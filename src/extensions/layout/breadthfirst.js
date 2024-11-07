@@ -84,6 +84,7 @@ BreadthFirstLayout.prototype.run = function(){
 
         roots = roots.add( compRoots );
       }
+
     }
   }
 
@@ -96,6 +97,7 @@ BreadthFirstLayout.prototype.run = function(){
     }
 
     const i = depths[d].length;
+
     depths[d].push( ele );
 
     setInfo( ele, {
@@ -106,7 +108,9 @@ BreadthFirstLayout.prototype.run = function(){
 
   const changeDepth = ( ele, newDepth ) => {
     const { depth, index } = getInfo( ele );
+
     depths[ depth ][ index ] = null;
+
     // add only childless nodes
     if (ele.isChildless()) addToDepth( ele, newDepth );
   };
@@ -118,7 +122,7 @@ BreadthFirstLayout.prototype.run = function(){
     visit: function( node, edge, pNode, i, depth ){
       const ele = node[0];
       const id = ele.id();
-
+      
       // add only childless nodes
       if (ele.isChildless()) addToDepth( ele, depth );
       foundByBfs[ id ] = true;
@@ -142,7 +146,7 @@ BreadthFirstLayout.prototype.run = function(){
     const eles = depths[ i ];
 
     for( let j = 0; j < eles.length; j++ ){
-      let ele = eles[ j ];
+      const ele = eles[ j ];
 
       if( ele == null ){
         eles.splice( j, 1 );
@@ -154,14 +158,6 @@ BreadthFirstLayout.prototype.run = function(){
         depth: i,
         index: j
       });
-    }
-  };
-
-  const depthsLen = depths.length;
-
-  const assignDepths = function(){
-    for( let i = 0; i < depthsLen; i++ ){
-      assignDepthsAt( i );
     }
   };
 
@@ -216,8 +212,6 @@ BreadthFirstLayout.prototype.run = function(){
       }
     }
   }
-
-  assignDepths(); // clear holes
 
   // find min distance we need to leave between nodes
   let minDistance = 0;
@@ -282,6 +276,7 @@ BreadthFirstLayout.prototype.run = function(){
     return percent;
   };
 
+
   // rearrange the indices in each depth level based on connectivity
   let sortFn = function( a, b ){
     const apct = getWeightedPercent( a );
@@ -300,6 +295,8 @@ BreadthFirstLayout.prototype.run = function(){
     sortFn = options.depthSort;
   }
 
+  let depthsLen = depths.length;
+
   // sort each level to make connected nodes closer
   for( let i = 0; i < depthsLen; i++ ){
     depths[ i ].sort( sortFn );
@@ -311,10 +308,19 @@ BreadthFirstLayout.prototype.run = function(){
   for( let i = 0; i < orphanNodes.length; i++ ){
     orphanDepth.push( orphanNodes[i] );
   }
-  // add a new top-level depth only when there are orphan nodes
-  if (orphanDepth.length) depths.unshift( orphanDepth );
 
-  assignDepths();
+  const assignDepths = function(){
+    for( let i = 0; i < depthsLen; i++ ){
+      assignDepthsAt( i );
+    }
+  };
+  
+  // add a new top-level depth only when there are orphan nodes
+  if (orphanDepth.length) {
+    depths.unshift( orphanDepth );
+    depthsLen = depths.length;
+    assignDepths();
+  }
 
   let biggestDepthSize = 0;
   for( let i = 0; i < depthsLen; i++ ){

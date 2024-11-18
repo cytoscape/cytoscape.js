@@ -821,9 +821,7 @@ styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
       && ( name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') )
     ){
       ele.parallelEdges().forEach(pllEdge => {
-        if( pllEdge.isBundledBezier() ){
-          pllEdge.dirtyBoundingBoxCache();
-        }
+        pllEdge.dirtyBoundingBoxCache();
       });
     }
 

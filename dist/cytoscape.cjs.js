@@ -15736,9 +15736,7 @@ styfn$8.checkBoundsTrigger = function (ele, name, fromValue, toValue) {
     // only for beziers -- so performance of other edges isn't affected
     prop.triggersBoundsOfParallelBeziers && name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) {
       ele.parallelEdges().forEach(function (pllEdge) {
-        if (pllEdge.isBundledBezier()) {
-          pllEdge.dirtyBoundingBoxCache();
-        }
+        pllEdge.dirtyBoundingBoxCache();
       });
     }
     if (prop.triggersBoundsOfConnectedEdges && name === 'display' && (fromValue === 'none' || toValue === 'none')) {
@@ -31361,7 +31359,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.30.3";
+var version = "3.30.4";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

@@ -1,29 +1,14 @@
 import { EdgeDrawing } from './drawing-edges-webgl';
 import { NodeDrawing } from './drawing-nodes-webgl';
+import { RENDER_TARGET, renderDefaults } from './defaults';
 import { OverlayUnderlayRenderer } from './drawing-overlay';
 import * as util from './webgl-util';
 import * as eleTextureCache from '../ele-texture-cache';
-import { defaults, debounce } from '../../../../util';
+import { debounce } from '../../../../util';
 import { color2tuple } from '../../../../util/colors';
 import { mat3 } from 'gl-matrix';
 
 
-
-export const RENDER_TARGET = {
-  SCREEN:  { name: 'screen',  screen:  true },
-  PICKING: { name: 'picking', picking: true },
-};
-
-export const initRenderTypeDefaults = defaults({
-  getKey: null,
-  drawElement: null,
-  getBoundingBox: null,
-  getRotation: null,
-  getRotationPoint: null,
-  getRotationOffset: null,
-  isVisible: null,
-  getPadding: null,
-});
 
 function getBGColor(container) {
   const cssColor = (container && container.style && container.style.backgroundColor) || 'white';
@@ -63,7 +48,7 @@ CRp.initWebgl = function(opts, fns) {
     return label && label.value;
   };
 
-  r.edgeDrawing = new EdgeDrawing(r, gl, opts, {
+  r.edgeDrawing = new EdgeDrawing(r, gl, opts, renderDefaults({
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -71,19 +56,19 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible,
-  });
+  }));
 
   r.nodeDrawing = new NodeDrawing(r, gl, opts);
   const our = new OverlayUnderlayRenderer(r);
   
-  r.nodeDrawing.addRenderType('node-body', {
+  r.nodeDrawing.addRenderType('node-body', renderDefaults({
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
     isVisible: ele => ele.visible(),
-  });
+  }));
 
-  r.nodeDrawing.addRenderType('node-label', {
+  r.nodeDrawing.addRenderType('node-label', renderDefaults({
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -91,23 +76,23 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible,
-  });
+  }));
   
-  r.nodeDrawing.addRenderType('node-overlay', {
+  r.nodeDrawing.addRenderType('node-overlay', renderDefaults({
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('overlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('overlay', ctx, ele, bb),
     isVisible: ele => our.isVisible('overlay', ele),
     getPadding: ele => our.getPadding('overlay', ele),
-  });
+  }));
 
-  r.nodeDrawing.addRenderType('node-underlay', {
+  r.nodeDrawing.addRenderType('node-underlay', renderDefaults({
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('underlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('underlay', ctx, ele, bb),
     isVisible: ele => our.isVisible('underlay', ele),
     getPadding: ele => our.getPadding('underlay', ele),
-  });
+  }));
 
   // this is a very simplistic way of triggering garbage collection
   const setGCFlag = debounce(() => {

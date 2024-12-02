@@ -1,7 +1,6 @@
 import * as util from './webgl-util';
 import * as cyutil from '../../../../util';
 import { mat3 } from 'gl-matrix';
-import { initRenderTypeDefaults } from './drawing-redraw-webgl';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
@@ -459,7 +458,7 @@ export class AtlasManager {
 
   addRenderType(type, renderTypeOptions) {
     const atlasCollection = new AtlasCollection(this.r, this.globalOptions);
-    const typeOpts = initRenderTypeDefaults(renderTypeOptions);
+    const typeOpts = renderTypeOptions;
     this.renderTypes.set(type, cyutil.extend( { type, atlasCollection}, typeOpts ) );
   }
 

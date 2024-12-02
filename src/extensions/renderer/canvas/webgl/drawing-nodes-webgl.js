@@ -1,7 +1,7 @@
 // For rendering nodes
 import * as util from './webgl-util';
 import { AtlasManager } from './atlas';
-import { RENDER_TARGET } from './drawing-redraw-webgl';
+import { RENDER_TARGET } from './defaults';
 
 
 export class NodeDrawing {

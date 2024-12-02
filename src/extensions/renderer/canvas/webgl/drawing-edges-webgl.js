@@ -1,8 +1,7 @@
 import * as util from './webgl-util';
 import { mat3 } from 'gl-matrix';
 import { AtlasManager } from './atlas';
-import { RENDER_TARGET } from './drawing-redraw-webgl';
-import { initRenderTypeDefaults } from './drawing-redraw-webgl';
+import { RENDER_TARGET } from './defaults';
 
 // The canvas renderer uses a mask to remove the part of the edge line that's under
 // a translucent edge arrow (see the part of CRp.drawArrowhead that uses globalCompositeOperation). 
@@ -33,7 +32,7 @@ export class EdgeDrawing {
     this.atlasSize = opts.webglTexSize;
     this.bgColor = opts.bgColor;
 
-    this.labelOpts = initRenderTypeDefaults(labelRenderOptions);
+    this.labelOpts = labelRenderOptions;
 
     // with the current strategy we don't have enough shader attributes for wrapped textures
     opts.enableWrapping = false;

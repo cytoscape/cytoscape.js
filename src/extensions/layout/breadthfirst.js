@@ -39,29 +39,29 @@ function BreadthFirstLayout( options ){
 }
 
 BreadthFirstLayout.prototype.run = function(){
-  let params = this.options;
-  let options = params;
+  const options = this.options;
+  const cy = options.cy;
+  const eles = options.eles;
+  const nodes = eles.nodes().filter( n => n.isChildless() );
+  const graph = eles;
+  const directed = options.directed;
+  const maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
 
-  let cy = params.cy;
-  let eles = options.eles;
-  let nodes = eles.nodes().filter( n => !n.isParent() );
-  let graph = eles;
-  let directed = options.directed;
-  let maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
-
-  let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
-    x1: 0, y1: 0, w: cy.width(), h: cy.height()
+  const hasBoundingBox = !!options.boundingBox;
+  const cyExtent = cy.extent();
+  const bb = math.makeBoundingBox( hasBoundingBox ? options.boundingBox : {
+    x1: cyExtent.x1, y1: cyExtent.y1, w: cyExtent.w, h: cyExtent.h
   } );
 
   let roots;
   if( is.elementOrCollection( options.roots ) ){
     roots = options.roots;
   } else if( is.array( options.roots ) ){
-    let rootsArray = [];
+    const rootsArray = [];
 
     for( let i = 0; i < options.roots.length; i++ ){
-      let id = options.roots[ i ];
-      let ele = cy.getElementById( id );
+      const id = options.roots[ i ];
+      const ele = cy.getElementById( id );
       rootsArray.push( ele );
     }
 
@@ -73,31 +73,30 @@ BreadthFirstLayout.prototype.run = function(){
     if( directed ){
       roots = nodes.roots();
     } else {
-      let components = eles.components();
+      const components = eles.components();
 
       roots = cy.collection();
       for( let i = 0; i < components.length; i++ ){
-        let comp = components[i];
-        let maxDegree = comp.maxDegree( false );
-        let compRoots = comp.filter( function( ele ){
+        const comp = components[i];
+        const maxDegree = comp.maxDegree( false );
+        const compRoots = comp.filter( function( ele ){
           return ele.degree( false ) === maxDegree;
         } );
 
         roots = roots.add( compRoots );
       }
-
     }
   }
 
-  let depths = [];
-  let foundByBfs = {};
+  const depths = [];
+  const foundByBfs = {};
 
-  let addToDepth = ( ele, d ) => {
+  const addToDepth = ( ele, d ) => {
     if( depths[d] == null ){
       depths[d] = [];
     }
 
-    let i = depths[d].length;
+    const i = depths[d].length;
 
     depths[d].push( ele );
 
@@ -107,12 +106,13 @@ BreadthFirstLayout.prototype.run = function(){
     } );
   };
 
-  let changeDepth = ( ele, newDepth ) => {
-    let { depth, index } = getInfo( ele );
+  const changeDepth = ( ele, newDepth ) => {
+    const { depth, index } = getInfo( ele );
 
     depths[ depth ][ index ] = null;
 
-    addToDepth( ele, newDepth );
+    // add only childless nodes
+    if (ele.isChildless()) addToDepth( ele, newDepth );
   };
 
   // find the depths of the nodes
@@ -120,18 +120,19 @@ BreadthFirstLayout.prototype.run = function(){
     roots: roots,
     directed: options.directed,
     visit: function( node, edge, pNode, i, depth ){
-      let ele = node[0];
-      let id = ele.id();
-
-      addToDepth( ele, depth );
+      const ele = node[0];
+      const id = ele.id();
+      
+      // add only childless nodes
+      if (ele.isChildless()) addToDepth( ele, depth );
       foundByBfs[ id ] = true;
     }
   } );
 
   // check for nodes not found by bfs
-  let orphanNodes = [];
+  const orphanNodes = [];
   for( let i = 0; i < nodes.length; i++ ){
-    let ele = nodes[ i ];
+    const ele = nodes[ i ];
 
     if( foundByBfs[ ele.id() ] ){
       continue;
@@ -141,12 +142,11 @@ BreadthFirstLayout.prototype.run = function(){
   }
 
   // assign the nodes a depth and index
-
-  let assignDepthsAt = function( i ){
-    let eles = depths[ i ];
+  const assignDepthsAt = function( i ){
+    const eles = depths[ i ];
 
     for( let j = 0; j < eles.length; j++ ){
-      let ele = eles[ j ];
+      const ele = eles[ j ];
 
       if( ele == null ){
         eles.splice( j, 1 );
@@ -161,21 +161,15 @@ BreadthFirstLayout.prototype.run = function(){
     }
   };
 
-  let assignDepths = function(){
-    for( let i = 0; i < depths.length; i++ ){
-      assignDepthsAt( i );
-    }
-  };
-
-  let adjustMaximally = function( ele, shifted ){
-    let eInfo = getInfo( ele );
-    let incomers = ele.incomers().filter( el => el.isNode() && eles.has(el) );
+  const adjustMaximally = function( ele, shifted ){
+    const eInfo = getInfo( ele );
+    const incomers = ele.incomers().filter( el => el.isNode() && eles.has(el) );
     let maxDepth = -1;
-    let id = ele.id();
+    const id = ele.id();
 
     for( let k = 0; k < incomers.length; k++ ){
-      let incmr = incomers[k];
-      let iInfo = getInfo( incmr );
+      const incmr = incomers[k];
+      const iInfo = getInfo( incmr );
 
       maxDepth = Math.max( maxDepth, iInfo.depth );
     }
@@ -185,7 +179,7 @@ BreadthFirstLayout.prototype.run = function(){
         return null;
       }
 
-      let newDepth = maxDepth + 1;
+      const newDepth = maxDepth + 1;
       changeDepth( ele, newDepth );
       shifted[id] = newDepth;
 
@@ -197,17 +191,17 @@ BreadthFirstLayout.prototype.run = function(){
 
   // for the directed case, try to make the edges all go down (i.e. depth i => depth i + 1)
   if( directed && maximal ){
-    let Q = [];
-    let shifted = {};
+    const Q = [];
+    const shifted = {};
 
-    let enqueue = n => Q.push(n);
-    let dequeue = () => Q.shift();
+    const enqueue = n => Q.push(n);
+    const dequeue = () => Q.shift();
 
     nodes.forEach( n => Q.push(n) );
 
     while( Q.length > 0 ){
-      let ele = dequeue();
-      let didShift = adjustMaximally( ele, shifted );
+      const ele = dequeue();
+      const didShift = adjustMaximally( ele, shifted );
 
       if( didShift ){
         ele.outgoers().filter( el => el.isNode() && eles.has(el) ).forEach( enqueue );
@@ -219,53 +213,51 @@ BreadthFirstLayout.prototype.run = function(){
     }
   }
 
-  assignDepths(); // clear holes
-
   // find min distance we need to leave between nodes
   let minDistance = 0;
   if( options.avoidOverlap ){
     for( let i = 0; i < nodes.length; i++ ){
-      let n = nodes[ i ];
-      let nbb = n.layoutDimensions( options );
-      let w = nbb.w;
-      let h = nbb.h;
+      const n = nodes[ i ];
+      const nbb = n.layoutDimensions( options );
+      const w = nbb.w;
+      const h = nbb.h;
 
       minDistance = Math.max( minDistance, w, h );
     }
   }
 
   // get the weighted percent for an element based on its connectivity to other levels
-  let cachedWeightedPercent = {};
-  let getWeightedPercent = function( ele ){
+  const cachedWeightedPercent = {};
+  const getWeightedPercent = function( ele ){
     if( cachedWeightedPercent[ ele.id() ] ){
       return cachedWeightedPercent[ ele.id() ];
     }
 
-    let eleDepth = getInfo( ele ).depth;
-    let neighbors = ele.neighborhood();
+    const eleDepth = getInfo( ele ).depth;
+    const neighbors = ele.neighborhood();
     let percent = 0;
     let samples = 0;
 
     for( let i = 0; i < neighbors.length; i++ ){
-      let neighbor = neighbors[ i ];
+      const neighbor = neighbors[ i ];
 
       if( neighbor.isEdge() || neighbor.isParent() || !nodes.has( neighbor ) ){
         continue;
       }
 
-      let bf = getInfo( neighbor );
+      const bf = getInfo( neighbor );
 
       if (bf == null){ continue; }
 
-      let index = bf.index;
-      let depth = bf.depth;
+      const index = bf.index;
+      const depth = bf.depth;
 
       // unassigned neighbours shouldn't affect the ordering
       if( index == null || depth == null ){
         continue;
       }
 
-      let nDepth = depths[ depth ].length;
+      const nDepth = depths[ depth ].length;
 
       if( depth < eleDepth ){ // only get influenced by elements above
         percent += index / nDepth;
@@ -286,12 +278,11 @@ BreadthFirstLayout.prototype.run = function(){
 
 
   // rearrange the indices in each depth level based on connectivity
-
   let sortFn = function( a, b ){
-    let apct = getWeightedPercent( a );
-    let bpct = getWeightedPercent( b );
+    const apct = getWeightedPercent( a );
+    const bpct = getWeightedPercent( b );
 
-    let diff = apct - bpct;
+    const diff = apct - bpct;
 
     if( diff === 0 ){
       return util.sort.ascending( a.id(), b.id() ); // make sure sort doesn't have don't-care comparisons
@@ -304,52 +295,70 @@ BreadthFirstLayout.prototype.run = function(){
     sortFn = options.depthSort;
   }
 
+  let depthsLen = depths.length;
+
   // sort each level to make connected nodes closer
-  for( let i = 0; i < depths.length; i++ ){
+  for( let i = 0; i < depthsLen; i++ ){
     depths[ i ].sort( sortFn );
     assignDepthsAt( i );
   }
 
   // assign orphan nodes to a new top-level depth
-  let orphanDepth = [];
+  const orphanDepth = [];
   for( let i = 0; i < orphanNodes.length; i++ ){
     orphanDepth.push( orphanNodes[i] );
   }
-  depths.unshift( orphanDepth );
 
-  assignDepths();
+  const assignDepths = function(){
+    for( let i = 0; i < depthsLen; i++ ){
+      assignDepthsAt( i );
+    }
+  };
+  
+  // add a new top-level depth only when there are orphan nodes
+  if (orphanDepth.length) {
+    depths.unshift( orphanDepth );
+    depthsLen = depths.length;
+    assignDepths();
+  }
 
   let biggestDepthSize = 0;
-  for( let i = 0; i < depths.length; i++ ){
+  for( let i = 0; i < depthsLen; i++ ){
     biggestDepthSize = Math.max( depths[ i ].length, biggestDepthSize );
   }
 
-  let center = {
+  const center = {
     x: bb.x1 + bb.w / 2,
-    y: bb.x1 + bb.h / 2
+    y: bb.y1 + bb.h / 2
   };
 
-  let maxDepthSize = depths.reduce( (max, eles) => Math.max(max, eles.length), 0 );
+  // average node size
+  const aveNodeSize = nodes.reduce((acc, node) => ((box) => ({
+    w: acc.w === -1 ? box.w : (acc.w + box.w) / 2,
+    h: acc.h === -1 ? box.h : (acc.h + box.h) / 2,
+  }))(node.boundingBox({
+    includeLabels: options.nodeDimensionsIncludeLabels
+  })), { w: -1, h: -1 });
 
-  let getPosition = function( ele ){
-    let { depth, index } = getInfo( ele );
-    let depthSize = depths[ depth ].length;
+  const distanceY = Math.max(
+    // only one depth
+    depthsLen === 1 ? 0 :
+      // inside a bounding box, no need for top & bottom padding
+      hasBoundingBox ? ((bb.h - options.padding * 2 - aveNodeSize.h) / (depthsLen - 1)) :
+        (bb.h - options.padding * 2 - aveNodeSize.h) / (depthsLen + 1),
+    minDistance );
 
-    let distanceX = Math.max( bb.w / ( (options.grid ? maxDepthSize : depthSize) + 1 ), minDistance );
-    let distanceY = Math.max( bb.h / (depths.length + 1), minDistance );
-    let radiusStepSize = Math.min( bb.w / 2 / depths.length, bb.h / 2 / depths.length );
-    radiusStepSize = Math.max( radiusStepSize, minDistance );
+  const maxDepthSize = depths.reduce( (max, eles) => Math.max(max, eles.length), 0 );
 
-    if( !options.circle ){
-      let epos = {
-        x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
-        y: (depth + 1) * distanceY
-      };
+  const getPosition = function( ele ){
+    const { depth, index } = getInfo( ele );
 
-      return epos;
-    } else {
-      let radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize / 2 : 0);
-      let theta = 2 * Math.PI / depths[ depth ].length * index;
+    if ( options.circle ){
+      let radiusStepSize = Math.min( bb.w / 2 / depthsLen, bb.h / 2 / depthsLen );
+      radiusStepSize = Math.max( radiusStepSize, minDistance );
+
+      let radius = radiusStepSize * depth + radiusStepSize - (depthsLen > 0 && depths[0].length <= 3 ? radiusStepSize / 2 : 0);
+      const theta = 2 * Math.PI / depths[ depth ].length * index;
 
       if( depth === 0 && depths[0].length === 1 ){
         radius = 1;
@@ -359,6 +368,23 @@ BreadthFirstLayout.prototype.run = function(){
         x: center.x + radius * Math.cos( theta ),
         y: center.y + radius * Math.sin( theta )
       };
+
+    } else {
+      const depthSize = depths[ depth ].length;
+      const distanceX = Math.max(
+        // only one depth
+        depthSize === 1 ? 0 :
+          // inside a bounding box, no need for left & right padding
+          hasBoundingBox ? ((bb.w - options.padding * 2 - aveNodeSize.w) / ((options.grid ? maxDepthSize : depthSize) - 1)):
+            (bb.w - options.padding * 2 - aveNodeSize.w) / ((options.grid ? maxDepthSize : depthSize) + 1),
+        minDistance );
+
+      const epos = {
+        x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
+        y: center.y + (depth + 1 - (depthsLen + 1) / 2) * distanceY
+      };
+
+      return epos;
     }
 
   };

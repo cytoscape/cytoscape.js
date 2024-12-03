@@ -9,6 +9,13 @@ var networks = {
     url: 'network-styles.json',
     layout: { name: 'preset' }
   },
+  'curve_test': {
+    desc: 'Curve Test',
+    nodes: 2,
+    edges: 1,
+    url: 'network-curve.json',
+    layout: { name: 'preset' }
+  },
   // 'compound': {
   //   desc: 'Compound nodes',
   //   nodes: 6,

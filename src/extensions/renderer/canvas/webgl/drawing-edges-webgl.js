@@ -280,6 +280,7 @@ export class EdgeDrawing {
 
     util.createBufferStaticDraw(gl, 'vec3', program.aPositionType, instanceGeometry);
 
+    // all buffers must end with "Buffer"
     const n = this.maxInstances;
     this.indexBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
     this.sourceTargetBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aSourceTarget);
@@ -302,6 +303,12 @@ export class EdgeDrawing {
     return vao;
   }
 
+  get buffers() {
+    if(!this._buffers) {
+      this._buffers = Object.keys(this).filter(k => k.endsWith('Buffer')).map(k => this[k]);
+    }
+    return this._buffers;
+  }
 
   getArrowInfo(edge, edgeWidth, prefix) {
     // Edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object.
@@ -476,20 +483,9 @@ export class EdgeDrawing {
     gl.bindVertexArray(vao);
 
     // buffer the attribute data
-    this.indexBuffer.bufferSubData(count);
-    this.sourceTargetBuffer.bufferSubData(count);
-    this.lineWidthBuffer.bufferSubData(count);
-    this.lineColorBuffer.bufferSubData(count);
-    this.sourceArrowColorBuffer.bufferSubData(count);
-    this.targetArrowColorBuffer.bufferSubData(count);
-    this.sourceArrowScaleRotateBuffer.bufferSubData(count);
-    this.sourceArrowTranslateBuffer.bufferSubData(count);
-    this.targetArrowScaleRotateBuffer.bufferSubData(count);
-    this.targetArrowTranslateBuffer.bufferSubData(count);
-    this.atlasIdBuffer.bufferSubData(count);
-    this.texBuffer.bufferSubData(count);
-    this.labelScaleRotateBuffer.bufferSubData(count);
-    this.labelTranslateBuffer.bufferSubData(count);
+    for(const buffer of this.buffers) {
+      buffer.bufferSubData(count);
+    }
 
     const atlases = this.atlasManager.getAtlases();
     // must buffer before activating texture units

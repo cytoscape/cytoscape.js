@@ -1,0 +1,45 @@
+{
+  "elements": {
+    "nodes": [
+      { "data": { "id": "n1", "weight": 1 }, "position": { "x": 0, "y":  0 } },
+      { "data": { "id": "n2", "weight": 2 }, "position": { "x": 0, "y": 100 } }
+    ],
+    "edges": [
+      { "data": { "id":"n1-n2-0", "source": "n1", "target": "n2", "directed": "false" } },
+      { "data": { "id":"n1-n2-1", "source": "n1", "target": "n2", "directed": "false" } },
+      { "data": { "id":"n1-n2-2", "source": "n1", "target": "n2", "directed": "false" } },
+      { "data": { "id":"n1-n2-3", "source": "n1", "target": "n2", "directed": "false" } },
+      { "data": { "id":"self-0", "source": "n1", "target": "n1", "directed": "false" } },
+      { "data": { "id":"self-1", "source": "n1", "target": "n1", "directed": "false" } }
+    ]
+  },
+  "style": [
+    {
+      "selector": "node",
+      "style": {
+        "label": "data(id)",
+        "text-valign": "center",
+        "color": "#000000",
+        "background-color": "#3a7ecf",
+        "font-family": "Helvetica"
+      }
+    },
+    {
+      "selector": "node:selected",
+      "style": {
+        "border-color": "yellow",
+        "border-opacity": 1,
+        "border-width": 2
+      }
+    },
+    {
+      "selector": "edge",
+      "style": {
+        "width": 4,
+        "line-color": "#3a7ecf",
+        "opacity": 0.5,
+        "curve-style": "bezier"
+      }
+    }
+  ]
+}

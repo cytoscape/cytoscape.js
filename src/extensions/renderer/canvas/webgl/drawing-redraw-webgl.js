@@ -1,4 +1,5 @@
-import { EdgeDrawing } from './drawing-edges-webgl';
+// import { EdgeDrawing } from './drawing-edges-webgl';
+import { EdgeBezierDrawing } from './drawing-edges-curved-webgl';
 import { NodeDrawing } from './drawing-nodes-webgl';
 import { RENDER_TARGET, renderDefaults } from './defaults';
 import { OverlayUnderlayRenderer } from './drawing-overlay';
@@ -48,7 +49,7 @@ CRp.initWebgl = function(opts, fns) {
     return label && label.value;
   };
 
-  r.edgeDrawing = new EdgeDrawing(r, gl, opts, renderDefaults({
+  r.edgeDrawing = new EdgeBezierDrawing(r, gl, opts, renderDefaults({
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,

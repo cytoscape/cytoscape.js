@@ -32,7 +32,7 @@ export class EdgeBezierDrawing {
 
   createShaderProgram(renderTarget) {
     // see https://wwwtyro.net/2019/11/18/instanced-lines.html
-    const { gl } = this;
+    // and https://wwwtyro.net/2021/10/01/instanced-lines-part-2.html 
 
     const vertexShaderSource = `#version 300 es
       precision highp float;
@@ -63,31 +63,32 @@ export class EdgeBezierDrawing {
           p0 = aPointD;
           p1 = aPointC;
           p2 = aPointB;
-          pos = vec2(1.0 - aPosition.x, -aPosition.y);
+          pos = vec2(0.0, -aPosition.y);
         }
 
+        vec2 p01 = p1 - p0;
+        vec2 p12 = p2 - p1;
+        vec2 p21 = p1 - p2;
+
         // Find the normal vector.
-        vec2 tangent = normalize(normalize(p2 - p1) + normalize(p1 - p0));
+        vec2 tangent = normalize(normalize(p12) + normalize(p01));
         vec2 normal = vec2(-tangent.y, tangent.x);
 
         // Find the vector perpendicular to p0 -> p1.
-        vec2 p01 = p1 - p0;
-        vec2 p21 = p1 - p2;
         vec2 p01Norm = normalize(vec2(-p01.y, p01.x));
 
         // Determine the bend direction.
         float sigma = sign(dot(p01 + p21, normal));
+        float width = aLineWidth;
 
         if(sign(pos.y) == -sigma) {
           // This is an intersecting vertex. Adjust the position so that there's no overlap.
-          vec2 point = 0.5 * normal * -sigma * aLineWidth / dot(normal, p01Norm);
+          vec2 point = 0.5 * width * normal * -sigma / dot(normal, p01Norm);
           gl_Position = vec4(uPanZoomMatrix * vec3(p1 + point, 1.0), 1.0);
         } else {
-          // This is a non-intersecting vertex. Treat it normally.
-          vec2 xBasis = p2 - p1;
-          vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
-          vec2 point = p1 + xBasis * pos.x + yBasis * aLineWidth * pos.y;
-          gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
+          // This is a non-intersecting vertex. Treat it like a mitre join.
+          vec2 point = 0.5 * width * normal * sigma * dot(normal, p01Norm);
+          gl_Position = vec4(uPanZoomMatrix * vec3(p1 + point, 1.0), 1.0);
         }
 
         vColor = aLineColor;
@@ -114,6 +115,7 @@ export class EdgeBezierDrawing {
       }
     `;
 
+    const { gl } = this;
     const program = util.createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
     program.aPosition = gl.getAttribLocation(program, 'aPosition');
@@ -159,7 +161,7 @@ export class EdgeBezierDrawing {
     const n = this.maxInstances;
     this.indexBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
 
-    // BAD! use one buffer but with different offsets
+    // TODO: use a single buffer for the points, but with different offsets for the attributes
     this.aPointABuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointA);
     this.aPointBBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointB);
     this.aPointCBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointC);
@@ -233,7 +235,7 @@ export class EdgeBezierDrawing {
     // - performance (fewer segments when performance is a concern)
     // - user configurable option(s)
     // note: number of segments should be less than the max number of instances
-    return 16;
+    return 15;
   }
 
   /**
@@ -259,13 +261,15 @@ export class EdgeBezierDrawing {
       let pD = curvePoints[i+2];
 
       // make phantom points for the first and last segments
+      // TODO adding 0.001 to avoid division by zero in the shader (I think), need a better solution
       if(i == 0) {
-        pA = { x: 2*pB.x - pC.x, y: 2*pB.y - pC.y };
+        pA = { x: 2*pB.x - pC.x + 0.001, y: 2*pB.y - pC.y + 0.001 };
       }
       if(i == curvePoints.length-2) {
-        pD = { x: 2*pC.x - pB.x, y: 2*pC.y - pB.y };
+        pD = { x: 2*pC.x - pB.x + 0.001, y: 2*pC.y - pB.y + 0.001 };
       }
 
+      // TODO using 4 separate buffers is not efficient, need to use a single buffer with different offsets
       const pAView = this.aPointABuffer.getView(instance);
       pAView[0] = pA.x;
       pAView[1] = pA.y;

@@ -192,42 +192,14 @@ export class EdgeBezierDrawing {
     this.instanceCount = 0;
   }
 
+  
   getControlPoints(edge) {
     const rs = edge._private.rscratch;
-    const { allpts } = rs;
-    const points = [];
-    for(let i = 0; i < allpts.length; i += 2) {
-      points.push({ x: allpts[i], y: allpts[i+1] });
-    }
-    return points;
+    return rs.allpts;
   }
-
-  getCurvePoint(points, t) {
-    if(points.length == 1) {
-      return points[0];
-    } else {
-      const newpoints = Array(points.length-1);
-      for(let i = 0; i < newpoints.length; i++) {
-        const x = (1-t) * points[i].x + t * points[i+1].x;
-        const y = (1-t) * points[i].y + t * points[i+1].y;
-        newpoints[i] = { x, y };
-      }
-      return this.getCurvePoint(newpoints, t);
-    }
-  }
-
-  getCurvePoints(points, steps) {
-    const curvePoints = [];
-    for(let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      curvePoints.push(this.getCurvePoint(points, t));
-    }
-    return curvePoints;
-  }
-
+  
   getNumSegments(edge) {
-    // TODO need a heuristic that decides how many segments to use
-    // factors to consider:
+    // TODO Need a heuristic that decides how many segments to use. Factors to consider:
     // - edge width/length
     // - edge curvature (the more the curvature, the more segments)
     // - zoom level (more segments when zoomed in)
@@ -235,7 +207,43 @@ export class EdgeBezierDrawing {
     // - performance (fewer segments when performance is a concern)
     // - user configurable option(s)
     // note: number of segments should be less than the max number of instances
-    return 15;
+    const numSegments = 10;
+    return Math.min(Math.max(numSegments, 5), this.maxInstances);
+  }
+
+  getCurveSegmentPoints(controlPoints, segments) {
+    const curvePoints = Array((segments + 1) * 2);
+    for(let i = 0; i <= segments; i++) {
+      // the first and last points are the same as the first and last control points
+      if(i == 0) {
+        curvePoints[0] = controlPoints[0];
+        curvePoints[1] = controlPoints[1];
+      } else if(i == segments) {
+        curvePoints[i*2  ] = controlPoints[controlPoints.length-2];
+        curvePoints[i*2+1] = controlPoints[controlPoints.length-1];
+      } else {
+        const t = i / segments;
+        // pass in curvePoints to set the values in the array directly
+        this.setCurvePoint(controlPoints, t, curvePoints, i*2);
+      }
+    }
+    return curvePoints;
+  }
+
+  setCurvePoint(points, t, curvePoints, cpi) {
+    if(points.length <= 2) {
+      curvePoints[cpi  ] = points[0];
+      curvePoints[cpi+1] = points[1];
+    } else {
+      const newpoints = Array(points.length-2);
+      for(let i = 0; i < newpoints.length; i+=2) {
+        const x = (1-t) * points[i  ] + t * points[i+2];
+        const y = (1-t) * points[i+1] + t * points[i+3];
+        newpoints[i  ] = x;
+        newpoints[i+1] = y;
+      }
+      return this.setCurvePoint(newpoints, t, curvePoints, cpi);
+    }
   }
 
   /**
@@ -246,47 +254,38 @@ export class EdgeBezierDrawing {
   draw(edge, eleIndex) {
     const controlPoints = this.getControlPoints(edge);
     const numSegments = this.getNumSegments(edge);
-    const curvePoints = this.getCurvePoints(controlPoints, numSegments);
+    const curvePoints = this.getCurveSegmentPoints(controlPoints, numSegments);
 
-    if(curvePoints.length + this.instanceCount > this.maxInstances) {
+    if(curvePoints.length/2 + this.instanceCount > this.maxInstances) {
       this.endBatch();
     }
 
-    for(let i = 0; i < curvePoints.length-1; i++) {
+    for(let i = 0; i < curvePoints.length-2; i += 2) {
       const instance = this.instanceCount;
 
-      let pA = curvePoints[i-1];
-      let pB = curvePoints[i];   // start
-      let pC = curvePoints[i+1]; // end
-      let pD = curvePoints[i+2];
+      let pAx = curvePoints[i-2], pAy = curvePoints[i-1];
+      let pBx = curvePoints[i  ], pBy = curvePoints[i+1];
+      let pCx = curvePoints[i+2], pCy = curvePoints[i+3];
+      let pDx = curvePoints[i+4], pDy = curvePoints[i+5];
 
       // make phantom points for the first and last segments
       // TODO adding 0.001 to avoid division by zero in the shader (I think), need a better solution
       if(i == 0) {
-        pA = { x: 2*pB.x - pC.x + 0.001, y: 2*pB.y - pC.y + 0.001 };
+        pAx = 2*pBx - pCx + 0.001;
+        pAy = 2*pBy - pCy + 0.001;
       }
-      if(i == curvePoints.length-2) {
-        pD = { x: 2*pC.x - pB.x + 0.001, y: 2*pC.y - pB.y + 0.001 };
+      if(i == curvePoints.length-4) {
+        pDx = 2*pCx - pBx + 0.001;
+        pDy = 2*pCy - pBy + 0.001;
       }
 
-      // TODO using 4 separate buffers is not efficient, need to use a single buffer with different offsets
-      const pAView = this.aPointABuffer.getView(instance);
-      pAView[0] = pA.x;
-      pAView[1] = pA.y;
+      // TODO using 4 separate buffers may not be efficient, could use a single buffer with different offsets
+      this.aPointABuffer.setPoint(instance, pAx, pAy);
+      this.aPointBBuffer.setPoint(instance, pBx, pBy);
+      this.aPointCBuffer.setPoint(instance, pCx, pCy);
+      this.aPointDBuffer.setPoint(instance, pDx, pDy);
 
-      const pBView = this.aPointBBuffer.getView(instance);
-      pBView[0] = pB.x;
-      pBView[1] = pB.y;
-
-      const pCView = this.aPointCBuffer.getView(instance);
-      pCView[0] = pC.x;
-      pCView[1] = pC.y;
-
-      const pDView = this.aPointDBuffer.getView(instance);
-      pDView[0] = pD.x;
-      pDView[1] = pD.y;
-
-          // Element index in the array returned by r.getCachedZSortedEles(), used for picking.
+      // Element index in the array returned by r.getCachedZSortedEles(), used for picking.
       const indexView = this.indexBuffer.getView(instance);
       util.indexToVec4(eleIndex, indexView);
 

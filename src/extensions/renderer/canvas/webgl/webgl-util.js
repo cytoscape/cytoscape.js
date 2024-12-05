@@ -213,6 +213,12 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
     return views[i];
   };
 
+  buffer.setPoint = (i, x, y) => {
+    const view = views[i];
+    view[0] = x;
+    view[1] = y;
+  };
+
   buffer.bufferSubData = (count) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     if(count) {

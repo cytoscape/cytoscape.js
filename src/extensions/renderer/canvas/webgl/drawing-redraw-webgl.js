@@ -1,6 +1,7 @@
 // import { EdgeDrawing } from './drawing-edges-webgl';
-import { EdgeBezierDrawing } from './drawing-edges-curved-webgl';
-import { NodeDrawing } from './drawing-nodes-webgl';
+// import { EdgeBezierDrawing } from './drawing-edges-curved-webgl';
+// import { NodeDrawing } from './drawing-nodes-webgl';
+import { ElementDrawingWebGL } from './drawing-elements-webgl';
 import { RENDER_TARGET, renderDefaults } from './defaults';
 import { OverlayUnderlayRenderer } from './drawing-overlay';
 import * as util from './webgl-util';
@@ -49,17 +50,17 @@ CRp.initWebgl = function(opts, fns) {
     return label && label.value;
   };
 
-  r.edgeDrawing = new EdgeBezierDrawing(r, gl, opts, renderDefaults({
-    getKey: fns.getLabelKey,
-    getBoundingBox: fns.getLabelBox,
-    drawElement: fns.drawLabel,
-    getRotation: getLabelRotation,
-    getRotationPoint: fns.getLabelRotationPoint,
-    getRotationOffset: fns.getLabelRotationOffset,
-    isVisible: isLabelVisible,
-  }));
+  // r.edgeDrawing = new EdgeBezierDrawing(r, gl, opts, renderDefaults({
+  //   getKey: fns.getLabelKey,
+  //   getBoundingBox: fns.getLabelBox,
+  //   drawElement: fns.drawLabel,
+  //   getRotation: getLabelRotation,
+  //   getRotationPoint: fns.getLabelRotationPoint,
+  //   getRotationOffset: fns.getLabelRotationOffset,
+  //   isVisible: isLabelVisible,
+  // }));
 
-  r.nodeDrawing = new NodeDrawing(r, gl, opts);
+  r.nodeDrawing = new ElementDrawingWebGL(r, gl, opts);
   const our = new OverlayUnderlayRenderer(r);
   
   r.nodeDrawing.addRenderType('node-body', renderDefaults({
@@ -105,7 +106,7 @@ CRp.initWebgl = function(opts, fns) {
     let gcNeeded = false;
     if(eles && eles.length > 0) {
       gcNeeded |= r.nodeDrawing.invalidate(eles);
-      gcNeeded |= r.edgeDrawing.invalidate(eles);
+      // gcNeeded |= r.edgeDrawing.invalidate(eles);
     }
     if(gcNeeded) {
       setGCFlag();
@@ -286,7 +287,7 @@ function drawAtlases(r) {
   draw(r.nodeDrawing, 'node-body',     i++);
   draw(r.nodeDrawing, 'node-label',    i++);
   // draw(r.nodeDrawing, 'node-overlay',  i++);
-  draw(r.edgeDrawing, 'edge-label',    i++);
+  // draw(r.edgeDrawing, 'edge-label',    i++);
 }
 
 
@@ -407,7 +408,7 @@ function renderWebgl(r, options, renderTarget) {
     start = performance.now(); // eslint-disable-line no-undef
   }
   
-  const { nodeDrawing, edgeDrawing } = r;
+  const { nodeDrawing } = r;
 
   if(renderTarget.screen) {
     if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
@@ -431,36 +432,27 @@ function renderWebgl(r, options, renderTarget) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    let prevEle;
-
     // eslint-disable-next-line no-inner-declarations
     function draw(ele, index) {
       index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
       if(ele.isNode()) {
-        if(prevEle && prevEle.isEdge()) {
-          edgeDrawing.endBatch();
-        }
-        nodeDrawing.draw(ele, index, 'node-underlay');
-        nodeDrawing.draw(ele, index, 'node-body');
-        nodeDrawing.draw(ele, index, 'node-label');
-        nodeDrawing.draw(ele, index, 'node-overlay');
+        nodeDrawing.drawTexture(ele, index, 'node-underlay');
+        nodeDrawing.drawTexture(ele, index, 'node-body');
+        nodeDrawing.drawTexture(ele, index, 'node-label');
+        nodeDrawing.drawTexture(ele, index, 'node-overlay');
       } else {
-        if(prevEle && prevEle.isNode()) {
-          nodeDrawing.endBatch();
-        }
-        edgeDrawing.draw(ele, index);
+        // nodeDrawing.draw(ele, index);
       }
-      prevEle = ele;
     }
 
     const panZoomMatrix = createPanZoomMatrix(r);
     const eles = r.getCachedZSortedEles();
 
     nodeDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
-    edgeDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
+    // edgeDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
 
     nodeDrawing.startBatch();
-    edgeDrawing.startBatch();
+    // edgeDrawing.startBatch();
 
     if(renderTarget.screen) {
       for(let i = 0; i < eles.nondrag.length; i++) {
@@ -476,14 +468,14 @@ function renderWebgl(r, options, renderTarget) {
     }
 
     nodeDrawing.endBatch();
-    edgeDrawing.endBatch();
+    // edgeDrawing.endBatch();
 
 
     if(r.data.gc) {
       console.log("Garbage Collect!");
       r.data.gc = false;
       nodeDrawing.gc();
-      edgeDrawing.gc();
+      // edgeDrawing.gc();
     }
 
     if(renderTarget.screen && r.webglDebugShowAtlases) {
@@ -526,10 +518,10 @@ function renderWebgl(r, options, renderTarget) {
       for(const info of nodeAtlasInfo) {
         console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
       }
-      const edgeAtlasInfo = edgeDrawing.getAtlasDebugInfo();
-      for(const info of edgeAtlasInfo) {
-        console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
-      }
+      // const edgeAtlasInfo = edgeDrawing.getAtlasDebugInfo();
+      // for(const info of edgeAtlasInfo) {
+      //   console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
+      // }
       console.log('');
     }
   }

@@ -212,6 +212,9 @@ export class EdgeBezierDrawing {
   }
 
   getCurveSegmentPoints(controlPoints, segments) {
+    if(controlPoints.length == 4) {
+      return controlPoints; // straight line
+    }
     const curvePoints = Array((segments + 1) * 2);
     for(let i = 0; i <= segments; i++) {
       // the first and last points are the same as the first and last control points
@@ -246,27 +249,37 @@ export class EdgeBezierDrawing {
     }
   }
 
+  getEdgePoints(edge) {
+    const controlPoints = this.getControlPoints(edge);
+    if(controlPoints.length == 4) {
+      return controlPoints;
+    }
+    const numSegments = this.getNumSegments(edge);
+    return this.getCurveSegmentPoints(controlPoints, numSegments);
+  }
+
   /**
    * This function gets the data needed to draw an edge and sets it into the buffers.
    * This function is called for evey edge on every frame, it is performance critical.
    * Set values in the buffers using Typed Array Views for performance.
    */
   draw(edge, eleIndex) {
-    const controlPoints = this.getControlPoints(edge);
-    const numSegments = this.getNumSegments(edge);
-    const curvePoints = this.getCurveSegmentPoints(controlPoints, numSegments);
+    const points = this.getEdgePoints(edge);
 
-    if(curvePoints.length/2 + this.instanceCount > this.maxInstances) {
+    // console.log('controlPoints', controlPoints);
+    // console.log('curvePoints', curvePoints);
+
+    if(points.length/2 + this.instanceCount > this.maxInstances) {
       this.endBatch();
     }
 
-    for(let i = 0; i < curvePoints.length-2; i += 2) {
+    for(let i = 0; i < points.length-2; i += 2) {
       const instance = this.instanceCount;
 
-      let pAx = curvePoints[i-2], pAy = curvePoints[i-1];
-      let pBx = curvePoints[i  ], pBy = curvePoints[i+1];
-      let pCx = curvePoints[i+2], pCy = curvePoints[i+3];
-      let pDx = curvePoints[i+4], pDy = curvePoints[i+5];
+      let pAx = points[i-2], pAy = points[i-1];
+      let pBx = points[i  ], pBy = points[i+1];
+      let pCx = points[i+2], pCy = points[i+3];
+      let pDx = points[i+4], pDy = points[i+5];
 
       // make phantom points for the first and last segments
       // TODO adding 0.001 to avoid division by zero in the shader (I think), need a better solution
@@ -274,7 +287,7 @@ export class EdgeBezierDrawing {
         pAx = 2*pBx - pCx + 0.001;
         pAy = 2*pBy - pCy + 0.001;
       }
-      if(i == curvePoints.length-4) {
+      if(i == points.length-4) {
         pDx = 2*pCx - pBx + 0.001;
         pDy = 2*pCy - pBy + 0.001;
       }

@@ -34,8 +34,7 @@ export class ElementDrawingWebGL {
     this.debugInfo = [];
   }
 
-  addRenderType(type, opts) {
-    // TODO rename to addTextureRenderType
+  addTextureRenderType(type, opts) {
     this.atlasManager.addRenderType(type, opts);
   }
 
@@ -93,6 +92,8 @@ export class ElementDrawingWebGL {
       flat out int vVertType;
 
       void main(void) {
+        int vid = gl_VertexID;
+
         if(aVertType == ${TEXTURE}) {
           float texX;
           float texY;
@@ -135,20 +136,30 @@ export class ElementDrawingWebGL {
 
           gl_Position = vec4(uPanZoomMatrix * texMatrix * vec3(aPosition, 1.0), 1.0);
         } 
-        else if(aVertType == ${EDGE_STRAIGHT}) {
+        else if(aVertType == ${EDGE_STRAIGHT} && vid < 6) {
           vec2 source = aPointAPointB.xy;
           vec2 target = aPointAPointB.zw;
+          // adjust the geometry so that the line is centered on the edge
+          // source.y = source.y - 0.5;
+          // target.y = target.y - 0.5;
+
           vec2 xBasis = target - source;
           vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
           vec2 point = source + xBasis * aPosition.x + yBasis * aLineWidth * aPosition.y;
+
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
           vEdgeColor = aLineColor;
         } 
-        else if(aVertType == ${EDGE_CURVE_SEGMENT}) {
+        else if(aVertType == ${EDGE_CURVE_SEGMENT} && vid < 6) {
           vec2 pointA = aPointAPointB.xy;
           vec2 pointB = aPointAPointB.zw;
           vec2 pointC = aPointCPointD.xy;
           vec2 pointD = aPointCPointD.zw;
+
+          pointA.y = pointA.y - 0.5;
+          pointB.y = pointB.y - 0.5;
+          pointC.y = pointC.y - 0.5;
+          pointD.y = pointD.y - 0.5;
 
           vec2 p0 = pointA;
           vec2 p1 = pointB;
@@ -187,6 +198,8 @@ export class ElementDrawingWebGL {
           }
 
           vEdgeColor = aLineColor;
+        } else {
+          gl_Position = vec4(2.0, 0.0, 0.0, 1.0); // discard vertex by putting it outside webgl clip space
         }
 
         vAtlasId = aAtlasId;
@@ -269,7 +282,7 @@ export class ElementDrawingWebGL {
     // TODO if we are rendering an edge then only the first quad is used
     const instanceGeometry = [
       ...quad, 
-      ...quad
+      // ...quad
     ];
 
     this.vertexCount = instanceGeometry.length / 2;
@@ -312,11 +325,16 @@ export class ElementDrawingWebGL {
     this.panZoomMatrix = panZoomMatrix;
     this.debugInfo = debugInfo;
     this.renderTarget = renderTarget;
+    this.startBatch();
   }
 
   startBatch() {
     this.instanceCount = 0;
     this.atlasManager.startBatch();
+  }
+
+  endFrame() {
+    this.endBatch();
   }
 
   drawTexture(ele, eleIndex, type) {
@@ -359,8 +377,6 @@ export class ElementDrawingWebGL {
     for(const tex of [1,2]) {
       atlasManager.setTransformMatrix(transform, atlasInfo, ele, tex === 1);
 
-      console.log('this', this);
-
       const scaleRotateView = this[`tex${tex}ScaleRotateBuffer`].getView(instance);
       scaleRotateView[0] = transform[0];
       scaleRotateView[1] = transform[1];
@@ -376,6 +392,152 @@ export class ElementDrawingWebGL {
 
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
+    }
+  }
+
+  drawEdge(edge, eleIndex) {
+    console.log('drawEdge', edge.id());
+    // line style
+    const baseOpacity = edge.pstyle('opacity').value;
+    const lineOpacity = edge.pstyle('line-opacity').value;
+    const width = edge.pstyle('width').pfValue;
+    const color = edge.pstyle('line-color').value;
+    const opacity = baseOpacity * lineOpacity;
+
+    const bufferStyleAndIndex = (instance) => {
+      const indexView = this.indexBuffer.getView(instance);
+      util.indexToVec4(eleIndex, indexView);
+
+      const lineColorView = this.lineColorBuffer.getView(instance);
+      util.toWebGLColor(color, opacity, lineColorView);
+
+      const lineWidthBuffer = this.lineWidthBuffer.getView(instance);
+      lineWidthBuffer[0] = width;
+    };
+
+    const points = this.getEdgePoints(edge);
+
+    if(points.length/2 + this.instanceCount > this.maxInstances) {
+      this.endBatch();
+    }
+
+    if(points.length == 4) { // straight line
+      console.log('straight line');
+      const instance = this.instanceCount;
+      
+      this.vertTypeBuffer.getView(instance)[0] = EDGE_STRAIGHT;
+
+      const sourceTargetView = this.pointAPointBBuffer.getView(instance);
+      sourceTargetView[0] = points[0]; // source x
+      sourceTargetView[1] = points[1]; // source y
+      sourceTargetView[2] = points[2]; // target x
+      sourceTargetView[3] = points[3]; // target y
+
+      bufferStyleAndIndex(instance);
+
+      this.instanceCount++;
+
+    } else { // curved line
+      return;
+
+      for(let i = 0; i < points.length-2; i += 2) {
+        const instance = this.instanceCount;
+
+        this.vertTypeBuffer.getView(instance)[0] = EDGE_CURVE_SEGMENT;
+
+        let pAx = points[i-2], pAy = points[i-1];
+        let pBx = points[i  ], pBy = points[i+1];
+        let pCx = points[i+2], pCy = points[i+3];
+        let pDx = points[i+4], pDy = points[i+5];
+
+        // make phantom points for the first and last segments
+        // TODO adding 0.001 to avoid division by zero in the shader (I think), need a better solution
+        if(i == 0) {
+          pAx = 2*pBx - pCx + 0.001;
+          pAy = 2*pBy - pCy + 0.001;
+        }
+        if(i == points.length-4) {
+          pDx = 2*pCx - pBx + 0.001;
+          pDy = 2*pCy - pBy + 0.001;
+        }
+
+        const pointABView = this.pointAPointBBuffer.getView(instance);
+        pointABView[0] = pAx;
+        pointABView[1] = pAy;
+        pointABView[2] = pBx;
+        pointABView[3] = pBy;
+
+        const pointCDView = this.pointCPointDBuffer.getView(instance);
+        pointCDView[0] = pCx;
+        pointCDView[1] = pCy;
+        pointCDView[2] = pDx;
+        pointCDView[3] = pDy;
+
+        bufferStyleAndIndex(instance);
+
+        this.instanceCount++;
+      }
+    }
+  }
+  
+  getEdgePoints(edge) {
+    const rs = edge._private.rscratch;
+    const controlPoints = rs.allpts;
+    if(controlPoints.length == 4) {
+      return controlPoints;
+    }
+    const numSegments = this.getNumSegments(edge);
+    return this.getCurveSegmentPoints(controlPoints, numSegments);
+  }
+
+  getNumSegments(edge) {
+    // TODO Need a heuristic that decides how many segments to use. Factors to consider:
+    // - edge width/length
+    // - edge curvature (the more the curvature, the more segments)
+    // - zoom level (more segments when zoomed in)
+    // - number of visible edges (more segments when there are fewer edges)
+    // - performance (fewer segments when performance is a concern)
+    // - user configurable option(s)
+    // note: number of segments should be less than the max number of instances
+    const numSegments = 10;
+    return Math.min(Math.max(numSegments, 5), this.maxInstances);
+  }
+
+  getCurveSegmentPoints(controlPoints, segments) {
+    if(controlPoints.length == 4) {
+      return controlPoints; // straight line
+    }
+    const curvePoints = Array((segments + 1) * 2);
+    for(let i = 0; i <= segments; i++) {
+      // the first and last points are the same as the first and last control points
+      if(i == 0) {
+        curvePoints[0] = controlPoints[0];
+        curvePoints[1] = controlPoints[1];
+      } else if(i == segments) {
+        curvePoints[i*2  ] = controlPoints[controlPoints.length-2];
+        curvePoints[i*2+1] = controlPoints[controlPoints.length-1];
+      } else {
+        const t = i / segments;
+        // pass in curvePoints to set the values in the array directly
+        this.setCurvePoint(controlPoints, t, curvePoints, i*2);
+      }
+    }
+    return curvePoints;
+  }
+
+  setCurvePoint(points, t, curvePoints, cpi) {
+    if(points.length <= 2) {
+      curvePoints[cpi  ] = points[0];
+      curvePoints[cpi+1] = points[1];
+    } else {
+      const newpoints = Array(points.length-2);
+      for(let i = 0; i < newpoints.length; i+=2) {
+        const x = (1-t) * points[i  ] + t * points[i+2];
+        const y = (1-t) * points[i+1] + t * points[i+3];
+        newpoints[i  ] = x;
+        newpoints[i+1] = y;
+      }
+      return this.setCurvePoint(newpoints, t, curvePoints, cpi);
     }
   }
 

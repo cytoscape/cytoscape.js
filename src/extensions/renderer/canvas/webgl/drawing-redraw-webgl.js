@@ -60,17 +60,17 @@ CRp.initWebgl = function(opts, fns) {
   //   isVisible: isLabelVisible,
   // }));
 
-  r.nodeDrawing = new ElementDrawingWebGL(r, gl, opts);
+  r.eleDrawing = new ElementDrawingWebGL(r, gl, opts);
   const our = new OverlayUnderlayRenderer(r);
   
-  r.nodeDrawing.addRenderType('node-body', renderDefaults({
+  r.eleDrawing.addTextureRenderType('node-body', renderDefaults({
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
     isVisible: ele => ele.visible(),
   }));
 
-  r.nodeDrawing.addRenderType('node-label', renderDefaults({
+  r.eleDrawing.addTextureRenderType('node-label', renderDefaults({
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -80,7 +80,7 @@ CRp.initWebgl = function(opts, fns) {
     isVisible: isLabelVisible,
   }));
   
-  r.nodeDrawing.addRenderType('node-overlay', renderDefaults({
+  r.eleDrawing.addTextureRenderType('node-overlay', renderDefaults({
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('overlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('overlay', ctx, ele, bb),
@@ -88,13 +88,25 @@ CRp.initWebgl = function(opts, fns) {
     getPadding: ele => our.getPadding('overlay', ele),
   }));
 
-  r.nodeDrawing.addRenderType('node-underlay', renderDefaults({
+  r.eleDrawing.addTextureRenderType('node-underlay', renderDefaults({
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('underlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('underlay', ctx, ele, bb),
     isVisible: ele => our.isVisible('underlay', ele),
     getPadding: ele => our.getPadding('underlay', ele),
   }));
+
+  r.eleDrawing.addTextureRenderType('edge-label', renderDefaults({
+    getKey: fns.getLabelKey,
+    getBoundingBox: fns.getLabelBox,
+    drawElement: fns.drawLabel,
+    getRotation: getLabelRotation,
+    getRotationPoint: fns.getLabelRotationPoint,
+    getRotationOffset: fns.getLabelRotationOffset,
+    isVisible: isLabelVisible,
+  }));
+
+  // TODO edge arrows, same approach as node-overlay/underlay
 
   // this is a very simplistic way of triggering garbage collection
   const setGCFlag = debounce(() => {
@@ -105,7 +117,7 @@ CRp.initWebgl = function(opts, fns) {
   r.onUpdateEleCalcs((willDraw, eles) => {
     let gcNeeded = false;
     if(eles && eles.length > 0) {
-      gcNeeded |= r.nodeDrawing.invalidate(eles);
+      gcNeeded |= r.eleDrawing.invalidate(eles);
       // gcNeeded |= r.edgeDrawing.invalidate(eles);
     }
     if(gcNeeded) {
@@ -177,7 +189,7 @@ function overrideCanvasRendererFunctions(r) {
       if(eventName === 'viewport' || eventName === 'bounds') {
         r.pickingFrameBuffer.needsDraw = true;
       } else if(eventName === 'background') { // background image finished loading, need to redraw
-        r.nodeDrawing.invalidate(eles, { type: 'node-body' });
+        r.eleDrawing.invalidate(eles, { type: 'node-body' });
       }
     };
   }
@@ -283,11 +295,11 @@ function drawAtlases(r) {
     }
   };
   let i = 0;
-  // draw(r.nodeDrawing, 'node-underlay', i++);
-  draw(r.nodeDrawing, 'node-body',     i++);
-  draw(r.nodeDrawing, 'node-label',    i++);
-  // draw(r.nodeDrawing, 'node-overlay',  i++);
-  // draw(r.edgeDrawing, 'edge-label',    i++);
+  // draw(r.eleDrawing, 'node-underlay', i++);
+  draw(r.eleDrawing, 'node-body',     i++);
+  draw(r.eleDrawing, 'node-label',    i++);
+  // draw(r.eleDrawing, 'node-overlay',  i++);
+  // draw(r.eleDrawing, 'edge-label',    i++);
 }
 
 
@@ -408,7 +420,7 @@ function renderWebgl(r, options, renderTarget) {
     start = performance.now(); // eslint-disable-line no-undef
   }
   
-  const { nodeDrawing } = r;
+  const { eleDrawing } = r;
 
   if(renderTarget.screen) {
     if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
@@ -436,23 +448,20 @@ function renderWebgl(r, options, renderTarget) {
     function draw(ele, index) {
       index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
       if(ele.isNode()) {
-        nodeDrawing.drawTexture(ele, index, 'node-underlay');
-        nodeDrawing.drawTexture(ele, index, 'node-body');
-        nodeDrawing.drawTexture(ele, index, 'node-label');
-        nodeDrawing.drawTexture(ele, index, 'node-overlay');
+        eleDrawing.drawTexture(ele, index, 'node-underlay');
+        eleDrawing.drawTexture(ele, index, 'node-body');
+        eleDrawing.drawTexture(ele, index, 'node-label');
+        eleDrawing.drawTexture(ele, index, 'node-overlay');
       } else {
-        // nodeDrawing.draw(ele, index);
+        eleDrawing.drawEdge(ele, index);
+        eleDrawing.drawTexture(ele, index, 'edge-label');
       }
     }
 
     const panZoomMatrix = createPanZoomMatrix(r);
     const eles = r.getCachedZSortedEles();
 
-    nodeDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
-    // edgeDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
-
-    nodeDrawing.startBatch();
-    // edgeDrawing.startBatch();
+    eleDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
 
     if(renderTarget.screen) {
       for(let i = 0; i < eles.nondrag.length; i++) {
@@ -467,15 +476,13 @@ function renderWebgl(r, options, renderTarget) {
       }
     }
 
-    nodeDrawing.endBatch();
-    // edgeDrawing.endBatch();
+    eleDrawing.endFrame();
 
 
     if(r.data.gc) {
       console.log("Garbage Collect!");
       r.data.gc = false;
-      nodeDrawing.gc();
-      // edgeDrawing.gc();
+      eleDrawing.gc();
     }
 
     if(renderTarget.screen && r.webglDebugShowAtlases) {
@@ -506,6 +513,7 @@ function renderWebgl(r, options, renderTarget) {
       }
     }
 
+    // TODO nodes and edges are no longer is separate batches
     if(compact) {
       console.log(`WebGL (${renderTarget.name}) - frame ${Math.ceil(end - start)}ms - edges ${edgeCount}/${edgeBatchCount}, nodes ${nodeCount}/${nodeBatchCount}`);
     } else {
@@ -514,14 +522,10 @@ function renderWebgl(r, options, renderTarget) {
       console.log(`  ${edgeCount} edges in ${edgeBatchCount} batches`);
       console.log(`  ${nodeCount} nodes in ${nodeBatchCount} batches`);
       console.log('Texture Atlases Used:');
-      const nodeAtlasInfo = nodeDrawing.getAtlasDebugInfo();
-      for(const info of nodeAtlasInfo) {
+      const atlasInfo = eleDrawing.getAtlasDebugInfo();
+      for(const info of atlasInfo) {
         console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
       }
-      // const edgeAtlasInfo = edgeDrawing.getAtlasDebugInfo();
-      // for(const info of edgeAtlasInfo) {
-      //   console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
-      // }
       console.log('');
     }
   }

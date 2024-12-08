@@ -93,6 +93,7 @@ export class ElementDrawingWebGL {
 
       void main(void) {
         int vid = gl_VertexID;
+        vec2 position = aPosition;
 
         if(aVertType == ${TEXTURE}) {
           float texX;
@@ -124,28 +125,28 @@ export class ElementDrawingWebGL {
             );
           }
 
-          if(vid == 2 || vid == 3 || vid == 5 || vid == 8 || vid == 9 || vid == 11) {
+          if(vid == 1 || vid == 2 || vid == 4 || vid == 7 || vid == 8 || vid == 10) {
             texX += texW;
           }
-          if(vid == 1 || vid == 4 || vid == 5 || vid == 7 || vid == 10 || vid == 11) {
+          if(vid == 2 || vid == 4 || vid == 5 || vid == 8 || vid == 10 || vid == 11) {
             texY += texH;
           }
 
           float d = float(uAtlasSize);
           vTexCoord = vec2(texX / d, texY / d); // tex coords must be between 0 and 1
 
-          gl_Position = vec4(uPanZoomMatrix * texMatrix * vec3(aPosition, 1.0), 1.0);
+          gl_Position = vec4(uPanZoomMatrix * texMatrix * vec3(position, 1.0), 1.0);
         } 
         else if(aVertType == ${EDGE_STRAIGHT} && vid < 6) {
           vec2 source = aPointAPointB.xy;
           vec2 target = aPointAPointB.zw;
+
           // adjust the geometry so that the line is centered on the edge
-          // source.y = source.y - 0.5;
-          // target.y = target.y - 0.5;
+          position.y = position.y - 0.5;
 
           vec2 xBasis = target - source;
           vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
-          vec2 point = source + xBasis * aPosition.x + yBasis * aLineWidth * aPosition.y;
+          vec2 point = source + xBasis * position.x + yBasis * aLineWidth * position.y;
 
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
           vEdgeColor = aLineColor;
@@ -156,20 +157,18 @@ export class ElementDrawingWebGL {
           vec2 pointC = aPointCPointD.xy;
           vec2 pointD = aPointCPointD.zw;
 
-          pointA.y = pointA.y - 0.5;
-          pointB.y = pointB.y - 0.5;
-          pointC.y = pointC.y - 0.5;
-          pointD.y = pointD.y - 0.5;
+          // adjust the geometry so that the line is centered on the edge
+          position.y = position.y - 0.5;
 
           vec2 p0 = pointA;
           vec2 p1 = pointB;
           vec2 p2 = pointC;
-          vec2 pos = aPosition;
-          if(aPosition.x == 1.0) {
+          vec2 pos = position;
+          if(position.x == 1.0) {
             p0 = pointD;
             p1 = pointC;
             p2 = pointB;
-            pos = vec2(0.0, -aPosition.y);
+            pos = vec2(0.0, -position.y);
           }
 
           vec2 p01 = p1 - p0;
@@ -274,15 +273,14 @@ export class ElementDrawingWebGL {
 
   createVAO() {
     const quad = [
-      0, 0,  0, 1,  1, 0,
-      1, 0,  0, 1,  1, 1,
+      0, 0,  1, 0,  1, 1,
+      0, 0,  1, 1,  0, 1,
     ];
 
     // a texture is split into two parts if it wraps in the atlas
-    // TODO if we are rendering an edge then only the first quad is used
     const instanceGeometry = [
       ...quad, 
-      // ...quad
+      ...quad
     ];
 
     this.vertexCount = instanceGeometry.length / 2;
@@ -295,7 +293,7 @@ export class ElementDrawingWebGL {
     util.createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
     
     // Create buffers for all the attributes
-    this.indexBuffer    = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
+    this.indexBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
     this.vertTypeBuffer = util.createBufferDynamicDraw(gl, n, 'int', program.aVertType);
     this.atlasIdBuffer = util.createBufferDynamicDraw(gl, n, 'int', program.aAtlasId);
     this.tex1Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex1);
@@ -374,7 +372,7 @@ export class ElementDrawingWebGL {
 
     const transform = this.tempMatrix = this.tempMatrix || mat3.create();
 
-    for(const tex of [1,2]) {
+    for(const tex of [1, 2]) {
       atlasManager.setTransformMatrix(transform, atlasInfo, ele, tex === 1);
 
       const scaleRotateView = this[`tex${tex}ScaleRotateBuffer`].getView(instance);
@@ -396,7 +394,6 @@ export class ElementDrawingWebGL {
   }
 
   drawEdge(edge, eleIndex) {
-    console.log('drawEdge', edge.id());
     // line style
     const baseOpacity = edge.pstyle('opacity').value;
     const lineOpacity = edge.pstyle('line-opacity').value;
@@ -422,7 +419,6 @@ export class ElementDrawingWebGL {
     }
 
     if(points.length == 4) { // straight line
-      console.log('straight line');
       const instance = this.instanceCount;
       
       this.vertTypeBuffer.getView(instance)[0] = EDGE_STRAIGHT;
@@ -438,8 +434,6 @@ export class ElementDrawingWebGL {
       this.instanceCount++;
 
     } else { // curved line
-      return;
-
       for(let i = 0; i < points.length-2; i += 2) {
         const instance = this.instanceCount;
 

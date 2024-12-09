@@ -133,17 +133,17 @@ cytoscape('collection', 'fooBar', function(){
 1. Use [rollup-starter-lib](https://github.com/rollup/rollup-starter-lib) to create the project's scaffolding.  Alternatively, manually generate the project configuration files with your favourite bundler.
 1. Use [Babel](https://babeljs.io) if you want to support older browsers with your extension.  The `rollup-starter-lib` repo has an example in the [`babel` branch](https://github.com/rollup/rollup-starter-lib/tree/babel).
 1. The default export of your extension should be a registration function, e.g.:
-  ```
-  export default function register(cytoscape){
-    cytoscape('collection', 'fooBar', fooBarFunction);
-  }
-  ```
+    ```
+    export default function register(cytoscape){
+      cytoscape('collection', 'fooBar', fooBarFunction);
+    }
+    ```
 1. You may want to support automatic registration for consumers who use traditional `<script>` tags to use your extension, i.e.:
-  ```
-  if(typeof window.cytoscape !== 'undefined'){
-    register(window.cytoscape);
-  }
-  ```
+    ```
+    if(typeof window.cytoscape !== 'undefined'){
+      register(window.cytoscape);
+    }
+    ```
 1. Document your extension's API in a `README.md` file in the root directory of your respository.
 1. [Publish your extension to npm](https://docs.npmjs.com/cli/publish).
 1. [Submit a request](https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&title=List%20extension%20:%20%3Cyour%20extension%20name%3E&body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description) to have your extension listed in the documentation.

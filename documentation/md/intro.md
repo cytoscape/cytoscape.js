@@ -23,6 +23,7 @@
     * npm
     * yarn
     * bower
+    * jspm
 * Supports the [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
 * Supports rendering images of graphs on Node.js with [Cytosnap](https://github.com/cytoscape/cytosnap)
 * Has a large suite of tests that can be run in the browser or the terminal
@@ -50,7 +51,7 @@
 
 * [Amazon](http://amazon.com)
 * [Apache Software Foundation](https://apache.org)
-* [Duo](https://duo.com)
+* [Cisco](https://www.cisco.com)
 * [Elastic](https://www.elastic.co/)
 * [Fujitsu](https://www.fujitsu.com)
 * [GitHub](https://github.com)
@@ -285,6 +286,7 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Packages
 
 * npm : `npm install cytoscape`
+* yarn : `yarn install cytoscape`
 * bower : `bower install cytoscape`
 * jspm : `jspm install npm:cytoscape`
 

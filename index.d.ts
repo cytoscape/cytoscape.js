@@ -1699,6 +1699,13 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#ele.isEdge
          */
         isEdge(): this is EdgeSingular;
+
+        /**
+         * Get the connected component for the calling element.
+         * The component considers all elements in the graph.
+         * http://js.cytoscape.org/#ele.component
+         */
+        component(): CollectionReturnValue;
     }
     /**
      * http://js.cytoscape.org/#collection/data
@@ -1970,6 +1977,24 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#nodes.unlock
          */
         unlock(): this;
+
+        /**
+         * Gets whether the element allows passthrough panning.
+         * http://js.cytoscape.org/#ele.pannable
+         */
+        pannable(): boolean;
+
+        /**
+         * Enables passthrough panning on the elements.
+         * http://js.cytoscape.org/#eles.panify
+         */
+        panify(): this;
+
+        /**
+         * Disables passthrough panning on the elements.
+         * http://js.cytoscape.org/#eles.unpanify
+         */
+        unpanify(): this;
     }
     /**
      * http://js.cytoscape.org/#collection/position--dimensions
@@ -2033,6 +2058,8 @@ declare namespace cytoscape {
         includeTargetLabels?: boolean | undefined;
         /** A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default true). */
         includeOverlays?: boolean | undefined;
+        /** A boolean indicating whether to include underlays in the bounding box (default: true). */
+        includeUnderlays?: boolean | undefined;
     }
     /**
      * http://js.cytoscape.org/#collection/position--dimensions
@@ -2903,6 +2930,15 @@ declare namespace cytoscape {
          * An array of collections is returned, with each collection representing a component.
          */
         components(): CollectionReturnValue[];
+
+        /**
+         * Get the connected components to which the passed elements belong.
+         * The components consider only the subgraph made by the elements in the calling collection.
+         * An array of collections is returned, with each collection representing a component.
+         * http://js.cytoscape.org/#eles.componentsOf
+         * @param root The components that contain these elements are returned.
+         */
+        componentsOf(root: Selector): CollectionReturnValue[];
     }
     /**
      * http://js.cytoscape.org/#collection/edge-points
@@ -2918,6 +2954,12 @@ declare namespace cytoscape {
          */
         controlPoints(): Position[];
         /**
+         * Get the control points in rendered coordinates.
+         * http://js.cytoscape.org/#edge.renderedControlPoints
+         */
+        renderedControlPoints(): Position[];
+
+        /**
          * Get an array of segment point model positions (i.e. bend points) for a {@code curve-style: segments} edge.
          *
          * While the segment points may be specified relatively in the stylesheet,
@@ -2926,13 +2968,31 @@ declare namespace cytoscape {
          */
         segmentPoints(): Position[];
         /**
+         * Get the segment points in rendered coordinates.
+         * http://js.cytoscape.org/#edge.renderedSegmentPoints
+         */
+        renderedSegmentPoints(): Position[];
+
+        /**
          * Get the model position of where the edge ends, towards the source node.
          */
         sourceEndpoint(): Position;
         /**
+         * Get the source endpoint in rendered coordinates.
+         * http://js.cytoscape.org/#edge.renderedSourceEndpoint
+         */
+        renderedSourceEndpoint(): Position;
+
+        /**
          * Get the model position of where the edge ends, towards the target node.
          */
         targetEndpoint(): Position;
+        /**
+         * Get the target endpoint in rendered coordinates.
+         * http://js.cytoscape.org/#edge.renderedTargetEndpoint
+         */
+        renderedTargetEndpoint(): Position;
+
         /**
          * Get the model position of the midpoint of the edge.
          *
@@ -2944,6 +3004,11 @@ declare namespace cytoscape {
          * For an even number of segment points, the overall midpoint is the midpoint of the middle-most line segment (i.e. the mean of the middle two segment points).
          */
         midpoint(): Position;
+        /**
+         * Get the midpoint in rendered coordinates.
+         * http://js.cytoscape.org/#edge.renderedMidpoint
+         */
+        renderedMidpoint(): Position;
     }
     interface EdgeSingularTraversing {
         /**
@@ -3464,7 +3529,127 @@ declare namespace cytoscape {
      * trivial
      */
 
-    interface CollectionAlgorithms {
+    /**
+     * Options for hierarchical clustering.
+     */
+    interface HierarchicalClusteringOptions {
+        attributes?: ((node: NodeSingular) => number)[] | undefined;
+        distance?: "euclidean" | "squaredEuclidean" | "manhattan" | "max" | ((length: number, getPAt: (i: number) => number, getQAt: (i: number) => number, nodeP?: NodeSingular, nodeQ?: NodeSingular) => number) | ((nodeP: NodeSingular, nodeQ: NodeSingular) => number) | undefined;
+        linkage?: "mean" | "min" | "max" | undefined;
+        mode?: "threshold" | "dendrogram" | undefined;
+        threshold?: number | undefined;
+        dendrogramDepth?: number | undefined;
+        addDendrogram?: boolean | undefined;
+    }
+
+    /**
+     * Result of hierarchical clustering.
+     */
+    interface HierarchicalClusteringResult {
+        clusters: NodeCollection[];
+        dendrogram?: CollectionReturnValue | undefined;
+    }
+
+    /**
+     * Options for Markov clustering.
+     */
+    interface MarkovClusteringOptions {
+        attributes?: ((edge: EdgeSingular) => number)[] | undefined;
+        expandFactor?: number | undefined;
+        inflateFactor?: number | undefined;
+        multFactor?: number | undefined;
+        maxIterations?: number | undefined;
+    }
+
+    /**
+     * Result of Markov clustering.
+     */
+    type MarkovClusteringResult = NodeCollection[];
+
+    /**
+     * Options for k-means clustering.
+     */
+    interface KMeansOptions {
+        attributes: ((node: NodeSingular) => number)[];
+        k: number;
+        distance?: "euclidean" | "squaredEuclidean" | "manhattan" | "max" | ((length: number, getPAt: (i: number) => number, getQAt: (i: number) => number, nodeP?: NodeSingular, nodeQ?: NodeSingular) => number) | undefined;
+        maxIterations?: number | undefined;
+        sensitivityThreshold?: number | undefined;
+    }
+
+    /**
+     * Result of k-means clustering.
+     */
+    type KMeansResult = NodeCollection[];
+
+    /**
+     * Options for k-medoids clustering.
+     */
+    interface KMedoidsOptions {
+        attributes: ((node: NodeSingular) => number)[];
+        k: number;
+        distance?: "euclidean" | "squaredEuclidean" | "manhattan" | "max" | ((length: number, getPAt: (i: number) => number, getQAt: (i: number) => number, nodeP?: NodeSingular, nodeQ?: NodeSingular) => number) | ((nodeP: NodeSingular, nodeQ: NodeSingular) => number) | undefined;
+        maxIterations?: number | undefined;
+    }
+
+    /**
+     * Result of k-medoids clustering.
+     */
+    type KMedoidsResult = NodeCollection[];
+
+    /**
+     * Options for fuzzy c-means clustering.
+     */
+    interface FuzzyCMeansOptions {
+        attributes: ((node: NodeSingular) => number)[];
+        k: number;
+        distance?: "euclidean" | "squaredEuclidean" | "manhattan" | "max" | ((length: number, getPAt: (i: number) => number, getQAt: (i: number) => number, nodeP?: NodeSingular, nodeQ?: NodeSingular) => number) | undefined;
+        maxIterations?: number | undefined;
+        sensitivityThreshold?: number | undefined;
+    }
+
+    /**
+     * Result of fuzzy c-means clustering.
+     */
+    interface FuzzyCMeansResult {
+        clusters: NodeCollection[];
+        degreeOfMembership: number[][];
+    }
+
+    /**
+     * Options for affinity propagation clustering.
+     */
+    interface AffinityPropagationOptions {
+        attributes: ((node: NodeSingular) => number)[];
+        distance?: "euclidean" | "squaredEuclidean" | "manhattan" | "max" | ((length: number, getPAt: (i: number) => number, getQAt: (i: number) => number, nodeP?: NodeSingular, nodeQ?: NodeSingular) => number) | ((nodeP: NodeSingular, nodeQ: NodeSingular) => number) | undefined;
+        preference?: "median" | "mean" | "min" | "max" | number | undefined;
+        damping?: number | undefined;
+        minIterations?: number | undefined;
+        maxIterations?: number | undefined;
+    }
+
+    /**
+     * Result of affinity propagation clustering.
+     */
+    type AffinityPropagationResult = NodeCollection[];
+
+    /**
+     * Options for Hierholzer's algorithm.
+     */
+    interface HierholzerOptions {
+        root?: Selector | NodeCollection | undefined;
+        directed?: boolean | undefined;
+    }
+
+    /**
+     * Result of Hierholzer's algorithm.
+     */
+    interface HierholzerResult {
+        found: boolean;
+        trail: CollectionReturnValue;
+    }
+
+    interface SearchAlgorithms {
         /**
          * Perform a breadth-first search within the elements in the collection.
          * @param options
@@ -3473,6 +3658,7 @@ declare namespace cytoscape {
          */
         breadthFirstSearch(options: SearchFirstOptions): SearchFirstResult;
         bfs(options: SearchFirstOptions): SearchFirstResult;
+        
         /**
          * Perform a depth-first search within the elements in the collection.
          * http://js.cytoscape.org/#eles.depthFirstSearch
@@ -3494,24 +3680,39 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#eles.aStar
          */
         aStar(options: SearchAStarOptions): SearchAStarResult;
+
         /**
          * Perform the Floyd Warshall search algorithm on the elements in the collection.
          * This finds the shortest path between all pairs of nodes.
          * http://js.cytoscape.org/#eles.floydWarshall
          */
         floydWarshall(options: SearchFloydWarshallOptions): SearchFloydWarshallResult;
+
         /**
          * Perform the Bellman-Ford search algorithm on the elements in the collection.
          * This finds the shortest path from the starting node to all other nodes in the collection.
          * http://js.cytoscape.org/#eles.bellmanFord
          */
         bellmanFord(options: SearchBellmanFordOptions): SearchBellmanFordResult;
+    
+        /**
+         * Perform the Hierholzer search algorithm on the elements in the collection.
+         * This finds Eulerian trails and circuits.
+         * http://js.cytoscape.org/#eles.hierholzer
+         */
+        hierholzer(options: HierholzerOptions): HierholzerResult;
+    }
+
+    interface SpanningAlgorithms {
         /**
          * Perform Kruskal's algorithm on the elements in the collection,
          * returning the minimum spanning tree, assuming undirected edges.
          * http://js.cytoscape.org/#eles.kruskal
          */
         kruskal(handler: (edge: EdgeCollection) => number): CollectionReturnValue;
+    }
+
+    interface CutAlgorithms {
         /**
          * Finds the minimum cut in a graph using the Karger-Stein algorithm.
          * The optimal result is found with a high probability, but without guarantee.
@@ -3523,6 +3724,7 @@ declare namespace cytoscape {
             partitionFirst: NodeCollection;
             partitionSecond: NodeCollection;
         };
+
         /**
          * finds the biconnected components in an undirected graph,
          * as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.
@@ -3547,6 +3749,7 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#eles.hopcroftTarjanBiconnected
          */
         htbc(): { cut: NodeCollection; components: CollectionReturnValue };
+
         /**
          * Finds the strongly connected components of a directed graph using Tarjan's algorithm.
          * http://js.cytoscape.org/#eles.tarjanStronglyConnected
@@ -3567,11 +3770,9 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#eles.tarjanStronglyConnected
          */
         tscc(): { cut: EdgeCollection; components: CollectionReturnValue };
-        /**
-         * Rank the nodes in the collection using the Page Rank algorithm.
-         * http://js.cytoscape.org/#eles.pageRank
-         */
-        pageRank(options: SearchPageRankOptions): SearchPageRankResult;
+    }
+
+    interface CentralityAlgorithms {
         /**
          * Considering only the elements in the calling collection,
          * calculate the degree centrality of the specified root node.
@@ -3610,7 +3811,57 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#eles.betweennessCentrality
          */
         betweennessCentrality(options: SearchBetweennessOptions): SearchBetweennessResult;
+    
+        /**
+         * Rank the nodes in the collection using the Page Rank algorithm.
+         * http://js.cytoscape.org/#eles.pageRank
+         */
+        pageRank(options: SearchPageRankOptions): SearchPageRankResult;
     }
+
+    interface ClusteringAlgorithms {
+        /**
+         * Considering only the elements in the calling collection,
+         * run the Markov cluster algorithm of the nodes.
+         * http://js.cytoscape.org/#eles.markovClustering
+         */
+        markovClustering(options: MarkovClusteringOptions): MarkovClusteringResult;
+        /**
+         * Considering only the nodes in the calling collection,
+         * calculate the k-means clustering of the nodes.
+         * http://js.cytoscape.org/#nodes.kMeans
+         */
+        kMeans(options: KMeansOptions): KMeansResult;
+        /**
+         * Considering only the elements in the calling collection,
+         * calculate the agglomerative hierarchical clustering of the nodes.
+         * http://js.cytoscape.org/#nodes.hierarchicalClustering
+         */
+        hierarchicalClustering(options: HierarchicalClusteringOptions): HierarchicalClusteringResult;
+    
+        /**
+         * Considering only the nodes in the calling collection,
+         * calculate the k-medoids clustering of the nodes.
+         * http://js.cytoscape.org/#nodes.kMedoids
+         */
+        kMedoids(options: KMedoidsOptions): KMedoidsResult;
+
+        /**
+         * Considering only the elements in the calling collection,
+         * calculate the fuzzy c-means clustering of the nodes.
+         * http://js.cytoscape.org/#nodes.fuzzyCMeans
+         */
+        fuzzyCMeans(options: FuzzyCMeansOptions): FuzzyCMeansResult;
+
+        /**
+         * Considering only the elements in the calling collection,
+         * calculate the affinity propagation clustering of the nodes.
+         * http://js.cytoscape.org/#nodes.affinityPropagation
+         */
+        affinityPropagation(options: AffinityPropagationOptions): AffinityPropagationResult;
+    }
+
+    interface CollectionAlgorithms extends SearchAlgorithms, SpanningAlgorithms, CutAlgorithms, CentralityAlgorithms, ClusteringAlgorithms {}
 
     /**
      * http://js.cytoscape.org/#collection/compound-nodes
@@ -3836,7 +4087,10 @@ declare namespace cytoscape {
         interface Node
             extends
                 Partial<Overlay>,
+                Partial<Underlay>,
+                Partial<Outline>,
                 PaddingNode,
+                Partial<CompoundParentSizing>,
                 Partial<Labels<NodeSingular>>,
                 BackgroundImage,
                 Partial<Ghost>,
@@ -3881,8 +4135,21 @@ declare namespace cytoscape {
              */
             "background-opacity"?: PropertyValueNode<number> | undefined;
             /**
+             * The filling style of the node’s body; may be solid (default), linear-gradient, or radial-gradient.
+             */
+            "background-fill"?: PropertyValueNode<"solid" | "linear-gradient" | "radial-gradient"> | undefined;
+            /**
              * The size of the node’s border.
              */
+            "background-gradient-direction"?: PropertyValueNode<string> | undefined;
+            /**
+             * The colors to use at each stop in the gradient for the node’s background; may be specified as a space-separated list or an array.
+             */
+            "background-stop-colors"?: PropertyValueNode<string[]> | undefined;
+            /**
+             * The positions of each stop in the gradient for the node’s background; may be specified as a space-separated list or an array.
+             */
+            "background-stop-positions"?: PropertyValueNode<string[]> | undefined;
             "border-width"?: PropertyValueNode<number | string> | undefined;
             /**
              * The style of the node’s border.
@@ -3901,15 +4168,12 @@ declare namespace cytoscape {
              * The position of the node’s border.
              * One of: center, inside, outside.
              */
-            "border-position"?: PropertyValueNode<"center" | "inside" | "outside"> | undefined;
             /**
-             * The cap style of the node’s border.
-             * One of: butt, round, square.
+             * The cap style of the node’s border; may be butt, round or square.
              */
             "border-cap"?: PropertyValueNode<"butt" | "round" | "square"> | undefined;
             /**
-             * The join style of the node’s border.
-             * One of: miter, bevel, round.
+             * The join style of the node’s border; may be miter, bevel or round.
              */
             "border-join"?: PropertyValueNode<"miter" | "bevel" | "round"> | undefined;
             /**
@@ -3920,19 +4184,87 @@ declare namespace cytoscape {
              * The dashed line offset (e.g. 24). It is useful for creating edge animations.
              */
             "border-dash-offset"?: PropertyValueNode<number> | undefined;
+            /**
+             * The position of the node’s border; may be center, inside, outside.
+             */
+            "border-position"?: PropertyValueNode<"center" | "inside" | "outside"> | undefined;
+            /**
+             * The corner radius for round shapes and the cut-rectangle, in px or em.
+             */
+            "corner-radius"?: PropertyValueNode<string> | undefined;
         }
 
         /**
-         * A padding defines an addition to a node’s dimension.
-         * For example, padding-left adds to a node’s outer (i.e. total) width.
-         * This can be used to add spacing around the label of width: label; height: label; nodes,
-         * or it can be used to add spacing between a compound node parent and its children.
+         * A padding defines an addition to a node’s dimension. For example,
+         * padding adds to a node’s outer (i.e. total) width and height.
+         * This can beused to add spacing between a compound node parent
+         * and its children.
          */
         interface PaddingNode {
-            "padding-left"?: PropertyValueNode<string> | undefined;
-            "padding-right"?: PropertyValueNode<string> | undefined;
-            "padding-top"?: PropertyValueNode<string> | undefined;
-            "padding-bottom"?: PropertyValueNode<string> | undefined;
+            /**
+             * The amount of padding around all sides of the node. Either percentage or pixel value can be specified.
+             * For example, both `50%` and `50px` are acceptable values. By default, percentage padding is calculated as a percentage of node width.
+             */
+            "padding"?: PropertyValueNode<string> | undefined;
+            /**
+             * Determines how padding is calculated if and only if the percentage unit is used. Accepts one of the keywords specified below.
+             * - `width`: calculate padding as a percentage of the node width.
+             * - `height`: calculate padding as a percentage of the node height.
+             * - `average`: calculate padding as a percentage of the average of the node width and height.
+             * - `min`: calculate padding as a percentage of the minimum of the node width and height.
+             * - `max`: calculate padding as a percentage of the maximum of the node width and height.
+             */
+            "padding-relative-to"?: PropertyValueNode<"width" | "height" | "average" | "min" | "max"> | undefined;
+        }
+
+        interface CompoundParentSizing {
+            /**
+             * Whether to include labels of descendants in sizing a compound node; may be include or exclude.
+             */
+            "compound-sizing-wrt-labels"?: PropertyValueNode<"include" | "exclude"> | undefined;
+            /**
+             * Specifies the minimum (inner) width of the node’s body for a compound parent node (e.g. 400px).
+             */
+            "min-width"?: PropertyValueNode<string> | undefined;
+            /**
+             * When a compound node is enlarged by its min-width, this value specifies the percent of the extra width put on the left side of the node (e.g. 50%).
+             */
+            "min-width-bias-left"?: PropertyValueNode<string> | undefined;
+            /**
+             * When a compound node is enlarged by its min-width, this value specifies the percent of the extra width put on the right side of the node (e.g. 50%).
+             */
+            "min-width-bias-right"?: PropertyValueNode<string> | undefined;
+            /**
+             * Specifies the minimum (inner) height of the node’s body for a compound parent node (e.g. 400px).
+             */
+            "min-height"?: PropertyValueNode<string> | undefined;
+            /**
+             * When a compound node is enlarged by its min-height, this value specifies the percent of the extra width put on the top side of the node (e.g. 50%).
+             */
+            "min-height-bias-top"?: PropertyValueNode<string> | undefined;
+        }
+
+        interface Outline {
+            /**
+             * The size of the node’s outline.
+             */
+            "outline-width"?: PropertyValueNode<number | string> | undefined;
+            /**
+             * The style of the node’s outline; may be solid, dotted, dashed, or double.
+             */
+            "outline-style"?: PropertyValueNode<LineStyle> | undefined;
+            /**
+             * The colour of the node’s outline.
+             */
+            "outline-color"?: PropertyValueNode<Colour> | undefined;
+            /**
+             * The opacity of the node’s outline.
+             */
+            "outline-opacity"?: PropertyValueNode<number> | undefined;
+            /**
+             * The offset of the node’s outline.
+             */
+            "outline-offset"?: PropertyValueNode<number | string> | undefined;
         }
 
         interface Dictionary {
@@ -4136,7 +4468,6 @@ declare namespace cytoscape {
          */
         interface PieChartBackground {
             /**
-             * @deprecated
              *
              * The diameter of the pie, measured as a percent of node size (e.g. 100%) or an absolute length (e.g. 25px).
              */
@@ -4150,13 +4481,13 @@ declare namespace cytoscape {
             /**
              * @deprecated
              *
-             * The size of the node’s ith pie chart slice, measured in percent (e.g. 25% or 25).
+             * The size of the node’s ith (1 <= i <= 16) pie chart slice, measured in percent (e.g. 25% or 25).
              */
             "pie-i-background-size": PropertyValueNode<number>;
             /**
              * @deprecated
              *
-             * The opacity of the node’s ith pie chart slice.
+             * The opacity of the node’s ith (1 <= i <= 16) pie chart slice.
              */
             "pie-i-background-opacity": PropertyValueNode<number>;
 
@@ -4360,6 +4691,7 @@ declare namespace cytoscape {
                 EdgeArrow,
                 Partial<Gradient>,
                 Partial<Overlay>,
+                Partial<Underlay>,
                 Partial<BezierEdges>,
                 Partial<LoopEdges>,
                 Partial<UnbundledBezierEdges>,
@@ -4589,6 +4921,19 @@ declare namespace cytoscape {
              */
             "segment-weights": PropertyValueEdge<number | number[] | string>;
             /**
+             * A series of values that provide the radii of the different points positioned by segment-distances and segment-weights, e.g. 15 0 5.
+             * If less radii are provided than points have been defined, the last provided radius will be used for all the missing radius.
+             * If a single radius is provided, it will therefore be applied to all the segment’s points.
+             */
+            "segment-radii"?: PropertyValueEdge<number[]> | undefined;
+            /**
+             * Defines where segment-radii are applied, which is particularly relevant when the corner angle is acute.
+             * Values can be:
+             * - `arc-radius`: Default strategy: The radius property is applied to the corner arc, which will be placed further away from the control point if the arc doesn’t fit in an acute angle.
+             * - `influence-radius`: The radius property is applied to the control point sphere of influence. The arcs for a given control point will all start and end at radius distance from the control-points.
+             */
+            "radius-type"?: PropertyValueEdge<"arc-radius" | "influence-radius"> | undefined;
+            /**
              * With value
              *  * "intersection" (default), the line from source to target
              *  * for "segment-weights" is from the outside of the source node’s shape to the outside of the target node’s shape.
@@ -4636,6 +4981,10 @@ declare namespace cytoscape {
              * the source or target. As such, it also helps to avoid turns overlapping edge endpoint arrows.
              */
             "taxi-turn-min-distance": PropertyValueEdge<number | string>;
+            /**
+             * The radius of the rounded corners of the edge.
+             */
+            "taxi-radius"?: PropertyValueEdge<number> | undefined;
             /**
              * With value `intersection` (default), the `distances` (`taxi-turn` and `taxi-turn-min-distance`)
              * are considered from the outside of the source’s bounds to the outside of the target’s bounds.
@@ -5067,6 +5416,34 @@ declare namespace cytoscape {
              * The opacity of the overlay.
              */
             "overlay-opacity": PropertyValueEdge<number>;
+
+            /**
+             * The shape of the node overlay; may be round-rectangle (default), ellipse. Doesn’t apply to edges.
+             */
+            "overlay-shape"?: PropertyValueEdge<"round-rectangle" | "ellipse"> | undefined;
+        }
+
+        /**
+         * These properties allow for the creation of underlays behind nodes or edges,
+         * and are often used in a highlighted state.
+         */
+        interface Underlay {
+            /**
+             * The colour of the underlay.
+             */
+            "underlay-color"?: PropertyValueNode<Colour> | undefined;
+            /**
+             * The area outside of the element within which the underlay is shown.
+             */
+            "underlay-padding"?: PropertyValueNode<number | string> | undefined;
+            /**
+             * The opacity of the underlay.
+             */
+            "underlay-opacity"?: PropertyValueNode<number> | undefined;
+            /**
+             * The shape of the node underlay; may be round-rectangle (default), ellipse. Doesn’t apply to edges.
+             */
+            "underlay-shape"?: PropertyValueNode<"round-rectangle" | "ellipse"> | undefined;
         }
 
         /**
@@ -5769,10 +6146,21 @@ declare namespace cytoscape {
          */
         play(): this;
         /**
+         * Requests that the animation be played, starting on the next frame.
+         * If the animation is complete, it restarts from the beginning.
+         * http://js.cytoscape.org/#ani.play
+         */
+        run(): this;
+        /**
          * Get whether the animation is currently playing.
          * http://js.cytoscape.org/#ani.playing
          */
         playing(): boolean;
+        /**
+         * Get whether the animation is currently playing.
+         * http://js.cytoscape.org/#ani.playing
+         */
+        running(): boolean;
         /**
          * Get or set how far along the animation has progressed.
          * http://js.cytoscape.org/#ani.progress

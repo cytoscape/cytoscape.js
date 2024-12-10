@@ -453,7 +453,9 @@ function renderWebgl(r, options, renderTarget) {
         eleDrawing.drawTexture(ele, index, 'node-label');
         eleDrawing.drawTexture(ele, index, 'node-overlay');
       } else {
-        eleDrawing.drawEdge(ele, index);
+        eleDrawing.drawEdgeLine(ele, index);
+        eleDrawing.drawEdgeArrow(ele, index, 'source');
+        eleDrawing.drawEdgeArrow(ele, index, 'target');
         eleDrawing.drawTexture(ele, index, 'edge-label');
       }
     }

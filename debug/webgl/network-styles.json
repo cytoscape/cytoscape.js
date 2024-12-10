@@ -100,8 +100,7 @@
         "width": 2,
         "line-color": "#3a7ecf",
         "opacity": 0.5,
-        "curve-style": "haystack",
-        "haystack-radius": 0.5
+        "curve-style": "bezier"
       }
     },
     {

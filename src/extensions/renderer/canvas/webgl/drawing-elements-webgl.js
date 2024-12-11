@@ -41,15 +41,19 @@ export class ElementDrawingWebGL {
   }
 
   invalidate(eles, { type } = {}) {
-    // const testEle = ele => ele.isNode();
-    // // TODO, will need to add support for edges 
-    // const testType = type ? t => t === type : null; 
-    // const forceRedraw = type ? true : false;
-    // return this.atlasManager.invalidate(eles, { testEle, testType, forceRedraw });
+    const { atlasManager } = this;
+    if(type) {
+      return atlasManager.invalidate(eles, { 
+        filterType: t => t === type, 
+        forceRedraw: true
+      });
+    } else {
+      return atlasManager.invalidate(eles);
+    }
   }
 
   gc() {
-    // this.atlasManager.gc();
+    this.atlasManager.gc();
   }
 
 

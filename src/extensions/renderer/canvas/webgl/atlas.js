@@ -471,13 +471,13 @@ export class AtlasManager {
   }
 
   /** Marks textues associated with the element for garbage collection. */
-  invalidate(eles, { testEle, testType, forceRedraw } = {}) {
+  invalidate(eles, { forceRedraw, filterEle = ()=>true, filterType = ()=>true } = {}) {
     let gcNeeded = false;
     for(const ele of eles) {
-      if(!testEle || testEle(ele)) {
+      if(filterEle(ele)) {
         const id = ele.id();
         for(const opts of this.getRenderTypes()) {
-          if(!testType || testType(opts.type)) {
+          if(filterType(opts.type)) {
             const styleKey = opts.getKey(ele);
             if(forceRedraw) { 
               // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn

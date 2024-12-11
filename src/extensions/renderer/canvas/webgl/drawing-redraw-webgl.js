@@ -118,7 +118,6 @@ CRp.initWebgl = function(opts, fns) {
     let gcNeeded = false;
     if(eles && eles.length > 0) {
       gcNeeded |= r.eleDrawing.invalidate(eles);
-      // gcNeeded |= r.edgeDrawing.invalidate(eles);
     }
     if(gcNeeded) {
       setGCFlag();

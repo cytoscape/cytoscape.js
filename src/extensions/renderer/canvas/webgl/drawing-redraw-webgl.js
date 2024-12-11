@@ -420,12 +420,12 @@ function renderWebgl(r, options, renderTarget) {
   }
   
   const { eleDrawing } = r;
+  let eleCount = 0;
 
   if(renderTarget.screen) {
     if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
       drawSelectionRectangle(r, options);
     }
-    // drawAxes(r);
   }
 
   // see drawing-elements.js drawCachedElement()
@@ -461,6 +461,7 @@ function renderWebgl(r, options, renderTarget) {
 
     const panZoomMatrix = createPanZoomMatrix(r);
     const eles = r.getCachedZSortedEles();
+    eleCount = eles.length;
 
     eleDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
 
@@ -479,7 +480,6 @@ function renderWebgl(r, options, renderTarget) {
 
     eleDrawing.endFrame();
 
-
     if(r.data.gc) {
       console.log("Garbage Collect!");
       r.data.gc = false;
@@ -487,6 +487,7 @@ function renderWebgl(r, options, renderTarget) {
     }
 
     if(renderTarget.screen && r.webglDebugShowAtlases) {
+      drawAxes(r);
       drawAtlases(r);
     }
 
@@ -499,29 +500,21 @@ function renderWebgl(r, options, renderTarget) {
     const end = performance.now();
     const compact = true;
 
-    let nodeBatchCount = 0;
-    let nodeCount = 0;
-    let edgeBatchCount = 0;
-    let edgeCount = 0;
-
+    let batchCount = 0;
+    let count = 0;
     for(const info of debugInfo) {
-      if(info.type === 'node') {
-        nodeBatchCount++;
-        nodeCount += info.count;
-      } else {
-        edgeBatchCount++;
-        edgeCount += info.count;
-      }
+      batchCount++;
+      count += info.count;
     }
 
     // TODO nodes and edges are no longer is separate batches
+    const time = Math.ceil(end - start);
+    const report = `${eleCount} elements, ${count} rectangles, ${batchCount} batches`;
     if(compact) {
-      console.log(`WebGL (${renderTarget.name}) - frame ${Math.ceil(end - start)}ms - edges ${edgeCount}/${edgeBatchCount}, nodes ${nodeCount}/${nodeBatchCount}`);
+      console.log(`WebGL (${renderTarget.name}) - ${report}`);
     } else {
-      console.log(`WebGL render (${renderTarget.name}) - frame time ${Math.ceil(end - start)}ms`);
-      console.log(`Batches: ${debugInfo.length}`);
-      console.log(`  ${edgeCount} edges in ${edgeBatchCount} batches`);
-      console.log(`  ${nodeCount} nodes in ${nodeBatchCount} batches`);
+      console.log(`WebGL render (${renderTarget.name}) - frame time ${time}ms`);
+      console.log(`  ${report}`);
       console.log('Texture Atlases Used:');
       const atlasInfo = eleDrawing.getAtlasDebugInfo();
       for(const info of atlasInfo) {

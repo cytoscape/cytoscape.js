@@ -685,7 +685,6 @@ export class ElementDrawingWebGL {
 
     if(this.debugInfo) {
       this.debugInfo.push({
-        type: 'node',
         count,
         atlasCount: atlases.length
       });

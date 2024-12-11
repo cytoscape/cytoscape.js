@@ -471,7 +471,7 @@ export class AtlasManager {
   }
 
   /** Marks textues associated with the element for garbage collection. */
-  invalidate(eles, { forceRedraw, filterEle = ()=>true, filterType = ()=>true } = {}) {
+  invalidate(eles, { forceRedraw=false, filterEle=()=>true, filterType=()=>true } = {}) {
     let gcNeeded = false;
     for(const ele of eles) {
       if(filterEle(ele)) {

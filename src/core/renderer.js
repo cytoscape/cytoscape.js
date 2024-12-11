@@ -18,8 +18,8 @@ let rendererDefaults = util.defaults({
   webglDebugShowAtlases: false,
   webglTexSize: 4096,
   webglTexRows: 24,
-  webglBatchSize: 1024,
-  webglTexPerBatch: 12,
+  webglBatchSize: 2028,
+  webglTexPerBatch: 16,
   webglBgColor: [255, 255, 255]
 });
 

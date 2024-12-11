@@ -154,9 +154,9 @@ CRp.getTextAngle = function( ele, prefix ){
   let rscratch = _p.rscratch;
   let pdash = prefix ? prefix + '-' : '';
   let rotation = ele.pstyle( pdash + 'text-rotation' );
-  let textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
-
+  
   if( rotation.strValue === 'autorotate' ){
+    let textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
     theta = ele.isEdge() ? textAngle : 0;
   } else if( rotation.strValue === 'none' ){
     theta = 0;

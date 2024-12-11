@@ -369,17 +369,6 @@ export class ElementDrawingWebGL {
     this.endBatch();
   }
 
-  instance(drawFn) {
-    const instance = this.instanceCount;
-
-    drawFn(instance);
-
-    this.instanceCount++;
-    if(this.instanceCount >= this.maxInstances) {
-      this.endBatch();
-    }
-  }
-  
   getTempMatrix() {
     return this.tempMatrix = this.tempMatrix || mat3.create();
   }
@@ -394,59 +383,58 @@ export class ElementDrawingWebGL {
       this.endBatch(); // draws then starts a new batch
     }
     
-    this.instance(instance => {
-      this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
+    const instance = this.instanceCount;
+    this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
 
-      const indexView = this.indexBuffer.getView(instance);
-      util.indexToVec4(eleIndex, indexView);
+    const indexView = this.indexBuffer.getView(instance);
+    util.indexToVec4(eleIndex, indexView);
 
-      const atlasInfo = atlasManager.getAtlasInfo(ele, type);
-      const { atlasID, tex1, tex2 } = atlasInfo;
+    const atlasInfo = atlasManager.getAtlasInfo(ele, type, atlasInfo);
+    const { atlasID, tex1, tex2 } = atlasInfo;
 
-      // Set values in the buffers using Typed Array Views for performance.
-      const atlasIdView = this.atlasIdBuffer.getView(instance);
-      atlasIdView[0] = atlasID;
-      
-      // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
-      const tex1View = this.tex1Buffer.getView(instance);
-      tex1View[0] = tex1.x;
-      tex1View[1] = tex1.y;
-      tex1View[2] = tex1.w;
-      tex1View[3] = tex1.h;
+    // Set values in the buffers using Typed Array Views for performance.
+    const atlasIdView = this.atlasIdBuffer.getView(instance);
+    atlasIdView[0] = atlasID;
+    
+    // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
+    const tex1View = this.tex1Buffer.getView(instance);
+    tex1View[0] = tex1.x;
+    tex1View[1] = tex1.y;
+    tex1View[2] = tex1.w;
+    tex1View[3] = tex1.h;
 
-      const tex2View = this.tex2Buffer.getView(instance);
-      tex2View[0] = tex2.x;
-      tex2View[1] = tex2.y;
-      tex2View[2] = tex2.w;
-      tex2View[3] = tex2.h;
+    const tex2View = this.tex2Buffer.getView(instance);
+    tex2View[0] = tex2.x;
+    tex2View[1] = tex2.y;
+    tex2View[2] = tex2.w;
+    tex2View[3] = tex2.h;
 
-      const transform = this.getTempMatrix();
+    const transform = this.getTempMatrix();
 
-      for(const tex of [1, 2]) {
-        atlasManager.setTransformMatrix(transform, atlasInfo, ele, tex === 1);
+    for(const tex of [1, 2]) {
+      atlasManager.setTransformMatrix(transform, atlasInfo, ele, tex === 1);
 
-        const scaleRotateView = this[`scaleRotate${tex}Buffer`].getView(instance);
-        scaleRotateView[0] = transform[0];
-        scaleRotateView[1] = transform[1];
-        scaleRotateView[2] = transform[3];
-        scaleRotateView[3] = transform[4];
+      const scaleRotateView = this[`scaleRotate${tex}Buffer`].getView(instance);
+      scaleRotateView[0] = transform[0];
+      scaleRotateView[1] = transform[1];
+      scaleRotateView[2] = transform[3];
+      scaleRotateView[3] = transform[4];
 
-        const translateView = this[`translate${tex}Buffer`].getView(instance);
-        translateView[0] = transform[6];
-        translateView[1] = transform[7];
-      }
-    });
+      const translateView = this[`translate${tex}Buffer`].getView(instance);
+      translateView[0] = transform[6];
+      translateView[1] = transform[7];
+    }
+
+    this.instanceCount++;
+    if(this.instanceCount >= this.maxInstances) {
+      this.endBatch();
+    }
   }
 
 
   drawEdgeArrow(edge, eleIndex, prefix) {
     // Edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object.
     const rs = edge._private.rscratch;
-
-    const arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
-    if(arrowShape === 'none' ) {
-      return; 
-    }
 
     let x, y, angle;
     if(prefix === 'source') {
@@ -461,6 +449,11 @@ export class ElementDrawingWebGL {
 
     // taken from CRp.drawArrowhead
     if(isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) { 
+      return; 
+    }
+
+    const arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
+    if(arrowShape === 'none' ) {
       return; 
     }
 
@@ -481,26 +474,31 @@ export class ElementDrawingWebGL {
     mat3.scale(transform, transform, [size, size]);
     mat3.rotate(transform, transform, angle);
 
-    this.instance(instance => {
-      this.vertTypeBuffer.getView(instance)[0] = EDGE_ARROW;
+    const instance = this.instanceCount;
 
-      const indexView = this.indexBuffer.getView(instance);
-      util.indexToVec4(eleIndex, indexView);
+    this.vertTypeBuffer.getView(instance)[0] = EDGE_ARROW;
 
-      const colorView = this.edgeColorBuffer.getView(instance);
-      util.toWebGLColor(color, opacity, colorView);
+    const indexView = this.indexBuffer.getView(instance);
+    util.indexToVec4(eleIndex, indexView);
 
-      // TODO change attribute names to scaleRotateBuffer1 and remove the 'tex' prefix
-      const scaleRotateView = this.scaleRotate1Buffer.getView(instance);
-      scaleRotateView[0] = transform[0];
-      scaleRotateView[1] = transform[1];
-      scaleRotateView[2] = transform[3];
-      scaleRotateView[3] = transform[4];
+    const colorView = this.edgeColorBuffer.getView(instance);
+    util.toWebGLColor(color, opacity, colorView);
 
-      const translateView = this.translate1Buffer.getView(instance);
-      translateView[0] = transform[6];
-      translateView[1] = transform[7];
-    });
+    // TODO change attribute names to scaleRotateBuffer1 and remove the 'tex' prefix
+    const scaleRotateView = this.scaleRotate1Buffer.getView(instance);
+    scaleRotateView[0] = transform[0];
+    scaleRotateView[1] = transform[1];
+    scaleRotateView[2] = transform[3];
+    scaleRotateView[3] = transform[4];
+
+    const translateView = this.translate1Buffer.getView(instance);
+    translateView[0] = transform[6];
+    translateView[1] = transform[7];
+
+    this.instanceCount++;
+    if(this.instanceCount >= this.maxInstances) {
+      this.endBatch();
+    }
   }
 
 
@@ -512,17 +510,6 @@ export class ElementDrawingWebGL {
     const color = edge.pstyle('line-color').value;
     const opacity = baseOpacity * lineOpacity;
 
-    const bufferStyleAndIndex = (instance) => {
-      const indexView = this.indexBuffer.getView(instance);
-      util.indexToVec4(eleIndex, indexView);
-
-      const colorView = this.edgeColorBuffer.getView(instance);
-      util.toWebGLColor(color, opacity, colorView);
-
-      const lineWidthBuffer = this.lineWidthBuffer.getView(instance);
-      lineWidthBuffer[0] = width;
-    };
-
     const points = this.getEdgePoints(edge);
 
     if(points.length/2 + this.instanceCount > this.maxInstances) {
@@ -530,50 +517,73 @@ export class ElementDrawingWebGL {
     }
 
     if(points.length == 4) { // straight line
-      this.instance(instance => {
-        this.vertTypeBuffer.getView(instance)[0] = EDGE_STRAIGHT;
-        bufferStyleAndIndex(instance);
+      const instance = this.instanceCount;
 
-        const sourceTargetView = this.pointAPointBBuffer.getView(instance);
-        sourceTargetView[0] = points[0]; // source x
-        sourceTargetView[1] = points[1]; // source y
-        sourceTargetView[2] = points[2]; // target x
-        sourceTargetView[3] = points[3]; // target y
-      });
+      this.vertTypeBuffer.getView(instance)[0] = EDGE_STRAIGHT;
+
+      const indexView = this.indexBuffer.getView(instance);
+      util.indexToVec4(eleIndex, indexView);
+      const colorView = this.edgeColorBuffer.getView(instance);
+      util.toWebGLColor(color, opacity, colorView);
+      const lineWidthBuffer = this.lineWidthBuffer.getView(instance);
+      lineWidthBuffer[0] = width;
+
+      const sourceTargetView = this.pointAPointBBuffer.getView(instance);
+      sourceTargetView[0] = points[0]; // source x
+      sourceTargetView[1] = points[1]; // source y
+      sourceTargetView[2] = points[2]; // target x
+      sourceTargetView[3] = points[3]; // target y
+
+      this.instanceCount++;
+      if(this.instanceCount >= this.maxInstances) {
+        this.endBatch();
+      }
+
     } else { // curved line
       for(let i = 0; i < points.length-2; i += 2) {
-        this.instance(instance => {
-          this.vertTypeBuffer.getView(instance)[0] = EDGE_CURVE_SEGMENT;
-          bufferStyleAndIndex(instance);
+        const instance = this.instanceCount;
 
-          let pAx = points[i-2], pAy = points[i-1];
-          let pBx = points[i  ], pBy = points[i+1];
-          let pCx = points[i+2], pCy = points[i+3];
-          let pDx = points[i+4], pDy = points[i+5];
+        this.vertTypeBuffer.getView(instance)[0] = EDGE_CURVE_SEGMENT;
 
-          // make phantom points for the first and last segments
-          // TODO adding 0.001 to avoid division by zero in the shader (I think), need a better solution
-          if(i == 0) {
-            pAx = 2*pBx - pCx + 0.001;
-            pAy = 2*pBy - pCy + 0.001;
-          }
-          if(i == points.length-4) {
-            pDx = 2*pCx - pBx + 0.001;
-            pDy = 2*pCy - pBy + 0.001;
-          }
+        const indexView = this.indexBuffer.getView(instance);
+        util.indexToVec4(eleIndex, indexView);
+        const colorView = this.edgeColorBuffer.getView(instance);
+        util.toWebGLColor(color, opacity, colorView);
+        const lineWidthBuffer = this.lineWidthBuffer.getView(instance);
+        lineWidthBuffer[0] = width;
 
-          const pointABView = this.pointAPointBBuffer.getView(instance);
-          pointABView[0] = pAx;
-          pointABView[1] = pAy;
-          pointABView[2] = pBx;
-          pointABView[3] = pBy;
+        let pAx = points[i-2], pAy = points[i-1];
+        let pBx = points[i  ], pBy = points[i+1];
+        let pCx = points[i+2], pCy = points[i+3];
+        let pDx = points[i+4], pDy = points[i+5];
 
-          const pointCDView = this.pointCPointDBuffer.getView(instance);
-          pointCDView[0] = pCx;
-          pointCDView[1] = pCy;
-          pointCDView[2] = pDx;
-          pointCDView[3] = pDy;
-        });
+        // make phantom points for the first and last segments
+        // TODO adding 0.001 to avoid division by zero in the shader (I think), need a better solution
+        if(i == 0) {
+          pAx = 2*pBx - pCx + 0.001;
+          pAy = 2*pBy - pCy + 0.001;
+        }
+        if(i == points.length-4) {
+          pDx = 2*pCx - pBx + 0.001;
+          pDy = 2*pCy - pBy + 0.001;
+        }
+
+        const pointABView = this.pointAPointBBuffer.getView(instance);
+        pointABView[0] = pAx;
+        pointABView[1] = pAy;
+        pointABView[2] = pBx;
+        pointABView[3] = pBy;
+
+        const pointCDView = this.pointCPointDBuffer.getView(instance);
+        pointCDView[0] = pCx;
+        pointCDView[1] = pCy;
+        pointCDView[2] = pDx;
+        pointCDView[3] = pDy;
+
+        this.instanceCount++;
+        if(this.instanceCount >= this.maxInstances) {
+          this.endBatch();
+        }
       }
     }
   }

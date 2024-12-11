@@ -265,7 +265,8 @@ export class AtlasCollection {
   }
 
   draw(id, key, bb, doDrawing) {
-    if(this.styleKeyNeedsRedraw.delete(key)) {
+    if(this.styleKeyNeedsRedraw.has(key)) {
+      this.styleKeyNeedsRedraw.delete(key);
       this.deleteKey(id, key);
       // We need to mark the atlas as needing GC because the key will be mapped to
       // this atlas or a new atlas, so the key itself won't be marked for GC.

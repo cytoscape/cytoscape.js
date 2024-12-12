@@ -5,14 +5,14 @@ var networks = {
   'style_test': {
     desc: 'Style Test',
     nodes: 5,
-    edges: 10,
+    edges: 13,
     url: 'network-styles.json',
     layout: { name: 'preset' }
   },
   'curve_test': {
     desc: 'Curve Test',
-    nodes: 2,
-    edges: 1,
+    nodes: 3,
+    edges: 7,
     url: 'network-curve.json',
     layout: { name: 'preset' }
   },

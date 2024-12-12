@@ -2,7 +2,8 @@
   "elements": {
     "nodes": [
       { "data": { "id": "n1", "weight": 1 }, "position": { "x": 0, "y":  0 } },
-      { "data": { "id": "n2", "weight": 2 }, "position": { "x": 0, "y": 100 } }
+      { "data": { "id": "n2", "weight": 2 }, "position": { "x": 0, "y": 150 } },
+      { "data": { "id": "n3", "weight": 3 }, "position": { "x": 150, "y": -25 } }
     ],
     "edges": [
       { "data": { "id":"n1-n2-0", "source": "n1", "target": "n2", "directed": "false" } },
@@ -10,7 +11,8 @@
       { "data": { "id":"n1-n2-2", "source": "n1", "target": "n2", "directed": "false" } },
       { "data": { "id":"n1-n2-3", "source": "n1", "target": "n2", "directed": "false" } },
       { "data": { "id":"self-0", "source": "n1", "target": "n1", "directed": "false" } },
-      { "data": { "id":"self-1", "source": "n1", "target": "n1", "directed": "false" } }
+      { "data": { "id":"self-1", "source": "n1", "target": "n1", "directed": "false" } },
+      { "data": { "id":"n1-n3", "source": "n1", "target": "n3", "directed": "false" } }
     ]
   },
   "style": [
@@ -39,6 +41,18 @@
         "line-color": "#3a7ecf",
         "opacity": 0.5,
         "curve-style": "bezier"
+      }
+    }, {
+      "selector": "#n1-n3",
+      "style": {
+        "curve-style": "unbundled-bezier",
+        "control-point-distances": [40, -40],
+        "control-point-weights": [0.250, 0.75],
+        "source-arrow-shape": "triangle",
+        "source-arrow-color": "green",
+        "target-arrow-shape": "triangle",
+        "target-arrow-color": "green",
+        "width": 3
       }
     }
   ]

@@ -374,6 +374,46 @@ declare namespace cytoscape {
          * The default value is 1.
          */
         pixelRatio?: number | "auto" | undefined;
+
+        /**
+         * Enables the experimental WebGL mode.
+         * WARNING: This is currently experimental, and may have API changes in future.
+         */
+        webgl?: boolean | undefined;
+
+        /**
+         * Prints debug info to the browser console.
+         * (optional)
+         * WARNING: This is currently experimental, and may have API changes in future.
+         */
+        webglDebug?: boolean | undefined;
+
+        /**
+         * The size of the WebGL texture.
+         * (provisional, may change in future releases)
+         * WARNING: This is currently experimental, and may have API changes in future.
+         */
+        webglTexSize?: number | undefined;
+
+        /**
+         * The number of rows in the WebGL texture.
+         * (provisional, may change in future releases)
+         * WARNING: This is currently experimental, and may have API changes in future.
+         */
+        webglTexRows?: number | undefined;
+
+        /**
+         * The batch size for WebGL.
+         * (provisional, may change in future releases)
+         */
+        webglBatchSize?: number | undefined;
+
+        /**
+         * The number of textures per batch in WebGL.
+         * (provisional, may change in future releases)
+         * WARNING: This is currently experimental, and may have API changes in future.
+         */
+        webglTexPerBatch?: number | undefined;
     }
 
     /**

@@ -91,7 +91,8 @@ Promise.all([
         layoutOpts: {
           randomize: true,
           animate: true
-        }
+        },
+        tooltip: 'Randomise'
       },
 
       {
@@ -99,7 +100,8 @@ Promise.all([
         layoutOpts: {
           randomize: false,
           animate: true
-        }
+        },
+        tooltip: 'Step'
       }
     ];
 
@@ -150,7 +152,7 @@ Promise.all([
     }
 
     function makeButton( opts ){
-      var $button = h('button', { 'class': 'btn btn-default' }, [ opts.label ]);
+      var $button = h('button', { 'class': 'btn btn-default', title: opts.tooltip }, [ opts.label ]);
 
       $btnParam.appendChild( $button );
 
@@ -160,6 +162,12 @@ Promise.all([
         layout = makeLayout( opts.layoutOpts );
         layout.run();
       });
+
+      return tippy( $button, {
+        content: opts.tooltip,
+        arrow: true,
+        placement: 'right'
+      } );
     }
 
     var makeTippy = function(node, html){

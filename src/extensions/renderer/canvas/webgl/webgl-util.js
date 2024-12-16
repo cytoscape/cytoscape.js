@@ -113,8 +113,7 @@ export function vec4ToIndex(vec4) {
   );
 }
 
-
-export function bufferTexture(gl, textureCanvas) {
+export function bufferTexture(gl, textureCanvas, debugID) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
  
@@ -130,8 +129,14 @@ export function bufferTexture(gl, textureCanvas) {
   gl.generateMipmap(gl.TEXTURE_2D);
 
   gl.bindTexture(gl.TEXTURE_2D, null);
+
+  texture.deleteTexture = () => {
+    gl.deleteTexture(texture);
+  };
+
   return texture;
 }
+
 
 function getTypeInfo(gl, glslType) {
   switch(glslType) {

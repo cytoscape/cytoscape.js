@@ -198,7 +198,11 @@ export class Atlas {
 
   bufferIfNeeded(gl) {
     if(!this.buffered) {
-      this.texture = util.bufferTexture(gl, this.canvas);
+      if(this.texture) {
+        this.texture.deleteTexture();
+        this.texture = null;
+      }
+      this.texture = util.bufferTexture(gl, this.canvas, this.debugID);
       this.buffered = true;
     }
   }
@@ -452,7 +456,6 @@ export class AtlasManager {
   }
 
   _cacheScratchCanvas(opts) {
-    console.log("cachedScratchFactory", opts);
     let prevW = -1;
     let prevH = -1;
     let scratchCanvas = null;

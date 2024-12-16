@@ -1,6 +1,6 @@
 body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin: 0; padding: 0; height: 100%; width: 100%;}
-#cytoscape { position: absolute; left: 0; right: 21em; top: 0; bottom: 0; }
-#commands { padding: 0.25em; width: 27em; z-index: 3; position: absolute; right: 0; top: 0; bottom: 0; overflow: auto; font-size: 0.75em; line-height: 1; background: rgba(200, 200, 200, 0.5); border-radius: 0.333em; }
+#cytoscape { position: absolute; left: 0; right: 19.5em; top: 0; bottom: 0; }
+#commands { padding: 0.25em; width: 25em; z-index: 3; position: absolute; right: 0; top: 0; bottom: 0; overflow: auto; font-size: 0.75em; line-height: 1; background: rgba(200, 200, 200, 0.5); border-radius: 0.333em; }
 #commands h2 { margin-top: 1em; font-size: 1.25em; }
 #nodes-number, #edges-number, #parent-node { width: 5em; }
 .ui-tooltip { font-size: 0.75em; max-width: 400px; }

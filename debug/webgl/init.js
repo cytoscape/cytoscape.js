@@ -5,7 +5,7 @@ var cy;
 
 const paramDefs = {
   networkID: {
-    default: 'em-web',
+    default: 'style_test',
     control: '#network-select'
   },
   bgcolor: {
@@ -25,7 +25,7 @@ const paramDefs = {
   //   control: '#atlas-checkbox'
   // },
   webglTexSize: {
-    default: 4096,
+    default: 1024,
     control: '#texture-size-select'
   },
   webglTexRows: {
@@ -33,11 +33,11 @@ const paramDefs = {
     control: '#texture-rows-select'
   },
   webglBatchSize: {
-    default: 1024,
+    default: 2048,
     control: '#batch-size-select'
   },
   webglTexPerBatch: {
-    default: 12,
+    default: 14,
     control: '#texture-units-select'
   },
 };
@@ -166,22 +166,29 @@ const paramDefs = {
       console.log(p);
       const control = $(paramDefs[p].control);
       const value = control.type == 'checkbox' ? control.checked : control.value;
-      urlParams.set(p, value);
+      console.log(paramDefs[p], value, paramDefs[p].default);
+      if(String(value) !== String(paramDefs[p].default)) {
+        urlParams.set(p, value);
+      }
     }
-
+    
     window.location.href = origin + pathname + '?' + urlParams.toString();
   }
 
   $('#hide-commands').addEventListener('click', () => {
     document.body.classList.remove('commands-shown');
     document.body.classList.add('commands-hidden');
-		cy.resize();
+    if(cy) {
+      cy.resize();
+    }
   });
 
   $('#show-commands').addEventListener('click', () => {
     document.body.classList.add('commands-shown');
     document.body.classList.remove('commands-hidden');
-		cy.resize();
+		if(cy) {
+		  cy.resize();
+    }
   });
   
   $("#fit-button").addEventListener('click', () => cy.fit());

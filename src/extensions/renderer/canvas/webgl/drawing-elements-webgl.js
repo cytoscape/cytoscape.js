@@ -26,6 +26,7 @@ export class ElementDrawingWebGL {
     this.bgColor = opts.bgColor;
 
     opts.enableWrapping = true;
+    opts.createTextureCanvas = util.createTextureCanvas; // Unit tests mock this
     this.atlasManager = new AtlasManager(r, opts);
 
     this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);

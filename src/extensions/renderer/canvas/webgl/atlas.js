@@ -31,13 +31,8 @@ export class Atlas {
     // if the texture wraps then there's a second location
     this.keyToLocation = new Map(); // styleKey -> [ location, location ]
 
-    // for unit tests
-    if(!opts.createTextureCanvas) {
-      opts.createTextureCanvas = util.createTextureCanvas; 
-    }
-
     this.canvas  = opts.createTextureCanvas(r, this.atlasSize, this.atlasSize);
-    this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight);
+    this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight, 'scratch');
   }
 
   getKeys() {
@@ -222,10 +217,6 @@ export class AtlasCollection {
     this.r = r;
     this.opts = opts;
 
-    if(!opts.createTextureCanvas) {
-      opts.createTextureCanvas = util.createTextureCanvas; 
-    }
-
     this.keyToIds = new Map();
     this.idToKey  = new Map();
 
@@ -259,7 +250,7 @@ export class AtlasCollection {
       const { r, opts } = this;
       const atlasSize = opts.webglTexSize;
       const texHeight = Math.floor(atlasSize / opts.webglTexRows);
-      this.scratch = opts.createTextureCanvas(r, atlasSize, texHeight);
+      this.scratch = opts.createTextureCanvas(r, atlasSize, texHeight, 'scratch');
     }
     return this.scratch;
   }
@@ -448,13 +439,38 @@ export class AtlasManager {
   constructor(r, globalOptions) {
     this.r = r;
 
-    this.globalOptions = globalOptions;
-    this.maxAtlases = globalOptions.webglTexPerBatch;
-    this.atlasSize = globalOptions.webglTexSize;
+    const opts = globalOptions;
+    this.globalOptions = opts;
+    this.maxAtlases = opts.webglTexPerBatch;
+    this.atlasSize = opts.webglTexSize;
     
     this.renderTypes = new Map(); // string -> object
     this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
     this.batchAtlases = [];
+
+    this._cacheScratchCanvas(opts);
+  }
+
+  _cacheScratchCanvas(opts) {
+    console.log("cachedScratchFactory", opts);
+    let prevW = -1;
+    let prevH = -1;
+    let scratchCanvas = null;
+
+    const baseCreateTextureCanvas = opts.createTextureCanvas;
+
+    opts.createTextureCanvas = (r, w, h, scratch) => {
+      if(scratch) {
+        if(!scratchCanvas || w != prevW || h != prevH) {
+          prevW = w;
+          prevH = h;
+          scratchCanvas = baseCreateTextureCanvas(r, w, h);
+        }
+        return scratchCanvas;
+      } else {
+        return baseCreateTextureCanvas(r, w, h);
+      }
+    };
   }
 
   addRenderType(type, renderTypeOptions) {

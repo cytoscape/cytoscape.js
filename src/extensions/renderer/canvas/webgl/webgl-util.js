@@ -13,7 +13,7 @@ export function compileShader(gl, type, source) {
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     throw new Error(gl.getShaderInfoLog(shader));
   }
-  console.log(gl.getShaderInfoLog(shader));
+  // console.log(gl.getShaderInfoLog(shader));
   return shader;
 }
 
@@ -113,22 +113,25 @@ export function vec4ToIndex(vec4) {
   );
 }
 
-export function bufferTexture(gl, textureCanvas, debugID) {
+export function createTexture(gl, debugID) {
   const texture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+
+  texture.buffer = (offscreenCanvas) => {
+    gl.bindTexture(gl.TEXTURE_2D, texture);
  
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-
-  // very important, this tells webgl to premultiply colors by the alpha channel
-  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
-  gl.generateMipmap(gl.TEXTURE_2D);
-
-  gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+  
+    // very important, this tells webgl to premultiply colors by the alpha channel
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+  
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offscreenCanvas);
+    gl.generateMipmap(gl.TEXTURE_2D);
+  
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  };
 
   texture.deleteTexture = () => {
     gl.deleteTexture(texture);

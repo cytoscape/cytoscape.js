@@ -22,7 +22,7 @@ export class Atlas {
 
     this.texture = null;
     this.canvas = null;
-    this.buffered = false;
+    this.needsBuffer = true;
 
     // a "location" is an object with a row and x fields
     this.freePointer = { x: 0, row: 0 };
@@ -175,7 +175,7 @@ export class Atlas {
     }
 
     this.keyToLocation.set(key, locations);
-    this.buffered = false;
+    this.needsBuffer = true;
     return locations;
   }
 
@@ -197,13 +197,20 @@ export class Atlas {
   }
 
   bufferIfNeeded(gl) {
-    if(!this.buffered) {
-      if(this.texture) {
-        this.texture.deleteTexture();
-        this.texture = null;
-      }
-      this.texture = util.bufferTexture(gl, this.canvas, this.debugID);
-      this.buffered = true;
+    if(!this.texture) {
+      this.texture = util.createTexture(gl, this.debugID);
+    }
+    if(this.needsBuffer) {
+      this.texture.buffer(this.canvas);
+      this.needsBuffer = false;
+    }
+  }
+
+  dispose() {
+    if(this.texture) {
+      this.texture.deleteTexture();
+      this.texture = null;
+      this.needsBuffer = true;
     }
   }
 

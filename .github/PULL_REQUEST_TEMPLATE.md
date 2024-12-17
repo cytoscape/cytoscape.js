@@ -20,6 +20,7 @@ Author:
 - [ ] Automated tests have been included in this pull request, if possible, for the new feature(s) or bug fix.  Check this box if tests are not pragmatically possible (e.g. rendering features could include screenshots or videos instead of automated tests).
 - [ ] The associated GitHub issues are included (above).
 - [ ] Notes have been included (above).
+- [ ] For new or updated API, the `index.d.ts` Typescript definition file has been appropriately updated.
 
 Reviewers:
 

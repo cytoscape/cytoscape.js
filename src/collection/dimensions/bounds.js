@@ -1,6 +1,6 @@
 import * as is from '../../is';
 import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox, shiftBoundingBox, updateBoundingBox } from '../../math';
-import { defaults, getPrefixedProperty, hashIntsArray } from '../../util';
+import { defaults, getPrefixedProperty, getBoundingBoxPosKey } from '../../util';
 
 let fn, elesfn;
 
@@ -800,18 +800,6 @@ let getKey = function( opts ){
   return key;
 };
 
-let getBoundingBoxPosKey = ele => {
-  if( ele.isEdge() ){
-    let p1 = ele.source().position();
-    let p2 = ele.target().position();
-    let r = x => Math.round(x);
-
-    return hashIntsArray([ r(p1.x), r(p1.y), r(p2.x), r(p2.y) ]);
-  } else {
-    return 0;
-  }
-};
-
 let cachedBoundingBoxImpl = function( ele, opts ){
   let _p = ele._private;
   let bb;
@@ -926,6 +914,7 @@ elesfn.boundingBox = function( options ){
         let isPosKeySame = _p.bbCachePosKey === currPosKey;
         let useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
 
+        _p.bbCachePosKey = currPosKey;
         ele.recalculateRenderedStyle( useCache );
       }
     }

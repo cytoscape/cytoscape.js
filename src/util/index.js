@@ -12,6 +12,7 @@ export * from './maps';
 export * from './strings';
 export * from './timing';
 export * from './hash';
+export * from './bounds';
 
 export { strings, extend, extend as assign, memoize, regex, sort };
 

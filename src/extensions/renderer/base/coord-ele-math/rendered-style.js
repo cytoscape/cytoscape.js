@@ -1,3 +1,5 @@
+import { getBoundingBoxPosKey } from '../../../../util';
+
 let BRp = {};
 
 BRp.registerCalculationListeners = function(){
@@ -50,6 +52,8 @@ BRp.registerCalculationListeners = function(){
           enqueue( ele.connectedEdges() );
 
           rstyle.cleanConnected = true;
+        } else if (ele.isEdge()) {
+          ele._private.bbCachePosKey = getBoundingBoxPosKey( ele );
         }
       }
 

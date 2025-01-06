@@ -25,11 +25,11 @@ const paramDefs = {
   //   control: '#atlas-checkbox'
   // },
   webglTexSize: {
-    default: 1024,
+    default: 2048,
     control: '#texture-size-select'
   },
   webglTexRows: {
-    default: 24,
+    default: 12,
     control: '#texture-rows-select'
   },
   webglBatchSize: {

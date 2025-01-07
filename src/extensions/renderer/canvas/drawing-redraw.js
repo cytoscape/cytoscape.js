@@ -247,7 +247,7 @@ CRp.matchCanvasSize = function( container ){
 
   r.canvasWidth = canvasWidth;
   r.canvasHeight = canvasHeight;
-
+  r.pixelRatio = pixelRatio;
 };
 
 CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
@@ -260,17 +260,30 @@ CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
   } );
 };
 
+CRp.clearCanvas = function(){
+  var r = this;
+  var data = r.data;
+  function clear(context) {
+    context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+  }
+  clear(data.contexts[ r.NODE ]);
+  clear(data.contexts[ r.DRAG ]);
+};
+
+
 CRp.render = function( options ){
+  var r = this;
   options = options || util.staticEmptyObject();
+
+  var cy = r.cy; 
 
   var forcedContext = options.forcedContext;
   var drawAllLayers = options.drawAllLayers;
   var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
   var forcedZoom = options.forcedZoom;
   var forcedPan = options.forcedPan;
-  var r = this;
   var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
-  var cy = r.cy; var data = r.data;
+  var data = r.data;
   var needDraw = data.canvasNeedsRedraw;
   var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
   var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
@@ -539,79 +552,7 @@ CRp.render = function( options ){
     }
   }
 
-  if( r.showFps || (!drawOnlyNodeLayer && (needDraw[ r.SELECT_BOX ] && !drawAllLayers)) ){
-    var context = forcedContext || data.contexts[ r.SELECT_BOX ];
-
-    setContextTransform( context );
-
-    if( r.selection[4] == 1 && ( r.hoverData.selecting || r.touchData.selecting ) ){
-      var zoom = r.cy.zoom();
-      var borderWidth = style.core( 'selection-box-border-width' ).value / zoom;
-
-      context.lineWidth = borderWidth;
-      context.fillStyle = 'rgba('
-        + style.core( 'selection-box-color' ).value[0] + ','
-        + style.core( 'selection-box-color' ).value[1] + ','
-        + style.core( 'selection-box-color' ).value[2] + ','
-        + style.core( 'selection-box-opacity' ).value + ')';
-
-      context.fillRect(
-        r.selection[0],
-        r.selection[1],
-        r.selection[2] - r.selection[0],
-        r.selection[3] - r.selection[1] );
-
-      if( borderWidth > 0 ){
-        context.strokeStyle = 'rgba('
-          + style.core( 'selection-box-border-color' ).value[0] + ','
-          + style.core( 'selection-box-border-color' ).value[1] + ','
-          + style.core( 'selection-box-border-color' ).value[2] + ','
-          + style.core( 'selection-box-opacity' ).value + ')';
-
-        context.strokeRect(
-          r.selection[0],
-          r.selection[1],
-          r.selection[2] - r.selection[0],
-          r.selection[3] - r.selection[1] );
-      }
-    }
-
-    if( data.bgActivePosistion && !r.hoverData.selecting ){
-      var zoom = r.cy.zoom();
-      var pos = data.bgActivePosistion;
-
-      context.fillStyle = 'rgba('
-        + style.core( 'active-bg-color' ).value[0] + ','
-        + style.core( 'active-bg-color' ).value[1] + ','
-        + style.core( 'active-bg-color' ).value[2] + ','
-        + style.core( 'active-bg-opacity' ).value + ')';
-
-      context.beginPath();
-      context.arc( pos.x, pos.y, style.core( 'active-bg-size' ).pfValue / zoom, 0, 2 * Math.PI );
-      context.fill();
-    }
-
-    var timeToRender = r.lastRedrawTime;
-    if( r.showFps && timeToRender ){
-      timeToRender = Math.round( timeToRender );
-      var fps = Math.round( 1000 / timeToRender );
-
-      context.setTransform( 1, 0, 0, 1, 0, 0 );
-
-      context.fillStyle = 'rgba(255, 0, 0, 0.75)';
-      context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
-      context.lineWidth = 1;
-      context.fillText( '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20 );
-
-      var maxFps = 60;
-      context.strokeRect( 0, 30, 250, 20 );
-      context.fillRect( 0, 30, 250 * Math.min( fps / maxFps, 1 ), 20 );
-    }
-
-    if( !drawAllLayers ){
-      needDraw[ r.SELECT_BOX ] = false;
-    }
-  }
+  this.drawSelectionRectangle(options, setContextTransform);
 
   // motionblur: blit rendered blurry frames
   if( motionBlur && mbPxRatio !== 1 ){
@@ -681,6 +622,100 @@ CRp.render = function( options ){
     cy.emit('render');
   }
 
+};
+
+let fpsHeight;
+
+CRp.drawSelectionRectangle = function(options, setContextTransform) {
+  const r = this;
+  const cy = r.cy; 
+  const data = r.data;
+  const style = cy.style();
+
+  const drawOnlyNodeLayer = options.drawOnlyNodeLayer;
+  const drawAllLayers = options.drawAllLayers;
+  const needDraw = data.canvasNeedsRedraw;
+  const forcedContext = options.forcedContext;
+
+  if( r.showFps || (!drawOnlyNodeLayer && (needDraw[ r.SELECT_BOX ] && !drawAllLayers)) ){
+    var context = forcedContext || data.contexts[ r.SELECT_BOX ];
+
+    setContextTransform( context );
+
+    if( r.selection[4] == 1 && ( r.hoverData.selecting || r.touchData.selecting ) ){
+      var zoom = r.cy.zoom();
+      var borderWidth = style.core( 'selection-box-border-width' ).value / zoom;
+
+      context.lineWidth = borderWidth;
+      context.fillStyle = 'rgba('
+        + style.core( 'selection-box-color' ).value[0] + ','
+        + style.core( 'selection-box-color' ).value[1] + ','
+        + style.core( 'selection-box-color' ).value[2] + ','
+        + style.core( 'selection-box-opacity' ).value + ')';
+
+      context.fillRect(
+        r.selection[0],
+        r.selection[1],
+        r.selection[2] - r.selection[0],
+        r.selection[3] - r.selection[1] );
+
+      if( borderWidth > 0 ){
+        context.strokeStyle = 'rgba('
+          + style.core( 'selection-box-border-color' ).value[0] + ','
+          + style.core( 'selection-box-border-color' ).value[1] + ','
+          + style.core( 'selection-box-border-color' ).value[2] + ','
+          + style.core( 'selection-box-opacity' ).value + ')';
+
+        context.strokeRect(
+          r.selection[0],
+          r.selection[1],
+          r.selection[2] - r.selection[0],
+          r.selection[3] - r.selection[1] );
+      }
+    }
+
+    if( data.bgActivePosistion && !r.hoverData.selecting ){
+      var zoom = r.cy.zoom();
+      var pos = data.bgActivePosistion;
+
+      context.fillStyle = 'rgba('
+        + style.core( 'active-bg-color' ).value[0] + ','
+        + style.core( 'active-bg-color' ).value[1] + ','
+        + style.core( 'active-bg-color' ).value[2] + ','
+        + style.core( 'active-bg-opacity' ).value + ')';
+
+      context.beginPath();
+      context.arc( pos.x, pos.y, style.core( 'active-bg-size' ).pfValue / zoom, 0, 2 * Math.PI );
+      context.fill();
+    }
+
+    var timeToRender = r.lastRedrawTime;
+    if( r.showFps && timeToRender ){
+      timeToRender = Math.round( timeToRender );
+      var fps = Math.round( 1000 / timeToRender );
+      const text = '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps';
+
+      context.setTransform( 1, 0, 0, 1, 0, 0 );
+
+      context.fillStyle = 'rgba(255, 0, 0, 0.75)';
+      context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
+      // context.lineWidth = 1;
+      context.font = '30px Arial';
+      if(!fpsHeight) {
+        const dims = context.measureText(text);
+        fpsHeight = dims.actualBoundingBoxAscent;
+      }
+      context.fillText( text, 0, fpsHeight );
+
+      var maxFps = 60;
+      context.strokeRect( 0, fpsHeight + 10, 250, 20 );
+      context.fillRect( 0, fpsHeight + 10, 250 * Math.min( fps / maxFps, 1 ), 20 );
+    }
+
+    if( !drawAllLayers ){
+      needDraw[ r.SELECT_BOX ] = false;
+    }
+  }
 };
 
 export default CRp;

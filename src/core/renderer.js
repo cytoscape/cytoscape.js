@@ -10,7 +10,18 @@ let rendererDefaults = util.defaults({
   touchTapThreshold: 8,
   wheelSensitivity: 1,
   debug: false,
-  showFps: false
+  showFps: false,
+  
+  // webgl options
+  webgl: false,
+  webglDebug: false,
+  webglDebugShowAtlases: false,
+  // defaults good for mobile
+  webglTexSize: 2048,
+  webglTexRows: 12,
+  webglBatchSize: 2048,
+  webglTexPerBatch: 14,
+  webglBgColor: [255, 255, 255]
 });
 
 let corefn = ({

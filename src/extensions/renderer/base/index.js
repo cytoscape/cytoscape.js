@@ -81,6 +81,7 @@ BRp.init = function( options ){
   r.redraws = 0;
   r.showFps = options.showFps;
   r.debug = options.debug;
+  r.webgl = options.webgl;
 
   r.hideEdgesOnViewport = options.hideEdgesOnViewport;
   r.textureOnViewport = options.textureOnViewport;
@@ -116,7 +117,7 @@ BRp.init = function( options ){
   r.registerCalculationListeners();
 };
 
-BRp.notify = function( eventName, eles ){
+BRp.notify = function( eventName, eles ) {
   var r = this;
   var cy = r.cy;
 
@@ -146,6 +147,10 @@ BRp.notify = function( eventName, eles ){
 
   if( eventName === 'viewport' ){
     r.redrawHint( 'select', true );
+  }
+
+  if( eventName === 'gc' ){
+    r.redrawHint( 'gc', true );
   }
 
   if( eventName === 'load' || eventName === 'resize' || eventName === 'mount' ){

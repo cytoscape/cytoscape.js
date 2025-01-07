@@ -7,8 +7,8 @@ import ElementTextureCacheLookup from './ele-texture-cache-lookup';
 const minTxrH = 25; // the size of the texture cache for small height eles (special case)
 const txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
 const minLvl = -4; // when scaling smaller than that we don't need to re-render
-const maxLvl = 3; // when larger than this scale just render directly (caching is not helpful)
-const maxZoom = 7.99; // beyond this zoom level, layered textures are not used
+export const maxLvl = 3; // when larger than this scale just render directly (caching is not helpful)
+export const maxZoom = 7.99; // beyond this zoom level, layered textures are not used
 const eleTxrSpacing = 8; // spacing between elements on textures to avoid blitting overlaps
 const defTxrWidth = 1024; // default/minimum texture width
 const maxTxrW = 1024; // the maximum width of a texture

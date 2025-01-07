@@ -5,5 +5,5 @@ import canvasRenderer from './canvas';
 export default [
   { name: 'null', impl: nullRenderer },
   { name: 'base', impl: baseRenderer },
-  { name: 'canvas', impl: canvasRenderer }
+  { name: 'canvas', impl: canvasRenderer },
 ];

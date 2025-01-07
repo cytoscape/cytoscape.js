@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <!-- <script>
+      document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
+      ':35729/livereload.js?snipver=1"></' + 'script>')
+    </script>  -->
+
+    <link rel="stylesheet" href="./style.css" />
+
+    <script>
+      var $ = function( sel ){ return document.querySelector(sel); };
+      var $$ = function( sel ){ return document.querySelectorAll(sel); };
+
+      // patches for IE:
+
+      if(NodeList.prototype.forEach == null) {
+        NodeList.prototype.forEach = function(fn) {
+          var l = this.length;
+          var i, el;
+          for(i = 0; i < l; i++){
+            el = this[i];
+            fn(el, i, this);
+          }
+        };
+      }
+    </script>
+
+    <script src="./cytoscape.umd.js"></script>
+
+    <style>
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+      }
+      
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 180px;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        
+        /* Position the tooltip */
+        position: absolute;
+        z-index: 1;
+        top: 100%;
+        left: 50%;
+        margin-left: -140px;
+      }
+      
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+      }
+    </style>
+
+    <title>Cytoscape.js - WebGL Demo</title>
+
+  </head>
+
+  <body>
+      <div id="cytoscape"></div>
+      <div id="bb"></div>
+      <div id="console"></div>
+
+      <div id="commands-show-area">
+        <button id="show-commands">+</button>
+      </div>
+
+      <div id="commands">
+
+        <button id="hide-commands">-</button>
+
+        <h1>Cytoscape.js<br/>WebGL Demo</h1>
+        <h2>Network</h2>
+
+        <select id="network-select">
+        </select>
+        <br><br>
+        Background Color: 
+        <select id="bg-color-select">
+          <option value="white">⚪ White</option>
+          <option value="blue">🔵 Blue</option>
+          <option value="black">⚫ Black</option>
+          <option value="purple">🟣 Purple</option>
+          <option value="orange">🟠 Orange</option>
+          <option value="red">🔴 Red</option>
+          <option value="green">🟢 Green</option>
+          <option value="yellow">🟡 Yellow</option>
+          <option value="brown">🟤 Brown</option>👽
+          <option value="gray">👽 Gray</option>
+        </select>
+        <br><br>
+        <div>
+          <input type="checkbox" id="hover-check" />
+          <label for="hover-check">Enable Hover Style</label>
+        </div><br>
+        <button id="fit-button">Fit to view</button>
+        <br><br>
+
+        <!--
+        <button id="select-button">Select all nodes</button>
+        <br><br>
+        <button id="delete-button">Delete selected</button>
+        <br><br>
+        <button id="animate-button">Animate selected</button>
+        <br><br>
+        <button id="gc-button">Garbage collect (beta)</button>
+        <br><br>
+        -->
+
+        <h2>WebGL Settings</h2>
+        <div>
+          <input type="checkbox" id="webgl-check" />
+          <label for="webgl-check">Enable <b>WebGL</b></label>
+        </div>
+        <br>
+        <div>
+          Texture Size: 
+          <select id="texture-size-select">
+            <option value="1024">1024</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+            <option value="8192">8192</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Texture Size</b><br>This size of each dimension of each texture atlas. Affects buffering time and texture quality.
+          </span></div>
+        </div>
+        <br>
+        <div>
+          Texture Rows: 
+          <select id="texture-rows-select">
+            <option value="8">8</option>
+            <option value="12">12</option>
+            <option value="18">18</option>
+            <option value="24">24</option>
+            <option value="30">30</option>
+            <option value="36">36</option>
+            <option value="42">42</option>
+            <option value="48">48</option>
+            <option value="54">54</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Texture Rows</b><br>Number of rows to divide the texture atlas into. Affects number of textures used and texture quality.
+          </span></div>
+        </div>
+        <br>
+        <div>
+          Max Textures Per Batch: 
+          <select id="texture-units-select">
+            <option value="2">2</option>
+            <option value="4">4</option>
+            <option value="6">6</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Textures Per Batch</b><br>Number of texture units to use per batch.
+          </span></div>
+        </div>
+        <br>
+        <div>
+          Max Elements Per Batch:
+          <select id="batch-size-select">
+            <option value="1024">1024</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+            <option value="8192">8192</option>
+            <option value="16384">16384</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Elements Per Batch</b><br>Number of nodes or edges to draw in a batch. Affects the size of data buffers.
+          </span></div>
+        </div>
+        <br>
+
+        <!--
+        <div>
+          Show Atlases:
+          <input id="atlas-checkbox" type="checkbox">&nbsp;
+        </div>
+        <br>
+        -->
+
+        <p>Open the debug console for debug and performance info. <br>(Option + Command + J)</p>
+
+        <br/><br/>
+        <button id="reset-button">Reset</button> <br />
+
+
+      </div>
+
+      <script src="networks.js"></script>
+      <script src="init.js"></script>
+  </body>
+
+</html>

@@ -706,28 +706,7 @@ BRp.findEdgeControlPoints = function( edges ){
   let cy = r.cy;
   let hasCompounds = cy.hasCompoundNodes();
 
-  let hashTable = {
-    map: new Map(),
-    get: function(pairId){
-      let map2 = this.map.get(pairId[0]);
-
-      if( map2 != null ){
-        return map2.get(pairId[1]);
-      } else {
-        return null;
-      }
-    },
-    set: function(pairId, val){
-      let map2 = this.map.get(pairId[0]);
-
-      if( map2 == null ){
-        map2 = new Map();
-        this.map.set(pairId[0], map2);
-      }
-
-      map2.set(pairId[1], val);
-    }
-  };
+  let hashTable = new Map();
 
   let pairIds = [];
   let haystackEdges = [];
@@ -756,7 +735,7 @@ BRp.findEdgeControlPoints = function( edges ){
     let srcIndex = src.poolIndex();
     let tgtIndex = tgt.poolIndex();
 
-    let pairId = [ srcIndex, tgtIndex ].sort();
+    let pairId = `${srcIndex}_${tgtIndex}_${edgeIsUnbundled}`;
 
     let tableEntry = hashTable.get( pairId );
 

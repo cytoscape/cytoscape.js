@@ -735,7 +735,8 @@ BRp.findEdgeControlPoints = function( edges ){
     let srcIndex = src.poolIndex();
     let tgtIndex = tgt.poolIndex();
 
-    let pairId = `${srcIndex}_${tgtIndex}_${edgeIsUnbundled}`;
+    let sortIndex = [ srcIndex, tgtIndex ].sort();
+    let pairId = `${sortIndex[0]}_${sortIndex[1]}_${edgeIsUnbundled}`;
 
     let tableEntry = hashTable.get( pairId );
 

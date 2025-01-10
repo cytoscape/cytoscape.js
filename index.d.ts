@@ -1718,7 +1718,7 @@ declare namespace cytoscape {
          * Get the element's plain JavaScript object representation.
          * http://js.cytoscape.org/#ele.json
          */
-        json(): string;
+        json(): Object;
 
         /**
          * Get the group string that defines the type of the element.

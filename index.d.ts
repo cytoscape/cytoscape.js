@@ -582,14 +582,14 @@ declare namespace cytoscape {
          * @alias attr
          *
          * @param name The name of the field to set.
-         * @param value The value to set for the field.
+         * @param value The value to set for the field (must be JSON-serializable).
          */
         data(name: string, value: any): this;
         /**
          * Update multiple data fields at once via an object.
          * @alias attr
          *
-         * @param obj The object containing name-value pairs to update data fields.
+         * @param obj The object containing name-value pairs to update data fields (must be JSON-serializable).
          */
         data(obj: Record<string, any>): this;
         /**
@@ -602,7 +602,7 @@ declare namespace cytoscape {
          * Set a particular data field.
          *
          * @param name The name of the field to set.
-         * @param value The value to set for the field.
+         * @param value The value to set for the field  (must be JSON-serializable).
          */
         attr(name: string, value: any): this;
         /**
@@ -1644,12 +1644,12 @@ declare namespace cytoscape {
         /**
          * Set a particular data field for the element.
          * @param name The name of the field to set.
-         * @param value The value to set for the field.
+         * @param value The value to set for the field  (must be JSON-serializable).
          */
         data(name: string, value: any): this;
         /**
          * Update multiple data fields at once via an object.
-         * @param obj The object containing name- value pairs to update data fields.
+         * @param obj The object containing name- value pairs to update data fields  (must be JSON-serializable).
          */
         data(obj: any): this;
         /**
@@ -1660,7 +1660,7 @@ declare namespace cytoscape {
         /**
          * Set a particular data field for the element.
          * @param name The name of the field to set.
-         * @param value The value to set for the field.
+         * @param value The value to set for the field  (must be JSON-serializable).
          */
         attr(name: string, value: any): this;
         /**

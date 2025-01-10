@@ -174,9 +174,9 @@ declare namespace cytoscape {
             | Promise<ElementDefinition[]>
            ;
         /**
-         * The [[Stylesheet]] used to style the graph. For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.
+         * The StylesheetJson (StylesheetJsonBlock[]) used to style the graph. For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.
          */
-        style?: Stylesheet[] | Promise<Stylesheet[]>;
+        style?: StylesheetJson | Promise<StylesheetJson>;
         /**
          * A plain object that specifies layout options.
          * Which layout is initially run is specified by the name field.
@@ -1219,14 +1219,14 @@ declare namespace cytoscape {
          * Assign a new stylesheet to replace the existing one (if provided)
          * and return the style.
          */
-        style(sheet?: Stylesheet | Stylesheet[] | string): Style;
+        style(sheet?: StylesheetJsonBlock | StylesheetJsonBlock[] | string): Style;
     }
 
     interface Style {
         /**
          * Add a rule to the stylesheet.
          */
-        append(style: string | Stylesheet | Stylesheet[]): this;
+        append(style: string | StylesheetJsonBlock | StylesheetJsonBlock[]): this;
 
         /**
          * Remove all styles, including default styles.
@@ -1289,7 +1289,8 @@ declare namespace cytoscape {
     /**
      * http://js.cytoscape.org/#cy.style
      */
-    type Stylesheet = StylesheetStyle | StylesheetCSS;
+    type StylesheetJsonBlock = StylesheetStyle | StylesheetCSS;
+    type StylesheetJson = StylesheetJsonBlock[];
 
     interface StylesheetStyle {
         selector: string;

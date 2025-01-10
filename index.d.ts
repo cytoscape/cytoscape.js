@@ -405,6 +405,7 @@ declare namespace cytoscape {
         /**
          * The batch size for WebGL.
          * (provisional, may change in future releases)
+         * WARNING: This is currently experimental, and may have API changes in future.
          */
         webglBatchSize?: number;
 

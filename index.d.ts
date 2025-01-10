@@ -43,7 +43,7 @@
  *      The input must be a single edge.
  *
  * For a output of a function it will always give:
- *  - Cy.CollectionElements
+ *  - Cy.Elements
  *      The output is a collection of node and edge elements OR single element.
  *  - Cy.EdgeCollection
  *      The output is a collection of edge elements OR single edge.

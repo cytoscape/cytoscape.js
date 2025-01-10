@@ -4,6 +4,14 @@
 // TypeScript Version: 2.3
 
 /**
+ * WARNING: This is a provisional specification of the Cytoscape.js
+ * API in TypeScript, based on improvements made on the Typescript
+ * specification for Cytoscape.js in DefinitelyTyped.  This is a work
+ * in progress and may not be complete, and it may have errors. Please 
+ * report any issues to the issue tracker:
+ * 
+ * https://github.com/cytoscape/cytoscape.js/issues
+ * 
  * cy   --> Cy.Core
  *  the core
  *
@@ -50,11 +58,20 @@
  *  - Cy.NodeCollection
  *      The output is a collection of node elements OR single node.
  *
- * A number of interfaces contain nothing as they server to collect interfaces.
+ * A number of interfaces contain nothing as they serve to collect interfaces.
  */
 export = cytoscape;
 export as namespace cytoscape;
 
+/**
+ * WARNING: This is a provisional specification of the Cytoscape.js
+ * API in TypeScript, based on improvements made on the Typescript
+ * specification for Cytoscape.js in DefinitelyTyped.  This is a work
+ * in progress and may not be complete, and it may have errors. Please 
+ * report any issues to the issue tracker:
+ * 
+ * https://github.com/cytoscape/cytoscape.js/issues
+ */
 declare function cytoscape(options?: cytoscape.CytoscapeOptions): cytoscape.Core;
 declare function cytoscape(type: string, name: string): unknown;
 declare function cytoscape(type: string, name: string, registrant: any): void;

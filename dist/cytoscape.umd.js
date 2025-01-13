@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2024, The Cytoscape Consortium.
+ * Copyright (c) 2016-2025, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -73,8 +73,17 @@
   function _slicedToArray(arr, i) {
     return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
   }
+  function _toConsumableArray(arr) {
+    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
+  }
+  function _arrayWithoutHoles(arr) {
+    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
+  }
   function _arrayWithHoles(arr) {
     if (Array.isArray(arr)) return arr;
+  }
+  function _iterableToArray(iter) {
+    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
   }
   function _iterableToArrayLimit(arr, i) {
     var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
@@ -112,6 +121,9 @@
     if (len == null || len > arr.length) len = arr.length;
     for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
     return arr2;
+  }
+  function _nonIterableSpread() {
+    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
   function _nonIterableRest() {
     throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
@@ -1179,9 +1191,9 @@
 
   var debounce_1 = debounce;
 
-  var performance = _window ? _window.performance : null;
-  var pnow = performance && performance.now ? function () {
-    return performance.now();
+  var performance$1 = _window ? _window.performance : null;
+  var pnow = performance$1 && performance$1.now ? function () {
+    return performance$1.now();
   } : function () {
     return Date.now();
   };
@@ -3026,7 +3038,7 @@
       y: p.y
     };
   };
-  var modelToRenderedPosition = function modelToRenderedPosition(p, zoom, pan) {
+  var modelToRenderedPosition$1 = function modelToRenderedPosition(p, zoom, pan) {
     return {
       x: p.x * zoom + pan.x,
       y: p.y * zoom + pan.y
@@ -4787,7 +4799,7 @@
   };
 
   // Common distance metrics for clustering algorithms
-  var identity = function identity(x) {
+  var identity$1 = function identity(x) {
     return x;
   };
   var absDiff = function absDiff(p, q) {
@@ -4806,7 +4818,7 @@
     return Math.max(currentMax, absDiff(p, q));
   };
   var getDistance = function getDistance(length, getP, getQ, init, visit) {
-    var post = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : identity;
+    var post = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : identity$1;
     var ret = init;
     var p, q;
     for (var dim = 0; dim < length; dim++) {
@@ -10102,7 +10114,7 @@
         } else {
           // getting
           var pos = ele.position();
-          rpos = modelToRenderedPosition(pos, zoom, pan);
+          rpos = modelToRenderedPosition$1(pos, zoom, pan);
           if (dim === undefined) {
             // then return the whole rendered position
             return rpos;
@@ -10496,10 +10508,14 @@
       }
 
       // shift by margin and expand by outline and border
-      lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-      lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
-      ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-      ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+      var leftPad = marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+      var rightPad = marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+      var topPad = marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+      var botPad = marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+      lx1 += leftPad;
+      lx2 += rightPad;
+      ly1 += topPad;
+      ly2 += botPad;
 
       // always store the unrotated label bounds separately
       var bbPrefix = prefix || 'main';
@@ -10511,6 +10527,10 @@
       bb.y2 = ly2;
       bb.w = lx2 - lx1;
       bb.h = ly2 - ly1;
+      bb.leftPad = leftPad;
+      bb.rightPad = rightPad;
+      bb.topPad = topPad;
+      bb.botPad = botPad;
       var isAutorotate = isEdge && rotation.strValue === 'autorotate';
       var isPfValue = rotation.pfValue != null && rotation.pfValue !== 0;
       if (isAutorotate || isPfValue) {
@@ -10902,7 +10922,7 @@
     var isDirty = function isDirty(ele) {
       return ele._private.bbCache == null || ele._private.styleDirty;
     };
-    var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
+    var needRecalc = !useCache || isDirty(ele) || isEdge && (isDirty(ele.source()) || isDirty(ele.target()));
     if (needRecalc) {
       if (!isPosKeySame) {
         ele.recalculateRenderedStyle(useCache);
@@ -11179,7 +11199,7 @@
   var ifEdgeRenderedPosition = function ifEdgeRenderedPosition(ele, getPoint) {
     if (ele.isEdge()) {
       var cy = ele.cy();
-      return modelToRenderedPosition(getPoint(ele), cy.zoom(), cy.pan());
+      return modelToRenderedPosition$1(getPoint(ele), cy.zoom(), cy.pan());
     }
   };
   var ifEdgeRenderedPositions = function ifEdgeRenderedPositions(ele, getPoints) {
@@ -11188,7 +11208,7 @@
       var pan = cy.pan();
       var zoom = cy.zoom();
       return getPoints(ele).map(function (p) {
-        return modelToRenderedPosition(p, zoom, pan);
+        return modelToRenderedPosition$1(p, zoom, pan);
       });
     }
   };
@@ -12487,7 +12507,14 @@
         return;
       }
       if (ele) {
-        this.cleanStyle();
+        // this.cleanStyle();
+
+        // Inline the important part of cleanStyle(), for raw performance
+        if (ele._private.styleDirty) {
+          // n.b. this flag should be set before apply() to avoid potential infinite recursion
+          ele._private.styleDirty = false;
+          cy.style().apply(ele);
+        }
         var overriddenStyle = ele._private.style[property];
         if (overriddenStyle != null) {
           return overriddenStyle;
@@ -14868,7 +14895,17 @@
     touchTapThreshold: 8,
     wheelSensitivity: 1,
     debug: false,
-    showFps: false
+    showFps: false,
+    // webgl options
+    webgl: false,
+    webglDebug: false,
+    webglDebugShowAtlases: false,
+    // defaults good for mobile
+    webglTexSize: 2048,
+    webglTexRows: 12,
+    webglBatchSize: 2048,
+    webglTexPerBatch: 14,
+    webglBgColor: [255, 255, 255]
   });
   var corefn$4 = {
     renderTo: function renderTo(context, zoom, pan, pxRatio) {
@@ -15732,9 +15769,7 @@
       // only for beziers -- so performance of other edges isn't affected
       prop.triggersBoundsOfParallelBeziers && name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) {
         ele.parallelEdges().forEach(function (pllEdge) {
-          if (pllEdge.isBundledBezier()) {
-            pllEdge.dirtyBoundingBoxCache();
-          }
+          pllEdge.dirtyBoundingBoxCache();
         });
       }
       if (prop.triggersBoundsOfConnectedEdges && name === 'display' && (fromValue === 'none' || toValue === 'none')) {
@@ -17094,6 +17129,12 @@
       name: 'line-dash-offset',
       type: t.number
     }, {
+      name: 'line-outline-width',
+      type: t.size
+    }, {
+      name: 'line-outline-color',
+      type: t.color
+    }, {
       name: 'line-gradient-stop-colors',
       type: t.colors
     }, {
@@ -17551,6 +17592,8 @@
       'line-fill': 'solid',
       'line-cap': 'butt',
       'line-opacity': 1,
+      'line-outline-width': 0,
+      'line-outline-color': '#000',
       'line-gradient-stop-colors': '#999',
       'line-gradient-stop-positions': '0%',
       'control-point-step-size': 40,
@@ -18393,6 +18436,9 @@
       return this; // chaining
     },
 
+    gc: function gc() {
+      this.notify('gc');
+    },
     fit: function fit(elements, padding) {
       var viewportState = this.getFitViewport(elements, padding);
       if (viewportState) {
@@ -18512,7 +18558,7 @@
         // then zoom about a point
         zoom = params.level;
         if (params.position != null) {
-          pos = modelToRenderedPosition(params.position, currentZoom, currentPan);
+          pos = modelToRenderedPosition$1(params.position, currentZoom, currentPan);
         } else if (params.renderedPosition != null) {
           pos = params.renderedPosition;
         }
@@ -19278,22 +19324,23 @@
     this.options = extend({}, defaults$7, deprecatedOptionDefaults, options);
   }
   BreadthFirstLayout.prototype.run = function () {
-    var params = this.options;
-    var options = params;
-    var cy = params.cy;
+    var options = this.options;
+    var cy = options.cy;
     var eles = options.eles;
     var nodes = eles.nodes().filter(function (n) {
-      return !n.isParent();
+      return n.isChildless();
     });
     var graph = eles;
     var directed = options.directed;
     var maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
 
-    var bb = makeBoundingBox(options.boundingBox ? options.boundingBox : {
-      x1: 0,
-      y1: 0,
-      w: cy.width(),
-      h: cy.height()
+    var hasBoundingBox = !!options.boundingBox;
+    var cyExtent = cy.extent();
+    var bb = makeBoundingBox(hasBoundingBox ? options.boundingBox : {
+      x1: cyExtent.x1,
+      y1: cyExtent.y1,
+      w: cyExtent.w,
+      h: cyExtent.h
     });
     var roots;
     if (elementOrCollection(options.roots)) {
@@ -19345,7 +19392,9 @@
         depth = _getInfo.depth,
         index = _getInfo.index;
       depths[depth][index] = null;
-      addToDepth(ele, newDepth);
+
+      // add only childless nodes
+      if (ele.isChildless()) addToDepth(ele, newDepth);
     };
 
     // find the depths of the nodes
@@ -19355,7 +19404,9 @@
       visit: function visit(node, edge, pNode, i, depth) {
         var ele = node[0];
         var id = ele.id();
-        addToDepth(ele, depth);
+
+        // add only childless nodes
+        if (ele.isChildless()) addToDepth(ele, depth);
         foundByBfs[id] = true;
       }
     });
@@ -19372,7 +19423,6 @@
     }
 
     // assign the nodes a depth and index
-
     var assignDepthsAt = function assignDepthsAt(i) {
       var eles = depths[i];
       for (var j = 0; j < eles.length; j++) {
@@ -19386,11 +19436,6 @@
           depth: i,
           index: j
         });
-      }
-    };
-    var assignDepths = function assignDepths() {
-      for (var _i3 = 0; _i3 < depths.length; _i3++) {
-        assignDepthsAt(_i3);
       }
     };
     var adjustMaximally = function adjustMaximally(ele, shifted) {
@@ -19444,13 +19489,11 @@
       }
     }
 
-    assignDepths(); // clear holes
-
     // find min distance we need to leave between nodes
     var minDistance = 0;
     if (options.avoidOverlap) {
-      for (var _i4 = 0; _i4 < nodes.length; _i4++) {
-        var n = nodes[_i4];
+      for (var _i3 = 0; _i3 < nodes.length; _i3++) {
+        var n = nodes[_i3];
         var nbb = n.layoutDimensions(options);
         var w = nbb.w;
         var h = nbb.h;
@@ -19468,8 +19511,8 @@
       var neighbors = ele.neighborhood();
       var percent = 0;
       var samples = 0;
-      for (var _i5 = 0; _i5 < neighbors.length; _i5++) {
-        var neighbor = neighbors[_i5];
+      for (var _i4 = 0; _i4 < neighbors.length; _i4++) {
+        var neighbor = neighbors[_i4];
         if (neighbor.isEdge() || neighbor.isParent() || !nodes.has(neighbor)) {
           continue;
         }
@@ -19502,7 +19545,6 @@
     };
 
     // rearrange the indices in each depth level based on connectivity
-
     var sortFn = function sortFn(a, b) {
       var apct = getWeightedPercent(a);
       var bpct = getWeightedPercent(b);
@@ -19516,28 +19558,59 @@
     if (options.depthSort !== undefined) {
       sortFn = options.depthSort;
     }
+    var depthsLen = depths.length;
 
     // sort each level to make connected nodes closer
-    for (var _i6 = 0; _i6 < depths.length; _i6++) {
-      depths[_i6].sort(sortFn);
-      assignDepthsAt(_i6);
+    for (var _i5 = 0; _i5 < depthsLen; _i5++) {
+      depths[_i5].sort(sortFn);
+      assignDepthsAt(_i5);
     }
 
     // assign orphan nodes to a new top-level depth
     var orphanDepth = [];
-    for (var _i7 = 0; _i7 < orphanNodes.length; _i7++) {
-      orphanDepth.push(orphanNodes[_i7]);
+    for (var _i6 = 0; _i6 < orphanNodes.length; _i6++) {
+      orphanDepth.push(orphanNodes[_i6]);
     }
-    depths.unshift(orphanDepth);
-    assignDepths();
+    var assignDepths = function assignDepths() {
+      for (var _i7 = 0; _i7 < depthsLen; _i7++) {
+        assignDepthsAt(_i7);
+      }
+    };
+
+    // add a new top-level depth only when there are orphan nodes
+    if (orphanDepth.length) {
+      depths.unshift(orphanDepth);
+      depthsLen = depths.length;
+      assignDepths();
+    }
     var biggestDepthSize = 0;
-    for (var _i8 = 0; _i8 < depths.length; _i8++) {
+    for (var _i8 = 0; _i8 < depthsLen; _i8++) {
       biggestDepthSize = Math.max(depths[_i8].length, biggestDepthSize);
     }
     var center = {
       x: bb.x1 + bb.w / 2,
-      y: bb.x1 + bb.h / 2
+      y: bb.y1 + bb.h / 2
     };
+
+    // average node size
+    var aveNodeSize = nodes.reduce(function (acc, node) {
+      return function (box) {
+        return {
+          w: acc.w === -1 ? box.w : (acc.w + box.w) / 2,
+          h: acc.h === -1 ? box.h : (acc.h + box.h) / 2
+        };
+      }(node.boundingBox({
+        includeLabels: options.nodeDimensionsIncludeLabels
+      }));
+    }, {
+      w: -1,
+      h: -1
+    });
+    var distanceY = Math.max(
+    // only one depth
+    depthsLen === 1 ? 0 :
+    // inside a bounding box, no need for top & bottom padding
+    hasBoundingBox ? (bb.h - options.padding * 2 - aveNodeSize.h) / (depthsLen - 1) : (bb.h - options.padding * 2 - aveNodeSize.h) / (depthsLen + 1), minDistance);
     var maxDepthSize = depths.reduce(function (max, eles) {
       return Math.max(max, eles.length);
     }, 0);
@@ -19545,19 +19618,10 @@
       var _getInfo2 = getInfo(ele),
         depth = _getInfo2.depth,
         index = _getInfo2.index;
-      var depthSize = depths[depth].length;
-      var distanceX = Math.max(bb.w / ((options.grid ? maxDepthSize : depthSize) + 1), minDistance);
-      var distanceY = Math.max(bb.h / (depths.length + 1), minDistance);
-      var radiusStepSize = Math.min(bb.w / 2 / depths.length, bb.h / 2 / depths.length);
-      radiusStepSize = Math.max(radiusStepSize, minDistance);
-      if (!options.circle) {
-        var epos = {
-          x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
-          y: (depth + 1) * distanceY
-        };
-        return epos;
-      } else {
-        var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize / 2 : 0);
+      if (options.circle) {
+        var radiusStepSize = Math.min(bb.w / 2 / depthsLen, bb.h / 2 / depthsLen);
+        radiusStepSize = Math.max(radiusStepSize, minDistance);
+        var radius = radiusStepSize * depth + radiusStepSize - (depthsLen > 0 && depths[0].length <= 3 ? radiusStepSize / 2 : 0);
         var theta = 2 * Math.PI / depths[depth].length * index;
         if (depth === 0 && depths[0].length === 1) {
           radius = 1;
@@ -19566,6 +19630,18 @@
           x: center.x + radius * Math.cos(theta),
           y: center.y + radius * Math.sin(theta)
         };
+      } else {
+        var depthSize = depths[depth].length;
+        var distanceX = Math.max(
+        // only one depth
+        depthSize === 1 ? 0 :
+        // inside a bounding box, no need for left & right padding
+        hasBoundingBox ? (bb.w - options.padding * 2 - aveNodeSize.w) / ((options.grid ? maxDepthSize : depthSize) - 1) : (bb.w - options.padding * 2 - aveNodeSize.w) / ((options.grid ? maxDepthSize : depthSize) + 1), minDistance);
+        var epos = {
+          x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
+          y: center.y + (depth + 1 - (depthsLen + 1) / 2) * distanceY
+        };
+        return epos;
       }
     };
     eles.nodes().layoutPositions(this, options, getPosition);
@@ -23147,7 +23223,9 @@ var printLayoutInfo;
             hasUnbundled: pairInfo.hasUnbundled,
             eles: pairInfo.eles,
             srcPos: tgtPos,
+            srcRs: tgtRs,
             tgtPos: srcPos,
+            tgtRs: srcRs,
             srcW: tgtW,
             srcH: tgtH,
             tgtW: srcW,
@@ -23234,17 +23312,17 @@ var printLayoutInfo;
   }
   BRp$c.getSegmentPoints = function (edge) {
     var rs = edge[0]._private.rscratch;
+    this.recalculateRenderedStyle(edge);
     var type = rs.edgeType;
     if (type === 'segments') {
-      this.recalculateRenderedStyle(edge);
       return getPts(rs.segpts);
     }
   };
   BRp$c.getControlPoints = function (edge) {
     var rs = edge[0]._private.rscratch;
+    this.recalculateRenderedStyle(edge);
     var type = rs.edgeType;
     if (type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound') {
-      this.recalculateRenderedStyle(edge);
       return getPts(rs.ctrlpts);
     }
   };
@@ -23548,8 +23626,6 @@ var printLayoutInfo;
   BRp$a.recalculateEdgeProjections = function (edges) {
     this.findEdgeControlPoints(edges);
   };
-
-  /* global document */
 
   var BRp$9 = {};
   BRp$9.recalculateNodeLabelProjection = function (node) {
@@ -23869,8 +23945,8 @@ var printLayoutInfo;
       var overflow = ele.pstyle('text-overflow-wrap').value;
       var overflowAny = overflow === 'anywhere';
       var wrappedLines = [];
-      var wordsRegex = /[\s\u200b]+/;
-      var wordSeparator = overflowAny ? '' : ' ';
+      var separatorRegex = /[\s\u200b]+|$/g; // Include end of string to add last word
+
       for (var l = 0; l < lines.length; l++) {
         var line = lines[l];
         var lineDims = this.calculateLabelDimensions(ele, line);
@@ -23881,26 +23957,39 @@ var printLayoutInfo;
         }
         if (lineW > maxW) {
           // line is too long
-          var words = line.split(wordsRegex);
+          var separatorMatches = line.matchAll(separatorRegex);
           var subline = '';
-          for (var w = 0; w < words.length; w++) {
-            var word = words[w];
-            var testLine = subline.length === 0 ? word : subline + wordSeparator + word;
-            var testDims = this.calculateLabelDimensions(ele, testLine);
-            var testW = testDims.width;
-            if (testW <= maxW) {
-              // word fits on current line
-              subline += word + wordSeparator;
-            } else {
-              // word starts new line
-              if (subline) {
-                wrappedLines.push(subline);
+          var previousIndex = 0;
+          // Add fake match
+          var _iterator = _createForOfIteratorHelper(separatorMatches),
+            _step;
+          try {
+            for (_iterator.s(); !(_step = _iterator.n()).done;) {
+              var separatorMatch = _step.value;
+              var wordSeparator = separatorMatch[0];
+              var word = line.substring(previousIndex, separatorMatch.index);
+              previousIndex = separatorMatch.index + wordSeparator.length;
+              var testLine = subline.length === 0 ? word : subline + word + wordSeparator;
+              var testDims = this.calculateLabelDimensions(ele, testLine);
+              var testW = testDims.width;
+              if (testW <= maxW) {
+                // word fits on current line
+                subline += word + wordSeparator;
+              } else {
+                // word starts new line
+                if (subline) {
+                  wrappedLines.push(subline);
+                }
+                subline = word + wordSeparator;
               }
-              subline = word + wordSeparator;
             }
-          }
 
-          // if there's remaining text, put it in a wrapped line
+            // if there's remaining text, put it in a wrapped line
+          } catch (err) {
+            _iterator.e(err);
+          } finally {
+            _iterator.f();
+          }
           if (!subline.match(/^[\s\u200b]+$/)) {
             wrappedLines.push(subline);
           }
@@ -23962,6 +24051,8 @@ var printLayoutInfo;
   };
   BRp$9.calculateLabelDimensions = function (ele, text) {
     var r = this;
+    var containerWindow = r.cy.window();
+    var document = containerWindow.document;
     var cacheKey = hashString(text, ele._private.labelDimsKey);
     var cache = r.labelDimCache || (r.labelDimCache = []);
     var existingVal = cache[cacheKey];
@@ -24286,11 +24377,23 @@ var printLayoutInfo;
 
   var BRp$3 = {};
 
-  /* global document, window, ResizeObserver, MutationObserver */
+  /* global document, ResizeObserver, MutationObserver */
 
   BRp$3.registerBinding = function (target, event, handler, useCapture) {
     // eslint-disable-line no-unused-vars
     var args = Array.prototype.slice.apply(arguments, [1]); // copy
+
+    if (Array.isArray(target)) {
+      var res = [];
+      for (var i = 0; i < target.length; i++) {
+        var t = target[i];
+        if (t !== undefined) {
+          var b = this.binder(t);
+          res.push(b.on.apply(b, args));
+        }
+      }
+      return res;
+    }
     var b = this.binder(target);
     return b.on.apply(b, args);
   };
@@ -24349,6 +24452,13 @@ var printLayoutInfo;
     var containerWindow = r.cy.window();
     var isSelected = function isSelected(ele) {
       return ele.selected();
+    };
+    var getShadowRoot = function getShadowRoot(element) {
+      var rootNode = element.getRootNode();
+      // Check if the root node is a shadow root
+      if (rootNode && rootNode.nodeType === 11 && rootNode.host !== undefined) {
+        return rootNode;
+      }
     };
     var triggerEvents = function triggerEvents(target, names, e, position) {
       if (target == null) {
@@ -24620,6 +24730,11 @@ var printLayoutInfo;
       if (!eventInContainer(e)) {
         return;
       }
+
+      // during left mouse button gestures, ignore other buttons
+      if (r.hoverData.which === 1 && e.which !== 1) {
+        return;
+      }
       e.preventDefault();
       blurActiveDomElement();
       r.hoverData.capture = true;
@@ -24758,7 +24873,8 @@ var printLayoutInfo;
       select[0] = select[2] = pos[0];
       select[1] = select[3] = pos[1];
     }, false);
-    r.registerBinding(containerWindow, 'mousemove', function mousemoveHandler(e) {
+    var shadowRoot = getShadowRoot(r.container);
+    r.registerBinding([containerWindow, shadowRoot], 'mousemove', function mousemoveHandler(e) {
       // eslint-disable-line no-undef
       var capture = r.hoverData.capture;
       if (!capture && !eventInContainer(e)) {
@@ -25004,6 +25120,10 @@ var printLayoutInfo;
     var clickTimeout, didDoubleClick, prevClickTimeStamp;
     r.registerBinding(containerWindow, 'mouseup', function mouseupHandler(e) {
       // eslint-disable-line no-undef
+      // during left mouse button gestures, ignore other buttons
+      if (r.hoverData.which === 1 && e.which !== 1 && r.hoverData.capture) {
+        return;
+      }
       var capture = r.hoverData.capture;
       if (!capture) {
         return;
@@ -25190,6 +25310,7 @@ var printLayoutInfo;
       r.hoverData.dragDelta = [];
       r.hoverData.mdownPos = null;
       r.hoverData.mdownGPos = null;
+      r.hoverData.which = null;
     }, false);
     var wheelHandler = function wheelHandler(e) {
       if (r.scrollingPage) {
@@ -25502,7 +25623,7 @@ var printLayoutInfo;
       }
     }, false);
     var touchmoveHandler;
-    r.registerBinding(window, 'touchmove', touchmoveHandler = function touchmoveHandler(e) {
+    r.registerBinding(containerWindow, 'touchmove', touchmoveHandler = function touchmoveHandler(e) {
       // eslint-disable-line no-undef
       var capture = r.touchData.capture;
       if (!capture && !eventInContainer(e)) {
@@ -26814,6 +26935,7 @@ var printLayoutInfo;
     r.redraws = 0;
     r.showFps = options.showFps;
     r.debug = options.debug;
+    r.webgl = options.webgl;
     r.hideEdgesOnViewport = options.hideEdgesOnViewport;
     r.textureOnViewport = options.textureOnViewport;
     r.wheelSensitivity = options.wheelSensitivity;
@@ -26867,6 +26989,9 @@ var printLayoutInfo;
     }
     if (eventName === 'viewport') {
       r.redrawHint('select', true);
+    }
+    if (eventName === 'gc') {
+      r.redrawHint('gc', true);
     }
     if (eventName === 'load' || eventName === 'resize' || eventName === 'mount') {
       r.invalidateContainerClientCoordsCache();
@@ -27637,6 +27762,7 @@ var printLayoutInfo;
   var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
   var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
   var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
+  var maxLayerDim = 32767; // maximum size for the width/height of layer canvases
   var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requests (generally faster and cheaper in the longterm)
 
   // var log = function(){ console.log.apply( console, arguments ); };
@@ -27777,7 +27903,12 @@ var printLayoutInfo;
       opts = opts || {};
       var after = opts.after;
       getBb();
-      var area = bb.w * scale * (bb.h * scale);
+      var w = Math.ceil(bb.w * scale);
+      var h = Math.ceil(bb.h * scale);
+      if (w > maxLayerDim || h > maxLayerDim) {
+        return null;
+      }
+      var area = w * h;
       if (area > maxLayerArea) {
         return null;
       }
@@ -28194,7 +28325,7 @@ var printLayoutInfo;
     }
   });
 
-  var CRp$a = {};
+  var CRp$b = {};
   var impl;
   function polygon(context, points) {
     for (var i = 0; i < points.length; i++) {
@@ -28252,7 +28383,7 @@ var printLayoutInfo;
   function circle(context, rx, ry, r) {
     context.arc(rx, ry, r, 0, Math.PI * 2, false);
   }
-  CRp$a.arrowShapeImpl = function (name) {
+  CRp$b.arrowShapeImpl = function (name) {
     return (impl || (impl = {
       'polygon': polygon,
       'triangle-backcurve': triangleBackcurve,
@@ -28263,8 +28394,8 @@ var printLayoutInfo;
     }))[name];
   };
 
-  var CRp$9 = {};
-  CRp$9.drawElement = function (context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity) {
+  var CRp$a = {};
+  CRp$a.drawElement = function (context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity) {
     var r = this;
     if (ele.isNode()) {
       r.drawNode(context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity);
@@ -28272,7 +28403,7 @@ var printLayoutInfo;
       r.drawEdge(context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity);
     }
   };
-  CRp$9.drawElementOverlay = function (context, ele) {
+  CRp$a.drawElementOverlay = function (context, ele) {
     var r = this;
     if (ele.isNode()) {
       r.drawNodeOverlay(context, ele);
@@ -28280,7 +28411,7 @@ var printLayoutInfo;
       r.drawEdgeOverlay(context, ele);
     }
   };
-  CRp$9.drawElementUnderlay = function (context, ele) {
+  CRp$a.drawElementUnderlay = function (context, ele) {
     var r = this;
     if (ele.isNode()) {
       r.drawNodeUnderlay(context, ele);
@@ -28288,7 +28419,7 @@ var printLayoutInfo;
       r.drawEdgeUnderlay(context, ele);
     }
   };
-  CRp$9.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation, getOpacity) {
+  CRp$a.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation, getOpacity) {
     var r = this;
     var bb = eleTxrCache.getBoundingBox(ele);
     if (bb.w === 0 || bb.h === 0) {
@@ -28363,7 +28494,7 @@ var printLayoutInfo;
   var getTextOpacity = function getTextOpacity(e, ele) {
     return ele.pstyle('text-opacity').pfValue * ele.effectiveOpacity();
   };
-  CRp$9.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestHighQuality) {
+  CRp$a.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestHighQuality) {
     var r = this;
     var _r$data = r.data,
       eleTxrCache = _r$data.eleTxrCache,
@@ -28390,21 +28521,21 @@ var printLayoutInfo;
       r.drawElementOverlay(context, ele);
     }
   };
-  CRp$9.drawElements = function (context, eles) {
+  CRp$a.drawElements = function (context, eles) {
     var r = this;
     for (var i = 0; i < eles.length; i++) {
       var ele = eles[i];
       r.drawElement(context, ele);
     }
   };
-  CRp$9.drawCachedElements = function (context, eles, pxRatio, extent) {
+  CRp$a.drawCachedElements = function (context, eles, pxRatio, extent) {
     var r = this;
     for (var i = 0; i < eles.length; i++) {
       var ele = eles[i];
       r.drawCachedElement(context, ele, pxRatio, extent);
     }
   };
-  CRp$9.drawCachedNodes = function (context, eles, pxRatio, extent) {
+  CRp$a.drawCachedNodes = function (context, eles, pxRatio, extent) {
     var r = this;
     for (var i = 0; i < eles.length; i++) {
       var ele = eles[i];
@@ -28414,7 +28545,7 @@ var printLayoutInfo;
       r.drawCachedElement(context, ele, pxRatio, extent);
     }
   };
-  CRp$9.drawLayeredElements = function (context, eles, pxRatio, extent) {
+  CRp$a.drawLayeredElements = function (context, eles, pxRatio, extent) {
     var r = this;
     var layers = r.data.lyrTxrCache.getLayers(eles, pxRatio);
     if (layers) {
@@ -28432,8 +28563,8 @@ var printLayoutInfo;
     }
   };
 
-  var CRp$8 = {};
-  CRp$8.drawEdge = function (context, edge, shiftToOriginWithBb) {
+  var CRp$9 = {};
+  CRp$9.drawEdge = function (context, edge, shiftToOriginWithBb) {
     var drawLabel = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
     var shouldDrawOverlay = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
     var shouldDrawOpacity = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : true;
@@ -28459,6 +28590,8 @@ var printLayoutInfo;
     var lineStyle = edge.pstyle('line-style').value;
     var edgeWidth = edge.pstyle('width').pfValue;
     var lineCap = edge.pstyle('line-cap').value;
+    var lineOutlineWidth = edge.pstyle('line-outline-width').value;
+    var lineOutlineColor = edge.pstyle('line-outline-color').value;
     var effectiveLineOpacity = opacity * lineOpacity;
     // separate arrow opacity would require arrow-opacity property
     var effectiveArrowOpacity = opacity * lineOpacity;
@@ -28471,6 +28604,25 @@ var printLayoutInfo;
         context.lineWidth = edgeWidth;
         context.lineCap = lineCap;
         r.eleStrokeStyle(context, edge, strokeOpacity);
+        r.drawEdgePath(edge, context, rs.allpts, lineStyle);
+        context.lineCap = 'butt'; // reset for other drawing functions
+      }
+    };
+
+    var drawLineOutline = function drawLineOutline() {
+      var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : effectiveLineOpacity;
+      context.lineWidth = edgeWidth + lineOutlineWidth;
+      context.lineCap = lineCap;
+      if (lineOutlineWidth > 0) {
+        r.colorStrokeStyle(context, lineOutlineColor[0], lineOutlineColor[1], lineOutlineColor[2], strokeOpacity);
+      } else {
+        // do not draw any lineOutline
+        context.lineCap = 'butt'; // reset for other drawing functions
+        return;
+      }
+      if (curveStyle === 'straight-triangle') {
+        r.drawEdgeTrianglePath(edge, context, rs.allpts);
+      } else {
         r.drawEdgePath(edge, context, rs.allpts, lineStyle);
         context.lineCap = 'butt'; // reset for other drawing functions
       }
@@ -28506,6 +28658,8 @@ var printLayoutInfo;
       drawLine(effectiveGhostOpacity);
       drawArrows(effectiveGhostOpacity);
       context.translate(-gx, -gy);
+    } else {
+      drawLineOutline();
     }
     drawUnderlay();
     drawLine();
@@ -28544,9 +28698,9 @@ var printLayoutInfo;
       r.drawEdgePath(edge, context, rs.allpts, 'solid');
     };
   };
-  CRp$8.drawEdgeOverlay = drawEdgeOverlayUnderlay('overlay');
-  CRp$8.drawEdgeUnderlay = drawEdgeOverlayUnderlay('underlay');
-  CRp$8.drawEdgePath = function (edge, context, pts, type) {
+  CRp$9.drawEdgeOverlay = drawEdgeOverlayUnderlay('overlay');
+  CRp$9.drawEdgeUnderlay = drawEdgeOverlayUnderlay('underlay');
+  CRp$9.drawEdgePath = function (edge, context, pts, type) {
     var rs = edge._private.rscratch;
     var canvasCxt = context;
     var path;
@@ -28637,7 +28791,7 @@ var printLayoutInfo;
       context.setLineDash([]);
     }
   };
-  CRp$8.drawEdgeTrianglePath = function (edge, context, pts) {
+  CRp$9.drawEdgeTrianglePath = function (edge, context, pts) {
     // use line stroke style for triangle fill style
     context.fillStyle = context.strokeStyle;
     var edgeWidth = edge.pstyle('width').pfValue;
@@ -28654,7 +28808,7 @@ var printLayoutInfo;
       context.fill();
     }
   };
-  CRp$8.drawArrowheads = function (context, edge, opacity) {
+  CRp$9.drawArrowheads = function (context, edge, opacity) {
     var rs = edge._private.rscratch;
     var isHaystack = rs.edgeType === 'haystack';
     if (!isHaystack) {
@@ -28666,7 +28820,7 @@ var printLayoutInfo;
       this.drawArrowhead(context, edge, 'target', rs.arrowEndX, rs.arrowEndY, rs.tgtArrowAngle, opacity);
     }
   };
-  CRp$8.drawArrowhead = function (context, edge, prefix, x, y, angle, opacity) {
+  CRp$9.drawArrowhead = function (context, edge, prefix, x, y, angle, opacity) {
     if (isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) {
       return;
     }
@@ -28700,7 +28854,7 @@ var printLayoutInfo;
     self.colorStrokeStyle(context, color[0], color[1], color[2], opacity);
     self.drawArrowShape(edge, context, arrowFill, edgeWidth, arrowShape, arrowWidth, x, y, angle);
   };
-  CRp$8.drawArrowShape = function (edge, context, fill, edgeWidth, shape, shapeWidth, x, y, angle) {
+  CRp$9.drawArrowShape = function (edge, context, fill, edgeWidth, shape, shapeWidth, x, y, angle) {
     var r = this;
     var usePaths = this.usePaths() && shape !== 'triangle-cross';
     var pathCacheHit = false;
@@ -28773,8 +28927,8 @@ var printLayoutInfo;
     }
   };
 
-  var CRp$7 = {};
-  CRp$7.safeDrawImage = function (context, img, ix, iy, iw, ih, x, y, w, h) {
+  var CRp$8 = {};
+  CRp$8.safeDrawImage = function (context, img, ix, iy, iw, ih, x, y, w, h) {
     // detect problematic cases for old browsers with bad images (cheaper than try-catch)
     if (iw <= 0 || ih <= 0 || w <= 0 || h <= 0) {
       return;
@@ -28785,7 +28939,7 @@ var printLayoutInfo;
       warn(e);
     }
   };
-  CRp$7.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
+  CRp$8.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
     var r = this;
     var pos = node.position();
     var nodeX = pos.x;
@@ -28922,8 +29076,8 @@ var printLayoutInfo;
     }
   };
 
-  var CRp$6 = {};
-  CRp$6.eleTextBiggerThanMin = function (ele, scale) {
+  var CRp$7 = {};
+  CRp$7.eleTextBiggerThanMin = function (ele, scale) {
     if (!scale) {
       var zoom = ele.cy().zoom();
       var pxRatio = this.getPixelRatio();
@@ -28938,7 +29092,7 @@ var printLayoutInfo;
     }
     return true;
   };
-  CRp$6.drawElementText = function (context, ele, shiftToOriginWithBb, force, prefix) {
+  CRp$7.drawElementText = function (context, ele, shiftToOriginWithBb, force, prefix) {
     var useEleOpacity = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : true;
     var r = this;
     if (force == null) {
@@ -28986,7 +29140,7 @@ var printLayoutInfo;
       context.translate(bb.x1, bb.y1);
     }
   };
-  CRp$6.getFontCache = function (context) {
+  CRp$7.getFontCache = function (context) {
     var cache;
     this.fontCaches = this.fontCaches || [];
     for (var i = 0; i < this.fontCaches.length; i++) {
@@ -29004,7 +29158,7 @@ var printLayoutInfo;
 
   // set up canvas context with font
   // returns transformed text string
-  CRp$6.setupTextStyle = function (context, ele) {
+  CRp$7.setupTextStyle = function (context, ele) {
     var useEleOpacity = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
     // Font style
     var labelStyle = ele.pstyle('font-style').strValue;
@@ -29039,14 +29193,14 @@ var printLayoutInfo;
     ctx.closePath();
     if (stroke) ctx.stroke();else ctx.fill();
   }
-  CRp$6.getTextAngle = function (ele, prefix) {
+  CRp$7.getTextAngle = function (ele, prefix) {
     var theta;
     var _p = ele._private;
     var rscratch = _p.rscratch;
     var pdash = prefix ? prefix + '-' : '';
     var rotation = ele.pstyle(pdash + 'text-rotation');
-    var textAngle = getPrefixedProperty(rscratch, 'labelAngle', prefix);
     if (rotation.strValue === 'autorotate') {
+      var textAngle = getPrefixedProperty(rscratch, 'labelAngle', prefix);
       theta = ele.isEdge() ? textAngle : 0;
     } else if (rotation.strValue === 'none') {
       theta = 0;
@@ -29055,7 +29209,7 @@ var printLayoutInfo;
     }
     return theta;
   };
-  CRp$6.drawText = function (context, ele, prefix) {
+  CRp$7.drawText = function (context, ele, prefix) {
     var applyRotation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
     var useEleOpacity = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
     var _p = ele._private;
@@ -29253,8 +29407,8 @@ var printLayoutInfo;
   };
 
   /* global Path2D */
-  var CRp$5 = {};
-  CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
+  var CRp$6 = {};
+  CRp$6.drawNode = function (context, node, shiftToOriginWithBb) {
     var drawLabel = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
     var shouldDrawOverlay = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
     var shouldDrawOpacity = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : true;
@@ -29730,16 +29884,16 @@ var printLayoutInfo;
       }
     };
   };
-  CRp$5.drawNodeOverlay = drawNodeOverlayUnderlay('overlay');
-  CRp$5.drawNodeUnderlay = drawNodeOverlayUnderlay('underlay');
+  CRp$6.drawNodeOverlay = drawNodeOverlayUnderlay('overlay');
+  CRp$6.drawNodeUnderlay = drawNodeOverlayUnderlay('underlay');
 
   // does the node have at least one pie piece?
-  CRp$5.hasPie = function (node) {
+  CRp$6.hasPie = function (node) {
     node = node[0]; // ensure ele ref
 
     return node._private.hasPie;
   };
-  CRp$5.drawPie = function (context, node, nodeOpacity, pos) {
+  CRp$6.drawPie = function (context, node, nodeOpacity, pos) {
     node = node[0]; // ensure ele ref
     pos = pos || node.position();
     var cyStyle = node.cy().style();
@@ -29792,21 +29946,22 @@ var printLayoutInfo;
     }
   };
 
-  var CRp$4 = {};
+  var CRp$5 = {};
   var motionBlurDelay = 100;
 
   // var isFirefox = typeof InstallTrigger !== 'undefined';
 
-  CRp$4.getPixelRatio = function () {
+  CRp$5.getPixelRatio = function () {
     var context = this.data.contexts[0];
     if (this.forcedPixelRatio != null) {
       return this.forcedPixelRatio;
     }
+    var containerWindow = this.cy.window();
     var backingStore = context.backingStorePixelRatio || context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio || context.msBackingStorePixelRatio || context.oBackingStorePixelRatio || context.backingStorePixelRatio || 1;
-    return (window.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
+    return (containerWindow.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
   };
 
-  CRp$4.paintCache = function (context) {
+  CRp$5.paintCache = function (context) {
     var caches = this.paintCaches = this.paintCaches || [];
     var needToCreateCache = true;
     var cache;
@@ -29825,7 +29980,7 @@ var printLayoutInfo;
     }
     return cache;
   };
-  CRp$4.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opacity) {
+  CRp$5.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opacity) {
     var gradientStyle;
     var usePaths = this.usePaths();
     var colors = ele.pstyle(shapeStyleName + '-gradient-stop-colors').value,
@@ -29903,12 +30058,12 @@ var printLayoutInfo;
     }
     return gradientStyle;
   };
-  CRp$4.gradientFillStyle = function (context, ele, fill, opacity) {
+  CRp$5.gradientFillStyle = function (context, ele, fill, opacity) {
     var gradientStyle = this.createGradientStyleFor(context, 'background', ele, fill, opacity);
     if (!gradientStyle) return null; // error
     context.fillStyle = gradientStyle;
   };
-  CRp$4.colorFillStyle = function (context, r, g, b, a) {
+  CRp$5.colorFillStyle = function (context, r, g, b, a) {
     context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     // turn off for now, seems context does its own caching
 
@@ -29921,7 +30076,7 @@ var printLayoutInfo;
     // }
   };
 
-  CRp$4.eleFillStyle = function (context, ele, opacity) {
+  CRp$5.eleFillStyle = function (context, ele, opacity) {
     var backgroundFill = ele.pstyle('background-fill').value;
     if (backgroundFill === 'linear-gradient' || backgroundFill === 'radial-gradient') {
       this.gradientFillStyle(context, ele, backgroundFill, opacity);
@@ -29930,12 +30085,12 @@ var printLayoutInfo;
       this.colorFillStyle(context, backgroundColor[0], backgroundColor[1], backgroundColor[2], opacity);
     }
   };
-  CRp$4.gradientStrokeStyle = function (context, ele, fill, opacity) {
+  CRp$5.gradientStrokeStyle = function (context, ele, fill, opacity) {
     var gradientStyle = this.createGradientStyleFor(context, 'line', ele, fill, opacity);
     if (!gradientStyle) return null; // error
     context.strokeStyle = gradientStyle;
   };
-  CRp$4.colorStrokeStyle = function (context, r, g, b, a) {
+  CRp$5.colorStrokeStyle = function (context, r, g, b, a) {
     context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
     // turn off for now, seems context does its own caching
 
@@ -29948,7 +30103,7 @@ var printLayoutInfo;
     // }
   };
 
-  CRp$4.eleStrokeStyle = function (context, ele, opacity) {
+  CRp$5.eleStrokeStyle = function (context, ele, opacity) {
     var lineFill = ele.pstyle('line-fill').value;
     if (lineFill === 'linear-gradient' || lineFill === 'radial-gradient') {
       this.gradientStrokeStyle(context, ele, lineFill, opacity);
@@ -29959,7 +30114,7 @@ var printLayoutInfo;
   };
 
   // Resize canvas
-  CRp$4.matchCanvasSize = function (container) {
+  CRp$5.matchCanvasSize = function (container) {
     var r = this;
     var data = r.data;
     var bb = r.findContainerClientCoords();
@@ -30005,8 +30160,9 @@ var printLayoutInfo;
     }
     r.canvasWidth = canvasWidth;
     r.canvasHeight = canvasHeight;
+    r.pixelRatio = pixelRatio;
   };
-  CRp$4.renderTo = function (cxt, zoom, pan, pxRatio) {
+  CRp$5.renderTo = function (cxt, zoom, pan, pxRatio) {
     this.render({
       forcedContext: cxt,
       forcedZoom: zoom,
@@ -30015,16 +30171,25 @@ var printLayoutInfo;
       forcedPxRatio: pxRatio
     });
   };
-  CRp$4.render = function (options) {
+  CRp$5.clearCanvas = function () {
+    var r = this;
+    var data = r.data;
+    function clear(context) {
+      context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+    }
+    clear(data.contexts[r.NODE]);
+    clear(data.contexts[r.DRAG]);
+  };
+  CRp$5.render = function (options) {
+    var r = this;
     options = options || staticEmptyObject();
+    var cy = r.cy;
     var forcedContext = options.forcedContext;
     var drawAllLayers = options.drawAllLayers;
     var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
     var forcedZoom = options.forcedZoom;
     var forcedPan = options.forcedPan;
-    var r = this;
     var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
-    var cy = r.cy;
     var data = r.data;
     var needDraw = data.canvasNeedsRedraw;
     var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
@@ -30241,45 +30406,7 @@ var printLayoutInfo;
         needDraw[r.DRAG] = false;
       }
     }
-    if (r.showFps || !drawOnlyNodeLayer && needDraw[r.SELECT_BOX] && !drawAllLayers) {
-      var context = forcedContext || data.contexts[r.SELECT_BOX];
-      setContextTransform(context);
-      if (r.selection[4] == 1 && (r.hoverData.selecting || r.touchData.selecting)) {
-        var zoom = r.cy.zoom();
-        var borderWidth = style.core('selection-box-border-width').value / zoom;
-        context.lineWidth = borderWidth;
-        context.fillStyle = 'rgba(' + style.core('selection-box-color').value[0] + ',' + style.core('selection-box-color').value[1] + ',' + style.core('selection-box-color').value[2] + ',' + style.core('selection-box-opacity').value + ')';
-        context.fillRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
-        if (borderWidth > 0) {
-          context.strokeStyle = 'rgba(' + style.core('selection-box-border-color').value[0] + ',' + style.core('selection-box-border-color').value[1] + ',' + style.core('selection-box-border-color').value[2] + ',' + style.core('selection-box-opacity').value + ')';
-          context.strokeRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
-        }
-      }
-      if (data.bgActivePosistion && !r.hoverData.selecting) {
-        var zoom = r.cy.zoom();
-        var pos = data.bgActivePosistion;
-        context.fillStyle = 'rgba(' + style.core('active-bg-color').value[0] + ',' + style.core('active-bg-color').value[1] + ',' + style.core('active-bg-color').value[2] + ',' + style.core('active-bg-opacity').value + ')';
-        context.beginPath();
-        context.arc(pos.x, pos.y, style.core('active-bg-size').pfValue / zoom, 0, 2 * Math.PI);
-        context.fill();
-      }
-      var timeToRender = r.lastRedrawTime;
-      if (r.showFps && timeToRender) {
-        timeToRender = Math.round(timeToRender);
-        var fps = Math.round(1000 / timeToRender);
-        context.setTransform(1, 0, 0, 1, 0, 0);
-        context.fillStyle = 'rgba(255, 0, 0, 0.75)';
-        context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
-        context.lineWidth = 1;
-        context.fillText('1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20);
-        var maxFps = 60;
-        context.strokeRect(0, 30, 250, 20);
-        context.fillRect(0, 30, 250 * Math.min(fps / maxFps, 1), 20);
-      }
-      if (!drawAllLayers) {
-        needDraw[r.SELECT_BOX] = false;
-      }
-    }
+    this.drawSelectionRectangle(options, setContextTransform);
 
     // motionblur: blit rendered blurry frames
     if (motionBlur && mbPxRatio !== 1) {
@@ -30339,6 +30466,2436 @@ var printLayoutInfo;
       cy.emit('render');
     }
   };
+  var fpsHeight;
+  CRp$5.drawSelectionRectangle = function (options, setContextTransform) {
+    var r = this;
+    var cy = r.cy;
+    var data = r.data;
+    var style = cy.style();
+    var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
+    var drawAllLayers = options.drawAllLayers;
+    var needDraw = data.canvasNeedsRedraw;
+    var forcedContext = options.forcedContext;
+    if (r.showFps || !drawOnlyNodeLayer && needDraw[r.SELECT_BOX] && !drawAllLayers) {
+      var context = forcedContext || data.contexts[r.SELECT_BOX];
+      setContextTransform(context);
+      if (r.selection[4] == 1 && (r.hoverData.selecting || r.touchData.selecting)) {
+        var zoom = r.cy.zoom();
+        var borderWidth = style.core('selection-box-border-width').value / zoom;
+        context.lineWidth = borderWidth;
+        context.fillStyle = 'rgba(' + style.core('selection-box-color').value[0] + ',' + style.core('selection-box-color').value[1] + ',' + style.core('selection-box-color').value[2] + ',' + style.core('selection-box-opacity').value + ')';
+        context.fillRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
+        if (borderWidth > 0) {
+          context.strokeStyle = 'rgba(' + style.core('selection-box-border-color').value[0] + ',' + style.core('selection-box-border-color').value[1] + ',' + style.core('selection-box-border-color').value[2] + ',' + style.core('selection-box-opacity').value + ')';
+          context.strokeRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
+        }
+      }
+      if (data.bgActivePosistion && !r.hoverData.selecting) {
+        var zoom = r.cy.zoom();
+        var pos = data.bgActivePosistion;
+        context.fillStyle = 'rgba(' + style.core('active-bg-color').value[0] + ',' + style.core('active-bg-color').value[1] + ',' + style.core('active-bg-color').value[2] + ',' + style.core('active-bg-opacity').value + ')';
+        context.beginPath();
+        context.arc(pos.x, pos.y, style.core('active-bg-size').pfValue / zoom, 0, 2 * Math.PI);
+        context.fill();
+      }
+      var timeToRender = r.lastRedrawTime;
+      if (r.showFps && timeToRender) {
+        timeToRender = Math.round(timeToRender);
+        var fps = Math.round(1000 / timeToRender);
+        var text = '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps';
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.fillStyle = 'rgba(255, 0, 0, 0.75)';
+        context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
+        // context.lineWidth = 1;
+        context.font = '30px Arial';
+        if (!fpsHeight) {
+          var dims = context.measureText(text);
+          fpsHeight = dims.actualBoundingBoxAscent;
+        }
+        context.fillText(text, 0, fpsHeight);
+        var maxFps = 60;
+        context.strokeRect(0, fpsHeight + 10, 250, 20);
+        context.fillRect(0, fpsHeight + 10, 250 * Math.min(fps / maxFps, 1), 20);
+      }
+      if (!drawAllLayers) {
+        needDraw[r.SELECT_BOX] = false;
+      }
+    }
+  };
+
+  /**
+   * Notes:
+   * - All colors have premultiplied alpha. Very important for textues and 
+   *   blending to work correctly.
+   */
+
+  function compileShader(gl, type, source) {
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      throw new Error(gl.getShaderInfoLog(shader));
+    }
+    // console.log(gl.getShaderInfoLog(shader));
+    return shader;
+  }
+  function createProgram(gl, vertexSource, fragementSource) {
+    var vertexShader = compileShader(gl, gl.VERTEX_SHADER, vertexSource);
+    var fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragementSource);
+    var program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      throw new Error('Could not initialize shaders');
+    }
+    return program;
+  }
+
+  /**
+   * Creates an offscren canvas with a 2D context, for the
+   * canvas renderer to use for drawing textures.
+   */
+  function createTextureCanvas(r, width, height) {
+    if (height === undefined) {
+      height = width;
+    }
+    var canvas = r.makeOffscreenCanvas(width, height);
+    var ctx = canvas.context = canvas.getContext('2d');
+    canvas.clear = function () {
+      return ctx.clearRect(0, 0, canvas.width, canvas.height);
+    };
+    canvas.clear();
+    return canvas;
+  }
+
+  /**
+   * Returns the current pan & zoom values, scaled by the pixel ratio.
+   */
+  function getEffectivePanZoom(r) {
+    var pixelRatio = r.pixelRatio;
+    var zoom = r.cy.zoom();
+    var pan = r.cy.pan();
+    return {
+      zoom: zoom * pixelRatio,
+      pan: {
+        x: pan.x * pixelRatio,
+        y: pan.y * pixelRatio
+      }
+    };
+  }
+  function modelToRenderedPosition(r, pan, zoom, x, y) {
+    var rx = x * zoom + pan.x;
+    var ry = y * zoom + pan.y;
+    ry = Math.round(r.canvasHeight - ry); // adjust for webgl
+    return [rx, ry];
+  }
+
+  /**
+   * Takes color & opacity style values and converts them to WebGL format. 
+   * Alpha is premultiplied.
+   */
+  function toWebGLColor(color, opacity, outArray) {
+    var r = color[0] / 255;
+    var g = color[1] / 255;
+    var b = color[2] / 255;
+    var a = opacity;
+    var arr = outArray || new Array(4);
+    arr[0] = r * a;
+    arr[1] = g * a;
+    arr[2] = b * a;
+    arr[3] = a;
+    return arr;
+  }
+  function indexToVec4(index, outArray) {
+    var arr = outArray || new Array(4);
+    arr[0] = (index >> 0 & 0xFF) / 0xFF;
+    arr[1] = (index >> 8 & 0xFF) / 0xFF;
+    arr[2] = (index >> 16 & 0xFF) / 0xFF;
+    arr[3] = (index >> 24 & 0xFF) / 0xFF;
+    return arr;
+  }
+  function vec4ToIndex(vec4) {
+    return vec4[0] + (vec4[1] << 8) + (vec4[2] << 16) + (vec4[3] << 24);
+  }
+  function createTexture(gl, debugID) {
+    var texture = gl.createTexture();
+    texture.buffer = function (offscreenCanvas) {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+
+      // very important, this tells webgl to premultiply colors by the alpha channel
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offscreenCanvas);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    };
+    texture.deleteTexture = function () {
+      gl.deleteTexture(texture);
+    };
+    return texture;
+  }
+  function getTypeInfo(gl, glslType) {
+    switch (glslType) {
+      case 'float':
+        return [1, gl.FLOAT, 4];
+      case 'vec2':
+        return [2, gl.FLOAT, 4];
+      case 'vec3':
+        return [3, gl.FLOAT, 4];
+      case 'vec4':
+        return [4, gl.FLOAT, 4];
+      case 'int':
+        return [1, gl.INT, 4];
+      case 'ivec2':
+        return [2, gl.INT, 4];
+    }
+  }
+  function createTypedArray(gl, glType, dataOrSize) {
+    switch (glType) {
+      case gl.FLOAT:
+        return new Float32Array(dataOrSize);
+      case gl.INT:
+        return new Int32Array(dataOrSize);
+    }
+  }
+  function createTypedArrayView(gl, glType, array, stride, size, i) {
+    switch (glType) {
+      case gl.FLOAT:
+        return new Float32Array(array.buffer, i * stride, size);
+      case gl.INT:
+        return new Int32Array(array.buffer, i * stride, size);
+    }
+  }
+
+  /** @param {WebGLRenderingContext} gl */
+  function createBufferStaticDraw(gl, type, attributeLoc, dataArray) {
+    var _getTypeInfo = getTypeInfo(gl, type),
+      _getTypeInfo2 = _slicedToArray(_getTypeInfo, 2),
+      size = _getTypeInfo2[0],
+      glType = _getTypeInfo2[1];
+    var data = createTypedArray(gl, glType, dataArray);
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    if (glType === gl.FLOAT) {
+      gl.vertexAttribPointer(attributeLoc, size, glType, false, 0, 0);
+    } else if (glType === gl.INT) {
+      gl.vertexAttribIPointer(attributeLoc, size, glType, 0, 0);
+    }
+    gl.enableVertexAttribArray(attributeLoc);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    return buffer;
+  }
+
+  /** 
+   * Creates a float buffer with gl.DYNAMIC_DRAW.
+   * The returned buffer object contains functions to easily set instance data and buffer the data before a draw call.
+   * @param {WebGLRenderingContext} gl 
+   */
+  function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
+    var _getTypeInfo3 = getTypeInfo(gl, type),
+      _getTypeInfo4 = _slicedToArray(_getTypeInfo3, 3),
+      size = _getTypeInfo4[0],
+      glType = _getTypeInfo4[1],
+      bytes = _getTypeInfo4[2];
+    var dataArray = createTypedArray(gl, glType, instances * size);
+    var stride = size * bytes;
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, instances * stride, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(attributeLoc);
+    if (glType === gl.FLOAT) {
+      gl.vertexAttribPointer(attributeLoc, size, glType, false, stride, 0);
+    } else if (glType === gl.INT) {
+      gl.vertexAttribIPointer(attributeLoc, size, glType, stride, 0);
+    }
+    gl.vertexAttribDivisor(attributeLoc, 1);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    // use array views to set values directly into the buffer array
+    var views = new Array(instances);
+    for (var i = 0; i < instances; i++) {
+      views[i] = createTypedArrayView(gl, glType, dataArray, stride, size, i);
+    }
+    buffer.dataArray = dataArray;
+    buffer.stride = stride;
+    buffer.size = size;
+    buffer.getView = function (i) {
+      return views[i];
+    };
+    buffer.setPoint = function (i, x, y) {
+      var view = views[i];
+      view[0] = x;
+      view[1] = y;
+    };
+    buffer.bufferSubData = function (count) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      if (count) {
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, dataArray, 0, count * size);
+      } else {
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, dataArray);
+      }
+    };
+    return buffer;
+  }
+
+  /** 
+   * Creates a Frame Buffer to use for offscreen rendering.
+   * @param {WebGLRenderingContext} gl 
+   */
+  function createPickingFrameBuffer(gl) {
+    // Create and bind the framebuffer
+    var fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+
+    // Create a texture to render to
+    var targetTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, targetTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+    // attach the texture as the first color attachment
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, targetTexture, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    fb.setFramebufferAttachmentSizes = function (width, height) {
+      gl.bindTexture(gl.TEXTURE_2D, targetTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    };
+    return fb;
+  }
+
+  /**
+   * Common utilities
+   * @module glMatrix
+   */
+  var ARRAY_TYPE = typeof Float32Array !== 'undefined' ? Float32Array : Array;
+  if (!Math.hypot) Math.hypot = function () {
+    var y = 0,
+        i = arguments.length;
+
+    while (i--) {
+      y += arguments[i] * arguments[i];
+    }
+
+    return Math.sqrt(y);
+  };
+
+  /**
+   * 3x3 Matrix
+   * @module mat3
+   */
+
+  /**
+   * Creates a new identity mat3
+   *
+   * @returns {mat3} a new 3x3 matrix
+   */
+
+  function create() {
+    var out = new ARRAY_TYPE(9);
+
+    if (ARRAY_TYPE != Float32Array) {
+      out[1] = 0;
+      out[2] = 0;
+      out[3] = 0;
+      out[5] = 0;
+      out[6] = 0;
+      out[7] = 0;
+    }
+
+    out[0] = 1;
+    out[4] = 1;
+    out[8] = 1;
+    return out;
+  }
+  /**
+   * Set a mat3 to the identity matrix
+   *
+   * @param {mat3} out the receiving matrix
+   * @returns {mat3} out
+   */
+
+  function identity(out) {
+    out[0] = 1;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = 1;
+    out[5] = 0;
+    out[6] = 0;
+    out[7] = 0;
+    out[8] = 1;
+    return out;
+  }
+  /**
+   * Multiplies two mat3's
+   *
+   * @param {mat3} out the receiving matrix
+   * @param {ReadonlyMat3} a the first operand
+   * @param {ReadonlyMat3} b the second operand
+   * @returns {mat3} out
+   */
+
+  function multiply(out, a, b) {
+    var a00 = a[0],
+        a01 = a[1],
+        a02 = a[2];
+    var a10 = a[3],
+        a11 = a[4],
+        a12 = a[5];
+    var a20 = a[6],
+        a21 = a[7],
+        a22 = a[8];
+    var b00 = b[0],
+        b01 = b[1],
+        b02 = b[2];
+    var b10 = b[3],
+        b11 = b[4],
+        b12 = b[5];
+    var b20 = b[6],
+        b21 = b[7],
+        b22 = b[8];
+    out[0] = b00 * a00 + b01 * a10 + b02 * a20;
+    out[1] = b00 * a01 + b01 * a11 + b02 * a21;
+    out[2] = b00 * a02 + b01 * a12 + b02 * a22;
+    out[3] = b10 * a00 + b11 * a10 + b12 * a20;
+    out[4] = b10 * a01 + b11 * a11 + b12 * a21;
+    out[5] = b10 * a02 + b11 * a12 + b12 * a22;
+    out[6] = b20 * a00 + b21 * a10 + b22 * a20;
+    out[7] = b20 * a01 + b21 * a11 + b22 * a21;
+    out[8] = b20 * a02 + b21 * a12 + b22 * a22;
+    return out;
+  }
+  /**
+   * Translate a mat3 by the given vector
+   *
+   * @param {mat3} out the receiving matrix
+   * @param {ReadonlyMat3} a the matrix to translate
+   * @param {ReadonlyVec2} v vector to translate by
+   * @returns {mat3} out
+   */
+
+  function translate(out, a, v) {
+    var a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a10 = a[3],
+        a11 = a[4],
+        a12 = a[5],
+        a20 = a[6],
+        a21 = a[7],
+        a22 = a[8],
+        x = v[0],
+        y = v[1];
+    out[0] = a00;
+    out[1] = a01;
+    out[2] = a02;
+    out[3] = a10;
+    out[4] = a11;
+    out[5] = a12;
+    out[6] = x * a00 + y * a10 + a20;
+    out[7] = x * a01 + y * a11 + a21;
+    out[8] = x * a02 + y * a12 + a22;
+    return out;
+  }
+  /**
+   * Rotates a mat3 by the given angle
+   *
+   * @param {mat3} out the receiving matrix
+   * @param {ReadonlyMat3} a the matrix to rotate
+   * @param {Number} rad the angle to rotate the matrix by
+   * @returns {mat3} out
+   */
+
+  function rotate(out, a, rad) {
+    var a00 = a[0],
+        a01 = a[1],
+        a02 = a[2],
+        a10 = a[3],
+        a11 = a[4],
+        a12 = a[5],
+        a20 = a[6],
+        a21 = a[7],
+        a22 = a[8],
+        s = Math.sin(rad),
+        c = Math.cos(rad);
+    out[0] = c * a00 + s * a10;
+    out[1] = c * a01 + s * a11;
+    out[2] = c * a02 + s * a12;
+    out[3] = c * a10 - s * a00;
+    out[4] = c * a11 - s * a01;
+    out[5] = c * a12 - s * a02;
+    out[6] = a20;
+    out[7] = a21;
+    out[8] = a22;
+    return out;
+  }
+  /**
+   * Scales the mat3 by the dimensions in the given vec2
+   *
+   * @param {mat3} out the receiving matrix
+   * @param {ReadonlyMat3} a the matrix to rotate
+   * @param {ReadonlyVec2} v the vec2 to scale the matrix by
+   * @returns {mat3} out
+   **/
+
+  function scale(out, a, v) {
+    var x = v[0],
+        y = v[1];
+    out[0] = x * a[0];
+    out[1] = x * a[1];
+    out[2] = x * a[2];
+    out[3] = y * a[3];
+    out[4] = y * a[4];
+    out[5] = y * a[5];
+    out[6] = a[6];
+    out[7] = a[7];
+    out[8] = a[8];
+    return out;
+  }
+  /**
+   * Generates a 2D projection matrix with the given bounds
+   *
+   * @param {mat3} out mat3 frustum matrix will be written into
+   * @param {number} width Width of your gl context
+   * @param {number} height Height of gl context
+   * @returns {mat3} out
+   */
+
+  function projection(out, width, height) {
+    out[0] = 2 / width;
+    out[1] = 0;
+    out[2] = 0;
+    out[3] = 0;
+    out[4] = -2 / height;
+    out[5] = 0;
+    out[6] = -1;
+    out[7] = 1;
+    out[8] = 1;
+    return out;
+  }
+
+  var RENDER_TARGET = {
+    SCREEN: {
+      name: 'screen',
+      screen: true
+    },
+    PICKING: {
+      name: 'picking',
+      picking: true
+    }
+  };
+  var renderDefaults = defaults$g({
+    getKey: null,
+    drawElement: null,
+    getBoundingBox: null,
+    getRotation: null,
+    getRotationPoint: null,
+    getRotationOffset: null,
+    isVisible: null,
+    getPadding: null
+  });
+
+  // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
+
+  /**
+   * A single square texture atlas (also known as a "sprite sheet").
+   */
+  var Atlas = /*#__PURE__*/function () {
+    function Atlas(r, opts) {
+      _classCallCheck(this, Atlas);
+      this.debugID = Math.floor(Math.random() * 10000);
+      this.r = r;
+      this.atlasSize = opts.webglTexSize;
+      this.rows = opts.webglTexRows;
+      this.enableWrapping = opts.enableWrapping;
+      this.texHeight = Math.floor(this.atlasSize / this.rows);
+      this.maxTexWidth = this.atlasSize;
+      this.texture = null;
+      this.canvas = null;
+      this.needsBuffer = true;
+
+      // a "location" is an object with a row and x fields
+      this.freePointer = {
+        x: 0,
+        row: 0
+      };
+
+      // map from the style key to the row/x where the texture starts
+      // if the texture wraps then there's a second location
+      this.keyToLocation = new Map(); // styleKey -> [ location, location ]
+
+      this.canvas = opts.createTextureCanvas(r, this.atlasSize, this.atlasSize);
+      this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight, 'scratch');
+    }
+    _createClass(Atlas, [{
+      key: "getKeys",
+      value: function getKeys() {
+        return new Set(this.keyToLocation.keys());
+      }
+    }, {
+      key: "getScale",
+      value: function getScale(_ref) {
+        var w = _ref.w,
+          h = _ref.h;
+        var texHeight = this.texHeight,
+          maxTexWidth = this.maxTexWidth;
+        // try to fit to the height of a row
+        var scale = texHeight / h; // TODO what about pixelRatio?
+        var texW = w * scale;
+        var texH = h * scale;
+        // if the scaled width is too wide then scale to fit max width instead
+        if (texW > maxTexWidth) {
+          scale = maxTexWidth / w;
+          texW = w * scale;
+          texH = h * scale;
+        }
+        return {
+          scale: scale,
+          texW: texW,
+          texH: texH
+        };
+      }
+    }, {
+      key: "draw",
+      value: function draw(key, bb, doDrawing) {
+        var _this = this;
+        var atlasSize = this.atlasSize,
+          rows = this.rows,
+          texHeight = this.texHeight;
+        var _this$getScale = this.getScale(bb),
+          scale = _this$getScale.scale,
+          texW = _this$getScale.texW,
+          texH = _this$getScale.texH;
+        var locations = [null, null];
+        var drawAt = function drawAt(location, canvas) {
+          if (doDrawing && canvas) {
+            var context = canvas.context;
+            var x = location.x,
+              row = location.row;
+            var xOffset = x;
+            var yOffset = texHeight * row;
+            context.save();
+            context.translate(xOffset, yOffset);
+            context.scale(scale, scale);
+            doDrawing(context, bb);
+            context.restore();
+          }
+        };
+        var drawNormal = function drawNormal() {
+          // don't need to wrap, draw directly on the canvas
+          drawAt(_this.freePointer, _this.canvas);
+          locations[0] = {
+            x: _this.freePointer.x,
+            y: _this.freePointer.row * texHeight,
+            w: texW,
+            h: texH
+          };
+          locations[1] = {
+            // indlude a second location with a width of 0, for convenience
+            x: _this.freePointer.x + texW,
+            y: _this.freePointer.row * texHeight,
+            w: 0,
+            h: texH
+          };
+
+          // move the pointer to the end of the texture
+          _this.freePointer.x += texW;
+          if (_this.freePointer.x == atlasSize) {
+            // move to the next row
+            // TODO what if there is no next row???
+            _this.freePointer.x = 0;
+            _this.freePointer.row++;
+          }
+        };
+        var drawWrapped = function drawWrapped() {
+          var scratch = _this.scratch,
+            canvas = _this.canvas;
+
+          // Draw to the scratch canvas
+          scratch.clear();
+          drawAt({
+            x: 0,
+            row: 0
+          }, scratch);
+          var firstTexW = atlasSize - _this.freePointer.x;
+          var secondTexW = texW - firstTexW;
+          var h = texHeight;
+          {
+            // copy first part of scratch to the first texture
+            var dx = _this.freePointer.x;
+            var dy = _this.freePointer.row * texHeight;
+            var w = firstTexW;
+            canvas.context.drawImage(scratch, 0, 0, w, h, dx, dy, w, h);
+            locations[0] = {
+              x: dx,
+              y: dy,
+              w: w,
+              h: texH
+            };
+          }
+          {
+            // copy second part of scratch to the second texture
+            var sx = firstTexW;
+            var _dy = (_this.freePointer.row + 1) * texHeight;
+            var _w = secondTexW;
+            if (canvas) {
+              canvas.context.drawImage(scratch, sx, 0, _w, h, 0, _dy, _w, h);
+            }
+            locations[1] = {
+              x: 0,
+              y: _dy,
+              w: _w,
+              h: texH
+            };
+          }
+          _this.freePointer.x = secondTexW;
+          _this.freePointer.row++;
+        };
+        var moveToStartOfNextRow = function moveToStartOfNextRow() {
+          _this.freePointer.x = 0;
+          _this.freePointer.row++;
+        };
+        if (this.freePointer.x + texW <= atlasSize) {
+          // There's enough space in the current row
+          drawNormal();
+        } else if (this.freePointer.row >= rows - 1) {
+          // Need to move to the next row, but there are no more rows, atlas is full.
+          return false;
+        } else if (this.freePointer.x === atlasSize) {
+          // happen to be right at end of current row
+          moveToStartOfNextRow();
+          drawNormal();
+        } else if (this.enableWrapping) {
+          // draw part of the texture to the end of the curent row, then wrap to the next row
+          drawWrapped();
+        } else {
+          // move to the start of the next row, then draw normally
+          moveToStartOfNextRow();
+          drawNormal();
+        }
+        this.keyToLocation.set(key, locations);
+        this.needsBuffer = true;
+        return locations;
+      }
+    }, {
+      key: "getOffsets",
+      value: function getOffsets(key) {
+        return this.keyToLocation.get(key);
+      }
+    }, {
+      key: "isEmpty",
+      value: function isEmpty() {
+        return this.freePointer.x === 0 && this.freePointer.row === 0;
+      }
+    }, {
+      key: "canFit",
+      value: function canFit(bb) {
+        var atlasSize = this.atlasSize,
+          rows = this.rows;
+        var _this$getScale2 = this.getScale(bb),
+          texW = _this$getScale2.texW;
+        if (this.freePointer.x + texW > atlasSize) {
+          // need to wrap
+          return this.freePointer.row < rows - 1; // return true if there's a row to wrap to
+        }
+
+        return true;
+      }
+    }, {
+      key: "bufferIfNeeded",
+      value: function bufferIfNeeded(gl) {
+        if (!this.texture) {
+          this.texture = createTexture(gl, this.debugID);
+        }
+        if (this.needsBuffer) {
+          this.texture.buffer(this.canvas);
+          this.needsBuffer = false;
+        }
+      }
+    }, {
+      key: "dispose",
+      value: function dispose() {
+        if (this.texture) {
+          this.texture.deleteTexture();
+          this.texture = null;
+          this.needsBuffer = true;
+        }
+      }
+    }]);
+    return Atlas;
+  }();
+
+  /**
+   * A collection of texture atlases, all of the same "render type". 
+   * (Node body is an example of a render type.)
+   * An AtlasCollection can also be notified when a texture is no longer needed, 
+   * and it can garbage collect the unused textures.
+   */
+  var AtlasCollection = /*#__PURE__*/function () {
+    function AtlasCollection(r, opts) {
+      _classCallCheck(this, AtlasCollection);
+      this.r = r;
+      this.opts = opts;
+      this.keyToIds = new Map();
+      this.idToKey = new Map();
+      this.atlases = [];
+      this.styleKeyToAtlas = new Map();
+      this.styleKeyNeedsRedraw = new Set();
+      this.forceGC = false;
+    }
+    _createClass(AtlasCollection, [{
+      key: "getKeys",
+      value: function getKeys() {
+        return new Set(this.styleKeyToAtlas.keys());
+      }
+    }, {
+      key: "getIdsFor",
+      value: function getIdsFor(key) {
+        var ids = this.keyToIds.get(key);
+        if (!ids) {
+          ids = new Set();
+          this.keyToIds.set(key, ids);
+        }
+        return ids;
+      }
+    }, {
+      key: "_createAtlas",
+      value: function _createAtlas() {
+        var r = this.r,
+          opts = this.opts;
+        return new Atlas(r, opts);
+      }
+    }, {
+      key: "_getScratchCanvas",
+      value: function _getScratchCanvas() {
+        if (!this.scratch) {
+          var r = this.r,
+            opts = this.opts;
+          var atlasSize = opts.webglTexSize;
+          var texHeight = Math.floor(atlasSize / opts.webglTexRows);
+          this.scratch = opts.createTextureCanvas(r, atlasSize, texHeight, 'scratch');
+        }
+        return this.scratch;
+      }
+    }, {
+      key: "draw",
+      value: function draw(id, key, bb, doDrawing) {
+        if (this.styleKeyNeedsRedraw.has(key)) {
+          this.styleKeyNeedsRedraw["delete"](key);
+          this.deleteKey(id, key);
+          // We need to mark the atlas as needing GC because the key will be mapped to
+          // this atlas or a new atlas, so the key itself won't be marked for GC.
+          var _atlas = this.styleKeyToAtlas.get(key);
+          if (_atlas) {
+            _atlas.forceGC = true;
+          }
+          this.styleKeyToAtlas["delete"](key);
+        }
+        var atlas = this.styleKeyToAtlas.get(key);
+        if (!atlas) {
+          // This is a simplistic way of finding an atlas. 
+          // May waste space at the end of the atalas if the element doesn't fit.
+          atlas = this.atlases[this.atlases.length - 1];
+          if (!atlas || !atlas.canFit(bb)) {
+            atlas = this._createAtlas();
+            this.atlases.push(atlas);
+          }
+          atlas.draw(key, bb, doDrawing);
+          this.styleKeyToAtlas.set(key, atlas);
+          this.getIdsFor(key).add(id);
+          this.idToKey.set(id, key);
+        }
+        return atlas;
+      }
+    }, {
+      key: "getAtlas",
+      value: function getAtlas(key) {
+        return this.styleKeyToAtlas.get(key);
+      }
+    }, {
+      key: "hasAtlas",
+      value: function hasAtlas(key) {
+        return this.styleKeyToAtlas.has(key);
+      }
+    }, {
+      key: "deleteKey",
+      value: function deleteKey(id, key) {
+        this.idToKey["delete"](id);
+        this.getIdsFor(key)["delete"](id);
+      }
+    }, {
+      key: "checkKeyIsInvalid",
+      value: function checkKeyIsInvalid(id, newKey) {
+        if (!this.idToKey.has(id)) return false;
+        var oldKey = this.idToKey.get(id);
+        if (oldKey != newKey) {
+          this.deleteKey(id, oldKey);
+          return true;
+        }
+        return false;
+      }
+    }, {
+      key: "_getKeysToCollect",
+      value: function _getKeysToCollect() {
+        var markedKeys = new Set();
+        var _iterator = _createForOfIteratorHelper(this.styleKeyToAtlas.keys()),
+          _step;
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var key = _step.value;
+            if (this.getIdsFor(key).size == 0) {
+              markedKeys.add(key);
+            }
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+        return markedKeys;
+      }
+
+      /**
+       * TODO dispose of the old atlas and texture
+       */
+    }, {
+      key: "gc",
+      value: function gc() {
+        var _this2 = this;
+        var forceGC = this.atlases.some(function (atlas) {
+          return atlas.forceGC;
+        });
+        var markedKeys = this._getKeysToCollect();
+        if (markedKeys.size === 0 && !forceGC) {
+          console.log("nothing to garbage collect");
+          return;
+        }
+        var newAtlases = [];
+        var newStyleKeyToAtlas = new Map();
+        var newAtlas = null;
+        var _iterator2 = _createForOfIteratorHelper(this.atlases),
+          _step2;
+        try {
+          var _loop = function _loop() {
+            var atlas = _step2.value;
+            var keys = atlas.getKeys();
+            var keysToCollect = intersection(markedKeys, keys);
+            if (keysToCollect.size === 0 && !atlas.forceGC) {
+              newAtlases.push(atlas);
+              keys.forEach(function (k) {
+                return newStyleKeyToAtlas.set(k, atlas);
+              });
+              return "continue";
+            }
+            if (!newAtlas) {
+              newAtlas = _this2._createAtlas();
+              newAtlases.push(newAtlas);
+            }
+            var _iterator3 = _createForOfIteratorHelper(keys),
+              _step3;
+            try {
+              for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+                var key = _step3.value;
+                if (!keysToCollect.has(key)) {
+                  var _atlas$getOffsets = atlas.getOffsets(key),
+                    _atlas$getOffsets2 = _slicedToArray(_atlas$getOffsets, 2),
+                    s1 = _atlas$getOffsets2[0],
+                    s2 = _atlas$getOffsets2[1];
+                  if (!newAtlas.canFit({
+                    w: s1.w + s2.w,
+                    h: s1.h
+                  })) {
+                    newAtlas = _this2._createAtlas();
+                    newAtlases.push(newAtlas);
+                  }
+                  _this2._copyTextureToNewAtlas(key, atlas, newAtlas);
+                  newStyleKeyToAtlas.set(key, newAtlas);
+                }
+              }
+            } catch (err) {
+              _iterator3.e(err);
+            } finally {
+              _iterator3.f();
+            }
+          };
+          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+            var _ret = _loop();
+            if (_ret === "continue") continue;
+          }
+        } catch (err) {
+          _iterator2.e(err);
+        } finally {
+          _iterator2.f();
+        }
+        this.atlases = newAtlases;
+        this.styleKeyToAtlas = newStyleKeyToAtlas;
+      }
+    }, {
+      key: "_copyTextureToNewAtlas",
+      value: function _copyTextureToNewAtlas(key, oldAtlas, newAtlas) {
+        var _oldAtlas$getOffsets = oldAtlas.getOffsets(key),
+          _oldAtlas$getOffsets2 = _slicedToArray(_oldAtlas$getOffsets, 2),
+          s1 = _oldAtlas$getOffsets2[0],
+          s2 = _oldAtlas$getOffsets2[1];
+        if (s2.w === 0) {
+          // the texture does not wrap, draw directly to new atlas
+          newAtlas.draw(key, s1, function (context) {
+            context.drawImage(oldAtlas.canvas, s1.x, s1.y, s1.w, s1.h, 0, 0, s1.w, s1.h);
+          });
+        } else {
+          // the texture wraps, first draw both parts to a scratch canvas
+          var scratch = this._getScratchCanvas();
+          scratch.clear();
+          scratch.context.drawImage(oldAtlas.canvas, s1.x, s1.y, s1.w, s1.h, 0, 0, s1.w, s1.h);
+          scratch.context.drawImage(oldAtlas.canvas, s2.x, s2.y, s2.w, s2.h, s1.w, 0, s2.w, s2.h);
+
+          // now draw the scratch to the new atlas
+          var w = s1.w + s2.w;
+          var h = s1.h;
+          newAtlas.draw(key, {
+            w: w,
+            h: h
+          }, function (context) {
+            context.drawImage(scratch, 0, 0, w, h, 0, 0, w, h // the destination context has already been translated to the correct position
+            );
+          });
+        }
+      }
+    }, {
+      key: "getCounts",
+      value: function getCounts() {
+        return {
+          keyCount: this.styleKeyToAtlas.size,
+          atlasCount: new Set(this.styleKeyToAtlas.values()).size
+        };
+      }
+    }]);
+    return AtlasCollection;
+  }();
+  function intersection(set1, set2) {
+    // TODO why no Set.intersection in node 16???
+    if (set1.intersection) return set1.intersection(set2);else return new Set(_toConsumableArray(set1).filter(function (x) {
+      return set2.has(x);
+    }));
+  }
+
+  /**
+   * Used to manage batches of Atlases for drawing nodes and labels.
+   * Supports different types of AtlasCollections for different render types,
+   * for example 'node body' and 'node label' would be different render types.
+   * Render types are kept separate because they will likely need to be garbage collected
+   * separately and its not entierly guaranteed that their style keys won't collide.
+   */
+  var AtlasManager = /*#__PURE__*/function () {
+    function AtlasManager(r, globalOptions) {
+      _classCallCheck(this, AtlasManager);
+      this.r = r;
+      var opts = globalOptions;
+      this.globalOptions = opts;
+      this.maxAtlases = opts.webglTexPerBatch;
+      this.atlasSize = opts.webglTexSize;
+      this.renderTypes = new Map(); // string -> object
+      this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
+      this.batchAtlases = [];
+      this._cacheScratchCanvas(opts);
+    }
+    _createClass(AtlasManager, [{
+      key: "_cacheScratchCanvas",
+      value: function _cacheScratchCanvas(opts) {
+        var prevW = -1;
+        var prevH = -1;
+        var scratchCanvas = null;
+        var baseCreateTextureCanvas = opts.createTextureCanvas;
+        opts.createTextureCanvas = function (r, w, h, scratch) {
+          if (scratch) {
+            if (!scratchCanvas || w != prevW || h != prevH) {
+              prevW = w;
+              prevH = h;
+              scratchCanvas = baseCreateTextureCanvas(r, w, h);
+            }
+            return scratchCanvas;
+          } else {
+            return baseCreateTextureCanvas(r, w, h);
+          }
+        };
+      }
+    }, {
+      key: "addRenderType",
+      value: function addRenderType(type, renderTypeOptions) {
+        var atlasCollection = new AtlasCollection(this.r, this.globalOptions);
+        var typeOpts = renderTypeOptions;
+        this.renderTypes.set(type, extend({
+          type: type,
+          atlasCollection: atlasCollection
+        }, typeOpts));
+      }
+    }, {
+      key: "getRenderTypes",
+      value: function getRenderTypes() {
+        return _toConsumableArray(this.renderTypes.values());
+      }
+    }, {
+      key: "getRenderTypeOpts",
+      value: function getRenderTypeOpts(type) {
+        return this.renderTypes.get(type);
+      }
+
+      /** Marks textues associated with the element for garbage collection. */
+    }, {
+      key: "invalidate",
+      value: function invalidate(eles) {
+        var _ref2 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+          _ref2$forceRedraw = _ref2.forceRedraw,
+          forceRedraw = _ref2$forceRedraw === void 0 ? false : _ref2$forceRedraw,
+          _ref2$filterEle = _ref2.filterEle,
+          filterEle = _ref2$filterEle === void 0 ? function () {
+            return true;
+          } : _ref2$filterEle,
+          _ref2$filterType = _ref2.filterType,
+          filterType = _ref2$filterType === void 0 ? function () {
+            return true;
+          } : _ref2$filterType;
+        var gcNeeded = false;
+        var _iterator4 = _createForOfIteratorHelper(eles),
+          _step4;
+        try {
+          for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+            var ele = _step4.value;
+            if (filterEle(ele)) {
+              var id = ele.id();
+              var _iterator5 = _createForOfIteratorHelper(this.getRenderTypes()),
+                _step5;
+              try {
+                for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+                  var opts = _step5.value;
+                  if (filterType(opts.type)) {
+                    var styleKey = opts.getKey(ele);
+                    if (forceRedraw) {
+                      // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn
+                      opts.atlasCollection.deleteKey(id, styleKey);
+                      opts.atlasCollection.styleKeyNeedsRedraw.add(styleKey);
+                      gcNeeded = true; // TODO is this too conservative?
+                    } else {
+                      gcNeeded |= opts.atlasCollection.checkKeyIsInvalid(id, styleKey);
+                    }
+                  }
+                }
+              } catch (err) {
+                _iterator5.e(err);
+              } finally {
+                _iterator5.f();
+              }
+            }
+          }
+        } catch (err) {
+          _iterator4.e(err);
+        } finally {
+          _iterator4.f();
+        }
+        return gcNeeded;
+      }
+
+      /** Garbage collect */
+    }, {
+      key: "gc",
+      value: function gc() {
+        var _iterator6 = _createForOfIteratorHelper(this.getRenderTypes()),
+          _step6;
+        try {
+          for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+            var opts = _step6.value;
+            opts.atlasCollection.gc();
+          }
+        } catch (err) {
+          _iterator6.e(err);
+        } finally {
+          _iterator6.f();
+        }
+      }
+    }, {
+      key: "isRenderable",
+      value: function isRenderable(ele, type) {
+        var opts = this.getRenderTypeOpts(type);
+        return opts && opts.isVisible(ele);
+      }
+    }, {
+      key: "startBatch",
+      value: function startBatch() {
+        this.batchAtlases = [];
+      }
+    }, {
+      key: "getAtlasCount",
+      value: function getAtlasCount() {
+        return this.batchAtlases.length;
+      }
+    }, {
+      key: "getAtlases",
+      value: function getAtlases() {
+        return this.batchAtlases;
+      }
+    }, {
+      key: "getOrCreateAtlas",
+      value: function getOrCreateAtlas(ele, bb, type) {
+        var opts = this.renderTypes.get(type);
+        var styleKey = opts.getKey(ele);
+        var id = ele.id();
+
+        // Draws the texture if needed.
+        return opts.atlasCollection.draw(id, styleKey, bb, function (context) {
+          opts.drawElement(context, ele, bb, true, true);
+        });
+      }
+    }, {
+      key: "getAtlasIndexForBatch",
+      value: function getAtlasIndexForBatch(atlas) {
+        var atlasID = this.batchAtlases.indexOf(atlas);
+        if (atlasID < 0) {
+          if (this.batchAtlases.length === this.maxAtlasesPerBatch) {
+            return;
+          }
+          this.batchAtlases.push(atlas);
+          atlasID = this.batchAtlases.length - 1;
+        }
+        return atlasID;
+      }
+    }, {
+      key: "getIndexArray",
+      value: function getIndexArray() {
+        return Array.from({
+          length: this.maxAtlases
+        }, function (v, i) {
+          return i;
+        });
+      }
+    }, {
+      key: "getAtlasInfo",
+      value: function getAtlasInfo(ele, type) {
+        var opts = this.renderTypes.get(type);
+        var bb = opts.getBoundingBox(ele);
+        var atlas = this.getOrCreateAtlas(ele, bb, type);
+        var atlasID = this.getAtlasIndexForBatch(atlas);
+        if (atlasID === undefined) {
+          return undefined; // batch is full
+        }
+
+        var styleKey = opts.getKey(ele);
+        var _atlas$getOffsets3 = atlas.getOffsets(styleKey),
+          _atlas$getOffsets4 = _slicedToArray(_atlas$getOffsets3, 2),
+          tex1 = _atlas$getOffsets4[0],
+          tex2 = _atlas$getOffsets4[1];
+        // This object may be passed back to setTransformMatrix()
+        return {
+          atlasID: atlasID,
+          tex: tex1,
+          tex1: tex1,
+          tex2: tex2,
+          bb: bb,
+          type: type,
+          styleKey: styleKey
+        };
+      }
+    }, {
+      key: "canAddToCurrentBatch",
+      value: function canAddToCurrentBatch(ele, type) {
+        if (this.batchAtlases.length === this.maxAtlasesPerBatch) {
+          // batch is full, is the atlas already part of this batch?
+          var opts = this.renderTypes.get(type);
+          var styleKey = opts.getKey(ele);
+          var atlas = opts.atlasCollection.getAtlas(styleKey);
+          // return true if there is an atlas and it is part of this batch already
+          return atlas && this.batchAtlases.includes(atlas);
+        }
+        return true; // not full
+      }
+
+      /**
+       * matrix is expected to be a 9 element array
+       * this function follows same pattern as CRp.drawCachedElementPortion(...)
+       */
+    }, {
+      key: "setTransformMatrix",
+      value: function setTransformMatrix(matrix, atlasInfo, ele) {
+        var first = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+        var bb = atlasInfo.bb,
+          type = atlasInfo.type,
+          tex1 = atlasInfo.tex1,
+          tex2 = atlasInfo.tex2;
+        var opts = this.getRenderTypeOpts(type);
+        var padding = opts.getPadding ? opts.getPadding(ele) : 0;
+        var ratio = tex1.w / (tex1.w + tex2.w);
+        if (!first) {
+          ratio = 1 - ratio;
+        }
+        var adjBB = this.getAdjustedBB(bb, padding, first, ratio);
+        var x, y;
+        identity(matrix);
+        var theta = opts.getRotation ? opts.getRotation(ele) : 0;
+        if (theta !== 0) {
+          var _opts$getRotationPoin = opts.getRotationPoint(ele),
+            sx = _opts$getRotationPoin.x,
+            sy = _opts$getRotationPoin.y;
+          translate(matrix, matrix, [sx, sy]);
+          rotate(matrix, matrix, theta);
+          var offset = opts.getRotationOffset(ele);
+          x = offset.x + adjBB.xOffset;
+          y = offset.y;
+        } else {
+          x = adjBB.x1;
+          y = adjBB.y1;
+        }
+        translate(matrix, matrix, [x, y]);
+        scale(matrix, matrix, [adjBB.w, adjBB.h]);
+      }
+    }, {
+      key: "getTransformMatrix",
+      value: function getTransformMatrix(atlasInfo, ele) {
+        var first = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+        var matrix = create();
+        this.setTransformMatrix(matrix, atlasInfo, ele, first);
+        return matrix;
+      }
+
+      /**
+       * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
+       * @param bb - the original bounding box
+       * @param padding - the padding to add to the bounding box
+       * @param first - whether this is the first part of a wrapped texture
+       * @param ratio - the ratio of the texture width of part of the text to the entire texture
+       */
+    }, {
+      key: "getAdjustedBB",
+      value: function getAdjustedBB(bb, padding, first, ratio) {
+        var x1 = bb.x1,
+          y1 = bb.y1,
+          w = bb.w,
+          h = bb.h;
+        if (padding) {
+          x1 -= padding;
+          y1 -= padding;
+          w += 2 * padding;
+          h += 2 * padding;
+        }
+        var xOffset = 0;
+        var adjW = w * ratio;
+        if (first && ratio < 1) {
+          w = adjW;
+        } else if (!first && ratio < 1) {
+          xOffset = w - adjW;
+          x1 += xOffset;
+          w = adjW;
+        }
+        return {
+          x1: x1,
+          y1: y1,
+          w: w,
+          h: h,
+          xOffset: xOffset
+        };
+      }
+    }, {
+      key: "getDebugInfo",
+      value: function getDebugInfo() {
+        var debugInfo = [];
+        var _iterator7 = _createForOfIteratorHelper(this.renderTypes),
+          _step7;
+        try {
+          for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+            var _step7$value = _slicedToArray(_step7.value, 2),
+              type = _step7$value[0],
+              opts = _step7$value[1];
+            var _opts$atlasCollection = opts.atlasCollection.getCounts(),
+              keyCount = _opts$atlasCollection.keyCount,
+              atlasCount = _opts$atlasCollection.atlasCount;
+            debugInfo.push({
+              type: type,
+              keyCount: keyCount,
+              atlasCount: atlasCount
+            });
+          }
+        } catch (err) {
+          _iterator7.e(err);
+        } finally {
+          _iterator7.f();
+        }
+        return debugInfo;
+      }
+    }]);
+    return AtlasManager;
+  }();
+
+  // Vertex types
+  var TEXTURE = 0;
+  var EDGE_STRAIGHT = 1;
+  var EDGE_CURVE_SEGMENT = 2;
+  var EDGE_ARROW = 3;
+  var ElementDrawingWebGL = /*#__PURE__*/function () {
+    /** 
+     * @param {WebGLRenderingContext} gl 
+     */
+    function ElementDrawingWebGL(r, gl, opts) {
+      _classCallCheck(this, ElementDrawingWebGL);
+      this.r = r;
+      this.gl = gl;
+      this.maxInstances = opts.webglBatchSize;
+      this.maxAtlases = opts.webglTexPerBatch;
+      this.atlasSize = opts.webglTexSize;
+      this.bgColor = opts.bgColor;
+      opts.enableWrapping = true;
+      opts.createTextureCanvas = createTextureCanvas; // Unit tests mock this
+      this.atlasManager = new AtlasManager(r, opts);
+      this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
+      this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
+      this.vao = this.createVAO();
+      this.debugInfo = [];
+    }
+    _createClass(ElementDrawingWebGL, [{
+      key: "addTextureRenderType",
+      value: function addTextureRenderType(type, opts) {
+        this.atlasManager.addRenderType(type, opts);
+      }
+    }, {
+      key: "invalidate",
+      value: function invalidate(eles) {
+        var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+          type = _ref.type;
+        var atlasManager = this.atlasManager;
+        if (type) {
+          return atlasManager.invalidate(eles, {
+            filterType: function filterType(t) {
+              return t === type;
+            },
+            forceRedraw: true
+          });
+        } else {
+          return atlasManager.invalidate(eles);
+        }
+      }
+    }, {
+      key: "gc",
+      value: function gc() {
+        this.atlasManager.gc();
+      }
+    }, {
+      key: "createShaderProgram",
+      value: function createShaderProgram(renderTarget) {
+        var gl = this.gl;
+
+        // compute texture coordinates in the shader, becase we are using instanced drawing
+        var vertexShaderSource = "#version 300 es\n      precision highp float;\n\n      uniform mat3 uPanZoomMatrix;\n      uniform int  uAtlasSize;\n      \n      // instanced\n      in vec2 aPosition; \n\n      // what are we rendering?\n      in int aVertType;\n\n      // for picking\n      in vec4 aIndex;\n      \n      // For textures\n      in int aAtlasId; // which shader unit/atlas to use\n      in vec4 aTex1; // x/y/w/h of texture in atlas\n      in vec4 aTex2; \n\n      // for any transforms that are needed\n      in vec4 aScaleRotate1;  // vectors use fewer attributes than matrices\n      in vec2 aTranslate1;\n      in vec4 aScaleRotate2;\n      in vec2 aTranslate2;\n\n      // for edges\n      in vec4 aPointAPointB;\n      in vec4 aPointCPointD;\n      in float aLineWidth;\n      in vec4 aEdgeColor;\n\n      out vec2 vTexCoord;\n      out vec4 vEdgeColor;\n      flat out int vAtlasId;\n      flat out vec4 vIndex;\n      flat out int vVertType;\n\n      void main(void) {\n        int vid = gl_VertexID;\n        vec2 position = aPosition;\n\n        if(aVertType == ".concat(TEXTURE, ") {\n          float texX;\n          float texY;\n          float texW;\n          float texH;\n          mat3  texMatrix;\n\n          int vid = gl_VertexID;\n          if(vid <= 5) {\n            texX = aTex1.x;\n            texY = aTex1.y;\n            texW = aTex1.z;\n            texH = aTex1.w;\n            texMatrix = mat3(\n              vec3(aScaleRotate1.xy, 0.0),\n              vec3(aScaleRotate2.zw, 0.0),\n              vec3(aTranslate1,      1.0)\n            );\n          } else {\n            texX = aTex2.x;\n            texY = aTex2.y;\n            texW = aTex2.z;\n            texH = aTex2.w;\n            texMatrix = mat3(\n              vec3(aScaleRotate2.xy, 0.0),\n              vec3(aScaleRotate2.zw, 0.0),\n              vec3(aTranslate2,      1.0)\n            );\n          }\n\n          if(vid == 1 || vid == 2 || vid == 4 || vid == 7 || vid == 8 || vid == 10) {\n            texX += texW;\n          }\n          if(vid == 2 || vid == 4 || vid == 5 || vid == 8 || vid == 10 || vid == 11) {\n            texY += texH;\n          }\n\n          float d = float(uAtlasSize);\n          vTexCoord = vec2(texX / d, texY / d); // tex coords must be between 0 and 1\n\n          gl_Position = vec4(uPanZoomMatrix * texMatrix * vec3(position, 1.0), 1.0);\n        } \n        else if(aVertType == ").concat(EDGE_STRAIGHT, " && vid < 6) {\n          vec2 source = aPointAPointB.xy;\n          vec2 target = aPointAPointB.zw;\n\n          // adjust the geometry so that the line is centered on the edge\n          position.y = position.y - 0.5;\n\n          vec2 xBasis = target - source;\n          vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));\n          vec2 point = source + xBasis * position.x + yBasis * aLineWidth * position.y;\n\n          gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);\n          vEdgeColor = aEdgeColor;\n        } \n        else if(aVertType == ").concat(EDGE_CURVE_SEGMENT, " && vid < 6) {\n          vec2 pointA = aPointAPointB.xy;\n          vec2 pointB = aPointAPointB.zw;\n          vec2 pointC = aPointCPointD.xy;\n          vec2 pointD = aPointCPointD.zw;\n\n          // adjust the geometry so that the line is centered on the edge\n          position.y = position.y - 0.5;\n\n          vec2 p0 = pointA;\n          vec2 p1 = pointB;\n          vec2 p2 = pointC;\n          vec2 pos = position;\n          if(position.x == 1.0) {\n            p0 = pointD;\n            p1 = pointC;\n            p2 = pointB;\n            pos = vec2(0.0, -position.y);\n          }\n\n          vec2 p01 = p1 - p0;\n          vec2 p12 = p2 - p1;\n          vec2 p21 = p1 - p2;\n\n          // Find the normal vector.\n          vec2 tangent = normalize(normalize(p12) + normalize(p01));\n          vec2 normal = vec2(-tangent.y, tangent.x);\n\n          // Find the vector perpendicular to p0 -> p1.\n          vec2 p01Norm = normalize(vec2(-p01.y, p01.x));\n\n          // Determine the bend direction.\n          float sigma = sign(dot(p01 + p21, normal));\n          float width = aLineWidth;\n\n          if(sign(pos.y) == -sigma) {\n            // This is an intersecting vertex. Adjust the position so that there's no overlap.\n            vec2 point = 0.5 * width * normal * -sigma / dot(normal, p01Norm);\n            gl_Position = vec4(uPanZoomMatrix * vec3(p1 + point, 1.0), 1.0);\n          } else {\n            // This is a non-intersecting vertex. Treat it like a mitre join.\n            vec2 point = 0.5 * width * normal * sigma * dot(normal, p01Norm);\n            gl_Position = vec4(uPanZoomMatrix * vec3(p1 + point, 1.0), 1.0);\n          }\n\n          vEdgeColor = aEdgeColor;\n        } \n        else if(aVertType == ").concat(EDGE_ARROW, " && vid < 3) {\n          // massage the first triangle into an edge arrow\n          if(vid == 0)\n            position = vec2(-0.15, -0.3);\n          if(vid == 1)\n            position = vec2( 0.0,   0.0);\n          if(vid == 2)\n            position = vec2( 0.15, -0.3);\n\n          mat3 transform = mat3(\n            vec3(aScaleRotate1.xy, 0.0),\n            vec3(aScaleRotate1.zw, 0.0),\n            vec3(aTranslate1,      1.0)\n          );\n          gl_Position = vec4(uPanZoomMatrix * transform * vec3(position, 1.0), 1.0);\n          vEdgeColor = aEdgeColor;\n        } else {\n          gl_Position = vec4(2.0, 0.0, 0.0, 1.0); // discard vertex by putting it outside webgl clip space\n        }\n\n        vAtlasId = aAtlasId;\n        vIndex = aIndex;\n        vVertType = aVertType;\n      }\n    ");
+        var idxs = this.atlasManager.getIndexArray();
+        var fragmentShaderSource = "#version 300 es\n      precision highp float;\n\n      // define texture unit for each node in the batch\n      ".concat(idxs.map(function (i) {
+          return "uniform sampler2D uTexture".concat(i, ";");
+        }).join('\n\t'), "\n\n      uniform vec4 uBGColor;\n\n      in vec2 vTexCoord;\n      in vec4 vEdgeColor;\n      flat in int vAtlasId;\n      flat in vec4 vIndex;\n      flat in int vVertType;\n\n      out vec4 outColor;\n\n      void main(void) {\n        if(vVertType == ").concat(TEXTURE, ") {\n          ").concat(idxs.map(function (i) {
+          return "if(vAtlasId == ".concat(i, ") outColor = texture(uTexture").concat(i, ", vTexCoord);");
+        }).join('\n\telse '), "\n        } else if(vVertType == ").concat(EDGE_ARROW, ") {\n          // blend arrow color with background (using premultiplied alpha)\n          outColor.rgb = vEdgeColor.rgb + (uBGColor.rgb * (1.0 - vEdgeColor.a)); \n          outColor.a = 1.0; // make opaque, masks out line under arrow\n        } else {\n          outColor = vEdgeColor;\n        }\n\n        ").concat(renderTarget.picking ? "if(outColor.a == 0.0) discard;\n             else outColor = vIndex;" : '', "\n      }\n    ");
+        var program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
+
+        // instance geometry
+        program.aPosition = gl.getAttribLocation(program, 'aPosition');
+
+        // attributes
+        program.aIndex = gl.getAttribLocation(program, 'aIndex');
+        program.aVertType = gl.getAttribLocation(program, 'aVertType');
+        program.aAtlasId = gl.getAttribLocation(program, 'aAtlasId');
+        program.aTex1 = gl.getAttribLocation(program, 'aTex1');
+        program.aTex2 = gl.getAttribLocation(program, 'aTex2');
+        program.aScaleRotate1 = gl.getAttribLocation(program, 'aScaleRotate1');
+        program.aTranslate1 = gl.getAttribLocation(program, 'aTranslate1');
+        program.aScaleRotate2 = gl.getAttribLocation(program, 'aScaleRotate2');
+        program.aTranslate2 = gl.getAttribLocation(program, 'aTranslate2');
+        program.aPointAPointB = gl.getAttribLocation(program, 'aPointAPointB');
+        program.aPointCPointD = gl.getAttribLocation(program, 'aPointCPointD');
+        program.aLineWidth = gl.getAttribLocation(program, 'aLineWidth');
+        program.aEdgeColor = gl.getAttribLocation(program, 'aEdgeColor');
+
+        // uniforms
+        program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
+        program.uAtlasSize = gl.getUniformLocation(program, 'uAtlasSize');
+        program.uBGColor = gl.getUniformLocation(program, 'uBGColor');
+        program.uTextures = [];
+        for (var i = 0; i < this.atlasManager.maxAtlases; i++) {
+          program.uTextures.push(gl.getUniformLocation(program, "uTexture".concat(i)));
+        }
+        return program;
+      }
+    }, {
+      key: "createVAO",
+      value: function createVAO() {
+        var quad = [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1];
+
+        // a texture is split into two parts if it wraps in the atlas
+        var instanceGeometry = [].concat(quad, quad);
+        this.vertexCount = instanceGeometry.length / 2;
+        var n = this.maxInstances;
+        var gl = this.gl,
+          program = this.program;
+        var vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+        createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
+
+        // Create buffers for all the attributes
+        this.indexBuffer = createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
+        this.vertTypeBuffer = createBufferDynamicDraw(gl, n, 'int', program.aVertType);
+        this.atlasIdBuffer = createBufferDynamicDraw(gl, n, 'int', program.aAtlasId);
+        this.tex1Buffer = createBufferDynamicDraw(gl, n, 'vec4', program.aTex1);
+        this.tex2Buffer = createBufferDynamicDraw(gl, n, 'vec4', program.aTex2);
+        this.scaleRotate1Buffer = createBufferDynamicDraw(gl, n, 'vec4', program.aScaleRotate1);
+        this.translate1Buffer = createBufferDynamicDraw(gl, n, 'vec2', program.aTranslate1);
+        this.scaleRotate2Buffer = createBufferDynamicDraw(gl, n, 'vec4', program.aScaleRotate2);
+        this.translate2Buffer = createBufferDynamicDraw(gl, n, 'vec2', program.aTranslate2);
+        this.pointAPointBBuffer = createBufferDynamicDraw(gl, n, 'vec4', program.aPointAPointB);
+        this.pointCPointDBuffer = createBufferDynamicDraw(gl, n, 'vec4', program.aPointCPointD);
+        this.lineWidthBuffer = createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
+        this.edgeColorBuffer = createBufferDynamicDraw(gl, n, 'vec4', program.aEdgeColor);
+        gl.bindVertexArray(null);
+        return vao;
+      }
+    }, {
+      key: "buffers",
+      get: function get() {
+        var _this = this;
+        if (!this._buffers) {
+          this._buffers = Object.keys(this).filter(function (k) {
+            return k.endsWith('Buffer');
+          }).map(function (k) {
+            return _this[k];
+          });
+        }
+        return this._buffers;
+      }
+    }, {
+      key: "startFrame",
+      value: function startFrame(panZoomMatrix, debugInfo) {
+        var renderTarget = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : RENDER_TARGET.SCREEN;
+        this.panZoomMatrix = panZoomMatrix;
+        this.debugInfo = debugInfo;
+        this.renderTarget = renderTarget;
+        this.startBatch();
+      }
+    }, {
+      key: "startBatch",
+      value: function startBatch() {
+        this.instanceCount = 0;
+        this.atlasManager.startBatch();
+      }
+    }, {
+      key: "endFrame",
+      value: function endFrame() {
+        this.endBatch();
+      }
+    }, {
+      key: "getTempMatrix",
+      value: function getTempMatrix() {
+        return this.tempMatrix = this.tempMatrix || create();
+      }
+    }, {
+      key: "drawTexture",
+      value: function drawTexture(ele, eleIndex, type) {
+        var atlasManager = this.atlasManager;
+        if (!atlasManager.isRenderable(ele, type)) {
+          return;
+        }
+        if (!atlasManager.canAddToCurrentBatch(ele, type)) {
+          this.endBatch(); // draws then starts a new batch
+        }
+
+        var instance = this.instanceCount;
+        this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
+        var indexView = this.indexBuffer.getView(instance);
+        indexToVec4(eleIndex, indexView);
+        var atlasInfo = atlasManager.getAtlasInfo(ele, type, atlasInfo);
+        var atlasID = atlasInfo.atlasID,
+          tex1 = atlasInfo.tex1,
+          tex2 = atlasInfo.tex2;
+
+        // Set values in the buffers using Typed Array Views for performance.
+        var atlasIdView = this.atlasIdBuffer.getView(instance);
+        atlasIdView[0] = atlasID;
+
+        // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
+        var tex1View = this.tex1Buffer.getView(instance);
+        tex1View[0] = tex1.x;
+        tex1View[1] = tex1.y;
+        tex1View[2] = tex1.w;
+        tex1View[3] = tex1.h;
+        var tex2View = this.tex2Buffer.getView(instance);
+        tex2View[0] = tex2.x;
+        tex2View[1] = tex2.y;
+        tex2View[2] = tex2.w;
+        tex2View[3] = tex2.h;
+        var transform = this.getTempMatrix();
+        for (var _i = 0, _arr = [1, 2]; _i < _arr.length; _i++) {
+          var tex = _arr[_i];
+          atlasManager.setTransformMatrix(transform, atlasInfo, ele, tex === 1);
+          var scaleRotateView = this["scaleRotate".concat(tex, "Buffer")].getView(instance);
+          scaleRotateView[0] = transform[0];
+          scaleRotateView[1] = transform[1];
+          scaleRotateView[2] = transform[3];
+          scaleRotateView[3] = transform[4];
+          var translateView = this["translate".concat(tex, "Buffer")].getView(instance);
+          translateView[0] = transform[6];
+          translateView[1] = transform[7];
+        }
+        this.instanceCount++;
+        if (this.instanceCount >= this.maxInstances) {
+          this.endBatch();
+        }
+      }
+    }, {
+      key: "drawEdgeArrow",
+      value: function drawEdgeArrow(edge, eleIndex, prefix) {
+        // Edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object.
+        var rs = edge._private.rscratch;
+        var x, y, angle;
+        if (prefix === 'source') {
+          x = rs.arrowStartX;
+          y = rs.arrowStartY;
+          angle = rs.srcArrowAngle;
+        } else {
+          x = rs.arrowEndX;
+          y = rs.arrowEndY;
+          angle = rs.tgtArrowAngle;
+        }
+
+        // taken from CRp.drawArrowhead
+        if (isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) {
+          return;
+        }
+        var arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
+        if (arrowShape === 'none') {
+          return;
+        }
+        var color = edge.pstyle(prefix + '-arrow-color').value;
+        var baseOpacity = edge.pstyle('opacity').value;
+        var lineOpacity = edge.pstyle('line-opacity').value;
+        var opacity = baseOpacity * lineOpacity;
+        var lineWidth = edge.pstyle('width').pfValue;
+        var scale$1 = edge.pstyle('arrow-scale').value;
+        var size = this.r.getArrowWidth(lineWidth, scale$1);
+        var transform = this.getTempMatrix();
+        identity(transform);
+        translate(transform, transform, [x, y]);
+        scale(transform, transform, [size, size]);
+        rotate(transform, transform, angle);
+        var instance = this.instanceCount;
+        this.vertTypeBuffer.getView(instance)[0] = EDGE_ARROW;
+        var indexView = this.indexBuffer.getView(instance);
+        indexToVec4(eleIndex, indexView);
+        var colorView = this.edgeColorBuffer.getView(instance);
+        toWebGLColor(color, opacity, colorView);
+
+        // TODO change attribute names to scaleRotateBuffer1 and remove the 'tex' prefix
+        var scaleRotateView = this.scaleRotate1Buffer.getView(instance);
+        scaleRotateView[0] = transform[0];
+        scaleRotateView[1] = transform[1];
+        scaleRotateView[2] = transform[3];
+        scaleRotateView[3] = transform[4];
+        var translateView = this.translate1Buffer.getView(instance);
+        translateView[0] = transform[6];
+        translateView[1] = transform[7];
+        this.instanceCount++;
+        if (this.instanceCount >= this.maxInstances) {
+          this.endBatch();
+        }
+      }
+    }, {
+      key: "drawEdgeLine",
+      value: function drawEdgeLine(edge, eleIndex) {
+        // line style
+        var baseOpacity = edge.pstyle('opacity').value;
+        var lineOpacity = edge.pstyle('line-opacity').value;
+        var width = edge.pstyle('width').pfValue;
+        var color = edge.pstyle('line-color').value;
+        var opacity = baseOpacity * lineOpacity;
+        var points = this.getEdgePoints(edge);
+        if (points.length / 2 + this.instanceCount > this.maxInstances) {
+          this.endBatch();
+        }
+        if (points.length == 4) {
+          // straight line
+          var instance = this.instanceCount;
+          this.vertTypeBuffer.getView(instance)[0] = EDGE_STRAIGHT;
+          var indexView = this.indexBuffer.getView(instance);
+          indexToVec4(eleIndex, indexView);
+          var colorView = this.edgeColorBuffer.getView(instance);
+          toWebGLColor(color, opacity, colorView);
+          var lineWidthBuffer = this.lineWidthBuffer.getView(instance);
+          lineWidthBuffer[0] = width;
+          var sourceTargetView = this.pointAPointBBuffer.getView(instance);
+          sourceTargetView[0] = points[0]; // source x
+          sourceTargetView[1] = points[1]; // source y
+          sourceTargetView[2] = points[2]; // target x
+          sourceTargetView[3] = points[3]; // target y
+
+          this.instanceCount++;
+          if (this.instanceCount >= this.maxInstances) {
+            this.endBatch();
+          }
+        } else {
+          // curved line
+          for (var i = 0; i < points.length - 2; i += 2) {
+            var _instance = this.instanceCount;
+            this.vertTypeBuffer.getView(_instance)[0] = EDGE_CURVE_SEGMENT;
+            var _indexView = this.indexBuffer.getView(_instance);
+            indexToVec4(eleIndex, _indexView);
+            var _colorView = this.edgeColorBuffer.getView(_instance);
+            toWebGLColor(color, opacity, _colorView);
+            var _lineWidthBuffer = this.lineWidthBuffer.getView(_instance);
+            _lineWidthBuffer[0] = width;
+            var pAx = points[i - 2],
+              pAy = points[i - 1];
+            var pBx = points[i],
+              pBy = points[i + 1];
+            var pCx = points[i + 2],
+              pCy = points[i + 3];
+            var pDx = points[i + 4],
+              pDy = points[i + 5];
+
+            // make phantom points for the first and last segments
+            // TODO adding 0.001 to avoid division by zero in the shader (I think), need a better solution
+            if (i == 0) {
+              pAx = 2 * pBx - pCx + 0.001;
+              pAy = 2 * pBy - pCy + 0.001;
+            }
+            if (i == points.length - 4) {
+              pDx = 2 * pCx - pBx + 0.001;
+              pDy = 2 * pCy - pBy + 0.001;
+            }
+            var pointABView = this.pointAPointBBuffer.getView(_instance);
+            pointABView[0] = pAx;
+            pointABView[1] = pAy;
+            pointABView[2] = pBx;
+            pointABView[3] = pBy;
+            var pointCDView = this.pointCPointDBuffer.getView(_instance);
+            pointCDView[0] = pCx;
+            pointCDView[1] = pCy;
+            pointCDView[2] = pDx;
+            pointCDView[3] = pDy;
+            this.instanceCount++;
+            if (this.instanceCount >= this.maxInstances) {
+              this.endBatch();
+            }
+          }
+        }
+      }
+    }, {
+      key: "getEdgePoints",
+      value: function getEdgePoints(edge) {
+        var rs = edge._private.rscratch;
+        var controlPoints = rs.allpts;
+        if (controlPoints.length == 4) {
+          return controlPoints;
+        }
+        var numSegments = this.getNumSegments(edge);
+        return this.getCurveSegmentPoints(controlPoints, numSegments);
+      }
+    }, {
+      key: "getNumSegments",
+      value: function getNumSegments(edge) {
+        // TODO Need a heuristic that decides how many segments to use. Factors to consider:
+        // - edge width/length
+        // - edge curvature (the more the curvature, the more segments)
+        // - zoom level (more segments when zoomed in)
+        // - number of visible edges (more segments when there are fewer edges)
+        // - performance (fewer segments when performance is a concern)
+        // - user configurable option(s)
+        // note: number of segments should be less than the max number of instances
+        // note: segments don't need to be evenly spaced out, it might make sense to have shorter segments nearer to the control points
+        var numSegments = 15;
+        return Math.min(Math.max(numSegments, 5), this.maxInstances);
+      }
+    }, {
+      key: "getCurveSegmentPoints",
+      value: function getCurveSegmentPoints(controlPoints, segments) {
+        if (controlPoints.length == 4) {
+          return controlPoints; // straight line
+        }
+
+        var curvePoints = Array((segments + 1) * 2);
+        for (var i = 0; i <= segments; i++) {
+          // the first and last points are the same as the first and last control points
+          if (i == 0) {
+            curvePoints[0] = controlPoints[0];
+            curvePoints[1] = controlPoints[1];
+          } else if (i == segments) {
+            curvePoints[i * 2] = controlPoints[controlPoints.length - 2];
+            curvePoints[i * 2 + 1] = controlPoints[controlPoints.length - 1];
+          } else {
+            var t = i / segments; // segments have equal length, its not strictly necessary to do it this way
+            // pass in curvePoints to set the values in the array directly
+            this.setCurvePoint(controlPoints, t, curvePoints, i * 2);
+          }
+        }
+        return curvePoints;
+      }
+    }, {
+      key: "setCurvePoint",
+      value: function setCurvePoint(points, t, curvePoints, cpi) {
+        if (points.length <= 2) {
+          curvePoints[cpi] = points[0];
+          curvePoints[cpi + 1] = points[1];
+        } else {
+          var newpoints = Array(points.length - 2);
+          for (var i = 0; i < newpoints.length; i += 2) {
+            var x = (1 - t) * points[i] + t * points[i + 2];
+            var y = (1 - t) * points[i + 1] + t * points[i + 3];
+            newpoints[i] = x;
+            newpoints[i + 1] = y;
+          }
+          return this.setCurvePoint(newpoints, t, curvePoints, cpi);
+        }
+      }
+    }, {
+      key: "endBatch",
+      value: function endBatch() {
+        var gl = this.gl,
+          vao = this.vao,
+          vertexCount = this.vertexCount,
+          count = this.instanceCount;
+        if (count === 0) return;
+        var program = this.renderTarget.picking ? this.pickingProgram : this.program;
+        gl.useProgram(program);
+        gl.bindVertexArray(vao);
+
+        // buffer the attribute data
+        var _iterator = _createForOfIteratorHelper(this.buffers),
+          _step;
+        try {
+          for (_iterator.s(); !(_step = _iterator.n()).done;) {
+            var buffer = _step.value;
+            buffer.bufferSubData(count);
+          }
+        } catch (err) {
+          _iterator.e(err);
+        } finally {
+          _iterator.f();
+        }
+        var atlases = this.atlasManager.getAtlases();
+        // must buffer before activating texture units
+        for (var i = 0; i < atlases.length; i++) {
+          atlases[i].bufferIfNeeded(gl);
+        }
+        // Activate all the texture units that we need
+        for (var _i2 = 0; _i2 < atlases.length; _i2++) {
+          gl.activeTexture(gl.TEXTURE0 + _i2);
+          gl.bindTexture(gl.TEXTURE_2D, atlases[_i2].texture);
+          gl.uniform1i(program.uTextures[_i2], _i2);
+        }
+
+        // Set the uniforms
+        gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
+        gl.uniform1i(program.uAtlasSize, this.atlasManager.atlasSize);
+        // set background color, needed for edge arrow color blending
+        var webglBgColor = toWebGLColor(this.bgColor, 1);
+        gl.uniform4fv(program.uBGColor, webglBgColor);
+
+        // draw!
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, count);
+        gl.bindVertexArray(null);
+        gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
+
+        if (this.debugInfo) {
+          this.debugInfo.push({
+            count: count,
+            atlasCount: atlases.length
+          });
+        }
+
+        // start the next batch, even if not needed
+        this.startBatch();
+      }
+    }, {
+      key: "getDebugInfo",
+      value: function getDebugInfo() {
+        return this.debugInfo;
+      }
+    }, {
+      key: "getAtlasDebugInfo",
+      value: function getAtlasDebugInfo() {
+        return this.atlasManager.getDebugInfo();
+      }
+    }]);
+    return ElementDrawingWebGL;
+  }();
+
+  function fillStyle(color, opacity) {
+    return "rgba(".concat(color[0], ", ").concat(color[1], ", ").concat(color[2], ", ").concat(opacity, ")");
+  }
+  var OverlayUnderlayRenderer = /*#__PURE__*/function () {
+    function OverlayUnderlayRenderer(r) {
+      _classCallCheck(this, OverlayUnderlayRenderer);
+      this.r = r;
+    }
+    _createClass(OverlayUnderlayRenderer, [{
+      key: "getStyleKey",
+      value: function getStyleKey(type, node) {
+        var _this$getStyle = this.getStyle(type, node),
+          shape = _this$getStyle.shape,
+          opacity = _this$getStyle.opacity,
+          color = _this$getStyle.color;
+        if (!shape) return null;
+        var w = node.width();
+        var h = node.height();
+        var c = fillStyle(color, opacity);
+        return hashString("".concat(shape, "-").concat(w, "-").concat(h, "-").concat(c)); // TODO hack, not very efficient
+      }
+    }, {
+      key: "isVisible",
+      value: function isVisible(type, node) {
+        var opacity = node.pstyle("".concat(type, "-opacity")).value;
+        return opacity > 0;
+      }
+    }, {
+      key: "getStyle",
+      value: function getStyle(type, node) {
+        var opacity = node.pstyle("".concat(type, "-opacity")).value;
+        var color = node.pstyle("".concat(type, "-color")).value;
+        var shape = node.pstyle("".concat(type, "-shape")).value;
+        return {
+          opacity: opacity,
+          color: color,
+          shape: shape
+        }; // TODO need to add radius at some point
+      }
+    }, {
+      key: "getPadding",
+      value: function getPadding(type, node) {
+        return node.pstyle("".concat(type, "-padding")).pfValue;
+      }
+    }, {
+      key: "draw",
+      value: function draw(type, context, node, bb) {
+        if (!this.isVisible(type, node)) return;
+        var r = this.r;
+        var w = bb.w;
+        var h = bb.h;
+        var x = w / 2;
+        var y = h / 2;
+        var _this$getStyle2 = this.getStyle(type, node),
+          shape = _this$getStyle2.shape,
+          color = _this$getStyle2.color,
+          opacity = _this$getStyle2.opacity;
+        context.save();
+        context.fillStyle = fillStyle(color, opacity);
+        if (shape === 'round-rectangle' || shape === 'roundrectangle') {
+          r.drawRoundRectanglePath(context, x, y, w, h, 'auto');
+        } else if (shape === 'ellipse') {
+          r.drawEllipsePath(context, x, y, w, h);
+        }
+        context.fill();
+        context.restore();
+      }
+    }]);
+    return OverlayUnderlayRenderer;
+  }();
+
+  function getBGColor(container) {
+    var cssColor = container && container.style && container.style.backgroundColor || 'white';
+    return color2tuple(cssColor);
+  }
+  var CRp$4 = {};
+
+  /**
+   * TODO - webgl specific data should be in a sub object, or it should be prefixed with 'webgl'
+   */
+  CRp$4.initWebgl = function (opts, fns) {
+    var r = this;
+    var gl = r.data.contexts[r.WEBGL];
+    var container = opts.cy.container();
+    opts.bgColor = getBGColor(container);
+    opts.webglTexSize = Math.min(opts.webglTexSize, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    opts.webglTexRows = Math.min(opts.webglTexRows, 54);
+    opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
+    opts.webglTexPerBatch = Math.min(opts.webglTexPerBatch, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
+    r.webglDebug = opts.webglDebug;
+    r.webglDebugShowAtlases = opts.webglDebugShowAtlases;
+    console.log('max texture units', gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
+    console.log('max texture size', gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    console.log('webgl options', opts);
+
+    // for offscreen rendering when render target is PICKING
+    r.pickingFrameBuffer = createPickingFrameBuffer(gl);
+    r.pickingFrameBuffer.needsDraw = true;
+    var getLabelRotation = function getLabelRotation(ele) {
+      return r.getTextAngle(ele, null);
+    };
+    var isLabelVisible = function isLabelVisible(ele) {
+      var label = ele.pstyle('label');
+      return label && label.value;
+    };
+
+    // r.edgeDrawing = new EdgeBezierDrawing(r, gl, opts, renderDefaults({
+    //   getKey: fns.getLabelKey,
+    //   getBoundingBox: fns.getLabelBox,
+    //   drawElement: fns.drawLabel,
+    //   getRotation: getLabelRotation,
+    //   getRotationPoint: fns.getLabelRotationPoint,
+    //   getRotationOffset: fns.getLabelRotationOffset,
+    //   isVisible: isLabelVisible,
+    // }));
+
+    r.eleDrawing = new ElementDrawingWebGL(r, gl, opts);
+    var our = new OverlayUnderlayRenderer(r);
+    r.eleDrawing.addTextureRenderType('node-body', renderDefaults({
+      getKey: fns.getStyleKey,
+      getBoundingBox: fns.getElementBox,
+      drawElement: fns.drawElement,
+      isVisible: function isVisible(ele) {
+        return ele.visible();
+      }
+    }));
+    r.eleDrawing.addTextureRenderType('node-label', renderDefaults({
+      getKey: fns.getLabelKey,
+      getBoundingBox: fns.getLabelBox,
+      drawElement: fns.drawLabel,
+      getRotation: getLabelRotation,
+      getRotationPoint: fns.getLabelRotationPoint,
+      getRotationOffset: fns.getLabelRotationOffset,
+      isVisible: isLabelVisible
+    }));
+    r.eleDrawing.addTextureRenderType('node-overlay', renderDefaults({
+      getBoundingBox: fns.getElementBox,
+      getKey: function getKey(ele) {
+        return our.getStyleKey('overlay', ele);
+      },
+      drawElement: function drawElement(ctx, ele, bb) {
+        return our.draw('overlay', ctx, ele, bb);
+      },
+      isVisible: function isVisible(ele) {
+        return our.isVisible('overlay', ele);
+      },
+      getPadding: function getPadding(ele) {
+        return our.getPadding('overlay', ele);
+      }
+    }));
+    r.eleDrawing.addTextureRenderType('node-underlay', renderDefaults({
+      getBoundingBox: fns.getElementBox,
+      getKey: function getKey(ele) {
+        return our.getStyleKey('underlay', ele);
+      },
+      drawElement: function drawElement(ctx, ele, bb) {
+        return our.draw('underlay', ctx, ele, bb);
+      },
+      isVisible: function isVisible(ele) {
+        return our.isVisible('underlay', ele);
+      },
+      getPadding: function getPadding(ele) {
+        return our.getPadding('underlay', ele);
+      }
+    }));
+    r.eleDrawing.addTextureRenderType('edge-label', renderDefaults({
+      getKey: fns.getLabelKey,
+      getBoundingBox: fns.getLabelBox,
+      drawElement: fns.drawLabel,
+      getRotation: getLabelRotation,
+      getRotationPoint: fns.getLabelRotationPoint,
+      getRotationOffset: fns.getLabelRotationOffset,
+      isVisible: isLabelVisible
+    }));
+
+    // TODO edge arrows, same approach as node-overlay/underlay
+
+    // this is a very simplistic way of triggering garbage collection
+    var setGCFlag = debounce_1(function () {
+      console.log('garbage collect flag set');
+      r.data.gc = true;
+    }, 10000);
+    r.onUpdateEleCalcs(function (willDraw, eles) {
+      var gcNeeded = false;
+      if (eles && eles.length > 0) {
+        gcNeeded |= r.eleDrawing.invalidate(eles);
+      }
+      if (gcNeeded) {
+        setGCFlag();
+      }
+    });
+
+    // "Override" certain functions in canvas and base renderer
+    overrideCanvasRendererFunctions(r);
+  };
+
+  /**
+   * Plug into the canvas renderer to use webgl for rendering.
+   */
+  function overrideCanvasRendererFunctions(r) {
+    {
+      // Override the render function to call the webgl render function if the zoom level is appropriate
+      var renderCanvas = r.render;
+      r.render = function (options) {
+        options = options || {};
+        var cy = r.cy;
+        if (r.webgl) {
+          // if the zoom level is greater than the max zoom level, then disable webgl
+          if (cy.zoom() > maxZoom$1) {
+            clearWebgl(r);
+            renderCanvas.call(r, options);
+          } else {
+            clearCanvas(r);
+            renderWebgl(r, options, RENDER_TARGET.SCREEN);
+          }
+        }
+      };
+    }
+    {
+      // Override the matchCanvasSize function to update the picking frame buffer size
+      var baseFunc = r.matchCanvasSize;
+      r.matchCanvasSize = function (container) {
+        baseFunc.call(r, container);
+        r.pickingFrameBuffer.setFramebufferAttachmentSizes(r.canvasWidth, r.canvasHeight);
+        r.pickingFrameBuffer.needsDraw = true;
+      };
+    }
+    {
+      // Override function to call the webgl version
+      r.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
+        // the canvas version of this function is very slow on large graphs
+        return findNearestElementsWebgl(r, x, y);
+      };
+    }
+
+    // Don't override the selction box picking, its not accurate enough with webgl
+    // { // Override function to call the webgl version
+    //   r.getAllInBox = function(x1, y1, x2, y2) {
+    //     return getAllInBoxWebgl(r, x1, y1, x2, y2);
+    //   }
+    // }
+
+    {
+      // need to know when the cached elements have changed so we can invalidate our caches
+      var _baseFunc = r.invalidateCachedZSortedEles;
+      r.invalidateCachedZSortedEles = function () {
+        _baseFunc.call(r);
+        r.pickingFrameBuffer.needsDraw = true;
+      };
+    }
+    {
+      // need to know when the cached elements have changed so we can invalidate our caches
+      var _baseFunc2 = r.notify;
+      r.notify = function (eventName, eles) {
+        _baseFunc2.call(r, eventName, eles);
+        if (eventName === 'viewport' || eventName === 'bounds') {
+          r.pickingFrameBuffer.needsDraw = true;
+        } else if (eventName === 'background') {
+          // background image finished loading, need to redraw
+          r.eleDrawing.invalidate(eles, {
+            type: 'node-body'
+          });
+        }
+      };
+    }
+  }
+  function clearWebgl(r) {
+    var gl = r.data.contexts[r.WEBGL];
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  }
+  function clearCanvas(r) {
+    // the CRp.clearCanvas() function doesn't take the transform into account
+    var clear = function clear(context) {
+      context.save();
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+      context.restore();
+    };
+    clear(r.data.contexts[r.NODE]);
+    clear(r.data.contexts[r.DRAG]);
+  }
+  function createPanZoomMatrix(r) {
+    var width = r.canvasWidth;
+    var height = r.canvasHeight;
+    var _util$getEffectivePan = getEffectivePanZoom(r),
+      pan = _util$getEffectivePan.pan,
+      zoom = _util$getEffectivePan.zoom;
+    var transform = create();
+    translate(transform, transform, [pan.x, pan.y]);
+    scale(transform, transform, [zoom, zoom]);
+    var projection$1 = create();
+    projection(projection$1, width, height);
+    var product = create();
+    multiply(product, projection$1, transform);
+    return product;
+  }
+  function setContextTransform(r, context) {
+    var width = r.canvasWidth;
+    var height = r.canvasHeight;
+    var _util$getEffectivePan2 = getEffectivePanZoom(r),
+      pan = _util$getEffectivePan2.pan,
+      zoom = _util$getEffectivePan2.zoom;
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, width, height);
+    context.translate(pan.x, pan.y);
+    context.scale(zoom, zoom);
+  }
+  function drawSelectionRectangle(r, options) {
+    r.drawSelectionRectangle(options, function (context) {
+      return setContextTransform(r, context);
+    });
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  function drawAxes(r) {
+    // for debgging
+    var context = r.data.contexts[r.NODE];
+    context.save();
+    setContextTransform(r, context);
+    context.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    context.beginPath();
+    context.moveTo(-1000, 0);
+    context.lineTo(1000, 0);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(0, -1000);
+    context.lineTo(0, 1000);
+    context.stroke();
+    context.restore();
+  }
+  function drawAtlases(r) {
+    // For debugging the atlases
+    var draw = function draw(drawing, renderType, row) {
+      var opts = drawing.atlasManager.getRenderTypeOpts(renderType);
+      var context = r.data.contexts[r.NODE];
+      var scale = 0.125;
+      var atlases = opts.atlasCollection.atlases;
+      for (var _i = 0; _i < atlases.length; _i++) {
+        var atlas = atlases[_i];
+        var canvas = atlas.canvas;
+        var w = canvas.width;
+        var h = canvas.height;
+        var x = w * _i;
+        var y = canvas.height * row;
+        context.save();
+        context.scale(scale, scale);
+        context.drawImage(canvas, x, y);
+        context.strokeStyle = 'black';
+        context.rect(x, y, w, h);
+        context.stroke();
+        context.restore();
+      }
+    };
+    var i = 0;
+    // draw(r.eleDrawing, 'node-underlay', i++);
+    draw(r.eleDrawing, 'node-body', i++);
+    draw(r.eleDrawing, 'node-label', i++);
+    // draw(r.eleDrawing, 'node-overlay',  i++);
+    // draw(r.eleDrawing, 'edge-label',    i++);
+  }
+
+  /**
+   * Arguments are in model coordinates.
+   * (x1, y1) is top left corner
+   * (x2, y2) is bottom right corner (optional)
+   * Returns a Set of indexes.
+   */
+  function getPickingIndexes(r, mX1, mY1, mX2, mY2) {
+    var x, y, w, h;
+    var _util$getEffectivePan3 = getEffectivePanZoom(r),
+      pan = _util$getEffectivePan3.pan,
+      zoom = _util$getEffectivePan3.zoom;
+    if (mX2 === undefined || mY2 === undefined) {
+      var _util$modelToRendered = modelToRenderedPosition(r, pan, zoom, mX1, mY1),
+        _util$modelToRendered2 = _slicedToArray(_util$modelToRendered, 2),
+        cX1 = _util$modelToRendered2[0],
+        cY1 = _util$modelToRendered2[1];
+      var t = 6; // should be even
+      x = cX1 - t / 2;
+      y = cY1 - t / 2;
+      w = t;
+      h = t;
+    } else {
+      var _util$modelToRendered3 = modelToRenderedPosition(r, pan, zoom, mX1, mY1),
+        _util$modelToRendered4 = _slicedToArray(_util$modelToRendered3, 2),
+        _cX = _util$modelToRendered4[0],
+        _cY = _util$modelToRendered4[1];
+      var _util$modelToRendered5 = modelToRenderedPosition(r, pan, zoom, mX2, mY2),
+        _util$modelToRendered6 = _slicedToArray(_util$modelToRendered5, 2),
+        cX2 = _util$modelToRendered6[0],
+        cY2 = _util$modelToRendered6[1];
+      x = _cX; // (cX1, cY2) is the bottom left corner of the box
+      y = cY2;
+      w = Math.abs(cX2 - _cX);
+      h = Math.abs(cY2 - _cY);
+    }
+    if (w === 0 || h === 0) {
+      return [];
+    }
+    var gl = r.data.contexts[r.WEBGL];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, r.pickingFrameBuffer);
+    if (r.pickingFrameBuffer.needsDraw) {
+      // Draw element z-indexes to the picking framebuffer
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+      renderWebgl(r, null, RENDER_TARGET.PICKING);
+      r.pickingFrameBuffer.needsDraw = false;
+    }
+    var n = w * h; // number of pixels to read
+    // eslint-disable-next-line no-undef
+    var data = new Uint8Array(n * 4); // 4 bytes per pixel
+    gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, data);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    var indexes = new Set();
+    for (var i = 0; i < n; i++) {
+      var pixel = data.slice(i * 4, i * 4 + 4);
+      var index = vec4ToIndex(pixel) - 1; // The framebuffer is cleared with 0s, so z-indexes are offset by 1
+      if (index >= 0) {
+        indexes.add(index);
+      }
+    }
+    return indexes;
+  }
+
+  /**
+   * Cy.js: model coordinate y axis goes down
+   */
+  function findNearestElementsWebgl(r, x, y) {
+    // model coordinates
+    var indexes = getPickingIndexes(r, x, y);
+    var eles = r.getCachedZSortedEles();
+    var node, edge;
+    var _iterator = _createForOfIteratorHelper(indexes),
+      _step;
+    try {
+      for (_iterator.s(); !(_step = _iterator.n()).done;) {
+        var index = _step.value;
+        var ele = eles[index];
+        if (!node && ele.isNode()) {
+          node = ele;
+        }
+        if (!edge && ele.isEdge()) {
+          edge = ele;
+        }
+        if (node && edge) {
+          break;
+        }
+      }
+    } catch (err) {
+      _iterator.e(err);
+    } finally {
+      _iterator.f();
+    }
+    return [node, edge].filter(Boolean);
+  }
+  function renderWebgl(r, options, renderTarget) {
+    var start;
+    var debugInfo;
+    if (r.webglDebug) {
+      debugInfo = [];
+      start = performance.now(); // eslint-disable-line no-undef
+    }
+
+    var eleDrawing = r.eleDrawing;
+    var eleCount = 0;
+    if (renderTarget.screen) {
+      if (r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
+        drawSelectionRectangle(r, options);
+      }
+    }
+
+    // see drawing-elements.js drawCachedElement()
+    if (r.data.canvasNeedsRedraw[r.NODE] || renderTarget.picking) {
+      // eslint-disable-next-line no-inner-declarations
+      var draw = function draw(ele, index) {
+        index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
+        if (ele.isNode()) {
+          eleDrawing.drawTexture(ele, index, 'node-underlay');
+          eleDrawing.drawTexture(ele, index, 'node-body');
+          eleDrawing.drawTexture(ele, index, 'node-label');
+          eleDrawing.drawTexture(ele, index, 'node-overlay');
+        } else {
+          eleDrawing.drawEdgeLine(ele, index);
+          eleDrawing.drawEdgeArrow(ele, index, 'source');
+          eleDrawing.drawEdgeArrow(ele, index, 'target');
+          eleDrawing.drawTexture(ele, index, 'edge-label');
+        }
+      };
+      var gl = r.data.contexts[r.WEBGL];
+      if (renderTarget.screen) {
+        gl.clearColor(0, 0, 0, 0); // background color
+        gl.enable(gl.BLEND); // enable alpha blending of textures
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // we are using premultiplied alpha
+      } else {
+        gl.disable(gl.BLEND);
+      }
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+      var panZoomMatrix = createPanZoomMatrix(r);
+      var eles = r.getCachedZSortedEles();
+      eleCount = eles.length;
+      eleDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
+      if (renderTarget.screen) {
+        for (var i = 0; i < eles.nondrag.length; i++) {
+          draw(eles.nondrag[i], i);
+        }
+        for (var _i2 = 0; _i2 < eles.drag.length; _i2++) {
+          draw(eles.drag[_i2], -1);
+        }
+      } else if (renderTarget.picking) {
+        for (var _i3 = 0; _i3 < eles.length; _i3++) {
+          draw(eles[_i3], _i3);
+        }
+      }
+      eleDrawing.endFrame();
+      if (r.data.gc) {
+        console.log("Garbage Collect!");
+        r.data.gc = false;
+        eleDrawing.gc();
+      }
+      if (renderTarget.screen && r.webglDebugShowAtlases) {
+        drawAxes(r);
+        drawAtlases(r);
+      }
+      r.data.canvasNeedsRedraw[r.NODE] = false;
+      r.data.canvasNeedsRedraw[r.DRAG] = false;
+    }
+    if (r.webglDebug) {
+      // eslint-disable-next-line no-undef
+      var end = performance.now();
+      var compact = true;
+      var batchCount = 0;
+      var count = 0;
+      var _iterator3 = _createForOfIteratorHelper(debugInfo),
+        _step3;
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var _info = _step3.value;
+          batchCount++;
+          count += _info.count;
+        }
+
+        // TODO nodes and edges are no longer is separate batches
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+      var time = Math.ceil(end - start);
+      var report = "".concat(eleCount, " elements, ").concat(count, " rectangles, ").concat(batchCount, " batches");
+      if (compact) {
+        console.log("WebGL (".concat(renderTarget.name, ") - ").concat(report));
+      } else {
+        console.log("WebGL render (".concat(renderTarget.name, ") - frame time ").concat(time, "ms"));
+        console.log("  ".concat(report));
+        console.log('Texture Atlases Used:');
+        var atlasInfo = eleDrawing.getAtlasDebugInfo();
+        var _iterator4 = _createForOfIteratorHelper(atlasInfo),
+          _step4;
+        try {
+          for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+            var info = _step4.value;
+            console.log("  ".concat(info.type, ": ").concat(info.keyCount, " keys, ").concat(info.atlasCount, " atlases"));
+          }
+        } catch (err) {
+          _iterator4.e(err);
+        } finally {
+          _iterator4.f();
+        }
+        console.log('');
+      }
+    }
+  }
 
   var CRp$3 = {};
 
@@ -30642,6 +33199,8 @@ var printLayoutInfo;
   CRp.SELECT_BOX = 0;
   CRp.DRAG = 1;
   CRp.NODE = 2;
+  CRp.WEBGL = 3;
+  CRp.CANVAS_TYPES = ['2d', '2d', '2d', 'webgl2'];
   CRp.BUFFER_COUNT = 3;
   //
   CRp.TEXTURE_BUFFER = 0;
@@ -30649,6 +33208,12 @@ var printLayoutInfo;
   CRp.MOTIONBLUR_BUFFER_DRAG = 2;
   function CanvasRenderer(options) {
     var r = this;
+    var containerWindow = r.cy.window();
+    var document = containerWindow.document;
+    if (options.webgl) {
+      CRp.CANVAS_LAYERS = r.CANVAS_LAYERS = 4;
+      console.log('webgl rendering enabled');
+    }
     r.data = {
       canvases: new Array(CRp.CANVAS_LAYERS),
       contexts: new Array(CRp.CANVAS_LAYERS),
@@ -30680,7 +33245,11 @@ var printLayoutInfo;
     }
     for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
       var canvas = r.data.canvases[i] = document.createElement('canvas'); // eslint-disable-line no-undef
-      r.data.contexts[i] = canvas.getContext('2d');
+      var type = CRp.CANVAS_TYPES[i];
+      r.data.contexts[i] = canvas.getContext(type);
+      if (!r.data.contexts[i]) {
+        error('Could not create canvas of type ' + type);
+      }
       Object.keys(styleMap).forEach(function (k) {
         canvas.style[k] = styleMap[k];
       });
@@ -30694,6 +33263,9 @@ var printLayoutInfo;
     r.data.canvases[CRp.NODE].setAttribute('data-id', 'layer' + CRp.NODE + '-node');
     r.data.canvases[CRp.SELECT_BOX].setAttribute('data-id', 'layer' + CRp.SELECT_BOX + '-selectbox');
     r.data.canvases[CRp.DRAG].setAttribute('data-id', 'layer' + CRp.DRAG + '-drag');
+    if (r.data.canvases[CRp.WEBGL]) {
+      r.data.canvases[CRp.WEBGL].setAttribute('data-id', 'layer' + CRp.WEBGL + '-webgl');
+    }
     for (var i = 0; i < CRp.BUFFER_COUNT; i++) {
       r.data.bufferCanvases[i] = document.createElement('canvas'); // eslint-disable-line no-undef
       r.data.bufferContexts[i] = r.data.bufferCanvases[i].getContext('2d');
@@ -30807,18 +33379,18 @@ var printLayoutInfo;
       if (ele.isNode()) {
         switch (ele.pstyle('text-halign').value) {
           case 'left':
-            p.x = -bb.w;
+            p.x = -bb.w - (bb.leftPad || 0);
             break;
           case 'right':
-            p.x = 0;
+            p.x = -(bb.rightPad || 0);
             break;
         }
         switch (ele.pstyle('text-valign').value) {
           case 'top':
-            p.y = -bb.h;
+            p.y = -bb.h - (bb.topPad || 0);
             break;
           case 'bottom':
-            p.y = 0;
+            p.y = -(bb.botPad || 0);
             break;
         }
       }
@@ -30884,6 +33456,20 @@ var printLayoutInfo;
     lblTxrCache.onDequeue(refineInLayers);
     slbTxrCache.onDequeue(refineInLayers);
     tlbTxrCache.onDequeue(refineInLayers);
+    if (options.webgl) {
+      r.initWebgl(options, {
+        getStyleKey: getStyleKey,
+        getLabelKey: getLabelKey,
+        drawElement: drawElement,
+        drawLabel: drawLabel,
+        getElementBox: getElementBox,
+        getLabelBox: getLabelBox,
+        getElementRotationPoint: getElementRotationPoint,
+        getElementRotationOffset: getElementRotationOffset,
+        getLabelRotationPoint: getLabelRotationPoint,
+        getLabelRotationOffset: getLabelRotationOffset
+      });
+    }
   }
   CRp.redrawHint = function (group, bool) {
     var r = this;
@@ -30896,6 +33482,9 @@ var printLayoutInfo;
         break;
       case 'select':
         r.data.canvasNeedsRedraw[CRp.SELECT_BOX] = bool;
+        break;
+      case 'gc':
+        r.data.gc = true;
         break;
     }
   };
@@ -30932,13 +33521,15 @@ var printLayoutInfo;
     if ((typeof OffscreenCanvas === "undefined" ? "undefined" : _typeof(OffscreenCanvas)) !== ("undefined" )) {
       canvas = new OffscreenCanvas(width, height);
     } else {
+      var containerWindow = this.cy.window();
+      var document = containerWindow.document;
       canvas = document.createElement('canvas'); // eslint-disable-line no-undef
       canvas.width = width;
       canvas.height = height;
     }
     return canvas;
   };
-  [CRp$a, CRp$9, CRp$8, CRp$7, CRp$6, CRp$5, CRp$4, CRp$3, CRp$2, CRp$1].forEach(function (props) {
+  [CRp$b, CRp$a, CRp$9, CRp$8, CRp$7, CRp$6, CRp$5, CRp$4, CRp$3, CRp$2, CRp$1].forEach(function (props) {
     extend(CRp, props);
   });
 
@@ -31270,7 +33861,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.29.1";
+  var version = "3.31.0";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

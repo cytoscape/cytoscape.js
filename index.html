@@ -66,13 +66,13 @@
 					<div class="gallery-demos">
 						<div class="gallery-demo">
 
-							<a class="gallery-link" href="demos/colajs-graph">
-								<span class="gallery-preview" style="background-image: url('img/demos/colajs-graph.png');"></span>
+							<a class="gallery-link" href="demos/fcose-gene">
+								<span class="gallery-preview" style="background-image: url('img/demos/fcose-gene.png');"></span>
 							</a>
 
 							<div class="gallery-title">
-								<a href="https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/colajs-graph">
-									<span class="gallery-name"><span class="fa fa-github"></span> Cola.js gene-gene graph</span>
+								<a href="https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/fcose-gene">
+									<span class="gallery-name"><span class="fa fa-github"></span> FCOSE gene-gene graph</span>
 								</a>
 							</div>
 
@@ -568,6 +568,7 @@
 <li>npm</li>
 <li>yarn</li>
 <li>bower</li>
+<li>jspm</li>
 </ul>
 </li>
 </ul>
@@ -594,14 +595,13 @@
 </ul>
 </li>
 <li>Listed by <a href="https://doi.org/10.5281/zenodo.831800">Zenodo</a> for per-version DOIs</li>
-<li>Listed by <a href="https://omictools.com/cytoscape-js-tool">OMIC Tools</a></li>
 </ul>
 <h2 id="introduction/who-uses-cytoscape.js">Who uses Cytoscape.js <a href="#introduction/who-uses-cytoscape.js"><span class="fa fa-bookmark"></span></a></h2>
 <h3 id="big-name-tech">Big-name tech</h3>
 <ul>
 <li><a href="http://amazon.com">Amazon</a></li>
 <li><a href="https://apache.org">Apache Software Foundation</a></li>
-<li><a href="https://duo.com">Duo</a></li>
+<li><a href="https://www.cisco.com">Cisco</a></li>
 <li><a href="https://www.elastic.co/">Elastic</a></li>
 <li><a href="https://www.fujitsu.com">Fujitsu</a></li>
 <li><a href="https://github.com">GitHub</a></li>
@@ -637,6 +637,7 @@
 <li><a href="http://cpdb.molgen.mpg.de/">ConsensusPathDB</a></li>
 <li><a href="https://dsysmap.irbbarcelona.org">dSysMap</a></li>
 <li><a href="https://www.elsevier.com">Elsevier</a></li>
+<li><a href="https://enrichmentmap.org">EnrichmentMap</a></li>
 <li><a href="https://www.ensembl.org">Ensembl</a></li>
 <li><a href="https://flybase.org/">FlyBase</a></li>
 <li><a href="https://galaxyproject.org">Galaxy</a></li>
@@ -734,6 +735,7 @@
 <li><a href="https://www.appzen.com/">AppZen</a></li>
 <li><a href="https://apromore.com">Apromore</a></li>
 <li><a href="https://www.aras.com/en">Aras</a></li>
+<li><a href="https://arcadedb.com/">ArcadeDB</a></li>
 <li><a href="https://www.athenz.io">Athenz</a></li>
 <li><a href="https://github.com/awslabs/aws-perspective">AWS Perspective</a></li>
 <li><a href="https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview">Azure Bicep</a></li>
@@ -787,10 +789,12 @@
 <li><a href="https://github.com/6illes/weathermap">Network Weathermap</a></li>
 <li><a href="https://newrelic.com">New Relic</a></li>
 <li><a href="https://www.nflows.com">nFlows</a></li>
+<li><a href="https://nodeland.io/">NodeLand</a></li>
 <li><a href="https://nx.dev">Nx</a></li>
 <li><a href="https://obsidian.md">Obsidian</a></li>
 <li><a href="https://www.onepanel.ai">Onepanel</a></li>
 <li><a href="https://opendialog.ai">OpenDialog</a></li>
+<li><a href="https://orchidex.org">Orchidex</a></li>
 <li><a href="https://www.panaya.com">Panaya</a></li>
 <li><a href="https://pinpoint-apm.gitbook.io/pinpoint/">Pinpoint</a></li>
 <li><a href="https://recallgraph.tech">RecallGraph</a></li>
@@ -819,12 +823,21 @@
 <h2 id="introduction/packages">Packages <a href="#introduction/packages"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>npm : <code>npm install cytoscape</code></li>
+<li>yarn : <code>yarn install cytoscape</code></li>
 <li>bower : <code>bower install cytoscape</code></li>
 <li>jspm : <code>jspm install npm:cytoscape</code></li>
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <p></p>
 <ul> 
+    <li>
+        3.31
+        <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.31.0+is%3Aclosed">3.31.0</a>
+            </li>
+        </ul>
+    </li>
     <li>
         3.30
         <ul>
@@ -16539,6 +16552,7 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/lambdalisue/cytoscape-dblclick"><code>dblclick</code></a> : Adds a <code>dblclick</code> event to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-graphml"><code>graphml</code></a> : Adds GraphML import and export functionality to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-layout-utilities"><code>layout-utilities</code></a> : Provides miscellenaous layout utilities in order to manage the placement of nodes or components without layout information.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-pdf-export"><code>pdf-export</code></a> : PDF exporter.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo"><code>undo-redo</code></a> : Adds undo-redo APIs to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities"><code>view-utilities</code></a> : Adds search and highlight APIs to Cytoscape.js.</li>
 </ul>
@@ -16574,20 +16588,16 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 <li>Create a repository on GitHub for your extension’s code</li>
 <li>Use <a href="https://github.com/rollup/rollup-starter-lib">rollup-starter-lib</a> to create the project’s scaffolding.  Alternatively, manually generate the project configuration files with your favourite bundler.</li>
 <li>Use <a href="https://babeljs.io">Babel</a> if you want to support older browsers with your extension.  The <code>rollup-starter-lib</code> repo has an example in the <a href="https://github.com/rollup/rollup-starter-lib/tree/babel"><code>babel</code> branch</a>.</li>
-<li>The default export of your extension should be a registration function, e.g.:</li>
-</ol>
-<pre><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">register</span>(<span class="hljs-params">cytoscape</span>)</span>{
+<li>The default export of your extension should be a registration function, e.g.:<pre><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">register</span>(<span class="hljs-params">cytoscape</span>)</span>{
   cytoscape(<span class="hljs-string">&#x27;collection&#x27;</span>, <span class="hljs-string">&#x27;fooBar&#x27;</span>, fooBarFunction);
 }
 </code></pre>
-<ol>
-<li>You may want to support automatic registration for consumers who use traditional <code>&lt;script&gt;</code> tags to use your extension, i.e.:</li>
-</ol>
-<pre><code><span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> <span class="hljs-built_in">window</span>.cytoscape !== <span class="hljs-string">&#x27;undefined&#x27;</span>){
+</li>
+<li>You may want to support automatic registration for consumers who use traditional <code>&lt;script&gt;</code> tags to use your extension, i.e.:<pre><code><span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> <span class="hljs-built_in">window</span>.cytoscape !== <span class="hljs-string">&#x27;undefined&#x27;</span>){
   register(<span class="hljs-built_in">window</span>.cytoscape);
 }
 </code></pre>
-<ol>
+</li>
 <li>Document your extension’s API in a <code>README.md</code> file in the root directory of your respository.</li>
 <li><a href="https://docs.npmjs.com/cli/publish">Publish your extension to npm</a>.</li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&amp;title=List%20extension%20:%20%3Cyour%20extension%20name%3E&amp;body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description">Submit a request</a> to have your extension listed in the documentation.</li>

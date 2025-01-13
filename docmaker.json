@@ -33,7 +33,7 @@
       "name": "Demos",
       "md": "demos",
       "demos": [
-        { "name": "Cola.js gene-gene graph", "id": "colajs-graph" },
+        { "name": "FCOSE gene-gene graph", "id": "fcose-gene" },
         { "name": "Tokyo railways", "id": "tokyo-railways" },
         { "name": "Wine & cheese", "id": "wine-cheese-map", "github": "cytoscape/wineandcheesemap", "viewUrl": "http://wineandcheesemap.com" },
         { "name": "SBGN stylesheet", "id": "sbgn-stylesheet", "github": "PathwayCommons/cytoscape-sbgn-stylesheet" },

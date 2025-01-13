@@ -23,6 +23,7 @@
     * npm
     * yarn
     * bower
+    * jspm
 * Supports the [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
 * Supports rendering images of graphs on Node.js with [Cytosnap](https://github.com/cytoscape/cytosnap)
 * Has a large suite of tests that can be run in the browser or the terminal
@@ -43,7 +44,6 @@
    * Weekly patch release cadence
    * Monthly feature release cadence
 * Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
-* Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
 
 ## Who uses Cytoscape.js
 
@@ -51,7 +51,7 @@
 
 * [Amazon](http://amazon.com)
 * [Apache Software Foundation](https://apache.org)
-* [Duo](https://duo.com)
+* [Cisco](https://www.cisco.com)
 * [Elastic](https://www.elastic.co/)
 * [Fujitsu](https://www.fujitsu.com)
 * [GitHub](https://github.com)
@@ -87,6 +87,7 @@
 * [ConsensusPathDB](http://cpdb.molgen.mpg.de/)
 * [dSysMap](https://dsysmap.irbbarcelona.org)
 * [Elsevier](https://www.elsevier.com)
+* [EnrichmentMap](https://enrichmentmap.org)
 * [Ensembl](https://www.ensembl.org)
 * [FlyBase](https://flybase.org/)
 * [Galaxy](https://galaxyproject.org)
@@ -184,6 +185,7 @@
 * [AppZen](https://www.appzen.com/)
 * [Apromore](https://apromore.com)
 * [Aras](https://www.aras.com/en)
+* [ArcadeDB](https://arcadedb.com/)
 * [Athenz](https://www.athenz.io)
 * [AWS Perspective](https://github.com/awslabs/aws-perspective)
 * [Azure Bicep](https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview)
@@ -237,10 +239,12 @@
 * [Network Weathermap](https://github.com/6illes/weathermap)
 * [New Relic](https://newrelic.com)
 * [nFlows](https://www.nflows.com)
+* [NodeLand](https://nodeland.io/)
 * [Nx](https://nx.dev)
 * [Obsidian](https://obsidian.md)
 * [Onepanel](https://www.onepanel.ai)
 * [OpenDialog](https://opendialog.ai)
+* [Orchidex](https://orchidex.org)
 * [Panaya](https://www.panaya.com)
 * [Pinpoint](https://pinpoint-apm.gitbook.io/pinpoint/)
 * [RecallGraph](https://recallgraph.tech)
@@ -282,6 +286,7 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Packages
 
 * npm : `npm install cytoscape`
+* yarn : `yarn install cytoscape`
 * bower : `bower install cytoscape`
 * jspm : `jspm install npm:cytoscape`
 

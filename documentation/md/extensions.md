@@ -48,6 +48,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-users"></i> [`node-html-label`](https://github.com/kaluginserg/cytoscape-node-html-label) : Allows HTML to be specified as the labels for nodes.
  * <i class="fa fa-fw fa-users"></i> [`node-edge-html-label`](https://github.com/laikmokashi/cytoscape-node-edge-html-label) : Allows HTML to be specified as the labels for nodes and edges.
  * <i class="fa fa-fw fa-user"></i> [`node-resize`](https://github.com/iVis-at-Bilkent/cytoscape.js-node-resize) : A highly customisable node resizing extension with a traditional UI.
+ * <i class="fa fa-fw fa-user"></i> [`node-resizer`](https://github.com/gxara/cytoscape-js-node-resizer) : A node resizing extension with zero dependencies.
  * <i class="fa fa-fw fa-users"></i> [`noderesize`](https://github.com/curupaco/cytoscape.js-noderesize) : A minimalistic node resize control.
  * <i class="fa fa-fw fa-users"></i> [`overlays`](https://github.com/sgratzl/cytoscape.js-overlays) : Overlays that shows bars, histograms, sparklines, binary sparklines, symbols (categorical data), or boxplots next to nodes.
  * <i class="fa fa-fw fa-user"></i> [`panzoom`](https://github.com/cytoscape/cytoscape.js-panzoom) : A panzoom UI widget.

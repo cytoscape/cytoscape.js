@@ -8,58 +8,56 @@ var cy, defaultSty, options;
 
       .selector('node')
         .style({
-          'background-opacity': 0.4,
-          'label': 'data(id)',
+          'label': 'data(id)'
+        })
+      .selector('#b, #c, #f, #i')
+        .style({
           'outline-offset': 5,
           'outline-color': 'red',
-          'outline-opacity': 0.5,
+          'outline-opacity': 0.125,
           'outline-width': 10,
           'outline-style': 'solid',
           'border-width': 5,
-          'border-opacity': 0.5,
-          'border-color': 'blue',
-          'border-position': 'inside',
-          'width': 220,
-          'height': 60
+          'border-opacity': 0.25,
+          'border-color': 'cyan',
+          'border-position': 'inside'
         })
-      .selector('node#a')
+      .selector('node#c')
         .style({
           'shape': 'round-rectangle',
           'width': 220,
           'height': 60,
           'corner-radius': 30,
-          "label": "I am a long label over-\u200bflowing my max    width,\n but spa\u200bces are ke\u200bpt",
+          "label": "c has a long label over-\u200bflowing its max    width,\n but spa\u200bces are ke\u200bpt",
           "text-max-width": 100,
           "text-wrap": "wrap",
         })
       .selector('node#b')
-      .style({
-        'shape': 'round-hexagon',
-        'width': 60,
-        'height': 60,
-        'corner-radius': 10
-      })
+        .style({
+          'shape': 'round-hexagon',
+          'width': 60,
+          'height': 60,
+          'corner-radius': 10
+        })
       .selector('node#c')
-      .style({
-        'shape': 'round-rectangle',
-        'width': 220,
-        'height': 60,
-        'corner-radius': 5
-      })
-      .selector('node#e')
-      .style({
-        'shape': 'cut-rectangle',
-        'width': 50,
-        'corner-radius': 10,
-      })
-
+        .style({
+          'shape': 'round-rectangle',
+          'width': 220,
+          'height': 60,
+          'corner-radius': 5
+        })
+      .selector('node#f')
+        .style({
+          'shape': 'cut-rectangle',
+          'width': 50,
+          'corner-radius': 10,
+        })
       .selector('edge')
         .style({
           'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
-          'mid-source-arrow-shape': 'triangle-backcurve',
-          'curve-style': 'straight',
+          'mid-source-arrow-shape': 'triangle-backcurve'
         })
       .selector('#ab')
         .style({
@@ -80,7 +78,7 @@ var cy, defaultSty, options;
           'source-arrow-width': '50%',
           'target-arrow-fill': 'hollow',
         })
-      .selector('#ef')
+      .selector('#fi')
         .style({
           'curve-style': 'straight-triangle',
           'source-arrow-shape': 'none',
@@ -98,7 +96,19 @@ var cy, defaultSty, options;
         .style({
           'curve-style': 'bezier'
         })
-      .selector('[source = "b"][target = "f"]')
+      .selector('#ae')
+        .style({
+          'curve-style': 'bezier'
+        })
+      .selector('#be')
+        .style({
+          'curve-style': 'bezier'
+        })
+      .selector('#cf')
+        .style({
+          'curve-style': 'bezier'
+        })
+      .selector('#bf')
         .style({
           'curve-style': 'taxi'
         })
@@ -113,9 +123,15 @@ var cy, defaultSty, options;
       .selector('#eh')
         .style({
           'curve-style': 'round-segments',
-          'segment-distances': [ 0  , 0 , 0  , -50, 0  , 0  , 100 ],
-          'segment-weights': [   0.5, 0.6, 0.7, 0.6, 0.5, 0.8, 0.85],
-          'segment-radii': [ 50, 100 ],
+          'segment-distances': [ 20, -80 ],
+          'segment-weights': [ 0.25, 0.5 ],
+          'segment-radii': [ 8, 8 ],
+        })
+      .selector('#ed')
+        .style({
+          'curve-style': 'segments',
+          'segment-distances': [ -100 ],
+          'segment-weights': [ 0.5 ]
         })
       .selector('#ei')
         .style({
@@ -165,17 +181,18 @@ var cy, defaultSty, options;
         { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
         { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
         { data: { id: 'ce2', weight: 6, source: 'c', target: 'e' } },
-        { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
+        { data: { id: 'cf', weight: 2, source: 'c', target: 'f' } },
         { data: { id: 'de', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'ed', weight: 7, source: 'e', target: 'd' } },
         { data: { id: 'de2', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de3', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'bf', weight: 3, source: 'b', target: 'f' } },
-        { data: { id: 'ef', weight: 3, source: 'e', target: 'f' } },
         { data: { id: 'eg', weight: 3, source: 'e', target: 'g' } },
         { data: { id: 'eh', weight: 3, source: 'e', target: 'h' } },
         { data: { id: 'ei', weight: 3, source: 'e', target: 'i' } },
+        { data: { id: 'fi', weight: 3, source: 'f', target: 'i' } },
         { data: { id: 'gh', weight: 3, source: 'g', target: 'h' } },
       ]
     }

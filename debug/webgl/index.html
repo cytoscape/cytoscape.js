@@ -12,6 +12,8 @@
 
     <link rel="stylesheet" href="./style.css" />
 
+    <script src="https://greggman.github.io/webgl-memory/webgl-memory.js" crossorigin></script>
+
     <script>
       var $ = function( sel ){ return document.querySelector(sel); };
       var $$ = function( sel ){ return document.querySelectorAll(sel); };
@@ -112,8 +114,6 @@
         <br><br>
         <button id="animate-button">Animate selected</button>
         <br><br>
-        <button id="gc-button">Garbage collect (beta)</button>
-        <br><br>
         -->
 
         <h2>WebGL Settings</h2>
@@ -196,7 +196,14 @@
         <p>Open the debug console for debug and performance info. <br>(Option + Command + J)</p>
 
         <br/><br/>
-        <button id="reset-button">Reset</button> <br />
+        <button id="reset-button">Reset</button>
+        <br><br>
+        <button id="webgl-report">WebGL Report</button>
+        <br><br>
+        <button id="gc-button">Garbage collect (beta)</button>
+        <br><br>
+        <button id="save-atlas-button">Save Atlases</button>
+        <br><br>
 
 
       </div>

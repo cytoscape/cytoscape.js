@@ -194,6 +194,44 @@ const paramDefs = {
   $("#fit-button").addEventListener('click', () => cy.fit());
   $("#reset-button").addEventListener('click', () => reloadPage(true));
 
+  $("#webgl-report").addEventListener('click', () => {
+    function findWebGLContext() {
+      const canvases = document.querySelectorAll('canvas');
+      for (let canvas of canvases) {
+        const gl = canvas.getContext('webgl2');
+        if (gl) {
+          return gl;
+        }
+      }
+      return null;
+    }
+
+    const gl = findWebGLContext();
+    const ext = gl.getExtension('GMAN_webgl_memory');
+    if (ext) {
+      console.log("WebGL Report");
+      // memory info
+      const info = ext.getMemoryInfo();
+      // every texture, it's size, a stack of where it was created and a stack of where it was last updated.
+      const textures = ext.getResourcesInfo(WebGLTexture);
+      // every buffer, it's size, a stack of where it was created and a stack of where it was last updated.
+      const buffers = ext.getResourcesInfo(WebGLBuffer);
+
+      console.log('memory info', info);
+      console.log('textures', textures);
+      console.log('buffers', buffers);
+    }
+  });
+
+  $("#gc-button").addEventListener('click', () => {
+    cy.gc();
+  });
+
+  $("#save-atlas-button").addEventListener('click', () => {
+    cy.webglCommand('png_save');
+  });
+
+
   // $("#delete-button").addEventListener('click', () => {
   //   cy.remove(':selected');
   // });
@@ -218,10 +256,6 @@ const paramDefs = {
 
   // $("#select-button").addEventListener('click', () => {
   //   cy.nodes().select();
-  // });
-
-  // $("#gc-button").addEventListener('click', () => {
-  //   cy.gc();
   // });
 
 })();

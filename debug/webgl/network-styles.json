@@ -104,6 +104,13 @@
       }
     },
     {
+      "selector": "#n1",
+      "style": {
+        "visibility": "hidden"
+      
+      }
+    },
+    {
       "selector": "#n1-n2",
       "style": {
         "line-style": "solid"

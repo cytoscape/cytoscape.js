@@ -377,7 +377,7 @@ export class ElementDrawingWebGL {
 
   drawTexture(ele, eleIndex, type) {
     const { atlasManager } = this;
-    if(!atlasManager.isRenderable(ele, type)) {
+    if(!ele.visible() || !atlasManager.isVisible(ele, type)) {
       return;
     }
     if(!atlasManager.canAddToCurrentBatch(ele, type)) {
@@ -434,6 +434,9 @@ export class ElementDrawingWebGL {
 
 
   drawEdgeArrow(edge, eleIndex, prefix) {
+    if(!edge.visible()) {
+      return;
+    }
     // Edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object.
     const rs = edge._private.rscratch;
 
@@ -453,6 +456,7 @@ export class ElementDrawingWebGL {
       return; 
     }
 
+    // check shape after the x/y check because pstyle() is a bit slow
     const arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
     if(arrowShape === 'none' ) {
       return; 
@@ -504,14 +508,20 @@ export class ElementDrawingWebGL {
 
 
   drawEdgeLine(edge, eleIndex) {
+    if(!edge.visible()) {
+      return;
+    }
+    const points = this.getEdgePoints(edge);
+    if(!points) {
+      return;
+    }
+
     // line style
     const baseOpacity = edge.pstyle('opacity').value;
     const lineOpacity = edge.pstyle('line-opacity').value;
     const width = edge.pstyle('width').pfValue;
     const color = edge.pstyle('line-color').value;
     const opacity = baseOpacity * lineOpacity;
-
-    const points = this.getEdgePoints(edge);
 
     if(points.length/2 + this.instanceCount > this.maxInstances) {
       this.endBatch();
@@ -591,6 +601,11 @@ export class ElementDrawingWebGL {
   
   getEdgePoints(edge) {
     const rs = edge._private.rscratch;
+
+    // if bezier ctrl pts can not be calculated, then die
+    if( rs.badLine || rs.allpts == null || isNaN(rs.allpts[0]) ){ // isNaN in case edge is impossible and browser bugs (e.g. safari)
+      return;
+    }
     const controlPoints = rs.allpts;
     if(controlPoints.length == 4) {
       return controlPoints;

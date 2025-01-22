@@ -1,6 +1,3 @@
-// import { EdgeDrawing } from './drawing-edges-webgl';
-// import { EdgeBezierDrawing } from './drawing-edges-curved-webgl';
-// import { NodeDrawing } from './drawing-nodes-webgl';
 import { ElementDrawingWebGL } from './drawing-elements-webgl';
 import { RENDER_TARGET, renderDefaults } from './defaults';
 import { OverlayUnderlayRenderer } from './drawing-overlay';
@@ -50,16 +47,6 @@ CRp.initWebgl = function(opts, fns) {
     return label && label.value;
   };
 
-  // r.edgeDrawing = new EdgeBezierDrawing(r, gl, opts, renderDefaults({
-  //   getKey: fns.getLabelKey,
-  //   getBoundingBox: fns.getLabelBox,
-  //   drawElement: fns.drawLabel,
-  //   getRotation: getLabelRotation,
-  //   getRotationPoint: fns.getLabelRotationPoint,
-  //   getRotationOffset: fns.getLabelRotationOffset,
-  //   isVisible: isLabelVisible,
-  // }));
-
   r.eleDrawing = new ElementDrawingWebGL(r, gl, opts);
   const our = new OverlayUnderlayRenderer(r);
   
@@ -67,7 +54,6 @@ CRp.initWebgl = function(opts, fns) {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-    isVisible: ele => ele.visible(),
   }));
 
   r.eleDrawing.addTextureRenderType('node-label', renderDefaults({

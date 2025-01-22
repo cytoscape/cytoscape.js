@@ -12,6 +12,6 @@ export const renderDefaults = defaults({
   getRotation: null,
   getRotationPoint: null,
   getRotationOffset: null,
-  isVisible: null,
+  isVisible: () => true,  // this is an extra check for visibility in addition to ele.visible()
   getPadding: null,
 });

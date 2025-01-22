@@ -1,5 +1,3 @@
-/*global console */
-
 import * as is from '../is.mjs';
 import * as strings from './strings.mjs';
 import * as regex from './regex.mjs';
@@ -7,17 +5,17 @@ import * as sort from './sort.mjs';
 import { memoize } from './memoize.mjs';
 import { extend } from './extend.mjs';
 
-export * from './colors';
-export * from './maps';
-export * from './strings';
-export * from './timing';
-export * from './hash';
+export * from './colors.mjs';
+export * from './maps.mjs';
+export * from './strings.mjs';
+export * from './timing.mjs';
+export * from './hash.mjs';
 
 export { strings, extend, extend as assign, memoize, regex, sort };
 
 let warningsEnabled = true;
-let warnSupported = console.warn != null; // eslint-disable-line no-console
-let traceSupported = console.trace != null; // eslint-disable-line no-console
+let warnSupported = console.warn != null;
+let traceSupported = console.trace != null;
 
 export const MAX_INT = Number.MAX_SAFE_INTEGER || 9007199254740991;
 
@@ -41,7 +39,7 @@ export const warnings = enabled => {
   }
 };
 
-export const warn = msg => { /* eslint-disable no-console */
+export const warn = msg => {
   if( !warnings() ){ return; }
 
   if( warnSupported ){
@@ -53,7 +51,7 @@ export const warn = msg => { /* eslint-disable no-console */
       console.trace();
     }
   }
-}; /* eslint-enable */
+};
 
 export const clone = obj => {
   return extend( {}, obj );

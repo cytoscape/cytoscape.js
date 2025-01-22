@@ -1,5 +1,5 @@
 import window from '../window.mjs';
-import debounce from 'lodash/debounce';
+import debounce from 'lodash/debounce.js';
 
 var performance = window ? window.performance : null;
 

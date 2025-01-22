@@ -5,7 +5,7 @@ import path from 'path';
 import process from 'process';
 
 // Adjust the base directory to match your project layout:
-const SRC_DIR = path.join(process.cwd(), 'src');
+const SRC_DIR = path.join(process.cwd(), 'test');
 
 /**
  * Recursively gather all .mjs files in the given directory

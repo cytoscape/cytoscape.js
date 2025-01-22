@@ -1,5 +1,5 @@
-var expect = require('chai').expect;
-var cytoscape = require('../src/test.js', cytoscape);
+import { expect } from 'chai';
+import cytoscape from '../src/test.mjs';
 
 describe('Collection style', function(){
 

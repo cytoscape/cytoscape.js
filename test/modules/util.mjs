@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { hashString, hashInt, hashIntsArray, hashStrings } from '../../src/util';
+import { hashString, hashInt, hashIntsArray, hashStrings } from '../../src/util/index.mjs';
 
 var randInt = function(min, max){
   return Math.round(Math.random() * (max - min) + min);

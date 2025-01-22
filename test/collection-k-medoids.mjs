@@ -1,5 +1,5 @@
-var expect = require('chai').expect;
-var cytoscape = require('../src/test.js', cytoscape);
+import { expect } from 'chai';
+import cytoscape from '../src/test.mjs';
 
 // Expected results from: http://www.inf.unibz.it/dis/teaching/DWDM/slides2010/lesson8-Clustering.pdf
 //                        https://en.wikipedia.org/wiki/K-medoids

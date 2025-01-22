@@ -1,6 +1,6 @@
 import { describe } from 'mocha';
 import { expect } from 'chai';
-import { Atlas, AtlasCollection } from '../../src/extensions/renderer/canvas/webgl/atlas';
+import { Atlas, AtlasCollection } from '../../src/extensions/renderer/canvas/webgl/atlas.mjs';
 
 
 function createTextureCanvas(r, width, height) {

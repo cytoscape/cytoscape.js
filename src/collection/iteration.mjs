@@ -1,5 +1,5 @@
-import * as is from '../is' ;
-import zIndexSort from './zsort' ;
+import * as is from '../is.mjs' ;
+import zIndexSort from './zsort.mjs' ;
 import * as util from '../util/index.mjs';
 
 let elesfn = ({
@@ -124,10 +124,10 @@ elesfn.each = elesfn.forEach;
 
 const defineSymbolIterator = () => {
   const typeofUndef = typeof undefined;
-  const isIteratorSupported = typeof Symbol != typeofUndef && typeof Symbol.iterator != typeofUndef; // eslint-disable-line no-undef
+  const isIteratorSupported = typeof Symbol != typeofUndef && typeof Symbol.iterator != typeofUndef;
 
   if (isIteratorSupported) {
-    elesfn[Symbol.iterator] = function() { // eslint-disable-line no-undef
+    elesfn[Symbol.iterator] = function() {
       let entry = { value: undefined, done: false };
       let i = 0;
       let length = this.length;
@@ -143,7 +143,7 @@ const defineSymbolIterator = () => {
 
           return entry;
         },
-        [Symbol.iterator]: function() { // eslint-disable-line no-undef
+        [Symbol.iterator]: function() {
           return this;
         }
       };

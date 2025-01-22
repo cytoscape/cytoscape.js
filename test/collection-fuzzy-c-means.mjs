@@ -1,5 +1,5 @@
-var expect = require('chai').expect;
-var cytoscape = require('../src/test.js', cytoscape);
+import { expect } from 'chai';
+import cytoscape from '../src/test.mjs';
 
 // Expected results generated from the numerical example found in the paper:
 // "FCM: The fuzzy c-means clustering algorithm" by JC Bezdek

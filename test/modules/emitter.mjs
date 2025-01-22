@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import Emitter from '../../src/emitter';
+import Emitter from '../../src/emitter.mjs';
 
 describe('Emitter', function(){
   var em;

@@ -2,13 +2,17 @@
 This file tells the Mocha tests what build of Cytoscape to use.
 */
 
-// For Travis or manual build tests, use the CJS build
-// NB : Must do `npm run build:cjs` before `npm test`
-if( process.env.TRAVIS || process.env.TEST_BUILD ){
-  module.exports = require('../build/cytoscape.cjs.js');
+// For manual build tests, use the ESM build
+// NB : Must do `npm run build` before `npm test`
+let cytoscape;
 
-// Otherwise use the unbundled, unbabelified, raw source
-// NB : Must use a version of Node that natively supports all JS features used in the lib
+if (process.env.TEST_BUILD) {
+  // Dynamically import the ESM build
+  cytoscape = await import('../build/cytoscape.esm.mjs'); // Assuming the ESM build uses `.esm.js`
 } else {
-  module.exports = require('./index.js').default;
+  // Dynamically import the unbundled, unbabelified raw source
+  cytoscape = await import('./index.mjs');
 }
+
+// Export the module (adjust based on whether you need default or named exports)
+export default cytoscape.default || cytoscape;

@@ -1,5 +1,5 @@
 import Map from '../../../map.mjs';
-import Set from'../../../set';
+import Set from'../../../set.mjs';
 import * as util from '../../../util/index.mjs';
 
 // Allows lookups for (ele, lvl) => cache.

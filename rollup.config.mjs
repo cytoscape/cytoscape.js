@@ -2,9 +2,15 @@ import nodeResolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import babel from '@rollup/plugin-babel';
 import replace from '@rollup/plugin-replace';
-import { terser } from "rollup-plugin-terser";
+import terser from '@rollup/plugin-terser';
 import license from 'rollup-plugin-license';
 import path from 'path';
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
 const FILE = process.env.FILE;
@@ -21,8 +27,14 @@ const envVariables = {
   'process.env.NODE_ENV': JSON.stringify(NODE_ENV)
 };
 
+const replaceOptions = {
+  values: envVariables,
+  preventAssignment: true
+};
+
 const getBabelOptions = () => ({
-  exclude: '**/node_modules/**'
+  exclude: '**/node_modules/**',
+  babelHelpers: 'bundled'
 });
 
 // Ignore all node_modules dependencies
@@ -50,7 +62,7 @@ const configs = [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
-      replace(envVariables),
+      replace(replaceOptions),
       license(licenseHeaderOptions)
     ]
   },
@@ -66,10 +78,8 @@ const configs = [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
-      replace(envVariables),
-      terser({
-        sourcemap: false
-      }),
+      replace(replaceOptions),
+      terser(),
       license(licenseHeaderOptions)
     ]
   },
@@ -84,7 +94,7 @@ const configs = [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
-      replace(envVariables),
+      replace(replaceOptions),
       license(licenseHeaderOptions),
       terser()
     ]
@@ -97,7 +107,7 @@ const configs = [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
-      replace(envVariables),
+      replace(replaceOptions),
       license(licenseHeaderOptions)
     ]
   },
@@ -109,7 +119,7 @@ const configs = [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
-      replace(envVariables),
+      replace(replaceOptions),
       license(licenseHeaderOptions)
     ]
   }

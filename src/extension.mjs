@@ -1,4 +1,4 @@
-import * as util from'./util';
+import * as util from'./util/index.mjs';
 import define from './define/index.mjs';
 import Collection from './collection/index.mjs';
 import Core from './core/index.mjs';

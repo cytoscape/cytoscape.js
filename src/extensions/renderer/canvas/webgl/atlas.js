@@ -528,7 +528,7 @@ export class AtlasManager {
     }
   }
 
-  isRenderable(ele, type) {
+  isVisible(ele, type) {
     const opts = this.getRenderTypeOpts(type);
     return opts && opts.isVisible(ele);
   }

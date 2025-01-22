@@ -12,7 +12,7 @@ const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
 const BABEL = process.env.BABEL !== 'false'; // default true
 const NODE_ENV = process.env.NODE_ENV === 'development' ? 'development' : 'production'; // default prod
 
-const input = './src/index.js';
+const input = './src/index.mjs';
 
 const name = 'cytoscape';
 

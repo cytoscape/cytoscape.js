@@ -114,7 +114,6 @@ CRp.initWebgl = function(opts, fns) {
   overrideCanvasRendererFunctions(r);
 };
 
-
 /**
  * Plug into the canvas renderer to use webgl for rendering.
  */
@@ -124,16 +123,16 @@ function overrideCanvasRendererFunctions(r) {
     r.render = function(options) {
       options = options || {};
       const cy = r.cy; 
-      if(r.webgl) {
-        // if the zoom level is greater than the max zoom level, then disable webgl
-        if(cy.zoom() > eleTextureCache.maxZoom) {
-          clearWebgl(r);
-          renderCanvas.call(r, options); 
-        } else {
-          clearCanvas(r);
-          renderWebgl(r, options, RENDER_TARGET.SCREEN);
-        }
+      let redraw = false;
+      // if the zoom level is greater than the max zoom level, then disable webgl
+      if(cy.zoom() > eleTextureCache.maxZoom) {
+        clearWebgl(r);
+        renderCanvas.call(r, options); 
+      } else {
+        clearCanvas(r);
+        redraw = renderWebgl(r, options, RENDER_TARGET.SCREEN);
       }
+      return redraw;
     };
   }
 
@@ -481,6 +480,12 @@ function renderWebgl(r, options, renderTarget) {
     r.data.canvasNeedsRedraw[r.DRAG] = false;
   }
 
+  const redraw = eleDrawing.needAnotherFrame();
+  if(redraw) {
+    r.data.canvasNeedsRedraw[r.NODE] = true;
+    r.data.canvasNeedsRedraw[r.DRAG] = true;
+  }
+
   if(r.webglDebug) {
     // eslint-disable-next-line no-undef
     const end = performance.now();
@@ -495,7 +500,9 @@ function renderWebgl(r, options, renderTarget) {
 
     // TODO nodes and edges are no longer is separate batches
     const time = Math.ceil(end - start);
-    const report = `${eleCount} elements, ${count} rectangles, ${batchCount} batches`;
+    const atlasInfo = eleDrawing.getAtlasDebugInfo();
+    const totalAtlases = atlasInfo.reduce((count, info) => count + info.atlasCount, 0);
+    const report = `${eleCount} elements, ${count} rectangles, ${batchCount} batches, ${totalAtlases} atlases`;
     if(compact) {
       console.log(`WebGL (${renderTarget.name}) - ${report}`);
     } else {
@@ -510,6 +517,7 @@ function renderWebgl(r, options, renderTarget) {
     }
   }
 
+  return redraw;
 }
 
 export default CRp;

@@ -9,6 +9,9 @@ const TEXTURE = 0;
 const EDGE_STRAIGHT = 1;
 const EDGE_CURVE_SEGMENT = 2;
 const EDGE_ARROW = 3;
+const PLACEHOLDER = 4;
+
+const TEX_DRAW_TIME_THRESHOLD = 1000 / 20; // milliseconds
 
 
 export class ElementDrawingWebGL {
@@ -119,7 +122,7 @@ export class ElementDrawingWebGL {
             texH = aTex1.w;
             texMatrix = mat3(
               vec3(aScaleRotate1.xy, 0.0),
-              vec3(aScaleRotate2.zw, 0.0),
+              vec3(aScaleRotate1.zw, 0.0),
               vec3(aTranslate1,      1.0)
             );
           } else {
@@ -223,7 +226,16 @@ export class ElementDrawingWebGL {
           );
           gl_Position = vec4(uPanZoomMatrix * transform * vec3(position, 1.0), 1.0);
           vEdgeColor = aEdgeColor;
-        } else {
+        }
+        else if(aVertType == ${PLACEHOLDER}) {
+          mat3 transform = mat3(
+            vec3(aScaleRotate1.xy, 0.0),
+            vec3(aScaleRotate1.zw, 0.0),
+            vec3(aTranslate1,      1.0)
+          );
+          gl_Position = vec4(uPanZoomMatrix * transform * vec3(position, 1.0), 1.0);
+        } 
+        else {
           gl_Position = vec4(2.0, 0.0, 0.0, 1.0); // discard vertex by putting it outside webgl clip space
         }
 
@@ -258,6 +270,8 @@ export class ElementDrawingWebGL {
           // blend arrow color with background (using premultiplied alpha)
           outColor.rgb = vEdgeColor.rgb + (uBGColor.rgb * (1.0 - vEdgeColor.a)); 
           outColor.a = 1.0; // make opaque, masks out line under arrow
+        } else if(vVertType == ${PLACEHOLDER}) {
+          outColor = vec4(0.8, 0.8, 0.8, 1.0);
         } else {
           outColor = vEdgeColor;
         }
@@ -358,6 +372,13 @@ export class ElementDrawingWebGL {
     this.panZoomMatrix = panZoomMatrix;
     this.debugInfo = debugInfo;
     this.renderTarget = renderTarget;
+
+    this.texFrameInfo = {
+      drawCount: 0, // the number of textures drawn this frame
+      startTime: null,
+      drawPlaceholders: false
+    };
+
     this.startBatch();
   }
 
@@ -373,25 +394,43 @@ export class ElementDrawingWebGL {
   getTempMatrix() {
     return this.tempMatrix = this.tempMatrix || mat3.create();
   }
-
-
+  
   drawTexture(ele, eleIndex, type) {
-    const { atlasManager } = this;
+    const { atlasManager, texFrameInfo } = this;
+
     if(!ele.visible() || !atlasManager.isVisible(ele, type)) {
+      return;
+    }
+    if(texFrameInfo.drawPlaceholders) {
+      this._drawTexturePlacholder(ele, eleIndex, type);
       return;
     }
     if(!atlasManager.canAddToCurrentBatch(ele, type)) {
       this.endBatch(); // draws then starts a new batch
     }
     
+    const atlasInfo = atlasManager.getOrCreateAtlas(ele, type, atlasInfo); // draws to the atlas if needed
+    const { atlasID, tex1, tex2, drawn } = atlasInfo;
+
+    if(drawn) { // the element had to be drawn to the atlas (aka texture)
+      if(texFrameInfo.drawCount == 0) {
+        texFrameInfo.startTime = performance.now(); // eslint-disable-line no-undef
+      }
+      texFrameInfo.drawCount++;
+      if(!texFrameInfo.drawPlaceholders && texFrameInfo.drawCount % 50 == 0) { // TODO no magic numbers
+        const currTime = performance.now(); // eslint-disable-line no-undef
+        if(currTime - texFrameInfo.startTime > TEX_DRAW_TIME_THRESHOLD) {
+          // spent too much time this frame drawing textures, draw placeholders for the rest of the frame
+          texFrameInfo.drawPlaceholders = true;
+        }
+      }
+    }
+
     const instance = this.instanceCount;
     this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
 
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
-
-    const atlasInfo = atlasManager.getAtlasInfo(ele, type, atlasInfo);
-    const { atlasID, tex1, tex2 } = atlasInfo;
 
     // Set values in the buffers using Typed Array Views for performance.
     const atlasIdView = this.atlasIdBuffer.getView(instance);
@@ -425,6 +464,35 @@ export class ElementDrawingWebGL {
       translateView[0] = transform[6];
       translateView[1] = transform[7];
     }
+
+    this.instanceCount++;
+    if(this.instanceCount >= this.maxInstances) {
+      this.endBatch();
+    }
+  }
+
+
+  _drawTexturePlacholder(ele, eleIndex, type) {
+    const { atlasManager } = this;
+
+    const instance = this.instanceCount;
+    this.vertTypeBuffer.getView(instance)[0] = PLACEHOLDER;
+
+    const indexView = this.indexBuffer.getView(instance);
+    util.indexToVec4(eleIndex, indexView);
+
+    const transform = this.getTempMatrix();
+    atlasManager.setPlaceholderTransformMatrix(transform, ele, type);
+
+    const scaleRotateView = this.scaleRotate1Buffer.getView(instance);
+    scaleRotateView[0] = transform[0];
+    scaleRotateView[1] = transform[1];
+    scaleRotateView[2] = transform[3];
+    scaleRotateView[3] = transform[4];
+
+    const translateView = this.translate1Buffer.getView(instance);
+    translateView[0] = transform[6];
+    translateView[1] = transform[7];
 
     this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {
@@ -489,7 +557,6 @@ export class ElementDrawingWebGL {
     const colorView = this.edgeColorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
-    // TODO change attribute names to scaleRotateBuffer1 and remove the 'tex' prefix
     const scaleRotateView = this.scaleRotate1Buffer.getView(instance);
     scaleRotateView[0] = transform[0];
     scaleRotateView[1] = transform[1];
@@ -718,6 +785,11 @@ export class ElementDrawingWebGL {
 
     // start the next batch, even if not needed
     this.startBatch();
+  }
+
+  needAnotherFrame() {
+    // if we had to draw any placeholders then we need another frame
+    return this.texFrameInfo.drawPlaceholders;
   }
 
   getDebugInfo() {

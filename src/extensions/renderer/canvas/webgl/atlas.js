@@ -545,15 +545,19 @@ export class AtlasManager {
     return this.batchAtlases;
   }
 
-  getOrCreateAtlas(ele, bb, type) {
+  getAtlasForEle(ele, bb, type) {
     const opts = this.renderTypes.get(type);
     const styleKey = opts.getKey(ele);
     const id = ele.id();
 
+    let drawn = false;
     // Draws the texture if needed.
-    return opts.atlasCollection.draw(id, styleKey, bb, context => {
+    const atlas = opts.atlasCollection.draw(id, styleKey, bb, context => {
       opts.drawElement(context, ele, bb, true, true);
+      drawn = true;
     });
+
+    return { atlas, drawn };
   }
 
   getAtlasIndexForBatch(atlas) {
@@ -572,10 +576,10 @@ export class AtlasManager {
     return Array.from({ length: this.maxAtlases }, (v,i) => i);
   }
 
-  getAtlasInfo(ele, type) {
+  getOrCreateAtlas(ele, type) {
     const opts = this.renderTypes.get(type);
     const bb = opts.getBoundingBox(ele);
-    const atlas = this.getOrCreateAtlas(ele, bb, type);
+    const { atlas, drawn } = this.getAtlasForEle(ele, bb, type); // draws if needed
     const atlasID = this.getAtlasIndexForBatch(atlas);
     if(atlasID === undefined) {
       return undefined; // batch is full
@@ -583,7 +587,7 @@ export class AtlasManager {
     const styleKey = opts.getKey(ele);
     const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
     // This object may be passed back to setTransformMatrix()
-    return { atlasID, tex:tex1, tex1, tex2, bb, type, styleKey };
+    return { atlasID, tex:tex1, tex1, tex2, bb, type, styleKey, drawn };
   }
 
   canAddToCurrentBatch(ele, type) {
@@ -614,7 +618,20 @@ export class AtlasManager {
     }
 
     const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
+    this._applyTransformMatrix(matrix, adjBB, opts, ele);
+  }
 
+  /**
+   * Get the transformation for an element that doesn't have a texture in the
+   * atlas yet.
+   */
+  setPlaceholderTransformMatrix(matrix, ele, type) {
+    const opts = this.getRenderTypeOpts(type);
+    const bb = opts.getBoundingBox(ele);
+    this._applyTransformMatrix(matrix, bb, opts, ele);
+  }
+
+  _applyTransformMatrix(matrix, adjBB, opts, ele) {
     let x, y;
     mat3.identity(matrix);
 

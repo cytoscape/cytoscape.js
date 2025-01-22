@@ -65,7 +65,7 @@ BRp.startRenderLoop = function(){
 
       var startTime = util.performanceNow();
 
-      r.render( r.renderOptions );
+      const redraw = r.render( r.renderOptions );
 
       var endTime = r.lastDrawTime = util.performanceNow();
 
@@ -91,7 +91,7 @@ BRp.startRenderLoop = function(){
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime / 2 + duration / 2;
 
-      r.requestedFrame = false;
+      r.requestedFrame = Boolean(redraw);
     } else {
       beforeRenderCallbacks( r, false, requestTime );
     }

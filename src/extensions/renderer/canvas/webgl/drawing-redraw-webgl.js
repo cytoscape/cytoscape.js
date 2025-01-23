@@ -495,7 +495,10 @@ function renderWebgl(r, options, renderTarget) {
 
     // TODO nodes and edges are no longer is separate batches
     const time = Math.ceil(end - start);
-    const report = `${eleCount} elements, ${count} rectangles, ${batchCount} batches`;
+    const atlasInfo = eleDrawing.getAtlasDebugInfo();
+    const wrappedCount = eleDrawing.wrappedCount;
+    const totalAtlases = atlasInfo.reduce((count, info) => count + info.atlasCount, 0);
+    const report = `${eleCount} elements, ${count} rectangles, ${batchCount} batches, ${totalAtlases} atlases. ${wrappedCount} wrapped textures`;
     if(compact) {
       console.log(`WebGL (${renderTarget.name}) - ${report}`);
     } else {

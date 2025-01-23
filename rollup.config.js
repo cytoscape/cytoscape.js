@@ -4,6 +4,7 @@ import babel from '@rollup/plugin-babel';
 import replace from '@rollup/plugin-replace';
 import { terser } from "rollup-plugin-terser";
 import license from 'rollup-plugin-license';
+import webWorkerLoader from 'rollup-plugin-web-worker-loader';
 import path from 'path';
 
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
@@ -51,7 +52,8 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      license(licenseHeaderOptions)
+      license(licenseHeaderOptions),
+      webWorkerLoader()
     ]
   },
 
@@ -70,7 +72,8 @@ const configs = [
       terser({
         sourcemap: false
       }),
-      license(licenseHeaderOptions)
+      license(licenseHeaderOptions),
+      webWorkerLoader()
     ]
   },
 
@@ -86,7 +89,8 @@ const configs = [
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
       license(licenseHeaderOptions),
-      terser()
+      terser(),
+      webWorkerLoader()
     ]
   },
 
@@ -98,7 +102,8 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      license(licenseHeaderOptions)
+      license(licenseHeaderOptions),
+      webWorkerLoader()
     ]
   },
 
@@ -110,7 +115,8 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      license(licenseHeaderOptions)
+      license(licenseHeaderOptions),
+      webWorkerLoader()
     ]
   }
 ];

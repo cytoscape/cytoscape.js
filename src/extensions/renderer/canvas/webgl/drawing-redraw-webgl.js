@@ -7,6 +7,8 @@ import { debounce } from '../../../../util';
 import { color2tuple } from '../../../../util/colors';
 import { mat3 } from 'gl-matrix';
 
+import BasisWorker from 'web-worker:./basis-worker.js';
+import { MessageType } from './basis-worker.js';
 
 
 function getBGColor(container) {
@@ -110,9 +112,33 @@ CRp.initWebgl = function(opts, fns) {
     }
   });
 
+  initBasisWorker(opts, r);
   // "Override" certain functions in canvas and base renderer
   overrideCanvasRendererFunctions(r);
 };
+
+
+function initBasisWorker(opts, r) {
+  console.log('initBasisWorker', opts.webglUseBasis, opts.webglBasisJsURL, opts.webglBasisWasmURL);
+  if(opts.webglUseBasis && opts.webglBasisJsURL && opts.webglBasisWasmURL) {
+    const basisWorker = new BasisWorker();
+
+    basisWorker.onmessage = (event) => {
+      const { data } = event;
+      console.log("got message back from worker", data);
+    };
+
+    basisWorker.postMessage({ 
+      type: MessageType.INIT, 
+      jsUrl: opts.webglBasisJsURL, 
+      wasmUrl: opts.webglBasisWasmURL
+    });
+
+    basisWorker.postMessage({
+      type: MessageType.ENCODE
+    });
+  }
+}
 
 /**
  * Plug into the canvas renderer to use webgl for rendering.

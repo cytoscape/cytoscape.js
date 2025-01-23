@@ -29,7 +29,7 @@ const paramDefs = {
     control: '#texture-size-select'
   },
   webglTexRows: {
-    default: 12,
+    default: 24,
     control: '#texture-rows-select'
   },
   webglBatchSize: {
@@ -72,6 +72,9 @@ const paramDefs = {
         webglTexRows: params.webglTexRows,
         webglBatchSize: params.webglBatchSize,
         webglTexPerBatch: params.webglTexPerBatch,
+        webglUseBasis: true,
+        webglBasisJsURL:   'http://localhost:8000/src/extensions/renderer/canvas/webgl/basis/basis_encoder.js',
+        webglBasisWasmURL: 'http://localhost:8000/src/extensions/renderer/canvas/webgl/basis/basis_encoder.wasm'
       },
       style: style,
       elements: elements,

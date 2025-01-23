@@ -74,6 +74,8 @@ export class ElementDrawingWebGL {
       // instanced
       in vec2 aPosition; 
 
+      in mat3 aTransform;
+
       // what are we rendering?
       in int aVertType;
 
@@ -82,14 +84,7 @@ export class ElementDrawingWebGL {
       
       // For textures
       in int aAtlasId; // which shader unit/atlas to use
-      in vec4 aTex1; // x/y/w/h of texture in atlas
-      in vec4 aTex2; 
-
-      // for any transforms that are needed
-      in vec4 aScaleRotate1;  // vectors use fewer attributes than matrices
-      in vec2 aTranslate1;
-      in vec4 aScaleRotate2;
-      in vec2 aTranslate2;
+      in vec4 aTex; // x/y/w/h of texture in atlas
 
       // for edges
       in vec4 aPointAPointB;
@@ -108,47 +103,28 @@ export class ElementDrawingWebGL {
         vec2 position = aPosition;
 
         if(aVertType == ${TEXTURE}) {
-          float texX;
-          float texY;
-          float texW;
-          float texH;
-          mat3  texMatrix;
+          float texX = aTex.x;
+          float texY = aTex.y;
+          float texW = aTex.z;
+          float texH = aTex.w;
 
           int vid = gl_VertexID;
-          if(vid <= 5) {
-            texX = aTex1.x;
-            texY = aTex1.y;
-            texW = aTex1.z;
-            texH = aTex1.w;
-            texMatrix = mat3(
-              vec3(aScaleRotate1.xy, 0.0),
-              vec3(aScaleRotate1.zw, 0.0),
-              vec3(aTranslate1,      1.0)
-            );
-          } else {
-            texX = aTex2.x;
-            texY = aTex2.y;
-            texW = aTex2.z;
-            texH = aTex2.w;
-            texMatrix = mat3(
-              vec3(aScaleRotate2.xy, 0.0),
-              vec3(aScaleRotate2.zw, 0.0),
-              vec3(aTranslate2,      1.0)
-            );
-          }
 
-          if(vid == 1 || vid == 2 || vid == 4 || vid == 7 || vid == 8 || vid == 10) {
+          if(vid == 1 || vid == 2 || vid == 4) {
             texX += texW;
           }
-          if(vid == 2 || vid == 4 || vid == 5 || vid == 8 || vid == 10 || vid == 11) {
+          if(vid == 2 || vid == 4 || vid == 5) {
             texY += texH;
           }
 
           float d = float(uAtlasSize);
           vTexCoord = vec2(texX / d, texY / d); // tex coords must be between 0 and 1
 
-          gl_Position = vec4(uPanZoomMatrix * texMatrix * vec3(position, 1.0), 1.0);
+          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         } 
+        else if(aVertType == ${PLACEHOLDER}) {
+          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
+        }
         else if(aVertType == ${EDGE_STRAIGHT} && vid < 6) {
           vec2 source = aPointAPointB.xy;
           vec2 target = aPointAPointB.zw;
@@ -219,22 +195,9 @@ export class ElementDrawingWebGL {
           if(vid == 2)
             position = vec2( 0.15, -0.3);
 
-          mat3 transform = mat3(
-            vec3(aScaleRotate1.xy, 0.0),
-            vec3(aScaleRotate1.zw, 0.0),
-            vec3(aTranslate1,      1.0)
-          );
-          gl_Position = vec4(uPanZoomMatrix * transform * vec3(position, 1.0), 1.0);
+          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
           vEdgeColor = aEdgeColor;
         }
-        else if(aVertType == ${PLACEHOLDER}) {
-          mat3 transform = mat3(
-            vec3(aScaleRotate1.xy, 0.0),
-            vec3(aScaleRotate1.zw, 0.0),
-            vec3(aTranslate1,      1.0)
-          );
-          gl_Position = vec4(uPanZoomMatrix * transform * vec3(position, 1.0), 1.0);
-        } 
         else {
           gl_Position = vec4(2.0, 0.0, 0.0, 1.0); // discard vertex by putting it outside webgl clip space
         }
@@ -292,15 +255,10 @@ export class ElementDrawingWebGL {
     // attributes
     program.aIndex    = gl.getAttribLocation(program, 'aIndex');
     program.aVertType = gl.getAttribLocation(program, 'aVertType');
+    program.aTransform = gl.getAttribLocation(program, 'aTransform');
 
     program.aAtlasId     = gl.getAttribLocation(program, 'aAtlasId');
-    program.aTex1        = gl.getAttribLocation(program, 'aTex1');
-    program.aTex2        = gl.getAttribLocation(program, 'aTex2');
-
-    program.aScaleRotate1 = gl.getAttribLocation(program, 'aScaleRotate1');
-    program.aTranslate1   = gl.getAttribLocation(program, 'aTranslate1');
-    program.aScaleRotate2 = gl.getAttribLocation(program, 'aScaleRotate2');
-    program.aTranslate2   = gl.getAttribLocation(program, 'aTranslate2');
+    program.aTex        = gl.getAttribLocation(program, 'aTex');
 
     program.aPointAPointB   = gl.getAttribLocation(program, 'aPointAPointB');
     program.aPointCPointD   = gl.getAttribLocation(program, 'aPointCPointD');
@@ -321,15 +279,9 @@ export class ElementDrawingWebGL {
   }
 
   createVAO() {
-    const quad = [
+    const instanceGeometry = [
       0, 0,  1, 0,  1, 1,
       0, 0,  1, 1,  0, 1,
-    ];
-
-    // a texture is split into two parts if it wraps in the atlas
-    const instanceGeometry = [
-      ...quad, 
-      ...quad
     ];
 
     this.vertexCount = instanceGeometry.length / 2;
@@ -342,15 +294,12 @@ export class ElementDrawingWebGL {
     util.createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
     
     // Create buffers for all the attributes
+    this.transformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aTransform);
+
     this.indexBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
     this.vertTypeBuffer = util.createBufferDynamicDraw(gl, n, 'int', program.aVertType);
     this.atlasIdBuffer = util.createBufferDynamicDraw(gl, n, 'int', program.aAtlasId);
-    this.tex1Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex1);
-    this.tex2Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex2);
-    this.scaleRotate1Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aScaleRotate1);
-    this.translate1Buffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aTranslate1);
-    this.scaleRotate2Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aScaleRotate2);
-    this.translate2Buffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aTranslate2);
+    this.texBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex);
     this.pointAPointBBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointAPointB);
     this.pointCPointDBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointCPointD);
     this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
@@ -379,6 +328,7 @@ export class ElementDrawingWebGL {
       drawPlaceholders: false
     };
 
+    this.wrappedCount = 0;
     this.startBatch();
   }
 
@@ -395,23 +345,9 @@ export class ElementDrawingWebGL {
     return this.tempMatrix = this.tempMatrix || mat3.create();
   }
   
-  drawTexture(ele, eleIndex, type) {
-    const { atlasManager, texFrameInfo } = this;
-
-    if(!ele.visible() || !atlasManager.isVisible(ele, type)) {
-      return;
-    }
-    if(texFrameInfo.drawPlaceholders) {
-      this._drawTexturePlacholder(ele, eleIndex, type);
-      return;
-    }
-    if(!atlasManager.canAddToCurrentBatch(ele, type)) {
-      this.endBatch(); // draws then starts a new batch
-    }
-    
-    const atlasInfo = atlasManager.getOrCreateAtlas(ele, type, atlasInfo); // draws to the atlas if needed
-    const { atlasID, tex1, tex2, drawn } = atlasInfo;
-
+  maybeSetPlaceholderFlagForRestOfFrame(atlasInfo) {
+    const { texFrameInfo } = this;
+    const { drawn } = atlasInfo;
     if(drawn) { // the element had to be drawn to the atlas (aka texture)
       if(texFrameInfo.drawCount == 0) {
         texFrameInfo.startTime = performance.now(); // eslint-disable-line no-undef
@@ -425,47 +361,61 @@ export class ElementDrawingWebGL {
         }
       }
     }
+  }
 
-    const instance = this.instanceCount;
-    this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
+  drawTexture(ele, eleIndex, type) {
+    const { atlasManager, texFrameInfo } = this;
 
-    const indexView = this.indexBuffer.getView(instance);
-    util.indexToVec4(eleIndex, indexView);
-
-    // Set values in the buffers using Typed Array Views for performance.
-    const atlasIdView = this.atlasIdBuffer.getView(instance);
-    atlasIdView[0] = atlasID;
+    if(!ele.visible() || !atlasManager.isVisible(ele, type)) {
+      return;
+    }
+    if(texFrameInfo.drawPlaceholders) {
+      this._drawTexturePlacholder(ele, eleIndex, type);
+      return;
+    }
+    if(!atlasManager.canAddToCurrentBatch(ele, type)) {
+      this.endBatch(); // draws then starts a new batch
+    } 
+    if(this.instanceCount + 1 >= this.maxInstances) {
+      this.endBatch(); // make sure there's space for at least two instances, wrapped textures need two instances
+    }
     
-    // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
-    const tex1View = this.tex1Buffer.getView(instance);
-    tex1View[0] = tex1.x;
-    tex1View[1] = tex1.y;
-    tex1View[2] = tex1.w;
-    tex1View[3] = tex1.h;
+    const atlasInfo = atlasManager.getOrCreateAtlas(ele, type); // draws to the atlas if needed
+    const { atlasID, tex1, tex2 } = atlasInfo;
 
-    const tex2View = this.tex2Buffer.getView(instance);
-    tex2View[0] = tex2.x;
-    tex2View[1] = tex2.y;
-    tex2View[2] = tex2.w;
-    tex2View[3] = tex2.h;
+    this.maybeSetPlaceholderFlagForRestOfFrame(atlasInfo);
+    let first = true;
 
-    const transform = this.getTempMatrix();
+    if(tex2.w > 0)
+      this.wrappedCount++;
 
-    for(const tex of [1, 2]) {
-      atlasManager.setTransformMatrix(transform, atlasInfo, ele, tex === 1);
+    for(const tex of [tex1, tex2]) {
+      if(tex.w != 0) {
+        const instance = this.instanceCount;
+        this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
 
-      const scaleRotateView = this[`scaleRotate${tex}Buffer`].getView(instance);
-      scaleRotateView[0] = transform[0];
-      scaleRotateView[1] = transform[1];
-      scaleRotateView[2] = transform[3];
-      scaleRotateView[3] = transform[4];
+        const indexView = this.indexBuffer.getView(instance);
+        util.indexToVec4(eleIndex, indexView);
 
-      const translateView = this[`translate${tex}Buffer`].getView(instance);
-      translateView[0] = transform[6];
-      translateView[1] = transform[7];
+        // Set values in the buffers using Typed Array Views for performance.
+        const atlasIdView = this.atlasIdBuffer.getView(instance);
+        atlasIdView[0] = atlasID;
+        
+        // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
+        const texView = this.texBuffer.getView(instance);
+        texView[0] = tex.x;
+        texView[1] = tex.y;
+        texView[2] = tex.w;
+        texView[3] = tex.h;
+
+        const matrixView = this.transformBuffer.getMatrixView(instance);
+        atlasManager.setTransformMatrix(matrixView, atlasInfo, ele, first);
+
+        this.instanceCount++;
+      }
+      first = false;
     }
 
-    this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
     }
@@ -481,18 +431,8 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
-    const transform = this.getTempMatrix();
-    atlasManager.setPlaceholderTransformMatrix(transform, ele, type);
-
-    const scaleRotateView = this.scaleRotate1Buffer.getView(instance);
-    scaleRotateView[0] = transform[0];
-    scaleRotateView[1] = transform[1];
-    scaleRotateView[2] = transform[3];
-    scaleRotateView[3] = transform[4];
-
-    const translateView = this.translate1Buffer.getView(instance);
-    translateView[0] = transform[6];
-    translateView[1] = transform[7];
+    const matrixView = this.transformBuffer.getMatrixView(instance);
+    atlasManager.setPlaceholderTransformMatrix(matrixView, ele, type);
 
     this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {
@@ -540,7 +480,7 @@ export class ElementDrawingWebGL {
     const scale = edge.pstyle('arrow-scale').value;
     const size = this.r.getArrowWidth(lineWidth, scale);
 
-    const transform = this.getTempMatrix();
+    const transform = this.transformBuffer.getMatrixView();
 
     mat3.identity(transform);
     mat3.translate(transform, transform, [x, y]);
@@ -556,16 +496,6 @@ export class ElementDrawingWebGL {
 
     const colorView = this.edgeColorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
-
-    const scaleRotateView = this.scaleRotate1Buffer.getView(instance);
-    scaleRotateView[0] = transform[0];
-    scaleRotateView[1] = transform[1];
-    scaleRotateView[2] = transform[3];
-    scaleRotateView[3] = transform[4];
-
-    const translateView = this.translate1Buffer.getView(instance);
-    translateView[0] = transform[6];
-    translateView[1] = transform[7];
 
     this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {

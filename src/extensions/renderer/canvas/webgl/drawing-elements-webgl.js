@@ -27,6 +27,9 @@ export class ElementDrawingWebGL {
     this.maxAtlases = opts.webglTexPerBatch;
     this.atlasSize = opts.webglTexSize;
     this.bgColor = opts.bgColor;
+    
+    this.debug = opts.webglDebug;
+    this.batchDebugInfo = [];
 
     opts.enableWrapping = true;
     opts.createTextureCanvas = util.createTextureCanvas; // Unit tests mock this
@@ -36,8 +39,6 @@ export class ElementDrawingWebGL {
     this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
 
     this.vao = this.createVAO();
-
-    this.debugInfo = [];
   }
 
   addTextureRenderType(type, opts) {
@@ -317,9 +318,8 @@ export class ElementDrawingWebGL {
   }
 
 
-  startFrame(panZoomMatrix, debugInfo, renderTarget = RENDER_TARGET.SCREEN) {
+  startFrame(panZoomMatrix, renderTarget = RENDER_TARGET.SCREEN) {
     this.panZoomMatrix = panZoomMatrix;
-    this.debugInfo = debugInfo;
     this.renderTarget = renderTarget;
 
     this.texFrameInfo = {
@@ -328,7 +328,9 @@ export class ElementDrawingWebGL {
       drawPlaceholders: false
     };
 
-    this.wrappedCount = 0;
+    this.batchDebugInfo = [];
+    this.wrappedCount = 0; // TODO this should be in the AtlasManager
+    
     this.startBatch();
   }
 
@@ -706,9 +708,9 @@ export class ElementDrawingWebGL {
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
 
-    if(this.debugInfo) {
-      this.debugInfo.push({
-        count,
+    if(this.debug) {
+      this.batchDebugInfo.push({
+        count, // instance count
         atlasCount: atlases.length
       });
     }
@@ -722,12 +724,22 @@ export class ElementDrawingWebGL {
     return this.texFrameInfo.drawPlaceholders;
   }
 
+  /** Should be called after the end of a frame. */
   getDebugInfo() {
-    return this.debugInfo;
-  }
+    const atlasInfo = this.atlasManager.getDebugInfo();
+    const totalAtlases = atlasInfo.reduce((count, info) => count + info.atlasCount, 0);
 
-  getAtlasDebugInfo() {
-    return this.atlasManager.getDebugInfo();
+    const batchInfo = this.batchDebugInfo;
+    const totalInstances = batchInfo.reduce((count, info) => count + info.count, 0);
+
+    return {
+      atlasInfo,
+      totalAtlases,
+      wrappedCount: this.wrappedCount,
+      batchCount: batchInfo.length,
+      batchInfo,
+      totalInstances
+    };
   }
 
 }

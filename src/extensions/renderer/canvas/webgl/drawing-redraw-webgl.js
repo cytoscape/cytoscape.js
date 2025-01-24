@@ -517,26 +517,25 @@ function renderWebgl(r, options, renderTarget) {
     const end = performance.now();
     const compact = true;
 
-    let batchCount = 0;
-    let count = 0;
-    for(const info of debugInfo) {
-      batchCount++;
-      count += info.count;
-    }
-
-    // TODO nodes and edges are no longer is separate batches
     const time = Math.ceil(end - start);
-    const atlasInfo = eleDrawing.getAtlasDebugInfo();
-    const wrappedCount = eleDrawing.wrappedCount;
-    const totalAtlases = atlasInfo.reduce((count, info) => count + info.atlasCount, 0);
-    const report = `${eleCount} elements, ${count} rectangles, ${batchCount} batches, ${totalAtlases} atlases. ${wrappedCount} wrapped textures`;
+    const debugInfo = eleDrawing.getDebugInfo();
+    
+    const report = [
+      `${eleCount} elements`, 
+      `${debugInfo.totalInstances} instances`,
+      `${debugInfo.batchCount} batches`,
+      `${debugInfo.totalAtlases} atlases`,
+      `${debugInfo.wrappedCount} wrapped textures`
+    ].join(', ');
+
     if(compact) {
-      console.log(`WebGL (${renderTarget.name}) - ${report}`);
+      console.log(`WebGL (${renderTarget.name}) - time ${time}ms, ${report}`);
     } else {
-      console.log(`WebGL render (${renderTarget.name}) - frame time ${time}ms`);
+      console.log(`WebGL (${renderTarget.name}) - frame time ${time}ms`);
+      console.log('Totals:');
       console.log(`  ${report}`);
       console.log('Texture Atlases Used:');
-      const atlasInfo = eleDrawing.getAtlasDebugInfo();
+      const atlasInfo = debugInfo.atlasInfo;
       for(const info of atlasInfo) {
         console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
       }

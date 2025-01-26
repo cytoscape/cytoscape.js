@@ -116,7 +116,7 @@ export function vec4ToIndex(vec4) {
 export function createTexture(gl, debugID) {
   const texture = gl.createTexture();
 
-  texture.buffer = (offscreenCanvas) => {
+  texture.bufferCanvas = (offscreenCanvas) => {
     gl.bindTexture(gl.TEXTURE_2D, texture);
  
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);

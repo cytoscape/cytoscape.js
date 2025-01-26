@@ -686,7 +686,8 @@ export class ElementDrawingWebGL {
     const atlases = this.atlasManager.getAtlases();
     // must buffer before activating texture units
     for(let i = 0; i < atlases.length; i++) {
-      atlases[i].bufferIfNeeded(gl);
+      // atlases[i].bufferIfNeeded(gl);
+      this.atlasManager.bufferAtlas(gl, atlases[i]);
     }
     // Activate all the texture units that we need
     for(let i = 0; i < atlases.length; i++) {

@@ -2,6 +2,9 @@ import * as util from './webgl-util';
 import * as cyutil from '../../../../util';
 import { mat3 } from 'gl-matrix';
 
+import BasisWorker from 'web-worker:./basis-worker.js';
+import { MessageTo, MessageFrom } from './basis-worker.js';
+
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
 /**
@@ -33,6 +36,8 @@ export class Atlas {
 
     this.canvas  = opts.createTextureCanvas(r, this.atlasSize, this.atlasSize);
     this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight, 'scratch');
+
+    this.compressed = false;
   }
 
   getKeys() {
@@ -201,7 +206,7 @@ export class Atlas {
       this.texture = util.createTexture(gl, this.debugID);
     }
     if(this.needsBuffer) {
-      this.texture.buffer(this.canvas);
+      this.texture.bufferCanvas(this.canvas);
       this.needsBuffer = false;
     }
   }
@@ -460,6 +465,7 @@ export class AtlasManager {
     this.batchAtlases = [];
 
     this._cacheScratchCanvas(opts);
+    this._initBasisWorker();
   }
 
   _cacheScratchCanvas(opts) {
@@ -698,6 +704,52 @@ export class AtlasManager {
       debugInfo.push({ type, keyCount, atlasCount });
     }
     return debugInfo;
+  }
+
+  _initBasisWorker() {
+    const opts = this.globalOptions;
+    console.log('initBasisWorker', opts.webglUseBasis, opts.webglBasisJsURL, opts.webglBasisWasmURL);
+
+    if(opts.webglUseBasis && opts.webglBasisJsURL && opts.webglBasisWasmURL) {
+      this.basisWorker = new BasisWorker();
+      this.basisAvailable = true;
+  
+      this.basisWorker.onmessage = (event) => {
+        const { data } = event;
+        console.log("got message back from worker", data);
+      };
+  
+      this.basisWorker.postMessage({ 
+        type: MessageTo.INIT, 
+        jsUrl: opts.webglBasisJsURL, 
+        wasmUrl: opts.webglBasisWasmURL
+      });
+    }
+  }
+
+  bufferAtlas(gl, atlas) {
+    if(this.basisAvailable && !this.onlyOnce) {
+      const { basisWorker } = this;
+      // const context = atlas.canvas.context;
+      // const imageData = context.getImageData(0, 0, this.atlasSize, this.atlasSize);
+      // const pixelData = new Uint8Array(imageData.data.buffer); // creates a view
+      this.onlyOnce = true;
+
+      atlas.canvas.convertToBlob({ type: 'image/png' })
+        .then(blob => blob.arrayBuffer())
+        .then(buffer => {
+          basisWorker.postMessage({
+            type: MessageTo.ENCODE,
+            buffer
+          });
+        });
+    } 
+
+    atlas.bufferIfNeeded(gl);
+    // else {
+    //   // buffers uncompressed
+    //   atlas.bufferIfNeeded(gl);
+    // }
   }
 
 }

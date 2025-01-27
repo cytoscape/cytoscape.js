@@ -33,7 +33,7 @@ export class ElementDrawingWebGL {
 
     opts.enableWrapping = true;
     opts.createTextureCanvas = util.createTextureCanvas; // Unit tests mock this
-    this.atlasManager = new AtlasManager(r, opts);
+    this.atlasManager = new AtlasManager(r, gl, opts);
 
     this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
     this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
@@ -482,14 +482,14 @@ export class ElementDrawingWebGL {
     const scale = edge.pstyle('arrow-scale').value;
     const size = this.r.getArrowWidth(lineWidth, scale);
 
-    const transform = this.transformBuffer.getMatrixView();
+    const instance = this.instanceCount;
+
+    const transform = this.transformBuffer.getMatrixView(instance);
 
     mat3.identity(transform);
     mat3.translate(transform, transform, [x, y]);
     mat3.scale(transform, transform, [size, size]);
     mat3.rotate(transform, transform, angle);
-
-    const instance = this.instanceCount;
 
     this.vertTypeBuffer.getView(instance)[0] = EDGE_ARROW;
 
@@ -684,11 +684,15 @@ export class ElementDrawingWebGL {
     }
 
     const atlases = this.atlasManager.getAtlases();
+    const promises = new Array(atlases.length);
+
     // must buffer before activating texture units
     for(let i = 0; i < atlases.length; i++) {
-      // atlases[i].bufferIfNeeded(gl);
-      this.atlasManager.bufferAtlas(gl, atlases[i]);
+      promises[i] = atlases[i].bufferIfNeeded(gl);
+      // TODO temporary
+      promises[i].then(() => this.r.redraw());
     }
+
     // Activate all the texture units that we need
     for(let i = 0; i < atlases.length; i++) {
       gl.activeTexture(gl.TEXTURE0 + i);

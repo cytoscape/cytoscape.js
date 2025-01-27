@@ -21,7 +21,10 @@ let rendererDefaults = util.defaults({
   webglTexRows: 12,
   webglBatchSize: 2048,
   webglTexPerBatch: 14,
-  webglBgColor: [255, 255, 255]
+  webglBgColor: [255, 255, 255],
+  webglUseBasis: false,
+  webglBasisJsURL: undefined,
+  webglBasisWasmURL: undefined
 });
 
 let corefn = ({

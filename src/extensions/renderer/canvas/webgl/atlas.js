@@ -12,9 +12,10 @@ import { MessageTo, MessageFrom } from './basis-worker.js';
  */
 export class Atlas {
 
-  constructor(r, opts) {
+  constructor(r, opts, atlasManager = null) {
     this.debugID = Math.floor(Math.random() * 10000);
     this.r = r;
+    this.atlasManager = atlasManager; // optional
 
     this.atlasSize = opts.webglTexSize;
     this.rows = opts.webglTexRows;
@@ -201,15 +202,52 @@ export class Atlas {
     return true;
   }
 
-  bufferIfNeeded(gl) {
+  // TODO, if the texture gets rebuffered, it needs to be disposed
+  _getTexture(gl) {
     if(!this.texture) {
       this.texture = util.createTexture(gl, this.debugID);
     }
-    if(this.needsBuffer) {
-      this.texture.bufferCanvas(this.canvas);
-      this.needsBuffer = false;
-    }
+    return this.texture;
   }
+
+
+  bufferIfNeeded(gl) {
+    if(this.needsBuffer) {
+      this.needsBuffer = false;
+      console.log(this.atlasManager);
+      if(this.atlasManager && this.atlasManager.canCompress()) {
+        // TODO handle error from this promise
+        return this.atlasManager
+          .compressAtlas(this)
+          .then(eventData => {
+            // How to get the correct width/height?????
+            const { data, width, height, webglFormat } = eventData;
+            console.log("what is this data? ", data);
+            const texture = this._getTexture(gl);
+            texture.bufferCompressed(data, width, height, webglFormat);
+          })
+          .catch((err) => console.log("BAD", err));
+      } else {
+        const texture = this._getTexture();
+        texture.bufferCanvas(this.canvas);
+        return Promise.resolve();
+      }
+    }
+    return Promise.resolve();
+  }
+
+
+  /**
+   * TODO, this is a wierd API
+   */
+  bufferCompressed(gl, data) {
+    if(!this.texture) {
+      this.texture = util.createTexture(gl, this.debugID);
+    }
+    this.texture.bufferCompressed(data);
+  }
+
+
 
   dispose() {
     if(this.texture) {
@@ -229,9 +267,10 @@ export class Atlas {
  */
 export class AtlasCollection {
 
-  constructor(r, opts) {
+  constructor(r, opts, atlasManager = null) {
     this.r = r;
     this.opts = opts;
+    this.atlasManager = atlasManager; // optional
 
     this.keyToIds = new Map();
     this.idToKey  = new Map();
@@ -257,8 +296,8 @@ export class AtlasCollection {
   }
 
   _createAtlas() {
-    const { r, opts } = this;
-    return new Atlas(r, opts);
+    const { r, opts, atlasManager } = this;
+    return new Atlas(r, opts, atlasManager);
   }
 
   _getScratchCanvas() {
@@ -452,8 +491,9 @@ function intersection(set1, set2) {
  */
 export class AtlasManager {
 
-  constructor(r, globalOptions) {
+  constructor(r, gl, globalOptions) {
     this.r = r;
+    this.gl = gl;
 
     const opts = globalOptions;
     this.globalOptions = opts;
@@ -490,7 +530,7 @@ export class AtlasManager {
   }
 
   addRenderType(type, renderTypeOptions) {
-    const atlasCollection = new AtlasCollection(this.r, this.globalOptions);
+    const atlasCollection = new AtlasCollection(this.r, this.globalOptions, this);
     const typeOpts = renderTypeOptions;
     this.renderTypes.set(type, cyutil.extend( { type, atlasCollection}, typeOpts ) );
   }
@@ -707,49 +747,123 @@ export class AtlasManager {
   }
 
   _initBasisWorker() {
-    const opts = this.globalOptions;
-    console.log('initBasisWorker', opts.webglUseBasis, opts.webglBasisJsURL, opts.webglBasisWasmURL);
+    const { globalOptions: opts, gl } = this;
 
     if(opts.webglUseBasis && opts.webglBasisJsURL && opts.webglBasisWasmURL) {
-      this.basisWorker = new BasisWorker();
+      console.log('AtlasManager.initBasisWorker', opts.webglBasisJsURL, opts.webglBasisWasmURL);
+      
+      this.basisManager = new BasisWorkerManager(gl, opts);
       this.basisAvailable = true;
-  
-      this.basisWorker.onmessage = (event) => {
-        const { data } = event;
-        console.log("got message back from worker", data);
-      };
-  
-      this.basisWorker.postMessage({ 
-        type: MessageTo.INIT, 
-        jsUrl: opts.webglBasisJsURL, 
-        wasmUrl: opts.webglBasisWasmURL
+
+      this.basisManager.initBasis(() => {
+        console.log('basis worker done initializing');
       });
     }
   }
 
-  bufferAtlas(gl, atlas) {
-    if(this.basisAvailable && !this.onlyOnce) {
-      const { basisWorker } = this;
-      // const context = atlas.canvas.context;
-      // const imageData = context.getImageData(0, 0, this.atlasSize, this.atlasSize);
-      // const pixelData = new Uint8Array(imageData.data.buffer); // creates a view
-      this.onlyOnce = true;
+  canCompress() {
+    return this.basisAvailable;
+  }
 
-      atlas.canvas.convertToBlob({ type: 'image/png' })
+  compressAtlas(atlas) {
+    if(this.basisAvailable) {
+      const { basisManager } = this;
+      return basisManager.compress(atlas.canvas);
+    } else {
+      return Promise.reject('basis not available');
+    }
+  }
+
+}
+
+
+class BasisWorkerManager {
+
+  constructor(gl, opts) {
+    this.gl = gl;
+    this.opts = opts;
+    this.typeToHandlers = new Map(); // string => hander[]
+
+    this.worker = new BasisWorker();
+    this.tag = 1;
+
+    this.worker.onmessage = event => {
+      const { type } = event.data;
+      const handlers = this.typeToHandlers.get(type);
+      for(const h of handlers) {
+        h(event);
+      }
+    };
+  }
+
+  initBasis(onComplete) {
+    const flags = util.getGPUTextureCompressionSupport(this.gl);
+  
+    this.once(MessageFrom.INIT_COMPLETE, onComplete);
+
+    this.worker.postMessage({ 
+      type: MessageTo.INIT, 
+      jsUrl: this.opts.webglBasisJsURL, 
+      wasmUrl: this.opts.webglBasisWasmURL,
+      flags
+    });
+  }
+
+  compress(canvas) {
+    const tag = ++this.tag;
+
+    return new Promise((resolve, reject) => {
+      const off = this.on(MessageFrom.ENCODE_COMPLETE, (event) => {
+        console.log("got message back from basis worker: ", event.data);
+        const data = event.data;
+        if(data.tag === tag) {
+          off();
+          if(data.success) {
+            resolve(data);
+          } else {
+            reject(data);
+          }
+        }
+      });
+
+      canvas
+        .convertToBlob({ type: 'image/png' })
         .then(blob => blob.arrayBuffer())
         .then(buffer => {
-          basisWorker.postMessage({
+          this.worker.postMessage({
             type: MessageTo.ENCODE,
-            buffer
+            buffer,
+            tag
           });
         });
-    } 
-
-    atlas.bufferIfNeeded(gl);
-    // else {
-    //   // buffers uncompressed
-    //   atlas.bufferIfNeeded(gl);
-    // }
+    });
   }
+
+  on(type, handler) {
+    const { typeToHandlers } = this;
+
+    if(typeToHandlers.has(type))
+      typeToHandlers.get(type).push(handler);
+    else
+      typeToHandlers.set(type, [handler]);
+
+    const off = () => {
+      const array = typeToHandlers.get(type);
+      const index = array.indexOf(handler);
+      if(index > -1) {
+        array.splice(index, 1); //
+      }
+    };
+
+    return off;
+  }
+
+  once(type, handler) {
+    const off = this.on(type, (evt) => {
+      handler(evt);
+      off();
+    });
+  }
+
 
 }

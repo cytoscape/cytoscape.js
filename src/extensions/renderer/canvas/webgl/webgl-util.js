@@ -5,6 +5,17 @@
  */
 
 
+export function getGPUTextureCompressionSupport(gl) {
+  const dxt  = Boolean(gl.getExtension('WEBGL_compressed_texture_s3tc'));
+  const etc  = Boolean(gl.getExtension('WEBGL_compressed_texture_etc' ));
+  const astc = Boolean(gl.getExtension('WEBGL_compressed_texture_astc'));
+  const bc7  = Boolean(gl.getExtension('EXT_texture_compression_bptc' ));
+  return { dxt, etc, astc, bc7 };
+}
+
+export function isPowerOf2(n) {
+  return (n != 0) && (n & (n - 1) == 0);
+}
 
 export function compileShader(gl, type, source) {
   const shader = gl.createShader(type);
@@ -130,6 +141,19 @@ export function createTexture(gl, debugID) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offscreenCanvas);
     gl.generateMipmap(gl.TEXTURE_2D);
   
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  };
+
+  texture.bufferCompressed = (data /* Uint8Array */, width, height, format) => {
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+    gl.compressedTexImage2D(gl.TEXTURE_2D, 0, format, width, height, 0, data);
+
     gl.bindTexture(gl.TEXTURE_2D, null);
   };
 

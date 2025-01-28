@@ -214,28 +214,24 @@ export class Atlas {
   bufferIfNeeded(gl) {
     if(this.needsBuffer) {
       this.needsBuffer = false;
-      console.log(this.atlasManager);
       if(this.atlasManager && this.atlasManager.canCompress()) {
         // TODO handle error from this promise
         return this.atlasManager
           .compressAtlas(this)
-          .then(eventData => {
-            // How to get the correct width/height?????
-            const { data, width, height, webglFormat } = eventData;
-            console.log("what is this data? ", data);
+          .then(result => {
+            const { compressedData, width, height, format } = result;
             const texture = this._getTexture(gl);
-            texture.bufferCompressed(data, width, height, webglFormat);
+            texture.bufferCompressed(compressedData, width, height, format);
           })
-          .catch((err) => console.log("BAD", err));
+          .catch((err) => console.log('error from compression', err));
       } else {
-        const texture = this._getTexture();
+        const texture = this._getTexture(gl);
         texture.bufferCanvas(this.canvas);
         return Promise.resolve();
       }
     }
     return Promise.resolve();
   }
-
 
   /**
    * TODO, this is a wierd API
@@ -246,8 +242,6 @@ export class Atlas {
     }
     this.texture.bufferCompressed(data);
   }
-
-
 
   dispose() {
     if(this.texture) {
@@ -384,7 +378,7 @@ export class AtlasCollection {
     const markedKeys = this._getKeysToCollect();
 
     if(markedKeys.size === 0 && !forceGC) {
-      console.log("nothing to garbage collect");
+      console.log('nothing to garbage collect');
       return;
     }
 
@@ -767,8 +761,7 @@ export class AtlasManager {
 
   compressAtlas(atlas) {
     if(this.basisAvailable) {
-      const { basisManager } = this;
-      return basisManager.compress(atlas.canvas);
+      return this.basisManager.compress(atlas.canvas);
     } else {
       return Promise.reject('basis not available');
     }
@@ -803,7 +796,7 @@ class BasisWorkerManager {
 
     this.worker.postMessage({ 
       type: MessageTo.INIT, 
-      jsUrl: this.opts.webglBasisJsURL, 
+      jsUrl:   this.opts.webglBasisJsURL, 
       wasmUrl: this.opts.webglBasisWasmURL,
       flags
     });
@@ -814,14 +807,13 @@ class BasisWorkerManager {
 
     return new Promise((resolve, reject) => {
       const off = this.on(MessageFrom.ENCODE_COMPLETE, (event) => {
-        console.log("got message back from basis worker: ", event.data);
-        const data = event.data;
+        const { data } = event;
         if(data.tag === tag) {
           off();
           if(data.success) {
-            resolve(data);
+            resolve(data.result);
           } else {
-            reject(data);
+            reject(data.err);
           }
         }
       });
@@ -847,15 +839,13 @@ class BasisWorkerManager {
     else
       typeToHandlers.set(type, [handler]);
 
-    const off = () => {
+    return function off() {
       const array = typeToHandlers.get(type);
       const index = array.indexOf(handler);
       if(index > -1) {
-        array.splice(index, 1); //
+        array.splice(index, 1);
       }
     };
-
-    return off;
   }
 
   once(type, handler) {
@@ -864,6 +854,5 @@ class BasisWorkerManager {
       off();
     });
   }
-
 
 }

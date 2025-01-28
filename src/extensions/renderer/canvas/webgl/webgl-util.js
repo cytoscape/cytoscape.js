@@ -5,18 +5,6 @@
  */
 
 
-export function getGPUTextureCompressionSupport(gl) {
-  const dxt  = Boolean(gl.getExtension('WEBGL_compressed_texture_s3tc'));
-  const etc  = Boolean(gl.getExtension('WEBGL_compressed_texture_etc' ));
-  const astc = Boolean(gl.getExtension('WEBGL_compressed_texture_astc'));
-  const bc7  = Boolean(gl.getExtension('EXT_texture_compression_bptc' ));
-  return { dxt, etc, astc, bc7 };
-}
-
-export function isPowerOf2(n) {
-  return (n != 0) && (n & (n - 1) == 0);
-}
-
 export function compileShader(gl, type, source) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, source);
@@ -55,6 +43,15 @@ export function createTextureCanvas(r, width, height) {
   canvas.clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.clear();
   return canvas;
+}
+
+
+export function getGPUTextureCompressionSupport(gl) {
+  const dxt  = Boolean(gl.getExtension('WEBGL_compressed_texture_s3tc'));
+  const etc  = Boolean(gl.getExtension('WEBGL_compressed_texture_etc' ));
+  const astc = Boolean(gl.getExtension('WEBGL_compressed_texture_astc'));
+  const bc7  = Boolean(gl.getExtension('EXT_texture_compression_bptc' ));
+  return { dxt, etc, astc, bc7 };
 }
 
 /**

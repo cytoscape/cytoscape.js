@@ -464,7 +464,7 @@ function renderWebgl(r, options, renderTarget) {
     eleDrawing.endFrame();
 
     if(r.data.gc) {
-      console.log("Garbage Collect!");
+      console.log('Garbage Collect!');
       r.data.gc = false;
       eleDrawing.gc();
     }

@@ -684,13 +684,14 @@ export class ElementDrawingWebGL {
     }
 
     const atlases = this.atlasManager.getAtlases();
-    const promises = new Array(atlases.length);
+    // const promises = new Array(atlases.length);
 
     // must buffer before activating texture units
     for(let i = 0; i < atlases.length; i++) {
-      promises[i] = atlases[i].bufferIfNeeded(gl);
+      atlases[i].bufferIfNeeded(gl);
+      // promises[i] = atlases[i].bufferIfNeeded(gl);
       // TODO temporary
-      promises[i].then(() => this.r.redraw());
+      // promises[i].then(() => this.r.redraw());
     }
 
     // Activate all the texture units that we need

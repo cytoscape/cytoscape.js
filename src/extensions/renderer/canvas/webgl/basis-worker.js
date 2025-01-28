@@ -78,17 +78,14 @@ function encode(pngBuffer, tag) {
     encodePngToKTX2(basisModule, pngBuffer)
     .then(ktx2 => encodeKTX2ToGPU(basisModule, ktx2))
     .then(result => {
-      console.log('success encoding');
       self.postMessage({ 
         type: MessageFrom.ENCODE_COMPLETE, 
         success: true, 
         tag,
-        data: result.data,
-        webglFormat: result.format.webgl
+        result,
       });
     })
     .catch(err => {
-      console.log('error encoding', err);
       self.postMessage({ 
         type: MessageFrom.ENCODE_COMPLETE, 
         success: false, 
@@ -120,7 +117,9 @@ function encodePngToKTX2(basisModule, pngBuffer) {
   basisEncoder.setFormatMode(formatMode);
   basisEncoder.setRDOUASTC(false);
   basisEncoder.setMipGen(true);
-  basisEncoder.setPackUASTCFlags(1); // range [0, 3], lower is much faster
+
+  // texture quality, range [0, 3], lower quality is faster to compress
+  basisEncoder.setPackUASTCFlags(2);
 
   const startTime = performance.now(); // eslint-disable-line no-undef
 
@@ -136,10 +135,7 @@ function encodePngToKTX2(basisModule, pngBuffer) {
   basisEncoder.delete();
 
   if (numOutputBytes == 0) {
-    console.log('encodeBasisTexture() failed!');
     return Promise.reject(new Error('encoding png to ktx2 failed'));
-  } else {
-    console.log('encodeBasisTexture() succeeded, output size ' + numOutputBytes);
   }
 
   return Promise.resolve(actualKTX2FileData);
@@ -152,6 +148,9 @@ function encodeKTX2ToGPU(basisModule, ktx2FileData) {
   const { KTX2File, flags } = basisModule;
 
   const ktx2File = new KTX2File(new Uint8Array(ktx2FileData));
+  const width  = ktx2File.getWidth();
+  const height = ktx2File.getHeight();
+
   try {
     if(!ktx2File.isValid()) {
       return Promise.reject(new Error('Invalid or unsupported .ktx2 file'));
@@ -166,14 +165,21 @@ function encodeKTX2ToGPU(basisModule, ktx2FileData) {
     }
 
     const destSize = ktx2File.getImageTranscodedSizeInBytes(0, 0, 0, format.basis);
-    const data = new Uint8Array(destSize);
+    const compressedData = new Uint8Array(destSize);
   
-    const res = ktx2File.transcodeImageWithFlags(data, 0, 0, 0, format.basis, 0, -1, -1);
+    const decodeFlags = basisModule.basisu_decode_flags.cDecodeFlagsHighQuality.value;
+    const res = ktx2File.transcodeImageWithFlags(compressedData, 0, 0, 0, format.basis, decodeFlags, -1, -1);
     if(!res) {
       return Promise.reject(new Error('transcodeImage failed'));
     }
 
-    return Promise.resolve({ data, format });
+    return Promise.resolve({ 
+      compressedData, 
+      format: format.webgl, 
+      width, 
+      height 
+    });
+
   } finally {
     ktx2File.close();
     ktx2File.delete();
@@ -192,7 +198,6 @@ const webglFormat = {
   COMPRESSED_RGB_ETC1_WEBGL: 0x8D64
 };
 
-
 /**
  * Note: we assume the texture has alpha
  * @see webgl-util.js getGPUTextureCompressionSupport
@@ -201,17 +206,17 @@ function getCompressionFormat(basisModule, flags) {
   const basisFormat = basisModule.transcoder_texture_format;
   if(flags.astc) {
     return { 
-      basis: basisFormat.cTFASTC_4x4_RGBA, 
+      basis: basisFormat.cTFASTC_4x4_RGBA.value, 
       webgl: webglFormat.COMPRESSED_RGBA_ASTC_4x4_KHR 
     };
   } else if(flags.bc7) {
     return { 
-      basis: basisFormat.cTFBC7_RGBA,
+      basis: basisFormat.cTFBC7_RGBA.value,
       webgl: webglFormat.COMPRESSED_RGBA_BPTC_UNORM 
     };
   } else if(flags.dxt) {
     return { 
-      basis: basisFormat.cTFBC3_RGBA,
+      basis: basisFormat.cTFBC3_RGBA.value,
       webgl: webglFormat.COMPRESSED_RGBA_S3TC_DXT5_EXT 
     };
   // } else if((pvrtcSupported) && (!pvrtcDisabled) && (is_square_pow2)) {// TODO ?
@@ -219,7 +224,7 @@ function getCompressionFormat(basisModule, flags) {
   // }
   } else if(flags.etc) {
     return { 
-      basis: basisFormat.cTFETC1_RGB,
+      basis: basisFormat.cTFETC1_RGB.value,
       webgl: webglFormat.COMPRESSED_RGB_ETC1_WEBGL 
     };
   } else {

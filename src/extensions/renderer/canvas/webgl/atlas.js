@@ -21,8 +21,10 @@ export class Atlas {
     this.maxTexWidth = this.atlasSize;
 
     this.texture = null;
-    this.canvas = null;
     this.needsBuffer = true;
+
+    // once an atlas is locked it can no longer be drawn to
+    this.locked = false;
 
     // a "location" is an object with a row and x fields
     this.freePointer = { x: 0, row: 0 };
@@ -33,6 +35,10 @@ export class Atlas {
 
     this.canvas  = opts.createTextureCanvas(r, this.atlasSize, this.atlasSize);
     this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight, 'scratch');
+  }
+
+  lock() {
+    this.locked = true;
   }
 
   getKeys() {
@@ -56,6 +62,9 @@ export class Atlas {
 
 
   draw(key, bb, doDrawing) {
+    if(this.locked)
+      throw new Error('can\'t draw, atlas is locked');
+
     const { atlasSize, rows, texHeight } = this;
     const { scale, texW, texH } = this.getScale(bb);
     
@@ -188,6 +197,9 @@ export class Atlas {
   }
 
   canFit(bb) {
+    if(this.locked)
+      return false;
+
     const { atlasSize, rows } = this;
     const { texW } = this.getScale(bb);
     if(this.freePointer.x + texW > atlasSize) { // need to wrap
@@ -196,6 +208,7 @@ export class Atlas {
     return true;
   }
 
+  // called on every frame
   bufferIfNeeded(gl) {
     if(!this.texture) {
       this.texture = util.createTexture(gl, this.debugID);
@@ -203,6 +216,12 @@ export class Atlas {
     if(this.needsBuffer) {
       this.texture.buffer(this.canvas);
       this.needsBuffer = false;
+
+      if(this.locked) {
+        console.log('freeing offscreen canvas');
+        this.canvas = null;
+        this.scratch = null;
+      }
     }
   }
 
@@ -210,8 +229,10 @@ export class Atlas {
     if(this.texture) {
       this.texture.deleteTexture();
       this.texture = null;
-      this.needsBuffer = true;
     }
+    this.canvas = null;
+    this.scratch = null;
+    this.locked = true;
   }
 
 }
@@ -281,10 +302,12 @@ export class AtlasCollection {
 
     let atlas = this.styleKeyToAtlas.get(key);
     if(!atlas) {
-      // This is a simplistic way of finding an atlas. 
-      // May waste space at the end of the atalas if the element doesn't fit.
+      // check for space at the end of the last atlas
       atlas = this.atlases[this.atlases.length - 1];
       if(!atlas || !atlas.canFit(bb)) {
+        if(atlas)
+          atlas.lock();
+        // create a new atlas
         atlas = this._createAtlas();
         this.atlases.push(atlas);
       }
@@ -332,15 +355,13 @@ export class AtlasCollection {
     return markedKeys;
   }
 
-  /**
-   * TODO dispose of the old atlas and texture
-   */
+
   gc() {
     const forceGC = this.atlases.some(atlas => atlas.forceGC);
     const markedKeys = this._getKeysToCollect();
 
     if(markedKeys.size === 0 && !forceGC) {
-      console.log("nothing to garbage collect");
+      console.log('nothing to garbage collect');
       return;
     }
 
@@ -351,10 +372,10 @@ export class AtlasCollection {
 
     for(const atlas of this.atlases) {
       const keys = atlas.getKeys();
-      
       const keysToCollect = intersection(markedKeys, keys);
 
       if(keysToCollect.size === 0 && !atlas.forceGC) {
+        // this atlas can still be used
         newAtlases.push(atlas);
         keys.forEach(k => newStyleKeyToAtlas.set(k, atlas));
         continue;
@@ -369,6 +390,8 @@ export class AtlasCollection {
         if(!keysToCollect.has(key)) {
           const [ s1, s2 ] = atlas.getOffsets(key);
           if(!newAtlas.canFit({ w: s1.w + s2.w, h: s1.h })) {
+            newAtlas.lock();
+            
             newAtlas = this._createAtlas();
             newAtlases.push(newAtlas);
           }
@@ -376,6 +399,8 @@ export class AtlasCollection {
           newStyleKeyToAtlas.set(key, newAtlas);
         }
       }
+
+      atlas.dispose();
     }
 
     this.atlases = newAtlases;

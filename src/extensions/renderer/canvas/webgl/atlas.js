@@ -3,7 +3,7 @@ import * as cyutil from '../../../../util';
 import { mat3 } from 'gl-matrix';
 
 import BasisWorker from 'web-worker:./basis-worker.js';
-import { MessageTo, MessageFrom } from './basis-worker.js';
+import { WorkerMessage } from './basis-worker.js';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
@@ -792,10 +792,10 @@ class BasisWorkerManager {
   initBasis(onComplete) {
     const flags = util.getGPUTextureCompressionSupport(this.gl);
   
-    this.once(MessageFrom.INIT_COMPLETE, onComplete);
+    this.once(WorkerMessage.INIT_COMPLETE, onComplete);
 
     this.worker.postMessage({ 
-      type: MessageTo.INIT, 
+      type: WorkerMessage.INIT, 
       jsUrl:   this.opts.webglBasisJsURL, 
       wasmUrl: this.opts.webglBasisWasmURL,
       flags
@@ -806,7 +806,7 @@ class BasisWorkerManager {
     const tag = ++this.tag;
 
     return new Promise((resolve, reject) => {
-      const off = this.on(MessageFrom.ENCODE_COMPLETE, (event) => {
+      const off = this.on(WorkerMessage.ENCODE_COMPLETE, (event) => {
         const { data } = event;
         if(data.tag === tag) {
           off();
@@ -823,7 +823,7 @@ class BasisWorkerManager {
         .then(blob => blob.arrayBuffer())
         .then(buffer => {
           this.worker.postMessage({
-            type: MessageTo.ENCODE,
+            type: WorkerMessage.ENCODE,
             buffer,
             tag
           });

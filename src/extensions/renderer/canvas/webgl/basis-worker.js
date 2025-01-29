@@ -1,12 +1,10 @@
 /* global self, BASIS */
 
-export const MessageTo = {
+export const WorkerMessage = {
   PING: 'PING',
   INIT: 'INIT',
-  ENCODE: 'ENCODE'
-};
+  ENCODE: 'ENCODE',
 
-export const MessageFrom = {
   INIT_COMPLETE: 'INIT_COMPLETE',
   ENCODE_COMPLETE: 'ENCODE_COMPLETE'
 };
@@ -15,27 +13,24 @@ export const MessageFrom = {
 self.onmessage = (event) => {
   const { type } = event.data;
   switch(type) {
-    case MessageTo.PING: {
+    case WorkerMessage.PING: {
       console.log('basis-worker: received a ping');
       break;
     }
-    case MessageTo.INIT: {
+    case WorkerMessage.INIT: {
       console.log('basis-worker: loading basis');
       const { jsUrl, wasmUrl, flags } = event.data;
-      loadBasisModule(jsUrl, wasmUrl, flags)
-        .then((result) => {
-          self.postMessage({ type: MessageFrom.INIT_COMPLETE, message: "basis loaded" });
-        });
+      loadBasisModule(jsUrl, wasmUrl, flags);
       break;
     }
-    case MessageTo.ENCODE: {
+    case WorkerMessage.ENCODE: {
       console.log('basis-worker: got request to compress texture');
       const { buffer, tag } = event.data;
       encode(buffer, tag);
       break;
     }
     default: {
-      console.log(`basis-worker: received unrecogized message type: '${type}'`);
+      console.log(`basis-worker: unrecogized message type: '${type}'`);
       break;
     }
   }
@@ -56,6 +51,8 @@ function loadBasisModule(jsUrl, wasmUrl, flags) {
         basisModule.initializeBasis();
         basisModule.flags = flags;
         resolve(basisModule);
+
+        self.postMessage({ type: WorkerMessage.INIT_COMPLETE });
       });
     });
   }
@@ -69,33 +66,30 @@ function getBasisModule() {
   return basisPromise;
 }
 
+
 /**
  * @param buffer Uint8Array containing PNG format
  */
 function encode(pngBuffer, tag) {
   getBasisModule()
-  .then(basisModule => 
-    encodePngToKTX2(basisModule, pngBuffer)
-    .then(ktx2 => encodeKTX2ToGPU(basisModule, ktx2))
-    .then(result => {
-      self.postMessage({ 
-        type: MessageFrom.ENCODE_COMPLETE, 
-        success: true, 
-        tag,
-        result,
-      });
-    })
-    .catch(err => {
-      self.postMessage({ 
-        type: MessageFrom.ENCODE_COMPLETE, 
-        success: false, 
-        tag, 
-        err 
-      });
-    })
-  )
+  .then(basisModule => {
+    const ktx2 = encodePngToKTX2(basisModule, pngBuffer);
+    const result = encodeKTX2ToGPU(basisModule, ktx2);
+    self.postMessage({ 
+      type: WorkerMessage.ENCODE_COMPLETE, 
+      success: true, 
+      tag,
+      result,
+    });
+  })
   .catch(err => {
-    console.log('error initializing basis');
+    console.log('basis-worker: error in encode', err);
+    self.postMessage({ 
+      type: WorkerMessage.ENCODE_COMPLETE, 
+      success: false, 
+      tag, 
+      err 
+    });
   });
 }
 
@@ -119,12 +113,12 @@ function encodePngToKTX2(basisModule, pngBuffer) {
   basisEncoder.setMipGen(true);
 
   // texture quality, range [0, 3], lower quality is faster to compress
-  basisEncoder.setPackUASTCFlags(2);
+  basisEncoder.setPackUASTCFlags(1);
 
   const startTime = performance.now(); // eslint-disable-line no-undef
 
   // ENCODE!
-  const ktx2FileData = new Uint8Array(pngBuffer.byteLength);  // TODO How to know what size buffer to use? Assuming it has to be less than the PNG format.
+  const ktx2FileData = new Uint8Array(pngBuffer.byteLength * 2);  // TODO How to know what size buffer to use? Assuming it has to be less than the PNG format.
   const numOutputBytes = basisEncoder.encode(ktx2FileData);
 
   const elapsed = performance.now() - startTime; // eslint-disable-line no-undef
@@ -135,10 +129,9 @@ function encodePngToKTX2(basisModule, pngBuffer) {
   basisEncoder.delete();
 
   if (numOutputBytes == 0) {
-    return Promise.reject(new Error('encoding png to ktx2 failed'));
+    throw new Error('encoding png to ktx2 failed');
   }
-
-  return Promise.resolve(actualKTX2FileData);
+  return actualKTX2FileData;
 }
 
 /**
@@ -153,15 +146,15 @@ function encodeKTX2ToGPU(basisModule, ktx2FileData) {
 
   try {
     if(!ktx2File.isValid()) {
-      return Promise.reject(new Error('Invalid or unsupported .ktx2 file'));
+      throw new Error('Invalid or unsupported .ktx2 file');
     }
     if(!ktx2File.startTranscoding()) {
-      return Promise.reject(new Error('startTranscoding failed'));
+      throw new Error('startTranscoding failed');
     }
   
     const format = getCompressionFormat(basisModule, flags);
     if(format === undefined) {
-      return Promise.reject(new Error('no valid output format'));
+      throw new Error('no valid output format');
     }
 
     const destSize = ktx2File.getImageTranscodedSizeInBytes(0, 0, 0, format.basis);
@@ -170,15 +163,15 @@ function encodeKTX2ToGPU(basisModule, ktx2FileData) {
     const decodeFlags = basisModule.basisu_decode_flags.cDecodeFlagsHighQuality.value;
     const res = ktx2File.transcodeImageWithFlags(compressedData, 0, 0, 0, format.basis, decodeFlags, -1, -1);
     if(!res) {
-      return Promise.reject(new Error('transcodeImage failed'));
+      throw new Error('transcodeImage failed');
     }
 
-    return Promise.resolve({ 
+    return { 
       compressedData, 
       format: format.webgl, 
       width, 
       height 
-    });
+    };
 
   } finally {
     ktx2File.close();

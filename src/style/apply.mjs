@@ -1,6 +1,6 @@
-import * as util from '../util';
-import * as is from '../is';
-import Promise from '../promise';
+import * as util from '../util/index.mjs';
+import * as is from '../is.mjs';
+import Promise from '../promise.mjs';
 
 const styfn = {};
 

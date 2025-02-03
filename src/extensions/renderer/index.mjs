@@ -1,6 +1,6 @@
-import nullRenderer from './null';
-import baseRenderer from './base';
-import canvasRenderer from './canvas';
+import nullRenderer from './null/index.mjs';
+import baseRenderer from './base/index.mjs';
+import canvasRenderer from './canvas/index.mjs';
 
 export default [
   { name: 'null', impl: nullRenderer },

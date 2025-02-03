@@ -1,7 +1,7 @@
 /* global Path2D */
 
-import * as util from '../../../util';
-import {drawPreparedRoundCorner} from "../../../round";
+import * as util from '../../../util/index.mjs';
+import {drawPreparedRoundCorner} from "../../../round.mjs";
 
 let CRp = {};
 

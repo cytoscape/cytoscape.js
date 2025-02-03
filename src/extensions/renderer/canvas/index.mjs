@@ -6,23 +6,23 @@ Modifications tracked on Github.
 
 /* global OffscreenCanvas */
 
-import * as util from '../../../util';
-import * as is from '../../../is';
-import { makeBoundingBox } from '../../../math';
-import ElementTextureCache from './ele-texture-cache';
-import LayeredTextureCache from './layered-texture-cache';
+import * as util from '../../../util/index.mjs';
+import * as is from '../../../is.mjs';
+import { makeBoundingBox } from '../../../math.mjs';
+import ElementTextureCache from './ele-texture-cache.mjs';
+import LayeredTextureCache from './layered-texture-cache.mjs';
 
-import arrowShapes from './arrow-shapes';
-import drawingElements from './drawing-elements';
-import drawingEdges from './drawing-edges';
-import drawingImages from './drawing-images';
-import drawingLabelText from './drawing-label-text';
-import drawingNodes from './drawing-nodes';
-import drawingRedraw from './drawing-redraw';
-import drawingRedrawWebGL from './webgl/drawing-redraw-webgl';
-import drawingShapes from './drawing-shapes';
-import exportImage from './export-image';
-import nodeShapes from './node-shapes';
+import arrowShapes from './arrow-shapes.mjs';
+import drawingElements from './drawing-elements.mjs';
+import drawingEdges from './drawing-edges.mjs';
+import drawingImages from './drawing-images.mjs';
+import drawingLabelText from './drawing-label-text.mjs';
+import drawingNodes from './drawing-nodes.mjs';
+import drawingRedraw from './drawing-redraw.mjs';
+import drawingRedrawWebGL from './webgl/drawing-redraw-webgl.mjs';
+import drawingShapes from './drawing-shapes.mjs';
+import exportImage from './export-image.mjs';
+import nodeShapes from './node-shapes.mjs';
 
 var CR = CanvasRenderer;
 var CRp = CanvasRenderer.prototype;

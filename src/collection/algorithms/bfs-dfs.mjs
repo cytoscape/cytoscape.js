@@ -1,4 +1,4 @@
-import * as is from '../../is';
+import * as is from '../../is.mjs';
 
 let defineSearch = function( params ){
   params = {

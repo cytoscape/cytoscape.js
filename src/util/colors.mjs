@@ -1,5 +1,5 @@
-import * as is from '../is';
-import * as regex from './regex';
+import * as is from '../is.mjs';
+import * as regex from './regex.mjs';
 
   // get [r, g, b] from #abc or #aabbcc
 export const hex2tuple = hex => {

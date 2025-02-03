@@ -1,8 +1,8 @@
-import * as math from '../../../math';
-import { trueify, falsify, removeFromArray, clearArray, MAX_INT, assign, defaults } from '../../../util';
-import Heap from '../../../heap';
-import defs from './texture-cache-defs';
-import ElementTextureCacheLookup from './ele-texture-cache-lookup';
+import * as math from '../../../math.mjs';
+import { trueify, falsify, removeFromArray, clearArray, MAX_INT, assign, defaults } from '../../../util/index.mjs';
+import Heap from '../../../heap.mjs';
+import defs from './texture-cache-defs.mjs';
+import ElementTextureCacheLookup from './ele-texture-cache-lookup.mjs';
 
 const minTxrH = 25; // the size of the texture cache for small height eles (special case)
 const txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up

@@ -4,10 +4,10 @@
 // e.g.
 // let foo = define.foo({ /* params... */ })
 
-import * as util from '../util';
-import animation from './animation';
-import data from './data';
-import events from './events';
+import * as util from '../util/index.mjs';
+import animation from './animation.mjs';
+import data from './data.mjs';
+import events from './events.mjs';
 
 let define = {};
 

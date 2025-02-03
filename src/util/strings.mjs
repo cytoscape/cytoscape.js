@@ -1,5 +1,5 @@
-import * as is from '../is';
-import { memoize } from './memoize';
+import * as is from '../is.mjs';
+import { memoize } from './memoize.mjs';
 
 export const camel2dash = memoize(str => {
   return str.replace( /([A-Z])/g, v => {

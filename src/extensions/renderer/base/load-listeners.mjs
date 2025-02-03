@@ -1,6 +1,6 @@
-import * as is from '../../../is';
-import * as util from '../../../util';
-import * as math from '../../../math';
+import * as is from '../../../is.mjs';
+import * as util from '../../../util/index.mjs';
+import * as math from '../../../math.mjs';
 
 var BRp = {};
 

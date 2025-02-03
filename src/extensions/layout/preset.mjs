@@ -1,6 +1,6 @@
-import * as util from '../../util';
-import * as is from '../../is';
-import { copyPosition } from '../../math';
+import * as util from '../../util/index.mjs';
+import * as is from '../../is.mjs';
+import { copyPosition } from '../../math.mjs';
 
 let defaults = {
   positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }

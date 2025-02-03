@@ -1,5 +1,5 @@
-import * as util from '../util';
-import * as is from '../is';
+import * as util from '../util/index.mjs';
+import * as is from '../is.mjs';
 
 let corefn = ({
 

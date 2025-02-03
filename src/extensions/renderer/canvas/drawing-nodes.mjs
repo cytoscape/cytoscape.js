@@ -1,10 +1,10 @@
 /* global Path2D */
 
-import * as is from '../../../is';
-import {expandPolygon, joinLines} from '../../../math';
-import * as util from '../../../util';
-import * as round from "../../../round";
-import * as math from "../../../math";
+import * as is from '../../../is.mjs';
+import {expandPolygon, joinLines} from '../../../math.mjs';
+import * as util from '../../../util/index.mjs';
+import * as round from "../../../round.mjs";
+import * as math from "../../../math.mjs";
 
 let CRp = {};
 

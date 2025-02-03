@@ -1,5 +1,5 @@
-import * as math from '../../../../math';
-import * as util from '../../../../util';
+import * as math from '../../../../math.mjs';
+import * as util from '../../../../util/index.mjs';
 
 var BRp = {};
 

@@ -1,4 +1,4 @@
-import * as is from '../is';
+import * as is from '../is.mjs';
 
 export const valCmp = (fieldVal, operator, value) => {
   let matches;

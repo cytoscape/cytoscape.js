@@ -1,5 +1,5 @@
-import * as is from '../is';
-import Style from '../style';
+import * as is from '../is.mjs';
+import Style from '../style/index.mjs';
 
 let corefn = ({
 

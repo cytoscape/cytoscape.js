@@ -1,5 +1,5 @@
-import * as util from '../util';
-import * as is from '../is';
+import * as util from '../util/index.mjs';
+import * as is from '../is.mjs';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import toPath from 'lodash/toPath';

@@ -1,6 +1,6 @@
-import * as util from '../util';
-import * as is from '../is';
-import * as math from '../math';
+import * as util from '../util/index.mjs';
+import * as is from '../is.mjs';
+import * as math from '../math.mjs';
 
 let styfn = {};
 

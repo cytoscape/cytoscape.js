@@ -1,5 +1,5 @@
-import generateCubicBezier from './cubic-bezier';
-import generateSpringRK4 from './spring';
+import generateCubicBezier from './cubic-bezier.mjs';
+import generateSpringRK4 from './spring.mjs';
 
 let cubicBezier = function( t1, p1, t2, p2 ){
   let bezier = generateCubicBezier( t1, p1, t2, p2 );

@@ -1,7 +1,7 @@
-import define from '../../define';
-import * as is from '../../is';
-import * as math from '../../math';
-import * as util from '../../util';
+import define from '../../define/index.mjs';
+import * as is from '../../is.mjs';
+import * as math from '../../math.mjs';
+import * as util from '../../util/index.mjs';
 
 let fn, elesfn;
 

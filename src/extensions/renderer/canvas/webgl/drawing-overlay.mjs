@@ -1,4 +1,4 @@
-import { hashString } from '../../../../util/hash';
+import { hashString } from '../../../../util/hash.mjs';
 
 
 function fillStyle(color, opacity) {

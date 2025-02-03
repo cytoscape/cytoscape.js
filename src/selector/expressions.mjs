@@ -1,8 +1,8 @@
-import tokens from './tokens';
-import * as util from '../util';
-import newQuery from './new-query';
-import Type from './type';
-import { stateSelectorRegex } from './state';
+import tokens from './tokens.mjs';
+import * as util from '../util/index.mjs';
+import newQuery from './new-query.mjs';
+import Type from './type.mjs';
+import { stateSelectorRegex } from './state.mjs';
 
 // when a token like a variable has escaped meta characters, we need to clean the backslashes out
 // so that values get compared properly in Selector.filter()

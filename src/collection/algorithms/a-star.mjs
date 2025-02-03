@@ -1,6 +1,6 @@
-import Heap from '../../heap';
-import Set from '../../set';
-import { defaults } from '../../util';
+import Heap from '../../heap.mjs';
+import Set from '../../set.mjs';
+import { defaults } from '../../util/index.mjs';
 
 const aStarDefaults = defaults({
   root: null,

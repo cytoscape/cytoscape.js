@@ -1,6 +1,6 @@
-import Type from './type';
-import { stateSelectorMatches } from './state';
-import { valCmp, boolCmp, existCmp, meta, data } from './data';
+import Type from './type.mjs';
+import { stateSelectorMatches } from './state.mjs';
+import { valCmp, boolCmp, existCmp, meta, data } from './data.mjs';
 
 /** A lookup of `match(check, ele)` functions by `Type` int */
 export const match = [];

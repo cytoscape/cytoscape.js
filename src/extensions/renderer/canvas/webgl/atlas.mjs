@@ -1,5 +1,5 @@
-import * as util from './webgl-util';
-import * as cyutil from '../../../../util';
+import * as util from './webgl-util.mjs';
+import * as cyutil from '../../../../util/index.mjs';
 import { mat3 } from 'gl-matrix';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.

@@ -1,4 +1,4 @@
-import zIndexSort from '../../../../collection/zsort';
+import zIndexSort from '../../../../collection/zsort.mjs';
 
 var BRp = {};
 

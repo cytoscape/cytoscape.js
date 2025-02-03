@@ -1,4 +1,4 @@
-import Selector from '../selector';
+import Selector from '../selector/index.mjs';
 
 let elesfn = ({
   allAre: function( selector ){

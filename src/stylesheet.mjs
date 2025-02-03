@@ -1,6 +1,6 @@
-import * as is from './is';
-import Style from './style';
-import { dash2camel } from './util';
+import * as is from './is.mjs';
+import Style from './style/index.mjs';
+import { dash2camel } from './util/index.mjs';
 
 // a dummy stylesheet object that doesn't need a reference to the core
 // (useful for init)

@@ -1,4 +1,4 @@
-import { defaults } from '../../../../util';
+import { defaults } from '../../../../util/index.mjs';
 
 export const RENDER_TARGET = {
   SCREEN:  { name: 'screen',  screen:  true },

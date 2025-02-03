@@ -1,5 +1,5 @@
-import * as is from '../is';
-import Collection from '../collection';
+import * as is from '../is.mjs';
+import Collection from '../collection/index.mjs';
 
 let corefn = ({
 

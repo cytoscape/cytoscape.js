@@ -1,5 +1,5 @@
-import * as is from '../is';
-import * as util from '../util';
+import * as is from '../is.mjs';
+import * as util from '../util/index.mjs';
 
 let cache = function( fn, name ){
   return function traversalCache( arg1, arg2, arg3, arg4 ){

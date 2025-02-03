@@ -1,8 +1,8 @@
-import { warn } from '../util';
-import * as is from '../is';
-import exprs from './expressions';
-import newQuery from './new-query';
-import Type from './type';
+import { warn } from '../util/index.mjs';
+import * as is from '../is.mjs';
+import exprs from './expressions.mjs';
+import newQuery from './new-query.mjs';
+import Type from './type.mjs';
 
 /**
  * Of all the expressions, find the first match in the remaining text.

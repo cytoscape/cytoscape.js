@@ -1,11 +1,11 @@
-import breadthfirstLayout from './breadthfirst';
-import circleLayout from './circle';
-import concentricLayout from './concentric';
-import coseLayout from './cose';
-import gridLayout from './grid';
-import nullLayout from './null';
-import presetLayout from './preset';
-import randomLayout from './random';
+import breadthfirstLayout from './breadthfirst.mjs';
+import circleLayout from './circle.mjs';
+import concentricLayout from './concentric.mjs';
+import coseLayout from './cose.mjs';
+import gridLayout from './grid.mjs';
+import nullLayout from './null.mjs';
+import presetLayout from './preset.mjs';
+import randomLayout from './random.mjs';
 
 export default [
   { name: 'breadthfirst', impl: breadthfirstLayout },

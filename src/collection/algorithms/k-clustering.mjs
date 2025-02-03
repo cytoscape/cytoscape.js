@@ -6,8 +6,8 @@
 // References for fuzzy c-means: Ross, Fuzzy Logic w/Engineering Applications (2010), pages 352-353
 //                               http://yaikhom.com/2013/03/16/implementing-the-fuzzy-c-means-algorithm.html
 
-import clusteringDistance from './clustering-distances';
-import * as util from '../../util';
+import clusteringDistance from './clustering-distances.mjs';
+import * as util from '../../util/index.mjs';
 
 let defaults = util.defaults({
   k: 2,

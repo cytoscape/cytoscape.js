@@ -1,4 +1,4 @@
-import * as math from '../../../../math';
+import * as math from '../../../../math.mjs';
 
 var BRp = {};
 

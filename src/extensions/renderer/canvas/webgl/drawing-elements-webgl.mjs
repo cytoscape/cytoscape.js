@@ -1,7 +1,7 @@
-import * as util from './webgl-util';
+import * as util from './webgl-util.mjs';
 import { mat3 } from 'gl-matrix';
-import { RENDER_TARGET } from './defaults';
-import { AtlasManager } from './atlas';
+import { RENDER_TARGET } from './defaults.mjs';
+import { AtlasManager } from './atlas.mjs';
 
 
 // Vertex types

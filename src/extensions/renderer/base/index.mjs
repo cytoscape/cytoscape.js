@@ -1,12 +1,12 @@
-import * as util from '../../../util';
-import * as is from '../../../is';
+import * as util from '../../../util/index.mjs';
+import * as is from '../../../is.mjs';
 
-import arrowShapes from './arrow-shapes';
-import coordEleMath from './coord-ele-math';
-import images from './images';
-import loadListeners from './load-listeners';
-import nodeShapes from './node-shapes';
-import redraw from './redraw';
+import arrowShapes from './arrow-shapes.mjs';
+import coordEleMath from './coord-ele-math/index.mjs';
+import images from './images.mjs';
+import loadListeners from './load-listeners.mjs';
+import nodeShapes from './node-shapes.mjs';
+import redraw from './redraw.mjs';
 
 var BaseRenderer = function( options ){ this.init( options ); };
 var BR = BaseRenderer;

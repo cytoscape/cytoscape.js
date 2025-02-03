@@ -1,11 +1,11 @@
 /*global console */
 
-import * as is from '../is';
-import * as strings from './strings';
-import * as regex from './regex';
-import * as sort from './sort';
-import { memoize } from './memoize';
-import { extend } from './extend';
+import * as is from '../is.mjs';
+import * as strings from './strings.mjs';
+import * as regex from './regex.mjs';
+import * as sort from './sort.mjs';
+import { memoize } from './memoize.mjs';
+import { extend } from './extend.mjs';
 
 export * from './colors';
 export * from './maps';

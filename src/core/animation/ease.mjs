@@ -1,4 +1,4 @@
-import * as is from '../../is';
+import * as is from '../../is.mjs';
 
 function getEasedValue( type, start, end, percent, easingFn ){
   if( percent === 1 ){

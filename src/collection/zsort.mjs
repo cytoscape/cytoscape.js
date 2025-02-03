@@ -10,7 +10,7 @@
  *  z-index: An integer value that affects the relative draw order of elements.  In general, an element with a higher
  *      `z-index` will be drawn on top of an element with a lower `z-index`.
  */
-import * as util from '../util';
+import * as util from '../util/index.mjs';
 
 let zIndexSort = function( a, b ){
   let cy = a.cy();

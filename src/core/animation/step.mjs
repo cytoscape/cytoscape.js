@@ -1,7 +1,7 @@
-import easings from './easings';
-import ease from './ease';
-import * as is from '../../is';
-import {bound} from '../../math';
+import easings from './easings.mjs';
+import ease from './ease.mjs';
+import * as is from '../../is.mjs';
+import {bound} from '../../math.mjs';
 
 function step( self, ani, now, isCore ){
   let isEles = !isCore;

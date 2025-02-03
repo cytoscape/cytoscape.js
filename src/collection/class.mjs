@@ -1,5 +1,5 @@
-import Set from '../set';
-import * as is from '../is';
+import Set from '../set.mjs';
+import * as is from '../is.mjs';
 
 let elesfn = ({
   classes: function( classes ){

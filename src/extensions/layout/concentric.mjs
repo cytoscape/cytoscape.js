@@ -1,5 +1,5 @@
-import * as util from '../../util';
-import * as math from '../../math';
+import * as util from '../../util/index.mjs';
+import * as math from '../../math.mjs';
 
 let defaults = {
   fit: true, // whether to fit the viewport to the graph

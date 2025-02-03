@@ -1,7 +1,7 @@
-import * as is from '../is';
-import * as util from '../util';
-import Collection from '../collection';
-import Element from '../collection/element';
+import * as is from '../is.mjs';
+import * as util from '../util/index.mjs';
+import Collection from '../collection/index.mjs';
+import Element from '../collection/element.mjs';
 
 let corefn = {
   add: function( opts ){

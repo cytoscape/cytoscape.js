@@ -1,15 +1,15 @@
-import * as is from '../is';
-import * as util from '../util';
-import Selector from '../selector';
+import * as is from '../is.mjs';
+import * as util from '../util/index.mjs';
+import Selector from '../selector/index.mjs';
 
-import apply from './apply';
-import bypass from './bypass';
-import container from './container';
-import getForEle from './get-for-ele';
-import json from './json';
-import stringSheet from './string-sheet';
-import properties from './properties';
-import parse from './parse';
+import apply from './apply.mjs';
+import bypass from './bypass.mjs';
+import container from './container.mjs';
+import getForEle from './get-for-ele.mjs';
+import json from './json.mjs';
+import stringSheet from './string-sheet.mjs';
+import properties from './properties.mjs';
+import parse from './parse.mjs';
 
 let Style = function( cy ){
 

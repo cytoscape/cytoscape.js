@@ -1,8 +1,8 @@
-import * as math from '../../../../math';
-import * as is from '../../../../is';
-import * as util from '../../../../util';
-import Map from '../../../../map';
-import {getRoundCorner} from "../../../../round";
+import * as math from '../../../../math.mjs';
+import * as is from '../../../../is.mjs';
+import * as util from '../../../../util/index.mjs';
+import Map from '../../../../map.mjs';
+import {getRoundCorner} from "../../../../round.mjs";
 
 let BRp = {};
 

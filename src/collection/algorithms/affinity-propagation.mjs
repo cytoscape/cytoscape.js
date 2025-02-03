@@ -4,10 +4,10 @@
 // Implemented from the reference library: https://github.com/juhis/affinity-propagation
 // Additional reference: http://www.psi.toronto.edu/affinitypropagation/faq.html
 
-import * as util from '../../util';
-import * as math from '../../math';
-import * as is from '../../is';
-import clusteringDistance from './clustering-distances';
+import * as util from '../../util/index.mjs';
+import * as math from '../../math.mjs';
+import * as is from '../../is.mjs';
+import clusteringDistance from './clustering-distances.mjs';
 
 let defaults = util.defaults({
   distance: 'euclidean', // distance metric to compare attributes between two nodes

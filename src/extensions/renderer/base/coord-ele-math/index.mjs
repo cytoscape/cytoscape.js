@@ -1,14 +1,14 @@
-import * as util from '../../../../util';
+import * as util from '../../../../util/index.mjs';
 
-import coords from './coords';
-import edgeArrows from './edge-arrows';
-import edgeControlPoints from './edge-control-points';
-import edgeEndpoints from './edge-endpoints';
-import edgeProjection from './edge-projection';
-import labels from './labels';
-import nodes from './nodes';
-import renderedStyle from './rendered-style';
-import zOrdering from './z-ordering';
+import coords from './coords.mjs';
+import edgeArrows from './edge-arrows.mjs';
+import edgeControlPoints from './edge-control-points.mjs';
+import edgeEndpoints from './edge-endpoints.mjs';
+import edgeProjection from './edge-projection.mjs';
+import labels from './labels.mjs';
+import nodes from './nodes.mjs';
+import renderedStyle from './rendered-style.mjs';
+import zOrdering from './z-ordering.mjs';
 
 var BRp = {};
 

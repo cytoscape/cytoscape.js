@@ -1,6 +1,6 @@
-import * as util from '../util';
-import Promise from '../promise';
-import * as math from '../math';
+import * as util from '../util/index.mjs';
+import Promise from '../promise.mjs';
+import * as math from '../math.mjs';
 
 const getLayoutDimensionOptions = util.defaults({
   nodeDimensionsIncludeLabels: false

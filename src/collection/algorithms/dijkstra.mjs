@@ -1,6 +1,6 @@
-import * as is from '../../is';
-import Heap from '../../heap';
-import { defaults } from '../../util';
+import * as is from '../../is.mjs';
+import Heap from '../../heap.mjs';
+import { defaults } from '../../util/index.mjs';
 
 const dijkstraDefaults = defaults({
   root: null,

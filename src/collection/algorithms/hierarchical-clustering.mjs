@@ -3,8 +3,8 @@
 
 // Implemented from the reference library: https://harthur.github.io/clusterfck/
 
-import * as util from '../../util';
-import clusteringDistance from './clustering-distances';
+import * as util from '../../util/index.mjs';
+import clusteringDistance from './clustering-distances.mjs';
 
 const defaults = util.defaults({
   distance: 'euclidean', // distance metric to compare nodes

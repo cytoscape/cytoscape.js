@@ -1,6 +1,6 @@
 /*global HTMLElement DocumentTouch */
 
-import window from './window';
+import window from './window.mjs';
 
 let navigator = window ? window.navigator : null;
 let document = window ? window.document : null;

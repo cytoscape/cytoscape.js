@@ -1,6 +1,6 @@
-import define from '../../define';
-import * as util from '../../util';
-import stepAll from './step-all';
+import define from '../../define/index.mjs';
+import * as util from '../../util/index.mjs';
+import stepAll from './step-all.mjs';
 
 let corefn = ({
 

@@ -1,5 +1,5 @@
-import { matches as queryMatches } from './query-type-match';
-import Type from './type';
+import { matches as queryMatches } from './query-type-match.mjs';
+import Type from './type.mjs';
 
 // filter an existing collection
 let filter = function( collection ){

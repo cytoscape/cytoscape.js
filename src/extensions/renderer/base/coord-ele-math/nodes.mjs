@@ -1,6 +1,6 @@
 var BRp = {};
 
-import { warn } from '../../../../util';
+import { warn } from '../../../../util/index.mjs';
 
 const TOO_SMALL_CUT_RECT = 28;
 

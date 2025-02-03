@@ -1,6 +1,6 @@
-import * as util from './util';
-import * as is from './is';
-import Event from './event';
+import * as util from './util/index.mjs';
+import * as is from './is.mjs';
+import Event from './event.mjs';
 
 const eventRegex = /^([^.]+)(\.(?:[^.]+))?$/; // regex for matching event strings (e.g. "click.namespace")
 const universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally

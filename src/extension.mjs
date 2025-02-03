@@ -1,10 +1,10 @@
 import * as util from'./util';
-import define from './define';
-import Collection from './collection';
-import Core from './core';
-import incExts from './extensions';
-import * as is from './is';
-import Emitter from './emitter';
+import define from './define/index.mjs';
+import Collection from './collection/index.mjs';
+import Core from './core/index.mjs';
+import incExts from './extensions/index.mjs';
+import * as is from './is.mjs';
+import Emitter from './emitter.mjs';
 
 // registered extensions to cytoscape, indexed by name
 let extensions = {};

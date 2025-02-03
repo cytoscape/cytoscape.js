@@ -1,5 +1,5 @@
-import step from './step';
-import startAnimation from './start';
+import step from './step.mjs';
+import startAnimation from './start.mjs';
 
 function stepAll( now, cy ){
   let eles = cy._private.aniEles;

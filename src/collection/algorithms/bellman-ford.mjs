@@ -1,6 +1,6 @@
-import * as is from '../../is';
-import { warn, defaults } from '../../util';
-import Map from '../../map';
+import * as is from '../../is.mjs';
+import { warn, defaults } from '../../util/index.mjs';
+import Map from '../../map.mjs';
 
 const bellmanFordDefaults = defaults({
   weight: edge => 1,

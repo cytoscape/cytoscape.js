@@ -1,10 +1,10 @@
-import { ElementDrawingWebGL } from './drawing-elements-webgl';
-import { RENDER_TARGET, renderDefaults } from './defaults';
-import { OverlayUnderlayRenderer } from './drawing-overlay';
-import * as util from './webgl-util';
-import * as eleTextureCache from '../ele-texture-cache';
-import { debounce } from '../../../../util';
-import { color2tuple } from '../../../../util/colors';
+import { ElementDrawingWebGL } from './drawing-elements-webgl.mjs';
+import { RENDER_TARGET, renderDefaults } from './defaults.mjs';
+import { OverlayUnderlayRenderer } from './drawing-overlay.mjs';
+import * as util from './webgl-util.mjs';
+import * as eleTextureCache from '../ele-texture-cache.mjs';
+import { debounce } from '../../../../util/index.mjs';
+import { color2tuple } from '../../../../util/colors.mjs';
 import { mat3 } from 'gl-matrix';
 
 

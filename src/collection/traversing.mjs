@@ -1,6 +1,6 @@
-import * as util from '../util';
-import * as is from '../is';
-import cache from './cache-traversal-call';
+import * as util from '../util/index.mjs';
+import * as is from '../is.mjs';
+import cache from './cache-traversal-call.mjs';
 
 let elesfn = {};
 

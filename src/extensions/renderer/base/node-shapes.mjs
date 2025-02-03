@@ -1,5 +1,5 @@
-import * as math from '../../../math';
-import * as round from "../../../round";
+import * as math from '../../../math.mjs';
+import * as round from "../../../round.mjs";
 
 var BRp = {};
 

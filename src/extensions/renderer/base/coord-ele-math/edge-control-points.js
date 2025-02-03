@@ -706,28 +706,11 @@ BRp.findEdgeControlPoints = function( edges ){
   let cy = r.cy;
   let hasCompounds = cy.hasCompoundNodes();
 
-  let hashTable = {
-    map: new Map(),
-    get: function(pairId){
-      let map2 = this.map.get(pairId[0]);
-
-      if( map2 != null ){
-        return map2.get(pairId[1]);
-      } else {
-        return null;
-      }
-    },
-    set: function(pairId, val){
-      let map2 = this.map.get(pairId[0]);
-
-      if( map2 == null ){
-        map2 = new Map();
-        this.map.set(pairId[0], map2);
-      }
-
-      map2.set(pairId[1], val);
-    }
-  };
+  let hashTable = new Map();
+  let getKey = (pairId, edgeIsUnbundled) => [
+    ...pairId,
+    edgeIsUnbundled ? 1 : 0
+  ].join('-');
 
   let pairIds = [];
   let haystackEdges = [];
@@ -757,14 +740,15 @@ BRp.findEdgeControlPoints = function( edges ){
     let tgtIndex = tgt.poolIndex();
 
     let pairId = [ srcIndex, tgtIndex ].sort();
+    let key = getKey(pairId, edgeIsUnbundled);
 
-    let tableEntry = hashTable.get( pairId );
+    let tableEntry = hashTable.get( key );
 
     if( tableEntry == null ){
       tableEntry = { eles: [] };
 
-      hashTable.set( pairId, tableEntry );
-      pairIds.push( pairId );
+      pairIds.push({ pairId, edgeIsUnbundled });
+      hashTable.set( key, tableEntry );
     }
 
     tableEntry.eles.push( edge );
@@ -781,8 +765,9 @@ BRp.findEdgeControlPoints = function( edges ){
   // for each pair (src, tgt), create the ctrl pts
   // Nested for loop is OK; total number of iterations for both loops = edgeCount
   for( let p = 0; p < pairIds.length; p++ ){
-    let pairId = pairIds[ p ];
-    let pairInfo = hashTable.get( pairId );
+    let { pairId, edgeIsUnbundled } = pairIds[ p ];
+    let key = getKey(pairId, edgeIsUnbundled);
+    let pairInfo = hashTable.get( key );
     let swappedpairInfo;
 
     if( !pairInfo.hasUnbundled ){

@@ -627,19 +627,33 @@ export class AtlasManager {
    * matrix is expected to be a 9 element array
    * this function follows same pattern as CRp.drawCachedElementPortion(...)
    */
-  setTransformMatrix(matrix, atlasInfo, ele, first=true) {
-    const { bb, type, tex1, tex2 } = atlasInfo;
+  setTransformMatrix(ele, matrix, type, atlasInfo, first=true) {
     const opts = this.getRenderTypeOpts(type);
-
     const padding = opts.getPadding ? opts.getPadding(ele) : 0;
+    
 
-    let ratio = tex1.w / (tex1.w + tex2.w);
-    if(!first) {
-      ratio = 1 - ratio;
+    if(atlasInfo) { // we've already computed the bb and tex bounds for a texture
+      const { bb, tex1, tex2 } = atlasInfo;
+
+      // wrapped textures need separate matrix for each part
+      let ratio = tex1.w / (tex1.w + tex2.w); 
+      if(!first) { // first = true means its the first part of the wrapped texture
+        ratio = 1 - ratio;
+      }
+
+      const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
+      this._applyTransformMatrix(matrix, adjBB, opts, ele);
+    } 
+    else {
+      // we don't have a texture yet, or we want to avoid creating a texture for simple shapes
+      const bb = opts.getBoundingBox(ele);
+      const adjBB = this.getAdjustedBB(bb, padding, true, 1);
+      this._applyTransformMatrix(matrix, adjBB, opts, ele);
     }
-
-    const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
-
+  }
+  
+  
+  _applyTransformMatrix(matrix, adjBB, opts, ele) {
     let x, y;
     mat3.identity(matrix);
 
@@ -660,12 +674,6 @@ export class AtlasManager {
 
     mat3.translate(matrix, matrix, [x, y]);
     mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
-  }
-
-  getTransformMatrix(atlasInfo, ele, first=true) {
-    const matrix = mat3.create();
-    this.setTransformMatrix(matrix, atlasInfo, ele, first);
-    return matrix;
   }
 
   /**

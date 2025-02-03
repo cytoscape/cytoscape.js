@@ -9,6 +9,7 @@ const TEXTURE = 0;
 const EDGE_STRAIGHT = 1;
 const EDGE_CURVE_SEGMENT = 2;
 const EDGE_ARROW = 3;
+const RECTANGLE = 4;
 
 
 export class ElementDrawingWebGL {
@@ -88,10 +89,10 @@ export class ElementDrawingWebGL {
       in vec4 aPointAPointB;
       in vec4 aPointCPointD;
       in float aLineWidth;
-      in vec4 aEdgeColor;
+      in vec4 aColor;
 
       out vec2 vTexCoord;
-      out vec4 vEdgeColor;
+      out vec4 vColor;
       flat out int vAtlasId;
       flat out vec4 vIndex;
       flat out int vVertType;
@@ -119,8 +120,12 @@ export class ElementDrawingWebGL {
           vTexCoord = vec2(texX / d, texY / d); // tex coords must be between 0 and 1
 
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
-        } 
-        else if(aVertType == ${EDGE_STRAIGHT} && vid < 6) {
+        }
+        else if(aVertType == ${RECTANGLE}) {
+          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
+          vColor = aColor;
+        }
+        else if(aVertType == ${EDGE_STRAIGHT}) {
           vec2 source = aPointAPointB.xy;
           vec2 target = aPointAPointB.zw;
 
@@ -132,9 +137,9 @@ export class ElementDrawingWebGL {
           vec2 point = source + xBasis * position.x + yBasis * aLineWidth * position.y;
 
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
-          vEdgeColor = aEdgeColor;
+          vColor = aColor;
         } 
-        else if(aVertType == ${EDGE_CURVE_SEGMENT} && vid < 6) {
+        else if(aVertType == ${EDGE_CURVE_SEGMENT}) {
           vec2 pointA = aPointAPointB.xy;
           vec2 pointB = aPointAPointB.zw;
           vec2 pointC = aPointCPointD.xy;
@@ -179,7 +184,7 @@ export class ElementDrawingWebGL {
             gl_Position = vec4(uPanZoomMatrix * vec3(p1 + point, 1.0), 1.0);
           }
 
-          vEdgeColor = aEdgeColor;
+          vColor = aColor;
         } 
         else if(aVertType == ${EDGE_ARROW} && vid < 3) {
           // massage the first triangle into an edge arrow
@@ -191,7 +196,7 @@ export class ElementDrawingWebGL {
             position = vec2( 0.15, -0.3);
 
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
-          vEdgeColor = aEdgeColor;
+          vColor = aColor;
         }
         else {
           gl_Position = vec4(2.0, 0.0, 0.0, 1.0); // discard vertex by putting it outside webgl clip space
@@ -214,7 +219,7 @@ export class ElementDrawingWebGL {
       uniform vec4 uBGColor;
 
       in vec2 vTexCoord;
-      in vec4 vEdgeColor;
+      in vec4 vColor;
       flat in int vAtlasId;
       flat in vec4 vIndex;
       flat in int vVertType;
@@ -226,10 +231,10 @@ export class ElementDrawingWebGL {
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
         } else if(vVertType == ${EDGE_ARROW}) {
           // blend arrow color with background (using premultiplied alpha)
-          outColor.rgb = vEdgeColor.rgb + (uBGColor.rgb * (1.0 - vEdgeColor.a)); 
+          outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
           outColor.a = 1.0; // make opaque, masks out line under arrow
         } else {
-          outColor = vEdgeColor;
+          outColor = vColor;
         }
 
         ${ renderTarget.picking
@@ -246,17 +251,17 @@ export class ElementDrawingWebGL {
     program.aPosition = gl.getAttribLocation(program, 'aPosition');
 
     // attributes
-    program.aIndex    = gl.getAttribLocation(program, 'aIndex');
-    program.aVertType = gl.getAttribLocation(program, 'aVertType');
+    program.aIndex     = gl.getAttribLocation(program, 'aIndex');
+    program.aVertType  = gl.getAttribLocation(program, 'aVertType');
     program.aTransform = gl.getAttribLocation(program, 'aTransform');
 
-    program.aAtlasId     = gl.getAttribLocation(program, 'aAtlasId');
-    program.aTex        = gl.getAttribLocation(program, 'aTex');
+    program.aAtlasId   = gl.getAttribLocation(program, 'aAtlasId');
+    program.aTex       = gl.getAttribLocation(program, 'aTex');
 
     program.aPointAPointB   = gl.getAttribLocation(program, 'aPointAPointB');
     program.aPointCPointD   = gl.getAttribLocation(program, 'aPointCPointD');
     program.aLineWidth      = gl.getAttribLocation(program, 'aLineWidth');
-    program.aEdgeColor      = gl.getAttribLocation(program, 'aEdgeColor');
+    program.aColor          = gl.getAttribLocation(program, 'aColor');
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
@@ -296,7 +301,7 @@ export class ElementDrawingWebGL {
     this.pointAPointBBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointAPointB);
     this.pointCPointDBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointCPointD);
     this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
-    this.edgeColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aEdgeColor);
+    this.colorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aColor);
 
     gl.bindVertexArray(null);
     return vao;
@@ -316,6 +321,7 @@ export class ElementDrawingWebGL {
 
     this.batchDebugInfo = [];
     this.wrappedCount = 0; // TODO this should be in the AtlasManager
+    this.rectangleCount = 0;
     
     this.startBatch();
   }
@@ -383,13 +389,42 @@ export class ElementDrawingWebGL {
         texView[3] = tex.h;
 
         const matrixView = this.transformBuffer.getMatrixView(instance);
-        atlasManager.setTransformMatrix(matrixView, atlasInfo, ele, first);
+        atlasManager.setTransformMatrix(ele, matrixView, type, atlasInfo, first);
 
         this.instanceCount++;
       }
       first = false;
     }
 
+    if(this.instanceCount >= this.maxInstances) {
+      this.endBatch();
+    }
+  }
+
+
+  drawSimpleRectangle(ele, eleIndex, type) {
+    if(!ele.visible()) {
+      return;
+    }
+    const { atlasManager } = this;
+
+    const instance = this.instanceCount;
+    this.vertTypeBuffer.getView(instance)[0] = RECTANGLE;
+
+    const indexView = this.indexBuffer.getView(instance);
+    util.indexToVec4(eleIndex, indexView);
+
+    const color = ele.pstyle('background-color').value;
+    const opacity = ele.pstyle('background-opacity').value;
+    
+    const colorView = this.colorBuffer.getView(instance);
+    util.toWebGLColor(color, opacity, colorView);
+
+    const matrixView = this.transformBuffer.getMatrixView(instance);
+    atlasManager.setTransformMatrix(ele, matrixView, type);
+
+    this.rectangleCount++;
+    this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
     }
@@ -449,7 +484,7 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
-    const colorView = this.edgeColorBuffer.getView(instance);
+    const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
     this.instanceCount++;
@@ -486,7 +521,7 @@ export class ElementDrawingWebGL {
 
       const indexView = this.indexBuffer.getView(instance);
       util.indexToVec4(eleIndex, indexView);
-      const colorView = this.edgeColorBuffer.getView(instance);
+      const colorView = this.colorBuffer.getView(instance);
       util.toWebGLColor(color, opacity, colorView);
       const lineWidthBuffer = this.lineWidthBuffer.getView(instance);
       lineWidthBuffer[0] = width;
@@ -510,7 +545,7 @@ export class ElementDrawingWebGL {
 
         const indexView = this.indexBuffer.getView(instance);
         util.indexToVec4(eleIndex, indexView);
-        const colorView = this.edgeColorBuffer.getView(instance);
+        const colorView = this.colorBuffer.getView(instance);
         util.toWebGLColor(color, opacity, colorView);
         const lineWidthBuffer = this.lineWidthBuffer.getView(instance);
         lineWidthBuffer[0] = width;
@@ -684,6 +719,7 @@ export class ElementDrawingWebGL {
       atlasInfo,
       totalAtlases,
       wrappedCount: this.wrappedCount,
+      rectangleCount: this.rectangleCount,
       batchCount: batchInfo.length,
       batchInfo,
       totalInstances

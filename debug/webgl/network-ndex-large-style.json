@@ -6,7 +6,7 @@
   "style" : [ {
     "selector" : "node",
     "style" : {
-      "shape" : "ellipse",
+      "shape" : "rectangle",
       "background-opacity" : 1.0,
       "border-color" : "rgb(0,0,0)",
       "border-opacity" : 1.0,

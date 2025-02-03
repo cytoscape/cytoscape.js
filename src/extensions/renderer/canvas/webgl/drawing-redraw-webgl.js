@@ -8,23 +8,14 @@ import { color2tuple } from '../../../../util/colors';
 import { mat3 } from 'gl-matrix';
 
 
-
-function getBGColor(container) {
-  const cssColor = (container && container.style && container.style.backgroundColor) || 'white';
-  return color2tuple(cssColor);
-}
-
 const CRp = {};
 
-/**
- * TODO - webgl specific data should be in a sub object, or it should be prefixed with 'webgl'
- */
+
 CRp.initWebgl = function(opts, fns) {
   const r = this;
   const gl = r.data.contexts[r.WEBGL];
-  const container = opts.cy.container();
 
-  opts.bgColor = getBGColor(container);
+  opts.bgColor = getBGColor(r);
   opts.webglTexSize = Math.min(opts.webglTexSize, gl.getParameter(gl.MAX_TEXTURE_SIZE));
   opts.webglTexRows = Math.min(opts.webglTexRows, 54);
   opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
@@ -32,10 +23,6 @@ CRp.initWebgl = function(opts, fns) {
   
   r.webglDebug = opts.webglDebug;
   r.webglDebugShowAtlases = opts.webglDebugShowAtlases;
-
-  console.log('max texture units', gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-  console.log('max texture size' , gl.getParameter(gl.MAX_TEXTURE_SIZE));
-  console.log('webgl options', opts);
 
   // for offscreen rendering when render target is PICKING
   r.pickingFrameBuffer = util.createPickingFrameBuffer(gl);
@@ -114,6 +101,12 @@ CRp.initWebgl = function(opts, fns) {
   overrideCanvasRendererFunctions(r);
 };
 
+
+function getBGColor(r) {
+  const container = r.cy.container();
+  const cssColor = (container && container.style && container.style.backgroundColor) || 'white';
+  return color2tuple(cssColor);
+}
 
 /**
  * Plug into the canvas renderer to use webgl for rendering.
@@ -396,6 +389,17 @@ function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
   return Array.from(box);
 }
 
+// TODO: Is constantly checking this slower than just rendering a texture?
+// Maybe this should be cached as a flag on each node.
+function isSimpleRectangle(node) {
+  return (
+    node.pstyle('shape').value === 'rectangle' &&
+    node.pstyle('background-fill').value === 'solid' &&
+    node.pstyle('border-width').pfValue === 0 &&
+    node.pstyle('background-image').strValue === 'none'
+  );
+}
+
 
 function renderWebgl(r, options, renderTarget) {
   let start;
@@ -432,7 +436,11 @@ function renderWebgl(r, options, renderTarget) {
       index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
       if(ele.isNode()) {
         eleDrawing.drawTexture(ele, index, 'node-underlay');
-        eleDrawing.drawTexture(ele, index, 'node-body');
+        if(isSimpleRectangle(ele)) {
+          eleDrawing.drawSimpleRectangle(ele, index, 'node-body');
+        } else {
+          eleDrawing.drawTexture(ele, index, 'node-body');
+        }
         eleDrawing.drawTexture(ele, index, 'node-label');
         eleDrawing.drawTexture(ele, index, 'node-overlay');
       } else {
@@ -492,7 +500,8 @@ function renderWebgl(r, options, renderTarget) {
       `${debugInfo.totalInstances} instances`,
       `${debugInfo.batchCount} batches`,
       `${debugInfo.totalAtlases} atlases`,
-      `${debugInfo.wrappedCount} wrapped textures`
+      `${debugInfo.wrappedCount} wrapped textures`,
+      `${debugInfo.rectangleCount} simple rectangles`
     ].join(', ');
 
     if(compact) {

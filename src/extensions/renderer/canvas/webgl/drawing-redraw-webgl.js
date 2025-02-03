@@ -18,6 +18,7 @@ CRp.initWebgl = function(opts, fns) {
   opts.bgColor = getBGColor(r);
   opts.webglTexSize = Math.min(opts.webglTexSize, gl.getParameter(gl.MAX_TEXTURE_SIZE));
   opts.webglTexRows = Math.min(opts.webglTexRows, 54);
+  opts.webglTexRowsNodes = Math.min(opts.webglTexRowsNodes, 54);
   opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
   opts.webglTexPerBatch = Math.min(opts.webglTexPerBatch, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
   
@@ -41,6 +42,7 @@ CRp.initWebgl = function(opts, fns) {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
+    texRows: opts.webglTexRowsNodes,
   }));
 
   r.eleDrawing.addTextureRenderType('node-label', renderDefaults({
@@ -51,6 +53,7 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible,
+    texRows: opts.webglTexRows,
   }));
   
   r.eleDrawing.addTextureRenderType('node-overlay', renderDefaults({
@@ -59,6 +62,7 @@ CRp.initWebgl = function(opts, fns) {
     drawElement: (ctx, ele, bb) => our.draw('overlay', ctx, ele, bb),
     isVisible: ele => our.isVisible('overlay', ele),
     getPadding: ele => our.getPadding('overlay', ele),
+    texRows: opts.webglTexRowsNodes,
   }));
 
   r.eleDrawing.addTextureRenderType('node-underlay', renderDefaults({
@@ -67,6 +71,7 @@ CRp.initWebgl = function(opts, fns) {
     drawElement: (ctx, ele, bb) => our.draw('underlay', ctx, ele, bb),
     isVisible: ele => our.isVisible('underlay', ele),
     getPadding: ele => our.getPadding('underlay', ele),
+    texRows: opts.webglTexRowsNodes,
   }));
 
   r.eleDrawing.addTextureRenderType('edge-label', renderDefaults({
@@ -77,6 +82,7 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible,
+    texRows: opts.webglTexRows,
   }));
 
   // TODO edge arrows, same approach as node-overlay/underlay
@@ -257,19 +263,20 @@ function drawAtlases(r) {
     for(let i = 0; i < atlases.length; i++) {
       const atlas = atlases[i];
       const canvas = atlas.canvas;
-  
-      const w = canvas.width;
-      const h = canvas.height;
-      const x = w * i;
-      const y = canvas.height * row;
-  
-      context.save();
-      context.scale(scale, scale);
-      context.drawImage(canvas, x, y);
-      context.strokeStyle = 'black';
-      context.rect(x, y, w, h);
-      context.stroke();
-      context.restore();
+      if(canvas) {
+        const w = canvas.width;
+        const h = canvas.height;
+        const x = w * i;
+        const y = canvas.height * row;
+    
+        context.save();
+        context.scale(scale, scale);
+        context.drawImage(canvas, x, y);
+        context.strokeStyle = 'black';
+        context.rect(x, y, w, h);
+        context.stroke();
+        context.restore();
+      }
     }
   };
   let i = 0;
@@ -490,7 +497,7 @@ function renderWebgl(r, options, renderTarget) {
   if(r.webglDebug) {
     // eslint-disable-next-line no-undef
     const end = performance.now();
-    const compact = true;
+    const compact = false;
 
     const time = Math.ceil(end - start);
     const debugInfo = eleDrawing.getDebugInfo();

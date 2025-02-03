@@ -14,4 +14,5 @@ export const renderDefaults = defaults({
   getRotationOffset: null,
   isVisible: () => true,  // this is an extra check for visibility in addition to ele.visible()
   getPadding: null,
+  texRows: 24
 });

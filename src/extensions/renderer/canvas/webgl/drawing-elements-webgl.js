@@ -22,7 +22,6 @@ export class ElementDrawingWebGL {
     this.gl = gl;
     
     this.maxInstances = opts.webglBatchSize;
-    this.maxAtlases = opts.webglTexPerBatch;
     this.atlasSize = opts.webglTexSize;
     this.bgColor = opts.bgColor;
     
@@ -269,7 +268,7 @@ export class ElementDrawingWebGL {
     program.uBGColor       = gl.getUniformLocation(program, 'uBGColor');
 
     program.uTextures = [];
-    for(let i = 0; i < this.atlasManager.maxAtlases; i++) {
+    for(let i = 0; i < this.atlasManager.getMaxAtlasesPerBatch(); i++) {
       program.uTextures.push(gl.getUniformLocation(program, `uTexture${i}`));
     }
 
@@ -358,8 +357,11 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
-    const atlasInfo = atlasManager.getAtlasInfo(ele, type, atlasInfo);
+    const atlasInfo = atlasManager.getAtlasInfo(ele, type);
     const { atlasID, tex1, tex2 } = atlasInfo;
+    // if(ele.isNode()) {
+    //   console.log(`${JSON.stringify(tex1)} ${JSON.stringify(tex2)}`);
+    // }
 
     // Set values in the buffers using Typed Array Views for performance.
     const atlasIdView = this.atlasIdBuffer.getView(instance);
@@ -416,7 +418,7 @@ export class ElementDrawingWebGL {
 
     const color = ele.pstyle('background-color').value;
     const opacity = ele.pstyle('background-opacity').value;
-    
+
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
@@ -685,7 +687,7 @@ export class ElementDrawingWebGL {
 
     // Set the uniforms
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
-    gl.uniform1i(program.uAtlasSize, this.atlasManager.atlasSize);
+    gl.uniform1i(program.uAtlasSize, this.atlasManager.getAtlasSize());
     // set background color, needed for edge arrow color blending
     const webglBgColor = util.toWebGLColor(this.bgColor, 1);
     gl.uniform4fv(program.uBGColor, webglBgColor);

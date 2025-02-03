@@ -9,32 +9,29 @@ import { mat3 } from 'gl-matrix';
  */
 export class Atlas {
 
-  constructor(r, opts) {
+  constructor(r, texSize, texRows, createTextureCanvas) {
     this.debugID = Math.floor(Math.random() * 10000);
     this.r = r;
 
-    this.atlasSize = opts.webglTexSize;
-    this.rows = opts.webglTexRows;
-    this.enableWrapping = opts.enableWrapping;
+    this.texSize = texSize;
+    this.texRows = texRows;
+    this.texHeight = Math.floor(texSize / texRows);
 
-    this.texHeight = Math.floor(this.atlasSize / this.rows);
-    this.maxTexWidth = this.atlasSize;
+    this.enableWrapping = true; // hardcoded for now, can be made an option
 
-    this.texture = null;
+    this.locked = false; // once an atlas is locked it can no longer be drawn to
+    this.texture = null; // WebGLTexture object
     this.needsBuffer = true;
-
-    // once an atlas is locked it can no longer be drawn to
-    this.locked = false;
-
-    // a "location" is an object with a row and x fields
+    
+    // a "location" is an object with a 'row' and 'x' fields
     this.freePointer = { x: 0, row: 0 };
 
     // map from the style key to the row/x where the texture starts
     // if the texture wraps then there's a second location
     this.keyToLocation = new Map(); // styleKey -> [ location, location ]
 
-    this.canvas  = opts.createTextureCanvas(r, this.atlasSize, this.atlasSize);
-    this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight, 'scratch');
+    this.canvas  = createTextureCanvas(r, texSize, texSize);
+    this.scratch = createTextureCanvas(r, texSize, this.texHeight, 'scratch');
   }
 
   lock() {
@@ -46,7 +43,7 @@ export class Atlas {
   }
 
   getScale({ w, h }) {
-    const { texHeight, maxTexWidth } = this;
+    const { texHeight, texSize: maxTexWidth } = this;
     // try to fit to the height of a row
     let scale = texHeight / h;  // TODO what about pixelRatio?
     let texW = w * scale;
@@ -65,7 +62,7 @@ export class Atlas {
     if(this.locked)
       throw new Error('can\'t draw, atlas is locked');
 
-    const { atlasSize, rows, texHeight } = this;
+    const { texSize, texRows, texHeight } = this;
     const { scale, texW, texH } = this.getScale(bb);
     
     const locations = [ null, null ];
@@ -104,7 +101,7 @@ export class Atlas {
 
       // move the pointer to the end of the texture
       this.freePointer.x += texW;
-      if(this.freePointer.x == atlasSize) {
+      if(this.freePointer.x == texSize) {
         // move to the next row
         // TODO what if there is no next row???
         this.freePointer.x = 0;
@@ -119,7 +116,7 @@ export class Atlas {
       scratch.clear();
       drawAt({ x:0, row:0 }, scratch);
 
-      const firstTexW = atlasSize - this.freePointer.x;
+      const firstTexW = texSize - this.freePointer.x;
       const secondTexW = texW - firstTexW;
       const h = texHeight;
 
@@ -169,11 +166,11 @@ export class Atlas {
       this.freePointer.row++;
     };
 
-    if(this.freePointer.x + texW <= atlasSize) { // There's enough space in the current row
+    if(this.freePointer.x + texW <= texSize) { // There's enough space in the current row
       drawNormal();
-    } else if(this.freePointer.row >= rows-1) { // Need to move to the next row, but there are no more rows, atlas is full.
+    } else if(this.freePointer.row >= texRows-1) { // Need to move to the next row, but there are no more rows, atlas is full.
       return false;
-    } else if(this.freePointer.x === atlasSize) { // happen to be right at end of current row
+    } else if(this.freePointer.x === texSize) { // happen to be right at end of current row
       moveToStartOfNextRow();
       drawNormal();
     } else if(this.enableWrapping) { // draw part of the texture to the end of the curent row, then wrap to the next row
@@ -200,10 +197,10 @@ export class Atlas {
     if(this.locked)
       return false;
 
-    const { atlasSize, rows } = this;
+    const { texSize, texRows } = this;
     const { texW } = this.getScale(bb);
-    if(this.freePointer.x + texW > atlasSize) { // need to wrap
-      return this.freePointer.row < rows - 1; // return true if there's a row to wrap to
+    if(this.freePointer.x + texW > texSize) { // need to wrap
+      return this.freePointer.row < texRows - 1; // return true if there's a row to wrap to
     }
     return true;
   }
@@ -245,9 +242,12 @@ export class Atlas {
  */
 export class AtlasCollection {
 
-  constructor(r, opts) {
+  constructor(r, texSize, texRows, createTextureCanvas) {
     this.r = r;
-    this.opts = opts;
+
+    this.texSize = texSize;
+    this.texRows = texRows;
+    this.createTextureCanvas = createTextureCanvas;
 
     this.keyToIds = new Map();
     this.idToKey  = new Map();
@@ -273,16 +273,15 @@ export class AtlasCollection {
   }
 
   _createAtlas() {
-    const { r, opts } = this;
-    return new Atlas(r, opts);
+    const { r, texSize, texRows, createTextureCanvas } = this;
+    return new Atlas(r, texSize, texRows, createTextureCanvas);
   }
 
   _getScratchCanvas() {
     if(!this.scratch) {
-      const { r, opts } = this;
-      const atlasSize = opts.webglTexSize;
-      const texHeight = Math.floor(atlasSize / opts.webglTexRows);
-      this.scratch = opts.createTextureCanvas(r, atlasSize, texHeight, 'scratch');
+      const { r, texSize, texRows, createTextureCanvas } = this;
+      const texHeight = Math.floor(texSize / texRows);
+      this.scratch = createTextureCanvas(r, texSize, texHeight, 'scratch');
     }
     return this.scratch;
   }
@@ -475,43 +474,49 @@ export class AtlasManager {
   constructor(r, globalOptions) {
     this.r = r;
 
-    const opts = globalOptions;
-    this.globalOptions = opts;
-    this.maxAtlases = opts.webglTexPerBatch;
-    this.atlasSize = opts.webglTexSize;
-    
+    this.globalOptions = globalOptions;
+    this.atlasSize = globalOptions.webglTexSize;
     this.renderTypes = new Map(); // string -> object
     this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
     this.batchAtlases = [];
-
-    this._cacheScratchCanvas(opts);
   }
 
-  _cacheScratchCanvas(opts) {
+  getAtlasSize() {
+    return this.atlasSize;
+  }
+
+  getMaxAtlasesPerBatch() {
+    return this.maxAtlasesPerBatch;
+  }
+
+  _cacheScratchCanvas(createTextureCanvas, type) {
+    // all scratch canvases for the same render type will have the same width and height (ie webglTexRows option)
+    // but we'll keep track of the width and height just to be safe
     let prevW = -1;
     let prevH = -1;
     let scratchCanvas = null;
 
-    const baseCreateTextureCanvas = opts.createTextureCanvas;
-
-    opts.createTextureCanvas = (r, w, h, scratch) => {
+    return (r, w, h, scratch) => {
       if(scratch) {
         if(!scratchCanvas || w != prevW || h != prevH) {
           prevW = w;
           prevH = h;
-          scratchCanvas = baseCreateTextureCanvas(r, w, h);
+          scratchCanvas = createTextureCanvas(r, w, h);
         }
         return scratchCanvas;
       } else {
-        return baseCreateTextureCanvas(r, w, h);
+        return createTextureCanvas(r, w, h);
       }
     };
   }
 
   addRenderType(type, renderTypeOptions) {
-    const atlasCollection = new AtlasCollection(this.r, this.globalOptions);
-    const typeOpts = renderTypeOptions;
-    this.renderTypes.set(type, cyutil.extend( { type, atlasCollection}, typeOpts ) );
+    const { webglTexSize, createTextureCanvas } = this.globalOptions;
+    const { texRows } = renderTypeOptions;
+    const cachedCreateTextureCanvas = this._cacheScratchCanvas(createTextureCanvas, type);
+    const atlasCollection = new AtlasCollection(this.r, webglTexSize, texRows, cachedCreateTextureCanvas);
+    const opts = cyutil.extend({ type, atlasCollection }, renderTypeOptions);
+    this.renderTypes.set(type, opts);
   }
 
   getRenderTypes() {
@@ -594,7 +599,7 @@ export class AtlasManager {
   }
 
   getIndexArray() {
-    return Array.from({ length: this.maxAtlases }, (v,i) => i);
+    return Array.from({ length: this.maxAtlasesPerBatch }, (v,i) => i);
   }
 
   getAtlasInfo(ele, type) {

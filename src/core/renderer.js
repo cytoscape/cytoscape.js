@@ -16,11 +16,13 @@ let rendererDefaults = util.defaults({
   webgl: false,
   webglDebug: false,
   webglDebugShowAtlases: false,
-  // defaults good for mobile
+  // defaults
   webglTexSize: 2048,
-  webglTexRows: 12,
+  webglTexRows: 36,
+  webglTexRowsNodes: 18,
   webglBatchSize: 2048,
   webglTexPerBatch: 14,
+
   webglBgColor: [255, 255, 255]
 });
 

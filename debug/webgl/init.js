@@ -29,8 +29,12 @@ const paramDefs = {
     control: '#texture-size-select'
   },
   webglTexRows: {
-    default: 12,
+    default: 36,
     control: '#texture-rows-select'
+  },
+  webglTexRowsNodes: {
+    default: 18,
+    control: '#texture-rows-nodes-select'
   },
   webglBatchSize: {
     default: 2048,
@@ -70,6 +74,7 @@ const paramDefs = {
         webglDebugShowAtlases: params.webglDebugShowAtlases === 'true',
         webglTexSize: params.webglTexSize,
         webglTexRows: params.webglTexRows,
+        webglTexRowsNodes: params.webglTexRowsNodes,
         webglBatchSize: params.webglBatchSize,
         webglTexPerBatch: params.webglTexPerBatch,
       },

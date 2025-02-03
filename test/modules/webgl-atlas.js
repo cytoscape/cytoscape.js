@@ -15,28 +15,26 @@ function createTextureCanvas(r, width, height) {
     translate(xOffset, yOffset) { },
     scale(xScale, yScale) { },
     restore() { },
-  }
+  };
   canvas.clear = () => { };
 
   return canvas;
 }
 
 function createAtlas(webglTexSize = 100, webglTexRows = 10) {
-  return new Atlas(null, { 
+  return new Atlas(null,
     webglTexSize, 
     webglTexRows, 
-    createTextureCanvas,
-    enableWrapping: true
-  });
+    createTextureCanvas
+  );
 }
 
 function createAtlasCollection(webglTexSize = 100, webglTexRows = 10) {
-  return new AtlasCollection(null, { 
+  return new AtlasCollection(null, 
     webglTexSize, 
     webglTexRows, 
-    createTextureCanvas,
-    enableWrapping: true
-  });
+    createTextureCanvas
+  );
 }
 
 

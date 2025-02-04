@@ -471,14 +471,11 @@ BRp.calculateLabelDimensions = function( ele, text ){
 
   var document = containerWindow.document;
 
-  let cacheKey = util.hashString( text, ele._private.labelDimsKey );
+  let cacheKey = util.hashString(text, ele._private.labelDimsKey);
+  let cache = r.labelDimCache || (r.labelDimCache = { key: null, value: null });
 
-  let cache = r.labelDimCache || (r.labelDimCache = []);
-
-  let existingVal = cache[ cacheKey ];
-
-  if( existingVal != null ){
-    return existingVal;
+  if (cache.key === cacheKey) {
+    return cache.value;
   }
 
   let padding = 0; // add padding around text dims, as the measurement isn't that accurate
@@ -522,10 +519,13 @@ BRp.calculateLabelDimensions = function( ele, text ){
   width += padding;
   height += padding;
 
-  return ( cache[ cacheKey ] = {
+  cache.key = cacheKey;
+  cache.value = {
     width,
     height
-  } );
+  };
+
+  return cache.value;
 };
 
 

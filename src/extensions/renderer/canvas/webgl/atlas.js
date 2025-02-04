@@ -215,7 +215,6 @@ export class Atlas {
       this.needsBuffer = false;
 
       if(this.locked) {
-        console.log('freeing offscreen canvas');
         this.canvas = null;
         this.scratch = null;
       }
@@ -357,8 +356,9 @@ export class AtlasCollection {
 
   gc() {
     const forceGC = this.atlases.some(atlas => atlas.forceGC);
-    const markedKeys = this._getKeysToCollect();
+    this.atlases.forEach(atlas => atlas.forceGC = false);
 
+    const markedKeys = this._getKeysToCollect();
     if(markedKeys.size === 0 && !forceGC) {
       console.log('nothing to garbage collect');
       return;
@@ -464,7 +464,7 @@ function intersection(set1, set2) {
 
 /**
  * Used to manage batches of Atlases for drawing nodes and labels.
- * Supports different types of AtlasCollections for different render types,
+ * Supports different types of AtlasCollections for different render types (or 'texture groups'),
  * for example 'node body' and 'node label' would be different render types.
  * Render types are kept separate because they will likely need to be garbage collected
  * separately and its not entierly guaranteed that their style keys won't collide.
@@ -476,8 +476,11 @@ export class AtlasManager {
 
     this.globalOptions = globalOptions;
     this.atlasSize = globalOptions.webglTexSize;
-    this.renderTypes = new Map(); // string -> object
     this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
+
+    this.renderTypes = new Map(); // string -> object
+    this.collections = new Map(); // string -> AtlasCollection
+
     this.batchAtlases = [];
   }
 
@@ -489,7 +492,43 @@ export class AtlasManager {
     return this.maxAtlasesPerBatch;
   }
 
-  _cacheScratchCanvas(createTextureCanvas, type) {
+  addAtlasCollection(collectionName, atlasCollectionOptions) {
+    const { webglTexSize, createTextureCanvas } = this.globalOptions;
+    const { texRows } = atlasCollectionOptions;
+    const cachedCreateTextureCanvas = this._cacheScratchCanvas(createTextureCanvas);
+    const atlasCollection = new AtlasCollection(this.r, webglTexSize, texRows, cachedCreateTextureCanvas);
+    this.collections.set(collectionName, atlasCollection);
+  }
+
+  addRenderType(type, renderTypeOptions) {
+    const { collection } = renderTypeOptions;
+
+    if(!this.collections.has(collection))
+      throw new Error(`invalid atlas collection name '${collection}'`);
+
+    const atlasCollection = this.collections.get(collection);
+
+    const opts = cyutil.extend({ type, atlasCollection }, renderTypeOptions);
+    this.renderTypes.set(type, opts);
+  }
+
+  getRenderTypes() {
+    return [ ...this.renderTypes.values() ];
+  }
+
+  getAtlasCollections() {
+    return [ ...this.collections.values() ];
+  }
+
+  getRenderTypeOpts(type) {
+    return this.renderTypes.get(type);
+  }
+
+  getAtlasCollection(name) {
+    return this.collections.get(name);
+  }
+
+  _cacheScratchCanvas(createTextureCanvas) {
     // all scratch canvases for the same render type will have the same width and height (ie webglTexRows option)
     // but we'll keep track of the width and height just to be safe
     let prevW = -1;
@@ -510,23 +549,6 @@ export class AtlasManager {
     };
   }
 
-  addRenderType(type, renderTypeOptions) {
-    const { webglTexSize, createTextureCanvas } = this.globalOptions;
-    const { texRows } = renderTypeOptions;
-    const cachedCreateTextureCanvas = this._cacheScratchCanvas(createTextureCanvas, type);
-    const atlasCollection = new AtlasCollection(this.r, webglTexSize, texRows, cachedCreateTextureCanvas);
-    const opts = cyutil.extend({ type, atlasCollection }, renderTypeOptions);
-    this.renderTypes.set(type, opts);
-  }
-
-  getRenderTypes() {
-    return [ ...this.renderTypes.values() ];
-  }
-
-  getRenderTypeOpts(type) {
-    return this.renderTypes.get(type);
-  }
-
   /** Marks textues associated with the element for garbage collection. */
   invalidate(eles, { forceRedraw=false, filterEle=()=>true, filterType=()=>true } = {}) {
     let gcNeeded = false;
@@ -536,13 +558,14 @@ export class AtlasManager {
         for(const opts of this.getRenderTypes()) {
           if(filterType(opts.type)) {
             const styleKey = opts.getKey(ele);
+            const atlasCollection = this.collections.get(opts.collection);
             if(forceRedraw) { 
               // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn
-              opts.atlasCollection.deleteKey(id, styleKey);
-              opts.atlasCollection.styleKeyNeedsRedraw.add(styleKey);
+              atlasCollection.deleteKey(id, styleKey);
+              atlasCollection.styleKeyNeedsRedraw.add(styleKey);
               gcNeeded = true; // TODO is this too conservative?
             } else {
-              gcNeeded |= opts.atlasCollection.checkKeyIsInvalid(id, styleKey);
+              gcNeeded |= atlasCollection.checkKeyIsInvalid(id, styleKey);
             }
           }
         }
@@ -553,8 +576,8 @@ export class AtlasManager {
 
   /** Garbage collect */
   gc() {
-    for(const opts of this.getRenderTypes()) {
-      opts.atlasCollection.gc();
+    for(const collection of this.getAtlasCollections()) {
+      collection.gc();
     }
   }
 
@@ -580,8 +603,9 @@ export class AtlasManager {
     const styleKey = opts.getKey(ele);
     const id = ele.id();
 
+    const atlasCollection = this.collections.get(opts.collection);
     // Draws the texture if needed.
-    return opts.atlasCollection.draw(id, styleKey, bb, context => {
+    return atlasCollection.draw(id, styleKey, bb, context => {
       opts.drawElement(context, ele, bb, true, true);
     });
   }
@@ -621,7 +645,8 @@ export class AtlasManager {
       // batch is full, is the atlas already part of this batch?
       const opts = this.renderTypes.get(type);
       const styleKey = opts.getKey(ele);
-      const atlas = opts.atlasCollection.getAtlas(styleKey);
+      const atlasCollection = this.collections.get(opts.collection);
+      const atlas = atlasCollection.getAtlas(styleKey);
       // return true if there is an atlas and it is part of this batch already
       return atlas && this.batchAtlases.includes(atlas);
     }
@@ -714,9 +739,9 @@ export class AtlasManager {
 
   getDebugInfo() {
     const debugInfo = [];
-    for(let [ type, opts ] of this.renderTypes) {
-      const { keyCount, atlasCount } = opts.atlasCollection.getCounts();
-      debugInfo.push({ type, keyCount, atlasCount });
+    for(let [ name, collection ] of this.collections) {
+      const { keyCount, atlasCount } = collection.getCounts();
+      debugInfo.push({ type: name, keyCount, atlasCount });
     }
     return debugInfo;
   }

@@ -1,5 +1,5 @@
 import { ElementDrawingWebGL } from './drawing-elements-webgl';
-import { RENDER_TARGET, renderDefaults } from './defaults';
+import { RENDER_TARGET, renderDefaults, atlasCollectionDefaults } from './defaults';
 import { OverlayUnderlayRenderer } from './drawing-overlay';
 import * as util from './webgl-util';
 import * as eleTextureCache from '../ele-texture-cache';
@@ -37,15 +37,24 @@ CRp.initWebgl = function(opts, fns) {
 
   r.eleDrawing = new ElementDrawingWebGL(r, gl, opts);
   const our = new OverlayUnderlayRenderer(r);
-  
-  r.eleDrawing.addTextureRenderType('node-body', renderDefaults({
+
+  r.eleDrawing.addAtlasCollection('node', atlasCollectionDefaults({
+    texRows: opts.webglTexRowsNodes
+  }));
+
+  r.eleDrawing.addAtlasCollection('label', atlasCollectionDefaults({
+    texRows: opts.webglTexRows
+  }));
+
+  r.eleDrawing.addAtlasRenderType('node-body', renderDefaults({
+    collection: 'node',
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-    texRows: opts.webglTexRowsNodes,
   }));
 
-  r.eleDrawing.addTextureRenderType('node-label', renderDefaults({
+  r.eleDrawing.addAtlasRenderType('node-label', renderDefaults({
+    collection: 'label',
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -53,28 +62,28 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible,
-    texRows: opts.webglTexRows,
   }));
   
-  r.eleDrawing.addTextureRenderType('node-overlay', renderDefaults({
+  r.eleDrawing.addAtlasRenderType('node-overlay', renderDefaults({
+    collection: 'node',
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('overlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('overlay', ctx, ele, bb),
     isVisible: ele => our.isVisible('overlay', ele),
     getPadding: ele => our.getPadding('overlay', ele),
-    texRows: opts.webglTexRowsNodes,
   }));
 
-  r.eleDrawing.addTextureRenderType('node-underlay', renderDefaults({
+  r.eleDrawing.addAtlasRenderType('node-underlay', renderDefaults({
+    collection: 'node',
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('underlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('underlay', ctx, ele, bb),
     isVisible: ele => our.isVisible('underlay', ele),
     getPadding: ele => our.getPadding('underlay', ele),
-    texRows: opts.webglTexRowsNodes,
   }));
 
-  r.eleDrawing.addTextureRenderType('edge-label', renderDefaults({
+  r.eleDrawing.addAtlasRenderType('edge-label', renderDefaults({
+    collection: 'label',
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -82,7 +91,6 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible,
-    texRows: opts.webglTexRows,
   }));
 
   // TODO edge arrows, same approach as node-overlay/underlay
@@ -254,12 +262,12 @@ function drawAxes(r) { // for debgging
 
 function drawAtlases(r) {
   // For debugging the atlases
-  const draw = (drawing, renderType, row) => {
-    const opts = drawing.atlasManager.getRenderTypeOpts(renderType);
+  const draw = (drawing, name, row) => {
+    const collection = drawing.atlasManager.getAtlasCollection(name);
     const context = r.data.contexts[r.NODE];
     const scale = 0.125;
   
-    const atlases = opts.atlasCollection.atlases;
+    const atlases = collection.atlases;
     for(let i = 0; i < atlases.length; i++) {
       const atlas = atlases[i];
       const canvas = atlas.canvas;
@@ -280,11 +288,8 @@ function drawAtlases(r) {
     }
   };
   let i = 0;
-  // draw(r.eleDrawing, 'node-underlay', i++);
-  draw(r.eleDrawing, 'node-body',     i++);
-  draw(r.eleDrawing, 'node-label',    i++);
-  // draw(r.eleDrawing, 'node-overlay',  i++);
-  // draw(r.eleDrawing, 'edge-label',    i++);
+  draw(r.eleDrawing, 'node',  i++);
+  draw(r.eleDrawing, 'label', i++);
 }
 
 
@@ -479,12 +484,6 @@ function renderWebgl(r, options, renderTarget) {
 
     eleDrawing.endFrame();
 
-    if(r.data.gc) {
-      console.log("Garbage Collect!");
-      r.data.gc = false;
-      eleDrawing.gc();
-    }
-
     if(renderTarget.screen && r.webglDebugShowAtlases) {
       drawAxes(r);
       drawAtlases(r);
@@ -524,6 +523,12 @@ function renderWebgl(r, options, renderTarget) {
       }
       console.log('');
     }
+  }
+
+  if(r.data.gc) {
+    console.log('Garbage Collect!');
+    r.data.gc = false;
+    eleDrawing.gc();
   }
 
 }

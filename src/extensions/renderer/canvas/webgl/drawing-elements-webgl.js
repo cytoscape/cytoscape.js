@@ -38,8 +38,12 @@ export class ElementDrawingWebGL {
     this.vao = this.createVAO();
   }
 
-  addTextureRenderType(type, opts) {
-    this.atlasManager.addRenderType(type, opts);
+  addAtlasCollection(groupName, opts) {
+    this.atlasManager.addAtlasCollection(groupName, opts);
+  }
+
+  addAtlasRenderType(typeName, opts) {
+    this.atlasManager.addRenderType(typeName, opts);
   }
 
   invalidate(eles, { type } = {}) {

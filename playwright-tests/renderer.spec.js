@@ -293,7 +293,7 @@ test.describe('Renderer', () => {
 
     test('do not move when setting one edge to visibility:hidden', async ({ page }) => {
       await page.evaluate(() => {
-        cy.$('#ab1').style('visibility', 'hidden');
+        window.cy.$('#ab1').style('visibility', 'hidden');
       });
 
       let pt_ab1_2 = await page.evaluate(() => cy.$('#ab1').controlPoints()[0]);
@@ -305,7 +305,7 @@ test.describe('Renderer', () => {
 
     test('move when setting one edge to display:none', async ({ page }) => {
       await page.evaluate(() => {
-        cy.$('#ab1').style('display', 'none');
+        window.cy.$('#ab1').style('display', 'none');
       });
 
       let pt_ab1_2 = await page.evaluate(() => cy.$('#ab1').controlPoints());
@@ -317,7 +317,7 @@ test.describe('Renderer', () => {
 
     test('move when setting one edge to display:none (bigger bundle)', async ({ page }) => {
       await page.evaluate(() => {
-        cy.add([
+        window.cy.add([
           {
             data: { id: 'ab3', source: 'a', target: 'b' }
           },
@@ -342,7 +342,7 @@ test.describe('Renderer', () => {
 
     test('move when setting one edge to curve-style:straight', async ({ page }) => {
       await page.evaluate(() => {
-        cy.add([
+        window.cy.add([
           {
             data: { id: 'ab3', source: 'a', target: 'b' }
           },
@@ -357,13 +357,29 @@ test.describe('Renderer', () => {
         cy.$('#ab1').style('curve-style', 'straight');
       });
 
-      let pt_ab1_2 = await page.evaluate(() => cy.$('#ab1').controlPoints());
-      let pt_ab2_2 = await page.evaluate(() => cy.$('#ab2').controlPoints()[0]);
+      let pt_ab1_2 = await page.evaluate(() => window.cy.$('#ab1').controlPoints());
+      let pt_ab2_2 = await page.evaluate(() => window.cy.$('#ab2').controlPoints()[0]);
 
       expect(pt_ab1_2).toBeUndefined(); // because curve-style:straight
       expect(pt_ab2_2).toBeDefined();
       
-    }); // move when setting one edge to display:none
+    }); // move when setting one edge to curve-style:straight
+
+    // test('do not move when straight edge added', async ({ page }) => {
+    //   await page.evaluate(() => {
+    //     window.cy.add([
+    //       {
+    //         data: { id: 'ab3', source: 'a', target: 'b' },
+    //         style: {
+    //           'curve-style': 'straight'
+    //         }
+    //       }
+    //     ]);
+    //   });
+
+    //   // TODO...
+      
+    // }); // move when setting one edge to curve-style:straight
 
   }); // bundled beziers
 

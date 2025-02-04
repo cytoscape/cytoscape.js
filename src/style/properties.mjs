@@ -240,7 +240,19 @@ const styfn = {};
   ];
 
   let visibility = [
-    { name: 'display', type: t.display, triggersZOrder: diff.any, triggersBounds: diff.any, triggersBoundsOfConnectedEdges: true },
+    {
+      name: 'display',
+      type: t.display, 
+      triggersZOrder: diff.any, 
+      triggersBounds: diff.any, 
+      triggersBoundsOfConnectedEdges: diff.any,
+      triggersBoundsOfParallelEdges: (fromValue, toValue, ele) => {
+        if (fromValue === toValue) { return false; }
+
+        // only if edge is bundled bezier (so as not to affect performance of other edges)
+        return ele.pstyle('curve-style').value === 'bezier';
+      }
+    },
     { name: 'visibility', type: t.visibility, triggersZOrder: diff.any },
     { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: diff.zeroNonZero },
     { name: 'text-opacity', type: t.zeroOneNumber },
@@ -361,7 +373,18 @@ const styfn = {};
     { name: 'line-outline-color', type: t.color },
     { name: 'line-gradient-stop-colors', type: t.colors },
     { name: 'line-gradient-stop-positions', type: t.percentages },
-    { name: 'curve-style', type: t.curveStyle, triggersBounds: diff.any, triggersBoundsOfParallelBeziers: true },
+    {
+      name: 'curve-style',
+      type: t.curveStyle,
+      triggersBounds: diff.any,
+      triggersBoundsOfParallelEdges: (fromValue, toValue) => {
+        if (fromValue === toValue) { return false; } // must have diff
+
+        return (
+          fromValue === 'bezier' || // remove from bundle
+          toValue === 'bezier'); // add to bundle
+     }
+    },
     { name: 'haystack-radius', type: t.zeroOneNumber, triggersBounds: diff.any },
     { name: 'source-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },
     { name: 'target-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },

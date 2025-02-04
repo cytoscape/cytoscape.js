@@ -81,6 +81,8 @@ BRp.onUpdateEleCalcs = function( fn ){
 BRp.recalculateRenderedStyle = function( eles, useCache ){
   let isCleanConnected = ele => ele._private.rstyle.cleanConnected;
 
+  if (eles.length === 0) { return; }
+
   let edges = [];
   let nodes = [];
 
@@ -99,6 +101,12 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     // (and a request for recalc may come in between frames)
     if( ele.isEdge() && (!isCleanConnected(ele.source()) || !isCleanConnected(ele.target())) ){
       rstyle.clean = false;
+    }
+
+    if (ele.isEdge() && ele.isBundledBezier()) {
+      if (ele.parallelEdges().some(ele => !ele._private.rstyle.clean && ele.isBundledBezier())) {
+        rstyle.clean = false;
+      }
     }
 
     // only update if dirty and in graph

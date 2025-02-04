@@ -1,13 +1,13 @@
 import * as math from '../../math.mjs';
 
 const ifEdge = (ele, getValue) => {
-  if( ele.isEdge() ){
+  if( ele.isEdge() && ele.takesUpSpace() ){
     return getValue( ele );
   }
 };
 
 const ifEdgeRenderedPosition = (ele, getPoint) => {
-  if( ele.isEdge() ){
+  if( ele.isEdge() && ele.takesUpSpace() ){
     let cy = ele.cy();
 
     return math.modelToRenderedPosition( getPoint( ele ), cy.zoom(), cy.pan() );
@@ -15,7 +15,7 @@ const ifEdgeRenderedPosition = (ele, getPoint) => {
 };
 
 const ifEdgeRenderedPositions = (ele, getPoints) => {
-  if( ele.isEdge() ){
+  if( ele.isEdge() && ele.takesUpSpace() ){
     let cy = ele.cy();
     let pan = cy.pan();
     let zoom = cy.zoom();

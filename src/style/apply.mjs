@@ -798,7 +798,9 @@ styfn.checkTrigger = function( ele, name, fromValue, toValue, getTrigger, onTrig
   let prop = this.properties[ name ];
   let triggerCheck = getTrigger( prop );
 
-  if( triggerCheck != null && triggerCheck( fromValue, toValue ) ){
+  if (ele.removed()) { return; }
+
+  if( triggerCheck != null && triggerCheck( fromValue, toValue, ele ) ){
     onTrigger(prop);
   }
 };
@@ -813,27 +815,22 @@ styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
   this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBounds, prop => {
     ele.dirtyCompoundBoundsCache();
     ele.dirtyBoundingBoxCache();
+  });
+};
 
-    // if the prop change makes the bb of pll bezier edges invalid,
-    // then dirty the pll edge bb cache as well
-    if( // only for beziers -- so performance of other edges isn't affected
-      prop.triggersBoundsOfParallelBeziers
-      && ( name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') )
-    ){
-      ele.parallelEdges().forEach(pllEdge => {
-        pllEdge.dirtyBoundingBoxCache();
-      });
-    }
+styfn.checkConnectedEdgesBoundsTrigger = function( ele, name, fromValue, toValue ){
+  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBoundsOfConnectedEdges, prop => {
+    ele.connectedEdges().forEach(edge => {
+      edge.dirtyBoundingBoxCache();
+    });
+  });
+};
 
-    if(
-      prop.triggersBoundsOfConnectedEdges
-      && ( name === 'display' && (fromValue === 'none' || toValue === 'none') )  
-    ){
-      ele.connectedEdges().forEach(edge => {
-        edge.dirtyBoundingBoxCache();
-      });
-    }
-
+styfn.checkParallelEdgesBoundsTrigger = function( ele, name, fromValue, toValue ){
+  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBoundsOfParallelEdges, prop => {
+    ele.parallelEdges().forEach(pllEdge => {
+      pllEdge.dirtyBoundingBoxCache();
+    });
   });
 };
 
@@ -842,6 +839,8 @@ styfn.checkTriggers = function( ele, name, fromValue, toValue ){
 
   this.checkZOrderTrigger( ele, name, fromValue, toValue );
   this.checkBoundsTrigger( ele, name, fromValue, toValue );
+  this.checkConnectedEdgesBoundsTrigger( ele, name, fromValue, toValue );
+  this.checkParallelEdgesBoundsTrigger( ele, name, fromValue, toValue );
 };
 
 export default styfn;

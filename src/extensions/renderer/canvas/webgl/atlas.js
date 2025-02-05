@@ -457,14 +457,6 @@ export class AtlasManager {
     this.renderTypes.set(type, opts);
   }
 
-  getRenderTypes() {
-    return [ ...this.renderTypes.values() ];
-  }
-
-  getAtlasCollections() {
-    return [ ...this.collections.values() ];
-  }
-
   getRenderTypeOpts(type) {
     return this.renderTypes.get(type);
   }
@@ -505,8 +497,8 @@ export class AtlasManager {
 
     for(const ele of eles) {
       if(filterEle(ele)) {
-        const id = ele.id();
-        for(const opts of this.getRenderTypes()) {
+        
+        for(const opts of this.renderTypes.values()) {
           const renderType = opts.type;
           if(filterType(renderType)) {
 
@@ -518,9 +510,11 @@ export class AtlasManager {
               atlasCollection.markKeyForGC(styleKey);
               runGCNow = true; // run GC to remove the old texture right now, that way we don't need to remember for the next gc 
             } else {
+              const id = opts.getID ? opts.getID(ele) : ele.id();
               const mapKey = this._key(renderType, id);
               const oldStyleKey = this.typeAndIdToKey.get(mapKey);
-              if(oldStyleKey !== styleKey) {
+
+              if(oldStyleKey !== undefined && oldStyleKey !== styleKey) {
                 this.typeAndIdToKey.delete(mapKey);
                 atlasCollection.markKeyForGC(oldStyleKey);
                 needGC = true;
@@ -540,7 +534,7 @@ export class AtlasManager {
 
   /** Garbage collect */
   gc() {
-    for(const collection of this.getAtlasCollections()) {
+    for(const collection of this.collections.values()) {
       collection.gc();
     }
   }
@@ -548,6 +542,30 @@ export class AtlasManager {
   isVisible(ele, type) {
     const opts = this.getRenderTypeOpts(type);
     return opts && opts.isVisible(ele);
+  }
+
+  getOrCreateAtlas(ele, type, bb) {
+    const opts = this.renderTypes.get(type);
+    const styleKey = opts.getKey(ele);
+    if(!bb)
+      bb = opts.getBoundingBox(ele);
+
+    const atlasCollection = this.collections.get(opts.collection);
+
+    // draws the texture only if needed
+    let drawn = false;
+    const atlas = atlasCollection.draw(styleKey, bb, context => {
+      opts.drawElement(context, ele, bb, true, true);
+      drawn = true;
+    });
+
+    if(drawn) {
+      const id = opts.getID ? opts.getID(ele) : ele.id(); // for testing
+      const mapKey = this._key(type, id);
+      this.typeAndIdToKey.set(mapKey, styleKey);
+    }
+
+    return atlas;
   }
 
   startBatch() {
@@ -562,26 +580,17 @@ export class AtlasManager {
     return this.batchAtlases;
   }
 
-  getOrCreateAtlas(ele, bb, type) {
-    const opts = this.renderTypes.get(type);
-    const styleKey = opts.getKey(ele);
-
-    const atlasCollection = this.collections.get(opts.collection);
-
-    // draws the texture only if needed
-    let drawn = false;
-    const atlas =  atlasCollection.draw(styleKey, bb, context => {
-      opts.drawElement(context, ele, bb, true, true);
-      drawn = true;
-    });
-
-    if(drawn) {
-      const id = ele.id();
-      const mapKey = this._key(type, id);
-      this.typeAndIdToKey.set(mapKey, styleKey);
+  canAddToCurrentBatch(ele, type) {
+    if(this.batchAtlases.length === this.maxAtlasesPerBatch) { 
+      // batch is full, is the atlas already part of this batch?
+      const opts = this.renderTypes.get(type);
+      const styleKey = opts.getKey(ele);
+      const atlasCollection = this.collections.get(opts.collection);
+      const atlas = atlasCollection.getAtlas(styleKey);
+      // return true if there is an atlas and it is part of this batch already
+      return Boolean(atlas) && this.batchAtlases.includes(atlas);
     }
-
-    return atlas;
+    return true; // not full
   }
 
   getAtlasIndexForBatch(atlas) {
@@ -603,29 +612,17 @@ export class AtlasManager {
   getAtlasInfo(ele, type) {
     const opts = this.renderTypes.get(type);
     const bb = opts.getBoundingBox(ele);
-    const atlas = this.getOrCreateAtlas(ele, bb, type);
-    const atlasID = this.getAtlasIndexForBatch(atlas);
-    if(atlasID === undefined) {
+    const atlas = this.getOrCreateAtlas(ele, type, bb);
+    const index = this.getAtlasIndexForBatch(atlas);
+    if(index === undefined) {
       return undefined; // batch is full
     }
     const styleKey = opts.getKey(ele);
     const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
     // This object may be passed back to setTransformMatrix()
-    return { atlasID, tex:tex1, tex1, tex2, bb, type, styleKey };
+    return { index, tex1, tex2, bb };
   }
-
-  canAddToCurrentBatch(ele, type) {
-    if(this.batchAtlases.length === this.maxAtlasesPerBatch) { 
-      // batch is full, is the atlas already part of this batch?
-      const opts = this.renderTypes.get(type);
-      const styleKey = opts.getKey(ele);
-      const atlasCollection = this.collections.get(opts.collection);
-      const atlas = atlasCollection.getAtlas(styleKey);
-      // return true if there is an atlas and it is part of this batch already
-      return atlas && this.batchAtlases.includes(atlas);
-    }
-    return true; // not full
-  }
+  
 
   /**
    * matrix is expected to be a 9 element array

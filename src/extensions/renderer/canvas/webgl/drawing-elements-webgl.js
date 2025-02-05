@@ -362,15 +362,8 @@ export class ElementDrawingWebGL {
     util.indexToVec4(eleIndex, indexView);
 
     const atlasInfo = atlasManager.getAtlasInfo(ele, type);
-    const { atlasID, tex1, tex2 } = atlasInfo;
-    // if(ele.isNode()) {
-    //   console.log(`${JSON.stringify(tex1)} ${JSON.stringify(tex2)}`);
-    // }
+    const { index, tex1, tex2 } = atlasInfo;
 
-    // Set values in the buffers using Typed Array Views for performance.
-    const atlasIdView = this.atlasIdBuffer.getView(instance);
-    atlasIdView[0] = atlasID;
-    
     if(tex2.w > 0)
       this.wrappedCount++;
 
@@ -385,7 +378,7 @@ export class ElementDrawingWebGL {
 
         // Set values in the buffers using Typed Array Views for performance.
         const atlasIdView = this.atlasIdBuffer.getView(instance);
-        atlasIdView[0] = atlasID;
+        atlasIdView[0] = index;
         
         // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
         const texView = this.texBuffer.getView(instance);

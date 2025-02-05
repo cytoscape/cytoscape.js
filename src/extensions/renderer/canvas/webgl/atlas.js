@@ -248,27 +248,13 @@ export class AtlasCollection {
     this.texRows = texRows;
     this.createTextureCanvas = createTextureCanvas;
 
-    this.keyToIds = new Map();
-    this.idToKey  = new Map();
-
     this.atlases = [];
     this.styleKeyToAtlas = new Map();
-    this.styleKeyNeedsRedraw = new Set();
-
-    this.forceGC = false;
+    this.markedKeys = new Set(); // marked for garbage collection
   }
 
   getKeys() {
     return new Set(this.styleKeyToAtlas.keys());
-  }
-
-  getIdsFor(key) {
-    let ids = this.keyToIds.get(key);
-    if(!ids) {
-      ids = new Set();
-      this.keyToIds.set(key, ids);
-    }
-    return ids;
   }
 
   _createAtlas() {
@@ -285,19 +271,7 @@ export class AtlasCollection {
     return this.scratch;
   }
 
-  draw(id, key, bb, doDrawing) {
-    if(this.styleKeyNeedsRedraw.has(key)) {
-      this.styleKeyNeedsRedraw.delete(key);
-      this.deleteKey(id, key);
-      // We need to mark the atlas as needing GC because the key will be mapped to
-      // this atlas or a new atlas, so the key itself won't be marked for GC.
-      const atlas = this.styleKeyToAtlas.get(key);
-      if(atlas) {
-        atlas.forceGC = true;
-      }
-      this.styleKeyToAtlas.delete(key);
-    }
-
+  draw(key, bb, doDrawing) {
     let atlas = this.styleKeyToAtlas.get(key);
     if(!atlas) {
       // check for space at the end of the last atlas
@@ -313,8 +287,6 @@ export class AtlasCollection {
       atlas.draw(key, bb, doDrawing);
 
       this.styleKeyToAtlas.set(key, atlas);
-      this.getIdsFor(key).add(id);
-      this.idToKey.set(id, key);
     }
     return atlas;
   }
@@ -327,39 +299,13 @@ export class AtlasCollection {
     return this.styleKeyToAtlas.has(key);
   }
 
-  deleteKey(id, key) {
-    this.idToKey.delete(id);
-    this.getIdsFor(key).delete(id);
+  markKeyForGC(key) {
+    this.markedKeys.add(key);
   }
-
-  checkKeyIsInvalid(id, newKey) {
-    if(!this.idToKey.has(id))
-      return false;
-    const oldKey = this.idToKey.get(id);
-    if(oldKey != newKey) {
-      this.deleteKey(id, oldKey);
-      return true;
-    }
-    return false;
-  }
-
-  _getKeysToCollect() {
-    const markedKeys = new Set();
-    for(const key of this.styleKeyToAtlas.keys()) {
-      if(this.getIdsFor(key).size == 0) {
-        markedKeys.add(key);
-      }
-    }
-    return markedKeys;
-  }
-
 
   gc() {
-    const forceGC = this.atlases.some(atlas => atlas.forceGC);
-    this.atlases.forEach(atlas => atlas.forceGC = false);
-
-    const markedKeys = this._getKeysToCollect();
-    if(markedKeys.size === 0 && !forceGC) {
+    const { markedKeys } = this;
+    if(markedKeys.size === 0) {
       console.log('nothing to garbage collect');
       return;
     }
@@ -373,7 +319,7 @@ export class AtlasCollection {
       const keys = atlas.getKeys();
       const keysToCollect = intersection(markedKeys, keys);
 
-      if(keysToCollect.size === 0 && !atlas.forceGC) {
+      if(keysToCollect.size === 0) {
         // this atlas can still be used
         newAtlases.push(atlas);
         keys.forEach(k => newStyleKeyToAtlas.set(k, atlas));
@@ -404,6 +350,7 @@ export class AtlasCollection {
 
     this.atlases = newAtlases;
     this.styleKeyToAtlas = newStyleKeyToAtlas;
+    this.markedKeys = new Set();
   }
 
 
@@ -442,7 +389,6 @@ export class AtlasCollection {
     }
   }
 
-
   getCounts() {
     return { 
       keyCount: this.styleKeyToAtlas.size,
@@ -478,8 +424,10 @@ export class AtlasManager {
     this.atlasSize = globalOptions.webglTexSize;
     this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
 
-    this.renderTypes = new Map(); // string -> object
-    this.collections = new Map(); // string -> AtlasCollection
+    this.renderTypes = new Map(); // renderType:string -> renderTypeOptions
+    this.collections = new Map(); // collectionName:string -> AtlasCollection
+
+    this.typeAndIdToKey = new Map(); // [renderType,id] => style key
 
     this.batchAtlases = [];
   }
@@ -502,12 +450,9 @@ export class AtlasManager {
 
   addRenderType(type, renderTypeOptions) {
     const { collection } = renderTypeOptions;
-
     if(!this.collections.has(collection))
       throw new Error(`invalid atlas collection name '${collection}'`);
-
     const atlasCollection = this.collections.get(collection);
-
     const opts = cyutil.extend({ type, atlasCollection }, renderTypeOptions);
     this.renderTypes.set(type, opts);
   }
@@ -549,29 +494,48 @@ export class AtlasManager {
     };
   }
 
+  _key(renderType, id) {
+    return `${renderType}-${id}`; // TODO not very efficient
+  }
+
   /** Marks textues associated with the element for garbage collection. */
   invalidate(eles, { forceRedraw=false, filterEle=()=>true, filterType=()=>true } = {}) {
-    let gcNeeded = false;
+    let needGC = false;
+    let runGCNow = false;
+
     for(const ele of eles) {
       if(filterEle(ele)) {
         const id = ele.id();
         for(const opts of this.getRenderTypes()) {
-          if(filterType(opts.type)) {
+          const renderType = opts.type;
+          if(filterType(renderType)) {
+
             const styleKey = opts.getKey(ele);
             const atlasCollection = this.collections.get(opts.collection);
+
+            // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn
             if(forceRedraw) { 
-              // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn
-              atlasCollection.deleteKey(id, styleKey);
-              atlasCollection.styleKeyNeedsRedraw.add(styleKey);
-              gcNeeded = true; // TODO is this too conservative?
+              atlasCollection.markKeyForGC(styleKey);
+              runGCNow = true; // run GC to remove the old texture right now, that way we don't need to remember for the next gc 
             } else {
-              gcNeeded |= atlasCollection.checkKeyIsInvalid(id, styleKey);
+              const mapKey = this._key(renderType, id);
+              const oldStyleKey = this.typeAndIdToKey.get(mapKey);
+              if(oldStyleKey !== styleKey) {
+                this.typeAndIdToKey.delete(mapKey);
+                atlasCollection.markKeyForGC(oldStyleKey);
+                needGC = true;
+              }
             }
           }
         }
       }
     }
-    return gcNeeded;
+
+    if(runGCNow) {
+      this.gc();
+      needGC = false;
+    }
+    return needGC;
   }
 
   /** Garbage collect */
@@ -601,13 +565,23 @@ export class AtlasManager {
   getOrCreateAtlas(ele, bb, type) {
     const opts = this.renderTypes.get(type);
     const styleKey = opts.getKey(ele);
-    const id = ele.id();
 
     const atlasCollection = this.collections.get(opts.collection);
-    // Draws the texture if needed.
-    return atlasCollection.draw(id, styleKey, bb, context => {
+
+    // draws the texture only if needed
+    let drawn = false;
+    const atlas =  atlasCollection.draw(styleKey, bb, context => {
       opts.drawElement(context, ele, bb, true, true);
+      drawn = true;
     });
+
+    if(drawn) {
+      const id = ele.id();
+      const mapKey = this._key(type, id);
+      this.typeAndIdToKey.set(mapKey, styleKey);
+    }
+
+    return atlas;
   }
 
   getAtlasIndexForBatch(atlas) {

@@ -63,25 +63,25 @@ describe('webgl-atlas', function() {
     const atlasCollection = createAtlasCollection();
     let atlas;
 
-    atlas = atlasCollection.draw('a', 1, { h:10, w:100 });
+    atlas = atlasCollection.draw(1, { h:10, w:100 });
     expect(atlas.getOffsets(1)).to.eql([ { x: 0, y: 0, w: 100, h: 10 }, { x: 100, y: 0, w: 0, h: 10 } ]);
     
-    atlas = atlasCollection.draw('b', 2, { h:10, w:50 });
+    atlas = atlasCollection.draw(2, { h:10, w:50 });
     expect(atlas.getOffsets(2)).to.eql([ { x: 0, y: 10, w: 50, h: 10 }, { x: 50, y: 10, w: 0, h: 10 } ]);
 
-    atlas = atlasCollection.draw('c', 3, { h:10, w:100 });
+    atlas = atlasCollection.draw(3, { h:10, w:100 });
     expect(atlas.getOffsets(3)).to.eql([ { x: 50, y: 10, w: 50, h: 10 }, { x: 0, y: 20, w: 50, h: 10 } ]);
   });
 
 
   it('AtlasCollection garbage collects (easy)', function() {
     const ac = createAtlasCollection();
-    ac.draw('a', 1, { h:10, w:100 });
-    ac.draw('b', 2, { h:10, w:50  });
-    ac.draw('c', 3, { h:10, w:100 });
+    ac.draw(1, { h:10, w:100 });
+    ac.draw(2, { h:10, w:50  });
+    ac.draw(3, { h:10, w:100 });
     expect(ac.getCounts().keyCount).to.equal(3);
 
-    ac.checkKeyIsInvalid('b', 4); 
+    ac.markKeyForGC(2);
     ac.gc();
 
     expect(ac.getCounts().keyCount).to.equal(2);
@@ -93,21 +93,20 @@ describe('webgl-atlas', function() {
 
   it('AtlasCollection garbage collects (hard)', function() {
     const ac = createAtlasCollection(100, 4); // height is 25
-    ac.draw('a', 1, { h:25, w:100 });
-    ac.draw('b', 2, { h:25, w:75  });
-    ac.draw('c', 3, { h:25, w:50  });
-    ac.draw('d', 4, { h:25, w:100 });
-    ac.draw('e', 5, { h:25, w:50  });
-    ac.draw('f', 6, { h:25, w:75  });
-    ac.draw('g', 7, { h:25, w:75  });
+    ac.draw(1, { h:25, w:100 });
+    ac.draw(2, { h:25, w:75  });
+    ac.draw(3, { h:25, w:50  });
+    ac.draw(4, { h:25, w:100 });
+    ac.draw(5, { h:25, w:50  });
+    ac.draw(6, { h:25, w:75  });
+    ac.draw(7, { h:25, w:75  });
 
     expect(ac.getCounts().keyCount).to.equal(7);
     expect(ac.getCounts().atlasCount).to.equal(2);
 
-    ac.checkKeyIsInvalid('b', 8);
-    ac.checkKeyIsInvalid('e', 9);
-    ac.checkKeyIsInvalid('g', 10);
-
+    ac.markKeyForGC(2);
+    ac.markKeyForGC(5); 
+    ac.markKeyForGC(7); 
     ac.gc();
 
     expect(ac.getCounts().keyCount).to.equal(4);
@@ -117,7 +116,7 @@ describe('webgl-atlas', function() {
     expect(ac.getAtlas(4).getOffsets(4)).to.eql([ { x: 50, y: 25, w: 50,  h: 25 }, { x: 0,   y: 50, w: 50, h: 25 } ]);
     expect(ac.getAtlas(6).getOffsets(6)).to.eql([ { x: 50, y: 50, w: 50,  h: 25 }, { x: 0,   y: 75, w: 25, h: 25 } ]);
 
-    ac.draw('h', 11, { h:25, w:100 });
+    ac.draw(11, { h:25, w:100 });
 
     expect(ac.getCounts().keyCount).to.equal(5);
     expect(ac.getCounts().atlasCount).to.equal(2);

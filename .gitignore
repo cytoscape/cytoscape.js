@@ -12,3 +12,8 @@ documentation/api/**
 documentation/download/*.zip
 benchmark/suite/cytoscape.js
 
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -91,7 +91,6 @@
       "selector": "#n6",
       "style": {
         "shape": "rectangle",
-        "border-style": "none",
         "border-width": 0,
         "width": 100,
         "background-opacity": 0.5,
@@ -171,7 +170,14 @@
         "source-arrow-color": "red",
         "target-arrow-shape": "triangle",
         "target-arrow-color": "green",
-        "curve-style": "straight"
+        "curve-style": "straight",
+        "label": "mid",
+        "source-label": "source",
+        "target-label": "target",
+        "edge-text-rotation": "autorotate",
+        "font-size": "10px",
+        "source-text-offset": "20px",
+        "target-text-offset": "20px"
       }
     }
   ]

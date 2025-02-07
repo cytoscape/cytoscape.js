@@ -281,14 +281,24 @@ function CanvasRenderer( options ){
     r.initWebgl( options, {
       getStyleKey,
       getLabelKey,
+      getSourceLabelKey,
+      getTargetLabelKey,
       drawElement,
       drawLabel,
+      drawSourceLabel,
+      drawTargetLabel,
       getElementBox,
       getLabelBox,
+      getSourceLabelBox,
+      getTargetLabelBox,
       getElementRotationPoint,
       getElementRotationOffset,
       getLabelRotationPoint,
-      getLabelRotationOffset
+      getSourceLabelRotationPoint,
+      getTargetLabelRotationPoint,
+      getLabelRotationOffset,
+      getSourceLabelRotationOffset,
+      getTargetLabelRotationOffset
     } );
   }
 }

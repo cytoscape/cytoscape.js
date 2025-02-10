@@ -1,5 +1,5 @@
 import { ElementDrawingWebGL } from './drawing-elements-webgl.mjs';
-import { RENDER_TARGET, renderDefaults } from './defaults.mjs';
+import { RENDER_TARGET, renderDefaults, atlasCollectionDefaults } from './defaults.mjs';
 import { OverlayUnderlayRenderer } from './drawing-overlay.mjs';
 import * as util from './webgl-util.mjs';
 import * as eleTextureCache from '../ele-texture-cache.mjs';
@@ -8,65 +8,64 @@ import { color2tuple } from '../../../../util/colors.mjs';
 import { mat3 } from 'gl-matrix';
 
 
-
-function getBGColor(container) {
-  const cssColor = (container && container.style && container.style.backgroundColor) || 'white';
-  return color2tuple(cssColor);
-}
-
 const CRp = {};
 
-/**
- * TODO - webgl specific data should be in a sub object, or it should be prefixed with 'webgl'
- */
+
 CRp.initWebgl = function(opts, fns) {
   const r = this;
   const gl = r.data.contexts[r.WEBGL];
-  const container = opts.cy.container();
 
-  opts.bgColor = getBGColor(container);
+  opts.bgColor = getBGColor(r);
   opts.webglTexSize = Math.min(opts.webglTexSize, gl.getParameter(gl.MAX_TEXTURE_SIZE));
   opts.webglTexRows = Math.min(opts.webglTexRows, 54);
+  opts.webglTexRowsNodes = Math.min(opts.webglTexRowsNodes, 54);
   opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
   opts.webglTexPerBatch = Math.min(opts.webglTexPerBatch, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
   
   r.webglDebug = opts.webglDebug;
   r.webglDebugShowAtlases = opts.webglDebugShowAtlases;
 
-  console.log('max texture units', gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
-  console.log('max texture size' , gl.getParameter(gl.MAX_TEXTURE_SIZE));
-  console.log('webgl options', opts);
-
   // for offscreen rendering when render target is PICKING
   r.pickingFrameBuffer = util.createPickingFrameBuffer(gl);
   r.pickingFrameBuffer.needsDraw = true;
 
-  const getLabelRotation = (ele) => r.getTextAngle(ele, null);
-  const isLabelVisible = (ele) => {
-    const label = ele.pstyle('label');
+  const getLabelRotation = (prop) => (ele) => r.getTextAngle(ele, prop);
+  const isLabelVisible = (prop) => (ele) => {
+    const label = ele.pstyle(prop);
     return label && label.value;
   };
 
-  r.eleDrawing = new ElementDrawingWebGL(r, gl, opts);
+  r.drawing = new ElementDrawingWebGL(r, gl, opts);
   const our = new OverlayUnderlayRenderer(r);
-  
-  r.eleDrawing.addTextureRenderType('node-body', renderDefaults({
+
+  r.drawing.addAtlasCollection('node', atlasCollectionDefaults({
+    texRows: opts.webglTexRowsNodes
+  }));
+
+  r.drawing.addAtlasCollection('label', atlasCollectionDefaults({
+    texRows: opts.webglTexRows
+  }));
+
+  r.drawing.addAtlasRenderType('node-body', renderDefaults({
+    collection: 'node',
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
   }));
 
-  r.eleDrawing.addTextureRenderType('node-label', renderDefaults({
+  r.drawing.addAtlasRenderType('label', renderDefaults({ // node label or edge mid label
+    collection: 'label',
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
-    getRotation: getLabelRotation,
+    getRotation: getLabelRotation(null),
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
-    isVisible: isLabelVisible,
+    isVisible: isLabelVisible('label'),
   }));
   
-  r.eleDrawing.addTextureRenderType('node-overlay', renderDefaults({
+  r.drawing.addAtlasRenderType('node-overlay', renderDefaults({
+    collection: 'node',
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('overlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('overlay', ctx, ele, bb),
@@ -74,7 +73,8 @@ CRp.initWebgl = function(opts, fns) {
     getPadding: ele => our.getPadding('overlay', ele),
   }));
 
-  r.eleDrawing.addTextureRenderType('node-underlay', renderDefaults({
+  r.drawing.addAtlasRenderType('node-underlay', renderDefaults({
+    collection: 'node',
     getBoundingBox: fns.getElementBox,
     getKey: ele => our.getStyleKey('underlay', ele),
     drawElement: (ctx, ele, bb) => our.draw('underlay', ctx, ele, bb),
@@ -82,17 +82,27 @@ CRp.initWebgl = function(opts, fns) {
     getPadding: ele => our.getPadding('underlay', ele),
   }));
 
-  r.eleDrawing.addTextureRenderType('edge-label', renderDefaults({
-    getKey: fns.getLabelKey,
-    getBoundingBox: fns.getLabelBox,
-    drawElement: fns.drawLabel,
-    getRotation: getLabelRotation,
-    getRotationPoint: fns.getLabelRotationPoint,
-    getRotationOffset: fns.getLabelRotationOffset,
-    isVisible: isLabelVisible,
+  r.drawing.addAtlasRenderType('edge-source-label', renderDefaults({
+    collection: 'label',
+    getKey: fns.getSourceLabelKey,
+    getBoundingBox: fns.getSourceLabelBox,
+    drawElement: fns.drawSourceLabel,
+    getRotation: getLabelRotation('source'),
+    getRotationPoint: fns.getSourceLabelRotationPoint,
+    getRotationOffset: fns.getSourceLabelRotationOffset,
+    isVisible: isLabelVisible('source-label'),
   }));
 
-  // TODO edge arrows, same approach as node-overlay/underlay
+  r.drawing.addAtlasRenderType('edge-target-label', renderDefaults({
+    collection: 'label',
+    getKey: fns.getTargetLabelKey,
+    getBoundingBox: fns.getTargetLabelBox,
+    drawElement: fns.drawTargetLabel,
+    getRotation: getLabelRotation('target'),
+    getRotationPoint: fns.getTargetLabelRotationPoint,
+    getRotationOffset: fns.getTargetLabelRotationOffset,
+    isVisible: isLabelVisible('target-label'),
+  }));
 
   // this is a very simplistic way of triggering garbage collection
   const setGCFlag = debounce(() => {
@@ -103,7 +113,7 @@ CRp.initWebgl = function(opts, fns) {
   r.onUpdateEleCalcs((willDraw, eles) => {
     let gcNeeded = false;
     if(eles && eles.length > 0) {
-      gcNeeded |= r.eleDrawing.invalidate(eles);
+      gcNeeded |= r.drawing.invalidate(eles);
     }
     if(gcNeeded) {
       setGCFlag();
@@ -114,6 +124,12 @@ CRp.initWebgl = function(opts, fns) {
   overrideCanvasRendererFunctions(r);
 };
 
+
+function getBGColor(r) {
+  const container = r.cy.container();
+  const cssColor = (container && container.style && container.style.backgroundColor) || 'white';
+  return color2tuple(cssColor);
+}
 
 /**
  * Plug into the canvas renderer to use webgl for rendering.
@@ -174,7 +190,7 @@ function overrideCanvasRendererFunctions(r) {
       if(eventName === 'viewport' || eventName === 'bounds') {
         r.pickingFrameBuffer.needsDraw = true;
       } else if(eventName === 'background') { // background image finished loading, need to redraw
-        r.eleDrawing.invalidate(eles, { type: 'node-body' });
+        r.drawing.invalidate(eles, { type: 'node-body' });
       }
     };
   }
@@ -255,36 +271,34 @@ function drawAxes(r) { // for debgging
 
 function drawAtlases(r) {
   // For debugging the atlases
-  const draw = (drawing, renderType, row) => {
-    const opts = drawing.atlasManager.getRenderTypeOpts(renderType);
+  const draw = (drawing, name, row) => {
+    const collection = drawing.atlasManager.getAtlasCollection(name);
     const context = r.data.contexts[r.NODE];
     const scale = 0.125;
   
-    const atlases = opts.atlasCollection.atlases;
+    const atlases = collection.atlases;
     for(let i = 0; i < atlases.length; i++) {
       const atlas = atlases[i];
       const canvas = atlas.canvas;
-  
-      const w = canvas.width;
-      const h = canvas.height;
-      const x = w * i;
-      const y = canvas.height * row;
-  
-      context.save();
-      context.scale(scale, scale);
-      context.drawImage(canvas, x, y);
-      context.strokeStyle = 'black';
-      context.rect(x, y, w, h);
-      context.stroke();
-      context.restore();
+      if(canvas) {
+        const w = canvas.width;
+        const h = canvas.height;
+        const x = w * i;
+        const y = canvas.height * row;
+    
+        context.save();
+        context.scale(scale, scale);
+        context.drawImage(canvas, x, y);
+        context.strokeStyle = 'black';
+        context.rect(x, y, w, h);
+        context.stroke();
+        context.restore();
+      }
     }
   };
   let i = 0;
-  // draw(r.eleDrawing, 'node-underlay', i++);
-  draw(r.eleDrawing, 'node-body',     i++);
-  draw(r.eleDrawing, 'node-label',    i++);
-  // draw(r.eleDrawing, 'node-overlay',  i++);
-  // draw(r.eleDrawing, 'edge-label',    i++);
+  draw(r.drawing, 'node',  i++);
+  draw(r.drawing, 'label', i++);
 }
 
 
@@ -396,16 +410,47 @@ function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
   return Array.from(box);
 }
 
+// TODO: Is constantly checking this slower than just rendering a texture?
+// Maybe this should be cached as a flag on each node.
+function isSimpleRectangle(node) {
+  return (
+    node.pstyle('shape').value === 'rectangle' &&
+    node.pstyle('background-fill').value === 'solid' &&
+    node.pstyle('border-width').pfValue === 0 &&
+    node.pstyle('background-image').strValue === 'none'
+  );
+}
+
+function drawEle(r, index, ele) {
+  const { drawing } = r;
+  index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
+  if(ele.isNode()) {
+    drawing.drawTexture(ele, index, 'node-underlay');
+    if(isSimpleRectangle(ele)) {
+      drawing.drawSimpleRectangle(ele, index, 'node-body');
+    } else {
+      drawing.drawTexture(ele, index, 'node-body');
+    }
+    drawing.drawTexture(ele, index, 'label');
+    drawing.drawTexture(ele, index, 'node-overlay');
+  } else {
+    drawing.drawEdgeLine(ele, index);
+    drawing.drawEdgeArrow(ele, index, 'source');
+    drawing.drawEdgeArrow(ele, index, 'target');
+    drawing.drawTexture(ele, index, 'label');
+    drawing.drawTexture(ele, index, 'edge-source-label');
+    drawing.drawTexture(ele, index, 'edge-target-label');
+  }
+}
+
 
 function renderWebgl(r, options, renderTarget) {
   let start;
-  let debugInfo;
   if(r.webglDebug) {
-    debugInfo = [];
     start = performance.now(); // eslint-disable-line no-undef
   }
   
-  const { eleDrawing } = r;
+  const { drawing } = r;
   let eleCount = 0;
 
   if(renderTarget.screen) {
@@ -429,48 +474,26 @@ function renderWebgl(r, options, renderTarget) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    // eslint-disable-next-line no-inner-declarations
-    function draw(ele, index) {
-      index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
-      if(ele.isNode()) {
-        eleDrawing.drawTexture(ele, index, 'node-underlay');
-        eleDrawing.drawTexture(ele, index, 'node-body');
-        eleDrawing.drawTexture(ele, index, 'node-label');
-        eleDrawing.drawTexture(ele, index, 'node-overlay');
-      } else {
-        eleDrawing.drawEdgeLine(ele, index);
-        eleDrawing.drawEdgeArrow(ele, index, 'source');
-        eleDrawing.drawEdgeArrow(ele, index, 'target');
-        eleDrawing.drawTexture(ele, index, 'edge-label');
-      }
-    }
-
     const panZoomMatrix = createPanZoomMatrix(r);
     const eles = r.getCachedZSortedEles();
     eleCount = eles.length;
 
-    eleDrawing.startFrame(panZoomMatrix, debugInfo, renderTarget);
+    drawing.startFrame(panZoomMatrix, renderTarget);
 
     if(renderTarget.screen) {
       for(let i = 0; i < eles.nondrag.length; i++) {
-        draw(eles.nondrag[i], i);
+        drawEle(r, i, eles.nondrag[i]);
       }
       for(let i = 0; i < eles.drag.length; i++) {
-        draw(eles.drag[i], -1);
+        drawEle(r, i, eles.drag[i]);
       }
     } else if(renderTarget.picking) {
       for(let i = 0; i < eles.length; i++) {
-        draw(eles[i], i);
+        drawEle(r, i, eles[i]);
       }
     }
 
-    eleDrawing.endFrame();
-
-    if(r.data.gc) {
-      console.log("Garbage Collect!");
-      r.data.gc = false;
-      eleDrawing.gc();
-    }
+    drawing.endFrame();
 
     if(renderTarget.screen && r.webglDebugShowAtlases) {
       drawAxes(r);
@@ -484,25 +507,28 @@ function renderWebgl(r, options, renderTarget) {
   if(r.webglDebug) {
     // eslint-disable-next-line no-undef
     const end = performance.now();
-    const compact = true;
+    const compact = false;
 
-    let batchCount = 0;
-    let count = 0;
-    for(const info of debugInfo) {
-      batchCount++;
-      count += info.count;
-    }
-
-    // TODO nodes and edges are no longer is separate batches
     const time = Math.ceil(end - start);
-    const report = `${eleCount} elements, ${count} rectangles, ${batchCount} batches`;
+    const debugInfo = drawing.getDebugInfo();
+    
+    const report = [
+      `${eleCount} elements`, 
+      `${debugInfo.totalInstances} instances`,
+      `${debugInfo.batchCount} batches`,
+      `${debugInfo.totalAtlases} atlases`,
+      `${debugInfo.wrappedCount} wrapped textures`,
+      `${debugInfo.rectangleCount} simple rectangles`
+    ].join(', ');
+
     if(compact) {
-      console.log(`WebGL (${renderTarget.name}) - ${report}`);
+      console.log(`WebGL (${renderTarget.name}) - time ${time}ms, ${report}`);
     } else {
-      console.log(`WebGL render (${renderTarget.name}) - frame time ${time}ms`);
+      console.log(`WebGL (${renderTarget.name}) - frame time ${time}ms`);
+      console.log('Totals:');
       console.log(`  ${report}`);
       console.log('Texture Atlases Used:');
-      const atlasInfo = eleDrawing.getAtlasDebugInfo();
+      const atlasInfo = debugInfo.atlasInfo;
       for(const info of atlasInfo) {
         console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
       }
@@ -510,6 +536,11 @@ function renderWebgl(r, options, renderTarget) {
     }
   }
 
+  if(r.data.gc) {
+    console.log('Garbage Collect!');
+    r.data.gc = false;
+    drawing.gc();
+  }
 }
 
 export default CRp;

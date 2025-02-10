@@ -5,7 +5,8 @@
       { "data": { "id": "n2", "weight": 2 }, "position": { "x":  77, "y": -15 } },
       { "data": { "id": "n3", "weight": 3 }, "position": { "x": 178, "y":  36 } },
       { "data": { "id": "n4", "weight": 4 }, "position": { "x": -17, "y": 146 } },
-      { "data": { "id": "n5", "weight": 5 }, "position": { "x": 134, "y": 157 } }
+      { "data": { "id": "n5", "weight": 5 }, "position": { "x": 134, "y": 157 } },
+      { "data": { "id": "n6", "weight": 5 }, "position": { "x": 134, "y": 190 } }
     ],
     "edges": [
       { "data": { "id":"n1-n2", "source": "n1", "target": "n2", "directed": "false" } },
@@ -87,6 +88,16 @@
       }
     },
     {
+      "selector": "#n6",
+      "style": {
+        "shape": "rectangle",
+        "border-width": 0,
+        "width": 100,
+        "background-opacity": 0.5,
+        "background-color": "green"
+      }
+    },
+    {
       "selector": "node:selected",
       "style": {
         "border-color": "yellow",
@@ -159,7 +170,14 @@
         "source-arrow-color": "red",
         "target-arrow-shape": "triangle",
         "target-arrow-color": "green",
-        "curve-style": "straight"
+        "curve-style": "straight",
+        "label": "mid",
+        "source-label": "source",
+        "target-label": "target",
+        "edge-text-rotation": "autorotate",
+        "font-size": "10px",
+        "source-text-offset": "20px",
+        "target-text-offset": "20px"
       }
     }
   ]

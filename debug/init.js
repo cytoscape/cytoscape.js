@@ -57,7 +57,8 @@ var cy, defaultSty, options;
           'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
-          'mid-source-arrow-shape': 'triangle-backcurve'
+          'mid-source-arrow-shape': 'triangle-backcurve',
+          'label': e => e.data('id'),
         })
       .selector('#ab')
         .style({
@@ -123,9 +124,9 @@ var cy, defaultSty, options;
       .selector('#eh')
         .style({
           'curve-style': 'round-segments',
-          'segment-distances': [ 20, -80 ],
-          'segment-weights': [ 0.25, 0.5 ],
-          'segment-radii': [ 8, 8 ],
+          "segment-distances": [-50, -50, -50],
+          "segment-weights": [0.25,0.5,0.75],
+          'segment-radii': [ 50, 50 , 50]
         })
       .selector('#ed')
         .style({

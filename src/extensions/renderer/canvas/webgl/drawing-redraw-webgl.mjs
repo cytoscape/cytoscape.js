@@ -410,24 +410,32 @@ function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
   return Array.from(box);
 }
 
-// TODO: Is constantly checking this slower than just rendering a texture?
-// Maybe this should be cached as a flag on each node.
-function isSimpleRectangle(node) {
-  return (
-    node.pstyle('shape').value === 'rectangle' &&
+// TODO: Is constantly checking this actually faster than just rendering a texture?
+// TODO: Maybe this should be cached as a flag on each node.
+// TODO: overlays and underlays could be simple shapes too
+function simpleShape(r, node) {
+  const simple = (
     node.pstyle('background-fill').value === 'solid' &&
     node.pstyle('border-width').pfValue === 0 &&
     node.pstyle('background-image').strValue === 'none'
   );
+  if(simple) {
+    const shape = node.pstyle('shape').value;
+    if(r.drawing.isSimpleShapeSupported(shape)) {
+      return shape;
+    }
+  }
 }
+
 
 function drawEle(r, index, ele) {
   const { drawing } = r;
   index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
   if(ele.isNode()) {
     drawing.drawTexture(ele, index, 'node-underlay');
-    if(isSimpleRectangle(ele)) {
-      drawing.drawSimpleRectangle(ele, index, 'node-body');
+    const shape = simpleShape(r, ele);
+    if(shape) {
+      drawing.drawSimpleShape(ele, index, 'node-body', shape);
     } else {
       drawing.drawTexture(ele, index, 'node-body');
     }
@@ -518,7 +526,7 @@ function renderWebgl(r, options, renderTarget) {
       `${debugInfo.batchCount} batches`,
       `${debugInfo.totalAtlases} atlases`,
       `${debugInfo.wrappedCount} wrapped textures`,
-      `${debugInfo.rectangleCount} simple rectangles`
+      `${debugInfo.simpleCount} simple shapes`
     ].join(', ');
 
     if(compact) {

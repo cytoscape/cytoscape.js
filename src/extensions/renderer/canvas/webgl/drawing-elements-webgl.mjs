@@ -1,15 +1,18 @@
 import * as util from './webgl-util.mjs';
-import { mat3 } from 'gl-matrix';
+import * as math from '../../../../math.mjs';
+import { mat3, vec2, vec4 } from 'gl-matrix';
 import { RENDER_TARGET } from './defaults.mjs';
 import { AtlasManager } from './atlas.mjs';
 
 
-// Vertex types
+// Vertex types, used in the shaders so must be ints
 const TEXTURE = 0;
 const EDGE_STRAIGHT = 1;
 const EDGE_CURVE_SEGMENT = 2;
 const EDGE_ARROW = 3;
 const RECTANGLE = 4;
+const ROUND_RECTANGLE = 5;
+const ELLIPSE = 6;
 
 
 export class ElementDrawingWebGL {
@@ -75,10 +78,9 @@ export class ElementDrawingWebGL {
       
       // instanced
       in vec2 aPosition; 
-
+      
+      // where and what are we renderering
       in mat3 aTransform;
-
-      // what are we rendering?
       in int aVertType;
 
       // for picking
@@ -94,23 +96,27 @@ export class ElementDrawingWebGL {
       in float aLineWidth;
       in vec4 aColor;
 
+      // simple shapes
+      in vec4 aCornerRadius; // for round-rectangle [top-right, bottom-right, top-left, bottom-left]
+
       out vec2 vTexCoord;
       out vec4 vColor;
+      out vec2 vPosition; // original untransformed coordinate
       flat out int vAtlasId;
       flat out vec4 vIndex;
       flat out int vVertType;
+      flat out float vAspectRatio;
+      flat out vec4 vCornerRadius;
 
       void main(void) {
         int vid = gl_VertexID;
-        vec2 position = aPosition;
+        vec2 position = aPosition; // TODO make this a vec3, simplifies some code below
 
         if(aVertType == ${TEXTURE}) {
           float texX = aTex.x;
           float texY = aTex.y;
           float texW = aTex.z;
           float texH = aTex.w;
-
-          int vid = gl_VertexID;
 
           if(vid == 1 || vid == 2 || vid == 4) {
             texX += texW;
@@ -124,9 +130,20 @@ export class ElementDrawingWebGL {
 
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
-        else if(aVertType == ${RECTANGLE}) {
+        else if(aVertType == ${RECTANGLE} || aVertType == ${ELLIPSE}) {
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
           vColor = aColor;
+          vPosition = aPosition;
+        }
+        else if(aVertType == ${ROUND_RECTANGLE}) {
+          vec3 botLeft  = aTransform * vec3(0, 0, 1);
+          vec3 topRight = aTransform * vec3(1, 1, 1);
+          vAspectRatio = (topRight.x - botLeft.x) / (topRight.y - botLeft.y);
+
+          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
+          vColor = aColor;
+          vPosition = aPosition;
+          vCornerRadius = aCornerRadius;
         }
         else if(aVertType == ${EDGE_STRAIGHT}) {
           vec2 source = aPointAPointB.xy;
@@ -223,20 +240,56 @@ export class ElementDrawingWebGL {
 
       in vec2 vTexCoord;
       in vec4 vColor;
+      in vec2 vPosition; // untransformed position, inside unit square
+
       flat in int vAtlasId;
       flat in vec4 vIndex;
       flat in int vVertType;
+      flat in float vAspectRatio;
+      flat in vec4 vCornerRadius;
 
       out vec4 outColor;
 
       void main(void) {
         if(vVertType == ${TEXTURE}) {
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
-        } else if(vVertType == ${EDGE_ARROW}) {
+        } 
+        else if(vVertType == ${EDGE_ARROW}) {
           // blend arrow color with background (using premultiplied alpha)
+          // mimics how canvas renderer uses context.globalCompositeOperation = 'destination-out';
           outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
           outColor.a = 1.0; // make opaque, masks out line under arrow
-        } else {
+        } 
+        else if(vVertType == ${ELLIPSE}) {
+          vec2 p = vPosition - vec2(0.5); // translate unit square so (0,0) is at center
+          float r = 0.5; // radius of circle inside a unit square
+          float d = distance(vec2(0), p) - r; // signed distance
+          if(d <= 0.0) {
+            outColor = vColor; // inside circle
+          } else {
+            discard;
+          }
+        }
+        else if(vVertType == ${ROUND_RECTANGLE}) {
+          vec2 p = vPosition - vec2(0.5); // translate unit square so (0,0) is at center
+          p.x = p.x * vAspectRatio; // stretch unit square to fill
+          vec2 b = vec2(0.5 * vAspectRatio, 0.5); // half width/height
+          
+          vec4 cr = vCornerRadius.wzyx; // because canvas Y axis is opposite to webgl (I think)
+          cr.xy = (p.x > 0.0) ? cr.xy : cr.zw;
+          cr.x  = (p.y > 0.0) ? cr.x  : cr.y;
+
+          // calculate signed distance
+          vec2 q = abs(p) - b + cr.x;
+          float d = min(max(q.x, q.y), 0.0) + distance(vec2(0), max(q, 0.0)) - cr.x;
+
+          if(d <= 0.0) {
+            outColor = vColor;
+          } else {
+            discard;
+          }
+        }
+        else { // RECTANGLE, other
           outColor = vColor;
         }
 
@@ -265,6 +318,8 @@ export class ElementDrawingWebGL {
     program.aPointCPointD   = gl.getAttribLocation(program, 'aPointCPointD');
     program.aLineWidth      = gl.getAttribLocation(program, 'aLineWidth');
     program.aColor          = gl.getAttribLocation(program, 'aColor');
+    program.aCornerRadius   = gl.getAttribLocation(program, 'aCornerRadius');
+
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
@@ -305,6 +360,7 @@ export class ElementDrawingWebGL {
     this.pointCPointDBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointCPointD);
     this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
     this.colorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aColor);
+    this.cornerRadiusBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aCornerRadius);
 
     gl.bindVertexArray(null);
     return vao;
@@ -323,8 +379,8 @@ export class ElementDrawingWebGL {
     this.renderTarget = renderTarget;
 
     this.batchDebugInfo = [];
-    this.wrappedCount = 0; // TODO this should be in the AtlasManager
-    this.rectangleCount = 0;
+    this.wrappedCount = 0;
+    this.simpleCount = 0;
     
     this.startBatch();
   }
@@ -404,14 +460,61 @@ export class ElementDrawingWebGL {
   }
 
 
-  drawSimpleRectangle(ele, eleIndex, type) {
+  _getVertTypeForShape(shape) {
+    switch(shape) {
+      case 'rectangle': 
+        return RECTANGLE;
+      case 'ellipse': 
+        return ELLIPSE;
+      case 'roundrectangle':
+      case 'round-rectangle':
+      case 'bottom-round-rectangle':
+        return ROUND_RECTANGLE;
+    }
+  }
+
+  isSimpleShapeSupported(shape) {
+    return Boolean(this._getVertTypeForShape(shape));
+  }
+
+  _getCornerRadius(node, type) { // see CRp.drawRoundRectanglePath
+    const { w, h } = this.atlasManager.getRenderTypeOpts(type).getBoundingBox(node);
+
+    if(node.pstyle('corner-radius').value === 'auto') {
+      var radius = math.getRoundRectangleRadius(w, h);
+    } else {
+      const radiusProp = node.pstyle('corner-radius').pfValue;
+      const halfWidth  = w / 2;
+      const halfHeight = h / 2;
+      radius = Math.min(radiusProp, halfHeight, halfWidth);
+    }
+
+    return (1 / h) * radius; // scale radius to the unit square
+  }
+
+
+  drawSimpleShape(ele, eleIndex, type, shape) {
     if(!ele.visible()) {
       return;
     }
     const { atlasManager } = this;
-
     const instance = this.instanceCount;
-    this.vertTypeBuffer.getView(instance)[0] = RECTANGLE;
+
+    const vertType = this._getVertTypeForShape(shape);
+    this.vertTypeBuffer.getView(instance)[0] = vertType;
+
+    if(vertType === ROUND_RECTANGLE) {
+      const radius = this._getCornerRadius(ele, type);
+      const radiusView = this.cornerRadiusBuffer.getView(instance);
+      radiusView[0] = radius; // top-right
+      radiusView[1] = radius; // bottom-right
+      radiusView[2] = radius; // top-left
+      radiusView[3] = radius; // bottom-left
+      if(shape === 'bottom-round-rectangle') {
+        radiusView[0] = 0;
+        radiusView[2] = 0;
+      }
+    }
 
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
@@ -425,7 +528,7 @@ export class ElementDrawingWebGL {
     const matrixView = this.transformBuffer.getMatrixView(instance);
     atlasManager.setTransformMatrix(ele, matrixView, type);
 
-    this.rectangleCount++;
+    this.simpleCount++;
     this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
@@ -721,7 +824,7 @@ export class ElementDrawingWebGL {
       atlasInfo,
       totalAtlases,
       wrappedCount: this.wrappedCount,
-      rectangleCount: this.rectangleCount,
+      simpleCount: this.simpleCount,
       batchCount: batchInfo.length,
       batchInfo,
       totalInstances

@@ -489,7 +489,7 @@ export class ElementDrawingWebGL {
       radius = Math.min(radiusProp, halfHeight, halfWidth);
     }
 
-    return (1 / h) * radius; // scale radius to the unit square
+    return radius / h; // scale radius to the unit square
   }
 
 

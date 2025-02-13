@@ -625,18 +625,15 @@ export class AtlasManager {
    */
   setTransformMatrix(ele, matrix, type, atlasInfo, first=true) {
     const opts = this.getRenderTypeOpts(type);
-    const padding = opts.getPadding ? opts.getPadding(ele) : 0;
+    const padding = opts.getPadding(ele);
     
-
     if(atlasInfo) { // we've already computed the bb and tex bounds for a texture
       const { bb, tex1, tex2 } = atlasInfo;
-
       // wrapped textures need separate matrix for each part
       let ratio = tex1.w / (tex1.w + tex2.w); 
       if(!first) { // first = true means its the first part of the wrapped texture
         ratio = 1 - ratio;
       }
-
       const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
       this._applyTransformMatrix(matrix, adjBB, opts, ele);
     } 

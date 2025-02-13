@@ -51,6 +51,7 @@ CRp.initWebgl = function(opts, fns) {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
+    getPadding: node => node.padding()
   }));
 
   r.drawing.addAtlasRenderType('label', renderDefaults({ // node label or edge mid label

@@ -20,6 +20,10 @@ const paramDefs = {
     default: 'false',
     control: '#hover-check'
   },
+  animate: {
+    default: 'false',
+    control: '#animate-check'
+  },
   // webglDebugShowAtlases: {
   //   default: false,
   //   control: '#atlas-checkbox'
@@ -84,6 +88,41 @@ const paramDefs = {
     };
     options.layout.animate = false;
     cy = cytoscape(options);
+
+    if(params.animate === 'true' && params.networkID === 'style_test') {
+      cy.ready(() => {
+        var node = cy.getElementById('n8');
+        var expand = true;
+        var duration = 1000;
+        var timeout = duration + 100;
+        const originalWidth = node.width();
+
+        function testAnimate() {
+          if(expand) {
+            node.animate({
+              style: {
+                  width: originalWidth + 50
+              }, 
+              duration: duration,
+              queue: false,
+            });
+            expand = false;
+          } else {
+            node.animate({
+              style: {
+                  width: originalWidth
+              }, 
+              duration: duration,
+              queue: false,
+            });
+            expand = true;
+          }
+          setTimeout(testAnimate, timeout);
+        }
+        setTimeout(testAnimate, timeout);
+
+      });
+    }
 
     if(params.hover === 'true') { // add hover effect
       cy.ready(() => {

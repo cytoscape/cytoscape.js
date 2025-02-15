@@ -36,7 +36,8 @@
   "exports": {
     ".": {
       "import": "./dist/cytoscape.esm.mjs",
-      "require": "./dist/cytoscape.cjs.js"
+      "require": "./dist/cytoscape.cjs.js",
+      "types": "./index.d.ts"
     },
     "./dist/cytoscape.esm": {
       "import": "./dist/cytoscape.esm.mjs"

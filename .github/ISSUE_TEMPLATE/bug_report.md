@@ -39,7 +39,15 @@ _What do you expect Cytoscape.js to do instead?_
 _What do you need to do to reproduce the issue?_
 
 _Fork/clone this JSBin demo and reproduce your issue so that your issue can be addressed quickly and effectively:_
-http://jsbin.com/fiqugiq
+
+1. Go to our base JSBin: http://jsbin.com/fiqugiq
+2. Click the 'Edit in JSBin' button in the top-right corner.
+3. Click File > Clone to make your own copy of the demo (with its own unique URL) that you can edit.
+4. Click the yellow 'Login or Register' button at the top-right corner so that your JSBin persists longer-term.
+5. Log in with your GitHub account.
+6. Edit the JSBin to reproduce your issue.
+7. When you're finished editing, click 'File > Save snapshot` (command + s) to save your edits.
+8. Post the link to your JSBin here.
 
 
 

@@ -1325,8 +1325,6 @@ export const getBarrelCurveConstants = ( width, height ) => ({
 });
 
 // Separating Axis Theorem (SAT) to determine if two polygons intersect. 
-// The theorem states that two convex shapes do not intersect if and only if there exists a line (axis) 
-// along which the projections of the two shapes do not overlap.
 // The function takes two polygons as input and returns a boolean value indicating 
 // whether the two polygons intersect.
 export function satPolygonIntersection(poly1, poly2) {

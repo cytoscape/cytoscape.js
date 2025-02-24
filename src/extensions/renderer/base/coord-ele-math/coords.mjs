@@ -339,19 +339,85 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     x2: x2, y2: y2
   } );
 
+  function preprop(obj, name, pre) {
+    return util.getPrefixedProperty(obj, name, pre);
+  }
+
+  function getRotatedLabelBox(ele, prefix) {
+    var _p = ele._private;
+    var th = labelThreshold;
+
+    var prefixDash = prefix ? prefix + '-' : '';
+    ele.boundingBox();
+    var bb = _p.labelBounds[prefix || 'main'];
+
+    var lx = preprop(_p.rscratch, 'labelX', prefix);
+    var ly = preprop(_p.rscratch, 'labelY', prefix);
+    var theta = preprop(_p.rscratch, 'labelAngle', prefix);
+
+    var ox = ele.pstyle(prefixDash + 'text-margin-x').pfValue;
+    var oy = ele.pstyle(prefixDash + 'text-margin-y').pfValue;
+
+    var lx1 = bb.x1 - th - ox;
+    var lx2 = bb.x2 + th - ox;
+    var ly1 = bb.y1 - th - oy;
+    var ly2 = bb.y2 + th - oy;
+
+    if (theta) {
+      var cos = Math.cos(theta);
+      var sin = Math.sin(theta);
+
+      var rotate = function (x, y) {
+        x = x - lx;
+        y = y - ly;
+        return {
+          x: x * cos - y * sin + lx,
+          y: x * sin + y * cos + ly,
+        };
+      };
+
+      return [rotate(lx1, ly1), rotate(lx2, ly1), rotate(lx2, ly2), rotate(lx1, ly2)];
+    } else {
+      return [
+        { x: lx1, y: ly1 },
+        { x: lx2, y: ly1 },
+        { x: lx2, y: ly2 },
+        { x: lx1, y: ly2 },
+      ];
+    }
+  }
+
   for( var e = 0; e < eles.length; e++ ){
     var ele = eles[e];
 
     if( ele.isNode() ){
       var node = ele;
-      var nodeBb = node.boundingBox( {
+      var eventsEnabled = node.pstyle('text-events').strValue === 'yes';
+      var boxSelectEnabled = node.pstyle('box-select-labels').strValue === 'yes';
+      var labelRotated = preprop(node._private.rscratch, 'labelAngle', '');
+
+      var nodeBb = node.boundingBox({
         includeNodes: true,
         includeEdges: false,
-        includeLabels: false
-      } );
+        includeLabels: boxSelectEnabled && eventsEnabled,
+      });
 
-      if( math.boundingBoxesIntersect( boxBb, nodeBb ) && !math.boundingBoxInBoundingBox( nodeBb, boxBb ) ){
-        box.push( node );
+      if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
+        if (labelRotated > 0) {
+          let rotatedLabelBox = getRotatedLabelBox(node);
+          let selectionBox = [
+            { x: boxBb.x1, y: boxBb.y1 },
+            { x: boxBb.x2, y: boxBb.y1 },
+            { x: boxBb.x2, y: boxBb.y2 },
+            { x: boxBb.x1, y: boxBb.y2 },
+          ];
+
+          if (math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+            box.push(node);
+          }
+        } else if (!math.boundingBoxInBoundingBox(nodeBb, boxBb)) {
+          box.push(node);
+        }
       }
     } else {
       var edge = ele;

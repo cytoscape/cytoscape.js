@@ -231,7 +231,8 @@ const styfn = {};
     { name: 'text-border-width', type: t.size, triggersBounds: diff.any },
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
     { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
-    { name: 'text-justification', type: t.justification }
+    { name: 'text-justification', type: t.justification },
+    { name: 'box-select-labels', type: t.bool, triggersBounds: diff.any },
   ];
 
   let behavior = [

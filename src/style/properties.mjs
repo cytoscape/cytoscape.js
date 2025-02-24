@@ -655,6 +655,7 @@ styfn.getDefaultProperties = function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
+    'box-select-labels': 'no',
 
     // node props
     'background-blacken': 0,

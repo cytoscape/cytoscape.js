@@ -1,6 +1,5 @@
 import * as util from './webgl-util.mjs';
-import * as math from '../../../../math.mjs';
-import { mat3, vec2, vec4 } from 'gl-matrix';
+import { mat3 } from 'gl-matrix';
 import { RENDER_TARGET } from './defaults.mjs';
 import { AtlasManager } from './atlas.mjs';
 
@@ -275,7 +274,7 @@ export class ElementDrawingWebGL {
           p.x = p.x * vAspectRatio; // stretch unit square to fill
           vec2 b = vec2(0.5 * vAspectRatio, 0.5); // half width/height
           
-          vec4 cr = vCornerRadius.wzyx; // because canvas Y axis is opposite to webgl (I think)
+          vec4 cr = vCornerRadius.wzyx; // swizzle because canvas Y axis is opposite to webgl (I think)
           cr.xy = (p.x > 0.0) ? cr.xy : cr.zw;
           cr.x  = (p.y > 0.0) ? cr.x  : cr.y;
 
@@ -398,13 +397,19 @@ export class ElementDrawingWebGL {
     return this.tempMatrix = this.tempMatrix || mat3.create();
   }
 
+  _isVisible(ele, type) {
+    const { atlasManager } = this;
+    if(ele.visible()) {
+      const opts = atlasManager.getRenderTypeOpts(type);
+      return opts.isVisible(ele);
+    }
+    return false;
+  }
+
 
   drawTexture(ele, eleIndex, type) {
     const { atlasManager } = this;
-    if(!ele.visible()) {
-      return;
-    }
-    if(!atlasManager.getRenderTypeOpts(type).isVisible(ele)) {
+    if(!this._isVisible(ele, type)) {
       return;
     }
     if(!atlasManager.canAddToCurrentBatch(ele, type)) {
@@ -470,47 +475,47 @@ export class ElementDrawingWebGL {
       case 'round-rectangle':
       case 'bottom-round-rectangle':
         return ROUND_RECTANGLE;
+      default:
+        return undefined;
     }
   }
 
-  isSimpleShapeSupported(shape) {
-    return Boolean(this._getVertTypeForShape(shape));
-  }
 
-  _getCornerRadius(node, type) { // see CRp.drawRoundRectanglePath
-    const { w, h } = this.atlasManager.getRenderTypeOpts(type).getBoundingBox(node);
-
-    if(node.pstyle('corner-radius').value === 'auto') {
-      var radius = math.getRoundRectangleRadius(w, h);
-    } else {
-      const radiusProp = node.pstyle('corner-radius').pfValue;
-      const halfWidth  = w / 2;
-      const halfHeight = h / 2;
-      radius = Math.min(radiusProp, halfHeight, halfWidth);
-    }
-
-    return radius / h; // scale radius to the unit square
-  }
-
-
-  drawSimpleShape(ele, eleIndex, type, shape) {
-    if(!ele.visible()) {
+  drawNode(node, eleIndex, type) {
+    const { atlasManager } = this; 
+    if(!this._isVisible(node, type)) {
       return;
     }
-    const { atlasManager } = this;
+
+    const opts = atlasManager.getRenderTypeOpts(type);
+
+    const simpleShape = opts.simpleShapeHelper.getSimpleShape(node);
+
+    if(type === 'node-overlay' || type === 'node-underlay') {
+      console.log('drawNode', type, simpleShape);
+    }
+
+    if(simpleShape === undefined) {
+      this.drawTexture(node, eleIndex, type);
+      return;
+    }
+    
     const instance = this.instanceCount;
 
-    const vertType = this._getVertTypeForShape(shape);
+    const vertType = this._getVertTypeForShape(simpleShape);
     this.vertTypeBuffer.getView(instance)[0] = vertType;
 
     if(vertType === ROUND_RECTANGLE) {
-      const radius = this._getCornerRadius(ele, type);
+      const bb = opts.getBoundingBox(node);
+      const radiusProp = util.getCornerRadius(node, bb);
+      const radius = radiusProp / bb.h; // scale to unit square
+
       const radiusView = this.cornerRadiusBuffer.getView(instance);
       radiusView[0] = radius; // top-right
       radiusView[1] = radius; // bottom-right
       radiusView[2] = radius; // top-left
       radiusView[3] = radius; // bottom-left
-      if(shape === 'bottom-round-rectangle') {
+      if(simpleShape === 'bottom-round-rectangle') {
         radiusView[0] = 0;
         radiusView[2] = 0;
       }
@@ -519,14 +524,12 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
-    const color = ele.pstyle('background-color').value;
-    const opacity = ele.pstyle('background-opacity').value;
-
+    const { color, opacity } = opts.simpleShapeHelper.getColor(node);
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
     const matrixView = this.transformBuffer.getMatrixView(instance);
-    atlasManager.setTransformMatrix(ele, matrixView, type);
+    atlasManager.setTransformMatrix(node, matrixView, type);
 
     this.simpleCount++;
     this.instanceCount++;

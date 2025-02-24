@@ -1,3 +1,5 @@
+import * as math from '../../../../math.mjs';
+
 /**
  * Notes:
  * - All colors have premultiplied alpha. Very important for textues and 
@@ -61,6 +63,20 @@ export function getEffectivePanZoom(r) {
     }
   };
 }
+
+
+export function getCornerRadius(node, { w, h }) { // see CRp.drawRoundRectanglePath
+  if(node.pstyle('corner-radius').value === 'auto') {
+    var radius = math.getRoundRectangleRadius(w, h);
+  } else {
+    const radiusProp = node.pstyle('corner-radius').pfValue;
+    const halfWidth  = w / 2;
+    const halfHeight = h / 2;
+    radius = Math.min(radiusProp, halfHeight, halfWidth);
+  }
+  return radius;
+}
+
 
 export function modelToRenderedPosition(r, pan, zoom, x, y) {
   let rx = x * zoom + pan.x;

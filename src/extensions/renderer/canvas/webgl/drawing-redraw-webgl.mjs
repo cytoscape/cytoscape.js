@@ -1,6 +1,6 @@
 import { ElementDrawingWebGL } from './drawing-elements-webgl.mjs';
 import { RENDER_TARGET, renderDefaults, atlasCollectionDefaults } from './defaults.mjs';
-import { OverlayUnderlayRenderer } from './drawing-overlay.mjs';
+import { StyleProps, SimpleShapeHelper } from './simple-shape-helper.mjs';
 import * as util from './webgl-util.mjs';
 import * as eleTextureCache from '../ele-texture-cache.mjs';
 import { debounce } from '../../../../util/index.mjs';
@@ -35,8 +35,11 @@ CRp.initWebgl = function(opts, fns) {
     return label && label.value;
   };
 
+  const nodeBody = new SimpleShapeHelper(r, StyleProps.NodeBody);
+  const overlay  = new SimpleShapeHelper(r, StyleProps.Overlay);
+  const underlay = new SimpleShapeHelper(r, StyleProps.Underlay);
+
   r.drawing = new ElementDrawingWebGL(r, gl, opts);
-  const our = new OverlayUnderlayRenderer(r);
 
   r.drawing.addAtlasCollection('node', atlasCollectionDefaults({
     texRows: opts.webglTexRowsNodes
@@ -51,7 +54,26 @@ CRp.initWebgl = function(opts, fns) {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-    getPadding: node => node.padding()
+    simpleShapeHelper: nodeBody,
+    getPadding: n => n.padding()
+  }));
+  
+  r.drawing.addAtlasRenderType('node-overlay', renderDefaults({
+    collection: 'node',
+    getBoundingBox: fns.getElementBox,
+    simpleShapeHelper: overlay,
+    getKey: n => overlay.getStyleKey(n),
+    getPadding: n => overlay.getPadding(n),
+    drawElement: (context, ele, bb) => overlay.draw(context, ele, bb),
+  }));
+
+  r.drawing.addAtlasRenderType('node-underlay', renderDefaults({
+    collection: 'node',
+    getBoundingBox: fns.getElementBox,
+    simpleShapeHelper: underlay,
+    getKey: n => underlay.getStyleKey(n),
+    getPadding: n => underlay.getPadding(n),
+    drawElement: (context, ele, bb) => underlay.draw(context, ele, bb),
   }));
 
   r.drawing.addAtlasRenderType('label', renderDefaults({ // node label or edge mid label
@@ -63,24 +85,6 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible('label'),
-  }));
-  
-  r.drawing.addAtlasRenderType('node-overlay', renderDefaults({
-    collection: 'node',
-    getBoundingBox: fns.getElementBox,
-    getKey: ele => our.getStyleKey('overlay', ele),
-    drawElement: (ctx, ele, bb) => our.draw('overlay', ctx, ele, bb),
-    isVisible: ele => our.isVisible('overlay', ele),
-    getPadding: ele => our.getPadding('overlay', ele),
-  }));
-
-  r.drawing.addAtlasRenderType('node-underlay', renderDefaults({
-    collection: 'node',
-    getBoundingBox: fns.getElementBox,
-    getKey: ele => our.getStyleKey('underlay', ele),
-    drawElement: (ctx, ele, bb) => our.draw('underlay', ctx, ele, bb),
-    isVisible: ele => our.isVisible('underlay', ele),
-    getPadding: ele => our.getPadding('underlay', ele),
   }));
 
   r.drawing.addAtlasRenderType('edge-source-label', renderDefaults({
@@ -275,7 +279,6 @@ function drawAtlases(r) {
   const draw = (drawing, name, row) => {
     const collection = drawing.atlasManager.getAtlasCollection(name);
     const context = r.data.contexts[r.NODE];
-    const scale = 0.125;
   
     const atlases = collection.atlases;
     for(let i = 0; i < atlases.length; i++) {
@@ -433,15 +436,10 @@ function drawEle(r, index, ele) {
   const { drawing } = r;
   index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
   if(ele.isNode()) {
-    drawing.drawTexture(ele, index, 'node-underlay');
-    const shape = simpleShape(r, ele);
-    if(shape) {
-      drawing.drawSimpleShape(ele, index, 'node-body', shape);
-    } else {
-      drawing.drawTexture(ele, index, 'node-body');
-    }
+    drawing.drawNode(ele, index, 'node-underlay');
+    drawing.drawNode(ele, index, 'node-body');
     drawing.drawTexture(ele, index, 'label');
-    drawing.drawTexture(ele, index, 'node-overlay');
+    drawing.drawNode(ele, index, 'node-overlay');
   } else {
     drawing.drawEdgeLine(ele, index);
     drawing.drawEdgeArrow(ele, index, 'source');

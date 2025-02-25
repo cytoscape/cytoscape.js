@@ -1,5 +1,5 @@
-import { getCornerRadius } from './webgl-util.mjs';
 import { hashString } from '../../../../util/hash.mjs';
+import * as math from '../../../../math.mjs';
 
 
 export const StyleProps = {
@@ -7,23 +7,30 @@ export const StyleProps = {
     shape:   'shape',
     color:   'background-color',
     opacity: 'background-opacity',
-    padding: 'padding'
+    padding: 'padding',
+    radius:  'corner-radius',
   },
   Overlay: {
     shape:   'overlay-shape',
     color:   'overlay-color',
     opacity: 'overlay-opacity',
-    padding: 'overlay-padding'
+    padding: 'overlay-padding',
+    radius:  'overlay-corner-radius',
   },
   Underlay: {
     shape:   'underlay-shape',
     color:   'underlay-color',
     opacity: 'underlay-opacity',
-    padding: 'underlay-padding'
+    padding: 'underlay-padding',
+    radius:  'underlay-corner-radius',
   }
 }
 
-
+/**
+ * Node bodies, overlays and underlays can sometimes be rendered directly in the fragment
+ * shader without using textures if they use simple styles.
+ * This class provides a way to lookup styles that are common to bodies, overlays and underlays.
+ */
 export class SimpleShapeHelper {
 
   constructor(r, props) {
@@ -73,10 +80,23 @@ export class SimpleShapeHelper {
     return node.pstyle(this.props.opacity).value > 0; 
   }
 
+  getCornerRadius(node, { w, h }) { // see CRp.drawRoundRectanglePath
+    const prop = this.props.radius;
+    if(node.pstyle(prop).value === 'auto') {
+      var radius = math.getRoundRectangleRadius(w, h);
+    } else {
+      const radiusProp = node.pstyle(prop).pfValue;
+      const halfWidth  = w / 2;
+      const halfHeight = h / 2;
+      radius = Math.min(radiusProp, halfHeight, halfWidth);
+    }
+    return radius;
+  }
+
   getStyleKey(node) { // don't use for node-body, just for overlay/underlay
     const w = node.width();
     const h = node.height();
-    const radius = getCornerRadius(node, { w, h });
+    const radius = this.getCornerRadius(node, { w, h });
     const shape = this.getShape(node);
     const { color, opacity } = this.getColor(node);
     const c = colorCSS(color, opacity);
@@ -97,7 +117,7 @@ export class SimpleShapeHelper {
     const x = w / 2;
     const y = h / 2;
 
-    const radius = getCornerRadius(node, { w, h });
+    const radius = this.getCornerRadius(node, { w, h });
     const shape = this.getShape(node);
     const { color, opacity } = this.getColor(node);
 
@@ -118,3 +138,4 @@ export class SimpleShapeHelper {
 function colorCSS(color, opacity) {
   return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
 }
+

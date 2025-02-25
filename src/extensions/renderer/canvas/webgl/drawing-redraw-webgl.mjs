@@ -64,6 +64,7 @@ CRp.initWebgl = function(opts, fns) {
     simpleShapeHelper: overlay,
     getKey: n => overlay.getStyleKey(n),
     getPadding: n => overlay.getPadding(n),
+    isVisible: n => overlay.isVisible(n),
     drawElement: (context, ele, bb) => overlay.draw(context, ele, bb),
   }));
 
@@ -73,6 +74,7 @@ CRp.initWebgl = function(opts, fns) {
     simpleShapeHelper: underlay,
     getKey: n => underlay.getStyleKey(n),
     getPadding: n => underlay.getPadding(n),
+    isVisible: n => underlay.isVisible(n),
     drawElement: (context, ele, bb) => underlay.draw(context, ele, bb),
   }));
 

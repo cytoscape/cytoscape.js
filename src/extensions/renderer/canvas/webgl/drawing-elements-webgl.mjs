@@ -482,18 +482,13 @@ export class ElementDrawingWebGL {
 
 
   drawNode(node, eleIndex, type) {
-    const { atlasManager } = this; 
     if(!this._isVisible(node, type)) {
       return;
     }
 
+    const { atlasManager } = this; 
     const opts = atlasManager.getRenderTypeOpts(type);
-
     const simpleShape = opts.simpleShapeHelper.getSimpleShape(node);
-
-    if(type === 'node-overlay' || type === 'node-underlay') {
-      console.log('drawNode', type, simpleShape);
-    }
 
     if(simpleShape === undefined) {
       this.drawTexture(node, eleIndex, type);
@@ -505,11 +500,11 @@ export class ElementDrawingWebGL {
     const vertType = this._getVertTypeForShape(simpleShape);
     this.vertTypeBuffer.getView(instance)[0] = vertType;
 
-    if(vertType === ROUND_RECTANGLE) {
+    if(vertType === ROUND_RECTANGLE) { // get corner radius
       const bb = opts.getBoundingBox(node);
-      const radiusProp = util.getCornerRadius(node, bb);
-      const radius = radiusProp / bb.h; // scale to unit square
-
+      const radiusProp = opts.simpleShapeHelper.getCornerRadius(node, bb);
+      const radius = radiusProp / bb.h; // scale to unit square (not sure if correct)
+      
       const radiusView = this.cornerRadiusBuffer.getView(instance);
       radiusView[0] = radius; // top-right
       radiusView[1] = radius; // bottom-right

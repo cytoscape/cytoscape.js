@@ -383,4 +383,102 @@ test.describe('Renderer', () => {
 
   }); // bundled beziers
 
+  test.describe('rounded-edges', () => {
+    let singleBentEdge;
+    let midCollinearEdge;
+
+    test.beforeEach(async ({ page }) => {
+      await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.style().fromJson([
+          {
+            selector: 'edge',
+            style: {
+              'curve-style': 'round-segments',
+              'segment-radii': 50,
+              'radius-type': 'influence-radius'
+            }
+          },
+          {
+            selector: '#ab1',
+            style: {
+              'segment-weights': [0.5],
+              'segment-distances': [50]
+            }
+          },
+          {
+            selector: '#ab2',
+            style: {
+              'segment-weights': [0.25 , 0.5, 0.75],
+              'segment-distances': [50, 50, 50]
+            }
+          }
+        ]).update();
+
+        cy.add([
+          {
+            data: { id: 'a' }
+          },
+          {
+            data: { id: 'b' }
+          },
+          {
+            data: { id: 'ab1', source: 'a', target: 'b' }
+          },
+          {
+            data: { id: 'ab2', source: 'a', target: 'b' }
+          },
+        ]);
+
+        cy.layout({ name: 'grid', rows: 1, cols: 2 }).run();
+
+        singleBentEdge = cy.$('#ab1');
+        midCollinearEdge = cy.$('#ab2');
+      });
+
+    }) // Before Each
+
+    test('collinear mid point correctly defined', async ({page}) => {
+      const midpoint = await page.evaluate(() => midCollinearEdge.midpoint());
+      const points = await page.evaluate(() => midCollinearEdge.segmentPoints());
+
+      expect(midpoint.x).not.toBeNaN();
+      expect(midpoint.y).not.toBeNaN();
+      expect(midpoint).toMatchObject(points[1])
+    });
+
+    test('mid point correctly defined', async ({page}) => {
+      const {midpoint, points, a,b} = await page.evaluate(() => ({
+        midpoint: singleBentEdge.midpoint(),
+        points: singleBentEdge.segmentPoints(),
+        a: singleBentEdge.source().position(),
+        b: singleBentEdge.target().position(),
+      }));
+
+
+
+      expect(midpoint.x).not.toBeNaN();
+      expect(midpoint.y).not.toBeNaN();
+      const controlPoint = points[0];
+      expect(midpoint).not.toMatchObject(controlPoint); // The mid point is supposed to be on the curve and not on the control point
+
+      const isInsideTriangle = (point, {a,b,c}) => {
+        const dX = point.x - a.x, dY = point.y - a.y;
+        const dX21 = b.x - a.x, dY21 = b.y - a.y;
+        const dX31 = c.x - a.x, dY31 = c.y - a.y;
+        const denom = dY21 * dX31 - dX21 * dY31;
+        const alpha = (dY21 * dX - dX21 * dY) / denom;
+        const beta = (dX31 * dY - dY31 * dX) / denom;
+        const gamma = 1 - alpha - beta;
+        return alpha >= 0 && beta >= 0 && gamma >= 0;
+      };
+      // The actual midpoint should be within a triangle between the source, the target and the defined control point
+      expect(isInsideTriangle(midpoint, {a,b,c: controlPoint})).toBeTruthy()
+
+    })
+
+
+  }); // Rounded edges
+
 }); // renderer

@@ -666,19 +666,25 @@ BRp.storeAllpts = function( edge ){
       } else {
         let point = {x: rs.segpts[i1], y: rs.segpts[i1 + 1]};
         const corner = rs.roundCorners[i1 / 2];
+        if( corner.radius === 0 ){ // On collinear points
+          const nextPoint = {x: rs.segpts[i1 + 2], y: rs.segpts[i1 + 3]};
+          rs.midX = point.x;
+          rs.midY = point.y;
+          rs.midVector = [point.y - nextPoint.y, nextPoint.x - point.x];
+        } else { // On rounded points
+          let v = [
+            point.x - corner.cx,
+            point.y - corner.cy
+          ];
 
-        let v  = [
-           point.x - corner.cx,
-           point.y - corner.cy
-        ];
+          const factor = corner.radius / Math.sqrt(Math.pow(v[0], 2) + Math.pow(v[1], 2));
 
-        const factor = corner.radius / Math.sqrt(Math.pow(v[0], 2) +  Math.pow(v[1], 2));
+          v = v.map(c => c * factor);
 
-        v = v.map(c => c * factor);
-
-        rs.midX = corner.cx + v[0];
-        rs.midY = corner.cy + v[1];
-        rs.midVector = v;
+          rs.midX = corner.cx + v[0];
+          rs.midY = corner.cy + v[1];
+          rs.midVector = v;
+        }
       }
     }
 

@@ -18242,6 +18242,7 @@
       'transition-duration': 0,
       'transition-delay': 0,
       'transition-timing-function': 'linear',
+      'box-select-labels': 'no',
       // node props
       'background-blacken': 0,
       'background-color': '#999',
@@ -22783,6 +22784,8 @@ var printLayoutInfo;
   // 'Give me everything from this box'
   BRp$e.getAllInBox = function (x1, y1, x2, y2) {
     var eles = this.getCachedZSortedEles().interactive;
+    var zoom = this.cy.zoom();
+    var labelThreshold = 2 / zoom;
     var box = [];
     var x1c = Math.min(x1, x2);
     var x2c = Math.max(x1, x2);

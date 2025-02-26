@@ -728,6 +728,7 @@ Interactivity:
 
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.  Note that because of performance optimisations, the label may be shown at font sizes slightly smaller than this value.  This effect is more pronounced at larger screen pixel ratios.  However, it is guaranteed that the label will be shown at sizes equal to or greater than the value specified.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
+ * **`box-select-labels`** : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect only if `text-events=yes`.
 
 
 
@@ -735,6 +736,7 @@ Interactivity:
 
  * **`events`** : Whether events should occur on an element (e.g. `tap`, `mouseover`, etc.); may be `yes` or `no`.  For `no`, the element receives no events and events simply pass through to the core/viewport.  The `events` property is per-element, so the value of a compound parent does not affect its children.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
+ * **`box-select-labels`** : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect only if `text-events=yes`.
 
 
 ## Overlay

@@ -1,6 +1,4 @@
-import { ElementDrawingWebGL } from './drawing-elements-webgl.mjs';
-import { RENDER_TARGET, renderDefaults, atlasCollectionDefaults } from './defaults.mjs';
-import { StyleProps, SimpleShapeHelper } from './simple-shape-helper.mjs';
+import { ElementDrawingWebGL, RENDER_TARGET } from './drawing-elements-webgl.mjs';
 import * as util from './webgl-util.mjs';
 import * as eleTextureCache from '../ele-texture-cache.mjs';
 import { debounce } from '../../../../util/index.mjs';
@@ -34,51 +32,70 @@ CRp.initWebgl = function(opts, fns) {
     const label = ele.pstyle(prop);
     return label && label.value;
   };
-
-  const nodeBody = new SimpleShapeHelper(r, StyleProps.NodeBody);
-  const overlay  = new SimpleShapeHelper(r, StyleProps.Overlay);
-  const underlay = new SimpleShapeHelper(r, StyleProps.Underlay);
+  const isLayerVisible = (prefix) => (node) => {
+    return node.pstyle(`${prefix}-opacity`).value > 0;
+  }
+  const isNodeSimple = node => (
+    node.pstyle('background-fill').value === 'solid' &&
+    node.pstyle('border-width').pfValue === 0 &&
+    node.pstyle('background-image').strValue === 'none'
+  );
 
   r.drawing = new ElementDrawingWebGL(r, gl, opts);
 
-  r.drawing.addAtlasCollection('node', atlasCollectionDefaults({
+  r.drawing.addAtlasCollection('node', {
     texRows: opts.webglTexRowsNodes
-  }));
+  });
 
-  r.drawing.addAtlasCollection('label', atlasCollectionDefaults({
+  r.drawing.addAtlasCollection('label', {
     texRows: opts.webglTexRows
-  }));
+  });
 
-  r.drawing.addAtlasRenderType('node-body', renderDefaults({
+  r.drawing.addTextureAtlasRenderType('node-body', {
     collection: 'node',
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-    simpleShapeHelper: nodeBody,
-    getPadding: n => n.padding()
-  }));
+    getPadding: n => n.padding(),
+  });
+
+  r.drawing.addSimpleShapeRenderType('node-body', {
+    getBoundingBox: fns.getElementBox,
+    isSimple: isNodeSimple,
+    shapeProps: {
+      shape:   'shape',
+      color:   'background-color',
+      opacity: 'background-opacity',
+      padding: 'padding',
+      radius:  'corner-radius',
+    }
+  });
   
-  r.drawing.addAtlasRenderType('node-overlay', renderDefaults({
-    collection: 'node',
+  r.drawing.addSimpleShapeRenderType('node-overlay', {
     getBoundingBox: fns.getElementBox,
-    simpleShapeHelper: overlay,
-    getKey: n => overlay.getStyleKey(n),
-    getPadding: n => overlay.getPadding(n),
-    isVisible: n => overlay.isVisible(n),
-    drawElement: (context, ele, bb) => overlay.draw(context, ele, bb),
-  }));
+    isVisible: isLayerVisible('overlay'),
+    shapeProps: {
+      shape:   'overlay-shape',
+      color:   'overlay-color',
+      opacity: 'overlay-opacity',
+      padding: 'overlay-padding',
+      radius:  'overlay-corner-radius',
+    }
+  });
 
-  r.drawing.addAtlasRenderType('node-underlay', renderDefaults({
-    collection: 'node',
+  r.drawing.addSimpleShapeRenderType('node-underlay', {
     getBoundingBox: fns.getElementBox,
-    simpleShapeHelper: underlay,
-    getKey: n => underlay.getStyleKey(n),
-    getPadding: n => underlay.getPadding(n),
-    isVisible: n => underlay.isVisible(n),
-    drawElement: (context, ele, bb) => underlay.draw(context, ele, bb),
-  }));
+    isVisible: isLayerVisible('underlay'),
+    shapeProps: {
+      shape:   'underlay-shape',
+      color:   'underlay-color',
+      opacity: 'underlay-opacity',
+      padding: 'underlay-padding',
+      radius:  'underlay-corner-radius',
+    }
+  });
 
-  r.drawing.addAtlasRenderType('label', renderDefaults({ // node label or edge mid label
+  r.drawing.addTextureAtlasRenderType('label', { // node label or edge mid label
     collection: 'label',
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
@@ -87,9 +104,9 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible('label'),
-  }));
+  });
 
-  r.drawing.addAtlasRenderType('edge-source-label', renderDefaults({
+  r.drawing.addTextureAtlasRenderType('edge-source-label', {
     collection: 'label',
     getKey: fns.getSourceLabelKey,
     getBoundingBox: fns.getSourceLabelBox,
@@ -98,9 +115,9 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getSourceLabelRotationPoint,
     getRotationOffset: fns.getSourceLabelRotationOffset,
     isVisible: isLabelVisible('source-label'),
-  }));
+  });
 
-  r.drawing.addAtlasRenderType('edge-target-label', renderDefaults({
+  r.drawing.addTextureAtlasRenderType('edge-target-label', {
     collection: 'label',
     getKey: fns.getTargetLabelKey,
     getBoundingBox: fns.getTargetLabelBox,
@@ -109,7 +126,8 @@ CRp.initWebgl = function(opts, fns) {
     getRotationPoint: fns.getTargetLabelRotationPoint,
     getRotationOffset: fns.getTargetLabelRotationOffset,
     isVisible: isLabelVisible('target-label'),
-  }));
+  });
+
 
   // this is a very simplistic way of triggering garbage collection
   const setGCFlag = debounce(() => {

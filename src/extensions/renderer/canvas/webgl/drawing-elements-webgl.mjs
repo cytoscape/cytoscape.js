@@ -1,7 +1,13 @@
 import * as util from './webgl-util.mjs';
 import { mat3 } from 'gl-matrix';
-import { RENDER_TARGET } from './defaults.mjs';
 import { AtlasManager } from './atlas.mjs';
+import * as math from '../../../../math.mjs';
+
+
+export const RENDER_TARGET = {
+  SCREEN:  { name: 'screen',  screen:  true },
+  PICKING: { name: 'picking', picking: true },
+};
 
 
 // Vertex types, used in the shaders so must be ints
@@ -11,7 +17,8 @@ const EDGE_CURVE_SEGMENT = 2;
 const EDGE_ARROW = 3;
 const RECTANGLE = 4;
 const ROUND_RECTANGLE = 5;
-const ELLIPSE = 6;
+const BOTTOM_ROUND_RECTANGLE = 6;
+const ELLIPSE = 7;
 
 
 export class ElementDrawingWebGL {
@@ -34,19 +41,68 @@ export class ElementDrawingWebGL {
     opts.createTextureCanvas = util.createTextureCanvas; // Unit tests mock this
     this.atlasManager = new AtlasManager(r, opts);
 
-    this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
-    this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
+    this.simpleShapeOptions = new Map();
 
-    this.vao = this.createVAO();
+    this.program = this._createShaderProgram(RENDER_TARGET.SCREEN);
+    this.pickingProgram = this._createShaderProgram(RENDER_TARGET.PICKING);
+
+    this.vao = this._createVAO();
   }
 
-  addAtlasCollection(groupName, opts) {
-    this.atlasManager.addAtlasCollection(groupName, opts);
+
+  /**
+   * @param { string } collectionName
+   * @param {{ texRows: number }} opts
+   */
+  addAtlasCollection(collectionName, opts) {
+    this.atlasManager.addAtlasCollection(collectionName, opts);
   }
 
-  addAtlasRenderType(typeName, opts) {
+
+  /**
+   * @typedef { Object } TextureRenderTypeOpts
+   * @property { string } collection - name of atlas collection to render textures to
+   * @property { function } getKey - returns the "style key" for an element
+   * @property { function } drawElement - uses a canvas renderer to draw the element to the texture atlas
+   * @property { function } getBoundingBox - returns the bounding box for an element
+   * @property { function } getRotation
+   * @property { function } getRotationPoint
+   * @property { function } getRotationOffset
+   * @property { function } isVisible - this is an extra check for visibility in addition to ele.visible()
+   * @property { function } getPadding - returns the padding for an element
+   */
+  /**
+   * @param { string } typeName
+   * @param { TextureRenderTypeOpts } opts
+   */
+  addTextureAtlasRenderType(typeName, opts) {
     this.atlasManager.addRenderType(typeName, opts);
   }
+
+
+  /**
+   * @typedef { Object } SimpleShapeRenderTypeOpts
+   * @property { function } getBoundingBox - returns the bounding box for an element
+   * @property { function } isVisible - this is an extra check for visibility in addition to ele.visible()
+   * @property { function } isSimple - check if element is a simple shape, or if it needs to fall back to texture rendering
+   * @property { ShapeVisualProperties } shapeProps
+   */
+  /**
+   * @typedef { Object } ShapeVisualProperties
+   * @property { string } shape
+   * @property { string } color
+   * @property { string } opacity
+   * @property { string } padding
+   * @property { string } radius
+   */
+  /**
+   * @param { string } typeName
+   * @param { SimpleShapeRenderTypeOpts } opts
+   */
+  addSimpleShapeRenderType(typeName, opts) {
+    this.simpleShapeOptions.set(typeName, opts);
+  }
+
 
   invalidate(eles, { type } = {}) {
     const { atlasManager } = this;
@@ -65,7 +121,7 @@ export class ElementDrawingWebGL {
   }
 
 
-  createShaderProgram(renderTarget) {
+  _createShaderProgram(renderTarget) {
     const { gl } = this;
 
     // compute texture coordinates in the shader, becase we are using instanced drawing
@@ -134,7 +190,7 @@ export class ElementDrawingWebGL {
           vColor = aColor;
           vPosition = aPosition;
         }
-        else if(aVertType == ${ROUND_RECTANGLE}) {
+        else if(aVertType == ${ROUND_RECTANGLE} || aVertType == ${BOTTOM_ROUND_RECTANGLE}) {
           vec3 botLeft  = aTransform * vec3(0, 0, 1);
           vec3 topRight = aTransform * vec3(1, 1, 1);
           vAspectRatio = (topRight.x - botLeft.x) / (topRight.y - botLeft.y);
@@ -210,7 +266,7 @@ export class ElementDrawingWebGL {
           if(vid == 0)
             position = vec2(-0.15, -0.3);
           if(vid == 1)
-            position = vec2( 0.0,   0.0);
+            position = vec2(  0.0,  0.0);
           if(vid == 2)
             position = vec2( 0.15, -0.3);
 
@@ -269,7 +325,7 @@ export class ElementDrawingWebGL {
             discard;
           }
         }
-        else if(vVertType == ${ROUND_RECTANGLE}) {
+        else if(vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) {
           vec2 p = vPosition - vec2(0.5); // translate unit square so (0,0) is at center
           p.x = p.x * vAspectRatio; // stretch unit square to fill
           vec2 b = vec2(0.5 * vAspectRatio, 0.5); // half width/height
@@ -333,7 +389,8 @@ export class ElementDrawingWebGL {
     return program;
   }
 
-  createVAO() {
+
+  _createVAO() {
     const instanceGeometry = [
       0, 0,  1, 0,  1, 1,
       0, 0,  1, 1,  0, 1,
@@ -393,15 +450,13 @@ export class ElementDrawingWebGL {
     this.endBatch();
   }
 
-  getTempMatrix() {
-    return this.tempMatrix = this.tempMatrix || mat3.create();
-  }
 
-  _isVisible(ele, type) {
-    const { atlasManager } = this;
+  _isVisible(ele, opts) {
     if(ele.visible()) {
-      const opts = atlasManager.getRenderTypeOpts(type);
-      return opts.isVisible(ele);
+      if(opts && opts.isVisible) {
+        return opts.isVisible(ele);
+      } 
+      return true;
     }
     return false;
   }
@@ -409,7 +464,8 @@ export class ElementDrawingWebGL {
 
   drawTexture(ele, eleIndex, type) {
     const { atlasManager } = this;
-    if(!this._isVisible(ele, type)) {
+    const opts = atlasManager.getRenderTypeOpts(type);
+    if(!this._isVisible(ele, opts)) {
       return;
     }
     if(!atlasManager.canAddToCurrentBatch(ele, type)) {
@@ -431,8 +487,7 @@ export class ElementDrawingWebGL {
     if(tex2.w > 0)
       this.wrappedCount++;
 
-    let first = true;
-    for(const tex of [tex1, tex2]) {
+    for(const [ tex, first ] of [ [tex1, true], [tex2, false] ]) {
       if(tex.w != 0) {
         const instance = this.instanceCount;
         this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
@@ -452,11 +507,10 @@ export class ElementDrawingWebGL {
         texView[3] = tex.h;
 
         const matrixView = this.transformBuffer.getMatrixView(instance);
-        atlasManager.setTransformMatrix(ele, matrixView, type, atlasInfo, first);
+        this.setTransformMatrix(ele, matrixView, opts, atlasInfo, first);
 
         this.instanceCount++;
       }
-      first = false;
     }
 
     if(this.instanceCount >= this.maxInstances) {
@@ -464,53 +518,119 @@ export class ElementDrawingWebGL {
     }
   }
 
-
-  _getVertTypeForShape(shape) {
-    switch(shape) {
-      case 'rectangle': 
-        return RECTANGLE;
-      case 'ellipse': 
-        return ELLIPSE;
-      case 'roundrectangle':
-      case 'round-rectangle':
-      case 'bottom-round-rectangle':
-        return ROUND_RECTANGLE;
-      default:
-        return undefined;
+  /**
+   * matrix is expected to be a 9 element array
+   * this function follows same pattern as CRp.drawCachedElementPortion(...)
+   */
+  setTransformMatrix(ele, matrix, opts, atlasInfo, first=true) {
+    let padding = 0;
+    if(opts.getPadding) {
+      padding = opts.getPadding(ele);
+    } else if(opts.shapeProps) {
+      padding = ele.pstyle(opts.shapeProps.padding).pfValue;
+    } 
+    
+    if(atlasInfo) { // we've already computed the bb and tex bounds for a texture
+      const { bb, tex1, tex2 } = atlasInfo;
+      // wrapped textures need separate matrix for each part
+      let ratio = tex1.w / (tex1.w + tex2.w); 
+      if(!first) { // first = true means its the first part of the wrapped texture
+        ratio = 1 - ratio;
+      }
+      const adjBB = this._getAdjustedBB(bb, padding, first, ratio);
+      this._applyTransformMatrix(matrix, adjBB, opts, ele);
+    } 
+    else {
+      // we don't have a texture, or we want to avoid creating a texture for simple shapes
+      const bb = opts.getBoundingBox(ele);
+      const adjBB = this._getAdjustedBB(bb, padding, true, 1);
+      this._applyTransformMatrix(matrix, adjBB, opts, ele);
     }
   }
 
+  _applyTransformMatrix(matrix, adjBB, opts, ele) {
+    let x, y;
+    mat3.identity(matrix);
+
+    const theta = opts.getRotation ? opts.getRotation(ele) : 0;
+    if(theta !== 0) {
+      const { x:sx, y:sy } = opts.getRotationPoint(ele);
+      mat3.translate(matrix, matrix, [sx, sy]);
+      mat3.rotate(matrix, matrix, theta);
+
+      const offset = opts.getRotationOffset(ele);
+
+      x = offset.x + adjBB.xOffset;
+      y = offset.y;
+    } else {
+      x = adjBB.x1;
+      y = adjBB.y1;
+    }
+
+    mat3.translate(matrix, matrix, [x, y]);
+    mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
+  }
+
+  /**
+   * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
+   * @param bb - the original bounding box
+   * @param padding - the padding to add to the bounding box
+   * @param first - whether this is the first part of a wrapped texture
+   * @param ratio - the ratio of the texture width of part of the text to the entire texture
+   */
+  _getAdjustedBB(bb, padding, first, ratio) {
+    let { x1, y1, w, h } = bb;
+
+    if(padding) {
+      x1 -= padding;
+      y1 -= padding;
+      w += 2 * padding;
+      h += 2 * padding;
+    }
+
+    let xOffset = 0;
+    const adjW = w * ratio;
+
+    if(first && ratio < 1) {
+      w = adjW;
+    } else if(!first && ratio < 1) {
+      xOffset = w - adjW;
+      x1 += xOffset;
+      w = adjW;
+    }
+
+    return { x1, y1, w, h, xOffset };
+  }
+  
 
   drawNode(node, eleIndex, type) {
-    if(!this._isVisible(node, type)) {
+    const opts = this.simpleShapeOptions.get(type);
+    if(!this._isVisible(node, opts)) {
       return;
     }
 
-    const { atlasManager } = this; 
-    const opts = atlasManager.getRenderTypeOpts(type);
-    const simpleShape = opts.simpleShapeHelper.getSimpleShape(node);
-
-    if(simpleShape === undefined) {
+    if(opts.isSimple && !opts.isSimple(node)) {
       this.drawTexture(node, eleIndex, type);
       return;
     }
     
+    const props = opts.shapeProps;
     const instance = this.instanceCount;
 
-    const vertType = this._getVertTypeForShape(simpleShape);
+    const vertType = this._getVertTypeForShape(node, props.shape);
     this.vertTypeBuffer.getView(instance)[0] = vertType;
 
-    if(vertType === ROUND_RECTANGLE) { // get corner radius
+    if(vertType === ROUND_RECTANGLE || vertType === BOTTOM_ROUND_RECTANGLE) { // get corner radius
       const bb = opts.getBoundingBox(node);
-      const radiusProp = opts.simpleShapeHelper.getCornerRadius(node, bb);
-      const radius = radiusProp / bb.h; // scale to unit square (not sure if correct)
+      const radiusVal = this._getCornerRadius(node, props.radius, bb);
+      const radius = radiusVal / bb.h; // scale to unit square (not sure if correct)
       
       const radiusView = this.cornerRadiusBuffer.getView(instance);
       radiusView[0] = radius; // top-right
       radiusView[1] = radius; // bottom-right
       radiusView[2] = radius; // top-left
       radiusView[3] = radius; // bottom-left
-      if(simpleShape === 'bottom-round-rectangle') {
+      if(vertType === BOTTOM_ROUND_RECTANGLE) {
         radiusView[0] = 0;
         radiusView[2] = 0;
       }
@@ -519,17 +639,47 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
-    const { color, opacity } = opts.simpleShapeHelper.getColor(node);
+    const color = node.pstyle(props.color).value;
+    const opacity = node.pstyle(props.opacity).value;
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
     const matrixView = this.transformBuffer.getMatrixView(instance);
-    atlasManager.setTransformMatrix(node, matrixView, type);
+    this.setTransformMatrix(node, matrixView, opts);
 
     this.simpleCount++;
     this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
+    }
+  }
+
+
+  _getVertTypeForShape(node, shapeProp) {
+    const shape = node.pstyle(shapeProp).value
+    switch(shape) {
+      case 'rectangle': 
+        return RECTANGLE;
+      case 'ellipse': 
+        return ELLIPSE;
+      case 'roundrectangle':
+      case 'round-rectangle':
+        return ROUND_RECTANGLE;
+      case 'bottom-round-rectangle':
+        return BOTTOM_ROUND_RECTANGLE;
+      default:
+        return undefined;
+    }
+  }
+
+  _getCornerRadius(node, radiusProp, { w, h }) { // see CRp.drawRoundRectanglePath
+    if(node.pstyle(radiusProp).value === 'auto') {
+      return math.getRoundRectangleRadius(w, h);
+    } else {
+      const radius = node.pstyle(radiusProp).pfValue;
+      const halfWidth  = w / 2;
+      const halfHeight = h / 2;
+      return Math.min(radius, halfHeight, halfWidth);
     }
   }
 
@@ -601,7 +751,7 @@ export class ElementDrawingWebGL {
     if(!edge.visible()) {
       return;
     }
-    const points = this.getEdgePoints(edge);
+    const points = this._getEdgePoints(edge);
     if(!points) {
       return;
     }
@@ -689,7 +839,7 @@ export class ElementDrawingWebGL {
     }
   }
   
-  getEdgePoints(edge) {
+  _getEdgePoints(edge) {
     const rs = edge._private.rscratch;
 
     // if bezier ctrl pts can not be calculated, then die
@@ -700,11 +850,11 @@ export class ElementDrawingWebGL {
     if(controlPoints.length == 4) {
       return controlPoints;
     }
-    const numSegments = this.getNumSegments(edge);
-    return this.getCurveSegmentPoints(controlPoints, numSegments);
+    const numSegments = this._getNumSegments(edge);
+    return this._getCurveSegmentPoints(controlPoints, numSegments);
   }
 
-  getNumSegments(edge) {
+  _getNumSegments(edge) {
     // TODO Need a heuristic that decides how many segments to use. Factors to consider:
     // - edge width/length
     // - edge curvature (the more the curvature, the more segments)
@@ -718,7 +868,7 @@ export class ElementDrawingWebGL {
     return Math.min(Math.max(numSegments, 5), this.maxInstances);
   }
 
-  getCurveSegmentPoints(controlPoints, segments) {
+  _getCurveSegmentPoints(controlPoints, segments) {
     if(controlPoints.length == 4) {
       return controlPoints; // straight line
     }
@@ -734,13 +884,13 @@ export class ElementDrawingWebGL {
       } else {
         const t = i / segments; // segments have equal length, its not strictly necessary to do it this way
         // pass in curvePoints to set the values in the array directly
-        this.setCurvePoint(controlPoints, t, curvePoints, i*2);
+        this._setCurvePoint(controlPoints, t, curvePoints, i*2);
       }
     }
     return curvePoints;
   }
 
-  setCurvePoint(points, t, curvePoints, cpi) {
+  _setCurvePoint(points, t, curvePoints, cpi) {
     if(points.length <= 2) {
       curvePoints[cpi  ] = points[0];
       curvePoints[cpi+1] = points[1];
@@ -752,7 +902,7 @@ export class ElementDrawingWebGL {
         newpoints[i  ] = x;
         newpoints[i+1] = y;
       }
-      return this.setCurvePoint(newpoints, t, curvePoints, cpi);
+      return this._setCurvePoint(newpoints, t, curvePoints, cpi);
     }
   }
 

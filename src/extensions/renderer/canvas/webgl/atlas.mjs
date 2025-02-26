@@ -1,6 +1,5 @@
 import * as util from './webgl-util.mjs';
 import * as cyutil from '../../../../util/index.mjs';
-import { mat3 } from 'gl-matrix';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
@@ -616,88 +615,6 @@ export class AtlasManager {
     const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
     // This object may be passed back to setTransformMatrix()
     return { index, tex1, tex2, bb };
-  }
-  
-
-  /**
-   * matrix is expected to be a 9 element array
-   * this function follows same pattern as CRp.drawCachedElementPortion(...)
-   */
-  setTransformMatrix(ele, matrix, type, atlasInfo, first=true) {
-    const opts = this.getRenderTypeOpts(type);
-    const padding = opts.getPadding(ele);
-    
-    if(atlasInfo) { // we've already computed the bb and tex bounds for a texture
-      const { bb, tex1, tex2 } = atlasInfo;
-      // wrapped textures need separate matrix for each part
-      let ratio = tex1.w / (tex1.w + tex2.w); 
-      if(!first) { // first = true means its the first part of the wrapped texture
-        ratio = 1 - ratio;
-      }
-      const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
-      this._applyTransformMatrix(matrix, adjBB, opts, ele);
-    } 
-    else {
-      // we don't have a texture yet, or we want to avoid creating a texture for simple shapes
-      const bb = opts.getBoundingBox(ele);
-      const adjBB = this.getAdjustedBB(bb, padding, true, 1);
-      this._applyTransformMatrix(matrix, adjBB, opts, ele);
-    }
-  }
-  
-  
-  _applyTransformMatrix(matrix, adjBB, opts, ele) {
-    let x, y;
-    mat3.identity(matrix);
-
-    const theta = opts.getRotation ? opts.getRotation(ele) : 0;
-    if(theta !== 0) {
-      const { x:sx, y:sy } = opts.getRotationPoint(ele);
-      mat3.translate(matrix, matrix, [sx, sy]);
-      mat3.rotate(matrix, matrix, theta);
-
-      const offset = opts.getRotationOffset(ele);
-
-      x = offset.x + adjBB.xOffset;
-      y = offset.y;
-    } else {
-      x = adjBB.x1;
-      y = adjBB.y1;
-    }
-
-    mat3.translate(matrix, matrix, [x, y]);
-    mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
-  }
-
-  /**
-   * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
-   * @param bb - the original bounding box
-   * @param padding - the padding to add to the bounding box
-   * @param first - whether this is the first part of a wrapped texture
-   * @param ratio - the ratio of the texture width of part of the text to the entire texture
-   */
-  getAdjustedBB(bb, padding, first, ratio) {
-    let { x1, y1, w, h } = bb;
-
-    if(padding) {
-      x1 -= padding;
-      y1 -= padding;
-      w += 2 * padding;
-      h += 2 * padding;
-    }
-
-    let xOffset = 0;
-    const adjW = w * ratio;
-
-    if(first && ratio < 1) {
-      w = adjW;
-    } else if(!first && ratio < 1) {
-      xOffset = w - adjW;
-      x1 += xOffset;
-      w = adjW;
-    }
-
-    return { x1, y1, w, h, xOffset };
   }
 
   getDebugInfo() {

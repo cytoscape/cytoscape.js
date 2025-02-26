@@ -40,7 +40,7 @@
 					<div class="links">
 
 <p><a href="https://github.com/cytoscape/cytoscape.js"><img src="https://img.shields.io/badge/Repo-GitHub-yellow.svg" alt="GitHub repo"></a>
-<a href="https://www.phind.com/search?c=I%27m%20using%20the%20Cytoscape.js%20graph%20theory%20JS%20library.&amp;q=How%20do%20I%20create%20a%20graph%20in%20my%20HTML%20page"><img src="https://img.shields.io/badge/Get%20help-Phind-yellow.svg" alt="Ask a question with Phind"></a>
+<a href="https://www.phind.com/search?c=I%27m%20using%20the%20Cytoscape.js%20graph%20theory%20JS%20library.&q=How%20do%20I%20create%20a%20graph%20in%20my%20HTML%20page"><img src="https://img.shields.io/badge/Get%20help-Phind-yellow.svg" alt="Ask a question with Phind"></a>
 <a href="https://blog.js.cytoscape.org"><img src="https://img.shields.io/badge/News%20%26%20tutorials-Blog-yellow.svg" alt="News and tutorials"></a>
 <a href="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
@@ -806,6 +806,7 @@
 <li><a href="https://trank.no">T-Rank</a></li>
 <li><a href="https://threatconnect.com">ThreatConnect</a></li>
 <li><a href="https://www.threatcrowd.org">ThreatCrowd</a></li>
+<li><a href="https://github.com/asadarafat/topoViewer">TopoViewer</a></li>
 <li><a href="https://www.underlay.org">Underlay</a></li>
 <li><a href="https://vac.dev">VAC</a></li>
 <li><a href="https://wanderer.ai">wanderer.ai</a></li>
@@ -833,6 +834,9 @@
     <li>
         3.31
         <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.31.1+is%3Aclosed">3.31.1</a>
+            </li>
             <li>
                 <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.31.0+is%3Aclosed">3.31.0</a>
             </li>
@@ -12371,7 +12375,7 @@ bf.pathTo(<span class="hljs-string">&#x27;#g&#x27;</span>).select();
 
 
 
-							<div class="descr"><p>Perform the <a href="https://en.wikipedia.org/wiki/Eulerian_path#Hierholzer&#39;s_algorithm">Hierholzer</a> search algorithm on the elements in the collection. This finds Eulerian trails and circuits.</p>
+							<div class="descr"><p>Perform the <a href="https://en.wikipedia.org/wiki/Eulerian_path#Hierholzer's_algorithm">Hierholzer</a> search algorithm on the elements in the collection. This finds Eulerian trails and circuits.</p>
 </div>
 
 							<div class="formats">
@@ -15615,7 +15619,7 @@ cy.layout( options );</code></pre>
 
 						<p>The <code>cose</code> (Compound Spring Embedder) layout uses a physics simulation to lay out graphs.  It works well with noncompound graphs and it has additional logic to support compound graphs well.</p>
 <p>It was implemented by <a href="https://www.linkedin.com/in/gerardohuck">Gerardo Huck</a> as part of Google Summer of Code 2013 (Mentors: Max Franz, Christian Lopes, Anders Riutta, Ugur Dogrusoz).</p>
-<p>Based on the article <a href="http://dl.acm.org/citation.cfm?id=1498047&amp;CFID=429377863&amp;CFTOKEN=94691144">“A layout algorithm for undirected compound graphs”</a> by Ugur Dogrusoz, Erhan Giral, Ahmet Cetintas, Ali Civril and Emek Demir.</p>
+<p>Based on the article <a href="http://dl.acm.org/citation.cfm?id=1498047&CFID=429377863&CFTOKEN=94691144">“A layout algorithm for undirected compound graphs”</a> by Ugur Dogrusoz, Erhan Giral, Ahmet Cetintas, Ali Civril and Emek Demir.</p>
 <p>The <code>cose</code> layout is very fast and produces good results.  The <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> extension is an evolution of the algorithm that is more computationally expensive but produces near-perfect results.</p>
 
 
@@ -16481,7 +16485,7 @@ jAni.play().promise().then(<span class="hljs-function"><span class="hljs-keyword
 
 cytoscape.use( ext );
 </code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>The extensions below are a curated list.  To add your extension, <a href="https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&amp;title=List%20extension%20:%20%3Cyour%20extension%20name%3E&amp;body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description">please submit a request</a> that includes your extension’s URL and a one line description.</p>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>The extensions below are a curated list.  To add your extension, <a href="https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&title=List%20extension%20:%20%3Cyour%20extension%20name%3E&body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description">please submit a request</a> that includes your extension’s URL and a one line description.</p>
 <p><i class="fa fa-fw fa-user"></i> denotes a first-party extension, one that is maintained by groups associated with the Cytoscape Consortium.</p>
 <p><i class="fa fa-fw fa-users"></i> denotes a third-party extension, one that is maintained by outside developers.</p>
 <h2 id="extensions/ui-extensions">UI extensions <a href="#extensions/ui-extensions"><span class="fa fa-bookmark"></span></a></h2>
@@ -16601,7 +16605,7 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 </li>
 <li>Document your extension’s API in a <code>README.md</code> file in the root directory of your respository.</li>
 <li><a href="https://docs.npmjs.com/cli/publish">Publish your extension to npm</a>.</li>
-<li><a href="https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&amp;title=List%20extension%20:%20%3Cyour%20extension%20name%3E&amp;body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description">Submit a request</a> to have your extension listed in the documentation.</li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&title=List%20extension%20:%20%3Cyour%20extension%20name%3E&body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description">Submit a request</a> to have your extension listed in the documentation.</li>
 </ol>
 <h2 id="extensions/layout-prototype">Layout prototype <a href="#extensions/layout-prototype"><span class="fa fa-bookmark"></span></a></h2>
 <ul>

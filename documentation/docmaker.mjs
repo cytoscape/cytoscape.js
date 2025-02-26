@@ -1,16 +1,24 @@
 /* eslint-disable no-console, no-useless-escape */
 
-let fs = require('fs');
-let marked = require('marked');
-let Handlebars = require('handlebars');
-let jsonlint = require('jsonlint');
-let hljs = require('highlight.js');
-let encoding = 'utf8';
+// convert to import statements
+
+import fs from 'fs';
+import * as marked from 'marked';
+import Handlebars from 'handlebars';
+import jsonlint from 'jsonlint';
+import hljs from 'highlight.js';
+import path from 'path';
+import process from 'process';
+
+const encoding = 'utf8';
+const configFile = './docmaker.json';
+const versionFile = './versions.json';
+
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const readFileSync = file => fs.readFileSync( path.join(__dirname, file), 'utf8')
+
 let config, versions;
-let configFile = './docmaker.json';
 let mdRend = new marked.Renderer();
-let path = require('path');
-let versionFile = './versions.json';
 
 let rendCode = mdRend.code;
 mdRend.code = function(code, lang){
@@ -24,11 +32,13 @@ mdRend.code = function(code, lang){
 };
 
 try {
-  jsonlint.parse( fs.readFileSync( path.join(__dirname, configFile), 'utf8') ); // validate first for convenience
-  config = require( configFile );
+  let confFileContents = readFileSync(configFile);
+  jsonlint.parse(confFileContents); // validate first for convenience
+  config = JSON.parse(confFileContents);
 
-  jsonlint.parse( fs.readFileSync( path.join(__dirname, versionFile), 'utf8') ); // validate first for convenience
-  versions = require( versionFile );
+  let versionFileContents = readFileSync(versionFile);
+  jsonlint.parse(versionFileContents); // validate first for convenience
+  versions = JSON.parse(versionFileContents);
 } catch(e){
   console.error('\n`' + configFile + '` could not be read; check the JSON is formatted correctly via jsonlint');
   throw e;
@@ -66,7 +76,7 @@ function md2html( file ){
       let ret;
 
       if( lang ){
-        ret = hljs.highlight(lang, code).value;
+        ret = hljs.highlight(code, { language: lang }).value;
       } else {
         ret = hljs.highlightAuto(code).value;
       }
@@ -237,7 +247,7 @@ function compileConfig( config ){
       let layout = section.layout;
 
       section.name = layout.name;
-      layout.code = fs.readFileSync( path.join(__dirname, '../src/extensions/layout/' + layout.name + '.js'), 'utf8' );
+      layout.code = fs.readFileSync( path.join(__dirname, '../src/extensions/layout/' + layout.name + '.mjs'), 'utf8' );
 
       try {
         layout.options = layout.code.match(/defaults\s*\=\s*(\{(?:.|\s)+?\}\;)/)[1];
@@ -255,7 +265,7 @@ function compileConfig( config ){
         lopts = 'let options = ' + lopts + '\n\ncy.layout( options );';
 
         // highlight
-        lopts = hljs.highlight('js', lopts).value;
+        lopts = hljs.highlight(lopts, { language: 'js' }).value;
 
         layout.optionsFormatted = lopts;
       } catch(e){
@@ -377,8 +387,10 @@ function getMilestoneLink(minor_ver) {
 function getVersionMap(all_versions) {
   const version_map = new Map();
   const breakpoint = /(\d+.\d+)/;
+
   all_versions.forEach((e) => {
-    v = e.split(breakpoint).filter(Boolean);
+    let notEmptyStr = v => v != null && v !== '';
+    let v = e.split(breakpoint).filter(notEmptyStr);
     if (version_map.has(v[0])) version_map.get(v[0]).push(v[1]);
     else {
       version_map.set(v[0], [v[1]]);
@@ -390,7 +402,7 @@ function getVersionMap(all_versions) {
 
 function generate_versions(context) {
   let all_versions = versions.versions;
-  unique_versions = [...new Set(all_versions)]
+  let unique_versions = [...new Set(all_versions)];
 
   const version_map = getVersionMap(unique_versions);
 

@@ -88,7 +88,7 @@ jobs:
           chmod +rx .github/workflows/scripts/pre_release_test.sh
           . .github/workflows/scripts/pre_release_test.sh ${{ env.BRANCH }}
       - name: Archive action failure results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ failure() && steps.release.conclusion == 'failure' }}
         with:
           name: npm-release--failure-report

@@ -15,6 +15,10 @@ cytoscape({
         'pie-3-background-color': '#74E883',
         'pie-3-background-size': 'mapData(baz, 0, 10, 0, 100)'
       })
+    .selector('#d, #e') // make these ones ring charts
+      .css({
+        'pie-hole': '60%'
+      })
     .selector('edge')
       .css({
         'curve-style': 'bezier',

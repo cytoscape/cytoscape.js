@@ -214,6 +214,43 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
+  let drawStripe = () => {
+    let redrawShape = true;
+
+    if( r.hasStripe( node ) ){
+      context.save();
+
+      if (usePaths) {
+        context.clip( rs.pathCache );
+      } else {
+        r.nodeShapes[ r.getNodeShape( node ) ].draw(
+          context,
+          pos.x,
+          pos.y,
+          nodeWidth,
+          nodeHeight, cornerRadius, rs );
+          context.clip();
+      }
+
+      r.drawStripe( context, node, eleOpacity );
+
+      context.restore();
+
+      // redraw/restore path if steps after stripes need it
+      if( redrawShape ){
+
+        if( !usePaths ){
+          r.nodeShapes[ r.getNodeShape( node ) ].draw(
+              context,
+              pos.x,
+              pos.y,
+              nodeWidth,
+              nodeHeight, cornerRadius, rs );
+        }
+      }
+    }
+  };
+
   let darken = ( darkenOpacity = eleOpacity ) => {
     let opacity = ( darkness > 0 ? darkness : -darkness ) * darkenOpacity;
     let c = darkness > 0 ? 0 : 255;
@@ -498,6 +535,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     setupBorderColor( ghostOpacity * borderOpacity );
     drawBorder();
     drawPie( darkness !== 0 || borderWidth !== 0 );
+    drawStripe( darkness !== 0 || borderWidth !== 0 );
     drawImages( effGhostOpacity, false );
     darken( effGhostOpacity );
 
@@ -520,6 +558,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   setupBorderColor();
   drawBorder();
   drawPie( darkness !== 0 || borderWidth !== 0 );
+  drawStripe();
   drawImages(eleOpacity, false);
 
   darken();
@@ -594,17 +633,25 @@ CRp.hasPie = function( node ){
   return node._private.hasPie;
 };
 
+CRp.hasStripe = function( node ){
+  node = node[0]; // ensure ele ref
+
+  return node._private.hasStripe;
+};
+
 CRp.drawPie = function( context, node, nodeOpacity, pos ){
   node = node[0]; // ensure ele ref
   pos = pos || node.position();
 
   let cyStyle = node.cy().style();
   let pieSize = node.pstyle( 'pie-size' );
+  let hole = node.pstyle('pie-hole');
   let x = pos.x;
   let y = pos.y;
   let nodeW = node.width();
   let nodeH = node.height();
   let radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
+  let holeRadius;
   let lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
   let usePaths = this.usePaths();
 
@@ -616,7 +663,17 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
   if( pieSize.units === '%' ){
     radius = radius * pieSize.pfValue;
   } else if( pieSize.pfValue !== undefined ){
-    radius = pieSize.pfValue / 2;
+    radius = pieSize.pfValue / 2; // diameter in pixels => radius
+  }
+
+  if (hole.units === '%') {
+    holeRadius = radius * hole.pfValue;
+  } else if (hole.pfValue !== undefined) {
+    holeRadius = hole.pfValue / 2; // diameter in pixels => radius
+  }
+
+  if (holeRadius >= radius) {
+    return; // the pie would be invisible anyway
   }
 
   for( let i = 1; i <= cyStyle.pieBackgroundN; i++ ){ // 1..N
@@ -642,9 +699,94 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
       continue;
     }
 
+    if (holeRadius === 0) { // make a pie slice
+      context.beginPath();
+      context.moveTo( x, y );
+      context.arc( x, y, radius, angleStart, angleEnd );
+      context.closePath();
+    } else { // make a pie slice that's like the above but with a hole in the middle
+      context.beginPath();
+      context.arc(x, y, radius, angleStart, angleEnd);
+      context.arc(x, y, holeRadius, angleEnd, angleStart, true); // true for anticlockwise
+      context.closePath();
+    }
+
+    this.colorFillStyle( context, color[0], color[1], color[2], opacity );
+
+    context.fill();
+
+    lastPercent += percent;
+  }
+
+};
+
+CRp.drawStripe = function( context, node, nodeOpacity, pos ){
+  node = node[0]; // ensure ele ref
+  pos = pos || node.position();
+
+  let cyStyle = node.cy().style();
+  let x = pos.x;
+  let y = pos.y;
+  let nodeW = node.width();
+  let nodeH = node.height();
+  let lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+  let usePaths = this.usePaths();
+
+  context.save();
+
+  let direction = node.pstyle('stripe-direction').value;
+  let stripeSize = node.pstyle('stripe-size');
+
+  switch (direction) {
+    case 'vertical':
+      break; // default
+    case 'righward':
+      context.rotate(-Math.PI / 2);
+      break;
+  }
+
+  let stripeW = nodeW;
+  let stripeH = nodeH;
+
+  if( stripeSize.units === '%' ){
+    stripeW = stripeW * stripeSize.pfValue;
+    stripeH = stripeH * stripeSize.pfValue;
+  } else if( stripeSize.pfValue !== undefined ){
+    stripeW = stripeSize.pfValue;
+    stripeH = stripeSize.pfValue;
+  }
+
+  if( usePaths ){
+    x = 0;
+    y = 0;
+  }
+
+  // shift up from the centre of the node to the top-left corner
+  y -= stripeW / 2;
+  x -= stripeH / 2;
+
+  for( let i = 1; i <= cyStyle.stripeBackgroundN; i++ ){ // 1..N
+    let size = node.pstyle( 'stripe-' + i + '-background-size' ).value;
+    let color = node.pstyle( 'stripe-' + i + '-background-color' ).value;
+    let opacity = node.pstyle( 'stripe-' + i + '-background-opacity' ).value * nodeOpacity;
+    let percent = size / 100; // map integer range [0, 100] to [0, 1]
+
+    // percent can't push beyond 1
+    if( percent + lastPercent > 1 ){
+      percent = 1 - lastPercent;
+    }
+
+    // ignore if
+    // - zero size
+    // - we're already beyond the full circle
+    // - adding the current slice would go beyond the full circle
+    if( size === 0 || lastPercent >= 1 || lastPercent + percent > 1 ){
+      continue;
+    }
+
+    // draw rect for the current stripe
     context.beginPath();
-    context.moveTo( x, y );
-    context.arc( x, y, radius, angleStart, angleEnd );
+    context.rect( x, y + stripeH * lastPercent, stripeW, stripeH * percent );
     context.closePath();
 
     this.colorFillStyle( context, color[0], color[1], color[2], opacity );
@@ -653,6 +795,8 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
 
     lastPercent += percent;
   }
+
+  context.restore();
 
 };
 

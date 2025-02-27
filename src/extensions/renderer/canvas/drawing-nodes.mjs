@@ -214,9 +214,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
-  let drawStripe = () => {
-    let redrawShape = true;
-
+  let drawStripe = (redrawShape = false, stripeOpacity = eleOpacity) => {
     if( r.hasStripe( node ) ){
       context.save();
 
@@ -232,7 +230,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
           context.clip();
       }
 
-      r.drawStripe( context, node, eleOpacity );
+      r.drawStripe( context, node, stripeOpacity );
 
       context.restore();
 
@@ -558,7 +556,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   setupBorderColor();
   drawBorder();
   drawPie( darkness !== 0 || borderWidth !== 0 );
-  drawStripe();
+  drawStripe( darkness !== 0 || borderWidth !== 0 );
   drawImages(eleOpacity, false);
 
   darken();
@@ -778,8 +776,8 @@ CRp.drawStripe = function( context, node, nodeOpacity, pos ){
 
     // ignore if
     // - zero size
-    // - we're already beyond the full circle
-    // - adding the current slice would go beyond the full circle
+    // - we're already beyond the full chart
+    // - adding the current slice would go beyond the full chart
     if( size === 0 || lastPercent >= 1 || lastPercent + percent > 1 ){
       continue;
     }

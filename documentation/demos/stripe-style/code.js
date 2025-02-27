@@ -7,17 +7,14 @@ cytoscape({
         'width': '60px',
         'height': '60px',
         'content': 'data(id)',
-        'pie-size': '80%',
-        'pie-1-background-color': '#E8747C',
-        'pie-1-background-size': 'mapData(foo, 0, 10, 0, 100)',
-        'pie-2-background-color': '#74CBE8',
-        'pie-2-background-size': 'mapData(bar, 0, 10, 0, 100)',
-        'pie-3-background-color': '#74E883',
-        'pie-3-background-size': 'mapData(baz, 0, 10, 0, 100)'
-      })
-    .selector('#d, #e') // make these ones ring charts
-      .css({
-        'pie-hole': '60%'
+        'stripe-size': '100%',
+        'stripe-direction': 'vertical',
+        'stripe-1-background-color': '#E8747C',
+        'stripe-1-background-size': 'mapData(foo, 0, 10, 0, 100)',
+        'stripe-2-background-color': '#74CBE8',
+        'stripe-2-background-size': 'mapData(bar, 0, 10, 0, 100)',
+        'stripe-3-background-color': '#74E883',
+        'stripe-3-background-size': 'mapData(baz, 0, 10, 0, 100)'
       })
     .selector('edge')
       .css({

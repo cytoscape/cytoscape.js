@@ -138,6 +138,10 @@ styfn.cssRule = function( name, value ){
       this._private.hasPie = true;
     }
 
+    if( property.name.match( /stripe-(\d+)-background-size/ ) && property.value ){
+      this._private.hasStripe = true;
+    }
+
     if( property.mapped ){
       this[ i ].mappedProperties.push( property );
     }

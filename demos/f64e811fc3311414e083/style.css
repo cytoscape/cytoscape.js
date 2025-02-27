@@ -1,0 +1,70 @@
+html, body { 
+  font: 14px helvetica neue, helvetica, arial, sans-serif;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#cy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+}
+
+#loading {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  text-align: center;
+  margin-top: -0.5em;
+  font-size: 2em;
+  color: #fff;
+}
+
+#loading.loaded {
+  display: none;
+}
+
+button {
+  font-size: 2em;
+  background-color: #FC4C4C;
+  color: #fff;
+  border: 0;
+  cursor: pointer;
+  border-radius: 0.25em;
+  font-family: helvetica neue, helvetica, arial, sans-serif;
+  outline: 0;
+}
+
+#clear {
+  position: absolute;
+  right: 0;
+  top: 0;
+  margin: 0.25em;
+  visibility: hidden;
+}
+
+body.has-start #clear {
+  visibility: visible;
+}
+
+#end {
+  display: none;
+}
+
+body.has-start:not(.has-end) #end {
+  display: inline;
+}
+
+body.has-start:not(.has-end) #start {
+  display: none;
+}
+
+body.calc #loading {
+  display: block;
+}

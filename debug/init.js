@@ -31,6 +31,17 @@ var cy, defaultSty, options;
           "label": "c has a long label over-\u200bflowing its max    width,\n but spa\u200bces are ke\u200bpt",
           "text-max-width": 100,
           "text-wrap": "wrap",
+          "text-events": "yes",
+          "box-select-labels": "yes",
+        })
+      .selector('node#d')
+        .style({
+          "label": "d has a long label over-\u200bflowing and its rotated by 45deg",
+          "text-max-width": 100,
+          "text-wrap": "wrap",
+          "text-events": "yes",
+          "box-select-labels": "yes",
+          "text-rotation": "45deg",
         })
       .selector('node#b')
         .style({

@@ -335,12 +335,14 @@ export class AtlasCollection {
           const [ s1, s2 ] = atlas.getOffsets(key);
           if(!newAtlas.canFit({ w: s1.w + s2.w, h: s1.h })) {
             newAtlas.lock();
-            
             newAtlas = this._createAtlas();
             newAtlases.push(newAtlas);
           }
-          this._copyTextureToNewAtlas(key, atlas, newAtlas);
-          newStyleKeyToAtlas.set(key, newAtlas);
+          if(atlas.canvas) {
+            // if the texture can't be copied then it will have to be redrawn on the next frame
+            this._copyTextureToNewAtlas(key, atlas, newAtlas);
+            newStyleKeyToAtlas.set(key, newAtlas);
+          }
         }
       }
 

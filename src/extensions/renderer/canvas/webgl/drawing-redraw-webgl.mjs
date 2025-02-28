@@ -35,11 +35,6 @@ CRp.initWebgl = function(opts, fns) {
   const isLayerVisible = (prefix) => (node) => {
     return node.pstyle(`${prefix}-opacity`).value > 0;
   }
-  const isNodeSimple = node => (
-    node.pstyle('background-fill').value === 'solid' &&
-    node.pstyle('border-width').pfValue === 0 &&
-    node.pstyle('background-image').strValue === 'none'
-  );
 
   r.drawing = new ElementDrawingWebGL(r, gl, opts);
 
@@ -61,7 +56,7 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addSimpleShapeRenderType('node-body', {
     getBoundingBox: fns.getElementBox,
-    isSimple: isNodeSimple,
+    isSimple: n => util.isSimpleShape(n),
     shapeProps: {
       shape:   'shape',
       color:   'background-color',
@@ -70,7 +65,7 @@ CRp.initWebgl = function(opts, fns) {
       radius:  'corner-radius',
     }
   });
-  
+
   r.drawing.addSimpleShapeRenderType('node-overlay', {
     getBoundingBox: fns.getElementBox,
     isVisible: isLayerVisible('overlay'),

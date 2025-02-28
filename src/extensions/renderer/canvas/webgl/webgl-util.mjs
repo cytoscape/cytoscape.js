@@ -70,6 +70,14 @@ export function modelToRenderedPosition(r, pan, zoom, x, y) {
   return [ rx, ry ];
 }
 
+export function isSimpleShape(node) {
+  return (
+    node.pstyle('background-fill').value === 'solid' &&
+    node.pstyle('background-image').strValue === 'none' &&
+    node.pstyle('border-width').pfValue === 0
+  );
+}
+
 /**
  * Takes color & opacity style values and converts them to WebGL format. 
  * Alpha is premultiplied.

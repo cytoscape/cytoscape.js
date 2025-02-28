@@ -2,6 +2,7 @@ import * as util from './webgl-util.mjs';
 import { mat3 } from 'gl-matrix';
 import { AtlasManager } from './atlas.mjs';
 import * as math from '../../../../math.mjs';
+import * as sdf from './shader-sdf.mjs';
 
 
 export const RENDER_TARGET = {
@@ -149,14 +150,15 @@ export class ElementDrawingWebGL {
       in vec4 aPointAPointB;
       in vec4 aPointCPointD;
       in float aLineWidth;
-      in vec4 aColor;
 
       // simple shapes
       in vec4 aCornerRadius; // for round-rectangle [top-right, bottom-right, top-left, bottom-left]
+      in vec4 aColor; // also used for edges
 
       out vec2 vTexCoord;
       out vec4 vColor;
       out vec2 vPosition; // original untransformed coordinate
+
       flat out int vAtlasId;
       flat out vec4 vIndex;
       flat out int vVertType;
@@ -185,20 +187,18 @@ export class ElementDrawingWebGL {
 
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
-        else if(aVertType == ${RECTANGLE} || aVertType == ${ELLIPSE}) {
-          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
-          vColor = aColor;
-          vPosition = aPosition;
-        }
-        else if(aVertType == ${ROUND_RECTANGLE} || aVertType == ${BOTTOM_ROUND_RECTANGLE}) {
+        else if(aVertType == ${RECTANGLE} || aVertType == ${ELLIPSE} 
+             || aVertType == ${ROUND_RECTANGLE} || aVertType == ${BOTTOM_ROUND_RECTANGLE}) {
+
           vec3 botLeft  = aTransform * vec3(0, 0, 1);
           vec3 topRight = aTransform * vec3(1, 1, 1);
           vAspectRatio = (topRight.x - botLeft.x) / (topRight.y - botLeft.y);
-
-          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
+          
           vColor = aColor;
           vPosition = aPosition;
           vCornerRadius = aCornerRadius;
+
+          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
         else if(aVertType == ${EDGE_STRAIGHT}) {
           vec2 source = aPointAPointB.xy;
@@ -305,6 +305,10 @@ export class ElementDrawingWebGL {
 
       out vec4 outColor;
 
+      ${sdf.circleSDF}
+      ${sdf.roundRectangleSDF}
+      ${sdf.ellipseSDF}
+
       void main(void) {
         if(vVertType == ${TEXTURE}) {
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
@@ -315,31 +319,26 @@ export class ElementDrawingWebGL {
           outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
           outColor.a = 1.0; // make opaque, masks out line under arrow
         } 
-        else if(vVertType == ${ELLIPSE}) {
+        else if(vVertType == ${ELLIPSE} || vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) { // use SDF
           vec2 p = vPosition - vec2(0.5); // translate unit square so (0,0) is at center
-          float r = 0.5; // radius of circle inside a unit square
-          float d = distance(vec2(0), p) - r; // signed distance
-          if(d <= 0.0) {
-            outColor = vColor; // inside circle
+          p.x = p.x * vAspectRatio; // stretch unit square horizontally to fill
+
+          float d; // signed distance
+          if(vVertType == ${ELLIPSE}) {
+            if(vAspectRatio == 1.0) {
+              d = circleSDF(p, 0.5); // faster
+            } else {
+              vec2 ab = vec2(0.5 * vAspectRatio, 0.5); // horizontal radius, vertical radius
+              d = ellipseSDF(p, ab);
+            }
           } else {
-            discard;
+            vec4 cr = vCornerRadius.wzyx; // swizzle because canvas Y axis is opposite to webgl (I think)
+            vec2 b = vec2(0.5 * vAspectRatio, 0.5); // half width/height
+            d = roundRectangleSDF(p, b, cr);
           }
-        }
-        else if(vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) {
-          vec2 p = vPosition - vec2(0.5); // translate unit square so (0,0) is at center
-          p.x = p.x * vAspectRatio; // stretch unit square to fill
-          vec2 b = vec2(0.5 * vAspectRatio, 0.5); // half width/height
-          
-          vec4 cr = vCornerRadius.wzyx; // swizzle because canvas Y axis is opposite to webgl (I think)
-          cr.xy = (p.x > 0.0) ? cr.xy : cr.zw;
-          cr.x  = (p.y > 0.0) ? cr.x  : cr.y;
 
-          // calculate signed distance
-          vec2 q = abs(p) - b + cr.x;
-          float d = min(max(q.x, q.y), 0.0) + distance(vec2(0), max(q, 0.0)) - cr.x;
-
-          if(d <= 0.0) {
-            outColor = vColor;
+          if(d <= 0.0) { // inside shape
+            outColor = vColor; 
           } else {
             discard;
           }
@@ -374,7 +373,6 @@ export class ElementDrawingWebGL {
     program.aLineWidth      = gl.getAttribLocation(program, 'aLineWidth');
     program.aColor          = gl.getAttribLocation(program, 'aColor');
     program.aCornerRadius   = gl.getAttribLocation(program, 'aCornerRadius');
-
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');

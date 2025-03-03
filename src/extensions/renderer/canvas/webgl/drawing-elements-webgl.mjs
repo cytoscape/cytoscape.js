@@ -1,6 +1,6 @@
 import * as util from './webgl-util.mjs';
 import { mat3 } from 'gl-matrix';
-import { AtlasManager } from './atlas.mjs';
+import { AtlasManager, AtlasBatchManager } from './atlas.mjs';
 import * as math from '../../../../math.mjs';
 import * as sdf from './shader-sdf.mjs';
 
@@ -41,6 +41,7 @@ export class ElementDrawingWebGL {
     opts.enableWrapping = true;
     opts.createTextureCanvas = util.createTextureCanvas; // Unit tests mock this
     this.atlasManager = new AtlasManager(r, opts);
+    this.batchManager = new AtlasBatchManager(opts);
 
     this.simpleShapeOptions = new Map();
 
@@ -283,7 +284,7 @@ export class ElementDrawingWebGL {
       }
     `;
 
-    const idxs = this.atlasManager.getIndexArray();
+    const idxs = this.batchManager.getIndexArray();
 
     const fragmentShaderSource = `#version 300 es
       precision highp float;
@@ -380,7 +381,7 @@ export class ElementDrawingWebGL {
     program.uBGColor       = gl.getUniformLocation(program, 'uBGColor');
 
     program.uTextures = [];
-    for(let i = 0; i < this.atlasManager.getMaxAtlasesPerBatch(); i++) {
+    for(let i = 0; i < this.batchManager.getMaxAtlasesPerBatch(); i++) {
       program.uTextures.push(gl.getUniformLocation(program, `uTexture${i}`));
     }
 
@@ -441,7 +442,7 @@ export class ElementDrawingWebGL {
 
   startBatch() {
     this.instanceCount = 0;
-    this.atlasManager.startBatch();
+    this.batchManager.startBatch();
   }
 
   endFrame() {
@@ -461,31 +462,24 @@ export class ElementDrawingWebGL {
 
 
   drawTexture(ele, eleIndex, type) {
-    const { atlasManager } = this;
+    const { atlasManager, batchManager } = this;
     const opts = atlasManager.getRenderTypeOpts(type);
     if(!this._isVisible(ele, opts)) {
       return;
-    }
-    if(!atlasManager.canAddToCurrentBatch(ele, type)) {
-      this.endBatch(); // draws then starts a new batch
     }
     if(this.instanceCount + 1 >= this.maxInstances) {
       this.endBatch(); // make sure there's space for at least two instances, wrapped textures need two instances
     }
     
-    const instance = this.instanceCount;
-    this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
-
-    const indexView = this.indexBuffer.getView(instance);
-    util.indexToVec4(eleIndex, indexView);
-
     const atlasInfo = atlasManager.getAtlasInfo(ele, type);
-    const { index, tex1, tex2 } = atlasInfo;
+    const { atlas, tex1, tex2 } = atlasInfo;
 
-    if(tex2.w > 0)
-      this.wrappedCount++;
+    if(!batchManager.canAddToCurrentBatch(atlas)) {
+      this.endBatch();
+    }
+    const atlasIndex = batchManager.getAtlasIndexForBatch(atlas);
 
-    for(const [ tex, first ] of [ [tex1, true], [tex2, false] ]) {
+    for(const [tex, first] of [[tex1, true], [tex2, false]]) {
       if(tex.w != 0) {
         const instance = this.instanceCount;
         this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
@@ -495,7 +489,7 @@ export class ElementDrawingWebGL {
 
         // Set values in the buffers using Typed Array Views for performance.
         const atlasIdView = this.atlasIdBuffer.getView(instance);
-        atlasIdView[0] = index;
+        atlasIdView[0] = atlasIndex;
         
         // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
         const texView = this.texBuffer.getView(instance);
@@ -508,6 +502,8 @@ export class ElementDrawingWebGL {
         this.setTransformMatrix(ele, matrixView, opts, atlasInfo, first);
 
         this.instanceCount++;
+        if(!first)
+          this.wrappedCount++;
       }
     }
 
@@ -922,7 +918,7 @@ export class ElementDrawingWebGL {
       buffer.bufferSubData(count);
     }
 
-    const atlases = this.atlasManager.getAtlases();
+    const atlases = this.batchManager.getAtlases();
     // must buffer before activating texture units
     for(let i = 0; i < atlases.length; i++) {
       atlases[i].bufferIfNeeded(gl);
@@ -936,7 +932,7 @@ export class ElementDrawingWebGL {
 
     // Set the uniforms
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
-    gl.uniform1i(program.uAtlasSize, this.atlasManager.getAtlasSize());
+    gl.uniform1i(program.uAtlasSize, this.batchManager.getAtlasSize());
     // set background color, needed for edge arrow color blending
     const webglBgColor = util.toWebGLColor(this.bgColor, 1);
     gl.uniform4fv(program.uBGColor, webglBgColor);

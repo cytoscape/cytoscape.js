@@ -429,16 +429,10 @@ export class AtlasManager {
     this.collections = new Map(); // collectionName:string -> AtlasCollection
 
     this.typeAndIdToKey = new Map(); // [renderType,id] => style key
-
-    this.batchAtlases = [];
   }
 
   getAtlasSize() {
     return this.atlasSize;
-  }
-
-  getMaxAtlasesPerBatch() {
-    return this.maxAtlasesPerBatch;
   }
 
   addAtlasCollection(collectionName, atlasCollectionOptions) {
@@ -564,6 +558,49 @@ export class AtlasManager {
     return atlas;
   }
 
+  getAtlasInfo(ele, type) {
+    const opts = this.renderTypes.get(type);
+    const bb = opts.getBoundingBox(ele);
+    const atlas = this.getOrCreateAtlas(ele, type, bb);
+    const styleKey = opts.getKey(ele);
+    const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
+    // This object may be passed back to setTransformMatrix()
+    return { atlas, tex:tex1, tex1, tex2, bb };
+  }
+
+  getDebugInfo() {
+    const debugInfo = [];
+    for(let [ name, collection ] of this.collections) {
+      const { keyCount, atlasCount } = collection.getCounts();
+      debugInfo.push({ type: name, keyCount, atlasCount });
+    }
+    return debugInfo;
+  }
+
+}
+
+
+export class AtlasBatchManager {
+
+  constructor(globalOptions) {
+    this.globalOptions = globalOptions;
+    this.atlasSize = globalOptions.webglTexSize;
+    this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
+    this.batchAtlases = [];
+  }
+
+  getMaxAtlasesPerBatch() {
+    return this.maxAtlasesPerBatch;
+  }
+
+  getAtlasSize() {
+    return this.atlasSize;
+  }
+
+  getIndexArray() {
+    return Array.from({ length: this.maxAtlasesPerBatch }, (v,i) => i);
+  }
+
   startBatch() {
     this.batchAtlases = [];
   }
@@ -576,15 +613,9 @@ export class AtlasManager {
     return this.batchAtlases;
   }
 
-  canAddToCurrentBatch(ele, type) {
+  canAddToCurrentBatch(atlas) {
     if(this.batchAtlases.length === this.maxAtlasesPerBatch) { 
-      // batch is full, is the atlas already part of this batch?
-      const opts = this.renderTypes.get(type);
-      const styleKey = opts.getKey(ele);
-      const atlasCollection = this.collections.get(opts.collection);
-      const atlas = atlasCollection.getAtlas(styleKey);
-      // return true if there is an atlas and it is part of this batch already
-      return Boolean(atlas) && this.batchAtlases.includes(atlas);
+      return this.batchAtlases.includes(atlas);
     }
     return true; // not full
   }
@@ -593,39 +624,12 @@ export class AtlasManager {
     let atlasID = this.batchAtlases.indexOf(atlas);
     if(atlasID < 0) {
       if(this.batchAtlases.length === this.maxAtlasesPerBatch) {
-        return;
+        throw new Error('cannot add more atlases to batch');
       }
       this.batchAtlases.push(atlas);
       atlasID = this.batchAtlases.length - 1;
     }
     return atlasID;
-  }
-
-  getIndexArray() {
-    return Array.from({ length: this.maxAtlasesPerBatch }, (v,i) => i);
-  }
-
-  getAtlasInfo(ele, type) {
-    const opts = this.renderTypes.get(type);
-    const bb = opts.getBoundingBox(ele);
-    const atlas = this.getOrCreateAtlas(ele, type, bb);
-    const index = this.getAtlasIndexForBatch(atlas);
-    if(index === undefined) {
-      return undefined; // batch is full
-    }
-    const styleKey = opts.getKey(ele);
-    const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
-    // This object may be passed back to setTransformMatrix()
-    return { index, tex1, tex2, bb };
-  }
-
-  getDebugInfo() {
-    const debugInfo = [];
-    for(let [ name, collection ] of this.collections) {
-      const { keyCount, atlasCount } = collection.getCounts();
-      debugInfo.push({ type: name, keyCount, atlasCount });
-    }
-    return debugInfo;
   }
 
 }

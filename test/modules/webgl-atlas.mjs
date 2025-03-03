@@ -140,7 +140,6 @@ describe('webgl-atlas', function() {
     const am = createAtlasManager(100, 2);
 
     expect(am.getAtlasSize()).to.equal(100);
-    expect(am.getMaxAtlasesPerBatch()).to.equal(2);
 
     // Configure the AtlasManager
     am.addAtlasCollection('node',  { texRows: 4  }); // texture height 25
@@ -195,18 +194,9 @@ describe('webgl-atlas', function() {
     expect(atlasLabel).to.not.equal(atlasUnderlay);
     expect(atlasLabel).to.not.equal(atlasBody);
     
-    // Start a draw batch, atlas index becomes a fragment shader texture unit
-    am.startBatch();
-    expect(am.getAtlasCount()).to.equal(0);
-    expect(am.getAtlasIndexForBatch(atlasUnderlay)).to.equal(0);
-    expect(am.getAtlasIndexForBatch(atlasBody)).to.equal(0);
-    expect(am.getAtlasIndexForBatch(atlasLabel)).to.equal(1);
-    expect(am.getAtlasCount()).to.equal(2);
-    expect(am.canAddToCurrentBatch('b1', 'bogus')).to.be.false;
-
     // Check things are correct
     const ai = am.getAtlasInfo('n1', 'node-body');
-    expect(ai.index).to.equal(0);
+    expect(ai.atlas).to.not.be.undefined;
     expect(ai.bb).to.eql({ h:50, w:50 });
     expect(ai.tex1).to.eql({ x: 25, y: 0, w: 25, h: 25 });
     expect(ai.tex2).to.eql({ x: 50, y: 0, w: 0,  h: 25 });

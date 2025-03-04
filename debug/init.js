@@ -20,7 +20,7 @@ var cy, defaultSty, options;
           'border-width': 5,
           'border-opacity': 0.25,
           'border-color': 'cyan',
-          'border-position': 'inside'
+          'border-position': 'inside',
         })
       .selector('node#c')
         .style({
@@ -31,13 +31,30 @@ var cy, defaultSty, options;
           "label": "c has a long label over-\u200bflowing its max    width,\n but spa\u200bces are ke\u200bpt",
           "text-max-width": 100,
           "text-wrap": "wrap",
+          "text-events": "yes",
+          "box-select-labels": "yes",
+        })
+      .selector('node#d')
+        .style({
+          "label": "d has a long label over-\u200bflowing and its rotated by 45deg",
+          "text-max-width": 100,
+          "text-wrap": "wrap",
+          "text-events": "yes",
+          "box-select-labels": "yes",
+          "text-rotation": "45deg",
         })
       .selector('node#b')
         .style({
           'shape': 'round-hexagon',
           'width': 60,
           'height': 60,
-          'corner-radius': 10
+          'corner-radius': 10,
+          "label": "b has a long label over-\u200bflowing and its rotated by 38deg",
+          "text-max-width": 100,
+          "text-wrap": "wrap",
+          "text-events": "yes",
+          "box-select-labels": "yes",
+          "text-rotation": "38deg",
         })
       .selector('node#c')
         .style({

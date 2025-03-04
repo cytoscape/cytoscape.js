@@ -22847,32 +22847,27 @@ BRp$e.getAllInBox = function (x1, y1, x2, y2) {
       var node = ele;
       var eventsEnabled = node.pstyle('text-events').strValue === 'yes';
       var boxSelectEnabled = node.pstyle('box-select-labels').strValue === 'yes';
-      var labelRotated = preprop(node._private.rscratch, 'labelAngle', '');
       var nodeBb = node.boundingBox({
         includeNodes: true,
         includeEdges: false,
         includeLabels: boxSelectEnabled && eventsEnabled
       });
       if (boundingBoxesIntersect(boxBb, nodeBb)) {
-        if (labelRotated > 0) {
-          var rotatedLabelBox = getRotatedLabelBox(node);
-          var selectionBox = [{
-            x: boxBb.x1,
-            y: boxBb.y1
-          }, {
-            x: boxBb.x2,
-            y: boxBb.y1
-          }, {
-            x: boxBb.x2,
-            y: boxBb.y2
-          }, {
-            x: boxBb.x1,
-            y: boxBb.y2
-          }];
-          if (satPolygonIntersection(rotatedLabelBox, selectionBox)) {
-            box.push(node);
-          }
-        } else if (!boundingBoxInBoundingBox(nodeBb, boxBb)) {
+        var rotatedLabelBox = getRotatedLabelBox(node);
+        var selectionBox = [{
+          x: boxBb.x1,
+          y: boxBb.y1
+        }, {
+          x: boxBb.x2,
+          y: boxBb.y1
+        }, {
+          x: boxBb.x2,
+          y: boxBb.y2
+        }, {
+          x: boxBb.x1,
+          y: boxBb.y2
+        }];
+        if (satPolygonIntersection(rotatedLabelBox, selectionBox)) {
           box.push(node);
         }
       }

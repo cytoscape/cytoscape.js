@@ -1,6 +1,6 @@
 import * as util from './webgl-util.mjs';
 import { mat3 } from 'gl-matrix';
-import { RENDER_TARGET } from './defaults.mjs';
+import { RENDER_TARGET, TEX_PICKING_MODE } from './defaults.mjs';
 import { AtlasManager } from './atlas.mjs';
 
 
@@ -348,9 +348,21 @@ export class ElementDrawingWebGL {
     if(!ele.visible()) {
       return;
     }
-    if(!atlasManager.getRenderTypeOpts(type).isVisible(ele)) {
+    const opts = atlasManager.getRenderTypeOpts(type);
+    if(!opts.isVisible(ele)) {
       return;
     }
+
+    if(this.renderTarget.picking && opts.getTexPickingMode) {
+      const mode = opts.getTexPickingMode(ele);
+      if(mode === TEX_PICKING_MODE.IGNORE) {
+        return;
+      } else if(mode == TEX_PICKING_MODE.USE_BB) {
+        this.drawSimpleRectangle(ele, eleIndex, type, true);
+        return;
+      }
+    }
+
     if(!atlasManager.canAddToCurrentBatch(ele, type)) {
       this.endBatch(); // draws then starts a new batch
     }
@@ -404,7 +416,7 @@ export class ElementDrawingWebGL {
   }
 
 
-  drawSimpleRectangle(ele, eleIndex, type) {
+  drawSimpleRectangle(ele, eleIndex, type, picking) {
     if(!ele.visible()) {
       return;
     }
@@ -416,8 +428,8 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
-    const color = ele.pstyle('background-color').value;
-    const opacity = ele.pstyle('background-opacity').value;
+    const color = picking ? [0,0,0] : ele.pstyle('background-color').value;
+    const opacity = picking ? 1 : ele.pstyle('background-opacity').value;
 
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);

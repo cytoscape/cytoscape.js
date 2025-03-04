@@ -10490,14 +10490,10 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     }
 
     // shift by margin and expand by outline and border
-    var leftPad = marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-    var rightPad = marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
-    var topPad = marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-    var botPad = marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
-    lx1 += leftPad;
-    lx2 += rightPad;
-    ly1 += topPad;
-    ly2 += botPad;
+    lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+    lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+    ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+    ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
 
     // always store the unrotated label bounds separately
     var bbPrefix = prefix || 'main';
@@ -10509,10 +10505,6 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     bb.y2 = ly2;
     bb.w = lx2 - lx1;
     bb.h = ly2 - ly1;
-    bb.leftPad = leftPad;
-    bb.rightPad = rightPad;
-    bb.topPad = topPad;
-    bb.botPad = botPad;
     var isAutorotate = isEdge && rotation.strValue === 'autorotate';
     var isPfValue = rotation.pfValue != null && rotation.pfValue !== 0;
     if (isAutorotate || isPfValue) {
@@ -10904,7 +10896,7 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var isDirty = function isDirty(ele) {
     return ele._private.bbCache == null || ele._private.styleDirty;
   };
-  var needRecalc = !useCache || isDirty(ele) || isEdge && (isDirty(ele.source()) || isDirty(ele.target()));
+  var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
   if (needRecalc) {
     if (!isPosKeySame) {
       ele.recalculateRenderedStyle(useCache);
@@ -15734,7 +15726,9 @@ styfn$8.checkBoundsTrigger = function (ele, name, fromValue, toValue) {
     // only for beziers -- so performance of other edges isn't affected
     prop.triggersBoundsOfParallelBeziers && name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) {
       ele.parallelEdges().forEach(function (pllEdge) {
-        pllEdge.dirtyBoundingBoxCache();
+        if (pllEdge.isBundledBezier()) {
+          pllEdge.dirtyBoundingBoxCache();
+        }
       });
     }
     if (prop.triggersBoundsOfConnectedEdges && name === 'display' && (fromValue === 'none' || toValue === 'none')) {
@@ -17094,12 +17088,6 @@ var styfn$2 = {};
     name: 'line-dash-offset',
     type: t.number
   }, {
-    name: 'line-outline-width',
-    type: t.size
-  }, {
-    name: 'line-outline-color',
-    type: t.color
-  }, {
     name: 'line-gradient-stop-colors',
     type: t.colors
   }, {
@@ -17557,8 +17545,6 @@ styfn$2.getDefaultProperties = function () {
     'line-fill': 'solid',
     'line-cap': 'butt',
     'line-opacity': 1,
-    'line-outline-width': 0,
-    'line-outline-color': '#000',
     'line-gradient-stop-colors': '#999',
     'line-gradient-stop-positions': '0%',
     'control-point-step-size': 40,
@@ -23155,9 +23141,7 @@ BRp$c.findEdgeControlPoints = function (edges) {
           hasUnbundled: pairInfo.hasUnbundled,
           eles: pairInfo.eles,
           srcPos: tgtPos,
-          srcRs: tgtRs,
           tgtPos: srcPos,
-          tgtRs: srcRs,
           srcW: tgtW,
           srcH: tgtH,
           tgtW: srcW,
@@ -23244,17 +23228,17 @@ function getPts(pts) {
 }
 BRp$c.getSegmentPoints = function (edge) {
   var rs = edge[0]._private.rscratch;
-  this.recalculateRenderedStyle(edge);
   var type = rs.edgeType;
   if (type === 'segments') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.segpts);
   }
 };
 BRp$c.getControlPoints = function (edge) {
   var rs = edge[0]._private.rscratch;
-  this.recalculateRenderedStyle(edge);
   var type = rs.edgeType;
   if (type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.ctrlpts);
   }
 };
@@ -23558,6 +23542,8 @@ BRp$a.storeEdgeProjections = function (edge) {
 BRp$a.recalculateEdgeProjections = function (edges) {
   this.findEdgeControlPoints(edges);
 };
+
+/* global document */
 
 var BRp$9 = {};
 BRp$9.recalculateNodeLabelProjection = function (node) {
@@ -23877,8 +23863,8 @@ BRp$9.getLabelText = function (ele, prefix) {
     var overflow = ele.pstyle('text-overflow-wrap').value;
     var overflowAny = overflow === 'anywhere';
     var wrappedLines = [];
-    var separatorRegex = /[\s\u200b]+|$/g; // Include end of string to add last word
-
+    var wordsRegex = /[\s\u200b]+/;
+    var wordSeparator = overflowAny ? '' : ' ';
     for (var l = 0; l < lines.length; l++) {
       var line = lines[l];
       var lineDims = this.calculateLabelDimensions(ele, line);
@@ -23889,39 +23875,26 @@ BRp$9.getLabelText = function (ele, prefix) {
       }
       if (lineW > maxW) {
         // line is too long
-        var separatorMatches = line.matchAll(separatorRegex);
+        var words = line.split(wordsRegex);
         var subline = '';
-        var previousIndex = 0;
-        // Add fake match
-        var _iterator = _createForOfIteratorHelper(separatorMatches),
-          _step;
-        try {
-          for (_iterator.s(); !(_step = _iterator.n()).done;) {
-            var separatorMatch = _step.value;
-            var wordSeparator = separatorMatch[0];
-            var word = line.substring(previousIndex, separatorMatch.index);
-            previousIndex = separatorMatch.index + wordSeparator.length;
-            var testLine = subline.length === 0 ? word : subline + word + wordSeparator;
-            var testDims = this.calculateLabelDimensions(ele, testLine);
-            var testW = testDims.width;
-            if (testW <= maxW) {
-              // word fits on current line
-              subline += word + wordSeparator;
-            } else {
-              // word starts new line
-              if (subline) {
-                wrappedLines.push(subline);
-              }
-              subline = word + wordSeparator;
+        for (var w = 0; w < words.length; w++) {
+          var word = words[w];
+          var testLine = subline.length === 0 ? word : subline + wordSeparator + word;
+          var testDims = this.calculateLabelDimensions(ele, testLine);
+          var testW = testDims.width;
+          if (testW <= maxW) {
+            // word fits on current line
+            subline += word + wordSeparator;
+          } else {
+            // word starts new line
+            if (subline) {
+              wrappedLines.push(subline);
             }
+            subline = word + wordSeparator;
           }
-
-          // if there's remaining text, put it in a wrapped line
-        } catch (err) {
-          _iterator.e(err);
-        } finally {
-          _iterator.f();
         }
+
+        // if there's remaining text, put it in a wrapped line
         if (!subline.match(/^[\s\u200b]+$/)) {
           wrappedLines.push(subline);
         }
@@ -23983,8 +23956,6 @@ BRp$9.getLabelJustification = function (ele) {
 };
 BRp$9.calculateLabelDimensions = function (ele, text) {
   var r = this;
-  var containerWindow = r.cy.window();
-  var document = containerWindow.document;
   var cacheKey = hashString(text, ele._private.labelDimsKey);
   var cache = r.labelDimCache || (r.labelDimCache = []);
   var existingVal = cache[cacheKey];
@@ -24309,23 +24280,11 @@ BRp$4.getCachedImage = function (url, crossOrigin, onLoad) {
 
 var BRp$3 = {};
 
-/* global document, ResizeObserver, MutationObserver */
+/* global document, window, ResizeObserver, MutationObserver */
 
 BRp$3.registerBinding = function (target, event, handler, useCapture) {
   // eslint-disable-line no-unused-vars
   var args = Array.prototype.slice.apply(arguments, [1]); // copy
-
-  if (Array.isArray(target)) {
-    var res = [];
-    for (var i = 0; i < target.length; i++) {
-      var t = target[i];
-      if (t !== undefined) {
-        var b = this.binder(t);
-        res.push(b.on.apply(b, args));
-      }
-    }
-    return res;
-  }
   var b = this.binder(target);
   return b.on.apply(b, args);
 };
@@ -24384,13 +24343,6 @@ BRp$3.load = function () {
   var containerWindow = r.cy.window();
   var isSelected = function isSelected(ele) {
     return ele.selected();
-  };
-  var getShadowRoot = function getShadowRoot(element) {
-    var rootNode = element.getRootNode();
-    // Check if the root node is a shadow root
-    if (rootNode && rootNode.nodeType === 11 && rootNode.host !== undefined) {
-      return rootNode;
-    }
   };
   var triggerEvents = function triggerEvents(target, names, e, position) {
     if (target == null) {
@@ -24662,11 +24614,6 @@ BRp$3.load = function () {
     if (!eventInContainer(e)) {
       return;
     }
-
-    // during left mouse button gestures, ignore other buttons
-    if (r.hoverData.which === 1 && e.which !== 1) {
-      return;
-    }
     e.preventDefault();
     blurActiveDomElement();
     r.hoverData.capture = true;
@@ -24805,8 +24752,7 @@ BRp$3.load = function () {
     select[0] = select[2] = pos[0];
     select[1] = select[3] = pos[1];
   }, false);
-  var shadowRoot = getShadowRoot(r.container);
-  r.registerBinding([containerWindow, shadowRoot], 'mousemove', function mousemoveHandler(e) {
+  r.registerBinding(containerWindow, 'mousemove', function mousemoveHandler(e) {
     // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
     if (!capture && !eventInContainer(e)) {
@@ -25052,10 +24998,6 @@ BRp$3.load = function () {
   var clickTimeout, didDoubleClick, prevClickTimeStamp;
   r.registerBinding(containerWindow, 'mouseup', function mouseupHandler(e) {
     // eslint-disable-line no-undef
-    // during left mouse button gestures, ignore other buttons
-    if (r.hoverData.which === 1 && e.which !== 1 && r.hoverData.capture) {
-      return;
-    }
     var capture = r.hoverData.capture;
     if (!capture) {
       return;
@@ -25242,7 +25184,6 @@ BRp$3.load = function () {
     r.hoverData.dragDelta = [];
     r.hoverData.mdownPos = null;
     r.hoverData.mdownGPos = null;
-    r.hoverData.which = null;
   }, false);
   var wheelHandler = function wheelHandler(e) {
     if (r.scrollingPage) {
@@ -25555,7 +25496,7 @@ BRp$3.load = function () {
     }
   }, false);
   var touchmoveHandler;
-  r.registerBinding(containerWindow, 'touchmove', touchmoveHandler = function touchmoveHandler(e) {
+  r.registerBinding(window, 'touchmove', touchmoveHandler = function touchmoveHandler(e) {
     // eslint-disable-line no-undef
     var capture = r.touchData.capture;
     if (!capture && !eventInContainer(e)) {
@@ -27690,7 +27631,6 @@ var deqFastCost = 0.9; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
 var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
-var maxLayerDim = 32767; // maximum size for the width/height of layer canvases
 var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requests (generally faster and cheaper in the longterm)
 
 // var log = function(){ console.log.apply( console, arguments ); };
@@ -27831,12 +27771,7 @@ LTCp.getLayers = function (eles, pxRatio, lvl) {
     opts = opts || {};
     var after = opts.after;
     getBb();
-    var w = Math.ceil(bb.w * scale);
-    var h = Math.ceil(bb.h * scale);
-    if (w > maxLayerDim || h > maxLayerDim) {
-      return null;
-    }
-    var area = w * h;
+    var area = bb.w * scale * (bb.h * scale);
     if (area > maxLayerArea) {
       return null;
     }
@@ -28518,8 +28453,6 @@ CRp$8.drawEdge = function (context, edge, shiftToOriginWithBb) {
   var lineStyle = edge.pstyle('line-style').value;
   var edgeWidth = edge.pstyle('width').pfValue;
   var lineCap = edge.pstyle('line-cap').value;
-  var lineOutlineWidth = edge.pstyle('line-outline-width').value;
-  var lineOutlineColor = edge.pstyle('line-outline-color').value;
   var effectiveLineOpacity = opacity * lineOpacity;
   // separate arrow opacity would require arrow-opacity property
   var effectiveArrowOpacity = opacity * lineOpacity;
@@ -28532,25 +28465,6 @@ CRp$8.drawEdge = function (context, edge, shiftToOriginWithBb) {
       context.lineWidth = edgeWidth;
       context.lineCap = lineCap;
       r.eleStrokeStyle(context, edge, strokeOpacity);
-      r.drawEdgePath(edge, context, rs.allpts, lineStyle);
-      context.lineCap = 'butt'; // reset for other drawing functions
-    }
-  };
-
-  var drawLineOutline = function drawLineOutline() {
-    var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : effectiveLineOpacity;
-    context.lineWidth = edgeWidth + lineOutlineWidth;
-    context.lineCap = lineCap;
-    if (lineOutlineWidth > 0) {
-      r.colorStrokeStyle(context, lineOutlineColor[0], lineOutlineColor[1], lineOutlineColor[2], strokeOpacity);
-    } else {
-      // do not draw any lineOutline
-      context.lineCap = 'butt'; // reset for other drawing functions
-      return;
-    }
-    if (curveStyle === 'straight-triangle') {
-      r.drawEdgeTrianglePath(edge, context, rs.allpts);
-    } else {
       r.drawEdgePath(edge, context, rs.allpts, lineStyle);
       context.lineCap = 'butt'; // reset for other drawing functions
     }
@@ -28586,8 +28500,6 @@ CRp$8.drawEdge = function (context, edge, shiftToOriginWithBb) {
     drawLine(effectiveGhostOpacity);
     drawArrows(effectiveGhostOpacity);
     context.translate(-gx, -gy);
-  } else {
-    drawLineOutline();
   }
   drawUnderlay();
   drawLine();
@@ -29884,9 +29796,8 @@ CRp$4.getPixelRatio = function () {
   if (this.forcedPixelRatio != null) {
     return this.forcedPixelRatio;
   }
-  var containerWindow = this.cy.window();
   var backingStore = context.backingStorePixelRatio || context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio || context.msBackingStorePixelRatio || context.oBackingStorePixelRatio || context.backingStorePixelRatio || 1;
-  return (containerWindow.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
+  return (window.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
 };
 
 CRp$4.paintCache = function (context) {
@@ -30732,8 +30643,6 @@ CRp.MOTIONBLUR_BUFFER_NODE = 1;
 CRp.MOTIONBLUR_BUFFER_DRAG = 2;
 function CanvasRenderer(options) {
   var r = this;
-  var containerWindow = r.cy.window();
-  var document = containerWindow.document;
   r.data = {
     canvases: new Array(CRp.CANVAS_LAYERS),
     contexts: new Array(CRp.CANVAS_LAYERS),
@@ -30892,18 +30801,18 @@ function CanvasRenderer(options) {
     if (ele.isNode()) {
       switch (ele.pstyle('text-halign').value) {
         case 'left':
-          p.x = -bb.w - (bb.leftPad || 0);
+          p.x = -bb.w;
           break;
         case 'right':
-          p.x = -(bb.rightPad || 0);
+          p.x = 0;
           break;
       }
       switch (ele.pstyle('text-valign').value) {
         case 'top':
-          p.y = -bb.h - (bb.topPad || 0);
+          p.y = -bb.h;
           break;
         case 'bottom':
-          p.y = -(bb.botPad || 0);
+          p.y = 0;
           break;
       }
     }
@@ -31017,8 +30926,6 @@ CRp.makeOffscreenCanvas = function (width, height) {
   if ((typeof OffscreenCanvas === "undefined" ? "undefined" : _typeof(OffscreenCanvas)) !== ("undefined" )) {
     canvas = new OffscreenCanvas(width, height);
   } else {
-    var containerWindow = this.cy.window();
-    var document = containerWindow.document;
     canvas = document.createElement('canvas'); // eslint-disable-line no-undef
     canvas.width = width;
     canvas.height = height;
@@ -31357,7 +31264,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.30.4";
+var version = "3.29.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

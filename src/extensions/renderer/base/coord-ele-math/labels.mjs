@@ -471,16 +471,6 @@ BRp.calculateLabelDimensions = function( ele, text ){
 
   var document = containerWindow.document;
 
-  let cacheKey = util.hashString( text, ele._private.labelDimsKey );
-
-  let cache = r.labelDimCache || (r.labelDimCache = []);
-
-  let existingVal = cache[ cacheKey ];
-
-  if( existingVal != null ){
-    return existingVal;
-  }
-
   let padding = 0; // add padding around text dims, as the measurement isn't that accurate
   let fStyle = ele.pstyle('font-style').strValue;
   let size = ele.pstyle('font-size').pfValue;
@@ -522,12 +512,11 @@ BRp.calculateLabelDimensions = function( ele, text ){
   width += padding;
   height += padding;
 
-  return ( cache[ cacheKey ] = {
+  return {
     width,
     height
-  } );
+  };
 };
-
 
 BRp.calculateLabelAngle = function( ele, prefix ){
   let _p = ele._private;

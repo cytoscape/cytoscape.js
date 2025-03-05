@@ -10,6 +10,11 @@ export const RENDER_TARGET = {
   PICKING: { name: 'picking', picking: true },
 };
 
+export const TEX_PICKING_MODE = {
+  NORMAL: 0, // render the texture just like in RENDER_TARGET.SCREEN mode
+  IGNORE: 1, // don't render the texture at all
+  USE_BB: 2  // render the bounding box as an opaque rectangle
+}
 
 // Vertex types, used in the shaders so must be ints
 const TEXTURE = 0;
@@ -72,6 +77,7 @@ export class ElementDrawingWebGL {
    * @property { function } getRotationOffset
    * @property { function } isVisible - this is an extra check for visibility in addition to ele.visible()
    * @property { function } getPadding - returns the padding for an element
+   * @property { function } getTexPickingMode - returns a value from the TEX_PICKING_MODE enum
    */
   /**
    * @param { string } typeName
@@ -467,6 +473,17 @@ export class ElementDrawingWebGL {
     if(!this._isVisible(ele, opts)) {
       return;
     }
+
+    if(this.renderTarget.picking && opts.getTexPickingMode) {
+      const mode = opts.getTexPickingMode(ele);
+      if(mode === TEX_PICKING_MODE.IGNORE) {
+        return;
+      } else if(mode == TEX_PICKING_MODE.USE_BB) {
+        this.drawPickingRectangle(ele, eleIndex, type);
+        return;
+      }
+    }
+
     if(this.instanceCount + 1 >= this.maxInstances) {
       this.endBatch(); // make sure there's space for at least two instances, wrapped textures need two instances
     }
@@ -596,6 +613,27 @@ export class ElementDrawingWebGL {
     return { x1, y1, w, h, xOffset };
   }
   
+  drawPickingRectangle(node, eleIndex, type) {
+    const opts = this.atlasManager.getRenderTypeOpts(type);
+    const instance = this.instanceCount;
+
+    this.vertTypeBuffer.getView(instance)[0] = RECTANGLE;
+
+    const indexView = this.indexBuffer.getView(instance);
+    util.indexToVec4(eleIndex, indexView);
+
+    const colorView = this.colorBuffer.getView(instance);
+    util.toWebGLColor([0,0,0], 1, colorView); // opaque, so entire label BB is clickable
+
+    const matrixView = this.transformBuffer.getMatrixView(instance);
+    this.setTransformMatrix(node, matrixView, opts);
+
+    this.simpleCount++;
+    this.instanceCount++;
+    if(this.instanceCount >= this.maxInstances) {
+      this.endBatch();
+    }
+  }
 
   drawNode(node, eleIndex, type) {
     const opts = this.simpleShapeOptions.get(type);

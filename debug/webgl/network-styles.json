@@ -67,7 +67,8 @@
         "background-gradient-stop-colors": "cyan magenta yellow",
         "text-valign": "top",
         "text-rotation": 0.7853981633974483,
-        "label": "n3 - Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod"
+        "label": "n3 - Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod",
+        "text-events": "yes"
       }
     },
     {

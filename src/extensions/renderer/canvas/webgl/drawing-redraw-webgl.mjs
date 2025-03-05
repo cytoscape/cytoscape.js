@@ -1,4 +1,4 @@
-import { ElementDrawingWebGL, RENDER_TARGET } from './drawing-elements-webgl.mjs';
+import { ElementDrawingWebGL, RENDER_TARGET, TEX_PICKING_MODE } from './drawing-elements-webgl.mjs';
 import * as util from './webgl-util.mjs';
 import * as eleTextureCache from '../ele-texture-cache.mjs';
 import { debounce } from '../../../../util/index.mjs';
@@ -35,6 +35,10 @@ CRp.initWebgl = function(opts, fns) {
   const isLayerVisible = (prefix) => (node) => {
     return node.pstyle(`${prefix}-opacity`).value > 0;
   }
+  const getTexPickingMode = (ele) => {
+    const enabled = ele.pstyle('text-events').strValue === 'yes';
+    return enabled ? TEX_PICKING_MODE.USE_BB : TEX_PICKING_MODE.IGNORE;
+  };
 
   r.drawing = new ElementDrawingWebGL(r, gl, opts);
 
@@ -92,6 +96,7 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addTextureAtlasRenderType('label', { // node label or edge mid label
     collection: 'label',
+    getTexPickingMode,
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -103,6 +108,7 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addTextureAtlasRenderType('edge-source-label', {
     collection: 'label',
+    getTexPickingMode,
     getKey: fns.getSourceLabelKey,
     getBoundingBox: fns.getSourceLabelBox,
     drawElement: fns.drawSourceLabel,
@@ -114,6 +120,7 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addTextureAtlasRenderType('edge-target-label', {
     collection: 'label',
+    getTexPickingMode,
     getKey: fns.getTargetLabelKey,
     getBoundingBox: fns.getTargetLabelBox,
     drawElement: fns.drawTargetLabel,
@@ -306,7 +313,7 @@ function drawAtlases(r) {
         const y = canvas.height * row;
     
         context.save();
-        context.scale(scale, scale);
+        // context.scale(scale, scale);
         context.drawImage(canvas, x, y);
         context.strokeStyle = 'black';
         context.rect(x, y, w, h);
@@ -427,23 +434,6 @@ function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
     }
   }
   return Array.from(box);
-}
-
-// TODO: Is constantly checking this actually faster than just rendering a texture?
-// TODO: Maybe this should be cached as a flag on each node.
-// TODO: overlays and underlays could be simple shapes too
-function simpleShape(r, node) {
-  const simple = (
-    node.pstyle('background-fill').value === 'solid' &&
-    node.pstyle('border-width').pfValue === 0 &&
-    node.pstyle('background-image').strValue === 'none'
-  );
-  if(simple) {
-    const shape = node.pstyle('shape').value;
-    if(r.drawing.isSimpleShapeSupported(shape)) {
-      return shape;
-    }
-  }
 }
 
 

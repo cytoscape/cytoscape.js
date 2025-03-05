@@ -1,5 +1,6 @@
 import { ElementDrawingWebGL } from './drawing-elements-webgl.mjs';
-import { RENDER_TARGET, renderDefaults, atlasCollectionDefaults } from './defaults.mjs';
+import { RENDER_TARGET, TEX_PICKING_MODE } from './defaults.mjs';
+import { renderDefaults, atlasCollectionDefaults } from './defaults.mjs';
 import { OverlayUnderlayRenderer } from './drawing-overlay.mjs';
 import * as util from './webgl-util.mjs';
 import * as eleTextureCache from '../ele-texture-cache.mjs';
@@ -34,6 +35,10 @@ CRp.initWebgl = function(opts, fns) {
     const label = ele.pstyle(prop);
     return label && label.value;
   };
+  const getTexPickingMode = (ele) => {
+    const enabled = ele.pstyle('text-events').strValue === 'yes';
+    return enabled ? TEX_PICKING_MODE.USE_BB : TEX_PICKING_MODE.IGNORE;
+  };
 
   r.drawing = new ElementDrawingWebGL(r, gl, opts);
   const our = new OverlayUnderlayRenderer(r);
@@ -55,6 +60,7 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addAtlasRenderType('label', renderDefaults({ // node label or edge mid label
     collection: 'label',
+    getTexPickingMode,
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -84,6 +90,7 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addAtlasRenderType('edge-source-label', renderDefaults({
     collection: 'label',
+    getTexPickingMode,
     getKey: fns.getSourceLabelKey,
     getBoundingBox: fns.getSourceLabelBox,
     drawElement: fns.drawSourceLabel,
@@ -95,6 +102,7 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addAtlasRenderType('edge-target-label', renderDefaults({
     collection: 'label',
+    getTexPickingMode,
     getKey: fns.getTargetLabelKey,
     getBoundingBox: fns.getTargetLabelBox,
     drawElement: fns.drawTargetLabel,

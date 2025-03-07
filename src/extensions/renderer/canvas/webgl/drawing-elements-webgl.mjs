@@ -76,7 +76,6 @@ export class ElementDrawingWebGL {
    * @property { function } getRotationPoint
    * @property { function } getRotationOffset
    * @property { function } isVisible - this is an extra check for visibility in addition to ele.visible()
-   * @property { function } getPadding - returns the padding for an element
    * @property { function } getTexPickingMode - returns a value from the TEX_PICKING_MODE enum
    */
   /**
@@ -535,9 +534,7 @@ export class ElementDrawingWebGL {
    */
   setTransformMatrix(ele, matrix, opts, atlasInfo, first=true) {
     let padding = 0;
-    if(opts.getPadding) {
-      padding = opts.getPadding(ele);
-    } else if(opts.shapeProps) {
+    if(opts.shapeProps && opts.shapeProps.padding) {
       padding = ele.pstyle(opts.shapeProps.padding).pfValue;
     } 
     

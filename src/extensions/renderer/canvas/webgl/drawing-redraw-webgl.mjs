@@ -39,6 +39,13 @@ CRp.initWebgl = function(opts, fns) {
     const enabled = ele.pstyle('text-events').strValue === 'yes';
     return enabled ? TEX_PICKING_MODE.USE_BB : TEX_PICKING_MODE.IGNORE;
   };
+  const getBBForSimpleShape = (node) => { // this only works for node body/underlay/overlay, not for labels
+    const padding = node.padding();
+    const { x, y } = node.position();
+    const w = node.width() + 2 * padding;
+    const h = node.height() + 2 * padding;
+    return { w, h, x1: x - w/2, y1: y - h/2 };
+  };
 
   r.drawing = new ElementDrawingWebGL(r, gl, opts);
 
@@ -55,23 +62,21 @@ CRp.initWebgl = function(opts, fns) {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-    getPadding: n => n.padding(),
   });
 
   r.drawing.addSimpleShapeRenderType('node-body', {
-    getBoundingBox: fns.getElementBox,
+    getBoundingBox: getBBForSimpleShape,
     isSimple: n => util.isSimpleShape(n),
     shapeProps: {
       shape:   'shape',
       color:   'background-color',
       opacity: 'background-opacity',
-      padding: 'padding',
       radius:  'corner-radius',
     }
   });
 
   r.drawing.addSimpleShapeRenderType('node-overlay', {
-    getBoundingBox: fns.getElementBox,
+    getBoundingBox: getBBForSimpleShape,
     isVisible: isLayerVisible('overlay'),
     shapeProps: {
       shape:   'overlay-shape',
@@ -83,7 +88,7 @@ CRp.initWebgl = function(opts, fns) {
   });
 
   r.drawing.addSimpleShapeRenderType('node-underlay', {
-    getBoundingBox: fns.getElementBox,
+    getBoundingBox: getBBForSimpleShape,
     isVisible: isLayerVisible('underlay'),
     shapeProps: {
       shape:   'underlay-shape',

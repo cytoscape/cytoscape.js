@@ -155,21 +155,25 @@ export class ElementDrawingWebGL {
       // for edges
       in vec4 aPointAPointB;
       in vec4 aPointCPointD;
-      in float aLineWidth;
+      in float aLineWidth; // also used for node border width
 
       // simple shapes
       in vec4 aCornerRadius; // for round-rectangle [top-right, bottom-right, top-left, bottom-left]
       in vec4 aColor; // also used for edges
+      in vec4 aBorderColor; // aLineWidth is used for border width
 
       out vec2 vTexCoord;
       out vec4 vColor;
-      out vec2 vPosition; // original untransformed coordinate
+      out vec2 vPosition;
 
       flat out int vAtlasId;
       flat out vec4 vIndex;
       flat out int vVertType;
-      flat out float vAspectRatio;
+      flat out vec2 vTopRight;
+      flat out vec2 vBotLeft;
       flat out vec4 vCornerRadius;
+      flat out vec4 vBorderColor;
+      flat out float vBorderWidth;
 
       void main(void) {
         int vid = gl_VertexID;
@@ -196,13 +200,14 @@ export class ElementDrawingWebGL {
         else if(aVertType == ${RECTANGLE} || aVertType == ${ELLIPSE} 
              || aVertType == ${ROUND_RECTANGLE} || aVertType == ${BOTTOM_ROUND_RECTANGLE}) {
 
-          vec3 botLeft  = aTransform * vec3(0, 0, 1);
-          vec3 topRight = aTransform * vec3(1, 1, 1);
-          vAspectRatio = (topRight.x - botLeft.x) / (topRight.y - botLeft.y);
-          
+          vBotLeft  = (aTransform * vec3(0, 0, 1)).xy; // flat
+          vTopRight = (aTransform * vec3(1, 1, 1)).xy; // flat
+          vPosition = (aTransform * vec3(position, 1)).xy; // interpolated
+
           vColor = aColor;
-          vPosition = aPosition;
           vCornerRadius = aCornerRadius;
+          vBorderColor = aBorderColor;
+          vBorderWidth = aLineWidth;
 
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
@@ -301,17 +306,21 @@ export class ElementDrawingWebGL {
 
       in vec2 vTexCoord;
       in vec4 vColor;
-      in vec2 vPosition; // untransformed position, inside unit square
+      in vec2 vPosition; // model coordinates
 
       flat in int vAtlasId;
       flat in vec4 vIndex;
       flat in int vVertType;
-      flat in float vAspectRatio;
+      flat in vec2 vTopRight;
+      flat in vec2 vBotLeft;
       flat in vec4 vCornerRadius;
+      flat in vec4 vBorderColor;
+      flat in float vBorderWidth;
 
       out vec4 outColor;
 
       ${sdf.circleSDF}
+      ${sdf.rectangleSDF}
       ${sdf.roundRectangleSDF}
       ${sdf.ellipseSDF}
 
@@ -324,27 +333,36 @@ export class ElementDrawingWebGL {
           // mimics how canvas renderer uses context.globalCompositeOperation = 'destination-out';
           outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
           outColor.a = 1.0; // make opaque, masks out line under arrow
-        } 
-        else if(vVertType == ${ELLIPSE} || vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) { // use SDF
-          vec2 p = vPosition - vec2(0.5); // translate unit square so (0,0) is at center
-          p.x = p.x * vAspectRatio; // stretch unit square horizontally to fill
+        }
+        else if(vVertType == ${RECTANGLE} && vBorderWidth == 0.0) { // simple rectangle with no border
+          outColor = vColor; // unit square is already transformed to a rectangle, nothing else needs to be done
+        }
+        else if(vVertType == ${RECTANGLE} || vVertType == ${ELLIPSE} 
+          || vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) { // use SDF
+
+          float w = vTopRight.x - vBotLeft.x;
+          float h = vTopRight.y - vBotLeft.y;
+          vec2 b = vec2(w/2.0, h/2.0); // half width/height
+          vec2 p = vPosition - vec2(vTopRight.x - b[0], vTopRight.y - b[1]); // translate to center
 
           float d; // signed distance
-          if(vVertType == ${ELLIPSE}) {
-            if(vAspectRatio == 1.0) {
-              d = circleSDF(p, 0.5); // faster
-            } else {
-              vec2 ab = vec2(0.5 * vAspectRatio, 0.5); // horizontal radius, vertical radius
-              d = ellipseSDF(p, ab);
-            }
+          if(vVertType == ${RECTANGLE}) {
+            d = rectangleSDF(p, b);
+          } else if(vVertType == ${ELLIPSE} && w == h) {
+            d = circleSDF(p, 0.5); // probably faster
+          } else if(vVertType == ${ELLIPSE}) {
+            d = ellipseSDF(p, b);
           } else {
             vec4 cr = vCornerRadius.wzyx; // swizzle because canvas Y axis is opposite to webgl (I think)
-            vec2 b = vec2(0.5 * vAspectRatio, 0.5); // half width/height
             d = roundRectangleSDF(p, b, cr);
           }
 
           if(d <= 0.0) { // inside shape
-            outColor = vColor; 
+            // if(d >= -vBorderWidth) {
+            //   outColor = vBorderColor;
+            // } else {
+              outColor = vColor; 
+            // }
           } else {
             discard;
           }
@@ -379,6 +397,7 @@ export class ElementDrawingWebGL {
     program.aLineWidth      = gl.getAttribLocation(program, 'aLineWidth');
     program.aColor          = gl.getAttribLocation(program, 'aColor');
     program.aCornerRadius   = gl.getAttribLocation(program, 'aCornerRadius');
+    program.aBorderColor    = gl.getAttribLocation(program, 'aBorderColor');
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
@@ -421,6 +440,7 @@ export class ElementDrawingWebGL {
     this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
     this.colorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aColor);
     this.cornerRadiusBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aCornerRadius);
+    this.borderColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aBorderColor);
 
     gl.bindVertexArray(null);
     return vao;
@@ -643,6 +663,7 @@ export class ElementDrawingWebGL {
       return;
     }
     
+    // render a "simple shape" using SDF
     const props = opts.shapeProps;
     const instance = this.instanceCount;
 
@@ -652,7 +673,7 @@ export class ElementDrawingWebGL {
     if(vertType === ROUND_RECTANGLE || vertType === BOTTOM_ROUND_RECTANGLE) { // get corner radius
       const bb = opts.getBoundingBox(node);
       const radiusVal = this._getCornerRadius(node, props.radius, bb);
-      const radius = radiusVal / bb.h; // scale to unit square (not sure if correct)
+      const radius = radiusVal;// / bb.h; // scale to unit square (not sure if correct)
       
       const radiusView = this.cornerRadiusBuffer.getView(instance);
       radiusView[0] = radius; // top-right
@@ -672,6 +693,12 @@ export class ElementDrawingWebGL {
     const opacity = node.pstyle(props.opacity).value;
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
+
+    const borderColorView = this.borderColorBuffer.getView(instance);
+    util.toWebGLColor([0,0,0], 1, borderColorView);
+
+    const lineWidth = this.lineWidthBuffer.getView(instance);
+    lineWidth[0] = 0.03;
 
     const matrixView = this.transformBuffer.getMatrixView(instance);
     this.setTransformMatrix(node, matrixView, opts);

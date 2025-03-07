@@ -14,6 +14,17 @@ export const circleSDF = `
 /**
  * param p - point
  * param b - b.x = half width, b.y = half height
+ */
+export const rectangleSDF = `
+  float rectangleSDF(vec2 p, vec2 b) {
+    vec2 d = abs(p)-b;
+    return distance(vec2(0),max(d,0.0)) + min(max(d.x,d.y),0.0);
+  }
+`;
+
+/**
+ * param p - point
+ * param b - b.x = half width, b.y = half height
  * param cr - vector of corner radiuses
  */
 export const roundRectangleSDF = `

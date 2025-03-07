@@ -299,6 +299,17 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
   let _p = ele._private;
 
   let text = this.getLabelText( ele, prefix );
+
+  let cacheKey = util.hashString( text, ele._private.labelDimsKey );
+
+  // save recalc if the label is the same as before
+  if( util.getPrefixedProperty( _p.rscratch, 'prefixedLabelDimsKey', prefix ) === cacheKey ){
+    return; // then the label dimensions + text are the same
+  }
+
+  // save the key
+  util.setPrefixedProperty( _p.rscratch, 'prefixedLabelDimsKey', prefix, cacheKey );
+
   let labelDims = this.calculateLabelDimensions( ele, text );
   let lineHeight = ele.pstyle('line-height').pfValue;
   let textWrap = ele.pstyle('text-wrap').strValue;
@@ -471,16 +482,6 @@ BRp.calculateLabelDimensions = function( ele, text ){
 
   var document = containerWindow.document;
 
-  let cacheKey = util.hashString( text, ele._private.labelDimsKey );
-
-  let cache = r.labelDimCache || (r.labelDimCache = []);
-
-  let existingVal = cache[ cacheKey ];
-
-  if( existingVal != null ){
-    return existingVal;
-  }
-
   let padding = 0; // add padding around text dims, as the measurement isn't that accurate
   let fStyle = ele.pstyle('font-style').strValue;
   let size = ele.pstyle('font-size').pfValue;
@@ -522,12 +523,11 @@ BRp.calculateLabelDimensions = function( ele, text ){
   width += padding;
   height += padding;
 
-  return ( cache[ cacheKey ] = {
+  return {
     width,
     height
-  } );
+  };
 };
-
 
 BRp.calculateLabelAngle = function( ele, prefix ){
   let _p = ele._private;

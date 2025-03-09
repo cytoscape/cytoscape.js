@@ -324,14 +324,20 @@ export class ElementDrawingWebGL {
       ${sdf.roundRectangleSDF}
       ${sdf.ellipseSDF}
 
+      vec4 blend(vec4 top, vec4 bot) { // with premultiplied alpha
+        return vec4( 
+          top.rgb + (bot.rgb * (1.0 - top.a)),
+          top.a   + (bot.a   * (1.0 - top.a)) 
+        );
+      }
+
       void main(void) {
         if(vVertType == ${TEXTURE}) {
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
         } 
         else if(vVertType == ${EDGE_ARROW}) {
-          // blend arrow color with background (using premultiplied alpha)
           // mimics how canvas renderer uses context.globalCompositeOperation = 'destination-out';
-          outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
+          outColor = blend(vColor, uBGColor);
           outColor.a = 1.0; // make opaque, masks out line under arrow
         }
         else if(vVertType == ${RECTANGLE} && vBorderWidth == 0.0) { // simple rectangle with no border
@@ -359,7 +365,7 @@ export class ElementDrawingWebGL {
 
           if(d <= 0.0) { // inside shape
             if(d >= -vBorderWidth) {
-              outColor = vBorderColor;
+              outColor = blend(vBorderColor, vColor);
             } else {
               outColor = vColor; 
             }

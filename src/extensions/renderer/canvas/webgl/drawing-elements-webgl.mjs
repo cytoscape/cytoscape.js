@@ -101,9 +101,7 @@ export class ElementDrawingWebGL {
    * @property { string } opacity
    * @property { string } padding
    * @property { string } radius
-   * @property { string } borderColor
-   * @property { string } borderOpacity
-   * @property { string } borderWidth
+   * @property { boolean } border
   */
   /**
    * @param { string } typeName
@@ -158,7 +156,7 @@ export class ElementDrawingWebGL {
       // for edges
       in vec4 aPointAPointB;
       in vec4 aPointCPointD;
-      in float aLineWidth; // also used for node border width
+      in vec2 aLineWidth; // also used for node border width
 
       // simple shapes
       in vec4 aCornerRadius; // for round-rectangle [top-right, bottom-right, top-left, bottom-left]
@@ -176,7 +174,7 @@ export class ElementDrawingWebGL {
       flat out vec2 vBotLeft;
       flat out vec4 vCornerRadius;
       flat out vec4 vBorderColor;
-      flat out float vBorderWidth;
+      flat out vec2 vBorderWidth;
 
       void main(void) {
         int vid = gl_VertexID;
@@ -223,7 +221,7 @@ export class ElementDrawingWebGL {
 
           vec2 xBasis = target - source;
           vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
-          vec2 point = source + xBasis * position.x + yBasis * aLineWidth * position.y;
+          vec2 point = source + xBasis * position.x + yBasis * aLineWidth[0] * position.y;
 
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
           vColor = aColor;
@@ -261,7 +259,7 @@ export class ElementDrawingWebGL {
 
           // Determine the bend direction.
           float sigma = sign(dot(p01 + p21, normal));
-          float width = aLineWidth;
+          float width = aLineWidth[0];
 
           if(sign(pos.y) == -sigma) {
             // This is an intersecting vertex. Adjust the position so that there's no overlap.
@@ -318,7 +316,7 @@ export class ElementDrawingWebGL {
       flat in vec2 vBotLeft;
       flat in vec4 vCornerRadius;
       flat in vec4 vBorderColor;
-      flat in float vBorderWidth;
+      flat in vec2 vBorderWidth;
 
       out vec4 outColor;
 
@@ -343,22 +341,24 @@ export class ElementDrawingWebGL {
           outColor = blend(vColor, uBGColor);
           outColor.a = 1.0; // make opaque, masks out line under arrow
         }
-        else if(vVertType == ${RECTANGLE} && vBorderWidth == 0.0) { // simple rectangle with no border
+        else if(vVertType == ${RECTANGLE} && vBorderWidth == vec2(0.0)) { // simple rectangle with no border
           outColor = vColor; // unit square is already transformed to a rectangle, nothing else needs to be done
         }
         else if(vVertType == ${RECTANGLE} || vVertType == ${ELLIPSE} 
           || vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) { // use SDF
 
-          float w = vTopRight.x - vBotLeft.x;
-          float h = vTopRight.y - vBotLeft.y;
+          float outerBorder = vBorderWidth[0];
+          float innerBorder = vBorderWidth[1];
+          float w = vTopRight.x - vBotLeft.x - outerBorder * 2.0;
+          float h = vTopRight.y - vBotLeft.y - outerBorder * 2.0;
           vec2 b = vec2(w/2.0, h/2.0); // half width/height
-          vec2 p = vPosition - vec2(vTopRight.x - b[0], vTopRight.y - b[1]); // translate to center
+          vec2 p = vPosition - vec2(vTopRight.x - b[0] - outerBorder, vTopRight.y - b[1] - outerBorder); // translate to center;
 
           float d; // signed distance
           if(vVertType == ${RECTANGLE}) {
             d = rectangleSDF(p, b);
           } else if(vVertType == ${ELLIPSE} && w == h) {
-            d = circleSDF(p, 0.5); // probably faster
+            d = circleSDF(p, b.x); // probably faster
           } else if(vVertType == ${ELLIPSE}) {
             d = ellipseSDF(p, b);
           } else {
@@ -366,15 +366,15 @@ export class ElementDrawingWebGL {
             d = roundRectangleSDF(p, b, cr);
           }
 
-          if(d <= 0.0) { // inside shape
-            if(d >= -vBorderWidth) {
-              outColor = blend(vBorderColor, vColor);
-            } else {
-              outColor = vColor; 
-            }
-          } else {
+          if(d > outerBorder) {
             discard;
-          }
+          } else if(d > 0.0) {
+            outColor = vBorderColor;
+          } else if(d >= innerBorder) {
+            outColor = blend(vBorderColor, vColor);
+          } else {
+            outColor = vColor;
+          } 
         }
         else { // RECTANGLE, other
           outColor = vColor;
@@ -446,7 +446,7 @@ export class ElementDrawingWebGL {
     this.texBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex);
     this.pointAPointBBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointAPointB);
     this.pointCPointDBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointCPointD);
-    this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
+    this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aLineWidth);
     this.colorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aColor);
     this.cornerRadiusBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aCornerRadius);
     this.borderColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aBorderColor);
@@ -702,18 +702,30 @@ export class ElementDrawingWebGL {
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
-    if(props.borderColor && props.borderOpacity) {
-      const borderColor = node.pstyle(props.borderColor).value;
-      const borderOpacity = node.pstyle(props.borderOpacity).value;
+    const lineWidthView = this.lineWidthBuffer.getView(instance);
+    if(props.border) {
+      const borderColor = node.pstyle('border-color').value;
+      const borderOpacity = node.pstyle('border-opacity').value;
       const borderColorView = this.borderColorBuffer.getView(instance);
       util.toWebGLColor(borderColor, borderOpacity, borderColorView);
 
-      const borderWidth = node.pstyle(props.borderWidth).value;
-      const lineWidthView = this.lineWidthBuffer.getView(instance);
-      lineWidthView[0] = borderWidth;
+      const borderWidth = node.pstyle('border-width').value;
+      const borderPos = node.pstyle('border-position').value;
+
+      if(borderPos === 'inside') {
+        lineWidthView[0] = 0;  // outer
+        lineWidthView[1] = -borderWidth; // inner
+      } else if(borderPos === 'outside') {
+        lineWidthView[0] = borderWidth;  // outer
+        lineWidthView[1] = 0; // inner
+      } else { // 'center'
+        const halfWidth = borderWidth / 2;
+        lineWidthView[0] = halfWidth;  // outer
+        lineWidthView[1] = -halfWidth; // inner
+      }
     } else {
-      const lineWidthView = this.lineWidthBuffer.getView(instance);
       lineWidthView[0] = 0;
+      lineWidthView[1] = 0;
     }
 
     const matrixView = this.transformBuffer.getMatrixView(instance);

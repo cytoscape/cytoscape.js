@@ -39,11 +39,10 @@ CRp.initWebgl = function(opts, fns) {
     const enabled = ele.pstyle('text-events').strValue === 'yes';
     return enabled ? TEX_PICKING_MODE.USE_BB : TEX_PICKING_MODE.IGNORE;
   };
-  const getBBForSimpleShape = (node) => { // to be consistent with CRp.drawNode
-    const padding = node.padding();
+  const getBBForSimpleShape = (node) => {
     const { x, y } = node.position();
-    const w = node.width() + 2 * padding;
-    const h = node.height() + 2 * padding;
+    const w = node.outerWidth(); // includes border and padding
+    const h = node.outerHeight();
     return { w, h, x1: x - w/2, y1: y - h/2 };
   };
 
@@ -72,9 +71,7 @@ CRp.initWebgl = function(opts, fns) {
       color:   'background-color',
       opacity: 'background-opacity',
       radius:  'corner-radius',
-      borderWidth:   'border-width',
-      borderColor:   'border-color',
-      borderOpacity: 'border-opacity',
+      border:  true
     }
   });
 

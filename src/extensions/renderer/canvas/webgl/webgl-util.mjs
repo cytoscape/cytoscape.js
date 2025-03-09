@@ -70,12 +70,23 @@ export function modelToRenderedPosition(r, pan, zoom, x, y) {
   return [ rx, ry ];
 }
 
+
 export function isSimpleShape(node) {
-  return (
-    node.pstyle('background-fill').value === 'solid' &&
-    node.pstyle('background-image').strValue === 'none' &&
-    node.pstyle('border-width').pfValue === 0
-  );
+  // the actual shape is checked in ElementDrawingWebGL._getVertTypeForShape()
+  // no need to check it twice, this just checks other visual properties
+  if(node.pstyle('background-fill').value !== 'solid')
+    return false;
+  if(node.pstyle('background-image').strValue !== 'none')
+    return false;
+  if(node.pstyle('border-width').value === 0)
+    return true;
+  if(node.pstyle('border-opacity').value === 0)
+    return true;
+  // we have a border but it must be simple
+  if(node.pstyle('border-style').value !== 'solid')
+    return false;
+  // TODO ignoring 'border-cap', 'border-join' and 'border-position' for now
+  return true;
 }
 
 /**

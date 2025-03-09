@@ -106,7 +106,7 @@
       "selector": "#n7",
       "style": {
         "shape": "ellipse",
-        "border-width": 0,
+        "border-width": 3,
         "border-opacity": 0.5,
         "width": 100,
         "background-opacity": 0.5,

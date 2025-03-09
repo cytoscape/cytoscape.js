@@ -39,7 +39,7 @@ CRp.initWebgl = function(opts, fns) {
     const enabled = ele.pstyle('text-events').strValue === 'yes';
     return enabled ? TEX_PICKING_MODE.USE_BB : TEX_PICKING_MODE.IGNORE;
   };
-  const getBBForSimpleShape = (node) => { // this only works for node body/underlay/overlay, not for labels
+  const getBBForSimpleShape = (node) => { // to be consistent with CRp.drawNode
     const padding = node.padding();
     const { x, y } = node.position();
     const w = node.width() + 2 * padding;

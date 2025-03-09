@@ -358,11 +358,11 @@ export class ElementDrawingWebGL {
           }
 
           if(d <= 0.0) { // inside shape
-            // if(d >= -vBorderWidth) {
-            //   outColor = vBorderColor;
-            // } else {
+            if(d >= -vBorderWidth) {
+              outColor = vBorderColor;
+            } else {
               outColor = vColor; 
-            // }
+            }
           } else {
             discard;
           }
@@ -657,17 +657,16 @@ export class ElementDrawingWebGL {
     if(!this._isVisible(node, opts)) {
       return;
     }
+    const props = opts.shapeProps;
 
-    if(opts.isSimple && !opts.isSimple(node)) {
+    const vertType = this._getVertTypeForShape(node, props.shape);
+    if(vertType === undefined || (opts.isSimple && !opts.isSimple(node))) {
       this.drawTexture(node, eleIndex, type);
       return;
     }
     
     // render a "simple shape" using SDF
-    const props = opts.shapeProps;
     const instance = this.instanceCount;
-
-    const vertType = this._getVertTypeForShape(node, props.shape);
     this.vertTypeBuffer.getView(instance)[0] = vertType;
 
     if(vertType === ROUND_RECTANGLE || vertType === BOTTOM_ROUND_RECTANGLE) { // get corner radius
@@ -694,11 +693,14 @@ export class ElementDrawingWebGL {
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
+    const borderColor = node.pstyle('border-color').value;
+    const borderOpacity = node.pstyle('border-opacity').value;
     const borderColorView = this.borderColorBuffer.getView(instance);
-    util.toWebGLColor([0,0,0], 1, borderColorView);
+    util.toWebGLColor(borderColor, borderOpacity, borderColorView);
 
-    const lineWidth = this.lineWidthBuffer.getView(instance);
-    lineWidth[0] = 0.03;
+    const borderWidth = node.pstyle('border-width').value;
+    const lineWidthView = this.lineWidthBuffer.getView(instance);
+    lineWidthView[0] = borderWidth;
 
     const matrixView = this.transformBuffer.getMatrixView(instance);
     this.setTransformMatrix(node, matrixView, opts);

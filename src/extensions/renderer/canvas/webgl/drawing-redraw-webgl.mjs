@@ -66,12 +66,15 @@ CRp.initWebgl = function(opts, fns) {
 
   r.drawing.addSimpleShapeRenderType('node-body', {
     getBoundingBox: getBBForSimpleShape,
-    isSimple: n => util.isSimpleShape(n),
+    isSimple: util.isSimpleShape,
     shapeProps: {
       shape:   'shape',
       color:   'background-color',
       opacity: 'background-opacity',
       radius:  'corner-radius',
+      borderWidth:   'border-width',
+      borderColor:   'border-color',
+      borderOpacity: 'border-opacity',
     }
   });
 

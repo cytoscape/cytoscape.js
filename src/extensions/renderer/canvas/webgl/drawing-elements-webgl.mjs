@@ -101,7 +101,10 @@ export class ElementDrawingWebGL {
    * @property { string } opacity
    * @property { string } padding
    * @property { string } radius
-   */
+   * @property { string } borderColor
+   * @property { string } borderOpacity
+   * @property { string } borderWidth
+  */
   /**
    * @param { string } typeName
    * @param { SimpleShapeRenderTypeOpts } opts
@@ -699,14 +702,19 @@ export class ElementDrawingWebGL {
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
-    const borderColor = node.pstyle('border-color').value;
-    const borderOpacity = node.pstyle('border-opacity').value;
-    const borderColorView = this.borderColorBuffer.getView(instance);
-    util.toWebGLColor(borderColor, borderOpacity, borderColorView);
+    if(props.borderColor && props.borderOpacity) {
+      const borderColor = node.pstyle(props.borderColor).value;
+      const borderOpacity = node.pstyle(props.borderOpacity).value;
+      const borderColorView = this.borderColorBuffer.getView(instance);
+      util.toWebGLColor(borderColor, borderOpacity, borderColorView);
 
-    const borderWidth = node.pstyle('border-width').value;
-    const lineWidthView = this.lineWidthBuffer.getView(instance);
-    lineWidthView[0] = borderWidth;
+      const borderWidth = node.pstyle(props.borderWidth).value;
+      const lineWidthView = this.lineWidthBuffer.getView(instance);
+      lineWidthView[0] = borderWidth;
+    } else {
+      const lineWidthView = this.lineWidthBuffer.getView(instance);
+      lineWidthView[0] = 0;
+    }
 
     const matrixView = this.transformBuffer.getMatrixView(instance);
     this.setTransformMatrix(node, matrixView, opts);

@@ -320,10 +320,10 @@ export class ElementDrawingWebGL {
 
       out vec4 outColor;
 
-      ${sdf.circleSDF}
-      ${sdf.rectangleSDF}
-      ${sdf.roundRectangleSDF}
-      ${sdf.ellipseSDF}
+      ${sdf.circleSD}
+      ${sdf.rectangleSD}
+      ${sdf.roundRectangleSD}
+      ${sdf.ellipseSD}
 
       vec4 blend(vec4 top, vec4 bot) { // with premultiplied alpha
         return vec4( 
@@ -349,20 +349,21 @@ export class ElementDrawingWebGL {
 
           float outerBorder = vBorderWidth[0];
           float innerBorder = vBorderWidth[1];
-          float w = vTopRight.x - vBotLeft.x - outerBorder * 2.0;
-          float h = vTopRight.y - vBotLeft.y - outerBorder * 2.0;
-          vec2 b = vec2(w/2.0, h/2.0); // half width/height
-          vec2 p = vPosition - vec2(vTopRight.x - b[0] - outerBorder, vTopRight.y - b[1] - outerBorder); // translate to center;
+          float borderPadding = outerBorder * 2.0;
+          float w = vTopRight.x - vBotLeft.x - borderPadding;
+          float h = vTopRight.y - vBotLeft.y - borderPadding;
+          vec2 b = vec2(w/2.0, h/2.0); // half width, half height
+          vec2 p = vPosition - vec2(vTopRight.x - b[0] - outerBorder, vTopRight.y - b[1] - outerBorder); // translate to center
 
           float d; // signed distance
           if(vVertType == ${RECTANGLE}) {
-            d = rectangleSDF(p, b);
+            d = rectangleSD(p, b);
           } else if(vVertType == ${ELLIPSE} && w == h) {
-            d = circleSDF(p, b.x); // probably faster
+            d = circleSD(p, b.x); // probably faster
           } else if(vVertType == ${ELLIPSE}) {
-            d = ellipseSDF(p, b);
+            d = ellipseSD(p, b);
           } else {
-            d = roundRectangleSDF(p, b, vCornerRadius.wzyx);
+            d = roundRectangleSD(p, b, vCornerRadius.wzyx);
           }
 
           if(d > outerBorder) {
@@ -701,30 +702,31 @@ export class ElementDrawingWebGL {
     util.toWebGLColor(color, opacity, colorView);
 
     const lineWidthView = this.lineWidthBuffer.getView(instance); // reuse edge line width attribute for node border
+    lineWidthView[0] = 0;
+    lineWidthView[1] = 0;
+
     if(props.border) {
-      const borderColor = node.pstyle('border-color').value;
-      const borderOpacity = node.pstyle('border-opacity').value;
-      const borderColorView = this.borderColorBuffer.getView(instance);
-      util.toWebGLColor(borderColor, borderOpacity, borderColorView);
-
       const borderWidth = node.pstyle('border-width').value;
-      const borderPos = node.pstyle('border-position').value;
-
-      // SDF distance is negative inside the shape and positive outside
-      if(borderPos === 'inside') {
-        lineWidthView[0] = 0;
-        lineWidthView[1] = -borderWidth;
-      } else if(borderPos === 'outside') {
-        lineWidthView[0] = borderWidth;
-        lineWidthView[1] = 0;
-      } else { // 'center'
-        const halfWidth = borderWidth / 2;
-        lineWidthView[0] =  halfWidth;
-        lineWidthView[1] = -halfWidth;
+      if(borderWidth > 0) {
+        const borderColor = node.pstyle('border-color').value;
+        const borderOpacity = node.pstyle('border-opacity').value;
+        const borderColorView = this.borderColorBuffer.getView(instance);
+        util.toWebGLColor(borderColor, borderOpacity, borderColorView);
+        
+        // SDF distance is negative inside the shape and positive outside
+        const borderPos = node.pstyle('border-position').value;
+        if(borderPos === 'inside') {
+          lineWidthView[0] = 0;
+          lineWidthView[1] = -borderWidth;
+        } else if(borderPos === 'outside') {
+          lineWidthView[0] = borderWidth;
+          lineWidthView[1] = 0;
+        } else { // 'center'
+          const halfWidth = borderWidth / 2;
+          lineWidthView[0] =  halfWidth;
+          lineWidthView[1] = -halfWidth;
+        }
       }
-    } else {
-      lineWidthView[0] = 0;
-      lineWidthView[1] = 0;
     }
 
     const matrixView = this.transformBuffer.getMatrixView(instance);

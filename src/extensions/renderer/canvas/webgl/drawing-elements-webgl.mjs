@@ -362,8 +362,7 @@ export class ElementDrawingWebGL {
           } else if(vVertType == ${ELLIPSE}) {
             d = ellipseSDF(p, b);
           } else {
-            vec4 cr = vCornerRadius.wzyx; // swizzle because canvas Y axis is opposite to webgl (I think)
-            d = roundRectangleSDF(p, b, cr);
+            d = roundRectangleSDF(p, b, vCornerRadius.wzyx);
           }
 
           if(d > outerBorder) {
@@ -376,7 +375,7 @@ export class ElementDrawingWebGL {
             outColor = vColor;
           } 
         }
-        else { // RECTANGLE, other
+        else {
           outColor = vColor;
         }
 
@@ -674,14 +673,13 @@ export class ElementDrawingWebGL {
       return;
     }
     
-    // render a "simple shape" using SDF
+    // render a "simple shape" using SDF (signed distance fields)
     const instance = this.instanceCount;
     this.vertTypeBuffer.getView(instance)[0] = vertType;
 
     if(vertType === ROUND_RECTANGLE || vertType === BOTTOM_ROUND_RECTANGLE) { // get corner radius
       const bb = opts.getBoundingBox(node);
-      const radiusVal = this._getCornerRadius(node, props.radius, bb);
-      const radius = radiusVal;// / bb.h; // scale to unit square (not sure if correct)
+      const radius = this._getCornerRadius(node, props.radius, bb);
       
       const radiusView = this.cornerRadiusBuffer.getView(instance);
       radiusView[0] = radius; // top-right
@@ -702,7 +700,7 @@ export class ElementDrawingWebGL {
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 
-    const lineWidthView = this.lineWidthBuffer.getView(instance);
+    const lineWidthView = this.lineWidthBuffer.getView(instance); // reuse edge line width attribute for node border
     if(props.border) {
       const borderColor = node.pstyle('border-color').value;
       const borderOpacity = node.pstyle('border-opacity').value;
@@ -712,16 +710,17 @@ export class ElementDrawingWebGL {
       const borderWidth = node.pstyle('border-width').value;
       const borderPos = node.pstyle('border-position').value;
 
+      // SDF distance is negative inside the shape and positive outside
       if(borderPos === 'inside') {
-        lineWidthView[0] = 0;  // outer
-        lineWidthView[1] = -borderWidth; // inner
+        lineWidthView[0] = 0;
+        lineWidthView[1] = -borderWidth;
       } else if(borderPos === 'outside') {
-        lineWidthView[0] = borderWidth;  // outer
-        lineWidthView[1] = 0; // inner
+        lineWidthView[0] = borderWidth;
+        lineWidthView[1] = 0;
       } else { // 'center'
         const halfWidth = borderWidth / 2;
-        lineWidthView[0] = halfWidth;  // outer
-        lineWidthView[1] = -halfWidth; // inner
+        lineWidthView[0] =  halfWidth;
+        lineWidthView[1] = -halfWidth;
       }
     } else {
       lineWidthView[0] = 0;
@@ -946,7 +945,7 @@ export class ElementDrawingWebGL {
     // - number of visible edges (more segments when there are fewer edges)
     // - performance (fewer segments when performance is a concern)
     // - user configurable option(s)
-    // note: number of segments should be less than the max number of instances
+    // note: number of segments must be less than the max number of instances
     // note: segments don't need to be evenly spaced out, it might make sense to have shorter segments nearer to the control points
     const numSegments = 15;
     return Math.min(Math.max(numSegments, 5), this.maxInstances);

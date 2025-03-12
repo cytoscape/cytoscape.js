@@ -8,6 +8,8 @@
       { "data": { "id": "n5", "weight": 5 }, "position": { "x": 134, "y": 160 } },
       { "data": { "id": "n6", "weight": 5 }, "position": { "x": 134, "y": 195 } },
       { "data": { "id": "n7", "weight": 5 }, "position": { "x": 134, "y": 225 } },
+      { "data": { "id": "n7i", "weight": 5 }, "position": { "x": 20, "y": 225 } },
+      { "data": { "id": "n7o", "weight": 5 }, "position": { "x": 250, "y": 225 } },
       { "data": { "id": "n8", "weight": 5 }, "position": { "x": 134, "y": 275 } },
       { "data": { "id": "n9", "weight": 5 }, "position": { "x": 134, "y": 315 } }
     ],
@@ -106,11 +108,35 @@
       "selector": "#n7",
       "style": {
         "shape": "ellipse",
-        "border-width": 3,
+        "border-width": 5,
         "border-opacity": 0.5,
         "width": 100,
         "background-opacity": 0.5,
         "background-color": "orange"
+      }
+    },
+    {
+      "selector": "#n7i",
+      "style": {
+        "shape": "ellipse",
+        "border-width": 5,
+        "border-opacity": 0.5,
+        "width": 100,
+        "background-opacity": 0.5,
+        "background-color": "orange",
+        "border-position": "inside" 
+      }
+    },
+    {
+      "selector": "#n7o",
+      "style": {
+        "shape": "ellipse",
+        "border-width": 5,
+        "border-opacity": 0.5,
+        "width": 100,
+        "background-opacity": 0.5,
+        "background-color": "orange",
+        "border-position": "outside" 
       }
     },
     {

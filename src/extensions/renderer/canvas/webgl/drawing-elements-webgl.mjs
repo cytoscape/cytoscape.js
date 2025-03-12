@@ -332,6 +332,10 @@ export class ElementDrawingWebGL {
         );
       }
 
+      vec4 distInterp(vec4 cA, vec4 cB, float d) { // interpolate color using Signed Distance
+        return mix(cA, cB, 1.0 - smoothstep(0.0, 0.3, abs(d)));
+      }
+
       void main(void) {
         if(vVertType == ${TEXTURE}) {
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
@@ -366,15 +370,32 @@ export class ElementDrawingWebGL {
             d = roundRectangleSD(p, b, vCornerRadius.wzyx);
           }
 
-          if(d > outerBorder) {
-            discard;
-          } else if(d > 0.0) {
-            outColor = vBorderColor;
-          } else if(d >= innerBorder) {
-            outColor = blend(vBorderColor, vColor);
+          // use the distance value to interpolate a color, doesn't need multisampling
+          // we must smooth colors inwards, because we can't change pixels outside the shape's bounding box
+          if(d > 0.0) {
+            if(d > outerBorder) {
+              discard;
+            } else {
+              outColor = distInterp(vBorderColor, vec4(0), d - outerBorder);
+            }
           } else {
-            outColor = vColor;
-          } 
+            if(d > innerBorder) {
+              vec4 outerColor = outerBorder == 0.0 ? vec4(0) : vBorderColor;
+              vec4 innerBorderColor = blend(vBorderColor, vColor);
+              outColor = distInterp(innerBorderColor, outerColor, d);
+            } 
+            else {
+              vec4 outerColor;
+              if(innerBorder == 0.0 && outerBorder == 0.0) {
+                outerColor = vec4(0);
+              } else if(innerBorder == 0.0) {
+                outerColor = vBorderColor;
+              } else {
+                outerColor = blend(vBorderColor, vColor);
+              }
+              outColor = distInterp(vColor, outerColor, d - innerBorder);
+            }
+          }
         }
         else {
           outColor = vColor;

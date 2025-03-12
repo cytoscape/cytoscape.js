@@ -124,6 +124,15 @@ const paramDefs = {
       });
     }
 
+    cy.on('pan zoom', (e) => {
+      const { x, y } = cy.pan();
+      const zoom = cy.zoom();
+      const panDiv = document.getElementById('pan');
+      panDiv.innerHTML = `Pan: x: ${x.toFixed(2)}, y: ${y.toFixed(2)}`;
+      const zoomDiv = document.getElementById('zoom');
+      zoomDiv.innerHTML = `Zoom: ${zoom.toFixed(4)}`;
+    });
+
     if(params.hover === 'true') { // add hover effect
       cy.ready(() => {
         const hoverMapping = {

@@ -304,6 +304,7 @@ export class ElementDrawingWebGL {
       ${idxs.map(i => `uniform sampler2D uTexture${i};`).join('\n\t')}
 
       uniform vec4 uBGColor;
+      uniform float uZoom;
 
       in vec2 vTexCoord;
       in vec4 vColor;
@@ -333,7 +334,9 @@ export class ElementDrawingWebGL {
       }
 
       vec4 distInterp(vec4 cA, vec4 cB, float d) { // interpolate color using Signed Distance
-        return mix(cA, cB, 1.0 - smoothstep(0.0, 0.3, abs(d)));
+        // scale to the zoom level so that borders don't look blurry when zoomed in
+        // note 1.5 is an aribitrary value chosen because it looks good
+        return mix(cA, cB, 1.0 - smoothstep(0.0, 1.5 / uZoom, abs(d))); 
       }
 
       void main(void) {
@@ -370,7 +373,7 @@ export class ElementDrawingWebGL {
             d = roundRectangleSD(p, b, vCornerRadius.wzyx);
           }
 
-          // use the distance value to interpolate a color, doesn't need multisampling
+          // use the distance to interpolate a color to smooth the edges of the shape, doesn't need multisampling
           // we must smooth colors inwards, because we can't change pixels outside the shape's bounding box
           if(d > 0.0) {
             if(d > outerBorder) {
@@ -433,6 +436,7 @@ export class ElementDrawingWebGL {
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
     program.uAtlasSize     = gl.getUniformLocation(program, 'uAtlasSize');
     program.uBGColor       = gl.getUniformLocation(program, 'uBGColor');
+    program.uZoom          = gl.getUniformLocation(program, 'uZoom');
 
     program.uTextures = [];
     for(let i = 0; i < this.batchManager.getMaxAtlasesPerBatch(); i++) {
@@ -1043,6 +1047,7 @@ export class ElementDrawingWebGL {
     }
 
     // Set the uniforms
+    gl.uniform1f(program.uZoom, util.getEffectiveZoom(this.r));
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
     gl.uniform1i(program.uAtlasSize, this.batchManager.getAtlasSize());
     // set background color, needed for edge arrow color blending

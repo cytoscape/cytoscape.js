@@ -63,6 +63,15 @@ export function getEffectivePanZoom(r) {
   };
 }
 
+/**
+ * Returns the zoom value, scaled by the pixel ratio.
+ */
+export function getEffectiveZoom(r) {
+  const { pixelRatio } = r;
+  const zoom = r.cy.zoom();
+  return zoom * pixelRatio;
+}
+
 export function modelToRenderedPosition(r, pan, zoom, x, y) {
   let rx = x * zoom + pan.x;
   let ry = y * zoom + pan.y;

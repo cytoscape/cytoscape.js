@@ -5,6 +5,7 @@ import Map from '../../../../map.mjs';
 import {getRoundCorner} from "../../../../round.mjs";
 
 const AVOID_IMPOSSIBLE_BEZIER_CONSTANT = 0.01;
+const AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L = Math.sqrt(2 * AVOID_IMPOSSIBLE_BEZIER_CONSTANT);
 
 let BRp = {};
 
@@ -878,9 +879,18 @@ BRp.findEdgeControlPoints = function( edges ){
         let dy = Math.abs( tgtOutside[1] - srcOutside[1] );
         let dx = Math.abs( tgtOutside[0] - srcOutside[0] );
         let l = Math.sqrt( 
-          Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER_CONSTANT) + 
-          Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER_CONSTANT)
+          (dx * dx) + 
+          (dy * dy)
         );
+
+        if (is.number(l) && l >= AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L) {
+          // keep l
+        } else {
+          l = Math.sqrt( 
+            Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER_CONSTANT) + 
+            Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER_CONSTANT)
+          );
+        }
 
         let vector = pairInfo.vector = {
           x: dx,

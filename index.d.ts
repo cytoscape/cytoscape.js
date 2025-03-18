@@ -4530,7 +4530,15 @@ declare namespace cytoscape {
              *
              * The diameter of the pie, measured as a percent of node size (e.g. 100%) or an absolute length (e.g. 25px).
              */
-            "pie-size": PropertyValueNode<string>;
+            "pie-size": PropertyValueNode<number|string>;
+            /**
+             * 
+             * The diameter of the hole in the centre of the pie, measured
+             * as a percent of node size (e.g. 100%) or an absolute length
+             * (e.g. 25px). This effectively converts the pie chart into a
+             * ring chart (default disabled, 0).
+             */
+            "pie-hole": PropertyValueNode<number|string>;
             /**
              * @deprecated
              *
@@ -4742,6 +4750,230 @@ declare namespace cytoscape {
              * The opacity of the node’s 16th pie chart slice.
              */
             "pie-16-background-opacity": PropertyValueNode<number>;
+        }
+
+        /**
+         * These properties allow you to create stripe chart backgrounds on
+         *  nodes ([demo](demos/stripe-style)).  Note that 16 stripes maximum
+         *  are supported per node, so in the properties `1 <= i <= 16`.  Of 
+         * course, you must specify a numerical value for each property in 
+         * place of `i`.  Each nonzero sized stripe is placed in order of `i`,
+         *  starting from the left and going rightwards for vertical stripes 
+         * (`stripe-direction: vertical`) or starting from the top and going 
+         * downwards for horizontal stripes (`stripe-direction: horizontal`).
+         * 
+         * You may find it useful to reserve a number to a particular colour 
+         * for all nodes in your stylesheet.  Then you can specify values for
+         *  `stripe-i-background-size` accordingly for each node via a mapper.  
+         *  This would allow you to create consistently coloured pie charts
+         *  in each node of the graph based on element data.
+         *
+         * http://js.cytoscape.org/#style/stripe-chart-background
+         */
+        interface StripeChartBackground {
+            /**
+             *
+             * The size of the stripes, measured as a percent of node size (e.g. 100%) or an absolute length (e.g. 25px).
+             */
+            "stripe-size": PropertyValueNode<number|string>;
+            /**
+             *
+             * The direction of the stripes, either `vertical` stripes or `horizontal` stripes.  Vertical stripes are
+             * stacked from left to right, and horizontal stripes are stacked from top to bottom.
+             */
+            "stripe-direction": PropertyValueNode<"vertical" | "horizontal">;
+            /**
+             * The colour of the node’s 1st stripe chart stripe.
+             */
+            "stripe-1-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 1st stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-1-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 1st stripe chart stripe.
+             */
+            "stripe-1-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 2nd stripe chart stripe.
+             */
+            "stripe-2-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 2nd stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-2-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 2nd stripe chart stripe.
+             */
+            "stripe-2-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 3rd stripe chart stripe.
+             */
+            "stripe-3-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 3rd stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-3-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 3rd stripe chart stripe.
+             */
+            "stripe-3-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 4th stripe chart stripe.
+             */
+            "stripe-4-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 4th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-4-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 4th stripe chart stripe.
+             */
+            "stripe-4-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 5th stripe chart stripe.
+             */
+            "stripe-5-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 5th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-5-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 5th stripe chart stripe.
+             */
+            "stripe-5-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 6th stripe chart stripe.
+             */
+            "stripe-6-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 6th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-6-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 6th stripe chart stripe.
+             */
+            "stripe-6-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 7th stripe chart stripe.
+             */
+            "stripe-7-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 7th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-7-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 7th stripe chart stripe.
+             */
+            "stripe-7-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 8th stripe chart stripe.
+             */
+            "stripe-8-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 8th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-8-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 8th stripe chart stripe.
+             */
+            "stripe-8-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 9th stripe chart stripe.
+             */
+            "stripe-9-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 9th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-9-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 9th stripe chart stripe.
+             */
+            "stripe-9-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 10th stripe chart stripe.
+             */
+            "stripe-10-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 10th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-10-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 10th stripe chart stripe.
+             */
+            "stripe-10-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 11th stripe chart stripe.
+             */
+            "stripe-11-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 11th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-11-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 11th stripe chart stripe.
+             */
+            "stripe-11-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 12th stripe chart stripe.
+             */
+            "stripe-12-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 12th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-12-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 12th stripe chart stripe.
+             */
+            "stripe-12-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 13th stripe chart stripe.
+             */
+            "stripe-13-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 13th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-13-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 13th stripe chart stripe.
+             */
+            "stripe-13-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 14th stripe chart stripe.
+             */
+            "stripe-14-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 14th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-14-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 14th stripe chart stripe.
+             */
+            "stripe-14-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 15th stripe chart stripe.
+             */
+            "stripe-15-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 15th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-15-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 15th stripe chart stripe.
+             */
+            "stripe-15-background-opacity": PropertyValueNode<number>;
+            /**
+             * The colour of the node’s 16th stripe chart stripe.
+             */
+            "stripe-16-background-color": PropertyValueNode<Colour>;
+            /**
+             * The size of the node’s 16th stripe chart stripe, measured in percent (e.g. 25% or 25).
+             */
+            "stripe-16-background-size": PropertyValueNode<number>;
+            /**
+             * The opacity of the node’s 16th stripe chart stripe.
+             */
+            "stripe-16-background-opacity": PropertyValueNode<number>;
         }
 
         interface Edge

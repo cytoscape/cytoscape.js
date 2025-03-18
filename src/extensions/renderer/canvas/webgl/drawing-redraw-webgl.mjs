@@ -3,6 +3,7 @@ import * as util from './webgl-util.mjs';
 import * as eleTextureCache from '../ele-texture-cache.mjs';
 import { debounce } from '../../../../util/index.mjs';
 import { color2tuple } from '../../../../util/colors.mjs';
+import { getPrefixedProperty } from '../../../../util/index.mjs';
 import { mat3 } from 'gl-matrix';
 
 
@@ -102,8 +103,9 @@ CRp.initWebgl = function(opts, fns) {
   r.drawing.addTextureAtlasRenderType('label', { // node label or edge mid label
     collection: 'label',
     getTexPickingMode,
-    getKey: fns.getLabelKey,
-    getBoundingBox: fns.getLabelBox,
+    getKey: getStyleKeysForLabel(fns.getLabelKey, null),
+    getBoundingBox: getBoundingBoxForLabel(fns.getLabelBox, null),
+    drawClipped: true,
     drawElement: fns.drawLabel,
     getRotation: getLabelRotation(null),
     getRotationPoint: fns.getLabelRotationPoint,
@@ -114,8 +116,9 @@ CRp.initWebgl = function(opts, fns) {
   r.drawing.addTextureAtlasRenderType('edge-source-label', {
     collection: 'label',
     getTexPickingMode,
-    getKey: fns.getSourceLabelKey,
-    getBoundingBox: fns.getSourceLabelBox,
+    getKey: getStyleKeysForLabel(fns.getSourceLabelKey, 'source'),
+    getBoundingBox: getBoundingBoxForLabel(fns.getSourceLabelBox, 'source'),
+    drawClipped: true,
     drawElement: fns.drawSourceLabel,
     getRotation: getLabelRotation('source'),
     getRotationPoint: fns.getSourceLabelRotationPoint,
@@ -126,8 +129,9 @@ CRp.initWebgl = function(opts, fns) {
   r.drawing.addTextureAtlasRenderType('edge-target-label', {
     collection: 'label',
     getTexPickingMode,
-    getKey: fns.getTargetLabelKey,
-    getBoundingBox: fns.getTargetLabelBox,
+    getKey: getStyleKeysForLabel(fns.getTargetLabelKey, 'target'),
+    getBoundingBox: getBoundingBoxForLabel(fns.getTargetLabelBox, 'target'),
+    drawClipped: true,
     drawElement: fns.drawTargetLabel,
     getRotation: getLabelRotation('target'),
     getRotationPoint: fns.getTargetLabelRotationPoint,
@@ -162,6 +166,49 @@ function getBGColor(r) {
   const cssColor = (container && container.style && container.style.backgroundColor) || 'white';
   return color2tuple(cssColor);
 }
+
+
+function getLabelLines(ele, prefix) {
+  const rs = ele._private.rscratch;
+  return getPrefixedProperty(rs, 'labelWrapCachedLines', prefix) || [];
+}
+
+/** 
+ * Handle multi-line labels by rendering each line as a seperate texture.
+ * That means each line needs its own style key.
+ */
+const getStyleKeysForLabel = (getKey, prefix) => (ele) => {
+  const key = getKey(ele);
+  const lines = getLabelLines(ele, prefix);
+  if(lines.length > 1) {
+    return lines.map((line, index) => `${key}_${index}`);
+  }
+  return key;
+};
+
+/**
+ * Need to create a separate bounding box for each line of a multi-line label.
+ * Note that 'drawClipped: true' should be used with this.
+ */
+const getBoundingBoxForLabel = (getBoundingBox, prefix) => (ele, styleKey) => {
+  const bb = getBoundingBox(ele);
+  if(typeof styleKey === 'string') {
+    const ui = styleKey.indexOf('_');
+    if(ui > 0) {
+      const lineIndex = Number(styleKey.substring(ui + 1));
+      const lines = getLabelLines(ele, prefix);
+      // Adjust the height and Y coordinate for one line of the label.
+      const h = bb.h / lines.length;
+      const yOffset = h * lineIndex;
+      const y1 = bb.y1 + yOffset;
+      // the yOffset is needed when rotating the label
+      return { x1: bb.x1, w: bb.w, y1, h, yOffset };
+    }
+  }
+  return bb;
+};
+
+
 
 /**
  * Plug into the canvas renderer to use webgl for rendering.

@@ -428,7 +428,7 @@ export class AtlasManager {
     this.renderTypes = new Map(); // renderType:string -> renderTypeOptions
     this.collections = new Map(); // collectionName:string -> AtlasCollection
 
-    this.typeAndIdToKey = new Map(); // [renderType,id] => style key
+    this.typeAndIdToKey = new Map(); // [renderType,id] => Array<style key>
   }
 
   getAtlasSize() {
@@ -496,23 +496,25 @@ export class AtlasManager {
         for(const opts of this.renderTypes.values()) {
           const renderType = opts.type;
           if(filterType(renderType)) {
-
-            const styleKey = opts.getKey(ele);
             const atlasCollection = this.collections.get(opts.collection);
+
+            const key = opts.getKey(ele);
+            const keyArray = Array.isArray(key) ? key : [key];
 
             // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn
             if(forceRedraw) { 
-              atlasCollection.markKeyForGC(styleKey);
+              keyArray.forEach(key => atlasCollection.markKeyForGC(key));
               runGCNow = true; // run GC to remove the old texture right now, that way we don't need to remember for the next gc 
             } else {
               const id = opts.getID ? opts.getID(ele) : ele.id();
               const mapKey = this._key(renderType, id);
-              const oldStyleKey = this.typeAndIdToKey.get(mapKey);
+              const oldKeyArray = this.typeAndIdToKey.get(mapKey);
 
-              if(oldStyleKey !== undefined && oldStyleKey !== styleKey) {
-                this.typeAndIdToKey.delete(mapKey);
-                atlasCollection.markKeyForGC(oldStyleKey);
+              if(oldKeyArray !== undefined && !util.arrayEqual(keyArray, oldKeyArray)) {
+                // conservative approach, if any of the keys don't match then throw them all away
                 needGC = true;
+                this.typeAndIdToKey.delete(mapKey);
+                oldKeyArray.forEach(oldKey => atlasCollection.markKeyForGC(oldKey));
               }
             }
           }
@@ -534,38 +536,50 @@ export class AtlasManager {
     }
   }
 
-  getOrCreateAtlas(ele, type, bb) {
+  getOrCreateAtlas(ele, type, bb, styleKey) {
+    // styleKey is not an array here
     const opts = this.renderTypes.get(type);
-    const styleKey = opts.getKey(ele);
-    if(!bb)
-      bb = opts.getBoundingBox(ele);
-
     const atlasCollection = this.collections.get(opts.collection);
 
     // draws the texture only if needed
     let drawn = false;
     const atlas = atlasCollection.draw(styleKey, bb, context => {
-      opts.drawElement(context, ele, bb, true, true);
+      if(opts.drawClipped) {
+        context.save();
+        context.beginPath();
+        context.rect(0, 0, bb.w, bb.h);
+        context.clip();
+        opts.drawElement(context, ele, bb, true, true);
+        context.restore();
+      } else {
+        opts.drawElement(context, ele, bb, true, true);
+      }
       drawn = true;
     });
 
     if(drawn) {
       const id = opts.getID ? opts.getID(ele) : ele.id(); // for testing
       const mapKey = this._key(type, id);
-      this.typeAndIdToKey.set(mapKey, styleKey);
+      if(this.typeAndIdToKey.has(mapKey)) {
+        this.typeAndIdToKey.get(mapKey).push(styleKey);
+      } else {
+        this.typeAndIdToKey.set(mapKey, [styleKey]);
+      }
     }
-
     return atlas;
   }
 
   getAtlasInfo(ele, type) {
     const opts = this.renderTypes.get(type);
-    const bb = opts.getBoundingBox(ele);
-    const atlas = this.getOrCreateAtlas(ele, type, bb);
-    const styleKey = opts.getKey(ele);
-    const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
-    // This object may be passed back to setTransformMatrix()
-    return { atlas, tex:tex1, tex1, tex2, bb };
+    const key = opts.getKey(ele);
+    const keyArray = Array.isArray(key) ? key : [key];
+    
+    return keyArray.map(styleKey => {
+      const bb = opts.getBoundingBox(ele, styleKey); // pass the key back to the getBoundingBox method
+      const atlas = this.getOrCreateAtlas(ele, type, bb, styleKey);
+      const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
+      return { atlas, tex:tex1, tex1, tex2, bb };
+    });
   }
 
   getDebugInfo() {

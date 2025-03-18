@@ -85,12 +85,16 @@
     {
       "selector": "#n5",
       "style": {
+        "width": 100,
         "border-color": "red",
         "border-style": "dotted",
         "border-width": 4,
-        "width": 100,
         "background-opacity": 0.5,
-        "text-valign": "top"
+        "label": "n5\nsecond line\nthird line\nfourth line",
+        "font-size": 10,
+        "text-valign": "top",
+        "text-wrap": "wrap",
+        "text-rotation": 0.0
       }
     },
     {

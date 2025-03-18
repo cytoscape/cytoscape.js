@@ -69,8 +69,9 @@ export class ElementDrawingWebGL {
   /**
    * @typedef { Object } TextureRenderTypeOpts
    * @property { string } collection - name of atlas collection to render textures to
-   * @property { function } getKey - returns the "style key" for an element
+   * @property { function } getKey - returns the "style key" for an element, may be a single value or an array for multi-line lables
    * @property { function } drawElement - uses a canvas renderer to draw the element to the texture atlas
+   * @property { boolean  } drawClipped - if true the context will be clipped to the bounding box before drawElement() is called, may affect performance 
    * @property { function } getBoundingBox - returns the bounding box for an element
    * @property { function } getRotation
    * @property { function } getRotationPoint
@@ -537,48 +538,46 @@ export class ElementDrawingWebGL {
       }
     }
 
-    if(this.instanceCount + 1 >= this.maxInstances) {
-      this.endBatch(); // make sure there's space for at least two instances, wrapped textures need two instances
-    }
-    
-    const atlasInfo = atlasManager.getAtlasInfo(ele, type);
-    const { atlas, tex1, tex2 } = atlasInfo;
+    const atlasInfoArray = atlasManager.getAtlasInfo(ele, type);
+    for(const atlasInfo of atlasInfoArray) {
+      const { atlas, tex1, tex2 } = atlasInfo;
 
-    if(!batchManager.canAddToCurrentBatch(atlas)) {
-      this.endBatch();
-    }
-    const atlasIndex = batchManager.getAtlasIndexForBatch(atlas);
-
-    for(const [tex, first] of [[tex1, true], [tex2, false]]) {
-      if(tex.w != 0) {
-        const instance = this.instanceCount;
-        this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
-
-        const indexView = this.indexBuffer.getView(instance);
-        util.indexToVec4(eleIndex, indexView);
-
-        // Set values in the buffers using Typed Array Views for performance.
-        const atlasIdView = this.atlasIdBuffer.getView(instance);
-        atlasIdView[0] = atlasIndex;
-        
-        // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
-        const texView = this.texBuffer.getView(instance);
-        texView[0] = tex.x;
-        texView[1] = tex.y;
-        texView[2] = tex.w;
-        texView[3] = tex.h;
-
-        const matrixView = this.transformBuffer.getMatrixView(instance);
-        this.setTransformMatrix(ele, matrixView, opts, atlasInfo, first);
-
-        this.instanceCount++;
-        if(!first)
-          this.wrappedCount++;
+      if(!batchManager.canAddToCurrentBatch(atlas)) {
+        this.endBatch();
       }
-    }
+      const atlasIndex = batchManager.getAtlasIndexForBatch(atlas);
 
-    if(this.instanceCount >= this.maxInstances) {
-      this.endBatch();
+      for(const [tex, first] of [[tex1, true], [tex2, false]]) {
+        if(tex.w != 0) {
+          const instance = this.instanceCount;
+          this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
+
+          const indexView = this.indexBuffer.getView(instance);
+          util.indexToVec4(eleIndex, indexView);
+
+          // Set values in the buffers using Typed Array Views for performance.
+          const atlasIdView = this.atlasIdBuffer.getView(instance);
+          atlasIdView[0] = atlasIndex;
+          
+          // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
+          const texView = this.texBuffer.getView(instance);
+          texView[0] = tex.x;
+          texView[1] = tex.y;
+          texView[2] = tex.w;
+          texView[3] = tex.h;
+
+          const matrixView = this.transformBuffer.getMatrixView(instance);
+          this.setTransformMatrix(ele, matrixView, opts, atlasInfo, first);
+
+          this.instanceCount++;
+          if(!first)
+            this.wrappedCount++;
+
+          if(this.instanceCount >= this.maxInstances) {
+            this.endBatch();
+          }
+        }
+      }
     }
   }
 
@@ -621,9 +620,8 @@ export class ElementDrawingWebGL {
       mat3.rotate(matrix, matrix, theta);
 
       const offset = opts.getRotationOffset(ele);
-
-      x = offset.x + adjBB.xOffset;
-      y = offset.y;
+      x = offset.x + (adjBB.xOffset || 0);
+      y = offset.y + (adjBB.yOffset || 0);
     } else {
       x = adjBB.x1;
       y = adjBB.y1;
@@ -641,7 +639,7 @@ export class ElementDrawingWebGL {
    * @param ratio - the ratio of the texture width of part of the text to the entire texture
    */
   _getAdjustedBB(bb, padding, first, ratio) {
-    let { x1, y1, w, h } = bb;
+    let { x1, y1, w, h, yOffset } = bb;
 
     if(padding) {
       x1 -= padding;
@@ -661,7 +659,7 @@ export class ElementDrawingWebGL {
       w = adjW;
     }
 
-    return { x1, y1, w, h, xOffset };
+    return { x1, y1, w, h, xOffset, yOffset };
   }
   
   drawPickingRectangle(node, eleIndex, type) {

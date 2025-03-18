@@ -1031,6 +1031,21 @@ declare namespace cytoscape {
         };
 
         /**
+         * Get the rendered extent of the viewport, a bounding box in rendered
+         * coordinates that lets you know what rendered
+         * positions are visible in the viewport.
+         * http://js.cytoscape.org/#cy.renderedExtent
+         */
+        renderedExtent(): {
+            x1: number;
+            y1: number;
+            x2: number;
+            y2: number;
+            w: number;
+            h: number;
+        };
+
+        /**
          * Get whether nodes are automatically locked
          * (i.e. if true, nodes are locked despite their individual state).
          * http://js.cytoscape.org/#cy.autolock

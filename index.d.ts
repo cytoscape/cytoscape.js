@@ -82,6 +82,15 @@ declare namespace cytoscape {
         y: number;
     }
 
+    interface BoundingBox {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+        w: number;
+        h: number;
+    }
+
     type CssStyleDeclaration = any;
 
     interface ElementDefinition {
@@ -1021,14 +1030,7 @@ declare namespace cytoscape {
          * positions are visible in the viewport.
          * http://js.cytoscape.org/#cy.extent
          */
-        extent(): {
-            x1: number;
-            y1: number;
-            x2: number;
-            y2: number;
-            w: number;
-            h: number;
-        };
+        extent(): BoundingBox;
 
         /**
          * Get the rendered extent of the viewport, a bounding box in rendered
@@ -1036,14 +1038,7 @@ declare namespace cytoscape {
          * positions are visible in the viewport.
          * http://js.cytoscape.org/#cy.renderedExtent
          */
-        renderedExtent(): {
-            x1: number;
-            y1: number;
-            x2: number;
-            y2: number;
-            w: number;
-            h: number;
-        };
+        renderedExtent(): BoundingBox;
 
         /**
          * Get whether nodes are automatically locked

@@ -4,6 +4,9 @@ import * as util from '../../../../util/index.mjs';
 import Map from '../../../../map.mjs';
 import {getRoundCorner} from "../../../../round.mjs";
 
+const AVOID_IMPOSSIBLE_BEZIER_CONSTANT = 0.01;
+const AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L = Math.sqrt(2 * AVOID_IMPOSSIBLE_BEZIER_CONSTANT);
+
 let BRp = {};
 
 BRp.findMidptPtsEtc = function(edge, pairInfo) {
@@ -231,8 +234,8 @@ BRp.findCompoundLoopPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
 
   // avoids cases with impossible beziers
   let minCompoundStretch = 0.5;
-  let compoundStretchA = Math.max( minCompoundStretch, Math.log( srcW * 0.01 ) );
-  let compoundStretchB = Math.max( minCompoundStretch, Math.log( tgtW * 0.01 ) );
+  let compoundStretchA = Math.max( minCompoundStretch, Math.log( srcW * AVOID_IMPOSSIBLE_BEZIER_CONSTANT ) );
+  let compoundStretchB = Math.max( minCompoundStretch, Math.log( tgtW * AVOID_IMPOSSIBLE_BEZIER_CONSTANT ) );
 
   rs.ctrlpts = [
     loopPos.x,
@@ -873,9 +876,21 @@ BRp.findEdgeControlPoints = function( edges ){
           y2: tgtPos.y
         };
 
-        let dy = ( tgtOutside[1] - srcOutside[1] );
-        let dx = ( tgtOutside[0] - srcOutside[0] );
-        let l = Math.sqrt( dx * dx + dy * dy );
+        let dy = Math.abs( tgtOutside[1] - srcOutside[1] );
+        let dx = Math.abs( tgtOutside[0] - srcOutside[0] );
+        let l = Math.sqrt( 
+          (dx * dx) + 
+          (dy * dy)
+        );
+
+        if (is.number(l) && l >= AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L) {
+          // keep l
+        } else {
+          l = Math.sqrt( 
+            Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER_CONSTANT) + 
+            Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER_CONSTANT)
+          );
+        }
 
         let vector = pairInfo.vector = {
           x: dx,

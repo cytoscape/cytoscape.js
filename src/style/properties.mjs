@@ -41,6 +41,8 @@ const styfn = {};
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
     sizeMaybePercent: { number: true, min: 0, allowPercent: true },
     axisDirection: { enums: ['horizontal', 'leftward', 'rightward', 'vertical', 'upward', 'downward', 'auto'] },
+    axisDirectionExplicit: { enums: ['leftward', 'rightward', 'upward', 'downward'] },
+    axisDirectionPrimary: { enums: ['horizontal', 'vertical'] },
     paddingRelativeTo: { enums: [ 'width', 'height', 'average', 'min', 'max' ] },
     bgWH: { number: true, min: 0, allowPercent: true, enums: [ 'auto' ], multiple: true },
     bgPos: { number: true, allowPercent: true, multiple: true },
@@ -431,10 +433,22 @@ const styfn = {};
   let pie = [];
   styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
   pie.push( { name: 'pie-size', type: t.sizeMaybePercent } );
+  pie.push( { name: 'pie-hole', type: t.sizeMaybePercent } );
   for( let i = 1; i <= styfn.pieBackgroundN; i++ ){
     pie.push( { name: 'pie-' + i + '-background-color', type: t.color } );
     pie.push( { name: 'pie-' + i + '-background-size', type: t.percent } );
     pie.push( { name: 'pie-' + i + '-background-opacity', type: t.zeroOneNumber } );
+  }
+
+  // stripe backgrounds for nodes
+  let stripe = [];
+  styfn.stripeBackgroundN = 16; // because the stripe properties are numbered, give access to a constant N (for renderer use)
+  stripe.push( { name: 'stripe-size', type: t.sizeMaybePercent } );
+  stripe.push( { name: 'stripe-direction', type: t.axisDirectionPrimary } );
+  for( let i = 1; i <= styfn.stripeBackgroundN; i++ ){
+    stripe.push( { name: 'stripe-' + i + '-background-color', type: t.color } );
+    stripe.push( { name: 'stripe-' + i + '-background-size', type: t.percent } );
+    stripe.push( { name: 'stripe-' + i + '-background-opacity', type: t.zeroOneNumber } );
   }
 
   // edge arrows
@@ -476,6 +490,7 @@ const styfn = {};
     ...nodeOutline,
     ...backgroundImage,
     ...pie,
+    ...stripe,
     ...compound,
 
     // edge props
@@ -507,6 +522,7 @@ const styfn = {};
     nodeOutline,
     backgroundImage,
     pie,
+    stripe,
     compound,
 
     // edge props
@@ -723,13 +739,31 @@ styfn.getDefaultProperties = function(){
     'min-height-bias-bottom': 0
   }, {
     // node pie bg
-    'pie-size': '100%'
+    'pie-size': '100%',
+    'pie-hole': 0,
   }, [
     { name: 'pie-{{i}}-background-color', value: 'black' },
     { name: 'pie-{{i}}-background-size', value: '0%' },
     { name: 'pie-{{i}}-background-opacity', value: 1 }
   ].reduce( function( css, prop ){
     for( let i = 1; i <= styfn.pieBackgroundN; i++ ){
+      let name = prop.name.replace( '{{i}}', i );
+      let val = prop.value;
+
+      css[ name ] = val;
+    }
+
+    return css;
+  }, {} ), {
+    // node stripes bg
+    'stripe-size': '100%',
+    'stripe-direction': 'horizontal',
+  }, [
+    { name: 'stripe-{{i}}-background-color', value: 'black' },
+    { name: 'stripe-{{i}}-background-size', value: '0%' },
+    { name: 'stripe-{{i}}-background-opacity', value: 1 }
+  ].reduce( function( css, prop ){
+    for( let i = 1; i <= styfn.stripeBackgroundN; i++ ){
       let name = prop.name.replace( '{{i}}', i );
       let val = prop.value;
 

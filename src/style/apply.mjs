@@ -357,15 +357,17 @@ styfn.updateStyleHints = function(ele){
   //
 
   if( isNode ){
-    let { nodeBody, nodeBorder, nodeOutline, backgroundImage, compound, pie } = _p.styleKeys;
+    let { nodeBody, nodeBorder, nodeOutline, backgroundImage, compound, pie, stripe } = _p.styleKeys;
 
-    let nodeKeys = [ nodeBody, nodeBorder, nodeOutline, backgroundImage, compound, pie ].filter(k => k != null).reduce(util.hashArrays, [
+    let nodeKeys = [ nodeBody, nodeBorder, nodeOutline, backgroundImage, compound, pie, stripe ].filter(k => k != null).reduce(util.hashArrays, [
       util.DEFAULT_HASH_SEED,
       util.DEFAULT_HASH_SEED_ALT
     ]);
     _p.nodeKey = util.combineHashesArray(nodeKeys);
     
     _p.hasPie = pie != null && pie[0] !== util.DEFAULT_HASH_SEED && pie[1] !== util.DEFAULT_HASH_SEED_ALT;
+
+    _p.hasStripe = stripe != null && stripe[0] !== util.DEFAULT_HASH_SEED && stripe[1] !== util.DEFAULT_HASH_SEED_ALT;
   }
 
   return oldStyleKey !== _p.styleKey;
@@ -385,6 +387,7 @@ styfn.clearStyleHints = function(ele){
   _p.targetLabelStyleKey = null;
   _p.nodeKey = null;
   _p.hasPie = null;
+  _p.hasStripe = null;
 };
 
 // apply a property to the style (for internal use)

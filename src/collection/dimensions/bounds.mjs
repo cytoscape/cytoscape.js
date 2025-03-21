@@ -1,6 +1,6 @@
 import * as is from '../../is.mjs';
 import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox, shiftBoundingBox, updateBoundingBox } from '../../math.mjs';
-import { defaults, getPrefixedProperty, hashIntsArray } from '../../util/index.mjs';
+import { defaults, getPrefixedProperty, hashIntsArray, memoize } from '../../util/index.mjs';
 
 let fn, elesfn;
 
@@ -801,14 +801,17 @@ let getKey = function( opts ){
 };
 
 let getBoundingBoxPosKey = ele => {
+  let r = x => Math.round(x);
+
   if( ele.isEdge() ){
     let p1 = ele.source().position();
     let p2 = ele.target().position();
-    let r = x => Math.round(x);
 
     return hashIntsArray([ r(p1.x), r(p1.y), r(p2.x), r(p2.y) ]);
   } else {
-    return 0;
+    let p = ele.position();
+
+    return hashIntsArray([ r(p.x), r(p.y) ]);
   }
 };
 
@@ -818,21 +821,12 @@ let cachedBoundingBoxImpl = function( ele, opts ){
   let isEdge = ele.isEdge();
   let key = opts == null ? defBbOptsKey : getKey( opts );
   let usingDefOpts = key === defBbOptsKey;
-  let currPosKey = getBoundingBoxPosKey( ele );
-  let isPosKeySame = _p.bbCachePosKey === currPosKey;
-  let useCache = opts.useCache;
-  let isDirty = ele => ele._private.bbCache == null || ele._private.styleDirty;
-  let needRecalc = !useCache || isDirty(ele) || (isEdge && (isDirty(ele.source()) || isDirty(ele.target())));
 
-  if( needRecalc ){
-    if( !isPosKeySame ){
-      ele.recalculateRenderedStyle(useCache);
-    }
-
+  if( _p.bbCache == null ){
     bb = boundingBoxImpl( ele, defBbOpts );
 
     _p.bbCache = bb;
-    _p.bbCachePosKey = currPosKey;
+    _p.bbCachePosKey = getBoundingBoxPosKey( ele );
   } else {
     bb = _p.bbCache;
   }
@@ -896,46 +890,54 @@ const filledBbOpts = defaults( defBbOpts );
 elesfn.boundingBox = function( options ){
   let bounds;
 
+  let useCache = (options === undefined || options.useCache === undefined || options.useCache === true);
+
+  let isDirty = memoize(ele => {
+    let _p = ele._private;
+    
+    return _p.bbCache == null || _p.styleDirty || _p.bbCachePosKey !== getBoundingBoxPosKey(ele);
+  }, ele => ele.id());
+
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
   // avoiding the overhead of the rest of the function
-  if( this.length === 1 && this[0]._private.bbCache != null && !this[0]._private.styleDirty && (options === undefined || options.useCache === undefined || options.useCache === true) ){
-    if( options === undefined ){
+  if (useCache && this.length === 1 && !isDirty(this[0])) {
+    if (options === undefined) {
       options = defBbOpts;
     } else {
       options = filledBbOpts( options );
     }
 
-    bounds = cachedBoundingBoxImpl( this[0], options );
+    bounds = cachedBoundingBoxImpl(this[0], options);
   } else {
     bounds = makeBoundingBox();
 
     options = options || defBbOpts;
 
-    let opts = filledBbOpts( options );
+    let opts = filledBbOpts(options);
 
     let eles = this;
     let cy = eles.cy();
     let styleEnabled = cy.styleEnabled();
 
-    if( styleEnabled ){
-      for( let i = 0; i < eles.length; i++ ){
-        let ele = eles[i];
-        let _p = ele._private;
-        let currPosKey = getBoundingBoxPosKey( ele );
-        let isPosKeySame = _p.bbCachePosKey === currPosKey;
-        let useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
+    // cache the isDirty state for all eles, edges first since they depend on node state
+    this.edges().forEach(isDirty);
+    this.nodes().forEach(isDirty);
 
-        ele.recalculateRenderedStyle( useCache );
-      }
+    if(styleEnabled) {
+      this.recalculateRenderedStyle(useCache);
     }
 
-    this.updateCompoundBounds(!options.useCache);
+    this.updateCompoundBounds(!useCache);
 
-    for( let i = 0; i < eles.length; i++ ){
+    for (let i = 0; i < eles.length; i++) {
       let ele = eles[i];
 
-      updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
+      if (isDirty(ele)) {
+        ele.dirtyBoundingBoxCache();
+      }
+
+      updateBoundsFromBox(bounds, cachedBoundingBoxImpl(ele, opts));
     }
   }
 

@@ -49,104 +49,69 @@ test.describe('Renderer', () => {
     expect(numNodes).toBe(1);
   });
 
-  // test('bundled beziers move when adding to the bundle', async ({ page }) => {
-  //   // const extent = await page.evaluate(() => {
-  //   //   return window.cy.extent();
-  //   // });
+  test.describe('straight edges', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.evaluate(() => {
+        const cy = window.cy;
+  
+        cy.style().fromJson([
+          {
+            selector: 'edge',
+            style: {
+              'curve-style': 'straight'
+            }
+          }
+        ]).update();
+  
+        cy.add([
+          {
+            data: { id: 'a' },
+            position: { x: 0, y: 0 }
+          },
+          {
+            data: { id: 'b' },
+            position: { x: 0, y: 0 }
+          },
+          {
+            data: { id: 'ab1', source: 'a', target: 'b' }
+          },
+          {
+            data: { id: 'ab2', source: 'a', target: 'b' }
+          }
+        ]);
+      });
+    }); // beforeEach
 
-  //   // console.log('extent', extent);
+    test('initial bounding box is zero', async ({ page }) => {
+      let bb1 = await page.evaluate(() => cy.$('#ab1').boundingBox());
+      let bb2 = await page.evaluate(() => cy.$('#ab2').boundingBox());
 
-  //   const stepSize = 40;
+      expect(bb1.w).toEqual(0);
+      expect(bb1.h).toEqual(0);
 
-  //   const ctrlpts1 = await page.evaluate(() => {
-  //     const cy = window.cy;
+      expect(bb2.w).toEqual(0);
+      expect(bb2.h).toEqual(0);
+    }); // initial bounding box is zero
 
-  //     cy.style().fromJson([
-  //       {
-  //         selector: 'edge',
-  //         style: {
-  //           'curve-style': 'bezier',
-  //           'control-point-step-size': 40
-  //         }
-  //       }
-  //     ]).update();
+    test('moved bounding box is nonzero', async ({ page }) => {
+      await delay(500);
 
-  //     cy.add([
-  //       {
-  //         data: { id: 'a' }
-  //       },
-  //       {
-  //         data: { id: 'b' }
-  //       },
-  //       {
-  //         data: { id: 'ab1', source: 'a', target: 'b' }
-  //       },
-  //       {
-  //         data: { id: 'ab2', source: 'a', target: 'b' }
-  //       }
-  //     ]);
+      await page.evaluate(() => {
+        cy.layout({ name: 'grid', rows: 1, cols: 2 }).run();
+      });
 
-  //     cy.layout({ name: 'grid', rows: 1, cols: 2 }).run();
+      await delay(500);
 
-  //     return cy.edges().map(edge => edge.controlPoints()[0]);
-  //   });
-    
-  //   let pt_ab1_1 = await page.evaluate(() => {
-  //     return window.cy.$('#ab1').controlPoints()[0];
-  //   });
+      let bb1 = await page.evaluate(() => cy.$('#ab1').boundingBox());
+      let bb2 = await page.evaluate(() => cy.$('#ab2').boundingBox());
 
-  //   let pt_ab2_1 = await page.evaluate(() => {
-  //     return window.cy.$('#ab2').controlPoints()[0];
-  //   });
+      expect(bb1.w).not.toEqual(0);
+      expect(bb1.h).not.toEqual(0);
 
-  //   expect(ctrlpts1.length).toBe(2);
-  //   expectUniquePoints(ctrlpts1);
-
-  //   // distance between the two control points
-  //   let d_1_01 = dist(ctrlpts1[0], ctrlpts1[1]);
-
-  //   expect(d_1_01).toBe(stepSize);
-
-  //   const ctrlpts2 = await page.evaluate(() => {
-  //     const cy = window.cy;
-
-  //     cy.add([
-  //       {
-  //         data: { id: 'ab3', source: 'a', target: 'b' }
-  //       },
-  //       {
-  //         data: { id: 'ab4', source: 'a', target: 'b' }
-  //       }
-  //     ]);
-
-  //     return cy.edges().map(edge => edge.controlPoints()[0]);
-  //   });
-
-  //   // console.log(ctrlpts2);
-
-  //   expect(ctrlpts2.length).toBe(4);
-  //   expectUniquePoints(ctrlpts2);
-
-  //   let d_2_01 = dist(ctrlpts2[0], ctrlpts2[1]);
-  //   let d_2_12 = dist(ctrlpts2[1], ctrlpts2[2]);
-  //   let d_2_23 = dist(ctrlpts2[2], ctrlpts2[3]);
-
-  //   expect(d_2_01).toBeCloseTo(stepSize);
-  //   expect(d_2_12).toBeCloseTo(stepSize);
-  //   expect(d_2_23).toBeCloseTo(stepSize);
-
-  //   let pt_ab1_2 = await page.evaluate(() => {
-  //     return window.cy.$('#ab1').controlPoints()[0];
-  //   });
-
-  //   let pt_ab2_2 = await page.evaluate(() => {
-  //     return window.cy.$('#ab2').controlPoints()[0];
-  //   });
-
-  //   // ctrl pts for ab1 and ab2 should have changed
-  //   expect(pt_ab1_1).not.toEqual(pt_ab1_2);
-  //   expect(pt_ab2_1).not.toEqual(pt_ab2_2);
-  // });
+      expect(bb2.w).not.toEqual(0);
+      expect(bb2.h).not.toEqual(0);
+    }); // initial bounding box is nonzero
+  });
 
   test.describe('bundled beziers', () => {
     const stepSize = 40;

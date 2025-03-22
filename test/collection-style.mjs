@@ -596,6 +596,36 @@ describe('Collection style', function(){
 
       expect(d, 'control-point-distances').to.deep.equal([32, 128]);
     });
+
+    it('ele.outerWidth() takes into account border position (center)', function(){
+      var n1 = cy.$('#n1');
+
+      n1.style('width', 20);
+      n1.style('border-width', 10);
+      n1.style('border-position', 'center');
+
+      expect( n1.outerWidth() ).to.equal( 30 );
+    });
+
+    it('ele.outerWidth() takes into account border position (inside)', function(){
+      var n1 = cy.$('#n1');
+
+      n1.style('width', 20);
+      n1.style('border-width', 10);
+      n1.style('border-position', 'inside');
+
+      expect( n1.outerWidth() ).to.equal( 20 );
+    });
+
+    it('ele.outerWidth() takes into account border position (outside)', function(){
+      var n1 = cy.$('#n1');
+
+      n1.style('width', 20);
+      n1.style('border-width', 10);
+      n1.style('border-position', 'outside');
+
+      expect( n1.outerWidth() ).to.equal( 40 );
+    });
   });
 
   describe('eles.addClass() etc', function(){

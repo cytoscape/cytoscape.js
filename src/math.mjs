@@ -1323,3 +1323,49 @@ export const getBarrelCurveConstants = ( width, height ) => ({
   widthOffset: Math.min(100, 0.25 * width),
   ctrlPtOffsetPct: 0.05
 });
+
+// Separating Axis Theorem (SAT) to determine if two polygons intersect. 
+// The function takes two polygons as input and returns a boolean value indicating 
+// whether the two polygons intersect.
+export function satPolygonIntersection(poly1, poly2) {
+  function getAxes(polygon) {
+      let axes = [];
+      for (let i = 0; i < polygon.length; i++) {
+          let p1 = polygon[i];
+          let p2 = polygon[(i + 1) % polygon.length];
+          let edge = { x: p2.x - p1.x, y: p2.y - p1.y };
+          let normal = { x: -edge.y, y: edge.x };
+          let length = Math.sqrt(normal.x * normal.x + normal.y * normal.y);
+          axes.push({ x: normal.x / length, y: normal.y / length });
+      }
+      return axes;
+  }
+
+  function project(polygon, axis) {
+      let min = Infinity;
+      let max = -Infinity;
+      for (let point of polygon) {
+          let projection = point.x * axis.x + point.y * axis.y;
+          min = Math.min(min, projection);
+          max = Math.max(max, projection);
+      }
+      return { min, max };
+  }
+
+  function overlaps(proj1, proj2) {
+      return !(proj1.max < proj2.min || proj2.max < proj1.min);
+  }
+
+  let axes = [...getAxes(poly1), ...getAxes(poly2)];
+
+  for (let axis of axes) {
+      let proj1 = project(poly1, axis);
+      let proj2 = project(poly2, axis);
+      if (!overlaps(proj1, proj2)) {
+          return false; // No overlap, so the polygons do not intersect
+      }
+  }
+
+  return true; // polygons intersect
+}
+

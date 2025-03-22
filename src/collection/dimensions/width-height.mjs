@@ -51,7 +51,18 @@ let defineDimFns = function( opts ){
     if( ele ){
       if( styleEnabled ){
         let dim = ele[ opts.name ]();
-        let border = ele.pstyle( 'border-width' ).pfValue; // n.b. 1/2 each side
+
+        let borderPos = ele.pstyle( 'border-position' ).value;
+
+        let border;
+        if(borderPos === 'center') {
+          border = ele.pstyle( 'border-width' ).pfValue; // n.b. 1/2 each side
+        } else if(borderPos === 'outside') {
+          border = 2 * ele.pstyle( 'border-width' ).pfValue;
+        } else { // 'inside'
+          border = 0;
+        }
+
         let padding = 2 * ele.padding();
 
         return dim + border + padding;

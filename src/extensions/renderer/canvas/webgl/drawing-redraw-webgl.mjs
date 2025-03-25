@@ -1,11 +1,9 @@
-import { ElementDrawingWebGL } from './drawing-elements-webgl.mjs';
-import { RENDER_TARGET, TEX_PICKING_MODE } from './defaults.mjs';
-import { renderDefaults, atlasCollectionDefaults } from './defaults.mjs';
-import { OverlayUnderlayRenderer } from './drawing-overlay.mjs';
+import { ElementDrawingWebGL, RENDER_TARGET, TEX_PICKING_MODE } from './drawing-elements-webgl.mjs';
 import * as util from './webgl-util.mjs';
 import * as eleTextureCache from '../ele-texture-cache.mjs';
 import { debounce } from '../../../../util/index.mjs';
 import { color2tuple } from '../../../../util/colors.mjs';
+import { getPrefixedProperty } from '../../../../util/index.mjs';
 import { mat3 } from 'gl-matrix';
 
 
@@ -35,82 +33,112 @@ CRp.initWebgl = function(opts, fns) {
     const label = ele.pstyle(prop);
     return label && label.value;
   };
+  const isLayerVisible = (prefix) => (node) => {
+    return node.pstyle(`${prefix}-opacity`).value > 0;
+  }
   const getTexPickingMode = (ele) => {
     const enabled = ele.pstyle('text-events').strValue === 'yes';
     return enabled ? TEX_PICKING_MODE.USE_BB : TEX_PICKING_MODE.IGNORE;
   };
+  const getBBForSimpleShape = (node) => {
+    const { x, y } = node.position();
+    const w = node.outerWidth(); // includes border and padding
+    const h = node.outerHeight();
+    return { w, h, x1: x - w/2, y1: y - h/2 };
+  };
 
   r.drawing = new ElementDrawingWebGL(r, gl, opts);
-  const our = new OverlayUnderlayRenderer(r);
 
-  r.drawing.addAtlasCollection('node', atlasCollectionDefaults({
+  r.drawing.addAtlasCollection('node', {
     texRows: opts.webglTexRowsNodes
-  }));
+  });
 
-  r.drawing.addAtlasCollection('label', atlasCollectionDefaults({
+  r.drawing.addAtlasCollection('label', {
     texRows: opts.webglTexRows
-  }));
+  });
 
-  r.drawing.addAtlasRenderType('node-body', renderDefaults({
+  r.drawing.addTextureAtlasRenderType('node-body', {
     collection: 'node',
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-  }));
+  });
 
-  r.drawing.addAtlasRenderType('label', renderDefaults({ // node label or edge mid label
+  r.drawing.addSimpleShapeRenderType('node-body', {
+    getBoundingBox: getBBForSimpleShape,
+    isSimple: util.isSimpleShape,
+    shapeProps: {
+      shape:   'shape',
+      color:   'background-color',
+      opacity: 'background-opacity',
+      radius:  'corner-radius',
+      border:  true
+    }
+  });
+
+  r.drawing.addSimpleShapeRenderType('node-overlay', {
+    getBoundingBox: getBBForSimpleShape,
+    isVisible: isLayerVisible('overlay'),
+    shapeProps: {
+      shape:   'overlay-shape',
+      color:   'overlay-color',
+      opacity: 'overlay-opacity',
+      padding: 'overlay-padding',
+      radius:  'overlay-corner-radius',
+    }
+  });
+
+  r.drawing.addSimpleShapeRenderType('node-underlay', {
+    getBoundingBox: getBBForSimpleShape,
+    isVisible: isLayerVisible('underlay'),
+    shapeProps: {
+      shape:   'underlay-shape',
+      color:   'underlay-color',
+      opacity: 'underlay-opacity',
+      padding: 'underlay-padding',
+      radius:  'underlay-corner-radius',
+    }
+  });
+
+  r.drawing.addTextureAtlasRenderType('label', { // node label or edge mid label
     collection: 'label',
     getTexPickingMode,
-    getKey: fns.getLabelKey,
-    getBoundingBox: fns.getLabelBox,
+    getKey: getStyleKeysForLabel(fns.getLabelKey, null),
+    getBoundingBox: getBoundingBoxForLabel(fns.getLabelBox, null),
+    drawClipped: true,
     drawElement: fns.drawLabel,
     getRotation: getLabelRotation(null),
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
     isVisible: isLabelVisible('label'),
-  }));
-  
-  r.drawing.addAtlasRenderType('node-overlay', renderDefaults({
-    collection: 'node',
-    getBoundingBox: fns.getElementBox,
-    getKey: ele => our.getStyleKey('overlay', ele),
-    drawElement: (ctx, ele, bb) => our.draw('overlay', ctx, ele, bb),
-    isVisible: ele => our.isVisible('overlay', ele),
-    getPadding: ele => our.getPadding('overlay', ele),
-  }));
+  });
 
-  r.drawing.addAtlasRenderType('node-underlay', renderDefaults({
-    collection: 'node',
-    getBoundingBox: fns.getElementBox,
-    getKey: ele => our.getStyleKey('underlay', ele),
-    drawElement: (ctx, ele, bb) => our.draw('underlay', ctx, ele, bb),
-    isVisible: ele => our.isVisible('underlay', ele),
-    getPadding: ele => our.getPadding('underlay', ele),
-  }));
-
-  r.drawing.addAtlasRenderType('edge-source-label', renderDefaults({
+  r.drawing.addTextureAtlasRenderType('edge-source-label', {
     collection: 'label',
     getTexPickingMode,
-    getKey: fns.getSourceLabelKey,
-    getBoundingBox: fns.getSourceLabelBox,
+    getKey: getStyleKeysForLabel(fns.getSourceLabelKey, 'source'),
+    getBoundingBox: getBoundingBoxForLabel(fns.getSourceLabelBox, 'source'),
+    drawClipped: true,
     drawElement: fns.drawSourceLabel,
     getRotation: getLabelRotation('source'),
     getRotationPoint: fns.getSourceLabelRotationPoint,
     getRotationOffset: fns.getSourceLabelRotationOffset,
     isVisible: isLabelVisible('source-label'),
-  }));
+  });
 
-  r.drawing.addAtlasRenderType('edge-target-label', renderDefaults({
+  r.drawing.addTextureAtlasRenderType('edge-target-label', {
     collection: 'label',
     getTexPickingMode,
-    getKey: fns.getTargetLabelKey,
-    getBoundingBox: fns.getTargetLabelBox,
+    getKey: getStyleKeysForLabel(fns.getTargetLabelKey, 'target'),
+    getBoundingBox: getBoundingBoxForLabel(fns.getTargetLabelBox, 'target'),
+    drawClipped: true,
     drawElement: fns.drawTargetLabel,
     getRotation: getLabelRotation('target'),
     getRotationPoint: fns.getTargetLabelRotationPoint,
     getRotationOffset: fns.getTargetLabelRotationOffset,
     isVisible: isLabelVisible('target-label'),
-  }));
+  });
+
 
   // this is a very simplistic way of triggering garbage collection
   const setGCFlag = debounce(() => {
@@ -138,6 +166,49 @@ function getBGColor(r) {
   const cssColor = (container && container.style && container.style.backgroundColor) || 'white';
   return color2tuple(cssColor);
 }
+
+
+function getLabelLines(ele, prefix) {
+  const rs = ele._private.rscratch;
+  return getPrefixedProperty(rs, 'labelWrapCachedLines', prefix) || [];
+}
+
+/** 
+ * Handle multi-line labels by rendering each line as a seperate texture.
+ * That means each line needs its own style key.
+ */
+const getStyleKeysForLabel = (getKey, prefix) => (ele) => {
+  const key = getKey(ele);
+  const lines = getLabelLines(ele, prefix);
+  if(lines.length > 1) {
+    return lines.map((line, index) => `${key}_${index}`);
+  }
+  return key;
+};
+
+/**
+ * Need to create a separate bounding box for each line of a multi-line label.
+ * Note that 'drawClipped: true' should be used with this.
+ */
+const getBoundingBoxForLabel = (getBoundingBox, prefix) => (ele, styleKey) => {
+  const bb = getBoundingBox(ele);
+  if(typeof styleKey === 'string') {
+    const ui = styleKey.indexOf('_');
+    if(ui > 0) {
+      const lineIndex = Number(styleKey.substring(ui + 1));
+      const lines = getLabelLines(ele, prefix);
+      // Adjust the height and Y coordinate for one line of the label.
+      const h = bb.h / lines.length;
+      const yOffset = h * lineIndex;
+      const y1 = bb.y1 + yOffset;
+      // the yOffset is needed when rotating the label
+      return { x1: bb.x1, w: bb.w, y1, h, yOffset };
+    }
+  }
+  return bb;
+};
+
+
 
 /**
  * Plug into the canvas renderer to use webgl for rendering.
@@ -282,7 +353,6 @@ function drawAtlases(r) {
   const draw = (drawing, name, row) => {
     const collection = drawing.atlasManager.getAtlasCollection(name);
     const context = r.data.contexts[r.NODE];
-    const scale = 0.125;
   
     const atlases = collection.atlases;
     for(let i = 0; i < atlases.length; i++) {
@@ -295,7 +365,7 @@ function drawAtlases(r) {
         const y = canvas.height * row;
     
         context.save();
-        context.scale(scale, scale);
+        // context.scale(scale, scale);
         context.drawImage(canvas, x, y);
         context.strokeStyle = 'black';
         context.rect(x, y, w, h);
@@ -418,29 +488,15 @@ function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
   return Array.from(box);
 }
 
-// TODO: Is constantly checking this slower than just rendering a texture?
-// Maybe this should be cached as a flag on each node.
-function isSimpleRectangle(node) {
-  return (
-    node.pstyle('shape').value === 'rectangle' &&
-    node.pstyle('background-fill').value === 'solid' &&
-    node.pstyle('border-width').pfValue === 0 &&
-    node.pstyle('background-image').strValue === 'none'
-  );
-}
 
 function drawEle(r, index, ele) {
   const { drawing } = r;
   index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
   if(ele.isNode()) {
-    drawing.drawTexture(ele, index, 'node-underlay');
-    if(isSimpleRectangle(ele)) {
-      drawing.drawSimpleRectangle(ele, index, 'node-body');
-    } else {
-      drawing.drawTexture(ele, index, 'node-body');
-    }
+    drawing.drawNode(ele, index, 'node-underlay');
+    drawing.drawNode(ele, index, 'node-body');
     drawing.drawTexture(ele, index, 'label');
-    drawing.drawTexture(ele, index, 'node-overlay');
+    drawing.drawNode(ele, index, 'node-overlay');
   } else {
     drawing.drawEdgeLine(ele, index);
     drawing.drawEdgeArrow(ele, index, 'source');
@@ -526,7 +582,7 @@ function renderWebgl(r, options, renderTarget) {
       `${debugInfo.batchCount} batches`,
       `${debugInfo.totalAtlases} atlases`,
       `${debugInfo.wrappedCount} wrapped textures`,
-      `${debugInfo.rectangleCount} simple rectangles`
+      `${debugInfo.simpleCount} simple shapes`
     ].join(', ');
 
     if(compact) {

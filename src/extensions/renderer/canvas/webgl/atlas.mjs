@@ -1,6 +1,5 @@
 import * as util from './webgl-util.mjs';
 import * as cyutil from '../../../../util/index.mjs';
-import { mat3 } from 'gl-matrix';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
@@ -336,12 +335,14 @@ export class AtlasCollection {
           const [ s1, s2 ] = atlas.getOffsets(key);
           if(!newAtlas.canFit({ w: s1.w + s2.w, h: s1.h })) {
             newAtlas.lock();
-            
             newAtlas = this._createAtlas();
             newAtlases.push(newAtlas);
           }
-          this._copyTextureToNewAtlas(key, atlas, newAtlas);
-          newStyleKeyToAtlas.set(key, newAtlas);
+          if(atlas.canvas) {
+            // if the texture can't be copied then it will have to be redrawn on the next frame
+            this._copyTextureToNewAtlas(key, atlas, newAtlas);
+            newStyleKeyToAtlas.set(key, newAtlas);
+          }
         }
       }
 
@@ -427,17 +428,11 @@ export class AtlasManager {
     this.renderTypes = new Map(); // renderType:string -> renderTypeOptions
     this.collections = new Map(); // collectionName:string -> AtlasCollection
 
-    this.typeAndIdToKey = new Map(); // [renderType,id] => style key
-
-    this.batchAtlases = [];
+    this.typeAndIdToKey = new Map(); // [renderType,id] => Array<style key>
   }
 
   getAtlasSize() {
     return this.atlasSize;
-  }
-
-  getMaxAtlasesPerBatch() {
-    return this.maxAtlasesPerBatch;
   }
 
   addAtlasCollection(collectionName, atlasCollectionOptions) {
@@ -501,23 +496,25 @@ export class AtlasManager {
         for(const opts of this.renderTypes.values()) {
           const renderType = opts.type;
           if(filterType(renderType)) {
-
-            const styleKey = opts.getKey(ele);
             const atlasCollection = this.collections.get(opts.collection);
+
+            const key = opts.getKey(ele);
+            const keyArray = Array.isArray(key) ? key : [key];
 
             // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn
             if(forceRedraw) { 
-              atlasCollection.markKeyForGC(styleKey);
+              keyArray.forEach(key => atlasCollection.markKeyForGC(key));
               runGCNow = true; // run GC to remove the old texture right now, that way we don't need to remember for the next gc 
             } else {
               const id = opts.getID ? opts.getID(ele) : ele.id();
               const mapKey = this._key(renderType, id);
-              const oldStyleKey = this.typeAndIdToKey.get(mapKey);
+              const oldKeyArray = this.typeAndIdToKey.get(mapKey);
 
-              if(oldStyleKey !== undefined && oldStyleKey !== styleKey) {
-                this.typeAndIdToKey.delete(mapKey);
-                atlasCollection.markKeyForGC(oldStyleKey);
+              if(oldKeyArray !== undefined && !util.arrayEqual(keyArray, oldKeyArray)) {
+                // conservative approach, if any of the keys don't match then throw them all away
                 needGC = true;
+                this.typeAndIdToKey.delete(mapKey);
+                oldKeyArray.forEach(oldKey => atlasCollection.markKeyForGC(oldKey));
               }
             }
           }
@@ -539,28 +536,83 @@ export class AtlasManager {
     }
   }
 
-  getOrCreateAtlas(ele, type, bb) {
+  getOrCreateAtlas(ele, type, bb, styleKey) {
+    // styleKey is not an array here
     const opts = this.renderTypes.get(type);
-    const styleKey = opts.getKey(ele);
-    if(!bb)
-      bb = opts.getBoundingBox(ele);
-
     const atlasCollection = this.collections.get(opts.collection);
 
     // draws the texture only if needed
     let drawn = false;
     const atlas = atlasCollection.draw(styleKey, bb, context => {
-      opts.drawElement(context, ele, bb, true, true);
+      if(opts.drawClipped) {
+        context.save();
+        context.beginPath();
+        context.rect(0, 0, bb.w, bb.h);
+        context.clip();
+        opts.drawElement(context, ele, bb, true, true);
+        context.restore();
+      } else {
+        opts.drawElement(context, ele, bb, true, true);
+      }
       drawn = true;
     });
 
     if(drawn) {
       const id = opts.getID ? opts.getID(ele) : ele.id(); // for testing
       const mapKey = this._key(type, id);
-      this.typeAndIdToKey.set(mapKey, styleKey);
+      if(this.typeAndIdToKey.has(mapKey)) {
+        this.typeAndIdToKey.get(mapKey).push(styleKey);
+      } else {
+        this.typeAndIdToKey.set(mapKey, [styleKey]);
+      }
     }
-
     return atlas;
+  }
+
+  getAtlasInfo(ele, type) {
+    const opts = this.renderTypes.get(type);
+    const key = opts.getKey(ele);
+    const keyArray = Array.isArray(key) ? key : [key];
+    
+    return keyArray.map(styleKey => {
+      const bb = opts.getBoundingBox(ele, styleKey); // pass the key back to the getBoundingBox method
+      const atlas = this.getOrCreateAtlas(ele, type, bb, styleKey);
+      const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
+      return { atlas, tex:tex1, tex1, tex2, bb };
+    });
+  }
+
+  getDebugInfo() {
+    const debugInfo = [];
+    for(let [ name, collection ] of this.collections) {
+      const { keyCount, atlasCount } = collection.getCounts();
+      debugInfo.push({ type: name, keyCount, atlasCount });
+    }
+    return debugInfo;
+  }
+
+}
+
+
+export class AtlasBatchManager {
+
+  constructor(globalOptions) {
+    this.globalOptions = globalOptions;
+    this.atlasSize = globalOptions.webglTexSize;
+    this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
+    this.batchAtlases = [];
+  }
+
+  getMaxAtlasesPerBatch() {
+    return this.maxAtlasesPerBatch;
+  }
+
+  getAtlasSize() {
+    return this.atlasSize;
+  }
+
+  getIndexArray() {
+    return Array.from({ length: this.maxAtlasesPerBatch }, (v,i) => i);
   }
 
   startBatch() {
@@ -575,15 +627,9 @@ export class AtlasManager {
     return this.batchAtlases;
   }
 
-  canAddToCurrentBatch(ele, type) {
+  canAddToCurrentBatch(atlas) {
     if(this.batchAtlases.length === this.maxAtlasesPerBatch) { 
-      // batch is full, is the atlas already part of this batch?
-      const opts = this.renderTypes.get(type);
-      const styleKey = opts.getKey(ele);
-      const atlasCollection = this.collections.get(opts.collection);
-      const atlas = atlasCollection.getAtlas(styleKey);
-      // return true if there is an atlas and it is part of this batch already
-      return Boolean(atlas) && this.batchAtlases.includes(atlas);
+      return this.batchAtlases.includes(atlas);
     }
     return true; // not full
   }
@@ -592,124 +638,12 @@ export class AtlasManager {
     let atlasID = this.batchAtlases.indexOf(atlas);
     if(atlasID < 0) {
       if(this.batchAtlases.length === this.maxAtlasesPerBatch) {
-        return;
+        throw new Error('cannot add more atlases to batch');
       }
       this.batchAtlases.push(atlas);
       atlasID = this.batchAtlases.length - 1;
     }
     return atlasID;
-  }
-
-  getIndexArray() {
-    return Array.from({ length: this.maxAtlasesPerBatch }, (v,i) => i);
-  }
-
-  getAtlasInfo(ele, type) {
-    const opts = this.renderTypes.get(type);
-    const bb = opts.getBoundingBox(ele);
-    const atlas = this.getOrCreateAtlas(ele, type, bb);
-    const index = this.getAtlasIndexForBatch(atlas);
-    if(index === undefined) {
-      return undefined; // batch is full
-    }
-    const styleKey = opts.getKey(ele);
-    const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
-    // This object may be passed back to setTransformMatrix()
-    return { index, tex1, tex2, bb };
-  }
-  
-
-  /**
-   * matrix is expected to be a 9 element array
-   * this function follows same pattern as CRp.drawCachedElementPortion(...)
-   */
-  setTransformMatrix(ele, matrix, type, atlasInfo, first=true) {
-    const opts = this.getRenderTypeOpts(type);
-    const padding = opts.getPadding ? opts.getPadding(ele) : 0;
-    
-
-    if(atlasInfo) { // we've already computed the bb and tex bounds for a texture
-      const { bb, tex1, tex2 } = atlasInfo;
-
-      // wrapped textures need separate matrix for each part
-      let ratio = tex1.w / (tex1.w + tex2.w); 
-      if(!first) { // first = true means its the first part of the wrapped texture
-        ratio = 1 - ratio;
-      }
-
-      const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
-      this._applyTransformMatrix(matrix, adjBB, opts, ele);
-    } 
-    else {
-      // we don't have a texture yet, or we want to avoid creating a texture for simple shapes
-      const bb = opts.getBoundingBox(ele);
-      const adjBB = this.getAdjustedBB(bb, padding, true, 1);
-      this._applyTransformMatrix(matrix, adjBB, opts, ele);
-    }
-  }
-  
-  
-  _applyTransformMatrix(matrix, adjBB, opts, ele) {
-    let x, y;
-    mat3.identity(matrix);
-
-    const theta = opts.getRotation ? opts.getRotation(ele) : 0;
-    if(theta !== 0) {
-      const { x:sx, y:sy } = opts.getRotationPoint(ele);
-      mat3.translate(matrix, matrix, [sx, sy]);
-      mat3.rotate(matrix, matrix, theta);
-
-      const offset = opts.getRotationOffset(ele);
-
-      x = offset.x + adjBB.xOffset;
-      y = offset.y;
-    } else {
-      x = adjBB.x1;
-      y = adjBB.y1;
-    }
-
-    mat3.translate(matrix, matrix, [x, y]);
-    mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
-  }
-
-  /**
-   * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
-   * @param bb - the original bounding box
-   * @param padding - the padding to add to the bounding box
-   * @param first - whether this is the first part of a wrapped texture
-   * @param ratio - the ratio of the texture width of part of the text to the entire texture
-   */
-  getAdjustedBB(bb, padding, first, ratio) {
-    let { x1, y1, w, h } = bb;
-
-    if(padding) {
-      x1 -= padding;
-      y1 -= padding;
-      w += 2 * padding;
-      h += 2 * padding;
-    }
-
-    let xOffset = 0;
-    const adjW = w * ratio;
-
-    if(first && ratio < 1) {
-      w = adjW;
-    } else if(!first && ratio < 1) {
-      xOffset = w - adjW;
-      x1 += xOffset;
-      w = adjW;
-    }
-
-    return { x1, y1, w, h, xOffset };
-  }
-
-  getDebugInfo() {
-    const debugInfo = [];
-    for(let [ name, collection ] of this.collections) {
-      const { keyCount, atlasCount } = collection.getCounts();
-      debugInfo.push({ type: name, keyCount, atlasCount });
-    }
-    return debugInfo;
   }
 
 }

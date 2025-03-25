@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FXAA Upscaler Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      background-color: #f5f5f5;
+    }
+    
+    h1 {
+      color: #333;
+    }
+    
+    .canvas-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    
+    .canvas-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    canvas {
+      border: 1px solid #ccc;
+      margin-bottom: 10px;
+      background-color: white;
+    }
+    
+    .controls {
+      margin: 20px 0;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .control-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: inline-block;
+      width: 150px;
+      font-weight: 600;
+    }
+    
+    input[type="range"] {
+      width: 300px;
+      vertical-align: middle;
+    }
+    
+    .value-display {
+      display: inline-block;
+      width: 50px;
+      text-align: center;
+      margin-left: 10px;
+    }
+    
+    button {
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    
+    button:hover {
+      background-color: #3367d6;
+    }
+    
+    .pattern-buttons {
+      margin-bottom: 15px;
+    }
+    
+    .zoom-factor {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .performance-info {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #f0f8ff;
+      border-left: 4px solid #4285f4;
+      font-family: monospace;
+    }
+
+    .upscaler-selector {
+      margin-bottom: 15px;
+    }
+    
+    select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background-color: white;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>FXAA Upscaler Test</h1>
+  
+  <div class="canvas-container">
+    <div class="canvas-wrapper">
+      <h3>Input Canvas (200×200)</h3>
+      <canvas id="inputCanvas" width="200" height="200"></canvas>
+      <div>Source image</div>
+    </div>
+    
+    <div class="canvas-wrapper">
+      <h3>Pixelated Upscaling (400×400)</h3>
+      <canvas id="standardCanvas" width="400" height="400"></canvas>
+      <div>Regular browser scaling (pixelated)</div>
+    </div>
+    
+    <div class="canvas-wrapper">
+      <h3>WebGL2 H/W Antialiased (400×400)</h3>
+      <canvas id="webglCanvas" width="400" height="400"></canvas>
+      <div>WebGL2 built-in antialiasing</div>
+    </div>
+    
+    <div class="canvas-wrapper">
+      <h3>Misc. Upscaled (400×400)</h3>
+      <canvas id="outputCanvas" width="400" height="400"></canvas>
+      <div>With very simple anti-aliasing applied</div>
+    </div>
+  </div>
+  
+  <div class="controls">
+    <div class="upscaler-selector">
+      <label for="upscalerSelect"><strong>Upscaler Type:</strong></label>
+      <select id="upscalerSelect">
+        <option value="fxaa">FXAA Upscaler</option>
+        <option value="misc">Misc Upscaler</option>
+      </select>
+    </div>
+    
+    <div class="pattern-buttons">
+      <button id="drawLines">Draw Lines</button>
+      <button id="drawCircles">Draw Circles</button>
+      <button id="drawText">Draw Text</button>
+      <button id="drawGraph">Draw Graph</button>
+    </div>
+    
+    <div class="control-group">
+      <label for="subpixelQuality">Subpixel Quality:</label>
+      <input type="range" id="subpixelQuality" min="0" max="1" step="0.05" value="0.75">
+      <span id="subpixelQualityValue" class="value-display">0.75</span>
+    </div>
+    
+    <div class="control-group">
+      <label for="edgeThreshold">Edge Threshold:</label>
+      <input type="range" id="edgeThreshold" min="0.05" max="0.5" step="0.01" value="0.166">
+      <span id="edgeThresholdValue" class="value-display">0.166</span>
+    </div>
+    
+    <div class="control-group">
+      <label for="edgeThresholdMin">Edge Threshold Min:</label>
+      <input type="range" id="edgeThresholdMin" min="0.01" max="0.2" step="0.01" value="0.0833">
+      <span id="edgeThresholdMinValue" class="value-display">0.0833</span>
+    </div>
+    
+    <button id="applyFxaa">Apply Upscaler</button>
+    
+    <div class="performance-info" id="performanceInfo">
+      Processing time: <span id="processingTime">0</span> ms
+    </div>
+  </div>
+  
+  <script type="module">
+    import { FxaaUpscaler } from '../../src/extensions/renderer/canvas/webgl/fxaa-upscaler.mjs';
+    import { UpscalerPlugin } from '../../src/extensions/renderer/canvas/webgl/misc-upscaler.js';
+    
+    // Get canvases
+    const inputCanvas = document.getElementById('inputCanvas');
+    const standardCanvas = document.getElementById('standardCanvas');
+    const webglCanvas = document.getElementById('webglCanvas');
+    const outputCanvas = document.getElementById('outputCanvas');
+    
+    const inputCtx = inputCanvas.getContext('2d');
+    const standardCtx = standardCanvas.getContext('2d');
+    
+    // Get upscaler selector
+    const upscalerSelect = document.getElementById('upscalerSelect');
+    
+    // Setup WebGL2 context with antialiasing
+    let gl = null;
+    let webglProgram = null;
+    let positionBuffer = null;
+    let texCoordBuffer = null;
+    let texture = null;
+    
+    function initWebGL() {
+      gl = webglCanvas.getContext('webgl2', { antialias: true });
+      if (!gl) {
+        console.error('WebGL2 not supported');
+        return;
+      }
+      
+      // Create shader program
+      const vertexShaderSource = `#version 300 es
+        in vec2 a_position;
+        in vec2 a_texCoord;
+        out vec2 v_texCoord;
+        void main() {
+          gl_Position = vec4(a_position, 0, 1);
+          v_texCoord = a_texCoord;
+        }
+      `;
+      
+      const fragmentShaderSource = `#version 300 es
+        precision mediump float;
+        in vec2 v_texCoord;
+        uniform sampler2D u_texture;
+        out vec4 outColor;
+        void main() {
+          outColor = texture(u_texture, v_texCoord);
+        }
+      `;
+      
+      const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+      const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+      webglProgram = createProgram(gl, vertexShader, fragmentShader);
+      
+      // Setup attributes
+      const positionAttributeLocation = gl.getAttribLocation(webglProgram, "a_position");
+      const texCoordAttributeLocation = gl.getAttribLocation(webglProgram, "a_texCoord");
+      
+      // Create buffers
+      positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1.0, -1.0,
+         1.0, -1.0,
+        -1.0,  1.0,
+         1.0,  1.0,
+      ]), gl.STATIC_DRAW);
+      
+      texCoordBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        0.0, 1.0, // Flipped y-coordinate (was 0.0, 0.0)
+        1.0, 1.0, // Flipped y-coordinate (was 1.0, 0.0)
+        0.0, 0.0, // Flipped y-coordinate (was 0.0, 1.0)
+        1.0, 0.0, // Flipped y-coordinate (was 1.0, 1.0)
+      ]), gl.STATIC_DRAW);
+      
+      // Create texture
+      texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      
+      // Setup VAOs
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      
+      // Position attribute
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.enableVertexAttribArray(positionAttributeLocation);
+      gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+      
+      // TexCoord attribute
+      gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+      gl.enableVertexAttribArray(texCoordAttributeLocation);
+      gl.vertexAttribPointer(texCoordAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    }
+    
+    function createShader(gl, type, source) {
+      const shader = gl.createShader(type);
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    }
+    
+    function createProgram(gl, vertexShader, fragmentShader) {
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error('Program linking error:', gl.getProgramInfoLog(program));
+        return null;
+      }
+      return program;
+    }
+    
+    function renderWebGL() {
+      if (!gl) return;
+      
+      gl.viewport(0, 0, webglCanvas.width, webglCanvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      
+      gl.useProgram(webglProgram);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, inputCanvas);
+      
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    
+    // Initialize WebGL
+    initWebGL();
+    
+    // Create upscalers with initial settings
+    let fxaaUpscaler = new FxaaUpscaler({
+      subpixelQuality: 0.75,
+      edgeThreshold: 0.166,
+      edgeThresholdMin: 0.0833
+    });
+    
+    let miscUpscaler = new UpscalerPlugin({
+      useEdgeDetection: true,
+      scaleFactor: 2.0
+    });
+    miscUpscaler.init(inputCanvas, outputCanvas);
+    
+    // Get current active upscaler
+    function getCurrentUpscaler() {
+      return upscalerSelect.value === 'fxaa' ? fxaaUpscaler : miscUpscaler;
+    }
+    
+    // Get slider elements
+    const subpixelQualitySlider = document.getElementById('subpixelQuality');
+    const edgeThresholdSlider = document.getElementById('edgeThreshold');
+    const edgeThresholdMinSlider = document.getElementById('edgeThresholdMin');
+    
+    // Get value display elements
+    const subpixelQualityValue = document.getElementById('subpixelQualityValue');
+    const edgeThresholdValue = document.getElementById('edgeThresholdValue');
+    const edgeThresholdMinValue = document.getElementById('edgeThresholdMinValue');
+    const processingTimeElement = document.getElementById('processingTime');
+    
+    // Get buttons
+    const applyFxaaButton = document.getElementById('applyFxaa');
+    const drawLinesButton = document.getElementById('drawLines');
+    const drawCirclesButton = document.getElementById('drawCircles');
+    const drawTextButton = document.getElementById('drawText');
+    const drawGraphButton = document.getElementById('drawGraph');
+    
+    // Default to drawing lines
+    drawTestPattern('lines');
+    applyUpscaling();
+    
+    // Add change event for upscaler selector
+    upscalerSelect.addEventListener('change', function() {
+      const isUsingFxaa = this.value === 'fxaa';
+      
+      // Update UI controls based on selected upscaler
+      document.querySelectorAll('.control-group').forEach(group => {
+        group.style.display = isUsingFxaa ? 'block' : 'none';
+      });
+      
+      applyUpscaling();
+    });
+    
+    // Update sliders when changed
+    subpixelQualitySlider.addEventListener('input', function() {
+      subpixelQualityValue.textContent = this.value;
+      updateFxaaSettings();
+    });
+    
+    edgeThresholdSlider.addEventListener('input', function() {
+      edgeThresholdValue.textContent = this.value;
+      updateFxaaSettings();
+    });
+    
+    edgeThresholdMinSlider.addEventListener('input', function() {
+      edgeThresholdMinValue.textContent = this.value;
+      updateFxaaSettings();
+    });
+    
+    // Add button event listeners
+    applyFxaaButton.addEventListener('click', applyUpscaling);
+    
+    drawLinesButton.addEventListener('click', function() {
+      drawTestPattern('lines');
+      applyUpscaling();
+    });
+    
+    drawCirclesButton.addEventListener('click', function() {
+      drawTestPattern('circles');
+      applyUpscaling();
+    });
+    
+    drawTextButton.addEventListener('click', function() {
+      drawTestPattern('text');
+      applyUpscaling();
+    });
+    
+    drawGraphButton.addEventListener('click', function() {
+      drawTestPattern('graph');
+      applyUpscaling();
+    });
+    
+    // Update FXAA settings from sliders
+    function updateFxaaSettings() {
+      fxaaUpscaler = new FxaaUpscaler({
+        subpixelQuality: parseFloat(subpixelQualitySlider.value),
+        edgeThreshold: parseFloat(edgeThresholdSlider.value),
+        edgeThresholdMin: parseFloat(edgeThresholdMinSlider.value)
+      });
+      
+      if (upscalerSelect.value === 'fxaa') {
+        applyUpscaling();
+      }
+    }
+    
+    // Apply upscaling
+    function applyUpscaling() {
+      // Clear the standard canvas and draw the input canvas at 2x size
+      standardCtx.clearRect(0, 0, standardCanvas.width, standardCanvas.height);
+      standardCtx.imageSmoothingEnabled = false; // Pixelated scaling
+      standardCtx.drawImage(inputCanvas, 0, 0, standardCanvas.width, standardCanvas.height);
+      
+      // Render to WebGL canvas with built-in antialiasing
+      renderWebGL();
+      
+      // Measure time for upscaler application
+      const startTime = performance.now();
+      
+      // Apply selected upscaler
+      const currentUpscaler = getCurrentUpscaler();
+      if (currentUpscaler === fxaaUpscaler) {
+        // Apply FXAA to the input canvas and render to the output canvas
+        currentUpscaler.apply(inputCanvas, outputCanvas);
+      } else {
+        // Apply Misc upscaler
+        currentUpscaler.render();
+      }
+      
+      // Calculate and display time taken
+      const endTime = performance.now();
+      const timeTaken = (endTime - startTime).toFixed(2);
+      processingTimeElement.textContent = timeTaken;
+    }
+    
+    function handleMouseMove(e) {
+      const rect = outputCanvas.getBoundingClientRect();
+      if (e.clientX > rect.left && e.clientX < rect.right && 
+          e.clientY > rect.top && e.clientY < rect.bottom) {
+        const normalizedX = (e.clientX - rect.left) / rect.width;
+        
+        if (normalizedX < 0.33) {
+          // Show standard
+          standardCanvas.style.clipPath = `inset(0)`;
+          webglCanvas.style.opacity = '0';
+          outputCanvas.style.clipPath = `inset(0 0 0 100%)`;
+        } else if (normalizedX < 0.66) {
+          // Show webgl
+          standardCanvas.style.clipPath = `inset(0 0 0 100%)`;
+          webglCanvas.style.opacity = '1';
+          outputCanvas.style.clipPath = `inset(0 0 0 100%)`;
+        } else {
+          // Show FXAA
+          standardCanvas.style.clipPath = `inset(0 0 0 100%)`;
+          webglCanvas.style.opacity = '0';
+          outputCanvas.style.clipPath = `inset(0)`;
+        }
+      }
+    }
+    
+    // Draw test patterns
+    function drawTestPattern(pattern) {
+      inputCtx.clearRect(0, 0, inputCanvas.width, inputCanvas.height);
+      
+      // White background
+      inputCtx.fillStyle = 'white';
+      inputCtx.fillRect(0, 0, inputCanvas.width, inputCanvas.height);
+      
+      switch(pattern) {
+        case 'lines':
+          drawLinePattern();
+          break;
+        case 'circles':
+          drawCirclePattern();
+          break;
+        case 'text':
+          drawTextPattern();
+          break;
+        case 'graph':
+          drawGraphPattern();
+          break;
+      }
+    }
+    
+    function drawLinePattern() {
+      inputCtx.strokeStyle = '#333';
+      inputCtx.lineWidth = 1;
+      
+      // Diagonal lines
+      for (let i = 0; i < 200; i += 10) {
+        inputCtx.beginPath();
+        inputCtx.moveTo(0, i);
+        inputCtx.lineTo(i, 0);
+        inputCtx.stroke();
+        
+        inputCtx.beginPath();
+        inputCtx.moveTo(200, i);
+        inputCtx.lineTo(i, 200);
+        inputCtx.stroke();
+      }
+      
+      // Draw a grid
+      inputCtx.strokeStyle = 'rgba(0, 0, 255, 0.5)';
+      for (let i = 0; i < 200; i += 20) {
+        inputCtx.beginPath();
+        inputCtx.moveTo(0, i);
+        inputCtx.lineTo(200, i);
+        inputCtx.stroke();
+        
+        inputCtx.beginPath();
+        inputCtx.moveTo(i, 0);
+        inputCtx.lineTo(i, 200);
+        inputCtx.stroke();
+      }
+      
+      // Draw some stars
+      inputCtx.fillStyle = 'red';
+      for (let i = 0; i < 5; i++) {
+        drawStar(
+          inputCtx, 
+          50 + i * 25, 
+          100 + Math.sin(i) * 30, 
+          5, 
+          10, 
+          5
+        );
+      }
+    }
+    
+    function drawCirclePattern() {
+      // Draw concentric circles
+      for (let i = 10; i < 100; i += 10) {
+        inputCtx.strokeStyle = `hsl(${i * 3}, 70%, 50%)`;
+        inputCtx.lineWidth = 1;
+        inputCtx.beginPath();
+        inputCtx.arc(100, 100, i, 0, Math.PI * 2);
+        inputCtx.stroke();
+      }
+      
+      // Draw some small filled circles
+      for (let i = 0; i < 20; i++) {
+        inputCtx.fillStyle = `rgba(0, 0, 255, 0.7)`;
+        inputCtx.beginPath();
+        inputCtx.arc(
+          Math.random() * 200, 
+          Math.random() * 200, 
+          2 + Math.random() * 4, 
+          0, 
+          Math.PI * 2
+        );
+        inputCtx.fill();
+      }
+    }
+    
+    function drawTextPattern() {
+      // Background
+      inputCtx.fillStyle = 'white';
+      inputCtx.fillRect(0, 0, 200, 200);
+      
+      // Draw various sizes of text
+      inputCtx.fillStyle = 'black';
+      
+      inputCtx.font = '24px Arial';
+      inputCtx.fillText('Hello FXAA', 20, 40);
+      
+      inputCtx.font = '12px Times New Roman';
+      inputCtx.fillText('Anti-aliasing comparison', 20, 70);
+      
+      inputCtx.font = '10px Courier New';
+      inputCtx.fillText('Small text looks jagged', 20, 90);
+      
+      inputCtx.font = '8px Arial';
+      inputCtx.fillText('Very small text is hard to read', 20, 110);
+      
+      // Draw rotated text
+      inputCtx.save();
+      inputCtx.translate(100, 150);
+      inputCtx.rotate(-Math.PI / 4);
+      inputCtx.font = '16px Arial';
+      inputCtx.fillText('Rotated Text', 0, 0);
+      inputCtx.restore();
+    }
+    
+    function drawGraphPattern() {
+      // Create a simple node-edge graph
+      const nodes = [
+        { x: 30, y: 30, r: 15, color: '#E41A1C' },
+        { x: 160, y: 40, r: 12, color: '#377EB8' },
+        { x: 100, y: 100, r: 18, color: '#4DAF4A' },
+        { x: 40, y: 150, r: 10, color: '#984EA3' },
+        { x: 170, y: 160, r: 14, color: '#FF7F00' }
+      ];
+      
+      const edges = [
+        [0, 2], [0, 3], [1, 2], [2, 3], [2, 4], [3, 4]
+      ];
+      
+      // Draw edges first
+      inputCtx.strokeStyle = '#999';
+      inputCtx.lineWidth = 1;
+      
+      for (const edge of edges) {
+        const fromNode = nodes[edge[0]];
+        const toNode = nodes[edge[1]];
+        
+        inputCtx.beginPath();
+        inputCtx.moveTo(fromNode.x, fromNode.y);
+        inputCtx.lineTo(toNode.x, toNode.y);
+        inputCtx.stroke();
+      }
+      
+      // Draw nodes
+      for (const node of nodes) {
+        inputCtx.fillStyle = node.color;
+        inputCtx.beginPath();
+        inputCtx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+        inputCtx.fill();
+        
+        inputCtx.strokeStyle = 'white';
+        inputCtx.lineWidth = 2;
+        inputCtx.beginPath();
+        inputCtx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+        inputCtx.stroke();
+      }
+    }
+    
+    function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+      let rot = Math.PI / 2 * 3;
+      let x = cx;
+      let y = cy;
+      let step = Math.PI / spikes;
+      
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerRadius);
+      
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+        
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+      }
+      
+      ctx.lineTo(cx, cy - outerRadius);
+      ctx.closePath();
+      ctx.fill();
+    }
+    
+  </script>
+</body>
+</html>

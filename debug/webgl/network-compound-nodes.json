@@ -27,6 +27,12 @@
       }
     },
     {
+      "selector": "node#d",
+      "css": {
+        "padding": 10
+      }
+    },
+    {
       "selector": "edge",
       "css": {
         "curve-style": "bezier",

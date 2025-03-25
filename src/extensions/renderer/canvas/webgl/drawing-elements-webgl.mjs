@@ -1,15 +1,30 @@
 import * as util from './webgl-util.mjs';
 import { mat3 } from 'gl-matrix';
-import { RENDER_TARGET, TEX_PICKING_MODE } from './defaults.mjs';
-import { AtlasManager } from './atlas.mjs';
+import { AtlasManager, AtlasBatchManager } from './atlas.mjs';
+import * as math from '../../../../math.mjs';
+import * as sdf from './shader-sdf.mjs';
 
 
-// Vertex types
+export const RENDER_TARGET = {
+  SCREEN:  { name: 'screen',  screen:  true },
+  PICKING: { name: 'picking', picking: true },
+};
+
+export const TEX_PICKING_MODE = {
+  NORMAL: 0, // render the texture just like in RENDER_TARGET.SCREEN mode
+  IGNORE: 1, // don't render the texture at all
+  USE_BB: 2  // render the bounding box as an opaque rectangle
+}
+
+// Vertex types, used in the shaders so must be ints
 const TEXTURE = 0;
 const EDGE_STRAIGHT = 1;
 const EDGE_CURVE_SEGMENT = 2;
 const EDGE_ARROW = 3;
 const RECTANGLE = 4;
+const ROUND_RECTANGLE = 5;
+const BOTTOM_ROUND_RECTANGLE = 6;
+const ELLIPSE = 7;
 
 
 export class ElementDrawingWebGL {
@@ -31,20 +46,72 @@ export class ElementDrawingWebGL {
     opts.enableWrapping = true;
     opts.createTextureCanvas = util.createTextureCanvas; // Unit tests mock this
     this.atlasManager = new AtlasManager(r, opts);
+    this.batchManager = new AtlasBatchManager(opts);
 
-    this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
-    this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
+    this.simpleShapeOptions = new Map();
 
-    this.vao = this.createVAO();
+    this.program = this._createShaderProgram(RENDER_TARGET.SCREEN);
+    this.pickingProgram = this._createShaderProgram(RENDER_TARGET.PICKING);
+
+    this.vao = this._createVAO();
   }
 
-  addAtlasCollection(groupName, opts) {
-    this.atlasManager.addAtlasCollection(groupName, opts);
+
+  /**
+   * @param { string } collectionName
+   * @param {{ texRows: number }} opts
+   */
+  addAtlasCollection(collectionName, opts) {
+    this.atlasManager.addAtlasCollection(collectionName, opts);
   }
 
-  addAtlasRenderType(typeName, opts) {
+
+  /**
+   * @typedef { Object } TextureRenderTypeOpts
+   * @property { string } collection - name of atlas collection to render textures to
+   * @property { function } getKey - returns the "style key" for an element, may be a single value or an array for multi-line lables
+   * @property { function } drawElement - uses a canvas renderer to draw the element to the texture atlas
+   * @property { boolean  } drawClipped - if true the context will be clipped to the bounding box before drawElement() is called, may affect performance 
+   * @property { function } getBoundingBox - returns the bounding box for an element
+   * @property { function } getRotation
+   * @property { function } getRotationPoint
+   * @property { function } getRotationOffset
+   * @property { function } isVisible - this is an extra check for visibility in addition to ele.visible()
+   * @property { function } getTexPickingMode - returns a value from the TEX_PICKING_MODE enum
+   */
+  /**
+   * @param { string } typeName
+   * @param { TextureRenderTypeOpts } opts
+   */
+  addTextureAtlasRenderType(typeName, opts) {
     this.atlasManager.addRenderType(typeName, opts);
   }
+
+
+  /**
+   * @typedef { Object } SimpleShapeRenderTypeOpts
+   * @property { function } getBoundingBox - returns the bounding box for an element
+   * @property { function } isVisible - this is an extra check for visibility in addition to ele.visible()
+   * @property { function } isSimple - check if element is a simple shape, or if it needs to fall back to texture rendering
+   * @property { ShapeVisualProperties } shapeProps
+   */
+  /**
+   * @typedef { Object } ShapeVisualProperties
+   * @property { string } shape
+   * @property { string } color
+   * @property { string } opacity
+   * @property { string } padding
+   * @property { string } radius
+   * @property { boolean } border
+  */
+  /**
+   * @param { string } typeName
+   * @param { SimpleShapeRenderTypeOpts } opts
+   */
+  addSimpleShapeRenderType(typeName, opts) {
+    this.simpleShapeOptions.set(typeName, opts);
+  }
+
 
   invalidate(eles, { type } = {}) {
     const { atlasManager } = this;
@@ -63,7 +130,7 @@ export class ElementDrawingWebGL {
   }
 
 
-  createShaderProgram(renderTarget) {
+  _createShaderProgram(renderTarget) {
     const { gl } = this;
 
     // compute texture coordinates in the shader, becase we are using instanced drawing
@@ -75,10 +142,9 @@ export class ElementDrawingWebGL {
       
       // instanced
       in vec2 aPosition; 
-
+      
+      // where and what are we renderering
       in mat3 aTransform;
-
-      // what are we rendering?
       in int aVertType;
 
       // for picking
@@ -91,26 +157,35 @@ export class ElementDrawingWebGL {
       // for edges
       in vec4 aPointAPointB;
       in vec4 aPointCPointD;
-      in float aLineWidth;
-      in vec4 aColor;
+      in vec2 aLineWidth; // also used for node border width
+
+      // simple shapes
+      in vec4 aCornerRadius; // for round-rectangle [top-right, bottom-right, top-left, bottom-left]
+      in vec4 aColor; // also used for edges
+      in vec4 aBorderColor; // aLineWidth is used for border width
 
       out vec2 vTexCoord;
       out vec4 vColor;
+      out vec2 vPosition;
+
       flat out int vAtlasId;
       flat out vec4 vIndex;
       flat out int vVertType;
+      flat out vec2 vTopRight;
+      flat out vec2 vBotLeft;
+      flat out vec4 vCornerRadius;
+      flat out vec4 vBorderColor;
+      flat out vec2 vBorderWidth;
 
       void main(void) {
         int vid = gl_VertexID;
-        vec2 position = aPosition;
+        vec2 position = aPosition; // TODO make this a vec3, simplifies some code below
 
         if(aVertType == ${TEXTURE}) {
           float texX = aTex.x;
           float texY = aTex.y;
           float texW = aTex.z;
           float texH = aTex.w;
-
-          int vid = gl_VertexID;
 
           if(vid == 1 || vid == 2 || vid == 4) {
             texX += texW;
@@ -124,9 +199,19 @@ export class ElementDrawingWebGL {
 
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
-        else if(aVertType == ${RECTANGLE}) {
-          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
+        else if(aVertType == ${RECTANGLE} || aVertType == ${ELLIPSE} 
+             || aVertType == ${ROUND_RECTANGLE} || aVertType == ${BOTTOM_ROUND_RECTANGLE}) {
+
+          vBotLeft  = (aTransform * vec3(0, 0, 1)).xy; // flat
+          vTopRight = (aTransform * vec3(1, 1, 1)).xy; // flat
+          vPosition = (aTransform * vec3(position, 1)).xy; // interpolated
+
           vColor = aColor;
+          vCornerRadius = aCornerRadius;
+          vBorderColor = aBorderColor;
+          vBorderWidth = aLineWidth;
+
+          gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
         else if(aVertType == ${EDGE_STRAIGHT}) {
           vec2 source = aPointAPointB.xy;
@@ -137,7 +222,7 @@ export class ElementDrawingWebGL {
 
           vec2 xBasis = target - source;
           vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
-          vec2 point = source + xBasis * position.x + yBasis * aLineWidth * position.y;
+          vec2 point = source + xBasis * position.x + yBasis * aLineWidth[0] * position.y;
 
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
           vColor = aColor;
@@ -175,7 +260,7 @@ export class ElementDrawingWebGL {
 
           // Determine the bend direction.
           float sigma = sign(dot(p01 + p21, normal));
-          float width = aLineWidth;
+          float width = aLineWidth[0];
 
           if(sign(pos.y) == -sigma) {
             // This is an intersecting vertex. Adjust the position so that there's no overlap.
@@ -194,7 +279,7 @@ export class ElementDrawingWebGL {
           if(vid == 0)
             position = vec2(-0.15, -0.3);
           if(vid == 1)
-            position = vec2( 0.0,   0.0);
+            position = vec2(  0.0,  0.0);
           if(vid == 2)
             position = vec2( 0.15, -0.3);
 
@@ -211,7 +296,7 @@ export class ElementDrawingWebGL {
       }
     `;
 
-    const idxs = this.atlasManager.getIndexArray();
+    const idxs = this.batchManager.getIndexArray();
 
     const fragmentShaderSource = `#version 300 es
       precision highp float;
@@ -220,23 +305,103 @@ export class ElementDrawingWebGL {
       ${idxs.map(i => `uniform sampler2D uTexture${i};`).join('\n\t')}
 
       uniform vec4 uBGColor;
+      uniform float uZoom;
 
       in vec2 vTexCoord;
       in vec4 vColor;
+      in vec2 vPosition; // model coordinates
+
       flat in int vAtlasId;
       flat in vec4 vIndex;
       flat in int vVertType;
+      flat in vec2 vTopRight;
+      flat in vec2 vBotLeft;
+      flat in vec4 vCornerRadius;
+      flat in vec4 vBorderColor;
+      flat in vec2 vBorderWidth;
 
       out vec4 outColor;
+
+      ${sdf.circleSD}
+      ${sdf.rectangleSD}
+      ${sdf.roundRectangleSD}
+      ${sdf.ellipseSD}
+
+      vec4 blend(vec4 top, vec4 bot) { // with premultiplied alpha
+        return vec4( 
+          top.rgb + (bot.rgb * (1.0 - top.a)),
+          top.a   + (bot.a   * (1.0 - top.a)) 
+        );
+      }
+
+      vec4 distInterp(vec4 cA, vec4 cB, float d) { // interpolate color using Signed Distance
+        // scale to the zoom level so that borders don't look blurry when zoomed in
+        // note 1.5 is an aribitrary value chosen because it looks good
+        return mix(cA, cB, 1.0 - smoothstep(0.0, 1.5 / uZoom, abs(d))); 
+      }
 
       void main(void) {
         if(vVertType == ${TEXTURE}) {
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
-        } else if(vVertType == ${EDGE_ARROW}) {
-          // blend arrow color with background (using premultiplied alpha)
-          outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
+        } 
+        else if(vVertType == ${EDGE_ARROW}) {
+          // mimics how canvas renderer uses context.globalCompositeOperation = 'destination-out';
+          outColor = blend(vColor, uBGColor);
           outColor.a = 1.0; // make opaque, masks out line under arrow
-        } else {
+        }
+        else if(vVertType == ${RECTANGLE} && vBorderWidth == vec2(0.0)) { // simple rectangle with no border
+          outColor = vColor; // unit square is already transformed to a rectangle, nothing else needs to be done
+        }
+        else if(vVertType == ${RECTANGLE} || vVertType == ${ELLIPSE} 
+          || vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) { // use SDF
+
+          float outerBorder = vBorderWidth[0];
+          float innerBorder = vBorderWidth[1];
+          float borderPadding = outerBorder * 2.0;
+          float w = vTopRight.x - vBotLeft.x - borderPadding;
+          float h = vTopRight.y - vBotLeft.y - borderPadding;
+          vec2 b = vec2(w/2.0, h/2.0); // half width, half height
+          vec2 p = vPosition - vec2(vTopRight.x - b[0] - outerBorder, vTopRight.y - b[1] - outerBorder); // translate to center
+
+          float d; // signed distance
+          if(vVertType == ${RECTANGLE}) {
+            d = rectangleSD(p, b);
+          } else if(vVertType == ${ELLIPSE} && w == h) {
+            d = circleSD(p, b.x); // probably faster
+          } else if(vVertType == ${ELLIPSE}) {
+            d = ellipseSD(p, b);
+          } else {
+            d = roundRectangleSD(p, b, vCornerRadius.wzyx);
+          }
+
+          // use the distance to interpolate a color to smooth the edges of the shape, doesn't need multisampling
+          // we must smooth colors inwards, because we can't change pixels outside the shape's bounding box
+          if(d > 0.0) {
+            if(d > outerBorder) {
+              discard;
+            } else {
+              outColor = distInterp(vBorderColor, vec4(0), d - outerBorder);
+            }
+          } else {
+            if(d > innerBorder) {
+              vec4 outerColor = outerBorder == 0.0 ? vec4(0) : vBorderColor;
+              vec4 innerBorderColor = blend(vBorderColor, vColor);
+              outColor = distInterp(innerBorderColor, outerColor, d);
+            } 
+            else {
+              vec4 outerColor;
+              if(innerBorder == 0.0 && outerBorder == 0.0) {
+                outerColor = vec4(0);
+              } else if(innerBorder == 0.0) {
+                outerColor = vBorderColor;
+              } else {
+                outerColor = blend(vBorderColor, vColor);
+              }
+              outColor = distInterp(vColor, outerColor, d - innerBorder);
+            }
+          }
+        }
+        else {
           outColor = vColor;
         }
 
@@ -265,21 +430,25 @@ export class ElementDrawingWebGL {
     program.aPointCPointD   = gl.getAttribLocation(program, 'aPointCPointD');
     program.aLineWidth      = gl.getAttribLocation(program, 'aLineWidth');
     program.aColor          = gl.getAttribLocation(program, 'aColor');
+    program.aCornerRadius   = gl.getAttribLocation(program, 'aCornerRadius');
+    program.aBorderColor    = gl.getAttribLocation(program, 'aBorderColor');
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
     program.uAtlasSize     = gl.getUniformLocation(program, 'uAtlasSize');
     program.uBGColor       = gl.getUniformLocation(program, 'uBGColor');
+    program.uZoom          = gl.getUniformLocation(program, 'uZoom');
 
     program.uTextures = [];
-    for(let i = 0; i < this.atlasManager.getMaxAtlasesPerBatch(); i++) {
+    for(let i = 0; i < this.batchManager.getMaxAtlasesPerBatch(); i++) {
       program.uTextures.push(gl.getUniformLocation(program, `uTexture${i}`));
     }
 
     return program;
   }
 
-  createVAO() {
+
+  _createVAO() {
     const instanceGeometry = [
       0, 0,  1, 0,  1, 1,
       0, 0,  1, 1,  0, 1,
@@ -303,8 +472,10 @@ export class ElementDrawingWebGL {
     this.texBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex);
     this.pointAPointBBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointAPointB);
     this.pointCPointDBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointCPointD);
-    this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
+    this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aLineWidth);
     this.colorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aColor);
+    this.cornerRadiusBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aCornerRadius);
+    this.borderColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aBorderColor);
 
     gl.bindVertexArray(null);
     return vao;
@@ -323,33 +494,37 @@ export class ElementDrawingWebGL {
     this.renderTarget = renderTarget;
 
     this.batchDebugInfo = [];
-    this.wrappedCount = 0; // TODO this should be in the AtlasManager
-    this.rectangleCount = 0;
+    this.wrappedCount = 0;
+    this.simpleCount = 0;
     
     this.startBatch();
   }
 
   startBatch() {
     this.instanceCount = 0;
-    this.atlasManager.startBatch();
+    this.batchManager.startBatch();
   }
 
   endFrame() {
     this.endBatch();
   }
 
-  getTempMatrix() {
-    return this.tempMatrix = this.tempMatrix || mat3.create();
+
+  _isVisible(ele, opts) {
+    if(ele.visible()) {
+      if(opts && opts.isVisible) {
+        return opts.isVisible(ele);
+      } 
+      return true;
+    }
+    return false;
   }
 
 
   drawTexture(ele, eleIndex, type) {
-    const { atlasManager } = this;
-    if(!ele.visible()) {
-      return;
-    }
+    const { atlasManager, batchManager } = this;
     const opts = atlasManager.getRenderTypeOpts(type);
-    if(!opts.isVisible(ele)) {
+    if(!this._isVisible(ele, opts)) {
       return;
     }
 
@@ -358,89 +533,261 @@ export class ElementDrawingWebGL {
       if(mode === TEX_PICKING_MODE.IGNORE) {
         return;
       } else if(mode == TEX_PICKING_MODE.USE_BB) {
-        this.drawSimpleRectangle(ele, eleIndex, type, true);
+        this.drawPickingRectangle(ele, eleIndex, type);
         return;
       }
     }
 
-    if(!atlasManager.canAddToCurrentBatch(ele, type)) {
-      this.endBatch(); // draws then starts a new batch
+    const atlasInfoArray = atlasManager.getAtlasInfo(ele, type);
+    for(const atlasInfo of atlasInfoArray) {
+      const { atlas, tex1, tex2 } = atlasInfo;
+
+      if(!batchManager.canAddToCurrentBatch(atlas)) {
+        this.endBatch();
+      }
+      const atlasIndex = batchManager.getAtlasIndexForBatch(atlas);
+
+      for(const [tex, first] of [[tex1, true], [tex2, false]]) {
+        if(tex.w != 0) {
+          const instance = this.instanceCount;
+          this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
+
+          const indexView = this.indexBuffer.getView(instance);
+          util.indexToVec4(eleIndex, indexView);
+
+          // Set values in the buffers using Typed Array Views for performance.
+          const atlasIdView = this.atlasIdBuffer.getView(instance);
+          atlasIdView[0] = atlasIndex;
+          
+          // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
+          const texView = this.texBuffer.getView(instance);
+          texView[0] = tex.x;
+          texView[1] = tex.y;
+          texView[2] = tex.w;
+          texView[3] = tex.h;
+
+          const matrixView = this.transformBuffer.getMatrixView(instance);
+          this.setTransformMatrix(ele, matrixView, opts, atlasInfo, first);
+
+          this.instanceCount++;
+          if(!first)
+            this.wrappedCount++;
+
+          if(this.instanceCount >= this.maxInstances) {
+            this.endBatch();
+          }
+        }
+      }
     }
-    if(this.instanceCount + 1 >= this.maxInstances) {
-      this.endBatch(); // make sure there's space for at least two instances, wrapped textures need two instances
-    }
+  }
+
+  /**
+   * matrix is expected to be a 9 element array
+   * this function follows same pattern as CRp.drawCachedElementPortion(...)
+   */
+  setTransformMatrix(ele, matrix, opts, atlasInfo, first=true) {
+    let padding = 0;
+    if(opts.shapeProps && opts.shapeProps.padding) {
+      padding = ele.pstyle(opts.shapeProps.padding).pfValue;
+    } 
     
+    if(atlasInfo) { // we've already computed the bb and tex bounds for a texture
+      const { bb, tex1, tex2 } = atlasInfo;
+      // wrapped textures need separate matrix for each part
+      let ratio = tex1.w / (tex1.w + tex2.w); 
+      if(!first) { // first = true means its the first part of the wrapped texture
+        ratio = 1 - ratio;
+      }
+      const adjBB = this._getAdjustedBB(bb, padding, first, ratio);
+      this._applyTransformMatrix(matrix, adjBB, opts, ele);
+    } 
+    else {
+      // we don't have a texture, or we want to avoid creating a texture for simple shapes
+      const bb = opts.getBoundingBox(ele);
+      const adjBB = this._getAdjustedBB(bb, padding, true, 1);
+      this._applyTransformMatrix(matrix, adjBB, opts, ele);
+    }
+  }
+
+  _applyTransformMatrix(matrix, adjBB, opts, ele) {
+    let x, y;
+    mat3.identity(matrix);
+
+    const theta = opts.getRotation ? opts.getRotation(ele) : 0;
+    if(theta !== 0) {
+      const { x:sx, y:sy } = opts.getRotationPoint(ele);
+      mat3.translate(matrix, matrix, [sx, sy]);
+      mat3.rotate(matrix, matrix, theta);
+
+      const offset = opts.getRotationOffset(ele);
+      x = offset.x + (adjBB.xOffset || 0);
+      y = offset.y + (adjBB.yOffset || 0);
+    } else {
+      x = adjBB.x1;
+      y = adjBB.y1;
+    }
+
+    mat3.translate(matrix, matrix, [x, y]);
+    mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
+  }
+
+  /**
+   * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
+   * @param bb - the original bounding box
+   * @param padding - the padding to add to the bounding box
+   * @param first - whether this is the first part of a wrapped texture
+   * @param ratio - the ratio of the texture width of part of the text to the entire texture
+   */
+  _getAdjustedBB(bb, padding, first, ratio) {
+    let { x1, y1, w, h, yOffset } = bb;
+
+    if(padding) {
+      x1 -= padding;
+      y1 -= padding;
+      w += 2 * padding;
+      h += 2 * padding;
+    }
+
+    let xOffset = 0;
+    const adjW = w * ratio;
+
+    if(first && ratio < 1) {
+      w = adjW;
+    } else if(!first && ratio < 1) {
+      xOffset = w - adjW;
+      x1 += xOffset;
+      w = adjW;
+    }
+
+    return { x1, y1, w, h, xOffset, yOffset };
+  }
+  
+  drawPickingRectangle(node, eleIndex, type) {
+    const opts = this.atlasManager.getRenderTypeOpts(type);
     const instance = this.instanceCount;
-    this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
+
+    this.vertTypeBuffer.getView(instance)[0] = RECTANGLE;
 
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
-    const atlasInfo = atlasManager.getAtlasInfo(ele, type);
-    const { index, tex1, tex2 } = atlasInfo;
+    const colorView = this.colorBuffer.getView(instance);
+    util.toWebGLColor([0,0,0], 1, colorView); // opaque, so entire label BB is clickable
 
-    if(tex2.w > 0)
-      this.wrappedCount++;
+    const matrixView = this.transformBuffer.getMatrixView(instance);
+    this.setTransformMatrix(node, matrixView, opts);
 
-    let first = true;
-    for(const tex of [tex1, tex2]) {
-      if(tex.w != 0) {
-        const instance = this.instanceCount;
-        this.vertTypeBuffer.getView(instance)[0] = TEXTURE;
+    this.simpleCount++;
+    this.instanceCount++;
+    if(this.instanceCount >= this.maxInstances) {
+      this.endBatch();
+    }
+  }
 
-        const indexView = this.indexBuffer.getView(instance);
-        util.indexToVec4(eleIndex, indexView);
+  drawNode(node, eleIndex, type) {
+    const opts = this.simpleShapeOptions.get(type);
+    if(!this._isVisible(node, opts)) {
+      return;
+    }
+    const props = opts.shapeProps;
 
-        // Set values in the buffers using Typed Array Views for performance.
-        const atlasIdView = this.atlasIdBuffer.getView(instance);
-        atlasIdView[0] = index;
-        
-        // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
-        const texView = this.texBuffer.getView(instance);
-        texView[0] = tex.x;
-        texView[1] = tex.y;
-        texView[2] = tex.w;
-        texView[3] = tex.h;
+    const vertType = this._getVertTypeForShape(node, props.shape);
+    if(vertType === undefined || (opts.isSimple && !opts.isSimple(node))) {
+      this.drawTexture(node, eleIndex, type);
+      return;
+    }
+    
+    // render a "simple shape" using SDF (signed distance fields)
+    const instance = this.instanceCount;
+    this.vertTypeBuffer.getView(instance)[0] = vertType;
 
-        const matrixView = this.transformBuffer.getMatrixView(instance);
-        atlasManager.setTransformMatrix(ele, matrixView, type, atlasInfo, first);
-
-        this.instanceCount++;
+    if(vertType === ROUND_RECTANGLE || vertType === BOTTOM_ROUND_RECTANGLE) { // get corner radius
+      const bb = opts.getBoundingBox(node);
+      const radius = this._getCornerRadius(node, props.radius, bb);
+      
+      const radiusView = this.cornerRadiusBuffer.getView(instance);
+      radiusView[0] = radius; // top-right
+      radiusView[1] = radius; // bottom-right
+      radiusView[2] = radius; // top-left
+      radiusView[3] = radius; // bottom-left
+      if(vertType === BOTTOM_ROUND_RECTANGLE) {
+        radiusView[0] = 0;
+        radiusView[2] = 0;
       }
-      first = false;
     }
 
+    const indexView = this.indexBuffer.getView(instance);
+    util.indexToVec4(eleIndex, indexView);
+
+    const color = node.pstyle(props.color).value;
+    const opacity = node.pstyle(props.opacity).value;
+    const colorView = this.colorBuffer.getView(instance);
+    util.toWebGLColor(color, opacity, colorView);
+
+    const lineWidthView = this.lineWidthBuffer.getView(instance); // reuse edge line width attribute for node border
+    lineWidthView[0] = 0;
+    lineWidthView[1] = 0;
+
+    if(props.border) {
+      const borderWidth = node.pstyle('border-width').value;
+      if(borderWidth > 0) {
+        const borderColor = node.pstyle('border-color').value;
+        const borderOpacity = node.pstyle('border-opacity').value;
+        const borderColorView = this.borderColorBuffer.getView(instance);
+        util.toWebGLColor(borderColor, borderOpacity, borderColorView);
+        
+        // SDF distance is negative inside the shape and positive outside
+        const borderPos = node.pstyle('border-position').value;
+        if(borderPos === 'inside') {
+          lineWidthView[0] = 0;
+          lineWidthView[1] = -borderWidth;
+        } else if(borderPos === 'outside') {
+          lineWidthView[0] = borderWidth;
+          lineWidthView[1] = 0;
+        } else { // 'center'
+          const halfWidth = borderWidth / 2;
+          lineWidthView[0] =  halfWidth;
+          lineWidthView[1] = -halfWidth;
+        }
+      }
+    }
+
+    const matrixView = this.transformBuffer.getMatrixView(instance);
+    this.setTransformMatrix(node, matrixView, opts);
+
+    this.simpleCount++;
+    this.instanceCount++;
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
     }
   }
 
 
-  drawSimpleRectangle(ele, eleIndex, type, picking) {
-    if(!ele.visible()) {
-      return;
+  _getVertTypeForShape(node, shapeProp) {
+    const shape = node.pstyle(shapeProp).value
+    switch(shape) {
+      case 'rectangle': 
+        return RECTANGLE;
+      case 'ellipse': 
+        return ELLIPSE;
+      case 'roundrectangle':
+      case 'round-rectangle':
+        return ROUND_RECTANGLE;
+      case 'bottom-round-rectangle':
+        return BOTTOM_ROUND_RECTANGLE;
+      default:
+        return undefined;
     }
-    const { atlasManager } = this;
+  }
 
-    const instance = this.instanceCount;
-    this.vertTypeBuffer.getView(instance)[0] = RECTANGLE;
-
-    const indexView = this.indexBuffer.getView(instance);
-    util.indexToVec4(eleIndex, indexView);
-
-    const color = picking ? [0,0,0] : ele.pstyle('background-color').value;
-    const opacity = picking ? 1 : ele.pstyle('background-opacity').value;
-
-    const colorView = this.colorBuffer.getView(instance);
-    util.toWebGLColor(color, opacity, colorView);
-
-    const matrixView = this.transformBuffer.getMatrixView(instance);
-    atlasManager.setTransformMatrix(ele, matrixView, type);
-
-    this.rectangleCount++;
-    this.instanceCount++;
-    if(this.instanceCount >= this.maxInstances) {
-      this.endBatch();
+  _getCornerRadius(node, radiusProp, { w, h }) { // see CRp.drawRoundRectanglePath
+    if(node.pstyle(radiusProp).value === 'auto') {
+      return math.getRoundRectangleRadius(w, h);
+    } else {
+      const radius = node.pstyle(radiusProp).pfValue;
+      const halfWidth  = w / 2;
+      const halfHeight = h / 2;
+      return Math.min(radius, halfHeight, halfWidth);
     }
   }
 
@@ -512,7 +859,7 @@ export class ElementDrawingWebGL {
     if(!edge.visible()) {
       return;
     }
-    const points = this.getEdgePoints(edge);
+    const points = this._getEdgePoints(edge);
     if(!points) {
       return;
     }
@@ -600,7 +947,7 @@ export class ElementDrawingWebGL {
     }
   }
   
-  getEdgePoints(edge) {
+  _getEdgePoints(edge) {
     const rs = edge._private.rscratch;
 
     // if bezier ctrl pts can not be calculated, then die
@@ -611,11 +958,11 @@ export class ElementDrawingWebGL {
     if(controlPoints.length == 4) {
       return controlPoints;
     }
-    const numSegments = this.getNumSegments(edge);
-    return this.getCurveSegmentPoints(controlPoints, numSegments);
+    const numSegments = this._getNumSegments(edge);
+    return this._getCurveSegmentPoints(controlPoints, numSegments);
   }
 
-  getNumSegments(edge) {
+  _getNumSegments(edge) {
     // TODO Need a heuristic that decides how many segments to use. Factors to consider:
     // - edge width/length
     // - edge curvature (the more the curvature, the more segments)
@@ -623,13 +970,13 @@ export class ElementDrawingWebGL {
     // - number of visible edges (more segments when there are fewer edges)
     // - performance (fewer segments when performance is a concern)
     // - user configurable option(s)
-    // note: number of segments should be less than the max number of instances
+    // note: number of segments must be less than the max number of instances
     // note: segments don't need to be evenly spaced out, it might make sense to have shorter segments nearer to the control points
     const numSegments = 15;
     return Math.min(Math.max(numSegments, 5), this.maxInstances);
   }
 
-  getCurveSegmentPoints(controlPoints, segments) {
+  _getCurveSegmentPoints(controlPoints, segments) {
     if(controlPoints.length == 4) {
       return controlPoints; // straight line
     }
@@ -645,13 +992,13 @@ export class ElementDrawingWebGL {
       } else {
         const t = i / segments; // segments have equal length, its not strictly necessary to do it this way
         // pass in curvePoints to set the values in the array directly
-        this.setCurvePoint(controlPoints, t, curvePoints, i*2);
+        this._setCurvePoint(controlPoints, t, curvePoints, i*2);
       }
     }
     return curvePoints;
   }
 
-  setCurvePoint(points, t, curvePoints, cpi) {
+  _setCurvePoint(points, t, curvePoints, cpi) {
     if(points.length <= 2) {
       curvePoints[cpi  ] = points[0];
       curvePoints[cpi+1] = points[1];
@@ -663,7 +1010,7 @@ export class ElementDrawingWebGL {
         newpoints[i  ] = x;
         newpoints[i+1] = y;
       }
-      return this.setCurvePoint(newpoints, t, curvePoints, cpi);
+      return this._setCurvePoint(newpoints, t, curvePoints, cpi);
     }
   }
 
@@ -685,7 +1032,7 @@ export class ElementDrawingWebGL {
       buffer.bufferSubData(count);
     }
 
-    const atlases = this.atlasManager.getAtlases();
+    const atlases = this.batchManager.getAtlases();
     // must buffer before activating texture units
     for(let i = 0; i < atlases.length; i++) {
       atlases[i].bufferIfNeeded(gl);
@@ -698,8 +1045,9 @@ export class ElementDrawingWebGL {
     }
 
     // Set the uniforms
+    gl.uniform1f(program.uZoom, util.getEffectiveZoom(this.r));
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
-    gl.uniform1i(program.uAtlasSize, this.atlasManager.getAtlasSize());
+    gl.uniform1i(program.uAtlasSize, this.batchManager.getAtlasSize());
     // set background color, needed for edge arrow color blending
     const webglBgColor = util.toWebGLColor(this.bgColor, 1);
     gl.uniform4fv(program.uBGColor, webglBgColor);
@@ -733,7 +1081,7 @@ export class ElementDrawingWebGL {
       atlasInfo,
       totalAtlases,
       wrappedCount: this.wrappedCount,
-      rectangleCount: this.rectangleCount,
+      simpleCount: this.simpleCount,
       batchCount: batchInfo.length,
       batchInfo,
       totalInstances

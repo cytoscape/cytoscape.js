@@ -1,3 +1,4 @@
+
 /**
  * Notes:
  * - All colors have premultiplied alpha. Very important for textues and 
@@ -62,11 +63,52 @@ export function getEffectivePanZoom(r) {
   };
 }
 
+/**
+ * Returns the zoom value, scaled by the pixel ratio.
+ */
+export function getEffectiveZoom(r) {
+  const { pixelRatio } = r;
+  const zoom = r.cy.zoom();
+  return zoom * pixelRatio;
+}
+
 export function modelToRenderedPosition(r, pan, zoom, x, y) {
   let rx = x * zoom + pan.x;
   let ry = y * zoom + pan.y;
   ry = Math.round(r.canvasHeight - ry); // adjust for webgl
   return [ rx, ry ];
+}
+
+
+export function isSimpleShape(node) {
+  // the actual shape is checked in ElementDrawingWebGL._getVertTypeForShape()
+  // no need to check it twice, this just checks other visual properties
+  if(node.pstyle('background-fill').value !== 'solid')
+    return false;
+  if(node.pstyle('background-image').strValue !== 'none')
+    return false;
+  if(node.pstyle('border-width').value === 0)
+    return true;
+  if(node.pstyle('border-opacity').value === 0)
+    return true;
+  // we have a border but it must be simple
+  if(node.pstyle('border-style').value !== 'solid')
+    return false;
+  // TODO ignoring 'border-cap', 'border-join' and 'border-position' for now
+  return true;
+}
+
+
+export function arrayEqual(a1, a2) {
+  if(a1.length !== a2.length) {
+    return false;
+  }
+  for(let i = 0; i < a1.length; i++) {
+    if(a1[i] !== a2[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**

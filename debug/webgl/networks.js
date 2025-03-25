@@ -16,13 +16,13 @@ var networks = {
     url: 'network-curve.json',
     layout: { name: 'preset' }
   },
-  // 'compound': {
-  //   desc: 'Compound nodes',
-  //   nodes: 6,
-  //   edges: 2,
-  //   url: 'network-compound-nodes.json',
-  //   layout: { name: 'preset' }
-  // },
+  'compound': {
+    desc: 'Compound nodes',
+    nodes: 6,
+    edges: 2,
+    url: 'network-compound-nodes.json',
+    layout: { name: 'preset' }
+  },
   // 'images': {
   //   desc: 'Image Load Test',
   //   nodes: 5,

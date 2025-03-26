@@ -5,18 +5,30 @@ import * as math from '../../../../math.mjs';
 import * as sdf from './shader-sdf.mjs';
 
 
+/**
+ * Two render modes. Each mode has its own shader program. They are almost identical, the main difference is the output.
+ * SCREEN:  output pixel colors to the screen
+ * PICKING: output z-order index to an offscreen framebuffer, used to detect what's under the mouse cursor
+ */
 export const RENDER_TARGET = {
   SCREEN:  { name: 'screen',  screen:  true },
   PICKING: { name: 'picking', picking: true },
 };
 
+/**
+ * Special handing for label textures in PICKING mode. See issue #3337.
+ */
 export const TEX_PICKING_MODE = {
   NORMAL: 0, // render the texture just like in RENDER_TARGET.SCREEN mode
   IGNORE: 1, // don't render the texture at all
   USE_BB: 2  // render the bounding box as an opaque rectangle
 }
 
-// Vertex types, used in the shaders so must be ints
+// Vertex types.
+// Used directly in the shaders so must be numeric.
+// There is only one shader program used for an entire frame that renders all types of elements.
+// There are if-else blocks in the shaders that do different things depending on the vertex type.
+// This allows all elements to be rendererd in large batches without switching shader programs.
 const TEXTURE = 0;
 const EDGE_STRAIGHT = 1;
 const EDGE_CURVE_SEGMENT = 2;
@@ -33,7 +45,7 @@ export class ElementDrawingWebGL {
    * @param {WebGLRenderingContext} gl 
    */
   constructor(r, gl, opts) {
-    this.r = r;
+    this.r = r; // reference to the canvas renderer
     this.gl = gl;
     
     this.maxInstances = opts.webglBatchSize;
@@ -45,6 +57,7 @@ export class ElementDrawingWebGL {
 
     opts.enableWrapping = true;
     opts.createTextureCanvas = util.createTextureCanvas; // Unit tests mock this
+
     this.atlasManager = new AtlasManager(r, opts);
     this.batchManager = new AtlasBatchManager(opts);
 
@@ -76,7 +89,7 @@ export class ElementDrawingWebGL {
    * @property { function } getRotation
    * @property { function } getRotationPoint
    * @property { function } getRotationOffset
-   * @property { function } isVisible - this is an extra check for visibility in addition to ele.visible()
+   * @property { function } isVisible - an extra check for visibility in addition to ele.visible()
    * @property { function } getTexPickingMode - returns a value from the TEX_PICKING_MODE enum
    */
   /**
@@ -113,6 +126,10 @@ export class ElementDrawingWebGL {
   }
 
 
+  /**
+   * Inform the atlasManager when element style keys may have changed.
+   * The atlasManager can then mark unused textures for "garbage collection".
+   */
   invalidate(eles, { type } = {}) {
     const { atlasManager } = this;
     if(type) {
@@ -125,6 +142,9 @@ export class ElementDrawingWebGL {
     }
   }
 
+  /**
+   * Run texture garbage collection.
+   */
   gc() {
     this.atlasManager.gc();
   }
@@ -133,7 +153,6 @@ export class ElementDrawingWebGL {
   _createShaderProgram(renderTarget) {
     const { gl } = this;
 
-    // compute texture coordinates in the shader, becase we are using instanced drawing
     const vertexShaderSource = `#version 300 es
       precision highp float;
 
@@ -141,13 +160,12 @@ export class ElementDrawingWebGL {
       uniform int  uAtlasSize;
       
       // instanced
-      in vec2 aPosition; 
+      in vec2 aPosition; // a vertex from the unit square
       
-      // where and what are we renderering
-      in mat3 aTransform;
-      in int aVertType;
+      in mat3 aTransform; // used to transform verticies, eg into a bounding box
+      in int aVertType; // the type of thing we are rendering
 
-      // for picking
+      // the z-index that is output when using picking mode
       in vec4 aIndex;
       
       // For textures
@@ -164,25 +182,26 @@ export class ElementDrawingWebGL {
       in vec4 aColor; // also used for edges
       in vec4 aBorderColor; // aLineWidth is used for border width
 
+      // output values passed to the fragment shader
       out vec2 vTexCoord;
       out vec4 vColor;
       out vec2 vPosition;
-
-      flat out int vAtlasId;
-      flat out vec4 vIndex;
+      // flat values are not interpolated
+      flat out int vAtlasId; 
       flat out int vVertType;
       flat out vec2 vTopRight;
       flat out vec2 vBotLeft;
       flat out vec4 vCornerRadius;
       flat out vec4 vBorderColor;
       flat out vec2 vBorderWidth;
-
+      flat out vec4 vIndex;
+      
       void main(void) {
         int vid = gl_VertexID;
         vec2 position = aPosition; // TODO make this a vec3, simplifies some code below
 
         if(aVertType == ${TEXTURE}) {
-          float texX = aTex.x;
+          float texX = aTex.x; // texture coordinates
           float texY = aTex.y;
           float texW = aTex.z;
           float texH = aTex.w;
@@ -200,12 +219,14 @@ export class ElementDrawingWebGL {
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
         else if(aVertType == ${RECTANGLE} || aVertType == ${ELLIPSE} 
-             || aVertType == ${ROUND_RECTANGLE} || aVertType == ${BOTTOM_ROUND_RECTANGLE}) {
+             || aVertType == ${ROUND_RECTANGLE} || aVertType == ${BOTTOM_ROUND_RECTANGLE}) { // simple shapes
 
+          // the bounding box is needed by the fragment shader
           vBotLeft  = (aTransform * vec3(0, 0, 1)).xy; // flat
           vTopRight = (aTransform * vec3(1, 1, 1)).xy; // flat
-          vPosition = (aTransform * vec3(position, 1)).xy; // interpolated
+          vPosition = (aTransform * vec3(position, 1)).xy; // will be interpolated
 
+          // calculations are done in the fragment shader, just pass these along
           vColor = aColor;
           vCornerRadius = aCornerRadius;
           vBorderColor = aBorderColor;
@@ -220,6 +241,7 @@ export class ElementDrawingWebGL {
           // adjust the geometry so that the line is centered on the edge
           position.y = position.y - 0.5;
 
+          // stretch the unit square into a long skinny rectangle
           vec2 xBasis = target - source;
           vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
           vec2 point = source + xBasis * position.x + yBasis * aLineWidth[0] * position.y;
@@ -236,11 +258,13 @@ export class ElementDrawingWebGL {
           // adjust the geometry so that the line is centered on the edge
           position.y = position.y - 0.5;
 
-          vec2 p0 = pointA;
-          vec2 p1 = pointB;
-          vec2 p2 = pointC;
-          vec2 pos = position;
-          if(position.x == 1.0) {
+          vec2 p0, p1, p2, pos;
+          if(position.x == 0.0) { // The left side of the unit square
+            p0 = pointA;
+            p1 = pointB;
+            p2 = pointC;
+            pos = position;
+          } else { // The right side of the unit square, use same approach but flip the geometry upside down
             p0 = pointD;
             p1 = pointC;
             p2 = pointB;
@@ -291,8 +315,8 @@ export class ElementDrawingWebGL {
         }
 
         vAtlasId = aAtlasId;
-        vIndex = aIndex;
         vVertType = aVertType;
+        vIndex = aIndex;
       }
     `;
 
@@ -301,7 +325,7 @@ export class ElementDrawingWebGL {
     const fragmentShaderSource = `#version 300 es
       precision highp float;
 
-      // define texture unit for each node in the batch
+      // declare texture unit for each texture atlas in the batch
       ${idxs.map(i => `uniform sampler2D uTexture${i};`).join('\n\t')}
 
       uniform vec4 uBGColor;
@@ -327,7 +351,7 @@ export class ElementDrawingWebGL {
       ${sdf.roundRectangleSD}
       ${sdf.ellipseSD}
 
-      vec4 blend(vec4 top, vec4 bot) { // with premultiplied alpha
+      vec4 blend(vec4 top, vec4 bot) { // blend colors with premultiplied alpha
         return vec4( 
           top.rgb + (bot.rgb * (1.0 - top.a)),
           top.a   + (bot.a   * (1.0 - top.a)) 
@@ -342,6 +366,7 @@ export class ElementDrawingWebGL {
 
       void main(void) {
         if(vVertType == ${TEXTURE}) {
+          // look up the texel from the texture unit
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
         } 
         else if(vVertType == ${EDGE_ARROW}) {
@@ -350,7 +375,7 @@ export class ElementDrawingWebGL {
           outColor.a = 1.0; // make opaque, masks out line under arrow
         }
         else if(vVertType == ${RECTANGLE} && vBorderWidth == vec2(0.0)) { // simple rectangle with no border
-          outColor = vColor; // unit square is already transformed to a rectangle, nothing else needs to be done
+          outColor = vColor; // unit square is already transformed to the rectangle, nothing else needs to be done
         }
         else if(vVertType == ${RECTANGLE} || vVertType == ${ELLIPSE} 
           || vVertType == ${ROUND_RECTANGLE} || vVertType == ${BOTTOM_ROUND_RECTANGLE}) { // use SDF
@@ -367,7 +392,7 @@ export class ElementDrawingWebGL {
           if(vVertType == ${RECTANGLE}) {
             d = rectangleSD(p, b);
           } else if(vVertType == ${ELLIPSE} && w == h) {
-            d = circleSD(p, b.x); // probably faster
+            d = circleSD(p, b.x); // faster than ellipse
           } else if(vVertType == ${ELLIPSE}) {
             d = ellipseSD(p, b);
           } else {
@@ -449,19 +474,19 @@ export class ElementDrawingWebGL {
 
 
   _createVAO() {
-    const instanceGeometry = [
+    const unitSquare = [
       0, 0,  1, 0,  1, 1,
       0, 0,  1, 1,  0, 1,
     ];
 
-    this.vertexCount = instanceGeometry.length / 2;
+    this.vertexCount = unitSquare.length / 2;
     const n = this.maxInstances;
     const { gl, program } = this;
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
+    util.createBufferStaticDraw(gl, 'vec2', program.aPosition, unitSquare);
     
     // Create buffers for all the attributes
     this.transformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aTransform);
@@ -520,7 +545,9 @@ export class ElementDrawingWebGL {
     return false;
   }
 
-
+  /**
+   * Draws a texture using the texture atlas.
+   */
   drawTexture(ele, eleIndex, type) {
     const { atlasManager, batchManager } = this;
     const opts = atlasManager.getRenderTypeOpts(type);
@@ -538,9 +565,11 @@ export class ElementDrawingWebGL {
       }
     }
 
-    const atlasInfoArray = atlasManager.getAtlasInfo(ele, type);
+    // Get the atlas and the texture coordinates, will draw the texture if it hasn't been drawn yet
+    // May be more than one texture if for example the label has multiple lines
+    const atlasInfoArray = atlasManager.getAtlasInfo(ele, type); 
     for(const atlasInfo of atlasInfoArray) {
-      const { atlas, tex1, tex2 } = atlasInfo;
+      const { atlas, tex1, tex2 } = atlasInfo; // tex2 is used if the label wraps and there are two textures
 
       if(!batchManager.canAddToCurrentBatch(atlas)) {
         this.endBatch();
@@ -662,7 +691,11 @@ export class ElementDrawingWebGL {
     return { x1, y1, w, h, xOffset, yOffset };
   }
   
-  drawPickingRectangle(node, eleIndex, type) {
+  /**
+   * Draw a solid opaque rectangle matching the element's Bounding Box.
+   * Used by the PICKING mode to make the entire BB of a label clickable.
+   */
+  drawPickingRectangle(ele, eleIndex, type) {
     const opts = this.atlasManager.getRenderTypeOpts(type);
     const instance = this.instanceCount;
 
@@ -675,7 +708,7 @@ export class ElementDrawingWebGL {
     util.toWebGLColor([0,0,0], 1, colorView); // opaque, so entire label BB is clickable
 
     const matrixView = this.transformBuffer.getMatrixView(instance);
-    this.setTransformMatrix(node, matrixView, opts);
+    this.setTransformMatrix(ele, matrixView, opts);
 
     this.simpleCount++;
     this.instanceCount++;
@@ -684,6 +717,9 @@ export class ElementDrawingWebGL {
     }
   }
 
+  /**
+   * Draw a node using either a texture or a "simple shape".
+   */
   drawNode(node, eleIndex, type) {
     const opts = this.simpleShapeOptions.get(type);
     if(!this._isVisible(node, opts)) {
@@ -691,13 +727,14 @@ export class ElementDrawingWebGL {
     }
     const props = opts.shapeProps;
 
+    // Check if we have to use a texture
     const vertType = this._getVertTypeForShape(node, props.shape);
     if(vertType === undefined || (opts.isSimple && !opts.isSimple(node))) {
       this.drawTexture(node, eleIndex, type);
       return;
     }
     
-    // render a "simple shape" using SDF (signed distance fields)
+    // Render a "simple shape" using SDF (signed distance fields)
     const instance = this.instanceCount;
     this.vertTypeBuffer.getView(instance)[0] = vertType;
 
@@ -733,6 +770,7 @@ export class ElementDrawingWebGL {
       if(borderWidth > 0) {
         const borderColor = node.pstyle('border-color').value;
         const borderOpacity = node.pstyle('border-opacity').value;
+
         const borderColorView = this.borderColorBuffer.getView(instance);
         util.toWebGLColor(borderColor, borderOpacity, borderColorView);
         
@@ -792,6 +830,9 @@ export class ElementDrawingWebGL {
   }
 
   
+  /**
+   * Only supports drawing triangles at the moment.
+   */
   drawEdgeArrow(edge, eleIndex, prefix) {
     if(!edge.visible()) {
       return;
@@ -817,16 +858,14 @@ export class ElementDrawingWebGL {
 
     // check shape after the x/y check because pstyle() is a bit slow
     const arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
-    if(arrowShape === 'none' ) {
+    if(arrowShape === 'none') {
       return; 
     }
 
     const color = edge.pstyle(prefix + '-arrow-color').value;
-
     const baseOpacity = edge.pstyle('opacity').value;
     const lineOpacity = edge.pstyle('line-opacity').value;
     const opacity = baseOpacity * lineOpacity;
-
     const lineWidth = edge.pstyle('width').pfValue;
     const scale = edge.pstyle('arrow-scale').value;
     const size = this.r.getArrowWidth(lineWidth, scale);
@@ -834,7 +873,6 @@ export class ElementDrawingWebGL {
     const instance = this.instanceCount;
     
     const transform = this.transformBuffer.getMatrixView(instance);
-
     mat3.identity(transform);
     mat3.translate(transform, transform, [x, y]);
     mat3.scale(transform, transform, [size, size]);
@@ -855,6 +893,9 @@ export class ElementDrawingWebGL {
   }
 
 
+  /**
+   * Draw straight-line or bezier curve edges.
+   */
   drawEdgeLine(edge, eleIndex) {
     if(!edge.visible()) {
       return;

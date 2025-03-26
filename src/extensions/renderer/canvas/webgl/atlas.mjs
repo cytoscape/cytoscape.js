@@ -1,7 +1,7 @@
 import * as util from './webgl-util.mjs';
 import * as cyutil from '../../../../util/index.mjs';
 
-// A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
+// A "texture atlas" is a big canvas, and sections of it are used as textures for nodes/labels.
 
 /**
  * A single square texture atlas (also known as a "sprite sheet").
@@ -22,7 +22,7 @@ export class Atlas {
     this.texture = null; // WebGLTexture object
     this.needsBuffer = true;
     
-    // a "location" is an object with a 'row' and 'x' fields
+    // a "location" is an pointer into the atlas with a 'row' and 'x' fields
     this.freePointer = { x: 0, row: 0 };
 
     // map from the style key to the row/x where the texture starts
@@ -63,8 +63,6 @@ export class Atlas {
 
     const { texSize, texRows, texHeight } = this;
     const { scale, texW, texH } = this.getScale(bb);
-    
-    const locations = [ null, null ];
 
     const drawAt = (location, canvas) => {
       if(doDrawing && canvas) {
@@ -81,6 +79,8 @@ export class Atlas {
       }
     };
 
+    const locations = [ null, null ];
+
     const drawNormal = () => {
       // don't need to wrap, draw directly on the canvas
       drawAt(this.freePointer, this.canvas);
@@ -91,7 +91,7 @@ export class Atlas {
         w: texW,
         h: texH
       };
-      locations[1] = {  // indlude a second location with a width of 0, for convenience
+      locations[1] = {  // create a second location with a width of 0, for convenience
         x: this.freePointer.x + texW,
         y: this.freePointer.row * texHeight,
         w: 0,
@@ -101,8 +101,6 @@ export class Atlas {
       // move the pointer to the end of the texture
       this.freePointer.x += texW;
       if(this.freePointer.x == texSize) {
-        // move to the next row
-        // TODO what if there is no next row???
         this.freePointer.x = 0;
         this.freePointer.row++;
       }
@@ -234,7 +232,7 @@ export class Atlas {
 
 /**
  * A collection of texture atlases, all of the same "render type". 
- * (Node body is an example of a render type.)
+ * ('node-body' is an example of a render type.)
  * An AtlasCollection can also be notified when a texture is no longer needed, 
  * and it can garbage collect the unused textures.
  */
@@ -411,8 +409,8 @@ function intersection(set1, set2) {
 
 /**
  * Used to manage batches of Atlases for drawing nodes and labels.
- * Supports different types of AtlasCollections for different render types (or 'texture groups'),
- * for example 'node body' and 'node label' would be different render types.
+ * Supports different types of AtlasCollections for different render types,
+ * for example 'node-body' and 'node-label' would be different render types.
  * Render types are kept separate because they will likely need to be garbage collected
  * separately and its not entierly guaranteed that their style keys won't collide.
  */

@@ -9,11 +9,14 @@ import { mat3 } from 'gl-matrix';
 
 const CRp = {};
 
-
+/**
+ * Initialize the WebGL rendering mode after the Canvas renderer has been initialized.
+ */
 CRp.initWebgl = function(opts, fns) {
   const r = this;
   const gl = r.data.contexts[r.WEBGL];
 
+  // Set defaults and limits for configuration options.
   opts.bgColor = getBGColor(r);
   opts.webglTexSize = Math.min(opts.webglTexSize, gl.getParameter(gl.MAX_TEXTURE_SIZE));
   opts.webglTexRows = Math.min(opts.webglTexRows, 54);
@@ -21,42 +24,53 @@ CRp.initWebgl = function(opts, fns) {
   opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
   opts.webglTexPerBatch = Math.min(opts.webglTexPerBatch, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
   
+  // Turn debug mode on or off.
   r.webglDebug = opts.webglDebug;
   r.webglDebugShowAtlases = opts.webglDebugShowAtlases;
 
-  // for offscreen rendering when render target is PICKING
+  // Create offscreen framebuffer that stores the results when RENDER_TARGET.PICKING is enabled.
+  // This is used to store the topmost element z-index for each pixel, which is used to tell whats under the mouse cursor point.
   r.pickingFrameBuffer = util.createPickingFrameBuffer(gl);
   r.pickingFrameBuffer.needsDraw = true;
 
+  // Create an ElementDrawingWebGL instance wich is used to do the actual WebGL rendering.
+  // This instance needs to be configured to draw various types of elements.
+  r.drawing = new ElementDrawingWebGL(r, gl, opts);
+
+  // Some functions that are used to configure ElementDrawingWebGL
   const getLabelRotation = (prop) => (ele) => r.getTextAngle(ele, prop);
   const isLabelVisible = (prop) => (ele) => {
     const label = ele.pstyle(prop);
     return label && label.value;
   };
-  const isLayerVisible = (prefix) => (node) => {
+  const isLayerVisible = (prefix) => (node) => { // prefix is 'overlay' or 'underlay'
     return node.pstyle(`${prefix}-opacity`).value > 0;
   }
-  const getTexPickingMode = (ele) => {
+  const getTexPickingMode = (ele) => { // tells when a label should be clickable
     const enabled = ele.pstyle('text-events').strValue === 'yes';
     return enabled ? TEX_PICKING_MODE.USE_BB : TEX_PICKING_MODE.IGNORE;
   };
-  const getBBForSimpleShape = (node) => {
+  const getBBForSimpleShape = (node) => { // "simple" shapes need their BB to include border and padding
     const { x, y } = node.position();
     const w = node.outerWidth(); // includes border and padding
     const h = node.outerHeight();
     return { w, h, x1: x - w/2, y1: y - h/2 };
   };
 
-  r.drawing = new ElementDrawingWebGL(r, gl, opts);
-
+  // An AtlasCollection is a collection of Atlases that have the same configuraiton options.
+  // Create one for node bodies and one for all types of labels.
   r.drawing.addAtlasCollection('node', {
     texRows: opts.webglTexRowsNodes
   });
-
   r.drawing.addAtlasCollection('label', {
     texRows: opts.webglTexRows
   });
 
+  // Configure the different types of elements that can be rendered.
+
+  // Node bodies can be rendered as textures or as "simple shapes". 
+  // Simple shapes are preferred because they do not use texture memory.
+  // Textures are required if the node body uses complex styles. 
   r.drawing.addTextureAtlasRenderType('node-body', {
     collection: 'node',
     getKey: fns.getStyleKey,
@@ -140,12 +154,13 @@ CRp.initWebgl = function(opts, fns) {
   });
 
 
-  // this is a very simplistic way of triggering garbage collection
+  // Very simplistic way of triggering garbage collection, just use a timer.
   const setGCFlag = debounce(() => {
     console.log('garbage collect flag set');
     r.data.gc = true;
   }, 10000);
 
+  // Event listener checks if style keys are no longer in use.
   r.onUpdateEleCalcs((willDraw, eles) => {
     let gcNeeded = false;
     if(eles && eles.length > 0) {
@@ -211,7 +226,8 @@ const getBoundingBoxForLabel = (getBoundingBox, prefix) => (ele, styleKey) => {
 
 
 /**
- * Plug into the canvas renderer to use webgl for rendering.
+ * Plug into the canvas renderer by dynamically overriding some of its functions.
+ * This requires minimal changes to the canvas rendrerer.
  */
 function overrideCanvasRendererFunctions(r) {
   { // Override the render function to call the webgl render function if the zoom level is appropriate
@@ -220,7 +236,8 @@ function overrideCanvasRendererFunctions(r) {
       options = options || {};
       const cy = r.cy; 
       if(r.webgl) {
-        // if the zoom level is greater than the max zoom level, then disable webgl
+        // If the zoom level is greater than the max zoom level, then disable webgl and switch back to 
+        // the canvas renderer.
         if(cy.zoom() > eleTextureCache.maxZoom) {
           clearWebgl(r);
           renderCanvas.call(r, options); 
@@ -241,19 +258,13 @@ function overrideCanvasRendererFunctions(r) {
     };
   } 
 
-  { // Override function to call the webgl version
+  { // Override function to call the webgl version for picking.
+    // Don't override r.getAllInBox() selction box picking, its not accurate enough with webgl
     r.findNearestElements = function(x, y, interactiveElementsOnly, isTouch) {
       // the canvas version of this function is very slow on large graphs
       return findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch);
     };
   }
-
-  // Don't override the selction box picking, its not accurate enough with webgl
-  // { // Override function to call the webgl version
-  //   r.getAllInBox = function(x1, y1, x2, y2) {
-  //     return getAllInBoxWebgl(r, x1, y1, x2, y2);
-  //   }
-  // }
 
   { // need to know when the cached elements have changed so we can invalidate our caches
     const baseFunc = r.invalidateCachedZSortedEles;
@@ -330,7 +341,6 @@ function drawSelectionRectangle(r, options) {
 }
 
 
-// eslint-disable-next-line no-unused-vars
 function drawAxes(r) { // for debgging
   const context = r.data.contexts[r.NODE];
   context.save();
@@ -348,8 +358,7 @@ function drawAxes(r) { // for debgging
 }
 
 
-function drawAtlases(r) {
-  // For debugging the atlases
+function drawAtlases(r) { // For debugging the atlases, this doesn't work for Atlases that are locked
   const draw = (drawing, name, row) => {
     const collection = drawing.atlasManager.getAtlasCollection(name);
     const context = r.data.contexts[r.NODE];
@@ -364,8 +373,9 @@ function drawAtlases(r) {
         const x = w * i;
         const y = canvas.height * row;
     
+        const scale = 0.4;
         context.save();
-        // context.scale(scale, scale);
+        context.scale(scale, scale);
         context.drawImage(canvas, x, y);
         context.strokeStyle = 'black';
         context.rect(x, y, w, h);
@@ -381,6 +391,7 @@ function drawAtlases(r) {
 
 
 /**
+ * Returns the z-order index of elments under or very close to the mouse cursor point.
  * Arguments are in model coordinates.
  * (x1, y1) is top left corner
  * (x2, y2) is bottom right corner (optional)
@@ -421,7 +432,6 @@ function getPickingIndexes(r, mX1, mY1, mX2, mY2) {
   }
 
   const n = w * h; // number of pixels to read
-  // eslint-disable-next-line no-undef
   const data = new Uint8Array(n * 4); // 4 bytes per pixel
   gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, data);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -464,31 +474,9 @@ function findNearestElementsWebgl(r, x, y) { // model coordinates
 }
 
 
-// eslint-disable-next-line no-unused-vars
-function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
-  let x1c = Math.min(x1, x2);
-  let x2c = Math.max(x1, x2);
-  let y1c = Math.min(y1, y2);
-  let y2c = Math.max(y1, y2);
-
-  x1 = x1c;
-  x2 = x2c;
-  y1 = y1c;
-  y2 = y2c;
-
-  const indexes = getPickingIndexes(r, x1, y1, x2, y2);
-  const eles = r.getCachedZSortedEles();
-
-  const box = new Set();
-  for(const index of indexes) {
-    if(index >= 0) {
-      box.add(eles[index]);
-    }
-  }
-  return Array.from(box);
-}
-
-
+/**
+ * Draw one node or edge. 
+ */
 function drawEle(r, index, ele) {
   const { drawing } = r;
   index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
@@ -507,7 +495,9 @@ function drawEle(r, index, ele) {
   }
 }
 
-
+/**
+ * Render one frame.
+ */
 function renderWebgl(r, options, renderTarget) {
   let start;
   if(r.webglDebug) {
@@ -529,10 +519,10 @@ function renderWebgl(r, options, renderTarget) {
 
     if(renderTarget.screen) {
       gl.clearColor(0, 0, 0, 0); // background color
-      gl.enable(gl.BLEND); // enable alpha blending of textures
-      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // we are using premultiplied alpha
+      gl.enable(gl.BLEND); // enable alpha blending of colors
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // webgl colors use premultiplied alpha
     } else {
-      gl.disable(gl.BLEND);
+      gl.disable(gl.BLEND); // don't blend z-order index values! they are not colors
     }
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

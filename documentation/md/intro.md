@@ -167,6 +167,7 @@
 * [University of Helsinki](https://www.helsinki.fi)
 * [University of Jyväskylä](https://www.jyu.fi)
 * [University of Leipzig](http://uni-leipzig.de)
+* [University of Mannheim](https://www.uni-mannheim.de/en/)
 * [University of Maryland](https://umd.edu/)
 * [University of Toronto](https://utoronto.ca)
 * [University of Utah](https://www.utah.edu)

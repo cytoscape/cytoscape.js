@@ -434,6 +434,7 @@ const styfn = {};
   styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
   pie.push( { name: 'pie-size', type: t.sizeMaybePercent } );
   pie.push( { name: 'pie-hole', type: t.sizeMaybePercent } );
+  pie.push( { name: 'pie-start-angle', type: t.angle } );
   for( let i = 1; i <= styfn.pieBackgroundN; i++ ){
     pie.push( { name: 'pie-' + i + '-background-color', type: t.color } );
     pie.push( { name: 'pie-' + i + '-background-size', type: t.percent } );
@@ -741,6 +742,7 @@ styfn.getDefaultProperties = function(){
     // node pie bg
     'pie-size': '100%',
     'pie-hole': 0,
+    'pie-start-angle': '0deg',
   }, [
     { name: 'pie-{{i}}-background-color', value: 'black' },
     { name: 'pie-{{i}}-background-size', value: '0%' },

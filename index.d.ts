@@ -4550,6 +4550,13 @@ declare namespace cytoscape {
              */
             "pie-hole": PropertyValueNode<number|string>;
             /**
+             * 
+             * The start angle of the pie, measured as an angle starting at
+             * the 12 o'clock position and going clockwise (e.g. `90deg`
+             * is 3 o'clock).  The default is to start at 12 o'clock (`0deg`, `0rad`).
+             */
+            "pie-start-angle": PropertyValueNode<number|string>;
+            /**
              * @deprecated
              *
              * The colour of the node’s ith pie chart slice.

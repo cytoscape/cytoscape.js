@@ -1,7 +1,6 @@
 import * as is from '../../../is.mjs';
 import * as util from '../../../util/index.mjs';
 import * as math from '../../../math.mjs';
-import { isNull } from 'lodash';
 
 var BRp = {};
 

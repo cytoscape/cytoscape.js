@@ -11580,15 +11580,16 @@
     return key;
   };
   var getBoundingBoxPosKey = function getBoundingBoxPosKey(ele) {
+    var r = function r(x) {
+      return Math.round(x);
+    };
     if (ele.isEdge()) {
       var p1 = ele.source().position();
       var p2 = ele.target().position();
-      var r = function r(x) {
-        return Math.round(x);
-      };
       return hashIntsArray([r(p1.x), r(p1.y), r(p2.x), r(p2.y)]);
     } else {
-      return 0;
+      var p = ele.position();
+      return hashIntsArray([r(p.x), r(p.y)]);
     }
   };
   var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
@@ -11597,20 +11598,10 @@
     var isEdge = ele.isEdge();
     var key = opts == null ? defBbOptsKey : getKey(opts);
     var usingDefOpts = key === defBbOptsKey;
-    var currPosKey = getBoundingBoxPosKey(ele);
-    var isPosKeySame = _p.bbCachePosKey === currPosKey;
-    var useCache = opts.useCache;
-    var isDirty = function isDirty(ele) {
-      return ele._private.bbCache == null || ele._private.styleDirty;
-    };
-    var needRecalc = !useCache || isDirty(ele) || isEdge && (isDirty(ele.source()) || isDirty(ele.target()));
-    if (needRecalc) {
-      if (!isPosKeySame) {
-        ele.recalculateRenderedStyle(useCache);
-      }
+    if (_p.bbCache == null) {
       bb = boundingBoxImpl(ele, defBbOpts);
       _p.bbCache = bb;
-      _p.bbCachePosKey = currPosKey;
+      _p.bbCachePosKey = getBoundingBoxPosKey(ele);
     } else {
       bb = _p.bbCache;
     }
@@ -11662,11 +11653,18 @@
   var filledBbOpts = defaults$g(defBbOpts);
   elesfn$b.boundingBox = function (options) {
     var bounds;
+    var useCache = options === undefined || options.useCache === undefined || options.useCache === true;
+    var isDirty = memoize(function (ele) {
+      var _p = ele._private;
+      return _p.bbCache == null || _p.styleDirty || _p.bbCachePosKey !== getBoundingBoxPosKey(ele);
+    }, function (ele) {
+      return ele.id();
+    });
 
     // the main usecase is ele.boundingBox() for a single element with no/def options
     // specified s.t. the cache is used, so check for this case to make it faster by
     // avoiding the overhead of the rest of the function
-    if (this.length === 1 && this[0]._private.bbCache != null && !this[0]._private.styleDirty && (options === undefined || options.useCache === undefined || options.useCache === true)) {
+    if (useCache && this.length === 1 && !isDirty(this[0])) {
       if (options === undefined) {
         options = defBbOpts;
       } else {
@@ -11680,20 +11678,20 @@
       var eles = this;
       var cy = eles.cy();
       var styleEnabled = cy.styleEnabled();
+
+      // cache the isDirty state for all eles, edges first since they depend on node state
+      this.edges().forEach(isDirty);
+      this.nodes().forEach(isDirty);
       if (styleEnabled) {
-        for (var i = 0; i < eles.length; i++) {
-          var ele = eles[i];
-          var _p = ele._private;
-          var currPosKey = getBoundingBoxPosKey(ele);
-          var isPosKeySame = _p.bbCachePosKey === currPosKey;
-          var useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
-          ele.recalculateRenderedStyle(useCache);
-        }
+        this.recalculateRenderedStyle(useCache);
       }
-      this.updateCompoundBounds(!options.useCache);
-      for (var _i = 0; _i < eles.length; _i++) {
-        var _ele = eles[_i];
-        updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
+      this.updateCompoundBounds(!useCache);
+      for (var i = 0; i < eles.length; i++) {
+        var ele = eles[i];
+        if (isDirty(ele)) {
+          ele.dirtyBoundingBoxCache();
+        }
+        updateBoundsFromBox(bounds, cachedBoundingBoxImpl(ele, opts));
       }
     }
     bounds.x1 = noninf(bounds.x1);
@@ -23084,6 +23082,8 @@ var printLayoutInfo;
     };
   }
 
+  var AVOID_IMPOSSIBLE_BEZIER_CONSTANT = 0.01;
+  var AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L = Math.sqrt(2 * AVOID_IMPOSSIBLE_BEZIER_CONSTANT);
   var BRp$c = {};
   BRp$c.findMidptPtsEtc = function (edge, pairInfo) {
     var posPts = pairInfo.posPts,
@@ -23279,8 +23279,8 @@ var printLayoutInfo;
 
     // avoids cases with impossible beziers
     var minCompoundStretch = 0.5;
-    var compoundStretchA = Math.max(minCompoundStretch, Math.log(srcW * 0.01));
-    var compoundStretchB = Math.max(minCompoundStretch, Math.log(tgtW * 0.01));
+    var compoundStretchA = Math.max(minCompoundStretch, Math.log(srcW * AVOID_IMPOSSIBLE_BEZIER_CONSTANT));
+    var compoundStretchB = Math.max(minCompoundStretch, Math.log(tgtW * AVOID_IMPOSSIBLE_BEZIER_CONSTANT));
     rs.ctrlpts = [loopPos.x, loopPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchA, loopPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchB, loopPos.y];
   };
   BRp$c.findStraightEdgePoints = function (edge) {
@@ -23829,9 +23829,12 @@ var printLayoutInfo;
             y1: srcPos.y,
             y2: tgtPos.y
           };
-          var dy = tgtOutside[1] - srcOutside[1];
-          var dx = tgtOutside[0] - srcOutside[0];
+          var dy = Math.abs(tgtOutside[1] - srcOutside[1]);
+          var dx = Math.abs(tgtOutside[0] - srcOutside[0]);
           var l = Math.sqrt(dx * dx + dy * dy);
+          if (number$1(l) && l >= AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L) ; else {
+            l = Math.sqrt(Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER_CONSTANT) + Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER_CONSTANT));
+          }
           var vector = pairInfo.vector = {
             x: dx,
             y: dy
@@ -24525,6 +24528,15 @@ var printLayoutInfo;
   BRp$9.applyPrefixedLabelDimensions = function (ele, prefix) {
     var _p = ele._private;
     var text = this.getLabelText(ele, prefix);
+    var cacheKey = hashString(text, ele._private.labelDimsKey);
+
+    // save recalc if the label is the same as before
+    if (getPrefixedProperty(_p.rscratch, 'prefixedLabelDimsKey', prefix) === cacheKey) {
+      return; // then the label dimensions + text are the same
+    }
+
+    // save the key
+    setPrefixedProperty(_p.rscratch, 'prefixedLabelDimsKey', prefix, cacheKey);
     var labelDims = this.calculateLabelDimensions(ele, text);
     var lineHeight = ele.pstyle('line-height').pfValue;
     var textWrap = ele.pstyle('text-wrap').strValue;
@@ -24685,12 +24697,6 @@ var printLayoutInfo;
     var r = this;
     var containerWindow = r.cy.window();
     var document = containerWindow.document;
-    var cacheKey = hashString(text, ele._private.labelDimsKey);
-    var cache = r.labelDimCache || (r.labelDimCache = []);
-    var existingVal = cache[cacheKey];
-    if (existingVal != null) {
-      return existingVal;
-    }
     var padding = 0; // add padding around text dims, as the measurement isn't that accurate
     var fStyle = ele.pstyle('font-style').strValue;
     var size = ele.pstyle('font-size').pfValue;
@@ -24723,7 +24729,7 @@ var printLayoutInfo;
     }
     width += padding;
     height += padding;
-    return cache[cacheKey] = {
+    return {
       width: width,
       height: height
     };
@@ -34565,7 +34571,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.31.1";
+  var version = "3.31.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

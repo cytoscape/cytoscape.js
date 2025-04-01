@@ -644,6 +644,7 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
   let cyStyle = node.cy().style();
   let pieSize = node.pstyle( 'pie-size' );
   let hole = node.pstyle('pie-hole');
+  let overallStartAngle = node.pstyle('pie-start-angle').pfValue;
   let x = pos.x;
   let y = pos.y;
   let nodeW = node.width();
@@ -685,7 +686,8 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
       percent = 1 - lastPercent;
     }
 
-    let angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
+    let angleStart = (1.5 * Math.PI) + (2 * Math.PI * lastPercent); // start at 12 o'clock and go clockwise
+    angleStart += overallStartAngle; // shift by the overall pie start angle
     let angleDelta = 2 * Math.PI * percent;
     let angleEnd = angleStart + angleDelta;
 

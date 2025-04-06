@@ -395,12 +395,12 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     if( ele.isNode() ){
       var node = ele;
       var eventsEnabled = node.pstyle('text-events').strValue === 'yes';
-      var boxSelectEnabled = node.pstyle('box-select-labels').strValue === 'yes';
+      var boxSelectLabelsEnabled = node.pstyle('box-select-labels').strValue === 'yes';
 
       var nodeBb = node.boundingBox({
         includeNodes: true,
         includeEdges: false,
-        includeLabels: boxSelectEnabled && eventsEnabled,
+        includeLabels: boxSelectLabelsEnabled && eventsEnabled,
       });
 
       if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
@@ -420,28 +420,54 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
       var edge = ele;
       var _p = edge._private;
       var rs = _p.rscratch;
+      var boxSelectLinesEnabled = edge.pstyle('box-select-lines').strValue === 'yes';
 
-      if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
-      if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
-
-      if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' || rs.edgeType === 'segments' || rs.edgeType === 'haystack' ){
-
-        var pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
-        var allInside = true;
-
-        for( var i = 0; i < pts.length; i++ ){
-          if( !math.pointInBoundingBox( boxBb, pts[ i ] ) ){
-            allInside = false;
-            break;
+      if( boxSelectLinesEnabled ) {
+        if (rs.startX != null && rs.startY != null && rs.endX != null && rs.endY != null) {
+          if (math.inBoundingBox(boxBb, rs.startX, rs.startY) || math.inBoundingBox(boxBb, rs.endX, rs.endY)) {
+            box.push(edge);
+          } else {
+            continue;
+          }
+        } else {
+          if( rs.edgeType === 'haystack' ) {
+            var allInside = false;
+            var pts = _p.rstyle.haystackPts;
+            for( var i = 0; i < pts.length; i++ ){
+              if( math.pointInBoundingBox( boxBb, pts[ i ] ) ){
+                allInside = true;
+                break;
+              }
+            }
+          
+            if( allInside ){
+              box.push( edge );
+            }
           }
         }
-
-        if( allInside ){
+      } else {
+        if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
+        if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
+  
+        if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' || rs.edgeType === 'segments' || rs.edgeType === 'haystack' ){
+  
+          var pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
+          var allInside = true;
+  
+          for( var i = 0; i < pts.length; i++ ){
+            if( !math.pointInBoundingBox( boxBb, pts[ i ] ) ){
+              allInside = false;
+              break;
+            }
+          }
+  
+          if( allInside ){
+            box.push( edge );
+          }
+  
+        } else if( rs.edgeType === 'straight' ){
           box.push( edge );
         }
-
-      } else if( rs.edgeType === 'haystack' || rs.edgeType === 'straight' ){
-        box.push( edge );
       }
     }
   }

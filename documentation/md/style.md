@@ -391,6 +391,7 @@ These properties affect the styling of an edge's line:
  * **`line-fill`** : The filling style of the edge's line; may be `solid` (default), `linear-gradient` (source to target), or `radial-gradient` (midpoint outwards).
  * **`line-dash-pattern`** : The `dashed` line pattern which specifies alternating lengths of lines and gaps. (e.g. `[6, 3]`).
  * **`line-dash-offset`** : The `dashed` line offset (e.g. `24`). It is useful for creating edge animations.
+ * **`box-select-lines`** : This allows selecting a line when at least one of its endpoints (start or end) is inside the user's selection box (box selection), which then selects the line as well as any associated connected lines attached to that point.
 
 ## Gradient
 

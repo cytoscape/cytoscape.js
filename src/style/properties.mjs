@@ -407,7 +407,8 @@ const styfn = {};
     { name: 'loop-direction', type: t.angle, triggersBounds: diff.any },
     { name: 'loop-sweep', type: t.angle, triggersBounds: diff.any },
     { name: 'source-distance-from-node', type: t.size, triggersBounds: diff.any },
-    { name: 'target-distance-from-node', type: t.size, triggersBounds: diff.any }
+    { name: 'target-distance-from-node', type: t.size, triggersBounds: diff.any },
+    { name: 'box-select-lines', type: t.bool, triggersBounds: diff.any }
   ];
 
   let ghost = [
@@ -806,6 +807,7 @@ styfn.getDefaultProperties = function(){
     'target-endpoint': 'outside-to-node',
     'line-dash-pattern': [6, 3],
     'line-dash-offset': 0,
+    'box-select-lines': 'no',
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

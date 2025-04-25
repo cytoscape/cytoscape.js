@@ -52,6 +52,7 @@ const styfn = {};
     bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials', 'null' ], multiple: true },
     bgClip: { enums: [ 'none', 'node' ], multiple: true },
     bgContainment: { enums: [ 'inside', 'over' ], multiple: true },
+    boxSelection: { enums: [ 'contain', 'overlap', 'none' ] },
     color: { color: true },
     colors: { color: true, multiple: true },
     fill: { enums: ['solid', 'linear-gradient', 'radial-gradient'] },
@@ -234,7 +235,7 @@ const styfn = {};
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
     { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
     { name: 'text-justification', type: t.justification },
-    { name: 'box-select-labels', type: t.bool, triggersBounds: diff.any },
+    { name: 'box-selection', type: t.boxSelection }
   ];
 
   let behavior = [
@@ -408,7 +409,7 @@ const styfn = {};
     { name: 'loop-sweep', type: t.angle, triggersBounds: diff.any },
     { name: 'source-distance-from-node', type: t.size, triggersBounds: diff.any },
     { name: 'target-distance-from-node', type: t.size, triggersBounds: diff.any },
-    { name: 'box-select-lines', type: t.bool, triggersBounds: diff.any }
+    { name: 'box-selection', type: t.boxSelection }
   ];
 
   let ghost = [
@@ -673,7 +674,7 @@ styfn.getDefaultProperties = function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-    'box-select-labels': 'no',
+    'box-selection': 'contain',
 
     // node props
     'background-blacken': 0,
@@ -807,7 +808,7 @@ styfn.getDefaultProperties = function(){
     'target-endpoint': 'outside-to-node',
     'line-dash-pattern': [6, 3],
     'line-dash-offset': 0,
-    'box-select-lines': 'no',
+    'box-selection': 'contain',
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

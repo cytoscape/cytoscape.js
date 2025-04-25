@@ -395,34 +395,36 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     if( ele.isNode() ){
       var node = ele;
       var eventsEnabled = node.pstyle('text-events').strValue === 'yes';
-      var boxSelectLabelsEnabled = node.pstyle('box-select-labels').strValue === 'yes';
+      var nodeBoxSelectMode = node.pstyle('box-selection').strValue;
+      
+      if( nodeBoxSelectMode !== 'none' ) {
+        var nodeBb = node.boundingBox({
+          includeNodes: true,
+          includeEdges: false,
+          includeLabels: nodeBoxSelectMode && eventsEnabled,
+        });
 
-      var nodeBb = node.boundingBox({
-        includeNodes: true,
-        includeEdges: false,
-        includeLabels: boxSelectLabelsEnabled && eventsEnabled,
-      });
+        if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
+          let rotatedLabelBox = getRotatedLabelBox(node);
+          let selectionBox = [
+            { x: boxBb.x1, y: boxBb.y1 },
+            { x: boxBb.x2, y: boxBb.y1 },
+            { x: boxBb.x2, y: boxBb.y2 },
+            { x: boxBb.x1, y: boxBb.y2 },
+          ];
 
-      if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
-        let rotatedLabelBox = getRotatedLabelBox(node);
-        let selectionBox = [
-          { x: boxBb.x1, y: boxBb.y1 },
-          { x: boxBb.x2, y: boxBb.y1 },
-          { x: boxBb.x2, y: boxBb.y2 },
-          { x: boxBb.x1, y: boxBb.y2 },
-        ];
-
-        if (math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
-          box.push(node);
+          if (math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+            box.push(node);
+          }
         }
       }
     } else {
       var edge = ele;
       var _p = edge._private;
       var rs = _p.rscratch;
-      var boxSelectLinesEnabled = edge.pstyle('box-select-lines').strValue === 'yes';
+      var edgeBoxSelectMode = edge.pstyle('box-selection').strValue;
 
-      if( boxSelectLinesEnabled ) {
+      if ( edgeBoxSelectMode === 'overlap' ) {
         if (rs.startX != null && rs.startY != null && rs.endX != null && rs.endY != null) {
           if (math.inBoundingBox(boxBb, rs.startX, rs.startY) || math.inBoundingBox(boxBb, rs.endX, rs.endY)) {
             box.push(edge);
@@ -445,7 +447,7 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
             }
           }
         }
-      } else {
+      } else if ( edgeBoxSelectMode === 'contain' ) {
         if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
         if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
   

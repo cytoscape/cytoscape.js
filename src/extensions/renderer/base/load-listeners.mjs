@@ -1071,7 +1071,73 @@ BRp.load = function(){
 
   }, false );
 
+  var wheelDeltas = []; // log of first N wheel deltas
+  var wheelDeltaN = 4; // how many events to log
+  var inaccurateScrollDevice;
+  var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
+
+  var allAreDivisibleBy = function( list, factor ){
+    for( var i = 0; i < list.length; i++ ){
+      if( list[i] % factor !== 0 ){
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  var allAreSameMagnitude = function(list) {
+    var firstMag = Math.abs(list[0]);
+    for (var i = 1; i < list.length; i++) {
+      if (Math.abs(list[i]) !== firstMag) {
+        return false;
+      }
+    }
+    return true;
+  }
+      
   var wheelHandler = function( e ){
+    var clamp = false;
+    var delta = e.deltaY;
+
+    if (delta == null) { // compatibility with old browsers
+      if (e.wheelDeltaY != null) {
+        delta = e.wheelDeltaY / 4;
+      } else if (e.wheelDelta != null) {
+        delta = e.wheelDelta / 4;
+      }
+    }
+
+    if (inaccurateScrollDevice == null) {
+      if (wheelDeltas.length >= wheelDeltaN) { // use log to determine if inaccurate
+        var wds = wheelDeltas;
+        inaccurateScrollDevice = allAreDivisibleBy(wds, 5);
+
+        if (!inaccurateScrollDevice) { // check for all large values of exact same magnitude
+          var firstMag = Math.abs(wds[0]);
+
+          inaccurateScrollDevice = allAreSameMagnitude(wds) && firstMag > 5;
+        }
+        
+        if (inaccurateScrollDevice) {
+          for (var i = 0; i < wds.length; i++) {
+            inaccurateScrollFactor = Math.min(Math.abs(wds[i]), inaccurateScrollFactor);
+          }
+        }
+
+        // console.log('Sampled wheel deltas:', wds);
+        // console.log('inaccurateScrollDevice:', inaccurateScrollDevice);
+        // console.log('inaccurateScrollFactor:', inaccurateScrollFactor);
+      } else { // clamp and log until we reach N
+        wheelDeltas.push(delta);
+        clamp = true;
+        // console.log('Clamping initial wheel events until we get a good sample');
+      }
+    } else if(inaccurateScrollDevice) { // keep updating
+      inaccurateScrollFactor = Math.min(Math.abs(delta), inaccurateScrollFactor);
+      // console.log('Keep updating inaccurateScrollFactor beyond sample in case we did not get the smallest possible val:', inaccurateScrollFactor);
+    }
+
     if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
     var cy = r.cy;
@@ -1100,15 +1166,21 @@ BRp.load = function(){
 
       var diff;
 
-      if( e.deltaY != null ){
-        diff = e.deltaY / -250;
-      } else if( e.wheelDeltaY != null ){
-        diff = e.wheelDeltaY / 1000;
-      } else {
-        diff = e.wheelDelta / 1000;
+      if (clamp && Math.abs(delta) > 5) {
+        delta = math.signum(delta) * 5;
+      }
+
+      diff = delta / -250;
+
+      if (inaccurateScrollDevice) {
+        diff /= inaccurateScrollFactor;
+
+        diff *= 3;
       }
 
       diff = diff * r.wheelSensitivity;
+
+      // console.log(`delta = ${delta}, diff = ${diff}, mode = ${e.deltaMode}`)
 
       var needsWheelFix = e.deltaMode === 1;
       if( needsWheelFix ){ // fixes slow wheel events on ff/linux and ff/windows
@@ -1125,6 +1197,7 @@ BRp.load = function(){
         level: newZoom,
         renderedPosition: { x: rpos[0], y: rpos[1] }
       } );
+
       cy.emit(e.type === 'gesturechange' ? 'pinchzoom' : 'scrollzoom');
     }
 

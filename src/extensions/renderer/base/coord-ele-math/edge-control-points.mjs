@@ -876,8 +876,8 @@ BRp.findEdgeControlPoints = function( edges ){
           y2: tgtPos.y
         };
 
-        let dy = Math.abs( tgtOutside[1] - srcOutside[1] );
-        let dx = Math.abs( tgtOutside[0] - srcOutside[0] );
+        let dy = ( tgtOutside[1] - srcOutside[1] );
+        let dx = ( tgtOutside[0] - srcOutside[0] );
         let l = Math.sqrt( 
           (dx * dx) + 
           (dy * dy)

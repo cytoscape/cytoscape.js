@@ -57,6 +57,7 @@
   "unpkg": "dist/cytoscape.min.js",
   "jsdelivr": "dist/cytoscape.min.js",
   "scripts": {
+    "postinstall": "npx playwright install",
     "lint": "eslint src/**/*.mjs",
     "build": "rollup -c",
     "build:esm": "cross-env FILE=esm rollup -c",

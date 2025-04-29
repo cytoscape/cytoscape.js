@@ -330,6 +330,47 @@ test.describe('Renderer', () => {
       
     }); // move when setting one edge to curve-style:straight
 
+    test('diagonal bottom left to top right', async ({page}) => {
+      let controlPoints = await page.evaluate(() => {
+        const cy = window.cy;
+        cy.style().fromJson([{
+          selector: 'edge',
+          style: {
+            'curve-style': 'bezier',
+            'control-point-step-size': Math.sqrt(200)
+          }
+        }]).update();
+        cy.add([{
+          data: {id: 'a'}
+        }, {
+          data: {id: 'b'}
+        }, {
+          data: {id: 'ab1', source: 'a', target: 'b'}
+        }, {
+          data: {id: 'ab2', source: 'a', target: 'b'}
+        }]);
+        var presetOptions = {
+          name: 'preset',
+          positions: {
+            a: {x: 0, y: 100},
+            b: {x: 100, y: 0}
+          }
+        };
+        cy.layout(presetOptions).run();
+        let pt_ab1_1 = cy.$('#ab1').controlPoints()[0];
+        let pt_ab2_1 = cy.$('#ab2').controlPoints()[0];
+        return [pt_ab1_1, pt_ab2_1]
+      });
+      // Step size 14.14, sqrt(10*10+10*10).
+      // Gives a 5 pixel translation away from the mid-point,
+      // if the vector between the nodes are at a 45 deg angle.
+      // Mid-point is at (50,50)
+      expect(controlPoints[0].x).toBeCloseTo(45, 5);
+      expect(controlPoints[0].y).toBeCloseTo(45, 5);
+      expect(controlPoints[1].x).toBeCloseTo(55, 5);
+      expect(controlPoints[1].y).toBeCloseTo(55, 5);
+    });
+
     // test('do not move when straight edge added', async ({ page }) => {
     //   await page.evaluate(() => {
     //     window.cy.add([

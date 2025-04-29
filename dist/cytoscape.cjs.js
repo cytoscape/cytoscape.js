@@ -23825,8 +23825,8 @@ BRp$c.findEdgeControlPoints = function (edges) {
           y1: srcPos.y,
           y2: tgtPos.y
         };
-        var dy = Math.abs(tgtOutside[1] - srcOutside[1]);
-        var dx = Math.abs(tgtOutside[0] - srcOutside[0]);
+        var dy = tgtOutside[1] - srcOutside[1];
+        var dx = tgtOutside[0] - srcOutside[0];
         var l = Math.sqrt(dx * dx + dy * dy);
         if (number$1(l) && l >= AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L) ; else {
           l = Math.sqrt(Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER_CONSTANT) + Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER_CONSTANT));
@@ -34567,7 +34567,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.31.2";
+var version = "3.31.3";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

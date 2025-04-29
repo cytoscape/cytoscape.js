@@ -1125,17 +1125,17 @@ BRp.load = function(){
           }
         }
 
-        console.log('Sampled wheel deltas:', wds);
-        console.log('inaccurateScrollDevice:', inaccurateScrollDevice);
-        console.log('inaccurateScrollFactor:', inaccurateScrollFactor);
+        // console.log('Sampled wheel deltas:', wds);
+        // console.log('inaccurateScrollDevice:', inaccurateScrollDevice);
+        // console.log('inaccurateScrollFactor:', inaccurateScrollFactor);
       } else { // clamp and log until we reach N
         wheelDeltas.push(delta);
         clamp = true;
-        console.log('Clamping initial wheel events until we get a good sample');
+        // console.log('Clamping initial wheel events until we get a good sample');
       }
     } else if(inaccurateScrollDevice) { // keep updating
       inaccurateScrollFactor = Math.min(Math.abs(delta), inaccurateScrollFactor);
-      console.log('Keep updating inaccurateScrollFactor beyond sample in case we did not get the smallest possible val:', inaccurateScrollFactor);
+      // console.log('Keep updating inaccurateScrollFactor beyond sample in case we did not get the smallest possible val:', inaccurateScrollFactor);
     }
 
     if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
@@ -1180,7 +1180,7 @@ BRp.load = function(){
 
       diff = diff * r.wheelSensitivity;
 
-      console.log(`delta = ${delta}, diff = ${diff}, mode = ${e.deltaMode}`)
+      // console.log(`delta = ${delta}, diff = ${diff}, mode = ${e.deltaMode}`)
 
       var needsWheelFix = e.deltaMode === 1;
       if( needsWheelFix ){ // fixes slow wheel events on ff/linux and ff/windows

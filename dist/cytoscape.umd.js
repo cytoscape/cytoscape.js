@@ -34571,7 +34571,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.31.3";
+  var version = "3.31.4";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

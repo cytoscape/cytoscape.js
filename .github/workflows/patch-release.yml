@@ -28,6 +28,13 @@ jobs:
           node-version: 22
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
+      - name: Install dependencies
+        run: npm install
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run tests
+        run : |
+          npm test 
       - name: Get new version string
         id: get_new_patch_version
         run: |
@@ -72,13 +79,6 @@ jobs:
           git add . && git commit -m "Docs: Add ${{ env.VERSION }} to versions.json"
           git push
           git checkout ${{ env.BRANCH }}
-      - name: Install dependencies
-        run: npm install
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-      - name: Run tests
-        run : |
-          npm test 
       - name: Set Git Config
         run : |
           # Set git configs

@@ -717,6 +717,7 @@
 <li><a href="https://www.helsinki.fi">University of Helsinki</a></li>
 <li><a href="https://www.jyu.fi">University of Jyväskylä</a></li>
 <li><a href="http://uni-leipzig.de">University of Leipzig</a></li>
+<li><a href="https://www.uni-mannheim.de/en/">University of Mannheim</a></li>
 <li><a href="https://umd.edu/">University of Maryland</a></li>
 <li><a href="https://utoronto.ca">University of Toronto</a></li>
 <li><a href="https://www.utah.edu">University of Utah</a></li>
@@ -831,6 +832,14 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <p></p>
 <ul> 
+    <li>
+        3.32
+        <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.32.0+is%3Aclosed">3.32.0</a>
+            </li>
+        </ul>
+    </li>
     <li>
         3.31
         <ul>
@@ -14815,13 +14824,25 @@ node {
 }
 </code></pre>
 <h2 id="style/pie-chart-background">Pie chart background <a href="#style/pie-chart-background"><span class="fa fa-bookmark"></span></a></h2>
-<p>These properties allow you to create pie chart backgrounds on nodes (<a href="demos/pie-style">demo</a>).  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.</p>
+<p>These properties allow you to create pie chart (or ring chart) backgrounds on nodes (<a href="demos/pie-style">demo</a>).  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.  The start angle may be shifted from the 12 o’clock position, if needed.</p>
 <p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
 <ul>
 <li><strong><code>pie-size</code></strong> : The diameter of the pie, measured as a percent of node size (e.g. <code>100%</code>) or an absolute length (e.g. <code>25px</code>).</li>
+<li><strong><code>pie-start-angle</code></strong> : The start angle of the pie, measured as an angle starting at the 12 o’clock position and going clockwise (e.g. <code>90deg</code> is 3 o’clock).  The default is to start at 12 o’clock (<code>0deg</code>, <code>0rad</code>).</li>
+<li><strong><code>pie-hole</code></strong> : The diameter of the hole in the centre of the pie, measured as a percent of node size (e.g. <code>100%</code>) or an absolute length (e.g. <code>25px</code>).  This effectively converts the pie chart into a ring chart (default disabled, <code>0</code>).</li>
 <li><strong><code>pie-i-background-color</code></strong> : The colour of the node’s ith pie chart slice.</li>
-<li><strong><code>pie-i-background-size</code></strong> : The size of the node’s ith pie chart slice, measured in percent (e.g. <code>25%</code> or <code>25</code>).</li>
+<li><strong><code>pie-i-background-size</code></strong> : The size of the node’s ith pie chart slice, measured in percent (e.g. <code>25%</code>).</li>
 <li><strong><code>pie-i-background-opacity</code></strong> : The opacity of the node’s ith pie chart slice.</li>
+</ul>
+<h2 id="style/stripe-chart-background">Stripe chart background <a href="#style/stripe-chart-background"><span class="fa fa-bookmark"></span></a></h2>
+<p>These properties allow you to create stripe chart backgrounds on nodes (<a href="demos/stripe-style">demo</a>).  Note that 16 stripes maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized stripe is placed in order of <code>i</code>, starting from the left and going rightwards for vertical stripes (<code>stripe-direction: vertical</code>) or starting from the top and going downwards for horizontal stripes (<code>stripe-direction: horizontal</code>).</p>
+<p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>stripe-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
+<ul>
+<li><strong><code>stripe-size</code></strong> : The diameter of the stripes, measured as a percent of node size (e.g. <code>100%</code>) or an absolute length (e.g. <code>25px</code>).</li>
+<li><strong><code>stripe-direction</code></strong> : The direction of the stripes, either <code>vertical</code> stripes or <code>horizontal</code> stripes.  Vertical stripes are stacked from left to right, and horizontal stripes are stacked from top to bottom.</li>
+<li><strong><code>stripe-i-background-color</code></strong> : The colour of the node’s ith stripe.</li>
+<li><strong><code>stripe-i-background-size</code></strong> : The size of the node’s ith stripe, measured in percent (e.g. <code>25%</code>).</li>
+<li><strong><code>stripe-i-background-opacity</code></strong> : The opacity of the node’s ith stripe.</li>
 </ul>
 <h2 id="style/edge-line">Edge line <a href="#style/edge-line"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties affect the styling of an edge’s line:</p>
@@ -15192,11 +15213,13 @@ node {
 <ul>
 <li><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.  Note that because of performance optimisations, the label may be shown at font sizes slightly smaller than this value.  This effect is more pronounced at larger screen pixel ratios.  However, it is guaranteed that the label will be shown at sizes equal to or greater than the value specified.</li>
 <li><strong><code>text-events</code></strong> : Whether events should occur on an element if the label receives an event; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable.</li>
+<li><strong><code>box-select-labels</code></strong> : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable. This setting takes effect only if <code>text-events=yes</code>.</li>
 </ul>
 <h2 id="style/events">Events <a href="#style/events"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li><strong><code>events</code></strong> : Whether events should occur on an element (e.g. <code>tap</code>, <code>mouseover</code>, etc.); may be <code>yes</code> or <code>no</code>.  For <code>no</code>, the element receives no events and events simply pass through to the core/viewport.  The <code>events</code> property is per-element, so the value of a compound parent does not affect its children.</li>
 <li><strong><code>text-events</code></strong> : Whether events should occur on an element if the label receives an event; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable.</li>
+<li><strong><code>box-select-labels</code></strong> : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable. This setting takes effect only if <code>text-events=yes</code>.</li>
 </ul>
 <h2 id="style/overlay">Overlay <a href="#style/overlay"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties allow for the creation of overlays on top of nodes or edges, and are often used in the <code>:active</code> state.</p>
@@ -17370,6 +17393,11 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#style/pie-chart-background">Pie chart background</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#style/stripe-chart-background">Stripe chart background</a>
 						</div>
 
 						<div class="section lvl2">

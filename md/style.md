@@ -348,15 +348,31 @@ The following is an example of valid background image styling using JSON. The ex
 
 ## Pie chart background
 
-These properties allow you to create pie chart backgrounds on nodes ([demo](demos/pie-style)).  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
+These properties allow you to create pie chart (or ring chart) backgrounds on nodes ([demo](demos/pie-style)).  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.  The start angle may be shifted from the 12 o'clock position, if needed.
 
 You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for `pie-i-background-size` accordingly for each node via a [mapper](#style/mappers).  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
 
  * **`pie-size`** : The diameter of the pie, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).
+ * **`pie-start-angle`** : The start angle of the pie, measured as an angle starting at the 12 o'clock position and going clockwise (e.g. `90deg` is 3 o'clock).  The default is to start at 12 o'clock (`0deg`, `0rad`).
+ * **`pie-hole`** : The diameter of the hole in the centre of the pie, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).  This effectively converts the pie chart into a ring chart (default disabled, `0`).
  * **`pie-i-background-color`** : The colour of the node's ith pie chart slice.
- * **`pie-i-background-size`** : The size of the node's ith pie chart slice, measured in percent (e.g. `25%` or `25`).
+ * **`pie-i-background-size`** : The size of the node's ith pie chart slice, measured in percent (e.g. `25%`).
  * **`pie-i-background-opacity`** : The opacity of the node's ith pie chart slice.
 
+
+
+## Stripe chart background
+
+These properties allow you to create stripe chart backgrounds on nodes ([demo](demos/stripe-style)).  Note that 16 stripes maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized stripe is placed in order of `i`, starting from the left and going rightwards for vertical stripes (`stripe-direction: vertical`) or starting from the top and going downwards for horizontal stripes (`stripe-direction: horizontal`).
+
+You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for `stripe-i-background-size` accordingly for each node via a [mapper](#style/mappers).  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
+
+ * **`stripe-size`** : The diameter of the stripes, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).
+ * **`stripe-direction`** : The direction of the stripes, either `vertical` stripes or `horizontal` stripes.  Vertical stripes are stacked from left to right, and horizontal stripes are stacked from top to bottom.
+ * **`stripe-i-background-color`** : The colour of the node's ith stripe.
+ * **`stripe-i-background-size`** : The size of the node's ith stripe, measured in percent (e.g. `25%`).
+ * **`stripe-i-background-opacity`** : The opacity of the node's ith stripe.
+ 
 
 
 
@@ -728,6 +744,7 @@ Interactivity:
 
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.  Note that because of performance optimisations, the label may be shown at font sizes slightly smaller than this value.  This effect is more pronounced at larger screen pixel ratios.  However, it is guaranteed that the label will be shown at sizes equal to or greater than the value specified.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
+ * **`box-select-labels`** : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect only if `text-events=yes`.
 
 
 
@@ -735,6 +752,7 @@ Interactivity:
 
  * **`events`** : Whether events should occur on an element (e.g. `tap`, `mouseover`, etc.); may be `yes` or `no`.  For `no`, the element receives no events and events simply pass through to the core/viewport.  The `events` property is per-element, so the value of a compound parent does not affect its children.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
+ * **`box-select-labels`** : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect only if `text-events=yes`.
 
 
 ## Overlay

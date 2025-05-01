@@ -1,0 +1,132 @@
+[
+  {
+    "selector": "node[label]",
+    "style": {
+      "label": "data(label)"
+    }
+  },
+
+  {
+    "selector": "edge[label]",
+    "style": {
+      "label": "data(label)",
+      "width": 3
+    }
+  },
+
+  {
+    "selector": ".top-left",
+    "style": {
+      "text-valign": "top",
+      "text-halign": "left"
+    }
+  },
+
+  {
+    "selector": ".top-center",
+    "style": {
+      "text-valign": "top",
+      "text-halign": "center"
+    }
+  },
+
+  {
+    "selector": ".top-right",
+    "style": {
+      "text-valign": "top",
+      "text-halign": "right"
+    }
+  },
+
+  {
+    "selector": ".center-left",
+    "style": {
+      "text-valign": "center",
+      "text-halign": "left"
+    }
+  },
+
+  {
+    "selector": ".center-center",
+    "style": {
+      "text-valign": "center",
+      "text-halign": "center"
+    }
+  },
+
+  {
+    "selector": ".center-right",
+    "style": {
+      "text-valign": "center",
+      "text-halign": "right"
+    }
+  },
+
+  {
+    "selector": ".bottom-left",
+    "style": {
+      "text-valign": "bottom",
+      "text-halign": "left"
+    }
+  },
+
+  {
+    "selector": ".bottom-center",
+    "style": {
+      "text-valign": "bottom",
+      "text-halign": "center"
+    }
+  },
+
+  {
+    "selector": ".bottom-right",
+    "style": {
+      "text-valign": "bottom",
+      "text-halign": "right"
+    }
+  },
+
+  {
+    "selector": ".multiline-manual",
+    "style": {
+      "text-wrap": "wrap"
+    }
+  },
+
+  {
+    "selector": ".multiline-auto",
+    "style": {
+      "text-wrap": "wrap",
+      "text-max-width": 80
+    }
+  },
+
+  {
+    "selector": ".autorotate",
+    "style": {
+      "edge-text-rotation": "autorotate"
+    }
+  },
+
+  {
+    "selector": ".background",
+    "style": {
+      "text-background-opacity": 1,
+      "color": "#fff",
+      "text-background-color": "#888",
+      "text-background-shape": "roundrectangle",
+      "text-border-color": "#000",
+      "text-border-width": 1,
+      "text-border-opacity": 1
+    }
+  },
+
+  {
+    "selector": ".outline",
+    "style": {
+      "color": "#fff",
+      "text-outline-color": "#888",
+      "text-outline-width": 3
+    }
+  }
+]

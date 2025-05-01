@@ -24,6 +24,13 @@ jobs:
           node-version: 22
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
+      - name: Install dependencies
+        run: npm install
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+      - name: Run tests
+        run : |
+          npm test
       - name: Determine version for the release
         id: get_new_patch_version
         run: |
@@ -44,13 +51,6 @@ jobs:
       - name: Update documentation and Merge unstable to master branch
         run: |
           . ./.github/workflows/scripts/merge_unstable_to_master.sh
-      - name: Install dependencies
-        run: npm install
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-      - name: Run tests
-        run : |
-          npm test
       - name: Build release and verify changes
         id: release
         run: |

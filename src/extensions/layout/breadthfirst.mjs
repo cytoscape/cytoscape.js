@@ -6,7 +6,7 @@ import * as is from '../../is.mjs';
 const defaults = {
   fit: true, // whether to fit the viewport to the graph
   directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
-  direction: 'top-bottom', // 'top-bottom' or 'left-right'
+  direction: 'top-bottom', // 'top-bottom', 'bottom-top', 'left-right', or 'right-left'
   padding: 30, // padding on fit
   circle: false, // put depths in concentric circles if true, put depths top down if false
   grid: false, // whether to create an even grid into which the DAG is placed (circle:false only)
@@ -349,7 +349,7 @@ BreadthFirstLayout.prototype.run = function(){
 
   const maxDepthSize = depths.reduce( (max, eles) => Math.max(max, eles.length), 0 );
 
-  const getPositionTB = function( ele ){
+  const getPositionTopBottom = function( ele ){
     const { depth, index } = getInfo( ele );
 
     if ( options.circle ){
@@ -385,13 +385,18 @@ BreadthFirstLayout.prototype.run = function(){
 
       return epos;
     }
-
   };
 
-  const getPositionLR = ( ele ) => util.rotatePos90LeftAndSkewByBox(getPositionTB(ele), bb);
+  const rotateDegrees = {
+    'bottom-top': 180,
+    'left-right': -90,
+    'right-left': 90,
+    'top-bottom': 0,
+  }
 
-  eles.nodes().layoutPositions( this, options,
-    options.direction === 'top-bottom' ? getPositionTB : getPositionLR );
+  const getPosition = (ele) => util.rotatePosAndSkewByBox(getPositionTopBottom(ele), bb, rotateDegrees[options.direction] ?? 0);
+
+  eles.nodes().layoutPositions( this, options, getPosition);
 
   return this; // chaining
 };

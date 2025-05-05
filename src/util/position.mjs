@@ -16,12 +16,12 @@ export const skewPointInBox = (x, y, boxX, boxY, skewX, skewY) => ({
   y: (y - boxY) * skewY + boxY
 });
 
-export const rotatePos90LeftAndSkewByBox = function( pos, box ) {
+export const rotatePosAndSkewByBox = function( pos, box, angleDegrees ) {
+  if (angleDegrees === 0) return pos;
   const centerX = (box.x1 + box.x2) / 2;
   const centerY = (box.y1 + box.y2) / 2;
   const skewX = box.w / box.h;
   const skewY = 1 / skewX;
-  const angleDegrees = -90;
 
   const rotated = rotatePoint(pos.x, pos.y, centerX, centerY, angleDegrees);
   const skewed = skewPointInBox(rotated.x, rotated.y, centerX, centerY, skewX, skewY);

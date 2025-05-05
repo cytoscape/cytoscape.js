@@ -3247,6 +3247,7 @@ declare namespace cytoscape {
          * A boolean indicating whether the algorithm should only go along edges from source to target (default false).
          */
         directed?: boolean;
+        direction?: 'top-bottom' | 'bottom-top' | 'left-right' | 'right-left';
     }
     interface SearchFirstOptions1 extends SearchFirstOptionsBase {
         /**

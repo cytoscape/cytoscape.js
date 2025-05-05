@@ -6,6 +6,7 @@ import * as is from '../../is.mjs';
 const defaults = {
   fit: true, // whether to fit the viewport to the graph
   directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+  direction: 'top-bottom', // 'top-bottom' or 'left-right'
   padding: 30, // padding on fit
   circle: false, // put depths in concentric circles if true, put depths top down if false
   grid: false, // whether to create an even grid into which the DAG is placed (circle:false only)
@@ -48,10 +49,8 @@ BreadthFirstLayout.prototype.run = function(){
   const maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
 
   const hasBoundingBox = !!options.boundingBox;
-  const cyExtent = cy.extent();
-  const bb = math.makeBoundingBox( hasBoundingBox ? options.boundingBox : {
-    x1: cyExtent.x1, y1: cyExtent.y1, w: cyExtent.w, h: cyExtent.h
-  } );
+  const bb = math.makeBoundingBox( hasBoundingBox ? options.boundingBox :
+    structuredClone(cy.extent()));
 
   let roots;
   if( is.elementOrCollection( options.roots ) ){
@@ -350,7 +349,7 @@ BreadthFirstLayout.prototype.run = function(){
 
   const maxDepthSize = depths.reduce( (max, eles) => Math.max(max, eles.length), 0 );
 
-  const getPosition = function( ele ){
+  const getPositionTB = function( ele ){
     const { depth, index } = getInfo( ele );
 
     if ( options.circle ){
@@ -389,7 +388,10 @@ BreadthFirstLayout.prototype.run = function(){
 
   };
 
-  eles.nodes().layoutPositions( this, options, getPosition );
+  const getPositionLR = ( ele ) => util.rotatePos90LeftAndSkewByBox(getPositionTB(ele), bb);
+
+  eles.nodes().layoutPositions( this, options,
+    options.direction === 'top-bottom' ? getPositionTB : getPositionLR );
 
   return this; // chaining
 };

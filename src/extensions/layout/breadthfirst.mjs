@@ -394,7 +394,11 @@ BreadthFirstLayout.prototype.run = function(){
     'top-bottom': 0,
   }
 
-  const getPosition = (ele) => util.rotatePosAndSkewByBox(getPositionTopBottom(ele), bb, rotateDegrees[options.direction] ?? 0);
+  if (Object.keys(rotateDegrees).indexOf(options.direction) === -1) {
+    util.error(`Invalid direction '${options.direction}' specified for breadthfirst layout. Valid values are: ${Object.keys(rotateDegrees).join(', ')}`);
+  }
+
+  const getPosition = (ele) => util.rotatePosAndSkewByBox(getPositionTopBottom(ele), bb, rotateDegrees[options.direction]);
 
   eles.nodes().layoutPositions( this, options, getPosition);
 

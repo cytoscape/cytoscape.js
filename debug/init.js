@@ -32,7 +32,7 @@ var cy, defaultSty, options;
           "text-max-width": 100,
           "text-wrap": "wrap",
           "text-events": "yes",
-          "box-select-labels": "yes",
+          "box-selection": "overlap",
         })
       .selector('node#d')
         .style({
@@ -40,7 +40,7 @@ var cy, defaultSty, options;
           "text-max-width": 100,
           "text-wrap": "wrap",
           "text-events": "yes",
-          "box-select-labels": "yes",
+          "box-selection": "none",
           "text-rotation": "45deg",
         })
       .selector('node#b')
@@ -53,7 +53,6 @@ var cy, defaultSty, options;
           "text-max-width": 100,
           "text-wrap": "wrap",
           "text-events": "yes",
-          "box-select-labels": "yes",
           "text-rotation": "38deg",
         })
       .selector('node#c')
@@ -82,6 +81,7 @@ var cy, defaultSty, options;
           'curve-style': 'unbundled-bezier',
           'control-point-distances': [ 20, -100, 20 ],
           'control-point-weights': [ 0.25, 0.5, 0.75 ],
+          'box-selection': 'none',
           'source-arrow-fill': 'hollow',
           'source-arrow-width': 2,
           'target-arrow-fill': 'hollow',
@@ -90,6 +90,7 @@ var cy, defaultSty, options;
       .selector('#bc')
         .style({
           'curve-style': 'segments',
+          'box-selection': 'overlap',
           'segment-distances': [ 20, -80 ],
           'segment-weights': [ 0.25, 0.5 ],
           'source-arrow-fill': 'hollow',

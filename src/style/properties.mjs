@@ -235,12 +235,12 @@ const styfn = {};
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
     { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
     { name: 'text-justification', type: t.justification },
-    { name: 'box-selection', type: t.boxSelection }
   ];
 
   let behavior = [
     { name: 'events', type: t.bool, triggersZOrder: diff.any },
-    { name: 'text-events', type: t.bool, triggersZOrder: diff.any }
+    { name: 'text-events', type: t.bool, triggersZOrder: diff.any },
+    { name: 'box-selection', type: t.boxSelection, triggersZOrder: diff.any },
   ];
 
   let visibility = [
@@ -409,7 +409,6 @@ const styfn = {};
     { name: 'loop-sweep', type: t.angle, triggersBounds: diff.any },
     { name: 'source-distance-from-node', type: t.size, triggersBounds: diff.any },
     { name: 'target-distance-from-node', type: t.size, triggersBounds: diff.any },
-    { name: 'box-selection', type: t.boxSelection }
   ];
 
   let ghost = [
@@ -618,6 +617,7 @@ styfn.getDefaultProperties = function(){
     'text-justification': 'auto',
     'line-height': 1,
     'color': '#000',
+    'box-selection': 'contain',
     'text-outline-color': '#000',
     'text-outline-width': 0,
     'text-outline-opacity': 1,
@@ -674,7 +674,6 @@ styfn.getDefaultProperties = function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-    'box-selection': 'contain',
 
     // node props
     'background-blacken': 0,
@@ -808,7 +807,6 @@ styfn.getDefaultProperties = function(){
     'target-endpoint': 'outside-to-node',
     'line-dash-pattern': [6, 3],
     'line-dash-offset': 0,
-    'box-selection': 'contain',
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

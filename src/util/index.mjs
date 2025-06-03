@@ -10,6 +10,7 @@ export * from './maps.mjs';
 export * from './strings.mjs';
 export * from './timing.mjs';
 export * from './hash.mjs';
+export * from './position.mjs';
 
 export { strings, extend, extend as assign, memoize, regex, sort };
 

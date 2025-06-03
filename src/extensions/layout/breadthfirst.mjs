@@ -6,7 +6,7 @@ import * as is from '../../is.mjs';
 const defaults = {
   fit: true, // whether to fit the viewport to the graph
   directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
-  direction: 'top-bottom', // 'top-bottom', 'bottom-top', 'left-right', or 'right-left'
+  direction: 'top-bottom', // determines the orientation in which the tree structure is drawn.  The possible values are 'top-bottom', 'bottom-top', 'left-right', or 'right-left'
   padding: 30, // padding on fit
   circle: false, // put depths in concentric circles if true, put depths top down if false
   grid: false, // whether to create an even grid into which the DAG is placed (circle:false only)

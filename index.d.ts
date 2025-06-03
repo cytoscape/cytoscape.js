@@ -3247,7 +3247,6 @@ declare namespace cytoscape {
          * A boolean indicating whether the algorithm should only go along edges from source to target (default false).
          */
         directed?: boolean;
-        direction?: 'top-bottom' | 'bottom-top' | 'left-right' | 'right-left';
     }
     interface SearchFirstOptions1 extends SearchFirstOptionsBase {
         /**
@@ -6295,6 +6294,8 @@ declare namespace cytoscape {
 
         // whether the tree is directed downwards (or edges can point in any direction if false)
         directed?: boolean;
+        // determines the orientation in which the tree structure is drawn
+        direction?: 'top-bottom' | 'bottom-top' | 'left-right' | 'right-left';
         // put depths in concentric circles if true, put depths top down if false
         circle?: boolean;
         // the roots of the trees

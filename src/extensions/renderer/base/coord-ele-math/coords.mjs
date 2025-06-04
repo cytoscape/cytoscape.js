@@ -353,6 +353,10 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     ele.boundingBox();
     var bb = _p.labelBounds[prefix || 'main'];
 
+    // If the bounding box is not available, return null.
+    // This indicates that the label box cannot be calculated, which is consistent
+    // with the expected behavior of this function. Returning null allows the caller
+    // to handle the absence of a bounding box explicitly.
     if (!bb) {
       return null;
     }

@@ -353,6 +353,10 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     ele.boundingBox();
     var bb = _p.labelBounds[prefix || 'main'];
 
+    if (!bb) {
+      return null;
+    }
+
     var lx = preprop(_p.rscratch, 'labelX', prefix);
     var ly = preprop(_p.rscratch, 'labelY', prefix);
     var theta = preprop(_p.rscratch, 'labelAngle', prefix);
@@ -412,7 +416,7 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
           { x: boxBb.x1, y: boxBb.y2 },
         ];
 
-        if (math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+        if (!rotatedLabelBox || math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
           box.push(node);
         }
       }

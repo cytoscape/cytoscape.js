@@ -39,19 +39,26 @@
       "require": "./dist/cytoscape.cjs.js",
       "types": "./index.d.ts"
     },
+    "./dist/cytoscape.esm.mjs": {
+      "import": "./dist/cytoscape.esm.mjs"
+    },
     "./dist/cytoscape.esm": {
       "import": "./dist/cytoscape.esm.mjs"
+    },
+    "./dist/cytoscape.esm.min.mjs": {
+      "import": "./dist/cytoscape.esm.min.mjs"
     },
     "./dist/cytoscape.esm.min": {
       "import": "./dist/cytoscape.esm.min.mjs"
     },
+    "./dist/cytoscape.cjs.js": {
+      "require": "./dist/cytoscape.cjs.js"
+    },
     "./dist/cytoscape.umd.js": {
-      "import": "./dist/cytoscape.umd.js",
       "require": "./dist/cytoscape.umd.js"
     },
-    "./dist/*": {
-      "import": "./dist/*.js",
-      "require": "./dist/*.js"
+    "./dist/cytoscape.min.js": {
+      "require": "./dist/cytoscape.min.js"
     }
   },
   "unpkg": "dist/cytoscape.min.js",

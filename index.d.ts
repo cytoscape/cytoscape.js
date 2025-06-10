@@ -6304,6 +6304,8 @@ declare namespace cytoscape {
 
         // whether the tree is directed downwards (or edges can point in any direction if false)
         directed?: boolean;
+        // determines the direction in which the tree structure is drawn
+        direction?: 'downward' | 'upward' | 'rightward' | 'leftward';
         // put depths in concentric circles if true, put depths top down if false
         circle?: boolean;
         // the roots of the trees

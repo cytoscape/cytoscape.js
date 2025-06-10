@@ -6,6 +6,7 @@ import * as is from '../../is.mjs';
 const defaults = {
   fit: true, // whether to fit the viewport to the graph
   directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+  direction: 'downward', // determines the direction in which the tree structure is drawn.  The possible values are 'downward', 'upward', 'rightward', or 'leftward'.
   padding: 30, // padding on fit
   circle: false, // put depths in concentric circles if true, put depths top down if false
   grid: false, // whether to create an even grid into which the DAG is placed (circle:false only)
@@ -48,10 +49,8 @@ BreadthFirstLayout.prototype.run = function(){
   const maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
 
   const hasBoundingBox = !!options.boundingBox;
-  const cyExtent = cy.extent();
-  const bb = math.makeBoundingBox( hasBoundingBox ? options.boundingBox : {
-    x1: cyExtent.x1, y1: cyExtent.y1, w: cyExtent.w, h: cyExtent.h
-  } );
+  const bb = math.makeBoundingBox( hasBoundingBox ? options.boundingBox :
+    structuredClone(cy.extent()));
 
   let roots;
   if( is.elementOrCollection( options.roots ) ){
@@ -350,7 +349,7 @@ BreadthFirstLayout.prototype.run = function(){
 
   const maxDepthSize = depths.reduce( (max, eles) => Math.max(max, eles.length), 0 );
 
-  const getPosition = function( ele ){
+  const getPositionTopBottom = function( ele ){
     const { depth, index } = getInfo( ele );
 
     if ( options.circle ){
@@ -386,10 +385,22 @@ BreadthFirstLayout.prototype.run = function(){
 
       return epos;
     }
-
   };
 
-  eles.nodes().layoutPositions( this, options, getPosition );
+  const rotateDegrees = {
+    'downward': 0,
+    'leftward': 90,
+    'upward': 180,
+    'rightward': -90,
+  }
+
+  if (Object.keys(rotateDegrees).indexOf(options.direction) === -1) {
+    util.error(`Invalid direction '${options.direction}' specified for breadthfirst layout. Valid values are: ${Object.keys(rotateDegrees).join(', ')}`);
+  }
+
+  const getPosition = (ele) => util.rotatePosAndSkewByBox(getPositionTopBottom(ele), bb, rotateDegrees[options.direction]);
+
+  eles.nodes().layoutPositions( this, options, getPosition);
 
   return this; // chaining
 };

@@ -71,7 +71,7 @@ const styfn = {};
     textTransform: { enums: [ 'none', 'uppercase', 'lowercase' ] },
     textWrap: { enums: [ 'none', 'wrap', 'ellipsis' ] },
     textOverflowWrap: { enums: [ 'whitespace', 'anywhere' ] },
-    textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle', 'round-rectangle' ]},
+    textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle', 'round-rectangle', 'circle' ]},
     nodeShape: { enums: [
       'rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel',
       'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon',

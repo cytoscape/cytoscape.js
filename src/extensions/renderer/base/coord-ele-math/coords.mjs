@@ -515,6 +515,16 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
         // Segment intersection check (only if not already selected)
         if (!selected) {
           let pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
+
+          // straight edges
+          if ((!pts || pts.length < 2) && rs.edgeType === 'straight') {
+            if (rs.startX != null && rs.startY != null && rs.endX != null && rs.endY != null) {
+              pts = [
+                { x: rs.startX, y: rs.startY },
+                { x: rs.endX, y: rs.endY }
+              ];
+            }
+          }
           if (!pts || pts.length < 2) continue;
 
           for (let i = 0; i < pts.length - 1; i++) {

@@ -340,6 +340,19 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     x1: x1, y1: y1,
     x2: x2, y2: y2
   } );
+  var selectionBox = [
+    { x: boxBb.x1, y: boxBb.y1 },
+    { x: boxBb.x2, y: boxBb.y1 },
+    { x: boxBb.x2, y: boxBb.y2 },
+    { x: boxBb.x1, y: boxBb.y2 },
+  ];
+  var boxEdges = [
+    [selectionBox[0], selectionBox[1]],
+    [selectionBox[1], selectionBox[2]],
+    [selectionBox[2], selectionBox[3]],
+    [selectionBox[3], selectionBox[0]]
+  ];
+
 
   function preprop(obj, name, pre) {
     return util.getPrefixedProperty(obj, name, pre);
@@ -397,59 +410,166 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     }
   }
 
+  function doLinesIntersect(p1, p2, q1, q2) {
+    function ccw(a, b, c) {
+      return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
+    }
+    return ccw(p1, q1, q2) !== ccw(p2, q1, q2) && ccw(p1, p2, q1) !== ccw(p1, p2, q2);
+  }
+
   for( var e = 0; e < eles.length; e++ ){
     var ele = eles[e];
 
     if( ele.isNode() ){
       var node = ele;
-      var eventsEnabled = node.pstyle('text-events').strValue === 'yes';
-      var boxSelectEnabled = node.pstyle('box-select-labels').strValue === 'yes';
+      var textEvents = node.pstyle('text-events').strValue === 'yes';
+      var nodeBoxSelectMode = node.pstyle('box-selection').strValue;
+      var labelBoxSelectEnabled = node.pstyle('box-select-labels').strValue === 'yes';
 
+      if ( nodeBoxSelectMode === 'none' ) {
+        continue; 
+      }
+      var includeLabels = (nodeBoxSelectMode === 'overlap' || labelBoxSelectEnabled) && textEvents;
       var nodeBb = node.boundingBox({
         includeNodes: true,
         includeEdges: false,
-        includeLabels: boxSelectEnabled && eventsEnabled,
+        includeLabels,
       });
+      
+      if ( nodeBoxSelectMode === 'contain' ) {
+        let selected = false;
 
-      if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
-        let rotatedLabelBox = getRotatedLabelBox(node);
-        let selectionBox = [
-          { x: boxBb.x1, y: boxBb.y1 },
-          { x: boxBb.x2, y: boxBb.y1 },
-          { x: boxBb.x2, y: boxBb.y2 },
-          { x: boxBb.x1, y: boxBb.y2 },
-        ];
+        if (labelBoxSelectEnabled && textEvents) {
+          const rotatedLabelBox = getRotatedLabelBox(node);
+          if (rotatedLabelBox && math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+            box.push(node);
+            selected = true;
+          }
+        }
 
-        if (!rotatedLabelBox || math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+        if (!selected && math.boundingBoxInBoundingBox(boxBb, nodeBb)) {
           box.push(node);
+        }
+      } else if ( nodeBoxSelectMode === 'overlap' ) {
+        if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
+          const nodeBodyBb = node.boundingBox({ 
+            includeNodes: true, 
+            includeEdges: true, 
+            includeLabels: false, 
+            includeMainLabels: false, 
+            includeSourceLabels: false, 
+            includeTargetLabels: false 
+          });
+
+          const nodeBodyCorners = [
+            { x: nodeBodyBb.x1, y: nodeBodyBb.y1 },
+            { x: nodeBodyBb.x2, y: nodeBodyBb.y1 },
+            { x: nodeBodyBb.x2, y: nodeBodyBb.y2 },
+            { x: nodeBodyBb.x1, y: nodeBodyBb.y2 },
+          ];
+
+          // if node body intersects, no need to check label
+          if (math.satPolygonIntersection(nodeBodyCorners, selectionBox)) {
+            box.push(node);
+          } else {
+            // only check label if node body didn't intersect
+            const rotatedLabelBox = getRotatedLabelBox(node);
+            if (rotatedLabelBox && math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+              box.push(node);
+            }
+          }
         }
       }
     } else {
       var edge = ele;
       var _p = edge._private;
       var rs = _p.rscratch;
+      var edgeBoxSelectMode = edge.pstyle('box-selection').strValue;
 
-      if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
-      if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
+      if ( edgeBoxSelectMode === 'none' ) {
+        continue; 
+      }
 
-      if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' || rs.edgeType === 'segments' || rs.edgeType === 'haystack' ){
+      if ( edgeBoxSelectMode === 'contain' ) {
+        if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
+        if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
+  
+        if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' || rs.edgeType === 'segments' || rs.edgeType === 'haystack' ){
+  
+          let pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
+          let allInside = true;
+  
+          for( var i = 0; i < pts.length; i++ ){
+            if( !math.pointInBoundingBox( boxBb, pts[ i ] ) ){
+              allInside = false;
+              break;
+            }
+          }
+  
+          if( allInside ){
+            box.push( edge );
+          }
+  
+        } else if( rs.edgeType === 'straight' ){
+          box.push( edge );
+        }
+      } else if ( edgeBoxSelectMode === 'overlap' ) {
+        let selected = false;
 
-        var pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
-        var allInside = true;
-
-        for( var i = 0; i < pts.length; i++ ){
-          if( !math.pointInBoundingBox( boxBb, pts[ i ] ) ){
-            allInside = false;
-            break;
+        // Check: either endpoint inside box
+        if (
+          rs.startX != null && rs.startY != null &&
+          rs.endX != null && rs.endY != null &&
+          (math.inBoundingBox(boxBb, rs.startX, rs.startY) || math.inBoundingBox(boxBb, rs.endX, rs.endY))
+        ) {
+          box.push(edge);
+          selected = true;
+        } 
+        
+        // Haystack fallback (only check if not already selected)
+        else if (!selected && rs.edgeType === 'haystack') {
+          const haystackPts = _p.rstyle.haystackPts;
+          for (let i = 0; i < haystackPts.length; i++) {
+            if (math.pointInBoundingBox(boxBb, haystackPts[i])) {
+              box.push(edge);
+              selected = true;
+              break;
+            }
           }
         }
 
-        if( allInside ){
-          box.push( edge );
-        }
+        // Segment intersection check (only if not already selected)
+        if (!selected) {
+          let pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
 
-      } else if( rs.edgeType === 'haystack' || rs.edgeType === 'straight' ){
-        box.push( edge );
+          // straight edges
+          if ((!pts || pts.length < 2) && rs.edgeType === 'straight') {
+            if (rs.startX != null && rs.startY != null && rs.endX != null && rs.endY != null) {
+              pts = [
+                { x: rs.startX, y: rs.startY },
+                { x: rs.endX, y: rs.endY }
+              ];
+            }
+          }
+          if (!pts || pts.length < 2) continue;
+
+          for (let i = 0; i < pts.length - 1; i++) {
+            let segStart = pts[i];
+            let segEnd = pts[i + 1];
+
+            for (let b = 0; b < boxEdges.length; b++) {
+              let [boxStart, boxEnd] = boxEdges[b];
+
+              if (doLinesIntersect(segStart, segEnd, boxStart, boxEnd)) {
+                box.push(edge);
+                selected = true;
+                break;
+              }
+            }
+
+            if (selected) break;
+          }
+        }
       }
     }
   }

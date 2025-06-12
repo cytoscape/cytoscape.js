@@ -5688,6 +5688,16 @@ declare namespace cytoscape {
              * You may want a style applied to the text on active so you know the text is activatable.
              */
             "text-events": PropertyValue<SingularType, "yes" | "no">;
+            /**
+             * Defines how an element responds to box selection via a selection rectangle.
+             * 
+             * - `contain` (default): The element is selected only if it is entirely within the selection box.
+             * - `overlap`: The element is selected if it intersects with any part of the selection box.
+             * - `none`: The element is excluded from box selection.
+             * 
+             * This property can be applied to nodes, edges, or both. For example, use `overlap` for more lenient selection or `contain` for stricter control.
+             */
+            "box-selection": PropertyValue<SingularType, "contain" | "overlap" | "none">;
         }
 
         /**

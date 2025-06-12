@@ -340,17 +340,17 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     x1: x1, y1: y1,
     x2: x2, y2: y2
   } );
-  var boxCorners = [
+  var selectionBox = [
     { x: boxBb.x1, y: boxBb.y1 },
     { x: boxBb.x2, y: boxBb.y1 },
     { x: boxBb.x2, y: boxBb.y2 },
-    { x: boxBb.x1, y: boxBb.y2 }
+    { x: boxBb.x1, y: boxBb.y2 },
   ];
   var boxEdges = [
-    [boxCorners[0], boxCorners[1]],
-    [boxCorners[1], boxCorners[2]],
-    [boxCorners[2], boxCorners[3]],
-    [boxCorners[3], boxCorners[0]]
+    [selectionBox[0], selectionBox[1]],
+    [selectionBox[1], selectionBox[2]],
+    [selectionBox[2], selectionBox[3]],
+    [selectionBox[3], selectionBox[0]]
   ];
 
 
@@ -422,22 +422,33 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
 
     if( ele.isNode() ){
       var node = ele;
-      var textEventsEnabled = node.pstyle('text-events').strValue === 'yes';
+      var textEvents = node.pstyle('text-events').strValue === 'yes';
       var nodeBoxSelectMode = node.pstyle('box-selection').strValue;
+      var labelBoxSelectEnabled = node.pstyle('box-select-labels').strValue === 'yes';
 
       if ( nodeBoxSelectMode === 'none' ) {
         continue; 
       }
-      var includeLabels = nodeBoxSelectMode === 'overlap' && textEventsEnabled;
+      var includeLabels = (nodeBoxSelectMode === 'overlap' || labelBoxSelectEnabled) && textEvents;
       var nodeBb = node.boundingBox({
         includeNodes: true,
         includeEdges: false,
-        includeLabels: includeLabels,
+        includeLabels,
       });
       
       if ( nodeBoxSelectMode === 'contain' ) {
-        if( math.boundingBoxesIntersect( boxBb, nodeBb ) && !math.boundingBoxInBoundingBox( nodeBb, boxBb ) ){
-          box.push( node );
+        let selected = false;
+
+        if (labelBoxSelectEnabled && textEvents) {
+          const rotatedLabelBox = getRotatedLabelBox(node);
+          if (rotatedLabelBox && math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+            box.push(node);
+            selected = true;
+          }
+        }
+
+        if (!selected && math.boundingBoxInBoundingBox(boxBb, nodeBb)) {
+          box.push(node);
         }
       } else if ( nodeBoxSelectMode === 'overlap' ) {
         if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
@@ -449,13 +460,6 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
             includeSourceLabels: false, 
             includeTargetLabels: false 
           });
-
-          const selectionBox = [
-            { x: boxBb.x1, y: boxBb.y1 },
-            { x: boxBb.x2, y: boxBb.y1 },
-            { x: boxBb.x2, y: boxBb.y2 },
-            { x: boxBb.x1, y: boxBb.y2 },
-          ];
 
           const nodeBodyCorners = [
             { x: nodeBodyBb.x1, y: nodeBodyBb.y1 },

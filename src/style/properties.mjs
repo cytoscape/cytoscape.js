@@ -235,6 +235,7 @@ const styfn = {};
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
     { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
     { name: 'text-justification', type: t.justification },
+    { name: 'box-select-labels', type: t.bool, triggersBounds: diff.any },
   ];
 
   let behavior = [
@@ -674,6 +675,7 @@ styfn.getDefaultProperties = function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
+    'box-select-labels': 'no',
 
     // node props
     'background-blacken': 0,

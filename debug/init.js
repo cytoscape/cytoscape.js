@@ -54,6 +54,7 @@ var cy, defaultSty, options;
           "text-wrap": "wrap",
           "text-events": "yes",
           "text-rotation": "38deg",
+          "box-select-labels": "yes",
         })
       .selector('node#c')
         .style({

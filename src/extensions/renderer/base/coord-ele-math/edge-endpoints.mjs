@@ -99,7 +99,7 @@ BRp.findEndpoints = function( edge ){
   let p2_i; // point to intersect with source shape
 
   let tgtManEndptPt = tgtManEndpt.pfValue ?? [0, 0];
-  let srcManEndptPt = tgtManEndpt.pfValue ?? [0, 0];
+  let srcManEndptPt = srcManEndpt.pfValue ?? [0, 0];
 
   if( bezier ){
     let cpStart = [ rs.ctrlpts[0], rs.ctrlpts[1] ];

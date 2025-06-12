@@ -441,16 +441,38 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
         }
       } else if ( nodeBoxSelectMode === 'overlap' ) {
         if (math.boundingBoxesIntersect(boxBb, nodeBb)) {
-          let rotatedLabelBox = getRotatedLabelBox(node);
-          let selectionBox = [
+          const nodeBodyBb = node.boundingBox({ 
+            includeNodes: true, 
+            includeEdges: true, 
+            includeLabels: false, 
+            includeMainLabels: false, 
+            includeSourceLabels: false, 
+            includeTargetLabels: false 
+          });
+
+          const selectionBox = [
             { x: boxBb.x1, y: boxBb.y1 },
             { x: boxBb.x2, y: boxBb.y1 },
             { x: boxBb.x2, y: boxBb.y2 },
             { x: boxBb.x1, y: boxBb.y2 },
           ];
 
-          if (!rotatedLabelBox || math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+          const nodeBodyCorners = [
+            { x: nodeBodyBb.x1, y: nodeBodyBb.y1 },
+            { x: nodeBodyBb.x2, y: nodeBodyBb.y1 },
+            { x: nodeBodyBb.x2, y: nodeBodyBb.y2 },
+            { x: nodeBodyBb.x1, y: nodeBodyBb.y2 },
+          ];
+
+          // if node body intersects, no need to check label
+          if (math.satPolygonIntersection(nodeBodyCorners, selectionBox)) {
             box.push(node);
+          } else {
+            // only check label if node body didn't intersect
+            const rotatedLabelBox = getRotatedLabelBox(node);
+            if (rotatedLabelBox && math.satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+              box.push(node);
+            }
           }
         }
       }

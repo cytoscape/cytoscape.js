@@ -98,6 +98,9 @@ BRp.findEndpoints = function( edge ){
   let p1_i; // point to intersect with target shape
   let p2_i; // point to intersect with source shape
 
+  let tgtManEndptPt = tgtManEndpt.pfValue ?? [0, 0];
+  let srcManEndptPt = tgtManEndpt.pfValue ?? [0, 0];
+
   if( bezier ){
     let cpStart = [ rs.ctrlpts[0], rs.ctrlpts[1] ];
     let cpEnd = multi ? [ rs.ctrlpts[ rs.ctrlpts.length - 2], rs.ctrlpts[ rs.ctrlpts.length - 1] ] : cpStart;
@@ -105,8 +108,14 @@ BRp.findEndpoints = function( edge ){
     p1 = cpEnd;
     p2 = cpStart;
   } else if( lines ){
-    let srcArrowFromPt = !segments ? [ tgtPos.x, tgtPos.y ] : rs.segpts.slice( 0, 2 );
-    let tgtArrowFromPt = !segments ? [ srcPos.x, srcPos.y ] : rs.segpts.slice( rs.segpts.length - 2 );
+    let srcArrowFromPt = !segments ? [
+      tgtPos.x + tgtManEndptPt[0],
+      tgtPos.y + tgtManEndptPt[1]
+    ] : rs.segpts.slice( 0, 2 );
+    let tgtArrowFromPt = !segments ? [
+      srcPos.x + srcManEndptPt[0],
+      srcPos.y + srcManEndptPt[1]
+    ] : rs.segpts.slice( rs.segpts.length - 2 );
 
     p1 = tgtArrowFromPt;
     p2 = srcArrowFromPt;

@@ -111,6 +111,51 @@ test.describe('Renderer', () => {
       expect(bb2.w).not.toEqual(0);
       expect(bb2.h).not.toEqual(0);
     }); // initial bounding box is nonzero
+
+    test('manual endpoints correct', async ({ page }) => {
+      // Set the endpoints manually
+      const {
+        ab1Source, ab1Target, ab2Source, ab2Target,
+        ab1Midpoint, ab2Midpoint
+      } = await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.$('#1').position({ x: 0, y: 0 });
+        cy.$('#b').position({ x: 100, y: 0 });
+
+        // Set the endpoints for the fist edge via style
+        cy.$('#ab1').style('source-endpoint', '10px 10px');
+        cy.$('#ab1').style('target-endpoint', '20px 10px');
+
+        // Set the endpoints for the second edge via style
+        cy.$('#ab2').style('source-endpoint', '30px 20px');
+        cy.$('#ab2').style('target-endpoint', '40px 20px');
+
+        // Return the endpoints for verification
+        return {
+          ab1Source: cy.$('#ab1').sourceEndpoint(),
+          ab1Target: cy.$('#ab1').targetEndpoint(),
+          ab2Source: cy.$('#ab2').sourceEndpoint(),
+          ab2Target: cy.$('#ab2').targetEndpoint(),
+          ab1Midpoint: cy.$('#ab1').midpoint(),
+          ab2Midpoint: cy.$('#ab2').midpoint()
+        };
+      });
+
+      // Verify the endpoints
+      expect(ab1Source.x).toBe(10);
+      expect(ab1Source.y).toBe(10);
+      expect(ab1Target.x).toBe(20 + 100);
+      expect(ab1Target.y).toBe(10);
+      expect(ab2Source.x).toBe(30);
+      expect(ab2Source.y).toBe(20);
+      expect(ab2Target.x).toBe(40 + 100);
+      expect(ab2Target.y).toBe(20);
+
+      // Verify the midpoint y values only
+      expect(ab1Midpoint.y).toEqual(10);
+      expect(ab2Midpoint.y).toEqual(20);
+    }); // manual endpoints correct
   });
 
   test.describe('bundled beziers', () => {

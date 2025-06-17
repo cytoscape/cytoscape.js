@@ -5647,7 +5647,7 @@ declare namespace cytoscape {
             /**
              * The shape to use for the label background.
              */
-            "text-background-shape": PropertyValue<SingularType, "rectangle" | "roundrectangle">;
+            "text-background-shape": PropertyValue<SingularType, "rectangle" | "roundrectangle" | "circle">;
 
             /**
              * Border:

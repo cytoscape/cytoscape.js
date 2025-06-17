@@ -129,23 +129,31 @@ CRp.setupTextStyle = function( context, ele, useEleOpacity = true ){
   this.colorStrokeStyle( context, outlineColor[ 0 ], outlineColor[ 1 ], outlineColor[ 2 ], outlineOpacity );
 };
 
-// TODO ensure re-used
-function roundRect( ctx, x, y, width, height, radius = 5, stroke){
+function circle(ctx, x, y, width, height) {
+  const diameter = Math.min(width, height);
+  const radius = diameter / 2;
+
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+
   ctx.beginPath();
-  ctx.moveTo( x + radius, y );
-  ctx.lineTo( x + width - radius, y );
-  ctx.quadraticCurveTo( x + width, y, x + width, y + radius );
-  ctx.lineTo( x + width, y + height - radius );
-  ctx.quadraticCurveTo( x + width, y + height, x + width - radius, y + height );
-  ctx.lineTo( x + radius, y + height );
-  ctx.quadraticCurveTo( x, y + height, x, y + height - radius );
-  ctx.lineTo( x, y + radius );
-  ctx.quadraticCurveTo( x, y, x + radius, y );
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
   ctx.closePath();
-  if(stroke)
-    ctx.stroke();
-  else
-    ctx.fill();
+}
+
+function roundRect(ctx, x, y, width, height, radius = 5) {
+  const r = Math.min(radius, width / 2, height / 2); // prevent overflow
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
 }
 
 CRp.getTextAngle = function( ele, prefix ){
@@ -241,89 +249,85 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
     let textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     let backgroundPadding = ele.pstyle( 'text-background-padding' ).pfValue;
     let styleShape = ele.pstyle( 'text-background-shape' ).strValue;
-    let rounded = styleShape.indexOf('round') === 0;
+    let rounded = styleShape === 'round-rectangle' || styleShape === 'roundrectangle';
+    let circled = styleShape === 'circle';
     let roundRadius = 2;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
-      let bgX = textX - backgroundPadding;
+      let textFill = context.fillStyle;
+      let textStroke = context.strokeStyle;
+      let textLineWidth = context.lineWidth;
 
+      let textBackgroundColor = ele.pstyle( 'text-background-color' ).value;
+      let textBorderColor = ele.pstyle( 'text-border-color' ).value;
+      let textBorderStyle = ele.pstyle( 'text-border-style' ).value;
+
+      let doFill = backgroundOpacity > 0;
+      let doStroke = textBorderWidth > 0 && borderOpacity > 0;
+
+      let bgX = textX - backgroundPadding;
       switch( halign ){
-        case 'left':
-          bgX -= textW;
-          break;
-        case 'center':
-          bgX -= textW / 2;
-          break;
-        case 'right':
-          break;
+        case 'left':   bgX -= textW; break;
+        case 'center': bgX -= textW / 2; break;
       }
 
       let bgY = textY - textH - backgroundPadding;
       let bgW = textW + 2*backgroundPadding;
       let bgH = textH + 2*backgroundPadding;
 
-      if( backgroundOpacity > 0 ){
-        let textFill = context.fillStyle;
-        let textBackgroundColor = ele.pstyle( 'text-background-color' ).value;
-
-        context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
-        if( rounded ){
-          roundRect( context, bgX, bgY, bgW, bgH, roundRadius );
-        } else {
-          context.fillRect( bgX, bgY, bgW, bgH );
-        }
-        context.fillStyle = textFill;
+      if( doFill ){
+        context.fillStyle = `rgba(${textBackgroundColor[0]},${textBackgroundColor[1]},${textBackgroundColor[2]},${backgroundOpacity * parentOpacity})`;
       }
 
-      if( textBorderWidth > 0 && borderOpacity > 0 ){
-        let textStroke = context.strokeStyle;
-        let textLineWidth = context.lineWidth;
-        let textBorderColor = ele.pstyle( 'text-border-color' ).value;
-        let textBorderStyle = ele.pstyle( 'text-border-style' ).value;
-
-        context.strokeStyle = 'rgba(' + textBorderColor[ 0 ] + ',' + textBorderColor[ 1 ] + ',' + textBorderColor[ 2 ] + ',' + borderOpacity * parentOpacity + ')';
+      if( doStroke ){
+        context.strokeStyle = `rgba(${textBorderColor[0]},${textBorderColor[1]},${textBorderColor[2]},${borderOpacity * parentOpacity})`;
         context.lineWidth = textBorderWidth;
 
-        if( context.setLineDash ){ // for very outofdate browsers
+        if( context.setLineDash ){
           switch( textBorderStyle ){
-            case 'dotted':
-              context.setLineDash( [ 1, 1 ] );
-              break;
-            case 'dashed':
-              context.setLineDash( [ 4, 2 ] );
-              break;
+            case 'dotted': context.setLineDash([1, 1]); break;
+            case 'dashed': context.setLineDash([4, 2]); break;
             case 'double':
-              context.lineWidth = textBorderWidth / 4; // 50% reserved for white between the two borders
-              context.setLineDash( [] );
+              context.lineWidth = textBorderWidth / 4;
+              context.setLineDash([]);
               break;
-            case 'solid':
-              context.setLineDash( [] );
-              break;
+            case 'solid': default: context.setLineDash([]); break;
           }
         }
-
-        if( rounded ){
-          roundRect( context, bgX, bgY, bgW, bgH, roundRadius, 'stroke' );
-        } else {
-          context.strokeRect( bgX, bgY, bgW, bgH );
-        }
-
-        if( textBorderStyle === 'double' ){
-          let whiteWidth = textBorderWidth / 2;
-          if( rounded ){
-            roundRect( context, bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2, roundRadius, 'stroke' );
-          } else {
-            context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2 );
-          }
-        }
-
-        if( context.setLineDash ){ // for very outofdate browsers
-          context.setLineDash( [] );
-        }
-        context.lineWidth = textLineWidth;
-        context.strokeStyle = textStroke;
       }
 
+      if( rounded ){
+        context.beginPath();
+        roundRect(context, bgX, bgY, bgW, bgH, roundRadius); 
+      } else if (circled){
+        context.beginPath();
+        circle(context, bgX, bgY, bgW, bgH); 
+      } else {
+        context.beginPath();
+        context.rect(bgX, bgY, bgW, bgH);
+      }
+
+      if( doFill ) context.fill();
+      if( doStroke ) context.stroke();
+
+      // Double border pass for 'double' style
+      if( doStroke && textBorderStyle === 'double' ){
+        let whiteWidth = textBorderWidth / 2;
+        context.beginPath();
+
+        if( rounded ){
+          roundRect(context, bgX + whiteWidth, bgY + whiteWidth, bgW - 2*whiteWidth, bgH - 2*whiteWidth, roundRadius);
+        } else {
+          context.rect(bgX + whiteWidth, bgY + whiteWidth, bgW - 2*whiteWidth, bgH - 2*whiteWidth);
+        }
+
+        context.stroke();
+      }
+
+      context.fillStyle = textFill;
+      context.strokeStyle = textStroke;
+      context.lineWidth = textLineWidth;
+      if( context.setLineDash ) context.setLineDash([]);
     }
 
     let lineWidth = 2 * ele.pstyle( 'text-outline-width' ).pfValue; // *2 b/c the stroke is drawn centred on the middle

@@ -179,6 +179,16 @@
         'text-border-color': 'red',
         'text-border-style': 'double',
       });
+      cy.$('#h').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'font-size': '26px',
+        'text-background-shape': 'circle',
+        'text-background-padding': 5,
+        'text-border-width': 2,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+      });
     },
     teardown: function(){
       cy.nodes().removeCss();

@@ -155,6 +155,10 @@ var cy, defaultSty, options;
         .style({
           'curve-style': 'round-taxi'
         })
+    .selector('#ep')
+    .style({
+      'curve-style': 'round-taxi',
+    })
       .selector('#gh')
         .style({
           'curve-style': 'round-taxi'
@@ -185,8 +189,9 @@ var cy, defaultSty, options;
         { data: { id: 'e', weight: 75 } },
         { data: { id: 'f', weight: 100 } },
         { data: { id: 'g', weight: 40 } },
-        { data: { id: 'h', weight: 16 } },
-        { data: { id: 'i', weight: 16 } },
+        { data: { id: 'h', weight: 16, parent: 'p'} },
+        { data: { id: 'i', weight: 16, parent: 'p'} },
+        { data: { id: 'p' } },
       ],
 
       edges: [
@@ -210,6 +215,7 @@ var cy, defaultSty, options;
         { data: { id: 'eg', weight: 3, source: 'e', target: 'g' } },
         { data: { id: 'eh', weight: 3, source: 'e', target: 'h' } },
         { data: { id: 'ei', weight: 3, source: 'e', target: 'i' } },
+        { data: { id: 'ep', weight: 3, source: 'e', target: 'p' } },
         { data: { id: 'fi', weight: 3, source: 'f', target: 'i' } },
         { data: { id: 'gh', weight: 3, source: 'g', target: 'h' } },
       ]

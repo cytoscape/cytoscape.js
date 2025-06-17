@@ -73,7 +73,7 @@ BRp.findEndpoints = function( edge ){
   let rs = edge._private.rscratch;
 
   let et = rs.edgeType;
-  let taxi = curveStyle === 'taxi';
+  let taxi = curveStyle.endsWith('taxi'); // Covers taxi and round-taxi
   let self = et === 'self' || et === 'compound';
   let bezier = et === 'bezier' || et === 'multibezier' || self;
   let multi = et !== 'bezier';

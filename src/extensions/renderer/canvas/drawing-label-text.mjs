@@ -298,7 +298,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
 
       if( rounded ){
         context.beginPath();
-        roundRect(context, bgX, bgY, bgW, bgH, roundRadius, false); 
+        roundRect(context, bgX, bgY, bgW, bgH, roundRadius); 
       } else if (circled){
         context.beginPath();
         circle(context, bgX, bgY, bgW, bgH); 
@@ -316,7 +316,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
         context.beginPath();
 
         if( rounded ){
-          roundRect(context, bgX + whiteWidth, bgY + whiteWidth, bgW - 2*whiteWidth, bgH - 2*whiteWidth, roundRadius, false);
+          roundRect(context, bgX + whiteWidth, bgY + whiteWidth, bgW - 2*whiteWidth, bgH - 2*whiteWidth, roundRadius);
         } else {
           context.rect(bgX + whiteWidth, bgY + whiteWidth, bgW - 2*whiteWidth, bgH - 2*whiteWidth);
         }

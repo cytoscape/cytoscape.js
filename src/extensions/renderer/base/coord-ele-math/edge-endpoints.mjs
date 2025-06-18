@@ -1,5 +1,6 @@
 import * as math from '../../../../math.mjs';
 import * as is from '../../../../is.mjs';
+import {endsWith} from "../../../../util/index.mjs";
 
 let BRp = {};
 
@@ -73,7 +74,7 @@ BRp.findEndpoints = function( edge ){
   let rs = edge._private.rscratch;
 
   let et = rs.edgeType;
-  let taxi = curveStyle === 'taxi';
+  let taxi = endsWith(curveStyle, 'taxi'); // Covers taxi and round-taxi
   let self = et === 'self' || et === 'compound';
   let bezier = et === 'bezier' || et === 'multibezier' || self;
   let multi = et !== 'bezier';

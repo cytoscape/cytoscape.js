@@ -49,6 +49,42 @@ test.describe('Renderer', () => {
     expect(numNodes).toBe(1);
   });
 
+  test.describe('node style', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.add({ data: { id: 'a' } });
+
+      });
+    }); // beforeEach
+
+    test('node bounding box extends beyond width and height for bordered triangle', async ({ page }) => {
+      const bb = await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.style().fromJson([
+          {
+            selector: 'node',
+            style: {
+              'shape': 'triangle',
+              'width': 100,
+              'height': 100,
+              'border-width': 10,
+              'border-color': 'black',
+            }
+          }
+        ]).update();
+
+        return cy.$('#a').boundingBox();
+      });
+
+      expect(bb.w).toBeGreaterThan(105);
+      expect(bb.h).toBeGreaterThan(105);
+    } ); // node bounding box extends beyond width and height for triangle
+
+  });
+
   test.describe('straight edges', () => {
     test.beforeEach(async ({ page }) => {
       await page.evaluate(() => {

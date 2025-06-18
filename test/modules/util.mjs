@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import { hashString, hashInt, hashIntsArray, hashStrings } from '../../src/util/index.mjs';
+import { hashString, hashInt, hashIntsArray, hashStrings, endsWith } from '../../src/util/index.mjs';
+import exp from "node:constants";
 
 var randInt = function(min, max){
   return Math.round(Math.random() * (max - min) + min);
@@ -131,6 +132,11 @@ describe('util', function(){
 
       expect(h1).to.not.equal(h2);
     });
+
+    it('endWiths works', function(){
+      expect(endsWith('prefix-suffix', 'suffix')).to.equal(true);
+      expect(endsWith('short', 'longlong')).to.equal(false);
+    })
   });
 
 });

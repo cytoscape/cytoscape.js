@@ -3,6 +3,7 @@ import { mat3 } from 'gl-matrix';
 import { AtlasManager, AtlasBatchManager } from './atlas.mjs';
 import * as math from '../../../../math.mjs';
 import * as sdf from './shader-sdf.mjs';
+import {endsWith} from "../../../../util/index.mjs";
 
 
 /**
@@ -41,17 +42,17 @@ const ELLIPSE = 7;
 
 export class ElementDrawingWebGL {
 
-  /** 
-   * @param {WebGLRenderingContext} gl 
+  /**
+   * @param {WebGLRenderingContext} gl
    */
   constructor(r, gl, opts) {
     this.r = r; // reference to the canvas renderer
     this.gl = gl;
-    
+
     this.maxInstances = opts.webglBatchSize;
     this.atlasSize = opts.webglTexSize;
     this.bgColor = opts.bgColor;
-    
+
     this.debug = opts.webglDebug;
     this.batchDebugInfo = [];
 
@@ -84,7 +85,7 @@ export class ElementDrawingWebGL {
    * @property { string } collection - name of atlas collection to render textures to
    * @property { function } getKey - returns the "style key" for an element, may be a single value or an array for multi-line lables
    * @property { function } drawElement - uses a canvas renderer to draw the element to the texture atlas
-   * @property { boolean  } drawClipped - if true the context will be clipped to the bounding box before drawElement() is called, may affect performance 
+   * @property { boolean  } drawClipped - if true the context will be clipped to the bounding box before drawElement() is called, may affect performance
    * @property { function } getBoundingBox - returns the bounding box for an element
    * @property { function } getRotation
    * @property { function } getRotationPoint
@@ -133,8 +134,8 @@ export class ElementDrawingWebGL {
   invalidate(eles, { type } = {}) {
     const { atlasManager } = this;
     if(type) {
-      return atlasManager.invalidate(eles, { 
-        filterType: t => t === type, 
+      return atlasManager.invalidate(eles, {
+        filterType: t => t === type,
         forceRedraw: true
       });
     } else {
@@ -487,7 +488,7 @@ export class ElementDrawingWebGL {
     gl.bindVertexArray(vao);
 
     util.createBufferStaticDraw(gl, 'vec2', program.aPosition, unitSquare);
-    
+
     // Create buffers for all the attributes
     this.transformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aTransform);
 
@@ -508,7 +509,7 @@ export class ElementDrawingWebGL {
 
   get buffers() {
     if(!this._buffers) {
-      this._buffers = Object.keys(this).filter(k => k.endsWith('Buffer')).map(k => this[k]);
+      this._buffers = Object.keys(this).filter(k => endsWith(k, 'Buffer')).map(k => this[k]);
     }
     return this._buffers;
   }
@@ -521,7 +522,7 @@ export class ElementDrawingWebGL {
     this.batchDebugInfo = [];
     this.wrappedCount = 0;
     this.simpleCount = 0;
-    
+
     this.startBatch();
   }
 
@@ -539,7 +540,7 @@ export class ElementDrawingWebGL {
     if(ele.visible()) {
       if(opts && opts.isVisible) {
         return opts.isVisible(ele);
-      } 
+      }
       return true;
     }
     return false;
@@ -567,7 +568,7 @@ export class ElementDrawingWebGL {
 
     // Get the atlas and the texture coordinates, will draw the texture if it hasn't been drawn yet
     // May be more than one texture if for example the label has multiple lines
-    const atlasInfoArray = atlasManager.getAtlasInfo(ele, type); 
+    const atlasInfoArray = atlasManager.getAtlasInfo(ele, type);
     for(const atlasInfo of atlasInfoArray) {
       const { atlas, tex1, tex2 } = atlasInfo; // tex2 is used if the label wraps and there are two textures
 
@@ -587,7 +588,7 @@ export class ElementDrawingWebGL {
           // Set values in the buffers using Typed Array Views for performance.
           const atlasIdView = this.atlasIdBuffer.getView(instance);
           atlasIdView[0] = atlasIndex;
-          
+
           // we have two sets of texture coordinates and transforms because textures can wrap in the atlas
           const texView = this.texBuffer.getView(instance);
           texView[0] = tex.x;
@@ -618,18 +619,18 @@ export class ElementDrawingWebGL {
     let padding = 0;
     if(opts.shapeProps && opts.shapeProps.padding) {
       padding = ele.pstyle(opts.shapeProps.padding).pfValue;
-    } 
-    
+    }
+
     if(atlasInfo) { // we've already computed the bb and tex bounds for a texture
       const { bb, tex1, tex2 } = atlasInfo;
       // wrapped textures need separate matrix for each part
-      let ratio = tex1.w / (tex1.w + tex2.w); 
+      let ratio = tex1.w / (tex1.w + tex2.w);
       if(!first) { // first = true means its the first part of the wrapped texture
         ratio = 1 - ratio;
       }
       const adjBB = this._getAdjustedBB(bb, padding, first, ratio);
       this._applyTransformMatrix(matrix, adjBB, opts, ele);
-    } 
+    }
     else {
       // we don't have a texture, or we want to avoid creating a texture for simple shapes
       const bb = opts.getBoundingBox(ele);
@@ -690,7 +691,7 @@ export class ElementDrawingWebGL {
 
     return { x1, y1, w, h, xOffset, yOffset };
   }
-  
+
   /**
    * Draw a solid opaque rectangle matching the element's Bounding Box.
    * Used by the PICKING mode to make the entire BB of a label clickable.
@@ -733,7 +734,7 @@ export class ElementDrawingWebGL {
       this.drawTexture(node, eleIndex, type);
       return;
     }
-    
+
     // Render a "simple shape" using SDF (signed distance fields)
     const instance = this.instanceCount;
     this.vertTypeBuffer.getView(instance)[0] = vertType;
@@ -741,7 +742,7 @@ export class ElementDrawingWebGL {
     if(vertType === ROUND_RECTANGLE || vertType === BOTTOM_ROUND_RECTANGLE) { // get corner radius
       const bb = opts.getBoundingBox(node);
       const radius = this._getCornerRadius(node, props.radius, bb);
-      
+
       const radiusView = this.cornerRadiusBuffer.getView(instance);
       radiusView[0] = radius; // top-right
       radiusView[1] = radius; // bottom-right
@@ -773,7 +774,7 @@ export class ElementDrawingWebGL {
 
         const borderColorView = this.borderColorBuffer.getView(instance);
         util.toWebGLColor(borderColor, borderOpacity, borderColorView);
-        
+
         // SDF distance is negative inside the shape and positive outside
         const borderPos = node.pstyle('border-position').value;
         if(borderPos === 'inside') {
@@ -804,9 +805,9 @@ export class ElementDrawingWebGL {
   _getVertTypeForShape(node, shapeProp) {
     const shape = node.pstyle(shapeProp).value
     switch(shape) {
-      case 'rectangle': 
+      case 'rectangle':
         return RECTANGLE;
-      case 'ellipse': 
+      case 'ellipse':
         return ELLIPSE;
       case 'roundrectangle':
       case 'round-rectangle':
@@ -829,7 +830,7 @@ export class ElementDrawingWebGL {
     }
   }
 
-  
+
   /**
    * Only supports drawing triangles at the moment.
    */
@@ -852,14 +853,14 @@ export class ElementDrawingWebGL {
     }
 
     // taken from CRp.drawArrowhead
-    if(isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) { 
-      return; 
+    if(isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) {
+      return;
     }
 
     // check shape after the x/y check because pstyle() is a bit slow
     const arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
     if(arrowShape === 'none') {
-      return; 
+      return;
     }
 
     const color = edge.pstyle(prefix + '-arrow-color').value;
@@ -871,7 +872,7 @@ export class ElementDrawingWebGL {
     const size = this.r.getArrowWidth(lineWidth, scale);
 
     const instance = this.instanceCount;
-    
+
     const transform = this.transformBuffer.getMatrixView(instance);
     mat3.identity(transform);
     mat3.translate(transform, transform, [x, y]);
@@ -987,7 +988,7 @@ export class ElementDrawingWebGL {
       }
     }
   }
-  
+
   _getEdgePoints(edge) {
     const rs = edge._private.rscratch;
 
@@ -1058,13 +1059,13 @@ export class ElementDrawingWebGL {
 
   endBatch() {
     const { gl, vao, vertexCount, instanceCount: count } = this;
-    if(count === 0) 
+    if(count === 0)
       return;
 
-    const program = this.renderTarget.picking 
-      ? this.pickingProgram 
+    const program = this.renderTarget.picking
+      ? this.pickingProgram
       : this.program;
- 
+
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 

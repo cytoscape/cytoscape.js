@@ -1,6 +1,6 @@
 import * as is from '../../is.mjs';
 import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox, shiftBoundingBox, updateBoundingBox } from '../../math.mjs';
-import { defaults, getPrefixedProperty, hashIntsArray, memoize } from '../../util/index.mjs';
+import {defaults, endsWith, getPrefixedProperty, hashIntsArray, memoize} from '../../util/index.mjs';
 
 let fn, elesfn;
 
@@ -620,7 +620,7 @@ let boundingBoxImpl = function( ele, options ){
 
         } else if(
           curveStyle === 'bezier' || curveStyle === 'unbundled-bezier'
-          || curveStyle.endsWith('segments') || curveStyle.endsWith('taxi')
+          || endsWith(curveStyle, 'segments') || endsWith(curveStyle, 'taxi')
         ){
           let pts;
 
@@ -894,7 +894,7 @@ elesfn.boundingBox = function( options ){
 
   let isDirty = memoize(ele => {
     let _p = ele._private;
-    
+
     return _p.bbCache == null || _p.styleDirty || _p.bbCachePosKey !== getBoundingBoxPosKey(ele);
   }, ele => ele.id());
 

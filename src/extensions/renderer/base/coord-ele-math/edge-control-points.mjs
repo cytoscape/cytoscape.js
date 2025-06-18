@@ -3,6 +3,7 @@ import * as is from '../../../../is.mjs';
 import * as util from '../../../../util/index.mjs';
 import Map from '../../../../map.mjs';
 import {getRoundCorner} from "../../../../round.mjs";
+import {endsWith} from "../../../../util/index.mjs";
 
 const AVOID_IMPOSSIBLE_BEZIER_CONSTANT = 0.01;
 const AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L = Math.sqrt(2 * AVOID_IMPOSSIBLE_BEZIER_CONSTANT);
@@ -46,7 +47,7 @@ BRp.findMidptPtsEtc = function(edge, pairInfo) {
         const [x1, y1] = this.manualEndptToPx( edge.source()[0], srcManEndpt );
         const [x2, y2] = this.manualEndptToPx( edge.target()[0], tgtManEndpt );
         const endPts = { x1, y1, x2, y2 };
-        
+
         vectorNormInverse = recalcVectorNormInverse(x1, y1, x2, y2);
         midptPts = endPts;
       } else {
@@ -741,7 +742,7 @@ BRp.findEdgeControlPoints = function( edges ){
       continue;
     }
 
-    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle.endsWith('segments') || curveStyle === 'straight' || curveStyle === 'straight-triangle' || curveStyle.endsWith('taxi');
+    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || endsWith(curveStyle, 'segments') || curveStyle === 'straight' || curveStyle === 'straight-triangle' || endsWith(curveStyle, 'taxi');
     let edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
     let src = _p.source;
     let tgt = _p.target;
@@ -834,7 +835,7 @@ BRp.findEdgeControlPoints = function( edges ){
       const edge = pairInfo.eles[i];
       const rs = edge[0]._private.rscratch;
       const curveStyle = edge.pstyle( 'curve-style' ).value;
-      const edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle.endsWith('segments') || curveStyle.endsWith('taxi');
+      const edgeIsUnbundled = curveStyle === 'unbundled-bezier' || endsWith(curveStyle, 'segments') || endsWith(curveStyle, 'taxi');
 
       // whether the normalised pair order is the reverse of the edge's src-tgt order
       const edgeIsSwapped = !src.same(edge.source());
@@ -878,16 +879,16 @@ BRp.findEdgeControlPoints = function( edges ){
 
         let dy = ( tgtOutside[1] - srcOutside[1] );
         let dx = ( tgtOutside[0] - srcOutside[0] );
-        let l = Math.sqrt( 
-          (dx * dx) + 
+        let l = Math.sqrt(
+          (dx * dx) +
           (dy * dy)
         );
 
         if (is.number(l) && l >= AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L) {
           // keep l
         } else {
-          l = Math.sqrt( 
-            Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER_CONSTANT) + 
+          l = Math.sqrt(
+            Math.max(dx * dx, AVOID_IMPOSSIBLE_BEZIER_CONSTANT) +
             Math.max(dy * dy, AVOID_IMPOSSIBLE_BEZIER_CONSTANT)
           );
         }
@@ -1022,7 +1023,7 @@ function getPts( pts ){
 
 BRp.getSegmentPoints = function( edge ){
   let rs = edge[0]._private.rscratch;
-  
+
   this.recalculateRenderedStyle( edge );
 
   let type = rs.edgeType;
@@ -1035,7 +1036,7 @@ BRp.getControlPoints = function( edge ){
   let rs = edge[0]._private.rscratch;
 
   this.recalculateRenderedStyle( edge );
-  
+
   let type = rs.edgeType;
   if( type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound' ){
     return getPts( rs.ctrlpts );

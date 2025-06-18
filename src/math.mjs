@@ -371,6 +371,89 @@ export const boundingBoxInBoundingBox = ( bb1, bb2 ) => (
   && inBoundingBox( bb1, bb2.x2, bb2.y2 )
 );
 
+export const hypot = Math.hypot ?? ((x, y) => Math.sqrt(x * x + y * y));
+
+function inflatePolygon(polygon, d) {
+  if (polygon.length < 3) {
+    throw new Error('Need at least 3 vertices');
+  }
+  // Helpers
+  const add = (a, b) => ({ x: a.x + b.x, y: a.y + b.y });
+  const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y });
+  const scale = (v, s) => ({ x: v.x * s, y: v.y * s });
+  const cross = (u, v) => u.x * v.y - u.y * v.x;
+  const normalize = v => {
+    const len = hypot(v.x, v.y);
+    return len === 0 ? { x: 0, y: 0 } : { x: v.x / len, y: v.y / len };
+  };
+  // Signed area (positive = CCW)
+  const signedArea = pts => {
+    let A = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[(i + 1) % pts.length];
+      A += p.x * q.y - q.x * p.y;
+    }
+    return A / 2;
+  };
+  // Line–line intersection (infinite lines)
+  const intersectLines = (p1, p2, p3, p4) => {
+    const r = sub(p2, p1);
+    const s = sub(p4, p3);
+    const denom = cross(r, s);
+    if (Math.abs(denom) < 1e-9) {
+      // Parallel or nearly so — fallback to midpoint
+      return add(p1, scale(r, 0.5));
+    }
+    const t = cross(sub(p3, p1), s) / denom;
+    return add(p1, scale(r, t));
+  };
+
+  // Make a shallow copy and enforce CCW
+  const pts = polygon.map(p => ({ x: p.x, y: p.y }));
+  if (signedArea(pts) < 0) pts.reverse();
+
+  const n = pts.length;
+  // Compute outward normals for each edge
+  const normals = [];
+  for (let i = 0; i < n; i++) {
+    const p = pts[i], q = pts[(i + 1) % n];
+    const edge = sub(q, p);
+    // For CCW polygon, inward normal = (-edge.y, edge.x)
+    // so outward normal = (edge.y, -edge.x)
+    const out = normalize({ x:  edge.y, y: -edge.x });
+    normals.push(out);
+  }
+
+  // Build offset edges
+  const offsetEdges = normals.map((nrm, i) => {
+    const p1 = add(pts[i], scale(nrm, d));
+    const p2 = add(pts[(i + 1) % n], scale(nrm, d));
+    return { p1, p2 };
+  });
+
+  // Intersect consecutive offset edges
+  const inflated = [];
+  for (let i = 0; i < n; i++) {
+    const prevEdge = offsetEdges[(i - 1 + n) % n];
+    const currEdge = offsetEdges[i];
+    const ip = intersectLines(prevEdge.p1, prevEdge.p2, currEdge.p1, currEdge.p2);
+    inflated.push(ip);
+  }
+
+  return inflated;
+}
+
+
+export function miterBox(pts, centerX, centerY, width, height, strokeWidth) {
+  const tpts = transformPoints(pts, centerX, centerY, width, height);
+  let offsetPoints = inflatePolygon(tpts, strokeWidth);
+  let bb = makeBoundingBox();
+
+  offsetPoints.forEach(pt => expandBoundingBoxByPoint(bb, pt.x, pt.y));
+
+  return bb;
+}
+
 export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding, radius = 'auto' ) => {
 
   let cornerRadius = radius === 'auto' ? getRoundRectangleRadius( width, height ) : radius;
@@ -1100,6 +1183,30 @@ export const finiteLinesIntersect = (
       return [];
     }
   }
+};
+
+export const transformPoints = ( points, centerX, centerY, width, height ) => {
+  let ret = [];
+
+  var halfW = width / 2;
+  var halfH = height / 2;
+
+  let x = centerX;
+  let y = centerY;
+
+  ret.push({
+    x: x + halfW * points[0],
+    y: y + halfH * points[1]
+  });
+
+  for( var i = 1; i < points.length / 2; i++ ){
+    ret.push({ 
+      x: x + halfW * points[i * 2], 
+      y: y + halfH * points[i * 2 + 1]
+    });
+  }
+
+  return ret;
 };
 
 // math.polygonIntersectLine( x, y, basePoints, centerX, centerY, width, height, padding )

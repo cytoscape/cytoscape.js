@@ -437,50 +437,50 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
   return bounds;
 };
 
-let updateBoundsFromOutline = function( bounds, ele ){
-  if( ele.cy().headless() ){ return; }
-
+let updateBoundsFromOutline = function (bounds, ele) {
+  if (ele.cy().headless()) { return; }
+  
   let outlineOpacity = ele.pstyle('outline-opacity').value;
   let outlineWidth = ele.pstyle('outline-width').value;
+  let outlineOffset = ele.pstyle('outline-offset').value;
+  let expansion = outlineWidth + outlineOffset;
 
-  if (outlineOpacity > 0 && outlineWidth > 0) {
-    let outlineOffset = ele.pstyle('outline-offset').value;
-    let nodeShape = ele.pstyle( 'shape' ).value;
+  updateBoundsFromMiter( bounds, ele, outlineOpacity, expansion, 'outside', expansion/2 );
+};
 
-    let outlineSize = outlineWidth + outlineOffset;
-    let scaleX = (bounds.w + outlineSize * 2) / bounds.w;
-    let scaleY = (bounds.h + outlineSize * 2) / bounds.h;
-    let xOffset = 0;
-    let yOffset = 0;
-
-    if (["diamond", "pentagon", "round-triangle"].includes(nodeShape)) {
-      scaleX = (bounds.w + outlineSize * 2.4) / bounds.w;
-      yOffset = -outlineSize/3.6;
-    } else if (["concave-hexagon", "rhomboid", "right-rhomboid"].includes(nodeShape)) {
-      scaleX = (bounds.w + outlineSize * 2.4) / bounds.w;
-    } else if (nodeShape === "star") {
-      scaleX = (bounds.w + outlineSize * 2.8) / bounds.w;
-      scaleY = (bounds.h + outlineSize * 2.6) / bounds.h;
-      yOffset = -outlineSize / 3.8;
-    } else if (nodeShape === "triangle") {
-      scaleX = (bounds.w + outlineSize * 2.8) / bounds.w;
-      scaleY = (bounds.h + outlineSize * 2.4) / bounds.h;
-      yOffset = -outlineSize/1.4;
-    } else if (nodeShape === "vee") {
-      scaleX = (bounds.w + outlineSize * 4.4) / bounds.w;
-      scaleY = (bounds.h + outlineSize * 3.8) / bounds.h;
-      yOffset = -outlineSize * .5;
-    }
-
-    let hDelta = (bounds.h * scaleY) - bounds.h;
-    let wDelta = (bounds.w * scaleX) - bounds.w;
-    expandBoundingBoxSides(bounds, [Math.ceil(hDelta/2), Math.ceil(wDelta/2)]);
-
-    if (xOffset != 0 || yOffset !== 0) {
-      let oBounds = shiftBoundingBox(bounds, xOffset, yOffset);
-      updateBoundingBox(bounds, oBounds);
-    }
+let updateBoundsFromMiter = function( bounds, ele, opacity, expansionSize, expansionPosition, useFallbackValue){
+  if (opacity === 0 || expansionSize <= 0 || expansionPosition === 'inside') {
+    return;
   }
+  
+  let cy = ele.cy();
+  let shape = ele.pstyle('shape').value
+  let rshape = cy.renderer().nodeShapes[shape];
+  let { x, y } = ele.position();
+  let w = ele.width();
+  let h = ele.height();
+
+  if (rshape.hasMiterBounds) {
+    if (expansionPosition === 'center') {
+      expansionSize /= 2;
+    }
+
+    let mbb = rshape.miterBounds(x, y, w, h, expansionSize);
+
+    updateBoundsFromBox(bounds, mbb);
+  } else if (useFallbackValue != null && useFallbackValue > 0) {
+    expandBoundingBoxSides(bounds, [useFallbackValue, useFallbackValue, useFallbackValue, useFallbackValue]);
+  }
+};
+
+let updateBoundsFromMiterBorder = function( bounds, ele ){
+  if (ele.cy().headless()) { return; }
+
+  let borderOpacity = ele.pstyle('border-opacity').value;
+  let borderWidth = ele.pstyle('border-width').pfValue;
+  let borderPosition = ele.pstyle('border-position').value;
+
+  updateBoundsFromMiter(bounds, ele, borderOpacity, borderWidth, borderPosition);
 };
 
 // get the bounding box of the elements (in raw model position)
@@ -565,8 +565,16 @@ let boundingBoxImpl = function( ele, options ){
 
       updateBounds( bounds, ex1, ey1, ex2, ey2 );
 
-      if( styleEnabled && options.includeOutlines ){
+      if( styleEnabled ){
+        updateBoundsFromOutline(bounds, ele)
+      }
+
+      if( styleEnabled && options.includeOutlines && !headless ){
         updateBoundsFromOutline( bounds, ele );
+      }
+
+      if (styleEnabled) {
+        updateBoundsFromMiterBorder(bounds, ele);
       }
     } else if( isEdge && options.includeEdges ){
 

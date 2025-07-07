@@ -142,7 +142,9 @@ declare namespace cytoscape {
          * you should only use `style`/`css` for very special cases; use classes instead
          */
         css?: Css.Node | Css.Edge;
-
+        /**
+         * an element can be in a removed state, these elements will be not part of the rendered graph
+         */
         removed?: boolean;
     }
 
@@ -477,7 +479,7 @@ declare namespace cytoscape {
          * Add elements to the graph and return them.
          */
         add(
-            eles: ElementDefinition | ElementDefinition[] | ElementsDefinition | CollectionArgument
+            eles: ElementDefinition | ElementDefinition[] | ElementsDefinition | CollectionArgument,
         ): CollectionReturnValue;
 
         /**
@@ -1635,10 +1637,13 @@ declare namespace cytoscape {
         on(events: EventNames, selector: string, data: any, handler: EventHandler): this;
         on(events: EventNames, selector: string, handler: EventHandler): this;
         on(events: EventNames, handler: EventHandler): this;
+        bind(events: EventNames, selector: string, data: any, handler: EventHandler): this;
         bind(events: EventNames, selector: string, handler: EventHandler): this;
         bind(events: EventNames, handler: EventHandler): this;
+        listen(events: EventNames, selector: string, data: any, handler: EventHandler): this;
         listen(events: EventNames, selector: string, handler: EventHandler): this;
         listen(events: EventNames, handler: EventHandler): this;
+        addListener(events: EventNames, selector: string, data: any, handler: EventHandler): this;
         addListener(events: EventNames, selector: string, handler: EventHandler): this;
         addListener(events: EventNames, handler: EventHandler): this;
 
@@ -4195,7 +4200,8 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#style/node-body
          */
         interface Node
-            extends Partial<Overlay>,
+            extends
+                Partial<Overlay>,
                 Partial<Underlay>,
                 Partial<Outline>,
                 PaddingNode,
@@ -4206,7 +4212,8 @@ declare namespace cytoscape {
                 Partial<Visibility<NodeSingular>>,
                 Partial<PieChartBackground>,
                 Partial<Events<NodeSingular>>,
-                Partial<TransitionAnimation> {
+                Partial<TransitionAnimation>
+        {
             /**
              * The CSS content field
              */
@@ -4323,6 +4330,10 @@ declare namespace cytoscape {
              * - `max`: calculate padding as a percentage of the maximum of the node width and height.
              */
             "padding-relative-to"?: PropertyValueNode<"width" | "height" | "average" | "min" | "max">;
+            "padding-left"?: PropertyValueNode<string>;
+            "padding-right"?: PropertyValueNode<string>;
+            "padding-top"?: PropertyValueNode<string>;
+            "padding-bottom"?: PropertyValueNode<string>;
         }
 
         interface CompoundParentSizing {
@@ -4373,19 +4384,6 @@ declare namespace cytoscape {
              * The offset of the node’s outline.
              */
             "outline-offset"?: PropertyValueNode<number | string>;
-        }
-
-        /**
-         * A padding defines an addition to a node’s dimension.
-         * For example, padding-left adds to a node’s outer (i.e. total) width.
-         * This can be used to add spacing around the label of width: label; height: label; nodes,
-         * or it can be used to add spacing between a compound node parent and its children.
-         */
-        interface PaddingNode {
-            "padding-left"?: PropertyValueNode<string>;
-            "padding-right"?: PropertyValueNode<string>;
-            "padding-top"?: PropertyValueNode<string>;
-            "padding-bottom"?: PropertyValueNode<string>;
         }
 
         interface Dictionary {

@@ -84,7 +84,7 @@ jobs:
           # Set git configs
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"        
-      - name: Pre Release Tests
+      - name: Make Release
         id: release
         run: |
           chmod +rx .github/workflows/scripts/pre_release_test.sh

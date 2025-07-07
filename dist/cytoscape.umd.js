@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2024, The Cytoscape Consortium.
+ * Copyright (c) 2016-2025, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -314,6 +314,9 @@
       return str;
     }
     return str.charAt(0).toUpperCase() + str.substring(1);
+  };
+  var endsWith = function endsWith(string, suffix) {
+    return string.slice(-1 * suffix.length) === suffix;
   };
 
   var number = '(?:[-+]?(?:(?:\\d+|\\d*\\.\\d+)(?:[Ee][+-]?\\d+)?))';
@@ -3186,6 +3189,7 @@
     }
   }; // elesfn
 
+  var _Math$hypot;
   var copyPosition = function copyPosition(p) {
     return {
       x: p.x,
@@ -3416,16 +3420,6 @@
     bb.w = 0;
     bb.h = 0;
   };
-  var shiftBoundingBox = function shiftBoundingBox(bb, dx, dy) {
-    return {
-      x1: bb.x1 + dx,
-      x2: bb.x2 + dx,
-      y1: bb.y1 + dy,
-      y2: bb.y2 + dy,
-      w: bb.w,
-      h: bb.h
-    };
-  };
   var updateBoundingBox = function updateBoundingBox(bb1, bb2) {
     // update bb1 with bb2 bounds
 
@@ -3532,6 +3526,121 @@
   var boundingBoxInBoundingBox = function boundingBoxInBoundingBox(bb1, bb2) {
     return inBoundingBox(bb1, bb2.x1, bb2.y1) && inBoundingBox(bb1, bb2.x2, bb2.y2);
   };
+  var hypot = (_Math$hypot = Math.hypot) !== null && _Math$hypot !== undefined ? _Math$hypot : function (x, y) {
+    return Math.sqrt(x * x + y * y);
+  };
+  function inflatePolygon(polygon, d) {
+    if (polygon.length < 3) {
+      throw new Error('Need at least 3 vertices');
+    }
+    // Helpers
+    var add = function add(a, b) {
+      return {
+        x: a.x + b.x,
+        y: a.y + b.y
+      };
+    };
+    var sub = function sub(a, b) {
+      return {
+        x: a.x - b.x,
+        y: a.y - b.y
+      };
+    };
+    var scale = function scale(v, s) {
+      return {
+        x: v.x * s,
+        y: v.y * s
+      };
+    };
+    var cross = function cross(u, v) {
+      return u.x * v.y - u.y * v.x;
+    };
+    var normalize = function normalize(v) {
+      var len = hypot(v.x, v.y);
+      return len === 0 ? {
+        x: 0,
+        y: 0
+      } : {
+        x: v.x / len,
+        y: v.y / len
+      };
+    };
+    // Signed area (positive = CCW)
+    var signedArea = function signedArea(pts) {
+      var A = 0;
+      for (var i = 0; i < pts.length; i++) {
+        var p = pts[i],
+          q = pts[(i + 1) % pts.length];
+        A += p.x * q.y - q.x * p.y;
+      }
+      return A / 2;
+    };
+    // Line–line intersection (infinite lines)
+    var intersectLines = function intersectLines(p1, p2, p3, p4) {
+      var r = sub(p2, p1);
+      var s = sub(p4, p3);
+      var denom = cross(r, s);
+      if (Math.abs(denom) < 1e-9) {
+        // Parallel or nearly so — fallback to midpoint
+        return add(p1, scale(r, 0.5));
+      }
+      var t = cross(sub(p3, p1), s) / denom;
+      return add(p1, scale(r, t));
+    };
+
+    // Make a shallow copy and enforce CCW
+    var pts = polygon.map(function (p) {
+      return {
+        x: p.x,
+        y: p.y
+      };
+    });
+    if (signedArea(pts) < 0) pts.reverse();
+    var n = pts.length;
+    // Compute outward normals for each edge
+    var normals = [];
+    for (var i = 0; i < n; i++) {
+      var p = pts[i],
+        q = pts[(i + 1) % n];
+      var edge = sub(q, p);
+      // For CCW polygon, inward normal = (-edge.y, edge.x)
+      // so outward normal = (edge.y, -edge.x)
+      var out = normalize({
+        x: edge.y,
+        y: -edge.x
+      });
+      normals.push(out);
+    }
+
+    // Build offset edges
+    var offsetEdges = normals.map(function (nrm, i) {
+      var p1 = add(pts[i], scale(nrm, d));
+      var p2 = add(pts[(i + 1) % n], scale(nrm, d));
+      return {
+        p1: p1,
+        p2: p2
+      };
+    });
+
+    // Intersect consecutive offset edges
+    var inflated = [];
+    for (var _i2 = 0; _i2 < n; _i2++) {
+      var prevEdge = offsetEdges[(_i2 - 1 + n) % n];
+      var currEdge = offsetEdges[_i2];
+      var ip = intersectLines(prevEdge.p1, prevEdge.p2, currEdge.p1, currEdge.p2);
+      inflated.push(ip);
+    }
+    return inflated;
+  }
+  function miterBox(pts, centerX, centerY, width, height, strokeWidth) {
+    var tpts = transformPoints(pts, centerX, centerY, width, height);
+    var offsetPoints = inflatePolygon(tpts, strokeWidth);
+    var bb = makeBoundingBox();
+    offsetPoints.forEach(function (pt) {
+      return expandBoundingBoxByPoint(bb, pt.x, pt.y);
+    });
+    return bb;
+  }
   var roundRectangleIntersectLine = function roundRectangleIntersectLine(x, y, nodeX, nodeY, width, height, padding) {
     var radius = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : 'auto';
     var cornerRadius = radius === 'auto' ? getRoundRectangleRadius(width, height) : radius;
@@ -4058,6 +4167,24 @@
       }
     }
   };
+  var transformPoints = function transformPoints(points, centerX, centerY, width, height) {
+    var ret = [];
+    var halfW = width / 2;
+    var halfH = height / 2;
+    var x = centerX;
+    var y = centerY;
+    ret.push({
+      x: x + halfW * points[0],
+      y: y + halfH * points[1]
+    });
+    for (var i = 1; i < points.length / 2; i++) {
+      ret.push({
+        x: x + halfW * points[i * 2],
+        y: y + halfH * points[i * 2 + 1]
+      });
+    }
+    return ret;
+  };
 
   // math.polygonIntersectLine( x, y, basePoints, centerX, centerY, width, height, padding )
   // intersect a node polygon (pts transformed)
@@ -4088,12 +4215,12 @@
       points = basePoints;
     }
     var currentX, currentY, nextX, nextY;
-    for (var _i2 = 0; _i2 < points.length / 2; _i2++) {
-      currentX = points[_i2 * 2];
-      currentY = points[_i2 * 2 + 1];
-      if (_i2 < points.length / 2 - 1) {
-        nextX = points[(_i2 + 1) * 2];
-        nextY = points[(_i2 + 1) * 2 + 1];
+    for (var _i3 = 0; _i3 < points.length / 2; _i3++) {
+      currentX = points[_i3 * 2];
+      currentY = points[_i3 * 2 + 1];
+      if (_i3 < points.length / 2 - 1) {
+        nextX = points[(_i3 + 1) * 2];
+        nextY = points[(_i3 + 1) * 2 + 1];
       } else {
         nextX = points[0];
         nextY = points[1];
@@ -4133,11 +4260,11 @@
     if (intersections.length > 2) {
       var lowestIntersection = [intersections[0], intersections[1]];
       var lowestSquaredDistance = Math.pow(lowestIntersection[0] - x, 2) + Math.pow(lowestIntersection[1] - y, 2);
-      for (var _i3 = 1; _i3 < intersections.length / 2; _i3++) {
-        var squaredDistance = Math.pow(intersections[_i3 * 2] - x, 2) + Math.pow(intersections[_i3 * 2 + 1] - y, 2);
+      for (var _i4 = 1; _i4 < intersections.length / 2; _i4++) {
+        var squaredDistance = Math.pow(intersections[_i4 * 2] - x, 2) + Math.pow(intersections[_i4 * 2 + 1] - y, 2);
         if (squaredDistance <= lowestSquaredDistance) {
-          lowestIntersection[0] = intersections[_i3 * 2];
-          lowestIntersection[1] = intersections[_i3 * 2 + 1];
+          lowestIntersection[0] = intersections[_i4 * 2];
+          lowestIntersection[1] = intersections[_i4 * 2 + 1];
           lowestSquaredDistance = squaredDistance;
         }
       }
@@ -4178,17 +4305,17 @@
     // stretch factors
     var sx = 2 / (maxX - minX);
     var sy = 2 / (maxY - minY);
-    for (var _i4 = 0; _i4 < sides; _i4++) {
-      x = points[2 * _i4] = points[2 * _i4] * sx;
-      y = points[2 * _i4 + 1] = points[2 * _i4 + 1] * sy;
+    for (var _i5 = 0; _i5 < sides; _i5++) {
+      x = points[2 * _i5] = points[2 * _i5] * sx;
+      y = points[2 * _i5 + 1] = points[2 * _i5 + 1] * sy;
       minX = Math.min(minX, x);
       maxX = Math.max(maxX, x);
       minY = Math.min(minY, y);
       maxY = Math.max(maxY, y);
     }
     if (minY < -1) {
-      for (var _i5 = 0; _i5 < sides; _i5++) {
-        y = points[2 * _i5 + 1] = points[2 * _i5 + 1] + (-1 - minY);
+      for (var _i6 = 0; _i6 < sides; _i6++) {
+        y = points[2 * _i6 + 1] = points[2 * _i6 + 1] + (-1 - minY);
       }
     }
     return points;
@@ -11346,40 +11473,40 @@
     }
     var outlineOpacity = ele.pstyle('outline-opacity').value;
     var outlineWidth = ele.pstyle('outline-width').value;
-    if (outlineOpacity > 0 && outlineWidth > 0) {
-      var outlineOffset = ele.pstyle('outline-offset').value;
-      var nodeShape = ele.pstyle('shape').value;
-      var outlineSize = outlineWidth + outlineOffset;
-      var scaleX = (bounds.w + outlineSize * 2) / bounds.w;
-      var scaleY = (bounds.h + outlineSize * 2) / bounds.h;
-      var xOffset = 0;
-      var yOffset = 0;
-      if (["diamond", "pentagon", "round-triangle"].includes(nodeShape)) {
-        scaleX = (bounds.w + outlineSize * 2.4) / bounds.w;
-        yOffset = -outlineSize / 3.6;
-      } else if (["concave-hexagon", "rhomboid", "right-rhomboid"].includes(nodeShape)) {
-        scaleX = (bounds.w + outlineSize * 2.4) / bounds.w;
-      } else if (nodeShape === "star") {
-        scaleX = (bounds.w + outlineSize * 2.8) / bounds.w;
-        scaleY = (bounds.h + outlineSize * 2.6) / bounds.h;
-        yOffset = -outlineSize / 3.8;
-      } else if (nodeShape === "triangle") {
-        scaleX = (bounds.w + outlineSize * 2.8) / bounds.w;
-        scaleY = (bounds.h + outlineSize * 2.4) / bounds.h;
-        yOffset = -outlineSize / 1.4;
-      } else if (nodeShape === "vee") {
-        scaleX = (bounds.w + outlineSize * 4.4) / bounds.w;
-        scaleY = (bounds.h + outlineSize * 3.8) / bounds.h;
-        yOffset = -outlineSize * .5;
-      }
-      var hDelta = bounds.h * scaleY - bounds.h;
-      var wDelta = bounds.w * scaleX - bounds.w;
-      expandBoundingBoxSides(bounds, [Math.ceil(hDelta / 2), Math.ceil(wDelta / 2)]);
-      if (xOffset != 0 || yOffset !== 0) {
-        var oBounds = shiftBoundingBox(bounds, xOffset, yOffset);
-        updateBoundingBox(bounds, oBounds);
-      }
+    var outlineOffset = ele.pstyle('outline-offset').value;
+    var expansion = outlineWidth + outlineOffset;
+    updateBoundsFromMiter(bounds, ele, outlineOpacity, expansion, 'outside', expansion / 2);
+  };
+  var updateBoundsFromMiter = function updateBoundsFromMiter(bounds, ele, opacity, expansionSize, expansionPosition, useFallbackValue) {
+    if (opacity === 0 || expansionSize <= 0 || expansionPosition === 'inside') {
+      return;
     }
+    var cy = ele.cy();
+    var shape = ele.pstyle('shape').value;
+    var rshape = cy.renderer().nodeShapes[shape];
+    var _ele$position = ele.position(),
+      x = _ele$position.x,
+      y = _ele$position.y;
+    var w = ele.width();
+    var h = ele.height();
+    if (rshape.hasMiterBounds) {
+      if (expansionPosition === 'center') {
+        expansionSize /= 2;
+      }
+      var mbb = rshape.miterBounds(x, y, w, h, expansionSize);
+      updateBoundsFromBox(bounds, mbb);
+    } else if (useFallbackValue != null && useFallbackValue > 0) {
+      expandBoundingBoxSides(bounds, [useFallbackValue, useFallbackValue, useFallbackValue, useFallbackValue]);
+    }
+  };
+  var updateBoundsFromMiterBorder = function updateBoundsFromMiterBorder(bounds, ele) {
+    if (ele.cy().headless()) {
+      return;
+    }
+    var borderOpacity = ele.pstyle('border-opacity').value;
+    var borderWidth = ele.pstyle('border-width').pfValue;
+    var borderPosition = ele.pstyle('border-position').value;
+    updateBoundsFromMiter(bounds, ele, borderOpacity, borderWidth, borderPosition);
   };
 
   // get the bounding box of the elements (in raw model position)
@@ -11447,8 +11574,14 @@
         ey1 = y - halfH;
         ey2 = y + halfH;
         updateBounds(bounds, ex1, ey1, ex2, ey2);
-        if (styleEnabled && options.includeOutlines) {
+        if (styleEnabled) {
           updateBoundsFromOutline(bounds, ele);
+        }
+        if (styleEnabled && options.includeOutlines && !headless) {
+          updateBoundsFromOutline(bounds, ele);
+        }
+        if (styleEnabled) {
+          updateBoundsFromMiterBorder(bounds, ele);
         }
       } else if (isEdge && options.includeEdges) {
         if (styleEnabled && !headless) {
@@ -11491,7 +11624,7 @@
               }
               updateBounds(bounds, ex1 - wHalf, ey1 - wHalf, ex2 + wHalf, ey2 + wHalf);
             }
-          } else if (curveStyle === 'bezier' || curveStyle === 'unbundled-bezier' || curveStyle.endsWith('segments') || curveStyle.endsWith('taxi')) {
+          } else if (curveStyle === 'bezier' || curveStyle === 'unbundled-bezier' || endsWith(curveStyle, 'segments') || endsWith(curveStyle, 'taxi')) {
             var pts;
             switch (curveStyle) {
               case 'bezier':
@@ -22886,6 +23019,14 @@ var printLayoutInfo;
       var prefixDash = '';
       ele.boundingBox();
       var bb = _p.labelBounds['main'];
+
+      // If the bounding box is not available, return null.
+      // This indicates that the label box cannot be calculated, which is consistent
+      // with the expected behavior of this function. Returning null allows the caller
+      // to handle the absence of a bounding box explicitly.
+      if (!bb) {
+        return null;
+      }
       var lx = preprop(_p.rscratch, 'labelX', prefix);
       var ly = preprop(_p.rscratch, 'labelY', prefix);
       var theta = preprop(_p.rscratch, 'labelAngle', prefix);
@@ -22949,7 +23090,7 @@ var printLayoutInfo;
             x: boxBb.x1,
             y: boxBb.y2
           }];
-          if (satPolygonIntersection(rotatedLabelBox, selectionBox)) {
+          if (!rotatedLabelBox || satPolygonIntersection(rotatedLabelBox, selectionBox)) {
             box.push(node);
           }
         }
@@ -23935,7 +24076,7 @@ var printLayoutInfo;
         haystackEdges.push(edge);
         continue;
       }
-      var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle.endsWith('segments') || curveStyle === 'straight' || curveStyle === 'straight-triangle' || curveStyle.endsWith('taxi');
+      var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || endsWith(curveStyle, 'segments') || curveStyle === 'straight' || curveStyle === 'straight-triangle' || endsWith(curveStyle, 'taxi');
       var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
       var src = _p.source;
       var tgt = _p.target;
@@ -24022,7 +24163,7 @@ var printLayoutInfo;
         var _edge = pairInfo.eles[_i2];
         var rs = _edge[0]._private.rscratch;
         var _curveStyle = _edge.pstyle('curve-style').value;
-        var _edgeIsUnbundled = _curveStyle === 'unbundled-bezier' || _curveStyle.endsWith('segments') || _curveStyle.endsWith('taxi');
+        var _edgeIsUnbundled = _curveStyle === 'unbundled-bezier' || endsWith(_curveStyle, 'segments') || endsWith(_curveStyle, 'taxi');
 
         // whether the normalised pair order is the reverse of the edge's src-tgt order
         var edgeIsSwapped = !src.same(_edge.source());
@@ -24218,6 +24359,7 @@ var printLayoutInfo;
     }
   };
   BRp$b.findEndpoints = function (edge) {
+    var _ref, _tgtManEndpt$pfValue, _ref2, _srcManEndpt$pfValue;
     var r = this;
     var intersect;
     var source = edge.source()[0];
@@ -24233,7 +24375,7 @@ var printLayoutInfo;
     var curveStyle = edge.pstyle('curve-style').value;
     var rs = edge._private.rscratch;
     var et = rs.edgeType;
-    var taxi = curveStyle === 'taxi';
+    var taxi = endsWith(curveStyle, 'taxi'); // Covers taxi and round-taxi
     var self = et === 'self' || et === 'compound';
     var bezier = et === 'bezier' || et === 'multibezier' || self;
     var multi = et !== 'bezier';
@@ -24255,14 +24397,16 @@ var printLayoutInfo;
     var p1_i; // point to intersect with target shape
     var p2_i; // point to intersect with source shape
 
+    var tgtManEndptPt = (_ref = (tgtManEndpt === null || tgtManEndpt === undefined || (_tgtManEndpt$pfValue = tgtManEndpt.pfValue) === null || _tgtManEndpt$pfValue === undefined ? undefined : _tgtManEndpt$pfValue.length) === 2 ? tgtManEndpt.pfValue : null) !== null && _ref !== undefined ? _ref : [0, 0];
+    var srcManEndptPt = (_ref2 = (srcManEndpt === null || srcManEndpt === undefined || (_srcManEndpt$pfValue = srcManEndpt.pfValue) === null || _srcManEndpt$pfValue === undefined ? undefined : _srcManEndpt$pfValue.length) === 2 ? srcManEndpt.pfValue : null) !== null && _ref2 !== undefined ? _ref2 : [0, 0];
     if (bezier) {
       var cpStart = [rs.ctrlpts[0], rs.ctrlpts[1]];
       var cpEnd = multi ? [rs.ctrlpts[rs.ctrlpts.length - 2], rs.ctrlpts[rs.ctrlpts.length - 1]] : cpStart;
       p1 = cpEnd;
       p2 = cpStart;
     } else if (lines) {
-      var srcArrowFromPt = !segments ? [tgtPos.x, tgtPos.y] : rs.segpts.slice(0, 2);
-      var tgtArrowFromPt = !segments ? [srcPos.x, srcPos.y] : rs.segpts.slice(rs.segpts.length - 2);
+      var srcArrowFromPt = !segments ? [tgtPos.x + tgtManEndptPt[0], tgtPos.y + tgtManEndptPt[1]] : rs.segpts.slice(0, 2);
+      var tgtArrowFromPt = !segments ? [srcPos.x + srcManEndptPt[0], srcPos.y + srcManEndptPt[1]] : rs.segpts.slice(rs.segpts.length - 2);
       p1 = tgtArrowFromPt;
       p2 = srcArrowFromPt;
     }
@@ -25613,6 +25757,16 @@ var printLayoutInfo;
       var draggedElements = r.dragData.possibleDragElements;
       r.hoverData.mdownPos = pos;
       r.hoverData.mdownGPos = gpos;
+      var makeEvent = function makeEvent(type) {
+        return {
+          originalEvent: e,
+          type: type,
+          position: {
+            x: pos[0],
+            y: pos[1]
+          }
+        };
+      };
       var checkForTaphold = function checkForTaphold() {
         r.hoverData.tapholdCancelled = false;
         clearTimeout(r.hoverData.tapholdTimeout);
@@ -25622,23 +25776,9 @@ var printLayoutInfo;
           } else {
             var ele = r.hoverData.down;
             if (ele) {
-              ele.emit({
-                originalEvent: e,
-                type: 'taphold',
-                position: {
-                  x: pos[0],
-                  y: pos[1]
-                }
-              });
+              ele.emit(makeEvent('taphold'));
             } else {
-              cy.emit({
-                originalEvent: e,
-                type: 'taphold',
-                position: {
-                  x: pos[0],
-                  y: pos[1]
-                }
-              });
+              cy.emit(makeEvent('taphold'));
             }
           }
         }, r.tapholdDuration);
@@ -25676,16 +25816,6 @@ var printLayoutInfo;
           // If something is under the cursor and it is draggable, prepare to grab it
           if (near != null) {
             if (r.nodeIsGrabbable(near)) {
-              var makeEvent = function makeEvent(type) {
-                return {
-                  originalEvent: e,
-                  type: type,
-                  position: {
-                    x: pos[0],
-                    y: pos[1]
-                  }
-                };
-              };
               var triggerGrab = function triggerGrab(ele) {
                 ele.emit(makeEvent('grab'));
               };
@@ -25788,17 +25918,20 @@ var printLayoutInfo;
         x: pos[0],
         y: pos[1]
       });
+      var makeEvent = function makeEvent(type) {
+        return {
+          originalEvent: e,
+          type: type,
+          position: {
+            x: pos[0],
+            y: pos[1]
+          }
+        };
+      };
       var goIntoBoxMode = function goIntoBoxMode() {
         r.data.bgActivePosistion = undefined;
         if (!r.hoverData.selecting) {
-          cy.emit({
-            originalEvent: e,
-            type: 'boxstart',
-            position: {
-              x: pos[0],
-              y: pos[1]
-            }
-          });
+          cy.emit(makeEvent('boxstart'));
         }
         select[4] = 1;
         r.hoverData.selecting = true;
@@ -25810,14 +25943,7 @@ var printLayoutInfo;
       if (r.hoverData.which === 3) {
         // but only if over threshold
         if (isOverThresholdDrag) {
-          var cxtEvt = {
-            originalEvent: e,
-            type: 'cxtdrag',
-            position: {
-              x: pos[0],
-              y: pos[1]
-            }
-          };
+          var cxtEvt = makeEvent('cxtdrag');
           if (down) {
             down.emit(cxtEvt);
           } else {
@@ -25826,25 +25952,11 @@ var printLayoutInfo;
           r.hoverData.cxtDragged = true;
           if (!r.hoverData.cxtOver || near !== r.hoverData.cxtOver) {
             if (r.hoverData.cxtOver) {
-              r.hoverData.cxtOver.emit({
-                originalEvent: e,
-                type: 'cxtdragout',
-                position: {
-                  x: pos[0],
-                  y: pos[1]
-                }
-              });
+              r.hoverData.cxtOver.emit(makeEvent('cxtdragout'));
             }
             r.hoverData.cxtOver = near;
             if (near) {
-              near.emit({
-                originalEvent: e,
-                type: 'cxtdragover',
-                position: {
-                  x: pos[0],
-                  y: pos[1]
-                }
-              });
+              near.emit(makeEvent('cxtdragover'));
             }
           }
         }
@@ -25868,7 +25980,7 @@ var printLayoutInfo;
             };
           }
           cy.panBy(deltaP);
-          cy.emit('dragpan');
+          cy.emit(makeEvent('dragpan'));
           r.hoverData.dragged = true;
         }
 
@@ -25922,11 +26034,11 @@ var printLayoutInfo;
               // then selection overrides
               if (down && down.grabbed()) {
                 freeDraggedElements(draggedElements);
-                down.emit('freeon');
-                draggedElements.emit('free');
+                down.emit(makeEvent('freeon'));
+                draggedElements.emit(makeEvent('free'));
                 if (r.dragData.didDrag) {
-                  down.emit('dragfreeon');
-                  draggedElements.emit('dragfree');
+                  down.emit(makeEvent('dragfreeon'));
+                  draggedElements.emit(makeEvent('dragfree'));
                 }
               }
               goIntoBoxMode();
@@ -25960,7 +26072,7 @@ var printLayoutInfo;
                 }
               }
               r.hoverData.draggingEles = true;
-              draggedElements.silentShift(totalShift).emit('position drag');
+              draggedElements.silentShift(totalShift).emit(makeEvent('position')).emit(makeEvent('drag'));
               r.redrawHint('drag', true);
               r.redraw();
             }
@@ -26010,29 +26122,25 @@ var printLayoutInfo;
       if (down) {
         down.unactivate();
       }
-      if (r.hoverData.which === 3) {
-        var cxtEvt = {
+      var makeEvent = function makeEvent(type) {
+        return {
           originalEvent: e,
-          type: 'cxttapend',
+          type: type,
           position: {
             x: pos[0],
             y: pos[1]
           }
         };
+      };
+      if (r.hoverData.which === 3) {
+        var cxtEvt = makeEvent('cxttapend');
         if (down) {
           down.emit(cxtEvt);
         } else {
           cy.emit(cxtEvt);
         }
         if (!r.hoverData.cxtDragged) {
-          var cxtTap = {
-            originalEvent: e,
-            type: 'cxttap',
-            position: {
-              x: pos[0],
-              y: pos[1]
-            }
-          };
+          var cxtTap = makeEvent('cxttap');
           if (down) {
             down.emit(cxtTap);
           } else {
@@ -26116,24 +26224,17 @@ var printLayoutInfo;
           if (box.length > 0) {
             r.redrawHint('eles', true);
           }
-          cy.emit({
-            type: 'boxend',
-            originalEvent: e,
-            position: {
-              x: pos[0],
-              y: pos[1]
-            }
-          });
+          cy.emit(makeEvent('boxend'));
           var eleWouldBeSelected = function eleWouldBeSelected(ele) {
             return ele.selectable() && !ele.selected();
           };
           if (cy.selectionType() === 'additive') {
-            box.emit('box').stdFilter(eleWouldBeSelected).select().emit('boxselect');
+            box.emit(makeEvent('box')).stdFilter(eleWouldBeSelected).select().emit(makeEvent('boxselect'));
           } else {
             if (!multSelKeyDown) {
               cy.$(isSelected).unmerge(box).unselect();
             }
-            box.emit('box').stdFilter(eleWouldBeSelected).select().emit('boxselect');
+            box.emit(makeEvent('box')).stdFilter(eleWouldBeSelected).select().emit(makeEvent('boxselect'));
           }
 
           // always need redraw in case eles unselectable
@@ -26153,11 +26254,11 @@ var printLayoutInfo;
           var downWasGrabbed = down && down.grabbed();
           freeDraggedElements(draggedElements);
           if (downWasGrabbed) {
-            down.emit('freeon');
-            draggedElements.emit('free');
+            down.emit(makeEvent('freeon'));
+            draggedElements.emit(makeEvent('free'));
             if (r.dragData.didDrag) {
-              down.emit('dragfreeon');
-              draggedElements.emit('dragfree');
+              down.emit(makeEvent('dragfreeon'));
+              draggedElements.emit(makeEvent('dragfree'));
             }
           }
         }
@@ -26291,7 +26392,14 @@ var printLayoutInfo;
             y: rpos[1]
           }
         });
-        cy.emit(e.type === 'gesturechange' ? 'pinchzoom' : 'scrollzoom');
+        cy.emit({
+          type: e.type === 'gesturechange' ? 'pinchzoom' : 'scrollzoom',
+          originalEvent: e,
+          position: {
+            x: pos[0],
+            y: pos[1]
+          }
+        });
       }
     };
 
@@ -26391,6 +26499,16 @@ var printLayoutInfo;
         now[4] = pos[0];
         now[5] = pos[1];
       }
+      var makeEvent = function makeEvent(type) {
+        return {
+          originalEvent: e,
+          type: type,
+          position: {
+            x: now[0],
+            y: now[1]
+          }
+        };
+      };
 
       // record starting points for pinch-to-zoom
       if (e.touches[1]) {
@@ -26420,34 +26538,13 @@ var printLayoutInfo;
           var near1 = r.findNearestElement(now[0], now[1], true, true);
           var near2 = r.findNearestElement(now[2], now[3], true, true);
           if (near1 && near1.isNode()) {
-            near1.activate().emit({
-              originalEvent: e,
-              type: 'cxttapstart',
-              position: {
-                x: now[0],
-                y: now[1]
-              }
-            });
+            near1.activate().emit(makeEvent('cxttapstart'));
             r.touchData.start = near1;
           } else if (near2 && near2.isNode()) {
-            near2.activate().emit({
-              originalEvent: e,
-              type: 'cxttapstart',
-              position: {
-                x: now[0],
-                y: now[1]
-              }
-            });
+            near2.activate().emit(makeEvent('cxttapstart'));
             r.touchData.start = near2;
           } else {
-            cy.emit({
-              originalEvent: e,
-              type: 'cxttapstart',
-              position: {
-                x: now[0],
-                y: now[1]
-              }
-            });
+            cy.emit(makeEvent('cxttapstart'));
           }
           if (r.touchData.start) {
             r.touchData.start._private.grabbed = false;
@@ -26493,16 +26590,6 @@ var printLayoutInfo;
               });
             }
             setGrabTarget(near);
-            var makeEvent = function makeEvent(type) {
-              return {
-                originalEvent: e,
-                type: type,
-                position: {
-                  x: now[0],
-                  y: now[1]
-                }
-              };
-            };
             near.emit(makeEvent('grabon'));
             if (selectedNodes) {
               selectedNodes.forEach(function (n) {
@@ -26579,6 +26666,16 @@ var printLayoutInfo;
         now[4] = pos[0];
         now[5] = pos[1];
       }
+      var makeEvent = function makeEvent(type) {
+        return {
+          originalEvent: e,
+          type: type,
+          position: {
+            x: now[0],
+            y: now[1]
+          }
+        };
+      };
       var startGPos = r.touchData.startGPosition;
       var isOverThresholdDrag;
       if (capture && e.touches[0] && startGPos) {
@@ -26614,14 +26711,7 @@ var printLayoutInfo;
           r.touchData.cxt = false;
           r.data.bgActivePosistion = undefined;
           r.redrawHint('select', true);
-          var cxtEvt = {
-            originalEvent: e,
-            type: 'cxttapend',
-            position: {
-              x: now[0],
-              y: now[1]
-            }
-          };
+          var cxtEvt = makeEvent('cxttapend');
           if (r.touchData.start) {
             r.touchData.start.unactivate().emit(cxtEvt);
             r.touchData.start = null;
@@ -26633,14 +26723,7 @@ var printLayoutInfo;
 
       // context swipe
       if (capture && r.touchData.cxt) {
-        var cxtEvt = {
-          originalEvent: e,
-          type: 'cxtdrag',
-          position: {
-            x: now[0],
-            y: now[1]
-          }
-        };
+        var cxtEvt = makeEvent('cxtdrag');
         r.data.bgActivePosistion = undefined;
         r.redrawHint('select', true);
         if (r.touchData.start) {
@@ -26655,25 +26738,11 @@ var printLayoutInfo;
         var near = r.findNearestElement(now[0], now[1], true, true);
         if (!r.touchData.cxtOver || near !== r.touchData.cxtOver) {
           if (r.touchData.cxtOver) {
-            r.touchData.cxtOver.emit({
-              originalEvent: e,
-              type: 'cxtdragout',
-              position: {
-                x: now[0],
-                y: now[1]
-              }
-            });
+            r.touchData.cxtOver.emit(makeEvent('cxtdragout'));
           }
           r.touchData.cxtOver = near;
           if (near) {
-            near.emit({
-              originalEvent: e,
-              type: 'cxtdragover',
-              position: {
-                x: now[0],
-                y: now[1]
-              }
-            });
+            near.emit(makeEvent('cxtdragover'));
           }
         }
 
@@ -26683,14 +26752,7 @@ var printLayoutInfo;
         r.data.bgActivePosistion = undefined;
         this.lastThreeTouch = +new Date();
         if (!r.touchData.selecting) {
-          cy.emit({
-            originalEvent: e,
-            type: 'boxstart',
-            position: {
-              x: now[0],
-              y: now[1]
-            }
-          });
+          cy.emit(makeEvent('boxstart'));
         }
         r.touchData.selecting = true;
         r.touchData.didSelect = true;
@@ -26767,11 +26829,11 @@ var printLayoutInfo;
             freeDraggedElements(draggedEles);
             r.redrawHint('drag', true);
             r.redrawHint('eles', true);
-            _start.unactivate().emit('freeon');
-            draggedEles.emit('free');
+            _start.unactivate().emit(makeEvent('freeon'));
+            draggedEles.emit(makeEvent('free'));
             if (r.dragData.didDrag) {
-              _start.emit('dragfreeon');
-              draggedEles.emit('dragfree');
+              _start.emit(makeEvent('dragfreeon'));
+              draggedEles.emit(makeEvent('dragfree'));
             }
           }
           cy.viewport({
@@ -26779,7 +26841,7 @@ var printLayoutInfo;
             pan: pan2,
             cancelOnFailedZoom: true
           });
-          cy.emit('pinchzoom');
+          cy.emit(makeEvent('pinchzoom'));
           distance1 = distance2;
           f1x1 = f1x2;
           f1y1 = f1y2;
@@ -26845,7 +26907,7 @@ var printLayoutInfo;
               }
             }
             r.hoverData.draggingEles = true;
-            draggedEles.silentShift(totalShift).emit('position drag');
+            draggedEles.silentShift(totalShift).emit(makeEvent('position')).emit(makeEvent('drag'));
             r.redrawHint('drag', true);
             if (r.touchData.startPosition[0] == earlier[0] && r.touchData.startPosition[1] == earlier[1]) {
               r.redrawHint('eles', true);
@@ -26872,24 +26934,10 @@ var printLayoutInfo;
           });
           if ((!start || !start.grabbed()) && near != last) {
             if (last) {
-              last.emit({
-                originalEvent: e,
-                type: 'tapdragout',
-                position: {
-                  x: now[0],
-                  y: now[1]
-                }
-              });
+              last.emit(makeEvent('tapdragout'));
             }
             if (near) {
-              near.emit({
-                originalEvent: e,
-                type: 'tapdragover',
-                position: {
-                  x: now[0],
-                  y: now[1]
-                }
-              });
+              near.emit(makeEvent('tapdragover'));
             }
           }
           r.touchData.last = near;
@@ -26917,14 +26965,14 @@ var printLayoutInfo;
                 x: disp[0] * zoom,
                 y: disp[1] * zoom
               });
-              cy.emit('dragpan');
+              cy.emit(makeEvent('dragpan'));
             } else if (isOverThresholdDrag) {
               r.swipePanning = true;
               cy.panBy({
                 x: dx * zoom,
                 y: dy * zoom
               });
-              cy.emit('dragpan');
+              cy.emit(makeEvent('dragpan'));
               if (start) {
                 start.unactivate();
                 r.redrawHint('select', true);
@@ -26994,33 +27042,29 @@ var printLayoutInfo;
         now[4] = pos[0];
         now[5] = pos[1];
       }
-      if (start) {
-        start.unactivate();
-      }
-      var ctxTapend;
-      if (r.touchData.cxt) {
-        ctxTapend = {
+      var makeEvent = function makeEvent(type) {
+        return {
           originalEvent: e,
-          type: 'cxttapend',
+          type: type,
           position: {
             x: now[0],
             y: now[1]
           }
         };
+      };
+      if (start) {
+        start.unactivate();
+      }
+      var ctxTapend;
+      if (r.touchData.cxt) {
+        ctxTapend = makeEvent('cxttapend');
         if (start) {
           start.emit(ctxTapend);
         } else {
           cy.emit(ctxTapend);
         }
         if (!r.touchData.cxtDragged) {
-          var ctxTap = {
-            originalEvent: e,
-            type: 'cxttap',
-            position: {
-              x: now[0],
-              y: now[1]
-            }
-          };
+          var ctxTap = makeEvent('cxttap');
           if (start) {
             start.emit(ctxTap);
           } else {
@@ -27046,18 +27090,11 @@ var printLayoutInfo;
         select[3] = undefined;
         select[4] = 0;
         r.redrawHint('select', true);
-        cy.emit({
-          type: 'boxend',
-          originalEvent: e,
-          position: {
-            x: now[0],
-            y: now[1]
-          }
-        });
+        cy.emit(makeEvent('boxend'));
         var eleWouldBeSelected = function eleWouldBeSelected(ele) {
           return ele.selectable() && !ele.selected();
         };
-        box.emit('box').stdFilter(eleWouldBeSelected).select().emit('boxselect');
+        box.emit(makeEvent('box')).stdFilter(eleWouldBeSelected).select().emit(makeEvent('boxselect'));
         if (box.nonempty()) {
           r.redrawHint('eles', true);
         }
@@ -27079,11 +27116,11 @@ var printLayoutInfo;
           r.redrawHint('drag', true);
           r.redrawHint('eles', true);
           if (startWasGrabbed) {
-            start.emit('freeon');
-            draggedEles.emit('free');
+            start.emit(makeEvent('freeon'));
+            draggedEles.emit(makeEvent('free'));
             if (r.dragData.didDrag) {
-              start.emit('dragfreeon');
-              draggedEles.emit('dragfree');
+              start.emit(makeEvent('dragfreeon'));
+              draggedEles.emit(makeEvent('dragfree'));
             }
           }
           triggerEvents(start, ['touchend', 'tapend', 'vmouseup', 'tapdragout'], e, {
@@ -27284,6 +27321,10 @@ var printLayoutInfo;
       },
       checkPoint: function checkPoint(x, y, padding, width, height, centerX, centerY, cornerRadius) {
         return pointInsidePolygon(x, y, this.points, centerX, centerY, width, height, [0, -1], padding);
+      },
+      hasMiterBounds: name !== 'rectangle',
+      miterBounds: function miterBounds(centerX, centerY, width, height, strokeWidth, strokePosition) {
+        return miterBox(this.points, centerX, centerY, width, height, strokeWidth);
       }
     };
   };
@@ -32924,8 +32965,8 @@ var printLayoutInfo;
   var BOTTOM_ROUND_RECTANGLE = 6;
   var ELLIPSE = 7;
   var ElementDrawingWebGL = /*#__PURE__*/function () {
-    /** 
-     * @param {WebGLRenderingContext} gl 
+    /**
+     * @param {WebGLRenderingContext} gl
      */
     function ElementDrawingWebGL(r, gl, opts) {
       _classCallCheck(this, ElementDrawingWebGL);
@@ -32962,7 +33003,7 @@ var printLayoutInfo;
        * @property { string } collection - name of atlas collection to render textures to
        * @property { function } getKey - returns the "style key" for an element, may be a single value or an array for multi-line lables
        * @property { function } drawElement - uses a canvas renderer to draw the element to the texture atlas
-       * @property { boolean  } drawClipped - if true the context will be clipped to the bounding box before drawElement() is called, may affect performance 
+       * @property { boolean  } drawClipped - if true the context will be clipped to the bounding box before drawElement() is called, may affect performance
        * @property { function } getBoundingBox - returns the bounding box for an element
        * @property { function } getRotation
        * @property { function } getRotationPoint
@@ -33109,7 +33150,7 @@ var printLayoutInfo;
         var _this = this;
         if (!this._buffers) {
           this._buffers = Object.keys(this).filter(function (k) {
-            return k.endsWith('Buffer');
+            return endsWith(k, 'Buffer');
           }).map(function (k) {
             return _this[k];
           });
@@ -35312,7 +35353,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.32.0";
+  var version = "3.32.1";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

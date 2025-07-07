@@ -30,6 +30,12 @@ BRp.generatePolygon = function( name, points ){
       return math.pointInsidePolygon( x, y, this.points,
         centerX, centerY, width, height, [0, -1], padding )
       ;
+    },
+
+    hasMiterBounds: name !== 'rectangle',
+
+    miterBounds: function( centerX, centerY, width, height, strokeWidth, strokePosition ){
+      return math.miterBox( this.points, centerX, centerY, width, height, strokeWidth, strokePosition );
     }
   } );
 };

@@ -7,11 +7,11 @@
  * WARNING: This is a provisional specification of the Cytoscape.js
  * API in TypeScript, based on improvements made on the Typescript
  * specification for Cytoscape.js in DefinitelyTyped.  This is a work
- * in progress and may not be complete, and it may have errors. Please 
+ * in progress and may not be complete, and it may have errors. Please
  * report any issues to the issue tracker:
- * 
+ *
  * https://github.com/cytoscape/cytoscape.js/issues
- * 
+ *
  * cy   --> Cy.Core
  *  the core
  *
@@ -46,7 +46,7 @@
  *  - Cy.Singular
  *      The input must be a single element.
  *  - Cy.NodeSingular
- *      The inut must be a single node.
+ *      The input must be a single node.
  *  - Cy.EdgeSingular
  *      The input must be a single edge.
  *
@@ -63,6 +63,7 @@
 export = cytoscape;
 export as namespace cytoscape;
 
+
 /**
  * WARNING: This is a provisional specification of the Cytoscape.js
  * API in TypeScript, based on improvements made on the Typescript
@@ -77,6 +78,7 @@ declare function cytoscape(type: string, name: string): unknown;
 declare function cytoscape(type: string, name: string, registrant: any): void;
 
 declare namespace cytoscape {
+    type CytoscapeRegistry = (type: "core" | "collection" | "layout", name: string, extension: unknown) => void;
     interface Position {
         x: number;
         y: number;
@@ -140,6 +142,8 @@ declare namespace cytoscape {
          * you should only use `style`/`css` for very special cases; use classes instead
          */
         css?: Css.Node | Css.Edge;
+
+        removed?: boolean;
     }
 
     interface ElementDataDefinition {
@@ -151,12 +155,11 @@ declare namespace cytoscape {
     }
 
     interface EdgeDefinition extends ElementDefinition {
+        group: "edges";
         data: EdgeDataDefinition;
     }
 
     interface EdgeDataDefinition extends ElementDataDefinition {
-        id?: string;
-
         /**
          * the source node id (edge comes from this node)
          */
@@ -170,11 +173,11 @@ declare namespace cytoscape {
     }
 
     interface NodeDefinition extends ElementDefinition {
+        group: "nodes";
         data: NodeDataDefinition;
     }
 
     interface NodeDataDefinition extends ElementDataDefinition {
-        id?: string;
         parent?: string;
         [key: string]: any;
     }
@@ -474,19 +477,26 @@ declare namespace cytoscape {
          * Add elements to the graph and return them.
          */
         add(
-            eles: ElementDefinition | ElementDefinition[] | ElementsDefinition | CollectionArgument,
+            eles: ElementDefinition | ElementDefinition[] | ElementsDefinition | CollectionArgument
         ): CollectionReturnValue;
 
         /**
-         * Remove elements in collecion or match the selector from the graph and return them.
+         * Remove elements in collection or match the selector from the graph and return them.
          */
         remove(eles: CollectionArgument | Selector): CollectionReturnValue;
 
         /**
          * Get a collection from elements in the graph matching the specified selector or from an array of elements.
-         * If no parameter specified, an empty collection will be returned
+         * If no parameter is specified, an empty collection will be returned
+         * options The options for the collection
+         * removed A truthy value that sets whether the elements are in the removed state (true) or added to the graph (false, default).
          */
-        collection(eles?: Selector | CollectionArgument[]): CollectionReturnValue;
+        collection(
+            eleObjs?: ElementDefinition[] | CollectionArgument | Selector,
+            options?: {
+                removed?: true;
+            }
+        ): CollectionReturnValue;
 
         /**
          * check whether the specified id is in the collection
@@ -782,7 +792,7 @@ declare namespace cytoscape {
         unlisten(eventsMap: { [value: string]: EventHandler }, selector?: Selector): this;
 
         removeListener(events: EventNames, handler?: EventHandler): this;
-        removeListener(events: EventNames, selector: Selector, handler?: EventHandler): this;
+        removeListener(events: EventNames, selector: Selector | undefined, handler?: EventHandler): this;
         removeListener(eventsMap: { [value: string]: EventHandler }, selector?: Selector): this;
 
         /**
@@ -852,7 +862,7 @@ declare namespace cytoscape {
          * @param eles [optional] The collection to fit to.
          * @param padding [optional] An amount of padding (in pixels) to have around the graph
          */
-        fit(eles?: CollectionArgument, padding?: number): this;
+        fit(eles?: CollectionArgument | Selector, padding?: number): this;
 
         /**
          * Reset the graph to the default zoom level and panning position.
@@ -983,6 +993,16 @@ declare namespace cytoscape {
          * @param options.pan The pan to set (a rendered position).
          */
         viewport(options: { zoom: number; pan: Position }): this;
+
+        /**
+         * gets the viewport state (pan & zoom) in one call.
+         * http://js.cytoscape.org/#cy.viewport
+         *
+         */
+        getFitViewport(): {
+            zoom: number;
+            pan: Position;
+        };
 
         /**
          * Get whether box selection is enabled.
@@ -1299,7 +1319,7 @@ declare namespace cytoscape {
          * @example
          * style.selector('foo').style('color', 'black');
          */
-        style(key: string, value: string): this;
+        style(key: string, value: string | number): this;
 
         /**
          * Sets a style for the current selected selector.
@@ -1418,8 +1438,23 @@ declare namespace cytoscape {
         /**
          * Export the graph as JSON, the same format used at initialisation.
          */
-        json(): object;
-        json(json: object): this;
+        json(): {
+            elements: {
+                nodes?: ElementDefinition[];
+                edges?: ElementDefinition[];
+            };
+        } & Record<string, any>;
+
+        json(
+            json: {
+                elements:
+                    | {
+                    nodes?: ElementDefinition[];
+                    edges?: ElementDefinition[];
+                }
+                    | ElementDefinition[];
+            } & Record<string, any>
+        ): this;
     }
 
     /**
@@ -1594,8 +1629,10 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#eles.on
          * @param events A space separated list of event names.
          * @param selector [optional] A delegate selector to specify child elements for which the handler runs.
+         * @param data  extra data given to the handler.
          * @param handler The handler function called when one of the specified events occurs. Takes the event object as a parameter.
          */
+        on(events: EventNames, selector: string, data: any, handler: EventHandler): this;
         on(events: EventNames, selector: string, handler: EventHandler): this;
         on(events: EventNames, handler: EventHandler): this;
         bind(events: EventNames, selector: string, handler: EventHandler): this;
@@ -1701,14 +1738,14 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#eles.removeData
          * @param names A space-separated list of fields to delete.
          */
-        removeData(names?: string): CollectionReturnValue;
-        removeAttr(names?: string): CollectionReturnValue;
+        removeData(...names: string[]): CollectionReturnValue;
+        removeAttr(...names: string[]): CollectionReturnValue;
 
         /**
          * Get an array of the plain JavaScript object
          * representation of all elements in the collection.
          */
-        jsons(): string[];
+        jsons(): Record<string, any>[];
     }
     /**
      * http://js.cytoscape.org/#collection/data
@@ -1742,10 +1779,10 @@ declare namespace cytoscape {
         id(): string;
 
         /**
-         * Get the element's plain JavaScript object representation.
+         * Get the or set with element's plain JavaScript object representation
          * http://js.cytoscape.org/#ele.json
          */
-        json(): Object;
+        json(obj?: Record<string, any>): Record<string, any>;
 
         /**
          * Get the group string that defines the type of the element.
@@ -1801,17 +1838,17 @@ declare namespace cytoscape {
          * Get the degree of a node.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        degree(includeLoops: boolean): number;
+        degree(includeLoops?: boolean): number;
         /**
          * Get the indegree of a node.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        indegree(includeLoops: boolean): number;
+        indegree(includeLoops?: boolean): number;
         /**
          * Get the outdegree of a node.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        outdegree(includeLoops: boolean): number;
+        outdegree(includeLoops?: boolean): number;
     }
 
     /**
@@ -1822,43 +1859,43 @@ declare namespace cytoscape {
          * Get the total degree of a collection of nodes.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        totalDegree(includeLoops: boolean): number;
+        totalDegree(includeLoops?: boolean): number;
 
         /**
          * Get the minimum degree of the nodes in the collection.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        minDegree(includeLoops: boolean): number;
+        minDegree(includeLoops?: boolean): number;
 
         /**
          * Get the maximum degree of the nodes in the collection.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        maxDegree(includeLoops: boolean): number;
+        maxDegree(includeLoops?: boolean): number;
 
         /**
          * Get the minimum indegree of the nodes in the collection.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        minIndegree(includeLoops: boolean): number;
+        minIndegree(includeLoops?: boolean): number;
 
         /**
          * Get the maximum indegree of the nodes in the collection.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        maxIndegree(includeLoops: boolean): number;
+        maxIndegree(includeLoops?: boolean): number;
 
         /**
          * Get the minimum outdegree of the nodes in the collection.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        minOutdegree(includeLoops: boolean): number;
+        minOutdegree(includeLoops?: boolean): number;
 
         /**
          * Get the maximum outdegree of the nodes in the collection.
          * @param includeLoops A boolean, indicating whether loops are to be included in degree calculations.
          */
-        maxOutdegree(includeLoops: boolean): number;
+        maxOutdegree(includeLoops?: boolean): number;
     }
 
     /**
@@ -2209,7 +2246,7 @@ declare namespace cytoscape {
      */
     interface LayoutDimensionOptions {
         // Boolean which changes whether label dimensions are included when calculating node dimensions
-        nodeDimensionsIncludeLabels: boolean;
+        nodeDimensionsIncludeLabels?: boolean;
     }
 
     /**
@@ -2417,6 +2454,10 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#ele.transparent
          */
         transparent(): number;
+        /**
+         /* undocumented feature used in edge editing extension
+         */
+        pstyle(selector: string): undefined | { pfValue: any };
     }
 
     /**
@@ -4154,8 +4195,7 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#style/node-body
          */
         interface Node
-            extends
-                Partial<Overlay>,
+            extends Partial<Overlay>,
                 Partial<Underlay>,
                 Partial<Outline>,
                 PaddingNode,
@@ -4166,8 +4206,7 @@ declare namespace cytoscape {
                 Partial<Visibility<NodeSingular>>,
                 Partial<PieChartBackground>,
                 Partial<Events<NodeSingular>>,
-                Partial<TransitionAnimation>
-        {
+                Partial<TransitionAnimation> {
             /**
              * The CSS content field
              */
@@ -4218,7 +4257,7 @@ declare namespace cytoscape {
             /**
              * The positions of each stop in the gradient for the node’s background; may be specified as a space-separated list or an array.
              */
-            "background-stop-positions"?: PropertyValueNode<string[]>;
+            "background-stop-positions"?: PropertyValueNode<(number | string)[]>;
             "border-width"?: PropertyValueNode<number | string>;
             /**
              * The style of the node’s border.
@@ -4266,7 +4305,7 @@ declare namespace cytoscape {
         /**
          * A padding defines an addition to a node’s dimension. For example,
          * padding adds to a node’s outer (i.e. total) width and height.
-         * This can beused to add spacing between a compound node parent
+         * This can be used to add spacing between a compound node parent
          * and its children.
          */
         interface PaddingNode {
@@ -4334,6 +4373,19 @@ declare namespace cytoscape {
              * The offset of the node’s outline.
              */
             "outline-offset"?: PropertyValueNode<number | string>;
+        }
+
+        /**
+         * A padding defines an addition to a node’s dimension.
+         * For example, padding-left adds to a node’s outer (i.e. total) width.
+         * This can be used to add spacing around the label of width: label; height: label; nodes,
+         * or it can be used to add spacing between a compound node parent and its children.
+         */
+        interface PaddingNode {
+            "padding-left"?: PropertyValueNode<string>;
+            "padding-right"?: PropertyValueNode<string>;
+            "padding-top"?: PropertyValueNode<string>;
+            "padding-bottom"?: PropertyValueNode<string>;
         }
 
         interface Dictionary {
@@ -5034,9 +5086,16 @@ declare namespace cytoscape {
              * Smaller node shapes, like triangle, will not be as aesthetically pleasing.
              * Also note that edge arrows are unsupported for haystack edges.
              */
-            "curve-style"?:
-                | PropertyValueEdge<"haystack" | "straight" | "bezier" | "unbundled-bezier" | "segments" | "taxi">
-               ;
+            "curve-style"?: PropertyValueEdge<
+                | "haystack"
+                | "straight"
+                | "bezier"
+                | "unbundled-bezier"
+                | "segments"
+                | "taxi"
+                | "round-taxi"
+                | "round-segments"
+            >;
             /**
              * The colour of the edge’s line.
              */
@@ -5080,11 +5139,11 @@ declare namespace cytoscape {
             /**
              * The distance the edge ends from its target.
              */
-            "target-distance-from-node"?: PropertyValueEdge<number>;
+            "target-distance-from-node"?: PropertyValueEdge<number | string>;
             /**
              * The distance the edge ends from its source.
              */
-            "source-distance-from-node"?: PropertyValueEdge<number>;
+            "source-distance-from-node"?: PropertyValueEdge<number | string>;
         }
 
         /**
@@ -5096,12 +5155,12 @@ declare namespace cytoscape {
             /**
              * The colors of the gradient stops.
              */
-            "line-gradient-stop-colors"?: Array<PropertyValueEdge<Colour>>;
+            "line-gradient-stop-colors"?: PropertyValueEdge<Colour[]>;
             /**
              * The positions of the gradient stops.
              * If not specified (or invalid), the stops will divide equally.
              */
-            "line-gradient-stop-positions"?: Array<PropertyValueEdge<number>>;
+            "line-gradient-stop-positions"?: PropertyValueEdge<number[]>;
         }
 
         /**
@@ -5682,7 +5741,7 @@ declare namespace cytoscape {
              * This effect is more pronounced at larger screen pixel ratios.However,
              * it is guaranteed that the label will be shown at sizes equal to or greater than the value specified.
              */
-            "min-zoomed-font-size": PropertyValue<SingularType, number>;
+            "min-zoomed-font-size": PropertyValue<SingularType, number | string>;
             /**
              * Whether events should occur on an element if the label receives an event; may be `yes` or `no`.
              * You may want a style applied to the text on active so you know the text is activatable.
@@ -6193,7 +6252,7 @@ declare namespace cytoscape {
         // the zoom level to set (prob want fit = false if set)
         zoom?: number;
         // the pan level to set (prob want fit = false if set)
-        pan?: number;
+        pan?: Position;
         // whether to fit to viewport
         fit?: boolean;
         // padding on fit
@@ -6322,14 +6381,14 @@ declare namespace cytoscape {
         // Extra spacing between components in non-compound graphs
         componentSpacing?: number;
         // Node repulsion (non overlapping) multiplier
-        nodeRepulsion?(node: any): number;
+        nodeRepulsion?: Css.PropertyValueNode<number>;
 
         // Node repulsion (overlapping) multiplier
         nodeOverlap?: number;
         // Ideal edge (non nested) length
-        idealEdgeLength?(edge: any): number;
+        idealEdgeLength?: Css.PropertyValueEdge<number>;
         // Divisor to compute edge forces
-        edgeElasticity?(edge: any): number;
+        edgeElasticity?: Css.PropertyValueEdge<number>;
 
         // Nesting factor (multiplier) to compute ideal edge length for nested edges
         nestingFactor?: number;

@@ -63,7 +63,6 @@
 export = cytoscape;
 export as namespace cytoscape;
 
-
 /**
  * WARNING: This is a provisional specification of the Cytoscape.js
  * API in TypeScript, based on improvements made on the Typescript
@@ -78,6 +77,10 @@ declare function cytoscape(type: string, name: string): unknown;
 declare function cytoscape(type: string, name: string, registrant: any): void;
 
 declare namespace cytoscape {
+    /***
+    * extensions can add functionality  to the registry for Cytoscape ,
+     * to three different types of functionality can be added
+    **/
     type CytoscapeRegistry = (type: "core" | "collection" | "layout", name: string, extension: unknown) => void;
     interface Position {
         x: number;
@@ -2459,10 +2462,6 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#ele.transparent
          */
         transparent(): number;
-        /**
-         /* undocumented feature used in edge editing extension
-         */
-        pstyle(selector: string): undefined | { pfValue: any };
     }
 
     /**
@@ -4260,11 +4259,11 @@ declare namespace cytoscape {
             /**
              * The colors to use at each stop in the gradient for the node’s background; may be specified as a space-separated list or an array.
              */
-            "background-stop-colors"?: PropertyValueNode<string[]>;
+            "background-gradient-stop-colors"?: PropertyValueNode<string[]>;
             /**
              * The positions of each stop in the gradient for the node’s background; may be specified as a space-separated list or an array.
              */
-            "background-stop-positions"?: PropertyValueNode<(number | string)[]>;
+            "background-gradient-stop-positions"?: PropertyValueNode<(number | string)[]>;
             "border-width"?: PropertyValueNode<number | string>;
             /**
              * The style of the node’s border.

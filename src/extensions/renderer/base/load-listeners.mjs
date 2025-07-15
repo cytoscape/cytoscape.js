@@ -1082,6 +1082,10 @@ BRp.load = function(){
       }
     }
 
+    if (delta === 0) {
+      return; // no change in zoom (Bug: Zoom becomes erratic on rapid scroll due to deltaY: 0 event #3394)
+    }
+
     if (inaccurateScrollDevice == null) {
       if (wheelDeltas.length >= wheelDeltaN) { // use log to determine if inaccurate
         var wds = wheelDeltas;

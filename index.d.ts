@@ -160,7 +160,7 @@ declare namespace cytoscape {
     }
 
     interface EdgeDefinition extends ElementDefinition {
-        group: "edges";
+        group?: "edges";
         data: EdgeDataDefinition;
     }
 
@@ -178,7 +178,7 @@ declare namespace cytoscape {
     }
 
     interface NodeDefinition extends ElementDefinition {
-        group: "nodes";
+        group?: "nodes";
         data: NodeDataDefinition;
     }
 

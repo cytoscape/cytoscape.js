@@ -568,4 +568,43 @@ test.describe('Renderer', () => {
 
   }); // Rounded edges
 
+  test.describe('with layout', () => {
+
+    test('single node cose layout with bounding box', async ({ page }) => {
+      const pos = await page.evaluate(async () => {
+        const cy = window.cy;
+
+        // remove all eles
+        cy.elements().remove();
+
+        // add one node
+        let node = cy.add({ data: { id: 'a' } }); 
+
+        // run layout
+        let layout = cy.layout({
+          name: 'cose',
+          boundingBox: {
+            x1: 0,
+            y1: 0,
+            x2: 100,
+            y2: 100
+          },
+        });
+
+        let layoutstop = layout.promiseOn('layoutstop');
+
+        layout.run();
+
+        await layoutstop;
+
+        return node.position();
+      });
+      
+      expect(pos.x).not.toBeNaN();
+      expect(pos.y).not.toBeNaN();
+
+    }); // single node cose layout
+
+  }); // with layout
+
 }); // renderer

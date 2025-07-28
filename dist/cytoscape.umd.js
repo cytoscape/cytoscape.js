@@ -21413,8 +21413,9 @@ var printLayoutInfo;
       var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
       if (options.boundingBox) {
         // then add extra bounding box constraint
-        var pctX = (lnode.positionX - coseBB.x1) / coseBB.w;
-        var pctY = (lnode.positionY - coseBB.y1) / coseBB.h;
+        // Handle single node case where coseBB.w or coseBB.h is 0
+        var pctX = coseBB.w === 0 ? 0.5 : (lnode.positionX - coseBB.x1) / coseBB.w;
+        var pctY = coseBB.h === 0 ? 0.5 : (lnode.positionY - coseBB.y1) / coseBB.h;
         return {
           x: bb.x1 + pctX * bb.w,
           y: bb.y1 + pctY * bb.h
@@ -26309,6 +26310,9 @@ var printLayoutInfo;
         } else if (e.wheelDelta != null) {
           delta = e.wheelDelta / 4;
         }
+      }
+      if (delta === 0) {
+        return; // no change in zoom (Bug: Zoom becomes erratic on rapid scroll due to deltaY: 0 event #3394)
       }
       if (inaccurateScrollDevice == null) {
         if (wheelDeltas.length >= wheelDeltaN) {
@@ -35353,7 +35357,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.32.1";
+  var version = "3.32.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

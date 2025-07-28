@@ -833,6 +833,14 @@
 <p></p>
 <ul> 
     <li>
+        3.33
+        <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.33.0+is%3Aclosed">3.33.0</a>
+            </li>
+        </ul>
+    </li>
+    <li>
         3.32
         <ul>
             <li>
@@ -14864,6 +14872,12 @@ node {
 <li><strong><code>line-fill</code></strong> : The filling style of the edge’s line; may be <code>solid</code> (default), <code>linear-gradient</code> (source to target), or <code>radial-gradient</code> (midpoint outwards).</li>
 <li><strong><code>line-dash-pattern</code></strong> : The <code>dashed</code> line pattern which specifies alternating lengths of lines and gaps. (e.g. <code>[6, 3]</code>).</li>
 <li><strong><code>line-dash-offset</code></strong> : The <code>dashed</code> line offset (e.g. <code>24</code>). It is useful for creating edge animations.</li>
+<li><strong><code>box-selection</code></strong> : Determines whether events should be triggered on an edge during box selection: <ul>
+<li><code>contain</code> (default): the entire edge must be fully inside the selection box to trigger the event.</li>
+<li><code>overlap</code>: either endpoint (source or target node) or any part of the edge’s line or curve overlaps the selection box.</li>
+<li><code>none</code>: the edge is excluded from box selection and events are not triggered.</li>
+</ul>
+</li>
 </ul>
 <h2 id="style/gradient">Gradient <a href="#style/gradient"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
@@ -15205,7 +15219,7 @@ node {
 <ul>
 <li><strong><code>text-background-color</code></strong> : A colour to apply on the text background.</li>
 <li><strong><code>text-background-opacity</code></strong> : The opacity of the label background; the background is disabled for <code>0</code> (default value).</li>
-<li><strong><code>text-background-shape</code></strong> : The shape to use for the label background, can be <code>rectangle</code> or <code>round-rectangle</code>.</li>
+<li><strong><code>text-background-shape</code></strong> : The shape to use for the label background, can be <code>rectangle</code>, <code>round-rectangle</code>, or <code>circle</code>. The <code>circle</code> option is primarily a visual-only style for compact or short labels; however, the actual bounding box remains rectangular, especially for longer text. The <code>text-background-padding</code> property can be applied to expand the visual radius of the circular background.</li>
 <li><strong><code>text-background-padding</code></strong> : A padding on the background of the label (e.g <code>5px</code>); zero padding is used by default.</li>
 </ul>
 <p>Border:</p>
@@ -15219,13 +15233,22 @@ node {
 <ul>
 <li><strong><code>min-zoomed-font-size</code></strong> : If zooming makes the effective font size of the label smaller than this, then no label is shown.  Note that because of performance optimisations, the label may be shown at font sizes slightly smaller than this value.  This effect is more pronounced at larger screen pixel ratios.  However, it is guaranteed that the label will be shown at sizes equal to or greater than the value specified.</li>
 <li><strong><code>text-events</code></strong> : Whether events should occur on an element if the label receives an event; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable.</li>
-<li><strong><code>box-select-labels</code></strong> : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable. This setting takes effect only if <code>text-events=yes</code>.</li>
+<li><strong><code>box-selection</code></strong> : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be <code>contain</code> (default, completely inside the box), <code>overlap</code> (overlaps with the box), or <code>none</code> (box selection disabled). You may want a style applied to the text on <code>:active</code> so you know the text is activatable. This setting takes effect on node label only if <code>text-events=yes</code>.</li>
 </ul>
 <h2 id="style/events">Events <a href="#style/events"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
-<li><strong><code>events</code></strong> : Whether events should occur on an element (e.g. <code>tap</code>, <code>mouseover</code>, etc.); may be <code>yes</code> or <code>no</code>.  For <code>no</code>, the element receives no events and events simply pass through to the core/viewport.  The <code>events</code> property is per-element, so the value of a compound parent does not affect its children.</li>
-<li><strong><code>text-events</code></strong> : Whether events should occur on an element if the label receives an event; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable.</li>
-<li><strong><code>box-select-labels</code></strong> : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable. This setting takes effect only if <code>text-events=yes</code>.</li>
+<li><p><strong><code>events</code></strong> : Whether events should occur on an element (e.g. <code>tap</code>, <code>mouseover</code>, etc.); may be <code>yes</code> or <code>no</code>.  For <code>no</code>, the element receives no events and events simply pass through to the core/viewport.  The <code>events</code> property is per-element, so the value of a compound parent does not affect its children.</p>
+</li>
+<li><p><strong><code>text-events</code></strong> : Whether events should occur on an element if the label receives an event; may be <code>yes</code> or <code>no</code>.  You may want a style applied to the text on <code>:active</code> so you know the text is activatable.</p>
+</li>
+<li><p><strong><code>box-selection</code></strong> : Whether events should be triggered on a node element when its label is partially or fully selected via box selection rectangle (e.g., when the user drags a selection box).</p>
+<ul>
+<li><code>contain</code> (default): The element is selected only if it is entirely within the selection box.</li>
+<li><code>overlap</code>: The element is selected if any part of it overlaps with the selection box.</li>
+<li><code>none</code>: The element is excluded from box selection.</li>
+</ul>
+<p> You may want a style applied to the text on <code>:active</code> so you know the text is activatable. This setting takes effect on node label only if <code>text-events=yes</code>.</p>
+</li>
 </ul>
 <h2 id="style/overlay">Overlay <a href="#style/overlay"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties allow for the creation of overlays on top of nodes or edges, and are often used in the <code>:active</code> state.</p>
@@ -15621,7 +15644,7 @@ cy.layout( options );</code></pre>
 					<h2 id="layouts/breadthfirst">breadthfirst <a href="#layouts/breadthfirst"><span class="fa fa-bookmark"></span></a></h2>
 
 
-						<p>The <code>breadthfirst</code> layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.  It is best suited to trees and forests in its default top-down mode, and it is best suited to DAGs in its circle mode.</p>
+						<p>The <code>breadthfirst</code> layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.  It is best suited to trees and forests in its default downward direction, and it is best suited to DAGs in its circle mode.</p>
 
 
 						<h3>Options</h3>
@@ -15630,6 +15653,7 @@ cy.layout( options );</code></pre>
 
   <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
   <span class="hljs-attr">directed</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the tree is directed downwards (or edges can point in any direction if false)</span>
+  <span class="hljs-attr">direction</span>: <span class="hljs-string">&#x27;downward&#x27;</span>, <span class="hljs-comment">// determines the direction in which the tree structure is drawn.  The possible values are &#x27;downward&#x27;, &#x27;upward&#x27;, &#x27;rightward&#x27;, or &#x27;leftward&#x27;.</span>
   <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
   <span class="hljs-attr">circle</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// put depths in concentric circles if true, put depths top down if false</span>
   <span class="hljs-attr">grid</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to create an even grid into which the DAG is placed (circle:false only)</span>

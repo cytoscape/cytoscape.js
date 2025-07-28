@@ -391,6 +391,10 @@ These properties affect the styling of an edge's line:
  * **`line-fill`** : The filling style of the edge's line; may be `solid` (default), `linear-gradient` (source to target), or `radial-gradient` (midpoint outwards).
  * **`line-dash-pattern`** : The `dashed` line pattern which specifies alternating lengths of lines and gaps. (e.g. `[6, 3]`).
  * **`line-dash-offset`** : The `dashed` line offset (e.g. `24`). It is useful for creating edge animations.
+ * **`box-selection`** : Determines whether events should be triggered on an edge during box selection: 
+    - `contain` (default): the entire edge must be fully inside the selection box to trigger the event.
+    - `overlap`: either endpoint (source or target node) or any part of the edge’s line or curve overlaps the selection box.
+    - `none`: the edge is excluded from box selection and events are not triggered.
 
 ## Gradient
 
@@ -730,7 +734,7 @@ Background:
 
  * **`text-background-color`** : A colour to apply on the text background.
  * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0` (default value).
- * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `round-rectangle`.
+ * **`text-background-shape`** : The shape to use for the label background, can be `rectangle`, `round-rectangle`, or `circle`. The `circle` option is primarily a visual-only style for compact or short labels; however, the actual bounding box remains rectangular, especially for longer text. The `text-background-padding` property can be applied to expand the visual radius of the circular background.
  * **`text-background-padding`** : A padding on the background of the label (e.g `5px`); zero padding is used by default.
 
 Border:
@@ -744,7 +748,7 @@ Interactivity:
 
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.  Note that because of performance optimisations, the label may be shown at font sizes slightly smaller than this value.  This effect is more pronounced at larger screen pixel ratios.  However, it is guaranteed that the label will be shown at sizes equal to or greater than the value specified.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
- * **`box-select-labels`** : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect only if `text-events=yes`.
+ * **`box-selection`** : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be `contain` (default, completely inside the box), `overlap` (overlaps with the box), or `none` (box selection disabled). You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect on node label only if `text-events=yes`.
 
 
 
@@ -752,7 +756,12 @@ Interactivity:
 
  * **`events`** : Whether events should occur on an element (e.g. `tap`, `mouseover`, etc.); may be `yes` or `no`.  For `no`, the element receives no events and events simply pass through to the core/viewport.  The `events` property is per-element, so the value of a compound parent does not affect its children.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
- * **`box-select-labels`** : Whether events should be triggered on an element when its label is partially or fully selected via box selection; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect only if `text-events=yes`.
+ * **`box-selection`** : Whether events should be triggered on a node element when its label is partially or fully selected via box selection rectangle (e.g., when the user drags a selection box).
+    - `contain` (default): The element is selected only if it is entirely within the selection box.
+    - `overlap`: The element is selected if any part of it overlaps with the selection box.
+    - `none`: The element is excluded from box selection.
+
+    You may want a style applied to the text on `:active` so you know the text is activatable. This setting takes effect on node label only if `text-events=yes`.
 
 
 ## Overlay

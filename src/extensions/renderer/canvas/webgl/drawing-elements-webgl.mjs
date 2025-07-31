@@ -556,6 +556,14 @@ export class ElementDrawingWebGL {
       return;
     }
 
+    // Edges are not drawn as textures
+    // Edges with invalid points could be passed here, causing errors
+    // Ref: Random "Script Error" thrown when generating nodes and edges in newest webgl version #3365
+    // https://github.com/cytoscape/cytoscape.js/issues/3365
+    if(ele.isEdge()) {
+      return;
+    }
+
     if(this.renderTarget.picking && opts.getTexPickingMode) {
       const mode = opts.getTexPickingMode(ele);
       if(mode === TEX_PICKING_MODE.IGNORE) {

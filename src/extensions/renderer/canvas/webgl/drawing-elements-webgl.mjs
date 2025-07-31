@@ -556,11 +556,10 @@ export class ElementDrawingWebGL {
       return;
     }
 
-    // Edges are not drawn as textures
-    // Edges with invalid points could be passed here, causing errors
+    // Edges with invalid points could be passed here (labels), causing errors
     // Ref: Random "Script Error" thrown when generating nodes and edges in newest webgl version #3365
     // https://github.com/cytoscape/cytoscape.js/issues/3365
-    if(ele.isEdge()) {
+    if(ele.isEdge() && !this._isValidEdge(ele)) {
       return;
     }
 
@@ -997,11 +996,21 @@ export class ElementDrawingWebGL {
     }
   }
 
+  _isValidEdge(edge) {
+    const rs = edge._private.rscratch;
+    
+    if( rs.badLine || rs.allpts == null || isNaN(rs.allpts[0]) ){ // isNaN in case edge is impossible and browser bugs (e.g. safari)
+      return false;
+    }
+
+    return true;
+  }
+
   _getEdgePoints(edge) {
     const rs = edge._private.rscratch;
 
     // if bezier ctrl pts can not be calculated, then die
-    if( rs.badLine || rs.allpts == null || isNaN(rs.allpts[0]) ){ // isNaN in case edge is impossible and browser bugs (e.g. safari)
+    if(!this._isValidEdge(edge)){ // isNaN in case edge is impossible and browser bugs (e.g. safari)
       return;
     }
     const controlPoints = rs.allpts;

@@ -19,6 +19,7 @@ const readFileSync = file => fs.readFileSync( path.join(__dirname, file), 'utf8'
 
 let config, versions;
 let mdRend = new marked.Renderer();
+let mdRendDefault = new marked.Renderer();
 
 let rendCode = mdRend.code;
 mdRend.code = function(code, lang){
@@ -69,9 +70,7 @@ function md2html( file ){
     throw 'A markdown file named `' + file + '` was referenced but could not be read';
   }
 
-  // let html = converter.makeHtml( md );
-  //let html = mdConvertor( md );
-  marked.setOptions({
+  let options = {
     highlight: function(code, lang){
       let ret;
 
@@ -87,10 +86,20 @@ function md2html( file ){
 
     smartypants: true,
 
-    renderer: mdRend,
-
     gfm: true
-  } );
+  };
+
+  let mdBtnBlocked = config.mdRunButtonBlocked.indexOf(file) >= 0;
+  let mdBtnAllowed = !mdBtnBlocked;
+
+  if( mdBtnAllowed ){
+    // add run button to code blocks
+    options.renderer = mdRend;
+  } else {
+    options.renderer = mdRendDefault;
+  }
+
+  marked.setOptions(options);
 
   let html = marked.parse( md );
 

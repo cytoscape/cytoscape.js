@@ -24,6 +24,13 @@
     "cyJson": "#core/initialisation"
   },
 
+  "mdRunButtonBlocked": [
+    "intro.md",
+    "notation.md",
+    "getting-started.md",
+    "core/init.md"
+  ],
+
   "sections": [
     {
       "md": "links"

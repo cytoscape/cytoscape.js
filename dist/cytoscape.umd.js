@@ -33378,6 +33378,13 @@ var printLayoutInfo;
         if (!this._isVisible(ele, opts)) {
           return;
         }
+
+        // Edges with invalid points could be passed here (labels), causing errors
+        // Ref: Random "Script Error" thrown when generating nodes and edges in newest webgl version #3365
+        // https://github.com/cytoscape/cytoscape.js/issues/3365
+        if (ele.isEdge() && !this._isValidEdge(ele)) {
+          return;
+        }
         if (this.renderTarget.picking && opts.getTexPickingMode) {
           var mode = opts.getTexPickingMode(ele);
           if (mode === TEX_PICKING_MODE.IGNORE) {
@@ -33818,12 +33825,22 @@ var printLayoutInfo;
         }
       }
     }, {
+      key: "_isValidEdge",
+      value: function _isValidEdge(edge) {
+        var rs = edge._private.rscratch;
+        if (rs.badLine || rs.allpts == null || isNaN(rs.allpts[0])) {
+          // isNaN in case edge is impossible and browser bugs (e.g. safari)
+          return false;
+        }
+        return true;
+      }
+    }, {
       key: "_getEdgePoints",
       value: function _getEdgePoints(edge) {
         var rs = edge._private.rscratch;
 
         // if bezier ctrl pts can not be calculated, then die
-        if (rs.badLine || rs.allpts == null || isNaN(rs.allpts[0])) {
+        if (!this._isValidEdge(edge)) {
           // isNaN in case edge is impossible and browser bugs (e.g. safari)
           return;
         }
@@ -35528,7 +35545,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.33.0";
+  var version = "3.33.1";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

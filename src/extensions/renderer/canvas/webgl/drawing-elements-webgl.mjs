@@ -764,8 +764,11 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
+    // Nodes should still be clickable if they pass the visibility check but
+    // have background-opacity: 0
+    const opacity = this.renderTarget.picking ? 1 : node.pstyle(props.opacity).value;
+
     const color = node.pstyle(props.color).value;
-    const opacity = node.pstyle(props.opacity).value;
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 

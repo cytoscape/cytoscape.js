@@ -452,7 +452,7 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
           badSourceOrTarget = true;
         } else if( !cy.hasElementWithId( val ) ){
           // can't create edge if one of its nodes doesn't exist
-          util.error( 'Can not create edge `' + id + '` with nonexistant ' + field + ' `' + val + '`' );
+          util.error( 'Can not create edge `' + id + '` with nonexistent ' + field + ' `' + val + '`' );
           badSourceOrTarget = true;
         }
       }

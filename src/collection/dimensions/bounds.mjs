@@ -27,6 +27,53 @@ elesfn.renderedBoundingBox = function( options ){
   };
 };
 
+elesfn.renderedActualLabelBoundingBox = function(){
+  let polygon = this.actualLabelBoundingBox();
+  let cy = this.cy();
+  let zoom = cy.zoom();
+  let pan = cy.pan();
+
+  return polygon.map(p => ({
+    x: p.x * zoom + pan.x,
+    y: p.y * zoom + pan.y
+  }));
+};
+
+elesfn.actualLabelBoundingBox = function() {
+  let bounds;
+
+  let isDirty = memoize(ele => {
+    let _p = ele._private;
+
+    return _p.labelPolygonCache == null || _p.styleDirty || _p.labelPolygonPosKey !== getLabelPolygonPosKey(ele);
+  }, ele => ele.id());
+
+  if (this.length === 1 && !isDirty(this[0])) {
+    bounds = this[0]._private.labelPolygonCache;
+  } else {
+    let eles = this;
+    let cy = eles.cy();
+    let styleEnabled = cy.styleEnabled();
+    this.edges().forEach(isDirty);
+    this.nodes().forEach(isDirty);
+
+    if(styleEnabled) {
+      this.recalculateRenderedStyle();
+    }
+
+    for (let i = 0; i < eles.length; i++) {
+      let ele = eles[i];
+      let _p = ele._private;
+      let polygon = getRotatedLabelBox(ele);
+      _p.labelPolygonCache = polygon;
+      _p.labelPolygonPosKey = getLabelPolygonPosKey(ele);
+      bounds = polygon;
+    }
+  }
+
+  return bounds;
+};
+
 elesfn.dirtyCompoundBoundsCache = function(silent = false){
   let cy = this.cy();
 
@@ -223,6 +270,69 @@ let updateBoundsFromBox = function( b, b2 ){
 let prefixedProperty = function( obj, field, prefix ){
   return getPrefixedProperty( obj, field, prefix );
 };
+
+let getRotatedLabelBox = function (ele, prefix) {
+
+  if( ele.cy().headless() ){ return; }
+
+  var _p = ele._private;
+  let cy = ele.cy();
+  var zoom = cy.zoom();
+  var th = 2 / zoom;
+  ele.boundingBox({ includeLabels: true });
+
+  var prefixDash = prefix ? prefix + '-' : '';
+  let label = ele.pstyle( prefixDash + 'label' ).strValue;
+  if (!label) {
+    return null;
+  }
+  let bbPrefix = prefix || 'main';
+  let bbs = _p.labelBounds;
+  let bb = bbs[bbPrefix] = bbs[bbPrefix] || {};
+
+  // If the bounding box is not available, return null.
+  // This indicates that the label box cannot be calculated, which is consistent
+  // with the expected behavior of this function. Returning null allows the caller
+  // to handle the absence of a bounding box explicitly.
+  if (!bb) {
+    return null;
+  }
+
+  var lx = prefixedProperty(_p.rscratch, 'labelX', prefix);
+  var ly = prefixedProperty(_p.rscratch, 'labelY', prefix);
+  var theta = prefixedProperty(_p.rscratch, 'labelAngle', prefix);
+
+  var ox = ele.pstyle(prefixDash + 'text-margin-x').pfValue;
+  var oy = ele.pstyle(prefixDash + 'text-margin-y').pfValue;
+
+  var lx1 = bb.x1 - th - ox;
+  var lx2 = bb.x2 + th - ox;
+  var ly1 = bb.y1 - th - oy;
+  var ly2 = bb.y2 + th - oy;
+
+  if (theta) {
+    var cos = Math.cos(theta);
+    var sin = Math.sin(theta);
+
+    var rotate = function (x, y) {
+      x = x - lx;
+      y = y - ly;
+      return {
+        x: x * cos - y * sin + lx,
+        y: x * sin + y * cos + ly,
+      };
+    };
+
+    return [rotate(lx1, ly1), rotate(lx2, ly1), rotate(lx2, ly2), rotate(lx1, ly2)];
+  } else {
+    return [
+      { x: lx1, y: ly1 },
+      { x: lx2, y: ly1 },
+      { x: lx2, y: ly2 },
+      { x: lx1, y: ly2 },
+    ];
+  }
+}
 
 let updateBoundsFromArrow = function( bounds, ele, prefix ){
   if( ele.cy().headless() ){ return; }
@@ -879,6 +989,17 @@ let cachedBoundingBoxImpl = function( ele, opts ){
   return bb;
 };
 
+let getLabelPolygonPosKey = function(ele) {
+  let pos = ele.position();
+  let angle = ele.pstyle('text-rotation').pfValue || 0;
+
+  return hashIntsArray([
+    Math.round(pos.x),
+    Math.round(pos.y),
+    Math.round(angle * 1000) 
+  ]);
+};
+
 let defBbOpts = {
   includeNodes: true,
   includeEdges: true,
@@ -979,6 +1100,8 @@ elesfn.dirtyBoundingBoxCache = function(){
     _p.arrowBounds.target = null;
     _p.arrowBounds['mid-source'] = null;
     _p.arrowBounds['mid-target'] = null;
+    _p.labelPolygonCache = null;
+    _p.labelPolygonPosKey = null;
   }
 
   this.emitAndNotify('bounds');
@@ -1041,5 +1164,7 @@ elesfn.boundingBoxAt = function( fn ){
 
 fn.boundingbox = fn.bb = fn.boundingBox;
 fn.renderedBoundingbox = fn.renderedBoundingBox;
+fn.actualLabelBoundingbox = fn.actualLabelBoundingBox;
+fn.renderedActualLabelBoundingbox = fn.renderedActualLabelBoundingBox;
 
 export default elesfn;

@@ -2192,6 +2192,22 @@ declare namespace cytoscape {
          */
         renderedBoundingBox(options?: BoundingBoxOptions): BoundingBox12 & BoundingBoxWH;
         renderedBoundingbox(options?: BoundingBoxOptions): BoundingBox12 & BoundingBoxWH;
+        /**
+         * Get the bounding polygon of the elements in model coordinates.
+         * Returns an array of points [{x, y}, ...] representing the polygon.
+         * 
+         * @returns Polygon in model coordinate space.
+         */
+        actualLabelBoundingBox(): PolygonBoundingBox;
+        actualLabelBoundingbox(): PolygonBoundingBox;
+        /**
+         * Get the bounding polygon of the elements in rendered coordinates.
+         * Returns an array of points [{x, y}, ...] representing the polygon.
+         * 
+         * @returns Polygon in rendered coordinate space.
+         */
+        renderedActualLabelBoundingBox(): PolygonBoundingBox;
+        renderedActualLabelBoundingbox(): PolygonBoundingBox;
     }
 
     /**
@@ -2996,6 +3012,30 @@ declare namespace cytoscape {
              */
             ele: SingularElementReturnValue;
         };
+        /**
+         * Returns a new collection containing nodes whose position lies inside
+         * the specified rectangular box in model coordinates.
+         * This is a spatial filter based on element positions.
+         *
+         * @param box BoundingBox12 & BoundingBoxWH
+         */
+        withinBox(box: BoundingBox12 & BoundingBoxWH): Collection<TIn>;
+        /**
+         * Returns a new collection containing nodes whose polygonal bounds
+         * intersect the specified polygon in model coordinates.
+         * This is a spatial filter based on polygon-polygon intersection using SAT.
+         *
+         * @param polygon Array of points {x, y} defining a polygon
+         */
+        polygonIntersection(polygon: PolygonBoundingBox): Collection<TIn>;
+        /**
+         * Returns a new collection containing nodes whose label polygon bounds
+         * contain the specified point (in model coordinates).
+         * This is useful for hit-testing clicks inside rendered labels.
+         *
+         * @param point The point in model coordinates {x, y}
+         */
+        labelsContainPoint(point: Position): Collection<TIn>;
     }
 
     /**
@@ -6225,6 +6265,7 @@ declare namespace cytoscape {
         w: number;
         h: number;
     }
+    type PolygonBoundingBox = Position[];
     interface AnimatedLayoutOptions {
         // whether to transition the node positions
         animate?: boolean;

@@ -223,4 +223,8 @@ var cy, defaultSty, options;
   };
 
   cy = cytoscape(options);
+// Listen for renderer errors. This is for debug/diagnostics.
+cy.on('render:error', (evt, data) => {
+  console.log('Renderer error event received:', data && data.error);
+});
 })();

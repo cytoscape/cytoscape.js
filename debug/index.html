@@ -44,6 +44,22 @@
   </head>
 
   <body>
+    <!-- layout control bar: add near top of body in debug/index.html -->
+<div id="layout-controls" style="padding:8px; display:flex; gap:8px; align-items:center;">
+  <label style="font-family: sans-serif; font-size:14px;">Layout:</label>
+  <button id="layout-cose">COSE</button>
+  <button id="layout-grid">Grid</button>
+  <button id="layout-breadth">Breadthfirst</button>
+  <span id="layout-status" style="margin-left:12px; font-size:13px; color:#333;"></span>
+</div>
+<div id="layout-controls" style="padding:8px; display:flex; gap:8px; align-items:center; background:#f7f7f7; border-bottom:1px solid #ccc;">
+  <label>Layout:</label>
+  <button id="layout-cose">COSE</button>
+  <button id="layout-grid">Grid</button>
+  <button id="layout-breadth">Breadthfirst</button>
+  <span id="layout-status" style="margin-left:10px; font-size:13px;">Default</span>
+</div>
+
       <div id="cytoscape"></div>
       <div id="bb"></div>
 

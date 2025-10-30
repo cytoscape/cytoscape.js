@@ -221,4 +221,17 @@ BRp.isHeadless = function(){
   util.extend( BRp, props );
 } );
 
+// Minimal event helper for renderer-local events. Currently used to track
+// render errors in a backward-compatible way without changing public surface.
+BRp.emit = function( eventName, data ){
+  if( eventName === 'render:error' ){
+    this._lastRenderError = data;
+  }
+  return this;
+};
+
+BRp.getLastRenderError = function(){
+  return this._lastRenderError || null;
+};
+
 export default BR;

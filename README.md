@@ -51,6 +51,38 @@ You can find the documentation and downloads on the [project website](https://js
 
 
 
+## Renderer errors API (new)
+
+Expose renderer failures to your app code using a tiny, dependency-free API.
+
+```js
+import { createRendererErrorsAPI, RENDER_ERROR_EVENT } from './src/renderer-errors-api.js';
+
+const errors = createRendererErrorsAPI();
+
+// Event style
+errors.on(RENDER_ERROR_EVENT, (err) => {
+  console.error('[render:error]', err.message, err);
+});
+
+// Callback style
+function onRenderError(err) {
+  // e.g. send to monitoring
+}
+errors.onRenderError(onRenderError);
+
+// Inside renderer when catching an error
+try {
+  // ... render work ...
+} catch (e) {
+  errors.emitRenderError(e);
+}
+
+// Last error
+const last = errors.getLastRenderError();
+```
+
+
 ## Roadmap
 
 Future versions of Cytoscape.js are planned in the [milestones of the Github issue tracker](https://github.com/cytoscape/cytoscape.js/milestones).  You can use the milestones to see what's currently planned for future releases.

@@ -455,6 +455,9 @@ let updateBoundsFromMiter = function( bounds, ele, opacity, expansionSize, expan
   
   let cy = ele.cy();
   let shape = ele.pstyle('shape').value
+  if (shape === 'polygon') {
+    return;
+  }
   let rshape = cy.renderer().nodeShapes[shape];
   let { x, y } = ele.position();
   let w = ele.width();

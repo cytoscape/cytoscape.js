@@ -16,7 +16,8 @@
         "text-halign": "center",
         "shape": "round-rectangle",
         "corner-radius": "10",
-        "padding": 10
+        "padding": 10,
+        "background-opacity": 0.0
       }
     },
     {

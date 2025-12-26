@@ -737,7 +737,7 @@ export class ElementDrawingWebGL {
 
     // Check if we have to use a texture
     const vertType = this._getVertTypeForShape(node, props.shape);
-    if(vertType === undefined || (opts.isSimple && !opts.isSimple(node))) {
+    if(vertType === undefined || (opts.isSimple && !opts.isSimple(node, this.renderTarget))) {
       this.drawTexture(node, eleIndex, type);
       return;
     }

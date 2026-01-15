@@ -737,7 +737,7 @@ export class ElementDrawingWebGL {
 
     // Check if we have to use a texture
     const vertType = this._getVertTypeForShape(node, props.shape);
-    if(vertType === undefined || (opts.isSimple && !opts.isSimple(node))) {
+    if(vertType === undefined || (opts.isSimple && !opts.isSimple(node, this.renderTarget))) {
       this.drawTexture(node, eleIndex, type);
       return;
     }
@@ -764,8 +764,11 @@ export class ElementDrawingWebGL {
     const indexView = this.indexBuffer.getView(instance);
     util.indexToVec4(eleIndex, indexView);
 
+    // Nodes should still be clickable if they pass the visibility check but
+    // have background-opacity: 0
+    const opacity = this.renderTarget.picking ? 1 : node.pstyle(props.opacity).value;
+
     const color = node.pstyle(props.color).value;
-    const opacity = node.pstyle(props.opacity).value;
     const colorView = this.colorBuffer.getView(instance);
     util.toWebGLColor(color, opacity, colorView);
 

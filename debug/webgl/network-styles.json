@@ -79,7 +79,7 @@
         "border-color": "black",
         "border-style": "dashed",
         "border-width": 2,
-        "background-opacity": 0.5
+        "background-opacity": 0.0
       }
     },
     {

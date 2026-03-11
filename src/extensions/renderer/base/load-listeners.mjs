@@ -922,7 +922,11 @@ BRp.load = function(){
       }
 
       // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-      if( (down == null) // not mousedown on node
+      // #3414 also deselect if clicked on an unselectable/non-grabbable node (treat it like background)
+      var downIsUnselectable = down != null && !down._private.selectable;
+      var downIsBackground = down == null || (downIsUnselectable && !r.nodeIsGrabbable(down));
+      
+      if( downIsBackground // not mousedown on interactive node
         && !r.dragData.didDrag // didn't move the node around
         && !r.hoverData.selecting // not box selection
         && !r.hoverData.dragged // didn't pan

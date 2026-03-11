@@ -29,7 +29,10 @@ BRp.getCachedImage = function( url, crossOrigin, onLoad ){
       image.crossOrigin = crossOrigin; // prevent tainted canvas
     }
 
-    image.src = url;
+    // #3421 encode URLs to handle spaces and special characters
+    // encodeURI preserves URL structure while encoding spaces and other characters
+    var encodedUrl = isDataUri ? url : encodeURI(url);
+    image.src = encodedUrl;
 
     return image;
   }

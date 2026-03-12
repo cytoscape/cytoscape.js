@@ -226,3 +226,61 @@ describe('Collection position & dimensions', function(){
   });
 
 });
+
+describe('Polygon node bounds', function(){
+
+  var cy;
+
+  beforeEach(function(){
+    cy = cytoscape({
+      elements: {
+        nodes: [
+          {
+            data: { id: 'p1' },
+            position: { x: 100, y: 100 },
+            classes: 'polygon'
+          },
+          {
+            data: { id: 'n1' },
+            position: { x: 200, y: 200 }
+          }
+        ],
+        edges: [
+          { data: { id: 'e1', source: 'p1', target: 'n1' } }
+        ]
+      },
+      style: [
+        {
+          selector: 'node.polygon',
+          style: {
+            'shape': 'polygon',
+            'shape-polygon-points': '-1 -1  1 -1  1 1  -1 1'
+          }
+        }
+      ],
+      layout: { name: 'preset' }
+    });
+  });
+
+  afterEach(function(){
+    cy.destroy();
+  });
+
+  it('boundingBox() should not throw for polygon nodes with edges', function(){
+    var p1 = cy.$('#p1');
+
+    expect(function(){
+      p1.boundingBox();
+    }).to.not.throw();
+  });
+
+  it('boundingBox() should return valid dimensions for polygon nodes with edges', function(){
+    var bb = cy.$('#p1').boundingBox();
+
+    expect( bb.w ).to.exist;
+    expect( bb.w ).to.not.equal(0);
+    expect( bb.h ).to.exist;
+    expect( bb.h ).to.not.equal(0);
+  });
+
+});

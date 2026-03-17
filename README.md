@@ -98,7 +98,7 @@ Run `npm run <target>` in the console.  The main targets are:
 
 **Building:**
 
- * `build`: do all builds of the library (umd, min, umd, esm)
+ * `build`: do all builds of the library (umd, min, cjs, esm)
  * `build:min` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
  * `build:umd` : do the umd (cjs/amd/globals) build
  * `build:esm` : do the esm (ES 2015 modules) build

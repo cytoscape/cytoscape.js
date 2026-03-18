@@ -83,6 +83,74 @@ test.describe('Renderer', () => {
       expect(bb.h).toBeGreaterThan(105);
     } ); // node bounding box extends beyond width and height for triangle
 
+    test('boundingBox() does not throw for polygon node with border and edge', async ({ page }) => {
+      const bb = await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.add([
+          {
+            data: { id: 'p' },
+            position: { x: 100, y: 100 }
+          },
+          {
+            data: { id: 'q' },
+            position: { x: 200, y: 200 }
+          },
+          {
+            data: { id: 'pq', source: 'p', target: 'q' }
+          }
+        ]);
+
+        cy.style().fromJson([
+          {
+            selector: '#p',
+            style: {
+              'shape': 'polygon',
+              'shape-polygon-points': '-1 -1 1 -1 1 1 -1 1',
+              'width': 50,
+              'height': 50,
+              'border-width': 5,
+              'border-color': 'black',
+            }
+          }
+        ]).update();
+
+        return cy.$('#p').boundingBox();
+      });
+
+      expect(bb.w).toBeGreaterThan(0);
+      expect(bb.h).toBeGreaterThan(0);
+      expect(bb.x1).toBeDefined();
+      expect(bb.x2).toBeDefined();
+      expect(bb.y1).toBeDefined();
+      expect(bb.y2).toBeDefined();
+    }); // boundingBox() does not throw for polygon node with border and edge
+
+    test('polygon node bounding box extends beyond width and height for border', async ({ page }) => {
+      const bb = await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.style().fromJson([
+          {
+            selector: 'node',
+            style: {
+              'shape': 'polygon',
+              'shape-polygon-points': '-1 -1 1 -1 1 1 -1 1',
+              'width': 100,
+              'height': 100,
+              'border-width': 10,
+              'border-color': 'black',
+            }
+          }
+        ]).update();
+
+        return cy.$('#a').boundingBox();
+      });
+
+      expect(bb.w).toBeGreaterThan(105);
+      expect(bb.h).toBeGreaterThan(105);
+    }); // polygon node bounding box extends beyond width and height for border
+
   });
 
   test.describe('straight edges', () => {

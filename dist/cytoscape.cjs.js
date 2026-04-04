@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2025, The Cytoscape Consortium.
+ * Copyright (c) 2016-2026, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -11507,8 +11507,11 @@ var updateBoundsFromMiter = function updateBoundsFromMiter(bounds, ele, opacity,
     return;
   }
   var cy = ele.cy();
-  var shape = ele.pstyle('shape').value;
-  var rshape = cy.renderer().nodeShapes[shape];
+  var r = cy.renderer();
+  var rshape = r.nodeShapes[r.getNodeShape(ele)];
+  if (!rshape) {
+    return;
+  }
   var _ele$position = ele.position(),
     x = _ele$position.x,
     y = _ele$position.y;
@@ -14547,7 +14550,7 @@ elesfn$1.restore = function () {
           badSourceOrTarget = true;
         } else if (!cy.hasElementWithId(val)) {
           // can't create edge if one of its nodes doesn't exist
-          error('Can not create edge `' + id + '` with nonexistant ' + field + ' `' + val + '`');
+          error('Can not create edge `' + id + '` with nonexistent ' + field + ' `' + val + '`');
           badSourceOrTarget = true;
         }
       }
@@ -31841,17 +31844,22 @@ function modelToRenderedPosition(r, pan, zoom, x, y) {
   ry = Math.round(r.canvasHeight - ry); // adjust for webgl
   return [rx, ry];
 }
-function isSimpleShape(node) {
+function isSimpleShape(node, renderTarget) {
   // the actual shape is checked in ElementDrawingWebGL._getVertTypeForShape()
   // no need to check it twice, this just checks other visual properties
-  if (node.pstyle('background-fill').value !== 'solid') return false;
-  if (node.pstyle('background-image').strValue !== 'none') return false;
-  if (node.pstyle('border-width').value === 0) return true;
-  if (node.pstyle('border-opacity').value === 0) return true;
-  // we have a border but it must be simple
-  if (node.pstyle('border-style').value !== 'solid') return false;
-  // TODO ignoring 'border-cap', 'border-join' and 'border-position' for now
-  return true;
+  if (renderTarget.picking) {
+    // We don't care about the border or background style for picking
+    return true;
+  } else {
+    if (node.pstyle('background-fill').value !== 'solid') return false;
+    if (node.pstyle('background-image').strValue !== 'none') return false;
+    if (node.pstyle('border-width').value === 0) return true;
+    if (node.pstyle('border-opacity').value === 0) return true;
+    // we have a border but it must be simple
+    if (node.pstyle('border-style').value !== 'solid') return false;
+    // TODO ignoring 'border-cap', 'border-join' and 'border-position' for now
+    return true;
+  }
 }
 function arrayEqual(a1, a2) {
   if (a1.length !== a2.length) {
@@ -33577,7 +33585,7 @@ var ElementDrawingWebGL = /*#__PURE__*/function () {
 
       // Check if we have to use a texture
       var vertType = this._getVertTypeForShape(node, props.shape);
-      if (vertType === undefined || opts.isSimple && !opts.isSimple(node)) {
+      if (vertType === undefined || opts.isSimple && !opts.isSimple(node, this.renderTarget)) {
         this.drawTexture(node, eleIndex, type);
         return;
       }
@@ -33601,8 +33609,11 @@ var ElementDrawingWebGL = /*#__PURE__*/function () {
       }
       var indexView = this.indexBuffer.getView(instance);
       indexToVec4(eleIndex, indexView);
+
+      // Nodes should still be clickable if they pass the visibility check but
+      // have background-opacity: 0
+      var opacity = this.renderTarget.picking ? 1 : node.pstyle(props.opacity).value;
       var color = node.pstyle(props.color).value;
-      var opacity = node.pstyle(props.opacity).value;
       var colorView = this.colorBuffer.getView(instance);
       toWebGLColor(color, opacity, colorView);
       var lineWidthView = this.lineWidthBuffer.getView(instance); // reuse edge line width attribute for node border
@@ -35541,7 +35552,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.33.1";
+var version = "3.33.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

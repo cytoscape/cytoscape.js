@@ -1,11 +1,11 @@
 const setGrabState = function( ele, grabbed ){
-  let element = ele[0];
+  let ele0 = ele[0];
 
-  if( !element || element._private.grabbed === grabbed ){
+  if( !ele0 || ele0._private.grabbed === grabbed ){
     return;
   }
 
-  element._private.grabbed = grabbed;
+  ele0._private.grabbed = grabbed;
   ele.updateStyle( false );
 };
 

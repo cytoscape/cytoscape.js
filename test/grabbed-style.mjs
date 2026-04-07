@@ -4,7 +4,7 @@ import { setFreed, setGrabbed } from '../src/extensions/renderer/base/grab-state
 
 describe('Grabbed style', function(){
 
-  var cy;
+  let cy;
 
   beforeEach(function(){
     cy = cytoscape({
@@ -38,7 +38,7 @@ describe('Grabbed style', function(){
   });
 
   it('reapplies `:grabbed` style each time the node is grabbed', function(){
-    var n1 = cy.$('#n1');
+    const n1 = cy.$('#n1');
 
     expect( n1.style('border-width') ).to.equal('0px');
 

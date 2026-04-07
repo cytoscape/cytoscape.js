@@ -38,15 +38,11 @@ describe('Grabbed style', function(){
     cy.destroy();
   });
 
-  const setGrabbedFor = function( eles ){
-    eles.forEach( setGrabbed );
-  };
+  const setGrabbedAll = eles => eles.forEach( setGrabbed );
 
-  const setFreedFor = function( eles ){
-    eles.forEach( setFreed );
-  };
+  const setFreedAll = eles => eles.forEach( setFreed );
 
-  const expectBorderWidth = function( eles, value ){
+  const expectBorderWidth = ( eles, value ) => {
     eles.forEach( ele => expect( ele.style('border-width') ).to.equal( value ) );
   };
 
@@ -68,26 +64,26 @@ describe('Grabbed style', function(){
   it('reapplies `:grabbed` style for a selected group when grabbed repeatedly from either node', function(){
     const n1 = cy.$('#n1');
     const n2 = cy.$('#n2');
-    const selectedNodes = [ n1, n2 ];
+    const selectedNodes = n1.add( n2 );
 
     n1.select();
     n2.select();
 
     expectBorderWidth( selectedNodes, '0px' );
 
-    setGrabbedFor( selectedNodes );
+    setGrabbedAll( selectedNodes );
     expectBorderWidth( selectedNodes, '3px' );
 
-    setFreedFor( selectedNodes );
+    setFreedAll( selectedNodes );
     expectBorderWidth( selectedNodes, '0px' );
 
-    setGrabbedFor( selectedNodes );
+    setGrabbedAll( selectedNodes );
     expectBorderWidth( selectedNodes, '3px' );
 
-    setFreedFor( selectedNodes );
+    setFreedAll( selectedNodes );
     expectBorderWidth( selectedNodes, '0px' );
 
-    setGrabbedFor( [ n2, n1 ] );
+    setGrabbedAll( n2.add( n1 ) );
     expectBorderWidth( selectedNodes, '3px' );
   });
 });

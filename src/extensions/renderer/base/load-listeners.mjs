@@ -1,6 +1,7 @@
 import * as is from '../../../is.mjs';
 import * as util from '../../../util/index.mjs';
 import * as math from '../../../math.mjs';
+import { setFreed, setGrabbed } from './grab-state.mjs';
 
 var BRp = {};
 
@@ -149,14 +150,6 @@ BRp.load = function(){
     }
 
     return allowPassthrough;
-  };
-
-  var setGrabbed = function( ele ){
-    ele[0]._private.grabbed = true;
-  };
-
-  var setFreed = function( ele ){
-    ele[0]._private.grabbed = false;
   };
 
   var setInDragLayer = function( ele ){

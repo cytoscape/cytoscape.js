@@ -61,10 +61,6 @@ jobs:
         with:
           name: npm-release--failure-report
           path: /home/runner/.npm/_logs/
-      - name: Publish Package To npmjs
-        run:  npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish Package to GitHub Releases
         run: |
           curl -L \
@@ -92,4 +88,11 @@ jobs:
               -H "Accept: application/vnd.github.v3+json" \
               "https://api.github.com/repos/cytoscape/cytoscape.js-blog/issues" \
               -d "{\"title\":\"$TITLE\",\"body\":\"$BODY\"}"
-       
+
+  npm_publish:
+    needs: feature-release
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/npm-publish.yml
+

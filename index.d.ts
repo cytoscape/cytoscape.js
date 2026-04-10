@@ -5596,7 +5596,7 @@ declare namespace cytoscape {
              */
 
             /**
-             * The vertical alignment of a node’s label.
+             * The horizontal alignment of a node’s label.
              */
             "text-halign": PropertyValue<SingularType, "left" | "center" | "right">;
             /**

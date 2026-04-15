@@ -4,7 +4,7 @@ import { ElementDrawingWebGL, RENDER_TARGET } from '../../src/extensions/rendere
 
 const createBuffer = (size) => ({
   view: new Float32Array(size),
-  getView(){
+  getView() {
     return this.view;
   }
 });
@@ -20,7 +20,7 @@ describe('webgl-drawing-elements', function(){
     const cornerRadiusBuffer = createBuffer(4);
     const transformMatrix = new Float32Array(9);
     const transformBuffer = {
-      getMatrixView(){
+      getMatrixView() {
         return transformMatrix;
       }
     };

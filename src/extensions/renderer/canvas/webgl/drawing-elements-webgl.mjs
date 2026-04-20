@@ -766,13 +766,9 @@ export class ElementDrawingWebGL {
 
     // Nodes should still be clickable if they pass the visibility check but
     // have background-opacity: 0
-    let opacity = this.renderTarget.picking ? 1 : node.effectiveOpacity();
-    let bgOpacity = this.renderTarget.picking ? 1 : node.pstyle('background-opacity').value * opacity;
-
-    if (type === 'node-overlay') {
-      opacity = node.pstyle(props.opacity).value;
-      bgOpacity = opacity;
-    }
+    // Also: everything but node-body is exempt from effective opacity inheritence/stacking
+    let opacity = this.renderTarget.picking ? 1 : (type === 'node-body' ? node.effectiveOpacity() : 1);
+    let bgOpacity = this.renderTarget.picking ? 1 : (node.pstyle(props.opacity).value * opacity);
 
     const color = node.pstyle(props.color).value;
     const colorView = this.colorBuffer.getView(instance);

@@ -766,11 +766,17 @@ export class ElementDrawingWebGL {
 
     // Nodes should still be clickable if they pass the visibility check but
     // have background-opacity: 0
-    const opacity = this.renderTarget.picking ? 1 : node.effectiveOpacity();
+    let opacity = this.renderTarget.picking ? 1 : node.effectiveOpacity();
+    let bgOpacity = this.renderTarget.picking ? 1 : node.pstyle('background-opacity').value * opacity;
+
+    if (type === 'node-overlay') {
+      opacity = node.pstyle(props.opacity).value;
+      bgOpacity = opacity;
+    }
 
     const color = node.pstyle(props.color).value;
     const colorView = this.colorBuffer.getView(instance);
-    util.toWebGLColor(color, opacity, colorView);
+    util.toWebGLColor(color, bgOpacity, colorView);
 
     const lineWidthView = this.lineWidthBuffer.getView(instance); // reuse edge line width attribute for node border
     lineWidthView[0] = 0;

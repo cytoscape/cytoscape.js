@@ -766,8 +766,7 @@ export class ElementDrawingWebGL {
 
     // Nodes should still be clickable if they pass the visibility check but
     // have background-opacity: 0
-    const effectiveOpacity = this.renderTarget.picking ? 1 : node.effectiveOpacity();
-    const opacity = effectiveOpacity * node.pstyle(props.opacity).value;
+    const opacity = this.renderTarget.picking ? 1 : node.effectiveOpacity();
 
     const color = node.pstyle(props.color).value;
     const colorView = this.colorBuffer.getView(instance);
@@ -781,7 +780,7 @@ export class ElementDrawingWebGL {
       const borderWidth = node.pstyle('border-width').value;
       if(borderWidth > 0) {
         const borderColor = node.pstyle('border-color').value;
-        const borderOpacity = effectiveOpacity * node.pstyle('border-opacity').value;
+        const borderOpacity = opacity * node.pstyle('border-opacity').value;
 
         const borderColorView = this.borderColorBuffer.getView(instance);
         util.toWebGLColor(borderColor, borderOpacity, borderColorView);

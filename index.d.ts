@@ -5590,6 +5590,20 @@ declare namespace cytoscape {
              * height of a line of text.
              */
             "line-height": PropertyValue<SingularType, number>;
+            /**
+             * Horizontal and vertical margin of error applied to a node's bounding box.
+             * These margins help compensate for layout inaccuracies or rendering quirks.
+             * Values are in pixels.
+             */
+            "bbox-margin-error-x": PropertyValue<SingularType, number>;
+            "bbox-margin-error-y": PropertyValue<SingularType, number>;
+            /**
+             * The vertical alignment of text relative to its baseline. This affects how text 
+             * dimensions are calculated and displayed.
+             * - `default`: Calculate using font size.
+             * - `actual`: Calculate using actual label text metrics (for ascending/descending character size).
+             */
+            "text-metrics": PropertyValue<SingularType, "default" | "actual">;
 
             /**
              * Node label alignment:

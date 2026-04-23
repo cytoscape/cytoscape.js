@@ -37,9 +37,10 @@ CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix
     if( !label || !label.value ){ return; }
 
     let justification = r.getLabelJustification(ele);
+    let isTextMetricsActual = ele.pstyle('text-metrics').strValue === 'actual';
 
     context.textAlign = justification;
-    context.textBaseline = 'bottom';
+    context.textBaseline = isTextMetricsActual ? 'alphabetic' : 'bottom';
   } else {
     let badLine = ele.element()._private.rscratch.badLine;
     let label = ele.pstyle( 'label' );
@@ -198,6 +199,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
     let pdash = prefix ? prefix + '-' : '';
     let textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
     let textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
+    let labelActualDescent = util.getPrefixedProperty( rscratch, 'labelActualDescent', prefix );
     let marginX = ele.pstyle( pdash + 'text-margin-x' ).pfValue;
     let marginY = ele.pstyle( pdash + 'text-margin-y' ).pfValue;
 
@@ -335,7 +337,8 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
     if( lineWidth > 0 ){
       context.lineWidth = lineWidth;
     }
-
+    
+    textY -= labelActualDescent;
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
       let lines = util.getPrefixedProperty( rscratch, 'labelWrapCachedLines', prefix );
       let lineHeight = util.getPrefixedProperty( rscratch, 'labelLineHeight', prefix );

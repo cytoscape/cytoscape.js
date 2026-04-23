@@ -312,14 +312,14 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
 
   let labelDims = this.calculateLabelDimensions( ele, text );
   let lineHeight = ele.pstyle('line-height').pfValue;
+  let size = ele.pstyle('font-size').pfValue;
   let textWrap = ele.pstyle('text-wrap').strValue;
   let lines = util.getPrefixedProperty( _p.rscratch, 'labelWrapCachedLines', prefix ) || [];
   let numLines = textWrap !== 'wrap' ? 1 : Math.max(lines.length, 1);
-  let normPerLineHeight = labelDims.height / numLines;
-  let labelLineHeight = normPerLineHeight * lineHeight;
+  let labelLineHeight = size * lineHeight;
 
   let width = labelDims.width;
-  let height = labelDims.height + (numLines - 1) * (lineHeight - 1) * normPerLineHeight;
+  let height = labelDims.height + (numLines - 1) * (lineHeight - 1) * size;
 
   util.setPrefixedProperty( _p.rstyle,   'labelWidth', prefix, width );
   util.setPrefixedProperty( _p.rscratch, 'labelWidth', prefix, width );
@@ -328,6 +328,7 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
   util.setPrefixedProperty( _p.rscratch, 'labelHeight', prefix, height );
 
   util.setPrefixedProperty( _p.rscratch, 'labelLineHeight', prefix, labelLineHeight );
+  util.setPrefixedProperty( _p.rscratch, 'labelActualDescent', prefix, labelDims.labelActualDescent );
 };
 
 BRp.getLabelText = function( ele, prefix ){
@@ -487,6 +488,7 @@ BRp.calculateLabelDimensions = function( ele, text ){
   let size = ele.pstyle('font-size').pfValue;
   let family = ele.pstyle('font-family').strValue;
   let weight = ele.pstyle('font-weight').strValue;
+  let textMetrics = ele.pstyle('text-metrics').strValue || 'default';
 
   let canvas = this.labelCalcCanvas;
   let c2d = this.labelCalcCanvasContext;
@@ -509,23 +511,38 @@ BRp.calculateLabelDimensions = function( ele, text ){
   let width = 0;
   let height = 0;
   let lines = text.split('\n');
+  let lineCount = lines.length;
+  let labelActualDescent = 0;
+  let labelActualAscent = 0;
 
-  for( let i = 0; i < lines.length; i++ ){
+  for( let i = 0; i < lineCount; i++ ){
     let line = lines[i];
     let metrics = c2d.measureText(line);
     let w = Math.ceil(metrics.width);
     let h = size;
+    if ( textMetrics === 'actual' ){
+      if (i === 0) {
+        labelActualAscent = metrics.actualBoundingBoxAscent; 
+      }
+      if (i === lineCount - 1) {
+        labelActualDescent = metrics.actualBoundingBoxDescent;
+      }
+    }
 
     width = Math.max(w, width);
     height += h;
   }
-
+  if ( textMetrics === 'actual' ){
+    height -= size - labelActualAscent - labelActualDescent;
+  }
   width += padding;
   height += padding;
 
   return {
     width,
-    height
+    height,
+    labelActualAscent,
+    labelActualDescent
   };
 };
 

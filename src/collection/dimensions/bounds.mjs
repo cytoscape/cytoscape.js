@@ -291,7 +291,8 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     let borderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     let halfBorderWidth = borderWidth / 2;
     let padding = ele.pstyle( 'text-background-padding' ).pfValue;
-    let marginOfError = 2; // expand to work around browser dimension inaccuracies
+    let marginOfErrorX = ele.pstyle( 'bbox-margin-error-x' ).pfValue; // expand to work around browser dimension inaccuracies
+    let marginOfErrorY = ele.pstyle( 'bbox-margin-error-y' ).pfValue; // expand to work around browser dimension inaccuracies
 
     let lh = labelHeight;
     let lw = labelWidth;
@@ -341,10 +342,10 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     }
 
     // shift by margin and expand by outline and border
-    let leftPad  = marginX - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
-    let rightPad = marginX + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
-    let topPad   = marginY - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
-    let botPad   = marginY + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
+    let leftPad  = marginX - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfErrorX;
+    let rightPad = marginX + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfErrorX;
+    let topPad   = marginY - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfErrorY;
+    let botPad   = marginY + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfErrorY;
 
     lx1 += leftPad;
     lx2 += rightPad;

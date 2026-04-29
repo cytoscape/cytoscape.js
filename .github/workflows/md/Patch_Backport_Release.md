@@ -33,12 +33,12 @@ The "Patch Release Test" GitHub Action comprises the following steps:
 
 2. **Checkout Patch Branch**:
    - Action: Checks out the specified patch branch.
-   - Uses: `actions/checkout@v3`.
+   - Uses: `actions/checkout@v6`.
    - Branch: The branch specified by the `BRANCH` environment variable.
 
 3. **Setup Node.js Environment**:
    - Action: Sets up Node.js environment for the workflow.
-   - Uses: `actions/setup-node@v3`.
+   - Uses: `actions/setup-node@v6`.
    - Node Version: 18.
    - Caches npm packages.
 
@@ -57,7 +57,7 @@ The "Patch Release Test" GitHub Action comprises the following steps:
 
 7. **Checkout Master Branch**:
    - Action: Checks out the `master` branch.
-   - Uses: `actions/checkout@v3`.
+   - Uses: `actions/checkout@v6`.
 
 8. **Update Version on Master**:
    - Action: Updates the `versions.json` file on the `master` branch.
@@ -66,7 +66,7 @@ The "Patch Release Test" GitHub Action comprises the following steps:
 
 9. **Checkout Patch Branch Again**:
    - Action: Checks out the specified patch branch.
-   - Uses: `actions/checkout@v3`.
+   - Uses: `actions/checkout@v6`.
    - Branch: The branch specified by the `BRANCH` environment variable.
 
 10. **Update Version on Unstable**:

@@ -15,15 +15,14 @@ jobs:
 
     steps:
       - name: checkout unstable branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: 'unstable'
           fetch-depth: 0
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
       - name: Install dependencies
         run: npm install
       - name: Install Playwright Browsers
@@ -44,7 +43,7 @@ jobs:
           jq --version
         shell: bash
       - name: Checkout Master Branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: master
           fetch-depth: 0

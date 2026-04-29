@@ -70,7 +70,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 ### Very commonly used options
 
 <span id="init-opts/container"></span>
-**`container`** : A HTML DOM element in which the graph should be rendered.  This is unspecified if Cytoscape.js is run headlessly.  The container is expected to be an empty div; the visualisation owns the div.
+**`container`** : A HTML DOM element in which the graph should be rendered.  This is unspecified if Cytoscape.js is run headlessly.  The container is expected to be an empty div with its own width and height set by the page's styles; the visualisation owns the div's contents.
 
 <span id="init-opts/elements"></span>
 **`elements`** : An array of [elements specified as plain objects](#notation/elements-json).  For convenience, this option can alternatively be specified as a promise that resolves to the elements JSON.

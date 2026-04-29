@@ -6,6 +6,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: prod
     permissions:
       contents: read
       id-token: write
@@ -17,8 +18,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
-          cache: 'npm'
-      - name: Install dependencies
-        run: npm install
+          package-manager-cache: false
       - name: Publish Package To npmjs
         run: npm publish --provenance

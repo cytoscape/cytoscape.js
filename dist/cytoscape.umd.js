@@ -25548,6 +25548,21 @@ var printLayoutInfo;
     }
   };
 
+  var setGrabState = function setGrabState(ele, grabbed) {
+    var ele0 = ele[0];
+    if (!ele0 || ele0._private.grabbed === grabbed) {
+      return;
+    }
+    ele0._private.grabbed = grabbed;
+    ele.updateStyle(false);
+  };
+  var setGrabbed = function setGrabbed(ele) {
+    setGrabState(ele, true);
+  };
+  var setFreed = function setFreed(ele) {
+    setGrabState(ele, false);
+  };
+
   var BRp$3 = {};
 
   /* global document, ResizeObserver, MutationObserver */
@@ -25666,12 +25681,6 @@ var printLayoutInfo;
         allowPassthrough = true;
       }
       return allowPassthrough;
-    };
-    var setGrabbed = function setGrabbed(ele) {
-      ele[0]._private.grabbed = true;
-    };
-    var setFreed = function setFreed(ele) {
-      ele[0]._private.grabbed = false;
     };
     var setInDragLayer = function setInDragLayer(ele) {
       ele[0]._private.rscratch.inDragLayer = true;
@@ -33616,10 +33625,12 @@ var printLayoutInfo;
 
         // Nodes should still be clickable if they pass the visibility check but
         // have background-opacity: 0
-        var opacity = this.renderTarget.picking ? 1 : node.pstyle(props.opacity).value;
+        // Also: everything but node-body is exempt from effective opacity inheritence/stacking
+        var opacity = this.renderTarget.picking ? 1 : type === 'node-body' ? node.effectiveOpacity() : 1;
+        var bgOpacity = this.renderTarget.picking ? 1 : node.pstyle(props.opacity).value * opacity;
         var color = node.pstyle(props.color).value;
         var colorView = this.colorBuffer.getView(instance);
-        toWebGLColor(color, opacity, colorView);
+        toWebGLColor(color, bgOpacity, colorView);
         var lineWidthView = this.lineWidthBuffer.getView(instance); // reuse edge line width attribute for node border
         lineWidthView[0] = 0;
         lineWidthView[1] = 0;
@@ -33627,7 +33638,7 @@ var printLayoutInfo;
           var borderWidth = node.pstyle('border-width').value;
           if (borderWidth > 0) {
             var borderColor = node.pstyle('border-color').value;
-            var borderOpacity = node.pstyle('border-opacity').value;
+            var borderOpacity = opacity * node.pstyle('border-opacity').value;
             var borderColorView = this.borderColorBuffer.getView(instance);
             toWebGLColor(borderColor, borderOpacity, borderColorView);
 
@@ -35556,7 +35567,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.33.2";
+  var version = "3.33.3";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

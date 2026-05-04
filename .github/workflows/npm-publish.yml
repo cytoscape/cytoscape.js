@@ -6,20 +6,18 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: prod
     permissions:
       contents: read
       id-token: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: master
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-      - name: Install dependencies
-        run: npm install
+          node-version-file: .nvmrc
+          package-manager-cache: false
       - name: Publish Package To npmjs
         run: npm publish --provenance

@@ -28,11 +28,11 @@ Below are the steps performed by the "Feature Release Test" GitHub Action:
 
 1. **Checkout Patch Branch**:
    - Action: Checks out the `unstable` branch.
-   - Uses: `actions/checkout@v3`.
+   - Uses: `actions/checkout@v6`.
 
 2. **Setup Node.js Environment**:
    - Action: Sets up Node.js environment.
-   - Uses: `actions/setup-node@v3`.
+   - Uses: `actions/setup-node@v6`.
    - Node Version: 18.
    - Caches npm packages.
 
@@ -43,7 +43,7 @@ Below are the steps performed by the "Feature Release Test" GitHub Action:
 
 4. **Checkout Master Branch**:
    - Action: Checks out the `master` branch.
-   - Uses: `actions/checkout@v3`.
+   - Uses: `actions/checkout@v6`.
 
 5. **Merge Unstable to Master Branch**:
    - Action: Merges changes from `unstable` to `master` branch.

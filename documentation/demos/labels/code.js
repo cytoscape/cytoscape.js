@@ -26,6 +26,10 @@
       { data: { label: 'bottom center' }, classes: 'bottom-center' },
       { data: { label: 'bottom right' }, classes: 'bottom-right' },
 
+      { data: { label: 'top-inside left-inside' }, classes: 'top-inside-left-inside' },
+      { data: { label: 'center left-inside' }, classes: 'center-left-inside' },
+      { data: { label: 'bottom-inside right-inside' }, classes: 'bottom-inside-right-inside' },
+
       { data: { label: 'multiline manual\nfoo\nbar\nbaz' }, classes: 'multiline-manual' },
       { data: { label: 'multiline auto foo bar baz' }, classes: 'multiline-auto' },
       { data: { label: 'outline' }, classes: 'outline' },

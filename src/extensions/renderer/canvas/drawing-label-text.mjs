@@ -1,5 +1,6 @@
 import * as util from '../../../util/index.mjs';
 import * as math from '../../../math.mjs';
+import { labelHalign, labelValign } from '../../../style/align.mjs';
 
 let CRp = {};
 
@@ -233,7 +234,10 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
       textY = 0;
     }
 
-    switch( valign ){
+    let boxHalign = labelHalign( halign );
+    let boxValign = labelValign( valign );
+
+    switch( boxValign ){
       case 'top':
         break;
       case 'center':
@@ -266,7 +270,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
       let doStroke = textBorderWidth > 0 && borderOpacity > 0;
 
       let bgX = textX - backgroundPadding;
-      switch( halign ){
+      switch( boxHalign ){
         case 'left':   bgX -= textW; break;
         case 'center': bgX -= textW / 2; break;
       }
@@ -344,19 +348,19 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
 
       if( justification === 'auto' ){
         // then it's already ok, so skip all the other ifs
-      } else if( halign === 'left' ){ // auto justification : right
+      } else if( boxHalign === 'left' ){ // auto justification : right
         if( justification === 'left' ){
           textX += -textW;
         } else if( justification === 'center' ){
           textX += -halfTextW;
         } // else same as auto
-      } else if( halign === 'center' ){ // auto justfication : center
+      } else if( boxHalign === 'center' ){ // auto justfication : center
         if( justification === 'left' ){
           textX += -halfTextW;
         } else if( justification === 'right' ){
           textX += halfTextW;
         } // else same as auto
-      } else if( halign === 'right' ){ // auto justification : left
+      } else if( boxHalign === 'right' ){ // auto justification : left
         if( justification === 'center' ){
           textX += halfTextW;
         } else if( justification === 'right' ){
@@ -364,7 +368,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
         } // else same as auto
       }
 
-      switch( valign ){
+      switch( boxValign ){
         case 'top':
           textY -= ( lines.length - 1 ) * lineHeight;
           break;

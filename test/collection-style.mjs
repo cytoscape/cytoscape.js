@@ -197,6 +197,26 @@ describe('Collection style', function(){
       expect( cy.$('#n1').style('width') ).to.equal('20px');
     });
 
+    it('ele.style() accepts inside label alignment values', function(){
+      var n1 = cy.$('#n1');
+
+      n1.style({
+        'text-halign': 'left-inside',
+        'text-valign': 'top-inside'
+      });
+
+      expect( n1.style('text-halign') ).to.equal('left-inside');
+      expect( n1.style('text-valign') ).to.equal('top-inside');
+
+      n1.style({
+        'text-halign': 'right-inside',
+        'text-valign': 'bottom-inside'
+      });
+
+      expect( n1.style('text-halign') ).to.equal('right-inside');
+      expect( n1.style('text-valign') ).to.equal('bottom-inside');
+    });
+
     it('ele.style(propName) works for unitless property value', function(){
       expect( cy.$('#n1').style('opacity') ).to.equal('0.5');
     });

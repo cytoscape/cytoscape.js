@@ -488,7 +488,7 @@ BRp.calculateLabelDimensions = function( ele, text ){
   let size = ele.pstyle('font-size').pfValue;
   let family = ele.pstyle('font-family').strValue;
   let weight = ele.pstyle('font-weight').strValue;
-  let textMetrics = ele.pstyle('text-metrics').strValue || 'default';
+  let textMetrics = ele.pstyle('text-metrics').strValue || 'font';
 
   let canvas = this.labelCalcCanvas;
   let c2d = this.labelCalcCanvasContext;
@@ -520,7 +520,7 @@ BRp.calculateLabelDimensions = function( ele, text ){
     let metrics = c2d.measureText(line);
     let w = Math.ceil(metrics.width);
     let h = size;
-    if ( textMetrics === 'actual' ){
+    if ( textMetrics === 'glyph' ){
       if (i === 0) {
         labelActualAscent = metrics.actualBoundingBoxAscent; 
       }
@@ -532,7 +532,7 @@ BRp.calculateLabelDimensions = function( ele, text ){
     width = Math.max(w, width);
     height += h;
   }
-  if ( textMetrics === 'actual' ){
+  if ( textMetrics === 'glyph' ){
     height -= size - labelActualAscent - labelActualDescent;
   }
   width += padding;

@@ -5086,6 +5086,7 @@ declare namespace cytoscape {
             "curve-style"?: PropertyValueEdge<
                 | "haystack"
                 | "straight"
+                | "straight-triangle"
                 | "bezier"
                 | "unbundled-bezier"
                 | "segments"

@@ -5590,6 +5590,12 @@ declare namespace cytoscape {
              * height of a line of text.
              */
             "line-height": PropertyValue<SingularType, number>;
+            /**
+             * Controls how label dimensions are measured.
+             * - `font`: uses font-size as the height basis (default).
+             * - `glyph`: uses actual rendered glyph bounds (tighter fit).
+             */
+            "text-metrics": PropertyValue<SingularType, "font" | "glyph">;
 
             /**
              * Node label alignment:

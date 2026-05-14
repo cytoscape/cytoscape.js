@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Echo branch name
         shell: bash
-        id: extract_branch
+        id: echo_branch
         run: |
           echo "Branch: " $BRANCH
       - name: checkout patch branch

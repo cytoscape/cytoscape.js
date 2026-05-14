@@ -42,10 +42,10 @@ jobs:
           . ./.github/workflows/scripts/new-patch-version.sh
         shell: bash
       - name: See patch branch
-        run: echo branch ${{ env.BRANCH }}
+        run: echo branch $BRANCH
         shell: bash
       - name: See new patch version
-        run: echo "# version:" ${{ env.VERSION }}
+        run: echo "# version:" $BRANCH
         shell: bash
       - name: checkout master branch
         uses: actions/checkout@v6
@@ -88,7 +88,7 @@ jobs:
         id: release
         run: |
           chmod +rx .github/workflows/scripts/pre_release_test.sh
-          . .github/workflows/scripts/pre_release_test.sh ${{ env.BRANCH }}
+          . .github/workflows/scripts/pre_release_test.sh $BRANCH
       - name: Archive action failure results
         uses: actions/upload-artifact@v4
         if: ${{ failure() && steps.release.conclusion == 'failure' }}

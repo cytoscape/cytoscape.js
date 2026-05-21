@@ -41,34 +41,32 @@
       });
     }
 
+    var pool = nodes.length ? nodes : cy.nodes().jsons();
+
+    if( pool.length === 0 && e > 0 ){
+      console.warn('Add/Remove: No nodes available for edge creation; skipping edges.');
+    }
+
     function randNodeId(){
-      var pool = nodes.length ? nodes : cy.nodes().toArray();
-
-      if( pool.length === 0 ){
-        return null;
-      }
-
       return pool[ Math.floor(Math.random() * pool.length) ].data.id;
     }
 
     var edges = [];
-    for(var i = 0; i < e; i++){
-      var source = randNodeId();
-      var target = randNodeId();
+    if( pool.length > 0 ){
+      for(var i = 0; i < e; i++){
+        var source = randNodeId();
+        var target = randNodeId();
 
-      if( source == null || target == null ){
-        continue;
+        edges.push({
+          group: 'edges',
+          data: {
+            id: makeId(),
+            weight: Math.round( Math.random() * 100 ),
+            source: source,
+            target: target
+          }
+        });
       }
-
-      edges.push({
-        group: 'edges',
-        data: {
-          id: makeId(),
-          weight: Math.round( Math.random() * 100 ),
-          source: source,
-          target: target
-        }
-      });
     }
 
     var eles = {

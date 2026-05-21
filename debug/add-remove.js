@@ -42,18 +42,31 @@
     }
 
     function randNodeId(){
-      return nodes[ Math.round(Math.random() * (nodes.length - 1)) ].data.id;
+      var pool = nodes.length ? nodes : cy.nodes().toArray();
+
+      if( pool.length === 0 ){
+        return null;
+      }
+
+      return pool[ Math.floor(Math.random() * pool.length) ].data.id;
     }
 
     var edges = [];
     for(var i = 0; i < e; i++){
+      var source = randNodeId();
+      var target = randNodeId();
+
+      if( source == null || target == null ){
+        continue;
+      }
+
       edges.push({
         group: 'edges',
         data: {
           id: makeId(),
           weight: Math.round( Math.random() * 100 ),
-          source: randNodeId(),
-          target: randNodeId()
+          source: source,
+          target: target
         }
       });
     }

@@ -2193,21 +2193,19 @@ declare namespace cytoscape {
         renderedBoundingBox(options?: BoundingBoxOptions): BoundingBox12 & BoundingBoxWH;
         renderedBoundingbox(options?: BoundingBoxOptions): BoundingBox12 & BoundingBoxWH;
         /**
-         * Get the bounding polygon of the elements in model coordinates.
-         * Returns an array of points [{x, y}, ...] representing the polygon.
-         * 
-         * @returns Polygon in model coordinate space.
+         * Get the bounding polygon of a label in model coordinates.
+         * For edges, use `label: 'source'` or `label: 'target'` to select a specific label slot.
+         * Defaults to the main label.
          */
-        actualLabelBoundingBox(): PolygonBoundingBox;
-        actualLabelBoundingbox(): PolygonBoundingBox;
+        actualLabelBoundingBox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
+        actualLabelBoundingbox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
         /**
-         * Get the bounding polygon of the elements in rendered coordinates.
-         * Returns an array of points [{x, y}, ...] representing the polygon.
-         * 
-         * @returns Polygon in rendered coordinate space.
+         * Get the bounding polygon of a label in rendered coordinates.
+         * For edges, use `label: 'source'` or `label: 'target'` to select a specific label slot.
+         * Defaults to the main label.
          */
-        renderedActualLabelBoundingBox(): PolygonBoundingBox;
-        renderedActualLabelBoundingbox(): PolygonBoundingBox;
+        renderedActualLabelBoundingBox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
+        renderedActualLabelBoundingbox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
     }
 
     /**

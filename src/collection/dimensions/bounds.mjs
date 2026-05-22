@@ -27,8 +27,8 @@ elesfn.renderedBoundingBox = function( options ){
   };
 };
 
-elesfn.renderedActualLabelBoundingBox = function(){
-  let polygon = this.actualLabelBoundingBox();
+elesfn.renderedActualLabelBoundingBox = function( options ){
+  let polygon = this.actualLabelBoundingBox( options );
   let cy = this.cy();
   let zoom = cy.zoom();
   let pan = cy.pan();
@@ -39,36 +39,45 @@ elesfn.renderedActualLabelBoundingBox = function(){
   }));
 };
 
-elesfn.actualLabelBoundingBox = function() {
-  let bounds;
+elesfn.actualLabelBoundingBox = function( options ) {
+  let label = (options && options.label) || 'main';
+  let prefix = label === 'main' ? undefined : label; // 'source' | 'target' | undefined
 
   let isDirty = memoize(ele => {
     let _p = ele._private;
+    let cache = _p.labelPolygonCache;
 
-    return _p.labelPolygonCache == null || _p.styleDirty || _p.labelPolygonPosKey !== getLabelPolygonPosKey(ele);
+    return cache == null || cache[label] == null || _p.styleDirty || _p.labelPolygonPosKey !== getLabelPolygonPosKey(ele);
   }, ele => ele.id());
 
   if (this.length === 1 && !isDirty(this[0])) {
-    bounds = this[0]._private.labelPolygonCache;
-  } else {
-    let eles = this;
-    let cy = eles.cy();
-    let styleEnabled = cy.styleEnabled();
-    this.edges().forEach(isDirty);
-    this.nodes().forEach(isDirty);
+    return this[0]._private.labelPolygonCache[label];
+  }
 
-    if(styleEnabled) {
-      this.recalculateRenderedStyle();
-    }
+  let eles = this;
+  let cy = eles.cy();
+  let styleEnabled = cy.styleEnabled();
+  this.edges().forEach(isDirty);
+  this.nodes().forEach(isDirty);
 
-    for (let i = 0; i < eles.length; i++) {
-      let ele = eles[i];
-      let _p = ele._private;
-      let polygon = getRotatedLabelBox(ele);
-      _p.labelPolygonCache = polygon;
+  if(styleEnabled) {
+    this.recalculateRenderedStyle();
+  }
+
+  let bounds;
+
+  for (let i = 0; i < eles.length; i++) {
+    let ele = eles[i];
+    let _p = ele._private;
+
+    if( _p.labelPolygonCache == null || _p.labelPolygonPosKey !== getLabelPolygonPosKey(ele) ){
+      _p.labelPolygonCache = {};
       _p.labelPolygonPosKey = getLabelPolygonPosKey(ele);
-      bounds = polygon;
     }
+
+    let polygon = getRotatedLabelBox(ele, prefix);
+    _p.labelPolygonCache[label] = polygon;
+    bounds = polygon;
   }
 
   return bounds;
@@ -990,14 +999,18 @@ let cachedBoundingBoxImpl = function( ele, opts ){
 };
 
 let getLabelPolygonPosKey = function(ele) {
-  let pos = ele.position();
   let angle = ele.pstyle('text-rotation').pfValue || 0;
 
-  return hashIntsArray([
-    Math.round(pos.x),
-    Math.round(pos.y),
-    Math.round(angle * 1000) 
-  ]);
+  if( ele.isEdge() ){
+    let p1 = ele.source().position();
+    let p2 = ele.target().position();
+
+    return hashIntsArray([ Math.round(p1.x), Math.round(p1.y), Math.round(p2.x), Math.round(p2.y), Math.round(angle * 1000) ]);
+  } else {
+    let pos = ele.position();
+
+    return hashIntsArray([ Math.round(pos.x), Math.round(pos.y), Math.round(angle * 1000) ]);
+  }
 };
 
 let defBbOpts = {
@@ -1100,7 +1113,7 @@ elesfn.dirtyBoundingBoxCache = function(){
     _p.arrowBounds.target = null;
     _p.arrowBounds['mid-source'] = null;
     _p.arrowBounds['mid-target'] = null;
-    _p.labelPolygonCache = null;
+    _p.labelPolygonCache = {};
     _p.labelPolygonPosKey = null;
   }
 

@@ -2,24 +2,17 @@ name: Patch Release
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to run the action on'
-        required: true
-        default: 'master'
 
-jobs:  
+jobs:
   patch-release:
     runs-on: ubuntu-latest
     environment: prod
-    env:
-      BRANCH: ${{ github.event.inputs.branch }}
     steps:
-      - name: Echo branch name
+      - name: Set branch name
         shell: bash
-        id: echo_branch
         run: |
-          echo "Branch: " $BRANCH
+          echo "BRANCH=master" >> $GITHUB_ENV
+          echo "Branch: master"
       - name: checkout patch branch
         uses: actions/checkout@v6
         with:
@@ -45,7 +38,7 @@ jobs:
         run: echo branch $BRANCH
         shell: bash
       - name: See new patch version
-        run: echo "# version:" $BRANCH
+        run: echo "# version:" ${{ env.VERSION }}
         shell: bash
       - name: checkout master branch
         uses: actions/checkout@v6

@@ -1,6 +1,7 @@
 import * as is from '../../is.mjs';
 import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox, shiftBoundingBox, updateBoundingBox } from '../../math.mjs';
 import {defaults, endsWith, getPrefixedProperty, hashIntsArray, memoize} from '../../util/index.mjs';
+import { labelHalign, labelValign } from '../../style/align.mjs';
 
 let fn, elesfn;
 
@@ -305,7 +306,7 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       ly1 = labelY - lh_2;
       ly2 = labelY + lh_2;
     } else {
-      switch( halign.value ){
+      switch( labelHalign( halign.value ) ){
         case 'left':
           lx1 = labelX - lw;
           lx2 = labelX;
@@ -322,7 +323,7 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
           break;
       }
 
-      switch( valign.value ){
+      switch( labelValign( valign.value ) ){
         case 'top':
           ly1 = labelY - lh;
           ly2 = labelY;
@@ -379,7 +380,7 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       let yo = (ly1 + ly2)/2;
 
       if( !isEdge ){
-        switch( halign.value ){
+        switch( labelHalign( halign.value ) ){
           case 'left':
             xo = lx2;
             break;
@@ -389,7 +390,7 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
             break;
         }
 
-        switch( valign.value ){
+        switch( labelValign( valign.value ) ){
           case 'top':
             yo = ly2;
             break;

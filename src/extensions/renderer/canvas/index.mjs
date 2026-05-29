@@ -9,6 +9,7 @@ Modifications tracked on Github.
 import * as util from '../../../util/index.mjs';
 import * as is from '../../../is.mjs';
 import { makeBoundingBox } from '../../../math.mjs';
+import { labelHalign, labelValign } from '../../../style/align.mjs';
 import ElementTextureCache from './ele-texture-cache.mjs';
 import LayeredTextureCache from './layered-texture-cache.mjs';
 
@@ -186,7 +187,7 @@ function CanvasRenderer( options ){
     let p = getCenterOffset( getLabelBox(ele) );
 
     if( ele.isNode() ){
-      switch( ele.pstyle('text-halign').value ){
+      switch( labelHalign( ele.pstyle('text-halign').value ) ){
         case 'left':
           p.x = -bb.w - (bb.leftPad || 0);
           break;
@@ -195,7 +196,7 @@ function CanvasRenderer( options ){
           break;
       }
 
-      switch( ele.pstyle('text-valign').value ){
+      switch( labelValign( ele.pstyle('text-valign').value ) ){
         case 'top':
           p.y = -bb.h - (bb.topPad || 0);
           break;

@@ -5605,11 +5605,11 @@ declare namespace cytoscape {
             /**
              * The horizontal alignment of a node’s label.
              */
-            "text-halign": PropertyValue<SingularType, "left" | "center" | "right">;
+            "text-halign": PropertyValue<SingularType, "left" | "left-inside" | "center" | "right" | "right-inside">;
             /**
              * The vertical alignment of a node’s label.
              */
-            "text-valign": PropertyValue<SingularType, "top" | "center" | "bottom">;
+            "text-valign": PropertyValue<SingularType, "top" | "top-inside" | "center" | "bottom" | "bottom-inside">;
 
             /**
              * Edge label alignment:

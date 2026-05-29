@@ -1,6 +1,7 @@
 import * as math from '../../../../math.mjs';
 import * as is from '../../../../is.mjs';
 import * as util from '../../../../util/index.mjs';
+import { labelJustification } from '../../../../style/align.mjs';
 
 let BRp = {};
 
@@ -25,8 +26,16 @@ BRp.recalculateNodeLabelProjection = function( node ){
       textX = nodePos.x - nodeWidth / 2 - padding;
       break;
 
+    case 'left-inside':
+      textX = nodePos.x - nodeWidth / 2 + padding;
+      break;
+
     case 'right':
       textX = nodePos.x + nodeWidth / 2 + padding;
+      break;
+
+    case 'right-inside':
+      textX = nodePos.x + nodeWidth / 2 - padding;
       break;
 
     default: // e.g. center
@@ -38,8 +47,16 @@ BRp.recalculateNodeLabelProjection = function( node ){
       textY = nodePos.y - nodeHeight / 2 - padding;
       break;
 
+    case 'top-inside':
+      textY = nodePos.y - nodeHeight / 2 + padding;
+      break;
+
     case 'bottom':
       textY = nodePos.y + nodeHeight / 2 + padding;
+      break;
+
+    case 'bottom-inside':
+      textY = nodePos.y + nodeHeight / 2 - padding;
       break;
 
     default: // e.g. middle
@@ -460,14 +477,7 @@ BRp.getLabelJustification = function(ele){
 
   if( justification === 'auto' ){
     if( ele.isNode() ){
-      switch( textHalign ){
-        case 'left':
-          return 'right';
-        case 'right':
-          return 'left';
-        default:
-          return 'center';
-      }
+      return labelJustification( textHalign );
     } else {
       return 'center';
     }

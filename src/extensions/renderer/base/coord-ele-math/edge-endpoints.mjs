@@ -1,6 +1,7 @@
 import * as math from '../../../../math.mjs';
 import * as is from '../../../../is.mjs';
 import {endsWith} from "../../../../util/index.mjs";
+import { labelHalign, labelValign } from '../../../../style/align.mjs';
 
 let BRp = {};
 
@@ -155,6 +156,7 @@ BRp.findEndpoints = function( edge ){
       let lh2 = lh/2;
 
       let va = target.pstyle('text-valign').value;
+      va = labelValign( va );
       if( va === 'top' ){
         ly -= lh2;
       } else if( va === 'bottom' ){
@@ -162,6 +164,7 @@ BRp.findEndpoints = function( edge ){
       }
 
       let ha = target.pstyle('text-halign').value;
+      ha = labelHalign( ha );
       if( ha === 'left' ){
         lx -= lw2;
       } else if( ha === 'right' ){
@@ -247,6 +250,7 @@ BRp.findEndpoints = function( edge ){
       let lh2 = lh/2;
 
       let va = source.pstyle('text-valign').value;
+      va = labelValign( va );
       if( va === 'top' ){
         ly -= lh2;
       } else if( va === 'bottom' ){
@@ -254,6 +258,7 @@ BRp.findEndpoints = function( edge ){
       }
 
       let ha = source.pstyle('text-halign').value;
+      ha = labelHalign( ha );
       if( ha === 'left' ){
         lx -= lw2;
       } else if( ha === 'right' ){

@@ -2,23 +2,17 @@ name: Patch Release
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to run the action on'
-        required: true
-        default: 'master'
 
-jobs:  
+jobs:
   patch-release:
     runs-on: ubuntu-latest
     environment: prod
     steps:
-      - name: Extract branch name
+      - name: Set branch name
         shell: bash
-        id: extract_branch
         run: |
-          echo "BRANCH=${{ github.event.inputs.branch }}" >> $GITHUB_ENV
-          echo "Branch: " $BRANCH
+          echo "BRANCH=master" >> $GITHUB_ENV
+          echo "Branch: master"
       - name: checkout patch branch
         uses: actions/checkout@v6
         with:
@@ -41,7 +35,7 @@ jobs:
           . ./.github/workflows/scripts/new-patch-version.sh
         shell: bash
       - name: See patch branch
-        run: echo branch ${{ env.BRANCH }}
+        run: echo branch $BRANCH
         shell: bash
       - name: See new patch version
         run: echo "# version:" ${{ env.VERSION }}
@@ -87,7 +81,7 @@ jobs:
         id: release
         run: |
           chmod +rx .github/workflows/scripts/pre_release_test.sh
-          . .github/workflows/scripts/pre_release_test.sh ${{ env.BRANCH }}
+          . .github/workflows/scripts/pre_release_test.sh $BRANCH
       - name: Archive action failure results
         uses: actions/upload-artifact@v4
         if: ${{ failure() && steps.release.conclusion == 'failure' }}

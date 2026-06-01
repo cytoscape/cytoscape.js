@@ -1,6 +1,6 @@
 import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
-import { satPolygonIntersection, pointInsidePolygon, pointInsidePolygonPoints } from '../math.mjs';
+import { satPolygonIntersection, pointInsidePolygon, pointInsidePolygonPoints, makeBoundingBox } from '../math.mjs';
 
 let elesfn = ({
   nodes: function( selector ){
@@ -383,12 +383,12 @@ let elesfn = ({
 
   withinBox: function(box) {
     let eles = this;
-    const { x1, y1, x2, y2 } = box;
+    let { x1, y1, x2, y2 } = makeBoundingBox(box);
     let filtered = [];
 
     for (let i = 0, len = eles.length; i < len; i++) {
       const ele = eles[i];
-      const pos = ele._private.position || ele.position(); 
+      const pos = ele._private.position || ele.position();
       if (pos.x >= x1 && pos.x <= x2 && pos.y >= y1 && pos.y <= y2) {
         filtered.push(ele);
       }
@@ -423,15 +423,35 @@ let elesfn = ({
   },
 
   polygonIntersection: function(polygon) {
+    const eles = this;
+    const cy = eles.cy();
+
+    if( cy.styleEnabled() ){
+      this.recalculateRenderedStyle();
+    }
+
     const matches = [];
 
-    for (let i = 0; i < this.length; i++) {
-      const ele = this[i];
+    for (let i = 0; i < eles.length; i++) {
+      const ele = eles[i];
+      const bb = ele._private.bodyBounds;
 
-      const elePoly = ele.actualLabelBoundingBox();
-      if (!elePoly || !elePoly.length) continue;
+      if (bb) {
+        const bodyPoly = [
+          { x: bb.x1, y: bb.y1 },
+          { x: bb.x2, y: bb.y1 },
+          { x: bb.x2, y: bb.y2 },
+          { x: bb.x1, y: bb.y2 }
+        ];
 
-      if (satPolygonIntersection(elePoly, polygon)) {
+        if (satPolygonIntersection(bodyPoly, polygon)) {
+          matches.push(ele);
+          continue;
+        }
+      }
+
+      const labelPoly = ele.actualLabelBoundingBox();
+      if (labelPoly && labelPoly.length && satPolygonIntersection(labelPoly, polygon)) {
         matches.push(ele);
       }
     }

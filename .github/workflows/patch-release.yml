@@ -11,6 +11,7 @@ on:
 jobs:  
   patch-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: prod
     steps:
       - name: Extract branch name

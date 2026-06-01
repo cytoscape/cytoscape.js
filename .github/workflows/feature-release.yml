@@ -12,6 +12,7 @@ jobs:
   feature-release:
     runs-on: ubuntu-latest
     environment: prod
+    timeout-minutes: 10
 
     steps:
       - name: checkout unstable branch

@@ -87,6 +87,30 @@
   },
 
   {
+    "selector": ".top-inside-left-inside",
+    "style": {
+      "text-valign": "top-inside",
+      "text-halign": "left-inside"
+    }
+  },
+
+  {
+    "selector": ".center-left-inside",
+    "style": {
+      "text-valign": "center",
+      "text-halign": "left-inside"
+    }
+  },
+
+  {
+    "selector": ".bottom-inside-right-inside",
+    "style": {
+      "text-valign": "bottom-inside",
+      "text-halign": "right-inside"
+    }
+  },
+
+  {
     "selector": ".multiline-manual",
     "style": {
       "text-wrap": "wrap"

@@ -695,8 +695,8 @@ Wrapping text:
 
 Node label alignment:
 
- * **`text-halign`** : The horizontal alignment of a node's label; may have value `left`, `center`, or `right`.
- * **`text-valign`** : The vertical alignment of a node's label; may have value `top`, `center`, or `bottom`.
+ * **`text-halign`** : The horizontal alignment of a node's label; may have value `left`, `left-inside`, `center`, `right`, or `right-inside`.
+ * **`text-valign`** : The vertical alignment of a node's label; may have value `top`, `top-inside`, `center`, `bottom`, or `bottom-inside`.
 
 Edge label alignment:
 

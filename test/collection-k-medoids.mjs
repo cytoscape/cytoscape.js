@@ -270,5 +270,33 @@ describe('Algorithms', function(){
       expect(cltrIExpected(1), '1st cluster expected').to.be.true;
     });
 
+    // Shared attribute accessors for the input-validation tests below.
+    var validationAttributes = [
+      function(node){ return node.data('attrA'); },
+      function(node){ return node.data('attrB'); }
+    ];
+
+    it('throws when k exceeds the number of nodes', function(){
+      // Regression: previously looped forever because randomMedoids() could
+      // never pick k unique medoids. It should fail loudly instead of hanging.
+      expect(function(){
+        cy.elements().kMedoids({
+          k: nodes.length + 1,
+          attributes: validationAttributes
+        });
+      }).to.throw(/cannot exceed the number of nodes/);
+    });
+
+    it('throws for an empty collection instead of hanging', function(){
+      var emptyCy = cytoscape({ headless: true, elements: { nodes: [] } });
+
+      expect(function(){
+        emptyCy.elements().kMedoids({
+          k: 2,
+          attributes: validationAttributes
+        });
+      }).to.throw(/cannot exceed the number of nodes/);
+    });
+
   });
 });

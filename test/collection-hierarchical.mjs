@@ -269,6 +269,57 @@ describe('Algorithms', function(){
         expect(clustersAtLevel2[3][1].id()).to.equal('F');
         expect(clustersAtLevel2[3][2].id()).to.equal('D');
       });
+
+      it('addDendrogram adds a new node and edges', function(){
+        var dendroCy = cytoscape({
+          elements: {
+            nodes: [
+              { data: { id: 'A', X1: 0, X2: 0 } },
+              { data: { id: 'B', X1: 1, X2: 1 } }
+            ]
+          }
+        });
+
+        var opts = {
+          distance: 'euclidean',
+          linkage: 'min',
+          attributes: [
+            function(node){
+              return node.data('X1');
+            },
+            function(node){
+              return node.data('X2');
+            }
+          ],
+          mode: 'dendrogram',
+          dendrogramDepth: 0,
+          addDendrogram: true
+        };
+
+        var originalIds = dendroCy.nodes().map(function(node){
+          return node.id();
+        });
+        var originalEdgeCount = dendroCy.edges().length;
+
+        dendroCy.elements().hierarchicalClustering( opts );
+
+        var newNodes = dendroCy.nodes().filter(function(node){
+          return originalIds.indexOf(node.id()) === -1;
+        });
+
+        expect(newNodes.length).to.equal(1);
+
+        var dendroNode = newNodes[0];
+        var incoming = dendroCy.edges().filter(function(edge){
+          return edge.target().id() === dendroNode.id();
+        });
+
+        expect(incoming.length).to.equal(2);
+        incoming.forEach(function(edge){
+          expect(originalIds.indexOf(edge.source().id()) !== -1).to.be.true;
+        });
+        expect(dendroCy.edges().length).to.equal(originalEdgeCount + 2);
+      });
     }
 
   });

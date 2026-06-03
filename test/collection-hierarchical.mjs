@@ -320,6 +320,44 @@ describe('Algorithms', function(){
         });
         expect(dendroCy.edges().length).to.equal(originalEdgeCount + 2);
       });
+
+      // Shared base for the empty-collection cases; tests override addDendrogram.
+      function emptyDendrogramOpts( overrides ){
+        return Object.assign({
+          distance: 'euclidean',
+          linkage: 'min',
+          attributes: [
+            function(node){ return node.data('X1'); },
+            function(node){ return node.data('X2'); }
+          ],
+          mode: 'dendrogram',
+          dendrogramDepth: 0,
+          addDendrogram: false
+        }, overrides);
+      }
+
+      it('returns an empty array for an empty collection (dendrogram mode)', function(){
+        var emptyCy = cytoscape({ elements: { nodes: [] } });
+
+        // Regression: previously threw `TypeError: Cannot read properties of
+        // undefined (reading 'key')` on an empty collection, while threshold
+        // mode returned []. Dendrogram mode should be consistent.
+        var clusters = emptyCy.elements().hierarchicalClustering( emptyDendrogramOpts() );
+
+        expect(clusters).to.exist;
+        expect(Array.isArray(clusters)).to.be.true;
+        expect(clusters.length).to.equal(0);
+      });
+
+      it('does not add dendrogram nodes/edges for an empty collection', function(){
+        var emptyCy = cytoscape({ elements: { nodes: [] } });
+
+        var clusters = emptyCy.elements().hierarchicalClustering( emptyDendrogramOpts({ addDendrogram: true }) );
+
+        expect(clusters.length).to.equal(0);
+        expect(emptyCy.nodes().length).to.equal(0);
+        expect(emptyCy.edges().length).to.equal(0);
+      });
     }
 
   });

@@ -1026,4 +1026,53 @@
     }
   });
 
+  test({
+    name: "addEdgesNoNodes",
+    displayName: "Add edges with zero nodes",
+    description: "Sets Nodes=0 and Edges=1 then clicks Add. Expect no crash and no edges when the graph is empty.",
+
+    setup: function(){
+      var nodesInput = $('#nodes-number');
+      var edgesInput = $('#edges-number');
+      var addButton = $('#add-elements-button');
+
+      cy.scratch('prevEles', cy.elements().jsons());
+      cy.elements().remove();
+
+      cy.scratch('prevAddRemoveInputs', {
+        nodes: nodesInput.value,
+        edges: edgesInput.value
+      });
+
+      nodesInput.value = 0;
+      edgesInput.value = 1;
+
+      addButton.click();
+
+      if( cy.edges().length === 0 ){
+        notify('Add/Remove', 'No edges added when nodes=0 (expected).');
+      } else {
+        notify('Add/Remove', 'Edges were added with nodes=0 (unexpected).');
+      }
+    },
+
+    teardown: function(){
+      var nodesInput = $('#nodes-number');
+      var edgesInput = $('#edges-number');
+      var prevInputs = cy.scratch('prevAddRemoveInputs');
+
+      if( prevInputs ){
+        nodesInput.value = prevInputs.nodes;
+        edgesInput.value = prevInputs.edges;
+        cy.removeScratch('prevAddRemoveInputs');
+      }
+
+      var prevEles = cy.scratch('prevEles');
+      if( prevEles ){
+        cy.add(prevEles);
+        cy.removeScratch('prevEles');
+      }
+    }
+  });
+
 })();

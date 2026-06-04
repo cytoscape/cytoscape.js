@@ -72,6 +72,105 @@ BRp.invalidateContainerClientCoordsCache = function(){
   this.containerBB = null;
 };
 
+// Returns true if (x, y) is inside the label of ele.
+BRp.checkLabelHitAt = function( ele, x, y, prefix, th ){
+  var _p = ele._private;
+  var prefixDash = prefix ? prefix + '-' : '';
+
+  ele.boundingBox();
+  var bb = _p.labelBounds[ prefix || 'main' ];
+  var text = ele.pstyle( prefixDash + 'label' ).value;
+  var eventsEnabled = ele.pstyle( 'text-events' ).strValue === 'yes';
+
+  if( !eventsEnabled || !text || !bb ){ return false; }
+
+  var lx = util.getPrefixedProperty( _p.rscratch, 'labelX', prefix );
+  var ly = util.getPrefixedProperty( _p.rscratch, 'labelY', prefix );
+  var theta = util.getPrefixedProperty( _p.rscratch, 'labelAngle', prefix );
+  var ox = ele.pstyle( prefixDash + 'text-margin-x' ).pfValue;
+  var oy = ele.pstyle( prefixDash + 'text-margin-y' ).pfValue;
+
+  var lx1 = bb.x1 - th - ox;
+  var lx2 = bb.x2 + th - ox;
+  var ly1 = bb.y1 - th - oy;
+  var ly2 = bb.y2 + th - oy;
+
+  if( theta ){
+    var cos = Math.cos( theta );
+    var sin = Math.sin( theta );
+    var rotate = function( px, py ){
+      px = px - lx; py = py - ly;
+      return { x: px * cos - py * sin + lx, y: px * sin + py * cos + ly };
+    };
+    var px1y1 = rotate( lx1, ly1 );
+    var px1y2 = rotate( lx1, ly2 );
+    var px2y1 = rotate( lx2, ly1 );
+    var px2y2 = rotate( lx2, ly2 );
+    var points = [
+      px1y1.x + ox, px1y1.y + oy,
+      px2y1.x + ox, px2y1.y + oy,
+      px2y2.x + ox, px2y2.y + oy,
+      px1y2.x + ox, px1y2.y + oy
+    ];
+    return math.pointInsidePolygonPoints( x, y, points );
+  } else {
+    return math.inBoundingBox( bb, x, y );
+  }
+};
+
+// Returns all elements from eles that are hit by (x, y), sorted topmost first.
+// options: { includeBody: true, includeLabels: true, isTouch: false }
+BRp.hitTestAt = function( x, y, eles, options ){
+  var r = this;
+  var zoom = r.cy.zoom();
+  var opts = options || {};
+  var isTouch = opts.isTouch;
+  var includeBody   = opts.includeBody   !== false;
+  var includeLabels = opts.includeLabels !== false;
+  var nodeThreshold  = ( isTouch ? 8 : 2 ) / zoom;
+  var labelThreshold = ( isTouch ? 8 : 2 ) / zoom;
+
+  var eleIds = new Set();
+  for( var i = 0; i < eles.length; i++ ){ eleIds.add( eles[i]._private.data.id ); }
+
+  var zSorted = r.getCachedZSortedEles();
+  var matches = [];
+
+  for( var i = zSorted.length - 1; i >= 0; i-- ){ // reverse = topmost first
+    var ele = zSorted[ i ];
+    if( !eleIds.has( ele._private.data.id ) ){ continue; }
+
+    var hit = false;
+
+    if( ele.isNode() ){
+      if( includeBody ){
+        var width  = ele.outerWidth()  + 2 * nodeThreshold;
+        var height = ele.outerHeight() + 2 * nodeThreshold;
+        var pos    = ele.position();
+        if( pos.x - width/2 <= x && x <= pos.x + width/2 &&
+            pos.y - height/2 <= y && y <= pos.y + height/2 ){
+          var cornerRadius = ele.pstyle('corner-radius').value === 'auto' ? 'auto' : ele.pstyle('corner-radius').pfValue;
+          var shape = r.nodeShapes[ r.getNodeShape( ele ) ];
+          hit = shape.checkPoint( x, y, 0, width, height, pos.x, pos.y, cornerRadius, ele._private.rscratch );
+        }
+      }
+      if( !hit && includeLabels ){
+        hit = r.checkLabelHitAt( ele, x, y, null, labelThreshold );
+      }
+    } else { // edge
+      if( includeLabels ){
+        hit = r.checkLabelHitAt( ele, x, y, null,     labelThreshold )
+           || r.checkLabelHitAt( ele, x, y, 'source', labelThreshold )
+           || r.checkLabelHitAt( ele, x, y, 'target', labelThreshold );
+      }
+    }
+
+    if( hit ){ matches.push( ele ); }
+  }
+
+  return matches;
+};
+
 BRp.findNearestElement = function( x, y, interactiveElementsOnly, isTouch ){
   return this.findNearestElements( x, y, interactiveElementsOnly, isTouch )[0];
 };

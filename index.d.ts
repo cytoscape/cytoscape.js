@@ -3011,9 +3011,8 @@ declare namespace cytoscape {
             ele: SingularElementReturnValue;
         };
         /**
-         * Returns a new collection containing nodes whose position lies inside
-         * the specified rectangular box in model coordinates.
-         * This is a spatial filter based on element positions.
+         * Returns subset of collection within the given box, using the
+         * renderer's box-selection rules
          *
          * @param box BoundingBox12 & BoundingBoxWH
          */
@@ -3027,13 +3026,13 @@ declare namespace cytoscape {
          */
         polygonIntersection(polygon: PolygonBoundingBox): Collection<TIn>;
         /**
-         * Returns a new collection containing nodes whose label polygon bounds
-         * contain the specified point (in model coordinates).
-         * This is useful for hit-testing clicks inside rendered labels.
+         * Returns elements from collection that are hit by the given position,
+         * sorted topmost first (by z-order); also works with rotated labels.
          *
-         * @param point The point in model coordinates {x, y}
+         * @param pos        The point in model coordinates {x, y}
+         * @param options    What to include in the hit test
          */
-        labelsContainPoint(point: Position): Collection<TIn>;
+        hit(pos: Position, options?: HitTestOptions): Collection<TIn>;
     }
 
     /**
@@ -6264,6 +6263,11 @@ declare namespace cytoscape {
         h: number;
     }
     type PolygonBoundingBox = Position[];
+    interface HitTestOptions {
+        includeBody?: boolean;
+        includeLabels?: boolean;
+        isTouch?: boolean;
+    }
     interface AnimatedLayoutOptions {
         // whether to transition the node positions
         animate?: boolean;

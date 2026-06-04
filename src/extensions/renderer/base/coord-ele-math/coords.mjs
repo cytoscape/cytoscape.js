@@ -119,14 +119,16 @@ BRp.checkLabelHitAt = function( ele, x, y, prefix, th ){
 };
 
 // Returns all elements from eles that are hit by (x, y), sorted topmost first.
-// options: { includeBody: true, includeLabels: true, isTouch: false }
+// options: { includeBody, includeMainLabels, includeSourceLabels, includeTargetLabels, isTouch }
 BRp.hitTestAt = function( x, y, eles, options ){
   var r = this;
   var zoom = r.cy.zoom();
   var opts = options || {};
-  var isTouch = opts.isTouch;
-  var includeBody   = opts.includeBody   !== false;
-  var includeLabels = opts.includeLabels !== false;
+  var isTouch            = opts.isTouch;
+  var includeBody        = opts.includeBody        !== false;
+  var includeMainLabels  = opts.includeMainLabels  !== false;
+  var includeSourceLabels = opts.includeSourceLabels !== false;
+  var includeTargetLabels = opts.includeTargetLabels !== false;
   var nodeThreshold  = ( isTouch ? 8 : 2 ) / zoom;
   var labelThreshold = ( isTouch ? 8 : 2 ) / zoom;
 
@@ -154,14 +156,18 @@ BRp.hitTestAt = function( x, y, eles, options ){
           hit = shape.checkPoint( x, y, 0, width, height, pos.x, pos.y, cornerRadius, ele._private.rscratch );
         }
       }
-      if( !hit && includeLabels ){
+      if( !hit && includeMainLabels ){
         hit = r.checkLabelHitAt( ele, x, y, null, labelThreshold );
       }
     } else { // edge
-      if( includeLabels ){
-        hit = r.checkLabelHitAt( ele, x, y, null,     labelThreshold )
-           || r.checkLabelHitAt( ele, x, y, 'source', labelThreshold )
-           || r.checkLabelHitAt( ele, x, y, 'target', labelThreshold );
+      if( includeMainLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, null,     labelThreshold );
+      }
+      if( includeSourceLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, 'source', labelThreshold );
+      }
+      if( includeTargetLabels ){
+        hit = hit || r.checkLabelHitAt( ele, x, y, 'target', labelThreshold );
       }
     }
 

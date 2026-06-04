@@ -6265,7 +6265,9 @@ declare namespace cytoscape {
     type PolygonBoundingBox = Position[];
     interface HitTestOptions {
         includeBody?: boolean;
-        includeLabels?: boolean;
+        includeMainLabels?: boolean;
+        includeSourceLabels?: boolean;
+        includeTargetLabels?: boolean;
         isTouch?: boolean;
     }
     interface AnimatedLayoutOptions {

@@ -237,6 +237,13 @@ let hierarchicalClustering = function( options ){
   let cy    = this.cy();
   let nodes = this.nodes();
 
+  // Nothing to cluster: return no clusters and add no dendrogram. Handles the
+  // empty case locally so dendrogram mode never indexes into empty `clusters`
+  // (which previously threw a TypeError), and keeps both modes consistent.
+  if ( nodes.length === 0 ){
+    return [];
+  }
+
   // Set parameters of algorithm: linkage type, distance metric, etc.
   let opts = setOptions( options );
 

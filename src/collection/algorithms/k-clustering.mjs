@@ -248,6 +248,13 @@ let kMedoids = function( options ) {
   let node  = null;
   let opts  = setOptions( options );
 
+  // k distinct medoids are required, so k cannot exceed the number of nodes.
+  // Otherwise randomMedoids() can never pick k unique nodes and loops forever
+  // (e.g. an empty collection, where it also reads from an empty node list).
+  if ( opts.k > nodes.length ) {
+    util.error(`kMedoids: k (${opts.k}) cannot exceed the number of nodes (${nodes.length}).`);
+  }
+
   // Begin k-medoids algorithm
   let clusters = new Array(opts.k);
   let medoids;

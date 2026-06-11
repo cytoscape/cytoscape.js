@@ -1,8 +1,5 @@
-import nodeResolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
 import babel from '@rollup/plugin-babel';
 import replace from '@rollup/plugin-replace';
-import terser from '@rollup/plugin-terser';
 import license from 'rollup-plugin-license';
 import path from 'path';
 
@@ -37,9 +34,6 @@ const getBabelOptions = () => ({
   babelHelpers: 'bundled'
 });
 
-// Ignore all node_modules dependencies
-const isExternal = id => !id.startsWith('\0') && !id.startsWith('.') && !id.startsWith('/');
-
 const licenseHeaderOptions = {
   sourcemap: true,
   banner: {
@@ -49,6 +43,8 @@ const licenseHeaderOptions = {
   }
 };
 
+// Node resolution and CommonJS interop are handled natively by rolldown,
+// so @rollup/plugin-node-resolve and @rollup/plugin-commonjs are no longer needed.
 const configs = [
   {
     input,
@@ -59,8 +55,6 @@ const configs = [
       sourcemap: SOURCEMAPS ? 'inline' : false
     },
     plugins: [
-      nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(replaceOptions),
       license(licenseHeaderOptions)
@@ -72,14 +66,12 @@ const configs = [
     output: {
       file: 'build/cytoscape.min.js',
       format: 'umd',
-      name
+      name,
+      minify: true
     },
     plugins: [
-      nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(replaceOptions),
-      terser(),
       license(licenseHeaderOptions)
     ]
   },
@@ -88,15 +80,13 @@ const configs = [
     input,
     output: {
       file: 'build/cytoscape.esm.min.mjs',
-      format: 'es'
+      format: 'es',
+      minify: true
     },
     plugins: [
-      nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(replaceOptions),
-      license(licenseHeaderOptions),
-      terser()
+      license(licenseHeaderOptions)
     ]
   },
 
@@ -104,8 +94,6 @@ const configs = [
     input,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
     plugins: [
-      nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(replaceOptions),
       license(licenseHeaderOptions)
@@ -116,8 +104,6 @@ const configs = [
     input,
     output: { file: 'build/cytoscape.esm.mjs', format: 'es' },
     plugins: [
-      nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(replaceOptions),
       license(licenseHeaderOptions)

@@ -229,7 +229,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 styfn.updateStyleHints = function(ele){
   let _p = ele._private;
   let self = this;
-  let propNames = self.propertyGroupNames;
+  let propNames;
   let propGrKeys = self.propertyGroupKeys;
   let propHash = ( ele, propNames, seedKey ) => self.getPropertiesHash( ele, propNames, seedKey );
   let oldStyleKey = _p.styleKey;
@@ -450,7 +450,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       )
     )
   ){
-    prop = parsedProp = this.parse( parsedProp.name, 'bezier', propIsBypass );
+    prop = this.parse( parsedProp.name, 'bezier', propIsBypass );
   }
 
   if( prop.delete ){ // delete the property and use the default value on falsey value

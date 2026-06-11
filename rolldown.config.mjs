@@ -19,6 +19,15 @@ const input = './src/index.mjs';
 
 const name = 'cytoscape';
 
+// During the TypeScript migration, import specifiers keep their original
+// '.mjs' extension while files are renamed to '.mts' one at a time. This
+// alias makes rolldown try foo.mts first when resolving './foo.mjs'.
+const resolve = {
+  extensionAlias: {
+    '.mjs': ['.mts', '.mjs']
+  }
+};
+
 const envVariables = {
   'process.env.VERSION': JSON.stringify(VERSION),
   'process.env.NODE_ENV': JSON.stringify(NODE_ENV)
@@ -48,6 +57,7 @@ const licenseHeaderOptions = {
 const configs = [
   {
     input,
+    resolve,
     output: {
       file: 'build/cytoscape.umd.js',
       format: 'umd',
@@ -63,6 +73,7 @@ const configs = [
 
   {
     input,
+    resolve,
     output: {
       file: 'build/cytoscape.min.js',
       format: 'umd',
@@ -78,6 +89,7 @@ const configs = [
 
   {
     input,
+    resolve,
     output: {
       file: 'build/cytoscape.esm.min.mjs',
       format: 'es',
@@ -92,6 +104,7 @@ const configs = [
 
   {
     input,
+    resolve,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
     plugins: [
       BABEL ? babel(getBabelOptions()) : {},
@@ -102,6 +115,7 @@ const configs = [
 
   {
     input,
+    resolve,
     output: { file: 'build/cytoscape.esm.mjs', format: 'es' },
     plugins: [
       BABEL ? babel(getBabelOptions()) : {},

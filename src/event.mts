@@ -6,39 +6,71 @@ https://tldrlegal.com/license/mit-license
 https://github.com/jquery/jquery/blob/master/src/event.js
 */
 
-let Event = function( src, props ){
-  this.recycle( src, props );
-};
+import type { Position, CoreShim } from './types.mjs';
 
-function returnFalse(){
+type NativeEvent = globalThis.Event;
+
+export interface EventProps {
+  originalEvent?: NativeEvent;
+  type?: string;
+  cy?: CoreShim;
+  target?: unknown;
+  position?: Position;
+  renderedPosition?: Position;
+  namespace?: string | null;
+  layout?: unknown;
+  timeStamp?: number;
+}
+
+export type EventSrc = string | NativeEvent | EventProps | null | undefined;
+
+function returnFalse(): boolean {
   return false;
 }
 
-function returnTrue(){
+function returnTrue(): boolean {
   return true;
 }
 
 // http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
-Event.prototype = {
-  instanceString: function(){
-    return 'event';
-  },
+class Event {
+  type!: string;
+  originalEvent?: NativeEvent;
+  cy?: CoreShim;
+  target?: unknown;
+  position?: Position;
+  renderedPosition?: Position;
+  namespace?: string | null;
+  layout?: unknown;
+  timeStamp!: number;
 
-  recycle: function( src, props ){
+  isDefaultPrevented: () => boolean = returnFalse;
+  isPropagationStopped: () => boolean = returnFalse;
+  isImmediatePropagationStopped: () => boolean = returnFalse;
+
+  constructor( src: EventSrc, props?: EventProps ){
+    this.recycle( src, props );
+  }
+
+  instanceString(): string {
+    return 'event';
+  }
+
+  recycle( src: EventSrc, props?: EventProps ): void {
     this.isImmediatePropagationStopped = this.isPropagationStopped = this.isDefaultPrevented = returnFalse;
 
-    if( src != null && src.preventDefault ){ // Browser Event object
+    if( src != null && typeof src !== 'string' && 'preventDefault' in src && typeof src.preventDefault === 'function' ){ // Browser Event object
       this.type = src.type;
 
       // Events bubbling up the document may have been marked as prevented
       // by a handler lower down the tree; reflect the correct value.
       this.isDefaultPrevented = ( src.defaultPrevented ) ? returnTrue : returnFalse;
 
-    } else if( src != null && src.type ){ // Plain object containing all event details
-      props = src;
+    } else if( src != null && typeof src !== 'string' && src.type ){ // Plain object containing all event details
+      props = src as EventProps;
 
     } else { // Event string
-      this.type = src;
+      this.type = src as string;
     }
 
     // Put explicitly provided properties onto the event object
@@ -67,10 +99,10 @@ Event.prototype = {
     }
 
     // Create a timestamp if incoming event doesn't have one
-    this.timeStamp = src && src.timeStamp || Date.now();
-  },
+    this.timeStamp = ( src && typeof src !== 'string' && src.timeStamp ) || Date.now();
+  }
 
-  preventDefault: function(){
+  preventDefault(): void {
     this.isDefaultPrevented = returnTrue;
 
     let e = this.originalEvent;
@@ -82,9 +114,9 @@ Event.prototype = {
     if( e.preventDefault ){
       e.preventDefault();
     }
-  },
+  }
 
-  stopPropagation: function(){
+  stopPropagation(): void {
     this.isPropagationStopped = returnTrue;
 
     let e = this.originalEvent;
@@ -96,16 +128,12 @@ Event.prototype = {
     if( e.stopPropagation ){
       e.stopPropagation();
     }
-  },
+  }
 
-  stopImmediatePropagation: function(){
+  stopImmediatePropagation(): void {
     this.isImmediatePropagationStopped = returnTrue;
     this.stopPropagation();
-  },
-
-  isDefaultPrevented: returnFalse,
-  isPropagationStopped: returnFalse,
-  isImmediatePropagationStopped: returnFalse
-};
+  }
+}
 
 export default Event;

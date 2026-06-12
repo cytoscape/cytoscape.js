@@ -6,12 +6,22 @@
 // and consumed the way the hand-written index.d.ts was.
 
 import cytoscape from '../../build/dts/index.js';
-import type { Core, Collection, Element, CytoscapeOptions, NodeCollection, EdgeCollection, NodeSingular } from '../../build/dts/index.js';
+import type { Core, Collection, Css, Element, CytoscapeOptions, NodeCollection, EdgeCollection, NodeSingular, StyleJsonBlock } from '../../build/dts/index.js';
 
 // factory: create an instance
 const opts: CytoscapeOptions = {
   headless: true,
   styleEnabled: true,
+  style: [
+    {
+      selector: 'node',
+      style: {
+        'background-color': 'red',
+        width: ( ele ) => ele.data('w') as number,
+        shape: 'ellipse'
+      }
+    }
+  ],
   elements: [
     { data: { id: 'a' } },
     { data: { id: 'b' } },
@@ -59,5 +69,22 @@ layout.run();
 cytoscape.use(() => {});
 const v: string = cytoscape.version;
 
+const nodeCss: Css.Node = {
+  'background-color': 'blue',
+  'transition-timing-function': 'ease-in-out',
+  shape: 'round-rectangle'
+};
+
+const styleJsonBlock: StyleJsonBlock = {
+  selector: 'core',
+  style: { 'selection-box-color': 'red' }
+};
+
+cytoscape.stylesheet()
+  .selector('node')
+  .style(nodeCss)
+  .selector('edge')
+  .css({ 'line-color': 'black', 'target-arrow-shape': 'triangle' });
+
 // silence unused-locals
-void [all, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v];
+void [all, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v, styleJsonBlock];

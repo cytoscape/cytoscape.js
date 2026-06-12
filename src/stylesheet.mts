@@ -1,6 +1,7 @@
 import * as is from './is.mjs';
 import Style from './style/index.mjs';
 import { dash2camel } from './util/index.mjs';
+import type { Css } from './style/css-types.mjs';
 
 export interface StylesheetProperty {
   name: string;
@@ -18,8 +19,8 @@ export interface Stylesheet {
   [index: number]: StylesheetContext;
   instanceString(): string;
   selector( selector: string ): Stylesheet;
-  css( name: string | Record<string, unknown>, value?: unknown ): Stylesheet;
-  style( name: string | Record<string, unknown>, value?: unknown ): Stylesheet;
+  css( name: string | Css.Node | Css.Edge | Css.Core, value?: unknown ): Stylesheet;
+  style( name: string | Css.Node | Css.Edge | Css.Core, value?: unknown ): Stylesheet;
   generateStyle( cy: unknown ): unknown;
   appendToStyle<S>( style: S ): S;
 }
@@ -27,7 +28,7 @@ export interface Stylesheet {
 // callable with or without `new` (it guards internally), so it must stay a
 // constructor function rather than become an ES class
 export interface StylesheetStatic {
-  ( this: Stylesheet | void ): Stylesheet;
+  ( this: unknown ): Stylesheet;
   new (): Stylesheet;
   prototype: Stylesheet;
 }

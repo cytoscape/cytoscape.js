@@ -14,6 +14,7 @@ import type { SetLike } from '../set.mjs';
 import type Animation from '../animation.mjs';
 import type Emitter from '../emitter.mjs';
 import type { ParsedStyleProperty } from '../style/parse.mjs';
+import type { Css } from '../style/css-types.mjs';
 
 // per-mixin contribution interfaces (each mixin file exports its own)
 import type { CollectionAlgorithms } from './algorithms/index.mjs';
@@ -116,8 +117,8 @@ export interface ElementDefinition {
   grabbable?: boolean;
   pannable?: boolean;
   classes?: string | string[];
-  style?: Record<string, unknown>;
-  css?: Record<string, unknown>;
+  style?: Css.Node | Css.Edge;
+  css?: Css.Node | Css.Edge;
   scratch?: Record<string, unknown>;
   parent?: Element | null;
 }

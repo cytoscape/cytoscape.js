@@ -29,6 +29,8 @@ export type {
   Singular
 } from './collection/eles-types.mjs';
 export type { Position, BoundingBox } from './types.mjs';
+export type { Css } from './style/css-types.mjs';
+export type { StyleJsonBlock, StyleJson } from './style/json.mjs';
 
 /** A plugin registrant, as passed to `cytoscape.use(ext)`. */
 export type CytoscapeExtension = ( cy: CytoscapeFactory, ...args: unknown[] ) => void;

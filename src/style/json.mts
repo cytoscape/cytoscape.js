@@ -1,11 +1,14 @@
 import type { Style } from './index.mjs';
+import type { Css } from './css-types.mjs';
 
 /** A JSON stylesheet block: a selector and its style properties. */
 export interface StyleJsonBlock {
   selector: string;
-  style?: Record<string, unknown>;
-  css?: Record<string, unknown>;
+  style?: Css.Node | Css.Edge | Css.Core;
+  css?: Css.Node | Css.Edge | Css.Core;
 }
+
+export type StyleJson = StyleJsonBlock[];
 
 export interface JsonStyfn {
   appendFromJson( this: Style, json: StyleJsonBlock[] ): Style;

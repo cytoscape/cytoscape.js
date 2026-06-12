@@ -13,6 +13,7 @@ import parse, { type ParseStyfn, type ParsedStyleProperty, type ParseResult } fr
 
 import type { CoreShim } from '../types.mjs';
 import type { PromiseLikeObject } from '../promise.mjs';
+import type { Css } from './css-types.mjs';
 
 /**
  * Minimal structural view of a Selector instance, as used by style code.
@@ -146,7 +147,7 @@ export interface Style extends ApplyStyfn, BypassStyfn, ContainerStyfn, GetForEl
   core( propName: string ): ParseResult;
   selector( selectorStr: string ): Style;
   css(): Style;
-  css( map: Record<string, unknown> ): Style;
+  css( map: Css.Node | Css.Edge | Css.Core ): Style;
   css( name: string, value: unknown ): Style;
   style: Style['css'];
   cssRule( name: string, value: unknown ): Style;

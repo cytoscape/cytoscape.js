@@ -4,6 +4,7 @@
 // runtime prototype assembly (parallel to collection/eles-types.mts).
 
 import type { Collection, Element, CoreStyleAccess, CoreRendererAccess, ElementDefinition } from '../collection/eles-types.mjs';
+import type { StyleJson } from '../style/json.mjs';
 import type { Position, BoundingBox } from '../types.mjs';
 import type Emitter from '../emitter.mjs';
 import type Animation from '../animation.mjs';
@@ -43,13 +44,16 @@ export interface RendererInstance {
   [key: string]: unknown;
 }
 
+interface StylesheetLike {
+  generateStyle( cy: unknown ): unknown;
+}
+
 /** Options accepted by the `cytoscape(...)` factory. */
 export interface CytoscapeOptions {
   container?: HTMLElement | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- elements accept the broad public json/collection forms
   elements?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- stylesheet accepts many shapes (array, string, fn, promise)
-  style?: any;
+  style?: string | StyleJson | Promise<StyleJson> | StylesheetLike;
   layout?: { name?: string; [key: string]: unknown };
   data?: Record<string, unknown>;
   zoom?: number;

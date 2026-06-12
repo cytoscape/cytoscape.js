@@ -1,29 +1,3 @@
-//#region src/stylesheet.d.mts
-interface StylesheetProperty {
-  name: string;
-  value: unknown;
-}
-interface StylesheetContext {
-  selector: string;
-  properties: StylesheetProperty[];
-}
-interface Stylesheet {
-  length: number;
-  [index: number]: StylesheetContext;
-  instanceString(): string;
-  selector(selector: string): Stylesheet;
-  css(name: string | Record<string, unknown>, value?: unknown): Stylesheet;
-  style(name: string | Record<string, unknown>, value?: unknown): Stylesheet;
-  generateStyle(cy: unknown): unknown;
-  appendToStyle<S>(style: S): S;
-}
-interface StylesheetStatic {
-  (this: Stylesheet | void): Stylesheet;
-  new (): Stylesheet;
-  prototype: Stylesheet;
-}
-declare let Stylesheet: StylesheetStatic;
-//#endregion
 //#region src/types.d.mts
 interface Position {
   x: number;
@@ -581,7 +555,7 @@ interface DiffResult {
 interface CollectionFilter {
   nodes(selector?: FilterArg): NodeCollection;
   edges(selector?: FilterArg): EdgeCollection;
-  filter(filter?: FilterArg, thisArg?: any): Collection;
+  filter(filter?: FilterArg, thisArg?: unknown): Collection;
   not(toRemove?: SetArg): Collection;
   difference(toRemove?: SetArg): Collection;
   relativeComplement(toRemove?: SetArg): Collection;
@@ -1080,17 +1054,17 @@ interface CollectionStyle {
 //#endregion
 //#region src/collection/switch-functions.d.mts
 interface CollectionSwitchFunctions {
-  lock(...args: any[]): Collection;
-  unlock(...args: any[]): Collection;
-  grabify(...args: any[]): Collection;
-  ungrabify(...args: any[]): Collection;
-  select(...args: any[]): Collection;
-  unselect(...args: any[]): Collection;
-  deselect(...args: any[]): Collection;
-  selectify(...args: any[]): Collection;
-  unselectify(...args: any[]): Collection;
-  panify(...args: any[]): Collection;
-  unpanify(...args: any[]): Collection;
+  lock(...args: unknown[]): Collection;
+  unlock(...args: unknown[]): Collection;
+  grabify(...args: unknown[]): Collection;
+  ungrabify(...args: unknown[]): Collection;
+  select(...args: unknown[]): Collection;
+  unselect(...args: unknown[]): Collection;
+  deselect(...args: unknown[]): Collection;
+  selectify(...args: unknown[]): Collection;
+  unselectify(...args: unknown[]): Collection;
+  panify(...args: unknown[]): Collection;
+  unpanify(...args: unknown[]): Collection;
   locked(): boolean | undefined;
   grabbable(): boolean | undefined;
   grabbed(): boolean | undefined;
@@ -1203,8 +1177,8 @@ interface ElementDefinition {
   grabbable?: boolean;
   pannable?: boolean;
   classes?: string | string[];
-  style?: Record<string, unknown>;
-  css?: Record<string, unknown>;
+  style?: Css.Node | Css.Edge;
+  css?: Css.Node | Css.Edge;
   scratch?: Record<string, unknown>;
   parent?: Element$1 | null;
 }
@@ -1254,7 +1228,7 @@ interface Collection extends CollectionBaseFns, CollectionAlgorithms, Collection
 /** A single element (node or edge); array-like of itself, length 1. */
 interface Element$1 extends Collection {}
 type PublicSelectorArg = string | Collection | Element$1 | ((ele: Element$1, i: number, eles: Collection) => boolean | unknown) | undefined | null;
-interface Singular extends Element$1 {}
+type Singular = Element$1;
 interface NodeCollection extends Collection {
   parent(selector?: PublicSelectorArg): NodeCollection;
   parents(selector?: PublicSelectorArg): NodeCollection;
@@ -1283,115 +1257,128 @@ interface EdgeCollection extends Collection {
 type NodeSingular = Singular & NodeCollection;
 type EdgeSingular = Singular & EdgeCollection;
 //#endregion
-//#region src/core/add-remove.d.mts
-/** The shapes accepted by `add()`. */
-type AddOpts = Collection | Element$1 | ElementDefinition | ElementDefinition[] | {
-  nodes?: ElementDefinition[];
-  edges?: ElementDefinition[];
-};
-/** Add/remove element methods contributed to the core prototype. */
-interface CoreAddRemove {
-  add(this: Core, opts: AddOpts): Collection;
-  remove(this: Core, collection: Collection | Element$1 | string): Collection;
+//#region src/style/css-types.d.mts
+declare namespace Css {
+  type Colour = string;
+  type MapperFunction<Element, Type> = (ele: Element) => Type;
+  type PropertyValue<SingularType extends NodeSingular | EdgeSingular | Core, Type> = Type | MapperFunction<SingularType, Type>;
+  type PropertyValueNode<Type> = PropertyValue<NodeSingular, Type>;
+  type PropertyValueEdge<Type> = PropertyValue<EdgeSingular, Type>;
+  type PropertyValueCore<Type> = PropertyValue<Core, Type>;
+  type NodeShape = 'rectangle' | 'roundrectangle' | 'ellipse' | 'triangle' | 'pentagon' | 'hexagon' | 'heptagon' | 'octagon' | 'star' | 'barrel' | 'diamond' | 'vee' | 'rhomboid' | 'polygon' | 'tag' | 'round-rectangle' | 'round-triangle' | 'round-diamond' | 'round-pentagon' | 'round-hexagon' | 'round-heptagon' | 'round-octagon' | 'round-tag' | 'cut-rectangle' | 'bottom-round-rectangle' | 'concave-hexagon';
+  type LineStyle = 'solid' | 'dotted' | 'dashed' | 'double';
+  type ArrowShape = 'tee' | 'vee' | 'triangle' | 'triangle-tee' | 'circle-triangle' | 'triangle-cross' | 'triangle-backcurve' | 'square' | 'circle' | 'diamond' | 'chevron' | 'none';
+  type ArrowFill = 'filled' | 'hollow';
+  type TransitionTimingFunction = 'linear' | 'spring' | 'cubic-bezier' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'ease-in-sine' | 'ease-out-sine' | 'ease-in-out-sine' | 'ease-in-quad' | 'ease-out-quad' | 'ease-in-out-quad' | 'ease-in-cubic' | 'ease-out-cubic' | 'ease-in-out-cubic' | 'ease-in-quart' | 'ease-out-quart' | 'ease-in-out-quart' | 'ease-in-quint' | 'ease-out-quint' | 'ease-in-out-quint' | 'ease-in-expo' | 'ease-out-expo' | 'ease-in-out-expo' | 'ease-in-circ' | 'ease-out-circ' | 'ease-in-out-circ';
+  interface CommonElement {
+    [name: string]: PropertyValueNode<unknown> | PropertyValueEdge<unknown> | undefined;
+    display?: PropertyValueNode<'none' | 'element'> | PropertyValueEdge<'none' | 'element'>;
+    visibility?: PropertyValueNode<'hidden' | 'visible'> | PropertyValueEdge<'hidden' | 'visible'>;
+    opacity?: PropertyValueNode<number> | PropertyValueEdge<number>;
+    events?: PropertyValueNode<'yes' | 'no'> | PropertyValueEdge<'yes' | 'no'>;
+    'text-events'?: PropertyValueNode<'yes' | 'no'> | PropertyValueEdge<'yes' | 'no'>;
+    'transition-property'?: PropertyValueNode<string> | PropertyValueEdge<string>;
+    'transition-duration'?: PropertyValueNode<number> | PropertyValueEdge<number>;
+    'transition-delay'?: PropertyValueNode<number> | PropertyValueEdge<number>;
+    'transition-timing-function'?: PropertyValueNode<TransitionTimingFunction> | PropertyValueEdge<TransitionTimingFunction>;
+  }
+  interface Node extends CommonElement {
+    content?: PropertyValueNode<string>;
+    width?: PropertyValueNode<number | string>;
+    height?: PropertyValueNode<number | string>;
+    shape?: PropertyValueNode<NodeShape>;
+    'background-color'?: PropertyValueNode<Colour>;
+    'background-blacken'?: PropertyValueNode<number>;
+    'background-opacity'?: PropertyValueNode<number>;
+    'background-fill'?: PropertyValueNode<'solid' | 'linear-gradient' | 'radial-gradient'>;
+    'background-gradient-direction'?: PropertyValueNode<string>;
+    'background-gradient-stop-colors'?: PropertyValueNode<string | string[]>;
+    'background-gradient-stop-positions'?: PropertyValueNode<string | number[] | string[]>;
+    'background-image'?: PropertyValueNode<string | string[]>;
+    'background-fit'?: PropertyValueNode<'none' | 'contain' | 'cover' | Array<'none' | 'contain' | 'cover'>>;
+    'background-repeat'?: PropertyValueNode<'no-repeat' | 'repeat-x' | 'repeat-y' | 'repeat' | Array<'no-repeat' | 'repeat-x' | 'repeat-y' | 'repeat'>>;
+    'border-width'?: PropertyValueNode<number | string>;
+    'border-style'?: PropertyValueNode<LineStyle>;
+    'border-color'?: PropertyValueNode<Colour>;
+    'border-opacity'?: PropertyValueNode<number>;
+    'border-position'?: PropertyValueNode<'center' | 'inside' | 'outside'>;
+    'border-cap'?: PropertyValueNode<'butt' | 'round' | 'square'>;
+    'border-join'?: PropertyValueNode<'miter' | 'bevel' | 'round'>;
+    'shape-polygon-points'?: PropertyValueNode<string | number[]>;
+    'corner-radius'?: PropertyValueNode<string>;
+    padding?: PropertyValueNode<string>;
+    'padding-relative-to'?: PropertyValueNode<'width' | 'height' | 'average' | 'min' | 'max'>;
+    ghost?: PropertyValueNode<'yes' | 'no'>;
+    'pie-size'?: PropertyValueNode<number | string>;
+    'stripe-size'?: PropertyValueNode<number | string>;
+  }
+  interface Edge extends CommonElement {
+    width?: PropertyValueEdge<number | string>;
+    'curve-style'?: PropertyValueEdge<'haystack' | 'straight' | 'straight-triangle' | 'bezier' | 'unbundled-bezier' | 'segments' | 'taxi' | 'round-taxi' | 'round-segments'>;
+    'line-color'?: PropertyValueEdge<Colour>;
+    'line-style'?: PropertyValueEdge<LineStyle>;
+    'line-cap'?: PropertyValueEdge<'butt' | 'round' | 'square'>;
+    'line-fill'?: PropertyValueEdge<'solid' | 'linear-gradient' | 'radial-gradient'>;
+    'line-opacity'?: PropertyValueEdge<number>;
+    'line-gradient-stop-colors'?: PropertyValueEdge<Colour[] | string>;
+    'line-gradient-stop-positions'?: PropertyValueEdge<number[] | string>;
+    'line-outline-width'?: PropertyValueEdge<number | string>;
+    'line-outline-color'?: PropertyValueEdge<Colour>;
+    'source-arrow-color'?: PropertyValueEdge<Colour>;
+    'mid-source-arrow-color'?: PropertyValueEdge<Colour>;
+    'target-arrow-color'?: PropertyValueEdge<Colour>;
+    'mid-target-arrow-color'?: PropertyValueEdge<Colour>;
+    'source-arrow-shape'?: PropertyValueEdge<ArrowShape>;
+    'mid-source-arrow-shape'?: PropertyValueEdge<ArrowShape>;
+    'target-arrow-shape'?: PropertyValueEdge<ArrowShape>;
+    'mid-target-arrow-shape'?: PropertyValueEdge<ArrowShape>;
+    'source-arrow-fill'?: PropertyValueEdge<ArrowFill>;
+    'mid-source-arrow-fill'?: PropertyValueEdge<ArrowFill>;
+    'target-arrow-fill'?: PropertyValueEdge<ArrowFill>;
+    'mid-target-arrow-fill'?: PropertyValueEdge<ArrowFill>;
+    'source-endpoint'?: PropertyValueEdge<string>;
+    'target-endpoint'?: PropertyValueEdge<string>;
+    'taxi-direction'?: PropertyValueEdge<'auto' | 'vertical' | 'downward' | 'upward' | 'horizontal' | 'rightward' | 'leftward'>;
+  }
+  interface Core {
+    [name: string]: PropertyValueCore<unknown> | undefined;
+    'active-bg-color'?: PropertyValueCore<Colour>;
+    'active-bg-opacity'?: PropertyValueCore<number>;
+    'active-bg-size'?: PropertyValueCore<number>;
+    'selection-box-color'?: PropertyValueCore<Colour>;
+    'selection-box-border-color'?: PropertyValueCore<Colour>;
+    'selection-box-border-width'?: PropertyValueCore<number>;
+    'selection-box-opacity'?: PropertyValueCore<number>;
+    'outside-texture-bg-color'?: PropertyValueCore<Colour>;
+    'outside-texture-bg-opacity'?: PropertyValueCore<number>;
+  }
 }
 //#endregion
-//#region src/core/animation/index.d.mts
-/**
- * Animation methods contributed to `Core.prototype` by this mixin. The
- * `.animate()`/`.animation()`/etc. methods are generated by `define`; the
- * loop-management methods are defined here.
- */
-interface CoreAnimation {
-  animate(properties: AnimationOptions, params?: AnimationOptions): Core;
-  animation(properties?: AnimationOptions, params?: AnimationOptions): Animation | Core;
-  animated(): boolean | undefined;
-  clearQueue(): Core;
-  delay(time: number, complete?: () => void): Core;
-  delayAnimation(time: number, complete?: () => void): Animation | Core;
-  stop(clearQueue?: boolean, jumpToEnd?: boolean): Core;
-}
-//#endregion
-//#region src/core/events.d.mts
-/** Inputs accepted as the selector arg of `.on()` and friends. */
-type EventSelectorArg = string | Selector | EventHandler | null | undefined;
-interface CoreEvents {
-  on(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  removeListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  removeAllListeners(): Core;
-  one(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  emit(events: EmitInput, extraParams?: unknown[]): Core;
-  addListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  listen(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  bind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  unlisten(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  unbind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  off(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  trigger(events: EmitInput, extraParams?: unknown[]): Core;
-  pon(events: string, selector?: EventSelectorArg): Promise<Event>;
-  promiseOn(events: string, selector?: EventSelectorArg): Promise<Event>;
-}
-//#endregion
-//#region src/core/export.d.mts
-/** Options accepted by the image export methods (`png`/`jpg`/`jpeg`). */
-interface ExportOptions {
-  output?: 'base64uri' | 'base64' | 'blob' | 'blob-promise';
-  bg?: string;
-  full?: boolean;
-  scale?: number;
-  maxWidth?: number;
-  maxHeight?: number;
-  quality?: number;
-  [key: string]: unknown;
-}
-/** Image export methods contributed to the core prototype. */
-interface CoreExport {
-  png(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
-  jpg(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
-  jpeg(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
-}
-//#endregion
-//#region src/core/layout.d.mts
-/** Options accepted by `layout()`/`makeLayout()`/`createLayout()`. */
-interface LayoutOptions {
+//#region src/stylesheet.d.mts
+interface StylesheetProperty {
   name: string;
-  eles?: Collection | string;
-  [key: string]: unknown;
+  value: unknown;
 }
-/** Layout construction methods contributed to the core prototype. */
-interface CoreLayout {
-  layout(this: Core, options?: LayoutOptions): LayoutInstance;
-  makeLayout(this: Core, options?: LayoutOptions): LayoutInstance;
-  createLayout(this: Core, options?: LayoutOptions): LayoutInstance;
+interface StylesheetContext {
+  selector: string;
+  properties: StylesheetProperty[];
 }
-//#endregion
-//#region src/core/notification.d.mts
-interface CoreNotification {
-  startBatch(): Core;
-  endBatch(): Core;
-  batch(callback: () => void): Core;
+interface Stylesheet {
+  length: number;
+  [index: number]: StylesheetContext;
+  instanceString(): string;
+  selector(selector: string): Stylesheet;
+  css(name: string | Css.Node | Css.Edge | Css.Core, value?: unknown): Stylesheet;
+  style(name: string | Css.Node | Css.Edge | Css.Core, value?: unknown): Stylesheet;
+  generateStyle(cy: unknown): unknown;
+  appendToStyle<S>(style: S): S;
 }
-//#endregion
-//#region src/core/renderer.d.mts
-interface CoreRenderer {
-  resize(): Core;
-  invalidateDimensions(): Core;
+interface StylesheetStatic {
+  (this: unknown): Stylesheet;
+  new (): Stylesheet;
+  prototype: Stylesheet;
 }
-//#endregion
-//#region src/core/search.d.mts
-/** Options accepted by `collection()` when building from an array. */
-interface CollectionOpts {
-  unique?: boolean;
-  removed?: boolean;
-}
-/** Graph search/collection helpers contributed to the core prototype. */
-interface CoreSearch {
-  collection(this: Core, eles?: string | Collection | Element$1 | Element$1[], opts?: CollectionOpts): Collection;
-  nodes(this: Core, selector?: FilterArg): NodeCollection;
-  edges(this: Core, selector?: FilterArg): EdgeCollection;
-  $(this: Core, selector?: FilterArg): Collection;
-  elements(this: Core, selector?: FilterArg): Collection;
-  filter(this: Core, selector?: FilterArg): Collection;
-}
+declare let Stylesheet: StylesheetStatic;
 //#endregion
 //#region src/style/properties.d.mts
 /** Validation/parsing descriptor for a style property value type (an entry in `Style.types`). */
@@ -1596,19 +1583,6 @@ interface GetForEleStyfn {
   getPropertiesHash(this: Style, ele: StyleElement, propNames: string[], seed: number[]): number[];
 }
 //#endregion
-//#region src/style/json.d.mts
-/** A JSON stylesheet block: a selector and its style properties. */
-interface StyleJsonBlock {
-  selector: string;
-  style?: Record<string, unknown>;
-  css?: Record<string, unknown>;
-}
-interface JsonStyfn {
-  appendFromJson(this: Style, json: StyleJsonBlock[]): Style;
-  fromJson(this: Style, json: StyleJsonBlock[]): Style;
-  json(this: Style): StyleJsonBlock[];
-}
-//#endregion
 //#region src/style/string-sheet.d.mts
 interface StringSheetStyfn {
   appendFromString(this: Style, string: string): Style;
@@ -1742,7 +1716,7 @@ interface Style extends ApplyStyfn, BypassStyfn, ContainerStyfn, GetForEleStyfn,
   core(propName: string): ParseResult;
   selector(selectorStr: string): Style;
   css(): Style;
-  css(map: Record<string, unknown>): Style;
+  css(map: Css.Node | Css.Edge | Css.Core): Style;
   css(name: string, value: unknown): Style;
   style: Style['css'];
   cssRule(name: string, value: unknown): Style;
@@ -1762,10 +1736,134 @@ interface StyleStatic {
 }
 declare let Style: StyleStatic;
 //#endregion
+//#region src/style/json.d.mts
+/** A JSON stylesheet block: a selector and its style properties. */
+interface StyleJsonBlock {
+  selector: string;
+  style?: Css.Node | Css.Edge | Css.Core;
+  css?: Css.Node | Css.Edge | Css.Core;
+}
+type StyleJson = StyleJsonBlock[];
+interface JsonStyfn {
+  appendFromJson(this: Style, json: StyleJsonBlock[]): Style;
+  fromJson(this: Style, json: StyleJsonBlock[]): Style;
+  json(this: Style): StyleJsonBlock[];
+}
+//#endregion
+//#region src/core/add-remove.d.mts
+/** The shapes accepted by `add()`. */
+type AddOpts = Collection | Element$1 | ElementDefinition | ElementDefinition[] | {
+  nodes?: ElementDefinition[];
+  edges?: ElementDefinition[];
+};
+/** Add/remove element methods contributed to the core prototype. */
+interface CoreAddRemove {
+  add(this: Core$1, opts: AddOpts): Collection;
+  remove(this: Core$1, collection: Collection | Element$1 | string): Collection;
+}
+//#endregion
+//#region src/core/animation/index.d.mts
+/**
+ * Animation methods contributed to `Core.prototype` by this mixin. The
+ * `.animate()`/`.animation()`/etc. methods are generated by `define`; the
+ * loop-management methods are defined here.
+ */
+interface CoreAnimation {
+  animate(properties: AnimationOptions, params?: AnimationOptions): Core$1;
+  animation(properties?: AnimationOptions, params?: AnimationOptions): Animation | Core$1;
+  animated(): boolean | undefined;
+  clearQueue(): Core$1;
+  delay(time: number, complete?: () => void): Core$1;
+  delayAnimation(time: number, complete?: () => void): Animation | Core$1;
+  stop(clearQueue?: boolean, jumpToEnd?: boolean): Core$1;
+}
+//#endregion
+//#region src/core/events.d.mts
+/** Inputs accepted as the selector arg of `.on()` and friends. */
+type EventSelectorArg = string | Selector | EventHandler | null | undefined;
+interface CoreEvents {
+  on(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  removeListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  removeAllListeners(): Core$1;
+  one(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  emit(events: EmitInput, extraParams?: unknown[]): Core$1;
+  addListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  listen(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  bind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  unlisten(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  unbind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  off(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core$1;
+  trigger(events: EmitInput, extraParams?: unknown[]): Core$1;
+  pon(events: string, selector?: EventSelectorArg): Promise<Event>;
+  promiseOn(events: string, selector?: EventSelectorArg): Promise<Event>;
+}
+//#endregion
+//#region src/core/export.d.mts
+/** Options accepted by the image export methods (`png`/`jpg`/`jpeg`). */
+interface ExportOptions {
+  output?: 'base64uri' | 'base64' | 'blob' | 'blob-promise';
+  bg?: string;
+  full?: boolean;
+  scale?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+  [key: string]: unknown;
+}
+/** Image export methods contributed to the core prototype. */
+interface CoreExport {
+  png(this: Core$1, options?: ExportOptions): string | Blob | Promise<Blob>;
+  jpg(this: Core$1, options?: ExportOptions): string | Blob | Promise<Blob>;
+  jpeg(this: Core$1, options?: ExportOptions): string | Blob | Promise<Blob>;
+}
+//#endregion
+//#region src/core/layout.d.mts
+/** Options accepted by `layout()`/`makeLayout()`/`createLayout()`. */
+interface LayoutOptions {
+  name: string;
+  eles?: Collection | string;
+  [key: string]: unknown;
+}
+/** Layout construction methods contributed to the core prototype. */
+interface CoreLayout {
+  layout(this: Core$1, options?: LayoutOptions): LayoutInstance;
+  makeLayout(this: Core$1, options?: LayoutOptions): LayoutInstance;
+  createLayout(this: Core$1, options?: LayoutOptions): LayoutInstance;
+}
+//#endregion
+//#region src/core/notification.d.mts
+interface CoreNotification {
+  startBatch(): Core$1;
+  endBatch(): Core$1;
+  batch(callback: () => void): Core$1;
+}
+//#endregion
+//#region src/core/renderer.d.mts
+interface CoreRenderer {
+  resize(): Core$1;
+  invalidateDimensions(): Core$1;
+}
+//#endregion
+//#region src/core/search.d.mts
+/** Options accepted by `collection()` when building from an array. */
+interface CollectionOpts {
+  unique?: boolean;
+  removed?: boolean;
+}
+/** Graph search/collection helpers contributed to the core prototype. */
+interface CoreSearch {
+  collection(this: Core$1, eles?: string | Collection | Element$1 | Element$1[], opts?: CollectionOpts): Collection;
+  nodes(this: Core$1, selector?: FilterArg): NodeCollection;
+  edges(this: Core$1, selector?: FilterArg): EdgeCollection;
+  $(this: Core$1, selector?: FilterArg): Collection;
+  elements(this: Core$1, selector?: FilterArg): Collection;
+  filter(this: Core$1, selector?: FilterArg): Collection;
+}
+//#endregion
 //#region src/core/style.d.mts
 /** Style engine accessor methods contributed to the core prototype. */
 interface CoreStyle {
-  style(this: Core, newStyle?: unknown): Style;
+  style(this: Core$1, newStyle?: unknown): Style;
 }
 //#endregion
 //#region src/core/viewport.d.mts
@@ -1784,41 +1882,41 @@ interface ViewportOptions {
 /** The contribution interface this mixin adds to `Core`. */
 interface CoreViewport {
   autolock(): boolean;
-  autolock(bool: boolean): Core;
+  autolock(bool: boolean): Core$1;
   autoungrabify(): boolean;
-  autoungrabify(bool: boolean): Core;
+  autoungrabify(bool: boolean): Core$1;
   autounselectify(): boolean;
-  autounselectify(bool: boolean): Core;
+  autounselectify(bool: boolean): Core$1;
   selectionType(): 'single' | 'additive';
-  selectionType(selType: 'single' | 'additive'): Core;
+  selectionType(selType: 'single' | 'additive'): Core$1;
   panningEnabled(): boolean;
-  panningEnabled(bool: boolean): Core;
+  panningEnabled(bool: boolean): Core$1;
   userPanningEnabled(): boolean;
-  userPanningEnabled(bool: boolean): Core;
+  userPanningEnabled(bool: boolean): Core$1;
   zoomingEnabled(): boolean;
-  zoomingEnabled(bool: boolean): Core;
+  zoomingEnabled(bool: boolean): Core$1;
   userZoomingEnabled(): boolean;
-  userZoomingEnabled(bool: boolean): Core;
+  userZoomingEnabled(bool: boolean): Core$1;
   boxSelectionEnabled(): boolean;
-  boxSelectionEnabled(bool: boolean): Core;
+  boxSelectionEnabled(bool: boolean): Core$1;
   pan(): Position;
   pan(dim: string): number;
-  pan(dims: Position): Core;
-  pan(dim: string, val: number): Core;
-  panBy(dims: Position): Core;
-  panBy(dim: string, val: number): Core;
-  fit(elements?: Collection | string | BoundingBox | number, padding?: number): Core;
+  pan(dims: Position): Core$1;
+  pan(dim: string, val: number): Core$1;
+  panBy(dims: Position): Core$1;
+  panBy(dim: string, val: number): Core$1;
+  fit(elements?: Collection | string | BoundingBox | number, padding?: number): Core$1;
   minZoom(): number;
-  minZoom(zoom: number): Core;
+  minZoom(zoom: number): Core$1;
   maxZoom(): number;
-  maxZoom(zoom: number): Core;
+  maxZoom(zoom: number): Core$1;
   zoom(): number;
-  zoom(params: number | ZoomOptions): Core;
-  viewport(opts: ViewportOptions): Core;
-  center(elements?: Collection | string): Core;
+  zoom(params: number | ZoomOptions): Core$1;
+  viewport(opts: ViewportOptions): Core$1;
+  center(elements?: Collection | string): Core$1;
   /** Alias of {@link center}. */
-  centre(elements?: Collection | string): Core;
-  reset(): Core;
+  centre(elements?: Collection | string): Core$1;
+  reset(): Core$1;
   width(): number;
   height(): number;
   extent(): BoundingBox;
@@ -1828,12 +1926,12 @@ interface CoreViewport {
 //#region src/core/data.d.mts
 /** Data/scratch accessor methods contributed to the core prototype. */
 interface CoreData {
-  data: DataFunc<Core>;
-  removeData: RemoveDataFunc<Core>;
-  scratch: DataFunc<Core>;
-  removeScratch: RemoveDataFunc<Core>;
-  attr: DataFunc<Core>;
-  removeAttr: RemoveDataFunc<Core>;
+  data: DataFunc<Core$1>;
+  removeData: RemoveDataFunc<Core$1>;
+  scratch: DataFunc<Core$1>;
+  removeScratch: RemoveDataFunc<Core$1>;
+  attr: DataFunc<Core$1>;
+  removeAttr: RemoveDataFunc<Core$1>;
 }
 //#endregion
 //#region src/core/core-types.d.mts
@@ -1854,11 +1952,14 @@ interface RendererInstance {
   notify(eles?: Collection, evts?: unknown): void;
   [key: string]: unknown;
 }
+interface StylesheetLike {
+  generateStyle(cy: unknown): unknown;
+}
 /** Options accepted by the `cytoscape(...)` factory. */
 interface CytoscapeOptions {
   container?: HTMLElement | null;
   elements?: any;
-  style?: any;
+  style?: string | StyleJson | Promise<StyleJson> | StylesheetLike;
   layout?: {
     name?: string;
     [key: string]: unknown;
@@ -1912,14 +2013,14 @@ interface CoreBaseFns {
  * the base methods. Structurally a superset of the collection module's
  * `CoreAccess`, so a Core is accepted wherever CoreAccess is required.
  */
-interface Core extends CoreBaseFns, CoreAddRemove, CoreAnimation, CoreEvents, CoreExport, CoreLayout, CoreNotification, CoreRenderer, CoreSearch, CoreStyle, CoreViewport, CoreData {}
+interface Core$1 extends CoreBaseFns, CoreAddRemove, CoreAnimation, CoreEvents, CoreExport, CoreLayout, CoreNotification, CoreRenderer, CoreSearch, CoreStyle, CoreViewport, CoreData {}
 //#endregion
 //#region src/index.d.mts
 /** A plugin registrant, as passed to `cytoscape.use(ext)`. */
 type CytoscapeExtension = (cy: CytoscapeFactory, ...args: unknown[]) => void;
 /** The cytoscape factory: create an instance, or register an extension. */
 interface CytoscapeFactory {
-  (options?: CytoscapeOptions): Core;
+  (options?: CytoscapeOptions): Core$1;
   (type: string, name: string, registrant?: unknown): unknown;
   use(ext: CytoscapeExtension, ...args: unknown[]): CytoscapeFactory;
   warnings(bool?: boolean): boolean;
@@ -1929,5 +2030,5 @@ interface CytoscapeFactory {
 }
 declare let cytoscape: CytoscapeFactory;
 //#endregion
-export { type BoundingBox, type Collection, type Core, CytoscapeExtension, CytoscapeFactory, type CytoscapeOptions, type EdgeCollection, type EdgeSingular, type Element$1 as Element, type ElementDefinition, type ElementJson, type LayoutInstance, type NodeCollection, type NodeSingular, type Position, type RendererInstance, type Singular, cytoscape as default };
+export { type BoundingBox, type Collection, type Core$1 as Core, type Css, CytoscapeExtension, CytoscapeFactory, type CytoscapeOptions, type EdgeCollection, type EdgeSingular, type Element$1 as Element, type ElementDefinition, type ElementJson, type LayoutInstance, type NodeCollection, type NodeSingular, type Position, type RendererInstance, type Singular, type StyleJson, type StyleJsonBlock, cytoscape as default };
 export as namespace cytoscape;

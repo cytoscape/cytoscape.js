@@ -12,6 +12,8 @@
     "checkJs": false,
     "skipLibCheck": true,
     "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": "tsconfig.tsbuildinfo",
     "types": []
   },
   "include": ["src/**/*"]

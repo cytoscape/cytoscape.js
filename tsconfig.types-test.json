@@ -8,6 +8,8 @@
     "noEmit": true,
     "noUnusedLocals": true,
     "skipLibCheck": false,
+    "incremental": true,
+    "tsBuildInfoFile": "tsconfig.types-test.tsbuildinfo",
     "types": []
   },
   "include": ["typescript/tests/**/*.ts"]

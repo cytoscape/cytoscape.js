@@ -96,3 +96,53 @@ signatures do not yet expose the old `EventObject*` hierarchy.
 Reverting `package.json` `types` to `./index.d.ts` restores the richer
 hand-written types if that trade-off is preferred while the above source
 enrichment is completed.
+
+## Current validation coverage and limits
+
+The current automated checks are useful, but they do **not** prove full
+parity with the old hand-written `index.d.ts`:
+
+- `npm run typecheck` validates the TypeScript source graph only. It does
+  not assert that the emitted public `.d.ts` exactly matches either the
+  docs or the old manual definitions.
+- `npm run test:types` proves that the generated declarations build and
+  are consumable by a representative TypeScript client in
+  `typescript/tests/api.test-d.ts`. It checks important exported names
+  and representative usage, but it is not an exhaustive public API
+  parity test.
+- `npm run test:types:docs` audits the freshly generated
+  `build/dts/index.d.ts` against `documentation/docmaker.json`, but only
+  for the broad documented surfaces represented as `cy.*`, `eles.*`, and
+  `ele.*` plus the narrowed `NodeCollection` / `EdgeCollection` aliases.
+  It is a doc-surface audit, not a symbol-for-symbol comparison against
+  the old `index.d.ts`.
+
+Known limitations of the current docmaker audit:
+
+- It currently passes with an explicit allowlist of known residual
+  exceptions for `NodeCollection` and `EdgeCollection` in
+  `test/types-docmaker-surface.mjs`. Those exceptions are the remaining
+  cross-kind methods inherited from the wide internal `Collection` type.
+- It enforces that undocumented `cy.*`, `eles.*`, and `ele.*` methods are
+  not exposed on the generated declarations, but it does **not** yet give
+  that same unconditional guarantee for narrowed node/edge projections.
+- It does not validate the exact overload shapes, generic constraints,
+  or argument/return precision of every documented API entry; it checks
+  presence/absence of the documented member names on the audited public
+  interfaces.
+- It does not assert full top-level export parity with the old manual
+  declarations beyond the names used in the representative consumer test
+  (e.g. broad alias-family presence like `NodeSingular` / `EdgeSingular`
+  is exercised indirectly, not exhaustively diffed).
+- It does not validate undocumented helper types unless they leak into the
+  audited public interfaces.
+
+Practical interpretation for now:
+
+- The generated `.d.ts` is automatically checked to avoid undocumented
+  `cy.*`, `eles.*`, and `ele.*` member leaks.
+- The generated `.d.ts` is automatically checked to remain usable by a
+  representative external TypeScript consumer.
+- The generated `.d.ts` is **not yet** automatically checked for complete
+  parity with the old hand-written `index.d.ts`, especially for strict
+  node/edge narrowing, `Css.*`, and `EventObject*` semantics.

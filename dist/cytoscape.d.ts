@@ -61,568 +61,6 @@ interface CollectionShim {
   };
 }
 //#endregion
-//#region src/promise.d.mts
-/*!
-Embeddable Minimum Strictly-Compliant Promises/A+ 1.1.1 Thenable
-Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
-Licensed under The MIT License (http://opensource.org/licenses/MIT)
-*/
-/**
- * The structural subset of the Promise API provided by both the native
- * `Promise` and the Thenable polyfill (construct with executor, `then`,
- * `resolve`, `reject`, `all`).
- */
-interface PromiseLikeObject<T> {
-  then<TResult1 = T, TResult2 = never>(onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null, onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null): PromiseLikeObject<TResult1 | TResult2>;
-}
-//#endregion
-//#region src/animation.d.mts
-interface AnimationStyleProp {
-  name: string;
-}
-/**
- * Animation options as accepted by `.animate()` / `.animation()`. The
- * same bag, plus bookkeeping fields, becomes the animation's `_private`
- * state.
- */
-interface AnimationOptions {
-  duration?: number | 'slow' | 'fast';
-  style?: AnimationStyleProp[] | Record<string, unknown>;
-  css?: AnimationStyleProp[] | Record<string, unknown>;
-  queue?: boolean;
-  complete?: () => void;
-  step?: () => void;
-  delay?: number;
-  easing?: string;
-  position?: Position;
-  renderedPosition?: Position;
-  startPosition?: Position;
-  startStyle?: Record<string, AnimationStyleProp>;
-  pan?: Position;
-  panBy?: Position;
-  startPan?: Position;
-  zoom?: number | Record<string, unknown> | null;
-  startZoom?: number;
-  center?: {
-    eles: unknown;
-  };
-  centre?: {
-    eles: unknown;
-  };
-  fit?: {
-    eles?: unknown;
-    boundingBox?: unknown;
-    padding?: number;
-  };
-}
-/**
- * Structural view of what an Animation animates: a Core or a single
- * element. Refined to the real types when src/core and src/collection
- * are converted.
- */
-interface AnimationTarget {
-  _private: {
-    animation: {
-      current: Animation[];
-      queue: Animation[];
-    };
-  };
-}
-interface AnimationPrivate extends AnimationOptions {
-  target: AnimationTarget;
-  started: boolean;
-  playing: boolean;
-  hooked: boolean;
-  applying: boolean;
-  progress: number;
-  completes: (() => void)[];
-  frames: (() => void)[];
-  stopped?: boolean;
-  duration: number | 'slow' | 'fast';
-}
-declare class Animation {
-  _private: AnimationPrivate;
-  length: number;
-  [index: number]: Animation;
-  constructor(target: AnimationTarget, opts?: AnimationOptions, opts2?: AnimationOptions);
-  instanceString(): string;
-  hook(): this;
-  play(): this;
-  playing(): boolean;
-  apply(): this;
-  applying(): boolean;
-  pause(): this;
-  stop(): this;
-  rewind(): this;
-  fastforward(): this;
-  time(): number;
-  time(t: number): this;
-  progress(): number;
-  progress(p: number): this;
-  completed(): boolean;
-  reverse(): this;
-  promise(type?: string): PromiseLikeObject<void>;
-  complete: this['completed'];
-  run: this['play'];
-  running: this['playing'];
-}
-//#endregion
-//#region src/event.d.mts
-type NativeEvent = globalThis.Event;
-interface EventProps {
-  originalEvent?: NativeEvent;
-  type?: string;
-  cy?: CoreShim;
-  target?: unknown;
-  position?: Position;
-  renderedPosition?: Position;
-  namespace?: string | null;
-  layout?: unknown;
-  timeStamp?: number;
-}
-type EventSrc = string | NativeEvent | EventProps | null | undefined;
-declare class Event {
-  type: string;
-  originalEvent?: NativeEvent;
-  cy?: CoreShim;
-  target?: unknown;
-  position?: Position;
-  renderedPosition?: Position;
-  namespace?: string | null;
-  layout?: unknown;
-  timeStamp: number;
-  isDefaultPrevented: () => boolean;
-  isPropagationStopped: () => boolean;
-  isImmediatePropagationStopped: () => boolean;
-  constructor(src: EventSrc, props?: EventProps);
-  instanceString(): string;
-  recycle(src: EventSrc, props?: EventProps): void;
-  preventDefault(): void;
-  stopPropagation(): void;
-  stopImmediatePropagation(): void;
-}
-//#endregion
-//#region src/emitter.d.mts
-type EventHandler = (this: any, event: Event, ...extraParams: any[]) => unknown;
-interface Listener<TQualifier = unknown> {
-  event: string | undefined;
-  callback: EventHandler;
-  type: string;
-  namespace: string | null | undefined;
-  qualifier?: TQualifier | null;
-  conf?: ListenerConf | null;
-}
-interface ListenerConf {
-  one?: boolean;
-}
-/** Something an event can bubble up to: it can emit further. */
-interface ParentEmitTarget {
-  emit(events: Event, extraParams?: unknown[]): unknown;
-}
-interface EmitterOptions<TContext, TQualifier = unknown> {
-  qualifierCompare?(q1: TQualifier | null | undefined, q2: TQualifier | null | undefined): boolean;
-  eventMatches?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): boolean;
-  addEventFields?(context: TContext, evt: EventProps): void;
-  callbackContext?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): unknown;
-  beforeEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
-  afterEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
-  bubble?(context: TContext): boolean;
-  parent?(context: TContext): ParentEmitTarget | null;
-  context?: TContext;
-}
-type EmitInput = string | string[] | Event | EventProps;
-declare class Emitter<TContext = unknown, TQualifier = unknown> {
-  qualifierCompare: (q1: TQualifier | null | undefined, q2: TQualifier | null | undefined) => boolean;
-  eventMatches: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => boolean;
-  addEventFields: (context: TContext, evt: EventProps) => void;
-  callbackContext: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => unknown;
-  beforeEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
-  afterEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
-  bubble: (context: TContext) => boolean;
-  parent: (context: TContext) => ParentEmitTarget | null;
-  context: TContext;
-  listeners: Listener<TQualifier>[];
-  emitting: number;
-  constructor(opts?: EmitterOptions<TContext, TQualifier>, context?: TContext);
-  on(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null, confOverrides?: ListenerConf): this;
-  addListener: this['on'];
-  one(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
-  off(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
-  removeListener: this['off'];
-  removeAllListeners(): this;
-  emit(events: EmitInput, extraParams?: unknown, manualCallback?: EventHandler): this;
-  trigger: this['emit'];
-}
-//#endregion
-//#region src/style/properties.d.mts
-/** Validation/parsing descriptor for a style property value type (an entry in `Style.types`). */
-interface StylePropertyType {
-  number?: boolean;
-  min?: number;
-  max?: number;
-  strictMin?: boolean;
-  strictMax?: boolean;
-  integer?: boolean;
-  unitless?: boolean;
-  units?: string;
-  implicitUnits?: string;
-  allowPercent?: boolean;
-  multiple?: boolean;
-  evenMultiple?: boolean;
-  enums?: (string | number)[];
-  singleEnum?: boolean;
-  color?: boolean;
-  string?: boolean;
-  mapping?: boolean;
-  regex?: string;
-  regexes?: string[];
-  singleRegexMatchValue?: boolean;
-  fn?: boolean;
-  propList?: boolean;
-  validate?: (valArr: unknown[], unitsArr: unknown[]) => boolean;
-}
-/** Diff function: whether a change from one value to another triggers an update. */
-type StylePropertyTriggerFn = (fromValue: unknown, toValue: unknown, ele: StyleElement) => boolean;
-/** Overrides the value hashed into the style key for a property. */
-type StylePropertyHashOverrideFn = (ele: StyleElement, parsedProp: ParsedStyleProperty) => number | (number | undefined)[] | undefined;
-/** Descriptor for a single visual style property (an entry in `Style.properties`). */
-interface StyleProperty {
-  name: string;
-  /** the value type of the property (absent on alias entries) */
-  type?: StylePropertyType;
-  /** the property group the property belongs to (assigned after the group tables are built) */
-  groupKey?: string;
-  triggersBounds?: StylePropertyTriggerFn;
-  triggersZOrder?: StylePropertyTriggerFn;
-  triggersBoundsOfConnectedEdges?: StylePropertyTriggerFn;
-  triggersBoundsOfParallelEdges?: StylePropertyTriggerFn;
-  hashOverride?: StylePropertyHashOverrideFn;
-  /** true for alias entries (e.g. `content` -> `label`) */
-  alias?: boolean;
-  /** the aliased property for alias entries */
-  pointsTo?: StyleProperty;
-}
-/** The property table: an array of descriptors that doubles as a name -> descriptor map. */
-type StylePropertiesTable = StyleProperty[] & {
-  [name: string]: StyleProperty | undefined;
-};
-interface PropertiesStyfn {
-  /** the value types that properties can have (statically available as `Style.types`) */
-  types: Record<string, StylePropertyType>;
-  /** the property table (statically available as `Style.properties`) */
-  properties: StylePropertiesTable;
-  propertyGroups: Record<string, StyleProperty[]>;
-  propertyGroupNames: Record<string, string[]>;
-  propertyGroupKeys: string[];
-  propertyNames: string[];
-  aliases: {
-    name: string;
-    pointsTo: string;
-  }[];
-  /** the pie properties are numbered, so give access to a constant N (for renderer use) */
-  pieBackgroundN: number;
-  /** the stripe properties are numbered, so give access to a constant N (for renderer use) */
-  stripeBackgroundN: number;
-  arrowPrefixes: string[];
-  getDefaultProperty(this: Style, name: string): ParseResult;
-  getDefaultProperties(this: Style): Record<string, ParseResult>;
-  addDefaultStylesheet(this: Style): void;
-}
-//#endregion
-//#region src/style/apply.d.mts
-/** Metadata about the contexts that match an element. */
-interface ContextMeta {
-  /** which contexts match the element, e.g. 'ttfftt' */
-  key: string;
-  diffPropNames: string[];
-  empty: boolean;
-}
-/** A computed ele style object based on matched contexts: name -> property. */
-type ContextStyleMap = {
-  _private: {
-    key: string;
-  };
-} & {
-  [name: string]: ParsedStyleProperty | undefined;
-};
-/** The previous and next values of a property that diffed during application. */
-interface DiffProp {
-  prev?: ParsedStyleProperty | null;
-  next?: ParsedStyleProperty | null;
-}
-interface ApplyStyfn {
-  apply(this: Style, eles: ArrayLike<StyleElement>): StyleEles;
-  getPropertiesDiff(this: Style, oldCxtKey: string, newCxtKey: string): string[];
-  getContextMeta(this: Style, ele: StyleElement): ContextMeta;
-  getContextStyle(this: Style, cxtMeta: ContextMeta): ContextStyleMap;
-  applyContextStyle(this: Style, cxtMeta: ContextMeta, cxtStyle: ContextStyleMap, ele: StyleElement): {
-    diffProps: Record<string, DiffProp>;
-  };
-  updateStyleHints(this: Style, ele: StyleElement): boolean;
-  clearStyleHints(this: Style, ele: StyleElement): void;
-  applyParsedProperty(this: Style, ele: StyleElement, parsedProp: ParsedStyleProperty): boolean;
-  cleanElements(this: Style, eles: ArrayLike<StyleElement>, keepBypasses?: boolean): void;
-  update(this: Style): void;
-  updateTransitions(this: Style, ele: StyleElement, diffProps: Record<string, DiffProp | undefined>, isBypass?: boolean): void;
-  checkTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown, getTrigger: (prop: StyleProperty) => StylePropertyTriggerFn | undefined, onTrigger: (prop: StyleProperty) => void): void;
-  checkZOrderTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
-  checkBoundsTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
-  checkConnectedEdgesBoundsTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
-  checkParallelEdgesBoundsTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
-  checkTriggers(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
-}
-//#endregion
-//#region src/style/bypass.d.mts
-interface BypassStyfn {
-  applyBypass(this: Style, eles: ArrayLike<StyleElement>, name: string | Record<string, unknown>, value?: unknown, updateTransitions?: unknown): boolean;
-  overrideBypass(this: Style, eles: ArrayLike<StyleElement>, name: string, value: unknown): void;
-  removeAllBypasses(this: Style, eles: ArrayLike<StyleElement>, updateTransitions?: boolean): void;
-  removeBypasses(this: Style, eles: ArrayLike<StyleElement>, props: string[], updateTransitions?: boolean): void;
-}
-//#endregion
-//#region src/style/container.d.mts
-interface ContainerStyfn {
-  getEmSizeInPixels(this: Style): number;
-  containerCss(this: Style, propName: string): string | undefined;
-}
-//#endregion
-//#region src/style/get-for-ele.d.mts
-interface GetForEleStyfn {
-  getRenderedStyle(this: Style, ele: StyleElement, prop?: string): string | Record<string, string> | null | undefined;
-  getRawStyle(this: Style, ele: StyleElement, isRenderedVal?: boolean): Record<string, string> | undefined;
-  getIndexedStyle(this: Style, ele: StyleElement, property: string, subproperty: string, index: number): unknown;
-  getStylePropertyValue(this: Style, ele: StyleElement, propName: string, isRenderedVal?: boolean): string | null | undefined;
-  getAnimationStartStyle(this: Style, ele: StyleElement, aniProps: {
-    name: string;
-  }[]): Record<string, ParsedStyleProperty>;
-  getPropsList(this: Style, propsObj: Record<string, unknown> | null | undefined): ParsedStyleProperty[];
-  getNonDefaultPropertiesHash(this: Style, ele: StyleElement, propNames: string[], seed: number[]): number[];
-  getPropertiesHash(this: Style, ele: StyleElement, propNames: string[], seed: number[]): number[];
-}
-//#endregion
-//#region src/style/json.d.mts
-/** A JSON stylesheet block: a selector and its style properties. */
-interface StyleJsonBlock {
-  selector: string;
-  style?: Record<string, unknown>;
-  css?: Record<string, unknown>;
-}
-interface JsonStyfn {
-  appendFromJson(this: Style, json: StyleJsonBlock[]): Style;
-  fromJson(this: Style, json: StyleJsonBlock[]): Style;
-  json(this: Style): StyleJsonBlock[];
-}
-//#endregion
-//#region src/style/string-sheet.d.mts
-interface StringSheetStyfn {
-  appendFromString(this: Style, string: string): Style;
-  fromString(this: Style, string: string): Style;
-}
-//#endregion
-//#region src/style/index.d.mts
-/**
- * Minimal structural view of a Selector instance, as used by style code.
- * TODO(ts-migration): swap to the real Selector type once src/selector is converted.
- */
-interface SelectorLike {
-  matches(ele: StyleElement): boolean;
-  text(): string;
-  toString(): string;
-  invalid?: boolean;
-}
-/** The element `_private` fields read/written by style code. */
-interface StyleElementPrivate {
-  /** name -> applied parsed property */
-  style: Record<string, ParsedStyleProperty | null | undefined>;
-  styleCxtKey?: string;
-  /** style hint hashes per property group */
-  styleKeys: Record<string, [number, number]>;
-  styleKey: number | null;
-  labelDimsKey?: number | null;
-  labelKey: number | null;
-  labelStyleKey: number | null;
-  sourceLabelKey: number | null;
-  sourceLabelStyleKey: number | null;
-  targetLabelKey: number | null;
-  targetLabelStyleKey: number | null;
-  nodeKey: number | null;
-  hasPie: boolean | null;
-  hasStripe: boolean | null;
-  appliedInitStyle: boolean;
-  styleDirty: boolean;
-  transitioning: boolean;
-  group: string;
-  data: Record<string, unknown>;
-}
-/** Minimal structural view of a playable animation, as used by style transitions. */
-interface StyleAnimation {
-  play(): StyleAnimation;
-  promise(): PromiseLikeObject<unknown>;
-}
-/**
- * Minimal structural view of a single element, as used by style code.
- * Replaced by the real Element type once src/collection is converted.
- */
-interface StyleElement {
-  length: number;
-  [index: number]: StyleElement;
-  _private: StyleElementPrivate;
-  pstyle(name: string, includeNonDefault?: boolean): ParsedStyleProperty;
-  id(): string;
-  cy(): StyleCore;
-  isEdge(): boolean;
-  isLoop(): boolean;
-  isParent(): boolean;
-  source(): StyleElement;
-  target(): StyleElement;
-  removed(): boolean;
-  poolIndex(): number;
-  dirtyCompoundBoundsCache(): void;
-  dirtyBoundingBoxCache(): void;
-  dirtyStyleCache(): void;
-  connectedEdges(): StyleEles;
-  parallelEdges(): StyleEles;
-  emitAndNotify(events: string): void;
-  delayAnimation(duration: number): StyleAnimation;
-  animation(options: Record<string, unknown>): StyleAnimation;
-}
-/**
- * Minimal structural view of a collection, as used by style code.
- * Replaced by the real Collection type once src/collection is converted.
- */
-interface StyleEles {
-  length: number;
-  [index: number]: StyleElement;
-  forEach(fn: (ele: StyleElement) => void): void;
-  updateStyle(): void;
-  push(ele: StyleElement): unknown;
-}
-/**
- * Minimal structural view of the Core, as used by style code. Replaced by
- * the real Core type once src/core is converted.
- */
-interface StyleCore extends CoreShim {
-  collection(): StyleEles;
-  elements(): StyleEles;
-  mutableElements(): StyleEles;
-  notify(event: string, eles?: StyleElement): void;
-  container(): HTMLElement | null | undefined;
-  window(): {
-    getComputedStyle?: (elt: Element) => CSSStyleDeclaration;
-  } | null | undefined;
-  style(): Style;
-}
-/** The per-context parsed property list, which doubles as a name -> property map. */
-type StyleContextProperties = ParsedStyleProperty[] & {
-  [name: string]: ParsedStyleProperty | undefined;
-};
-/** A style context: a selector and the properties applied where it matches. */
-interface StyleContext {
-  selector: SelectorLike | null;
-  properties: StyleContextProperties;
-  mappedProperties: ParsedStyleProperty[];
-  index: number;
-}
-interface StylePrivate {
-  cy: StyleCore;
-  coreStyle: Record<string, ParsedStyleProperty>;
-  contextStyles?: Record<string, ContextStyleMap>;
-  propDiffs?: Record<string, string[]>;
-  hasPie?: boolean;
-  hasStripe?: boolean;
-  defaultProperties?: Record<string, ParseResult>;
-}
-interface Style extends ApplyStyfn, BypassStyfn, ContainerStyfn, GetForEleStyfn, JsonStyfn, StringSheetStyfn, PropertiesStyfn, ParseStyfn {
-  length: number;
-  /** the number of contexts in the default stylesheet (set by addDefaultStylesheet) */
-  defaultLength: number;
-  [index: number]: StyleContext;
-  _private: StylePrivate;
-  /** cache of parsed properties, keyed by argument hash (set lazily by parse) */
-  propCache?: ParseResult[];
-  instanceString(): string;
-  clear(): Style;
-  resetToDefault(): Style;
-  core(propName: string): ParseResult;
-  selector(selectorStr: string): Style;
-  css(): Style;
-  css(map: Record<string, unknown>): Style;
-  css(name: string, value: unknown): Style;
-  style: Style['css'];
-  cssRule(name: string, value: unknown): Style;
-  append(style: unknown): Style;
-}
-interface StyleStatic {
-  (this: Style | void, cy: StyleCore): Style;
-  new (cy: StyleCore): Style;
-  prototype: Style;
-  fromJson(cy: StyleCore, json: StyleJsonBlock[]): Style;
-  fromString(cy: StyleCore, string: string): Style;
-  types: Record<string, StylePropertyType>;
-  properties: StylePropertiesTable;
-  propertyGroups: Record<string, StyleProperty[]>;
-  propertyGroupNames: Record<string, string[]>;
-  propertyGroupKeys: string[];
-}
-declare let Style: StyleStatic;
-//#endregion
-//#region src/style/parse.d.mts
-/**
- * A parsed style property value, as produced by `Style.prototype.parse()`.
- * The fields beyond `name`/`value`/`strValue`/`bypass` are written at
- * various points in a property's lifecycle (parsing, mapping, flattening,
- * bypassing), so most of them are optional.
- */
-interface ParsedStyleProperty {
-  /** the name of the property */
-  name: string;
-  /** the parsed, native-typed value of the property (number, string, value array, colour tuple, regex match array, or mapper function) */
-  value?: unknown;
-  /** a string value that represents the property value in valid css */
-  strValue?: string;
-  /** the units of the value (or per-value units for multiple-valued properties) */
-  units?: string | (string | undefined)[];
-  /** true iff the property is a bypass property */
-  bypass?: boolean;
-  /** for a bypass property: the overridden non-bypass property */
-  bypassed?: ParsedStyleProperty | null;
-  /** indication to delete the bypass property */
-  deleteBypass?: boolean;
-  /** indication to delete the bypassed property */
-  deleteBypassed?: boolean;
-  /** indication to delete the property (use the default value) */
-  delete?: boolean;
-  /** the value normalised to canonical units (px, ms, rad, [0, 1] fractions, ...) */
-  pfValue?: number | (number | undefined)[];
-  /** the mapping type descriptor when the value is a mapper (e.g. `types.data`) */
-  mapped?: StylePropertyType;
-  /** for a flattened property: a reference back to the mapping that produced it */
-  mapping?: ParsedStyleProperty;
-  /** the data field used by data()/mapData() mappers */
-  field?: string;
-  /** mapData() input range minimum */
-  fieldMin?: number;
-  /** mapData() input range maximum */
-  fieldMax?: number;
-  /** mapData() output range minimum (parsed value) */
-  valueMin?: unknown;
-  /** mapData() output range maximum (parsed value) */
-  valueMax?: unknown;
-  /** cached fn-mapper return value */
-  fnValue?: unknown;
-  /** previously applied fn-mapper return value */
-  prevFnValue?: unknown;
-}
-/** `parseImpl()` returns `null` on an invalid property and `false` on a disallowed mapping. */
-type ParseResult = ParsedStyleProperty | null | false;
-/** Flattening flag passed through the parse functions. */
-type StylePropIsFlat = boolean | 'mapping' | 'multiple' | null;
-interface ParseStyfn {
-  parse(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
-  parseImplWarn(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
-  parseImpl(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
-}
-//#endregion
 //#region src/collection/algorithms/bfs-dfs.d.mts
 /** Callback invoked for each visited node during a search. Return `true` to
  * stop and record the node as `found`; return `false` to stop without. */
@@ -976,6 +414,112 @@ interface AlgorithmsTarjanStronglyConnected {
 /** All graph-algorithm methods contributed to the collection prototype. */
 interface CollectionAlgorithms extends AlgorithmsBfsDfs, AlgorithmsDijkstra, AlgorithmsKruskal, AlgorithmsAStar, AlgorithmsFloydWarshall, AlgorithmsBellmanFord, AlgorithmsKargerStein, AlgorithmsPageRank, AlgorithmsDegreeCentrality, AlgorithmsClosenessCentrality, AlgorithmsBetweennessCentrality, AlgorithmsMarkovClustering, AlgorithmsKClustering, AlgorithmsHierarchicalClustering, AlgorithmsAffinityPropagation, AlgorithmsHierholzer, AlgorithmsHopcroftTarjanBiconnected, AlgorithmsTarjanStronglyConnected {}
 //#endregion
+//#region src/promise.d.mts
+/*!
+Embeddable Minimum Strictly-Compliant Promises/A+ 1.1.1 Thenable
+Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
+Licensed under The MIT License (http://opensource.org/licenses/MIT)
+*/
+/**
+ * The structural subset of the Promise API provided by both the native
+ * `Promise` and the Thenable polyfill (construct with executor, `then`,
+ * `resolve`, `reject`, `all`).
+ */
+interface PromiseLikeObject<T> {
+  then<TResult1 = T, TResult2 = never>(onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null, onRejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null): PromiseLikeObject<TResult1 | TResult2>;
+}
+//#endregion
+//#region src/animation.d.mts
+interface AnimationStyleProp {
+  name: string;
+}
+/**
+ * Animation options as accepted by `.animate()` / `.animation()`. The
+ * same bag, plus bookkeeping fields, becomes the animation's `_private`
+ * state.
+ */
+interface AnimationOptions {
+  duration?: number | 'slow' | 'fast';
+  style?: AnimationStyleProp[] | Record<string, unknown>;
+  css?: AnimationStyleProp[] | Record<string, unknown>;
+  queue?: boolean;
+  complete?: () => void;
+  step?: () => void;
+  delay?: number;
+  easing?: string;
+  position?: Position;
+  renderedPosition?: Position;
+  startPosition?: Position;
+  startStyle?: Record<string, AnimationStyleProp>;
+  pan?: Position;
+  panBy?: Position;
+  startPan?: Position;
+  zoom?: number | Record<string, unknown> | null;
+  startZoom?: number;
+  center?: {
+    eles: unknown;
+  };
+  centre?: {
+    eles: unknown;
+  };
+  fit?: {
+    eles?: unknown;
+    boundingBox?: unknown;
+    padding?: number;
+  };
+}
+/**
+ * Structural view of what an Animation animates: a Core or a single
+ * element. Refined to the real types when src/core and src/collection
+ * are converted.
+ */
+interface AnimationTarget {
+  _private: {
+    animation: {
+      current: Animation[];
+      queue: Animation[];
+    };
+  };
+}
+interface AnimationPrivate extends AnimationOptions {
+  target: AnimationTarget;
+  started: boolean;
+  playing: boolean;
+  hooked: boolean;
+  applying: boolean;
+  progress: number;
+  completes: (() => void)[];
+  frames: (() => void)[];
+  stopped?: boolean;
+  duration: number | 'slow' | 'fast';
+}
+declare class Animation {
+  _private: AnimationPrivate;
+  length: number;
+  [index: number]: Animation;
+  constructor(target: AnimationTarget, opts?: AnimationOptions, opts2?: AnimationOptions);
+  instanceString(): string;
+  hook(): this;
+  play(): this;
+  playing(): boolean;
+  apply(): this;
+  applying(): boolean;
+  pause(): this;
+  stop(): this;
+  rewind(): this;
+  fastforward(): this;
+  time(): number;
+  time(t: number): this;
+  progress(): number;
+  progress(p: number): this;
+  completed(): boolean;
+  reverse(): this;
+  promise(type?: string): PromiseLikeObject<void>;
+  complete: this['completed'];
+  run: this['play'];
+  running: this['playing'];
+}
+//#endregion
 //#region src/collection/animation.d.mts
 /** Animation methods contributed to the collection prototype. */
 interface CollectionAnimation {
@@ -1032,8 +576,8 @@ type FilterArg = string | FilterEleFn | Collection | Element$1 | undefined | nul
 type SetArg = string | Collection | Element$1 | undefined | null;
 /** Result of `.byGroup()`. */
 interface ByGroupResult {
-  nodes: Collection;
-  edges: Collection;
+  nodes: NodeCollection;
+  edges: EdgeCollection;
 }
 /** Result of `.diff()`/`.difference()`. */
 interface DiffResult {
@@ -1042,8 +586,8 @@ interface DiffResult {
   both: Collection;
 }
 interface CollectionFilter {
-  nodes(selector?: FilterArg): Collection;
-  edges(selector?: FilterArg): Collection;
+  nodes(selector?: FilterArg): NodeCollection;
+  edges(selector?: FilterArg): EdgeCollection;
   byGroup(): ByGroupResult;
   filter(filter?: FilterArg, thisArg?: any): Collection;
   stdFilter(filter?: FilterArg, thisArg?: any): Collection;
@@ -1076,22 +620,109 @@ interface CollectionFilter {
 //#region src/collection/compounds.d.mts
 /** Compound-graph navigation methods contributed to the prototype. */
 interface CollectionCompounds {
-  parent(selector?: FilterArg): Collection;
-  parents(selector?: FilterArg): Collection;
-  ancestors(selector?: FilterArg): Collection;
-  commonAncestors(selector?: FilterArg): Collection;
-  orphans(selector?: FilterArg): Collection;
-  nonorphans(selector?: FilterArg): Collection;
-  children(selector?: FilterArg): Collection;
-  siblings(selector?: FilterArg): Collection;
+  parent(selector?: FilterArg): NodeCollection;
+  parents(selector?: FilterArg): NodeCollection;
+  ancestors(selector?: FilterArg): NodeCollection;
+  commonAncestors(selector?: FilterArg): NodeCollection;
+  orphans(selector?: FilterArg): NodeCollection;
+  nonorphans(selector?: FilterArg): NodeCollection;
+  children(selector?: FilterArg): NodeCollection;
+  siblings(selector?: FilterArg): NodeCollection;
   isParent(): boolean | undefined;
   isChildless(): boolean | undefined;
   isChild(): boolean | undefined;
   isOrphan(): boolean | undefined;
-  descendants(selector?: FilterArg): Collection;
+  descendants(selector?: FilterArg): NodeCollection;
   forEachDown(fn: (ele: Element$1) => unknown, includeSelf?: boolean): Collection;
   forEachUp(fn: (ele: Element$1) => unknown, includeSelf?: boolean): Collection;
   forEachUpAndDown(fn: (ele: Element$1) => unknown, includeSelf?: boolean): Collection;
+}
+//#endregion
+//#region src/event.d.mts
+type NativeEvent = globalThis.Event;
+interface EventProps {
+  originalEvent?: NativeEvent;
+  type?: string;
+  cy?: CoreShim;
+  target?: unknown;
+  position?: Position;
+  renderedPosition?: Position;
+  namespace?: string | null;
+  layout?: unknown;
+  timeStamp?: number;
+}
+type EventSrc = string | NativeEvent | EventProps | null | undefined;
+declare class Event {
+  type: string;
+  originalEvent?: NativeEvent;
+  cy?: CoreShim;
+  target?: unknown;
+  position?: Position;
+  renderedPosition?: Position;
+  namespace?: string | null;
+  layout?: unknown;
+  timeStamp: number;
+  isDefaultPrevented: () => boolean;
+  isPropagationStopped: () => boolean;
+  isImmediatePropagationStopped: () => boolean;
+  constructor(src: EventSrc, props?: EventProps);
+  instanceString(): string;
+  recycle(src: EventSrc, props?: EventProps): void;
+  preventDefault(): void;
+  stopPropagation(): void;
+  stopImmediatePropagation(): void;
+}
+//#endregion
+//#region src/emitter.d.mts
+type EventHandler = (this: any, event: Event, ...extraParams: any[]) => unknown;
+interface Listener<TQualifier = unknown> {
+  event: string | undefined;
+  callback: EventHandler;
+  type: string;
+  namespace: string | null | undefined;
+  qualifier?: TQualifier | null;
+  conf?: ListenerConf | null;
+}
+interface ListenerConf {
+  one?: boolean;
+}
+/** Something an event can bubble up to: it can emit further. */
+interface ParentEmitTarget {
+  emit(events: Event, extraParams?: unknown[]): unknown;
+}
+interface EmitterOptions<TContext, TQualifier = unknown> {
+  qualifierCompare?(q1: TQualifier | null | undefined, q2: TQualifier | null | undefined): boolean;
+  eventMatches?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): boolean;
+  addEventFields?(context: TContext, evt: EventProps): void;
+  callbackContext?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): unknown;
+  beforeEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
+  afterEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
+  bubble?(context: TContext): boolean;
+  parent?(context: TContext): ParentEmitTarget | null;
+  context?: TContext;
+}
+type EmitInput = string | string[] | Event | EventProps;
+declare class Emitter<TContext = unknown, TQualifier = unknown> {
+  qualifierCompare: (q1: TQualifier | null | undefined, q2: TQualifier | null | undefined) => boolean;
+  eventMatches: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => boolean;
+  addEventFields: (context: TContext, evt: EventProps) => void;
+  callbackContext: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => unknown;
+  beforeEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
+  afterEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
+  bubble: (context: TContext) => boolean;
+  parent: (context: TContext) => ParentEmitTarget | null;
+  context: TContext;
+  listeners: Listener<TQualifier>[];
+  emitting: number;
+  constructor(opts?: EmitterOptions<TContext, TQualifier>, context?: TContext);
+  on(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null, confOverrides?: ListenerConf): this;
+  addListener: this['on'];
+  one(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
+  off(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
+  removeListener: this['off'];
+  removeAllListeners(): this;
+  emit(events: EmitInput, extraParams?: unknown, manualCallback?: EventHandler): this;
+  trigger: this['emit'];
 }
 //#endregion
 //#region src/define/data.d.mts
@@ -1516,6 +1147,375 @@ interface CollectionLayout {
   makeLayout(this: Collection, options?: Partial<LayoutOptions$1>): LayoutLike;
 }
 //#endregion
+//#region src/style/properties.d.mts
+/** Validation/parsing descriptor for a style property value type (an entry in `Style.types`). */
+interface StylePropertyType {
+  number?: boolean;
+  min?: number;
+  max?: number;
+  strictMin?: boolean;
+  strictMax?: boolean;
+  integer?: boolean;
+  unitless?: boolean;
+  units?: string;
+  implicitUnits?: string;
+  allowPercent?: boolean;
+  multiple?: boolean;
+  evenMultiple?: boolean;
+  enums?: (string | number)[];
+  singleEnum?: boolean;
+  color?: boolean;
+  string?: boolean;
+  mapping?: boolean;
+  regex?: string;
+  regexes?: string[];
+  singleRegexMatchValue?: boolean;
+  fn?: boolean;
+  propList?: boolean;
+  validate?: (valArr: unknown[], unitsArr: unknown[]) => boolean;
+}
+/** Diff function: whether a change from one value to another triggers an update. */
+type StylePropertyTriggerFn = (fromValue: unknown, toValue: unknown, ele: StyleElement) => boolean;
+/** Overrides the value hashed into the style key for a property. */
+type StylePropertyHashOverrideFn = (ele: StyleElement, parsedProp: ParsedStyleProperty) => number | (number | undefined)[] | undefined;
+/** Descriptor for a single visual style property (an entry in `Style.properties`). */
+interface StyleProperty {
+  name: string;
+  /** the value type of the property (absent on alias entries) */
+  type?: StylePropertyType;
+  /** the property group the property belongs to (assigned after the group tables are built) */
+  groupKey?: string;
+  triggersBounds?: StylePropertyTriggerFn;
+  triggersZOrder?: StylePropertyTriggerFn;
+  triggersBoundsOfConnectedEdges?: StylePropertyTriggerFn;
+  triggersBoundsOfParallelEdges?: StylePropertyTriggerFn;
+  hashOverride?: StylePropertyHashOverrideFn;
+  /** true for alias entries (e.g. `content` -> `label`) */
+  alias?: boolean;
+  /** the aliased property for alias entries */
+  pointsTo?: StyleProperty;
+}
+/** The property table: an array of descriptors that doubles as a name -> descriptor map. */
+type StylePropertiesTable = StyleProperty[] & {
+  [name: string]: StyleProperty | undefined;
+};
+interface PropertiesStyfn {
+  /** the value types that properties can have (statically available as `Style.types`) */
+  types: Record<string, StylePropertyType>;
+  /** the property table (statically available as `Style.properties`) */
+  properties: StylePropertiesTable;
+  propertyGroups: Record<string, StyleProperty[]>;
+  propertyGroupNames: Record<string, string[]>;
+  propertyGroupKeys: string[];
+  propertyNames: string[];
+  aliases: {
+    name: string;
+    pointsTo: string;
+  }[];
+  /** the pie properties are numbered, so give access to a constant N (for renderer use) */
+  pieBackgroundN: number;
+  /** the stripe properties are numbered, so give access to a constant N (for renderer use) */
+  stripeBackgroundN: number;
+  arrowPrefixes: string[];
+  getDefaultProperty(this: Style, name: string): ParseResult;
+  getDefaultProperties(this: Style): Record<string, ParseResult>;
+  addDefaultStylesheet(this: Style): void;
+}
+//#endregion
+//#region src/style/apply.d.mts
+/** Metadata about the contexts that match an element. */
+interface ContextMeta {
+  /** which contexts match the element, e.g. 'ttfftt' */
+  key: string;
+  diffPropNames: string[];
+  empty: boolean;
+}
+/** A computed ele style object based on matched contexts: name -> property. */
+type ContextStyleMap = {
+  _private: {
+    key: string;
+  };
+} & {
+  [name: string]: ParsedStyleProperty | undefined;
+};
+/** The previous and next values of a property that diffed during application. */
+interface DiffProp {
+  prev?: ParsedStyleProperty | null;
+  next?: ParsedStyleProperty | null;
+}
+interface ApplyStyfn {
+  apply(this: Style, eles: ArrayLike<StyleElement>): StyleEles;
+  getPropertiesDiff(this: Style, oldCxtKey: string, newCxtKey: string): string[];
+  getContextMeta(this: Style, ele: StyleElement): ContextMeta;
+  getContextStyle(this: Style, cxtMeta: ContextMeta): ContextStyleMap;
+  applyContextStyle(this: Style, cxtMeta: ContextMeta, cxtStyle: ContextStyleMap, ele: StyleElement): {
+    diffProps: Record<string, DiffProp>;
+  };
+  updateStyleHints(this: Style, ele: StyleElement): boolean;
+  clearStyleHints(this: Style, ele: StyleElement): void;
+  applyParsedProperty(this: Style, ele: StyleElement, parsedProp: ParsedStyleProperty): boolean;
+  cleanElements(this: Style, eles: ArrayLike<StyleElement>, keepBypasses?: boolean): void;
+  update(this: Style): void;
+  updateTransitions(this: Style, ele: StyleElement, diffProps: Record<string, DiffProp | undefined>, isBypass?: boolean): void;
+  checkTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown, getTrigger: (prop: StyleProperty) => StylePropertyTriggerFn | undefined, onTrigger: (prop: StyleProperty) => void): void;
+  checkZOrderTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
+  checkBoundsTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
+  checkConnectedEdgesBoundsTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
+  checkParallelEdgesBoundsTrigger(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
+  checkTriggers(this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown): void;
+}
+//#endregion
+//#region src/style/bypass.d.mts
+interface BypassStyfn {
+  applyBypass(this: Style, eles: ArrayLike<StyleElement>, name: string | Record<string, unknown>, value?: unknown, updateTransitions?: unknown): boolean;
+  overrideBypass(this: Style, eles: ArrayLike<StyleElement>, name: string, value: unknown): void;
+  removeAllBypasses(this: Style, eles: ArrayLike<StyleElement>, updateTransitions?: boolean): void;
+  removeBypasses(this: Style, eles: ArrayLike<StyleElement>, props: string[], updateTransitions?: boolean): void;
+}
+//#endregion
+//#region src/style/container.d.mts
+interface ContainerStyfn {
+  getEmSizeInPixels(this: Style): number;
+  containerCss(this: Style, propName: string): string | undefined;
+}
+//#endregion
+//#region src/style/get-for-ele.d.mts
+interface GetForEleStyfn {
+  getRenderedStyle(this: Style, ele: StyleElement, prop?: string): string | Record<string, string> | null | undefined;
+  getRawStyle(this: Style, ele: StyleElement, isRenderedVal?: boolean): Record<string, string> | undefined;
+  getIndexedStyle(this: Style, ele: StyleElement, property: string, subproperty: string, index: number): unknown;
+  getStylePropertyValue(this: Style, ele: StyleElement, propName: string, isRenderedVal?: boolean): string | null | undefined;
+  getAnimationStartStyle(this: Style, ele: StyleElement, aniProps: {
+    name: string;
+  }[]): Record<string, ParsedStyleProperty>;
+  getPropsList(this: Style, propsObj: Record<string, unknown> | null | undefined): ParsedStyleProperty[];
+  getNonDefaultPropertiesHash(this: Style, ele: StyleElement, propNames: string[], seed: number[]): number[];
+  getPropertiesHash(this: Style, ele: StyleElement, propNames: string[], seed: number[]): number[];
+}
+//#endregion
+//#region src/style/json.d.mts
+/** A JSON stylesheet block: a selector and its style properties. */
+interface StyleJsonBlock {
+  selector: string;
+  style?: Record<string, unknown>;
+  css?: Record<string, unknown>;
+}
+interface JsonStyfn {
+  appendFromJson(this: Style, json: StyleJsonBlock[]): Style;
+  fromJson(this: Style, json: StyleJsonBlock[]): Style;
+  json(this: Style): StyleJsonBlock[];
+}
+//#endregion
+//#region src/style/string-sheet.d.mts
+interface StringSheetStyfn {
+  appendFromString(this: Style, string: string): Style;
+  fromString(this: Style, string: string): Style;
+}
+//#endregion
+//#region src/style/index.d.mts
+/**
+ * Minimal structural view of a Selector instance, as used by style code.
+ * TODO(ts-migration): swap to the real Selector type once src/selector is converted.
+ */
+interface SelectorLike {
+  matches(ele: StyleElement): boolean;
+  text(): string;
+  toString(): string;
+  invalid?: boolean;
+}
+/** The element `_private` fields read/written by style code. */
+interface StyleElementPrivate {
+  /** name -> applied parsed property */
+  style: Record<string, ParsedStyleProperty | null | undefined>;
+  styleCxtKey?: string;
+  /** style hint hashes per property group */
+  styleKeys: Record<string, [number, number]>;
+  styleKey: number | null;
+  labelDimsKey?: number | null;
+  labelKey: number | null;
+  labelStyleKey: number | null;
+  sourceLabelKey: number | null;
+  sourceLabelStyleKey: number | null;
+  targetLabelKey: number | null;
+  targetLabelStyleKey: number | null;
+  nodeKey: number | null;
+  hasPie: boolean | null;
+  hasStripe: boolean | null;
+  appliedInitStyle: boolean;
+  styleDirty: boolean;
+  transitioning: boolean;
+  group: string;
+  data: Record<string, unknown>;
+}
+/** Minimal structural view of a playable animation, as used by style transitions. */
+interface StyleAnimation {
+  play(): StyleAnimation;
+  promise(): PromiseLikeObject<unknown>;
+}
+/**
+ * Minimal structural view of a single element, as used by style code.
+ * Replaced by the real Element type once src/collection is converted.
+ */
+interface StyleElement {
+  length: number;
+  [index: number]: StyleElement;
+  _private: StyleElementPrivate;
+  pstyle(name: string, includeNonDefault?: boolean): ParsedStyleProperty;
+  id(): string;
+  cy(): StyleCore;
+  isEdge(): boolean;
+  isLoop(): boolean;
+  isParent(): boolean;
+  source(): StyleElement;
+  target(): StyleElement;
+  removed(): boolean;
+  poolIndex(): number;
+  dirtyCompoundBoundsCache(): void;
+  dirtyBoundingBoxCache(): void;
+  dirtyStyleCache(): void;
+  connectedEdges(): StyleEles;
+  parallelEdges(): StyleEles;
+  emitAndNotify(events: string): void;
+  delayAnimation(duration: number): StyleAnimation;
+  animation(options: Record<string, unknown>): StyleAnimation;
+}
+/**
+ * Minimal structural view of a collection, as used by style code.
+ * Replaced by the real Collection type once src/collection is converted.
+ */
+interface StyleEles {
+  length: number;
+  [index: number]: StyleElement;
+  forEach(fn: (ele: StyleElement) => void): void;
+  updateStyle(): void;
+  push(ele: StyleElement): unknown;
+}
+/**
+ * Minimal structural view of the Core, as used by style code. Replaced by
+ * the real Core type once src/core is converted.
+ */
+interface StyleCore extends CoreShim {
+  collection(): StyleEles;
+  elements(): StyleEles;
+  mutableElements(): StyleEles;
+  notify(event: string, eles?: StyleElement): void;
+  container(): HTMLElement | null | undefined;
+  window(): {
+    getComputedStyle?: (elt: Element) => CSSStyleDeclaration;
+  } | null | undefined;
+  style(): Style;
+}
+/** The per-context parsed property list, which doubles as a name -> property map. */
+type StyleContextProperties = ParsedStyleProperty[] & {
+  [name: string]: ParsedStyleProperty | undefined;
+};
+/** A style context: a selector and the properties applied where it matches. */
+interface StyleContext {
+  selector: SelectorLike | null;
+  properties: StyleContextProperties;
+  mappedProperties: ParsedStyleProperty[];
+  index: number;
+}
+interface StylePrivate {
+  cy: StyleCore;
+  coreStyle: Record<string, ParsedStyleProperty>;
+  contextStyles?: Record<string, ContextStyleMap>;
+  propDiffs?: Record<string, string[]>;
+  hasPie?: boolean;
+  hasStripe?: boolean;
+  defaultProperties?: Record<string, ParseResult>;
+}
+interface Style extends ApplyStyfn, BypassStyfn, ContainerStyfn, GetForEleStyfn, JsonStyfn, StringSheetStyfn, PropertiesStyfn, ParseStyfn {
+  length: number;
+  /** the number of contexts in the default stylesheet (set by addDefaultStylesheet) */
+  defaultLength: number;
+  [index: number]: StyleContext;
+  _private: StylePrivate;
+  /** cache of parsed properties, keyed by argument hash (set lazily by parse) */
+  propCache?: ParseResult[];
+  instanceString(): string;
+  clear(): Style;
+  resetToDefault(): Style;
+  core(propName: string): ParseResult;
+  selector(selectorStr: string): Style;
+  css(): Style;
+  css(map: Record<string, unknown>): Style;
+  css(name: string, value: unknown): Style;
+  style: Style['css'];
+  cssRule(name: string, value: unknown): Style;
+  append(style: unknown): Style;
+}
+interface StyleStatic {
+  (this: Style | void, cy: StyleCore): Style;
+  new (cy: StyleCore): Style;
+  prototype: Style;
+  fromJson(cy: StyleCore, json: StyleJsonBlock[]): Style;
+  fromString(cy: StyleCore, string: string): Style;
+  types: Record<string, StylePropertyType>;
+  properties: StylePropertiesTable;
+  propertyGroups: Record<string, StyleProperty[]>;
+  propertyGroupNames: Record<string, string[]>;
+  propertyGroupKeys: string[];
+}
+declare let Style: StyleStatic;
+//#endregion
+//#region src/style/parse.d.mts
+/**
+ * A parsed style property value, as produced by `Style.prototype.parse()`.
+ * The fields beyond `name`/`value`/`strValue`/`bypass` are written at
+ * various points in a property's lifecycle (parsing, mapping, flattening,
+ * bypassing), so most of them are optional.
+ */
+interface ParsedStyleProperty {
+  /** the name of the property */
+  name: string;
+  /** the parsed, native-typed value of the property (number, string, value array, colour tuple, regex match array, or mapper function) */
+  value?: unknown;
+  /** a string value that represents the property value in valid css */
+  strValue?: string;
+  /** the units of the value (or per-value units for multiple-valued properties) */
+  units?: string | (string | undefined)[];
+  /** true iff the property is a bypass property */
+  bypass?: boolean;
+  /** for a bypass property: the overridden non-bypass property */
+  bypassed?: ParsedStyleProperty | null;
+  /** indication to delete the bypass property */
+  deleteBypass?: boolean;
+  /** indication to delete the bypassed property */
+  deleteBypassed?: boolean;
+  /** indication to delete the property (use the default value) */
+  delete?: boolean;
+  /** the value normalised to canonical units (px, ms, rad, [0, 1] fractions, ...) */
+  pfValue?: number | (number | undefined)[];
+  /** the mapping type descriptor when the value is a mapper (e.g. `types.data`) */
+  mapped?: StylePropertyType;
+  /** for a flattened property: a reference back to the mapping that produced it */
+  mapping?: ParsedStyleProperty;
+  /** the data field used by data()/mapData() mappers */
+  field?: string;
+  /** mapData() input range minimum */
+  fieldMin?: number;
+  /** mapData() input range maximum */
+  fieldMax?: number;
+  /** mapData() output range minimum (parsed value) */
+  valueMin?: unknown;
+  /** mapData() output range maximum (parsed value) */
+  valueMax?: unknown;
+  /** cached fn-mapper return value */
+  fnValue?: unknown;
+  /** previously applied fn-mapper return value */
+  prevFnValue?: unknown;
+}
+/** `parseImpl()` returns `null` on an invalid property and `false` on a disallowed mapping. */
+type ParseResult = ParsedStyleProperty | null | false;
+/** Flattening flag passed through the parse functions. */
+type StylePropIsFlat = boolean | 'mapping' | 'multiple' | null;
+interface ParseStyfn {
+  parse(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
+  parseImplWarn(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
+  parseImpl(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
+}
+//#endregion
 //#region src/collection/style.d.mts
 /** Style accessor methods contributed to the collection prototype. */
 interface CollectionStyle {
@@ -1578,8 +1578,8 @@ interface CollectionSwitchFunctions {
 type SelectorArg = string | ((ele: Element$1, i: number, eles: Collection) => boolean | unknown) | Collection | Element$1 | undefined | null;
 interface CollectionTraversing {
   clearTraversalCache(): void;
-  roots(selector?: SelectorArg): Collection;
-  leaves(selector?: SelectorArg): Collection;
+  roots(selector?: SelectorArg): NodeCollection;
+  leaves(selector?: SelectorArg): NodeCollection;
   outgoers(selector?: SelectorArg): Collection;
   successors(selector?: SelectorArg): Collection;
   incomers(selector?: SelectorArg): Collection;
@@ -1590,16 +1590,16 @@ interface CollectionTraversing {
   closedNeighbourhood(selector?: SelectorArg): Collection;
   openNeighborhood(selector?: SelectorArg): Collection;
   openNeighbourhood(selector?: SelectorArg): Collection;
-  source(selector?: SelectorArg): Collection;
-  target(selector?: SelectorArg): Collection;
-  sources(selector?: SelectorArg): Collection;
-  targets(selector?: SelectorArg): Collection;
-  edgesWith(otherNodes: string | Collection): Collection;
-  edgesTo(otherNodes: string | Collection): Collection;
-  connectedEdges(selector?: SelectorArg): Collection;
-  connectedNodes(selector?: SelectorArg): Collection;
-  parallelEdges(selector?: SelectorArg): Collection;
-  codirectedEdges(selector?: SelectorArg): Collection;
+  source(selector?: SelectorArg): NodeSingular;
+  target(selector?: SelectorArg): NodeSingular;
+  sources(selector?: SelectorArg): NodeCollection;
+  targets(selector?: SelectorArg): NodeCollection;
+  edgesWith(otherNodes: string | Collection): EdgeCollection;
+  edgesTo(otherNodes: string | Collection): EdgeCollection;
+  connectedEdges(selector?: SelectorArg): EdgeCollection;
+  connectedNodes(selector?: SelectorArg): NodeCollection;
+  parallelEdges(selector?: SelectorArg): EdgeCollection;
+  codirectedEdges(selector?: SelectorArg): EdgeCollection;
   components(root?: Collection | Element$1 | null): Collection[];
   componentsOf(root?: Collection | Element$1 | null): Collection[];
   component(): Collection;
@@ -1739,6 +1739,35 @@ interface Collection extends CollectionBaseFns, CollectionAlgorithms, Collection
 }
 /** A single element (node or edge); array-like of itself, length 1. */
 interface Element$1 extends Collection {}
+type PublicSelectorArg = string | Collection | Element$1 | ((ele: Element$1, i: number, eles: Collection) => boolean | unknown) | undefined | null;
+interface Singular extends Element$1 {}
+interface NodeCollection extends Collection {
+  parent(selector?: PublicSelectorArg): NodeCollection;
+  parents(selector?: PublicSelectorArg): NodeCollection;
+  ancestors(selector?: PublicSelectorArg): NodeCollection;
+  commonAncestors(selector?: PublicSelectorArg): NodeCollection;
+  orphans(selector?: PublicSelectorArg): NodeCollection;
+  nonorphans(selector?: PublicSelectorArg): NodeCollection;
+  children(selector?: PublicSelectorArg): NodeCollection;
+  siblings(selector?: PublicSelectorArg): NodeCollection;
+  descendants(selector?: PublicSelectorArg): NodeCollection;
+  roots(selector?: PublicSelectorArg): NodeCollection;
+  leaves(selector?: PublicSelectorArg): NodeCollection;
+  connectedEdges(selector?: PublicSelectorArg): EdgeCollection;
+}
+interface EdgeCollection extends Collection {
+  source(selector?: PublicSelectorArg): NodeSingular;
+  target(selector?: PublicSelectorArg): NodeSingular;
+  sources(selector?: PublicSelectorArg): NodeCollection;
+  targets(selector?: PublicSelectorArg): NodeCollection;
+  edgesWith(otherNodes: string | Collection): EdgeCollection;
+  edgesTo(otherNodes: string | Collection): EdgeCollection;
+  connectedNodes(selector?: PublicSelectorArg): NodeCollection;
+  parallelEdges(selector?: PublicSelectorArg): EdgeCollection;
+  codirectedEdges(selector?: PublicSelectorArg): EdgeCollection;
+}
+type NodeSingular = Singular & NodeCollection;
+type EdgeSingular = Singular & EdgeCollection;
 //#endregion
 //#region src/core/add-remove.d.mts
 /** The shapes accepted by `add()`. */
@@ -1872,8 +1901,8 @@ interface CollectionOpts {
 /** Graph search/collection helpers contributed to the core prototype. */
 interface CoreSearch {
   collection(this: Core, eles?: string | Collection | Element$1 | Element$1[], opts?: CollectionOpts): Collection;
-  nodes(this: Core, selector?: FilterArg): Collection;
-  edges(this: Core, selector?: FilterArg): Collection;
+  nodes(this: Core, selector?: FilterArg): NodeCollection;
+  edges(this: Core, selector?: FilterArg): EdgeCollection;
   $(this: Core, selector?: FilterArg): Collection;
   elements(this: Core, selector?: FilterArg): Collection;
   filter(this: Core, selector?: FilterArg): Collection;
@@ -2092,5 +2121,5 @@ interface CytoscapeFactory {
 }
 declare let cytoscape: CytoscapeFactory;
 //#endregion
-export { type BoundingBox, type Collection, type Core, CytoscapeExtension, CytoscapeFactory, type CytoscapeOptions, type Element$1 as Element, type ElementDefinition, type ElementJson, type LayoutInstance, type Position, type RendererInstance, cytoscape as default };
+export { type BoundingBox, type Collection, type Core, CytoscapeExtension, CytoscapeFactory, type CytoscapeOptions, type EdgeCollection, type EdgeSingular, type Element$1 as Element, type ElementDefinition, type ElementJson, type LayoutInstance, type NodeCollection, type NodeSingular, type Position, type RendererInstance, type Singular, cytoscape as default };
 export as namespace cytoscape;

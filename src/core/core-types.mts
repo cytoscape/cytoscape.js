@@ -82,6 +82,7 @@ export interface CytoscapeOptions {
 }
 
 /** Internal core state (`cy._private`). Tagged @internal at use sites. */
+/** @internal */
 export interface CorePrivate {
   container: HTMLElement | null;
   ready: boolean;
@@ -169,6 +170,7 @@ export interface Core extends
 }
 
 /** The runtime Core constructor (a function, mirroring Collection). */
+/** @internal */
 export interface CoreStatic {
   new ( opts?: CytoscapeOptions ): Core;
   ( this: Core, opts?: CytoscapeOptions ): void;
@@ -176,4 +178,4 @@ export interface CoreStatic {
 }
 
 // re-exports used widely by core mixins
-export type { Position, BoundingBox, CoreStyleAccess, CoreRendererAccess, ElementDefinition };
+export type { Position, BoundingBox, ElementDefinition };

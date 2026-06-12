@@ -6,7 +6,7 @@
 // and consumed the way the hand-written index.d.ts was.
 
 import cytoscape from '../../build/dts/index.js';
-import type { Core, Collection, Element, CytoscapeOptions } from '../../build/dts/index.js';
+import type { Core, Collection, Element, CytoscapeOptions, NodeCollection, EdgeCollection, NodeSingular } from '../../build/dts/index.js';
 
 // factory: create an instance
 const opts: CytoscapeOptions = {
@@ -36,15 +36,16 @@ cy.on('tap', 'node', () => {});
 cy.emit('custom');
 
 // collection methods, traversal, data
-const nodes: Collection = cy.nodes();
-const edges: Collection = cy.edges();
+const nodes: NodeCollection = cy.nodes();
+const edges: EdgeCollection = cy.edges();
 const ele: Element | undefined = nodes.element();
 const id: string | undefined = nodes.id();
 const deg: number | undefined = nodes.degree();
 nodes.forEach((n) => n.data('weight', 1));
 const filtered: Collection = nodes.filter(':selected');
 const nhood: Collection = nodes.neighborhood();
-const conn: Collection = nodes.connectedEdges();
+const conn: EdgeCollection = nodes.connectedEdges();
+const src: NodeSingular = edges.source();
 
 // algorithms
 const dijkstra = cy.elements().dijkstra({ root: '#a', directed: false });
@@ -59,4 +60,4 @@ cytoscape.use(() => {});
 const v: string = cytoscape.version;
 
 // silence unused-locals
-void [all, removed, z, edges, ele, id, deg, filtered, nhood, conn, dist, path, v];
+void [all, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v];

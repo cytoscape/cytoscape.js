@@ -1,7 +1,7 @@
 import * as is from '../is.mjs';
 import Collection from '../collection/index.mjs';
 import type { Core } from './core-types.mjs';
-import type { Collection as Coll, Element, CoreAccess } from '../collection/eles-types.mjs';
+import type { Collection as Coll, Element, CoreAccess, NodeCollection, EdgeCollection } from '../collection/eles-types.mjs';
 import type { FilterArg } from '../collection/filter.mjs';
 
 /** Options accepted by `collection()` when building from an array. */
@@ -82,8 +82,8 @@ corefn.elements = corefn.filter = corefn.$;
 /** Graph search/collection helpers contributed to the core prototype. */
 export interface CoreSearch {
   collection( this: Core, eles?: string | Coll | Element | Element[], opts?: CollectionOpts ): Coll;
-  nodes( this: Core, selector?: FilterArg ): Coll;
-  edges( this: Core, selector?: FilterArg ): Coll;
+  nodes( this: Core, selector?: FilterArg ): NodeCollection;
+  edges( this: Core, selector?: FilterArg ): EdgeCollection;
   $( this: Core, selector?: FilterArg ): Coll;
   elements( this: Core, selector?: FilterArg ): Coll;
   filter( this: Core, selector?: FilterArg ): Coll;

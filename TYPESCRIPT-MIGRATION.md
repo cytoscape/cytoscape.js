@@ -64,27 +64,25 @@ The runtime keeps its prototype-mixin structure; the types mirror it:
 
 The generated d.ts (~2,100 lines) covers the **full method surface** of
 `Core`, `Collection`, and `Element` — more method coverage than the
-hand-written file, since every mixin method is typed. The old
-`index.d.ts` (6,644 lines) is kept in the repo as a reference and parity
-target. Three areas of the hand-written file are **not yet reproduced**
-from source and are the remaining work to reach full parity:
+hand-written file, since every mixin method is typed. The public entry
+point now also re-exports the old broad node/edge alias family
+(`Singular`, `NodeSingular`, `EdgeSingular`, `NodeCollection`,
+`EdgeCollection`), and the documented search/traversal helpers return
+those aliases where appropriate. The old `index.d.ts` (6,644 lines) is
+kept in the repo as a reference and parity target. Two areas of the
+hand-written file are **not yet reproduced** from source and are the
+remaining work to reach full parity:
 
-1. **Node/edge narrowing** — `NodeSingular`/`EdgeSingular`/
-   `NodeCollection`/`EdgeCollection`. The source currently uses a single
-   wide `Collection`/`Element`. To regenerate the projections, add
-   node/edge-narrowed interfaces in `eles-types.mts` (e.g. `NodeSingular
-   extends Singular` with `position()`, `EdgeSingular` with
-   `source()`/`target()`), and have the typed traversal methods return
-   them.
-2. **`Css.*` style-property types** — the per-property value types
+1. **`Css.*` style-property types** — the per-property value types
    (`background-color`, `width`, mappers, etc.). Derive these from the
    `src/style/properties.mts` property table.
-3. **`EventObject` hierarchy** — surface the `EventObject` /
+2. **`EventObject` hierarchy** — surface the `EventObject` /
    `EventObjectNode` / `EventObjectEdge` types (the runtime `Event` class
    is already typed) on the public event-binding signatures.
 
-Until then, downstream TypeScript users relying on `NodeSingular` /
-`EdgeSingular` / `Css.*` get looser (`Collection` / `unknown`-ish) types
-from the generated definitions. Reverting `package.json` `types` to
-`./index.d.ts` restores the richer hand-written types if that trade-off is
-preferred while the above source enrichment is completed.
+Until then, downstream TypeScript users relying on `Css.*` get looser
+(`unknown`-ish) types from the generated definitions, and event handler
+signatures do not yet expose the old `EventObject*` hierarchy. Reverting
+`package.json` `types` to `./index.d.ts` restores the richer hand-written
+types if that trade-off is preferred while the above source enrichment is
+completed.

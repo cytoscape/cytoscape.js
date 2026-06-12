@@ -1,24 +1,24 @@
 import Set from '../set.mjs';
 import cache from './cache-traversal-call.mjs';
-import type { Collection, Element } from './eles-types.mjs';
+import type { Collection, Element, NodeCollection } from './eles-types.mjs';
 import type { FilterArg } from './filter.mjs';
 import type { SetLike } from '../set.mjs';
 
 /** Compound-graph navigation methods contributed to the prototype. */
 export interface CollectionCompounds {
-  parent( selector?: FilterArg ): Collection;
-  parents( selector?: FilterArg ): Collection;
-  ancestors( selector?: FilterArg ): Collection;
-  commonAncestors( selector?: FilterArg ): Collection;
-  orphans( selector?: FilterArg ): Collection;
-  nonorphans( selector?: FilterArg ): Collection;
-  children( selector?: FilterArg ): Collection;
-  siblings( selector?: FilterArg ): Collection;
+  parent( selector?: FilterArg ): NodeCollection;
+  parents( selector?: FilterArg ): NodeCollection;
+  ancestors( selector?: FilterArg ): NodeCollection;
+  commonAncestors( selector?: FilterArg ): NodeCollection;
+  orphans( selector?: FilterArg ): NodeCollection;
+  nonorphans( selector?: FilterArg ): NodeCollection;
+  children( selector?: FilterArg ): NodeCollection;
+  siblings( selector?: FilterArg ): NodeCollection;
   isParent(): boolean | undefined;
   isChildless(): boolean | undefined;
   isChild(): boolean | undefined;
   isOrphan(): boolean | undefined;
-  descendants( selector?: FilterArg ): Collection;
+  descendants( selector?: FilterArg ): NodeCollection;
   forEachDown( fn: ( ele: Element ) => unknown, includeSelf?: boolean ): Collection;
   forEachUp( fn: ( ele: Element ) => unknown, includeSelf?: boolean ): Collection;
   forEachUpAndDown( fn: ( ele: Element ) => unknown, includeSelf?: boolean ): Collection;

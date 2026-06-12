@@ -19,9 +19,14 @@ export type {
 } from './core/core-types.mjs';
 export type {
   Collection,
+  EdgeCollection,
+  EdgeSingular,
   Element,
   ElementDefinition,
-  ElementJson
+  ElementJson,
+  NodeCollection,
+  NodeSingular,
+  Singular
 } from './collection/eles-types.mjs';
 export type { Position, BoundingBox } from './types.mjs';
 

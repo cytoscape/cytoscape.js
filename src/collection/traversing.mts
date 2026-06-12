@@ -1,7 +1,7 @@
 import * as util from '../util/index.mjs';
 import * as is from '../is.mjs';
 import cache from './cache-traversal-call.mjs';
-import type { Collection, Element, ElementPrivate, CoreAccess } from './eles-types.mjs';
+import type { Collection, Element, ElementPrivate, CoreAccess, NodeCollection, NodeSingular, EdgeCollection } from './eles-types.mjs';
 
 /** Selector/filter argument accepted by traversal methods. */
 type SelectorArg = string | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | Collection | Element | undefined | null;
@@ -465,8 +465,8 @@ elesfn.componentsOf = elesfn.components;
 
 export interface CollectionTraversing {
   clearTraversalCache(): void;
-  roots( selector?: SelectorArg ): Collection;
-  leaves( selector?: SelectorArg ): Collection;
+  roots( selector?: SelectorArg ): NodeCollection;
+  leaves( selector?: SelectorArg ): NodeCollection;
   outgoers( selector?: SelectorArg ): Collection;
   successors( selector?: SelectorArg ): Collection;
   incomers( selector?: SelectorArg ): Collection;
@@ -477,16 +477,16 @@ export interface CollectionTraversing {
   closedNeighbourhood( selector?: SelectorArg ): Collection;
   openNeighborhood( selector?: SelectorArg ): Collection;
   openNeighbourhood( selector?: SelectorArg ): Collection;
-  source( selector?: SelectorArg ): Collection;
-  target( selector?: SelectorArg ): Collection;
-  sources( selector?: SelectorArg ): Collection;
-  targets( selector?: SelectorArg ): Collection;
-  edgesWith( otherNodes: string | Collection ): Collection;
-  edgesTo( otherNodes: string | Collection ): Collection;
-  connectedEdges( selector?: SelectorArg ): Collection;
-  connectedNodes( selector?: SelectorArg ): Collection;
-  parallelEdges( selector?: SelectorArg ): Collection;
-  codirectedEdges( selector?: SelectorArg ): Collection;
+  source( selector?: SelectorArg ): NodeSingular;
+  target( selector?: SelectorArg ): NodeSingular;
+  sources( selector?: SelectorArg ): NodeCollection;
+  targets( selector?: SelectorArg ): NodeCollection;
+  edgesWith( otherNodes: string | Collection ): EdgeCollection;
+  edgesTo( otherNodes: string | Collection ): EdgeCollection;
+  connectedEdges( selector?: SelectorArg ): EdgeCollection;
+  connectedNodes( selector?: SelectorArg ): NodeCollection;
+  parallelEdges( selector?: SelectorArg ): EdgeCollection;
+  codirectedEdges( selector?: SelectorArg ): EdgeCollection;
   components( root?: Collection | Element | null ): Collection[];
   componentsOf( root?: Collection | Element | null ): Collection[];
   component(): Collection;

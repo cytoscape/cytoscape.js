@@ -151,6 +151,7 @@ export interface CollectionPrivate {
 }
 
 /** Per-element private state (see the literal in element.mts). */
+/** @internal */
 export interface ElementPrivate extends CollectionPrivate {
   single: true;
   data: ElementData;
@@ -265,8 +266,44 @@ export interface Element extends Collection {
   _private: ElementPrivate;
 }
 
+type PublicSelectorArg = string | Collection | Element | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | undefined | null;
+
+export interface Singular extends Element {}
+
+export interface NodeCollection extends Collection {
+  parent( selector?: PublicSelectorArg ): NodeCollection;
+  parents( selector?: PublicSelectorArg ): NodeCollection;
+  ancestors( selector?: PublicSelectorArg ): NodeCollection;
+  commonAncestors( selector?: PublicSelectorArg ): NodeCollection;
+  orphans( selector?: PublicSelectorArg ): NodeCollection;
+  nonorphans( selector?: PublicSelectorArg ): NodeCollection;
+  children( selector?: PublicSelectorArg ): NodeCollection;
+  siblings( selector?: PublicSelectorArg ): NodeCollection;
+  descendants( selector?: PublicSelectorArg ): NodeCollection;
+  roots( selector?: PublicSelectorArg ): NodeCollection;
+  leaves( selector?: PublicSelectorArg ): NodeCollection;
+  connectedEdges( selector?: PublicSelectorArg ): EdgeCollection;
+}
+
+export interface EdgeCollection extends Collection {
+  source( selector?: PublicSelectorArg ): NodeSingular;
+  target( selector?: PublicSelectorArg ): NodeSingular;
+  sources( selector?: PublicSelectorArg ): NodeCollection;
+  targets( selector?: PublicSelectorArg ): NodeCollection;
+  edgesWith( otherNodes: string | Collection ): EdgeCollection;
+  edgesTo( otherNodes: string | Collection ): EdgeCollection;
+  connectedNodes( selector?: PublicSelectorArg ): NodeCollection;
+  parallelEdges( selector?: PublicSelectorArg ): EdgeCollection;
+  codirectedEdges( selector?: PublicSelectorArg ): EdgeCollection;
+}
+
+export type NodeSingular = Singular & NodeCollection;
+
+export type EdgeSingular = Singular & EdgeCollection;
+
 /** The runtime Collection constructor (a function, not a class — the
  * shared prototype is reassigned, which classes don't allow). */
+/** @internal */
 export interface CollectionStatic {
   new ( cy: CoreAccess, elements?: ElementsInput, unique?: boolean, removed?: boolean ): Collection;
   ( this: Collection, cy: CoreAccess, elements?: ElementsInput, unique?: boolean, removed?: boolean ): void;
@@ -274,6 +311,7 @@ export interface CollectionStatic {
 }
 
 /** The runtime Element constructor. */
+/** @internal */
 export interface ElementStatic {
   new ( cy: CoreAccess, params: ElementDefinition, restore?: boolean ): Element;
   ( this: Element, cy: CoreAccess, params: ElementDefinition, restore?: boolean ): void;

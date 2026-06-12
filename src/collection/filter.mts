@@ -2,7 +2,7 @@ import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
 import type { SelectorInput } from '../selector/index.mjs';
 import type { SelectorCollection } from '../selector/type.mjs';
-import type { Collection, Element, CoreAccess } from './eles-types.mjs';
+import type { Collection, Element, CoreAccess, NodeCollection, EdgeCollection } from './eles-types.mjs';
 
 // TODO(eles-types): the runtime Collection prototype inherits Array.prototype,
 // so .push() exists at runtime but is not declared on the Collection interface.
@@ -27,8 +27,8 @@ export type SetArg = string | Collection | Element | undefined | null;
 
 /** Result of `.byGroup()`. */
 export interface ByGroupResult {
-  nodes: Collection;
-  edges: Collection;
+  nodes: NodeCollection;
+  edges: EdgeCollection;
 }
 
 /** Result of `.diff()`/`.difference()`. */
@@ -39,8 +39,8 @@ export interface DiffResult {
 }
 
 export interface CollectionFilter {
-  nodes( selector?: FilterArg ): Collection;
-  edges( selector?: FilterArg ): Collection;
+  nodes( selector?: FilterArg ): NodeCollection;
+  edges( selector?: FilterArg ): EdgeCollection;
   byGroup(): ByGroupResult;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- thisArg may be any object
   filter( filter?: FilterArg, thisArg?: any ): Collection;
@@ -98,7 +98,7 @@ let elesfn = ({
       }
     }
 
-    return { nodes, edges };
+    return { nodes: nodes as unknown as NodeCollection, edges: edges as unknown as EdgeCollection };
   },
 
   filter: function( this: Collection, filter?: FilterArg, thisArg?: unknown ){

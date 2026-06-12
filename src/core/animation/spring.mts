@@ -1,12 +1,27 @@
 /*! Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
 /* Given a tension, friction, and duration, a simulation at 60FPS will first run without a defined duration in order to calculate the full path. A second pass
    then adjusts the time delta -- using the relation between actual time and duration -- to calculate the path for the duration-constrained animation. */
-let generateSpringRK4 = (function(){
-  function springAccelerationForState( state ){
+interface SpringState {
+  x: number;
+  v: number;
+  tension: number;
+  friction: number;
+}
+
+interface SpringDerivative {
+  dx: number;
+  dv: number;
+}
+
+/** Spring easing factory; returns the actual duration (no duration given) or a position sampler. */
+type SpringFactory = ( tension: number | string, friction: number | string, duration?: number | null ) => number | ( ( percentComplete: number ) => number );
+
+let generateSpringRK4: SpringFactory = (function(){
+  function springAccelerationForState( state: SpringState ){
     return (-state.tension * state.x) - (state.friction * state.v);
   }
 
-  function springEvaluateStateWithDerivative( initialState, dt, derivative ){
+  function springEvaluateStateWithDerivative( initialState: SpringState, dt: number, derivative: SpringDerivative ): SpringDerivative {
     let state = {
       x: initialState.x + derivative.dx * dt,
       v: initialState.v + derivative.dv * dt,
@@ -17,7 +32,7 @@ let generateSpringRK4 = (function(){
     return { dx: state.v, dv: springAccelerationForState( state ) };
   }
 
-  function springIntegrateState( state, dt ){
+  function springIntegrateState( state: SpringState, dt: number ){
     let a = {
       dx: state.v,
       dv: springAccelerationForState( state )
@@ -34,22 +49,22 @@ let generateSpringRK4 = (function(){
     return state;
   }
 
-  return function springRK4Factory( tension, friction, duration ){
+  return function springRK4Factory( tension: number | string, friction: number | string, duration?: number | null ): number | ( ( percentComplete: number ) => number ){
 
-    let initState = {
+    let initState: SpringState = {
       x: -1,
       v: 0,
-      tension: null,
-      friction: null
+      tension: 0,
+      friction: 0
     },
     path = [0],
     time_lapsed = 0,
     tolerance = 1 / 10000,
     DT = 16 / 1000,
-    have_duration, dt, last_state;
+    have_duration: boolean, dt: number, last_state: SpringState | undefined;
 
-    tension = parseFloat( tension ) || 500;
-    friction = parseFloat( friction ) || 20;
+    tension = parseFloat( tension as string ) || 500;
+    friction = parseFloat( friction as string ) || 20;
     duration = duration || null;
 
     initState.tension = tension;
@@ -60,9 +75,10 @@ let generateSpringRK4 = (function(){
     /* Calculate the actual time it takes for this animation to complete with the provided conditions. */
     if( have_duration ){
       /* Run the simulation without a duration. */
-      time_lapsed = springRK4Factory( tension, friction );
+      // no-duration call always returns the elapsed time (a number)
+      time_lapsed = springRK4Factory( tension, friction ) as number;
       /* Compute the adjusted time delta. */
-      dt = time_lapsed / duration * DT;
+      dt = time_lapsed / ( duration as number ) * DT;
     } else {
       dt = DT;
     }
@@ -81,7 +97,7 @@ let generateSpringRK4 = (function(){
 
     /* If duration is not defined, return the actual time required for completing this animation. Otherwise, return a closure that holds the
        computed path and returns a snapshot of the position according to a given percentComplete. */
-    return !have_duration ? time_lapsed : function( percentComplete ){ return path[ (percentComplete * (path.length - 1)) | 0 ]; };
+    return !have_duration ? time_lapsed : function( percentComplete: number ){ return path[ (percentComplete * (path.length - 1)) | 0 ]; };
   };
 }());
 

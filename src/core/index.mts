@@ -16,20 +16,41 @@ import style from './style.mjs';
 import viewport from './viewport.mjs';
 import data from './data.mjs';
 
-let Core = function( opts ){
-  let cy = this;
+import type {
+  Core as CoreType,
+  CoreStatic,
+  CorePrivate,
+  CytoscapeOptions
+} from './core-types.mjs';
+import type { Collection as CollectionType, CoreAccess, ElementDefinition, ElementJson, Element as ElementType } from '../collection/eles-types.mjs';
+
+// internal: a container DOM element may carry a cytoscape registration
+type CyContainer = HTMLElement & { _cyreg?: CyReg };
+interface CyReg {
+  cy?: CoreType;
+  readies?: ( ( evt: unknown ) => void )[];
+}
+
+// the resolved options shape: layout/renderer always have a name after init
+type CoreOptions = CytoscapeOptions & {
+  layout: { name?: string; [k: string]: unknown };
+  renderer: { name?: string; [k: string]: unknown };
+};
+
+let Core = function( this: CoreType, opts: CytoscapeOptions = {} ){
+  let cy = this; // eslint-disable-line @typescript-eslint/no-this-alias
 
   opts = util.extend( {}, opts );
 
-  let container = opts.container;
+  let container = opts.container as CyContainer | null | undefined;
 
   // allow for passing a wrapped jquery object
   // e.g. cytoscape({ container: $('#cy') })
-  if( container && !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
-    container = container[0];
+  if( container && !is.htmlElement( container ) && is.htmlElement( ( container as unknown as ArrayLike<unknown> )[0] ) ){
+    container = ( container as unknown as ArrayLike<CyContainer> )[0];
   }
 
-  let reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
+  let reg: CyReg | null = container ? ( container._cyreg ?? null ) : null; // e.g. already registered some info (e.g. readies) via jquery
   reg = reg || {};
 
   if( reg && reg.cy ){
@@ -44,11 +65,11 @@ let Core = function( opts ){
   reg.cy = cy;
 
   let head = window !== undefined && container !== undefined && !opts.headless;
-  let options = opts;
+  let options = opts as CoreOptions;
   options.layout = util.extend( { name: head ? 'grid' : 'null' }, options.layout );
   options.renderer = util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
 
-  let defVal = function( def, val, altVal ){
+  let defVal = function<T>( def: T, val: T | undefined, altVal?: T ): T {
     if( val !== undefined ){
       return val;
     } else if( altVal !== undefined ){
@@ -58,13 +79,13 @@ let Core = function( opts ){
     }
   };
 
-  let _p = this._private = {
-    container: container, // html dom ele container
+  let _p: CorePrivate = this._private = {
+    container: container || null, // html dom ele container
     ready: false, // whether ready has been triggered
     options: options, // cached options
-    elements: new Collection( this ), // elements in the graph
+    elements: new Collection( this as unknown as CoreAccess ), // elements in the graph
     listeners: [], // list of listeners
-    aniEles: new Collection( this ), // elements being animated
+    aniEles: new Collection( this as unknown as CoreAccess ), // elements being animated
     data: options.data || {}, // data for the core
     scratch: {}, // scratch object for core
     layout: null,
@@ -98,16 +119,16 @@ let Core = function( opts ){
   this.createEmitter();
 
   // set selection type
-  this.selectionType( options.selectionType );
+  this.selectionType( options.selectionType as 'single' | 'additive' );
 
   // init zoom bounds
   this.zoomRange({ min: options.minZoom, max: options.maxZoom });
 
-  let loadExtData = function( extData, next ){
+  let loadExtData = function( extData: unknown[], next: ( data: unknown[] ) => void ){
     let anyIsPromise = extData.some( is.promise );
 
     if( anyIsPromise ){
-      return Promise.all( extData ).then( next ); // load all data asynchronously, then exec rest of init
+      return Promise.all( extData ).then( next as ( data: unknown[] ) => void ); // load all data asynchronously, then exec rest of init
     } else {
       next( extData ); // exec synchronously for convenience
     }
@@ -122,7 +143,7 @@ let Core = function( opts ){
   let rendererOptions = util.assign({}, options, options.renderer); // allow rendering hints in top level options
   cy.initRenderer( rendererOptions );
 
-  let setElesAndLayout = function( elements, onload, ondone ){
+  let setElesAndLayout = function( elements: unknown, onload: () => void, ondone?: () => void ){
     cy.notifications( false );
 
     // remove old elements
@@ -133,28 +154,28 @@ let Core = function( opts ){
 
     if( elements != null ){
       if( is.plainObject( elements ) || is.array( elements ) ){
-        cy.add( elements );
+        cy.add( elements as Parameters<CoreType['add']>[0] );
       }
     }
 
-    cy.one( 'layoutready', function( e ){
+    cy.one( 'layoutready', function( e: unknown ){
       cy.notifications( true );
-      cy.emit( e ); // we missed this event by turning notifications off, so pass it on
+      cy.emit( e as string ); // we missed this event by turning notifications off, so pass it on
 
       cy.one( 'load', onload );
       cy.emitAndNotify( 'load' );
     } ).one( 'layoutstop', function(){
-      cy.one( 'done', ondone );
+      cy.one( 'done', ondone as () => void );
       cy.emit( 'done' );
     } );
 
     let layoutOpts = util.extend( {}, cy._private.options.layout );
     layoutOpts.eles = cy.elements();
 
-    cy.layout( layoutOpts ).run();
+    cy.layout( layoutOpts as Parameters<CoreType['layout']>[0] )!.run();
   };
 
-  loadExtData([ options.style, options.elements ], function( thens ){
+  loadExtData([ options.style, options.elements ], function( thens: unknown[] ){
     let initStyle = thens[0];
     let initEles = thens[1];
 
@@ -184,11 +205,11 @@ let Core = function( opts ){
     }, options.done );
 
   } );
-};
+} as CoreStatic;
 
-let corefn = Core.prototype; // short alias
+let corefn: CoreType = Core.prototype; // short alias
 
-util.extend( corefn, {
+util.extend( corefn, ({
   instanceString: function(){
     return 'core';
   },
@@ -212,7 +233,7 @@ util.extend( corefn, {
   },
 
   destroy: function(){
-    let cy = this;
+    let cy = this; // eslint-disable-line @typescript-eslint/no-this-alias
     if( cy.destroyed() ) return;
 
     cy.stopAnimationLoop();
@@ -239,7 +260,7 @@ util.extend( corefn, {
   },
 
   headless: function(){
-    return this._private.renderer.isHeadless();
+    return this._private.renderer!.isHeadless();
   },
 
   styleEnabled: function(){
@@ -253,7 +274,7 @@ util.extend( corefn, {
   },
 
   removeFromPool: function( eles ){
-    this._private.elements.unmerge( eles );
+    this._private.elements.unmerge( eles as unknown as CollectionType );
 
     return this;
   },
@@ -266,7 +287,7 @@ util.extend( corefn, {
     let container = this._private.container;
     if (container == null) return window;
 
-    let ownerDocument = this._private.container.ownerDocument;
+    let ownerDocument = container.ownerDocument;
 
     if (ownerDocument === undefined || ownerDocument == null) {
       return window;
@@ -278,12 +299,12 @@ util.extend( corefn, {
   mount: function( container ){
     if( container == null ){ return; }
 
-    let cy = this;
+    let cy = this; // eslint-disable-line @typescript-eslint/no-this-alias
     let _p = cy._private;
     let options = _p.options;
 
-    if( !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
-      container = container[0];
+    if( !is.htmlElement( container ) && is.htmlElement( ( container as unknown as ArrayLike<unknown> )[0] ) ){
+      container = ( container as unknown as ArrayLike<HTMLElement> )[0];
     }
 
     cy.stopAnimationLoop();
@@ -310,7 +331,7 @@ util.extend( corefn, {
   },
 
   unmount: function(){
-    let cy = this;
+    let cy = this; // eslint-disable-line @typescript-eslint/no-this-alias
 
     cy.stopAnimationLoop();
 
@@ -328,21 +349,21 @@ util.extend( corefn, {
   },
 
   json: function( obj ){
-    let cy = this;
+    let cy = this; // eslint-disable-line @typescript-eslint/no-this-alias
     let _p = cy._private;
     let eles = cy.mutableElements();
-    let getFreshRef = ele => cy.getElementById(ele.id());
+    let getFreshRef = ( ele: ElementType ) => cy.getElementById(ele.id()!);
 
-    if( is.plainObject( obj ) ){ // set
+    if( is.plainObject( obj as object ) ){ // set
 
       cy.startBatch();
 
       if( obj.elements ){
-        let idInJson = {};
+        let idInJson: Record<string, boolean> = {};
 
-        let updateEles = function( jsons, gr ){
-          let toAdd = [];
-          let toMod = [];
+        let updateEles = function( jsons: ElementJson[], gr?: 'nodes' | 'edges' ){
+          let toAdd: ElementJson[] = [];
+          let toMod: { ele: CollectionType; json: ElementJson }[] = [];
 
           for( let i = 0; i < jsons.length; i++ ){
             let json = jsons[ i ];
@@ -370,7 +391,7 @@ util.extend( corefn, {
             }
           }
 
-          cy.add( toAdd );
+          cy.add( toAdd as unknown as Parameters<CoreType['add']>[0] );
 
           for( let i = 0; i < toMod.length; i++ ){
             let { ele, json } = toMod[i];
@@ -383,13 +404,13 @@ util.extend( corefn, {
           updateEles( obj.elements );
 
         } else { // elements: { nodes: [], edges: [] }
-          let grs = [ 'nodes', 'edges' ];
+          let grs: ( 'nodes' | 'edges' )[] = [ 'nodes', 'edges' ];
           for( let i = 0; i < grs.length; i++ ){
             let gr = grs[ i ];
             let elements = obj.elements[ gr ];
 
             if( is.array( elements ) ){
-              updateEles( elements, gr );
+              updateEles( elements as ElementJson[], gr );
             }
           }
         }
@@ -397,7 +418,7 @@ util.extend( corefn, {
         let parentsToRemove = cy.collection();
 
         (eles
-          .filter(ele => !idInJson[ ele.id() ])
+          .filter(ele => !idInJson[ ele.id()! ])
           .forEach(ele => {
             if ( ele.isParent() ) {
               parentsToRemove.merge(ele);
@@ -444,7 +465,7 @@ util.extend( corefn, {
         let f = fields[ i ];
 
         if( obj[ f ] != null ){
-          cy[ f ]( obj[ f ] );
+          ( cy as unknown as Record<string, ( v: unknown ) => void> )[ f ]( obj[ f ] );
         }
       }
 
@@ -453,7 +474,9 @@ util.extend( corefn, {
       return this; // chaining
     } else { // get
       let flat = !!obj;
-      let json = {};
+      // the exported json blob is a heterogeneous, dynamically-built object
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let json: Record<string, any> = {};
 
       if( flat ){
         json.elements = this.elements().map( ele => ele.json() );
@@ -461,7 +484,7 @@ util.extend( corefn, {
         json.elements = {};
 
         eles.forEach( function( ele ){
-          let group = ele.group();
+          let group = ele.group()!;
 
           if( !json.elements[ group ] ){
             json.elements[ group ] = [];
@@ -499,7 +522,7 @@ util.extend( corefn, {
     }
   }
 
-} );
+}) satisfies Partial<CoreType> & ThisType<CoreType> );
 
 corefn.$id = corefn.getElementById;
 

@@ -1,7 +1,14 @@
 /* global Float32Array */
 
+/** A cubic-bezier easing function with debug helpers attached. */
+export interface BezierEasingFn {
+  ( aX: number ): number;
+  getControlPoints(): { x: number; y: number }[];
+  toString(): string;
+}
+
 /*! Bezier curve function generator. Copyright Gaetan Renaudeau. MIT License: http://en.wikipedia.org/wiki/MIT_License */
-function generateCubicBezier(mX1, mY1, mX2, mY2) {
+function generateCubicBezier(mX1: number, mY1: number, mX2: number, mY2: number): BezierEasingFn | false {
   let NEWTON_ITERATIONS = 4,
     NEWTON_MIN_SLOPE = 0.001,
     SUBDIVISION_PRECISION = 0.0000001,
@@ -17,6 +24,7 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
 
   /* Arguments must be numbers. */
   for (let i = 0; i < 4; ++i) {
+    // eslint-disable-next-line prefer-rest-params -- preserve runtime numeric validation exactly
     if (typeof arguments[i] !== "number" || isNaN(arguments[i]) || !isFinite(arguments[i])) {
       return false;
     }
@@ -30,27 +38,27 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
 
   let mSampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
 
-  function A(aA1, aA2) {
+  function A(aA1: number, aA2: number) {
     return 1.0 - 3.0 * aA2 + 3.0 * aA1;
   }
 
-  function B(aA1, aA2) {
+  function B(aA1: number, aA2: number) {
     return 3.0 * aA2 - 6.0 * aA1;
   }
 
-  function C(aA1) {
+  function C(aA1: number) {
     return 3.0 * aA1;
   }
 
-  function calcBezier(aT, aA1, aA2) {
+  function calcBezier(aT: number, aA1: number, aA2: number) {
     return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
   }
 
-  function getSlope(aT, aA1, aA2) {
+  function getSlope(aT: number, aA1: number, aA2: number) {
     return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
   }
 
-  function newtonRaphsonIterate(aX, aGuessT) {
+  function newtonRaphsonIterate(aX: number, aGuessT: number) {
     for (let i = 0; i < NEWTON_ITERATIONS; ++i) {
       let currentSlope = getSlope(aGuessT, mX1, mX2);
 
@@ -71,7 +79,7 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
     }
   }
 
-  function binarySubdivide(aX, aA, aB) {
+  function binarySubdivide(aX: number, aA: number, aB: number) {
     let currentX, currentT, i = 0;
 
     do {
@@ -87,7 +95,7 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
     return currentT;
   }
 
-  function getTForX(aX) {
+  function getTForX(aX: number) {
     let intervalStart = 0.0,
       currentSample = 1,
       lastSample = kSplineTableSize - 1;
@@ -120,7 +128,7 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
     }
   }
 
-  let f = function(aX) {
+  let f = function(aX: number) {
     if (!_precomputed) {
       precompute();
     }
@@ -137,7 +145,10 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
     return calcBezier(getTForX(aX), mY1, mY2);
   };
 
-  f.getControlPoints = function() {
+  // attach debug helpers onto the bare easing function
+  let bezierFn = f as BezierEasingFn;
+
+  bezierFn.getControlPoints = function() {
     return [{
       x: mX1,
       y: mY1
@@ -148,11 +159,11 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
   };
 
   let str = "generateBezier(" + [mX1, mY1, mX2, mY2] + ")";
-  f.toString = function() {
+  bezierFn.toString = function() {
     return str;
   };
 
-  return f;
+  return bezierFn;
 }
 
 export default generateCubicBezier;

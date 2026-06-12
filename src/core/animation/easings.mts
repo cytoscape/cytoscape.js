@@ -1,16 +1,26 @@
 import generateCubicBezier from './cubic-bezier.mjs';
 import generateSpringRK4 from './spring.mjs';
 
-let cubicBezier = function( t1, p1, t2, p2 ){
-  let bezier = generateCubicBezier( t1, p1, t2, p2 );
+/** A concrete easing: interpolates from start to end given a percent in [0,1]. */
+export type EasingFn = ( start: number, end: number, percent: number ) => number;
 
-  return function( start, end, percent ){
+/**
+ * An entry in the easings map: either a ready-to-use easing function, or a
+ * factory that builds one from user params (e.g. spring, cubic-bezier).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous map of easings and easing factories with differing arities
+export type EasingEntry = ( ...args: any[] ) => any;
+
+let cubicBezier = function( t1: number, p1: number, t2: number, p2: number ): EasingFn {
+  let bezier = generateCubicBezier( t1, p1, t2, p2 ) as ( aX: number ) => number;
+
+  return function( start: number, end: number, percent: number ){
     return start + ( end - start ) * bezier( percent );
   };
 };
 
-let easings = {
-  'linear': function( start, end, percent ){
+let easings: Record<string, EasingEntry> = {
+  'linear': function( start: number, end: number, percent: number ){
     return start + (end - start) * percent;
   },
 
@@ -58,14 +68,14 @@ let easings = {
 
   // user param easings...
 
-  'spring': function( tension, friction, duration ){
+  'spring': function( tension: number, friction: number, duration: number ){
     if( duration === 0 ){ // can't get a spring w/ duration 0
       return easings.linear; // duration 0 => jump to end so impl doesn't matter
     }
 
-    let spring = generateSpringRK4( tension, friction, duration );
+    let spring = generateSpringRK4( tension, friction, duration ) as ( percentComplete: number ) => number;
 
-    return function( start, end, percent ){
+    return function( start: number, end: number, percent: number ){
       return start + (end - start) * spring( percent );
     };
   },

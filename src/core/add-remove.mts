@@ -2,16 +2,27 @@ import * as is from '../is.mjs';
 import * as util from '../util/index.mjs';
 import Collection from '../collection/index.mjs';
 import Element from '../collection/element.mjs';
+import type { Core } from './core-types.mjs';
+import type { Collection as Coll, Element as Ele, ElementDefinition, CoreAccess } from '../collection/eles-types.mjs';
+
+/** The shapes accepted by `add()`. */
+type AddOpts =
+  | Coll
+  | Ele
+  | ElementDefinition
+  | ElementDefinition[]
+  | { nodes?: ElementDefinition[]; edges?: ElementDefinition[] };
 
 let corefn = {
-  add: function( opts ){
+  add: function( this: Core, opts: AddOpts ){
 
-    let elements;
-    let cy = this;
+    let elements: Coll;
+    // the collection/element constructors accept the structural CoreAccess view
+    let cy = this as unknown as CoreAccess;
 
     // add the elements
     if( is.elementOrCollection( opts ) ){
-      let eles = opts;
+      let eles = opts as unknown as Coll;
 
       if( eles._private.cy === cy ){ // same instance => just restore
         elements = eles.restore();
@@ -24,7 +35,7 @@ let corefn = {
           jsons.push( ele.json() );
         }
 
-        elements = new Collection( cy, jsons );
+        elements = new Collection( cy, jsons as unknown as ElementDefinition[] );
       }
     }
 
@@ -32,15 +43,15 @@ let corefn = {
     else if( is.array( opts ) ){
       let jsons = opts;
 
-      elements = new Collection( cy, jsons );
+      elements = new Collection( cy, jsons as unknown as ElementDefinition[] );
     }
 
     // specify via opts.nodes and opts.edges
     else if( is.plainObject( opts ) && (is.array( opts.nodes ) || is.array( opts.edges )) ){
-      let elesByGroup = opts;
+      let elesByGroup = opts as { nodes?: ElementDefinition[]; edges?: ElementDefinition[] };
       let jsons = [];
 
-      let grs = [ 'nodes', 'edges' ];
+      let grs = [ 'nodes', 'edges' ] as const;
       for( let i = 0, il = grs.length; i < il; i++ ){
         let group = grs[ i ];
         let elesArray = elesByGroup[ group ];
@@ -60,14 +71,14 @@ let corefn = {
 
     // specify options for one element
     else {
-      let json = opts;
+      let json = opts as ElementDefinition;
       elements = (new Element( cy, json )).collection();
     }
 
     return elements;
   },
 
-  remove: function( collection ){
+  remove: function( this: Core, collection: Coll | Ele | string ){
     if( is.elementOrCollection( collection ) ){
       // already have right ref
     } else if( is.string( collection ) ){
@@ -75,8 +86,14 @@ let corefn = {
       collection = this.$( selector );
     }
 
-    return collection.remove();
+    return ( collection as unknown as Coll ).remove();
   }
-};
+} as CoreAddRemove;
 
-export default corefn;
+/** Add/remove element methods contributed to the core prototype. */
+export interface CoreAddRemove {
+  add( this: Core, opts: AddOpts ): Coll;
+  remove( this: Core, collection: Coll | Ele | string ): Coll;
+}
+
+export default corefn as CoreAddRemove;

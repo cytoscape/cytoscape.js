@@ -80,6 +80,7 @@
     "dist": "cross-env NODE_ENV=production run-s build build:types dist:*",
     "release": "run-s copyright dist docs",
     "watch": "run-s watch:fast",
+    "dev": "run-s watch",
     "watch:sync": "livereload \"build, debug, debug/webgl\" -w 500 --extraExts 'json'",
     "watch:http": "http-server -p 3333 -s -c -1 -o debug",
     "watch:fast": "run-p watch:sync watch:http watch:build:fast",

@@ -4,13 +4,71 @@ Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
 Licensed under The MIT License (http://opensource.org/licenses/MIT)
 */
 
+/* eslint-disable no-var -- preserve the original third-party polyfill code verbatim */
+
 /*  promise states [Promises/A+ 2.1]  */
 var STATE_PENDING   = 0;                                         /*  [Promises/A+ 2.1.1]  */
 var STATE_FULFILLED = 1;                                         /*  [Promises/A+ 2.1.2]  */
 var STATE_REJECTED  = 2;                                         /*  [Promises/A+ 2.1.3]  */
 
+/*  `setImmediate` is a non-standard global (Node, old IE); probed via `typeof` below  */
+declare const setImmediate: ( ( fn: () => void ) => void ) | undefined;
+
+type Handler = ( value?: unknown ) => void;
+
+type ThenableExecutor = ( fulfill: Handler, reject: Handler ) => void;
+
+interface ThenableProxy {
+  then( onFulfilled?: unknown, onRejected?: unknown ): ThenableProxy;
+}
+
+interface Thenable {
+  id: string;
+  state: number;
+  fulfillValue: unknown;
+  rejectReason: unknown;
+  onFulfilled: Handler[];
+  onRejected: Handler[];
+  proxy: ThenableProxy;
+  fulfill( value?: unknown ): Thenable;
+  reject( value?: unknown ): Thenable;
+  then( onFulfilled?: unknown, onRejected?: unknown ): ThenableProxy;
+}
+
+interface ThenableApi {
+  ( executor?: ThenableExecutor ): Thenable;
+  new ( executor?: ThenableExecutor ): Thenable;
+  prototype: Pick<Thenable, 'fulfill' | 'reject' | 'then'>;
+  all( ps: ArrayLike<unknown> ): Thenable;
+  resolve( val?: unknown ): Thenable;
+  reject( val?: unknown ): Thenable;
+}
+
+/**
+ * The structural subset of the Promise API provided by both the native
+ * `Promise` and the Thenable polyfill (construct with executor, `then`,
+ * `resolve`, `reject`, `all`).
+ */
+export interface PromiseLikeObject<T> {
+  then<TResult1 = T, TResult2 = never>(
+    onFulfilled?: ( ( value: T ) => TResult1 | PromiseLike<TResult1> ) | null,
+    onRejected?: ( ( reason: unknown ) => TResult2 | PromiseLike<TResult2> ) | null
+  ): PromiseLikeObject<TResult1 | TResult2>;
+}
+
+/**
+ * Minimal structural constructor type for the default export.
+ */
+export interface PromiseConstructorLike {
+  new <T>( executor: ( resolve: ( value: T | PromiseLike<T> ) => void, reject: ( reason?: unknown ) => void ) => void ): PromiseLikeObject<T>;
+  resolve(): PromiseLikeObject<void>;
+  resolve<T>( value: T | PromiseLike<T> ): PromiseLikeObject<T>;
+  reject( reason?: unknown ): PromiseLikeObject<never>;
+  all<T>( values: readonly ( T | PromiseLike<T> )[] ): PromiseLikeObject<T[]>;
+}
+
 /*  promise object constructor  */
-var api = function( executor ){
+var api = function( this: Thenable, executor?: ThenableExecutor ){
   /*  optionally support non-constructor/plain-function call  */
   if( !(this instanceof api) )
     return new api( executor );
@@ -31,16 +89,17 @@ var api = function( executor ){
   /*  support optional executor function  */
   if( typeof executor === 'function' )
     executor.call( this, this.fulfill.bind( this ), this.reject.bind( this ) );
-};
+} as ThenableApi;
 
 /*  promise API methods  */
 api.prototype = {
   /*  promise resolving methods  */
-  fulfill: function( value ){ return deliver( this, STATE_FULFILLED, 'fulfillValue', value ); },
-  reject:  function( value ){ return deliver( this, STATE_REJECTED,  'rejectReason', value ); },
+  fulfill: function( this: Thenable, value?: unknown ){ return deliver( this, STATE_FULFILLED, 'fulfillValue', value ); },
+  reject:  function( this: Thenable, value?: unknown ){ return deliver( this, STATE_REJECTED,  'rejectReason', value ); },
 
   /*  "The then Method" [Promises/A+ 1.1, 1.2, 2.2]  */
-  then: function( onFulfilled, onRejected ){
+  then: function( this: Thenable, onFulfilled?: unknown, onRejected?: unknown ){
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- preserve the original polyfill code verbatim
     var curr = this;
     var next = new api();                                    /*  [Promises/A+ 2.2.7]  */
     curr.onFulfilled.push(
@@ -53,7 +112,7 @@ api.prototype = {
 };
 
 /*  deliver an action  */
-var deliver = function( curr, state, name, value ){
+var deliver = function( curr: Thenable, state: number, name: 'fulfillValue' | 'rejectReason', value: unknown ){
   if( curr.state === STATE_PENDING ){
     curr.state = state;                                      /*  [Promises/A+ 2.1.2.1, 2.1.3.1]  */
     curr[ name ] = value;                                      /*  [Promises/A+ 2.1.2.2, 2.1.3.2]  */
@@ -63,7 +122,7 @@ var deliver = function( curr, state, name, value ){
 };
 
 /*  execute all handlers  */
-var execute = function( curr ){
+var execute = function( curr: Thenable ){
   if( curr.state === STATE_FULFILLED )
     execute_handlers( curr, 'onFulfilled', curr.fulfillValue );
   else if( curr.state === STATE_REJECTED )
@@ -71,7 +130,7 @@ var execute = function( curr ){
 };
 
 /*  execute particular set of handlers  */
-var execute_handlers = function( curr, name, value ){
+var execute_handlers = function( curr: Thenable, name: 'onFulfilled' | 'onRejected', value: unknown ){
   /* global setImmediate: true */
   /* global setTimeout: true */
 
@@ -95,7 +154,7 @@ var execute_handlers = function( curr, name, value ){
 };
 
 /*  generate a resolver function  */
-var resolver = function( cb, next, method ){
+var resolver = function( cb: unknown, next: Thenable, method: 'fulfill' | 'reject' ): Handler {
   return function( value ){
     if( typeof cb !== 'function' )                            /*  [Promises/A+ 2.2.1, 2.2.7.3, 2.2.7.4]  */
       next[ method ].call( next, value );                      /*  [Promises/A+ 2.2.7.3, 2.2.7.4]  */
@@ -112,7 +171,7 @@ var resolver = function( cb, next, method ){
 };
 
 /*  "Promise Resolution Procedure"  */                           /*  [Promises/A+ 2.3]  */
-var resolve = function( promise, x ){
+var resolve = function( promise: Thenable, x: unknown ){
   /*  sanity check arguments  */                               /*  [Promises/A+ 2.3.1]  */
   if( promise === x || promise.proxy === x ){
     promise.reject( new TypeError( 'cannot resolve promise with itself' ) );
@@ -123,7 +182,7 @@ var resolve = function( promise, x ){
     (mainly to just call the "getter" of "then" only once)  */
   var then;
   if( (typeof x === 'object' && x !== null) || typeof x === 'function' ){
-    try { then = x.then; }                                   /*  [Promises/A+ 2.3.3.1, 3.5]  */
+    try { then = ( x as { then?: unknown } ).then; }         /*  [Promises/A+ 2.3.3.1, 3.5]  */
     catch( e ){
       promise.reject( e );                                   /*  [Promises/A+ 2.3.3.2]  */
       return;
@@ -138,7 +197,7 @@ var resolve = function( promise, x ){
       /*  call retrieved "then" method */                  /*  [Promises/A+ 2.3.3.3]  */
       then.call( x,
         /*  resolvePromise  */                           /*  [Promises/A+ 2.3.3.3.1]  */
-        function( y ){
+        function( y: unknown ){
           if( resolved ) return; resolved = true;       /*  [Promises/A+ 2.3.3.3.3]  */
           if( y === x )                                 /*  [Promises/A+ 3.6]  */
             promise.reject( new TypeError( 'circular thenable chain' ) );
@@ -147,7 +206,7 @@ var resolve = function( promise, x ){
         },
 
         /*  rejectPromise  */                            /*  [Promises/A+ 2.3.3.3.2]  */
-        function( r ){
+        function( r: unknown ){
           if( resolved ) return; resolved = true;       /*  [Promises/A+ 2.3.3.3.3]  */
           promise.reject( r );
         }
@@ -170,7 +229,7 @@ api.all = function( ps ){
     var vals = new Array( ps.length );
     var doneCount = 0;
 
-    var fulfill = function( i, val ){
+    var fulfill = function( i: number, val: unknown ){
       vals[ i ] = val;
       doneCount++;
 
@@ -180,12 +239,12 @@ api.all = function( ps ){
     };
 
     for( var i = 0; i < ps.length; i++ ){
-      (function( i ){
-        var p = ps[i];
+      (function( i: number ){
+        var p = ps[i] as { then?: ( onFulfilled: Handler, onRejected: Handler ) => void } | null | undefined;
         var isPromise = p != null && p.then != null;
 
         if( isPromise ){
-          p.then( function( val ){
+          p!.then!( function( val ){
             fulfill( i, val );
           }, function( err ){
             rejectAll( err );
@@ -201,6 +260,7 @@ api.all = function( ps ){
 };
 
 api.resolve = function( val ){
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- keep the original executor signature
   return new api(function( resolve, reject ){ resolve( val ); });
 };
 
@@ -208,4 +268,7 @@ api.reject = function( val ){
   return new api(function( resolve, reject ){ reject( val ); });
 };
 
-export default typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef
+// The polyfill provides only the subset of the Promise API above, so the
+// default export is typed with the honest, minimal structural constructor
+// shared by both implementations.
+export default (typeof Promise !== 'undefined' ? Promise : api) as unknown as PromiseConstructorLike;

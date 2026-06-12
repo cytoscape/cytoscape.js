@@ -2,14 +2,44 @@
  * Explained by Blindman67 at https://stackoverflow.com/a/44856925/11028828
  */
 
+import type { Position } from './types.mjs';
+
+/** A path point, optionally with a per-point corner radius */
+export interface RoundCornerPoint extends Position {
+  radius?: number;
+}
+
+/** A round corner computed by {@link getRoundCorner} */
+export interface RoundCorner {
+  cx: number;
+  cy: number;
+  radius: number;
+  startX: number;
+  startY: number;
+  stopX: number;
+  stopY: number;
+  startAngle: number | undefined;
+  endAngle: number | undefined;
+  counterClockwise: boolean | undefined;
+}
+
+// 2D vector in cartesian, polar, and normalised forms; fields are filled in by asVec()
+interface Vec {
+  x: number;
+  y: number;
+  len: number;
+  nx: number;
+  ny: number;
+  ang: number;
+}
 
 // Declare reused variable to avoid reallocating variables every time the function is called
-let x, y, v1 = {}, v2 = {}, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius, limit;
-let startX, startY, stopX, stopY;
-let lastPoint;
+let x: number, y: number, v1 = {} as Vec, v2 = {} as Vec, sinA: number, sinA90: number, radDirection: number, drawDirection: boolean, angle: number, halfAngle: number, cRadius: number, lenOut: number, radius: number, limit: number;
+let startX: number, startY: number, stopX: number, stopY: number;
+let lastPoint: RoundCornerPoint | undefined;
 
 // convert 2 points into vector form, polar form, and normalised
-const asVec = function (p, pp, v) {
+const asVec = function (p: Position, pp: Position, v: Vec): void {
   v.x = pp.x - p.x;
   v.y = pp.y - p.y;
   v.len = Math.sqrt(v.x * v.x + v.y * v.y);
@@ -18,7 +48,7 @@ const asVec = function (p, pp, v) {
   v.ang = Math.atan2(v.ny, v.nx);
 };
 
-const invertVec = function (originalV, invertedV) {
+const invertVec = function (originalV: Vec, invertedV: Vec): void {
   invertedV.x = originalV.x * -1;
   invertedV.y = originalV.y * -1;
   invertedV.nx = originalV.nx * -1;
@@ -26,9 +56,10 @@ const invertVec = function (originalV, invertedV) {
   invertedV.ang = originalV.ang > 0 ? -(Math.PI - originalV.ang) : Math.PI + originalV.ang;
 };
 
-const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius) => {
+const calcCornerArc = (previousPoint: RoundCornerPoint, currentPoint: RoundCornerPoint, nextPoint: RoundCornerPoint, radiusMax: number, isArcRadius: boolean): void => {
   //-----------------------------------------
   // Part 1
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- original code uses a bare ternary for the conditional call
   previousPoint !== lastPoint ? asVec(currentPoint, previousPoint, v1) : invertVec(v2, v1); // Avoid recalculating vec if it is the invert of the last one calculated
   asVec(currentPoint, nextPoint, v2);
   sinA = v1.nx * v2.ny - v1.ny * v2.nx;
@@ -69,7 +100,7 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, isArcR
 
 
   limit = Math.min(v1.len / 2, v2.len / 2);
-  
+
   if (isArcRadius) {
     //-----------------------------------------
     // Part 3
@@ -119,7 +150,7 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, isArcR
  * @param radiusMax :number
  * @param isArcRadius :boolean
  */
-export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius) {
+export function drawRoundCorner(ctx: CanvasRenderingContext2D, previousPoint: RoundCornerPoint, currentPoint: RoundCornerPoint, nextPoint: RoundCornerPoint, radiusMax: number, isArcRadius: boolean): void {
   calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius);
   if (cRadius === 0) ctx.lineTo(currentPoint.x, currentPoint.y);
   else ctx.arc(x, y, cRadius, v1.ang + Math.PI / 2 * radDirection, v2.ang - Math.PI / 2 * radDirection, drawDirection);
@@ -132,9 +163,9 @@ export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, rad
  * @param ctx :CanvasRenderingContext2D
  * @param roundCorner {{cx:number, cy:number, radius:number, endAngle: number, startAngle: number, counterClockwise: boolean}}
  */
-export function drawPreparedRoundCorner(ctx, roundCorner) {
+export function drawPreparedRoundCorner(ctx: CanvasRenderingContext2D, roundCorner: RoundCorner): void {
   if (roundCorner.radius === 0) ctx.lineTo(roundCorner.cx, roundCorner.cy);
-  else ctx.arc(roundCorner.cx, roundCorner.cy, roundCorner.radius, roundCorner.startAngle, roundCorner.endAngle, roundCorner.counterClockwise);
+  else ctx.arc(roundCorner.cx, roundCorner.cy, roundCorner.radius, roundCorner.startAngle!, roundCorner.endAngle!, roundCorner.counterClockwise); // angles are always set when radius > 0
 }
 
 /**
@@ -152,7 +183,7 @@ export function drawPreparedRoundCorner(ctx, roundCorner) {
  * endAngle: number, startAngle: number, counterClockwise: boolean
  * }}
  */
-export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius = true) {
+export function getRoundCorner(previousPoint: RoundCornerPoint, currentPoint: RoundCornerPoint, nextPoint: RoundCornerPoint, radiusMax: number, isArcRadius = true): RoundCorner {
   if (radiusMax === 0 || currentPoint.radius === 0) return {
     cx: currentPoint.x,
     cy: currentPoint.y,

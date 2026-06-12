@@ -1,8 +1,13 @@
 import * as is from '../is.mjs';
 import * as regex from './regex.mjs';
 
+export type RGBTuple = [ number, number, number ];
+export type RGBATuple = [ number, number, number, number ];
+/** [r, g, b, a] where a is undefined when no alpha value was specified */
+export type RGBAOptionalTuple = [ number, number, number, number | undefined ];
+
   // get [r, g, b] from #abc or #aabbcc
-export const hex2tuple = hex => {
+export const hex2tuple = ( hex: string ): RGBTuple | undefined => {
   if( !(hex.length === 4 || hex.length === 7) || hex[0] !== '#' ){ return; }
 
   let shortHex = hex.length === 4;
@@ -23,10 +28,10 @@ export const hex2tuple = hex => {
 };
 
   // get [r, g, b, a] from hsl(0, 0, 0) or hsla(0, 0, 0, 0)
-export const hsl2tuple = hsl => {
-  let ret;
+export const hsl2tuple = ( hsl: string ): RGBAOptionalTuple | undefined => {
+  let ret: RGBAOptionalTuple | undefined;
   let h, s, l, a, r, g, b;
-  function hue2rgb( p, q, t ){
+  function hue2rgb( p: number, q: number, t: number ){
     if( t < 0 ) t += 1;
     if( t > 1 ) t -= 1;
     if( t < 1 / 6 ) return p + (q - p) * 6 * t;
@@ -81,7 +86,7 @@ export const hsl2tuple = hsl => {
 };
 
 // get [r, g, b, a] from rgb(0, 0, 0) or rgba(0, 0, 0, 0)
-export const rgb2tuple = rgb => {
+export const rgb2tuple = ( rgb: string ): number[] | undefined => {
   let ret;
 
   let m = new RegExp( '^' + regex.rgba + '$' ).exec( rgb );
@@ -90,7 +95,7 @@ export const rgb2tuple = rgb => {
 
     let isPct = [];
     for( let i = 1; i <= 3; i++ ){
-      let channel = m[ i ];
+      let channel: string | number = m[ i ];
 
       if( channel[ channel.length - 1 ] === '%' ){
         isPct[ i ] = true;
@@ -110,7 +115,7 @@ export const rgb2tuple = rgb => {
     let allArePct = isPct[1] && isPct[2] && isPct[3];
     if( atLeastOneIsPct && !allArePct ){ return; } // must all be percent values if one is
 
-    let alpha = m[4];
+    let alpha: string | number | undefined = m[4];
     if( alpha !== undefined ){
       alpha = parseFloat( alpha );
 
@@ -123,19 +128,19 @@ export const rgb2tuple = rgb => {
   return ret;
 };
 
-export const colorname2tuple = color => {
+export const colorname2tuple = ( color: string ): RGBTuple | RGBATuple | undefined => {
   return colors[ color.toLowerCase() ];
 };
 
-export const color2tuple = color => {
+export const color2tuple = ( color: string | number[] ): number[] | RGBAOptionalTuple | null | undefined => {
   return ( is.array( color ) ? color : null )
-    || colorname2tuple( color )
-    || hex2tuple( color )
-    || rgb2tuple( color )
-    || hsl2tuple( color );
+    || colorname2tuple( color as string )
+    || hex2tuple( color as string )
+    || rgb2tuple( color as string )
+    || hsl2tuple( color as string );
 };
 
-export const colors = {
+export const colors: Record<string, RGBTuple | RGBATuple> = {
   // special colour names
   transparent: [0, 0, 0, 0], // NB alpha === 0
 

@@ -113,6 +113,8 @@
     "@playwright/test": "^1.49.1",
     "@rollup/plugin-babel": "^7.1.0",
     "@rollup/plugin-replace": "^6.0.3",
+    "@types/heap": "^0.2.35",
+    "@types/lodash": "^4.17.24",
     "@types/node": "^25.9.3",
     "benchmark": "^2.1.4",
     "bluebird": "^3.5.0",

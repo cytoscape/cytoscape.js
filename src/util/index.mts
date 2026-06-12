@@ -4,6 +4,7 @@ import * as regex from './regex.mjs';
 import * as sort from './sort.mjs';
 import { memoize } from './memoize.mjs';
 import { extend } from './extend.mjs';
+import type { Position } from '../types.mjs';
 
 export * from './colors.mjs';
 export * from './maps.mjs';
@@ -28,11 +29,11 @@ export const zeroify = () => 0;
 
 export const noop = () => {};
 
-export const error = msg => {
+export const error = ( msg: string ): never => {
   throw new Error( msg );
 };
 
-export const warnings = enabled => {
+export const warnings = ( enabled?: boolean ): boolean | undefined => {
   if( enabled !== undefined ){
     warningsEnabled = !!enabled;
   } else {
@@ -40,7 +41,7 @@ export const warnings = enabled => {
   }
 };
 
-export const warn = msg => {
+export const warn = ( msg: string ): void => {
   if( !warnings() ){ return; }
 
   if( warnSupported ){
@@ -54,16 +55,16 @@ export const warn = msg => {
   }
 };
 
-export const clone = obj => {
+export const clone = <T,>( obj: T ): T => {
   return extend( {}, obj );
 };
 
 // gets a shallow copy of the argument
-export const copy = obj => {
+export const copy = <T,>( obj: T ): T => {
   if( obj == null ){
     return obj;
   } if( is.array( obj ) ){
-    return obj.slice();
+    return obj.slice() as T;
   } else if( is.plainObject( obj ) ){
     return clone( obj );
   } else {
@@ -71,15 +72,17 @@ export const copy = obj => {
   }
 };
 
-export const copyArray = arr => {
+export const copyArray = <T,>( arr: T[] ): T[] => {
   return arr.slice();
 };
 
-export const clonePosition = pos => {
+export const clonePosition = ( pos: Position ): Position => {
   return { x: pos.x, y: pos.y };
 };
 
-export const uuid = ( a, b /* placeholders */) => {
+// any is required: the params are placeholder vars abused by the obfuscated, code-golfed uuid generator below
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const uuid = ( a?: any, b?: any /* placeholders */): string => {
     for(               // loop :)
         b=a='';        // b - result , a - numeric letiable
         a++<36;        //
@@ -103,11 +106,11 @@ const _staticEmptyObject = {};
 
 export const staticEmptyObject = () => _staticEmptyObject;
 
-export const defaults = defaults => {
-  let keys = Object.keys( defaults );
+export const defaults = <D extends Record<string, unknown>,>( defaults: D ) => {
+  let keys = Object.keys( defaults ) as ( keyof D )[];
 
-  return opts => {
-    let filledOpts = {};
+  return ( opts?: Partial<D> | null ): D => {
+    let filledOpts = {} as D;
 
     for( let i = 0; i < keys.length; i++ ){
       let key = keys[i];
@@ -120,7 +123,7 @@ export const defaults = defaults => {
   };
 };
 
-export const removeFromArray = ( arr, ele, oneCopy ) => {
+export const removeFromArray = <T,>( arr: T[], ele: T, oneCopy?: boolean ): void => {
   for( let i = arr.length - 1; i >= 0; i-- ){
     if( arr[i] === ele ){
       arr.splice( i, 1 );
@@ -130,11 +133,11 @@ export const removeFromArray = ( arr, ele, oneCopy ) => {
   }
 };
 
-export const clearArray = arr => {
+export const clearArray = <T,>( arr: T[] ): void => {
   arr.splice( 0, arr.length );
 };
 
-export const push = ( arr, otherArr ) => {
+export const push = <T,>( arr: T[], otherArr: ArrayLike<T> ): void => {
   for( let i = 0; i < otherArr.length; i++ ){
     let el = otherArr[i];
 
@@ -142,7 +145,7 @@ export const push = ( arr, otherArr ) => {
   }
 };
 
-export const getPrefixedProperty = ( obj, propName, prefix ) => {
+export const getPrefixedProperty = ( obj: Record<string, unknown>, propName: string, prefix?: string | null ): unknown => {
   if( prefix ){
     propName = strings.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
   }
@@ -150,7 +153,7 @@ export const getPrefixedProperty = ( obj, propName, prefix ) => {
   return obj[ propName ];
 };
 
-export const setPrefixedProperty = ( obj, propName, prefix, value ) => {
+export const setPrefixedProperty = ( obj: Record<string, unknown>, propName: string, prefix: string | null | undefined, value: unknown ): void => {
   if( prefix ){
     propName = strings.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
   }

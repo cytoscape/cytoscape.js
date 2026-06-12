@@ -2,7 +2,12 @@ export const DEFAULT_HASH_SEED = 9261;
 const K = 65599; // 37 also works pretty well
 export const DEFAULT_HASH_SEED_ALT = 5381;
 
-export const hashIterableInts = function( iterator, seed = DEFAULT_HASH_SEED ){ // sdbm/string-hash
+/** Minimal iterator protocol used by the hashing functions (`value` is always present). */
+export interface IntIterator {
+  next(): { value: number; done: boolean };
+}
+
+export const hashIterableInts = function( iterator: IntIterator, seed: number = DEFAULT_HASH_SEED ): number { // sdbm/string-hash
   let hash = seed;
   let entry;
 
@@ -17,30 +22,30 @@ export const hashIterableInts = function( iterator, seed = DEFAULT_HASH_SEED ){ 
   return hash;
 };
 
-export const hashInt = function( num, seed = DEFAULT_HASH_SEED ){ // sdbm/string-hash
+export const hashInt = function( num: number, seed: number = DEFAULT_HASH_SEED ): number { // sdbm/string-hash
   return ((seed * K) + num) | 0;
 };
 
-export const hashIntAlt = function( num, seed = DEFAULT_HASH_SEED_ALT ){ // djb2/string-hash
+export const hashIntAlt = function( num: number, seed: number = DEFAULT_HASH_SEED_ALT ): number { // djb2/string-hash
   return ((seed << 5) + seed + num) | 0;
 };
 
-export const combineHashes = function(hash1, hash2){
+export const combineHashes = function( hash1: number, hash2: number ): number {
   return hash1 * 0x200000 + hash2;
 };
 
-export const combineHashesArray = function(hashes){
+export const combineHashesArray = function( hashes: number[] ): number {
   return hashes[0] * 0x200000 + hashes[1];
 };
 
-export const hashArrays = function(hashes1, hashes2){
+export const hashArrays = function( hashes1: number[], hashes2: number[] ): [ number, number ] {
   return [
     hashInt(hashes1[0], hashes2[0]),
     hashIntAlt(hashes1[1], hashes2[1])
   ];
 };
 
-export const hashIntsArray = function( ints, seed ){
+export const hashIntsArray = function( ints: number[], seed?: number ): number {
   let entry = { value: 0, done: false };
   let i = 0;
   let length = ints.length;
@@ -60,7 +65,7 @@ export const hashIntsArray = function( ints, seed ){
   return hashIterableInts( iterator, seed );
 };
 
-export const hashString = function( str, seed ){
+export const hashString = function( str: string, seed?: number ): number {
   let entry = { value: 0, done: false };
   let i = 0;
   let length = str.length;
@@ -80,11 +85,12 @@ export const hashString = function( str, seed ){
   return hashIterableInts( iterator, seed );
 };
 
-export const hashStrings = function(){
+export const hashStrings: ( ...strs: string[] ) => number | undefined = function(){
+  // eslint-disable-next-line prefer-rest-params -- kept as `arguments` to preserve the original runtime exactly
   return hashStringsArray( arguments );
 };
 
-export const hashStringsArray = function( strs ){
+export const hashStringsArray = function( strs: ArrayLike<string> ): number | undefined {
   let hash;
 
   for( let i = 0; i < strs.length; i++ ){

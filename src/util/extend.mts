@@ -1,4 +1,5 @@
-export const extend = Object.assign != null ? Object.assign.bind( Object ) : function( tgt ){
+export const extend: typeof Object.assign = Object.assign != null ? Object.assign.bind( Object ) : function( tgt: Record<string, unknown> ){
+  // eslint-disable-next-line prefer-rest-params -- kept as `arguments` to preserve the original runtime exactly
   let args = arguments;
 
   for( let i = 1; i < args.length; i++ ){

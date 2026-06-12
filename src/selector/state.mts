@@ -1,6 +1,13 @@
 import * as util from '../util/index.mjs';
+import type { SelectorEle } from './type.mjs';
 
-export const stateSelectors = [
+/** A state selector (e.g. `:selected`) and its matching function */
+export interface StateSelector {
+  selector: string;
+  matches: ( ele: SelectorEle ) => boolean;
+}
+
+export const stateSelectors: StateSelector[] = ([
   {
     selector: ':selected',
     matches: function( ele ){ return ele.selected(); }
@@ -123,12 +130,12 @@ export const stateSelectors = [
     selector: ':nonbackgrounding',
     matches: function( ele ){ return !ele.backgrounding(); }
   }
-].sort(function( a, b ){ // n.b. selectors that are starting substrings of others must have the longer ones first
+] satisfies StateSelector[]).sort(function( a, b ){ // n.b. selectors that are starting substrings of others must have the longer ones first
   return util.sort.descending( a.selector, b.selector );
 });
 
 let lookup = (function(){
-  let selToFn = {};
+  let selToFn: Record<string, StateSelector['matches']> = {};
   let s;
 
   for( let i = 0; i < stateSelectors.length; i++ ){
@@ -140,7 +147,7 @@ let lookup = (function(){
   return selToFn;
 })();
 
-export const stateSelectorMatches = function( sel, ele ){
+export const stateSelectorMatches = function( sel: string, ele: SelectorEle ): boolean {
   return lookup[ sel ]( ele );
 };
 

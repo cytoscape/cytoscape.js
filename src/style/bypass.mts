@@ -1,13 +1,24 @@
 import * as is from '../is.mjs';
 import * as util from '../util/index.mjs';
 
-let styfn = {};
+import type { Style, StyleElement } from './index.mjs';
+import type { ParsedStyleProperty } from './parse.mjs';
+import type { DiffProp } from './apply.mjs';
+
+export interface BypassStyfn {
+  applyBypass( this: Style, eles: ArrayLike<StyleElement>, name: string | Record<string, unknown>, value?: unknown, updateTransitions?: unknown ): boolean;
+  overrideBypass( this: Style, eles: ArrayLike<StyleElement>, name: string, value: unknown ): void;
+  removeAllBypasses( this: Style, eles: ArrayLike<StyleElement>, updateTransitions?: boolean ): void;
+  removeBypasses( this: Style, eles: ArrayLike<StyleElement>, props: string[], updateTransitions?: boolean ): void;
+}
+
+let styfn = {} as BypassStyfn;
 
 // bypasses are applied to an existing style on an element, and just tacked on temporarily
 // returns true iff application was successful for at least 1 specified property
 styfn.applyBypass = function( eles, name, value, updateTransitions ){
-  let self = this;
-  let props = [];
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
+  let props: ParsedStyleProperty[] = [];
   let isBypass = true;
 
   // put all the properties (can specify one or many) in an array after parsing them
@@ -65,8 +76,8 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
   let ret = false; // return true if at least one succesful bypass applied
   for( let i = 0; i < eles.length; i++ ){ // for each ele
     let ele = eles[ i ];
-    let diffProps = {};
-    let diffProp;
+    let diffProps: Record<string, DiffProp> = {};
+    let diffProp: DiffProp | undefined;
 
     for( let j = 0; j < props.length; j++ ){ // for each prop
       let prop = props[ j ];
@@ -79,7 +90,7 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
       ret = this.applyParsedProperty( ele, util.copy(prop) ) || ret;
 
       if( updateTransitions ){
-        diffProp.next = ele.pstyle( prop.name );
+        diffProp!.next = ele.pstyle( prop.name ); // assigned above when updateTransitions is set
       }
 
     } // for props
@@ -103,9 +114,9 @@ styfn.overrideBypass = function( eles, name, value ){
   for( let i = 0; i < eles.length; i++ ){
     let ele = eles[ i ];
     let prop = ele._private.style[ name ];
-    let type = this.properties[ name ].type;
+    let type = this.properties[ name ]!.type!; // only called with valid, concrete property names
     let isColor = type.color;
-    let isMulti = type.mutiple;
+    let isMulti = ( type as { mutiple?: boolean } ).mutiple; // NB 'mutiple' (sic) preserved from the original source
     let oldValue = !prop ? null : prop.pfValue != null ? prop.pfValue : prop.value;
 
     if( !prop || !prop.bypass ){ // need a bypass if one doesn't exist
@@ -114,13 +125,13 @@ styfn.overrideBypass = function( eles, name, value ){
       prop.value = value;
 
       if( prop.pfValue != null ){
-        prop.pfValue = value;
+        prop.pfValue = value as number | ( number | undefined )[];
       }
 
       if( isColor ){
-        prop.strValue = 'rgb(' + value.join( ',' ) + ')';
+        prop.strValue = 'rgb(' + ( value as number[] ).join( ',' ) + ')';
       } else if( isMulti ){
-        prop.strValue = value.join( ' ' );
+        prop.strValue = ( value as unknown[] ).join( ' ' );
       } else {
         prop.strValue = '' + value;
       }
@@ -141,11 +152,11 @@ styfn.removeBypasses = function( eles, props, updateTransitions ){
 
   for( let j = 0; j < eles.length; j++ ){
     let ele = eles[ j ];
-    let diffProps = {};
+    let diffProps: Record<string, DiffProp> = {};
 
     for( let i = 0; i < props.length; i++ ){
       let name = props[ i ];
-      let prop = this.properties[ name ];
+      let prop = this.properties[ name ]!; // only called with valid property names
       let prevProp = ele.pstyle( prop.name );
 
       if( !prevProp || !prevProp.bypass ){
@@ -154,8 +165,8 @@ styfn.removeBypasses = function( eles, props, updateTransitions ){
       }
 
       let value = ''; // empty => remove bypass
-      let parsedProp = this.parse( name, value, true );
-      let diffProp = diffProps[ prop.name ] = { prev: prevProp };
+      let parsedProp = this.parse( name, value, true ) as ParsedStyleProperty; // an empty value parses to a deleteBypass property
+      let diffProp: DiffProp = diffProps[ prop.name ] = { prev: prevProp };
 
       this.applyParsedProperty( ele, parsedProp );
 

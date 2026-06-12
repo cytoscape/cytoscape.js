@@ -1,4 +1,4 @@
-export const labelHalign = halign => {
+export const labelHalign = ( halign: string ): 'left' | 'right' | 'center' => {
   switch( halign ){
     case 'left':
     case 'right-inside':
@@ -13,7 +13,7 @@ export const labelHalign = halign => {
   }
 };
 
-export const labelValign = valign => {
+export const labelValign = ( valign: string ): 'top' | 'bottom' | 'center' => {
   switch( valign ){
     case 'top':
     case 'bottom-inside':
@@ -28,7 +28,7 @@ export const labelValign = valign => {
   }
 };
 
-export const labelJustification = halign => {
+export const labelJustification = ( halign: string ): 'left' | 'right' | 'center' => {
   switch( halign ){
     case 'left':
       return 'right';

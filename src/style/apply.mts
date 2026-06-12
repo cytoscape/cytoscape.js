@@ -2,7 +2,48 @@ import * as util from '../util/index.mjs';
 import * as is from '../is.mjs';
 import Promise from '../promise.mjs';
 
-const styfn = {};
+import type { Style, StyleElement, StyleEles } from './index.mjs';
+import type { ParsedStyleProperty, StyleFnMapper } from './parse.mjs';
+import type { StyleProperty, StylePropertyTriggerFn } from './properties.mjs';
+
+/** Metadata about the contexts that match an element. */
+export interface ContextMeta {
+  /** which contexts match the element, e.g. 'ttfftt' */
+  key: string;
+  diffPropNames: string[];
+  empty: boolean;
+}
+
+/** A computed ele style object based on matched contexts: name -> property. */
+export type ContextStyleMap = { _private: { key: string } } & { [ name: string ]: ParsedStyleProperty | undefined };
+
+/** The previous and next values of a property that diffed during application. */
+export interface DiffProp {
+  prev?: ParsedStyleProperty | null;
+  next?: ParsedStyleProperty | null;
+}
+
+export interface ApplyStyfn {
+  apply( this: Style, eles: ArrayLike<StyleElement> ): StyleEles;
+  getPropertiesDiff( this: Style, oldCxtKey: string, newCxtKey: string ): string[];
+  getContextMeta( this: Style, ele: StyleElement ): ContextMeta;
+  getContextStyle( this: Style, cxtMeta: ContextMeta ): ContextStyleMap;
+  applyContextStyle( this: Style, cxtMeta: ContextMeta, cxtStyle: ContextStyleMap, ele: StyleElement ): { diffProps: Record<string, DiffProp> };
+  updateStyleHints( this: Style, ele: StyleElement ): boolean;
+  clearStyleHints( this: Style, ele: StyleElement ): void;
+  applyParsedProperty( this: Style, ele: StyleElement, parsedProp: ParsedStyleProperty ): boolean;
+  cleanElements( this: Style, eles: ArrayLike<StyleElement>, keepBypasses?: boolean ): void;
+  update( this: Style ): void;
+  updateTransitions( this: Style, ele: StyleElement, diffProps: Record<string, DiffProp | undefined>, isBypass?: boolean ): void;
+  checkTrigger( this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown, getTrigger: ( prop: StyleProperty ) => StylePropertyTriggerFn | undefined, onTrigger: ( prop: StyleProperty ) => void ): void;
+  checkZOrderTrigger( this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown ): void;
+  checkBoundsTrigger( this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown ): void;
+  checkConnectedEdgesBoundsTrigger( this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown ): void;
+  checkParallelEdgesBoundsTrigger( this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown ): void;
+  checkTriggers( this: Style, ele: StyleElement, name: string, fromValue: unknown, toValue: unknown ): void;
+}
+
+const styfn = {} as ApplyStyfn;
 
 // keys for style blocks, e.g. ttfftt
 const TRUE = 't';
@@ -13,7 +54,7 @@ const FALSE = 'f';
 // - its bypass
 // - what selectors match it
 styfn.apply = function( eles ){
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let _p = self._private;
   let cy = _p.cy;
   let updatedEles = cy.collection();
@@ -47,7 +88,7 @@ styfn.apply = function( eles ){
 };
 
 styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let cache = self._private.propDiffs = self._private.propDiffs || {};
   let dualCxtKey = oldCxtKey + '-' + newCxtKey;
   let cachedVal = cache[ dualCxtKey ];
@@ -56,8 +97,8 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
     return cachedVal;
   }
 
-  let diffProps = [];
-  let addedProp = {};
+  let diffProps: string[] = [];
+  let addedProp: Record<string, boolean> = {};
 
   for( let i = 0; i < self.length; i++ ){
     let cxt = self[ i ];
@@ -77,8 +118,8 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
         props = cxt.mappedProperties; // only need to check mapped
       }
 
-      for( let j = 0; j < props.length; j++ ){
-        let prop = props[ j ];
+      for( let j = 0; j < props!.length; j++ ){ // one of the branches above always assigns props
+        let prop = props![ j ];
         let name = prop.name;
 
         // if a later context overrides this property, then the fact that this context has switched/diffed doesn't matter
@@ -110,7 +151,7 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
 };
 
 styfn.getContextMeta = function( ele ){
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let cxtKey = '';
   let diffProps;
   let prevKey = ele._private.styleCxtKey || '';
@@ -141,7 +182,7 @@ styfn.getContextMeta = function( ele ){
 // gets a computed ele style object based on matched contexts
 styfn.getContextStyle = function( cxtMeta ){
   let cxtKey = cxtMeta.key;
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let cxtStyles = this._private.contextStyles = this._private.contextStyles || {};
 
   // if already computed style, returned cached copy
@@ -151,7 +192,7 @@ styfn.getContextStyle = function( cxtMeta ){
     _private: {
       key: cxtKey
     }
-  };
+  } as ContextStyleMap;
 
   for( let i = 0; i < self.length; i++ ){
     let cxt = self[ i ];
@@ -171,9 +212,9 @@ styfn.getContextStyle = function( cxtMeta ){
 };
 
 styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let diffProps = cxtMeta.diffPropNames;
-  let retDiffProps = {};
+  let retDiffProps: Record<string, DiffProp> = {};
   let types = self.types;
 
   for( let i = 0; i < diffProps.length; i++ ){
@@ -203,14 +244,14 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
       && eleProp.mapping.value === cxtProp.value // the current prop on the ele is a flat prop value for the function mapper
     ){ // NB don't write to cxtProp, as it's shared among eles (stored in stylesheet)
       let mapping = eleProp.mapping; // can write to mapping, as it's a per-ele copy
-      let fnValue = mapping.fnValue = cxtProp.value( ele ); // temporarily cache the value in case of a miss
+      let fnValue = mapping.fnValue = ( cxtProp.value as StyleFnMapper )( ele ); // temporarily cache the value in case of a miss
 
       if( fnValue === mapping.prevFnValue ){ continue; }
     }
 
     let retDiffProp = retDiffProps[ diffPropName ] = {
       prev: eleProp
-    };
+    } as DiffProp;
 
     self.applyParsedProperty( ele, cxtProp );
 
@@ -228,10 +269,10 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
 styfn.updateStyleHints = function(ele){
   let _p = ele._private;
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let propNames;
   let propGrKeys = self.propertyGroupKeys;
-  let propHash = ( ele, propNames, seedKey ) => self.getPropertiesHash( ele, propNames, seedKey );
+  let propHash = ( ele: StyleElement, propNames: string[], seedKey: number[] ) => self.getPropertiesHash( ele, propNames, seedKey );
   let oldStyleKey = _p.styleKey;
 
   if( ele.removed() ){ return false; }
@@ -252,15 +293,15 @@ styfn.updateStyleHints = function(ele){
     _p.styleKeys[ grKey ] = [ util.DEFAULT_HASH_SEED, util.DEFAULT_HASH_SEED_ALT ];
   }
 
-  let updateGrKey1 = (val, grKey) => _p.styleKeys[ grKey ][0] = util.hashInt( val, _p.styleKeys[ grKey ][0] );
-  let updateGrKey2 = (val, grKey) => _p.styleKeys[ grKey ][1] = util.hashIntAlt( val, _p.styleKeys[ grKey ][1] );
+  let updateGrKey1 = (val: number, grKey: string) => _p.styleKeys[ grKey ][0] = util.hashInt( val, _p.styleKeys[ grKey ][0] );
+  let updateGrKey2 = (val: number, grKey: string) => _p.styleKeys[ grKey ][1] = util.hashIntAlt( val, _p.styleKeys[ grKey ][1] );
 
-  let updateGrKey = (val, grKey) => {
+  let updateGrKey = (val: number, grKey: string) => {
     updateGrKey1(val, grKey);
     updateGrKey2(val, grKey);
   };
 
-  let updateGrKeyWStr = (strVal, grKey) => {
+  let updateGrKeyWStr = (strVal: string, grKey: string) => {
     for( let j = 0; j < strVal.length; j++ ){
       let ch = strVal.charCodeAt(j);
 
@@ -275,7 +316,7 @@ styfn.updateStyleHints = function(ele){
   // - make small numbers larger than a normal value to avoid collisions
   // - works in practice and it's relatively cheap
   let N = 2000000000;
-  let cleanNum = val => (-128 < val && val < 128) && Math.floor(val) !== val ? N - ((val * 1024) | 0) : val;
+  let cleanNum = (val: number) => (-128 < val && val < 128) && Math.floor(val) !== val ? N - ((val * 1024) | 0) : val;
 
   for( let i = 0; i < propNames.length; i++ ){
     let name = propNames[i];
@@ -283,9 +324,9 @@ styfn.updateStyleHints = function(ele){
 
     if( parsedProp == null ){ continue; }
 
-    let propInfo = this.properties[name];
-    let type = propInfo.type;
-    let grKey = propInfo.groupKey;
+    let propInfo = this.properties[name]!; // overridden style names are always valid property names
+    let type = propInfo.type!;
+    let grKey = propInfo.groupKey!;
     let normalizedNumberVal;
 
     if( propInfo.hashOverride != null ){
@@ -295,7 +336,7 @@ styfn.updateStyleHints = function(ele){
     }
 
     // might not be a number if it allows enums
-    let numberVal = propInfo.enums == null ? parsedProp.value : null;
+    let numberVal = ( propInfo as StyleProperty & { enums?: unknown } ).enums == null ? parsedProp.value : null; // NB enums is read off the property descriptor (not its type), as in the original
     let haveNormNum = normalizedNumberVal != null;
     let haveUnitedNum = numberVal != null;
     let haveNum = haveNormNum || haveUnitedNum;
@@ -306,13 +347,13 @@ styfn.updateStyleHints = function(ele){
     if( type.number && haveNum && !type.multiple ){
       let v = haveNormNum ? normalizedNumberVal : numberVal;
 
-      updateGrKey(cleanNum(v), grKey);
+      updateGrKey(cleanNum(v as number), grKey);
 
       if( !haveNormNum && units != null ){
-        updateGrKeyWStr(units, grKey);
+        updateGrKeyWStr(units as string, grKey); // single-valued prop => single units string
       }
     } else {
-      updateGrKeyWStr(parsedProp.strValue, grKey);
+      updateGrKeyWStr(parsedProp.strValue!, grKey);
     }
   }
 
@@ -335,11 +376,11 @@ styfn.updateStyleHints = function(ele){
   //
 
   let sk = _p.styleKeys;
-  
+
   _p.labelDimsKey = util.combineHashesArray(sk.labelDimensions);
 
   let labelKeys = propHash( ele, ['label'], sk.labelDimensions );
-  
+
   _p.labelKey = util.combineHashesArray(labelKeys);
   _p.labelStyleKey = util.combineHashesArray(util.hashArrays(sk.commonLabel, labelKeys));
 
@@ -364,7 +405,7 @@ styfn.updateStyleHints = function(ele){
       util.DEFAULT_HASH_SEED_ALT
     ]);
     _p.nodeKey = util.combineHashesArray(nodeKeys);
-    
+
     _p.hasPie = pie != null && pie[0] !== util.DEFAULT_HASH_SEED && pie[1] !== util.DEFAULT_HASH_SEED_ALT;
 
     _p.hasStripe = stripe != null && stripe[0] !== util.DEFAULT_HASH_SEED && stripe[1] !== util.DEFAULT_HASH_SEED_ALT;
@@ -407,19 +448,19 @@ styfn.clearStyleHints = function(ele){
 // for parsedProp:{ bypass: true }
 // the generated flattenedProp:{ bypassed: parsedProp }
 styfn.applyParsedProperty = function( ele, parsedProp ){
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let prop = parsedProp;
   let style = ele._private.style;
-  let flatProp;
+  let flatProp: ParsedStyleProperty | null | false | undefined;
   let types = self.types;
-  let type = self.properties[ prop.name ].type;
+  let type = self.properties[ prop.name ]!.type!; // a parsed prop always has a concrete (non-alias) property
   let propIsBypass = prop.bypass;
   let origProp = style[ prop.name ];
   let origPropIsBypass = origProp && origProp.bypass;
   let _p = ele._private;
-  let flatPropMapping = 'mapping';
+  let flatPropMapping = 'mapping' as const;
 
-  let getVal = p => {
+  let getVal = ( p: ParsedStyleProperty | null | undefined ) => {
     if( p == null ){
       return null;
     } else if( p.pfValue != null ){
@@ -450,7 +491,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       )
     )
   ){
-    prop = this.parse( parsedProp.name, 'bezier', propIsBypass );
+    prop = this.parse( parsedProp.name, 'bezier', propIsBypass ) as ParsedStyleProperty; // 'bezier' always parses
   }
 
   if( prop.delete ){ // delete the property and use the default value on falsey value
@@ -507,12 +548,12 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   switch( prop.mapped ){ // flatten the property if mapped
   case types.mapData: {
     // flatten the field (e.g. data.foo.bar)
-    let fields = prop.field.split( '.' );
-    let fieldVal = _p.data;
+    let fields = prop.field!.split( '.' ); // mapped props always have a field
+    let fieldVal: unknown = _p.data;
 
     for( let i = 0; i < fields.length && fieldVal; i++ ){
       let field = fields[ i ];
-      fieldVal = fieldVal[ field ];
+      fieldVal = ( fieldVal as Record<string, unknown> )[ field ];
     }
 
     if( fieldVal == null ){
@@ -525,12 +566,12 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       util.warn('Do not use continuous mappers without specifying numeric data (i.e. `' + prop.field + ': ' + fieldVal + '` for `' + ele.id() + '` is non-numeric)');
       return false;
     } else {
-      let fieldWidth = prop.fieldMax - prop.fieldMin;
+      let fieldWidth = prop.fieldMax! - prop.fieldMin!; // mapData props always have a numeric range
 
       if( fieldWidth === 0 ){ // safety check -- not strictly necessary as no props of zero range should be passed here
         percent = 0;
       } else {
-        percent = (fieldVal - prop.fieldMin) / fieldWidth;
+        percent = (fieldVal - prop.fieldMin!) / fieldWidth;
       }
     }
 
@@ -542,14 +583,14 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
 
     if( type.color ){
-      let r1 = prop.valueMin[0];
-      let r2 = prop.valueMax[0];
-      let g1 = prop.valueMin[1];
-      let g2 = prop.valueMax[1];
-      let b1 = prop.valueMin[2];
-      let b2 = prop.valueMax[2];
-      let a1 = prop.valueMin[3] == null ? 1 : prop.valueMin[3];
-      let a2 = prop.valueMax[3] == null ? 1 : prop.valueMax[3];
+      let r1 = ( prop.valueMin as number[] )[0]; // colour values are [r, g, b, a?] tuples
+      let r2 = ( prop.valueMax as number[] )[0];
+      let g1 = ( prop.valueMin as number[] )[1];
+      let g2 = ( prop.valueMax as number[] )[1];
+      let b1 = ( prop.valueMin as number[] )[2];
+      let b2 = ( prop.valueMax as number[] )[2];
+      let a1 = ( prop.valueMin as number[] )[3] == null ? 1 : ( prop.valueMin as number[] )[3];
+      let a2 = ( prop.valueMax as number[] )[3] == null ? 1 : ( prop.valueMax as number[] )[3];
 
       let clr = [
         Math.round( r1 + (r2 - r1) * percent ),
@@ -566,7 +607,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       };
 
     } else if( type.number ){
-      let calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
+      let calcValue = ( prop.valueMin as number ) + ( ( prop.valueMax as number ) - ( prop.valueMin as number ) ) * percent;
       flatProp = this.parse( prop.name, calcValue, prop.bypass, flatPropMapping );
 
     } else {
@@ -587,12 +628,12 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   // direct mapping
   case types.data: {
     // flatten the field (e.g. data.foo.bar)
-    let fields = prop.field.split( '.' );
-    let fieldVal = _p.data;
+    let fields = prop.field!.split( '.' ); // mapped props always have a field
+    let fieldVal: unknown = _p.data;
 
     for( let i = 0; i < fields.length && fieldVal; i++ ){
       let field = fields[ i ];
-      fieldVal = fieldVal[ field ];
+      fieldVal = ( fieldVal as Record<string, unknown> )[ field ];
     }
 
     if( fieldVal != null ){
@@ -611,7 +652,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   }
 
   case types.fn: {
-    let fn = prop.value;
+    let fn = prop.value as StyleFnMapper;
     let fnRetVal = prop.fnValue != null ? prop.fnValue : fn( ele ); // check for cached value before calling function
 
     prop.prevFnValue = fnRetVal;
@@ -644,7 +685,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   // if the property is a bypass property, then link the resultant property to the original one
   if( propIsBypass ){
     if( origPropIsBypass ){ // then this bypass overrides the existing one
-      prop.bypassed = origProp.bypassed; // steal bypassed prop from old bypass
+      prop.bypassed = origProp!.bypassed; // steal bypassed prop from old bypass
     } else { // then link the orig prop to the new bypass
       prop.bypassed = origProp;
     }
@@ -653,7 +694,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
   } else { // prop is not bypass
     if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
-      origProp.bypassed = prop;
+      origProp!.bypassed = prop;
     } else { // then just replace the old prop with the new one
       style[ prop.name ] = prop;
     }
@@ -705,15 +746,15 @@ styfn.update = function(){
 
 // diffProps : { name => { prev, next } }
 styfn.updateTransitions = function( ele, diffProps ){
-  let self = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let _p = ele._private;
-  let props = ele.pstyle( 'transition-property' ).value;
-  let duration = ele.pstyle( 'transition-duration' ).pfValue;
-  let delay = ele.pstyle( 'transition-delay' ).pfValue;
+  let props = ele.pstyle( 'transition-property' ).value as string[];
+  let duration = ele.pstyle( 'transition-duration' ).pfValue as number;
+  let delay = ele.pstyle( 'transition-delay' ).pfValue as number;
 
   if( props.length > 0 && duration > 0 ){
 
-    let style = {};
+    let style: Record<string, unknown> = {};
 
     // build up the style to animate towards
     let anyPrev = false;
@@ -727,7 +768,7 @@ styfn.updateTransitions = function( ele, diffProps ){
       let prevProp = diffProp.prev;
       let fromProp = prevProp;
       let toProp = diffProp.next != null ? diffProp.next : styProp;
-      let diff = false;
+      let diff: number | boolean = false;
       let initVal;
       let initDt = 0.000001; // delta time % value for initVal (allows animating out of init zero opacity)
 
@@ -767,9 +808,9 @@ styfn.updateTransitions = function( ele, diffProps ){
 
     _p.transitioning = true;
 
-    ( new Promise(function( resolve ){
+    ( new Promise<void>(function( resolve ){
       if( delay > 0 ){
-        ele.delayAnimation( delay ).play().promise().then( resolve );
+        ele.delayAnimation( delay ).play().promise().then( resolve as ( value: unknown ) => void ); // the resolved value is ignored
       } else {
         resolve();
       }
@@ -798,7 +839,7 @@ styfn.updateTransitions = function( ele, diffProps ){
 };
 
 styfn.checkTrigger = function( ele, name, fromValue, toValue, getTrigger, onTrigger ){
-  let prop = this.properties[ name ];
+  let prop = this.properties[ name ]!; // only called with valid property names
   let triggerCheck = getTrigger( prop );
 
   if (ele.removed()) { return; }

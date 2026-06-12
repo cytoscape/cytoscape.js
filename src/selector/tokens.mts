@@ -1,6 +1,28 @@
 import * as util from '../util/index.mjs';
 
+interface Tokens {
+  metaChar: string;
+  comparatorOp: string;
+  boolOp: string;
+  string: string;
+  number: string;
+  meta: string;
+  separator: string;
+  descendant: string;
+  child: string;
+  subject: string;
+  group: string;
+  directedEdge: string;
+  undirectedEdge: string;
+  variable: string;
+  className: string;
+  value: string;
+  id: string;
+}
+
 // tokens in the query language
+// (n.b. the assertion is because variable/className/value/id are derived from
+// the base tokens just below the initial literal)
 const tokens = {
   metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in let names, etc
   comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
@@ -15,7 +37,7 @@ const tokens = {
   group: 'node|edge|\\*',
   directedEdge: '\\s+->\\s+',
   undirectedEdge: '\\s+<->\\s+'
-};
+} as Tokens;
 tokens.variable = '(?:[\\w-.]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name can have letters, numbers, dashes, and periods
 tokens.className = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a class name has the same rules as a variable except it can't have a '.' in the name
 tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number

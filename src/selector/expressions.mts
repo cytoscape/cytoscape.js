@@ -3,16 +3,35 @@ import * as util from '../util/index.mjs';
 import newQuery from './new-query.mjs';
 import Type from './type.mjs';
 import { stateSelectorRegex } from './state.mjs';
+import type { Query } from './type.mjs';
+import type Selector from './index.mjs';
+
+/** An expression in the selector query language, recognised by the parser */
+export interface Expr {
+  /** just used for identifying when debugging */
+  name: string;
+  query?: boolean;
+  separator?: boolean;
+  modifier?: boolean;
+  regex: string;
+  /** the compiled form of `regex`; assigned for every expr at the bottom of this module */
+  regexObj?: RegExp;
+  /**
+   * Populate the query from the matched args.  May return the next query to
+   * be filled by following exprs, or `false` if population failed.
+   */
+  populate( selector: Selector, query: Query, args: string[] ): Query | false | void;
+}
 
 // when a token like a variable has escaped meta characters, we need to clean the backslashes out
 // so that values get compared properly in Selector.filter()
-const cleanMetaChars = function( str ){
+const cleanMetaChars = function( str: string ): string {
   return str.replace( new RegExp( '\\\\(' + tokens.metaChar + ')', 'g' ), function( match, $1 ){
     return $1;
   } );
 };
 
-const replaceLastQuery = ( selector, examiningQuery, replacementQuery ) => {
+const replaceLastQuery = ( selector: Selector, examiningQuery: Query, replacementQuery: Query ): void => {
   selector[ selector.length - 1 ] = replacementQuery;
 };
 
@@ -20,7 +39,7 @@ const replaceLastQuery = ( selector, examiningQuery, replacementQuery ) => {
 // - a query contains all adjacent (i.e. no separator in between) expressions;
 // - the current query is stored in selector[i]
 // - you need to check the query objects in match() for it actually filter properly, but that's pretty straight forward
-let exprs = [
+let exprs: Expr[] = [
   {
     name: 'group', // just used for identifying when debugging
     query: true,
@@ -91,7 +110,8 @@ let exprs = [
       if( valueIsString ){
         value = value.substring( 1, value.length - 1 );
       } else {
-        value = parseFloat( value );
+        // type-only cast: a number is stored in the check at runtime; Check['value'] is string | number
+        value = parseFloat( value ) as unknown as string;
       }
 
       query.checks.push( {
@@ -389,8 +409,8 @@ let exprs = [
 
         // change to neighbor check
         topChk.type = Type.NODE_NEIGHBOR;
-        topChk.node = topChk.nodes[1]; // second node is subject
-        topChk.neighbor = topChk.nodes[0];
+        topChk.node = topChk.nodes![1]; // second node is subject
+        topChk.neighbor = topChk.nodes![0];
 
         // clean up unused fields for new type
         topChk.nodes = null;

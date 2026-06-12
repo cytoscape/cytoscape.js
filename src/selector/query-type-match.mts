@@ -1,18 +1,25 @@
 import Type from './type.mjs';
 import { stateSelectorMatches } from './state.mjs';
 import { valCmp, boolCmp, existCmp, meta, data } from './data.mjs';
+import type { Check, FilterFn, Query, SelectorCollection, SelectorEle } from './type.mjs';
+
+/** A function that tests whether a check matches an element */
+export type MatchFn = ( check: Check, ele: SelectorEle ) => boolean | undefined;
 
 /** A lookup of `match(check, ele)` functions by `Type` int */
-export const match = [];
+export const match: MatchFn[] = [];
 
 /**
  * Returns whether the query matches for the element
  * @param query The `{ type, value, ... }` query object
  * @param ele The element to compare against
 */
-export const matches = (query, ele) => {
+export const matches = (query: Query, ele: SelectorEle): boolean => {
   return query.checks.every( chk => match[chk.type](chk, ele) );
 };
+
+// n.b. the assertions on check fields below are type-only: which fields a
+// check carries at runtime is guaranteed by its type (see `Check`)
 
 match[Type.GROUP] = (check, ele) => {
   let group = check.value;
@@ -21,7 +28,7 @@ match[Type.GROUP] = (check, ele) => {
 };
 
 match[Type.STATE] = (check, ele) => {
-  let stateSelector = check.value;
+  let stateSelector = check.value as string;
 
   return stateSelectorMatches( stateSelector, ele );
 };
@@ -33,7 +40,7 @@ match[Type.ID] = (check, ele) => {
 };
 
 match[Type.CLASS] = (check, ele) => {
-  let cls = check.value;
+  let cls = check.value as string;
 
   return ele.hasClass(cls);
 };
@@ -41,30 +48,30 @@ match[Type.CLASS] = (check, ele) => {
 match[Type.META_COMPARE] = (check, ele) => {
   let { field, operator, value } = check;
 
-  return valCmp( meta(ele, field), operator, value );
+  return valCmp( meta(ele, field!), operator!, value as string | number );
 };
 
 match[Type.DATA_COMPARE] = (check, ele) => {
   let { field, operator, value } = check;
 
-  return valCmp( data(ele, field), operator, value );
+  return valCmp( data(ele, field!), operator!, value as string | number );
 };
 
 match[Type.DATA_BOOL] = (check, ele) => {
   let { field, operator } = check;
 
-  return boolCmp( data(ele, field), operator );
+  return boolCmp( data(ele, field!), operator! );
 };
 
 match[Type.DATA_EXIST] = (check, ele) => {
   let { field, operator } = check;
 
-  return existCmp( data(ele, field), operator );
+  return existCmp( data(ele, field!), operator );
 };
 
 match[Type.UNDIRECTED_EDGE] = (check, ele) => {
-  let qA = check.nodes[0];
-  let qB = check.nodes[1];
+  let qA = check.nodes![0];
+  let qB = check.nodes![1];
   let src = ele.source();
   let tgt = ele.target();
 
@@ -72,51 +79,51 @@ match[Type.UNDIRECTED_EDGE] = (check, ele) => {
 };
 
 match[Type.NODE_NEIGHBOR] = (check, ele) => {
-  return matches(check.node, ele) && ele.neighborhood().some( n => n.isNode() && matches(check.neighbor, n) );
+  return matches(check.node!, ele) && ele.neighborhood().some( n => n.isNode() && matches(check.neighbor!, n) );
 };
 
 match[Type.DIRECTED_EDGE] = (check, ele) => {
-  return matches(check.source, ele.source()) && matches(check.target, ele.target());
+  return matches(check.source!, ele.source()) && matches(check.target!, ele.target());
 };
 
 match[Type.NODE_SOURCE] = (check, ele) => {
-  return matches(check.source, ele) && ele.outgoers().some( n => n.isNode() && matches(check.target, n) );
+  return matches(check.source!, ele) && ele.outgoers().some( n => n.isNode() && matches(check.target!, n) );
 };
 
 match[Type.NODE_TARGET] = (check, ele) => {
-  return matches(check.target, ele) && ele.incomers().some( n => n.isNode() && matches(check.source, n) );
+  return matches(check.target!, ele) && ele.incomers().some( n => n.isNode() && matches(check.source!, n) );
 };
 
 match[Type.CHILD] = (check, ele) => {
-  return matches(check.child, ele) && matches(check.parent, ele.parent());
+  return matches(check.child!, ele) && matches(check.parent!, ele.parent());
 };
 
 match[Type.PARENT] = (check, ele) => {
-  return matches(check.parent, ele) && ele.children().some( c => matches(check.child, c) );
+  return matches(check.parent!, ele) && ele.children().some( c => matches(check.child!, c) );
 };
 
 match[Type.DESCENDANT] = (check, ele) => {
-  return matches(check.descendant, ele) && ele.ancestors().some( a => matches(check.ancestor, a) );
+  return matches(check.descendant!, ele) && ele.ancestors().some( a => matches(check.ancestor!, a) );
 };
 
 match[Type.ANCESTOR] = (check, ele) => {
-  return matches(check.ancestor, ele) && ele.descendants().some( d => matches(check.descendant, d) );
+  return matches(check.ancestor!, ele) && ele.descendants().some( d => matches(check.descendant!, d) );
 };
 
 match[Type.COMPOUND_SPLIT] = (check, ele) => {
-  return matches(check.subject, ele) && matches(check.left, ele) && matches(check.right, ele);
+  return matches(check.subject!, ele) && matches(check.left!, ele) && matches(check.right!, ele);
 };
 
 match[Type.TRUE] = () => true;
 
 match[Type.COLLECTION] = (check, ele) => {
-  let collection = check.value;
+  let collection = check.value as SelectorCollection;
 
   return collection.has(ele);
 };
 
 match[Type.FILTER] = (check, ele) => {
-  let filter = check.value;
+  let filter = check.value as FilterFn;
 
   return filter(ele);
 };

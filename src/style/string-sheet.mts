@@ -1,15 +1,22 @@
 import * as util from '../util/index.mjs';
 import Selector from '../selector/index.mjs';
 
-let styfn = {};
+import type { Style, SelectorLike } from './index.mjs';
+
+export interface StringSheetStyfn {
+  appendFromString( this: Style, string: string ): Style;
+  fromString( this: Style, string: string ): Style;
+}
+
+let styfn = {} as StringSheetStyfn;
 
 styfn.appendFromString = function( string ){
-  let self = this;
-  let style = this;
+  let self = this; // eslint-disable-line @typescript-eslint/no-this-alias
+  let style = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let remaining = '' + string;
-  let selAndBlockStr;
-  let blockRem;
-  let propAndValStr;
+  let selAndBlockStr: string;
+  let blockRem: string;
+  let propAndValStr: string;
 
   // remove comments from the style string
   remaining = remaining.replace( /[/][*](\s|.)+?[*][/]/g, '' );
@@ -48,7 +55,7 @@ styfn.appendFromString = function( string ){
     // parse the selector
     let selectorStr = selAndBlock[1];
     if( selectorStr !== 'core' ){
-      let selector = new Selector( selectorStr );
+      let selector = new ( Selector as unknown as new ( selector: string ) => SelectorLike )( selectorStr ); // TODO(ts-migration): use the real Selector type once src/selector is converted
       if( selector.invalid ){
         util.warn( 'Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr );
 
@@ -125,7 +132,7 @@ styfn.appendFromString = function( string ){
 };
 
 styfn.fromString = function( string ){
-  let style = this;
+  let style = this; // eslint-disable-line @typescript-eslint/no-this-alias
 
   style.resetToDefault();
   style.appendFromString( string );

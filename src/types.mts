@@ -41,4 +41,5 @@ export interface CollectionShim {
 }
 
 /** A Collection holding exactly one element. */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- distinct name documents intent; gains members as the migration progresses
 export interface ElementShim extends CollectionShim {}

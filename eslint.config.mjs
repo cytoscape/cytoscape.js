@@ -33,8 +33,10 @@ export default [
       "@typescript-eslint/no-unused-vars": "warn",
       // the codebase style uses `let` pervasively; keep conversion diffs minimal
       "prefer-const": "off",
-      // converted files must be clean
-      "no-redeclare": ["error", { builtinGlobals: false }]
+      // converted files must be clean; the TS-aware rule understands
+      // type/value namespacing and declaration merging
+      "no-redeclare": "off",
+      "@typescript-eslint/no-redeclare": ["error", { builtinGlobals: false }]
     }
   },
   {

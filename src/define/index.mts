@@ -9,7 +9,7 @@ import animation from './animation.mjs';
 import data from './data.mjs';
 import events from './events.mjs';
 
-let define = {};
+let define = {} as typeof animation & typeof data & typeof events;
 
 [
   animation,

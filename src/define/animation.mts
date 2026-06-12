@@ -1,16 +1,45 @@
 import * as util from '../util/index.mjs';
-import Animation from '../animation.mjs';
+import Animation, { type AnimationOptions, type AnimationTarget } from '../animation.mjs';
 import * as math from '../math.mjs';
 import * as is from '../is.mjs';
+import type { Position } from '../types.mjs';
+
+// Internal structural view of the host (Core or Collection) inside the
+// generated animation methods. The host is duck-typed at runtime:
+// array-like (Collection of elements) or not (Core).
+interface AniCoreView {
+  styleEnabled(): boolean;
+  style(): { getPropsList( props: unknown ): unknown };
+  pan(): Position;
+  zoom(): number;
+  getCenterPan( eles: unknown, zoom?: unknown ): Position | undefined;
+  getFitViewport( eles: unknown, padding?: number ): { pan: Position; zoom: number } | undefined;
+  getZoomedViewport( zoomOpts: unknown ): { zoomed?: boolean; panned?: boolean; zoom?: number; pan?: Position } | null | undefined;
+  notify( event: string ): void;
+}
+
+interface AniEntityView extends AnimationTarget {
+  animated(): boolean;
+  animation( properties?: AnimationOptions, params?: AnimationOptions ): Animation;
+}
+
+interface AniHostView extends AniEntityView {
+  length?: number;
+  _private: AniEntityView['_private'] & { cy?: AniCoreView };
+  animate( properties: AnimationOptions, params?: AnimationOptions ): unknown;
+}
+
+const getCy = ( self: AniHostView ): AniCoreView =>
+  ( self._private.cy || self ) as unknown as AniCoreView;
 
 let define = {
 
-  animated: function(){
-    return function animatedImpl(){
-      let self = this;
+  animated: function<Self>(){
+    return function animatedImpl( this: Self ){
+      let self = this as unknown as AniHostView;
       let selfIsArrayLike = self.length !== undefined;
-      let all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
-      let cy = this._private.cy || this;
+      let all = ( selfIsArrayLike ? self : [ self ] ) as unknown as ArrayLike<AniEntityView>; // put in array if not array-like
+      let cy = getCy( self );
 
       if( !cy.styleEnabled() ){ return false; }
 
@@ -19,15 +48,15 @@ let define = {
       if( ele ){
         return ele._private.animation.current.length > 0;
       }
-    };
+    } as ( this: Self ) => boolean | undefined;
   }, // animated
 
-  clearQueue: function(){
-    return function clearQueueImpl(){
-      let self = this;
+  clearQueue: function<Self>(){
+    return function clearQueueImpl( this: Self ){
+      let self = this as unknown as AniHostView;
       let selfIsArrayLike = self.length !== undefined;
-      let all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
-      let cy = this._private.cy || this;
+      let all = ( selfIsArrayLike ? self : [ self ] ) as unknown as ArrayLike<AniEntityView>; // put in array if not array-like
+      let cy = getCy( self );
 
       if( !cy.styleEnabled() ){ return this; }
 
@@ -40,40 +69,42 @@ let define = {
     };
   }, // clearQueue
 
-  delay: function(){
-    return function delayImpl( time, complete ){
-      let cy = this._private.cy || this;
+  delay: function<Self>(){
+    return function delayImpl( this: Self, time: number, complete?: () => void ){
+      let self = this as unknown as AniHostView;
+      let cy = getCy( self );
 
       if( !cy.styleEnabled() ){ return this; }
 
-      return this.animate( {
+      return self.animate( {
         delay: time,
         duration: time,
         complete: complete
-      } );
+      } ) as unknown as Self; // .animate() chains, returning the host
     };
   }, // delay
 
-  delayAnimation: function(){
-    return function delayAnimationImpl( time, complete ){
-      let cy = this._private.cy || this;
+  delayAnimation: function<Self>(){
+    return function delayAnimationImpl( this: Self, time: number, complete?: () => void ){
+      let self = this as unknown as AniHostView;
+      let cy = getCy( self );
 
       if( !cy.styleEnabled() ){ return this; }
 
-      return this.animation( {
+      return self.animation( {
         delay: time,
         duration: time,
         complete: complete
-      } );
+      } ) as Animation | Self;
     };
   }, // delay
 
-  animation: function(){
-    return function animationImpl( properties, params ){
-      let self = this;
+  animation: function<Self>(){
+    return function animationImpl( this: Self, properties?: AnimationOptions, params?: AnimationOptions ){
+      let self = this as unknown as AniHostView;
       let selfIsArrayLike = self.length !== undefined;
-      let all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
-      let cy = this._private.cy || this;
+      let all = ( selfIsArrayLike ? self : [ self ] ) as unknown as ArrayLike<AniEntityView>; // put in array if not array-like
+      let cy = getCy( self );
       let isCore = !selfIsArrayLike;
       let isEles = !isCore;
 
@@ -81,12 +112,12 @@ let define = {
 
       let style = cy.style();
 
-      properties = util.assign( {}, properties, params );
+      properties = util.assign( {}, properties, params ) as AnimationOptions;
 
       let propertiesEmpty = Object.keys( properties ).length === 0;
 
       if( propertiesEmpty ){
-        return new Animation( all[0], properties ); // nothing to animate
+        return new Animation( all[0] as AnimationTarget, properties ); // nothing to animate
       }
 
       if( properties.duration === undefined ){
@@ -103,7 +134,7 @@ let define = {
       }
 
       if( isEles ){
-        properties.style = style.getPropsList( properties.style || properties.css );
+        properties.style = style.getPropsList( properties.style || properties.css ) as AnimationOptions['style'];
 
         properties.css = undefined;
       }
@@ -161,21 +192,21 @@ let define = {
         }
       }
 
-      return new Animation( all[0], properties );
-    };
+      return new Animation( all[0] as AnimationTarget, properties );
+    } as ( this: Self, properties?: AnimationOptions, params?: AnimationOptions ) => Animation | Self;
   }, // animate
 
-  animate: function(){
-    return function animateImpl( properties, params ){
-      let self = this;
+  animate: function<Self>(){
+    return function animateImpl( this: Self, properties: AnimationOptions, params?: AnimationOptions ){
+      let self = this as unknown as AniHostView;
       let selfIsArrayLike = self.length !== undefined;
-      let all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
-      let cy = this._private.cy || this;
+      let all = ( selfIsArrayLike ? self : [ self ] ) as unknown as ArrayLike<AniEntityView>; // put in array if not array-like
+      let cy = getCy( self );
 
       if( !cy.styleEnabled() ){ return this; }
 
       if( params ){
-        properties = util.extend( {}, properties, params );
+        properties = util.extend( {}, properties, params ) as AnimationOptions;
       }
 
       // manually hook and run the animation
@@ -192,12 +223,12 @@ let define = {
     };
   }, // animate
 
-  stop: function(){
-    return function stopImpl( clearQueue, jumpToEnd ){
-      let self = this;
+  stop: function<Self>(){
+    return function stopImpl( this: Self, clearQueue?: boolean, jumpToEnd?: boolean ){
+      let self = this as unknown as AniHostView;
       let selfIsArrayLike = self.length !== undefined;
-      let all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
-      let cy = this._private.cy || this;
+      let all = ( selfIsArrayLike ? self : [ self ] ) as unknown as ArrayLike<AniEntityView>; // put in array if not array-like
+      let cy = getCy( self );
 
       if( !cy.styleEnabled() ){ return this; }
 

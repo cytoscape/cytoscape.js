@@ -2,15 +2,52 @@ import * as is from './is.mjs';
 import Style from './style/index.mjs';
 import { dash2camel } from './util/index.mjs';
 
+export interface StylesheetProperty {
+  name: string;
+  value: unknown;
+}
+
+export interface StylesheetContext {
+  selector: string;
+  properties: StylesheetProperty[];
+}
+
+// the prototype surface of the dummy stylesheet
+export interface Stylesheet {
+  length: number;
+  [index: number]: StylesheetContext;
+  instanceString(): string;
+  selector( selector: string ): Stylesheet;
+  css( name: string | Record<string, unknown>, value?: unknown ): Stylesheet;
+  style( name: string | Record<string, unknown>, value?: unknown ): Stylesheet;
+  generateStyle( cy: unknown ): unknown;
+  appendToStyle<S>( style: S ): S;
+}
+
+// callable with or without `new` (it guards internally), so it must stay a
+// constructor function rather than become an ES class
+export interface StylesheetStatic {
+  ( this: Stylesheet | void ): Stylesheet;
+  new (): Stylesheet;
+  prototype: Stylesheet;
+}
+
+// minimal structural view of a Style instance (refined when src/style is converted)
+interface StyleLike {
+  selector( selector: string ): unknown;
+  css( name: string, value: unknown ): unknown;
+}
+
 // a dummy stylesheet object that doesn't need a reference to the core
 // (useful for init)
-let Stylesheet = function(){
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- intentional type/value pairing under one exported name
+let Stylesheet = function( this: Stylesheet ){
   if( !(this instanceof Stylesheet) ){
     return new Stylesheet();
   }
 
   this.length = 0;
-};
+} as StylesheetStatic;
 
 let sheetfn = Stylesheet.prototype;
 
@@ -49,7 +86,8 @@ sheetfn.css = function( name, value ){
 
       if( mapVal == null ){ continue; }
 
-      let prop = Style.properties[key] || Style.properties[dash2camel(key)];
+      let styleProps = ( Style as unknown as { properties: Record<string, { name: string } | undefined> } ).properties;
+      let prop = styleProps[key] || styleProps[dash2camel(key)];
 
       if( prop == null ){ continue; }
 
@@ -70,24 +108,26 @@ sheetfn.style = sheetfn.css;
 
 // generate a real style object from the dummy stylesheet
 sheetfn.generateStyle = function( cy ){
-  let style = new Style( cy );
+  let style = new ( Style as unknown as new ( cy: unknown ) => StyleLike )( cy );
 
   return this.appendToStyle( style );
 };
 
 // append a dummy stylesheet object on a real style object
-sheetfn.appendToStyle = function( style ){
+sheetfn.appendToStyle = function<S>( style: S ){
   for( let i = 0; i < this.length; i++ ){
     let context = this[ i ];
     let selector = context.selector;
     let props = context.properties;
 
-    style.selector( selector ); // apply selector
+    let s = style as unknown as StyleLike;
+
+    s.selector( selector ); // apply selector
 
     for( let j = 0; j < props.length; j++ ){
       let prop = props[ j ];
 
-      style.css( prop.name, prop.value ); // apply property
+      s.css( prop.name, prop.value ); // apply property
     }
   }
 

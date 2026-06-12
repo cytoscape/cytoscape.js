@@ -200,34 +200,22 @@ interface Pannable { pannable(): boolean; }
 
 export interface CollectionSwitchFunctions {
   // toggles: switch a state field on/off (also bind handlers when given a fn/data)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- variadic: (data, handler) | (handler) | () | (events[])
-  lock( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  unlock( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  grabify( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ungrabify( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  select( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  unselect( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deselect( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  selectify( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  unselectify( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // variadic: (data, handler) | (handler) | () | (events[])
+  lock( ...args: unknown[] ): Collection;
+  unlock( ...args: unknown[] ): Collection;
+  grabify( ...args: unknown[] ): Collection;
+  ungrabify( ...args: unknown[] ): Collection;
+  select( ...args: unknown[] ): Collection;
+  unselect( ...args: unknown[] ): Collection;
+  deselect( ...args: unknown[] ): Collection;
+  selectify( ...args: unknown[] ): Collection;
+  unselectify( ...args: unknown[] ): Collection;
   /** @internal */
-  activate( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  activate( ...args: unknown[] ): Collection;
   /** @internal */
-  unactivate( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  panify( ...args: any[] ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  unpanify( ...args: any[] ): Collection;
+  unactivate( ...args: unknown[] ): Collection;
+  panify( ...args: unknown[] ): Collection;
+  unpanify( ...args: unknown[] ): Collection;
 
   // predicates / state getters (read the first element's field)
   locked(): boolean | undefined;

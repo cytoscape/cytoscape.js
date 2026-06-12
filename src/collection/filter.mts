@@ -43,17 +43,14 @@ export interface CollectionFilter {
   edges( selector?: FilterArg ): EdgeCollection;
   /** @internal */
   byGroup(): ByGroupResult;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- thisArg may be any object
-  filter( filter?: FilterArg, thisArg?: any ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // thisArg may be any object
+  filter( filter?: FilterArg, thisArg?: unknown ): Collection;
   /** @internal */
-  stdFilter( filter?: FilterArg, thisArg?: any ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stdFilter( filter?: FilterArg, thisArg?: unknown ): Collection;
   /** @internal */
-  filterFn( filter?: FilterArg, thisArg?: any ): Collection;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filterFn( filter?: FilterArg, thisArg?: unknown ): Collection;
   /** @internal */
-  fnFilter( filter?: FilterArg, thisArg?: any ): Collection;
+  fnFilter( filter?: FilterArg, thisArg?: unknown ): Collection;
   not( toRemove?: SetArg ): Collection;
   difference( toRemove?: SetArg ): Collection;
   relativeComplement( toRemove?: SetArg ): Collection;

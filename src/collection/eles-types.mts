@@ -278,7 +278,7 @@ export interface Element extends Collection {
 
 type PublicSelectorArg = string | Collection | Element | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | undefined | null;
 
-export interface Singular extends Element {}
+export type Singular = Element;
 
 export interface NodeCollection extends Collection {
   parent( selector?: PublicSelectorArg ): NodeCollection;

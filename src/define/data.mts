@@ -45,6 +45,7 @@ export interface RemoveDataParams {
   triggerFnName?: string;
   triggerEvent?: boolean;
   immutableKeys?: Record<string, boolean>; // key => true if immutable
+  updateStyle?: boolean; // accepted (and ignored) by the remover; passed by some callers
 }
 
 /** The generated data remover (e.g. `.removeData()`, `.removeScratch()`). */
@@ -201,7 +202,9 @@ let define = {
 
   // remove data field
   removeData: function<Self>( params: RemoveDataParams ): RemoveDataFunc<Self> {
-    let defaults: Required<RemoveDataParams> = {
+    // updateStyle is accepted from callers but ignored by the remover, so it
+    // is intentionally absent from these defaults
+    let defaults: Required<Omit<RemoveDataParams, 'updateStyle'>> = {
       field: 'data',
       event: 'data',
       triggerFnName: 'trigger',

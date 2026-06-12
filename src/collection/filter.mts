@@ -1,0 +1,488 @@
+import * as is from '../is.mjs';
+import Selector from '../selector/index.mjs';
+import type { SelectorInput } from '../selector/index.mjs';
+import type { SelectorCollection } from '../selector/type.mjs';
+import type { Collection, Element, CoreAccess } from './eles-types.mjs';
+
+// TODO(eles-types): the runtime Collection prototype inherits Array.prototype,
+// so .push() exists at runtime but is not declared on the Collection interface.
+// Local helper used for spawned collections that are built up imperatively.
+type MutableCollection = Collection & { push( ele: Element ): number };
+
+// TODO(eles-types): cy.mutableElements()/cy.$() are part of the Core API but
+// not declared on the structural CoreAccess interface yet.
+type CoreWithQuery = CoreAccess & {
+  mutableElements(): Collection;
+  $( selector: string ): Collection;
+};
+
+/** A predicate run against each element of a collection. */
+export type FilterEleFn = ( ele: Element, i: number, eles: Collection ) => boolean | unknown;
+
+/** Inputs accepted by `.filter()` and friends: selector string, predicate, or collection. */
+export type FilterArg = string | FilterEleFn | Collection | Element | undefined | null;
+
+/** Inputs accepted by set operations: selector string or collection. */
+export type SetArg = string | Collection | Element | undefined | null;
+
+/** Result of `.byGroup()`. */
+export interface ByGroupResult {
+  nodes: Collection;
+  edges: Collection;
+}
+
+/** Result of `.diff()`/`.difference()`. */
+export interface DiffResult {
+  left: Collection;
+  right: Collection;
+  both: Collection;
+}
+
+export interface CollectionFilter {
+  nodes( selector?: FilterArg ): Collection;
+  edges( selector?: FilterArg ): Collection;
+  byGroup(): ByGroupResult;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- thisArg may be any object
+  filter( filter?: FilterArg, thisArg?: any ): Collection;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stdFilter( filter?: FilterArg, thisArg?: any ): Collection;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  filterFn( filter?: FilterArg, thisArg?: any ): Collection;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fnFilter( filter?: FilterArg, thisArg?: any ): Collection;
+  not( toRemove?: SetArg ): Collection;
+  difference( toRemove?: SetArg ): Collection;
+  relativeComplement( toRemove?: SetArg ): Collection;
+  subtract( toRemove?: SetArg ): Collection;
+  diff( other: SetArg ): DiffResult;
+  absoluteComplement(): Collection;
+  complement(): Collection;
+  abscomp(): Collection;
+  intersect( other: SetArg ): Collection;
+  intersection( other: SetArg ): Collection;
+  and( other: SetArg ): Collection;
+  xor( other: SetArg ): Collection;
+  symmetricDifference( other: SetArg ): Collection;
+  symdiff( other: SetArg ): Collection;
+  add( toAdd?: SetArg ): Collection;
+  union( toAdd?: SetArg ): Collection;
+  or( toAdd?: SetArg ): Collection;
+  merge( toAdd?: SetArg ): Collection;
+  unmergeAt( i: number ): Collection;
+  unmergeOne( ele: Collection | Element ): Collection;
+  unmerge( toRemove?: SetArg ): Collection;
+  unmergeBy( toRmFn: ( ele: Element ) => boolean | unknown ): Collection;
+}
+
+let elesfn = ({
+  nodes: function( this: Collection, selector?: FilterArg ){
+    return this.filter( ele => ele.isNode() ).filter( selector );
+  },
+
+  edges: function( this: Collection, selector?: FilterArg ){
+    return this.filter( ele => ele.isEdge() ).filter( selector );
+  },
+
+  // internal helper to get nodes and edges as separate collections with single iteration over elements
+  byGroup: function( this: Collection ): ByGroupResult {
+    let nodes = this.spawn() as MutableCollection;
+    let edges = this.spawn() as MutableCollection;
+
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[i];
+
+      if( ele.isNode() ){
+        nodes.push(ele);
+      } else {
+        edges.push(ele);
+      }
+    }
+
+    return { nodes, edges };
+  },
+
+  filter: function( this: Collection, filter?: FilterArg, thisArg?: unknown ){
+    if( filter === undefined ){ // check this first b/c it's the most common/performant case
+      return this;
+    } else if( is.string( filter ) || is.elementOrCollection( filter ) ){
+      return new Selector( filter as SelectorInput ).filter( this as unknown as SelectorCollection ) as unknown as Collection;
+    } else if( is.fn( filter ) ){
+      let filterEles = this.spawn() as MutableCollection;
+      let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
+      let fn = filter as FilterEleFn;
+
+      for( let i = 0; i < eles.length; i++ ){
+        let ele = eles[ i ];
+        let include = thisArg ? fn.apply( thisArg, [ ele, i, eles ] ) : fn( ele, i, eles );
+
+        if( include ){
+          filterEles.push( ele );
+        }
+      }
+
+      return filterEles;
+    }
+
+    return this.spawn(); // if not handled by above, give 'em an empty collection
+  },
+
+  not: function( this: Collection, toRemove?: SetArg ){
+    if( !toRemove ){
+      return this;
+    } else {
+      let removeColl: Collection;
+
+      if( is.string( toRemove ) ){
+        removeColl = this.filter( toRemove );
+      } else {
+        removeColl = toRemove as Collection;
+      }
+
+      let elements = this.spawn() as MutableCollection;
+
+      for( let i = 0; i < this.length; i++ ){
+        let element = this[ i ];
+
+        let remove = removeColl.has(element);
+        if( !remove ){
+          elements.push( element );
+        }
+      }
+
+      return elements;
+    }
+
+  },
+
+  absoluteComplement: function( this: Collection ){
+    let cy = this.cy() as CoreWithQuery;
+
+    return cy.mutableElements().not( this );
+  },
+
+  intersect: function( this: Collection, other: SetArg ){
+    // if a selector is specified, then filter by it instead
+    if( is.string( other ) ){
+      let selector = other;
+      return this.filter( selector );
+    }
+
+    let elements = this.spawn() as MutableCollection;
+    let col1 = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    let col2 = other as Collection;
+    let col1Smaller = this.length < col2.length;
+    let colS = col1Smaller ? col1 : col2;
+    let colL = col1Smaller ? col2 : col1;
+
+    for( let i = 0; i < colS.length; i++ ){
+      let ele = colS[i];
+
+      if( colL.has(ele) ){
+        elements.push(ele);
+      }
+    }
+
+    return elements;
+  },
+
+  xor: function( this: Collection, other: SetArg ){
+    let cy = this._private.cy as CoreWithQuery;
+    let otherColl: Collection;
+
+    if( is.string( other ) ){
+      otherColl = cy.$( other );
+    } else {
+      otherColl = other as Collection;
+    }
+
+    let elements = this.spawn() as MutableCollection;
+    let col1 = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    let col2 = otherColl;
+
+    let add = function( col: Collection, other: Collection ){
+      for( let i = 0; i < col.length; i++ ){
+        let ele = col[ i ];
+        let id = ele._private.data.id as string;
+        let inOther = other.hasElementWithId( id );
+
+        if( !inOther ){
+          elements.push( ele );
+        }
+      }
+
+    };
+
+    add( col1, col2 );
+    add( col2, col1 );
+
+    return elements;
+  },
+
+  diff: function( this: Collection, other: SetArg ): DiffResult {
+    let cy = this._private.cy as CoreWithQuery;
+    let otherColl: Collection;
+
+    if( is.string( other ) ){
+      otherColl = cy.$( other );
+    } else {
+      otherColl = other as Collection;
+    }
+
+    let left = this.spawn();
+    let right = this.spawn();
+    let both = this.spawn();
+    let col1 = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    let col2 = otherColl;
+
+    let add = function( col: Collection, other: Collection, retEles: MutableCollection ){
+
+      for( let i = 0; i < col.length; i++ ){
+        let ele = col[ i ];
+        let id = ele._private.data.id as string;
+        let inOther = other.hasElementWithId( id );
+
+        if( inOther ){
+          both.merge( ele );
+        } else {
+          retEles.push( ele );
+        }
+      }
+
+    };
+
+    add( col1, col2, left as MutableCollection );
+    add( col2, col1, right as MutableCollection );
+
+    return { left, right, both };
+  },
+
+  add: function( this: Collection, toAdd?: SetArg ){
+    let cy = this._private.cy as CoreWithQuery;
+
+    if( !toAdd ){
+      return this;
+    }
+
+    let addColl: Collection;
+
+    if( is.string( toAdd ) ){
+      let selector = toAdd;
+      addColl = cy.mutableElements().filter( selector );
+    } else {
+      addColl = toAdd as Collection;
+    }
+
+    let elements = this.spawnSelf() as MutableCollection;
+
+    for( let i = 0; i < addColl.length; i++ ){
+      let ele = addColl[i];
+
+      let add = !this.has(ele);
+      if( add ){
+        elements.push(ele);
+      }
+    }
+
+    return elements;
+  },
+
+  // in place merge on calling collection
+  merge: function( this: Collection, toAdd?: SetArg ){
+    let _p = this._private;
+    let cy = _p.cy as CoreWithQuery;
+
+    if( !toAdd ){
+      return this;
+    }
+
+    let addColl: Collection;
+
+    if( toAdd && is.string( toAdd ) ){
+      let selector = toAdd;
+      addColl = cy.mutableElements().filter( selector );
+    } else {
+      addColl = toAdd as Collection;
+    }
+
+    let map = _p.map;
+
+    for( let i = 0; i < addColl.length; i++ ){
+      let toAddEle = addColl[ i ];
+      let id = toAddEle._private.data.id as string;
+      let add = !map.has( id );
+
+      if( add ){
+        let index = this.length++;
+
+        this[ index ] = toAddEle;
+
+        map.set( id, { ele: toAddEle, index: index } );
+      }
+    }
+
+    return this; // chaining
+  },
+
+  unmergeAt: function( this: Collection, i: number ){
+    let ele = this[i];
+    let id = ele.id() as string;
+    let _p = this._private;
+    let map = _p.map;
+
+    // remove ele
+    ( this as unknown as { [ index: number ]: Element | undefined } )[ i ] = undefined;
+    map.delete( id );
+
+    let unmergedLastEle = i === this.length - 1;
+
+    // replace empty spot with last ele in collection
+    if( this.length > 1 && !unmergedLastEle ){
+      let lastEleI = this.length - 1;
+      let lastEle = this[ lastEleI ];
+      let lastEleId = lastEle._private.data.id as string;
+
+      ( this as unknown as { [ index: number ]: Element | undefined } )[ lastEleI ] = undefined;
+      this[ i ] = lastEle;
+      map.set( lastEleId, { ele: lastEle, index: i } );
+    }
+
+    // the collection is now 1 ele smaller
+    this.length--;
+
+    return this;
+  },
+
+  // remove single ele in place in calling collection
+  unmergeOne: function( this: Collection, ele: Collection | Element ){
+    ele = ele[0];
+
+    let _p = this._private;
+    let id = ( ele as Element )._private.data.id as string;
+    let map = _p.map;
+    let entry =  map.get( id );
+
+    if( !entry ){
+      return this; // no need to remove
+    }
+
+    let i = entry.index;
+
+    this.unmergeAt(i);
+
+    return this;
+  },
+
+  // remove eles in place on calling collection
+  unmerge: function( this: Collection, toRemove?: SetArg ){
+    let cy = this._private.cy as CoreWithQuery;
+
+    if( !toRemove ){
+      return this;
+    }
+
+    let removeColl: Collection;
+
+    if( toRemove && is.string( toRemove ) ){
+      let selector = toRemove;
+      removeColl = cy.mutableElements().filter( selector );
+    } else {
+      removeColl = toRemove as Collection;
+    }
+
+    for( let i = 0; i < removeColl.length; i++ ){
+      this.unmergeOne( removeColl[ i ] );
+    }
+
+    return this; // chaining
+  },
+
+  unmergeBy: function( this: Collection, toRmFn: ( ele: Element ) => boolean | unknown ){
+    for( let i = this.length - 1; i >= 0; i-- ){
+      let ele = this[i];
+
+      if( toRmFn(ele) ){
+        this.unmergeAt(i);
+      }
+    }
+
+    return this;
+  },
+
+  map: function( this: Collection, mapFn: ( ele: Element, i: number, eles: Collection ) => unknown, thisArg?: unknown ){
+    let arr: unknown[] = [];
+    let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
+
+    for( let i = 0; i < eles.length; i++ ){
+      let ele = eles[ i ];
+      let ret = thisArg ? mapFn.apply( thisArg, [ ele, i, eles ] ) : mapFn( ele, i, eles );
+
+      arr.push( ret );
+    }
+
+    return arr;
+  },
+
+  reduce: function( this: Collection, fn: ( acc: unknown, ele: Element, i: number, eles: Collection ) => unknown, initialValue: unknown ){
+    let val = initialValue;
+    let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
+
+    for( let i = 0; i < eles.length; i++ ){
+      val = fn( val, eles[i], i, eles );
+    }
+
+    return val;
+  },
+
+  max: function( this: Collection, valFn: ( ele: Element, i: number, eles: Collection ) => number, thisArg?: unknown ){
+    let max = -Infinity;
+    let maxEle: Element | undefined;
+    let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
+
+    for( let i = 0; i < eles.length; i++ ){
+      let ele = eles[ i ];
+      let val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
+
+      if( val > max ){
+        max = val;
+        maxEle = ele;
+      }
+    }
+
+    return {
+      value: max,
+      ele: maxEle
+    };
+  },
+
+  min: function( this: Collection, valFn: ( ele: Element, i: number, eles: Collection ) => number, thisArg?: unknown ){
+    let min = Infinity;
+    let minEle: Element | undefined;
+    let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
+
+    for( let i = 0; i < eles.length; i++ ){
+      let ele = eles[ i ];
+      let val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
+
+      if( val < min ){
+        min = val;
+        minEle = ele;
+      }
+    }
+
+    return {
+      value: min,
+      ele: minEle
+    };
+  }
+});
+
+// aliases
+let fn = elesfn as unknown as Record<string, unknown>;
+fn[ 'u' ] = fn[ '|' ] = fn[ '+' ] = fn.union = fn.or = fn.add;
+fn[ '\\' ] = fn[ '!' ] = fn[ '-' ] = fn.difference = fn.relativeComplement = fn.subtract = fn.not;
+fn[ 'n' ] = fn[ '&' ] = fn[ '.' ] = fn.and = fn.intersection = fn.intersect;
+fn[ '^' ] = fn[ '(+)' ] = fn[ '(-)' ] = fn.symmetricDifference = fn.symdiff = fn.xor;
+fn.fnFilter = fn.filterFn = fn.stdFilter = fn.filter;
+fn.complement = fn.abscomp = fn.absoluteComplement;
+
+export default elesfn as unknown as CollectionFilter;

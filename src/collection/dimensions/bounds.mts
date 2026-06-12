@@ -44,12 +44,16 @@ export interface BoundingBoxOptions {
 export interface CollectionBounds {
   renderedBoundingBox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
   renderedBoundingbox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
+  /** @internal */
   dirtyCompoundBoundsCache( this: Collection, silent?: boolean ): Collection;
+  /** @internal */
   updateCompoundBounds( this: Collection, force?: boolean ): Collection;
   boundingBox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
   boundingbox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
   bb( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
+  /** @internal */
   dirtyBoundingBoxCache( this: Collection ): Collection;
+  /** @internal */
   boundingBoxAt( this: Collection, fn: ( ( node: Element, i: number ) => Position ) | Position ): BoundingBox;
 }
 

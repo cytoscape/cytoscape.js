@@ -19,8 +19,11 @@ export interface CollectionCompounds {
   isChild(): boolean | undefined;
   isOrphan(): boolean | undefined;
   descendants( selector?: FilterArg ): NodeCollection;
+  /** @internal */
   forEachDown( fn: ( ele: Element ) => unknown, includeSelf?: boolean ): Collection;
+  /** @internal */
   forEachUp( fn: ( ele: Element ) => unknown, includeSelf?: boolean ): Collection;
+  /** @internal */
   forEachUpAndDown( fn: ( ele: Element ) => unknown, includeSelf?: boolean ): Collection;
 }
 

@@ -50,14 +50,18 @@ let argSelector = function( arg: EventSelectorArg ): Selector | EventHandler | n
 };
 
 export interface CoreEvents {
+  /** @internal */
   createEmitter(): Core;
+  /** @internal */
   emitter(): CoreEmitter;
   on( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
   removeListener( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
   removeAllListeners(): Core;
   one( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
+  /** @internal */
   once( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
   emit( events: EmitInput, extraParams?: unknown[] ): Core;
+  /** @internal */
   emitAndNotify( event: string, eles?: Collection ): Core;
 
   // aliases added by define.eventAliasesOn()

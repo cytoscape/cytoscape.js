@@ -20,8 +20,11 @@ export interface CoreAnimation {
   // returns `this` (Core) when style is disabled, otherwise the new Animation
   delayAnimation( time: number, complete?: () => void ): Animation | Core;
   stop( clearQueue?: boolean, jumpToEnd?: boolean ): Core;
+  /** @internal */
   addToAnimationPool( eles: Collection | Element ): void;
+  /** @internal */
   stopAnimationLoop(): void;
+  /** @internal */
   startAnimationLoop(): void;
 }
 

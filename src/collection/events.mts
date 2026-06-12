@@ -78,7 +78,9 @@ let argSelector = function( arg: EventSelectorArg ): Selector | EventHandler | n
 };
 
 export interface CollectionEvents {
+  /** @internal */
   createEmitter(): Collection;
+  /** @internal */
   emitter(): EleEmitter;
   on( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
   removeListener( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
@@ -86,6 +88,7 @@ export interface CollectionEvents {
   one( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
   once( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): void;
   emit( events: EmitInput, extraParams?: unknown[] ): Collection;
+  /** @internal */
   emitAndNotify( event: string, extraParams?: unknown[] ): Collection | undefined;
 
   // aliases added by define.eventAliasesOn()

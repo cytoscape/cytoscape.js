@@ -464,6 +464,7 @@ util.extend( elesfn, {
 elesfn.componentsOf = elesfn.components;
 
 export interface CollectionTraversing {
+  /** @internal */
   clearTraversalCache(): void;
   roots( selector?: SelectorArg ): NodeCollection;
   leaves( selector?: SelectorArg ): NodeCollection;

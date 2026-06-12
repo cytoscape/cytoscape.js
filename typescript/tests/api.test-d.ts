@@ -38,7 +38,7 @@ cy.emit('custom');
 // collection methods, traversal, data
 const nodes: NodeCollection = cy.nodes();
 const edges: EdgeCollection = cy.edges();
-const ele: Element | undefined = nodes.element();
+const ele: Element = nodes.first();
 const id: string | undefined = nodes.id();
 const deg: number | undefined = nodes.degree();
 nodes.forEach((n) => n.data('weight', 1));

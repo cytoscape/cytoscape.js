@@ -219,8 +219,10 @@ export interface CollectionSwitchFunctions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   unselectify( ...args: any[] ): Collection;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** @internal */
   activate( ...args: any[] ): Collection;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** @internal */
   unactivate( ...args: any[] ): Collection;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   panify( ...args: any[] ): Collection;
@@ -235,6 +237,7 @@ export interface CollectionSwitchFunctions {
   selectable(): boolean | undefined;
   active(): boolean | undefined;
   pannable(): boolean | undefined;
+  /** @internal */
   inactive(): boolean | undefined;
 }
 

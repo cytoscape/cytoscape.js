@@ -493,31 +493,49 @@ export default elesfn as CollectionStyle;
 
 /** Style accessor methods contributed to the collection prototype. */
 export interface CollectionStyle {
+  /** @internal */
   recalculateRenderedStyle( this: Collection, useCache?: boolean ): Collection;
+  /** @internal */
   dirtyStyleCache( this: Collection ): Collection;
+  /** @internal */
   updateStyle( this: Collection, notifyRenderer?: boolean ): Collection;
+  /** @internal */
   cleanStyle( this: Collection ): void;
+  /** @internal */
   parsedStyle( this: Collection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
+  /** @internal */
   pstyle( this: Collection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
   numericStyle( this: Collection, property: string ): number | unknown;
   numericStyleUnits( this: Collection, property: string ): string | ( string | undefined )[] | undefined;
+  /** @internal */
   renderedStyle( this: Collection, property?: string ): unknown;
   style( this: Collection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
   css( this: Collection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
+  /** @internal */
   bypass( this: Collection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
+  /** @internal */
   renderedCss( this: Collection, property?: string ): unknown;
   removeStyle( this: Collection, names?: string ): Collection;
+  /** @internal */
   removeBypass( this: Collection, names?: string ): Collection;
+  /** @internal */
   removeCss( this: Collection, names?: string ): Collection;
+  /** @internal */
   show( this: Collection ): Collection;
+  /** @internal */
   hide( this: Collection ): Collection;
   effectiveOpacity( this: Collection ): number | undefined;
   transparent( this: Collection ): boolean | undefined;
+  /** @internal */
   backgrounding( this: Collection ): boolean;
+  /** @internal */
   takesUpSpace( this: Collection ): boolean | undefined;
+  /** @internal */
   interactive( this: Collection ): boolean | undefined;
+  /** @internal */
   noninteractive( this: Collection ): boolean | undefined;
   visible( this: Collection ): boolean | undefined;
   hidden( this: Collection ): boolean | undefined;
+  /** @internal */
   isBundledBezier( this: Collection ): boolean | undefined;
 }

@@ -68,6 +68,7 @@
     "typecheck": "tsc --noEmit",
     "build:types": "rolldown -c rolldown.dts.config.mjs && node build-dts.mjs",
     "test:types": "npm run build:types && tsc -p tsconfig.types-test.json",
+    "test:types:docs": "npm run build:types && node test/types-docmaker-surface.mjs",
     "build": "rolldown -c",
     "build:esm": "cross-env FILE=esm rolldown -c",
     "build:esm.min": "cross-env FILE=esm.min rolldown -c",

@@ -26,14 +26,17 @@ export interface PositionAccessor {
 /** Position accessor methods contributed to the collection prototype. */
 export interface CollectionPosition {
   position: PositionAccessor;
+  /** @internal */
   silentPosition: PositionAccessor;
   modelPosition: PositionAccessor;
   point: PositionAccessor;
   positions( this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
+  /** @internal */
   silentPositions( this: Collection, pos: Partial<Position> | PositionFn ): Collection;
   modelPositions( this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
   points( this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
   shift( this: Collection, dim: Partial<Position> | string, val?: number | boolean, silent?: boolean ): Collection;
+  /** @internal */
   silentShift( this: Collection, dim: Partial<Position> | string, val?: number ): Collection;
   renderedPosition( this: Collection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
   renderedPoint( this: Collection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;

@@ -41,14 +41,18 @@ export interface DiffResult {
 export interface CollectionFilter {
   nodes( selector?: FilterArg ): NodeCollection;
   edges( selector?: FilterArg ): EdgeCollection;
+  /** @internal */
   byGroup(): ByGroupResult;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- thisArg may be any object
   filter( filter?: FilterArg, thisArg?: any ): Collection;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** @internal */
   stdFilter( filter?: FilterArg, thisArg?: any ): Collection;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** @internal */
   filterFn( filter?: FilterArg, thisArg?: any ): Collection;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  /** @internal */
   fnFilter( filter?: FilterArg, thisArg?: any ): Collection;
   not( toRemove?: SetArg ): Collection;
   difference( toRemove?: SetArg ): Collection;
@@ -68,9 +72,12 @@ export interface CollectionFilter {
   union( toAdd?: SetArg ): Collection;
   or( toAdd?: SetArg ): Collection;
   merge( toAdd?: SetArg ): Collection;
+  /** @internal */
   unmergeAt( i: number ): Collection;
+  /** @internal */
   unmergeOne( ele: Collection | Element ): Collection;
   unmerge( toRemove?: SetArg ): Collection;
+  /** @internal */
   unmergeBy( toRmFn: ( ele: Element ) => boolean | unknown ): Collection;
 }
 

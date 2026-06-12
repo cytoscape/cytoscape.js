@@ -12,8 +12,11 @@ export interface CollectionWidthHeight {
   outerHeight( this: Collection ): number | undefined;
   renderedHeight( this: Collection ): number | undefined;
   renderedOuterHeight( this: Collection ): number | undefined;
+  /** @internal */
   padding( this: Collection ): number;
+  /** @internal */
   paddedHeight( this: Collection ): number;
+  /** @internal */
   paddedWidth( this: Collection ): number;
 }
 

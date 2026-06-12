@@ -124,26 +124,36 @@ export interface CorePrivate {
 /** Methods defined directly in core/index.mts (not via mixins). */
 export interface CoreBaseFns {
   instanceString(): string;
+  /** @internal */
   isReady(): boolean;
   destroyed(): boolean;
   ready( fn: ( evt: unknown ) => void ): this;
   destroy(): this | undefined;
+  /** @internal */
   hasElementWithId( id: string | number ): boolean;
   getElementById( id: string | number ): Collection;
   $id( id: string | number ): Collection;
+  /** @internal */
   hasCompoundNodes(): boolean;
+  /** @internal */
   headless(): boolean;
+  /** @internal */
   styleEnabled(): boolean;
+  /** @internal */
   addToPool( eles: Collection | Element ): this;
+  /** @internal */
   removeFromPool( eles: Collection | Element[] ): this;
   container(): HTMLElement | null;
+  /** @internal */
   window(): Window | null;
   mount( container: HTMLElement ): this | undefined;
   unmount(): this;
+  /** @internal */
   options(): CytoscapeOptions;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- json get/set is broad and shape-dependent
   json( obj?: any ): any;
   // installed by src/extension.mts; lets a core reach the extension registry
+  /** @internal */
   extension( type: string, name: string, ...args: unknown[] ): unknown;
 }
 

@@ -205,18 +205,28 @@ export type ElementsInput =
 /** Methods defined directly in collection/index.mts (not via mixins). */
 export interface CollectionBaseFns {
   instanceString(): string;
+  /** @internal */
   spawn( eles?: ElementsInput, unique?: boolean ): Collection;
+  /** @internal */
   spawnSelf(): Collection;
   cy(): CoreAccess;
+  /** @internal */
   renderer(): CoreRendererAccess;
+  /** @internal */
   element(): Element | undefined;
+  /** @internal */
   collection(): Collection;
+  /** @internal */
   unique(): Collection;
+  /** @internal */
   hasElementWithId( id: string | number ): boolean;
   getElementById( id: string | number ): Collection;
   $id( id: string | number ): Collection;
+  /** @internal */
   poolIndex(): number;
+  /** @internal */
   indexOf( ele: Collection | Element ): number;
+  /** @internal */
   indexOfId( id: string | number ): number;
   json( obj?: Partial<ElementJson> ): ElementJson | this | undefined;
   jsons(): ( ElementJson | undefined )[];

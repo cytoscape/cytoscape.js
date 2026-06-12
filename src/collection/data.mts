@@ -8,7 +8,9 @@ export interface CollectionData {
   removeData: RemoveDataFunc<Collection>;
   scratch: DataFunc<Collection>;
   removeScratch: RemoveDataFunc<Collection>;
+  /** @internal */
   rscratch: DataFunc<Collection>;
+  /** @internal */
   removeRscratch: RemoveDataFunc<Collection>;
   attr: DataFunc<Collection>;
   removeAttr: RemoveDataFunc<Collection>;

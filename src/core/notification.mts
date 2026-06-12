@@ -136,12 +136,17 @@ let corefn = ({
 export default corefn as unknown as CoreNotification;
 
 export interface CoreNotification {
+  /** @internal */
   notify( eventName: string, eventEles?: Collection ): void;
+  /** @internal */
   notifications( bool?: boolean ): boolean | Core | undefined;
+  /** @internal */
   noNotifications( callback: () => void ): void;
+  /** @internal */
   batching(): boolean;
   startBatch(): Core;
   endBatch(): Core;
   batch( callback: () => void ): Core;
+  /** @internal */
   batchData( map: Record<string, unknown> ): Core;
 }

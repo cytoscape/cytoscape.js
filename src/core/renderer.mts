@@ -44,14 +44,21 @@ interface CoreWithExtension {
 }
 
 export interface CoreRenderer {
+  /** @internal */
   renderTo( context: CanvasRenderingContext2D, zoom?: number, pan?: { x: number; y: number }, pxRatio?: number ): Core;
+  /** @internal */
   renderer(): RendererInstance | null;
+  /** @internal */
   forceRender(): Core;
   resize(): Core;
   invalidateDimensions(): Core;
+  /** @internal */
   initRenderer( options: RendererInitOptions ): void;
+  /** @internal */
   destroyRenderer(): void;
+  /** @internal */
   onRender( fn: ( ...args: unknown[] ) => void ): Core;
+  /** @internal */
   offRender( fn: ( ...args: unknown[] ) => void ): Core;
 }
 

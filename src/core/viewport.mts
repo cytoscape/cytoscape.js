@@ -38,13 +38,17 @@ export interface CoreViewport {
   autolock(): boolean;
   autolock( bool: boolean ): Core;
   /** @deprecated backwards-compatibility alias of {@link autolock}. */
+  /** @internal */
   autolockNodes(): boolean;
+  /** @internal */
   autolockNodes( bool: boolean ): Core;
 
   autoungrabify(): boolean;
   autoungrabify( bool: boolean ): Core;
   /** @deprecated backwards-compatibility alias of {@link autoungrabify}. */
+  /** @internal */
   autoungrabifyNodes(): boolean;
+  /** @internal */
   autoungrabifyNodes( bool: boolean ): Core;
 
   autounselectify(): boolean;
@@ -76,17 +80,21 @@ export interface CoreViewport {
   panBy( dims: Position ): Core;
   panBy( dim: string, val: number ): Core;
 
+  /** @internal */
   gc(): void;
 
   fit( elements?: Collection | string | BoundingBox | number, padding?: number ): Core;
+  /** @internal */
   getFitViewport( elements?: Collection | string | BoundingBox | number, padding?: number ): FitViewport | undefined;
 
+  /** @internal */
   zoomRange( min: number | { min?: number; max?: number }, max?: number ): Core;
   minZoom(): number;
   minZoom( zoom: number ): Core;
   maxZoom(): number;
   maxZoom( zoom: number ): Core;
 
+  /** @internal */
   getZoomedViewport( params: number | ZoomOptions ): ZoomedViewport | null;
   zoom(): number;
   zoom( params: number | ZoomOptions ): Core;
@@ -96,11 +104,14 @@ export interface CoreViewport {
   center( elements?: Collection | string ): Core;
   /** Alias of {@link center}. */
   centre( elements?: Collection | string ): Core;
+  /** @internal */
   getCenterPan( elements?: Collection | string, zoom?: number ): Position | undefined;
 
   reset(): Core;
 
+  /** @internal */
   invalidateSize(): void;
+  /** @internal */
   size(): { width: number; height: number };
   width(): number;
   height(): number;
@@ -108,7 +119,9 @@ export interface CoreViewport {
   extent(): BoundingBox;
   renderedExtent(): BoundingBox;
 
+  /** @internal */
   multiClickDebounceTime(): number;
+  /** @internal */
   multiClickDebounceTime( int: number ): Core;
 }
 

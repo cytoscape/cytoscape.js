@@ -17,7 +17,9 @@ export interface CollectionComparators {
   allAreNeighbours( collection: Collection | Element | string ): boolean;
   contains( collection: Collection | Element | string ): boolean;
   has( collection: Collection | Element | string ): boolean;
+  /** @internal */
   equal( collection: Collection | Element | string ): boolean;
+  /** @internal */
   equals( collection: Collection | Element | string ): boolean;
 }
 

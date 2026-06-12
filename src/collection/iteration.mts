@@ -35,7 +35,9 @@ export interface CollectionIteration {
   empty(): boolean;
   nonempty(): boolean;
   sort( sortFn: SortFn ): Collection;
+  /** @internal */
   sortByZIndex(): Collection;
+  /** @internal */
   zDepth(): number | undefined;
   map<T>( mapFn: MapFn<T>, thisArg?: unknown ): T[];
   reduce<T>( fn: ReduceFn<T>, initialValue: T ): T;

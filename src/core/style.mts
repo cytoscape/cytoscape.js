@@ -50,7 +50,9 @@ let corefn = ({
 /** Style engine accessor methods contributed to the core prototype. */
 export interface CoreStyle {
   style( this: Core, newStyle?: unknown ): StyleType;
+  /** @internal */
   setStyle( this: Core, style?: unknown ): StyleType;
+  /** @internal */
   updateStyle( this: Core ): void;
 }
 

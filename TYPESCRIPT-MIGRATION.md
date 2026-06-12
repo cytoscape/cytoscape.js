@@ -69,20 +69,30 @@ point now also re-exports the old broad node/edge alias family
 (`Singular`, `NodeSingular`, `EdgeSingular`, `NodeCollection`,
 `EdgeCollection`), and the documented search/traversal helpers return
 those aliases where appropriate. The old `index.d.ts` (6,644 lines) is
-kept in the repo as a reference and parity target. Two areas of the
+kept in the repo as a reference and parity target. A docmaker-based audit
+(`npm run test:types:docs`) now checks that the generated `build/dts`
+surface matches the documented `cy.*` / `eles.*` / `ele.*` API and
+guards the remaining known exceptions. Three areas of the
 hand-written file are **not yet reproduced** from source and are the
 remaining work to reach full parity:
 
-1. **`Css.*` style-property types** — the per-property value types
+1. **Node/edge public projections** — `NodeCollection` and
+  `EdgeCollection` are re-exported again, but they still structurally
+  inherit some cross-kind methods from the wide internal `Collection`
+  type in the generated declarations. Fully matching the docs requires a
+  dedicated public node/edge projection layer that omits edge-only
+  methods from node types and node-only methods from edge types.
+2. **`Css.*` style-property types** — the per-property value types
    (`background-color`, `width`, mappers, etc.). Derive these from the
    `src/style/properties.mts` property table.
-2. **`EventObject` hierarchy** — surface the `EventObject` /
+3. **`EventObject` hierarchy** — surface the `EventObject` /
    `EventObjectNode` / `EventObjectEdge` types (the runtime `Event` class
    is already typed) on the public event-binding signatures.
 
-Until then, downstream TypeScript users relying on `Css.*` get looser
-(`unknown`-ish) types from the generated definitions, and event handler
-signatures do not yet expose the old `EventObject*` hierarchy. Reverting
-`package.json` `types` to `./index.d.ts` restores the richer hand-written
-types if that trade-off is preferred while the above source enrichment is
-completed.
+Until then, downstream TypeScript users still see some node/edge
+cross-kind methods on the generated `NodeCollection` / `EdgeCollection`
+aliases, `Css.*` remains looser (`unknown`-ish), and event handler
+signatures do not yet expose the old `EventObject*` hierarchy.
+Reverting `package.json` `types` to `./index.d.ts` restores the richer
+hand-written types if that trade-off is preferred while the above source
+enrichment is completed.

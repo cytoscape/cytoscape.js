@@ -563,8 +563,6 @@ interface CollectionComparators {
   allAreNeighbours(collection: Collection | Element$1 | string): boolean;
   contains(collection: Collection | Element$1 | string): boolean;
   has(collection: Collection | Element$1 | string): boolean;
-  equal(collection: Collection | Element$1 | string): boolean;
-  equals(collection: Collection | Element$1 | string): boolean;
 }
 //#endregion
 //#region src/collection/filter.d.mts
@@ -574,11 +572,6 @@ type FilterEleFn = (ele: Element$1, i: number, eles: Collection) => boolean | un
 type FilterArg = string | FilterEleFn | Collection | Element$1 | undefined | null;
 /** Inputs accepted by set operations: selector string or collection. */
 type SetArg = string | Collection | Element$1 | undefined | null;
-/** Result of `.byGroup()`. */
-interface ByGroupResult {
-  nodes: NodeCollection;
-  edges: EdgeCollection;
-}
 /** Result of `.diff()`/`.difference()`. */
 interface DiffResult {
   left: Collection;
@@ -588,11 +581,7 @@ interface DiffResult {
 interface CollectionFilter {
   nodes(selector?: FilterArg): NodeCollection;
   edges(selector?: FilterArg): EdgeCollection;
-  byGroup(): ByGroupResult;
   filter(filter?: FilterArg, thisArg?: any): Collection;
-  stdFilter(filter?: FilterArg, thisArg?: any): Collection;
-  filterFn(filter?: FilterArg, thisArg?: any): Collection;
-  fnFilter(filter?: FilterArg, thisArg?: any): Collection;
   not(toRemove?: SetArg): Collection;
   difference(toRemove?: SetArg): Collection;
   relativeComplement(toRemove?: SetArg): Collection;
@@ -611,10 +600,7 @@ interface CollectionFilter {
   union(toAdd?: SetArg): Collection;
   or(toAdd?: SetArg): Collection;
   merge(toAdd?: SetArg): Collection;
-  unmergeAt(i: number): Collection;
-  unmergeOne(ele: Collection | Element$1): Collection;
   unmerge(toRemove?: SetArg): Collection;
-  unmergeBy(toRmFn: (ele: Element$1) => boolean | unknown): Collection;
 }
 //#endregion
 //#region src/collection/compounds.d.mts
@@ -633,9 +619,6 @@ interface CollectionCompounds {
   isChild(): boolean | undefined;
   isOrphan(): boolean | undefined;
   descendants(selector?: FilterArg): NodeCollection;
-  forEachDown(fn: (ele: Element$1) => unknown, includeSelf?: boolean): Collection;
-  forEachUp(fn: (ele: Element$1) => unknown, includeSelf?: boolean): Collection;
-  forEachUpAndDown(fn: (ele: Element$1) => unknown, includeSelf?: boolean): Collection;
 }
 //#endregion
 //#region src/event.d.mts
@@ -675,55 +658,7 @@ declare class Event {
 //#endregion
 //#region src/emitter.d.mts
 type EventHandler = (this: any, event: Event, ...extraParams: any[]) => unknown;
-interface Listener<TQualifier = unknown> {
-  event: string | undefined;
-  callback: EventHandler;
-  type: string;
-  namespace: string | null | undefined;
-  qualifier?: TQualifier | null;
-  conf?: ListenerConf | null;
-}
-interface ListenerConf {
-  one?: boolean;
-}
-/** Something an event can bubble up to: it can emit further. */
-interface ParentEmitTarget {
-  emit(events: Event, extraParams?: unknown[]): unknown;
-}
-interface EmitterOptions<TContext, TQualifier = unknown> {
-  qualifierCompare?(q1: TQualifier | null | undefined, q2: TQualifier | null | undefined): boolean;
-  eventMatches?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): boolean;
-  addEventFields?(context: TContext, evt: EventProps): void;
-  callbackContext?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): unknown;
-  beforeEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
-  afterEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
-  bubble?(context: TContext): boolean;
-  parent?(context: TContext): ParentEmitTarget | null;
-  context?: TContext;
-}
 type EmitInput = string | string[] | Event | EventProps;
-declare class Emitter<TContext = unknown, TQualifier = unknown> {
-  qualifierCompare: (q1: TQualifier | null | undefined, q2: TQualifier | null | undefined) => boolean;
-  eventMatches: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => boolean;
-  addEventFields: (context: TContext, evt: EventProps) => void;
-  callbackContext: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => unknown;
-  beforeEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
-  afterEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
-  bubble: (context: TContext) => boolean;
-  parent: (context: TContext) => ParentEmitTarget | null;
-  context: TContext;
-  listeners: Listener<TQualifier>[];
-  emitting: number;
-  constructor(opts?: EmitterOptions<TContext, TQualifier>, context?: TContext);
-  on(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null, confOverrides?: ListenerConf): this;
-  addListener: this['on'];
-  one(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
-  off(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
-  removeListener: this['off'];
-  removeAllListeners(): this;
-  emit(events: EmitInput, extraParams?: unknown, manualCallback?: EventHandler): this;
-  trigger: this['emit'];
-}
 //#endregion
 //#region src/define/data.d.mts
 /** The generated data accessor (e.g. `.data()`, `.scratch()`). */
@@ -746,8 +681,6 @@ interface CollectionData {
   removeData: RemoveDataFunc<Collection>;
   scratch: DataFunc<Collection>;
   removeScratch: RemoveDataFunc<Collection>;
-  rscratch: DataFunc<Collection>;
-  removeRscratch: RemoveDataFunc<Collection>;
   attr: DataFunc<Collection>;
   removeAttr: RemoveDataFunc<Collection>;
   id(): string | undefined;
@@ -786,15 +719,12 @@ interface PositionAccessor {
 /** Position accessor methods contributed to the collection prototype. */
 interface CollectionPosition {
   position: PositionAccessor;
-  silentPosition: PositionAccessor;
   modelPosition: PositionAccessor;
   point: PositionAccessor;
   positions(this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean): Collection;
-  silentPositions(this: Collection, pos: Partial<Position> | PositionFn): Collection;
   modelPositions(this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean): Collection;
   points(this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean): Collection;
   shift(this: Collection, dim: Partial<Position> | string, val?: number | boolean, silent?: boolean): Collection;
-  silentShift(this: Collection, dim: Partial<Position> | string, val?: number): Collection;
   renderedPosition(this: Collection, dim?: Partial<Position> | string, val?: number): Position | number | Collection | undefined;
   renderedPoint(this: Collection, dim?: Partial<Position> | string, val?: number): Position | number | Collection | undefined;
   relativePosition(this: Collection, dim?: Partial<Position> | string, val?: number): Position | number | Collection | undefined;
@@ -820,13 +750,9 @@ interface BoundingBoxOptions {
 interface CollectionBounds {
   renderedBoundingBox(this: Collection, options?: BoundingBoxOptions): BoundingBox;
   renderedBoundingbox(this: Collection, options?: BoundingBoxOptions): BoundingBox;
-  dirtyCompoundBoundsCache(this: Collection, silent?: boolean): Collection;
-  updateCompoundBounds(this: Collection, force?: boolean): Collection;
   boundingBox(this: Collection, options?: BoundingBoxOptions): BoundingBox;
   boundingbox(this: Collection, options?: BoundingBoxOptions): BoundingBox;
   bb(this: Collection, options?: BoundingBoxOptions): BoundingBox;
-  dirtyBoundingBoxCache(this: Collection): Collection;
-  boundingBoxAt(this: Collection, fn: ((node: Element$1, i: number) => Position) | Position): BoundingBox;
 }
 //#endregion
 //#region src/collection/dimensions/width-height.d.mts
@@ -840,9 +766,6 @@ interface CollectionWidthHeight {
   outerHeight(this: Collection): number | undefined;
   renderedHeight(this: Collection): number | undefined;
   renderedOuterHeight(this: Collection): number | undefined;
-  padding(this: Collection): number;
-  paddedHeight(this: Collection): number;
-  paddedWidth(this: Collection): number;
 }
 //#endregion
 //#region src/collection/dimensions/edge-points.d.mts
@@ -1023,19 +946,15 @@ declare class Selector {
 }
 //#endregion
 //#region src/collection/events.d.mts
-type EleEmitter = Emitter<Element$1, Selector>;
 /** Inputs accepted as the selector arg of `.on()` and friends. */
 type EventSelectorArg$1 = string | Selector | EventHandler | null | undefined;
 interface CollectionEvents {
-  createEmitter(): Collection;
-  emitter(): EleEmitter;
   on(events: string | string[], selector?: EventSelectorArg$1, callback?: EventHandler): Collection;
   removeListener(events: string | string[], selector?: EventSelectorArg$1, callback?: EventHandler): Collection;
   removeAllListeners(): Collection;
   one(events: string | string[], selector?: EventSelectorArg$1, callback?: EventHandler): Collection;
   once(events: string | string[], selector?: EventSelectorArg$1, callback?: EventHandler): void;
   emit(events: EmitInput, extraParams?: unknown[]): Collection;
-  emitAndNotify(event: string, extraParams?: unknown[]): Collection | undefined;
   addListener(events: string | string[], selector?: EventSelectorArg$1, callback?: EventHandler): Collection;
   listen(events: string | string[], selector?: EventSelectorArg$1, callback?: EventHandler): Collection;
   bind(events: string | string[], selector?: EventSelectorArg$1, callback?: EventHandler): Collection;
@@ -1083,8 +1002,6 @@ interface CollectionIteration {
   empty(): boolean;
   nonempty(): boolean;
   sort(sortFn: SortFn): Collection;
-  sortByZIndex(): Collection;
-  zDepth(): number | undefined;
   map<T>(mapFn: MapFn<T>, thisArg?: unknown): T[];
   reduce<T>(fn: ReduceFn<T>, initialValue: T): T;
   max(valFn: MapFn<number>, thisArg?: unknown): MinMaxResult;
@@ -1145,6 +1062,335 @@ interface CollectionLayout {
   layout(this: Collection, options?: Partial<LayoutOptions$1>): LayoutLike;
   createLayout(this: Collection, options?: Partial<LayoutOptions$1>): LayoutLike;
   makeLayout(this: Collection, options?: Partial<LayoutOptions$1>): LayoutLike;
+}
+//#endregion
+//#region src/collection/style.d.mts
+/** Style accessor methods contributed to the collection prototype. */
+interface CollectionStyle {
+  numericStyle(this: Collection, property: string): number | unknown;
+  numericStyleUnits(this: Collection, property: string): string | (string | undefined)[] | undefined;
+  style(this: Collection, name?: string | Record<string, unknown>, value?: unknown): unknown;
+  css(this: Collection, name?: string | Record<string, unknown>, value?: unknown): unknown;
+  removeStyle(this: Collection, names?: string): Collection;
+  effectiveOpacity(this: Collection): number | undefined;
+  transparent(this: Collection): boolean | undefined;
+  visible(this: Collection): boolean | undefined;
+  hidden(this: Collection): boolean | undefined;
+}
+//#endregion
+//#region src/collection/switch-functions.d.mts
+interface CollectionSwitchFunctions {
+  lock(...args: any[]): Collection;
+  unlock(...args: any[]): Collection;
+  grabify(...args: any[]): Collection;
+  ungrabify(...args: any[]): Collection;
+  select(...args: any[]): Collection;
+  unselect(...args: any[]): Collection;
+  deselect(...args: any[]): Collection;
+  selectify(...args: any[]): Collection;
+  unselectify(...args: any[]): Collection;
+  panify(...args: any[]): Collection;
+  unpanify(...args: any[]): Collection;
+  locked(): boolean | undefined;
+  grabbable(): boolean | undefined;
+  grabbed(): boolean | undefined;
+  selected(): boolean | undefined;
+  selectable(): boolean | undefined;
+  active(): boolean | undefined;
+  pannable(): boolean | undefined;
+}
+//#endregion
+//#region src/collection/traversing.d.mts
+/** Selector/filter argument accepted by traversal methods. */
+type SelectorArg = string | ((ele: Element$1, i: number, eles: Collection) => boolean | unknown) | Collection | Element$1 | undefined | null;
+interface CollectionTraversing {
+  roots(selector?: SelectorArg): NodeCollection;
+  leaves(selector?: SelectorArg): NodeCollection;
+  outgoers(selector?: SelectorArg): Collection;
+  successors(selector?: SelectorArg): Collection;
+  incomers(selector?: SelectorArg): Collection;
+  predecessors(selector?: SelectorArg): Collection;
+  neighborhood(selector?: SelectorArg): Collection;
+  neighbourhood(selector?: SelectorArg): Collection;
+  closedNeighborhood(selector?: SelectorArg): Collection;
+  closedNeighbourhood(selector?: SelectorArg): Collection;
+  openNeighborhood(selector?: SelectorArg): Collection;
+  openNeighbourhood(selector?: SelectorArg): Collection;
+  source(selector?: SelectorArg): NodeSingular;
+  target(selector?: SelectorArg): NodeSingular;
+  sources(selector?: SelectorArg): NodeCollection;
+  targets(selector?: SelectorArg): NodeCollection;
+  edgesWith(otherNodes: string | Collection): EdgeCollection;
+  edgesTo(otherNodes: string | Collection): EdgeCollection;
+  connectedEdges(selector?: SelectorArg): EdgeCollection;
+  connectedNodes(selector?: SelectorArg): NodeCollection;
+  parallelEdges(selector?: SelectorArg): EdgeCollection;
+  codirectedEdges(selector?: SelectorArg): EdgeCollection;
+  components(root?: Collection | Element$1 | null): Collection[];
+  componentsOf(root?: Collection | Element$1 | null): Collection[];
+  component(): Collection;
+}
+//#endregion
+//#region src/collection/eles-types.d.mts
+/**
+ * The collection module's structural view of the Core. Grown as needed
+ * by collection code; src/core's real Core type must satisfy it (it is
+ * swapped in during the core conversion phase).
+ */
+interface CoreAccess {
+  hasElementWithId(id: string | number): boolean;
+  getElementById(id: string | number): Collection;
+  collection(eles?: unknown, opts?: unknown): Collection;
+  batch(fn: () => void): unknown;
+  startBatch(): unknown;
+  endBatch(): unknown;
+  batching(): boolean;
+  addToPool(eles: Collection | Element$1): unknown;
+  removeFromPool(eles: Collection | Element$1[]): unknown;
+  addToAnimationPool(eles: Collection | Element$1): void;
+  zoom(): number;
+  pan(): Position;
+  styleEnabled(): boolean;
+  style(): CoreStyleAccess;
+  notify(event: string, eles?: Collection): void;
+  renderer(): CoreRendererAccess;
+  hasCompoundNodes(): boolean;
+  headless(): boolean;
+  destroyed(): boolean;
+  emit(events: string, extraParams?: any[]): unknown;
+  _private: CorePrivateAccess;
+}
+interface CorePrivateAccess {
+  elements: Collection;
+  hasCompoundNodes: boolean;
+  [key: string]: unknown;
+}
+/** Loose structural view of the style engine as used by collection code. */
+interface CoreStyleAccess {
+  apply(eles: Collection | Element$1): unknown;
+  applyBypass(eles: Collection | Element$1, name?: unknown, value?: unknown, updateTransitions?: boolean): unknown;
+  removeBypasses(eles: Collection | Element$1, names?: string[], updateTransitions?: boolean): unknown;
+  getPropsList(props: unknown): unknown;
+  getRenderedStyle(ele: Element$1, prop?: string): unknown;
+  getRawStyle(ele: Element$1, isRenderedVal?: boolean): unknown;
+  getStylePropertyValue(ele: Element$1, propName: string, isRenderedVal?: boolean): unknown;
+  update(): unknown;
+  updateTransitions(ele: Element$1, diffProps: unknown): unknown;
+  updateMappers(eles: Collection | Element$1): unknown;
+  [key: string]: unknown;
+}
+/** Loose structural view of the renderer as used by collection code. */
+interface CoreRendererAccess {
+  notify?(event: string, eles?: Collection): void;
+  [key: string]: unknown;
+}
+interface ElementData {
+  id?: string;
+  source?: string;
+  target?: string;
+  parent?: string;
+  [key: string]: unknown;
+}
+/** JSON definition used to create an element. */
+interface ElementDefinition {
+  group?: 'nodes' | 'edges';
+  data?: ElementData;
+  position?: Position;
+  renderedPosition?: Position;
+  selected?: boolean;
+  selectable?: boolean;
+  locked?: boolean;
+  grabbable?: boolean;
+  pannable?: boolean;
+  classes?: string | string[];
+  style?: Record<string, unknown>;
+  css?: Record<string, unknown>;
+  scratch?: Record<string, unknown>;
+  parent?: Element$1 | null;
+}
+/** The shape produced/consumed by `eles.json()`. */
+interface ElementJson {
+  data: ElementData;
+  position: Position;
+  group: 'nodes' | 'edges';
+  removed: boolean;
+  selected: boolean;
+  selectable: boolean;
+  locked: boolean;
+  grabbable: boolean;
+  pannable: boolean;
+  classes: string | null;
+}
+/** Methods defined directly in collection/index.mts (not via mixins). */
+interface CollectionBaseFns {
+  instanceString(): string;
+  cy(): CoreAccess;
+  getElementById(id: string | number): Collection;
+  $id(id: string | number): Collection;
+  json(obj?: Partial<ElementJson>): ElementJson | this | undefined;
+  jsons(): (ElementJson | undefined)[];
+  clone(): Collection;
+  copy(): Collection;
+  restore(notifyRenderer?: boolean, addToPool?: boolean): this;
+  removed(): boolean;
+  inside(): boolean;
+  remove(notifyRenderer?: boolean, removeFromPool?: boolean): Collection;
+  move(struct: {
+    source?: string | number;
+    target?: string | number;
+    parent?: string | number | null;
+  }): this;
+}
+/**
+ * The wide internal collection type: the union of node and edge
+ * capabilities, matching how the shared prototype actually behaves at
+ * runtime. Public node/edge-narrowed projections are layered on top in
+ * the entry point's public API types.
+ */
+interface Collection extends CollectionBaseFns, CollectionAlgorithms, CollectionAnimation, CollectionClass, CollectionComparators, CollectionCompounds, CollectionData, CollectionDegree, CollectionDimensions, CollectionEvents, CollectionFilter, CollectionGroup, CollectionIteration, CollectionLayout, CollectionStyle, CollectionSwitchFunctions, CollectionTraversing {
+  length: number;
+  [index: number]: Element$1;
+}
+/** A single element (node or edge); array-like of itself, length 1. */
+interface Element$1 extends Collection {}
+type PublicSelectorArg = string | Collection | Element$1 | ((ele: Element$1, i: number, eles: Collection) => boolean | unknown) | undefined | null;
+interface Singular extends Element$1 {}
+interface NodeCollection extends Collection {
+  parent(selector?: PublicSelectorArg): NodeCollection;
+  parents(selector?: PublicSelectorArg): NodeCollection;
+  ancestors(selector?: PublicSelectorArg): NodeCollection;
+  commonAncestors(selector?: PublicSelectorArg): NodeCollection;
+  orphans(selector?: PublicSelectorArg): NodeCollection;
+  nonorphans(selector?: PublicSelectorArg): NodeCollection;
+  children(selector?: PublicSelectorArg): NodeCollection;
+  siblings(selector?: PublicSelectorArg): NodeCollection;
+  descendants(selector?: PublicSelectorArg): NodeCollection;
+  roots(selector?: PublicSelectorArg): NodeCollection;
+  leaves(selector?: PublicSelectorArg): NodeCollection;
+  connectedEdges(selector?: PublicSelectorArg): EdgeCollection;
+}
+interface EdgeCollection extends Collection {
+  source(selector?: PublicSelectorArg): NodeSingular;
+  target(selector?: PublicSelectorArg): NodeSingular;
+  sources(selector?: PublicSelectorArg): NodeCollection;
+  targets(selector?: PublicSelectorArg): NodeCollection;
+  edgesWith(otherNodes: string | Collection): EdgeCollection;
+  edgesTo(otherNodes: string | Collection): EdgeCollection;
+  connectedNodes(selector?: PublicSelectorArg): NodeCollection;
+  parallelEdges(selector?: PublicSelectorArg): EdgeCollection;
+  codirectedEdges(selector?: PublicSelectorArg): EdgeCollection;
+}
+type NodeSingular = Singular & NodeCollection;
+type EdgeSingular = Singular & EdgeCollection;
+//#endregion
+//#region src/core/add-remove.d.mts
+/** The shapes accepted by `add()`. */
+type AddOpts = Collection | Element$1 | ElementDefinition | ElementDefinition[] | {
+  nodes?: ElementDefinition[];
+  edges?: ElementDefinition[];
+};
+/** Add/remove element methods contributed to the core prototype. */
+interface CoreAddRemove {
+  add(this: Core, opts: AddOpts): Collection;
+  remove(this: Core, collection: Collection | Element$1 | string): Collection;
+}
+//#endregion
+//#region src/core/animation/index.d.mts
+/**
+ * Animation methods contributed to `Core.prototype` by this mixin. The
+ * `.animate()`/`.animation()`/etc. methods are generated by `define`; the
+ * loop-management methods are defined here.
+ */
+interface CoreAnimation {
+  animate(properties: AnimationOptions, params?: AnimationOptions): Core;
+  animation(properties?: AnimationOptions, params?: AnimationOptions): Animation | Core;
+  animated(): boolean | undefined;
+  clearQueue(): Core;
+  delay(time: number, complete?: () => void): Core;
+  delayAnimation(time: number, complete?: () => void): Animation | Core;
+  stop(clearQueue?: boolean, jumpToEnd?: boolean): Core;
+}
+//#endregion
+//#region src/core/events.d.mts
+/** Inputs accepted as the selector arg of `.on()` and friends. */
+type EventSelectorArg = string | Selector | EventHandler | null | undefined;
+interface CoreEvents {
+  on(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  removeListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  removeAllListeners(): Core;
+  one(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  emit(events: EmitInput, extraParams?: unknown[]): Core;
+  addListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  listen(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  bind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  unlisten(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  unbind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  off(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
+  trigger(events: EmitInput, extraParams?: unknown[]): Core;
+  pon(events: string, selector?: EventSelectorArg): Promise<Event>;
+  promiseOn(events: string, selector?: EventSelectorArg): Promise<Event>;
+}
+//#endregion
+//#region src/core/export.d.mts
+/** Options accepted by the image export methods (`png`/`jpg`/`jpeg`). */
+interface ExportOptions {
+  output?: 'base64uri' | 'base64' | 'blob' | 'blob-promise';
+  bg?: string;
+  full?: boolean;
+  scale?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+  [key: string]: unknown;
+}
+/** Image export methods contributed to the core prototype. */
+interface CoreExport {
+  png(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
+  jpg(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
+  jpeg(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
+}
+//#endregion
+//#region src/core/layout.d.mts
+/** Options accepted by `layout()`/`makeLayout()`/`createLayout()`. */
+interface LayoutOptions {
+  name: string;
+  eles?: Collection | string;
+  [key: string]: unknown;
+}
+/** Layout construction methods contributed to the core prototype. */
+interface CoreLayout {
+  layout(this: Core, options?: LayoutOptions): LayoutInstance;
+  makeLayout(this: Core, options?: LayoutOptions): LayoutInstance;
+  createLayout(this: Core, options?: LayoutOptions): LayoutInstance;
+}
+//#endregion
+//#region src/core/notification.d.mts
+interface CoreNotification {
+  startBatch(): Core;
+  endBatch(): Core;
+  batch(callback: () => void): Core;
+}
+//#endregion
+//#region src/core/renderer.d.mts
+interface CoreRenderer {
+  resize(): Core;
+  invalidateDimensions(): Core;
+}
+//#endregion
+//#region src/core/search.d.mts
+/** Options accepted by `collection()` when building from an array. */
+interface CollectionOpts {
+  unique?: boolean;
+  removed?: boolean;
+}
+/** Graph search/collection helpers contributed to the core prototype. */
+interface CoreSearch {
+  collection(this: Core, eles?: string | Collection | Element$1 | Element$1[], opts?: CollectionOpts): Collection;
+  nodes(this: Core, selector?: FilterArg): NodeCollection;
+  edges(this: Core, selector?: FilterArg): EdgeCollection;
+  $(this: Core, selector?: FilterArg): Collection;
+  elements(this: Core, selector?: FilterArg): Collection;
+  filter(this: Core, selector?: FilterArg): Collection;
 }
 //#endregion
 //#region src/style/properties.d.mts
@@ -1220,6 +1466,63 @@ interface PropertiesStyfn {
   getDefaultProperty(this: Style, name: string): ParseResult;
   getDefaultProperties(this: Style): Record<string, ParseResult>;
   addDefaultStylesheet(this: Style): void;
+}
+//#endregion
+//#region src/style/parse.d.mts
+/**
+ * A parsed style property value, as produced by `Style.prototype.parse()`.
+ * The fields beyond `name`/`value`/`strValue`/`bypass` are written at
+ * various points in a property's lifecycle (parsing, mapping, flattening,
+ * bypassing), so most of them are optional.
+ */
+interface ParsedStyleProperty {
+  /** the name of the property */
+  name: string;
+  /** the parsed, native-typed value of the property (number, string, value array, colour tuple, regex match array, or mapper function) */
+  value?: unknown;
+  /** a string value that represents the property value in valid css */
+  strValue?: string;
+  /** the units of the value (or per-value units for multiple-valued properties) */
+  units?: string | (string | undefined)[];
+  /** true iff the property is a bypass property */
+  bypass?: boolean;
+  /** for a bypass property: the overridden non-bypass property */
+  bypassed?: ParsedStyleProperty | null;
+  /** indication to delete the bypass property */
+  deleteBypass?: boolean;
+  /** indication to delete the bypassed property */
+  deleteBypassed?: boolean;
+  /** indication to delete the property (use the default value) */
+  delete?: boolean;
+  /** the value normalised to canonical units (px, ms, rad, [0, 1] fractions, ...) */
+  pfValue?: number | (number | undefined)[];
+  /** the mapping type descriptor when the value is a mapper (e.g. `types.data`) */
+  mapped?: StylePropertyType;
+  /** for a flattened property: a reference back to the mapping that produced it */
+  mapping?: ParsedStyleProperty;
+  /** the data field used by data()/mapData() mappers */
+  field?: string;
+  /** mapData() input range minimum */
+  fieldMin?: number;
+  /** mapData() input range maximum */
+  fieldMax?: number;
+  /** mapData() output range minimum (parsed value) */
+  valueMin?: unknown;
+  /** mapData() output range maximum (parsed value) */
+  valueMax?: unknown;
+  /** cached fn-mapper return value */
+  fnValue?: unknown;
+  /** previously applied fn-mapper return value */
+  prevFnValue?: unknown;
+}
+/** `parseImpl()` returns `null` on an invalid property and `false` on a disallowed mapping. */
+type ParseResult = ParsedStyleProperty | null | false;
+/** Flattening flag passed through the parse functions. */
+type StylePropIsFlat = boolean | 'mapping' | 'multiple' | null;
+interface ParseStyfn {
+  parse(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
+  parseImplWarn(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
+  parseImpl(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
 }
 //#endregion
 //#region src/style/apply.d.mts
@@ -1459,477 +1762,13 @@ interface StyleStatic {
 }
 declare let Style: StyleStatic;
 //#endregion
-//#region src/style/parse.d.mts
-/**
- * A parsed style property value, as produced by `Style.prototype.parse()`.
- * The fields beyond `name`/`value`/`strValue`/`bypass` are written at
- * various points in a property's lifecycle (parsing, mapping, flattening,
- * bypassing), so most of them are optional.
- */
-interface ParsedStyleProperty {
-  /** the name of the property */
-  name: string;
-  /** the parsed, native-typed value of the property (number, string, value array, colour tuple, regex match array, or mapper function) */
-  value?: unknown;
-  /** a string value that represents the property value in valid css */
-  strValue?: string;
-  /** the units of the value (or per-value units for multiple-valued properties) */
-  units?: string | (string | undefined)[];
-  /** true iff the property is a bypass property */
-  bypass?: boolean;
-  /** for a bypass property: the overridden non-bypass property */
-  bypassed?: ParsedStyleProperty | null;
-  /** indication to delete the bypass property */
-  deleteBypass?: boolean;
-  /** indication to delete the bypassed property */
-  deleteBypassed?: boolean;
-  /** indication to delete the property (use the default value) */
-  delete?: boolean;
-  /** the value normalised to canonical units (px, ms, rad, [0, 1] fractions, ...) */
-  pfValue?: number | (number | undefined)[];
-  /** the mapping type descriptor when the value is a mapper (e.g. `types.data`) */
-  mapped?: StylePropertyType;
-  /** for a flattened property: a reference back to the mapping that produced it */
-  mapping?: ParsedStyleProperty;
-  /** the data field used by data()/mapData() mappers */
-  field?: string;
-  /** mapData() input range minimum */
-  fieldMin?: number;
-  /** mapData() input range maximum */
-  fieldMax?: number;
-  /** mapData() output range minimum (parsed value) */
-  valueMin?: unknown;
-  /** mapData() output range maximum (parsed value) */
-  valueMax?: unknown;
-  /** cached fn-mapper return value */
-  fnValue?: unknown;
-  /** previously applied fn-mapper return value */
-  prevFnValue?: unknown;
-}
-/** `parseImpl()` returns `null` on an invalid property and `false` on a disallowed mapping. */
-type ParseResult = ParsedStyleProperty | null | false;
-/** Flattening flag passed through the parse functions. */
-type StylePropIsFlat = boolean | 'mapping' | 'multiple' | null;
-interface ParseStyfn {
-  parse(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
-  parseImplWarn(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
-  parseImpl(this: Style, name: string, value: unknown, propIsBypass?: boolean, propIsFlat?: StylePropIsFlat): ParseResult;
-}
-//#endregion
-//#region src/collection/style.d.mts
-/** Style accessor methods contributed to the collection prototype. */
-interface CollectionStyle {
-  recalculateRenderedStyle(this: Collection, useCache?: boolean): Collection;
-  dirtyStyleCache(this: Collection): Collection;
-  updateStyle(this: Collection, notifyRenderer?: boolean): Collection;
-  cleanStyle(this: Collection): void;
-  parsedStyle(this: Collection, property: string, includeNonDefault?: boolean): ParsedStyleProperty | null | undefined;
-  pstyle(this: Collection, property: string, includeNonDefault?: boolean): ParsedStyleProperty | null | undefined;
-  numericStyle(this: Collection, property: string): number | unknown;
-  numericStyleUnits(this: Collection, property: string): string | (string | undefined)[] | undefined;
-  renderedStyle(this: Collection, property?: string): unknown;
-  style(this: Collection, name?: string | Record<string, unknown>, value?: unknown): unknown;
-  css(this: Collection, name?: string | Record<string, unknown>, value?: unknown): unknown;
-  bypass(this: Collection, name?: string | Record<string, unknown>, value?: unknown): unknown;
-  renderedCss(this: Collection, property?: string): unknown;
-  removeStyle(this: Collection, names?: string): Collection;
-  removeBypass(this: Collection, names?: string): Collection;
-  removeCss(this: Collection, names?: string): Collection;
-  show(this: Collection): Collection;
-  hide(this: Collection): Collection;
-  effectiveOpacity(this: Collection): number | undefined;
-  transparent(this: Collection): boolean | undefined;
-  backgrounding(this: Collection): boolean;
-  takesUpSpace(this: Collection): boolean | undefined;
-  interactive(this: Collection): boolean | undefined;
-  noninteractive(this: Collection): boolean | undefined;
-  visible(this: Collection): boolean | undefined;
-  hidden(this: Collection): boolean | undefined;
-  isBundledBezier(this: Collection): boolean | undefined;
-}
-//#endregion
-//#region src/collection/switch-functions.d.mts
-interface CollectionSwitchFunctions {
-  lock(...args: any[]): Collection;
-  unlock(...args: any[]): Collection;
-  grabify(...args: any[]): Collection;
-  ungrabify(...args: any[]): Collection;
-  select(...args: any[]): Collection;
-  unselect(...args: any[]): Collection;
-  deselect(...args: any[]): Collection;
-  selectify(...args: any[]): Collection;
-  unselectify(...args: any[]): Collection;
-  activate(...args: any[]): Collection;
-  unactivate(...args: any[]): Collection;
-  panify(...args: any[]): Collection;
-  unpanify(...args: any[]): Collection;
-  locked(): boolean | undefined;
-  grabbable(): boolean | undefined;
-  grabbed(): boolean | undefined;
-  selected(): boolean | undefined;
-  selectable(): boolean | undefined;
-  active(): boolean | undefined;
-  pannable(): boolean | undefined;
-  inactive(): boolean | undefined;
-}
-//#endregion
-//#region src/collection/traversing.d.mts
-/** Selector/filter argument accepted by traversal methods. */
-type SelectorArg = string | ((ele: Element$1, i: number, eles: Collection) => boolean | unknown) | Collection | Element$1 | undefined | null;
-interface CollectionTraversing {
-  clearTraversalCache(): void;
-  roots(selector?: SelectorArg): NodeCollection;
-  leaves(selector?: SelectorArg): NodeCollection;
-  outgoers(selector?: SelectorArg): Collection;
-  successors(selector?: SelectorArg): Collection;
-  incomers(selector?: SelectorArg): Collection;
-  predecessors(selector?: SelectorArg): Collection;
-  neighborhood(selector?: SelectorArg): Collection;
-  neighbourhood(selector?: SelectorArg): Collection;
-  closedNeighborhood(selector?: SelectorArg): Collection;
-  closedNeighbourhood(selector?: SelectorArg): Collection;
-  openNeighborhood(selector?: SelectorArg): Collection;
-  openNeighbourhood(selector?: SelectorArg): Collection;
-  source(selector?: SelectorArg): NodeSingular;
-  target(selector?: SelectorArg): NodeSingular;
-  sources(selector?: SelectorArg): NodeCollection;
-  targets(selector?: SelectorArg): NodeCollection;
-  edgesWith(otherNodes: string | Collection): EdgeCollection;
-  edgesTo(otherNodes: string | Collection): EdgeCollection;
-  connectedEdges(selector?: SelectorArg): EdgeCollection;
-  connectedNodes(selector?: SelectorArg): NodeCollection;
-  parallelEdges(selector?: SelectorArg): EdgeCollection;
-  codirectedEdges(selector?: SelectorArg): EdgeCollection;
-  components(root?: Collection | Element$1 | null): Collection[];
-  componentsOf(root?: Collection | Element$1 | null): Collection[];
-  component(): Collection;
-}
-//#endregion
-//#region src/collection/eles-types.d.mts
-/**
- * The collection module's structural view of the Core. Grown as needed
- * by collection code; src/core's real Core type must satisfy it (it is
- * swapped in during the core conversion phase).
- */
-interface CoreAccess {
-  hasElementWithId(id: string | number): boolean;
-  getElementById(id: string | number): Collection;
-  collection(eles?: unknown, opts?: unknown): Collection;
-  batch(fn: () => void): unknown;
-  startBatch(): unknown;
-  endBatch(): unknown;
-  batching(): boolean;
-  addToPool(eles: Collection | Element$1): unknown;
-  removeFromPool(eles: Collection | Element$1[]): unknown;
-  addToAnimationPool(eles: Collection | Element$1): void;
-  zoom(): number;
-  pan(): Position;
-  styleEnabled(): boolean;
-  style(): CoreStyleAccess;
-  notify(event: string, eles?: Collection): void;
-  renderer(): CoreRendererAccess;
-  hasCompoundNodes(): boolean;
-  headless(): boolean;
-  destroyed(): boolean;
-  emit(events: string, extraParams?: any[]): unknown;
-  _private: CorePrivateAccess;
-}
-interface CorePrivateAccess {
-  elements: Collection;
-  hasCompoundNodes: boolean;
-  [key: string]: unknown;
-}
-/** Loose structural view of the style engine as used by collection code. */
-interface CoreStyleAccess {
-  apply(eles: Collection | Element$1): unknown;
-  applyBypass(eles: Collection | Element$1, name?: unknown, value?: unknown, updateTransitions?: boolean): unknown;
-  removeBypasses(eles: Collection | Element$1, names?: string[], updateTransitions?: boolean): unknown;
-  getPropsList(props: unknown): unknown;
-  getRenderedStyle(ele: Element$1, prop?: string): unknown;
-  getRawStyle(ele: Element$1, isRenderedVal?: boolean): unknown;
-  getStylePropertyValue(ele: Element$1, propName: string, isRenderedVal?: boolean): unknown;
-  update(): unknown;
-  updateTransitions(ele: Element$1, diffProps: unknown): unknown;
-  updateMappers(eles: Collection | Element$1): unknown;
-  [key: string]: unknown;
-}
-/** Loose structural view of the renderer as used by collection code. */
-interface CoreRendererAccess {
-  notify?(event: string, eles?: Collection): void;
-  [key: string]: unknown;
-}
-interface ElementData {
-  id?: string;
-  source?: string;
-  target?: string;
-  parent?: string;
-  [key: string]: unknown;
-}
-/** JSON definition used to create an element. */
-interface ElementDefinition {
-  group?: 'nodes' | 'edges';
-  data?: ElementData;
-  position?: Position;
-  renderedPosition?: Position;
-  selected?: boolean;
-  selectable?: boolean;
-  locked?: boolean;
-  grabbable?: boolean;
-  pannable?: boolean;
-  classes?: string | string[];
-  style?: Record<string, unknown>;
-  css?: Record<string, unknown>;
-  scratch?: Record<string, unknown>;
-  parent?: Element$1 | null;
-}
-/** The shape produced/consumed by `eles.json()`. */
-interface ElementJson {
-  data: ElementData;
-  position: Position;
-  group: 'nodes' | 'edges';
-  removed: boolean;
-  selected: boolean;
-  selectable: boolean;
-  locked: boolean;
-  grabbable: boolean;
-  pannable: boolean;
-  classes: string | null;
-}
-/** Inputs accepted where elements are expected (constructor, spawn, ...). */
-type ElementsInput = Element$1[] | Collection | ElementDefinition[] | (Element$1 | Collection)[] | (Element$1 | ElementDefinition)[];
-/** Methods defined directly in collection/index.mts (not via mixins). */
-interface CollectionBaseFns {
-  instanceString(): string;
-  spawn(eles?: ElementsInput, unique?: boolean): Collection;
-  spawnSelf(): Collection;
-  cy(): CoreAccess;
-  renderer(): CoreRendererAccess;
-  element(): Element$1 | undefined;
-  collection(): Collection;
-  unique(): Collection;
-  hasElementWithId(id: string | number): boolean;
-  getElementById(id: string | number): Collection;
-  $id(id: string | number): Collection;
-  poolIndex(): number;
-  indexOf(ele: Collection | Element$1): number;
-  indexOfId(id: string | number): number;
-  json(obj?: Partial<ElementJson>): ElementJson | this | undefined;
-  jsons(): (ElementJson | undefined)[];
-  clone(): Collection;
-  copy(): Collection;
-  restore(notifyRenderer?: boolean, addToPool?: boolean): this;
-  removed(): boolean;
-  inside(): boolean;
-  remove(notifyRenderer?: boolean, removeFromPool?: boolean): Collection;
-  move(struct: {
-    source?: string | number;
-    target?: string | number;
-    parent?: string | number | null;
-  }): this;
-}
-/**
- * The wide internal collection type: the union of node and edge
- * capabilities, matching how the shared prototype actually behaves at
- * runtime. Public node/edge-narrowed projections are layered on top in
- * the entry point's public API types.
- */
-interface Collection extends CollectionBaseFns, CollectionAlgorithms, CollectionAnimation, CollectionClass, CollectionComparators, CollectionCompounds, CollectionData, CollectionDegree, CollectionDimensions, CollectionEvents, CollectionFilter, CollectionGroup, CollectionIteration, CollectionLayout, CollectionStyle, CollectionSwitchFunctions, CollectionTraversing {
-  length: number;
-  [index: number]: Element$1;
-}
-/** A single element (node or edge); array-like of itself, length 1. */
-interface Element$1 extends Collection {}
-type PublicSelectorArg = string | Collection | Element$1 | ((ele: Element$1, i: number, eles: Collection) => boolean | unknown) | undefined | null;
-interface Singular extends Element$1 {}
-interface NodeCollection extends Collection {
-  parent(selector?: PublicSelectorArg): NodeCollection;
-  parents(selector?: PublicSelectorArg): NodeCollection;
-  ancestors(selector?: PublicSelectorArg): NodeCollection;
-  commonAncestors(selector?: PublicSelectorArg): NodeCollection;
-  orphans(selector?: PublicSelectorArg): NodeCollection;
-  nonorphans(selector?: PublicSelectorArg): NodeCollection;
-  children(selector?: PublicSelectorArg): NodeCollection;
-  siblings(selector?: PublicSelectorArg): NodeCollection;
-  descendants(selector?: PublicSelectorArg): NodeCollection;
-  roots(selector?: PublicSelectorArg): NodeCollection;
-  leaves(selector?: PublicSelectorArg): NodeCollection;
-  connectedEdges(selector?: PublicSelectorArg): EdgeCollection;
-}
-interface EdgeCollection extends Collection {
-  source(selector?: PublicSelectorArg): NodeSingular;
-  target(selector?: PublicSelectorArg): NodeSingular;
-  sources(selector?: PublicSelectorArg): NodeCollection;
-  targets(selector?: PublicSelectorArg): NodeCollection;
-  edgesWith(otherNodes: string | Collection): EdgeCollection;
-  edgesTo(otherNodes: string | Collection): EdgeCollection;
-  connectedNodes(selector?: PublicSelectorArg): NodeCollection;
-  parallelEdges(selector?: PublicSelectorArg): EdgeCollection;
-  codirectedEdges(selector?: PublicSelectorArg): EdgeCollection;
-}
-type NodeSingular = Singular & NodeCollection;
-type EdgeSingular = Singular & EdgeCollection;
-//#endregion
-//#region src/core/add-remove.d.mts
-/** The shapes accepted by `add()`. */
-type AddOpts = Collection | Element$1 | ElementDefinition | ElementDefinition[] | {
-  nodes?: ElementDefinition[];
-  edges?: ElementDefinition[];
-};
-/** Add/remove element methods contributed to the core prototype. */
-interface CoreAddRemove {
-  add(this: Core, opts: AddOpts): Collection;
-  remove(this: Core, collection: Collection | Element$1 | string): Collection;
-}
-//#endregion
-//#region src/core/animation/index.d.mts
-/**
- * Animation methods contributed to `Core.prototype` by this mixin. The
- * `.animate()`/`.animation()`/etc. methods are generated by `define`; the
- * loop-management methods are defined here.
- */
-interface CoreAnimation {
-  animate(properties: AnimationOptions, params?: AnimationOptions): Core;
-  animation(properties?: AnimationOptions, params?: AnimationOptions): Animation | Core;
-  animated(): boolean | undefined;
-  clearQueue(): Core;
-  delay(time: number, complete?: () => void): Core;
-  delayAnimation(time: number, complete?: () => void): Animation | Core;
-  stop(clearQueue?: boolean, jumpToEnd?: boolean): Core;
-  addToAnimationPool(eles: Collection | Element$1): void;
-  stopAnimationLoop(): void;
-  startAnimationLoop(): void;
-}
-//#endregion
-//#region src/core/events.d.mts
-type CoreEmitter = Emitter<Core, Selector>;
-/** Inputs accepted as the selector arg of `.on()` and friends. */
-type EventSelectorArg = string | Selector | EventHandler | null | undefined;
-interface CoreEvents {
-  createEmitter(): Core;
-  emitter(): CoreEmitter;
-  on(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  removeListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  removeAllListeners(): Core;
-  one(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  once(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  emit(events: EmitInput, extraParams?: unknown[]): Core;
-  emitAndNotify(event: string, eles?: Collection): Core;
-  addListener(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  listen(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  bind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  unlisten(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  unbind(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  off(events: string | string[], selector?: EventSelectorArg, callback?: EventHandler): Core;
-  trigger(events: EmitInput, extraParams?: unknown[]): Core;
-  pon(events: string, selector?: EventSelectorArg): Promise<Event>;
-  promiseOn(events: string, selector?: EventSelectorArg): Promise<Event>;
-}
-//#endregion
-//#region src/core/export.d.mts
-/** Options accepted by the image export methods (`png`/`jpg`/`jpeg`). */
-interface ExportOptions {
-  output?: 'base64uri' | 'base64' | 'blob' | 'blob-promise';
-  bg?: string;
-  full?: boolean;
-  scale?: number;
-  maxWidth?: number;
-  maxHeight?: number;
-  quality?: number;
-  [key: string]: unknown;
-}
-/** Image export methods contributed to the core prototype. */
-interface CoreExport {
-  png(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
-  jpg(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
-  jpeg(this: Core, options?: ExportOptions): string | Blob | Promise<Blob>;
-}
-//#endregion
-//#region src/core/layout.d.mts
-/** Options accepted by `layout()`/`makeLayout()`/`createLayout()`. */
-interface LayoutOptions {
-  name: string;
-  eles?: Collection | string;
-  [key: string]: unknown;
-}
-/** Layout construction methods contributed to the core prototype. */
-interface CoreLayout {
-  layout(this: Core, options?: LayoutOptions): LayoutInstance;
-  makeLayout(this: Core, options?: LayoutOptions): LayoutInstance;
-  createLayout(this: Core, options?: LayoutOptions): LayoutInstance;
-}
-//#endregion
-//#region src/core/notification.d.mts
-interface CoreNotification {
-  notify(eventName: string, eventEles?: Collection): void;
-  notifications(bool?: boolean): boolean | Core | undefined;
-  noNotifications(callback: () => void): void;
-  batching(): boolean;
-  startBatch(): Core;
-  endBatch(): Core;
-  batch(callback: () => void): Core;
-  batchData(map: Record<string, unknown>): Core;
-}
-//#endregion
-//#region src/core/renderer.d.mts
-/** Options accepted by `initRenderer()`. */
-interface RendererInitOptions {
-  name?: string;
-  wheelSensitivity?: number;
-  [key: string]: unknown;
-}
-interface CoreRenderer {
-  renderTo(context: CanvasRenderingContext2D, zoom?: number, pan?: {
-    x: number;
-    y: number;
-  }, pxRatio?: number): Core;
-  renderer(): RendererInstance | null;
-  forceRender(): Core;
-  resize(): Core;
-  invalidateDimensions(): Core;
-  initRenderer(options: RendererInitOptions): void;
-  destroyRenderer(): void;
-  onRender(fn: (...args: unknown[]) => void): Core;
-  offRender(fn: (...args: unknown[]) => void): Core;
-}
-//#endregion
-//#region src/core/search.d.mts
-/** Options accepted by `collection()` when building from an array. */
-interface CollectionOpts {
-  unique?: boolean;
-  removed?: boolean;
-}
-/** Graph search/collection helpers contributed to the core prototype. */
-interface CoreSearch {
-  collection(this: Core, eles?: string | Collection | Element$1 | Element$1[], opts?: CollectionOpts): Collection;
-  nodes(this: Core, selector?: FilterArg): NodeCollection;
-  edges(this: Core, selector?: FilterArg): EdgeCollection;
-  $(this: Core, selector?: FilterArg): Collection;
-  elements(this: Core, selector?: FilterArg): Collection;
-  filter(this: Core, selector?: FilterArg): Collection;
-  mutableElements(this: Core): Collection;
-}
-//#endregion
 //#region src/core/style.d.mts
 /** Style engine accessor methods contributed to the core prototype. */
 interface CoreStyle {
   style(this: Core, newStyle?: unknown): Style;
-  setStyle(this: Core, style?: unknown): Style;
-  updateStyle(this: Core): void;
 }
 //#endregion
 //#region src/core/viewport.d.mts
-/** Result of computing a zoom change about an optional focal point. */
-interface ZoomedViewport {
-  zoomed: boolean;
-  panned: boolean;
-  zoom: number;
-  pan: Position;
-}
-/** A computed fit viewport (zoom + pan). */
-interface FitViewport {
-  zoom: number;
-  pan: Position;
-}
 /** Params accepted by `zoom()` / `getZoomedViewport()` when zooming about a point. */
 interface ZoomOptions {
   level?: number;
@@ -1946,14 +1785,8 @@ interface ViewportOptions {
 interface CoreViewport {
   autolock(): boolean;
   autolock(bool: boolean): Core;
-  /** @deprecated backwards-compatibility alias of {@link autolock}. */
-  autolockNodes(): boolean;
-  autolockNodes(bool: boolean): Core;
   autoungrabify(): boolean;
   autoungrabify(bool: boolean): Core;
-  /** @deprecated backwards-compatibility alias of {@link autoungrabify}. */
-  autoungrabifyNodes(): boolean;
-  autoungrabifyNodes(bool: boolean): Core;
   autounselectify(): boolean;
   autounselectify(bool: boolean): Core;
   selectionType(): 'single' | 'additive';
@@ -1974,37 +1807,22 @@ interface CoreViewport {
   pan(dim: string, val: number): Core;
   panBy(dims: Position): Core;
   panBy(dim: string, val: number): Core;
-  gc(): void;
   fit(elements?: Collection | string | BoundingBox | number, padding?: number): Core;
-  getFitViewport(elements?: Collection | string | BoundingBox | number, padding?: number): FitViewport | undefined;
-  zoomRange(min: number | {
-    min?: number;
-    max?: number;
-  }, max?: number): Core;
   minZoom(): number;
   minZoom(zoom: number): Core;
   maxZoom(): number;
   maxZoom(zoom: number): Core;
-  getZoomedViewport(params: number | ZoomOptions): ZoomedViewport | null;
   zoom(): number;
   zoom(params: number | ZoomOptions): Core;
   viewport(opts: ViewportOptions): Core;
   center(elements?: Collection | string): Core;
   /** Alias of {@link center}. */
   centre(elements?: Collection | string): Core;
-  getCenterPan(elements?: Collection | string, zoom?: number): Position | undefined;
   reset(): Core;
-  invalidateSize(): void;
-  size(): {
-    width: number;
-    height: number;
-  };
   width(): number;
   height(): number;
   extent(): BoundingBox;
   renderedExtent(): BoundingBox;
-  multiClickDebounceTime(): number;
-  multiClickDebounceTime(int: number): Core;
 }
 //#endregion
 //#region src/core/data.d.mts
@@ -2079,25 +1897,15 @@ interface CytoscapeOptions {
 /** Methods defined directly in core/index.mts (not via mixins). */
 interface CoreBaseFns {
   instanceString(): string;
-  isReady(): boolean;
   destroyed(): boolean;
   ready(fn: (evt: unknown) => void): this;
   destroy(): this | undefined;
-  hasElementWithId(id: string | number): boolean;
   getElementById(id: string | number): Collection;
   $id(id: string | number): Collection;
-  hasCompoundNodes(): boolean;
-  headless(): boolean;
-  styleEnabled(): boolean;
-  addToPool(eles: Collection | Element$1): this;
-  removeFromPool(eles: Collection | Element$1[]): this;
   container(): HTMLElement | null;
-  window(): Window | null;
   mount(container: HTMLElement): this | undefined;
   unmount(): this;
-  options(): CytoscapeOptions;
   json(obj?: any): any;
-  extension(type: string, name: string, ...args: unknown[]): unknown;
 }
 /**
  * The full Core instance type: the union of all mixin contributions plus

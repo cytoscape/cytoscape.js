@@ -87,6 +87,7 @@ export interface CoreSearch {
   $( this: Core, selector?: FilterArg ): Coll;
   elements( this: Core, selector?: FilterArg ): Coll;
   filter( this: Core, selector?: FilterArg ): Coll;
+  /** @internal */
   mutableElements( this: Core ): Coll;
 }
 

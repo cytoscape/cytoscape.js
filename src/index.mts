@@ -14,8 +14,6 @@ import type { Core as CoreInstance, CytoscapeOptions } from './core/core-types.m
 export type {
   Core,
   CytoscapeOptions,
-  CorePrivate,
-  CoreStatic,
   LayoutInstance,
   RendererInstance
 } from './core/core-types.mjs';

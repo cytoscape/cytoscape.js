@@ -255,11 +255,13 @@ export interface Collection extends
 
   length: number;
   [index: number]: Element;
+  /** @internal */
   _private: CollectionPrivate;
 }
 
 /** A single element (node or edge); array-like of itself, length 1. */
 export interface Element extends Collection {
+  /** @internal */
   _private: ElementPrivate;
 }
 

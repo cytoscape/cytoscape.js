@@ -164,6 +164,7 @@ export interface Core extends
   CoreStyle,
   CoreViewport,
   CoreData {
+  /** @internal */
   _private: CorePrivate;
 }
 

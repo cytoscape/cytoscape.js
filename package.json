@@ -30,14 +30,14 @@
   "engines": {
     "node": ">=0.10"
   },
-  "types": "index.d.ts",
+  "types": "dist/cytoscape.d.ts",
   "main": "dist/cytoscape.cjs.js",
   "module": "dist/cytoscape.esm.mjs",
   "exports": {
     ".": {
+      "types": "./dist/cytoscape.d.ts",
       "import": "./dist/cytoscape.esm.mjs",
-      "require": "./dist/cytoscape.cjs.js",
-      "types": "./index.d.ts"
+      "require": "./dist/cytoscape.cjs.js"
     },
     "./dist/cytoscape.esm.mjs": {
       "import": "./dist/cytoscape.esm.mjs"
@@ -66,6 +66,8 @@
   "scripts": {
     "lint": "eslint \"src/**/*.{mjs,mts}\"",
     "typecheck": "tsc --noEmit",
+    "build:types": "rolldown -c rolldown.dts.config.mjs && node build-dts.mjs",
+    "test:types": "npm run build:types && tsc -p tsconfig.types-test.json",
     "build": "rolldown -c",
     "build:esm": "cross-env FILE=esm rolldown -c",
     "build:esm.min": "cross-env FILE=esm.min rolldown -c",
@@ -75,14 +77,14 @@
     "clean": "rimraf build/*",
     "copyright": "node license-update.mjs",
     "dist:copy": "cpy --flat build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.mjs build/cytoscape.esm.min.mjs dist",
-    "dist": "cross-env NODE_ENV=production run-s build dist:*",
+    "dist": "cross-env NODE_ENV=production run-s build build:types dist:*",
     "release": "run-s copyright dist docs",
     "watch": "run-s watch:fast",
     "watch:sync": "livereload \"build, debug, debug/webgl\" -w 500 --extraExts 'json'",
     "watch:http": "http-server -p 3333 -s -c -1 -o debug",
     "watch:fast": "run-p watch:sync watch:http watch:build:fast",
     "watch:umd": "run-p watch:sync watch:http watch:build:umd",
-    "watch:build:fast": "cross-env FILE=umd SOURCEMAPS=true BABEL=false NODE_ENV=development rolldown -c -w",
+    "watch:build:fast": "cross-env FILE=umd SOURCEMAPS=true NODE_ENV=development rolldown -c -w",
     "watch:build:umd": "cross-env FILE=umd SOURCEMAPS=true NODE_ENV=development rolldown -c -w",
     "watch:build:cjs": "cross-env FILE=cjs SOURCEMAPS=true NODE_ENV=development rolldown -c -w",
     "test": "run-s typecheck test:js test:modules test:playwright lint",
@@ -92,7 +94,7 @@
     "test:modules": "mocha  test/modules",
     "test:modules:debug": "mocha inspect  test/modules",
     "test:playwright:http": "http-server -p 3333 -s -c -1",
-    "test:playwright:build": "cross-env FILE=umd SOURCEMAPS=true BABEL=false NODE_ENV=development rolldown -c",
+    "test:playwright:build": "cross-env FILE=umd SOURCEMAPS=true NODE_ENV=development rolldown -c",
     "test:playwright:setup": "run-s test:playwright:build test:playwright:http",
     "test:playwright": "playwright test",
     "docs": "run-s docs:build docs:js",
@@ -107,11 +109,8 @@
     "benchmark:single": "run-s benchmark:download benchmark:single:exec"
   },
   "devDependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/preset-env": "^7.26.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.49.1",
-    "@rollup/plugin-babel": "^7.1.0",
     "@rollup/plugin-replace": "^6.0.3",
     "@types/heap": "^0.2.35",
     "@types/lodash": "^4.17.24",
@@ -139,6 +138,7 @@
     "npm-run-all": "^4.1.5",
     "rimraf": "^6.1.3",
     "rolldown": "^1.1.1",
+    "rolldown-plugin-dts": "^0.25.2",
     "rollup-plugin-license": "^3.5.3",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",

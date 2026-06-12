@@ -11,6 +11,14 @@ export default [
     process: "readonly"
   }}},
   pluginJs.configs.recommended,
+  {
+    files: ["test/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals.mocha
+      }
+    }
+  },
   ...tseslint.configs.recommended.map(config => ({
     ...config,
     files: ["src/**/*.mts", "src/**/*.ts"]

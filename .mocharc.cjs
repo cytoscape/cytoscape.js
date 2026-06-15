@@ -10,5 +10,10 @@ module.exports = {
   // incremental TypeScript migration.
   'node-option': ['import=tsx'],
   parallel: true,
-  jobs: parallelism
+  jobs: parallelism,
+  // The d.ts surface audit reads the generated build/dts declarations, which
+  // are not a precondition of the main `npm test` run. It has its own target
+  // (`test:types:docs`) that builds the types first, so keep it out of the
+  // recursive mocha sweep.
+  ignore: ['test/types-docmaker-surface.mjs']
 };

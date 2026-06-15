@@ -44,7 +44,10 @@ export default [
       // converted files must be clean; the TS-aware rule understands
       // type/value namespacing and declaration merging
       "no-redeclare": "off",
-      "@typescript-eslint/no-redeclare": ["error", { builtinGlobals: false }]
+      "@typescript-eslint/no-redeclare": ["error", { builtinGlobals: false }],
+      // type-only ambient groupings (e.g. `declare namespace Css`) are an
+      // accepted pattern for namespaced type families consumed as `Css.Node`
+      "@typescript-eslint/no-namespace": ["error", { allowDeclarations: true }]
     }
   },
   {

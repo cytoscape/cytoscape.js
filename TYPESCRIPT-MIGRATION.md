@@ -72,27 +72,42 @@ those aliases where appropriate. The old `index.d.ts` (6,644 lines) is
 kept in the repo as a reference and parity target. A docmaker-based audit
 (`npm run test:types:docs`) now checks that the generated `build/dts`
 surface matches the documented `cy.*` / `eles.*` / `ele.*` API and
-guards the remaining known exceptions. Three areas of the
-hand-written file are **not yet reproduced** from source and are the
-remaining work to reach full parity:
+guards the remaining known exceptions.
+
+**`Css.*` style-property types — done.** `src/style/css-types.mts` is now
+generated from the runtime style inventory (`src/style/properties.mts`) by
+`scripts/gen-css-types.mjs` (`npm run gen:css-types`); every property — node,
+edge, common, core, plus the generated `pie-N`/`stripe-N`/arrow families and
+property aliases — is typed with value families (`NodeShape`, `ArrowShape`,
+easing, …) emitted directly from the runtime `types` enums. Parity is enforced
+by `npm run test:types:css` (`test/types-css-surface.mjs`), which cross-checks
+the generated `Css.*` surface against the live runtime inventory. See
+`CSS-PLAN.md` for details.
+
+Two areas of the hand-written file are **not yet reproduced** from source and
+are the remaining work to reach full parity:
 
 1. **Node/edge public projections** — `NodeCollection` and
   `EdgeCollection` are re-exported again, but they still structurally
   inherit some cross-kind methods from the wide internal `Collection`
   type in the generated declarations. Fully matching the docs requires a
   dedicated public node/edge projection layer that omits edge-only
-  methods from node types and node-only methods from edge types.
-2. **`Css.*` style-property types** — the per-property value types
-   (`background-color`, `width`, mappers, etc.). Derive these from the
-   `src/style/properties.mts` property table.
-3. **`EventObject` hierarchy** — surface the `EventObject` /
+  methods from node types and node-only methods from edge types. The exact
+  cross-kind method lists currently tolerated live in the
+  `allowedResidualExtras` allowlist in `test/types-docmaker-surface.mjs`
+  (18 edge-only methods leaking onto `NodeCollection`, 58 node-only onto
+  `EdgeCollection`).
+2. **`EventObject` hierarchy** — surface the `EventObject` /
    `EventObjectNode` / `EventObjectEdge` types (the runtime `Event` class
-   is already typed) on the public event-binding signatures.
+   in `src/event.mts` is already typed) on the public event-binding
+   signatures. Handlers currently receive the internal `Event` type; the
+   public `on`/`one`/`bind`/`pon` signatures in `src/collection/events.mts`
+   and `src/core/events.mts` would thread the `EventObject*` variants.
 
 Until then, downstream TypeScript users still see some node/edge
 cross-kind methods on the generated `NodeCollection` / `EdgeCollection`
-aliases, `Css.*` remains looser (`unknown`-ish), and event handler
-signatures do not yet expose the old `EventObject*` hierarchy.
+aliases, and event handler signatures do not yet expose the old
+`EventObject*` hierarchy.
 Reverting `package.json` `types` to `./index.d.ts` restores the richer
 hand-written types if that trade-off is preferred while the above source
 enrichment is completed.
@@ -116,6 +131,12 @@ parity with the old hand-written `index.d.ts`:
   `ele.*` plus the narrowed `NodeCollection` / `EdgeCollection` aliases.
   It is a doc-surface audit, not a symbol-for-symbol comparison against
   the old `index.d.ts`.
+- `npm run test:types:css` audits the generated `Css.*` style surface
+  against the live runtime property inventory in `src/style/properties.mts`,
+  failing on any documented-but-untyped or typed-but-unknown property. It
+  guards property-name coverage, not exact value-family precision.
+- `npm run test:types:all` builds the declarations once and runs the tsc
+  consumer test plus both surface audits.
 
 Known limitations of the current docmaker audit:
 

@@ -4,10 +4,13 @@ import define from '../define/index.mjs';
 import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
 import type { SelectorEle } from '../selector/type.mjs';
-import type Event from '../event.mjs';
+import type { EventObject, EventHandler as PublicEventHandler } from '../event-types.mjs';
 import type { CoreShim } from '../types.mjs';
 import type { Core } from './core-types.mjs';
 import type { Collection } from '../collection/eles-types.mjs';
+
+/** Public selector/handler arg of `.on()` and friends (2- or 3-arg form). */
+type EventSelectorArg = string | Selector | PublicEventHandler | null | undefined;
 
 // The qualifier carried by core-level listeners is a Selector instance.
 type CoreEmitter = Emitter<Core, Selector>;
@@ -39,9 +42,9 @@ let emitterOptions: EmitterOptions<Core, Selector> = {
 };
 
 /** Inputs accepted as the selector arg of `.on()` and friends. */
-type EventSelectorArg = string | Selector | EventHandler | null | undefined;
+type InternalSelectorArg = string | Selector | EventHandler | null | undefined;
 
-let argSelector = function( arg: EventSelectorArg ): Selector | EventHandler | null | undefined {
+let argSelector = function( arg: InternalSelectorArg ): Selector | EventHandler | null | undefined {
   if( is.string(arg) ){
     return new Selector( arg );
   } else {
@@ -54,26 +57,26 @@ export interface CoreEvents {
   createEmitter(): Core;
   /** @internal */
   emitter(): CoreEmitter;
-  on( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
-  removeListener( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
+  on( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
+  removeListener( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
   removeAllListeners(): Core;
-  one( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
+  one( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
   /** @internal */
-  once( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
+  once( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
   emit( events: EmitInput, extraParams?: unknown[] ): Core;
   /** @internal */
   emitAndNotify( event: string, eles?: Collection ): Core;
 
   // aliases added by define.eventAliasesOn()
-  addListener( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
-  listen( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
-  bind( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
-  unlisten( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
-  unbind( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
-  off( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Core;
+  addListener( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
+  listen( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
+  bind( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
+  unlisten( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
+  unbind( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
+  off( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Core;
   trigger( events: EmitInput, extraParams?: unknown[] ): Core;
-  pon( events: string, selector?: EventSelectorArg ): Promise<Event>;
-  promiseOn( events: string, selector?: EventSelectorArg ): Promise<Event>;
+  pon( events: string, selector?: EventSelectorArg ): Promise<EventObject>;
+  promiseOn( events: string, selector?: EventSelectorArg ): Promise<EventObject>;
 }
 
 let elesfn = ({
@@ -91,13 +94,13 @@ let elesfn = ({
     return this._private.emitter as unknown as CoreEmitter;
   },
 
-  on: function( this: Core, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  on: function( this: Core, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     this.emitter().on( events, argSelector(selector), callback );
 
     return this;
   },
 
-  removeListener: function( this: Core, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  removeListener: function( this: Core, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     this.emitter().removeListener( events, argSelector(selector), callback );
 
     return this;
@@ -109,13 +112,13 @@ let elesfn = ({
     return this;
   },
 
-  one: function( this: Core, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  one: function( this: Core, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     this.emitter().one( events, argSelector(selector), callback );
 
     return this;
   },
 
-  once: function( this: Core, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  once: function( this: Core, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     this.emitter().one( events, argSelector(selector), callback );
 
     return this;

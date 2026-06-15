@@ -1,5 +1,5 @@
 import * as is from '../is.mjs';
-import type { EventHandler } from '../emitter.mjs';
+import type { EventHandler } from '../event-types.mjs';
 import type { Collection, Element, ElementPrivate } from './eles-types.mjs';
 
 // TODO(eles-types): autolock()/autoungrabify()/autounselectify() are part of

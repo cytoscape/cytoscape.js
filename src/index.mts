@@ -31,6 +31,16 @@ export type {
 export type { Position, BoundingBox } from './types.mjs';
 export type { Css } from './style/css-types.mjs';
 export type { StyleJsonBlock, StyleJson } from './style/json.mjs';
+export type {
+  EventObject,
+  EventObjectNode,
+  EventObjectEdge,
+  EventObjectCore,
+  EventHandler,
+  AbstractEventObject,
+  InputEventObject,
+  LayoutEventObject
+} from './event-types.mjs';
 
 /** A plugin registrant, as passed to `cytoscape.use(ext)`. */
 export type CytoscapeExtension = ( cy: CytoscapeFactory, ...args: unknown[] ) => void;

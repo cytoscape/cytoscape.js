@@ -6,8 +6,12 @@ import Selector from '../selector/index.mjs';
 import type { SelectorEle } from '../selector/type.mjs';
 import type Event from '../event.mjs';
 import type { EventProps } from '../event.mjs';
+import type { EventObject, EventHandler as PublicEventHandler } from '../event-types.mjs';
 import type { CoreShim } from '../types.mjs';
 import type { Collection, Element, ElementPrivate } from './eles-types.mjs';
+
+/** Public selector/handler arg of `.on()` and friends (2- or 3-arg form). */
+type EventSelectorArg = string | Selector | PublicEventHandler | null | undefined;
 
 // The qualifier carried by per-element listeners is a Selector instance.
 type EleEmitter = Emitter<Element, Selector>;
@@ -47,7 +51,10 @@ let emitterOptions: EmitterOptions<Element, Selector> = {
     let conf = listener.conf as OnceListenerConf | null | undefined;
 
     if( conf && conf.once ){
-      conf.onceCollection!.removeListener( listener.event!, listener.qualifier, listener.callback );
+      // listener.callback is the internal emitter handler (typed against the
+      // runtime Event class); removeListener now takes the public EventObject
+      // handler, so bridge the equivalent runtime shape across the boundary
+      conf.onceCollection!.removeListener( listener.event!, listener.qualifier, listener.callback as unknown as PublicEventHandler );
     }
   },
   bubble: function(){
@@ -67,9 +74,9 @@ let emitterOptions: EmitterOptions<Element, Selector> = {
 };
 
 /** Inputs accepted as the selector arg of `.on()` and friends. */
-type EventSelectorArg = string | Selector | EventHandler | null | undefined;
+type InternalSelectorArg = string | Selector | EventHandler | null | undefined;
 
-let argSelector = function( arg: EventSelectorArg ): Selector | EventHandler | null | undefined {
+let argSelector = function( arg: InternalSelectorArg ): Selector | EventHandler | null | undefined {
   if( is.string(arg) ){
     return new Selector( arg );
   } else {
@@ -82,25 +89,25 @@ export interface CollectionEvents {
   createEmitter(): Collection;
   /** @internal */
   emitter(): EleEmitter;
-  on( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
-  removeListener( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
+  on( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
+  removeListener( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
   removeAllListeners(): Collection;
-  one( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
-  once( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): void;
+  one( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
+  once( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): void;
   emit( events: EmitInput, extraParams?: unknown[] ): Collection;
   /** @internal */
   emitAndNotify( event: string, extraParams?: unknown[] ): Collection | undefined;
 
   // aliases added by define.eventAliasesOn()
-  addListener( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
-  listen( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
-  bind( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
-  unlisten( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
-  unbind( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
-  off( events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ): Collection;
+  addListener( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
+  listen( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
+  bind( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
+  unlisten( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
+  unbind( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
+  off( events: string | string[], selector?: EventSelectorArg, callback?: PublicEventHandler ): Collection;
   trigger( events: EmitInput, extraParams?: unknown[] ): Collection;
-  pon( events: string, selector?: EventSelectorArg ): Promise<Event>;
-  promiseOn( events: string, selector?: EventSelectorArg ): Promise<Event>;
+  pon( events: string, selector?: EventSelectorArg ): Promise<EventObject>;
+  promiseOn( events: string, selector?: EventSelectorArg ): Promise<EventObject>;
 }
 
 let elesfn = ({
@@ -121,7 +128,7 @@ let elesfn = ({
     return ( this._private as ElementPrivate ).emitter as unknown as EleEmitter;
   },
 
-  on: function( this: Collection, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  on: function( this: Collection, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     let argSel = argSelector(selector);
 
     for( let i = 0; i < this.length; i++ ){
@@ -133,7 +140,7 @@ let elesfn = ({
     return this;
   },
 
-  removeListener: function( this: Collection, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  removeListener: function( this: Collection, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     let argSel = argSelector(selector);
 
     for( let i = 0; i < this.length; i++ ){
@@ -155,7 +162,7 @@ let elesfn = ({
     return this;
   },
 
-  one: function( this: Collection, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  one: function( this: Collection, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     let argSel = argSelector(selector);
 
     for( let i = 0; i < this.length; i++ ){
@@ -167,7 +174,7 @@ let elesfn = ({
     return this;
   },
 
-  once: function( this: Collection, events: string | string[], selector?: EventSelectorArg, callback?: EventHandler ){
+  once: function( this: Collection, events: string | string[], selector?: InternalSelectorArg, callback?: EventHandler ){
     let argSel = argSelector(selector);
 
     for( let i = 0; i < this.length; i++ ){

@@ -4,6 +4,7 @@ import get from 'lodash/get.js';
 import set from 'lodash/set.js';
 import toPath from 'lodash/toPath.js';
 import type { EventHandler } from '../emitter.mjs';
+import type { EventHandler as PublicEventHandler } from '../event-types.mjs';
 
 /**
  * Configuration for a generated data accessor.
@@ -36,7 +37,7 @@ export interface DataFunc<Self> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- data values are arbitrary user values
   ( this: Self, name: string, value: any ): Self;
   ( this: Self, obj: Record<string, unknown> ): Self;
-  ( this: Self, handler: EventHandler ): Self;
+  ( this: Self, handler: PublicEventHandler ): Self;
 }
 
 export interface RemoveDataParams {

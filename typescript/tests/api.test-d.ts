@@ -6,7 +6,7 @@
 // and consumed the way the hand-written index.d.ts was.
 
 import cytoscape from '../../build/dts/index.js';
-import type { Core, Collection, Css, Element, CytoscapeOptions, NodeCollection, EdgeCollection, NodeSingular, StyleJsonBlock } from '../../build/dts/index.js';
+import type { Core, Collection, Css, Element, CytoscapeOptions, NodeCollection, EdgeCollection, NodeSingular, EdgeSingular, StyleJsonBlock, EventObject, EventObjectNode, EventObjectEdge } from '../../build/dts/index.js';
 
 // factory: create an instance
 const opts: CytoscapeOptions = {
@@ -41,9 +41,25 @@ const z: number = cy.zoom();
 cy.fit();
 cy.json();
 
-// events
-cy.on('tap', 'node', () => {});
+// events: the EventObject hierarchy is surfaced on the public binding API
+cy.on('tap', ( e: EventObject ) => {
+  const t: Element | Core = e.target;
+  const pos = e.position; // input-event field
+  const ts: number = e.timeStamp;
+  void [t, pos, ts];
+});
+cy.on('tap', 'node', ( e: EventObjectNode ) => {
+  const n: NodeSingular = e.target; // target narrowed to a node
+  void n;
+});
+cy.on('tap', 'edge', ( e: EventObjectEdge ) => {
+  const ed: EdgeSingular = e.target; // target narrowed to an edge
+  void ed;
+});
+const tapped: Promise<EventObject> = cy.pon('tap'); // promiseOn resolves to an EventObject
+cy.elements().on('mouseover', ( e: EventObject ) => void e.cy); // collection binding
 cy.emit('custom');
+void tapped;
 
 // collection methods, traversal, data
 const nodes: NodeCollection = cy.nodes();

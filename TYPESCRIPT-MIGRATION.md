@@ -84,8 +84,20 @@ by `npm run test:types:css` (`test/types-css-surface.mjs`), which cross-checks
 the generated `Css.*` surface against the live runtime inventory. See
 `CSS-PLAN.md` for details.
 
-Two areas of the hand-written file are **not yet reproduced** from source and
-are the remaining work to reach full parity:
+**`EventObject` hierarchy — done.** `src/event-types.mts` defines the public
+`AbstractEventObject` → `InputEventObject`/`LayoutEventObject` → `EventObject`
+hierarchy plus the narrowed `EventObjectNode`/`EventObjectEdge`/`EventObjectCore`
+variants and the public `EventHandler` type, all exported from the entry point.
+The event-binding signatures (`on`/`one`/`bind`/`off`/`pon`/… in
+`src/collection/events.mts` and `src/core/events.mts`) and the `.data(handler)`
+overload now hand callbacks an `EventObject` instead of the internal `Event`
+class, and `pon`/`promiseOn` resolve to `Promise<EventObject>`. `target` is
+typed `any` on the base so the narrowed variants stay usable as handler
+parameters (function-parameter contravariance), matching the old declarations.
+`typescript/tests/api.test-d.ts` exercises all three target kinds.
+
+One area of the hand-written file is **not yet reproduced** from source and is
+the remaining work to reach full parity:
 
 1. **Node/edge public projections** — `NodeCollection` and
   `EdgeCollection` are re-exported again, but they still structurally
@@ -97,17 +109,10 @@ are the remaining work to reach full parity:
   `allowedResidualExtras` allowlist in `test/types-docmaker-surface.mjs`
   (18 edge-only methods leaking onto `NodeCollection`, 58 node-only onto
   `EdgeCollection`).
-2. **`EventObject` hierarchy** — surface the `EventObject` /
-   `EventObjectNode` / `EventObjectEdge` types (the runtime `Event` class
-   in `src/event.mts` is already typed) on the public event-binding
-   signatures. Handlers currently receive the internal `Event` type; the
-   public `on`/`one`/`bind`/`pon` signatures in `src/collection/events.mts`
-   and `src/core/events.mts` would thread the `EventObject*` variants.
 
 Until then, downstream TypeScript users still see some node/edge
 cross-kind methods on the generated `NodeCollection` / `EdgeCollection`
-aliases, and event handler signatures do not yet expose the old
-`EventObject*` hierarchy.
+aliases.
 Reverting `package.json` `types` to `./index.d.ts` restores the richer
 hand-written types if that trade-off is preferred while the above source
 enrichment is completed.

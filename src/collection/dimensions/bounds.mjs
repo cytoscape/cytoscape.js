@@ -27,17 +27,6 @@ elesfn.renderedBoundingBox = function( options ){
   };
 };
 
-elesfn.renderedActualLabelBoundingBox = function( options ){
-  let polygon = this.actualLabelBoundingBox( options );
-  let cy = this.cy();
-  let zoom = cy.zoom();
-  let pan = cy.pan();
-
-  return polygon.map(p => ({
-    x: p.x * zoom + pan.x,
-    y: p.y * zoom + pan.y
-  }));
-};
 
 elesfn.actualLabelBoundingBox = function( options ) {
   let label = (options && options.label) || 'main';
@@ -1178,6 +1167,5 @@ elesfn.boundingBoxAt = function( fn ){
 fn.boundingbox = fn.bb = fn.boundingBox;
 fn.renderedBoundingbox = fn.renderedBoundingBox;
 fn.actualLabelBoundingbox = fn.actualLabelBoundingBox;
-fn.renderedActualLabelBoundingbox = fn.renderedActualLabelBoundingBox;
 
 export default elesfn;

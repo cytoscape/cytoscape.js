@@ -2199,13 +2199,6 @@ declare namespace cytoscape {
          */
         actualLabelBoundingBox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
         actualLabelBoundingbox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
-        /**
-         * Get the bounding polygon of a label in rendered coordinates.
-         * For edges, use `label: 'source'` or `label: 'target'` to select a specific label slot.
-         * Defaults to the main label.
-         */
-        renderedActualLabelBoundingBox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
-        renderedActualLabelBoundingbox(options?: { label?: 'main' | 'source' | 'target' }): PolygonBoundingBox;
     }
 
     /**

@@ -1,18 +1,20 @@
 import type { EdgeSingular, NodeSingular } from '../collection/eles-types.mjs';
-import type { Core } from '../core/core-types.mjs';
+// aliased so the namespace-local `Css.Core` property block (below) does not
+// shadow the cytoscape instance type used by core-property mapper functions
+import type { Core as CoreInstance } from '../core/core-types.mjs';
 
 export declare namespace Css {
   type Colour = string;
 
   type MapperFunction<Element, Type> = ( ele: Element ) => Type;
 
-  type PropertyValue<SingularType extends NodeSingular | EdgeSingular | Core, Type> =
+  type PropertyValue<SingularType extends NodeSingular | EdgeSingular | CoreInstance, Type> =
     | Type
     | MapperFunction<SingularType, Type>;
 
   type PropertyValueNode<Type> = PropertyValue<NodeSingular, Type>;
   type PropertyValueEdge<Type> = PropertyValue<EdgeSingular, Type>;
-  type PropertyValueCore<Type> = PropertyValue<Core, Type>;
+  type PropertyValueCore<Type> = PropertyValue<CoreInstance, Type>;
 
   type NodeShape =
     | 'rectangle'

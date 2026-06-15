@@ -69,22 +69,45 @@ layout.run();
 cytoscape.use(() => {});
 const v: string = cytoscape.version;
 
+// Css.* surface: node/edge/core property maps, mapper functions, and the
+// narrowed value families generated from the runtime style inventory.
 const nodeCss: Css.Node = {
   'background-color': 'blue',
-  'transition-timing-function': 'ease-in-out',
-  shape: 'round-rectangle'
+  'background-opacity': ( ele: NodeSingular ) => ele.data( 'o' ) as number, // node mapper
+  'transition-timing-function': 'ease-in-out', // common property + enum
+  shape: 'round-rectangle', // node-specific NodeShape enum
+  'pie-1-background-color': 'green' // generated numbered property
 };
+
+const edgeCss: Css.Edge = {
+  'line-color': 'black',
+  'curve-style': 'bezier', // edge-specific CurveStyle enum
+  'target-arrow-shape': 'triangle', // ArrowShape enum
+  'line-opacity': ( ele ) => ele.data( 'o' ) as number, // edge mapper (ele inferred as EdgeSingular)
+  width: 3 // shared property accepted via the index signature
+};
+
+const coreCss: Css.Core = {
+  'active-bg-color': 'black',
+  'selection-box-opacity': 0.5
+};
+
+const nodeShape: Css.NodeShape = 'hexagon'; // exported enum alias
 
 const styleJsonBlock: StyleJsonBlock = {
   selector: 'core',
-  style: { 'selection-box-color': 'red' }
+  style: coreCss
 };
 
+// public style entry points reference the Css surface
 cytoscape.stylesheet()
   .selector('node')
   .style(nodeCss)
   .selector('edge')
-  .css({ 'line-color': 'black', 'target-arrow-shape': 'triangle' });
+  .css(edgeCss);
+
+// element JSON style/css fields accept Css maps
+cy.add({ group: 'nodes', data: { id: 'd' }, style: { 'border-width': 2 } });
 
 // silence unused-locals
-void [all, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v, styleJsonBlock];
+void [all, byId, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v, styleJsonBlock, edgeCss, nodeShape];

@@ -201,7 +201,7 @@ export interface ElementPrivate extends CollectionPrivate {
 
 /** Inputs accepted where elements are expected (constructor, spawn, ...). */
 export type ElementsInput =
-  Element[] | Collection | ElementDefinition[] | ( Element | Collection )[] | ( Element | ElementDefinition )[];
+  Element[] | Collection | ElementDefinition[] | SharedCollection[] | ( Element | Collection )[] | ( Element | ElementDefinition )[];
 
 /** Methods defined directly in collection/index.mts (not via mixins). */
 export interface CollectionBaseFns {
@@ -226,7 +226,7 @@ export interface CollectionBaseFns {
   /** @internal */
   poolIndex(): number;
   /** @internal */
-  indexOf( ele: Collection | Element ): number;
+  indexOf( ele: SharedCollection ): number;
   /** @internal */
   indexOfId( id: string | number ): number;
   json( obj?: Partial<ElementJson> ): ElementJson | this | undefined;
@@ -277,11 +277,52 @@ export interface Element extends Collection {
   _private: ElementPrivate;
 }
 
-type PublicSelectorArg = string | Collection | Element | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | undefined | null;
+type PublicSelectorArg = string | SharedCollection | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | undefined | null;
 
 export type Singular = Element;
 
-export interface NodeCollection extends Collection {
+// Public node/edge-narrowed projections.
+//
+// The runtime prototype is shared across all element kinds, so the wide
+// `Collection`/`Element` types above carry both node- and edge-only members
+// (and internal code relies on that — a value typed `Collection` can call any
+// element method). The public node/edge types hide the other kind's members.
+//
+// `SharedCollection` is the kind-agnostic base (everything common to nodes and
+// edges). Internal helpers that operate on "any collection" should accept
+// `SharedCollection` so a `NodeCollection` or `EdgeCollection` can be passed
+// without casting. The omitted name lists below ARE the documented cross-kind
+// split, asserted by the `test/types-docmaker-surface.mjs` audit.
+
+/** Edge-only members hidden from the public node types. */
+type EdgeOnlyKeys =
+  | 'source' | 'target' | 'sources' | 'targets' | 'connectedNodes'
+  | 'parallelEdges' | 'codirectedEdges' | 'isLoop' | 'isSimple' | 'midpoint'
+  | 'controlPoints' | 'segmentPoints' | 'sourceEndpoint' | 'targetEndpoint'
+  | 'renderedMidpoint' | 'renderedControlPoints' | 'renderedSegmentPoints'
+  | 'renderedSourceEndpoint' | 'renderedTargetEndpoint';
+
+/** Node-only members hidden from the public edge types. */
+type NodeOnlyKeys =
+  | 'parent' | 'parents' | 'ancestors' | 'commonAncestors' | 'children'
+  | 'siblings' | 'descendants' | 'roots' | 'leaves' | 'orphans' | 'nonorphans'
+  | 'isParent' | 'isChild' | 'isChildless' | 'isOrphan' | 'connectedEdges'
+  | 'edgesWith' | 'edgesTo'
+  | 'degree' | 'indegree' | 'outdegree' | 'totalDegree'
+  | 'minDegree' | 'maxDegree' | 'minIndegree' | 'maxIndegree'
+  | 'minOutdegree' | 'maxOutdegree'
+  | 'incomers' | 'outgoers' | 'successors' | 'predecessors'
+  | 'position' | 'positions' | 'modelPosition' | 'modelPositions'
+  | 'point' | 'points' | 'relativePosition' | 'relativePoint'
+  | 'renderedPosition' | 'renderedPoint' | 'shift'
+  | 'grabbable' | 'grabbed' | 'grabify' | 'ungrabify'
+  | 'lock' | 'unlock' | 'locked'
+  | 'layoutDimensions' | 'layoutPositions'
+  | 'affinityPropagation' | 'ap' | 'fuzzyCMeans' | 'fcm'
+  | 'hierarchicalClustering' | 'hca' | 'kMeans' | 'kMedoids';
+
+/** Node-kind return-type narrowings layered over the wide collection. */
+interface NodeCollectionNarrowed {
   parent( selector?: PublicSelectorArg ): NodeCollection;
   parents( selector?: PublicSelectorArg ): NodeCollection;
   ancestors( selector?: PublicSelectorArg ): NodeCollection;
@@ -296,21 +337,28 @@ export interface NodeCollection extends Collection {
   connectedEdges( selector?: PublicSelectorArg ): EdgeCollection;
 }
 
-export interface EdgeCollection extends Collection {
+/** Edge-kind return-type narrowings layered over the wide collection. */
+interface EdgeCollectionNarrowed {
   source( selector?: PublicSelectorArg ): NodeSingular;
   target( selector?: PublicSelectorArg ): NodeSingular;
   sources( selector?: PublicSelectorArg ): NodeCollection;
   targets( selector?: PublicSelectorArg ): NodeCollection;
-  edgesWith( otherNodes: string | Collection ): EdgeCollection;
-  edgesTo( otherNodes: string | Collection ): EdgeCollection;
   connectedNodes( selector?: PublicSelectorArg ): NodeCollection;
   parallelEdges( selector?: PublicSelectorArg ): EdgeCollection;
   codirectedEdges( selector?: PublicSelectorArg ): EdgeCollection;
 }
 
-export type NodeSingular = Singular & NodeCollection;
+type NodeNarrowedKeys = keyof NodeCollectionNarrowed;
+type EdgeNarrowedKeys = keyof EdgeCollectionNarrowed;
 
-export type EdgeSingular = Singular & EdgeCollection;
+/** Kind-agnostic collection: members common to both nodes and edges. */
+export type SharedCollection = Omit<Collection, EdgeOnlyKeys | NodeOnlyKeys>;
+
+export type NodeCollection = Omit<Collection, EdgeOnlyKeys | NodeNarrowedKeys> & NodeCollectionNarrowed;
+export type EdgeCollection = Omit<Collection, NodeOnlyKeys | EdgeNarrowedKeys> & EdgeCollectionNarrowed;
+
+export type NodeSingular = Omit<Element, EdgeOnlyKeys | NodeNarrowedKeys> & NodeCollectionNarrowed;
+export type EdgeSingular = Omit<Element, NodeOnlyKeys | EdgeNarrowedKeys> & EdgeCollectionNarrowed;
 
 /** The runtime Collection constructor (a function, not a class — the
  * shared prototype is reassigned, which classes don't allow). */

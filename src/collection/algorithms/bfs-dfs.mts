@@ -109,7 +109,7 @@ let defineSearch = function( params: { bfs?: boolean; dfs?: boolean } ): SearchF
       let prevEdge = connectedBy[ vId ];
       let src = prevEdge != null ? prevEdge.source() : null;
       let tgt = prevEdge != null ? prevEdge.target() : null;
-      let prevNode = prevEdge == null ? undefined : ( v.same(src as Collection) ? ( tgt as Collection )[0] : ( src as Collection )[0] );
+      let prevNode = prevEdge == null ? undefined : ( v.same(src as unknown as Collection) ? ( tgt as unknown as Collection )[0] : ( src as unknown as Collection )[0] );
       let ret;
 
       ret = visitFn( v, prevEdge, prevNode, j++, depth );

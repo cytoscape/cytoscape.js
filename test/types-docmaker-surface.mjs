@@ -1,10 +1,9 @@
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import ts from 'typescript';
 
 const docs = JSON.parse( fs.readFileSync( new URL( '../documentation/docmaker.json', import.meta.url ), 'utf8' ) );
-const dtsPath = new URL( '../build/dts/index.d.ts', import.meta.url );
-const dts = fs.readFileSync( dtsPath, 'utf8' );
-const source = ts.createSourceFile( dtsPath.pathname, dts, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS );
+const dtsPath = fileURLToPath( new URL( '../build/dts/index.d.ts', import.meta.url ) );
 
 const docByPrefix = new Map();
 
@@ -43,46 +42,45 @@ function walkDocs( value ){
 
 walkDocs( docs );
 
-const interfaces = new Map();
+// The public node/edge types are `Omit<>`-based type aliases, not plain
+// interfaces, so we resolve effective members through the TypeScript type
+// checker rather than walking AST heritage clauses by hand.
+const program = ts.createProgram( [ dtsPath ], {
+  noEmit: true,
+  strict: true,
+  lib: [ 'lib.es2020.d.ts', 'lib.dom.d.ts' ],
+  moduleResolution: ts.ModuleResolutionKind.Bundler
+} );
+const checker = program.getTypeChecker();
+const source = program.getSourceFile( dtsPath );
 
-function collectInterfaces( node ){
-  if( ts.isInterfaceDeclaration( node ) ){
-    interfaces.set( node.name.text, node );
+// declaration name (as written in the d.ts, e.g. `Element$1`) -> type. Only
+// top-level declarations are collected, so the audited `Core` is the public
+// cytoscape instance type and not the namespaced `Css.Core` style block.
+const declaredTypes = new Map();
+
+for( let node of source.statements ){
+  if( ( ts.isInterfaceDeclaration( node ) || ts.isTypeAliasDeclaration( node ) ) && node.name ){
+    let symbol = checker.getSymbolAtLocation( node.name );
+
+    if( symbol ){
+      declaredTypes.set( node.name.text, checker.getDeclaredTypeOfSymbol( symbol ) );
+    }
   }
-
-  ts.forEachChild( node, collectInterfaces );
 }
 
-collectInterfaces( source );
-
-function namesForInterface( name, seen = new Set() ){
-  if( seen.has( name ) ){
-    return new Set();
-  }
-
-  seen.add( name );
-
-  let node = interfaces.get( name );
+function namesForInterface( name ){
+  let type = declaredTypes.get( name );
   let names = new Set();
 
-  if( !node ){
+  if( !type ){
     return names;
   }
 
-  for( let member of node.members ){
-    if( ( ts.isMethodSignature( member ) || ts.isPropertySignature( member ) ) && member.name && ts.isIdentifier( member.name ) ){
-      names.add( member.name.text );
-    }
-  }
-
-  for( let clause of node.heritageClauses || [] ){
-    for( let type of clause.types ){
-      if( ts.isIdentifier( type.expression ) ){
-        for( let inherited of namesForInterface( type.expression.text, seen ) ){
-          names.add( inherited );
-        }
-      }
-    }
+  // getPropertiesOfType resolves inherited, intersected, and Omit-projected
+  // members into the effective property set.
+  for( let prop of checker.getPropertiesOfType( type ) ){
+    names.add( prop.getName() );
   }
 
   return names;
@@ -96,34 +94,21 @@ const groups = {
   EdgeCollection: { iface: 'EdgeCollection', allowed: [ 'edge', 'edges', 'ele', 'eles' ], required: [ 'edge', 'edges' ] }
 };
 
-const allowedResidualExtras = {
-  NodeCollection: new Set( [
-    'codirectedEdges', 'connectedNodes', 'controlPoints', 'isLoop', 'isSimple',
-    'midpoint', 'parallelEdges', 'renderedControlPoints', 'renderedMidpoint',
-    'renderedSegmentPoints', 'renderedSourceEndpoint', 'renderedTargetEndpoint',
-    'segmentPoints', 'source', 'sourceEndpoint', 'sources', 'target',
-    'targetEndpoint', 'targets'
-  ] ),
-  EdgeCollection: new Set( [
-    'affinityPropagation', 'ancestors', 'ap', 'children', 'commonAncestors',
-    'connectedEdges', 'degree', 'descendants', 'edgesTo', 'edgesWith', 'fcm',
-    'fuzzyCMeans', 'grabbable', 'grabbed', 'grabify', 'hca',
-    'hierarchicalClustering', 'incomers', 'indegree', 'isChild',
-    'isChildless', 'isOrphan', 'isParent', 'kMeans', 'kMedoids',
-    'layoutDimensions', 'layoutPositions', 'leaves', 'lock', 'locked',
-    'maxDegree', 'maxIndegree', 'maxOutdegree', 'minDegree', 'minIndegree',
-    'minOutdegree', 'modelPosition', 'modelPositions', 'nonorphans', 'orphans',
-    'outdegree', 'outgoers', 'parent', 'parents', 'point', 'points',
-    'position', 'positions', 'predecessors', 'relativePoint',
-    'relativePosition', 'renderedPoint', 'renderedPosition', 'roots', 'shift',
-    'siblings', 'successors', 'totalDegree', 'ungrabify', 'unlock'
-  ] )
-};
+// The public node/edge projections now omit cross-kind members at the type
+// level (see EdgeOnlyKeys/NodeOnlyKeys in src/collection/eles-types.mts), so no
+// residual cross-kind allowlist is needed: the audit holds the generated
+// surface to the documented per-kind API exactly.
+const allowedResidualExtras = {};
 
 let failed = false;
 
 for( let [ label, config ] of Object.entries( groups ) ){
-  let actual = [ ...namesForInterface( config.iface ) ].filter( name => name !== 'instanceString' && name !== 'length' ).sort();
+  let actual = [ ...namesForInterface( config.iface ) ]
+    .filter( name => name !== 'instanceString' && name !== 'length' )
+    // drop symbol/computed members (e.g. the inherited Symbol.iterator, which
+    // the checker names like `__@iterator@151`) and other internal `__`-prefixed
+    .filter( name => !name.startsWith( '__@' ) )
+    .sort();
   let allowed = new Set( config.allowed.flatMap( prefix => [ ...( docByPrefix.get( prefix ) || [] ) ] ) );
   let required = new Set( config.required.flatMap( prefix => [ ...( docByPrefix.get( prefix ) || [] ) ] ) );
   let residual = allowedResidualExtras[ label ] || new Set();

@@ -3,7 +3,7 @@ import { assignBoundingBox, expandBoundingBoxSides, clearBoundingBox, expandBoun
 import {defaults, endsWith, getPrefixedProperty, hashIntsArray, memoize} from '../../util/index.mjs';
 import { labelHalign, labelValign } from '../../style/align.mjs';
 import type { BoundingBox, BoundingBox12, Position } from '../../types.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, SharedCollection, Element } from '../eles-types.mjs';
 import type { ParsedStyleProperty } from '../../style/parse.mjs';
 
 // A bounding box cache object stored on _private. These extend the basic
@@ -42,19 +42,19 @@ export interface BoundingBoxOptions {
 
 /** Bounding-box methods contributed to the collection prototype. */
 export interface CollectionBounds {
-  renderedBoundingBox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
-  renderedBoundingbox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
+  renderedBoundingBox( this: SharedCollection, options?: BoundingBoxOptions ): BoundingBox;
+  renderedBoundingbox( this: SharedCollection, options?: BoundingBoxOptions ): BoundingBox;
   /** @internal */
-  dirtyCompoundBoundsCache( this: Collection, silent?: boolean ): Collection;
+  dirtyCompoundBoundsCache( this: SharedCollection, silent?: boolean ): Collection;
   /** @internal */
-  updateCompoundBounds( this: Collection, force?: boolean ): Collection;
-  boundingBox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
-  boundingbox( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
-  bb( this: Collection, options?: BoundingBoxOptions ): BoundingBox;
+  updateCompoundBounds( this: SharedCollection, force?: boolean ): Collection;
+  boundingBox( this: SharedCollection, options?: BoundingBoxOptions ): BoundingBox;
+  boundingbox( this: SharedCollection, options?: BoundingBoxOptions ): BoundingBox;
+  bb( this: SharedCollection, options?: BoundingBoxOptions ): BoundingBox;
   /** @internal */
-  dirtyBoundingBoxCache( this: Collection ): Collection;
+  dirtyBoundingBoxCache( this: SharedCollection ): Collection;
   /** @internal */
-  boundingBoxAt( this: Collection, fn: ( ( node: Element, i: number ) => Position ) | Position ): BoundingBox;
+  boundingBoxAt( this: SharedCollection, fn: ( ( node: Element, i: number ) => Position ) | Position ): BoundingBox;
 }
 
 // helper to read a parsed style property
@@ -567,7 +567,7 @@ let boundingBoxImpl = function( ele: Element, options: BoundingBoxOptions ): Bou
 
   // must use `display` prop only, as reading `compound.width()` causes recursion
   // (other factors like width values will be considered later in this function anyway)
-  let isDisplayed = ( ele: Collection ) => pstyleOf( ele as unknown as Element, 'display' ).value !== 'none';
+  let isDisplayed = ( ele: SharedCollection ) => pstyleOf( ele as unknown as Element, 'display' ).value !== 'none';
 
   let displayed = (
     !styleEnabled

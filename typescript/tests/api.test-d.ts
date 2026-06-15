@@ -73,6 +73,21 @@ const nhood: Collection = nodes.neighborhood();
 const conn: EdgeCollection = nodes.connectedEdges();
 const src: NodeSingular = edges.source();
 
+// node/edge public projections: each kind exposes only its own methods
+nodes.degree();              // node-only, OK on nodes
+edges.source();              // edge-only, OK on edges
+// @ts-expect-error edge-only method is not on the node type
+nodes.source();
+// @ts-expect-error edge-only method is not on the node type
+nodes.parallelEdges();
+// @ts-expect-error node-only method is not on the edge type
+edges.degree();
+// @ts-expect-error node-only method is not on the edge type
+edges.parent();
+// shared methods remain available on both
+nodes.boundingBox();
+edges.boundingBox();
+
 // algorithms
 const dijkstra = cy.elements().dijkstra({ root: '#a', directed: false });
 const dist: number = dijkstra.distanceTo(cy.getElementById('b'));

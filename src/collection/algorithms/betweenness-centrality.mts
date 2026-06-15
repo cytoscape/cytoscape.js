@@ -1,6 +1,6 @@
 import Heap from '../../heap.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, SharedCollection, Element } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type BetweennessWeightFn = ( edge: Element ) => number;
@@ -38,7 +38,7 @@ let elesfn = ({
 
     // starting
     let V = this.nodes();
-    let A: Record<string, Collection> = {};
+    let A: Record<string, SharedCollection> = {};
     let _C: Record<string, number> = {};
     let max = 0;
     let C = {

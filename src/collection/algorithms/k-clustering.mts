@@ -9,7 +9,7 @@
 import clusteringDistance from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, Element, CoreAccess } from '../eles-types.mjs';
+import type { Collection, SharedCollection, Element, CoreAccess } from '../eles-types.mjs';
 
 /** A node attribute accessor used as a clustering feature. */
 export type KAttributeFn = ( node: Element ) => number;
@@ -89,7 +89,7 @@ let getDist = function(
 };
 
  
-let randomCentroids = function( nodes: Collection, k: number, attributes: KAttributeFn[], seed?: number ): FeatureCentroid[] {
+let randomCentroids = function( nodes: SharedCollection, k: number, attributes: KAttributeFn[], seed?: number ): FeatureCentroid[] {
   let ndim = attributes.length;
   let min: number[]  = new Array(ndim);
   let max: number[]  = new Array(ndim);
@@ -135,7 +135,7 @@ let classify = function(
   return index;
 };
 
-let buildCluster = function( centroid: number, nodes: Collection, assignment: Record<string, number> ): Element[] {
+let buildCluster = function( centroid: number, nodes: SharedCollection, assignment: Record<string, number> ): Element[] {
   let cluster: Element[] = [];
   let node: Element | null = null;
 
@@ -172,7 +172,7 @@ let seenBefore = function ( node: Element, medoids: Element[], n: number ): bool
   return false;
 };
 
-let randomMedoids = function( nodes: Collection, k: number ): Element[] {
+let randomMedoids = function( nodes: SharedCollection, k: number ): Element[] {
   let medoids: Element[] = new Array(k);
 
   // For small data sets, the probability of medoid conflict is greater,
@@ -374,7 +374,7 @@ let kMedoids = function( this: Collection, options?: KClusteringOptions ): Colle
 };
 
 let updateCentroids = function(
-  centroids: FeatureCentroid[], nodes: Collection, U: number[][], weight: number[][], opts: ReturnType<typeof setOptions>
+  centroids: FeatureCentroid[], nodes: SharedCollection, U: number[][], weight: number[][], opts: ReturnType<typeof setOptions>
 ): void {
   let numerator, denominator;
 
@@ -398,7 +398,7 @@ let updateCentroids = function(
 };
 
 let updateMembership = function(
-  U: number[][], _U: number[][], centroids: FeatureCentroid[], nodes: Collection, opts: ReturnType<typeof setOptions>
+  U: number[][], _U: number[][], centroids: FeatureCentroid[], nodes: SharedCollection, opts: ReturnType<typeof setOptions>
 ): void {
   // Save previous step
   for (let i = 0; i < U.length; i++) {
@@ -422,7 +422,7 @@ let updateMembership = function(
   }
 };
 
-let assign = function( nodes: Collection, U: number[][], opts: ReturnType<typeof setOptions>, cy: CoreAccess ): Collection[] {
+let assign = function( nodes: SharedCollection, U: number[][], opts: ReturnType<typeof setOptions>, cy: CoreAccess ): Collection[] {
   let clustersArr: Element[][] = new Array(opts.k);
   for ( let c = 0; c < clustersArr.length; c++ ) {
     clustersArr[c] = [];

@@ -60,19 +60,21 @@ The runtime keeps its prototype-mixin structure; the types mirror it:
   via a shared permissive `Renderer` interface; params/locals/data are
   typed honestly.
 
-## Parity with the old hand-written `index.d.ts` — remaining gap
+## Parity with the old hand-written `index.d.ts`
 
-The generated d.ts (~2,100 lines) covers the **full method surface** of
-`Core`, `Collection`, and `Element` — more method coverage than the
-hand-written file, since every mixin method is typed. The public entry
-point now also re-exports the old broad node/edge alias family
-(`Singular`, `NodeSingular`, `EdgeSingular`, `NodeCollection`,
-`EdgeCollection`), and the documented search/traversal helpers return
-those aliases where appropriate. The old `index.d.ts` (6,644 lines) is
-kept in the repo as a reference and parity target. A docmaker-based audit
-(`npm run test:types:docs`) now checks that the generated `build/dts`
-surface matches the documented `cy.*` / `eles.*` / `ele.*` API and
-guards the remaining known exceptions.
+The generated d.ts covers the **full method surface** of `Core`,
+`Collection`, and `Element` — more method coverage than the hand-written
+file, since every mixin method is typed. The public entry point also
+re-exports the old broad node/edge alias family (`Singular`,
+`NodeSingular`, `EdgeSingular`, `NodeCollection`, `EdgeCollection`), and the
+documented search/traversal helpers return those aliases where appropriate.
+The old `index.d.ts` (6,644 lines) is kept in the repo as a reference. A
+docmaker-based audit (`npm run test:types:docs`) checks that the generated
+`build/dts` surface matches the documented `cy.*` / `eles.*` / `ele.*` /
+`node.*` / `edge.*` API — with **no allowlisted exceptions**.
+
+All three areas that previously diverged from the hand-written file are now
+reproduced from source:
 
 **`Css.*` style-property types — done.** `src/style/css-types.mts` is now
 generated from the runtime style inventory (`src/style/properties.mts`) by
@@ -96,26 +98,24 @@ typed `any` on the base so the narrowed variants stay usable as handler
 parameters (function-parameter contravariance), matching the old declarations.
 `typescript/tests/api.test-d.ts` exercises all three target kinds.
 
-One area of the hand-written file is **not yet reproduced** from source and is
-the remaining work to reach full parity:
+**Node/edge public projections — done.** `src/collection/eles-types.mts`
+keeps a wide internal `Collection`/`Element` (the shared prototype carries
+every element method at runtime, and internal code relies on that), and
+derives the public types by omitting the other kind's members:
+`NodeCollection`/`NodeSingular` drop the edge-only members (`source`,
+`target`, endpoints, edge geometry, …) and `EdgeCollection`/`EdgeSingular`
+drop the node-only members (compounds, degree, position, grab/lock,
+clustering, …). The omitted name lists (`EdgeOnlyKeys`/`NodeOnlyKeys`) are
+the documented cross-kind split, and a new kind-agnostic base
+`SharedCollection` lets internal helpers accept any collection without
+casts. The docmaker audit now resolves the effective member set through the
+TypeScript type checker (so it understands the `Omit<>`-based projections)
+and passes with no residual allowlist; `typescript/tests/api.test-d.ts`
+asserts (via `@ts-expect-error`) that node types reject edge-only methods
+and vice versa.
 
-1. **Node/edge public projections** — `NodeCollection` and
-  `EdgeCollection` are re-exported again, but they still structurally
-  inherit some cross-kind methods from the wide internal `Collection`
-  type in the generated declarations. Fully matching the docs requires a
-  dedicated public node/edge projection layer that omits edge-only
-  methods from node types and node-only methods from edge types. The exact
-  cross-kind method lists currently tolerated live in the
-  `allowedResidualExtras` allowlist in `test/types-docmaker-surface.mjs`
-  (18 edge-only methods leaking onto `NodeCollection`, 58 node-only onto
-  `EdgeCollection`).
-
-Until then, downstream TypeScript users still see some node/edge
-cross-kind methods on the generated `NodeCollection` / `EdgeCollection`
-aliases.
-Reverting `package.json` `types` to `./index.d.ts` restores the richer
-hand-written types if that trade-off is preferred while the above source
-enrichment is completed.
+The generated `.d.ts` is now the source-of-truth type surface; the
+hand-written `index.d.ts` remains only as a historical reference.
 
 ## Current validation coverage and limits
 
@@ -131,11 +131,13 @@ parity with the old hand-written `index.d.ts`:
   and representative usage, but it is not an exhaustive public API
   parity test.
 - `npm run test:types:docs` audits the freshly generated
-  `build/dts/index.d.ts` against `documentation/docmaker.json`, but only
-  for the broad documented surfaces represented as `cy.*`, `eles.*`, and
-  `ele.*` plus the narrowed `NodeCollection` / `EdgeCollection` aliases.
-  It is a doc-surface audit, not a symbol-for-symbol comparison against
-  the old `index.d.ts`.
+  `build/dts/index.d.ts` against `documentation/docmaker.json` for the
+  documented `cy.*`, `eles.*`, `ele.*`, `node.*`, and `edge.*` surfaces. It
+  resolves effective members through the TypeScript type checker (so it
+  understands the `Omit<>`-based node/edge projections) and runs with **no
+  residual allowlist** — it both rejects undocumented members and requires
+  documented ones on each kind. It is a doc-surface audit, not a
+  symbol-for-symbol comparison against the old `index.d.ts`.
 - `npm run test:types:css` audits the generated `Css.*` style surface
   against the live runtime property inventory in `src/style/properties.mts`,
   failing on any documented-but-untyped or typed-but-unknown property. It
@@ -145,17 +147,10 @@ parity with the old hand-written `index.d.ts`:
 
 Known limitations of the current docmaker audit:
 
-- It currently passes with an explicit allowlist of known residual
-  exceptions for `NodeCollection` and `EdgeCollection` in
-  `test/types-docmaker-surface.mjs`. Those exceptions are the remaining
-  cross-kind methods inherited from the wide internal `Collection` type.
-- It enforces that undocumented `cy.*`, `eles.*`, and `ele.*` methods are
-  not exposed on the generated declarations, but it does **not** yet give
-  that same unconditional guarantee for narrowed node/edge projections.
-- It does not validate the exact overload shapes, generic constraints,
-  or argument/return precision of every documented API entry; it checks
-  presence/absence of the documented member names on the audited public
-  interfaces.
+- It enforces presence/absence of documented member *names* on the audited
+  public interfaces (`cy.*`, `eles.*`, `ele.*`, `node.*`, `edge.*`), but it
+  does not validate the exact overload shapes, generic constraints, or
+  argument/return precision of every documented API entry.
 - It does not assert full top-level export parity with the old manual
   declarations beyond the names used in the representative consumer test
   (e.g. broad alias-family presence like `NodeSingular` / `EdgeSingular`

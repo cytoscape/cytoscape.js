@@ -1,19 +1,19 @@
 import define from '../define/index.mjs';
 import type { DataFunc, RemoveDataFunc } from '../define/data.mjs';
-import type { Collection, Element } from './eles-types.mjs';
+import type { Collection, SharedCollection, Element } from './eles-types.mjs';
 
 /** Data/scratch accessors contributed to the collection prototype. */
 export interface CollectionData {
-  data: DataFunc<Collection>;
-  removeData: RemoveDataFunc<Collection>;
-  scratch: DataFunc<Collection>;
-  removeScratch: RemoveDataFunc<Collection>;
+  data: DataFunc<SharedCollection>;
+  removeData: RemoveDataFunc<SharedCollection>;
+  scratch: DataFunc<SharedCollection>;
+  removeScratch: RemoveDataFunc<SharedCollection>;
   /** @internal */
-  rscratch: DataFunc<Collection>;
+  rscratch: DataFunc<SharedCollection>;
   /** @internal */
-  removeRscratch: RemoveDataFunc<Collection>;
-  attr: DataFunc<Collection>;
-  removeAttr: RemoveDataFunc<Collection>;
+  removeRscratch: RemoveDataFunc<SharedCollection>;
+  attr: DataFunc<SharedCollection>;
+  removeAttr: RemoveDataFunc<SharedCollection>;
   id(): string | undefined;
 }
 
@@ -95,7 +95,7 @@ fn = elesfn = ({
     }
   }
 
-}) as CollectionData;
+}) as unknown as CollectionData;
 
 // aliases
 fn.attr = fn.data;

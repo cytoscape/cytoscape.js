@@ -12,7 +12,7 @@ import * as util from '../../util/index.mjs';
 import * as math from '../../math.mjs';
 import * as is from '../../is.mjs';
 import type { LayoutBase, LayoutOptionsBase, Core, Collection } from './layout-base.mjs';
-import type { Element } from '../../collection/eles-types.mjs';
+import type { Element, SharedCollection } from '../../collection/eles-types.mjs';
 import type { Position, BoundingBox } from '../../types.mjs';
 
 /** Options for the CoSE layout (from the `defaults` object). */
@@ -730,7 +730,7 @@ let randomizePositions = function( layoutInfo: LayoutInfo, cy: Core ){
   }
 };
 
-let getScaleInBoundsFn = function( layoutInfo: LayoutInfo, options: CoseLayoutOptions, nodes: Collection ): ( ele: Element, i: number ) => Position {
+let getScaleInBoundsFn = function( layoutInfo: LayoutInfo, options: CoseLayoutOptions, nodes: SharedCollection ): ( ele: Element, i: number ) => Position {
   let bb = layoutInfo.boundingBox;
   let coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity, w: 0, h: 0 };
 

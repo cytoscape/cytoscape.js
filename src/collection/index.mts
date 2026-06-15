@@ -23,6 +23,7 @@ import traversing from './traversing.mjs';
 
 import type {
   Collection as CollectionType,
+  SharedCollection,
   CollectionStatic,
   CollectionPrivate,
   CoreAccess,
@@ -536,7 +537,7 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
             break;
           }
 
-          ancestor = ancestor.parent();
+          ancestor = ancestor.parent() as CollectionType;
         }
 
         if( !selfAsParent ){
@@ -664,7 +665,7 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   let alteredParents = [] as unknown as ElementType[] & { ids: Record<string, boolean> };
   alteredParents.ids = {};
 
-  function removeChildRef( parent: CollectionType, ele: CollectionType ){
+  function removeChildRef( parent: SharedCollection, ele: SharedCollection ){
     let eleEle = ele[0];
     let parentEle = parent[0];
 

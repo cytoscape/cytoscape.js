@@ -74,7 +74,7 @@ let corefn = ({
     return this._private.elements;
   }
 
-}) as CoreSearch;
+}) as unknown as CoreSearch;
 
 // aliases
 corefn.elements = corefn.filter = corefn.$;

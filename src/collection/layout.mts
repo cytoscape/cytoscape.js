@@ -3,7 +3,7 @@ import Promise from '../promise.mjs';
 import * as math from '../math.mjs';
 import type { Position, BoundingBox } from '../types.mjs';
 import type Animation from '../animation.mjs';
-import type { Collection, Element } from './eles-types.mjs';
+import type { Collection, SharedCollection, Element } from './eles-types.mjs';
 
 /**
  * Structural view of a layout instance, as used by the collection layout
@@ -259,11 +259,11 @@ elesfn.createLayout = elesfn.makeLayout = elesfn.layout;
 
 /** Layout methods contributed to the collection prototype. */
 export interface CollectionLayout {
-  layoutDimensions( this: Collection, options: LayoutDimensionsOptions ): LayoutDimensions;
-  layoutPositions( this: Collection, layout: LayoutLike, options: LayoutOptions, fn: LayoutPositionFn ): Collection;
-  layout( this: Collection, options?: Partial<LayoutOptions> ): LayoutLike;
-  createLayout( this: Collection, options?: Partial<LayoutOptions> ): LayoutLike;
-  makeLayout( this: Collection, options?: Partial<LayoutOptions> ): LayoutLike;
+  layoutDimensions( this: SharedCollection, options: LayoutDimensionsOptions ): LayoutDimensions;
+  layoutPositions( this: SharedCollection, layout: LayoutLike, options: LayoutOptions, fn: LayoutPositionFn ): Collection;
+  layout( this: SharedCollection, options?: Partial<LayoutOptions> ): LayoutLike;
+  createLayout( this: SharedCollection, options?: Partial<LayoutOptions> ): LayoutLike;
+  makeLayout( this: SharedCollection, options?: Partial<LayoutOptions> ): LayoutLike;
 }
 
 export default elesfn as CollectionLayout;

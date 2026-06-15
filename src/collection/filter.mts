@@ -2,7 +2,7 @@ import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
 import type { SelectorInput } from '../selector/index.mjs';
 import type { SelectorCollection } from '../selector/type.mjs';
-import type { Collection, Element, CoreAccess, NodeCollection, EdgeCollection } from './eles-types.mjs';
+import type { Collection, Element, SharedCollection, CoreAccess, NodeCollection, EdgeCollection } from './eles-types.mjs';
 
 // TODO(eles-types): the runtime Collection prototype inherits Array.prototype,
 // so .push() exists at runtime but is not declared on the Collection interface.
@@ -20,10 +20,10 @@ type CoreWithQuery = CoreAccess & {
 export type FilterEleFn = ( ele: Element, i: number, eles: Collection ) => boolean | unknown;
 
 /** Inputs accepted by `.filter()` and friends: selector string, predicate, or collection. */
-export type FilterArg = string | FilterEleFn | Collection | Element | undefined | null;
+export type FilterArg = string | FilterEleFn | SharedCollection | undefined | null;
 
 /** Inputs accepted by set operations: selector string or collection. */
-export type SetArg = string | Collection | Element | undefined | null;
+export type SetArg = string | SharedCollection | undefined | null;
 
 /** Result of `.byGroup()`. */
 export interface ByGroupResult {

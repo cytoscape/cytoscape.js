@@ -10,10 +10,10 @@
 // structures are still typed honestly in each converted file.
 
 import type { Core } from '../../core/core-types.mjs';
-import type { Collection, Element } from '../../collection/eles-types.mjs';
+import type { Collection, SharedCollection, Element } from '../../collection/eles-types.mjs';
 import type { Position } from '../../types.mjs';
 
-export type { Core, Collection, Element, Position };
+export type { Core, Collection, SharedCollection, Element, Position };
 
 /* eslint-disable @typescript-eslint/no-explicit-any --
    the renderer prototype-mixin surface is open-ended and internal */

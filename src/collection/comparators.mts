@@ -1,6 +1,6 @@
 import Selector from '../selector/index.mjs';
 import type { SelectorEle } from '../selector/type.mjs';
-import type { Collection, Element } from './eles-types.mjs';
+import type { Collection, SharedCollection, Element } from './eles-types.mjs';
 
 /** Test callback for some()/every(). */
 export type CollectionTestFn = ( ele: Element, i: number, eles: Collection ) => boolean | void;
@@ -11,16 +11,16 @@ export interface CollectionComparators {
   is( selector: string ): boolean;
   some( fn: CollectionTestFn, thisArg?: unknown ): boolean;
   every( fn: CollectionTestFn, thisArg?: unknown ): boolean;
-  same( collection: Collection | Element | string ): boolean;
-  anySame( collection: Collection | Element | string ): boolean;
-  allAreNeighbors( collection: Collection | Element | string ): boolean;
-  allAreNeighbours( collection: Collection | Element | string ): boolean;
-  contains( collection: Collection | Element | string ): boolean;
-  has( collection: Collection | Element | string ): boolean;
+  same( collection: SharedCollection | string ): boolean;
+  anySame( collection: SharedCollection | string ): boolean;
+  allAreNeighbors( collection: SharedCollection | string ): boolean;
+  allAreNeighbours( collection: SharedCollection | string ): boolean;
+  contains( collection: SharedCollection | string ): boolean;
+  has( collection: SharedCollection | string ): boolean;
   /** @internal */
-  equal( collection: Collection | Element | string ): boolean;
+  equal( collection: SharedCollection | string ): boolean;
   /** @internal */
-  equals( collection: Collection | Element | string ): boolean;
+  equals( collection: SharedCollection | string ): boolean;
 }
 
 let elesfn = ({
@@ -64,7 +64,7 @@ let elesfn = ({
     return true;
   },
 
-  same: function( this: Collection, collection: Collection | Element | string ){
+  same: function( this: Collection, collection: SharedCollection | string ){
     // cheap collection ref check
     if( this === collection ){ return true; }
 
@@ -84,7 +84,7 @@ let elesfn = ({
     });
   },
 
-  anySame: function( this: Collection, collection: Collection | Element | string ){
+  anySame: function( this: Collection, collection: SharedCollection | string ){
     let coll = this.cy().collection( collection );
 
     return this.some(function( ele ){
@@ -92,7 +92,7 @@ let elesfn = ({
     });
   },
 
-  allAreNeighbors: function( this: Collection, collection: Collection | Element | string ){
+  allAreNeighbors: function( this: Collection, collection: SharedCollection | string ){
     let coll = this.cy().collection( collection );
 
     let nhood = this.neighborhood();
@@ -102,7 +102,7 @@ let elesfn = ({
     });
   },
 
-  contains: function( this: Collection, collection: Collection | Element | string ){
+  contains: function( this: Collection, collection: SharedCollection | string ){
     let coll = this.cy().collection( collection );
 
     let self = this; // eslint-disable-line @typescript-eslint/no-this-alias

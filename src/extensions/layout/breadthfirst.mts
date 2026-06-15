@@ -2,7 +2,7 @@ import * as util from '../../util/index.mjs';
 import * as math from '../../math.mjs';
 import * as is from '../../is.mjs';
 import type { LayoutBase, LayoutOptionsBase, Core, Collection } from './layout-base.mjs';
-import type { Element } from '../../collection/eles-types.mjs';
+import type { Element, SharedCollection } from '../../collection/eles-types.mjs';
 import type { Position } from '../../types.mjs';
 
 /** Options for the breadthfirst layout (from the `defaults` object). */
@@ -84,7 +84,7 @@ BreadthFirstLayout.prototype.run = function( this: BreadthFirstLayout ){
   const bb = math.makeBoundingBox( hasBoundingBox ? options.boundingBox :
     structuredClone(cy.extent()))!;
 
-  let roots: Collection;
+  let roots: SharedCollection;
   if( is.elementOrCollection( options.roots ) ){
     roots = options.roots as Collection;
   } else if( is.array( options.roots ) ){
@@ -150,7 +150,7 @@ BreadthFirstLayout.prototype.run = function( this: BreadthFirstLayout ){
   // find the depths of the nodes
   // bfs() is provided by the algorithms mixin; cast to the search-fn shape
   ( graph as unknown as { bfs( opts: {
-    roots: Collection;
+    roots: SharedCollection;
     directed?: boolean;
     visit( node: Collection, edge: Element | undefined, pNode: Element | undefined, i: number, depth: number ): void;
   } ): void } ).bfs( {

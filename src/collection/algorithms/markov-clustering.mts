@@ -5,7 +5,7 @@
 // and lecture notes: https://www.cs.ucsb.edu/~xyan/classes/CS595D-2009winter/MCL_Presentation2.pdf
 
 import * as util from '../../util/index.mjs';
-import type { Collection, Element, CoreAccess } from '../eles-types.mjs';
+import type { Collection, SharedCollection, Element, CoreAccess } from '../eles-types.mjs';
 
 /** A similarity/attribute function: maps an edge to a numeric contribution. */
 export type MarkovAttributeFn = ( edge: Element ) => number;
@@ -136,7 +136,7 @@ let hasConverged = function( M: number[], _M: number[], n2: number, roundFactor:
   return true;
 };
 
-let assign = function( M: number[], n: number, nodes: Collection, cy: CoreAccess ): Collection[] {
+let assign = function( M: number[], n: number, nodes: SharedCollection, cy: CoreAccess ): Collection[] {
   let clusters: Collection[] = [];
 
   for ( let i = 0; i < n; i++ ) {

@@ -1,10 +1,10 @@
 import * as util from '../util/index.mjs';
 import * as is from '../is.mjs';
 import cache from './cache-traversal-call.mjs';
-import type { Collection, Element, ElementPrivate, CoreAccess, NodeCollection, NodeSingular, EdgeCollection } from './eles-types.mjs';
+import type { Collection, Element, SharedCollection, ElementPrivate, CoreAccess, NodeCollection, NodeSingular, EdgeCollection } from './eles-types.mjs';
 
 /** Selector/filter argument accepted by traversal methods. */
-type SelectorArg = string | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | Collection | Element | undefined | null;
+type SelectorArg = string | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | SharedCollection | undefined | null;
 
 // TODO(eles-types): cy.mutableElements()/cy.$() are part of the Core API but
 // not declared on the structural CoreAccess interface yet.
@@ -74,7 +74,7 @@ interface DagOneHopParams {
 let defineDagOneHop = function( params: DagOneHopParams ){
   return function( this: Collection, selector?: SelectorArg ): Collection {
     let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
-    let oEles: ( Element | Collection )[] = [];
+    let oEles: SharedCollection[] = [];
 
     for( let i = 0; i < eles.length; i++ ){
       let ele = eles[ i ];

@@ -3,7 +3,7 @@ import * as is from '../../is.mjs';
 import * as math from '../../math.mjs';
 import * as util from '../../util/index.mjs';
 import type { Position } from '../../types.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, SharedCollection, Element } from '../eles-types.mjs';
 import type { DataParams } from '../../define/data.mjs';
 
 /** A function that computes a position for an element during `.positions()`. */
@@ -15,12 +15,12 @@ export type PositionFn = ( ele: Element, i: number ) => Position | undefined | f
  * full/partial Position, a (name, value) pair, or an event handler).
  */
 export interface PositionAccessor {
-  ( this: Collection ): Position;
-  ( this: Collection, pos: Partial<Position> ): Collection;
-  ( this: Collection, name: string ): number;
-  ( this: Collection, name: string, value: number ): Collection;
+  ( this: SharedCollection ): Position;
+  ( this: SharedCollection, pos: Partial<Position> ): Collection;
+  ( this: SharedCollection, name: string ): number;
+  ( this: SharedCollection, name: string, value: number ): Collection;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- binding overload accepts an arbitrary event handler
-  ( this: Collection, handler: ( ...args: any[] ) => void ): Collection;
+  ( this: SharedCollection, handler: ( ...args: any[] ) => void ): Collection;
 }
 
 /** Position accessor methods contributed to the collection prototype. */
@@ -30,18 +30,18 @@ export interface CollectionPosition {
   silentPosition: PositionAccessor;
   modelPosition: PositionAccessor;
   point: PositionAccessor;
-  positions( this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
+  positions( this: SharedCollection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
   /** @internal */
-  silentPositions( this: Collection, pos: Partial<Position> | PositionFn ): Collection;
-  modelPositions( this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
-  points( this: Collection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
-  shift( this: Collection, dim: Partial<Position> | string, val?: number | boolean, silent?: boolean ): Collection;
+  silentPositions( this: SharedCollection, pos: Partial<Position> | PositionFn ): Collection;
+  modelPositions( this: SharedCollection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
+  points( this: SharedCollection, pos: Partial<Position> | PositionFn, silent?: boolean ): Collection;
+  shift( this: SharedCollection, dim: Partial<Position> | string, val?: number | boolean, silent?: boolean ): Collection;
   /** @internal */
-  silentShift( this: Collection, dim: Partial<Position> | string, val?: number ): Collection;
-  renderedPosition( this: Collection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
-  renderedPoint( this: Collection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
-  relativePosition( this: Collection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
-  relativePoint( this: Collection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
+  silentShift( this: SharedCollection, dim: Partial<Position> | string, val?: number ): Collection;
+  renderedPosition( this: SharedCollection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
+  renderedPoint( this: SharedCollection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
+  relativePosition( this: SharedCollection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
+  relativePoint( this: SharedCollection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
 }
 
 // TODO(eles-types): `locked()` is contributed by the not-yet-converted

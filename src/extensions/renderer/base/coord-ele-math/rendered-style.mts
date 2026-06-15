@@ -1,4 +1,4 @@
-import type { Renderer, Element, Collection, Position } from '../../renderer-types.mjs';
+import type { Renderer, Element, Collection, SharedCollection, Position } from '../../renderer-types.mjs';
 
 // The shared `Element` type leaves the style/dimension mixin surface
 // loosely typed (pstyle() may be null with an `unknown` value; width()
@@ -21,7 +21,7 @@ BRp.registerCalculationListeners = function( this: Renderer ){
   let elesToUpdate = cy.collection();
   let r = this; // eslint-disable-line @typescript-eslint/no-this-alias
 
-  let enqueue = function( eles: Collection, dirtyStyleCaches = true ){
+  let enqueue = function( eles: SharedCollection, dirtyStyleCaches = true ){
     elesToUpdate.merge( eles );
 
     if( dirtyStyleCaches ){

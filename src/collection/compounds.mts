@@ -1,6 +1,6 @@
 import Set from '../set.mjs';
 import cache from './cache-traversal-call.mjs';
-import type { Collection, Element, NodeCollection } from './eles-types.mjs';
+import type { Collection, SharedCollection, Element, NodeCollection } from './eles-types.mjs';
 import type { FilterArg } from './filter.mjs';
 import type { SetLike } from '../set.mjs';
 
@@ -75,7 +75,8 @@ let elesfn = ({
       let ele = this[ i ];
       let parents = ele.parents();
 
-      ancestors = ancestors || parents;
+      // parents is a NodeCollection; widen to the mixed Collection accumulator
+      ancestors = ancestors || ( parents as Collection );
 
       ancestors = ancestors.intersect( parents ); // current list must be common with current ele parents set
     }
@@ -149,7 +150,7 @@ let elesfn = ({
   descendants: function( this: Collection, selector?: FilterArg ){
     let elements: Element[] = [];
 
-    function add( eles: Collection ){
+    function add( eles: SharedCollection ){
       for( let i = 0; i < eles.length; i++ ){
         let ele = eles[ i ];
 
@@ -165,7 +166,7 @@ let elesfn = ({
 
     return this.spawn( elements, true ).filter( selector );
   }
-}) as CollectionCompounds;
+}) as unknown as CollectionCompounds;
 
 function forEachCompound( eles: Collection, fn: ( ele: Element ) => unknown, includeSelf: boolean, recursiveStep: RecursiveStep ){
   let q: Element[] = [];

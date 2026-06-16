@@ -5,7 +5,7 @@ permissions:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-node@v6
@@ -17,3 +17,5 @@ jobs:
       run: npx playwright install --with-deps
     - name: Run tests
       run: npm test
+    - name: Verify type definitions
+      run: npm run test:types:all

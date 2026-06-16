@@ -26,6 +26,8 @@ jobs:
       - name: Run tests
         run : |
           npm test
+      - name: Verify type definitions
+        run: npm run test:types:all
       - name: Determine version for the release
         id: get_new_patch_version
         run: |

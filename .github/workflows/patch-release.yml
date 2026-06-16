@@ -28,7 +28,9 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run tests
         run : |
-          npm test 
+          npm test
+      - name: Verify type definitions
+        run: npm run test:types:all
       - name: Get new version string
         id: get_new_patch_version
         run: |

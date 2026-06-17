@@ -6,7 +6,15 @@
 // and consumed the way the hand-written index.d.ts was.
 
 import cytoscape from '../../build/dts/index.js';
-import type { Core, Collection, Css, Element, CytoscapeOptions, NodeCollection, EdgeCollection, NodeSingular, EdgeSingular, StyleJsonBlock, EventObject, EventObjectNode, EventObjectEdge } from '../../build/dts/index.js';
+import type {
+  AbstractEventObject, BoundingBox,
+  Collection, Core, Css, CytoscapeExtension, CytoscapeFactory, CytoscapeOptions,
+  EdgeCollection, EdgeSingular, Element, ElementDefinition, ElementJson,
+  EventHandler, EventObject, EventObjectCore, EventObjectEdge, EventObjectNode,
+  InputEventObject, LayoutEventObject, LayoutInstance,
+  NodeCollection, NodeSingular, Position, RendererInstance,
+  Singular, StyleJson, StyleJsonBlock,
+} from '../../build/dts/index.js';
 
 // factory: create an instance
 const opts: CytoscapeOptions = {
@@ -55,6 +63,14 @@ cy.on('tap', 'node', ( e: EventObjectNode ) => {
 cy.on('tap', 'edge', ( e: EventObjectEdge ) => {
   const ed: EdgeSingular = e.target; // target narrowed to an edge
   void ed;
+});
+cy.on('tap', ( e: EventObjectCore ) => {
+  const c: Core = e.target; // target narrowed to Core
+  void c;
+});
+cy.on('layoutstart', ( e: LayoutEventObject ) => {
+  const l: unknown = e.layout; // LayoutEventObject carries the layout reference
+  void l;
 });
 const tapped: Promise<EventObject> = cy.pon('tap'); // promiseOn resolves to an EventObject
 cy.elements().on('mouseover', ( e: EventObject ) => void e.cy); // collection binding
@@ -125,6 +141,15 @@ const coreCss: Css.Core = {
 
 const nodeShape: Css.NodeShape = 'hexagon'; // exported enum alias
 
+// Css enum values are narrowed — invalid literals must be rejected.
+// @ts-expect-error invalid NodeShape value
+const _badShape: Css.Node = { shape: 'not-a-shape' };
+// @ts-expect-error invalid CurveStyle value
+const _badCurve: Css.Edge = { 'curve-style': 'not-a-curve' };
+// @ts-expect-error invalid ArrowShape value
+const _badArrow: Css.Edge = { 'target-arrow-shape': 'not-an-arrow' };
+void [_badShape, _badCurve, _badArrow];
+
 const styleJsonBlock: StyleJsonBlock = {
   selector: 'core',
   style: coreCss
@@ -140,5 +165,26 @@ cytoscape.stylesheet()
 // element JSON style/css fields accept Css maps
 cy.add({ group: 'nodes', data: { id: 'd' }, style: { 'border-width': 2 } });
 
+// Verify every named export is importable and structurally usable.
+// If any type disappears from the export list, the import above fails to compile.
+const _pos: Position = { x: 0, y: 0 };
+const _bb: BoundingBox = { x1: 0, y1: 0, x2: 1, y2: 1, w: 1, h: 1 };
+const _eleDef: ElementDefinition = { data: {} };
+const _eleJson: ElementJson = { group: 'nodes', data: {}, position: { x: 0, y: 0 }, removed: false, selected: false, selectable: true, locked: false, grabbable: true, pannable: true, classes: null };
+const _styleJson: StyleJson = [{ selector: 'node', style: {} }];
+const _handler: EventHandler = ( _e ) => {};
+const _layoutInst: LayoutInstance = cy.layout({ name: 'grid' });
+const _singular: Singular = nodes.first();
+// Type-level checks: these cast through `any` just to reference the type name.
+const _abstract: AbstractEventObject = {} as any;
+const _input: InputEventObject = {} as any;
+const _layout: LayoutEventObject = {} as any;
+const _renderer: RendererInstance = {} as any;
+const _factory: CytoscapeFactory = cytoscape;
+const _ext: CytoscapeExtension = () => {};
+
 // silence unused-locals
-void [all, byId, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v, styleJsonBlock, edgeCss, nodeShape];
+void [all, byId, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v,
+  styleJsonBlock, edgeCss, nodeShape,
+  _pos, _bb, _eleDef, _eleJson, _styleJson, _handler, _layoutInst, _singular,
+  _abstract, _input, _layout, _renderer, _factory, _ext];

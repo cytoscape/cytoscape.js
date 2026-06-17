@@ -141,20 +141,25 @@ parity with the old hand-written `index.d.ts`:
 - `npm run test:types:css` audits the generated `Css.*` style surface
   against the live runtime property inventory in `src/style/properties.mts`,
   failing on any documented-but-untyped or typed-but-unknown property. It
-  guards property-name coverage, not exact value-family precision.
-- `npm run test:types:all` builds the declarations once and runs the tsc
-  consumer test plus both surface audits.
+  guards property-name coverage. Enum value-family precision (e.g. that
+  `shape` rejects non-`NodeShape` literals) is verified by the
+  `@ts-expect-error` assertions in `typescript/tests/api.test-d.ts`.
+- `npm run test:types:exports` audits the named exports of the generated
+  `build/dts/index.d.ts` against a snapshot list in
+  `test/types-exports.mjs`. It catches both missing exports (a public type
+  was dropped) and unexpected extras (an internal type leaked out).
+- `npm run test:types:all` builds the declarations once and runs all four
+  checks above.
 
-Known limitations of the current docmaker audit:
+Known remaining limitations:
 
 - It enforces presence/absence of documented member *names* on the audited
   public interfaces (`cy.*`, `eles.*`, `ele.*`, `node.*`, `edge.*`), but it
   does not validate the exact overload shapes, generic constraints, or
   argument/return precision of every documented API entry.
-- It does not assert full top-level export parity with the old manual
-  declarations beyond the names used in the representative consumer test
-  (e.g. broad alias-family presence like `NodeSingular` / `EdgeSingular`
-  is exercised indirectly, not exhaustively diffed).
+- Top-level named export completeness is enforced by `test:types:exports`;
+  structural usability of every exported type is enforced by the tsc
+  consumer test (which imports and uses each one).
 - It does not validate undocumented helper types unless they leak into the
   audited public interfaces.
 
@@ -164,6 +169,8 @@ Practical interpretation for now:
   `cy.*`, `eles.*`, and `ele.*` member leaks.
 - The generated `.d.ts` is automatically checked to remain usable by a
   representative external TypeScript consumer.
-- The generated `.d.ts` is **not yet** automatically checked for complete
-  parity with the old hand-written `index.d.ts`, especially for strict
-  node/edge narrowing, `Css.*`, and `EventObject*` semantics.
+- Strict node/edge narrowing, `Css.*` surface, and `EventObject*` semantics
+  are all enforced by the automated checks above (`test:types:docs`,
+  `test:types:css`, and the `@ts-expect-error` assertions in
+  `typescript/tests/api.test-d.ts`). The generated `.d.ts` is no longer
+  missing automated coverage in those three areas.

@@ -61,13 +61,9 @@ let emitterOptions: EmitterOptions<Element, Selector> = {
     return true;
   },
   parent: function( ele ){
-    // TODO(eles-types): isChild()/parent() come from the compounds mixin, not
-    // yet exposed on Element via eles-types; cast until that mixin is converted
-    let eleCompound = ele as unknown as { isChild(): boolean; parent(): Element };
-
     // both Element and Core expose emit() and so satisfy the emitter's parent
     // target contract; the structural target type isn't exported
-    let target = eleCompound.isChild() ? eleCompound.parent() : ele.cy();
+    let target = ( ele.isChild() ? ele.parent() : ele.cy() ) as unknown;
 
     return target as unknown as { emit( events: Event, extraParams?: unknown[] ): unknown };
   }

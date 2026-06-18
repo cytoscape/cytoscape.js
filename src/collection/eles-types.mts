@@ -29,7 +29,7 @@ import type { CollectionEvents } from './events.mjs';
 import type { CollectionFilter } from './filter.mjs';
 import type { CollectionGroup } from './group.mjs';
 import type { CollectionIteration } from './iteration.mjs';
-import type { CollectionLayout } from './layout.mjs';
+import type { CollectionLayout, LayoutLike } from './layout.mjs';
 import type { CollectionStyle } from './style.mjs';
 import type { CollectionSwitchFunctions } from './switch-functions.mjs';
 import type { CollectionTraversing } from './traversing.mjs';
@@ -51,7 +51,9 @@ export interface CoreAccess {
   removeFromPool( eles: Collection | Element[] ): unknown;
   addToAnimationPool( eles: Collection | Element ): void;
   zoom(): number;
+  zoom( level: number ): unknown;
   pan(): Position;
+  pan( pos: Position ): unknown;
   styleEnabled(): boolean;
   style(): CoreStyleAccess;
   notify( event: string, eles?: Collection ): void;
@@ -61,6 +63,15 @@ export interface CoreAccess {
   destroyed(): boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- emit passes through arbitrary extra params
   emit( events: string, extraParams?: any[] ): unknown;
+  mutableElements(): Collection;
+  $( selector?: unknown ): Collection;
+  filter( selector?: unknown ): Collection;
+  autolock( bool?: boolean ): boolean | this;
+  autoungrabify( bool?: boolean ): boolean | this;
+  autounselectify( bool?: boolean ): boolean | this;
+  makeLayout( options: Record<string, unknown> ): LayoutLike;
+  animation( properties: Record<string, unknown> ): Animation;
+  fit( eles?: Collection, padding?: number ): unknown;
   _private: CorePrivateAccess;
 }
 
@@ -75,6 +86,8 @@ export interface CoreStyleAccess {
   apply( eles: Collection | Element ): unknown;
   applyBypass( eles: Collection | Element, name?: unknown, value?: unknown, updateTransitions?: boolean ): unknown;
   removeBypasses( eles: Collection | Element, names?: string[], updateTransitions?: boolean ): unknown;
+  getDefaultProperty( property: string ): ParsedStyleProperty;
+  removeAllBypasses( ele: Element, updateTransitions?: boolean ): unknown;
   getPropsList( props: unknown ): unknown;
   getRenderedStyle( ele: Element, prop?: string ): unknown;
   getRawStyle( ele: Element, isRenderedVal?: boolean ): unknown;

@@ -59,8 +59,7 @@ let elesfn = ({
   degreeCentralityNormalized: function( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult {
     let opts = defaults( options );
 
-    // TODO(eles-types): CoreAccess.filter( selector ) is used here but not declared on CoreAccess
-    let cy = this.cy() as unknown as { filter( sel: string ): Collection };
+    let cy = this.cy();
     let nodes = this.nodes();
     let numNodes = nodes.length;
 

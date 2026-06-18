@@ -1,13 +1,5 @@
 import type { Collection } from './eles-types.mjs';
 
-// TODO(eles-types): `source()`/`target()` are contributed by the
-// not-yet-converted traversing.mjs mixin; drop this local view once
-// CollectionTraversing exports them.
-type HasEndpoints = Collection & {
-  source(): Collection;
-  target(): Collection;
-};
-
 /** Group/type-test methods contributed to the collection prototype. */
 export interface CollectionGroup {
   isNode(): boolean;
@@ -27,11 +19,11 @@ let elesfn = ({
   },
 
   isLoop: function( this: Collection ){
-    return this.isEdge() && ( this as HasEndpoints ).source()[0] === ( this as HasEndpoints ).target()[0];
+    return this.isEdge() && this.source()[0] === this.target()[0];
   },
 
   isSimple: function( this: Collection ){
-    return this.isEdge() && ( this as HasEndpoints ).source()[0] !== ( this as HasEndpoints ).target()[0];
+    return this.isEdge() && this.source()[0] !== this.target()[0];
   },
 
   group: function( this: Collection ){

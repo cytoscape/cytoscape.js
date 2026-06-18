@@ -3,28 +3,6 @@ import * as util from '../util/index.mjs';
 import type { Collection, Element, CoreStyleAccess } from './eles-types.mjs';
 import type { ParsedStyleProperty } from '../style/parse.mjs';
 
-// TODO(eles-types): CoreStyleAccess does not declare every style-engine
-// method used here. Cast locally to a structural view until the style
-// engine is fully converted. A precise type would add: getDefaultProperty,
-// removeAllBypasses, and the (name, value) overload of applyBypass.
-interface StyleEngineView extends CoreStyleAccess {
-  getDefaultProperty( property: string ): ParsedStyleProperty;
-  applyBypass( eles: Collection, name: unknown, value: unknown, updateTransitions: boolean ): unknown;
-  applyBypass( eles: Collection, props: Record<string, unknown>, updateTransitions: boolean ): unknown;
-  removeAllBypasses( ele: Element, updateTransitions: boolean ): unknown;
-  removeBypasses( ele: Element, names: string[], updateTransitions: boolean ): unknown;
-  getStylePropertyValue( ele: Element, name: string ): unknown;
-  getRawStyle( ele: Element ): unknown;
-  getRenderedStyle( ele: Element, property?: string ): unknown;
-}
-
-// TODO(eles-types): the following members are contributed by mixins / core
-// methods not yet converted; cast locally until they are declared.
-//   - connectedEdges(): CollectionTraversing (traversing.mjs)
-//   - CoreAccess.batching(): the core's batch flag accessor
-type WithConnectedEdges = { connectedEdges(): Collection };
-type CoreWithBatching = { batching(): boolean };
-
 type StyleCacheFn = ( ele: Element ) => unknown;
 
 function styleCache( key: number, fn: StyleCacheFn, ele: Element ): unknown {
@@ -89,14 +67,14 @@ let elesfn = ({
         .merge( this.parents() )
       ;
 
-      eles.merge( ( eles as unknown as WithConnectedEdges ).connectedEdges() );
+      eles.merge( eles.connectedEdges() );
 
       eles.forEach( dirty );
     } else {
       this.forEach( ( ele: Element ) => {
         dirty( ele );
 
-        ( ele as unknown as WithConnectedEdges ).connectedEdges().forEach( dirty );
+        ele.connectedEdges().forEach( dirty );
       } );
     }
 
@@ -109,7 +87,7 @@ let elesfn = ({
 
     if( !cy.styleEnabled() ){ return this; }
 
-    if( ( cy as unknown as CoreWithBatching ).batching() ){
+    if( cy.batching() ){
       let bEles = ( cy._private.batchStyleEles as Collection );
 
       bEles.merge( this );
@@ -180,7 +158,7 @@ let elesfn = ({
       if( overriddenStyle != null ){
         return overriddenStyle;
       } else if( includeNonDefault ){
-        return ( cy.style() as StyleEngineView ).getDefaultProperty( property );
+        return ( cy.style() ).getDefaultProperty( property );
       } else {
         return null;
       }
@@ -229,7 +207,7 @@ let elesfn = ({
     if( !cy.styleEnabled() ){ return this; }
 
     let updateTransitions = false;
-    let style = cy.style() as StyleEngineView;
+    let style = cy.style();
 
     if( is.plainObject( name ) ){ // then extend the bypass
       let props = name;
@@ -273,7 +251,7 @@ let elesfn = ({
     if( !cy.styleEnabled() ){ return this; }
 
     let updateTransitions = false;
-    let style = cy.style() as StyleEngineView;
+    let style = cy.style();
     let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
 
     if( names === undefined ){

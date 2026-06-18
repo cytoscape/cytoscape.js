@@ -9,13 +9,6 @@ import type { Collection, Element, SharedCollection, CoreAccess, NodeCollection,
 // Local helper used for spawned collections that are built up imperatively.
 type MutableCollection = Collection & { push( ele: Element ): number };
 
-// TODO(eles-types): cy.mutableElements()/cy.$() are part of the Core API but
-// not declared on the structural CoreAccess interface yet.
-type CoreWithQuery = CoreAccess & {
-  mutableElements(): Collection;
-  $( selector: string ): Collection;
-};
-
 /** A predicate run against each element of a collection. */
 export type FilterEleFn = ( ele: Element, i: number, eles: Collection ) => boolean | unknown;
 
@@ -159,7 +152,7 @@ let elesfn = ({
   },
 
   absoluteComplement: function( this: Collection ){
-    let cy = this.cy() as CoreWithQuery;
+    let cy = this.cy();
 
     return cy.mutableElements().not( this );
   },
@@ -190,7 +183,7 @@ let elesfn = ({
   },
 
   xor: function( this: Collection, other: SetArg ){
-    let cy = this._private.cy as CoreWithQuery;
+    let cy = this._private.cy;
     let otherColl: Collection;
 
     if( is.string( other ) ){
@@ -223,7 +216,7 @@ let elesfn = ({
   },
 
   diff: function( this: Collection, other: SetArg ): DiffResult {
-    let cy = this._private.cy as CoreWithQuery;
+    let cy = this._private.cy;
     let otherColl: Collection;
 
     if( is.string( other ) ){
@@ -261,7 +254,7 @@ let elesfn = ({
   },
 
   add: function( this: Collection, toAdd?: SetArg ){
-    let cy = this._private.cy as CoreWithQuery;
+    let cy = this._private.cy;
 
     if( !toAdd ){
       return this;
@@ -293,7 +286,7 @@ let elesfn = ({
   // in place merge on calling collection
   merge: function( this: Collection, toAdd?: SetArg ){
     let _p = this._private;
-    let cy = _p.cy as CoreWithQuery;
+    let cy = _p.cy;
 
     if( !toAdd ){
       return this;
@@ -378,7 +371,7 @@ let elesfn = ({
 
   // remove eles in place on calling collection
   unmerge: function( this: Collection, toRemove?: SetArg ){
-    let cy = this._private.cy as CoreWithQuery;
+    let cy = this._private.cy;
 
     if( !toRemove ){
       return this;

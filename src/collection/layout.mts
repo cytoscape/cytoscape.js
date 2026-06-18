@@ -55,17 +55,6 @@ export interface LayoutDimensions {
   h: number;
 }
 
-// TODO(eles-types): CoreAccess does not yet declare the layout/viewport
-// setters used here (makeLayout, animation, fit, and the zoom/pan setter
-// overloads). Cast locally to a structural view until the core is converted.
-interface LayoutCoreView {
-  makeLayout( options: LayoutOptions ): LayoutLike;
-  animation( properties: Record<string, unknown> ): Animation;
-  fit( eles: Collection, padding?: number ): unknown;
-  zoom( level?: number ): unknown;
-  pan( pos?: Position ): unknown;
-}
-
 const getLayoutDimensionOptions = util.defaults({
   nodeDimensionsIncludeLabels: false
 });
@@ -104,7 +93,7 @@ let elesfn = ({
   // using standard layout options, apply position function (w/ or w/o animation)
   layoutPositions: function( this: Collection, layout: LayoutLike, options: LayoutOptions, fn: LayoutPositionFn ): Collection {
     let nodes = this.nodes().filter(( n: Element ) => !n.isParent());
-    let cy = this.cy() as unknown as LayoutCoreView;
+    let cy = this.cy();
     let layoutEles = options.eles; // nodes & edges
     let getMemoizeKey = ( node: Element ): string => node.id() as string;
     let fnMem = util.memoize( fn, getMemoizeKey ); // memoized version of position function
@@ -245,7 +234,7 @@ let elesfn = ({
   },
 
   layout: function( this: Collection, options: Partial<LayoutOptions> ): LayoutLike {
-    let cy = this.cy() as unknown as LayoutCoreView;
+    let cy = this.cy();
 
     return cy.makeLayout( util.extend( {}, options, {
       eles: this

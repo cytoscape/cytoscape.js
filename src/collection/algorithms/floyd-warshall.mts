@@ -111,9 +111,7 @@ let elesfn = ({
       }
     }
 
-    // TODO(eles-types): CoreAccess.filter( selector ) is used here but not declared on CoreAccess
-    let cyFilter = ( cy as unknown as { filter( sel: string ): Collection } ).filter;
-    let getArgEle = ( ele: Collection | Element | string ): Element => ( is.string(ele) ? cyFilter.call(cy, ele) : ele )[0] as Element;
+    let getArgEle = ( ele: Collection | Element | string ): Element => ( is.string(ele) ? cy.filter( ele ) : ele )[0] as Element;
     let indexOfArgEle = ( ele: Collection | Element | string ) => indexOf(getArgEle(ele));
 
     let res: FloydWarshallResult = {

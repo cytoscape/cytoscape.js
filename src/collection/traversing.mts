@@ -6,19 +6,6 @@ import type { Collection, Element, SharedCollection, ElementPrivate, CoreAccess,
 /** Selector/filter argument accepted by traversal methods. */
 type SelectorArg = string | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | SharedCollection | undefined | null;
 
-// TODO(eles-types): cy.mutableElements()/cy.$() are part of the Core API but
-// not declared on the structural CoreAccess interface yet.
-type CoreWithQuery = CoreAccess & {
-  mutableElements(): Collection;
-  $( selector: string ): Collection;
-};
-
-// TODO(eles-types): bfs() comes from the algorithms mixin and is not yet
-// exposed on Collection via eles-types.
-type WithBfs = {
-  bfs( opts: { directed?: boolean; roots?: Element | Collection; visit?( v: Element ): unknown } ): unknown;
-};
-
 let elesfn: Record<string, unknown> = {};
 
 // DAG functions
@@ -282,7 +269,7 @@ function defineEdgesWithFunction( params?: EdgesWithParams ){
 
   return function edgesWithImpl( this: Collection, otherNodes: string | Collection ): Collection {
     let elements: Element[] = [];
-    let cy = this._private.cy as CoreWithQuery;
+    let cy = this._private.cy;
     let p = params || {};
     let others: Collection;
 
@@ -435,7 +422,7 @@ util.extend( elesfn, {
       let root = unvisited[0];
       visitInComponent( root, cmpt );
 
-      ( self as unknown as WithBfs ).bfs({
+      self.bfs({
         directed: false,
         roots: root,
         visit: v => visitInComponent( v, cmpt )
@@ -457,7 +444,7 @@ util.extend( elesfn, {
   component: function( this: Collection ): Collection {
     let ele = this[0];
 
-    return ( ele.cy() as CoreWithQuery ).mutableElements().components( ele )[0];
+    return ( ele.cy() ).mutableElements().components( ele )[0];
   }
 } );
 

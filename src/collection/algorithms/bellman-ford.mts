@@ -71,9 +71,7 @@ let elesfn = ({
       return obj;
     };
 
-    // TODO(eles-types): CoreAccess.$( selector ) is used here but not declared on CoreAccess
-    let cyDollar = ( cy as unknown as { $( sel: string ): Collection } ).$;
-    let getNodeFromTo = ( to: Collection | Element | string ): Element => (is.string(to) ? cyDollar.call(cy, to) : to)[0] as Element;
+    let getNodeFromTo = ( to: Collection | Element | string ): Element => (is.string(to) ? cy.$( to ) : to)[0] as Element;
 
     let distanceTo = ( to: Collection | Element | string ) => getInfo( getNodeFromTo(to) ).dist;
 

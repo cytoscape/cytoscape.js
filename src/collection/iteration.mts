@@ -146,12 +146,9 @@ let elesfn = ({
     let group = _p.group;
 
     if( group === 'nodes' ){
-      // TODO(eles-types): parents()/isParent() come from the compounds mixin, not
-      // yet exposed on Element via eles-types; cast until that mixin is converted
-      let eleCompound = ele as unknown as { parents(): Collection; isParent(): boolean };
-      let depth = _p.data.parent ? eleCompound.parents().size() : 0;
+      let depth = _p.data.parent ? ele.parents().size() : 0;
 
-      if( !eleCompound.isParent() ){
+      if( !ele.isParent() ){
         return util.MAX_INT - 1; // childless nodes always on top
       }
 

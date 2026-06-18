@@ -38,8 +38,7 @@ const elesfn = ({
   closenessCentralityNormalized: function( this: Collection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult {
     let { harmonic, weight, directed } = defaults(options);
 
-    // TODO(eles-types): CoreAccess.filter( selector ) is used here but not declared on CoreAccess
-    let cy = this.cy() as unknown as { filter( sel: string ): Collection };
+    let cy = this.cy();
     let closenesses: Record<string, number> = {};
     let maxCloseness = 0;
     let nodes = this.nodes();

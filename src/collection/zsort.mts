@@ -14,16 +14,12 @@ import * as util from '../util/index.mjs';
 import type { Element } from './eles-types.mjs';
 import type { ParsedStyleProperty } from '../style/parse.mjs';
 
-// TODO(eles-types): pstyle() comes from the style mixin, not yet exposed on
-// Element via eles-types; cast until CollectionStyle is converted/exported
-type WithStyle = { pstyle( prop: string ): ParsedStyleProperty };
-
 let zIndexSort = function( a: Element, b: Element ): number {
   let cy = a.cy();
   let hasCompoundNodes = cy.hasCompoundNodes();
 
   function getDepth( ele: Element ): number {
-    let style = ( ele as unknown as WithStyle ).pstyle( 'z-compound-depth' );
+    let style = ele.pstyle( 'z-compound-depth' )!;
     if ( style.value === 'auto' ){
       return hasCompoundNodes ? ( ele.zDepth() as number ) : 0;
     } else if ( style.value === 'bottom' ){
@@ -40,7 +36,7 @@ let zIndexSort = function( a: Element, b: Element ): number {
   }
 
   function getEleDepth( ele: Element ): number {
-    let style = ( ele as unknown as WithStyle ).pstyle( 'z-index-compare' );
+    let style = ele.pstyle( 'z-index-compare' )!;
     if ( style.value === 'auto' ){
       return ele.isNode() ? 1 : 0;
     }
@@ -52,7 +48,7 @@ let zIndexSort = function( a: Element, b: Element ): number {
     return eleDiff;
   }
 
-  let zDiff = ( ( a as unknown as WithStyle ).pstyle( 'z-index' ).value as number ) - ( ( b as unknown as WithStyle ).pstyle( 'z-index' ).value as number );
+  let zDiff = ( a.pstyle( 'z-index' )!.value as number ) - ( b.pstyle( 'z-index' )!.value as number );
   if ( zDiff !== 0 ){
     return zDiff;
   }

@@ -113,8 +113,7 @@ let elesfn = ({
             if( d[w] > d[v] + edgeWeight ){
               d[w] = d[v] + edgeWeight;
 
-              // TODO(eles-types): Heap's internal `nodes` array is not declared on the heap typings
-              if( ( Q as unknown as { nodes: string[] } ).nodes.indexOf( w ) < 0 ){ //if w is not in Q
+              if( ( Q as unknown as { nodes: string[] } ).nodes.indexOf( w ) < 0 ){ // nodes is an undeclared internal of the heap package
                 Q.push( w );
               } else { // update position if w is in Q
                 Q.updateItem( w );

@@ -2,18 +2,6 @@ import * as is from '../is.mjs';
 import type { EventHandler } from '../event-types.mjs';
 import type { Collection, Element, ElementPrivate } from './eles-types.mjs';
 
-// TODO(eles-types): autolock()/autoungrabify()/autounselectify() are part of
-// the Core API but not declared on the structural CoreAccess interface yet.
-interface CoreSwitchAccess {
-  autolock(): boolean;
-  autoungrabify(): boolean;
-  autounselectify(): boolean;
-}
-
-// TODO(eles-types): updateStyle() comes from the style mixin and pannable()
-// from this very mixin; not yet exposed on Element/Collection via eles-types.
-type EleWithStyle = { updateStyle(): unknown };
-
 /** Config for a single state field (e.g. `selected`). */
 interface SwitchSetParams {
   field: string;
@@ -83,7 +71,7 @@ function defineSwitchFunction( params: SwitchFunctionParams ){
       }
 
       let changedColl = this.spawn( changedEles );
-      ( changedColl as unknown as EleWithStyle ).updateStyle(); // change of state => possible change of style
+      changedColl.updateStyle(); // change of state => possible change of style
       changedColl.emit( params.event );
 
       if( addlEvents ){
@@ -132,7 +120,7 @@ function defineSwitchSet( params: SwitchSetParams ){
 defineSwitchSet( {
   field: 'locked',
   overrideField: function( ele ){
-    return ( ele.cy() as unknown as CoreSwitchAccess ).autolock() ? true : undefined;
+    return ele.cy().autolock() ? true : undefined;
   },
   on: 'lock',
   off: 'unlock'
@@ -141,7 +129,7 @@ defineSwitchSet( {
 defineSwitchSet( {
   field: 'grabbable',
   overrideField: function( ele ){
-    return ( ele.cy() as unknown as CoreSwitchAccess ).autoungrabify() || ( ele as unknown as Pannable ).pannable() ? false : undefined;
+    return ele.cy().autoungrabify() || ( ele as unknown as Pannable ).pannable() ? false : undefined;
   },
   on: 'grabify',
   off: 'ungrabify'
@@ -151,7 +139,7 @@ defineSwitchSet( {
   field: 'selected',
   ableField: 'selectable',
   overrideAble: function( ele ){
-    return ( ele.cy() as unknown as CoreSwitchAccess ).autounselectify() ? false : undefined;
+    return ele.cy().autounselectify() ? false : undefined;
   },
   on: 'select',
   off: 'unselect'
@@ -160,7 +148,7 @@ defineSwitchSet( {
 defineSwitchSet( {
   field: 'selectable',
   overrideField: function( ele ){
-    return ( ele.cy() as unknown as CoreSwitchAccess ).autounselectify() ? false : undefined;
+    return ele.cy().autounselectify() ? false : undefined;
   },
   on: 'selectify',
   off: 'unselectify'

@@ -3,6 +3,7 @@ import * as is from '../is.mjs';
 import Promise from '../promise.mjs';
 
 import type { Style, StyleElement, StyleEles } from './index.mjs';
+import type { SelectorEle } from '../selector/type.mjs';
 import type { ParsedStyleProperty, StyleFnMapper } from './parse.mjs';
 import type { StyleProperty, StylePropertyTriggerFn } from './properties.mjs';
 
@@ -159,7 +160,7 @@ styfn.getContextMeta = function( ele ){
   // get the cxt key
   for( let i = 0; i < self.length; i++ ){
     let context = self[ i ];
-    let contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
+    let contextSelectorMatches = context.selector && context.selector.matches( ele as unknown as SelectorEle ); // NB: context.selector may be null for 'core'
 
     if( contextSelectorMatches ){
       cxtKey += TRUE;

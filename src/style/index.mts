@@ -15,16 +15,7 @@ import type { CoreShim } from '../types.mjs';
 import type { PromiseLikeObject } from '../promise.mjs';
 import type { Css } from './css-types.mjs';
 
-/**
- * Minimal structural view of a Selector instance, as used by style code.
- * TODO(ts-migration): swap to the real Selector type once src/selector is converted.
- */
-export interface SelectorLike {
-  matches( ele: StyleElement ): boolean;
-  text(): string;
-  toString(): string;
-  invalid?: boolean;
-}
+export type { default as Selector } from '../selector/index.mjs';
 
 /** The element `_private` fields read/written by style code. */
 export interface StyleElementPrivate {
@@ -116,7 +107,7 @@ export type StyleContextProperties = ParsedStyleProperty[] & { [ name: string ]:
 
 /** A style context: a selector and the properties applied where it matches. */
 export interface StyleContext {
-  selector: SelectorLike | null;
+  selector: Selector | null;
   properties: StyleContextProperties;
   mappedProperties: ParsedStyleProperty[];
   index: number;
@@ -238,7 +229,7 @@ styfn.core = function( propName ){
 // create a new context from the specified selector string and switch to that context
 styfn.selector = function( selectorStr ){
   // 'core' is a special case and does not need a selector
-  let selector = selectorStr === 'core' ? null : new ( Selector as unknown as new ( selector: string ) => SelectorLike )( selectorStr );
+  let selector = selectorStr === 'core' ? null : new Selector( selectorStr );
 
   let i = this.length++; // new context means new index
   this[ i ] = {

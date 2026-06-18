@@ -1,7 +1,7 @@
 import * as util from '../util/index.mjs';
 import Selector from '../selector/index.mjs';
 
-import type { Style, SelectorLike } from './index.mjs';
+import type { Style } from './index.mjs';
 
 export interface StringSheetStyfn {
   appendFromString( this: Style, string: string ): Style;
@@ -55,7 +55,7 @@ styfn.appendFromString = function( string ){
     // parse the selector
     let selectorStr = selAndBlock[1];
     if( selectorStr !== 'core' ){
-      let selector = new ( Selector as unknown as new ( selector: string ) => SelectorLike )( selectorStr ); // TODO(ts-migration): use the real Selector type once src/selector is converted
+      let selector = new Selector( selectorStr );
       if( selector.invalid ){
         util.warn( 'Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr );
 

@@ -13,12 +13,6 @@ export interface LayoutOptions {
 /** A registered layout extension constructor. */
 type LayoutConstructor = new ( options: Record<string, unknown> ) => LayoutInstance;
 
-// TODO(core-types): cy.extension() is added to the prototype in extension.mjs
-// and is not declared on the Core interface yet; cast locally to read it.
-interface CoreWithExtension {
-  extension( type: string, name: string ): LayoutConstructor | null | undefined;
-}
-
 let corefn = ({
 
   layout: function( this: Core, options?: LayoutOptions ){
@@ -35,7 +29,7 @@ let corefn = ({
     }
 
     let name = options.name;
-    let Layout = ( cy as unknown as CoreWithExtension ).extension( 'layout', name );
+    let Layout = cy.extension( 'layout', name ) as LayoutConstructor | null | undefined;
 
     if( Layout == null ){
       util.error( 'No such layout `' + name + '` found.  Did you forget to import it and `cytoscape.use()` it?' );

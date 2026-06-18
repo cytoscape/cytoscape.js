@@ -37,12 +37,6 @@ interface RendererInitOptions {
 /** A registered renderer extension constructor. */
 type RendererConstructor = new ( options: Record<string, unknown> ) => RendererInstance;
 
-// TODO(core-types): cy.extension() is added to the prototype in extension.mjs
-// and is not declared on the Core interface yet; cast locally to read it.
-interface CoreWithExtension {
-  extension( type: string, name: string ): RendererConstructor | null | undefined;
-}
-
 export interface CoreRenderer {
   /** @internal */
   renderTo( context: CanvasRenderingContext2D, zoom?: number, pan?: { x: number; y: number }, pxRatio?: number ): Core;
@@ -92,7 +86,7 @@ let corefn = ({
   initRenderer: function( this: Core, options: RendererInitOptions ){
     let cy = this; // eslint-disable-line @typescript-eslint/no-this-alias
 
-    let RendererProto = ( cy as unknown as CoreWithExtension ).extension( 'renderer', options.name! );
+    let RendererProto = cy.extension( 'renderer', options.name! ) as RendererConstructor | null | undefined;
     if( RendererProto == null ){
       util.error( `Can not initialise: No such renderer \`${options.name}\` found. Did you forget to import it and \`cytoscape.use()\` it?` );
       return;

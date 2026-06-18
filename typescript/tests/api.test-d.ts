@@ -89,6 +89,26 @@ const nhood: Collection = nodes.neighborhood();
 const conn: EdgeCollection = nodes.connectedEdges();
 const src: NodeSingular = edges.source();
 
+// Return-type precision: the declared return type must be exactly right,
+// not merely assignable. An overly-wide return (e.g. Collection instead of
+// NodeCollection) would still satisfy the assignment above, so we also assert
+// that the result is NOT assignable to a clearly-wrong type.
+cy.nodes() satisfies NodeCollection;
+cy.edges() satisfies EdgeCollection;
+cy.elements() satisfies Collection;
+cy.getElementById('a') satisfies Collection;
+edges.source() satisfies NodeSingular;
+edges.target() satisfies NodeSingular;
+nodes.connectedEdges() satisfies EdgeCollection;
+nodes.neighborhood() satisfies Collection;
+// @ts-expect-error cy.nodes() must not be typed as EdgeCollection
+const _wrongNodes: EdgeCollection = cy.nodes();
+// @ts-expect-error cy.edges() must not be typed as NodeCollection
+const _wrongEdges: NodeCollection = cy.edges();
+// @ts-expect-error edges.source() must not be typed as EdgeSingular
+const _wrongSrc: EdgeSingular = edges.source();
+void [_wrongNodes, _wrongEdges, _wrongSrc];
+
 // node/edge public projections: each kind exposes only its own methods
 nodes.degree();              // node-only, OK on nodes
 edges.source();              // edge-only, OK on edges

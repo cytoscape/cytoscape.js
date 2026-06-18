@@ -1,41 +1,32 @@
-// Freshness gate for the COMMITTED generated type artifacts.
+// Freshness gate for src/style/css-types.mts.
 //
-// Two generated files are checked into the repo and shipped to consumers:
+// css-types.mts is generated from the runtime style inventory by
+// `npm run gen:css-types` and is committed to the repo so consumers see it
+// in source. This gate regenerates it and fails if the result differs from
+// what is committed — i.e. someone edited src/style/properties.mts without
+// running the generator.
 //
-//   * src/style/css-types.mts  — the public `Css.*` style typing surface,
-//     emitted from the runtime style inventory by `npm run gen:css-types`.
-//   * dist/cytoscape.d.ts      — the shipped declarations, emitted from the
-//     TypeScript source by `npm run build:types`.
-//
-// The surface audits (types-docmaker-surface.mjs / types-css-surface.mjs) run
-// against the freshly-regenerated `build/dts/index.d.ts`, so they cannot catch
-// a *committed* artifact that has drifted from source. This gate closes that
-// hole: it regenerates both files from source and fails if either differs from
-// what is committed — i.e. someone edited src/style/properties.mts or the typed
-// source without regenerating and committing the outputs.
+// dist/cytoscape.d.ts is intentionally NOT checked here; it is only rebuilt
+// just before a release, not on every commit.
 import { execFileSync } from 'node:child_process';
 
-const generated = [ 'src/style/css-types.mts', 'dist/cytoscape.d.ts' ];
+const generated = [ 'src/style/css-types.mts' ];
 
-// Regenerate both committed artifacts from source. Self-contained so this check
-// is order-independent of the other type runners.
 run( 'npm', [ 'run', 'gen:css-types' ] );
-run( 'npm', [ 'run', 'build:types' ] );
 
-// `git diff` (working tree vs index) surfaces any regenerated content that does
-// not match the committed copy. Tracked files only, which is what we want.
+// `git diff` (working tree vs index) surfaces content that doesn't match
+// the committed copy.
 const stale = execFileSync( 'git', [ 'diff', '--name-only', '--', ...generated ], { encoding: 'utf8' } ).trim();
 
 if( stale ){
-  console.error( `\nCommitted generated type artifacts are stale:\n${stale.split( '\n' ).map( f => `  ${f}` ).join( '\n' )}\n` );
-  console.error( 'Regenerate and commit them:' );
-  console.error( '  npm run gen:css-types   # after changing src/style/properties.mts' );
-  console.error( '  npm run build:types     # after changing the typed source\n' );
-  console.error( 'To inspect the drift: git diff -- ' + generated.join( ' ' ) );
+  console.error( `\nCommitted generated file is stale:\n${stale.split( '\n' ).map( f => `  ${f}` ).join( '\n' )}\n` );
+  console.error( 'Regenerate and commit it after changing src/style/properties.mts:' );
+  console.error( '  npm run gen:css-types' );
+  console.error( '\nTo inspect the drift: git diff -- ' + generated.join( ' ' ) );
   process.exit( 1 );
 }
 
-console.log( 'generated type artifacts are fresh (css-types.mts, dist/cytoscape.d.ts)' );
+console.log( 'generated type artifacts are fresh (css-types.mts)' );
 
 function run( cmd, args ){
   execFileSync( cmd, args, { stdio: 'inherit' } );

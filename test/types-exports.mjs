@@ -1,10 +1,14 @@
 // Snapshot audit for the named exports of the generated build/dts/index.d.ts.
 //
-// Checks two things:
+// Checks three things:
 //   1. Every name in EXPECTED_EXPORTS is present as a named export.
 //   2. No extra names are exported beyond EXPECTED_EXPORTS (catches accidental leaks).
+//   3. The count of `any` occurrences in the generated d.ts does not exceed
+//      ANY_THRESHOLD — guards against new `any` escape hatches silently appearing
+//      in the public surface during future edits.
 //
 // Update EXPECTED_EXPORTS deliberately when the public API surface changes.
+// Update ANY_THRESHOLD only when new `any` usage is intentional and justified.
 // Run via `npm run test:types:exports` (no build step needed; uses build/dts directly).
 
 import fs from 'node:fs';
@@ -42,6 +46,12 @@ const EXPECTED_EXPORTS = new Set( [
   'StyleJsonBlock',
   'default',
 ] );
+
+// Maximum number of `any` tokens allowed in the generated d.ts. Every `any`
+// here is an intentional escape hatch (event handler varargs, plugin API,
+// `target: any` on AbstractEventObject for contravariance). Raise this number
+// only when a new intentional `any` is added, and document why in the source.
+const ANY_THRESHOLD = 14;
 
 const dtsPath = new URL( '../build/dts/index.d.ts', import.meta.url );
 const dts = fs.readFileSync( dtsPath, 'utf8' );
@@ -82,8 +92,23 @@ if( extra.length ){
   console.error( '\nIf these are intentional additions, add them to EXPECTED_EXPORTS in test/types-exports.mjs.' );
 }
 
+// Count `any` tokens in non-comment lines of the generated d.ts.
+const anyCount = dts.split( '\n' )
+  .filter( line => {
+    const t = line.trimStart();
+    return !t.startsWith( '//' ) && !t.startsWith( '*' ) && !t.startsWith( '/*' );
+  } )
+  .join( '\n' )
+  .match( /\bany\b/g )?.length ?? 0;
+
+if( anyCount > ANY_THRESHOLD ){
+  failed = true;
+  console.error( `\`any\` count in build/dts/index.d.ts is ${anyCount}, exceeds threshold of ${ANY_THRESHOLD}.` );
+  console.error( 'If the new \`any\` usage is intentional, raise ANY_THRESHOLD in test/types-exports.mjs and document why in the source.' );
+}
+
 if( failed ){
   process.exit( 1 );
 }
 
-console.log( `export snapshot audit passed (${actual.size} named exports)` );
+console.log( `export snapshot audit passed (${actual.size} named exports, ${anyCount}/${ANY_THRESHOLD} any tokens)` );

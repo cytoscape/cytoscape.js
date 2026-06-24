@@ -5,7 +5,6 @@ import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
 import type { SelectorEle } from '../selector/type.mjs';
 import type Event from '../event.mjs';
-import type { EventProps } from '../event.mjs';
 import type { EventObject, EventHandler as PublicEventHandler } from '../event-types.mjs';
 import type { CoreShim } from '../types.mjs';
 import type { Collection, Element, ElementPrivate } from './eles-types.mjs';

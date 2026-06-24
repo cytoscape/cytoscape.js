@@ -398,7 +398,7 @@ function drawAtlases( r: Renderer ) { // For debugging the atlases, this doesn't
   };
   let i = 0;
   draw(r.drawing, 'node',  i++);
-  draw(r.drawing, 'label', i++);
+  draw(r.drawing, 'label', i);
 }
 
 

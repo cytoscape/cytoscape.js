@@ -20,10 +20,6 @@ interface BbCache extends BoundingBox {
   [key: string]: unknown;
 }
 
-// The value type used for _private.bbCache / bodyBounds / overlayBounds and
-// the entries of labelBounds / arrowBounds (see ElementPrivate).
-type BbCacheSlot = ( BoundingBox & Record<string, unknown> ) | null;
-
 /** Options controlling which sub-parts are included in a bounding box. */
 export interface BoundingBoxOptions {
   includeNodes?: boolean;
@@ -580,7 +576,7 @@ let boundingBoxImpl = function( ele: Element, options: BoundingBoxOptions ): Bou
   );
 
   if( displayed ){ // displayed suffices, since we will find zero area eles anyway
-    let overlayOpacity = 0;
+    let overlayOpacity;
     let overlayPadding = 0;
 
     if( styleEnabled && options.includeOverlays ){
@@ -591,7 +587,7 @@ let boundingBoxImpl = function( ele: Element, options: BoundingBoxOptions ): Bou
       }
     }
 
-    let underlayOpacity = 0;
+    let underlayOpacity;
     let underlayPadding = 0;
 
     if( styleEnabled && options.includeUnderlays ){
@@ -604,7 +600,7 @@ let boundingBoxImpl = function( ele: Element, options: BoundingBoxOptions ): Bou
 
     let padding = Math.max(overlayPadding, underlayPadding);
 
-    let w = 0;
+    let w;
     let wHalf = 0;
 
     if( styleEnabled ){

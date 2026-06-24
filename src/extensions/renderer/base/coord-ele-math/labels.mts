@@ -109,7 +109,7 @@ let lineAngle = function( p0: Pt, p1: Pt ){
   return lineAngleFromDelta( dx, dy );
 };
 
-let bezierAngle = function( p0: Pt, p1: Pt, p2: Pt, t: number, _p?: Pt ){ // eslint-disable-line @typescript-eslint/no-unused-vars -- caller passes an unused extra arg
+let bezierAngle = function( p0: Pt, p1: Pt, p2: Pt, t: number, _p?: Pt ){
   let t0 = math.bound( 0, t - 0.001, 1 );
   let t1 = math.bound( 0, t + 0.001, 1 );
 

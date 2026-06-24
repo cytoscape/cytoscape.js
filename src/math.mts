@@ -1414,7 +1414,7 @@ export const fitPolygonToSquare = ( points: number[] ): number[] => {
 
   if( minY < -1 ){
     for( let i = 0; i < sides; i++ ){
-      y = points[2 * i + 1] = points[2 * i + 1] + (-1 - minY);
+      points[2 * i + 1] = points[2 * i + 1] + (-1 - minY);
     }
   }
 

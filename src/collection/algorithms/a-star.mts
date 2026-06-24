@@ -30,8 +30,8 @@ export interface AlgorithmsAStar {
 const aStarDefaults = defaults({
   root: null as Collection | Element | string | null,
   goal: null as Collection | Element | string | null,
-  weight: ( ( edge: Element ) => 1 ) as AStarWeightFn,
-  heuristic: ( ( edge: Element ) => 0 ) as AStarWeightFn,
+  weight: ( ( _edge: Element ) => 1 ) as AStarWeightFn,
+  heuristic: ( ( _edge: Element ) => 0 ) as AStarWeightFn,
   directed: false
 });
 

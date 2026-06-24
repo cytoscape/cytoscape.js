@@ -466,7 +466,6 @@ CRp.drawNode = function( this: Renderer, context: CanvasRenderingContext2D, node
           p3 = p[ (i + 1) % len ];
           corners[ i ] = round.getRoundCorner( p1, p2, p3, radius );
           p1 = p2;
-          p2 = p3;
         }
 
         r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points, corners );

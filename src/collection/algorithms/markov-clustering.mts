@@ -31,7 +31,7 @@ let defaults = util.defaults({
   multFactor: 1,        // optional self loops for each node. Use a neutral value to improve cluster computations.
   maxIterations: 20,    // maximum number of iterations of the MCL algorithm in a single run
   attributes: [         // attributes/features used to group nodes, ie. similarity values between nodes
-    function( edge: Element ): number {
+    function( _edge: Element ): number {
       return 1;
     }
   ] as MarkovAttributeFn[]
@@ -41,19 +41,6 @@ let defaults = util.defaults({
 let setOptions = ( options?: MarkovClusteringOptions ) => defaults( options );
 
  
-if( process.env.NODE_ENV !== 'production' ){
-  let printMatrix = function( M: number[] ) { // used for debugging purposes only
-    let n = Math.sqrt(M.length);
-    for ( let i = 0; i < n; i++ ) {
-      let row = '';
-      for ( let j = 0; j < n; j++ ) {
-        row += Number(M[i*n+j]).toFixed(3) + ' ';
-      }
-      console.log(row);
-    }
-    console.log('');
-  };
-}
  
 
 let getSimilarity = function( edge: Element, attributes: MarkovAttributeFn[] ): number {

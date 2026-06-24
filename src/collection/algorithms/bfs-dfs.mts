@@ -65,7 +65,7 @@ let defineSearch = function( params: { bfs?: boolean; dfs?: boolean } ): SearchF
     let visitFn: SearchVisitFn = is.fn( fn ) ? ( fn as SearchVisitFn ) : function(){};
 
     let cy = this._private.cy;
-    let v: Collection = roots = ( is.string( roots ) ? this.filter( roots ) : roots ) as Collection;
+    let v: Collection = ( is.string( roots ) ? this.filter( roots ) : roots ) as Collection;
     let Q: Element[] = [];
     let connectedNodes: Element[] = [];
     let connectedBy: Record<string, Element> = {};

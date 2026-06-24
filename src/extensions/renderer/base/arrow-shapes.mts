@@ -117,7 +117,7 @@ BRp.registerArrowShapes = function( this: Renderer ){
         renderer.arrowShapeImpl( 'polygon' )( context, points );
       },
 
-      spacing: function( edge: any ){
+      spacing: function( _edge: any ){
         return 0;
       },
 
@@ -154,7 +154,7 @@ BRp.registerArrowShapes = function( this: Renderer ){
 
     roughCollide: bbCollide,
 
-    draw: function( this: ArrowShape, context: any, size: number, angle: number, translation: Position, edgeWidth?: number ){
+    draw: function( this: ArrowShape, context: any, size: number, angle: number, translation: Position, _edgeWidth?: number ){
       let ptsTrans = transformPoints( this.points, size, angle, translation );
       let ctrlPt = this.controlPoint;
       let ctrlPtTrans = transform( ctrlPt[0], ctrlPt[1], size, angle, translation );
@@ -191,7 +191,7 @@ BRp.registerArrowShapes = function( this: Renderer ){
       return inside;
     },
 
-    draw: function( this: ArrowShape, context: any, size: number, angle: number, translation: Position, edgeWidth?: number ){
+    draw: function( this: ArrowShape, context: any, size: number, angle: number, translation: Position, _edgeWidth?: number ){
       let triPts = transformPoints( this.points, size, angle, translation );
       let teePts = transformPoints( this.pointsTee, size, angle, translation );
 
@@ -208,7 +208,7 @@ BRp.registerArrowShapes = function( this: Renderer ){
       let triPts = pointsToArr(transformPoints(this.points, size + 2 * padding, angle, translation));
       return math.pointInsidePolygonPoints(x, y, triPts) || circleInside;
     },
-    draw: function draw( this: ArrowShape, context: any, size: number, angle: number, translation: Position, edgeWidth?: number ) {
+    draw: function draw( this: ArrowShape, context: any, size: number, angle: number, translation: Position, _edgeWidth?: number ) {
       let triPts = transformPoints(this.pointsTr, size, angle, translation);
       renderer.arrowShapeImpl(this.name)(context, triPts, translation.x, translation.y, this.radius * size);
     },
@@ -284,7 +284,7 @@ BRp.registerArrowShapes = function( this: Renderer ){
       return inside;
     },
 
-    draw: function( this: ArrowShape, context: any, size: number, angle: number, translation: Position, edgeWidth?: number ){
+    draw: function( this: ArrowShape, context: any, size: number, angle: number, translation: Position, _edgeWidth?: number ){
       renderer.arrowShapeImpl( this.name )( context, translation.x, translation.y, this.radius * size );
     },
 
@@ -302,11 +302,11 @@ BRp.registerArrowShapes = function( this: Renderer ){
       0.15, 0
     ],
 
-    spacing: function( edge: any ){
+    spacing: function( _edge: any ){
       return 1;
     },
 
-    gap: function( edge: any ){
+    gap: function( _edge: any ){
       return 1;
     }
   } );

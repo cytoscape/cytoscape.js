@@ -154,8 +154,8 @@ function setExtension( type: string, name: string, registrant: Registrant ): unk
     let rProto = registrant.prototype;
 
     let Renderer = function( this: AnyProto ){
-      BaseRenderer.apply( this, arguments ); // eslint-disable-line prefer-rest-params
-      RegistrantRenderer.apply( this, arguments ); // eslint-disable-line prefer-rest-params
+      BaseRenderer.apply( this, arguments );  
+      RegistrantRenderer.apply( this, arguments );  
     };
 
     let proto = Renderer.prototype;
@@ -250,7 +250,7 @@ let extension = function(){
     util.error( 'Invalid extension access syntax' );
   }
 
-} as ExtensionFn; // eslint-disable-line prefer-rest-params
+} as ExtensionFn;  
 
 // allows a core instance to access extensions internally
 Core.prototype.extension = extension;

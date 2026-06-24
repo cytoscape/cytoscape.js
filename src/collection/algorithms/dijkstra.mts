@@ -30,7 +30,7 @@ export interface AlgorithmsDijkstra {
 
 const dijkstraDefaults = defaults({
   root: null as Collection | Element | string | null,
-  weight: ( ( edge: Element ) => 1 ) as DijkstraWeightFn,
+  weight: ( ( _edge: Element ) => 1 ) as DijkstraWeightFn,
   directed: false
 });
 

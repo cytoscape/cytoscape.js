@@ -12,7 +12,7 @@ let elesfn = ({
   // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
   // implemented from pseudocode from wikipedia
   kruskal: function( this: Collection, weightFn?: KruskalWeightFn ): Collection {
-    let weight: KruskalWeightFn = weightFn || ( ( edge: Element ) => 1 );
+    let weight: KruskalWeightFn = weightFn || ( ( _edge: Element ) => 1 );
 
     let { nodes, edges } = this.byGroup();
     let numNodes = nodes.length;

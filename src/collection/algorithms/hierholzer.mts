@@ -138,7 +138,7 @@ let elesfn = ({
     };
 
     let trail: Collection[] = [];
-    let subtour: string[] = [];
+    let subtour: string[];
     subtour = walk(startVertex as string);
     while (subtour.length != 1) {
       if (nodes[subtour[0]].length == 0) {

@@ -857,14 +857,14 @@ styfn.checkZOrderTrigger = function( ele, name, fromValue, toValue ){
 };
 
 styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
-  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBounds, prop => {
+  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBounds, _prop => {
     ele.dirtyCompoundBoundsCache();
     ele.dirtyBoundingBoxCache();
   });
 };
 
 styfn.checkConnectedEdgesBoundsTrigger = function( ele, name, fromValue, toValue ){
-  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBoundsOfConnectedEdges, prop => {
+  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBoundsOfConnectedEdges, _prop => {
     ele.connectedEdges().forEach(edge => {
       edge.dirtyBoundingBoxCache();
     });
@@ -872,7 +872,7 @@ styfn.checkConnectedEdgesBoundsTrigger = function( ele, name, fromValue, toValue
 };
 
 styfn.checkParallelEdgesBoundsTrigger = function( ele, name, fromValue, toValue ){
-  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBoundsOfParallelEdges, prop => {
+  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBoundsOfParallelEdges, _prop => {
     ele.parallelEdges().forEach(pllEdge => {
       pllEdge.dirtyBoundingBoxCache();
     });

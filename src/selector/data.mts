@@ -90,7 +90,6 @@ export const boolCmp = (fieldVal: unknown, operator: string): boolean | undefine
 };
 
 // n.b. the second arg has always been passed by the DATA_EXIST check and ignored here
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const existCmp = (fieldVal: unknown, _operator?: string): boolean => fieldVal !== undefined;
 
 export const data = (ele: SelectorEle, field: string): unknown => ele.data(field);

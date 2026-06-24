@@ -3,7 +3,7 @@
 // assembled from the per-mixin contribution interfaces, mirroring the
 // runtime prototype assembly (parallel to collection/eles-types.mts).
 
-import type { Collection, Element, CoreStyleAccess, CoreRendererAccess, ElementDefinition } from '../collection/eles-types.mjs';
+import type { Collection, Element, CoreStyleAccess, ElementDefinition } from '../collection/eles-types.mjs';
 import type { StyleJson } from '../style/json.mjs';
 import type { Position, BoundingBox } from '../types.mjs';
 import type Emitter from '../emitter.mjs';

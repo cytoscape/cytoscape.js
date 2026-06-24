@@ -23,11 +23,11 @@ BRp.generatePolygon = function( this: Renderer, name: string, points: number[] )
 
     points: points,
 
-    draw: function( this: NodeShape, context: any, centerX: number, centerY: number, width: number, height: number, cornerRadius?: CornerRadius ){
+    draw: function( this: NodeShape, context: any, centerX: number, centerY: number, width: number, height: number, _cornerRadius?: CornerRadius ){
       this.renderer.nodeShapeImpl( 'polygon', context, centerX, centerY, width, height, this.points );
     },
 
-    intersectLine: function( this: NodeShape, nodeX: number, nodeY: number, width: number, height: number, x: number, y: number, padding: number, cornerRadius?: CornerRadius ){
+    intersectLine: function( this: NodeShape, nodeX: number, nodeY: number, width: number, height: number, x: number, y: number, padding: number, _cornerRadius?: CornerRadius ){
       return math.polygonIntersectLine(
           x, y,
           this.points,
@@ -38,7 +38,7 @@ BRp.generatePolygon = function( this: Renderer, name: string, points: number[] )
         ;
     },
 
-    checkPoint: function( this: NodeShape, x: number, y: number, padding: number, width: number, height: number, centerX: number, centerY: number, cornerRadius?: CornerRadius ){
+    checkPoint: function( this: NodeShape, x: number, y: number, padding: number, width: number, height: number, centerX: number, centerY: number, _cornerRadius?: CornerRadius ){
       return math.pointInsidePolygon( x, y, this.points,
         centerX, centerY, width, height, [0, -1], padding )
       ;
@@ -59,11 +59,11 @@ BRp.generateEllipse = function( this: Renderer ): NodeShape {
 
     name: 'ellipse',
 
-    draw: function( this: NodeShape, context: any, centerX: number, centerY: number, width: number, height: number, cornerRadius?: CornerRadius ){
+    draw: function( this: NodeShape, context: any, centerX: number, centerY: number, width: number, height: number, _cornerRadius?: CornerRadius ){
       this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
 
-    intersectLine: function( this: NodeShape, nodeX: number, nodeY: number, width: number, height: number, x: number, y: number, padding: number, cornerRadius?: CornerRadius ){
+    intersectLine: function( this: NodeShape, nodeX: number, nodeY: number, width: number, height: number, x: number, y: number, padding: number, _cornerRadius?: CornerRadius ){
       return math.intersectLineEllipse(
         x, y,
         nodeX,
@@ -73,7 +73,7 @@ BRp.generateEllipse = function( this: Renderer ): NodeShape {
       ;
     },
 
-    checkPoint: function( this: NodeShape, x: number, y: number, padding: number, width: number, height: number, centerX: number, centerY: number, cornerRadius?: CornerRadius ){
+    checkPoint: function( this: NodeShape, x: number, y: number, padding: number, width: number, height: number, centerX: number, centerY: number, _cornerRadius?: CornerRadius ){
       return math.checkInEllipse( x, y, width, height, centerX, centerY, padding );
     }
   } );
@@ -118,7 +118,6 @@ BRp.generateRoundPolygon = function( this: Renderer, name: string, points: numbe
         rs[ field ][ i ] = round.getRoundCorner( p1, p2, p3, cornerRadius );
 
         p1 = p2;
-        p2 = p3;
       }
 
       return rs[ field ];
@@ -307,11 +306,11 @@ BRp.generateBarrel = function( this: Renderer ): NodeShape {
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
-    draw: function( this: NodeShape, context: any, centerX: number, centerY: number, width: number, height: number, cornerRadius?: CornerRadius ){
+    draw: function( this: NodeShape, context: any, centerX: number, centerY: number, width: number, height: number, _cornerRadius?: CornerRadius ){
       this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
 
-    intersectLine: function( this: NodeShape, nodeX: number, nodeY: number, width: number, height: number, x: number, y: number, padding: number, cornerRadius?: CornerRadius ){
+    intersectLine: function( this: NodeShape, nodeX: number, nodeY: number, width: number, height: number, x: number, y: number, padding: number, _cornerRadius?: CornerRadius ){
       // use two fixed t values for the bezier curve approximation
 
       let t0 = 0.15;
@@ -375,7 +374,7 @@ BRp.generateBarrel = function( this: Renderer ): NodeShape {
     },
 
     checkPoint: function(
-      this: NodeShape, x: number, y: number, padding: number, width: number, height: number, centerX: number, centerY: number, cornerRadius?: CornerRadius ){
+      this: NodeShape, x: number, y: number, padding: number, width: number, height: number, centerX: number, centerY: number, _cornerRadius?: CornerRadius ){
 
       let curveConstants = math.getBarrelCurveConstants( width, height );
       let hOffset = curveConstants.heightOffset;

@@ -1,7 +1,7 @@
 import * as util from '../util/index.mjs';
 import * as is from '../is.mjs';
 import cache from './cache-traversal-call.mjs';
-import type { Collection, Element, SharedCollection, ElementPrivate, CoreAccess, NodeCollection, NodeSingular, EdgeCollection } from './eles-types.mjs';
+import type { Collection, Element, SharedCollection, ElementPrivate, NodeCollection, NodeSingular, EdgeCollection } from './eles-types.mjs';
 
 /** Selector/filter argument accepted by traversal methods. */
 type SelectorArg = string | ( ( ele: Element, i: number, eles: Collection ) => boolean | unknown ) | SharedCollection | undefined | null;

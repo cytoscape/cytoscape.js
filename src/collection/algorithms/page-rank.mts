@@ -26,7 +26,7 @@ const pageRankDefaults = defaults({
   dampingFactor: 0.8,
   precision: 0.000001,
   iterations: 200,
-  weight: ( ( edge: Element ) => 1 ) as PageRankWeightFn
+  weight: ( ( _edge: Element ) => 1 ) as PageRankWeightFn
 });
 
 let elesfn = ({

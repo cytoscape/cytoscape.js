@@ -12,7 +12,6 @@
  */
 import * as util from '../util/index.mjs';
 import type { Element } from './eles-types.mjs';
-import type { ParsedStyleProperty } from '../style/parse.mjs';
 
 let zIndexSort = function( a: Element, b: Element ): number {
   let cy = a.cy();

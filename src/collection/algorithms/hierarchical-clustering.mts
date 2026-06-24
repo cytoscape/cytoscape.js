@@ -215,7 +215,7 @@ let buildClustersFromTree = function( root: ClusterNode | undefined, k: number, 
       return [];
 
   // `left`/`right` hold leaf Elements (k <= 1) or recursively-built clusters (k > 1).
-  let left: Element[] = [], right: Element[] = [], leaves: Element[] = [];
+  let left: Element[] = [], right: Element[] = [], leaves: Element[];
 
   if ( k === 0 ) { // don't cut tree, simply return all nodes as 1 single cluster
     if ( root.left )
@@ -256,20 +256,6 @@ let buildClustersFromTree = function( root: ClusterNode | undefined, k: number, 
     }
   }
 };
-
-if( process.env.NODE_ENV !== 'production' ){  
-  let printMatrix = function( M: number[][] ) { // used for debugging purposes only
-    let n = M.length;
-    for(let i = 0; i < n; i++ ) {
-      let row = '';
-      for ( let j = 0; j < n; j++ ) {
-        row += Math.round(M[i][j]*100)/100 + ' ';
-      }
-      console.log(row);
-    }
-    console.log('');
-  };
-}  
 
 let hierarchicalClustering = function( this: Collection, options?: HierarchicalClusteringOptions ){
   let cy    = this.cy();

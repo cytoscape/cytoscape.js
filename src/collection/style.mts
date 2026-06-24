@@ -1,6 +1,6 @@
 import * as is from '../is.mjs';
 import * as util from '../util/index.mjs';
-import type { Collection, Element, CoreStyleAccess } from './eles-types.mjs';
+import type { Collection, Element } from './eles-types.mjs';
 import type { ParsedStyleProperty } from '../style/parse.mjs';
 
 type StyleCacheFn = ( ele: Element ) => unknown;

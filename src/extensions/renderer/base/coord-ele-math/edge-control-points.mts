@@ -180,7 +180,7 @@ BRp.findSegmentsPoints = function( this: Renderer, edge: Element, pairInfo: Pair
 
 };
 
-BRp.findLoopPoints = function( edge: Element, pairInfo: PairInfo, i: number, edgeIsUnbundled: boolean ){
+BRp.findLoopPoints = function( edge: Element, pairInfo: PairInfo, _i: number, edgeIsUnbundled: boolean ){
   // Self-edge
 
   const rs = edge._private.rscratch as RScratch;
@@ -193,11 +193,9 @@ BRp.findLoopPoints = function( edge: Element, pairInfo: PairInfo, i: number, edg
 
   rs.edgeType = 'self';
 
-  let j = i;
   let loopDist = stepSize;
 
   if( edgeIsUnbundled ){
-    j = 0;
     loopDist = ctrlptDist;
   }
 
@@ -207,7 +205,7 @@ BRp.findLoopPoints = function( edge: Element, pairInfo: PairInfo, i: number, edg
 
   // increase by step size for overlapping loops, keyed on direction and sweep values
   let dc = String(loopDir + '_' + loopSwp);
-  j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
+  let j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
 
   rs.ctrlpts = [
     srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1),

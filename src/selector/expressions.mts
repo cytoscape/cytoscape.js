@@ -154,7 +154,7 @@ let exprs: Expr[] = [
     name: 'nextQuery',
     separator: true,
     regex: tokens.separator,
-    populate: function( selector, query ){
+    populate: function( selector, _query ){
       let currentSubject = selector.currentSubject;
       let edgeCount = selector.edgeCount;
       let compoundCount = selector.compoundCount;

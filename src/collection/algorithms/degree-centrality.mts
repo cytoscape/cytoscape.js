@@ -50,7 +50,7 @@ export interface AlgorithmsDegreeCentrality {
 
 const defaults = util.defaults({
   root: null as Collection | Element | string | null,
-  weight: ( ( edge: Element ) => 1 ) as DegreeCentralityWeightFn,
+  weight: ( ( _edge: Element ) => 1 ) as DegreeCentralityWeightFn,
   directed: false,
   alpha: 0
 });

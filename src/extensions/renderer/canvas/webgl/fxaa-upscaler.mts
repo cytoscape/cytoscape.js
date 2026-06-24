@@ -152,13 +152,13 @@ export class FxaaUpscaler {
    */
   updateOptions(options: FxaaOptions = {}) {
     if (options.subpixelQuality !== undefined) this.subpixelQuality = options.subpixelQuality;
-    else if (!this.hasOwnProperty('subpixelQuality')) this.subpixelQuality = 0.75;
+    else if (!Object.prototype.hasOwnProperty.call(this, 'subpixelQuality')) this.subpixelQuality = 0.75;
     
     if (options.edgeThreshold !== undefined) this.edgeThreshold = options.edgeThreshold;
-    else if (!this.hasOwnProperty('edgeThreshold')) this.edgeThreshold = 0.166;
+    else if (!Object.prototype.hasOwnProperty.call(this, 'edgeThreshold')) this.edgeThreshold = 0.166;
     
     if (options.edgeThresholdMin !== undefined) this.edgeThresholdMin = options.edgeThresholdMin;
-    else if (!this.hasOwnProperty('edgeThresholdMin')) this.edgeThresholdMin = 0.0833;
+    else if (!Object.prototype.hasOwnProperty.call(this, 'edgeThresholdMin')) this.edgeThresholdMin = 0.0833;
     
     if (options.debug !== undefined) this.debug = options.debug;
 

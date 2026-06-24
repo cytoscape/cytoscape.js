@@ -1068,7 +1068,7 @@ export class ElementDrawingWebGL {
     return this._getCurveSegmentPoints(controlPoints, numSegments);
   }
 
-  _getNumSegments( edge: Element ) {
+  _getNumSegments( _edge: Element ) {
     // TODO Need a heuristic that decides how many segments to use. Factors to consider:
     // - edge width/length
     // - edge curvature (the more the curvature, the more segments)

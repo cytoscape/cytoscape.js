@@ -58,20 +58,6 @@ let defaults = util.defaults({
 
 let setOptions = ( options?: KClusteringOptions ) => defaults( options );
 
-if( process.env.NODE_ENV !== 'production' ){  
-  let printMatrix = function( M: number[][] ) { // used for debugging purposes only
-
-    for ( let i = 0; i < M.length; i++ ) {
-      let row = '';
-      for ( let j = 0; j < M[0].length; j++ ) {
-        row += Number(M[i][j]).toFixed(3) + ' ';
-      }
-      console.log(row);
-    }
-    console.log('');
-  };
-}  
-
 let getDist = function(
   type: DistanceMetric,
   node: Element,
@@ -89,12 +75,12 @@ let getDist = function(
 };
 
  
-let randomCentroids = function( nodes: SharedCollection, k: number, attributes: KAttributeFn[], seed?: number ): FeatureCentroid[] {
+let randomCentroids = function( nodes: SharedCollection, k: number, attributes: KAttributeFn[], _seed?: number ): FeatureCentroid[] {
   let ndim = attributes.length;
   let min: number[]  = new Array(ndim);
   let max: number[]  = new Array(ndim);
   let centroids: FeatureCentroid[] = new Array(k);
-  let centroid: FeatureCentroid | null  = null;
+  let centroid: FeatureCentroid | null;
 
   // Find min, max values for each attribute dimension
   for ( let i = 0; i < ndim; i++ ) {
@@ -137,7 +123,7 @@ let classify = function(
 
 let buildCluster = function( centroid: number, nodes: SharedCollection, assignment: Record<string, number> ): Element[] {
   let cluster: Element[] = [];
-  let node: Element | null = null;
+  let node: Element | null;
 
   for ( let n = 0; n < nodes.length; n++ ) {
     node = nodes[n];
@@ -210,7 +196,7 @@ let findCost = function( potentialNewMedoid: Element, cluster: Element[], attrib
 let kMeans = function( this: Collection, options?: KClusteringOptions ): Collection[] {
   let cy    = this.cy();
   let nodes = this.nodes();
-  let node: Element | null  = null;
+  let node: Element | null;
 
   // Set parameters of algorithm: # of clusters, distance metric, etc.
   let opts = setOptions( options );
@@ -294,7 +280,7 @@ let kMeans = function( this: Collection, options?: KClusteringOptions ): Collect
 let kMedoids = function( this: Collection, options?: KClusteringOptions ): Collection[] {
   let cy    = this.cy();
   let nodes = this.nodes();
-  let node: Element | null  = null;
+  let node: Element | null;
   let opts  = setOptions( options );
 
   // k distinct medoids are required, so k cannot exceed the number of nodes.

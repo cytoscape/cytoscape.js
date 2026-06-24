@@ -22,7 +22,7 @@ export interface AlgorithmsFloydWarshall {
 }
 
 const floydWarshallDefaults = defaults({
-  weight: ( ( edge: Element ) => 1 ) as FloydWarshallWeightFn,
+  weight: ( ( _edge: Element ) => 1 ) as FloydWarshallWeightFn,
   directed: false
 });
 
@@ -133,7 +133,7 @@ let elesfn = ({
         if( next[i * N + j] == null ){ return cy.collection(); }
 
         let path = cy.collection();
-        let prev = i;
+        let prev;
         let edge;
 
         path.merge( fromNode );

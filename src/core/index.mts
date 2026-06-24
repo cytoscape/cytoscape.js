@@ -22,7 +22,7 @@ import type {
   CorePrivate,
   CytoscapeOptions
 } from './core-types.mjs';
-import type { Collection as CollectionType, CoreAccess, ElementDefinition, ElementJson, Element as ElementType } from '../collection/eles-types.mjs';
+import type { Collection as CollectionType, CoreAccess, ElementJson, Element as ElementType } from '../collection/eles-types.mjs';
 
 // internal: a container DOM element may carry a cytoscape registration
 type CyContainer = HTMLElement & { _cyreg?: CyReg };

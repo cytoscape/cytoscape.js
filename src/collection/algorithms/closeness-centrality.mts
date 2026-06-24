@@ -28,7 +28,7 @@ export interface AlgorithmsClosenessCentrality {
 
 const defaults = util.defaults({
   harmonic: true,
-  weight: ( ( edge: Element ) => 1 ) as ClosenessCentralityWeightFn,
+  weight: ( ( _edge: Element ) => 1 ) as ClosenessCentralityWeightFn,
   directed: false,
   root: null as Collection | Element | string | null
 });

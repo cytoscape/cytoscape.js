@@ -137,7 +137,7 @@ const defaults = {
   // A function that determines whether the node should be animated
   // All nodes animated by default on animate enabled
   // Non-animated nodes are positioned immediately when the layout starts
-  animateFilter: function ( node: Element, i: number ){ return true; },
+  animateFilter: function ( _node: Element, _i: number ){ return true; },
 
 
   // The layout animates only after this many milliseconds for animate:true
@@ -166,16 +166,16 @@ const defaults = {
   componentSpacing: 40,
 
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: function( node: Element ){ return 2048; },
+  nodeRepulsion: function( _node: Element ){ return 2048; },
 
   // Node repulsion (overlapping) multiplier
   nodeOverlap: 4,
 
   // Ideal edge (non nested) length
-  idealEdgeLength: function( edge: Element ){ return 32; },
+  idealEdgeLength: function( _edge: Element ){ return 32; },
 
   // Divisor to compute edge forces
-  edgeElasticity: function( edge: Element ){ return 32; },
+  edgeElasticity: function( _edge: Element ){ return 32; },
 
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 1.2,
@@ -715,7 +715,7 @@ if( process.env.NODE_ENV !== 'production' ){
 /**
  * @brief : Randomizes the position of all nodes
  */
-let randomizePositions = function( layoutInfo: LayoutInfo, cy: Core ){
+let randomizePositions = function( layoutInfo: LayoutInfo, _cy: Core ){
   let width     = layoutInfo.clientWidth;
   let height    = layoutInfo.clientHeight;
 
@@ -749,7 +749,7 @@ let getScaleInBoundsFn = function( layoutInfo: LayoutInfo, options: CoseLayoutOp
     coseBB.h = coseBB.y2 - coseBB.y1;
   }
 
-  return function( ele: Element, i: number ): Position {
+  return function( ele: Element, _i: number ): Position {
     let lnode = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ ele.data( 'id' ) as string ] ];
 
     if( options.boundingBox ){ // then add extra bounding box constraint
@@ -812,7 +812,7 @@ let refreshPositions = function( this: unknown, layoutInfo: LayoutInfo, cy: Core
  * @arg cy         : Cytoscape object
  * @arg options    : Layout options
  */
-let step = function( layoutInfo: LayoutInfo, options: CoseLayoutOptions, step: number ){
+let step = function( layoutInfo: LayoutInfo, options: CoseLayoutOptions, _step: number ){
   // var s = "\n\n###############################";
   // s += "\nSTEP: " + step;
   // s += "\n###############################\n";
@@ -1063,7 +1063,7 @@ let findClippingPoint = function( node: CoseNode, dX: number, dY: number ): Posi
 /**
  * @brief : Calculates all edge forces
  */
-let calculateEdgeForces = function( layoutInfo: LayoutInfo, options: CoseLayoutOptions ){
+let calculateEdgeForces = function( layoutInfo: LayoutInfo, _options: CoseLayoutOptions ){
   // Iterate over all edges
   for( let i = 0; i < layoutInfo.edgeSize; i++ ){
     // Get edge, source & target nodes
@@ -1187,7 +1187,7 @@ let calculateGravityForces = function( layoutInfo: LayoutInfo, options: CoseLayo
  * @arg cy         : cytoscape Object
  * @arg options    : Layout options
  */
-let propagateForces = function( layoutInfo: LayoutInfo, options: CoseLayoutOptions ){
+let propagateForces = function( layoutInfo: LayoutInfo, _options: CoseLayoutOptions ){
   // Inline implementation of a queue, used for traversing the graph in BFS order
   let queue: string[] = [];
   let start = 0;   // Points to the start the queue
@@ -1239,7 +1239,7 @@ let propagateForces = function( layoutInfo: LayoutInfo, options: CoseLayoutOptio
  * @brief : Updates the layout model positions, based on
  *          the accumulated forces
  */
-let updatePositions = function( layoutInfo: LayoutInfo, options: CoseLayoutOptions ){
+let updatePositions = function( layoutInfo: LayoutInfo, _options: CoseLayoutOptions ){
   // var s = 'Updating positions';
   // logDebug(s);
 

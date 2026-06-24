@@ -131,7 +131,6 @@ var execute = function( curr: Thenable ){
 
 /*  execute particular set of handlers  */
 var execute_handlers = function( curr: Thenable, name: 'onFulfilled' | 'onRejected', value: unknown ){
-  /* global setImmediate: true */
   /* global setTimeout: true */
 
   /*  short-circuit processing  */

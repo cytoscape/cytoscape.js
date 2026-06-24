@@ -59,23 +59,6 @@ let setOptions = function( options?: AffinityPropagationOptions ) {
   return defaults( options );
 };
 
-if( process.env.NODE_ENV !== 'production' ){  
-  let printMatrix = function( M: number[] ) { // used for debugging purposes only
-    let str = '';
-    let log = ( s: string ) => str = str + s + '\n';
-    let n = Math.sqrt(M.length);
-    for ( let i = 0; i < n; i++ ) {
-      let row = '';
-      for ( let j = 0; j < n; j++ ) {
-        row += M[i*n+j] + ' ';
-      }
-      log(row);
-    }
-
-    console.log(str);
-  };
-}  
-
 let getSimilarity = function( type: DistanceMetric, n1: Element, n2: Element, attributes: AffinityAttributeFn[] ): number {
   let attr = ( n: Element, i: number ) => attributes[i](n);
 
@@ -251,7 +234,7 @@ let affinityPropagation = function( this: Collection, options?: AffinityPropagat
       let max = -Infinity,
           max2 = -Infinity,
           maxI = -1,
-          AS = 0.0;
+          AS;
 
       for ( let j = 0; j < n; j++ ) {
 

@@ -9,7 +9,7 @@ const BRp: any = {}; // eslint-disable-line @typescript-eslint/no-explicit-any
 
 /* global document, ResizeObserver, MutationObserver */
 
-BRp.registerBinding = function( this: Renderer, target: any, event?: any, handler?: any, useCapture?: any ){ // eslint-disable-line no-unused-vars, @typescript-eslint/no-explicit-any
+BRp.registerBinding = function( this: Renderer, target: any, _event?: any, _handler?: any, _useCapture?: any ){ // eslint-disable-line @typescript-eslint/no-explicit-any
   // eslint-disable-next-line prefer-rest-params
   let args = Array.prototype.slice.apply( arguments, [1] ); // copy
 
@@ -50,14 +50,14 @@ BRp.binder = function( this: Renderer, tgt: any ){ // eslint-disable-line @types
       } );
 
       containerWindow.addEventListener( 'test', null, opts );
-    } catch( err ){ // eslint-disable-line no-unused-vars
+    } catch( _err ){
       // not supported
     }
 
     r.supportsPassiveEvents = supportsPassive;
   }
 
-  let on = function( this: any, event: string, handler: any, useCapture?: boolean ){ // eslint-disable-line no-unused-vars, @typescript-eslint/no-explicit-any
+  let on = function( this: any, event: string, handler: any, useCapture?: boolean ){ // eslint-disable-line @typescript-eslint/no-explicit-any
     // eslint-disable-next-line prefer-rest-params
     let args = Array.prototype.slice.call( arguments );
 
@@ -74,7 +74,7 @@ BRp.binder = function( this: Renderer, tgt: any ){ // eslint-disable-line @types
       args: args
     });
 
-    ( tgt.addEventListener || tgt.on ).apply( tgt, args ); // eslint-disable-line prefer-spread
+    ( tgt.addEventListener || tgt.on ).apply( tgt, args );  
 
     return this;
   };
@@ -298,7 +298,7 @@ BRp.load = function( this: Renderer ){
 
   // watch for when the cy container is removed from the dom
   if( haveMutationsApi ){
-    r.removeObserver = new MutationObserver( function( mutns: MutationRecord[] ){ // eslint-disable-line no-undef
+    r.removeObserver = new MutationObserver( function( mutns: MutationRecord[] ){  
       for( let i = 0; i < mutns.length; i++ ){
         let mutn = mutns[ i ];
         let rNodes = mutn.removedNodes;
@@ -318,7 +318,7 @@ BRp.load = function( this: Renderer ){
       r.removeObserver.observe( r.container!.parentNode, { childList: true } );
     }
   } else {
-    r.registerBinding( r.container, 'DOMNodeRemoved', function( e: Event ){ // eslint-disable-line no-unused-vars
+    r.registerBinding( r.container, 'DOMNodeRemoved', function( _e: Event ){
       r.destroy();
     } );
   }
@@ -328,16 +328,16 @@ BRp.load = function( this: Renderer ){
   }, 100 );
 
   if( haveMutationsApi ){
-    r.styleObserver = new MutationObserver( onResize ); // eslint-disable-line no-undef
+    r.styleObserver = new MutationObserver( onResize );  
 
     r.styleObserver.observe( r.container, { attributes: true } );
   }
 
   // auto resize
-  r.registerBinding( containerWindow, 'resize', onResize ); // eslint-disable-line no-undef
+  r.registerBinding( containerWindow, 'resize', onResize );  
 
   if( haveResizeObserverApi ){
-    r.resizeObserver = new ResizeObserver(onResize); // eslint-disable-line no-undef
+    r.resizeObserver = new ResizeObserver(onResize);  
 
     r.resizeObserver.observe( r.container );
   }
@@ -434,7 +434,7 @@ BRp.load = function( this: Renderer ){
     let select = r.selection;
     let nears = r.findNearestElements( pos[0], pos[1], true, false );
     let near = nears[0];
-    let draggedElements = r.dragData.possibleDragElements;
+    let draggedElements;
 
     r.hoverData.mdownPos = pos;
     r.hoverData.mdownGPos = gpos;
@@ -568,12 +568,11 @@ BRp.load = function( this: Renderer ){
   }, false );
 
   let shadowRoot = getShadowRoot( r.container );
-  r.registerBinding( [ containerWindow, shadowRoot ], 'mousemove', function mousemoveHandler( e: MouseEvent ){ // eslint-disable-line no-undef
+  r.registerBinding( [ containerWindow, shadowRoot ], 'mousemove', function mousemoveHandler( e: MouseEvent ){  
     let capture = r.hoverData.capture;
 
     if( !capture && !eventInContainer(e) ){ return; }
 
-    let preventDefault = false;
     let cy = r.cy;
     let zoom = cy.zoom();
     let gpos = [ e.clientX, e.clientY ];
@@ -624,7 +623,7 @@ BRp.load = function( this: Renderer ){
     };
 
 
-    preventDefault = true;
+    let preventDefault = true;
 
     triggerEvents( near, [ 'mousemove', 'vmousemove', 'tapdrag' ], e, { x: pos[0], y: pos[1] } );
 
@@ -836,7 +835,7 @@ BRp.load = function( this: Renderer ){
   }, false );
 
   let clickTimeout: ReturnType<typeof setTimeout> | undefined, didDoubleClick: boolean, prevClickTimeStamp: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- nullable timestamp compared arithmetically
-  r.registerBinding( containerWindow, 'mouseup', function mouseupHandler( e: MouseEvent ){ // eslint-disable-line no-undef
+  r.registerBinding( containerWindow, 'mouseup', function mouseupHandler( e: MouseEvent ){  
     // during left mouse button gestures, ignore other buttons
     if (r.hoverData.which === 1 && e.which !== 1 && r.hoverData.capture) {
       return;
@@ -1192,7 +1191,7 @@ BRp.load = function( this: Renderer ){
   // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
   // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
-  r.registerBinding( containerWindow, 'scroll', function scrollHandler( e: Event ){ // eslint-disable-line no-unused-vars
+  r.registerBinding( containerWindow, 'scroll', function scrollHandler( _e: Event ){
     r.scrollingPage = true;
 
     clearTimeout( r.scrollingPageTimeout );
@@ -1268,7 +1267,7 @@ BRp.load = function( this: Renderer ){
     let now = r.touchData.now;
     let earlier = r.touchData.earlier;
 
-    if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
+    if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; } // eslint-disable-line no-var -- function-scoped pos reused across touch branches
     if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
     if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
 
@@ -1445,7 +1444,7 @@ BRp.load = function( this: Renderer ){
   }, false );
 
   let touchmoveHandler: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- reused for synthetic pointer events
-  r.registerBinding(containerWindow, 'touchmove', touchmoveHandler = function(this: any, e: any) { // eslint-disable-line no-undef, @typescript-eslint/no-explicit-any -- TouchEvent or synthetic pointer event; this is the bound DOM target
+  r.registerBinding(containerWindow, 'touchmove', touchmoveHandler = function(this: any, e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any -- TouchEvent or synthetic pointer event; this is the bound DOM target
     let capture = r.touchData.capture;
 
     if( !capture && !eventInContainer(e) ){ return; }
@@ -1456,7 +1455,7 @@ BRp.load = function( this: Renderer ){
     let earlier = r.touchData.earlier;
     let zoom = cy.zoom();
 
-    if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
+    if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; } // eslint-disable-line no-var -- function-scoped pos reused across touch branches
     if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
     if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
 
@@ -1849,7 +1848,7 @@ BRp.load = function( this: Renderer ){
 
   }, false );
   let touchcancelHandler: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- reused for synthetic pointer events
-  r.registerBinding( containerWindow, 'touchcancel', touchcancelHandler = function( e: any ){ // eslint-disable-line no-unused-vars, @typescript-eslint/no-explicit-any -- TouchEvent or synthetic pointer event
+  r.registerBinding( containerWindow, 'touchcancel', touchcancelHandler = function( _e: any ){ // eslint-disable-line @typescript-eslint/no-explicit-any -- TouchEvent or synthetic pointer event
     let start = r.touchData.start;
 
     r.touchData.capture = false;
@@ -1860,7 +1859,7 @@ BRp.load = function( this: Renderer ){
   } );
 
   let touchendHandler: any, didDoubleTouch: boolean, touchTimeout: ReturnType<typeof setTimeout> | undefined, prevTouchTimeStamp: any; // eslint-disable-line @typescript-eslint/no-explicit-any -- handler reused for synthetic pointer events; timestamp compared arithmetically
-  r.registerBinding( containerWindow, 'touchend', touchendHandler = function( e: any ){ // eslint-disable-line no-unused-vars, @typescript-eslint/no-explicit-any -- TouchEvent or synthetic pointer event
+  r.registerBinding( containerWindow, 'touchend', touchendHandler = function( e: any ){ // eslint-disable-line @typescript-eslint/no-explicit-any -- TouchEvent or synthetic pointer event
     let start = r.touchData.start;
 
     let capture = r.touchData.capture;
@@ -1885,7 +1884,7 @@ BRp.load = function( this: Renderer ){
     let now = r.touchData.now;
     let earlier = r.touchData.earlier;
 
-    if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
+    if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; } // eslint-disable-line no-var -- function-scoped pos reused across touch branches
     if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
     if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; } // eslint-disable-line no-var, @typescript-eslint/no-redeclare -- function-scoped pos reused across touch branches
 

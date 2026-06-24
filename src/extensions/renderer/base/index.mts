@@ -119,7 +119,7 @@ BRp.init = function( this: Renderer, options: RendererOptions ){
   r.registerCalculationListeners();
 };
 
-BRp.notify = function( this: Renderer, eventName: string, eles?: unknown ) {
+BRp.notify = function( this: Renderer, eventName: string, _eles?: unknown ) {
   let r = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let cy = r.cy;
 
@@ -202,7 +202,7 @@ BRp.destroy = function( this: Renderer ){
   if( r.labelCalcDiv ){
     try {
       document.body.removeChild( r.labelCalcDiv );
-    } catch( e ){
+    } catch( _e ){
       // ie10 issue #1014
     }
   }

@@ -38,7 +38,14 @@ export default [
     files: ["src/**/*.mts", "src/**/*.ts"],
     rules: {
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
+      // `_`-prefixed names are an intentional "unused but required" marker:
+      // positional callback/signature params kept for documentation and
+      // ignored bindings. Genuinely dead names get removed instead.
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_"
+      }],
       // the codebase style uses `let` pervasively; keep conversion diffs minimal
       "prefer-const": "off",
       // converted files must be clean; the TS-aware rule understands

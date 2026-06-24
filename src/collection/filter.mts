@@ -2,7 +2,7 @@ import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
 import type { SelectorInput } from '../selector/index.mjs';
 import type { SelectorCollection } from '../selector/type.mjs';
-import type { Collection, Element, SharedCollection, CoreAccess, NodeCollection, EdgeCollection } from './eles-types.mjs';
+import type { Collection, Element, SharedCollection, NodeCollection, EdgeCollection } from './eles-types.mjs';
 
 // TODO(eles-types): the runtime Collection prototype inherits Array.prototype,
 // so .push() exists at runtime but is not declared on the Collection interface.

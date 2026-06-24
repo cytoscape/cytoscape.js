@@ -3,24 +3,18 @@ import Promise from '../promise.mjs';
 import * as math from '../math.mjs';
 import type { Position, BoundingBox } from '../types.mjs';
 import type Animation from '../animation.mjs';
+import type { LayoutInstance } from '../core/core-types.mjs';
 import type { Collection, SharedCollection, Element } from './eles-types.mjs';
 
 /**
- * Structural view of a layout instance, as used by the collection layout
- * code. TODO(eles-types): swap to the real Layout type once layouts are
- * converted in the core/extension phase.
+ * A layout instance as driven by the collection layout code: the public
+ * `LayoutInstance` (run/stop/emit/on/… — see core-types) plus the internal
+ * `animations` array that `layoutPositions` populates. The built-in layout
+ * extensions pass themselves here.
  */
-export interface LayoutLike {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- emit forwards arbitrary event payloads to the layout emitter
-  emit( evt: { type: string; layout: LayoutLike } | string, ...args: any[] ): unknown;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- on/one register arbitrary event handlers
-  on( events: string, handler: ( ...args: any[] ) => void ): unknown;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- on/one register arbitrary event handlers
-  one( events: string, handler?: ( ...args: any[] ) => void ): unknown;
-  run(): unknown;
-  stop(): unknown;
+export interface LayoutLike extends LayoutInstance {
+  /** @internal */
   animations: Animation[];
-  [key: string]: unknown;
 }
 
 /** A node-positioning function used by `layoutPositions`. */

@@ -32,13 +32,22 @@ grid.on( 'layoutstop', () => {} );
 grid.one( 'layoutstop', () => {} );
 grid.off( 'layoutstop' );
 
+// documented layout event API (the layout mixes in the event emitter)
+grid.emit( 'layoutstop' );
+const layoutReady: Promise<unknown> = grid.promiseOn( 'layoutready' );
+grid.removeListener( 'layoutstop' );
+grid.removeAllListeners();
+void layoutReady;
+
 // chaining
 grid.run().stop();
 
-// eles.layout() returns the internal LayoutLike (a permissive structural type);
-// run() and on() are available on it
+// eles.layout() returns a LayoutInstance (run/on/emit/… available + chainable)
 cy.nodes().layout({ name: 'grid' }).run();
 cy.nodes().layout({ name: 'grid' }).on( 'layoutstop', () => {} );
+cy.nodes().layout({ name: 'grid' }).emit( 'layoutready' );
+const elesLayout: LayoutInstance = cy.nodes().layout({ name: 'grid' });
+void elesLayout;
 
 // LayoutInstance.run() returns `this` for chaining
 const chained: LayoutInstance = grid.run();

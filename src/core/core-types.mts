@@ -31,8 +31,13 @@ export interface LayoutInstance {
   stop(): this;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- layout emits/accepts arbitrary handler args
   on( events: string, handler: ( ...args: any[] ) => void ): this;
-  one( events: string, handler: ( ...args: unknown[] ) => void ): this;
+  one( events: string, handler?: ( ...args: unknown[] ) => void ): this;
   off( events: string, handler?: ( ...args: unknown[] ) => void ): this;
+  // documented layout event API (the layout mixes in the event emitter)
+  emit( events: string | { type: string; [key: string]: unknown }, extraParams?: unknown[] ): this;
+  promiseOn( events: string, selector?: string ): Promise<unknown>;
+  removeListener( events: string, handler?: ( ...args: unknown[] ) => void ): this;
+  removeAllListeners(): this;
   trigger( events: unknown ): this;
   [key: string]: unknown;
 }

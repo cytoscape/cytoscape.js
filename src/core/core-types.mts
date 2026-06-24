@@ -39,6 +39,15 @@ export interface LayoutInstance {
   removeListener( events: string, handler?: ( ...args: unknown[] ) => void ): this;
   removeAllListeners(): this;
   trigger( events: unknown ): this;
+  // documented aliases, typed by reference to their canonical method so they
+  // stay identical: addListener/bind/listen === on; unbind/unlisten === off;
+  // pon === promiseOn.
+  addListener: this['on'];
+  bind: this['on'];
+  listen: this['on'];
+  unbind: this['off'];
+  unlisten: this['off'];
+  pon: this['promiseOn'];
   [key: string]: unknown;
 }
 

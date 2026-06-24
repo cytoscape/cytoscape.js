@@ -74,6 +74,7 @@ interface AnimationPrivate extends AnimationOptions {
 }
 
 class Animation {
+  /** @internal */
   _private: AnimationPrivate;
   length: number;
   [index: number]: Animation;
@@ -130,6 +131,7 @@ class Animation {
 
   instanceString(): string { return 'animation'; }
 
+  /** @internal */
   hook(): this {
     let _p = this._private;
 

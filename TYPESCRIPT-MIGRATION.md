@@ -70,8 +70,11 @@ re-exports the old broad node/edge alias family (`Singular`,
 documented search/traversal helpers return those aliases where appropriate.
 The old `index.d.ts` (6,644 lines) is kept in the repo as a reference. A
 docmaker-based audit (`npm run test:types:docs`) checks that the generated
-`build/dts` surface matches the documented `cy.*` / `eles.*` / `ele.*` /
-`node.*` / `edge.*` API — with **no allowlisted exceptions**.
+`build/dts` surface matches every documented member namespace — `cy.*`,
+`eles.*` / `ele.*` / `node.*` / `nodes.*` / `edge.*` / `edges.*`, `ani.*`
+(the `Animation` class) and `layout.*` (`LayoutInstance`) — **including
+documented aliases** (e.g. `layout.bind`/`ani.run`), with **no allowlisted
+exceptions**.
 
 All three areas that previously diverged from the hand-written file are now
 reproduced from source:
@@ -135,10 +138,12 @@ parity with the old hand-written `index.d.ts`:
   well as narrowing, which plain assignability checks miss. It is a curated
   set (easily broadened) rather than an exhaustive public API parity test.
 - `npm run test:types:docs` audits the freshly generated
-  `build/dts/index.d.ts` against `documentation/docmaker.json` for the
-  documented `cy.*`, `eles.*`, `ele.*`, `node.*`, and `edge.*` surfaces. It
-  resolves effective members through the TypeScript type checker (so it
-  understands the `Omit<>`-based node/edge projections) and runs with **no
+  `build/dts/index.d.ts` against `documentation/docmaker.json` for every
+  documented member namespace — `cy.*`, `eles.*`/`ele.*`/`node.*`/`nodes.*`/
+  `edge.*`/`edges.*`, `ani.*` (`Animation`) and `layout.*` (`LayoutInstance`),
+  including documented aliases. It resolves effective members through the
+  TypeScript type checker (so it understands the `Omit<>`-based node/edge
+  projections and class instance types) and runs with **no
   residual allowlist** — it both rejects undocumented members and requires
   documented ones on each kind. It is a doc-surface audit, not a
   symbol-for-symbol comparison against the old `index.d.ts`.
@@ -157,10 +162,11 @@ parity with the old hand-written `index.d.ts`:
 
 Known remaining limitations:
 
-- It enforces presence/absence of documented member *names* on the audited
-  public interfaces (`cy.*`, `eles.*`, `ele.*`, `node.*`, `edge.*`), but it
-  does not validate the exact overload shapes, generic constraints, or
-  argument/return precision of every documented API entry.
+- It enforces presence/absence of documented member *names* (including
+  aliases) on every audited public surface (`cy.*`, the collection/element and
+  node/edge kinds, `ani.*`, and `layout.*`), but it does not validate the exact
+  overload shapes, generic constraints, or argument/return precision of every
+  documented API entry.
 - Top-level named export completeness is enforced by `test:types:exports`;
   structural usability of every exported type is enforced by the tsc
   consumer test (which imports and uses each one).
@@ -178,8 +184,10 @@ Known remaining limitations:
 
 Practical interpretation for now:
 
-- The generated `.d.ts` is automatically checked to avoid undocumented
-  `cy.*`, `eles.*`, and `ele.*` member leaks.
+- The generated `.d.ts` is automatically checked, across every documented
+  member namespace (core, collection/element, node/edge, animation, layout),
+  to expose all documented members (and aliases) and to avoid undocumented
+  member leaks.
 - The generated `.d.ts` is automatically checked to remain usable by a
   representative external TypeScript consumer.
 - Strict node/edge narrowing, `Css.*` surface, and `EventObject*` semantics

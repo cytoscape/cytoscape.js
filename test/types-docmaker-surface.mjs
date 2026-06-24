@@ -5,6 +5,12 @@ import ts from 'typescript';
 const docs = JSON.parse( fs.readFileSync( new URL( '../documentation/docmaker.json', import.meta.url ), 'utf8' ) );
 const dtsPath = fileURLToPath( new URL( '../build/dts/index.d.ts', import.meta.url ) );
 
+// Every dotted member namespace docmaker documents that maps to a public TS
+// type. `nodes`/`edges` fold into the node/edge collection groups; `ani` and
+// `layout` are the animation and layout instance types. (`Popper` in docmaker
+// is extension prose, not a typed member surface, so it is intentionally out.)
+const DOC_PREFIX = /^(cy|eles|ele|node|nodes|edge|edges|ani|layout)\./;
+
 const docByPrefix = new Map();
 
 function addDocName( prefix, name ){
@@ -22,14 +28,16 @@ function walkDocs( value ){
   }
 
   if( value && typeof value === 'object' ){
-    if( typeof value.name === 'string' && /^(cy|eles|ele|node|nodes|edge|edges)\./.test( value.name ) ){
+    if( typeof value.name === 'string' && DOC_PREFIX.test( value.name ) ){
       let [ prefix, name ] = value.name.split( '.' );
       addDocName( prefix, name );
     }
 
+    // Aliases are part of the public API surface and must be exposed too (e.g.
+    // `layout.bind` === `layout.on`, `ani.run` === `ani.play`).
     if( Array.isArray( value.pureAliases ) ){
       for( let alias of value.pureAliases ){
-        if( typeof alias === 'string' && /^(cy|eles|ele|node|nodes|edge|edges)\./.test( alias ) ){
+        if( typeof alias === 'string' && DOC_PREFIX.test( alias ) ){
           let [ prefix, name ] = alias.split( '.' );
           addDocName( prefix, name );
         }
@@ -60,7 +68,7 @@ const source = program.getSourceFile( dtsPath );
 const declaredTypes = new Map();
 
 for( let node of source.statements ){
-  if( ( ts.isInterfaceDeclaration( node ) || ts.isTypeAliasDeclaration( node ) ) && node.name ){
+  if( ( ts.isInterfaceDeclaration( node ) || ts.isTypeAliasDeclaration( node ) || ts.isClassDeclaration( node ) ) && node.name ){
     let symbol = checker.getSymbolAtLocation( node.name );
 
     if( symbol ){
@@ -91,7 +99,9 @@ const groups = {
   Collection: { iface: 'Collection', allowed: [ 'eles', 'ele', 'node', 'nodes', 'edge', 'edges' ], required: [ 'eles' ] },
   Element: { iface: 'Element$1', allowed: [ 'ele', 'eles', 'node', 'nodes', 'edge', 'edges' ], required: [ 'ele' ] },
   NodeCollection: { iface: 'NodeCollection', allowed: [ 'node', 'nodes', 'ele', 'eles' ], required: [ 'node', 'nodes' ] },
-  EdgeCollection: { iface: 'EdgeCollection', allowed: [ 'edge', 'edges', 'ele', 'eles' ], required: [ 'edge', 'edges' ] }
+  EdgeCollection: { iface: 'EdgeCollection', allowed: [ 'edge', 'edges', 'ele', 'eles' ], required: [ 'edge', 'edges' ] },
+  Animation: { iface: 'Animation', allowed: [ 'ani' ], required: [ 'ani' ] },
+  LayoutInstance: { iface: 'LayoutInstance', allowed: [ 'layout' ], required: [ 'layout' ] }
 };
 
 // The public node/edge projections now omit cross-kind members at the type

@@ -155,6 +155,20 @@ export interface ElementJson {
  * members are optional so that ElementPrivate remains a subtype (and
  * therefore Element remains assignable to Collection).
  */
+/**
+ * A bounding-box cache slot stored on element `_private` (bbCache, bodyBounds,
+ * overlayBounds, and the entries of labelBounds / arrowBounds). Extends a plain
+ * bounding box with the label-padding bookkeeping written by the bounds code;
+ * the index signature keeps it permissive for other renderer-written fields.
+ */
+export interface BbCache extends BoundingBox {
+  leftPad?: number;
+  rightPad?: number;
+  topPad?: number;
+  botPad?: number;
+  [key: string]: unknown;
+}
+
 export interface CollectionPrivate {
   cy: CoreAccess;
   map: MapLike<string, ElesEntry>;
@@ -200,12 +214,12 @@ export interface ElementPrivate extends CollectionPrivate {
   parent: Element | null;
   traversalCache: Record<string, unknown>;
   backgrounding: boolean;
-  bbCache: ( BoundingBox & Record<string, unknown> ) | null;
+  bbCache: BbCache | null;
   bbCacheShift: Position;
-  bodyBounds: ( BoundingBox & Record<string, unknown> ) | null;
-  overlayBounds: ( BoundingBox & Record<string, unknown> ) | null;
-  labelBounds: Record<string, ( BoundingBox & Record<string, unknown> ) | null>;
-  arrowBounds: Record<string, ( BoundingBox & Record<string, unknown> ) | null>;
+  bodyBounds: BbCache | null;
+  overlayBounds: BbCache | null;
+  labelBounds: Record<string, BbCache | null>;
+  arrowBounds: Record<string, BbCache | null>;
   emitter?: Emitter<Element>;
   source?: Element;
   target?: Element;
@@ -219,6 +233,13 @@ export type ElementsInput =
 /** Methods defined directly in collection/index.mts (not via mixins). */
 export interface CollectionBaseFns {
   instanceString(): string;
+  /**
+   * @internal
+   * The collection prototype inherits `Array.prototype` at runtime, so `.push()`
+   * is available for building up spawned collections imperatively. Kept internal
+   * (stripped from the public d.ts) — public collections are immutable views.
+   */
+  push( ele: Element ): number;
   /** @internal */
   spawn( eles?: ElementsInput, unique?: boolean ): Collection;
   /** @internal */

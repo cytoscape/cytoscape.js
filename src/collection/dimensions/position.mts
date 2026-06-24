@@ -44,15 +44,11 @@ export interface CollectionPosition {
   relativePoint( this: SharedCollection, dim?: Partial<Position> | string, val?: number ): Position | number | Collection | undefined;
 }
 
-// TODO(eles-types): `locked()` is contributed by the not-yet-converted
-// events/selection mixin; cast locally until CollectionEvents declares it.
-type WithLocked = { locked(): boolean };
-
 let beforePositionSet = function( eles: Collection, newPos: Partial<Position>, silent: boolean ): void {
   for( let i = 0; i < eles.length; i++ ){
     let ele = eles[i];
 
-    if( !( ele as unknown as WithLocked ).locked() ){
+    if( !ele.locked() ){
       let oldPos = ele._private.position;
 
       let delta = {
@@ -91,7 +87,7 @@ let positionDef: DataParams<Collection, Element> & { validKeys?: string[] } = {
     eles.dirtyCompoundBoundsCache();
   },
   canSet: function( ele: Element ){
-    return !( ele as unknown as WithLocked ).locked();
+    return !ele.locked();
   }
 };
 

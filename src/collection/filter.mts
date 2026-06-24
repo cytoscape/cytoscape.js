@@ -4,11 +4,6 @@ import type { SelectorInput } from '../selector/index.mjs';
 import type { SelectorCollection } from '../selector/type.mjs';
 import type { Collection, Element, SharedCollection, NodeCollection, EdgeCollection } from './eles-types.mjs';
 
-// TODO(eles-types): the runtime Collection prototype inherits Array.prototype,
-// so .push() exists at runtime but is not declared on the Collection interface.
-// Local helper used for spawned collections that are built up imperatively.
-type MutableCollection = Collection & { push( ele: Element ): number };
-
 /** A predicate run against each element of a collection. */
 export type FilterEleFn = ( ele: Element, i: number, eles: Collection ) => boolean | unknown;
 
@@ -82,8 +77,8 @@ let elesfn = ({
 
   // internal helper to get nodes and edges as separate collections with single iteration over elements
   byGroup: function( this: Collection ): ByGroupResult {
-    let nodes = this.spawn() as MutableCollection;
-    let edges = this.spawn() as MutableCollection;
+    let nodes = this.spawn();
+    let edges = this.spawn();
 
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];
@@ -104,7 +99,7 @@ let elesfn = ({
     } else if( is.string( filter ) || is.elementOrCollection( filter ) ){
       return new Selector( filter as SelectorInput ).filter( this as unknown as SelectorCollection ) as unknown as Collection;
     } else if( is.fn( filter ) ){
-      let filterEles = this.spawn() as MutableCollection;
+      let filterEles = this.spawn();
       let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
       let fn = filter as FilterEleFn;
 
@@ -135,7 +130,7 @@ let elesfn = ({
         removeColl = toRemove as Collection;
       }
 
-      let elements = this.spawn() as MutableCollection;
+      let elements = this.spawn();
 
       for( let i = 0; i < this.length; i++ ){
         let element = this[ i ];
@@ -164,7 +159,7 @@ let elesfn = ({
       return this.filter( selector );
     }
 
-    let elements = this.spawn() as MutableCollection;
+    let elements = this.spawn();
     let col1 = this; // eslint-disable-line @typescript-eslint/no-this-alias
     let col2 = other as Collection;
     let col1Smaller = this.length < col2.length;
@@ -192,7 +187,7 @@ let elesfn = ({
       otherColl = other as Collection;
     }
 
-    let elements = this.spawn() as MutableCollection;
+    let elements = this.spawn();
     let col1 = this; // eslint-disable-line @typescript-eslint/no-this-alias
     let col2 = otherColl;
 
@@ -231,7 +226,7 @@ let elesfn = ({
     let col1 = this; // eslint-disable-line @typescript-eslint/no-this-alias
     let col2 = otherColl;
 
-    let add = function( col: Collection, other: Collection, retEles: MutableCollection ){
+    let add = function( col: Collection, other: Collection, retEles: Collection ){
 
       for( let i = 0; i < col.length; i++ ){
         let ele = col[ i ];
@@ -247,8 +242,8 @@ let elesfn = ({
 
     };
 
-    add( col1, col2, left as MutableCollection );
-    add( col2, col1, right as MutableCollection );
+    add( col1, col2, left );
+    add( col2, col1, right );
 
     return { left, right, both };
   },
@@ -269,7 +264,7 @@ let elesfn = ({
       addColl = toAdd as Collection;
     }
 
-    let elements = this.spawnSelf() as MutableCollection;
+    let elements = this.spawnSelf();
 
     for( let i = 0; i < addColl.length; i++ ){
       let ele = addColl[i];

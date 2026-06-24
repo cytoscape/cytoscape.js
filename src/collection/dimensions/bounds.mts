@@ -3,22 +3,8 @@ import { assignBoundingBox, expandBoundingBoxSides, clearBoundingBox, expandBoun
 import {defaults, endsWith, getPrefixedProperty, hashIntsArray, memoize} from '../../util/index.mjs';
 import { labelHalign, labelValign } from '../../style/align.mjs';
 import type { BoundingBox, BoundingBox12, Position } from '../../types.mjs';
-import type { Collection, SharedCollection, Element } from '../eles-types.mjs';
+import type { Collection, SharedCollection, Element, BbCache } from '../eles-types.mjs';
 import type { ParsedStyleProperty } from '../../style/parse.mjs';
-
-// A bounding box cache object stored on _private. These extend the basic
-// bounding box with assorted bookkeeping fields (label padding, etc.).
-// TODO(eles-types): a precise type for _p.bbCache / bodyBounds / overlayBounds
-// / labelBounds entries / arrowBounds entries would be `BbCache` below; the
-// shared interfaces currently type these loosely as
-// `(BoundingBox & Record<string, unknown>) | null`.
-interface BbCache extends BoundingBox {
-  leftPad?: number;
-  rightPad?: number;
-  topPad?: number;
-  botPad?: number;
-  [key: string]: unknown;
-}
 
 /** Options controlling which sub-parts are included in a bounding box. */
 export interface BoundingBoxOptions {

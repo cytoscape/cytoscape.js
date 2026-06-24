@@ -52,7 +52,7 @@ const EXPECTED_EXPORTS = new Set( [
 // `target: any` on AbstractEventObject for contravariance). This is a ratchet:
 // raise it only when a new intentional `any` is added (and document why in the
 // source); lower it whenever a reduction makes the tighter bound hold.
-const ANY_THRESHOLD = 11;
+const ANY_THRESHOLD = 9;
 
 const dtsPath = new URL( '../build/dts/index.d.ts', import.meta.url );
 const dts = fs.readFileSync( dtsPath, 'utf8' );

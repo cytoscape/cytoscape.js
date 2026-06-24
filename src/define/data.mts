@@ -34,8 +34,9 @@ export interface DataParams<Self, Single = Self> {
 export interface DataFunc<Self> {
   ( this: Self ): Record<string, unknown> | undefined;
   ( this: Self, name: string ): unknown;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- data values are arbitrary user values
-  ( this: Self, name: string, value: any ): Self;
+  // data values are arbitrary user values; `unknown` accepts any argument
+  // (contravariant param) without the poisoning that `any` would introduce.
+  ( this: Self, name: string, value: unknown ): Self;
   ( this: Self, obj: Record<string, unknown> ): Self;
   ( this: Self, handler: PublicEventHandler ): Self;
 }

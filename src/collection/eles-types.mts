@@ -61,8 +61,8 @@ export interface CoreAccess {
   hasCompoundNodes(): boolean;
   headless(): boolean;
   destroyed(): boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- emit passes through arbitrary extra params
-  emit( events: string, extraParams?: any[] ): unknown;
+  // arbitrary event payloads — `unknown[]` accepts any args without poisoning
+  emit( events: string, extraParams?: unknown[] ): unknown;
   mutableElements(): Collection;
   $( selector?: unknown ): Collection;
   filter( selector?: unknown ): Collection;

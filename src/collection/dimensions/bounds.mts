@@ -524,8 +524,11 @@ let updateBoundsFromMiterBorder = function( bounds: BoundingBox, ele: Element ):
   updateBoundsFromMiter(bounds, ele, borderOpacity, borderWidth, borderPosition);
 };
 
-// TODO(eles-types): the renderer's node-shape registry is not declared on
-// CoreRendererAccess; type it locally until the renderer is converted.
+// The renderer's node-shape registry is an internal renderer surface, typed
+// locally on purpose: CoreRendererAccess is reachable from the public d.ts via
+// cy()/eles.renderer(), and these internals should not be exposed there (the
+// renderer's real type lives in the higher-layer renderer extension, which
+// collection code must not depend on). The cast below is guarded by !headless.
 interface MiterRenderer {
   nodeShapes: Record<string, { hasMiterBounds?: boolean; miterBounds?( x: number, y: number, w: number, h: number, expansion: number ): BoundingBox12 } | undefined>;
   getNodeShape( ele: Element ): string;

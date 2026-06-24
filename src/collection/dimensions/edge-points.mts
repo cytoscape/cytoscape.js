@@ -2,8 +2,12 @@ import * as math from '../../math.mjs';
 import type { Position } from '../../types.mjs';
 import type { Collection } from '../eles-types.mjs';
 
-// TODO(eles-types): CoreRendererAccess does not declare the edge-point
-// getters; cast the renderer locally until the renderer is converted.
+// The renderer's edge-point geometry getters are internal renderer methods.
+// They are typed locally (rather than on CoreRendererAccess) on purpose:
+// CoreRendererAccess is reachable from the public d.ts via cy()/eles.renderer(),
+// and these internal methods should not be exposed there. The renderer's real
+// type lives in the higher-layer renderer extension, which collection code must
+// not depend on. The casts below are guarded by isEdge()/takesUpSpace().
 interface EdgePointRenderer {
   getControlPoints( ele: Collection ): Position[];
   getSegmentPoints( ele: Collection ): Position[];

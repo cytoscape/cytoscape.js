@@ -126,10 +126,14 @@ parity with the old hand-written `index.d.ts`:
   not assert that the emitted public `.d.ts` exactly matches either the
   docs or the old manual definitions.
 - `npm run test:types` proves that the generated declarations build and
-  are consumable by a representative TypeScript client in
-  `typescript/tests/api.test-d.ts`. It checks important exported names
-  and representative usage, but it is not an exhaustive public API
-  parity test.
+  are consumable by representative TypeScript clients in
+  `typescript/tests/*.test-d.ts`. `api.test-d.ts` checks exported names and
+  representative usage; `algorithms`/`layout`/`extension.test-d.ts` cover
+  those surfaces; and `parity.test-d.ts` adds **invariant exact-type
+  assertions** (an `Expect<Equal<…>>` harness) that pin the precise return
+  type / overload shape of high-value entry points — catching *widening* as
+  well as narrowing, which plain assignability checks miss. It is a curated
+  set (easily broadened) rather than an exhaustive public API parity test.
 - `npm run test:types:docs` audits the freshly generated
   `build/dts/index.d.ts` against `documentation/docmaker.json` for the
   documented `cy.*`, `eles.*`, `ele.*`, `node.*`, and `edge.*` surfaces. It
@@ -162,6 +166,15 @@ Known remaining limitations:
   consumer test (which imports and uses each one).
 - It does not validate undocumented helper types unless they leak into the
   audited public interfaces.
+- **Known type gap (surfaced by `parity.test-d.ts`):** the `data(field,
+  value)` / `position(partial)` *setters* return the kind-agnostic base
+  collection (`SharedCollection`), which omits the clustering/algorithm
+  methods carried by `Collection`. Common chaining (`.addClass()`,
+  `.style()`, traversal) still compiles, but algorithm chaining off a setter
+  (e.g. `eles.data('w', 1).kMeans(...)`) — which compiled against the
+  hand-written `index.d.ts` — does not. The boundary is locked with a
+  `@ts-expect-error` in `parity.test-d.ts` so closing the gap is a
+  deliberate, test-updating change.
 
 Practical interpretation for now:
 

@@ -145,8 +145,13 @@ parity with the old hand-written `index.d.ts`:
   TypeScript type checker (so it understands the `Omit<>`-based node/edge
   projections and class instance types) and runs with **no
   residual allowlist** — it both rejects undocumented members and requires
-  documented ones on each kind. It is a doc-surface audit, not a
-  symbol-for-symbol comparison against the old `index.d.ts`.
+  documented ones on each kind. It additionally runs a **callability pass**:
+  for each narrowed kind (`NodeSingular`/`EdgeSingular`/`NodeCollection`/
+  `EdgeCollection`) it checks every documented member is not just present but
+  actually *callable* on that kind (the kind is assignable to the method's
+  `this` type) — catching `this: Collection` regressions that a name-only check
+  misses. It is a doc-surface audit, not a symbol-for-symbol comparison against
+  the old `index.d.ts`.
 - `npm run test:types:css` audits the generated `Css.*` style surface
   against the live runtime property inventory in `src/style/properties.mts`,
   failing on any documented-but-untyped or typed-but-unknown property. It
@@ -181,18 +186,18 @@ Known remaining limitations:
   hand-written `index.d.ts` — does not. The boundary is locked with a
   `@ts-expect-error` in `parity.test-d.ts` so closing the gap is a
   deliberate, test-updating change.
-- **Known type gap — `this: Collection` vs the node/edge projections:** many
-  collection mixin methods are typed `this: Collection` (the wide type). Since
-  the public `NodeCollection`/`NodeSingular`/`EdgeCollection`/`EdgeSingular`
-  are `Omit<>`-projections of `Collection`, they are NOT assignable to it, so
-  those methods do not type-check when called on a narrowed kind (e.g.
-  `cy.nodes().style('color')`). Methods meant to be kind-agnostic should use
-  `this: SharedCollection` instead (the base both projections satisfy) — as the
-  animation methods and the position/data accessors already do. The docmaker
-  name-presence audit does not catch this (it resolves member *names*, ignoring
-  `this` constraints); it surfaces only via consumer usage on a narrowed type.
-  Auditing/fixing the remaining `this: Collection` methods is tracked as a
-  follow-up.
+- **Resolved — `this: Collection` callability on the node/edge projections:**
+  kind-agnostic collection methods (algorithms, style, dimensions, edge-points,
+  animation) were typed `this: Collection`; since the public
+  `NodeCollection`/`NodeSingular`/`EdgeCollection`/`EdgeSingular` are
+  `Omit<>`-projections of `Collection` (not assignable to it), those methods did
+  not type-check on a narrowed kind (e.g. `cy.nodes().style('color')`). They now
+  use `this: SharedCollection` (the base both projections satisfy), with local
+  `this as Collection` casts in the few impl bodies that need wide access. The
+  presence audit could not catch this (it resolves member *names*, ignoring
+  `this`), so `test:types:docs` now also runs a **callability pass**: for each
+  narrowed kind it verifies every documented member is actually callable (the
+  kind is assignable to the method's `this` type).
 
 Practical interpretation for now:
 

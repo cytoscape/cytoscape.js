@@ -5,7 +5,7 @@
 
 import * as util from '../../util/index.mjs';
 import clusteringDistance from './clustering-distances.mjs';
-import type { Collection, Element, CoreAccess } from '../eles-types.mjs';
+import type { Collection, Element, CoreAccess, SharedCollection } from '../eles-types.mjs';
 import type { DistanceMetric, DimGetter } from './clustering-distances.mjs';
 
 // A node of the dendrogram / cluster tree built during clustering. `value` is a
@@ -257,7 +257,7 @@ let buildClustersFromTree = function( root: ClusterNode | undefined, k: number, 
   }
 };
 
-let hierarchicalClustering = function( this: Collection, options?: HierarchicalClusteringOptions ){
+let hierarchicalClustering = function( this: SharedCollection, options?: HierarchicalClusteringOptions ){
   let cy    = this.cy();
   let nodes = this.nodes();
 

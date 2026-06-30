@@ -1,7 +1,7 @@
 import Heap from '../../heap.mjs';
 import Set from '../../set.mjs';
 import { defaults } from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge/node weighting or heuristic function. */
 export type AStarWeightFn = ( ele: Element ) => number;
@@ -24,7 +24,7 @@ export interface AStarResult {
 }
 
 export interface AlgorithmsAStar {
-  aStar( this: Collection, options?: AStarOptions ): AStarResult;
+  aStar( this: SharedCollection, options?: AStarOptions ): AStarResult;
 }
 
 const aStarDefaults = defaults({
@@ -38,7 +38,7 @@ const aStarDefaults = defaults({
 let elesfn = ({
 
   // Implemented from pseudocode from wikipedia
-  aStar: function( this: Collection, options?: AStarOptions ): AStarResult {
+  aStar: function( this: SharedCollection, options?: AStarOptions ): AStarResult {
     let cy = this.cy();
     let { root, goal, heuristic, directed, weight } = aStarDefaults(options);
 

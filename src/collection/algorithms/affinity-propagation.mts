@@ -9,7 +9,7 @@ import * as math from '../../math.mjs';
 import * as is from '../../is.mjs';
 import clusteringDistance from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** A node attribute accessor used to quantify similarity. */
 export type AffinityAttributeFn = ( node: Element ) => number;
@@ -28,8 +28,8 @@ export interface AffinityPropagationOptions {
 }
 
 export interface AlgorithmsAffinityPropagation {
-  affinityPropagation( this: Collection, options?: AffinityPropagationOptions ): Collection[];
-  ap( this: Collection, options?: AffinityPropagationOptions ): Collection[];
+  affinityPropagation( this: SharedCollection, options?: AffinityPropagationOptions ): Collection[];
+  ap( this: SharedCollection, options?: AffinityPropagationOptions ): Collection[];
 }
 
 let defaults = util.defaults({
@@ -155,7 +155,7 @@ let assign = function( n: number, S: number[], exemplars: number[] ): number[] {
   return clusters;
 };
 
-let affinityPropagation = function( this: Collection, options?: AffinityPropagationOptions ): Collection[] {
+let affinityPropagation = function( this: SharedCollection, options?: AffinityPropagationOptions ): Collection[] {
   let cy    = this.cy();
   let nodes = this.nodes();
   let opts  = setOptions( options );

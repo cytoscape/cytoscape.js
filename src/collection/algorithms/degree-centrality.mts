@@ -1,6 +1,6 @@
 import * as is from '../../is.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type DegreeCentralityWeightFn = ( edge: Element ) => number;
@@ -41,11 +41,11 @@ export type DegreeCentralityNormalizedResult =
   UndirectedDegreeCentralityNormalized | DirectedDegreeCentralityNormalized;
 
 export interface AlgorithmsDegreeCentrality {
-  degreeCentralityNormalized( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult;
-  degreeCentrality( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityResult;
-  dc( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityResult;
-  dcn( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult;
-  degreeCentralityNormalised( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult;
+  degreeCentralityNormalized( this: SharedCollection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult;
+  degreeCentrality( this: SharedCollection, options?: DegreeCentralityOptions ): DegreeCentralityResult;
+  dc( this: SharedCollection, options?: DegreeCentralityOptions ): DegreeCentralityResult;
+  dcn( this: SharedCollection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult;
+  degreeCentralityNormalised( this: SharedCollection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult;
 }
 
 const defaults = util.defaults({
@@ -56,7 +56,7 @@ const defaults = util.defaults({
 });
 
 let elesfn = ({
-  degreeCentralityNormalized: function( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult {
+  degreeCentralityNormalized: function( this: SharedCollection, options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult {
     let opts = defaults( options );
 
     let cy = this.cy();
@@ -146,7 +146,7 @@ let elesfn = ({
   // Implemented from the algorithm in Opsahl's paper
   // "Node centrality in weighted networks: Generalizing degree and shortest paths"
   // check the heading 2 "Degree"
-  degreeCentrality: function( this: Collection, options?: DegreeCentralityOptions ): DegreeCentralityResult {
+  degreeCentrality: function( this: SharedCollection, options?: DegreeCentralityOptions ): DegreeCentralityResult {
     let opts = defaults( options );
 
     let cy = this.cy();

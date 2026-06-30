@@ -122,6 +122,31 @@ type AlgorithmCases = [
 ];
 
 // =============================================================================
+// Kind-agnostic methods must be CALLABLE on the narrowed node/edge projections,
+// not merely present. These previously failed to type-check because the methods
+// were typed `this: Collection` and the `Omit<>`-based Node/Edge projections are
+// not assignable to the wide `Collection`. The docmaker callability audit covers
+// this exhaustively; these are representative compile-path regression guards.
+// =============================================================================
+nodes.style( 'background-color' );
+nodes.css( { 'background-color': 'red' } );
+nodes.numericStyle( 'width' );
+nodes.width();
+nodes.height();
+nodes.effectiveOpacity();
+nodes.dijkstra( { root: '#a' } );
+nodes.pageRank( {} );
+edges.style( 'line-color' );
+edges.width();
+edges.controlPoints();
+edges.segmentPoints();
+edges.dijkstra( { root: '#a' } );
+const srcNode: NodeSingular = edges.source();
+srcNode.style( 'background-color' );
+srcNode.width();
+void srcNode;
+
+// =============================================================================
 // Self-test: the Equal harness must REJECT mismatches. If `Equal` were ever
 // weakened to be always-true, this `@ts-expect-error` would become unused and
 // tsc would flag it — keeping the harness itself honest.

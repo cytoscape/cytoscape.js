@@ -1,6 +1,6 @@
 import * as is from '../../is.mjs';
 import { defaults } from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type FloydWarshallWeightFn = ( edge: Element ) => number;
@@ -18,7 +18,7 @@ export interface FloydWarshallResult {
 }
 
 export interface AlgorithmsFloydWarshall {
-  floydWarshall( this: Collection, options?: FloydWarshallOptions ): FloydWarshallResult;
+  floydWarshall( this: SharedCollection, options?: FloydWarshallOptions ): FloydWarshallResult;
 }
 
 const floydWarshallDefaults = defaults({
@@ -29,7 +29,7 @@ const floydWarshallDefaults = defaults({
 let elesfn = ({
 
   // Implemented from pseudocode from wikipedia
-  floydWarshall: function( this: Collection, options?: FloydWarshallOptions ): FloydWarshallResult {
+  floydWarshall: function( this: SharedCollection, options?: FloydWarshallOptions ): FloydWarshallResult {
     let cy = this.cy();
 
     let { weight, directed } = floydWarshallDefaults(options);

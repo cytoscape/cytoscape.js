@@ -1,6 +1,6 @@
 import * as is from '../../is.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type ClosenessCentralityWeightFn = ( edge: Element ) => number;
@@ -19,11 +19,11 @@ export interface ClosenessCentralityNormalizedResult {
 }
 
 export interface AlgorithmsClosenessCentrality {
-  closenessCentralityNormalized( this: Collection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult;
-  closenessCentrality( this: Collection, options?: ClosenessCentralityOptions ): number;
-  cc( this: Collection, options?: ClosenessCentralityOptions ): number;
-  ccn( this: Collection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult;
-  closenessCentralityNormalised( this: Collection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult;
+  closenessCentralityNormalized( this: SharedCollection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult;
+  closenessCentrality( this: SharedCollection, options?: ClosenessCentralityOptions ): number;
+  cc( this: SharedCollection, options?: ClosenessCentralityOptions ): number;
+  ccn( this: SharedCollection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult;
+  closenessCentralityNormalised( this: SharedCollection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult;
 }
 
 const defaults = util.defaults({
@@ -35,7 +35,7 @@ const defaults = util.defaults({
 
 const elesfn = ({
 
-  closenessCentralityNormalized: function( this: Collection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult {
+  closenessCentralityNormalized: function( this: SharedCollection, options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult {
     let { harmonic, weight, directed } = defaults(options);
 
     let cy = this.cy();
@@ -91,7 +91,7 @@ const elesfn = ({
   },
 
   // Implemented from pseudocode from wikipedia
-  closenessCentrality: function( this: Collection, options?: ClosenessCentralityOptions ): number {
+  closenessCentrality: function( this: SharedCollection, options?: ClosenessCentralityOptions ): number {
     let { root, weight, directed, harmonic } = defaults(options);
 
     let rootEle: Element = this.filter(root)[0];

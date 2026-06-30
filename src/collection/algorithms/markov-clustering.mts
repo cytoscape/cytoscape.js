@@ -20,8 +20,8 @@ export interface MarkovClusteringOptions {
 }
 
 export interface AlgorithmsMarkovClustering {
-  markovClustering( this: Collection, options?: MarkovClusteringOptions ): Collection[];
-  mcl( this: Collection, options?: MarkovClusteringOptions ): Collection[];
+  markovClustering( this: SharedCollection, options?: MarkovClusteringOptions ): Collection[];
+  mcl( this: SharedCollection, options?: MarkovClusteringOptions ): Collection[];
 }
 
  
@@ -162,7 +162,7 @@ let removeDuplicates = function( clusters: Collection[] ): Collection[] {
   return clusters;
 };
 
-let markovClustering = function( this: Collection, options?: MarkovClusteringOptions ): Collection[] {
+let markovClustering = function( this: SharedCollection, options?: MarkovClusteringOptions ): Collection[] {
   let nodes = this.nodes();
   let edges = this.edges();
   let cy = this.cy();

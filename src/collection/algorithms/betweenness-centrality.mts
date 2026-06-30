@@ -19,8 +19,8 @@ export interface BetweennessCentralityResult {
 }
 
 export interface AlgorithmsBetweennessCentrality {
-  betweennessCentrality( this: Collection, options?: BetweennessCentralityOptions ): BetweennessCentralityResult;
-  bc( this: Collection, options?: BetweennessCentralityOptions ): BetweennessCentralityResult;
+  betweennessCentrality( this: SharedCollection, options?: BetweennessCentralityOptions ): BetweennessCentralityResult;
+  bc( this: SharedCollection, options?: BetweennessCentralityOptions ): BetweennessCentralityResult;
 }
 
 const defaults = util.defaults({
@@ -31,7 +31,7 @@ const defaults = util.defaults({
 let elesfn = ({
 
   // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
-  betweennessCentrality: function( this: Collection, options?: BetweennessCentralityOptions ): BetweennessCentralityResult {
+  betweennessCentrality: function( this: SharedCollection, options?: BetweennessCentralityOptions ): BetweennessCentralityResult {
     let { directed, weight } = defaults(options);
     let weighted = weight != null;
     let cy = this.cy();

@@ -1,6 +1,6 @@
 import * as is from '../../is.mjs';
 import { defaults } from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Options accepted by `hierholzer`. */
 export interface HierholzerOptions {
@@ -16,7 +16,7 @@ export interface HierholzerResult {
 
 export interface AlgorithmsHierholzer {
   hierholzer(
-    this: Collection,
+    this: SharedCollection,
     options?: HierholzerOptions | Collection | Element | string,
     directed?: boolean
   ): HierholzerResult;
@@ -29,7 +29,7 @@ const hierholzerDefaults = defaults({
 
 let elesfn = ({
   hierholzer: function(
-    this: Collection,
+    this: SharedCollection,
     options?: HierholzerOptions | Collection | Element | string,
     directed?: boolean
   ): HierholzerResult {

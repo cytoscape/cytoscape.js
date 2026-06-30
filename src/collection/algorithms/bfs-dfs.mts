@@ -1,5 +1,5 @@
 import * as is from '../../is.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Callback invoked for each visited node during a search. Return `true` to
  * stop and record the node as `found`; return `false` to stop without. */
@@ -27,7 +27,7 @@ export interface SearchResult {
 
 /** A configured search method (bfs or dfs). */
 export type SearchFn = (
-  this: Collection,
+  this: SharedCollection,
   roots?: SearchOptions | Collection | Element | string,
   fn?: SearchVisitFn | boolean,
   directed?: boolean
@@ -48,7 +48,7 @@ let defineSearch = function( params: { bfs?: boolean; dfs?: boolean } ): SearchF
 
   // from pseudocode on wikipedia
   return function searchFn(
-    this: Collection,
+    this: SharedCollection,
     roots?: SearchOptions | Collection | Element | string,
     fn?: SearchVisitFn | boolean,
     directed?: boolean

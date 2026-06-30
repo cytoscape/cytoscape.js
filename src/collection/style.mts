@@ -1,6 +1,6 @@
 import * as is from '../is.mjs';
 import * as util from '../util/index.mjs';
-import type { Collection, Element } from './eles-types.mjs';
+import type { Collection, Element, SharedCollection } from './eles-types.mjs';
 import type { ParsedStyleProperty } from '../style/parse.mjs';
 
 type StyleCacheFn = ( ele: Element ) => unknown;
@@ -27,12 +27,12 @@ function cacheStyleFunction( key: string, fn: StyleCacheFn ): StyleCacheFn {
   };
 }
 
-function cachePrototypeStyleFunction( key: string, fn: ( this: Element ) => unknown ): ( this: Collection ) => boolean | undefined {
+function cachePrototypeStyleFunction( key: string, fn: ( this: Element ) => unknown ): ( this: SharedCollection ) => boolean | undefined {
   let hashKey = util.hashString( key );
 
   let selfFn = ( ele: Element ) => fn.call( ele );
 
-  return function cachedPrototypeStyleFunction( this: Collection ){
+  return function cachedPrototypeStyleFunction( this: SharedCollection ){
     let ele = this[0];
 
     if( ele ){
@@ -43,19 +43,19 @@ function cachePrototypeStyleFunction( key: string, fn: ( this: Element ) => unkn
 
 let elesfn = ({
 
-  recalculateRenderedStyle: function( this: Collection, useCache?: boolean ){
+  recalculateRenderedStyle: function( this: SharedCollection, useCache?: boolean ){
     let cy = this.cy();
     let renderer = cy.renderer();
     let styleEnabled = cy.styleEnabled();
 
     if( renderer && styleEnabled ){
-      ( renderer as { recalculateRenderedStyle( eles: Collection, useCache?: boolean ): void } ).recalculateRenderedStyle( this, useCache );
+      ( renderer as { recalculateRenderedStyle( eles: Collection, useCache?: boolean ): void } ).recalculateRenderedStyle( this as Collection, useCache );
     }
 
     return this;
   },
 
-  dirtyStyleCache: function( this: Collection ){
+  dirtyStyleCache: function( this: SharedCollection ){
     let cy = this.cy();
     let dirty = ( ele: Element ) => ele._private.styleCache = null;
 
@@ -63,8 +63,8 @@ let elesfn = ({
       let eles;
 
       eles = this.spawnSelf()
-        .merge( this.descendants() )
-        .merge( this.parents() )
+        .merge( ( this as Collection ).descendants() )
+        .merge( ( this as Collection ).parents() )
       ;
 
       eles.merge( eles.connectedEdges() );
@@ -82,7 +82,7 @@ let elesfn = ({
   },
 
   // fully updates (recalculates) the style for the elements
-  updateStyle: function( this: Collection, notifyRenderer?: boolean ){
+  updateStyle: function( this: SharedCollection, notifyRenderer?: boolean ){
     let cy = this._private.cy;
 
     if( !cy.styleEnabled() ){ return this; }
@@ -96,12 +96,12 @@ let elesfn = ({
     }
 
     let hasCompounds = cy.hasCompoundNodes();
-    let updatedEles: Collection = this; // eslint-disable-line @typescript-eslint/no-this-alias
+    let updatedEles: Collection = this as Collection;
 
     notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
     if( hasCompounds ){ // then add everything up and down for compound selector checks
-      updatedEles = this.spawnSelf().merge( this.descendants() ).merge( this.parents() );
+      updatedEles = this.spawnSelf().merge( ( this as Collection ).descendants() ).merge( ( this as Collection ).parents() );
     }
 
     // let changedEles = style.apply( updatedEles );
@@ -119,7 +119,7 @@ let elesfn = ({
   },
 
   // private: clears dirty flag and recalculates style
-  cleanStyle: function( this: Collection ){
+  cleanStyle: function( this: SharedCollection ){
     let cy = this.cy();
 
     if( !cy.styleEnabled() ){ return; }
@@ -137,7 +137,7 @@ let elesfn = ({
   },
 
   // get the internal parsed style object for the specified property
-  parsedStyle: function( this: Collection, property: string, includeNonDefault = true ): ParsedStyleProperty | null | undefined {
+  parsedStyle: function( this: SharedCollection, property: string, includeNonDefault = true ): ParsedStyleProperty | null | undefined {
     let ele = this[0];
     let cy = ele.cy();
 
@@ -165,7 +165,7 @@ let elesfn = ({
     }
   },
 
-  numericStyle: function( this: Collection, property: string ){
+  numericStyle: function( this: SharedCollection, property: string ){
     let ele = this[0];
 
     if( !ele.cy().styleEnabled() ){ return; }
@@ -177,7 +177,7 @@ let elesfn = ({
     }
   },
 
-  numericStyleUnits: function( this: Collection, property: string ){
+  numericStyleUnits: function( this: SharedCollection, property: string ){
     let ele = this[0];
 
     if( !ele.cy().styleEnabled() ){ return; }
@@ -189,7 +189,7 @@ let elesfn = ({
 
   // get the specified css property as a rendered value (i.e. on-screen value)
   // or get the whole rendered style if no property specified (NB doesn't allow setting)
-  renderedStyle: function( this: Collection, property?: string ){
+  renderedStyle: function( this: SharedCollection, property?: string ){
     let cy = this.cy();
     if( !cy.styleEnabled() ){ return this; }
 
@@ -201,7 +201,7 @@ let elesfn = ({
   },
 
   // read the calculated css style of the element or override the style (via a bypass)
-  style: function( this: Collection, name?: string | Record<string, unknown>, value?: unknown ){
+  style: function( this: SharedCollection, name?: string | Record<string, unknown>, value?: unknown ){
     let cy = this.cy();
 
     if( !cy.styleEnabled() ){ return this; }
@@ -211,7 +211,7 @@ let elesfn = ({
 
     if( is.plainObject( name ) ){ // then extend the bypass
       let props = name;
-      style.applyBypass( this, props, updateTransitions );
+      style.applyBypass( this as Collection, props, updateTransitions );
 
       this.emitAndNotify( 'style' ); // let the renderer know we've updated style
 
@@ -227,7 +227,7 @@ let elesfn = ({
         }
 
       } else { // then set the bypass with the property value
-        style.applyBypass( this, name, value, updateTransitions );
+        style.applyBypass( this as Collection, name, value, updateTransitions );
 
         this.emitAndNotify( 'style' ); // let the renderer know we've updated style
       }
@@ -245,7 +245,7 @@ let elesfn = ({
     return this; // chaining
   },
 
-  removeStyle: function( this: Collection, names?: string ){
+  removeStyle: function( this: SharedCollection, names?: string ){
     let cy = this.cy();
 
     if( !cy.styleEnabled() ){ return this; }
@@ -275,17 +275,17 @@ let elesfn = ({
     return this; // chaining
   },
 
-  show: function( this: Collection ){
+  show: function( this: SharedCollection ){
     this.css( 'display', 'element' );
     return this; // chaining
   },
 
-  hide: function( this: Collection ){
+  hide: function( this: SharedCollection ){
     this.css( 'display', 'none' );
     return this; // chaining
   },
 
-  effectiveOpacity: function( this: Collection ): number | undefined {
+  effectiveOpacity: function( this: SharedCollection ): number | undefined {
     let cy = this.cy();
     if( !cy.styleEnabled() ){ return 1; }
 
@@ -313,7 +313,7 @@ let elesfn = ({
     }
   },
 
-  transparent: function( this: Collection ): boolean | undefined {
+  transparent: function( this: SharedCollection ): boolean | undefined {
     let cy = this.cy();
     if( !cy.styleEnabled() ){ return false; }
 
@@ -329,7 +329,7 @@ let elesfn = ({
     }
   },
 
-  backgrounding: function( this: Collection ): boolean {
+  backgrounding: function( this: SharedCollection ): boolean {
     let cy = this.cy();
     if( !cy.styleEnabled() ){ return false; }
 
@@ -425,7 +425,7 @@ elesfn.interactive = cachePrototypeStyleFunction( 'interactive', defineDerivedSt
   edgeOkViaNode: eleTakesUpSpace
 }) );
 
-elesfn.noninteractive = function( this: Collection ){
+elesfn.noninteractive = function( this: SharedCollection ){
   let ele = this[0];
 
   if( ele ){
@@ -448,7 +448,7 @@ elesfn.visible = cachePrototypeStyleFunction( 'visible', defineDerivedStateFunct
   edgeOkViaNode: edgeVisibleViaNode
 }) );
 
-elesfn.hidden = function( this: Collection ){
+elesfn.hidden = function( this: SharedCollection ){
   let ele = this[0];
 
   if( ele ){
@@ -472,48 +472,48 @@ export default elesfn as CollectionStyle;
 /** Style accessor methods contributed to the collection prototype. */
 export interface CollectionStyle {
   /** @internal */
-  recalculateRenderedStyle( this: Collection, useCache?: boolean ): Collection;
+  recalculateRenderedStyle( this: SharedCollection, useCache?: boolean ): Collection;
   /** @internal */
-  dirtyStyleCache( this: Collection ): Collection;
+  dirtyStyleCache( this: SharedCollection ): Collection;
   /** @internal */
-  updateStyle( this: Collection, notifyRenderer?: boolean ): Collection;
+  updateStyle( this: SharedCollection, notifyRenderer?: boolean ): Collection;
   /** @internal */
-  cleanStyle( this: Collection ): void;
+  cleanStyle( this: SharedCollection ): void;
   /** @internal */
-  parsedStyle( this: Collection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
+  parsedStyle( this: SharedCollection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
   /** @internal */
-  pstyle( this: Collection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
-  numericStyle( this: Collection, property: string ): number | unknown;
-  numericStyleUnits( this: Collection, property: string ): string | ( string | undefined )[] | undefined;
+  pstyle( this: SharedCollection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
+  numericStyle( this: SharedCollection, property: string ): number | unknown;
+  numericStyleUnits( this: SharedCollection, property: string ): string | ( string | undefined )[] | undefined;
   /** @internal */
-  renderedStyle( this: Collection, property?: string ): unknown;
-  style( this: Collection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
-  css( this: Collection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
+  renderedStyle( this: SharedCollection, property?: string ): unknown;
+  style( this: SharedCollection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
+  css( this: SharedCollection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
   /** @internal */
-  bypass( this: Collection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
+  bypass( this: SharedCollection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
   /** @internal */
-  renderedCss( this: Collection, property?: string ): unknown;
-  removeStyle( this: Collection, names?: string ): Collection;
+  renderedCss( this: SharedCollection, property?: string ): unknown;
+  removeStyle( this: SharedCollection, names?: string ): Collection;
   /** @internal */
-  removeBypass( this: Collection, names?: string ): Collection;
+  removeBypass( this: SharedCollection, names?: string ): Collection;
   /** @internal */
-  removeCss( this: Collection, names?: string ): Collection;
+  removeCss( this: SharedCollection, names?: string ): Collection;
   /** @internal */
-  show( this: Collection ): Collection;
+  show( this: SharedCollection ): Collection;
   /** @internal */
-  hide( this: Collection ): Collection;
-  effectiveOpacity( this: Collection ): number | undefined;
-  transparent( this: Collection ): boolean | undefined;
+  hide( this: SharedCollection ): Collection;
+  effectiveOpacity( this: SharedCollection ): number | undefined;
+  transparent( this: SharedCollection ): boolean | undefined;
   /** @internal */
-  backgrounding( this: Collection ): boolean;
+  backgrounding( this: SharedCollection ): boolean;
   /** @internal */
-  takesUpSpace( this: Collection ): boolean | undefined;
+  takesUpSpace( this: SharedCollection ): boolean | undefined;
   /** @internal */
-  interactive( this: Collection ): boolean | undefined;
+  interactive( this: SharedCollection ): boolean | undefined;
   /** @internal */
-  noninteractive( this: Collection ): boolean | undefined;
-  visible( this: Collection ): boolean | undefined;
-  hidden( this: Collection ): boolean | undefined;
+  noninteractive( this: SharedCollection ): boolean | undefined;
+  visible( this: SharedCollection ): boolean | undefined;
+  hidden( this: SharedCollection ): boolean | undefined;
   /** @internal */
-  isBundledBezier( this: Collection ): boolean | undefined;
+  isBundledBezier( this: SharedCollection ): boolean | undefined;
 }

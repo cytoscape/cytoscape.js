@@ -1,4 +1,4 @@
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Result of the Hopcroft-Tarjan biconnected-components algorithm. */
 export interface HopcroftTarjanBiconnectedResult {
@@ -7,10 +7,10 @@ export interface HopcroftTarjanBiconnectedResult {
 }
 
 export interface AlgorithmsHopcroftTarjanBiconnected {
-  hopcroftTarjanBiconnected( this: Collection ): HopcroftTarjanBiconnectedResult;
-  htbc( this: Collection ): HopcroftTarjanBiconnectedResult;
-  htb( this: Collection ): HopcroftTarjanBiconnectedResult;
-  hopcroftTarjanBiconnectedComponents( this: Collection ): HopcroftTarjanBiconnectedResult;
+  hopcroftTarjanBiconnected( this: SharedCollection ): HopcroftTarjanBiconnectedResult;
+  htbc( this: SharedCollection ): HopcroftTarjanBiconnectedResult;
+  htb( this: SharedCollection ): HopcroftTarjanBiconnectedResult;
+  hopcroftTarjanBiconnectedComponents( this: SharedCollection ): HopcroftTarjanBiconnectedResult;
 }
 
 /** Per-node bookkeeping kept during the DFS. */
@@ -27,7 +27,7 @@ interface StackEntry {
   edge: Element;
 }
 
-let hopcroftTarjanBiconnected = function( this: Collection ): HopcroftTarjanBiconnectedResult {
+let hopcroftTarjanBiconnected = function( this: SharedCollection ): HopcroftTarjanBiconnectedResult {
   let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
   let nodes: Record<string, NodeInfo> = {};
   let id = 0;

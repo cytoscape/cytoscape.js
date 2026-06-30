@@ -1,6 +1,6 @@
 import { defaults } from '../../util/index.mjs';
 import { inPlaceSumNormalize } from '../../math.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type PageRankWeightFn = ( edge: Element ) => number;
@@ -19,7 +19,7 @@ export interface PageRankResult {
 }
 
 export interface AlgorithmsPageRank {
-  pageRank( this: Collection, options?: PageRankOptions ): PageRankResult;
+  pageRank( this: SharedCollection, options?: PageRankOptions ): PageRankResult;
 }
 
 const pageRankDefaults = defaults({
@@ -31,7 +31,7 @@ const pageRankDefaults = defaults({
 
 let elesfn = ({
 
-  pageRank: function( this: Collection, options?: PageRankOptions ): PageRankResult {
+  pageRank: function( this: SharedCollection, options?: PageRankOptions ): PageRankResult {
     let { dampingFactor, precision, iterations, weight } = pageRankDefaults(options);
     let cy = this._private.cy;
     let { nodes, edges } = this.byGroup();

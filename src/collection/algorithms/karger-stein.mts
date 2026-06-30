@@ -1,5 +1,5 @@
 import { error } from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** An edge encoded as [ edge index, source node index, target node index ]. */
 type EdgeIndex = [ number, number, number ];
@@ -13,7 +13,7 @@ export interface KargerSteinResult {
 }
 
 export interface AlgorithmsKargerStein {
-  kargerStein( this: Collection ): KargerSteinResult | undefined;
+  kargerStein( this: SharedCollection ): KargerSteinResult | undefined;
 }
 
 const sqrt2 = Math.sqrt(2);
@@ -89,7 +89,7 @@ const elesfn = ({
 
   // Computes the minimum cut of an undirected graph
   // Returns the correct answer with high probability
-  kargerStein: function( this: Collection ): KargerSteinResult | undefined {
+  kargerStein: function( this: SharedCollection ): KargerSteinResult | undefined {
     let { nodes, edges } = this.byGroup();
     edges.unmergeBy(( edge: Element ) => edge.isLoop() );
 

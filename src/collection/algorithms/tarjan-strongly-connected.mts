@@ -1,4 +1,4 @@
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Result of Tarjan's strongly-connected-components algorithm. */
 export interface TarjanStronglyConnectedResult {
@@ -7,10 +7,10 @@ export interface TarjanStronglyConnectedResult {
 }
 
 export interface AlgorithmsTarjanStronglyConnected {
-  tarjanStronglyConnected( this: Collection ): TarjanStronglyConnectedResult;
-  tsc( this: Collection ): TarjanStronglyConnectedResult;
-  tscc( this: Collection ): TarjanStronglyConnectedResult;
-  tarjanStronglyConnectedComponents( this: Collection ): TarjanStronglyConnectedResult;
+  tarjanStronglyConnected( this: SharedCollection ): TarjanStronglyConnectedResult;
+  tsc( this: SharedCollection ): TarjanStronglyConnectedResult;
+  tscc( this: SharedCollection ): TarjanStronglyConnectedResult;
+  tarjanStronglyConnectedComponents( this: SharedCollection ): TarjanStronglyConnectedResult;
 }
 
 /** Per-node bookkeeping kept during the DFS. */
@@ -20,9 +20,9 @@ interface NodeInfo {
   explored: boolean;
 }
 
-let tarjanStronglyConnected = function( this: Collection ): TarjanStronglyConnectedResult {
+let tarjanStronglyConnected = function( this: SharedCollection ): TarjanStronglyConnectedResult {
 
-  let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias
+  let eles = this as Collection;
   let nodes: Record<string, NodeInfo> = {};
   let index = 0;
   let components: Collection[] = [];

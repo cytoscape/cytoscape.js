@@ -1,6 +1,6 @@
 import * as math from '../../math.mjs';
 import type { Position } from '../../types.mjs';
-import type { Collection } from '../eles-types.mjs';
+import type { Collection, SharedCollection } from '../eles-types.mjs';
 
 // The renderer's edge-point geometry getters are internal renderer methods.
 // They are typed locally (rather than on CoreRendererAccess) on purpose:
@@ -65,30 +65,30 @@ const renderedName = ( name: string ) => 'rendered' + name[0].toUpperCase() + na
 
 /** Edge-point accessors contributed to the collection prototype. */
 export interface CollectionEdgePoints {
-  controlPoints( this: Collection ): Position[] | undefined;
-  renderedControlPoints( this: Collection ): Position[] | undefined;
-  segmentPoints( this: Collection ): Position[] | undefined;
-  renderedSegmentPoints( this: Collection ): Position[] | undefined;
-  sourceEndpoint( this: Collection ): Position | undefined;
-  renderedSourceEndpoint( this: Collection ): Position | undefined;
-  targetEndpoint( this: Collection ): Position | undefined;
-  renderedTargetEndpoint( this: Collection ): Position | undefined;
-  midpoint( this: Collection ): Position | undefined;
-  renderedMidpoint( this: Collection ): Position | undefined;
+  controlPoints( this: SharedCollection ): Position[] | undefined;
+  renderedControlPoints( this: SharedCollection ): Position[] | undefined;
+  segmentPoints( this: SharedCollection ): Position[] | undefined;
+  renderedSegmentPoints( this: SharedCollection ): Position[] | undefined;
+  sourceEndpoint( this: SharedCollection ): Position | undefined;
+  renderedSourceEndpoint( this: SharedCollection ): Position | undefined;
+  targetEndpoint( this: SharedCollection ): Position | undefined;
+  renderedTargetEndpoint( this: SharedCollection ): Position | undefined;
+  midpoint( this: SharedCollection ): Position | undefined;
+  renderedMidpoint( this: SharedCollection ): Position | undefined;
 }
 
-type EdgePointFn = ( this: Collection ) => Position | Position[] | undefined;
+type EdgePointFn = ( this: SharedCollection ) => Position | Position[] | undefined;
 
 let elesfn = Object.keys( pts ).reduce( ( obj: Record<string, EdgePointFn>, name ) => {
   let spec = pts[ name ];
   let rName = renderedName( name );
 
-  obj[ name ] = function( this: Collection ){ return ifEdge( this, spec.get ); };
+  obj[ name ] = function( this: SharedCollection ){ return ifEdge( this as Collection, spec.get ); };
 
   if( spec.mult ){
-    obj[ rName ] = function( this: Collection ){ return ifEdgeRenderedPositions( this, spec.get as ( ele: Collection ) => Position[] ); };
+    obj[ rName ] = function( this: SharedCollection ){ return ifEdgeRenderedPositions( this as Collection, spec.get as ( ele: Collection ) => Position[] ); };
   } else {
-    obj[ rName ] = function( this: Collection ){ return ifEdgeRenderedPosition( this, spec.get as ( ele: Collection ) => Position ); };
+    obj[ rName ] = function( this: SharedCollection ){ return ifEdgeRenderedPosition( this as Collection, spec.get as ( ele: Collection ) => Position ); };
   }
 
   return obj;

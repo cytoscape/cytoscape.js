@@ -36,10 +36,10 @@ export interface FuzzyCMeansResult {
 }
 
 export interface AlgorithmsKClustering {
-  kMeans( this: Collection, options?: KClusteringOptions ): Collection[];
-  kMedoids( this: Collection, options?: KClusteringOptions ): Collection[];
-  fuzzyCMeans( this: Collection, options?: KClusteringOptions ): FuzzyCMeansResult;
-  fcm( this: Collection, options?: KClusteringOptions ): FuzzyCMeansResult;
+  kMeans( this: SharedCollection, options?: KClusteringOptions ): Collection[];
+  kMedoids( this: SharedCollection, options?: KClusteringOptions ): Collection[];
+  fuzzyCMeans( this: SharedCollection, options?: KClusteringOptions ): FuzzyCMeansResult;
+  fcm( this: SharedCollection, options?: KClusteringOptions ): FuzzyCMeansResult;
 }
 
 /** The kind of clustering being run; controls how distances are computed. */
@@ -193,7 +193,7 @@ let findCost = function( potentialNewMedoid: Element, cluster: Element[], attrib
   return cost;
 };
 
-let kMeans = function( this: Collection, options?: KClusteringOptions ): Collection[] {
+let kMeans = function( this: SharedCollection, options?: KClusteringOptions ): Collection[] {
   let cy    = this.cy();
   let nodes = this.nodes();
   let node: Element | null;
@@ -277,7 +277,7 @@ let kMeans = function( this: Collection, options?: KClusteringOptions ): Collect
   return clusters;
 };
 
-let kMedoids = function( this: Collection, options?: KClusteringOptions ): Collection[] {
+let kMedoids = function( this: SharedCollection, options?: KClusteringOptions ): Collection[] {
   let cy    = this.cy();
   let nodes = this.nodes();
   let node: Element | null;
@@ -437,7 +437,7 @@ let assign = function( nodes: SharedCollection, U: number[][], opts: ReturnType<
   return clusters;
 };
 
-let fuzzyCMeans = function( this: Collection, options?: KClusteringOptions ): FuzzyCMeansResult {
+let fuzzyCMeans = function( this: SharedCollection, options?: KClusteringOptions ): FuzzyCMeansResult {
   let cy    = this.cy();
   let nodes = this.nodes();
   let opts  = setOptions( options );

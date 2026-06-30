@@ -1,7 +1,7 @@
 import * as is from '../../is.mjs';
 import { warn, defaults } from '../../util/index.mjs';
 import Map from '../../map.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type BellmanFordWeightFn = ( edge: Element ) => number;
@@ -30,7 +30,7 @@ export interface BellmanFordResult {
 }
 
 export interface AlgorithmsBellmanFord {
-  bellmanFord( this: Collection, options?: BellmanFordOptions ): BellmanFordResult;
+  bellmanFord( this: SharedCollection, options?: BellmanFordOptions ): BellmanFordResult;
 }
 
 const bellmanFordDefaults = defaults({
@@ -42,7 +42,7 @@ const bellmanFordDefaults = defaults({
 let elesfn = ({
 
   // Implemented from pseudocode from wikipedia
-  bellmanFord: function( this: Collection, options?: BellmanFordOptions ): BellmanFordResult {
+  bellmanFord: function( this: SharedCollection, options?: BellmanFordOptions ): BellmanFordResult {
     let { weight, directed, root } = bellmanFordDefaults(options);
     let weightFn = weight;
     let eles = this; // eslint-disable-line @typescript-eslint/no-this-alias

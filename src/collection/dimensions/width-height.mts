@@ -1,23 +1,23 @@
 import * as util from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Element, SharedCollection } from '../eles-types.mjs';
 import type { ParsedStyleProperty } from '../../style/parse.mjs';
 
 /** Width/height/padding accessors contributed to the collection prototype. */
 export interface CollectionWidthHeight {
-  width( this: Collection ): number | undefined;
-  outerWidth( this: Collection ): number | undefined;
-  renderedWidth( this: Collection ): number | undefined;
-  renderedOuterWidth( this: Collection ): number | undefined;
-  height( this: Collection ): number | undefined;
-  outerHeight( this: Collection ): number | undefined;
-  renderedHeight( this: Collection ): number | undefined;
-  renderedOuterHeight( this: Collection ): number | undefined;
+  width( this: SharedCollection ): number | undefined;
+  outerWidth( this: SharedCollection ): number | undefined;
+  renderedWidth( this: SharedCollection ): number | undefined;
+  renderedOuterWidth( this: SharedCollection ): number | undefined;
+  height( this: SharedCollection ): number | undefined;
+  outerHeight( this: SharedCollection ): number | undefined;
+  renderedHeight( this: SharedCollection ): number | undefined;
+  renderedOuterHeight( this: SharedCollection ): number | undefined;
   /** @internal */
-  padding( this: Collection ): number;
+  padding( this: SharedCollection ): number;
   /** @internal */
-  paddedHeight( this: Collection ): number;
+  paddedHeight( this: SharedCollection ): number;
   /** @internal */
-  paddedWidth( this: Collection ): number;
+  paddedWidth( this: SharedCollection ): number;
 }
 
 // internal options bag built up by defineDimFns
@@ -35,7 +35,7 @@ type DimEle = Element & {
   [name: string]: ( () => number | undefined ) | unknown;
 };
 
-let fn: Record<string, ( this: Collection ) => number | undefined> = {};
+let fn: Record<string, ( this: SharedCollection ) => number | undefined> = {};
 let elesfn = fn as unknown as CollectionWidthHeight;
 
 let defineDimFns = function( opts: { name: string } ): void {
@@ -46,7 +46,7 @@ let defineDimFns = function( opts: { name: string } ): void {
   o.outerName = 'outer' + o.uppercaseName;
   o.uppercaseOuterName = util.capitalize( o.outerName );
 
-  fn[ o.name ] = function dimImpl( this: Collection ){
+  fn[ o.name ] = function dimImpl( this: SharedCollection ){
     let ele = this[0];
     let _p = ele._private;
     let cy = _p.cy;
@@ -77,7 +77,7 @@ let defineDimFns = function( opts: { name: string } ): void {
     }
   };
 
-  fn[ 'outer' + o.uppercaseName ] = function outerDimImpl( this: Collection ){
+  fn[ 'outer' + o.uppercaseName ] = function outerDimImpl( this: SharedCollection ){
     let ele = this[0] as DimEle;
     let _p = ele._private;
     let cy = _p.cy;
@@ -107,7 +107,7 @@ let defineDimFns = function( opts: { name: string } ): void {
     }
   };
 
-  fn[ 'rendered' + o.uppercaseName ] = function renderedDimImpl( this: Collection ){
+  fn[ 'rendered' + o.uppercaseName ] = function renderedDimImpl( this: SharedCollection ){
     let ele = this[0] as DimEle;
 
     if( ele ){
@@ -116,7 +116,7 @@ let defineDimFns = function( opts: { name: string } ): void {
     }
   };
 
-  fn[ 'rendered' + o.uppercaseOuterName ] = function renderedOuterDimImpl( this: Collection ){
+  fn[ 'rendered' + o.uppercaseOuterName ] = function renderedOuterDimImpl( this: SharedCollection ){
     let ele = this[0] as DimEle;
 
     if( ele ){
@@ -134,7 +134,7 @@ defineDimFns( {
   name: 'height'
 } );
 
-elesfn.padding = function( this: Collection ){
+elesfn.padding = function( this: SharedCollection ){
   let ele = this[0];
   let _p = ele._private;
   if( ele.isParent() ){
@@ -150,13 +150,13 @@ elesfn.padding = function( this: Collection ){
   }
 };
 
-elesfn.paddedHeight = function( this: Collection ){
+elesfn.paddedHeight = function( this: SharedCollection ){
   let ele = this[0];
 
   return ( ele.height() as number ) + (2 * ele.padding());
 };
 
-elesfn.paddedWidth = function( this: Collection ){
+elesfn.paddedWidth = function( this: SharedCollection ){
   let ele = this[0];
 
   return ( ele.width() as number ) + (2 * ele.padding());

@@ -1,7 +1,7 @@
 import * as is from '../../is.mjs';
 import Heap from '../../heap.mjs';
 import { defaults } from '../../util/index.mjs';
-import type { Collection, Element } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type DijkstraWeightFn = ( edge: Element ) => number;
@@ -21,7 +21,7 @@ export interface DijkstraResult {
 
 export interface AlgorithmsDijkstra {
   dijkstra(
-    this: Collection,
+    this: SharedCollection,
     options?: DijkstraOptions | Collection | Element | string,
     weight?: DijkstraWeightFn,
     directed?: boolean
@@ -37,7 +37,7 @@ const dijkstraDefaults = defaults({
 let elesfn = ({
 
   dijkstra: function(
-    this: Collection,
+    this: SharedCollection,
     options?: DijkstraOptions | Collection | Element | string,
     weight?: DijkstraWeightFn,
     directed?: boolean

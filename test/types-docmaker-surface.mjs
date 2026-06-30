@@ -140,6 +140,65 @@ for( let [ label, config ] of Object.entries( groups ) ){
   }
 }
 
+// --- callability audit -------------------------------------------------------
+// The presence audit above resolves member *names* but ignores `this`
+// constraints. A method typed `this: Collection` is still present on the
+// `Omit<>`-based NodeCollection/NodeSingular/EdgeCollection/EdgeSingular
+// projections, yet is NOT callable on them (those projections are not
+// assignable to the wide `Collection`). This pass verifies every documented
+// member is actually callable on each narrowed kind — i.e. the kind is
+// assignable to the method's `this` type. It is how the broad `this: Collection`
+// gap (`cy.nodes().style()`, algorithms, dimensions, …) was caught.
+const callabilityKinds = {
+  NodeSingular: [ 'ele', 'node', 'eles', 'nodes' ],
+  EdgeSingular: [ 'ele', 'edge', 'eles', 'edges' ],
+  NodeCollection: [ 'eles', 'nodes', 'ele', 'node' ],
+  EdgeCollection: [ 'eles', 'edges', 'ele', 'edge' ]
+};
+
+for( let [ iface, prefixes ] of Object.entries( callabilityKinds ) ){
+  let type = declaredTypes.get( iface );
+
+  if( !type ){
+    failed = true;
+    console.error( `\n[${iface}] type not found in generated d.ts` );
+    continue;
+  }
+
+  let docNames = new Set( prefixes.flatMap( prefix => [ ...( docByPrefix.get( prefix ) || [] ) ] ) );
+  let props = new Map( checker.getPropertiesOfType( type ).map( sym => [ sym.getName(), sym ] ) );
+  let uncallable = [];
+
+  for( let name of [ ...docNames ].sort() ){
+    let sym = props.get( name );
+
+    if( !sym ){ continue; } // missing-name is the presence audit's job
+
+    let decl = sym.valueDeclaration || ( sym.declarations && sym.declarations[0] );
+    if( !decl ){ continue; }
+
+    let sigs = checker.getTypeOfSymbolAtLocation( sym, decl ).getCallSignatures();
+    if( !sigs.length ){ continue; } // not a method
+
+    // callable on this kind iff some signature has no `this` constraint, or the
+    // kind type is assignable to the declared `this` type
+    let callable = sigs.some( sig => {
+      let thisParam = sig.thisParameter;
+      if( !thisParam ){ return true; }
+      let thisDecl = thisParam.valueDeclaration || ( thisParam.declarations && thisParam.declarations[0] ) || decl;
+      let thisType = checker.getTypeOfSymbolAtLocation( thisParam, thisDecl );
+      return checker.isTypeAssignableTo( type, thisType );
+    } );
+
+    if( !callable ){ uncallable.push( name ); }
+  }
+
+  if( uncallable.length ){
+    failed = true;
+    console.error( `\n[${iface}] documented members present but NOT callable on this kind (this-incompatible):\n${uncallable.join( '\n' )}` );
+  }
+}
+
 if( failed ){
   process.exit( 1 );
 }

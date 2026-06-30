@@ -85,22 +85,24 @@ let define = {
   }, // delay
 
   delayAnimation: function<Self>(){
-    return function delayAnimationImpl( this: Self, time: number, complete?: () => void ){
+    return function delayAnimationImpl( this: Self, time: number, complete?: () => void ): Animation {
       let self = this as unknown as AniHostView;
       let cy = getCy( self );
 
-      if( !cy.styleEnabled() ){ return this; }
+      // style disabled: a no-op that returns the host at runtime, but the
+      // public contract is an Animation (see animationImpl below).
+      if( !cy.styleEnabled() ){ return this as unknown as Animation; }
 
       return self.animation( {
         delay: time,
         duration: time,
         complete: complete
-      } ) as Animation | Self;
+      } );
     };
   }, // delay
 
   animation: function<Self>(){
-    return function animationImpl( this: Self, properties?: AnimationOptions, params?: AnimationOptions ){
+    return function animationImpl( this: Self, properties?: AnimationOptions, params?: AnimationOptions ): Animation {
       let self = this as unknown as AniHostView;
       let selfIsArrayLike = self.length !== undefined;
       let all = ( selfIsArrayLike ? self : [ self ] ) as unknown as ArrayLike<AniEntityView>; // put in array if not array-like
@@ -108,7 +110,9 @@ let define = {
       let isCore = !selfIsArrayLike;
       let isEles = !isCore;
 
-      if( !cy.styleEnabled() ){ return this; }
+      // style disabled: animations are a no-op; the runtime returns the host,
+      // but the public contract is an Animation (matching the historical types).
+      if( !cy.styleEnabled() ){ return this as unknown as Animation; }
 
       let style = cy.style();
 
@@ -193,8 +197,8 @@ let define = {
       }
 
       return new Animation( all[0] as AnimationTarget, properties );
-    } as ( this: Self, properties?: AnimationOptions, params?: AnimationOptions ) => Animation | Self;
-  }, // animate
+    } as ( this: Self, properties?: AnimationOptions, params?: AnimationOptions ) => Animation;
+  }, // animation
 
   animate: function<Self>(){
     return function animateImpl( this: Self, properties: AnimationOptions, params?: AnimationOptions ){

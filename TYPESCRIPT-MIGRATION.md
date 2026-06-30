@@ -181,6 +181,18 @@ Known remaining limitations:
   hand-written `index.d.ts` — does not. The boundary is locked with a
   `@ts-expect-error` in `parity.test-d.ts` so closing the gap is a
   deliberate, test-updating change.
+- **Known type gap — `this: Collection` vs the node/edge projections:** many
+  collection mixin methods are typed `this: Collection` (the wide type). Since
+  the public `NodeCollection`/`NodeSingular`/`EdgeCollection`/`EdgeSingular`
+  are `Omit<>`-projections of `Collection`, they are NOT assignable to it, so
+  those methods do not type-check when called on a narrowed kind (e.g.
+  `cy.nodes().style('color')`). Methods meant to be kind-agnostic should use
+  `this: SharedCollection` instead (the base both projections satisfy) — as the
+  animation methods and the position/data accessors already do. The docmaker
+  name-presence audit does not catch this (it resolves member *names*, ignoring
+  `this` constraints); it surfaces only via consumer usage on a narrowed type.
+  Auditing/fixing the remaining `this: Collection` methods is tracked as a
+  follow-up.
 
 Practical interpretation for now:
 

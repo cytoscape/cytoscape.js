@@ -12,13 +12,11 @@ import type { AnimationOptions } from '../../animation.mjs';
  */
 export interface CoreAnimation {
   animate( properties: AnimationOptions, params?: AnimationOptions ): Core;
-  // returns `this` (Core) when style is disabled, otherwise the new Animation
-  animation( properties?: AnimationOptions, params?: AnimationOptions ): Animation | Core;
+  animation( properties?: AnimationOptions, params?: AnimationOptions ): Animation;
   animated(): boolean | undefined;
   clearQueue(): Core;
   delay( time: number, complete?: () => void ): Core;
-  // returns `this` (Core) when style is disabled, otherwise the new Animation
-  delayAnimation( time: number, complete?: () => void ): Animation | Core;
+  delayAnimation( time: number, complete?: () => void ): Animation;
   stop( clearQueue?: boolean, jumpToEnd?: boolean ): Core;
   /** @internal */
   addToAnimationPool( eles: Collection | Element ): void;

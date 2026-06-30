@@ -17,6 +17,8 @@ import ts from 'typescript';
 // Canonical set of public named exports. Changing this list is a conscious API decision.
 const EXPECTED_EXPORTS = new Set( [
   'AbstractEventObject',
+  'Animation',
+  'AnimationOptions',
   'BoundingBox',
   'Collection',
   'Core',

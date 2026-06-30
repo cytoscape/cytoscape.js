@@ -11,12 +11,13 @@ module.exports = {
   'node-option': ['import=tsx'],
   parallel: true,
   jobs: parallelism,
-  // The d.ts surface audits read the generated build/dts declarations, which
-  // are not a precondition of the main `npm test` run. They have their own
-  // targets (`test:types:docs`, `test:types:css`) that build the types first,
-  // so keep them out of the recursive mocha sweep.
+  // The `test/types-*.mjs` files are standalone d.ts-surface audits, not mocha
+  // suites. They read the generated build/dts declarations (which are not a
+  // precondition of the main `npm test` run) and run via their own
+  // build-first targets (`test:types:docs`/`:css`/`:exports`, `test:types:fresh`
+  // and `test:types:all`). Keep them out of the recursive mocha sweep so a
+  // build-less `npm test` does not try to load them.
   ignore: [
-    'test/types-docmaker-surface.mjs',
-    'test/types-css-surface.mjs'
+    'test/types-*.mjs'
   ]
 };

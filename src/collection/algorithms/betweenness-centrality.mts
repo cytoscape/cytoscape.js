@@ -1,6 +1,6 @@
 import Heap from '../../heap.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, EdgeSingular, SharedCollection, Element } from '../eles-types.mjs';
+import type { EdgeSingular, SharedCollection, Element } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type BetweennessWeightFn = ( edge: EdgeSingular ) => number;

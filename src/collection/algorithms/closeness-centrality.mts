@@ -1,6 +1,6 @@
 import * as is from '../../is.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
+import type { EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type ClosenessCentralityWeightFn = ( edge: EdgeSingular ) => number;

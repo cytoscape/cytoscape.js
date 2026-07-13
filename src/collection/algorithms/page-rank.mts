@@ -1,6 +1,6 @@
 import { defaults } from '../../util/index.mjs';
 import { inPlaceSumNormalize } from '../../math.mjs';
-import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
+import type { EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
 export type PageRankWeightFn = ( edge: EdgeSingular ) => number;

@@ -7,7 +7,7 @@ export type DegreeCentralityWeightFn = ( edge: Element ) => number;
 
 /** Options accepted by the degree-centrality methods. */
 export interface DegreeCentralityOptions {
-  root?: Collection | Element | string | null;
+  root?: SharedCollection | string | null;
   weight?: DegreeCentralityWeightFn;
   directed?: boolean;
   alpha?: number;
@@ -28,13 +28,13 @@ export type DegreeCentralityResult = UndirectedDegreeCentrality | DirectedDegree
 
 /** Result of `degreeCentralityNormalized` for an undirected graph. */
 export interface UndirectedDegreeCentralityNormalized {
-  degree( node: Collection | Element | string ): number;
+  degree( node: SharedCollection | string ): number;
 }
 
 /** Result of `degreeCentralityNormalized` for a directed graph. */
 export interface DirectedDegreeCentralityNormalized {
-  indegree( node: Collection | Element | string ): number;
-  outdegree( node: Collection | Element | string ): number;
+  indegree( node: SharedCollection | string ): number;
+  outdegree( node: SharedCollection | string ): number;
 }
 
 export type DegreeCentralityNormalizedResult =
@@ -49,7 +49,7 @@ export interface AlgorithmsDegreeCentrality {
 }
 
 const defaults = util.defaults({
-  root: null as Collection | Element | string | null,
+  root: null as SharedCollection | string | null,
   weight: ( ( _edge: Element ) => 1 ) as DegreeCentralityWeightFn,
   directed: false,
   alpha: 0
@@ -83,12 +83,12 @@ let elesfn = ({
       }
 
       return {
-        degree: function( node: Collection | Element | string ): number {
+        degree: function( node: SharedCollection | string ): number {
           if( maxDegree === 0 ){ return 0; }
 
-          let n: Collection | Element = is.string( node )
+          let n: SharedCollection = is.string( node )
             ? cy.filter( node ) // from is a selector string
-            : ( node as Collection | Element );
+            : node;
 
           return degrees[ n.id()! ] / maxDegree;
         }
@@ -119,21 +119,21 @@ let elesfn = ({
       }
 
       return {
-        indegree: function( node: Collection | Element | string ): number {
+        indegree: function( node: SharedCollection | string ): number {
           if ( maxIndegree == 0 ){ return 0; }
 
-          let n: Collection | Element = is.string( node )
+          let n: SharedCollection = is.string( node )
             ? cy.filter( node ) // from is a selector string
-            : ( node as Collection | Element );
+            : node;
 
           return indegrees[ n.id()! ] / maxIndegree;
         },
-        outdegree: function( node: Collection | Element | string ): number {
+        outdegree: function( node: SharedCollection | string ): number {
           if ( maxOutdegree === 0 ){ return 0; }
 
-          let n: Collection | Element = is.string( node )
+          let n: SharedCollection = is.string( node )
             ? cy.filter( node ) // from is a selector string
-            : ( node as Collection | Element );
+            : node;
 
           return outdegrees[ n.id()! ] / maxOutdegree;
         }

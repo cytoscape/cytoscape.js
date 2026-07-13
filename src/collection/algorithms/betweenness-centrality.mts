@@ -13,9 +13,9 @@ export interface BetweennessCentralityOptions {
 
 /** Result of `betweennessCentrality`. */
 export interface BetweennessCentralityResult {
-  betweenness( node: Collection | Element | string ): number | undefined;
-  betweennessNormalized( node: Collection | Element | string ): number;
-  betweennessNormalised( node: Collection | Element | string ): number;
+  betweenness( node: SharedCollection | string ): number | undefined;
+  betweennessNormalized( node: SharedCollection | string ): number;
+  betweennessNormalised( node: SharedCollection | string ): number;
 }
 
 export interface AlgorithmsBetweennessCentrality {
@@ -167,13 +167,13 @@ let elesfn = ({
     }
 
     let ret = {
-      betweenness: function( node: Collection | Element | string ): number | undefined {
+      betweenness: function( node: SharedCollection | string ): number | undefined {
         let id = cy.collection(node).id()!;
 
         return C.get( id );
       },
 
-      betweennessNormalized: function( node: Collection | Element | string ): number {
+      betweennessNormalized: function( node: SharedCollection | string ): number {
         if ( max == 0 ){ return 0; }
 
         let id = cy.collection(node).id()!;

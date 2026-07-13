@@ -11,8 +11,8 @@ export type AStarHeuristicFn = ( node: NodeSingular ) => number;
 
 /** Options accepted by `aStar`. */
 export interface AStarOptions {
-  root?: Collection | Element | string | null;
-  goal?: Collection | Element | string | null;
+  root?: SharedCollection | string | null;
+  goal?: SharedCollection | string | null;
   weight?: AStarWeightFn;
   heuristic?: AStarHeuristicFn;
   directed?: boolean;
@@ -31,8 +31,8 @@ export interface AlgorithmsAStar {
 }
 
 const aStarDefaults = defaults({
-  root: null as Collection | Element | string | null,
-  goal: null as Collection | Element | string | null,
+  root: null as SharedCollection | string | null,
+  goal: null as SharedCollection | string | null,
   weight: ( ( _edge: EdgeSingular ) => 1 ) as AStarWeightFn,
   heuristic: ( ( _node: NodeSingular ) => 0 ) as AStarHeuristicFn,
   directed: false

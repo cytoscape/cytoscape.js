@@ -10,7 +10,7 @@ export type BellmanFordWeightFn = ( edge: Element ) => number;
 export interface BellmanFordOptions {
   weight?: BellmanFordWeightFn;
   directed?: boolean;
-  root?: Collection | Element | string | null;
+  root?: SharedCollection | string | null;
   findNegativeWeightCycles?: boolean;
 }
 
@@ -23,8 +23,8 @@ interface BellmanFordInfo {
 
 /** Result of `bellmanFord`. */
 export interface BellmanFordResult {
-  distanceTo( to: Collection | Element | string ): number | undefined;
-  pathTo( to: Collection | Element | string, thisStart?: Element ): Collection;
+  distanceTo( to: SharedCollection | string ): number | undefined;
+  pathTo( to: SharedCollection | string, thisStart?: SharedCollection ): Collection;
   hasNegativeWeightCycle: boolean;
   negativeWeightCycles: Collection[];
 }
@@ -36,7 +36,7 @@ export interface AlgorithmsBellmanFord {
 const bellmanFordDefaults = defaults({
   weight: ( () => 1 ) as BellmanFordWeightFn,
   directed: false,
-  root: null as Collection | Element | string | null
+  root: null as SharedCollection | string | null
 });
 
 let elesfn = ({
@@ -71,11 +71,11 @@ let elesfn = ({
       return obj;
     };
 
-    let getNodeFromTo = ( to: Collection | Element | string ): Element => (is.string(to) ? cy.$( to ) : to)[0] as Element;
+    let getNodeFromTo = ( to: SharedCollection | string ): Element => (is.string(to) ? cy.$( to ) : to)[0] as Element;
 
-    let distanceTo = ( to: Collection | Element | string ) => getInfo( getNodeFromTo(to) ).dist;
+    let distanceTo = ( to: SharedCollection | string ) => getInfo( getNodeFromTo(to) ).dist;
 
-    let pathTo = ( to: Collection | Element | string, thisStart: Element = rootEle ): Collection => {
+    let pathTo = ( to: SharedCollection | string, thisStart: SharedCollection = rootEle ): Collection => {
       let end = getNodeFromTo(to);
       let path: Element[] = [];
       let node: Element | null | undefined = end;

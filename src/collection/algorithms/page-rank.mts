@@ -15,7 +15,7 @@ export interface PageRankOptions {
 
 /** Result of `pageRank`: the rank of a given node. */
 export interface PageRankResult {
-  rank( node: Collection | Element | string ): number;
+  rank( node: SharedCollection | string ): number;
 }
 
 export interface AlgorithmsPageRank {
@@ -147,7 +147,7 @@ let elesfn = ({
 
     // Construct result
     let res: PageRankResult = {
-      rank: function( node: Collection | Element | string ): number {
+      rank: function( node: SharedCollection | string ): number {
         let n: Element = cy.collection(node)[0];
 
         return eigenvector[ nodes.indexOf(n) ];

@@ -10,12 +10,12 @@ export interface ClosenessCentralityOptions {
   harmonic?: boolean;
   weight?: ClosenessCentralityWeightFn;
   directed?: boolean;
-  root?: Collection | Element | string | null;
+  root?: SharedCollection | string | null;
 }
 
 /** Result of `closenessCentralityNormalized`. */
 export interface ClosenessCentralityNormalizedResult {
-  closeness( node: Collection | Element | string ): number;
+  closeness( node: SharedCollection | string ): number;
 }
 
 export interface AlgorithmsClosenessCentrality {
@@ -30,7 +30,7 @@ const defaults = util.defaults({
   harmonic: true,
   weight: ( ( _edge: Element ) => 1 ) as ClosenessCentralityWeightFn,
   directed: false,
-  root: null as Collection | Element | string | null
+  root: null as SharedCollection | string | null
 });
 
 const elesfn = ({
@@ -73,7 +73,7 @@ const elesfn = ({
     }
 
     return {
-      closeness: function( node: Collection | Element | string ): number {
+      closeness: function( node: SharedCollection | string ): number {
         if( maxCloseness == 0 ){ return 0; }
 
         let id: string;
@@ -82,7 +82,7 @@ const elesfn = ({
           id = (cy.filter( node )[0]).id()!;
         } else {
           // from is a node
-          id = ( node as Collection | Element ).id()!;
+          id = node.id()!;
         }
 
         return closenesses[ id ] / maxCloseness;

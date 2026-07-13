@@ -14,7 +14,7 @@ export interface BreadthFirstLayoutOptions extends LayoutOptionsBase {
   spacingFactor?: number;
   avoidOverlap?: boolean;
   nodeDimensionsIncludeLabels?: boolean;
-  roots?: Collection | Element | string | string[] | undefined;
+  roots?: SharedCollection | string | string[] | undefined;
   depthSort?: ( a: Element, b: Element ) => number;
   // deprecated options
   maximal?: boolean;

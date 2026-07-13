@@ -2,7 +2,7 @@ import * as is from '../is.mjs';
 import * as math from '../math.mjs';
 
 import type { Core } from './core-types.mjs';
-import type { Collection } from '../collection/eles-types.mjs';
+import type { Collection, SharedCollection } from '../collection/eles-types.mjs';
 import type { Position, BoundingBox } from '../types.mjs';
 
 /** Result of computing a zoom change about an optional focal point. */
@@ -83,9 +83,9 @@ export interface CoreViewport {
   /** @internal */
   gc(): void;
 
-  fit( elements?: Collection | string | BoundingBox | number, padding?: number ): Core;
+  fit( elements?: SharedCollection | string | BoundingBox | number, padding?: number ): Core;
   /** @internal */
-  getFitViewport( elements?: Collection | string | BoundingBox | number, padding?: number ): FitViewport | undefined;
+  getFitViewport( elements?: SharedCollection | string | BoundingBox | number, padding?: number ): FitViewport | undefined;
 
   /** @internal */
   zoomRange( min: number | { min?: number; max?: number }, max?: number ): Core;
@@ -101,11 +101,11 @@ export interface CoreViewport {
 
   viewport( opts: ViewportOptions ): Core;
 
-  center( elements?: Collection | string ): Core;
+  center( elements?: SharedCollection | string ): Core;
   /** Alias of {@link center}. */
-  centre( elements?: Collection | string ): Core;
+  centre( elements?: SharedCollection | string ): Core;
   /** @internal */
-  getCenterPan( elements?: Collection | string, zoom?: number ): Position | undefined;
+  getCenterPan( elements?: SharedCollection | string, zoom?: number ): Position | undefined;
 
   reset(): Core;
 
@@ -340,7 +340,7 @@ let corefn = ({
     this.notify('gc');
   },
 
-  fit: function( this: Core, elements?: Collection | string | BoundingBox | number, padding?: number ){
+  fit: function( this: Core, elements?: SharedCollection | string | BoundingBox | number, padding?: number ){
     let viewportState = this.getFitViewport( elements, padding );
 
     if( viewportState ){
@@ -356,7 +356,7 @@ let corefn = ({
     return this; // chaining
   },
 
-  getFitViewport: function( this: Core, elements?: Collection | string | BoundingBox | number, padding?: number ): FitViewport | undefined {
+  getFitViewport: function( this: Core, elements?: SharedCollection | string | BoundingBox | number, padding?: number ): FitViewport | undefined {
     if( is.number( elements ) && padding === undefined ){ // elements is optional
       padding = elements;
       elements = undefined;
@@ -609,7 +609,7 @@ let corefn = ({
     return this; // chaining
   },
 
-  center: function( this: Core, elements?: Collection | string ){
+  center: function( this: Core, elements?: SharedCollection | string ){
     let pan = this.getCenterPan( elements );
 
     if( pan ){
@@ -623,7 +623,7 @@ let corefn = ({
     return this; // chaining
   },
 
-  getCenterPan: function( this: Core, elements?: Collection | string, zoom?: number ): Position | undefined {
+  getCenterPan: function( this: Core, elements?: SharedCollection | string, zoom?: number ): Position | undefined {
     if( !this._private.panningEnabled ){
       return;
     }

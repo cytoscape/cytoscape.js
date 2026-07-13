@@ -8,28 +8,28 @@ export type DijkstraWeightFn = ( edge: Element ) => number;
 
 /** Options accepted by `dijkstra`. */
 export interface DijkstraOptions {
-  root?: Collection | Element | string | null;
+  root?: SharedCollection | string | null;
   weight?: DijkstraWeightFn;
   directed?: boolean;
 }
 
 /** Result of `dijkstra`: distance/path lookups from the root node. */
 export interface DijkstraResult {
-  distanceTo( node: Collection | Element | string ): number;
-  pathTo( node: Collection | Element | string ): Collection;
+  distanceTo( node: SharedCollection | string ): number;
+  pathTo( node: SharedCollection | string ): Collection;
 }
 
 export interface AlgorithmsDijkstra {
   dijkstra(
     this: SharedCollection,
-    options?: DijkstraOptions | Collection | Element | string,
+    options?: DijkstraOptions | SharedCollection | string,
     weight?: DijkstraWeightFn,
     directed?: boolean
   ): DijkstraResult;
 }
 
 const dijkstraDefaults = defaults({
-  root: null as Collection | Element | string | null,
+  root: null as SharedCollection | string | null,
   weight: ( ( _edge: Element ) => 1 ) as DijkstraWeightFn,
   directed: false
 });
@@ -38,7 +38,7 @@ let elesfn = ({
 
   dijkstra: function(
     this: SharedCollection,
-    options?: DijkstraOptions | Collection | Element | string,
+    options?: DijkstraOptions | SharedCollection | string,
     weight?: DijkstraWeightFn,
     directed?: boolean
   ): DijkstraResult {
@@ -135,13 +135,13 @@ let elesfn = ({
     } // while
 
     return {
-      distanceTo: function( node: Collection | Element | string ): number {
+      distanceTo: function( node: SharedCollection | string ): number {
         let target: Element = is.string( node ) ? nodes.filter( node )[0] : ( node as Collection )[0];
 
         return knownDist[ target.id()! ];
       },
 
-      pathTo: function( node: Collection | Element | string ): Collection {
+      pathTo: function( node: SharedCollection | string ): Collection {
         let target: Element = is.string( node ) ? nodes.filter( node )[0] : ( node as Collection )[0];
         let S: Element[] = [];
         let u = target;

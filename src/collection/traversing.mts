@@ -407,10 +407,10 @@ util.extend( elesfn, {
       unvisited = root.sources(); // doesn't matter which node to use (undirected), so just use the source sides
     }
 
-    let visitInComponent = ( node: Element | Collection, component: Collection ) => {
-      visited.merge( node as Collection );
-      unvisited.unmerge( node as Collection );
-      component.merge( node as Collection );
+    let visitInComponent = ( node: SharedCollection, component: Collection ) => {
+      visited.merge( node );
+      unvisited.unmerge( node );
+      component.merge( node );
     };
 
     if( unvisited.empty() ){ return self.spawn() as unknown as Collection[]; }
@@ -469,14 +469,14 @@ export interface CollectionTraversing {
   target( selector?: SelectorArg ): NodeSingular;
   sources( selector?: SelectorArg ): NodeCollection;
   targets( selector?: SelectorArg ): NodeCollection;
-  edgesWith( otherNodes: string | Collection ): EdgeCollection;
-  edgesTo( otherNodes: string | Collection ): EdgeCollection;
+  edgesWith( otherNodes: string | SharedCollection ): EdgeCollection;
+  edgesTo( otherNodes: string | SharedCollection ): EdgeCollection;
   connectedEdges( selector?: SelectorArg ): EdgeCollection;
   connectedNodes( selector?: SelectorArg ): NodeCollection;
   parallelEdges( selector?: SelectorArg ): EdgeCollection;
   codirectedEdges( selector?: SelectorArg ): EdgeCollection;
-  components( root?: Collection | Element | null ): Collection[];
-  componentsOf( root?: Collection | Element | null ): Collection[];
+  components( root?: SharedCollection | null ): Collection[];
+  componentsOf( root?: SharedCollection | null ): Collection[];
   component(): Collection;
 }
 

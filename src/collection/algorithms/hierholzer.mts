@@ -4,7 +4,7 @@ import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Options accepted by `hierholzer`. */
 export interface HierholzerOptions {
-  root?: Collection | Element | string;
+  root?: SharedCollection | string;
   directed?: boolean;
 }
 
@@ -17,26 +17,26 @@ export interface HierholzerResult {
 export interface AlgorithmsHierholzer {
   hierholzer(
     this: SharedCollection,
-    options?: HierholzerOptions | Collection | Element | string,
+    options?: HierholzerOptions | SharedCollection | string,
     directed?: boolean
   ): HierholzerResult;
 }
 
 const hierholzerDefaults = defaults({
-  root: undefined as Collection | Element | string | undefined,
+  root: undefined as SharedCollection | string | undefined,
   directed: false
 });
 
 let elesfn = ({
   hierholzer: function(
     this: SharedCollection,
-    options?: HierholzerOptions | Collection | Element | string,
+    options?: HierholzerOptions | SharedCollection | string,
     directed?: boolean
   ): HierholzerResult {
     let opts: HierholzerOptions;
     if (!is.plainObject(options)) {
       // mirror the original `arguments`-based positional handling: options as root, directed as directed
-      opts = { root: options as Collection | Element | string, directed };
+      opts = { root: options as SharedCollection | string, directed };
     } else {
       opts = options as HierholzerOptions;
     }

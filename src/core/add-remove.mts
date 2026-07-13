@@ -3,12 +3,11 @@ import * as util from '../util/index.mjs';
 import Collection from '../collection/index.mjs';
 import Element from '../collection/element.mjs';
 import type { Core } from './core-types.mjs';
-import type { Collection as Coll, Element as Ele, ElementDefinition, CoreAccess } from '../collection/eles-types.mjs';
+import type { Collection as Coll, ElementDefinition, CoreAccess, SharedCollection } from '../collection/eles-types.mjs';
 
 /** The shapes accepted by `add()`. */
 type AddOpts =
-  | Coll
-  | Ele
+  | SharedCollection
   | ElementDefinition
   | ElementDefinition[]
   | { nodes?: ElementDefinition[]; edges?: ElementDefinition[] };
@@ -78,7 +77,7 @@ let corefn = {
     return elements;
   },
 
-  remove: function( this: Core, collection: Coll | Ele | string ){
+  remove: function( this: Core, collection: SharedCollection | string ){
     if( is.elementOrCollection( collection ) ){
       // already have right ref
     } else if( is.string( collection ) ){
@@ -93,7 +92,7 @@ let corefn = {
 /** Add/remove element methods contributed to the core prototype. */
 export interface CoreAddRemove {
   add( this: Core, opts: AddOpts ): Coll;
-  remove( this: Core, collection: Coll | Ele | string ): Coll;
+  remove( this: Core, collection: SharedCollection | string ): Coll;
 }
 
 export default corefn as CoreAddRemove;

@@ -1,20 +1,20 @@
 import * as is from '../../is.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, NodeSingular, SharedCollection } from '../eles-types.mjs';
 
 /** Callback invoked for each visited node during a search. Return `true` to
  * stop and record the node as `found`; return `false` to stop without. */
 export type SearchVisitFn = (
-  v: Element,
-  e: Element | undefined,
-  u: Element | undefined,
+  v: NodeSingular,
+  e: EdgeSingular | undefined,
+  u: NodeSingular | undefined,
   i: number,
   depth: number
 ) => boolean | void;
 
 /** Options object accepted by breadthFirstSearch / depthFirstSearch. */
 export interface SearchOptions {
-  roots?: Collection | Element | string;
-  root?: Collection | Element | string;
+  roots?: SharedCollection | string;
+  root?: SharedCollection | string;
   visit?: SearchVisitFn;
   directed?: boolean;
 }
@@ -28,7 +28,7 @@ export interface SearchResult {
 /** A configured search method (bfs or dfs). */
 export type SearchFn = (
   this: SharedCollection,
-  roots?: SearchOptions | Collection | Element | string,
+  roots?: SearchOptions | SharedCollection | string,
   fn?: SearchVisitFn | boolean,
   directed?: boolean
 ) => SearchResult;
@@ -49,7 +49,7 @@ let defineSearch = function( params: { bfs?: boolean; dfs?: boolean } ): SearchF
   // from pseudocode on wikipedia
   return function searchFn(
     this: SharedCollection,
-    roots?: SearchOptions | Collection | Element | string,
+    roots?: SearchOptions | SharedCollection | string,
     fn?: SearchVisitFn | boolean,
     directed?: boolean
   ): SearchResult {
@@ -112,7 +112,13 @@ let defineSearch = function( params: { bfs?: boolean; dfs?: boolean } ): SearchF
       let prevNode = prevEdge == null ? undefined : ( v.same(src as unknown as Collection) ? ( tgt as unknown as Collection )[0] : ( src as unknown as Collection )[0] );
       let ret;
 
-      ret = visitFn( v, prevEdge, prevNode, j++, depth );
+      ret = visitFn(
+        v as unknown as NodeSingular,
+        prevEdge as unknown as EdgeSingular | undefined,
+        prevNode as unknown as NodeSingular | undefined,
+        j++,
+        depth
+      );
 
       if( ret === true ){
         found = v;

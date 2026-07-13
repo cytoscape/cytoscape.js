@@ -13,8 +13,8 @@ export interface FloydWarshallOptions {
 
 /** Result of `floydWarshall`: all-pairs distance/path lookups. */
 export interface FloydWarshallResult {
-  distance( from: Collection | Element | string, to: Collection | Element | string ): number;
-  path( from: Collection | Element | string, to: Collection | Element | string ): Collection;
+  distance( from: SharedCollection | string, to: SharedCollection | string ): number;
+  path( from: SharedCollection | string, to: SharedCollection | string ): Collection;
 }
 
 export interface AlgorithmsFloydWarshall {
@@ -111,8 +111,8 @@ let elesfn = ({
       }
     }
 
-    let getArgEle = ( ele: Collection | Element | string ): Element => ( is.string(ele) ? cy.filter( ele ) : ele )[0] as Element;
-    let indexOfArgEle = ( ele: Collection | Element | string ) => indexOf(getArgEle(ele));
+    let getArgEle = ( ele: SharedCollection | string ): Element => ( is.string(ele) ? cy.filter( ele ) : ele )[0] as Element;
+    let indexOfArgEle = ( ele: SharedCollection | string ) => indexOf(getArgEle(ele));
 
     let res: FloydWarshallResult = {
       distance: function( from, to ){

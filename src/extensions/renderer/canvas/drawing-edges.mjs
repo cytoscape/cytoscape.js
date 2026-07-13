@@ -171,7 +171,7 @@ const drawEdgeOverlayUnderlay = function( overlayOrUnderlay ) {
   
     let fillStyle = edge.pstyle(`${overlayOrUnderlay}-fill`)?.value;
 
-    if (fillStyle === "linear-gradient" || fillStyle === "radial-gradient") {
+    if (fillStyle === 'linear-gradient' || fillStyle === 'radial-gradient') {
       const gradient = r.createGradientStyleFor(
         context,
         overlayOrUnderlay,

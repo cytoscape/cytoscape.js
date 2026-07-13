@@ -1,8 +1,5 @@
 import { expect } from 'chai';
 import cytoscape from '../src/test.mjs';
-import Bluebird from 'bluebird';
-
-var Promise = Promise || Bluebird;
 
 describe('Core initialisation', function(){
 

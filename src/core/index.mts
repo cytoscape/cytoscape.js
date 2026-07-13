@@ -23,6 +23,7 @@ import type {
   CytoscapeOptions
 } from './core-types.mjs';
 import type { Collection as CollectionType, CoreAccess, ElementJson, Element as ElementType } from '../collection/eles-types.mjs';
+import type { EventHandler as InternalEventHandler } from '../emitter.mjs';
 
 // internal: a container DOM element may carry a cytoscape registration
 type CyContainer = HTMLElement & { _cyreg?: CyReg };
@@ -224,7 +225,7 @@ util.extend( corefn, ({
 
   ready: function( fn ){
     if( this.isReady() ){
-      this.emitter().emit( 'ready', [], fn ); // just calls fn as though triggered via ready event
+      this.emitter().emit( 'ready', [], fn as unknown as InternalEventHandler ); // just calls fn as though triggered via ready event
     } else {
       this.on( 'ready', fn );
     }

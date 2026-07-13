@@ -8,6 +8,7 @@ import type { StyleJson } from '../style/json.mjs';
 import type { Position, BoundingBox } from '../types.mjs';
 import type Emitter from '../emitter.mjs';
 import type Animation from '../animation.mjs';
+import type { EventObject } from '../event-types.mjs';
 
 // per-mixin contribution interfaces (each core mixin file exports its own)
 import type { CoreAddRemove } from './add-remove.mjs';
@@ -93,7 +94,7 @@ export interface CytoscapeOptions {
   textureOnViewport?: boolean;
   wheelSensitivity?: number;
   motionBlur?: boolean;
-  ready?: ( evt: unknown ) => void;
+  ready?: ( evt: EventObject ) => void;
   done?: () => void;
   // additional renderer/extension hints are accepted
   [key: string]: unknown;
@@ -145,7 +146,7 @@ export interface CoreBaseFns {
   /** @internal */
   isReady(): boolean;
   destroyed(): boolean;
-  ready( fn: ( evt: unknown ) => void ): this;
+  ready( fn: ( evt: EventObject ) => void ): this;
   destroy(): this | undefined;
   /** @internal */
   hasElementWithId( id: string | number ): boolean;

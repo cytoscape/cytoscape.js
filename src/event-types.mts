@@ -76,4 +76,5 @@ export interface EventObjectCore extends EventObject {
 }
 
 /** A user-supplied event-binding callback. */
-export type EventHandler = ( event: EventObject, ...extraParams: unknown[] ) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- emitted extra parameters are application-defined callback inputs
+export type EventHandler = ( event: EventObject, ...extraParams: any[] ) => void;

@@ -66,7 +66,7 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
 
       gradientStyle = context.createRadialGradient(mid.x, mid.y, 0, mid.x, mid.y, Math.max(d1, d2));
     } else {
-      let pos = usePaths ? {x: 0, y: 0 } : ele.position(),
+      let pos = usePaths && shapeStyleName === 'background' ? {x: 0, y: 0 } : ele.position(),
         width = ele.paddedWidth(), height = ele.paddedHeight();
       gradientStyle = context.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, Math.max(width, height));
     }
@@ -76,7 +76,7 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
 
       gradientStyle = context.createLinearGradient(start.x, start.y, end.x, end.y);
     } else {
-      let pos = usePaths ? { x: 0, y: 0 } : ele.position(),
+      let pos = usePaths && shapeStyleName === 'background' ? { x: 0, y: 0 } : ele.position(),
         width = ele.paddedWidth(), height = ele.paddedHeight(),
         halfWidth = width / 2, halfHeight = height / 2;
       let direction = ele.pstyle(shapeStyleName + '-gradient-direction').value;
@@ -119,7 +119,8 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
 
   let length = colors.length;
   for (let i = 0; i < length; i++) {
-    gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + opacity + ')');
+    let stopAlpha = (colors[i][3] != null ? colors[i][3] : 1) * opacity;
+    gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + stopAlpha + ')');
   }
 
   return gradientStyle;

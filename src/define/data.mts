@@ -36,9 +36,9 @@ export interface DataFunc<Self> {
   ( this: Self, name: string ): unknown;
   // data values are arbitrary user values; `unknown` accepts any argument
   // (contravariant param) without the poisoning that `any` would introduce.
-  ( this: Self, name: string, value: unknown ): Self;
-  ( this: Self, obj: Record<string, unknown> ): Self;
-  ( this: Self, handler: PublicEventHandler ): Self;
+  <Host extends Self>( this: Host, name: string, value: unknown ): Host;
+  <Host extends Self>( this: Host, obj: Record<string, unknown> ): Host;
+  <Host extends Self>( this: Host, handler: PublicEventHandler ): Host;
 }
 
 export interface RemoveDataParams {
@@ -52,6 +52,7 @@ export interface RemoveDataParams {
 
 /** The generated data remover (e.g. `.removeData()`, `.removeScratch()`). */
 export interface RemoveDataFunc<Self> {
+  <Host extends Self>( this: Host, names?: string ): Host;
   ( this: Self, names?: string ): Self;
 }
 
@@ -264,7 +265,7 @@ let define = {
       }
 
       return this; // maintain chaining
-    }; // function
+    } as RemoveDataFunc<Self>; // function
   }, // removeData
 }; // define
 

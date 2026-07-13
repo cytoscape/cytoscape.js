@@ -16,11 +16,11 @@ export type PositionFn = ( ele: Element, i: number ) => Position | undefined | f
  */
 export interface PositionAccessor {
   ( this: SharedCollection ): Position;
-  ( this: SharedCollection, pos: Partial<Position> ): Collection;
+  <Host extends SharedCollection>( this: Host, pos: Partial<Position> ): Host;
   ( this: SharedCollection, name: string ): number;
-  ( this: SharedCollection, name: string, value: number ): Collection;
+  <Host extends SharedCollection>( this: Host, name: string, value: number ): Host;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- binding overload accepts an arbitrary event handler
-  ( this: SharedCollection, handler: ( ...args: any[] ) => void ): Collection;
+  <Host extends SharedCollection>( this: Host, handler: ( ...args: any[] ) => void ): Host;
 }
 
 /** Position accessor methods contributed to the collection prototype. */

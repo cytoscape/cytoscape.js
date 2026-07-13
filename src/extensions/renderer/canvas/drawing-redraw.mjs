@@ -79,7 +79,7 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
       let pos = usePaths ? { x: 0, y: 0 } : ele.position(),
         width = ele.paddedWidth(), height = ele.paddedHeight(),
         halfWidth = width / 2, halfHeight = height / 2;
-      let direction = ele.pstyle('background-gradient-direction').value;
+      let direction = ele.pstyle(shapeStyleName + '-gradient-direction').value;
 
       switch (direction) {
         case 'to-bottom':

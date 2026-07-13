@@ -160,8 +160,7 @@ const drawEdgeOverlayUnderlay = function( overlayOrUnderlay ) {
   
     let padding = edge.pstyle(`${overlayOrUnderlay}-padding`).pfValue;
     let width = 2 * padding;
-    let color = edge.pstyle(`${overlayOrUnderlay}-color`).value;
-  
+
     context.lineWidth = width;
   
     if( rs.edgeType === 'self' && !usePaths ){
@@ -170,8 +169,29 @@ const drawEdgeOverlayUnderlay = function( overlayOrUnderlay ) {
       context.lineCap = 'round';
     }
   
-    r.colorStrokeStyle( context, color[0], color[1], color[2], opacity );
-  
+    let fillStyle = edge.pstyle(`${overlayOrUnderlay}-fill`)?.value;
+
+    if (fillStyle === "linear-gradient" || fillStyle === "radial-gradient") {
+      const gradient = r.createGradientStyleFor(
+        context,
+        overlayOrUnderlay,
+        edge,
+        fillStyle,
+        opacity,
+      );
+
+      if (gradient) {
+        context.strokeStyle = gradient;
+      } else {
+        // fallback to single‑color if gradient config is invalid
+        const color = edge.pstyle(`${overlayOrUnderlay}-color`).value;
+        r.colorStrokeStyle(context, color[0], color[1], color[2], opacity);
+      }
+    } else {
+      const color = edge.pstyle(`${overlayOrUnderlay}-color`).value;
+      r.colorStrokeStyle(context, color[0], color[1], color[2], opacity);
+    }
+    
     r.drawEdgePath(
       edge,
       context,

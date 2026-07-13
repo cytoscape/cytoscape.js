@@ -804,10 +804,6 @@ styfn.getDefaultProperties = function(){
     'curve-style': 'haystack',
     'haystack-radius': 0,
     'arrow-scale': 1,
-    ...styfn.arrowPrefixes.reduce((acc, pref) => ({ 
-      ...acc, 
-      [`${pref}-arrow-scale`]: 1
-    }), {}),
     'loop-direction': '-45deg',
     'loop-sweep': '-90deg',
     'source-distance-from-node': 0,
@@ -821,6 +817,7 @@ styfn.getDefaultProperties = function(){
     { name: 'arrow-color', value: '#999' },
     { name: 'arrow-fill', value: 'filled' },
     { name: 'arrow-width', value: 1 },
+    { name: 'arrow-scale', value: 1 },
   ].reduce( function( css, prop ){
     styfn.arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;

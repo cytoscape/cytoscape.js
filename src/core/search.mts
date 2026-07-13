@@ -1,7 +1,7 @@
 import * as is from '../is.mjs';
 import Collection from '../collection/index.mjs';
 import type { Core } from './core-types.mjs';
-import type { Collection as Coll, Element, CoreAccess, NodeCollection, EdgeCollection } from '../collection/eles-types.mjs';
+import type { Collection as Coll, Element, ElementDefinition, CoreAccess, NodeCollection, EdgeCollection } from '../collection/eles-types.mjs';
 import type { FilterArg } from '../collection/filter.mjs';
 
 /** Options accepted by `collection()` when building from an array. */
@@ -16,7 +16,7 @@ let corefn = ({
   // - empty collection on no args
   // - collection of elements in the graph on selector arg
   // - guarantee a returned collection when elements or collection specified
-  collection: function( this: Core, eles?: string | Coll | Element | Element[], opts?: CollectionOpts ){
+  collection: function( this: Core, eles?: string | Coll | Element | Element[] | ElementDefinition[], opts?: CollectionOpts ){
 
     if( is.string( eles ) ){
       return this.$( eles );
@@ -81,7 +81,7 @@ corefn.elements = corefn.filter = corefn.$;
 
 /** Graph search/collection helpers contributed to the core prototype. */
 export interface CoreSearch {
-  collection( this: Core, eles?: string | Coll | Element | Element[], opts?: CollectionOpts ): Coll;
+  collection( this: Core, eles?: string | Coll | Element | Element[] | ElementDefinition[], opts?: CollectionOpts ): Coll;
   nodes( this: Core, selector?: FilterArg ): NodeCollection;
   edges( this: Core, selector?: FilterArg ): EdgeCollection;
   $( this: Core, selector?: FilterArg ): Coll;

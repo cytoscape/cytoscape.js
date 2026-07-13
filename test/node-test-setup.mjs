@@ -16,9 +16,9 @@ const supportDoneCallback = fn => {
     return fn;
   }
 
-  return () => new Promise((resolve, reject) => {
-    fn.call(callbackContext, error => error == null ? resolve() : reject(error));
-  });
+  return (_testContext, done) => {
+    fn.call(callbackContext, done);
+  };
 };
 
 const wrap = testFunction => {

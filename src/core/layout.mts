@@ -57,12 +57,9 @@ corefn.createLayout = corefn.makeLayout = corefn.layout;
 
 /** Layout construction methods contributed to the core prototype. */
 export interface CoreLayout {
-  // returns a layout for valid options; the undefined path is a misuse guard
-  // (missing/invalid options), so the public contract is the non-undefined
-  // form to keep `cy.layout(opts).run()` chainable
-  layout( this: Core, options?: LayoutOptions ): LayoutInstance;
-  makeLayout( this: Core, options?: LayoutOptions ): LayoutInstance;
-  createLayout( this: Core, options?: LayoutOptions ): LayoutInstance;
+  layout( this: Core, options: LayoutOptions ): LayoutInstance;
+  makeLayout( this: Core, options: LayoutOptions ): LayoutInstance;
+  createLayout( this: Core, options: LayoutOptions ): LayoutInstance;
 }
 
 export default corefn as CoreLayout;

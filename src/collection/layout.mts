@@ -22,6 +22,7 @@ export type LayoutPositionFn = ( node: Element, i: number ) => Position;
 
 /** Options read by `layoutPositions` / `layout` / `makeLayout`. */
 export interface LayoutOptions {
+  name: string;
   eles: Collection;
   spacingFactor?: number;
   transform?: ( node: Element, pos: Position ) => Position;
@@ -37,6 +38,12 @@ export interface LayoutOptions {
   stop?: () => void;
   [key: string]: unknown;
 }
+
+/** Public collection-layout options; the collection itself supplies `eles`. */
+export type CollectionLayoutOptions =
+  Pick<LayoutOptions, 'name'>
+  & Omit<LayoutOptions, 'name' | 'eles'>
+  & { eles?: Collection };
 
 /** Options read by `layoutDimensions`. */
 export interface LayoutDimensionsOptions {
@@ -227,7 +234,7 @@ let elesfn = ({
     return this; // chaining
   },
 
-  layout: function( this: Collection, options: Partial<LayoutOptions> ): LayoutLike {
+  layout: function( this: Collection, options: CollectionLayoutOptions ): LayoutLike {
     let cy = this.cy();
 
     return cy.makeLayout( util.extend( {}, options, {
@@ -244,9 +251,9 @@ elesfn.createLayout = elesfn.makeLayout = elesfn.layout;
 export interface CollectionLayout {
   layoutDimensions( this: SharedCollection, options: LayoutDimensionsOptions ): LayoutDimensions;
   layoutPositions( this: SharedCollection, layout: LayoutLike, options: LayoutOptions, fn: LayoutPositionFn ): Collection;
-  layout( this: SharedCollection, options?: Partial<LayoutOptions> ): LayoutLike;
-  createLayout( this: SharedCollection, options?: Partial<LayoutOptions> ): LayoutLike;
-  makeLayout( this: SharedCollection, options?: Partial<LayoutOptions> ): LayoutLike;
+  layout( this: SharedCollection, options: CollectionLayoutOptions ): LayoutLike;
+  createLayout( this: SharedCollection, options: CollectionLayoutOptions ): LayoutLike;
+  makeLayout( this: SharedCollection, options: CollectionLayoutOptions ): LayoutLike;
 }
 
 export default elesfn as CollectionLayout;

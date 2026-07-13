@@ -2,14 +2,14 @@
 // Verifies that cy.layout() / eles.layout() return a usable LayoutInstance with
 // the documented lifecycle methods.
 //
-// Note: per-layout option types (GridLayoutOptions, BreadthFirstLayoutOptions,
-// etc.) were present in the hand-written index.d.ts but are NOT currently
-// exported from the generated declarations. Consumers who reference those named
-// types directly will get a compile error until they are added. The base
-// LayoutOptions shape ({ name: string }) is the only exported layout type.
+// Per-layout option types are exported from the generated declarations. These
+// checks cover both named aliases and contextual callback types on direct calls.
 
 import cytoscape from '../../build/dts/index.js';
-import type { Core, LayoutInstance } from '../../build/dts/index.js';
+import type {
+  Core, CoseLayoutOptions, EdgeSingular, GridLayoutOptions,
+  LayoutInstance, NodeSingular,
+} from '../../build/dts/index.js';
 
 const cy: Core = cytoscape({ headless: true });
 
@@ -23,6 +23,47 @@ const preset: LayoutInstance = cy.layout({ name: 'preset' });
 const cose: LayoutInstance = cy.layout({ name: 'cose' });
 const makeL: LayoutInstance = cy.makeLayout({ name: 'grid' });
 const createL: LayoutInstance = cy.createLayout({ name: 'grid' });
+
+// Built-in option aliases retain named fields despite their runtime index
+// signature, including contextual node/edge callback types.
+const typedGrid: GridLayoutOptions = {
+  name: 'grid',
+  position: node => {
+    const inferredNode: NodeSingular = node;
+    return { row: inferredNode.degree(), col: 0 };
+  },
+};
+const typedCose: CoseLayoutOptions = {
+  name: 'cose',
+  nodeRepulsion: node => {
+    const inferredNode: NodeSingular = node;
+    return inferredNode.degree() || 2048;
+  },
+  idealEdgeLength: edge => {
+    const inferredEdge: EdgeSingular = edge;
+    return inferredEdge.source().degree() || 32;
+  },
+  edgeElasticity: edge => {
+    const inferredEdge: EdgeSingular = edge;
+    return inferredEdge.target().degree() || 32;
+  },
+};
+cy.layout( typedGrid );
+cy.layout( typedCose );
+
+// Inline options receive the same callback context without a pre-annotation.
+cy.layout( {
+  name: 'grid',
+  position: node => ( { row: node.degree(), col: 0 } ),
+} );
+cytoscape( {
+  headless: true,
+  layout: {
+    name: 'cose',
+    nodeRepulsion: node => node.degree() || 2048,
+    idealEdgeLength: edge => edge.source().degree() || 32,
+  },
+} );
 
 // LayoutInstance lifecycle methods
 grid.run();
@@ -52,4 +93,4 @@ void elesLayout;
 // LayoutInstance.run() returns `this` for chaining
 const chained: LayoutInstance = grid.run();
 
-void [bfs, circle, concentric, random, preset, cose, makeL, createL, chained];
+void [bfs, circle, concentric, random, preset, cose, makeL, createL, typedGrid, typedCose, chained];

@@ -2,7 +2,7 @@ import * as util from '../../util/index.mjs';
 import * as math from '../../math.mjs';
 import type { LayoutBase, LayoutOptionsBase, Collection } from './layout-base.mjs';
 import type { LayoutLike, LayoutOptions, LayoutPositionFn } from '../../collection/layout.mjs';
-import type { ElementPrivate } from '../../collection/eles-types.mjs';
+import type { Element, ElementPrivate, NodeSingular } from '../../collection/eles-types.mjs';
 import type { BoundingBox, Position } from '../../types.mjs';
 
 /** A row/col position, as returned by the `position` option. */
@@ -23,8 +23,8 @@ export interface GridLayoutOptions extends LayoutOptionsBase {
   rows?: number;
   cols?: number;
   columns?: number;
-  position?: ( node: Collection ) => RowCol | undefined;
-  sort?: ( a: Collection, b: Collection ) => number;
+  position?: ( node: NodeSingular ) => RowCol | undefined;
+  sort?: ( a: NodeSingular, b: NodeSingular ) => number;
 }
 
 /** The grid layout instance (`this`). */
@@ -44,7 +44,7 @@ let defaults = {
   condense: false, // uses all available space on false, uses minimal space on true
   rows: undefined, // force num of rows in the grid
   cols: undefined, // force num of columns in the grid
-  position: function( node: Collection ){}, // returns { row, col } for element
+  position: function( node: NodeSingular ){}, // returns { row, col } for element
   sort: undefined, // a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
@@ -70,7 +70,7 @@ GridLayout.prototype.run = function( this: GridLayout ){
   let nodes = eles.nodes().not( ':parent' );
 
   if( options.sort ){
-    nodes = nodes.sort( options.sort );
+    nodes = nodes.sort( options.sort as unknown as ( a: Element, b: Element ) => number );
   }
 
   let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
@@ -215,7 +215,7 @@ GridLayout.prototype.run = function( this: GridLayout ){
     let id2manPos: Record<string, { row: number; col: number }> = {};
     for( let i = 0; i < nodes.length; i++ ){
       let node = nodes[ i ];
-      let rcPos = options.position!( node );
+      let rcPos = options.position!( node as unknown as NodeSingular );
 
       if( rcPos && (rcPos.row !== undefined || rcPos.col !== undefined) ){ // must have at least row or col def'd
         let pos = {

@@ -15,7 +15,7 @@ import type { CoreAddRemove } from './add-remove.mjs';
 import type { CoreAnimation } from './animation/index.mjs';
 import type { CoreEvents } from './events.mjs';
 import type { CoreExport } from './export.mjs';
-import type { CoreLayout } from './layout.mjs';
+import type { CoreLayout, LayoutOptions } from './layout.mjs';
 import type { CoreNotification } from './notification.mjs';
 import type { CoreRenderer } from './renderer.mjs';
 import type { CoreSearch } from './search.mjs';
@@ -69,7 +69,7 @@ export interface CytoscapeOptions {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- elements accept the broad public json/collection forms
   elements?: any;
   style?: string | StyleJson | Promise<StyleJson> | StylesheetLike;
-  layout?: { name?: string; [key: string]: unknown };
+  layout?: Partial<LayoutOptions>;
   data?: Record<string, unknown>;
   zoom?: number;
   pan?: Position;
@@ -105,7 +105,7 @@ export interface CytoscapeOptions {
 export interface CorePrivate {
   container: HTMLElement | null;
   ready: boolean;
-  options: CytoscapeOptions & { layout: { name?: string; [k: string]: unknown }; renderer: { name?: string; [k: string]: unknown } };
+  options: CytoscapeOptions & { layout: Partial<LayoutOptions>; renderer: { name?: string; [k: string]: unknown } };
   elements: Collection;
   listeners: unknown[];
   aniEles: Collection;

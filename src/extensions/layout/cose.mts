@@ -12,7 +12,7 @@ import * as util from '../../util/index.mjs';
 import * as math from '../../math.mjs';
 import * as is from '../../is.mjs';
 import type { LayoutBase, LayoutOptionsBase, Core, Collection } from './layout-base.mjs';
-import type { Element, SharedCollection } from '../../collection/eles-types.mjs';
+import type { Element, SharedCollection, NodeSingular, EdgeSingular } from '../../collection/eles-types.mjs';
 import type { Position, BoundingBox } from '../../types.mjs';
 
 /** Options for the CoSE layout (from the `defaults` object). */
@@ -22,10 +22,10 @@ export interface CoseLayoutOptions extends LayoutOptionsBase {
   nodeDimensionsIncludeLabels?: boolean;
   randomize?: boolean;
   componentSpacing?: number;
-  nodeRepulsion?: number | ( ( node: Element ) => number );
+  nodeRepulsion?: number | ( ( node: NodeSingular ) => number );
   nodeOverlap?: number;
-  idealEdgeLength?: number | ( ( edge: Element ) => number );
-  edgeElasticity?: number | ( ( edge: Element ) => number );
+  idealEdgeLength?: number | ( ( edge: EdgeSingular ) => number );
+  edgeElasticity?: number | ( ( edge: EdgeSingular ) => number );
   nestingFactor?: number;
   gravity?: number;
   numIter?: number;
@@ -166,16 +166,16 @@ const defaults = {
   componentSpacing: 40,
 
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: function( _node: Element ){ return 2048; },
+  nodeRepulsion: function( _node: NodeSingular ){ return 2048; },
 
   // Node repulsion (overlapping) multiplier
   nodeOverlap: 4,
 
   // Ideal edge (non nested) length
-  idealEdgeLength: function( _edge: Element ){ return 32; },
+  idealEdgeLength: function( _edge: EdgeSingular ){ return 32; },
 
   // Divisor to compute edge forces
-  edgeElasticity: function( _edge: Element ){ return 32; },
+  edgeElasticity: function( _edge: EdgeSingular ){ return 32; },
 
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 1.2,
@@ -444,7 +444,7 @@ let createLayoutInfo = function( cy: Core, layout: CoseLayout, options: CoseLayo
     tempNode.padBottom  = parseFloat( n.style( 'padding' ) as string );
 
     // forces
-    tempNode.nodeRepulsion = is.fn( options.nodeRepulsion ) ? ( options.nodeRepulsion as ( node: Element ) => number )(n) : ( options.nodeRepulsion as number );
+    tempNode.nodeRepulsion = is.fn( options.nodeRepulsion ) ? ( options.nodeRepulsion as ( node: NodeSingular ) => number )(n as unknown as NodeSingular) : ( options.nodeRepulsion as number );
 
     // Add new node
     layoutInfo.layoutNodes.push( tempNode );
@@ -513,8 +513,8 @@ let createLayoutInfo = function( cy: Core, layout: CoseLayout, options: CoseLayo
     tempEdge.targetId = e.data( 'target' ) as string;
 
     // Compute ideal length
-    let idealLength = is.fn( options.idealEdgeLength ) ? ( options.idealEdgeLength as ( edge: Element ) => number )(e) : ( options.idealEdgeLength as number );
-    let elasticity = is.fn( options.edgeElasticity ) ? ( options.edgeElasticity as ( edge: Element ) => number )(e) : ( options.edgeElasticity as number );
+    let idealLength = is.fn( options.idealEdgeLength ) ? ( options.idealEdgeLength as ( edge: EdgeSingular ) => number )(e as unknown as EdgeSingular) : ( options.idealEdgeLength as number );
+    let elasticity = is.fn( options.edgeElasticity ) ? ( options.edgeElasticity as ( edge: EdgeSingular ) => number )(e as unknown as EdgeSingular) : ( options.edgeElasticity as number );
 
     // Check if it's an inter graph edge
     let sourceIx    = layoutInfo.idToIndex[ tempEdge.sourceId ];

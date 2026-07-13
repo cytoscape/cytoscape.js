@@ -1,12 +1,17 @@
 import * as util from '../util/index.mjs';
 import * as is from '../is.mjs';
 import type { Core, LayoutInstance } from './core-types.mjs';
-import type { Collection } from '../collection/eles-types.mjs';
+import type { Collection, EdgeSingular, NodeSingular } from '../collection/eles-types.mjs';
 
 /** Options accepted by `layout()`/`makeLayout()`/`createLayout()`. */
 export interface LayoutOptions {
   name: string;
   eles?: Collection | string;
+  position?: ( node: NodeSingular ) => { row?: number; col?: number } | undefined;
+  sort?: ( a: NodeSingular, b: NodeSingular ) => number;
+  nodeRepulsion?: number | ( ( node: NodeSingular ) => number );
+  idealEdgeLength?: number | ( ( edge: EdgeSingular ) => number );
+  edgeElasticity?: number | ( ( edge: EdgeSingular ) => number );
   [key: string]: unknown;
 }
 

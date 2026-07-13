@@ -5,7 +5,6 @@
 import fs from 'fs';
 import * as marked from 'marked';
 import Handlebars from 'handlebars';
-import jsonlint from 'jsonlint';
 import hljs from 'highlight.js';
 import path from 'path';
 import process from 'process';
@@ -34,14 +33,14 @@ mdRend.code = function(code, lang){
 
 try {
   let confFileContents = readFileSync(configFile);
-  jsonlint.parse(confFileContents); // validate first for convenience
+  JSON.parse(confFileContents); // validate first for convenience
   config = JSON.parse(confFileContents);
 
   let versionFileContents = readFileSync(versionFile);
-  jsonlint.parse(versionFileContents); // validate first for convenience
+  JSON.parse(versionFileContents); // validate first for convenience
   versions = JSON.parse(versionFileContents);
 } catch(e){
-  console.error('\n`' + configFile + '` could not be read; check the JSON is formatted correctly via jsonlint');
+  console.error('\n`' + configFile + '` could not be read; check that the JSON is formatted correctly');
   throw e;
 }
 

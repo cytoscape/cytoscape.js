@@ -344,7 +344,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
     self.colorStrokeStyle( context, 255, 255, 255, 1 );
 
     self.drawArrowShape( edge, context,
-      arrowClearFill, edgeWidth, arrowShape, arrowWidth, x, y, angle
+      arrowClearFill, edgeWidth, arrowShape, arrowWidth, x, y, angle, prefix
     );
 
     context.globalCompositeOperation = gco;
@@ -355,20 +355,22 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   self.colorStrokeStyle( context, color[0], color[1], color[2], opacity );
 
   self.drawArrowShape( edge, context,
-    arrowFill, edgeWidth, arrowShape, arrowWidth, x, y, angle
+    arrowFill, edgeWidth, arrowShape, arrowWidth, x, y, angle, prefix
   );
 };
 
-CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, shapeWidth, x, y, angle ){
+CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, shapeWidth, x, y, angle, prefix ){
   let r = this;
   let usePaths = this.usePaths() && shape !== 'triangle-cross';
   let pathCacheHit = false;
   let path;
   let canvasContext = context;
   let translation = { x, y };
-  let scale = edge.pstyle( 'arrow-scale' ).value;
-  let size = this.getArrowWidth( edgeWidth, scale );
   let shapeImpl = r.arrowShapes[ shape ];
+  let defaultScale = edge.pstyle('arrow-scale').value;
+  let prefixScaleProp = edge.pstyle(`${prefix}-arrow-scale`, false);
+  let scaleUsed = prefixScaleProp != null ? prefixScaleProp.value : defaultScale;
+  let size = this.getArrowWidth(edgeWidth, scaleUsed);
 
   if( usePaths ){
     let cache = r.arrowPathCache = r.arrowPathCache || [];

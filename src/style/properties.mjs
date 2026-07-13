@@ -463,7 +463,8 @@ const styfn = {};
     { name: 'arrow-shape', type: t.arrowShape, triggersBounds: diff.any },
     { name: 'arrow-color', type: t.color },
     { name: 'arrow-fill', type: t.arrowFill },
-    { name: 'arrow-width', type: t.arrowWidth }
+    { name: 'arrow-width', type: t.arrowWidth },
+    { name: 'arrow-scale', type: t.positiveNumber, triggersBounds: diff.any }
   ].forEach( function( prop ){
     arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;
@@ -803,6 +804,10 @@ styfn.getDefaultProperties = function(){
     'curve-style': 'haystack',
     'haystack-radius': 0,
     'arrow-scale': 1,
+    ...styfn.arrowPrefixes.reduce((acc, pref) => ({ 
+      ...acc, 
+      [`${pref}-arrow-scale`]: 1
+    }), {}),
     'loop-direction': '-45deg',
     'loop-sweep': '-90deg',
     'source-distance-from-node': 0,

@@ -5381,6 +5381,7 @@ declare namespace cytoscape {
          *  * <pos>-arrow-color : The colour of the edge’s source arrow.
          *  * <pos>-arrow-shape : The shape of the edge’s source arrow.
          *  * <pos>-arrow-fill : The fill state of the edge’s source arrow.
+         *  * <pos>-arrow-scale : The size of the edge’s source arrow; falls back to arrow-scale if unset.
          *
          * For each edge arrow property above, replace <pos> with one of
          *  * source : Pointing towards the source node, at the end of the edge.
@@ -5392,8 +5393,17 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#style/edge-arrow
          */
         interface EdgeArrow {
-            /** The size of the arrow. */
+            /** The size of the arrow. Used as a fallback for any <pos>-arrow-scale that isn't explicitly set. */
             "arrow-scale"?: PropertyValueEdge<number>;
+
+            /** The size of the edge’s source arrow. Falls back to `arrow-scale` if unset. */
+            "source-arrow-scale"?: PropertyValueEdge<number>;
+            /** The size of the edge’s "mid-source" arrow. Falls back to `arrow-scale` if unset. */
+            "mid-source-arrow-scale"?: PropertyValueEdge<number>;
+            /** The size of the edge’s target arrow. Falls back to `arrow-scale` if unset. */
+            "target-arrow-scale"?: PropertyValueEdge<number>;
+            /** The size of the edge’s "mid-target" arrow. Falls back to `arrow-scale` if unset. */
+            "mid-target-arrow-scale"?: PropertyValueEdge<number>;
 
             /** The colour of the edge’s source arrow. */
             "source-arrow-color"?: PropertyValueEdge<Colour>;

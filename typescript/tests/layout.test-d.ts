@@ -56,6 +56,10 @@ cy.layout( {
   name: 'grid',
   position: node => ( { row: node.degree(), col: 0 } ),
 } );
+cy.nodes().layout( {
+  name: 'grid',
+  sort: ( a, b ) => a.degree()! - b.degree()!,
+} );
 cytoscape( {
   headless: true,
   layout: {

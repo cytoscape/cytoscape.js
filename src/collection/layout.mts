@@ -4,7 +4,7 @@ import * as math from '../math.mjs';
 import type { Position, BoundingBox } from '../types.mjs';
 import type Animation from '../animation.mjs';
 import type { LayoutInstance } from '../core/core-types.mjs';
-import type { Collection, SharedCollection, Element } from './eles-types.mjs';
+import type { Collection, EdgeSingular, SharedCollection, Element, NodeSingular } from './eles-types.mjs';
 
 /**
  * A layout instance as driven by the collection layout code: the public
@@ -20,8 +20,17 @@ export interface LayoutLike extends LayoutInstance {
 /** A node-positioning function used by `layoutPositions`. */
 export type LayoutPositionFn = ( node: Element, i: number ) => Position;
 
+/** Built-in callback options shared by core- and collection-created layouts. */
+export interface LayoutCallbackOptions {
+  position?: ( node: NodeSingular ) => { row?: number; col?: number } | undefined;
+  sort?: ( a: NodeSingular, b: NodeSingular ) => number;
+  nodeRepulsion?: number | ( ( node: NodeSingular ) => number );
+  idealEdgeLength?: number | ( ( edge: EdgeSingular ) => number );
+  edgeElasticity?: number | ( ( edge: EdgeSingular ) => number );
+}
+
 /** Options read by `layoutPositions` / `layout` / `makeLayout`. */
-export interface LayoutOptions {
+export interface LayoutOptions extends LayoutCallbackOptions {
   name: string;
   eles: Collection;
   spacingFactor?: number;
@@ -40,10 +49,23 @@ export interface LayoutOptions {
 }
 
 /** Public collection-layout options; the collection itself supplies `eles`. */
-export type CollectionLayoutOptions =
-  Pick<LayoutOptions, 'name'>
-  & Omit<LayoutOptions, 'name' | 'eles'>
-  & { eles?: Collection };
+export interface CollectionLayoutOptions extends LayoutCallbackOptions {
+  name: string;
+  eles?: Collection;
+  spacingFactor?: number;
+  transform?: ( node: Element, pos: Position ) => Position;
+  animate?: boolean;
+  animateFilter?: ( node: Element, i: number ) => boolean;
+  animationDuration?: number;
+  animationEasing?: string;
+  fit?: boolean;
+  padding?: number;
+  zoom?: number;
+  pan?: Position;
+  ready?: () => void;
+  stop?: () => void;
+  [key: string]: unknown;
+}
 
 /** Options read by `layoutDimensions`. */
 export interface LayoutDimensionsOptions {

@@ -1,17 +1,20 @@
 import Heap from '../../heap.mjs';
 import Set from '../../set.mjs';
 import { defaults } from '../../util/index.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, Element, SharedCollection, NodeSingular, EdgeSingular } from '../eles-types.mjs';
 
-/** Edge/node weighting or heuristic function. */
-export type AStarWeightFn = ( ele: Element ) => number;
+/** Edge weighting function. */
+export type AStarWeightFn = ( edge: EdgeSingular ) => number;
+
+/** Node heuristic function. */
+export type AStarHeuristicFn = ( node: NodeSingular ) => number;
 
 /** Options accepted by `aStar`. */
 export interface AStarOptions {
   root?: Collection | Element | string | null;
   goal?: Collection | Element | string | null;
   weight?: AStarWeightFn;
-  heuristic?: AStarWeightFn;
+  heuristic?: AStarHeuristicFn;
   directed?: boolean;
 }
 
@@ -30,8 +33,8 @@ export interface AlgorithmsAStar {
 const aStarDefaults = defaults({
   root: null as Collection | Element | string | null,
   goal: null as Collection | Element | string | null,
-  weight: ( ( _edge: Element ) => 1 ) as AStarWeightFn,
-  heuristic: ( ( _edge: Element ) => 0 ) as AStarWeightFn,
+  weight: ( ( _edge: EdgeSingular ) => 1 ) as AStarWeightFn,
+  heuristic: ( ( _node: NodeSingular ) => 0 ) as AStarHeuristicFn,
   directed: false
 });
 
@@ -75,7 +78,7 @@ let elesfn = ({
     addToOpenSet(rootEle, sid);
 
     gScore[ sid ] = 0;
-    fScore[ sid ] = heuristic( rootEle );
+    fScore[ sid ] = heuristic( rootEle as unknown as NodeSingular );
 
     // Counter
     let steps = 0;
@@ -146,7 +149,7 @@ let elesfn = ({
         }
 
         // New tentative score for node w
-        let tempScore = gScore[ cMinId ] + weight( e );
+        let tempScore = gScore[ cMinId ] + weight( e as unknown as EdgeSingular );
 
         // Update gScore for node w if:
         //   w not present in openSet
@@ -156,7 +159,7 @@ let elesfn = ({
         // w not in openSet
         if( !isInOpenSet(wid) ){
           gScore[ wid ] = tempScore;
-          fScore[ wid ] = tempScore + heuristic( w );
+          fScore[ wid ] = tempScore + heuristic( w as unknown as NodeSingular );
           addToOpenSet( w, wid );
           cameFrom[ wid ] = cMin;
           cameFromEdge[ wid ] = e;
@@ -167,7 +170,7 @@ let elesfn = ({
         // w already in openSet, but with greater gScore
         if( tempScore < gScore[ wid ] ){
           gScore[ wid ] = tempScore;
-          fScore[ wid ] = tempScore + heuristic( w );
+          fScore[ wid ] = tempScore + heuristic( w as unknown as NodeSingular );
           cameFrom[ wid ] = cMin;
           cameFromEdge[ wid ] = e;
         }

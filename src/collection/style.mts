@@ -483,16 +483,31 @@ export interface CollectionStyle {
   parsedStyle( this: SharedCollection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
   /** @internal */
   pstyle( this: SharedCollection, property: string, includeNonDefault?: boolean ): ParsedStyleProperty | null | undefined;
-  numericStyle( this: SharedCollection, property: string ): number | unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- style values vary by property; preserves the v3 accessor contract
+  numericStyle( this: SharedCollection, property: string ): any;
   numericStyleUnits( this: SharedCollection, property: string ): string | ( string | undefined )[] | undefined;
-  /** @internal */
-  renderedStyle( this: SharedCollection, property?: string ): unknown;
-  style( this: SharedCollection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
-  css( this: SharedCollection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- style maps contain property-specific values
+  renderedStyle( this: SharedCollection ): Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- return varies by style property
+  renderedStyle( this: SharedCollection, property: string ): any;
+  style<Self extends SharedCollection>( this: Self, name: string, value: unknown ): Self;
+  style<Self extends SharedCollection>( this: Self, obj: Record<string, unknown> ): Self;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- return varies by style property
+  style( this: SharedCollection, name: string ): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- style maps contain property-specific values
+  style( this: SharedCollection ): Record<string, any>;
+  css<Self extends SharedCollection>( this: Self, name: string, value: unknown ): Self;
+  css<Self extends SharedCollection>( this: Self, obj: Record<string, unknown> ): Self;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- return varies by style property
+  css( this: SharedCollection, name: string ): any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- style maps contain property-specific values
+  css( this: SharedCollection ): Record<string, any>;
   /** @internal */
   bypass( this: SharedCollection, name?: string | Record<string, unknown>, value?: unknown ): unknown;
-  /** @internal */
-  renderedCss( this: SharedCollection, property?: string ): unknown;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- style maps contain property-specific values
+  renderedCss( this: SharedCollection ): Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- return varies by style property
+  renderedCss( this: SharedCollection, property: string ): any;
   removeStyle( this: SharedCollection, names?: string ): Collection;
   /** @internal */
   removeBypass( this: SharedCollection, names?: string ): Collection;

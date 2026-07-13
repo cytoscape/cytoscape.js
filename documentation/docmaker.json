@@ -2127,6 +2127,22 @@
             },
 
             {
+              "name": "eles.renderedStyle",
+              "pureAliases": [ "eles.renderedCss", "ele.renderedStyle", "ele.renderedCss" ],
+              "descr": "Get the rendered style values for the first element in the collection.",
+              "formats": [
+                {
+                  "descr": "Get a name-value pair object containing all rendered style properties."
+                },
+                {
+                  "descr": "Get a particular rendered style property value.",
+                  "args": [ { "name": "name", "descr": "The name of the rendered style property to get." } ]
+                }
+              ],
+              "md": "collection/renderedCss"
+            },
+
+            {
               "name": "ele.numericStyle",
               "descr": "Get the numeric value of a style property in preferred units that can be used for calculations.",
               "formats": [

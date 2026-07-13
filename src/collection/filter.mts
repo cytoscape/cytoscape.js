@@ -56,7 +56,19 @@ export interface CollectionFilter {
   add( toAdd?: SetArg ): Collection;
   union( toAdd?: SetArg ): Collection;
   or( toAdd?: SetArg ): Collection;
+  u: CollectionFilter['union'];
+  '+': CollectionFilter['union'];
+  '|': CollectionFilter['union'];
   merge( toAdd?: SetArg ): Collection;
+  '\\': CollectionFilter['difference'];
+  '!': CollectionFilter['difference'];
+  '-': CollectionFilter['difference'];
+  n: CollectionFilter['intersection'];
+  '&': CollectionFilter['intersection'];
+  '.': CollectionFilter['intersection'];
+  '^': CollectionFilter['symmetricDifference'];
+  '(+)': CollectionFilter['symmetricDifference'];
+  '(-)': CollectionFilter['symmetricDifference'];
   /** @internal */
   unmergeAt( i: number ): Collection;
   /** @internal */

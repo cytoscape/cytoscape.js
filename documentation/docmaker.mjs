@@ -8,6 +8,7 @@ import Handlebars from 'handlebars';
 import hljs from 'highlight.js';
 import path from 'path';
 import process from 'process';
+import { makeMarkdownRenderer } from './markdown-renderer.mjs';
 
 const encoding = 'utf8';
 const configFile = './docmaker.json';
@@ -17,19 +18,8 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const readFileSync = file => fs.readFileSync( path.join(__dirname, file), 'utf8')
 
 let config, versions;
-let mdRend = new marked.Renderer();
-let mdRendDefault = new marked.Renderer();
-
-let rendCode = mdRend.code;
-mdRend.code = function(code, lang){
-  let button = '';
-
-  if( lang === 'js' ){
-    button = '<button class="run run-inline-code"><span class="fa fa-play"></span></button>';
-  }
-
-  return rendCode.call(this, code, lang) + button;
-};
+let mdRend = makeMarkdownRenderer({ addRunButton: true });
+let mdRendDefault = makeMarkdownRenderer();
 
 try {
   let confFileContents = readFileSync(configFile);
@@ -70,19 +60,6 @@ function md2html( file ){
   }
 
   let options = {
-    highlight: function(code, lang){
-      let ret;
-
-      if( lang ){
-        ret = hljs.highlight(code, { language: lang }).value;
-      } else {
-        ret = hljs.highlightAuto(code).value;
-      }
-
-      return ret;
-
-    },
-
     smartypants: true,
 
     gfm: true
@@ -255,7 +232,7 @@ function compileConfig( config ){
       let layout = section.layout;
 
       section.name = layout.name;
-      layout.code = fs.readFileSync( path.join(__dirname, '../src/extensions/layout/' + layout.name + '.mjs'), 'utf8' );
+      layout.code = fs.readFileSync( path.join(__dirname, '../src/extensions/layout/' + layout.name + '.mts'), 'utf8' );
 
       try {
         layout.options = layout.code.match(/defaults\s*\=\s*(\{(?:.|\s)+?\}\;)/)[1];

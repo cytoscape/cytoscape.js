@@ -1,9 +1,9 @@
 import Heap from '../../heap.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, SharedCollection, Element } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, SharedCollection, Element } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type BetweennessWeightFn = ( edge: Element ) => number;
+export type BetweennessWeightFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by `betweennessCentrality`. */
 export interface BetweennessCentralityOptions {
@@ -106,7 +106,7 @@ let elesfn = ({
               edge = wEle.edgesTo( vEle )[0];
             }
 
-            let edgeWeight = ( weight as BetweennessWeightFn )( edge );
+            let edgeWeight = ( weight as BetweennessWeightFn )( edge as unknown as EdgeSingular );
 
             let w = wEle.id()!;
 

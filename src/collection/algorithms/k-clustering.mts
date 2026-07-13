@@ -9,10 +9,10 @@
 import clusteringDistance from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, SharedCollection, Element, CoreAccess } from '../eles-types.mjs';
+import type { Collection, SharedCollection, Element, CoreAccess, NodeSingular } from '../eles-types.mjs';
 
 /** A node attribute accessor used as a clustering feature. */
-export type KAttributeFn = ( node: Element ) => number;
+export type KAttributeFn = ( node: NodeSingular ) => number;
 
 /** A feature-vector centroid (k-means / fuzzy c-means). */
 export type FeatureCentroid = number[];
@@ -66,8 +66,8 @@ let getDist = function(
   mode: KMode
 ): number {
   let noNodeP = mode !== 'kMedoids';
-  let getP = noNodeP ? ( ( i: number ) => ( centroid as FeatureCentroid )[i] ) : ( ( i: number ) => attributes[i](centroid as Element) );
-  let getQ = ( i: number ) => attributes[i](node);
+  let getP = noNodeP ? ( ( i: number ) => ( centroid as FeatureCentroid )[i] ) : ( ( i: number ) => attributes[i](centroid as unknown as NodeSingular) );
+  let getQ = ( i: number ) => attributes[i](node as unknown as NodeSingular);
   let nodeP = centroid;
   let nodeQ = node;
 
@@ -84,8 +84,8 @@ let randomCentroids = function( nodes: SharedCollection, k: number, attributes: 
 
   // Find min, max values for each attribute dimension
   for ( let i = 0; i < ndim; i++ ) {
-    min[i] = nodes.min( attributes[i] ).value;
-    max[i] = nodes.max( attributes[i] ).value;
+    min[i] = nodes.min( attributes[i] as unknown as ( ele: Element ) => number ).value;
+    max[i] = nodes.max( attributes[i] as unknown as ( ele: Element ) => number ).value;
   }
 
   // Build k centroids, each represented as an n-dim feature vector
@@ -257,7 +257,7 @@ let kMeans = function( this: SharedCollection, options?: KClusteringOptions ): C
         sum[d] = 0.0;
         for ( let i = 0; i < cluster.length; i++ ) {
           node = cluster[i];
-          sum[d] += opts.attributes[d](node);
+          sum[d] += opts.attributes[d](node as unknown as NodeSingular);
         }
         newCentroid[d] = sum[d] / cluster.length;
 
@@ -375,7 +375,7 @@ let updateCentroids = function(
       numerator   = 0;
       denominator = 0;
       for ( let n = 0; n < nodes.length; n++ ) {
-        numerator   += weight[n][c] * opts.attributes[dim](nodes[n]);
+        numerator   += weight[n][c] * opts.attributes[dim](nodes[n] as unknown as NodeSingular);
         denominator += weight[n][c];
       }
       centroids[c][dim] = numerator / denominator;

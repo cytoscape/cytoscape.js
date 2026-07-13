@@ -9,10 +9,10 @@ import * as math from '../../math.mjs';
 import * as is from '../../is.mjs';
 import clusteringDistance from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, Element, NodeSingular, SharedCollection } from '../eles-types.mjs';
 
 /** A node attribute accessor used to quantify similarity. */
-export type AffinityAttributeFn = ( node: Element ) => number;
+export type AffinityAttributeFn = ( node: NodeSingular ) => number;
 
 /** How to derive the on-diagonal preference value. */
 export type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
@@ -60,7 +60,7 @@ let setOptions = function( options?: AffinityPropagationOptions ) {
 };
 
 let getSimilarity = function( type: DistanceMetric, n1: Element, n2: Element, attributes: AffinityAttributeFn[] ): number {
-  let attr = ( n: Element, i: number ) => attributes[i](n);
+  let attr = ( n: Element, i: number ) => attributes[i](n as unknown as NodeSingular);
 
   // nb negative because similarity should have an inverse relationship to distance
   return -clusteringDistance( type, attributes.length, i => attr(n1, i), i => attr(n2, i), n1, n2 );

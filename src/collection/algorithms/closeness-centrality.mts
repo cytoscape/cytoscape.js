@@ -1,9 +1,9 @@
 import * as is from '../../is.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type ClosenessCentralityWeightFn = ( edge: Element ) => number;
+export type ClosenessCentralityWeightFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by the closeness-centrality methods. */
 export interface ClosenessCentralityOptions {
@@ -28,7 +28,7 @@ export interface AlgorithmsClosenessCentrality {
 
 const defaults = util.defaults({
   harmonic: true,
-  weight: ( ( _edge: Element ) => 1 ) as ClosenessCentralityWeightFn,
+  weight: ( ( _edge: EdgeSingular ) => 1 ) as ClosenessCentralityWeightFn,
   directed: false,
   root: null as SharedCollection | string | null
 });

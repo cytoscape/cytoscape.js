@@ -1,10 +1,10 @@
 import * as is from '../../is.mjs';
 import { warn, defaults } from '../../util/index.mjs';
 import Map from '../../map.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type BellmanFordWeightFn = ( edge: Element ) => number;
+export type BellmanFordWeightFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by `bellmanFord`. */
 export interface BellmanFordOptions {

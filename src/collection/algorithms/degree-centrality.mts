@@ -1,9 +1,9 @@
 import * as is from '../../is.mjs';
 import * as util from '../../util/index.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type DegreeCentralityWeightFn = ( edge: Element ) => number;
+export type DegreeCentralityWeightFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by the degree-centrality methods. */
 export interface DegreeCentralityOptions {
@@ -50,7 +50,7 @@ export interface AlgorithmsDegreeCentrality {
 
 const defaults = util.defaults({
   root: null as SharedCollection | string | null,
-  weight: ( ( _edge: Element ) => 1 ) as DegreeCentralityWeightFn,
+  weight: ( ( _edge: EdgeSingular ) => 1 ) as DegreeCentralityWeightFn,
   directed: false,
   alpha: 0
 });
@@ -162,7 +162,7 @@ let elesfn = ({
 
       // Now, sum edge weights
       for( let i = 0; i < connEdges.length; i++ ){
-        s += weight( connEdges[i] );
+        s += weight( connEdges[i] as unknown as EdgeSingular );
       }
 
       return {
@@ -179,12 +179,12 @@ let elesfn = ({
 
       // Now, sum incoming edge weights
       for( let i = 0; i < incoming.length; i++ ){
-        s_in += weight( incoming[i] );
+        s_in += weight( incoming[i] as unknown as EdgeSingular );
       }
 
       // Now, sum outgoing edge weights
       for( let i = 0; i < outgoing.length; i++ ){
-        s_out += weight( outgoing[i] );
+        s_out += weight( outgoing[i] as unknown as EdgeSingular );
       }
 
       return {

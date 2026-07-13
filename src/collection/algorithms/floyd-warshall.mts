@@ -1,9 +1,9 @@
 import * as is from '../../is.mjs';
 import { defaults } from '../../util/index.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type FloydWarshallWeightFn = ( edge: Element ) => number;
+export type FloydWarshallWeightFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by `floydWarshall`. */
 export interface FloydWarshallOptions {
@@ -22,7 +22,7 @@ export interface AlgorithmsFloydWarshall {
 }
 
 const floydWarshallDefaults = defaults({
-  weight: ( ( _edge: Element ) => 1 ) as FloydWarshallWeightFn,
+  weight: ( ( _edge: EdgeSingular ) => 1 ) as FloydWarshallWeightFn,
   directed: false
 });
 

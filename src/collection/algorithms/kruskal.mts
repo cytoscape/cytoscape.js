@@ -1,7 +1,7 @@
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type KruskalWeightFn = ( edge: Element ) => number;
+export type KruskalWeightFn = ( edge: EdgeSingular ) => number;
 
 export interface AlgorithmsKruskal {
   kruskal( this: SharedCollection, weightFn?: KruskalWeightFn ): Collection;
@@ -12,7 +12,7 @@ let elesfn = ({
   // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
   // implemented from pseudocode from wikipedia
   kruskal: function( this: SharedCollection, weightFn?: KruskalWeightFn ): Collection {
-    let weight: KruskalWeightFn = weightFn || ( ( _edge: Element ) => 1 );
+    let weight: KruskalWeightFn = weightFn || ( ( _edge: EdgeSingular ) => 1 );
 
     let { nodes, edges } = this.byGroup();
     let numNodes = nodes.length;
@@ -34,7 +34,7 @@ let elesfn = ({
       forest[i] = this.spawn( nodes[i] );
     }
 
-    let S = edges.sort( (a: Element, b: Element) => weight(a) - weight(b) );
+    let S = edges.sort( (a: Element, b: Element) => weight(a as unknown as EdgeSingular) - weight(b as unknown as EdgeSingular) );
 
     for( let i = 0; i < S.length; i++ ){
       let edge = S[i];

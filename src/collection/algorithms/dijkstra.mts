@@ -1,10 +1,10 @@
 import * as is from '../../is.mjs';
 import Heap from '../../heap.mjs';
 import { defaults } from '../../util/index.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type DijkstraWeightFn = ( edge: Element ) => number;
+export type DijkstraWeightFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by `dijkstra`. */
 export interface DijkstraOptions {
@@ -30,7 +30,7 @@ export interface AlgorithmsDijkstra {
 
 const dijkstraDefaults = defaults({
   root: null as SharedCollection | string | null,
-  weight: ( ( _edge: Element ) => 1 ) as DijkstraWeightFn,
+  weight: ( ( _edge: EdgeSingular ) => 1 ) as DijkstraWeightFn,
   directed: false
 });
 
@@ -90,7 +90,7 @@ let elesfn = ({
 
       for( let i = 0; i < uvs.length; i++ ){
         let edge = uvs[ i ];
-        let weight = weightFn( edge );
+        let weight = weightFn( edge as unknown as EdgeSingular );
 
         if( weight < smallestDistance || !smallestEdge ){
           smallestDistance = weight;

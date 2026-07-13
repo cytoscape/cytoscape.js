@@ -5,7 +5,7 @@
 
 import * as util from '../../util/index.mjs';
 import clusteringDistance from './clustering-distances.mjs';
-import type { Collection, Element, CoreAccess, SharedCollection } from '../eles-types.mjs';
+import type { Collection, Element, CoreAccess, NodeSingular, SharedCollection } from '../eles-types.mjs';
 import type { DistanceMetric, DimGetter } from './clustering-distances.mjs';
 
 // A node of the dendrogram / cluster tree built during clustering. `value` is a
@@ -28,7 +28,7 @@ export interface HierarchicalClusteringOptions {
   threshold?: number;
   addDendrogram?: boolean;
   dendrogramDepth?: number;
-  attributes?: Array<( ele: Element ) => number>;
+  attributes?: Array<( node: NodeSingular ) => number>;
 }
 
 export interface AlgorithmsHierarchicalClustering {
@@ -73,7 +73,7 @@ let mergeClosest = function( clusters: ClusterNode[], index: ClusterNode[], dist
   let dist;
   let attrs = opts.attributes;
 
-  let getDist = (n1: Element, n2: Element) => clusteringDistance( opts.distance, attrs.length, ( ( i: number ) => attrs[i](n1) ) as DimGetter, ( ( i: number ) => attrs[i](n2) ) as DimGetter, n1, n2 );
+  let getDist = (n1: Element, n2: Element) => clusteringDistance( opts.distance, attrs.length, ( ( i: number ) => attrs[i](n1 as unknown as NodeSingular) ) as DimGetter, ( ( i: number ) => attrs[i](n2 as unknown as NodeSingular) ) as DimGetter, n1, n2 );
 
   for ( let i = 0; i < clusters.length; i++ ) {
     let key  = clusters[i].key!;
@@ -272,7 +272,7 @@ let hierarchicalClustering = function( this: SharedCollection, options?: Hierarc
   let opts = setOptions( options );
 
   let attrs = opts.attributes;
-  let getDist = (n1: Element, n2: Element) => clusteringDistance( opts.distance, attrs.length, ( ( i: number ) => attrs[i](n1) ) as DimGetter, ( ( i: number ) => attrs[i](n2) ) as DimGetter, n1, n2 );
+  let getDist = (n1: Element, n2: Element) => clusteringDistance( opts.distance, attrs.length, ( ( i: number ) => attrs[i](n1 as unknown as NodeSingular) ) as DimGetter, ( ( i: number ) => attrs[i](n2 as unknown as NodeSingular) ) as DimGetter, n1, n2 );
 
   // Begin hierarchical algorithm
   let clusters: ClusterNode[] = [];

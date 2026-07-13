@@ -5,10 +5,10 @@
 // and lecture notes: https://www.cs.ucsb.edu/~xyan/classes/CS595D-2009winter/MCL_Presentation2.pdf
 
 import * as util from '../../util/index.mjs';
-import type { Collection, SharedCollection, Element, CoreAccess } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, SharedCollection, Element, CoreAccess } from '../eles-types.mjs';
 
 /** A similarity/attribute function: maps an edge to a numeric contribution. */
-export type MarkovAttributeFn = ( edge: Element ) => number;
+export type MarkovAttributeFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by `markovClustering`. */
 export interface MarkovClusteringOptions {
@@ -31,7 +31,7 @@ let defaults = util.defaults({
   multFactor: 1,        // optional self loops for each node. Use a neutral value to improve cluster computations.
   maxIterations: 20,    // maximum number of iterations of the MCL algorithm in a single run
   attributes: [         // attributes/features used to group nodes, ie. similarity values between nodes
-    function( _edge: Element ): number {
+    function( _edge: EdgeSingular ): number {
       return 1;
     }
   ] as MarkovAttributeFn[]
@@ -46,7 +46,7 @@ let setOptions = ( options?: MarkovClusteringOptions ) => defaults( options );
 let getSimilarity = function( edge: Element, attributes: MarkovAttributeFn[] ): number {
   let total = 0;
   for ( let i = 0; i < attributes.length; i++ ) {
-    total += attributes[i]( edge );
+    total += attributes[i]( edge as unknown as EdgeSingular );
   }
   return total;
 };

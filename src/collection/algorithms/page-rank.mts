@@ -1,9 +1,9 @@
 import { defaults } from '../../util/index.mjs';
 import { inPlaceSumNormalize } from '../../math.mjs';
-import type { Collection, Element, SharedCollection } from '../eles-types.mjs';
+import type { Collection, EdgeSingular, Element, SharedCollection } from '../eles-types.mjs';
 
 /** Edge weighting function. */
-export type PageRankWeightFn = ( edge: Element ) => number;
+export type PageRankWeightFn = ( edge: EdgeSingular ) => number;
 
 /** Options accepted by `pageRank`. */
 export interface PageRankOptions {
@@ -26,7 +26,7 @@ const pageRankDefaults = defaults({
   dampingFactor: 0.8,
   precision: 0.000001,
   iterations: 200,
-  weight: ( ( _edge: Element ) => 1 ) as PageRankWeightFn
+  weight: ( ( _edge: EdgeSingular ) => 1 ) as PageRankWeightFn
 });
 
 let elesfn = ({

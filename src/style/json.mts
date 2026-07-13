@@ -1,12 +1,15 @@
 import type { Style } from './index.mjs';
 import type { Css } from './css-types.mjs';
 
-/** A JSON stylesheet block: a selector and its style properties. */
-export interface StyleJsonBlock {
+type StyleJsonProperties = Css.Node | Css.Edge | Css.Core;
+
+/** A JSON stylesheet block: a selector and at least one style-property map. */
+export type StyleJsonBlock = {
   selector: string;
-  style?: Css.Node | Css.Edge | Css.Core;
-  css?: Css.Node | Css.Edge | Css.Core;
-}
+} & (
+  | { style: StyleJsonProperties; css?: StyleJsonProperties }
+  | { style?: StyleJsonProperties; css: StyleJsonProperties }
+);
 
 export type StyleJson = StyleJsonBlock[];
 

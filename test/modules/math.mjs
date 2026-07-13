@@ -1,5 +1,4 @@
 import { expandBoundingBoxSides, makeBoundingBox } from '../../src/math.mjs'
-import { describe } from 'mocha'
 import { expect } from 'chai'
 
 describe('Math', function(){

@@ -83,14 +83,6 @@
   "overrides": [
     {
       "files": [
-        "test/**/*.mjs"
-      ],
-      "env": {
-        "mocha": true
-      }
-    },
-    {
-      "files": [
         "src/**/*.mts",
         "src/**/*.ts"
       ],

@@ -1,4 +1,3 @@
-import { describe } from 'mocha';
 import { expect } from 'chai';
 import { Atlas, AtlasCollection, AtlasManager } from '../../src/extensions/renderer/canvas/webgl/atlas.mjs';
 

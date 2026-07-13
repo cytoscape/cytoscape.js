@@ -1,4 +1,3 @@
-import { describe, it } from 'mocha';
 import { expect } from 'chai';
 import { ElementDrawingWebGL, RENDER_TARGET } from '../../src/extensions/renderer/canvas/webgl/drawing-elements-webgl.mjs';
 

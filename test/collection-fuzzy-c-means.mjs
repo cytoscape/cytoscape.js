@@ -246,13 +246,11 @@ describe('Algorithms', function(){
       }
     });
 
-    it('should always return the same clusters if we run the algorithm multiple times', function() {
+    it('should always return the same clusters if we run the algorithm multiple times', { timeout: 10000 }, function() {
       // Run fuzzy c-means several times. Due to the non-deterministic nature of the algorithm,
       // sometimes the order of the two (# of clusters returned in this example) clusters will be swapped.
       // Example: [ [1,2,3] , [4,5,6] ] swapped to [ [4,5,6] , [1,2,3] ]
       // However, the same nodes should still be grouped together.
-
-      this.timeout(10000);
 
       for (var i = 0; i < 1000; i++) {
         var clusters2 = cy.elements().fuzzyCMeans(options).clusters;

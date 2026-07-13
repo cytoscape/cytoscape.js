@@ -5,12 +5,12 @@ describe('String-sheet parsing', function(){
   let cy;
   let consoleWarn;
 
-  this.beforeAll(function() {
+  before(function() {
     consoleWarn = console.warn;
     console.warn = function() {};
   });
 
-  this.afterAll(function() {
+  after(function() {
     console.warn = consoleWarn;
   });
 

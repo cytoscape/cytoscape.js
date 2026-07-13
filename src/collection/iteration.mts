@@ -29,9 +29,9 @@ export interface CollectionIteration {
   toArray(): Element[];
   slice( start?: number, end?: number ): Collection;
   size(): number;
-  eq( i: number ): Collection;
-  first(): Collection;
-  last(): Collection;
+  eq( i: number ): Element;
+  first(): Element;
+  last(): Element;
   empty(): boolean;
   nonempty(): boolean;
   sort( sortFn: SortFn ): Collection;

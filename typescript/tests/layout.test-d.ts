@@ -7,7 +7,7 @@
 
 import cytoscape from '../../build/dts/index.js';
 import type {
-  Core, CoseLayoutOptions, EdgeSingular, GridLayoutOptions,
+  CircleLayoutOptions, Core, CoseLayoutOptions, EdgeSingular, GridLayoutOptions,
   LayoutInstance, NodeSingular,
 } from '../../build/dts/index.js';
 
@@ -48,8 +48,13 @@ const typedCose: CoseLayoutOptions = {
     return inferredEdge.target().degree() || 32;
   },
 };
+const typedCircle: CircleLayoutOptions = {
+  name: 'circle',
+  sort: ( a, b ) => a.degree()! - b.degree()!,
+};
 cy.layout( typedGrid );
 cy.layout( typedCose );
+cy.layout( typedCircle );
 
 // Inline options receive the same callback context without a pre-annotation.
 cy.layout( {
@@ -97,4 +102,4 @@ void elesLayout;
 // LayoutInstance.run() returns `this` for chaining
 const chained: LayoutInstance = grid.run();
 
-void [bfs, circle, concentric, random, preset, cose, makeL, createL, typedGrid, typedCose, chained];
+void [bfs, circle, concentric, random, preset, cose, makeL, createL, typedGrid, typedCose, typedCircle, chained];

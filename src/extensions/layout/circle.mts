@@ -3,6 +3,7 @@ import * as math from '../../math.mjs';
 import * as is from '../../is.mjs';
 import type { LayoutBase, LayoutOptionsBase, Collection } from './layout-base.mjs';
 import type { LayoutLike, LayoutOptions } from '../../collection/layout.mjs';
+import type { Element, NodeSingular } from '../../collection/eles-types.mjs';
 import type { BoundingBox, Position } from '../../types.mjs';
 
 /** Options accepted by the circle layout. */
@@ -17,7 +18,7 @@ export interface CircleLayoutOptions extends LayoutOptionsBase {
   sweep?: number;
   clockwise?: boolean;
   counterclockwise?: boolean;
-  sort?: ( a: Collection, b: Collection ) => number;
+  sort?: ( a: NodeSingular, b: NodeSingular ) => number;
 }
 
 /** The circle layout instance (`this`). */
@@ -66,7 +67,7 @@ CircleLayout.prototype.run = function( this: CircleLayout ){
   let nodes = eles.nodes().not( ':parent' );
 
   if( options.sort ){
-    nodes = nodes.sort( options.sort );
+    nodes = nodes.sort( options.sort as unknown as ( a: Element, b: Element ) => number );
   }
 
   let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {

@@ -12,7 +12,7 @@
 // `types-docmaker-surface.mjs`. Run via `npm run test:types:css` (which builds
 // the declarations first). Needs tsx to import the .mts runtime inventory.
 import fs from 'node:fs';
-import ts from 'typescript';
+import ts from 'typescript-compiler-api';
 import styfn from '../src/style/properties.mjs';
 
 // --- runtime inventory ------------------------------------------------------

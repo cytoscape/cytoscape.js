@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
-import ts from 'typescript';
+import ts from 'typescript-compiler-api';
 
 const docs = JSON.parse( fs.readFileSync( new URL( '../documentation/docmaker.json', import.meta.url ), 'utf8' ) );
 const dtsPath = fileURLToPath( new URL( '../build/dts/index.d.ts', import.meta.url ) );

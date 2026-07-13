@@ -12,7 +12,7 @@
 // Run via `npm run test:types:exports` (no build step needed; uses build/dts directly).
 
 import fs from 'node:fs';
-import ts from 'typescript';
+import ts from 'typescript-compiler-api';
 
 // Canonical set of public named exports. Changing this list is a conscious API decision.
 const EXPECTED_EXPORTS = new Set( [

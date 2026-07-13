@@ -15,6 +15,7 @@ import type Animation from '../animation.mjs';
 import type Emitter from '../emitter.mjs';
 import type { ParsedStyleProperty } from '../style/parse.mjs';
 import type { Css } from '../style/css-types.mjs';
+import type { Core } from '../core/core-types.mjs';
 
 // per-mixin contribution interfaces (each mixin file exports its own)
 import type { CollectionAlgorithms } from './algorithms/index.mjs';
@@ -244,7 +245,9 @@ export interface CollectionBaseFns {
   spawn( eles?: ElementsInput, unique?: boolean ): Collection;
   /** @internal */
   spawnSelf(): Collection;
+  /** @internal */
   cy(): CoreAccess;
+  cy(): Core;
   /** @internal */
   renderer(): CoreRendererAccess;
   /** @internal */
@@ -307,6 +310,7 @@ export interface Collection extends
 
 /** A single element (node or edge); array-like of itself, length 1. */
 export interface Element extends Collection {
+  length: 1;
   /** @internal */
   _private: ElementPrivate;
 }
@@ -355,8 +359,68 @@ type NodeOnlyKeys =
   | 'affinityPropagation' | 'ap' | 'fuzzyCMeans' | 'fcm'
   | 'hierarchicalClustering' | 'hca' | 'kMeans' | 'kMedoids';
 
+type KindAwareIterationKeys =
+  | number
+  | 'forEach' | 'each' | 'toArray' | 'slice' | 'eq' | 'first' | 'last'
+  | 'sort' | 'map' | 'reduce' | 'max' | 'min'
+  | typeof Symbol.iterator;
+
+interface KindAwareIteration<Single, Chain, Subset> {
+  [index: number]: Single;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors Array#forEach's thisArg
+  forEach( fn: ( ele: Single, i: number, eles: Chain ) => unknown, thisArg?: any ): Chain;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- public alias of forEach
+  each( fn: ( ele: Single, i: number, eles: Chain ) => unknown, thisArg?: any ): Chain;
+  toArray(): Single[];
+  slice( start?: number, end?: number ): Subset;
+  eq( i: number ): Single;
+  first(): Single;
+  last(): Single;
+  sort( sortFn: ( a: Single, b: Single ) => number ): Subset;
+  map<T>( mapFn: ( ele: Single, i: number, eles: Chain ) => T, thisArg?: unknown ): T[];
+  reduce<T>( fn: ( acc: T, ele: Single, i: number, eles: Chain ) => T, initialValue: T ): T;
+  max( valFn: ( ele: Single, i: number, eles: Chain ) => number, thisArg?: unknown ): { value: number; ele: Single | undefined };
+  min( valFn: ( ele: Single, i: number, eles: Chain ) => number, thisArg?: unknown ): { value: number; ele: Single | undefined };
+  [ Symbol.iterator ](): Iterator<Single>;
+}
+
+// The narrowed projections must remain structurally compatible with the wide
+// source-only Collection type so internal mixins can accept either kind.  Keep
+// the broad iteration members for source checking, but strip them from the
+// generated declaration so consumers see only KindAwareIteration above.
+interface KindAwareIterationCompatibility {
+  /** @internal */
+  [index: number]: Element;
+  /** @internal */
+  forEach: Collection['forEach'];
+  /** @internal */
+  each: Collection['each'];
+  /** @internal */
+  toArray: Collection['toArray'];
+  /** @internal */
+  slice: Collection['slice'];
+  /** @internal */
+  eq: Collection['eq'];
+  /** @internal */
+  first: Collection['first'];
+  /** @internal */
+  last: Collection['last'];
+  /** @internal */
+  sort: Collection['sort'];
+  /** @internal */
+  map: Collection['map'];
+  /** @internal */
+  reduce: Collection['reduce'];
+  /** @internal */
+  max: Collection['max'];
+  /** @internal */
+  min: Collection['min'];
+  /** @internal */
+  [ Symbol.iterator ]: Collection[typeof Symbol.iterator];
+}
+
 /** Node-kind return-type narrowings layered over the wide collection. */
-interface NodeCollectionNarrowed {
+interface NodeKindNarrowed {
   parent( selector?: PublicSelectorArg ): NodeCollection;
   parents( selector?: PublicSelectorArg ): NodeCollection;
   ancestors( selector?: PublicSelectorArg ): NodeCollection;
@@ -372,7 +436,7 @@ interface NodeCollectionNarrowed {
 }
 
 /** Edge-kind return-type narrowings layered over the wide collection. */
-interface EdgeCollectionNarrowed {
+interface EdgeKindNarrowed {
   source( selector?: PublicSelectorArg ): NodeSingular;
   target( selector?: PublicSelectorArg ): NodeSingular;
   sources( selector?: PublicSelectorArg ): NodeCollection;
@@ -382,17 +446,35 @@ interface EdgeCollectionNarrowed {
   codirectedEdges( selector?: PublicSelectorArg ): EdgeCollection;
 }
 
-type NodeNarrowedKeys = keyof NodeCollectionNarrowed;
-type EdgeNarrowedKeys = keyof EdgeCollectionNarrowed;
+type NodeNarrowedKeys = keyof NodeKindNarrowed;
+type EdgeNarrowedKeys = keyof EdgeKindNarrowed;
 
 /** Kind-agnostic collection: members common to both nodes and edges. */
-export type SharedCollection = Omit<Collection, EdgeOnlyKeys | NodeOnlyKeys>;
+export type SharedCollection =
+  Omit<Collection, EdgeOnlyKeys | NodeOnlyKeys | KindAwareIterationKeys>
+  & KindAwareIterationCompatibility;
 
-export type NodeCollection = Omit<Collection, EdgeOnlyKeys | NodeNarrowedKeys> & NodeCollectionNarrowed;
-export type EdgeCollection = Omit<Collection, NodeOnlyKeys | EdgeNarrowedKeys> & EdgeCollectionNarrowed;
+export type NodeCollection =
+  Omit<Collection, EdgeOnlyKeys | NodeNarrowedKeys | KindAwareIterationKeys>
+  & NodeKindNarrowed
+  & KindAwareIteration<NodeSingular, NodeCollection, NodeCollection>
+  & KindAwareIterationCompatibility;
+export type EdgeCollection =
+  Omit<Collection, NodeOnlyKeys | EdgeNarrowedKeys | KindAwareIterationKeys>
+  & EdgeKindNarrowed
+  & KindAwareIteration<EdgeSingular, EdgeCollection, EdgeCollection>
+  & KindAwareIterationCompatibility;
 
-export type NodeSingular = Omit<Element, EdgeOnlyKeys | NodeNarrowedKeys> & NodeCollectionNarrowed;
-export type EdgeSingular = Omit<Element, NodeOnlyKeys | EdgeNarrowedKeys> & EdgeCollectionNarrowed;
+export type NodeSingular =
+  Omit<Element, EdgeOnlyKeys | NodeNarrowedKeys | KindAwareIterationKeys>
+  & NodeKindNarrowed
+  & KindAwareIteration<NodeSingular, NodeSingular, NodeCollection>
+  & KindAwareIterationCompatibility;
+export type EdgeSingular =
+  Omit<Element, NodeOnlyKeys | EdgeNarrowedKeys | KindAwareIterationKeys>
+  & EdgeKindNarrowed
+  & KindAwareIteration<EdgeSingular, EdgeSingular, EdgeCollection>
+  & KindAwareIterationCompatibility;
 
 /** The runtime Collection constructor (a function, not a class — the
  * shared prototype is reassigned, which classes don't allow). */

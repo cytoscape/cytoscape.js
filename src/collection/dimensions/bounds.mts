@@ -1041,7 +1041,7 @@ elesfn.dirtyBoundingBoxCache = function( this: Collection ){
 // - would be better to not modify the nodes but the nodes are read directly everywhere in the renderer...
 // - try to use for only things like discrete layouts where the node position would change anyway
 elesfn.boundingBoxAt = function( this: Collection, fn: ( ( node: Element, i: number ) => Position ) | Position ): BoundingBox {
-  let nodes = this.nodes();
+  let nodes: SharedCollection = this.nodes();
   let cy = this.cy();
   let hasCompoundNodes = cy.hasCompoundNodes();
   let parents = cy.collection();

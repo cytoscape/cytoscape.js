@@ -253,7 +253,7 @@ let fn = ({
       if( setting ){
         for( let i = 0; i < this.length; i++ ){
           let ele = this[ i ];
-          let parent = hasCompoundNodes ? ele.parent() : null;
+          let parent: SharedCollection | null = hasCompoundNodes ? ele.parent() : null;
           let hasParent = parent && parent.length > 0;
           let relativeToParent = hasParent;
 
@@ -275,7 +275,7 @@ let fn = ({
 
       } else { // getting
         let pos = ele.position();
-        let parent = hasCompoundNodes ? ele.parent() : null;
+        let parent: SharedCollection | null = hasCompoundNodes ? ele.parent() : null;
         let hasParent = parent && parent.length > 0;
         let relativeToParent = hasParent;
 

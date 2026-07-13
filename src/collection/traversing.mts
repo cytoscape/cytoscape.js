@@ -36,8 +36,8 @@ let defineDagExtremity = function( params: DagExtremityParams ){
         let tgt = edge.target();
 
         if(
-             ( params.noIncomingEdges && tgt === ele && src !== ele )
-          || ( params.noOutgoingEdges && src === ele && tgt !== ele )
+             ( params.noIncomingEdges && ( tgt as unknown ) === ele && ( src as unknown ) !== ele )
+          || ( params.noOutgoingEdges && ( src as unknown ) === ele && ( tgt as unknown ) !== ele )
         ){
           disqualified = true;
           break;
@@ -74,10 +74,10 @@ let defineDagOneHop = function( params: DagOneHopParams ){
         let src = edge.source();
         let tgt = edge.target();
 
-        if( params.outgoing && src === ele ){
+        if( params.outgoing && ( src as unknown ) === ele ){
           oEles.push( edge );
           oEles.push( tgt );
-        } else if( params.incoming && tgt === ele ){
+        } else if( params.incoming && ( tgt as unknown ) === ele ){
           oEles.push( edge );
           oEles.push( src );
         }

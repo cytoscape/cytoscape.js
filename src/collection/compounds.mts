@@ -76,7 +76,7 @@ let elesfn = ({
       let parents = ele.parents();
 
       // parents is a NodeCollection; widen to the mixed Collection accumulator
-      ancestors = ancestors || ( parents as Collection );
+      ancestors = ancestors || ( parents as unknown as Collection );
 
       ancestors = ancestors.intersect( parents ); // current list must be common with current ele parents set
     }

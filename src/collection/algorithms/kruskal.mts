@@ -19,7 +19,7 @@ let elesfn = ({
     let forest: Collection[] = new Array(numNodes);
     // byGroup() creates a fresh collection safe to mutate; A accumulates the
     // spanning tree (nodes + merged edges), so it is the mixed/wide Collection
-    let A: Collection = nodes as Collection;
+    let A: Collection = nodes as unknown as Collection;
 
     let findSetIndex = ( ele: Element ): number | undefined => {
       for( let i = 0; i < forest.length; i++ ){

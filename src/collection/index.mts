@@ -34,6 +34,7 @@ import type {
   ElementJson,
   Element as ElementType
 } from './eles-types.mjs';
+import type { Core } from '../core/core-types.mjs';
 
 // represents a set of nodes, edges, or both together
 let Collection = function( this: CollectionType, cy: CoreAccess, elements?: ElementsInput, unique = false, removed = false ){
@@ -154,7 +155,7 @@ elesfn.spawnSelf = function(){
 };
 
 elesfn.cy = function(){
-  return this._private.cy;
+  return this._private.cy as CoreAccess & Core;
 };
 
 elesfn.renderer = function(){
@@ -537,7 +538,7 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
             break;
           }
 
-          ancestor = ancestor.parent() as CollectionType;
+          ancestor = ancestor.parent() as unknown as CollectionType;
         }
 
         if( !selfAsParent ){

@@ -91,7 +91,7 @@ To install Cytoscape.js via Meteor/Atmosphere:
 npm install cytoscape
 ```
 
-Cytoscape.js supports environments with ES5 or newer, as it is transpiled by Babel and it uses only basic features of the standard library.  Feature detection is used for optional features that improve performance.  However, a future version of Cytoscape.js may require a more up-to-date version of the standard library.  You may want to use [`core-js`](https://github.com/zloirock/core-js) if you want to support old browsers in future.
+Cytoscape.js v4 targets modern JavaScript environments.  Browser builds require an ES2018-capable browser, and Node.js usage requires Node.js 24 or newer.  Applications that must support legacy browsers or older Node.js releases should remain on Cytoscape.js v3 or transpile the library for their target environment.
 
 
 

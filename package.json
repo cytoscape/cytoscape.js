@@ -28,7 +28,7 @@
     "cytoscape"
   ],
   "engines": {
-    "node": ">=0.10"
+    "node": ">=24"
   },
   "types": "dist/cytoscape.d.ts",
   "main": "dist/cytoscape.cjs.js",

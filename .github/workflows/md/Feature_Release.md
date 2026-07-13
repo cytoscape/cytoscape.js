@@ -33,7 +33,7 @@ Below are the steps performed by the "Feature Release Test" GitHub Action:
 2. **Setup Node.js Environment**:
    - Action: Sets up Node.js environment.
    - Uses: `actions/setup-node@v6`.
-   - Node Version: 18.
+   - Node Version: The version in `.nvmrc` (currently 24).
    - Caches npm packages.
 
 3. **Get New Version String**:

@@ -7,12 +7,8 @@
 * Highly optimised
 * No external dependencies
 * Compatible with
-  * All modern browsers
-  * Legacy browsers with ES5 and canvas support
-    * ES5 and canvas support are required, and feature detection is used for optional performance enhancements.
-    * Browsers circa 2012 support ES5 fully: IE10, Chrome 23, Firefox 21, Safari 6 ([caniuse](https://caniuse.com/#feat=es5))
-    * Browsers with partial but sufficient ES5 support also work, such as IE9 and Firefox 4.
-    * The documentation and examples are not optimised for old browsers, although the library itself is.  Some demos may not work in old browsers in order to keep the demo code simple.
+  * Modern browsers with ES2018 and canvas support
+  * Node.js 24 or newer
   * Module systems
     * ES modules
     * UMD

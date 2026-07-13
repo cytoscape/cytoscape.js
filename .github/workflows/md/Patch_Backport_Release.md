@@ -39,7 +39,7 @@ The "Patch Release Test" GitHub Action comprises the following steps:
 3. **Setup Node.js Environment**:
    - Action: Sets up Node.js environment for the workflow.
    - Uses: `actions/setup-node@v6`.
-   - Node Version: 18.
+   - Node Version: The version in `.nvmrc` (currently 24).
    - Caches npm packages.
 
 4. **Get New Version String**:

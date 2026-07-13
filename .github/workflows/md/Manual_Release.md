@@ -19,10 +19,7 @@
  1. Confirm all the tests are passing: 
      1. `npm run test`
      1. See also `test/index.html` for browser testing (optional)
- 1. Confirm all the tests are passing in IE9 (for feature releases):
-     1. `npm run watch:umd`
-     1. Open an [IE9 VM](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
-     1. Open `http://yourip:8081/test/ie.html` in IE
+ 1. For feature releases, sanity-check the debug pages in currently supported modern browsers using `npm run watch`.
  1. Prepare a release: `npm run release`
  1. Review the files that were just built in the previous step.
      1. There should be a series of updated files in the `dist` directory and the `documentation` directory, identified with `git status`.  

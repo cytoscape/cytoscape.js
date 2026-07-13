@@ -5,13 +5,43 @@ import ts from 'typescript-compiler-api';
 const docs = JSON.parse( fs.readFileSync( new URL( '../documentation/docmaker.json', import.meta.url ), 'utf8' ) );
 const dtsPath = fileURLToPath( new URL( '../build/dts/index.d.ts', import.meta.url ) );
 
-// Every dotted member namespace docmaker documents that maps to a public TS
-// type. `nodes`/`edges` fold into the node/edge collection groups; `ani` and
+// Every member namespace docmaker documents that maps to a public TS type.
+// `nodes`/`edges` fold into the node/edge collection groups; `ani` and
 // `layout` are the animation and layout instance types. (`Popper` in docmaker
 // is extension prose, not a typed member surface, so it is intentionally out.)
-const DOC_PREFIX = /^(cy|eles|ele|node|nodes|edge|edges|ani|layout)\./;
+const DOC_MEMBER = /^(cy|eles|ele|node|nodes|edge|edges|ani|layout)(?:\.([^.]+)|\['([^']+)'\])$/;
 
 const docByPrefix = new Map();
+
+function parseDocMember( value ){
+  let match = DOC_MEMBER.exec( value );
+
+  if( !match ){
+    return;
+  }
+
+  let [ , prefix, dottedName, bracketName ] = match;
+  let name = dottedName || bracketName.replaceAll( '\\\\', '\\' );
+
+  return { prefix, name };
+}
+
+// Set-operation aliases are documented using JavaScript bracket notation.
+// Keep focused coverage for both ordinary and escaped property keys so the
+// surface audit compares those aliases to their declaration member names.
+const docMemberParsingCases = [
+  [ 'eles.union', 'eles', 'union' ],
+  [ String.raw`eles['u']`, 'eles', 'u' ],
+  [ String.raw`eles['\\']`, 'eles', '\\' ]
+];
+
+for( let [ value, expectedPrefix, expectedName ] of docMemberParsingCases ){
+  let parsed = parseDocMember( value );
+
+  if( parsed?.prefix !== expectedPrefix || parsed.name !== expectedName ){
+    throw new Error( `Could not parse documented member ${value}` );
+  }
+}
 
 function addDocName( prefix, name ){
   if( !docByPrefix.has( prefix ) ){
@@ -28,18 +58,26 @@ function walkDocs( value ){
   }
 
   if( value && typeof value === 'object' ){
-    if( typeof value.name === 'string' && DOC_PREFIX.test( value.name ) ){
-      let [ prefix, name ] = value.name.split( '.' );
-      addDocName( prefix, name );
+    if( typeof value.name === 'string' ){
+      let parsed = parseDocMember( value.name );
+
+      if( parsed ){
+        let { prefix, name } = parsed;
+        addDocName( prefix, name );
+      }
     }
 
     // Aliases are part of the public API surface and must be exposed too (e.g.
     // `layout.bind` === `layout.on`, `ani.run` === `ani.play`).
     if( Array.isArray( value.pureAliases ) ){
       for( let alias of value.pureAliases ){
-        if( typeof alias === 'string' && DOC_PREFIX.test( alias ) ){
-          let [ prefix, name ] = alias.split( '.' );
-          addDocName( prefix, name );
+        if( typeof alias === 'string' ){
+          let parsed = parseDocMember( alias );
+
+          if( parsed ){
+            let { prefix, name } = parsed;
+            addDocName( prefix, name );
+          }
         }
       }
     }

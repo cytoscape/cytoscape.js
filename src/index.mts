@@ -8,56 +8,34 @@ import version from './version.mjs';
 import { warnings } from './util/index.mjs';
 
 import type { Core as CoreInstance, CytoscapeOptions } from './core/core-types.mjs';
+import type { Core as PublicCore } from './public-types.mjs';
 
 // public type surface re-exported as named exports (consumers can do
-// `import cytoscape, { Core } from 'cytoscape'`)
-export type {
-  Core,
-  CytoscapeOptions,
-  LayoutInstance,
-  RendererInstance
-} from './core/core-types.mjs';
-export type {
-  Collection,
-  EdgeCollection,
-  EdgeSingular,
-  Element,
-  ElementDefinition,
-  ElementJson,
-  NodeCollection,
-  NodeSingular,
-  Singular
-} from './collection/eles-types.mjs';
-export type { Position, BoundingBox } from './types.mjs';
-export type { default as Animation, AnimationOptions } from './animation.mjs';
-export type { Css } from './style/css-types.mjs';
-export type { StyleJsonBlock, StyleJson } from './style/json.mjs';
-export type {
-  EventObject,
-  EventObjectNode,
-  EventObjectEdge,
-  EventObjectCore,
-  EventHandler,
-  AbstractEventObject,
-  InputEventObject,
-  LayoutEventObject
-} from './event-types.mjs';
+// `import cytoscape, { Core } from 'cytoscape'`).  public-types.mts also
+// retains the type names exposed by the v3 `cytoscape` namespace.
+export type * from './public-types.mjs';
 
 /** A plugin registrant, as passed to `cytoscape.use(ext)`. */
-export type CytoscapeExtension = ( cy: CytoscapeFactory, ...args: unknown[] ) => void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- standalone extensions define their own argument tuple
+export type CytoscapeExtension<Args extends unknown[] = any[]> = ( cy: CytoscapeFactory, ...args: Args ) => void;
+
+/** Legacy extension registrant name retained for v3 declaration compatibility. */
+export type Ext = CytoscapeExtension;
 
 /** The cytoscape factory: create an instance, or register an extension. */
 export interface CytoscapeFactory {
-  ( options?: CytoscapeOptions ): CoreInstance;
+  ( options?: CytoscapeOptions ): PublicCore;
   ( type: string, name: string, registrant?: unknown ): unknown;
-  use( ext: CytoscapeExtension, ...args: unknown[] ): CytoscapeFactory;
+  use<Args extends unknown[]>( ext: CytoscapeExtension<Args>, ...args: Args ): CytoscapeFactory;
   warnings( bool?: boolean ): boolean;
   version: string;
   stylesheet: typeof Stylesheet;
   Stylesheet: typeof Stylesheet;
 }
 
-let cytoscape = function( options?: CytoscapeOptions | string ){
+function cytoscape( options?: CytoscapeOptions ): PublicCore;
+function cytoscape( type: string, name: string, registrant?: unknown ): unknown;
+function cytoscape( options?: CytoscapeOptions | string ): CoreInstance | unknown {
   // if no options specified, use default
   if( options === undefined ){
     options = {};
@@ -65,22 +43,18 @@ let cytoscape = function( options?: CytoscapeOptions | string ){
 
   // create instance
   if( is.plainObject( options ) ){
-    return new Core( options as CytoscapeOptions );
+    return new Core( options as CytoscapeOptions ) as unknown as PublicCore;
   }
 
   // allow for registration of extensions
   else if( is.string( options ) ){
     return ( extension as ( ...args: unknown[] ) => unknown ).apply( extension, arguments as unknown as unknown[] );
   }
-} as CytoscapeFactory;
+}
 
 // e.g. cytoscape.use( require('cytoscape-foo'), bar )
-cytoscape.use = function( this: CytoscapeFactory, ext: CytoscapeExtension ){
-  let args = Array.prototype.slice.call( arguments, 1 ); // args to pass to ext
-
-  args.unshift( cytoscape ); // cytoscape is first arg to ext
-
-  ext.apply( null, args as [ CytoscapeFactory, ...unknown[] ] );
+cytoscape.use = function<Args extends unknown[]>( this: CytoscapeFactory, ext: CytoscapeExtension<Args>, ...args: Args ){
+  ext.apply( null, [ cytoscape as CytoscapeFactory, ...args ] as [ CytoscapeFactory, ...Args ] );
 
   return this;
 };

@@ -1651,11 +1651,16 @@ BRp.load = function(){
             .emit(makeEvent('freeon'))
           ;
 
-          draggedEles.emit(makeEvent('free'));
+          if( draggedEles ){
+            draggedEles.emit(makeEvent('free'));
+          }
 
           if( r.dragData.didDrag ){
             start.emit(makeEvent('dragfreeon'));
-            draggedEles.emit(makeEvent('dragfree'));
+
+            if( draggedEles ){
+              draggedEles.emit(makeEvent('dragfree'));
+            }
           }
         }
 

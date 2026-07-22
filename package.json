@@ -59,6 +59,9 @@
     },
     "./dist/cytoscape.min.js": {
       "require": "./dist/cytoscape.min.js"
+    },
+    "./gpu": {
+      "import": "./dist/cytoscape-gpu.esm.mjs"
     }
   },
   "unpkg": "dist/cytoscape.min.js",
@@ -89,12 +92,12 @@
     "build:min": "cross-env FILE=min rolldown -c",
     "clean": "rimraf build/*",
     "copyright": "node license-update.mjs",
-    "dist:copy": "cpy --flat build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.mjs build/cytoscape.esm.min.mjs dist",
+    "dist:copy": "cpy --flat build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.mjs build/cytoscape.esm.min.mjs build/cytoscape-gpu.umd.js build/cytoscape-gpu.esm.mjs dist",
     "dist": "cross-env NODE_ENV=production run-s build build:types dist:*",
     "release": "run-s copyright dist docs",
     "watch": "run-s watch:fast",
     "dev": "run-s watch",
-    "watch:sync": "livereload \"build, debug, debug/webgl\" -w 500 --extraExts 'json'",
+    "watch:sync": "livereload \"build, debug, debug/webgl, debug/webgpu\" -w 500 --extraExts 'json'",
     "watch:http": "http-server -p 3333 -s -c -1 -o debug",
     "watch:fast": "run-p watch:sync watch:http watch:build:fast",
     "watch:umd": "run-p watch:sync watch:http watch:build:umd",
@@ -129,6 +132,7 @@
     "@rollup/plugin-replace": "^6.0.3",
     "@types/heap": "^0.2.35",
     "@types/lodash": "^4.17.24",
+    "@webgpu/types": "^0.1.71",
     "benchmark": "^2.1.4",
     "chai": "^6.2.2",
     "cpy-cli": "^7.0.0",

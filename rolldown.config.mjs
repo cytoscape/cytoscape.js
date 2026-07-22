@@ -14,8 +14,10 @@ const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
 const NODE_ENV = process.env.NODE_ENV === 'development' ? 'development' : 'production'; // default prod
 
 const input = './src/index.mjs';
+const gpuInput = './src/gpu/index.mjs';
 
 const name = 'cytoscape';
+const gpuName = 'cytoscapeGpu';
 
 // The sources are TypeScript (.mts); rolldown transpiles them natively via
 // oxc (Babel was dropped after the TS migration). This alias resolves the
@@ -117,6 +119,35 @@ const configs = [
     resolve,
     transform,
     output: { file: 'build/cytoscape.esm.mjs', format: 'es' },
+    plugins: [
+      replace(replaceOptions),
+      license(licenseHeaderOptions)
+    ]
+  },
+
+  // GPU prototype entry point (#3486); the FILE=umd filter below picks the
+  // gpu UMD up in watch builds because its file name also ends in 'umd.js'.
+  {
+    input: gpuInput,
+    resolve,
+    transform,
+    output: {
+      file: 'build/cytoscape-gpu.umd.js',
+      format: 'umd',
+      name: gpuName,
+      sourcemap: SOURCEMAPS ? 'inline' : false
+    },
+    plugins: [
+      replace(replaceOptions),
+      license(licenseHeaderOptions)
+    ]
+  },
+
+  {
+    input: gpuInput,
+    resolve,
+    transform,
+    output: { file: 'build/cytoscape-gpu.esm.mjs', format: 'es' },
     plugins: [
       replace(replaceOptions),
       license(licenseHeaderOptions)

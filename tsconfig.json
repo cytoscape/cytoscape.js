@@ -14,7 +14,7 @@
     "noEmit": true,
     "incremental": true,
     "tsBuildInfoFile": "tsconfig.tsbuildinfo",
-    "types": []
+    "types": ["@webgpu/types"]
   },
   "include": ["src/**/*"]
 }

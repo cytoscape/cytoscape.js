@@ -1,0 +1,67 @@
+import { expect } from 'chai';
+import cytoscapeGpu from '../src/gpu/index.mjs';
+
+describe('gpu/collection: comparison', function(){
+
+  var cy;
+
+  beforeEach(function(){
+    cy = cytoscapeGpu({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' }, selected: true },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ]
+    });
+  });
+
+  describe('eles.same()', function(){
+    it('is true for equal sets regardless of order', function(){
+      expect( cy.$('#a, #b').same( cy.$('#b, #a') ) ).to.be.true;
+    });
+
+    it('is false for different sets', function(){
+      expect( cy.$('#a').same( cy.$('#b') ) ).to.be.false;
+      expect( cy.$('#a, #b').same( cy.$('#a') ) ).to.be.false;
+    });
+  });
+
+  describe('eles.anySame()', function(){
+    it('is true on overlap', function(){
+      expect( cy.$('#a, #b').anySame( cy.$('#b, #c') ) ).to.be.true;
+    });
+
+    it('is false on disjoint sets', function(){
+      expect( cy.$('#a').anySame( cy.$('#b, #c') ) ).to.be.false;
+    });
+  });
+
+  describe('eles.contains()', function(){
+    it('is true for subsets', function(){
+      expect( cy.nodes().contains( cy.$('#a') ) ).to.be.true;
+      expect( cy.elements().has( cy.nodes() ) ).to.be.true;
+    });
+
+    it('is false otherwise', function(){
+      expect( cy.$('#a').contains( cy.nodes() ) ).to.be.false;
+    });
+  });
+
+  describe('eles.allAre()', function(){
+    it('checks every element against a selector', function(){
+      expect( cy.nodes().allAre('node') ).to.be.true;
+      expect( cy.elements().allAre('node') ).to.be.false;
+      expect( cy.collection().allAre('node') ).to.be.true; // vacuously true, as in v3
+    });
+  });
+
+  describe('eles.is()', function(){
+    it('checks whether any element matches', function(){
+      expect( cy.elements().is('edge') ).to.be.true;
+      expect( cy.nodes().is('edge') ).to.be.false;
+      expect( cy.nodes().is(':selected') ).to.be.true;
+    });
+  });
+
+});

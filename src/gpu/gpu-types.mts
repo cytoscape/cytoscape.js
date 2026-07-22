@@ -1,0 +1,78 @@
+/*
+Public option/type surface of the GPU prototype entry point.
+*/
+
+import type { Position } from '../types.mjs';
+
+export type { Position };
+
+export interface GpuElementData {
+  id?: string;
+  /** edges only; required for edges */
+  source?: string;
+  /** edges only; required for edges */
+  target?: string;
+}
+
+export interface GpuElementDefinition {
+  /** inferred from `data.source`/`data.target` when omitted */
+  group?: 'nodes' | 'edges';
+  data?: GpuElementData;
+  /** nodes only */
+  position?: Position;
+  selected?: boolean;
+  selectable?: boolean;
+}
+
+export type GpuElementsDefinition =
+  | GpuElementDefinition[]
+  | { nodes?: GpuElementDefinition[]; edges?: GpuElementDefinition[] };
+
+/**
+ * A constrained compiled-style block: constant values only (no mappers).
+ * Supported selectors: `node`, `edge`, `node:selected`, `edge:selected`, `#id`.
+ * Node props: background-color, width, height, shape, opacity, border-color,
+ * border-width.  Edge props: line-color, width, opacity.
+ */
+export interface GpuStyleBlock {
+  selector: string;
+  style: Record<string, string | number>;
+}
+
+export interface GpuGridLayoutOptions {
+  name: 'grid';
+  fit?: boolean;
+  padding?: number;
+  boundingBox?: { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
+  avoidOverlap?: boolean;
+  avoidOverlapPadding?: number;
+  spacingFactor?: number;
+  condense?: boolean;
+  rows?: number;
+  cols?: number;
+  /** returns a fixed { row, col } for a node handle */
+  position?: ( node: unknown ) => { row?: number; col?: number } | undefined;
+  /** comparator over node handles */
+  sort?: ( a: unknown, b: unknown ) => number;
+}
+
+export interface CytoscapeGpuOptions {
+  /**
+   * Where to render.  When given, WebGPU is required: the factory throws
+   * synchronously if `navigator.gpu` is missing.  When omitted, the instance
+   * is headless (works in Node, never throws for missing GPU).
+   */
+  container?: HTMLElement | null;
+  elements?: GpuElementsDefinition;
+  style?: GpuStyleBlock[];
+  layout?: GpuGridLayoutOptions;
+  zoom?: number;
+  pan?: Position;
+  minZoom?: number;
+  maxZoom?: number;
+  /** rendered dimensions used when headless */
+  headlessWidth?: number;
+  headlessHeight?: number;
+  /** device pixel ratio override; defaults to the window's */
+  pixelRatio?: number | 'auto';
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <script src="../livereload-setup.js"></script>
+
+    <link rel="stylesheet" href="./style.css" />
+
+    <script>
+      var $ = function( sel ){ return document.querySelector(sel); };
+    </script>
+
+    <script src="../../build/cytoscape-gpu.umd.js"></script>
+
+    <title>Cytoscape.js - WebGPU Demo</title>
+
+  </head>
+
+  <body>
+      <div id="cytoscape"></div>
+      <div id="stats"></div>
+
+      <div id="commands-show-area">
+        <button id="show-commands">+</button>
+      </div>
+
+      <div id="commands">
+
+        <button id="hide-commands">-</button>
+
+        <h1>Cytoscape.js<br/>WebGPU Demo</h1>
+
+        <h2>Network</h2>
+        <select id="network-select"></select>
+        <br><br>
+        Generated size (?network=gen):
+        <input id="gen-input" type="text" placeholder="100000x300000" size="14" />
+        <br><br>
+        Background Color:
+        <select id="bg-color-select">
+          <option value="white">⚪ White</option>
+          <option value="black">⚫ Black</option>
+          <option value="blue">🔵 Blue</option>
+          <option value="gray">⬜ Gray</option>
+        </select>
+        <br><br>
+        <button id="fit-button">Fit to view</button>
+
+        <h2>LOD</h2>
+        <div>
+          <label>Edge width floor (px): <input id="edge-floor-input" type="number" step="0.5" min="0" /></label>
+        </div>
+        <div>
+          <label>Node plain-disc below (px): <input id="node-lod-input" type="number" step="1" min="0" /></label>
+        </div>
+        <div>
+          <label>Size floor (px): <input id="hide-px-input" type="number" step="0.5" min="0" /></label>
+        </div>
+        <div>
+          <input type="checkbox" id="edge-dim-check" />
+          <label for="edge-dim-check">Zoom-based edge dimming</label>
+        </div>
+
+        <br/>
+        <div>
+          <div id="pan">Pan: 0</div>
+          <div id="zoom">Zoom: 1</div>
+        </div>
+
+        <p>Wheel: zoom about cursor. Drag background: pan. Drag node: move (edges follow on-GPU). Click: select (shift = additive). Hover: highlight.</p>
+
+        <p>Open the debug console for more info.</p>
+
+        <br/>
+        <button id="reset-button">Reset</button>
+
+      </div>
+
+      <script src="networks.js"></script>
+      <script src="init.js"></script>
+  </body>
+
+</html>

@@ -42,7 +42,27 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /webgpu\.spec\.js/,
       use: { ...devices['Desktop Chrome'] },
+    },
+
+    /*
+     * WebGPU prototype (src/gpu).  channel 'chromium' is the new headless
+     * mode with real GPU adapters (Metal on macOS); the swiftshader flag
+     * gives a deterministic software fallback on CI.  Specs soft-skip when
+     * no adapter is available.  Pages must load via http://127.0.0.1:3333 —
+     * navigator.gpu is unavailable on about:blank.
+     */
+    {
+      name: 'webgpu',
+      testMatch: /webgpu\.spec\.js/,
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chromium',
+        launchOptions: {
+          args: ['--enable-unsafe-webgpu', '--enable-unsafe-swiftshader'],
+        },
+      },
     },
 
     // {

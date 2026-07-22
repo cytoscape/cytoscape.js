@@ -1,0 +1,266 @@
+import { test, expect } from '@playwright/test';
+
+/*
+WebGPU prototype specs.  Run under the 'webgpu' Playwright project
+(chromium channel + --enable-unsafe-webgpu, with --enable-unsafe-swiftshader
+as a deterministic software fallback for CI).  Soft-skips when no adapter
+can be acquired.  Must load via http://127.0.0.1:3333 — navigator.gpu is
+unavailable on about:blank.
+*/
+
+const PAGE = 'http://127.0.0.1:3333/playwright-page/webgpu.html';
+
+const RED_NODE_GRAPH = {
+  elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+  style: [ { selector: 'node', style: {
+    'background-color': 'red', 'width': 100, 'height': 100, 'shape': 'rectangle'
+  } } ],
+  zoom: 1
+};
+
+const hasAdapter = async page => {
+  return await page.evaluate( async () => {
+    if( navigator.gpu == null ){ return false; }
+
+    return ( await navigator.gpu.requestAdapter() ) != null;
+  } );
+};
+
+/** Make the instance, await readiness and one presented frame. */
+const makeReadyCy = async ( page, options ) => {
+  await page.evaluate( async options => {
+    const cy = window.makeCy( options );
+
+    await cy.ready;
+
+    // nudge the viewport so a fresh frame definitely presents after this point
+    await new Promise( resolve => {
+      cy.one( 'render', () => resolve() );
+      cy.panBy( { x: 1, y: 0 } );
+      cy.panBy( { x: -1, y: 0 } );
+    } );
+  }, options );
+};
+
+/** Center the graph: the model origin maps to the viewport center. */
+const centerPan = async page => {
+  return await page.evaluate( () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    window.cy.pan( { x: w / 2, y: h / 2 } );
+
+    return { x: w / 2, y: h / 2 };
+  } );
+};
+
+/** Composited screen pixel at CSS coords, via a screenshot decoded in-page. */
+const pixelAt = async ( page, x, y ) => {
+  const b64 = ( await page.screenshot() ).toString( 'base64' );
+
+  return await page.evaluate( async ( { b64, x, y } ) => {
+    const img = new Image();
+
+    img.src = 'data:image/png;base64,' + b64;
+    await img.decode();
+
+    const canvas = document.createElement( 'canvas' );
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    const ctx = canvas.getContext( '2d' );
+
+    ctx.drawImage( img, 0, 0 );
+
+    const scale = img.width / window.innerWidth; // device scale factor of the screenshot
+
+    const d = ctx.getImageData( Math.round( x * scale ), Math.round( y * scale ), 1, 1 ).data;
+
+    return [ d[0], d[1], d[2], d[3] ];
+  }, { b64, x, y } );
+};
+
+const waitFrames = async ( page, n = 3 ) => {
+  await page.evaluate( async n => {
+    for( let i = 0; i < n; i++ ){
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+    }
+  }, n );
+};
+
+test.describe( 'WebGPU renderer', () => {
+
+  test.beforeEach( async ( { page } ) => {
+    page.on( 'console', msg => console.log( `[browser] ${msg.text()}` ) );
+
+    await page.setViewportSize( { width: 800, height: 600 } );
+    await page.goto( PAGE );
+  } );
+
+  test( 'hard error when WebGPU is unavailable', async ( { page } ) => {
+    const message = await page.evaluate( () => {
+      Object.defineProperty( navigator, 'gpu', { value: undefined } );
+
+      try {
+        window.makeCy( {} );
+
+        return null;
+      } catch( err ){
+        return err.message;
+      }
+    } );
+
+    expect( message ).toContain( 'WebGPU' );
+  } );
+
+  test( 'headless instances never require WebGPU', async ( { page } ) => {
+    const count = await page.evaluate( () => {
+      Object.defineProperty( navigator, 'gpu', { value: undefined } );
+
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' } } ] } );
+
+      return cy.nodes().length;
+    } );
+
+    expect( count ).toBe( 1 );
+  } );
+
+  test( 'ready resolves with a device', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const readyResolved = await page.evaluate( async () => {
+      const cy = window.makeCy( {} );
+
+      await cy.ready;
+
+      return true;
+    } );
+
+    expect( readyResolved ).toBe( true );
+  } );
+
+  test( 'renders a red node on white (premultiplied compositing)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const centerPixel = await pixelAt( page, center.x, center.y );
+    const cornerPixel = await pixelAt( page, 5, 5 );
+
+    // node body: red
+    expect( centerPixel[0] ).toBeGreaterThan( 200 );
+    expect( centerPixel[1] ).toBeLessThan( 60 );
+    expect( centerPixel[2] ).toBeLessThan( 60 );
+
+    // background: the white container shows through the transparent canvas
+    expect( cornerPixel[0] ).toBeGreaterThan( 240 );
+    expect( cornerPixel[1] ).toBeGreaterThan( 240 );
+    expect( cornerPixel[2] ).toBeGreaterThan( 240 );
+  } );
+
+  test( 'pick() resolves the node under the point and background elsewhere', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const onNode = await page.evaluate( async center => {
+      const ele = await window.cy.pick( center.x, center.y );
+
+      return ele == null ? null : ele.id();
+    }, center );
+
+    const onBackground = await page.evaluate( async () => {
+      const ele = await window.cy.pick( 5, 5 );
+
+      return ele == null ? null : ele.id();
+    } );
+
+    expect( onNode ).toBe( 'a' );
+    expect( onBackground ).toBe( null );
+  } );
+
+  test( 'mouse drag moves the node in the model and on screen', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // hover so the pan-vs-grab pick resolves over the node
+    await page.evaluate( () => {
+      window.__hovered = false;
+      window.cy.on( 'mouseover', () => { window.__hovered = true; } );
+    } );
+
+    await page.mouse.move( center.x - 10, center.y - 10 );
+    await page.mouse.move( center.x, center.y, { steps: 5 } );
+    await expect.poll( () => page.evaluate( () => window.__hovered ), { timeout: 5000 } ).toBe( true );
+
+    // drag by (+120, +60)
+    await page.mouse.down();
+    await page.mouse.move( center.x + 120, center.y + 60, { steps: 10 } );
+    await page.mouse.up();
+
+    const pos = await page.evaluate( () => window.cy.$( '#a' ).position() );
+
+    expect( pos.x ).toBeCloseTo( 120, 0 );
+    expect( pos.y ).toBeCloseTo( 60, 0 );
+
+    await waitFrames( page );
+
+    // the node now renders at its new location (edges/positions followed)
+    const movedPixel = await pixelAt( page, center.x + 120, center.y + 60 );
+    const oldPixel = await pixelAt( page, center.x - 45, center.y - 45 ); // old node corner area
+
+    expect( movedPixel[0] ).toBeGreaterThan( 150 );
+    expect( movedPixel[1] ).toBeLessThan( 100 );
+    expect( oldPixel[0] ).toBeGreaterThan( 240 );
+    expect( oldPixel[1] ).toBeGreaterThan( 240 );
+  } );
+
+  test( 'tap selects and background tap clears', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__hovered = false;
+      window.cy.on( 'mouseover', () => { window.__hovered = true; } );
+    } );
+
+    await page.mouse.move( center.x - 10, center.y - 10 );
+    await page.mouse.move( center.x, center.y, { steps: 5 } );
+    await expect.poll( () => page.evaluate( () => window.__hovered ), { timeout: 5000 } ).toBe( true );
+
+    await page.mouse.click( center.x, center.y );
+
+    expect( await page.evaluate( () => window.cy.$( '#a' ).selected() ) ).toBe( true );
+
+    // background tap clears; wait for the hover pick to resolve off the node
+    await page.mouse.move( 10, 10 );
+    await expect.poll(
+      () => page.evaluate( () => window.cy.pick( 10, 10 ).then( ele => ele == null ) ),
+      { timeout: 5000 }
+    ).toBe( true );
+
+    await page.mouse.click( 10, 10 );
+
+    expect( await page.evaluate( () => window.cy.$( '#a' ).selected() ) ).toBe( false );
+  } );
+
+} );

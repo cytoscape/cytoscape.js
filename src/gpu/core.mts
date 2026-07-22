@@ -19,6 +19,7 @@ import type { EleFilterFn } from './collection.mjs';
 /** What the core needs from the renderer (wired by the factory). */
 export interface RendererLike {
   destroy(): void;
+  pick( x: number, y: number ): Promise<GpuCollection | null>;
 }
 
 export interface LayoutLike {
@@ -324,6 +325,14 @@ export class GpuCore {
 
   maxZoom(): number {
     return this._viewport.maxZoom;
+  }
+
+  /**
+   * Async GPU pick at a rendered (CSS px) position; resolves with the
+   * element under the point or null (always null when headless).
+   */
+  pick( x: number, y: number ): Promise<GpuCollection | null> {
+    return this._renderer != null ? this._renderer.pick( x, y ) : Promise.resolve( null );
   }
 
   // -- environment --

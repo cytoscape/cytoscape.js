@@ -2,8 +2,12 @@ import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
 import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
+import { EDGE_PICK_BIT, Picking } from './picking.mjs';
+import type { InFlightCopy } from './picking.mjs';
 import { BUFFER_USAGE } from './webgpu-constants.mjs';
+import { FLAG_ALIVE } from '../contract.mjs';
 import type { GpuCore } from '../core.mjs';
+import type { GpuCollection } from '../collection.mjs';
 import type { GpuRendererOptions } from '../gpu-types.mjs';
 
 /*
@@ -55,6 +59,8 @@ export class Renderer {
   private onViewport: () => void;
   private frameCount: number;
   private lastFrameMs: number;
+  private picking: Picking | null;
+  private inFlightCopy: InFlightCopy | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -72,6 +78,8 @@ export class Renderer {
     this.destroyed = false;
     this.frameCount = 0;
     this.lastFrameMs = 0;
+    this.picking = null;
+    this.inFlightCopy = null;
 
     this.dpr = opts.pixelRatio == null || opts.pixelRatio === 'auto'
       ? ( globalThis.devicePixelRatio || 1 )
@@ -132,20 +140,82 @@ export class Renderer {
     this.resizeObserver?.disconnect();
     this.offInvalidate();
     this.cy.off( 'viewport', this.onViewport );
+    this.picking?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.device?.destroy();
     this.canvas.remove();
   }
 
-  // -- hooks for the picking subsystem (extended in commit with picking) --
+  // -- picking --
 
-  protected onReady(): void {}
-  protected onResized(): void {}
-  protected encodeExtraPasses( encoder: GPUCommandEncoder ): void { void encoder; }
-  protected afterSubmit(): void {}
-  protected hasExtraWork(): boolean { return false; }
-  protected pickLatencyMs(): number { return 0; }
+  /**
+   * Async GPU pick at a rendered (CSS px) position.  Resolves with the
+   * element under the point, or null for background/unknown.  Latency is
+   * 1–2 frames (latest-wins coalescing).
+   */
+  async pick( x: number, y: number ): Promise<GpuCollection | null> {
+    if( this.destroyed || !this.isReady || this.picking == null ){ return null; }
+
+    const promise = this.picking.request( x * this.dpr, y * this.dpr );
+
+    this.schedule(); // the pick pass runs with the next frame
+
+    return this.decodePick( await promise );
+  }
+
+  private decodePick( id: number | null ): GpuCollection | null {
+    if( id == null || id === 0 ){ return null; }
+
+    const isEdge = ( id & EDGE_PICK_BIT ) !== 0;
+    const group = isEdge ? 'edges' : 'nodes';
+    const slot = ( isEdge ? ( id & ~EDGE_PICK_BIT ) : id ) - 1;
+    const store = this.cy._store;
+
+    // the pick may be up to 2 frames stale: re-validate against the model
+    if( slot >= store.highWater( group ) || !store.hasFlag( group, slot, FLAG_ALIVE ) ){
+      return null;
+    }
+
+    return this.cy._ele( group, slot );
+  }
+
+  private onReady(): void {
+    this.picking = new Picking( this.device as GPUDevice );
+    this.picking.resize( this.canvas.width, this.canvas.height );
+  }
+
+  private onResized(): void {
+    this.picking?.resize( this.canvas.width, this.canvas.height );
+  }
+
+  private encodeExtraPasses( encoder: GPUCommandEncoder ): void {
+    const picking = this.picking;
+
+    if( picking == null || !picking.hasPending() ){ return; }
+
+    const targetView = picking.targetView();
+
+    if( targetView == null ){ return; }
+
+    this.drawPickPasses( encoder, targetView );
+    this.inFlightCopy = picking.encodeCopy( encoder );
+  }
+
+  private afterSubmit(): void {
+    if( this.inFlightCopy != null && this.picking != null ){
+      void this.picking.finish( this.inFlightCopy );
+      this.inFlightCopy = null;
+    }
+  }
+
+  private hasExtraWork(): boolean {
+    return this.picking?.hasPending() ?? false;
+  }
+
+  private pickLatencyMs(): number {
+    return this.picking?.lastLatencyMs ?? 0;
+  }
 
   // -- internals --
 

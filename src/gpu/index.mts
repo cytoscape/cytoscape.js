@@ -1,5 +1,6 @@
 import { GpuCore } from './core.mjs';
 import { Renderer } from './render/renderer.mjs';
+import { PointerHandler } from './interact/pointer.mjs';
 import type { CytoscapeGpuOptions } from './gpu-types.mjs';
 
 export type * from './gpu-types.mjs';
@@ -41,7 +42,9 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
       pixelRatio: options.pixelRatio,
       ...options.renderer
     } );
+    const pointer = new PointerHandler( cy, renderer );
 
+    cy.on( 'destroy', () => pointer.destroy() );
     cy._renderer = renderer;
     cy.ready = renderer.ready.then( () => cy );
   }

@@ -31,5 +31,9 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
     cy.add( options.elements );
   }
 
+  if( options.layout != null ){
+    cy.layout( options.layout ).run();
+  }
+
   return cy;
 }

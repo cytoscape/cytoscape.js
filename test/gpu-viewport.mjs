@@ -101,20 +101,23 @@ describe('gpu/viewport', function(){
     it('fits the graph with padding', function(){
       cy.fit( undefined, 50 );
 
-      // graph bb: (0,0)-(100,50); fit into 700×500 ⇒ zoom = 7
-      expect( cy.zoom() ).to.equal(7);
+      // graph bb incl. 30×30 node dims: (-15,-15)-(115,65) ⇒ 130×80;
+      // fit into 700×500 ⇒ zoom = 700/130
+      var zoom = 700 / 130;
+
+      expect( cy.zoom() ).to.be.closeTo(zoom, 1e-9);
 
       // bb center maps to viewport center
-      var center = { x: 50 * 7 + cy.pan().x, y: 25 * 7 + cy.pan().y };
+      var center = { x: 50 * zoom + cy.pan().x, y: 25 * zoom + cy.pan().y };
 
       expect( center.x ).to.be.closeTo(400, 1e-9);
       expect( center.y ).to.be.closeTo(300, 1e-9);
     });
 
     it('fits to a sub-collection', function(){
-      cy.fit( cy.$('#a') ); // zero-size bb ⇒ centered, zoom unchanged
+      cy.fit( cy.$('#a') ); // 30×30 bb about (0,0) ⇒ zoom = 600/30 = 20, centered
 
-      expect( cy.zoom() ).to.equal(1);
+      expect( cy.zoom() ).to.equal(20);
       expect( cy.$('#a').renderedPosition() ).to.deep.equal({ x: 400, y: 300 });
     });
 

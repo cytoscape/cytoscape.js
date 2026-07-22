@@ -3,20 +3,18 @@ import { GpuCollection } from './collection.mjs';
 import { hasListeners, makeCoreEmitter, selectorQualifier } from './events.mjs';
 import type { GpuQualifier } from './events.mjs';
 import { Viewport } from './viewport.mjs';
+import { StyleEngine } from './style.mjs';
+import { GridLayout } from './layout/grid.mjs';
 import type Emitter from '../emitter.mjs';
 import type { EventHandler } from '../emitter.mjs';
 import type Event from '../event.mjs';
 import type { EventProps } from '../event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
-  CytoscapeGpuOptions, GpuElementDefinition, GpuElementsDefinition, Position
+  CytoscapeGpuOptions, GpuElementDefinition, GpuElementsDefinition, GpuGridLayoutOptions,
+  GpuStyleBlock, Position
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
-
-/** What the core needs from the style engine (wired by the factory). */
-export interface StyleEngineLike {
-  apply( ref: Ref ): void;
-}
 
 /** What the core needs from the renderer (wired by the factory). */
 export interface RendererLike {
@@ -38,7 +36,7 @@ const DEFAULT_HEADLESS_HEIGHT = 600;
 export class GpuCore {
   _store: GraphStore;
   _emitter: Emitter<GpuCore, GpuQualifier>;
-  _styleEngine: StyleEngineLike | null;
+  _styleEngine: StyleEngine;
   _renderer: RendererLike | null;
   _viewport: Viewport;
 
@@ -55,7 +53,7 @@ export class GpuCore {
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
     this._emitter = makeCoreEmitter<GpuCore>( this );
-    this._styleEngine = null;
+    this._styleEngine = new StyleEngine( this._store );
     this._renderer = null;
     this._pool = { nodes: new Map(), edges: new Map() };
     this._container = options.container ?? null;
@@ -70,6 +68,34 @@ export class GpuCore {
       maxZoom: options.maxZoom
     } );
     this.ready = Promise.resolve( this );
+
+    if( options.style != null ){
+      this._styleEngine.setBlocks( options.style );
+    }
+  }
+
+  // -- style --
+
+  style( blocks?: GpuStyleBlock[] ): StyleEngine {
+    if( blocks != null ){
+      this._styleEngine.setBlocks( blocks );
+      this.emit( 'style' );
+    }
+
+    return this._styleEngine;
+  }
+
+  // -- layout --
+
+  layout( options: GpuGridLayoutOptions ): GridLayout {
+    if( options == null || options.name !== 'grid' ){
+      throw new Error(
+        `Only the 'grid' layout is available in the GPU prototype` +
+        ( options?.name != null ? `; got '${options.name}'` : '' )
+      );
+    }
+
+    return new GridLayout( this, options );
   }
 
   // -- graph manipulation --
@@ -374,9 +400,7 @@ export class GpuCore {
   }
 
   _applyStyle( ref: Ref ): void {
-    if( this._styleEngine != null ){
-      this._styleEngine.apply( ref );
-    }
+    this._styleEngine.apply( ref );
   }
 
   _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps> ): void {

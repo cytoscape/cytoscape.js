@@ -56,6 +56,20 @@ export interface GpuGridLayoutOptions {
   sort?: ( a: unknown, b: unknown ) => number;
 }
 
+/** Renderer tuning knobs (all LOD values in device px). */
+export interface GpuRendererOptions {
+  /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
+  edgeWidthFloor?: number;
+  /** below this node size, nodes draw as plain AA discs without decorations (default 3) */
+  nodeLodPx?: number;
+  /** below this size, elements are floored to it and alpha-compensated (default 1) */
+  hidePx?: number;
+  /** dim edges as zoom decreases below 1 (default false) */
+  edgeDimming?: boolean;
+  /** device pixel ratio override; defaults to the window's */
+  pixelRatio?: number | 'auto';
+}
+
 export interface CytoscapeGpuOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
@@ -75,4 +89,5 @@ export interface CytoscapeGpuOptions {
   headlessHeight?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
+  renderer?: GpuRendererOptions;
 }

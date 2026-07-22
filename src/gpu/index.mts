@@ -1,4 +1,5 @@
 import { GpuCore } from './core.mjs';
+import { Renderer } from './render/renderer.mjs';
 import type { CytoscapeGpuOptions } from './gpu-types.mjs';
 
 export type * from './gpu-types.mjs';
@@ -33,6 +34,16 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
 
   if( options.layout != null ){
     cy.layout( options.layout ).run();
+  }
+
+  if( options.container != null ){
+    const renderer = new Renderer( cy, options.container, {
+      pixelRatio: options.pixelRatio,
+      ...options.renderer
+    } );
+
+    cy._renderer = renderer;
+    cy.ready = renderer.ready.then( () => cy );
   }
 
   return cy;

@@ -48,6 +48,7 @@ const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
 const DEFAULT_NODE_LOD_PX = 3;
 const DEFAULT_HIDE_PX = 1;
 const DEFAULT_LABEL_FADE_PX = 6;
+const DEFAULT_LABEL_MIN_PX = 0; // 0 = no hard label cutoff
 
 /**
  * Backpressure: at most this many scene submissions may be unfinished on
@@ -516,7 +517,8 @@ export class Renderer {
     f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
     f[8] = opts.edgeDimming ? Math.min( 0.85, Math.max( 0, 1 - zoom ) * 0.85 ) : 0;
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
-    // f[10..11]: padding
+    f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
+    // f[11]: padding
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -550,6 +552,7 @@ export class Renderer {
     f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
     f[8] = 0; // edge dimming never affects pick coverage
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX; // labels aren't picked
+    f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
 
     ( this.device as GPUDevice ).queue.writeBuffer(
       this.pickUniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength

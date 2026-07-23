@@ -68,6 +68,10 @@ export interface GpuRendererOptions {
   edgeDimming?: boolean;
   /** labels fade out as on-screen glyph height drops below this (default 6) */
   labelFadePx?: number;
+  /** labels below this on-screen glyph height are not rendered at all —
+   * too small to read anyway (default 0 = off; the fade's own cutoff at
+   * labelFadePx/2 still applies) */
+  labelMinPx?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
 }

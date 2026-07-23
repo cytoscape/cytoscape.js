@@ -200,6 +200,9 @@ fn isVisible(slot: u32) -> bool {
 
   let heightPx = g.size.y * frame.zoomDpr;
 
+  // hard minimum: below this the text is too small to read, don't draw it
+  if (heightPx < frame.labelMinPx) { return false; }
+
   if (labelFade(heightPx, frame.labelFadePx) <= 0.001) { return false; }
 
   let originPx = modelToPx(frame, nodePositions[g.nodeSlot]) + g.offset * frame.zoomDpr;

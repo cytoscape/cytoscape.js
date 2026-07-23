@@ -35,6 +35,10 @@ const paramDefs = {
   labels: {
     default: 'false',
     control: '#labels-check'
+  },
+  labelMinPx: {
+    default: '0',
+    control: '#label-min-input'
   }
 };
 
@@ -168,7 +172,8 @@ const paramDefs = {
         edgeWidthFloor: parseFloat(params.edgeWidthFloor),
         nodeLodPx: parseFloat(params.nodeLodPx),
         hidePx: parseFloat(params.hidePx),
-        edgeDimming: params.edgeDimming === 'true'
+        edgeDimming: params.edgeDimming === 'true',
+        labelMinPx: parseFloat(params.labelMinPx)
       }
     });
 

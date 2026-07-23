@@ -15,7 +15,8 @@ unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
  * footguns); computed CPU-side from the core viewport + device pixel ratio.
  * Layout must match Renderer's Float32Array(12): viewportPx, panPx, zoomDpr,
- * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, 2 pads — 48 bytes.
+ * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, labelMinPx,
+ * 1 pad — 48 bytes.
  */
 export const FRAME_STRUCT = `
 struct Frame {
@@ -27,8 +28,8 @@ struct Frame {
   hidePx: f32,           // LOD: below this device-px size sizes are floored + alpha-compensated
   edgeDim: f32,          // LOD: zoom-based edge dimming [0,1)
   labelFadePx: f32,      // LOD: labels fade out as glyph height drops below this, device px
+  labelMinPx: f32,       // LOD: labels below this glyph height are culled outright (0 = off)
   pad1: f32,
-  pad2: f32,
 }
 `;
 

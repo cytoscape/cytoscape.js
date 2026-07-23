@@ -90,6 +90,10 @@ edges, non-grid layouts, graph algorithms.
   sub-half-alpha edges may neither draw nor pick at far zoom.  This removes
   the far-zoom worst case where every edge rasterized into a few hundred
   pixels and serialized at the blend stage (~33 ms → ~8 ms on 465k edges).
+- **Label LOD**: labels fade below `labelFadePx` (glyphs past the fade's
+  zero point are culled in compute, not drawn at zero alpha); the optional
+  `labelMinPx` renderer option hard-culls labels whose on-screen glyph
+  height is below it — too small to read anyway (default 0 = off).
 - **Labels**: nodes only, single line (newlines collapse to spaces), fixed
   placement (horizontally centered below the node), not pickable, and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop

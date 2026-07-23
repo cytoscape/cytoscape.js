@@ -65,7 +65,10 @@ as a UTF-8 blob with prefix offsets), and `options.elements`/`cy.add()`
 accept the buffer directly (or use `deserializeElements` to inspect it) —
 so a graph can be served as a static binary asset and fed straight from
 `fetch(...).arrayBuffer()` with no JSON parse.  Numeric columns
-deserialize as zero-copy views into the buffer.  Either way, the
+deserialize as zero-copy views into the buffer, and ids stay packed all
+the way into the store — the id index is itself blob-native (UTF-8 bytes
++ an open-addressing probe table, no JS strings), so id strings are
+decoded lazily, only for elements actually touched via handles.  Either way, the
 factory's load path materializes no per-element handles and emits no
 `add` events (nobody can be listening yet); `cy.add()` keeps full
 per-element semantics and takes all three forms.  ndex-x-large (19.6k

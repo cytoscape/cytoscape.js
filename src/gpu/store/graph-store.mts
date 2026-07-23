@@ -7,7 +7,7 @@ import {
   FLAG_ALIVE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
 import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
-import type { GpuColumnarEdges, GpuColumnarNodes } from '../gpu-types.mjs';
+import type { GpuColumnarEdges, GpuColumnarNodes, GpuPackedIds } from '../gpu-types.mjs';
 
 export interface AddElementOpts {
   selected?: boolean;
@@ -503,15 +503,16 @@ export class GraphStore implements ModelView {
   /** Register bulk-allocated slots: ids (auto-generated on holes) + insertion order. */
   private registerBulk(
     group: GroupName, slots: Uint32Array,
-    ids: ( string | undefined )[] | undefined, newId: () => string
+    ids: ( string | undefined )[] | GpuPackedIds | undefined, newId: () => string
   ): void {
+    this.ids.setBulk( group, slots, ids, newId ); // throws on a duplicate id
+
     const order = this.order[ group ];
     const gen = this.table( group ).gen;
 
     for( let i = 0; i < slots.length; i++ ){
       const slot = slots[ i ];
 
-      this.ids.set( ids?.[ i ] ?? newId(), group, slot ); // throws on a duplicate id
       order.slots.push( slot );
       order.gens.push( gen[ slot ] );
     }

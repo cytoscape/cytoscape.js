@@ -3,6 +3,21 @@ import cytoscapeGpu from '../src/gpu/index.mjs';
 import { toColumnarElements } from '../src/gpu/columnar.mjs';
 import { deserializeElements, isSerializedElements, serializeElements } from '../src/gpu/wire.mjs';
 
+// deserialized ids stay packed (blob + offsets); decode for assertions
+const idsOf = packed => {
+  const { offsets, blob } = packed;
+  const decoder = new TextDecoder();
+  const out = [];
+
+  for( let i = 0; i + 1 < offsets.length; i++ ){
+    out.push( offsets[ i + 1 ] > offsets[ i ]
+      ? decoder.decode( blob.subarray( offsets[ i ], offsets[ i + 1 ] ) )
+      : undefined );
+  }
+
+  return out;
+};
+
 const FIXTURE = {
   nodes: [
     { data: { id: 'a' }, position: { x: 1, y: 2 } },
@@ -29,12 +44,12 @@ describe('gpu/wire', function(){
 
       expect( out.columnar ).to.be.true;
       expect( out.nodes.count ).to.equal( 3 );
-      expect( out.nodes.ids ).to.deep.equal([ 'a', 'b', 'c' ]);
+      expect( idsOf( out.nodes.ids ) ).to.deep.equal([ 'a', 'b', 'c' ]);
       expect( Array.from( out.nodes.positions ) ).to.deep.equal([ 1, 2, 3, 4, 5, 6 ]);
       expect( Array.from( out.nodes.selected ) ).to.deep.equal([ 0, 1, 0 ]);
       expect( Array.from( out.nodes.selectable ) ).to.deep.equal([ 1, 1, 0 ]);
       expect( out.edges.count ).to.equal( 2 );
-      expect( out.edges.ids ).to.deep.equal([ 'ab', 'bc' ]);
+      expect( idsOf( out.edges.ids ) ).to.deep.equal([ 'ab', 'bc' ]);
       expect( Array.from( out.edges.sources ) ).to.deep.equal([ 0, 1 ]);
       expect( Array.from( out.edges.targets ) ).to.deep.equal([ 1, 2 ]);
       expect( Array.from( out.edges.selected ) ).to.deep.equal([ 0, 1 ]);
@@ -44,14 +59,14 @@ describe('gpu/wire', function(){
     it('accepts the definition form directly', function(){
       const out = deserializeElements( serializeElements( FIXTURE ) );
 
-      expect( out.nodes.ids ).to.deep.equal([ 'a', 'b', 'c' ]);
+      expect( idsOf( out.nodes.ids ) ).to.deep.equal([ 'a', 'b', 'c' ]);
       expect( Array.from( out.edges.sources ) ).to.deep.equal([ 0, 1 ]);
     });
 
     it('preserves id holes for auto-generation', function(){
       const out = deserializeElements( serializeElements([ { data: {} }, { data: { id: 'x' } } ]) );
 
-      expect( out.nodes.ids ).to.deep.equal([ undefined, 'x' ]);
+      expect( idsOf( out.nodes.ids ) ).to.deep.equal([ undefined, 'x' ]);
     });
 
     it('round-trips non-ASCII ids', function(){
@@ -62,7 +77,7 @@ describe('gpu/wire', function(){
         { data: { id: 'e', source: '🚀', target: 'nöde' } }
       ]) );
 
-      expect( out.nodes.ids ).to.deep.equal([ 'nöde', '🚀', 'plain' ]);
+      expect( idsOf( out.nodes.ids ) ).to.deep.equal([ 'nöde', '🚀', 'plain' ]);
       expect( Array.from( out.edges.sources ) ).to.deep.equal([ 1 ]);
       expect( Array.from( out.edges.targets ) ).to.deep.equal([ 0 ]);
     });
@@ -83,7 +98,7 @@ describe('gpu/wire', function(){
       const buffer = serializeElements( FIXTURE );
       const aligned = new Uint8Array( buffer );
 
-      expect( deserializeElements( aligned ).nodes.ids ).to.deep.equal([ 'a', 'b', 'c' ]);
+      expect( idsOf( deserializeElements( aligned ).nodes.ids ) ).to.deep.equal([ 'a', 'b', 'c' ]);
 
       const shifted = new Uint8Array( buffer.byteLength + 1 );
 
@@ -92,7 +107,7 @@ describe('gpu/wire', function(){
       const misaligned = new Uint8Array( shifted.buffer, 1, buffer.byteLength );
       const out = deserializeElements( misaligned );
 
-      expect( out.nodes.ids ).to.deep.equal([ 'a', 'b', 'c' ]);
+      expect( idsOf( out.nodes.ids ) ).to.deep.equal([ 'a', 'b', 'c' ]);
       expect( Array.from( out.nodes.positions ) ).to.deep.equal([ 1, 2, 3, 4, 5, 6 ]);
     });
 
@@ -102,7 +117,7 @@ describe('gpu/wire', function(){
 
       padded.set( new Uint8Array( buffer ) );
 
-      expect( deserializeElements( padded ).edges.ids ).to.deep.equal([ 'ab', 'bc' ]);
+      expect( idsOf( deserializeElements( padded ).edges.ids ) ).to.deep.equal([ 'ab', 'bc' ]);
     });
   });
 

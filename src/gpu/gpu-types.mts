@@ -28,11 +28,22 @@ export type GpuElementsDefinition =
   | GpuElementDefinition[]
   | { nodes?: GpuElementDefinition[]; edges?: GpuElementDefinition[] };
 
+/**
+ * Ids as bytes: one UTF-8 blob + prefix byte offsets (length count + 1).
+ * Zero-length entries are auto-generated.  This is the wire format's id
+ * representation, and the store ingests it without materializing any JS
+ * strings — id strings are decoded lazily, per element touched.
+ */
+export interface GpuPackedIds {
+  offsets: Uint32Array;
+  blob: Uint8Array;
+}
+
 /** Columnar node payload; all arrays are index-aligned with `count`. */
 export interface GpuColumnarNodes {
   count: number;
   /** unique ids; missing entries (or the whole array) are auto-generated */
-  ids?: ( string | undefined )[];
+  ids?: ( string | undefined )[] | GpuPackedIds;
   /** interleaved x,y pairs, length 2 × count; omitted = all (0, 0) */
   positions?: Float32Array;
   /** 1 = selected; omitted = all unselected */
@@ -44,7 +55,7 @@ export interface GpuColumnarNodes {
 /** Columnar edge payload; endpoints are indices into the payload's nodes. */
 export interface GpuColumnarEdges {
   count: number;
-  ids?: ( string | undefined )[];
+  ids?: ( string | undefined )[] | GpuPackedIds;
   /** source node index per edge (into the payload's nodes), length count */
   sources: Uint32Array;
   /** target node index per edge (into the payload's nodes), length count */

@@ -1,7 +1,7 @@
 import { partitionDefs } from './element-defs.mjs';
 import type {
   GpuColumnarEdges, GpuColumnarElements, GpuColumnarNodes,
-  GpuElementDefinition, GpuElementsDefinition
+  GpuElementDefinition, GpuElementsDefinition, GpuPackedIds
 } from './gpu-types.mjs';
 
 /*
@@ -11,6 +11,12 @@ endpoints as node indices — and this converter is the compat path for
 callers holding classic elements JSON.  Payloads are self-contained:
 every edge endpoint must name a node in the same payload.
 */
+
+export const isPackedIds = (
+  ids: ( string | undefined )[] | GpuPackedIds
+): ids is GpuPackedIds => {
+  return !Array.isArray( ids );
+};
 
 export const isColumnarElements = (
   elements: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements
@@ -24,9 +30,10 @@ export const toColumnarElements = (
   const { nodes, edges } = partitionDefs( defs );
   const index = new Map<string, number>();
 
+  const nodeIds = new Array<string | undefined>( nodes.length );
   const nodesOut: GpuColumnarNodes = {
     count: nodes.length,
-    ids: new Array<string | undefined>( nodes.length ),
+    ids: nodeIds,
     positions: new Float32Array( nodes.length * 2 )
   };
 
@@ -35,7 +42,7 @@ export const toColumnarElements = (
     const rawId = def.data?.id;
     const id = rawId != null ? String( rawId ) : undefined;
 
-    nodesOut.ids![ i ] = id;
+    nodeIds[ i ] = id;
 
     if( id != null ){ index.set( id, i ); }
 
@@ -49,9 +56,10 @@ export const toColumnarElements = (
 
   applySelectionColumns( nodesOut, nodes );
 
+  const edgeIds = new Array<string | undefined>( edges.length );
   const edgesOut: GpuColumnarEdges = {
     count: edges.length,
-    ids: new Array<string | undefined>( edges.length ),
+    ids: edgeIds,
     sources: new Uint32Array( edges.length ),
     targets: new Uint32Array( edges.length )
   };
@@ -78,7 +86,7 @@ export const toColumnarElements = (
     const data = def.data ?? {};
     const id = data.id != null ? String( data.id ) : undefined;
 
-    edgesOut.ids![ i ] = id;
+    edgeIds[ i ] = id;
     edgesOut.sources[ i ] = endpoint( id, 'source', data.source );
     edgesOut.targets[ i ] = endpoint( id, 'target', data.target );
   }

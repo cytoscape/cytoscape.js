@@ -1,7 +1,7 @@
-import { isColumnarElements, toColumnarElements } from './columnar.mjs';
+import { isColumnarElements, isPackedIds, toColumnarElements } from './columnar.mjs';
 import type {
   GpuColumnarEdges, GpuColumnarElements, GpuColumnarNodes,
-  GpuElementDefinition, GpuElementsDefinition
+  GpuElementDefinition, GpuElementsDefinition, GpuPackedIds
 } from './gpu-types.mjs';
 
 /*
@@ -9,9 +9,9 @@ Binary wire format for the columnar elements form: one little-endian
 ArrayBuffer — a fixed header followed by the columns — so a graph can be
 fetched as binary and passed straight to `options.elements`/`cy.add()`
 with no JSON parse.  Numeric columns deserialize as zero-copy views into
-the buffer; ids are a UTF-8 blob + prefix byte offsets (the one decoded
-part, with an ASCII fast path of one TextDecoder call for the whole
-blob).
+the buffer; ids are a UTF-8 blob + prefix byte offsets, and stay packed
+through deserialization — the store ingests the bytes directly and only
+decodes an id string when the element is actually touched.
 
 Header (6 × u32 LE): magic 'CYGE', version, nodeCount, edgeCount,
 presence flags, total byte length (truncation check; trailing padding
@@ -226,11 +226,17 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
     targets = read4( Uint32Array, edgeCount );
   }
 
-  if( flags & F_NODE_IDS ){ nodes.ids = readIds( read4( Uint32Array, nodeCount + 1 ), readU8, nodeCount ); }
+  // ids stay packed (blob + offsets): the store ingests the bytes
+  // directly and decodes id strings lazily, per element touched
+  const readPacked = ( count: number ): GpuPackedIds => {
+    const offsets = read4( Uint32Array, count + 1 );
 
-  const edgeIds = ( flags & F_EDGE_IDS )
-    ? readIds( read4( Uint32Array, edgeCount + 1 ), readU8, edgeCount )
-    : undefined;
+    return { offsets, blob: readU8( offsets[ count ] ) };
+  };
+
+  if( flags & F_NODE_IDS ){ nodes.ids = readPacked( nodeCount ); }
+
+  const edgeIds = ( flags & F_EDGE_IDS ) ? readPacked( edgeCount ) : undefined;
 
   if( flags & F_NODE_SELECTED ){ nodes.selected = readU8( nodeCount ); }
   if( flags & F_NODE_SELECTABLE ){ nodes.selectable = readU8( nodeCount ); }
@@ -252,10 +258,20 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
 
 /** UTF-8 blob + prefix byte offsets; holes (and empty strings) get zero length. */
 const encodeIds = (
-  ids: ( string | undefined )[] | undefined,
+  ids: ( string | undefined )[] | GpuPackedIds | undefined,
   count: number
 ): { offsets: Uint32Array; blob: Uint8Array } | null => {
   if( ids == null || count === 0 ){ return null; }
+
+  if( isPackedIds( ids ) ){ // already the wire representation
+    if( ids.offsets.length < count + 1 ){
+      throw new Error( `Packed ids must have ${count + 1} offsets` );
+    }
+
+    const offsets = ids.offsets.subarray( 0, count + 1 );
+
+    return { offsets, blob: ids.blob.subarray( 0, offsets[ count ] ) };
+  }
 
   const encoder = new TextEncoder();
   const offsets = new Uint32Array( count + 1 );
@@ -286,28 +302,3 @@ const encodeIds = (
   return { offsets, blob };
 };
 
-const readIds = (
-  offsets: Uint32Array,
-  readU8: ( len: number ) => Uint8Array,
-  count: number
-): ( string | undefined )[] => {
-  const blob = readU8( offsets[ count ] );
-  const ids = new Array<string | undefined>( count );
-  const decoder = new TextDecoder();
-  const text = decoder.decode( blob );
-
-  if( text.length === blob.length ){
-    // ASCII: byte offsets are code-unit offsets into the one decoded string
-    for( let i = 0; i < count; i++ ){
-      ids[ i ] = offsets[ i + 1 ] > offsets[ i ] ? text.slice( offsets[ i ], offsets[ i + 1 ] ) : undefined;
-    }
-  } else {
-    for( let i = 0; i < count; i++ ){
-      ids[ i ] = offsets[ i + 1 ] > offsets[ i ]
-        ? decoder.decode( blob.subarray( offsets[ i ], offsets[ i + 1 ] ) )
-        : undefined;
-    }
-  }
-
-  return ids;
-};

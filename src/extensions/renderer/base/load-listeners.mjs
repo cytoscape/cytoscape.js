@@ -1085,7 +1085,7 @@ BRp.load = function(){
         inaccurateScrollDevice = allAreDivisibleBy(wds, 5);
         var isfUnset = true;
 
-        if (!inaccurateScrollDevice) { // check for all large values with common divisor magnitude
+        if (!inaccurateScrollDevice) { // check for all large values of same or common-divisor magnitude
           if (wds[0] > 5) {
             var factor;
             // an array of equal integers "x" will have a GCD of x, so in that

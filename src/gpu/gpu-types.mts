@@ -72,6 +72,12 @@ export interface GpuRendererOptions {
    * too small to read anyway (default 0 = off; the fade's own cutoff at
    * labelFadePx/2 still applies) */
   labelMinPx?: number;
+  /** render the scene at this fraction of native resolution and upscale
+   * to the canvas with Catmull-Rom bicubic filtering — trades a little
+   * sharpness for fragment throughput (~1/scale² fill cost).  Clamped to
+   * [0.25, 1]; default 1 = native.  Picking always runs at native
+   * resolution. */
+  renderScale?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
 }

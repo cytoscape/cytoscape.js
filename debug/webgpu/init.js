@@ -39,6 +39,10 @@ const paramDefs = {
   labelMinPx: {
     default: '0',
     control: '#label-min-input'
+  },
+  renderScale: {
+    default: '1',
+    control: '#render-scale-input'
   }
 };
 
@@ -173,7 +177,8 @@ const paramDefs = {
         nodeLodPx: parseFloat(params.nodeLodPx),
         hidePx: parseFloat(params.hidePx),
         edgeDimming: params.edgeDimming === 'true',
-        labelMinPx: parseFloat(params.labelMinPx)
+        labelMinPx: parseFloat(params.labelMinPx),
+        renderScale: parseFloat(params.renderScale)
       }
     });
 

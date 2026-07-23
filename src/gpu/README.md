@@ -90,6 +90,14 @@ edges, non-grid layouts, graph algorithms.
   sub-half-alpha edges may neither draw nor pick at far zoom.  This removes
   the far-zoom worst case where every edge rasterized into a few hundred
   pixels and serialized at the blend stage (~33 ms → ~8 ms on 465k edges).
+- **`renderScale`**: optional low-resolution rendering — the scene draws
+  into an offscreen target at `renderScale` × native resolution
+  (clamped [0.25, 1], default 1 = native, zero overhead) and a fullscreen
+  Catmull-Rom bicubic pass upscales it to the canvas, preserving SDF
+  borders and hairline edges far better than bilinear.  Fill cost scales
+  ~`renderScale²` (ndex-x-large fit-all at dpr 2: 38 → 10.6 ms GPU at
+  0.5).  LOD thresholds apply in render px; picking always runs at native
+  resolution.
 - **Label LOD**: labels fade below `labelFadePx` (glyphs past the fade's
   zero point are culled in compute, not drawn at zero alpha); the optional
   `labelMinPx` renderer option hard-culls labels whose on-screen glyph

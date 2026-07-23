@@ -7,7 +7,8 @@ import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
-import { BUFFER_USAGE } from './webgpu-constants.mjs';
+import { Upscaler } from './upscale.mjs';
+import { BUFFER_USAGE, TEXTURE_USAGE } from './webgpu-constants.mjs';
 import { FLAG_ALIVE } from '../contract.mjs';
 import type { GpuCore } from '../core.mjs';
 import type { GpuCollection } from '../collection.mjs';
@@ -96,6 +97,10 @@ export class Renderer {
   private cullKernels: CullKernels | null;
   private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
   private pickCull: { node: CulledGroup; edge: CulledGroup } | null;
+  private renderScale: number;
+  private format: GPUTextureFormat | null;
+  private sceneTarget: GPUTexture | null;
+  private upscaler: Upscaler | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -124,6 +129,10 @@ export class Renderer {
     this.cullKernels = null;
     this.sceneCull = null;
     this.pickCull = null;
+    this.renderScale = Math.min( 1, Math.max( 0.25, opts.renderScale ?? 1 ) );
+    this.format = null;
+    this.sceneTarget = null;
+    this.upscaler = null;
 
     this.dpr = opts.pixelRatio == null || opts.pixelRatio === 'auto'
       ? ( globalThis.devicePixelRatio || 1 )
@@ -202,6 +211,8 @@ export class Renderer {
       group.destroy();
     }
 
+    this.upscaler?.destroy();
+    this.sceneTarget?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.pickUniform?.destroy();
@@ -299,7 +310,9 @@ export class Renderer {
     this.labelLayer = new LabelLayer( device, this.cy._store );
     this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
     this.picking = new Picking( device );
-    this.gpuTimer = GpuTimer.isSupported( device ) ? new GpuTimer( device ) : null;
+    this.format = format;
+    this.upscaler = this.renderScale < 1 ? new Upscaler( device, format ) : null;
+    this.gpuTimer = GpuTimer.isSupported( device ) ? new GpuTimer( device, this.renderScale < 1 ) : null;
 
     this.isReady = true;
     this.needsRedraw = true;
@@ -372,7 +385,12 @@ export class Renderer {
       // compact each group's visible slots + indirect args before drawing
       this.encodeCulls( encoder, this.uniform as GPUBuffer, this.sceneCull, true );
 
-      const view = context.getCurrentTexture().createView();
+      // renderScale < 1: draw into a low-res offscreen target, then a
+      // Catmull-Rom upscale pass resamples it to the swapchain
+      const scaled = this.upscaler != null;
+      const view = scaled
+        ? ( this.ensureSceneTarget() as GPUTexture ).createView()
+        : context.getCurrentTexture().createView();
       const pass = encoder.beginRenderPass( {
         label: 'cy-gpu:render-pass',
         colorAttachments: [ {
@@ -398,6 +416,22 @@ export class Renderer {
       }
 
       pass.end();
+
+      if( scaled ){
+        const upscalePass = encoder.beginRenderPass( {
+          label: 'cy-gpu:upscale-pass',
+          colorAttachments: [ {
+            view: context.getCurrentTexture().createView(),
+            clearValue: { r: 0, g: 0, b: 0, a: 0 },
+            loadOp: 'clear',
+            storeOp: 'store'
+          } ],
+          ...( this.gpuTimer != null ? { timestampWrites: this.gpuTimer.postTimestampWrites() } : {} )
+        } );
+
+        ( this.upscaler as Upscaler ).draw( upscalePass, device, this.sceneTarget as GPUTexture );
+        upscalePass.end();
+      }
 
       const finishTiming = this.gpuTimer?.encodeResolve( encoder ) ?? null;
 
@@ -500,6 +534,38 @@ export class Renderer {
     }
   }
 
+  /** Low-res scene target dimensions (must match writeFrameUniform). */
+  private scaledSize(): { w: number; h: number } {
+    return {
+      w: Math.max( 1, Math.round( this.canvas.width * this.renderScale ) ),
+      h: Math.max( 1, Math.round( this.canvas.height * this.renderScale ) )
+    };
+  }
+
+  private ensureSceneTarget(): GPUTexture {
+    const device = this.device as GPUDevice;
+    const { w, h } = this.scaledSize();
+    let target = this.sceneTarget;
+
+    if( target == null || target.width !== w || target.height !== h ){
+      const old = target;
+
+      target = device.createTexture( {
+        label: 'cy-gpu:scene-target',
+        size: { width: w, height: h },
+        format: this.format as GPUTextureFormat,
+        usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.TEXTURE_BINDING
+      } );
+      this.sceneTarget = target;
+
+      if( old != null ){ // may still be referenced by in-flight frames
+        void device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+      }
+    }
+
+    return target;
+  }
+
   private writeFrameUniform(): void {
     const viewport = this.cy._viewport;
     const zoom = viewport.zoom();
@@ -507,11 +573,16 @@ export class Renderer {
     const f = this.frameData;
     const opts = this.opts;
 
-    f[0] = this.canvas.width;
-    f[1] = this.canvas.height;
-    f[2] = pan.x * this.dpr;
-    f[3] = pan.y * this.dpr;
-    f[4] = zoom * this.dpr;
+    // with renderScale < 1 the scene renders in scaled device px; LOD
+    // thresholds stay in render px (a floored 1px edge is 1 low-res px)
+    const { w, h } = this.scaledSize();
+    const dprScale = this.dpr * this.renderScale;
+
+    f[0] = w;
+    f[1] = h;
+    f[2] = pan.x * dprScale;
+    f[3] = pan.y * dprScale;
+    f[4] = zoom * dprScale;
     f[5] = opts.edgeWidthFloor ?? DEFAULT_EDGE_WIDTH_FLOOR;
     f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
     f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;

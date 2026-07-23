@@ -161,5 +161,21 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    zero-copy views; deserialize is ~5 ms on this fixture (replacing the
    90–113 ms parse + 27–48 ms convert of the JSON path) and the payload
    is 9.2 MB vs 30 MB JSON.
-4. `data()` sidecar → unlocks style mappers and fixture labels beyond `data(id)`.
-5. Cheap wins: preset layout, arrows, pinch zoom.
+4. ~~`data()` sidecar~~ — **done**, columnar like everything else:
+   per-(group, key) adaptive columns (f64 + presence for numbers,
+   dictionary-encoded strings, plain-array fallback), `ele.data()` with
+   v3 semantics (immutable id/source/target, `data` events), ingest from
+   defs, columnar `data:` columns and the wire (v2 data blocks — f64 and
+   dictionary indices deserialize zero-copy).  Labels now take any
+   `data(key)` mapper and refresh on data writes.
+5. ~~Perf round 2 (post-load-path)~~ — **done**: (a) grid layout got a
+   slot path (no handles; bulk `setPositions`; 200k nodes 270 → 24 ms)
+   plus a new **preset layout**; (b) the id index went blob-native —
+   UTF-8 blob + open-addressing probe table, no stored JS strings, lazy
+   per-slot decode; packed wire ids ingest with zero string
+   materialization (484k ids: ~69 ms Map inserts / ~50 MB → ~10 ms /
+   ~9 MB); (c) adjacency is CSR built in two counting passes from the
+   endpoints column, with a per-node overlay for incremental adds
+   (~15.5 MB of per-node arrays → ~4 MB).  Wire-payload init on
+   ndex-x-large: ~106 → 68 ms median (deserialize itself ~0 ms).
+6. Cheap wins remaining: arrows, pinch zoom.

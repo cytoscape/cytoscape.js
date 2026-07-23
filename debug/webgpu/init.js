@@ -95,7 +95,9 @@ const paramDefs = {
 
       for(const [prop, value] of Object.entries(block.style || block.css || {})) {
         if(!SUPPORTED_PROPS.has(prop)) { continue; }
-        if(typeof value === 'string' && /(mapData|data)\s*\(/.test(value) && value !== 'data(id)') { continue; } // no mappers (except data(id))
+        // data(key) label mappers are supported now; other mappers are not
+        if(typeof value === 'string' && /mapData\s*\(/.test(value)) { continue; }
+        if(typeof value === 'string' && /data\s*\(/.test(value) && !(prop === 'label' && /^\s*data\s*\(\s*[\w-]+\s*\)\s*$/.test(value))) { continue; }
         if(prop === 'shape' && !SUPPORTED_SHAPES.has(value)) { continue; }
 
         style[prop] = value;
@@ -122,13 +124,14 @@ const paramDefs = {
 
       if(data.source != null && data.target != null) {
         edges.push({ data: {
+          ...data, // sidecar data() keys flow through
           id: data.id != null ? String(data.id) : undefined,
           source: String(data.source),
           target: String(data.target)
         } });
       } else {
         nodes.push({
-          data: { id: data.id != null ? String(data.id) : undefined },
+          data: { ...data, id: data.id != null ? String(data.id) : undefined },
           position: ele.position
         });
       }

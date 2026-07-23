@@ -121,6 +121,62 @@ describe('gpu/wire', function(){
     });
   });
 
+  describe('data() columns', function(){
+    const DATA_FIXTURE = {
+      nodes: [
+        { data: { id: 'a', name: 'Alpha', weight: 1.5, flagged: true } },
+        { data: { id: 'b', name: 'Beta', meta: { deep: [1] } } },
+        { data: { id: 'c', weight: 2.25 } }
+      ],
+      edges: [ { data: { id: 'ab', source: 'a', target: 'b', kind: 'likes' } } ]
+    };
+
+    it('round-trips numeric columns as zero-copy f64 with NaN holes', function(){
+      const out = deserializeElements( serializeElements( DATA_FIXTURE ) );
+
+      expect( out.nodes.data.weight ).to.be.an.instanceOf( Float64Array );
+      expect( out.nodes.data.weight[0] ).to.equal( 1.5 );
+      expect( Number.isNaN( out.nodes.data.weight[1] ) ).to.be.true;
+      expect( out.nodes.data.weight[2] ).to.equal( 2.25 );
+    });
+
+    it('round-trips string columns as dictionaries', function(){
+      const out = deserializeElements( serializeElements( DATA_FIXTURE ) );
+
+      expect( out.nodes.data.name.dict ).to.deep.equal([ 'Alpha', 'Beta' ]);
+      expect( Array.from( out.nodes.data.name.indices ) ).to.deep.equal([ 1, 2, 0 ]);
+      expect( out.edges.data.kind.dict ).to.deep.equal([ 'likes' ]);
+    });
+
+    it('round-trips mixed columns through the JSON fallback', function(){
+      const out = deserializeElements( serializeElements( DATA_FIXTURE ) );
+
+      expect( out.nodes.data.flagged ).to.deep.equal([ true, undefined, undefined ]);
+      expect( out.nodes.data.meta[1] ).to.deep.equal({ deep: [1] });
+    });
+
+    it('ingests to full data() parity with the defs path', function(){
+      const viaDefs = cytoscapeGpu( { elements: DATA_FIXTURE } );
+      const viaWire = cytoscapeGpu( { elements: serializeElements( DATA_FIXTURE ) } );
+
+      for( const id of [ 'a', 'b', 'c', 'ab' ] ){
+        expect( viaWire.$( '#' + id ).data(), id ).to.deep.equal( viaDefs.$( '#' + id ).data() );
+      }
+    });
+
+    it('survives a 4-but-not-8-aligned view (f64 realign)', function(){
+      const buffer = serializeElements( DATA_FIXTURE );
+      const shifted = new Uint8Array( buffer.byteLength + 4 );
+
+      shifted.set( new Uint8Array( buffer ), 4 );
+
+      const out = deserializeElements( new Uint8Array( shifted.buffer, 4, buffer.byteLength ) );
+
+      expect( out.nodes.data.weight[2] ).to.equal( 2.25 );
+      expect( out.nodes.data.name.dict ).to.deep.equal([ 'Alpha', 'Beta' ]);
+    });
+  });
+
   describe('validation', function(){
     it('rejects a buffer without the magic header', function(){
       expect( () => deserializeElements( new ArrayBuffer( 64 ) ) ).to.throw( /serialized elements/i );

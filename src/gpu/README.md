@@ -32,31 +32,41 @@ shader over every allocated slot.
 
 Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`),
 events, graph manipulation, `style()` (constrained blocks), `layout()`
-(grid only), `pick()`, `destroy()`, `width()`/`height()`.
+(grid and preset), `pick()`, `destroy()`, `width()`/`height()`.
 Collections: events, graph manipulation, position/dimensions, iteration,
 comparison, building/filtering, basic traversal (`outgoers` etc.),
-`select`/`unselect`, `label()` (read-only).
+`select`/`unselect`, `data()`, `label()` (read-only).
 
-Node labels (SDF): the `label` style prop takes constant strings or the
-single mapper `data(id)`; `font-size` and `color` are constants.  Glyphs
+`data()`: element data lives in a **columnar sidecar** — per-(group, key)
+columns, not per-element objects: numbers as Float64Array, strings
+dictionary-encoded, a plain-array fallback for the rest, each column
+adapting to what it holds.  `id` (and `source`/`target` on edges) stay
+first-class and immutable.  Setters emit `data` per element.
+
+Node labels (SDF): the `label` style prop takes constant strings or a
+`data(key)` mapper (any sidecar key; `data(id)` reads the first-class
+id); mapped labels refresh on data writes.  `font-size` and `color` are
+constants.  Glyphs
 come from a runtime SDF atlas (canvas-2D raster → Euclidean distance
 transform → one r8 texture) and live in a persistent instance buffer keyed
 by node slot — the label vertex shader reads the node position buffer, so
 labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
 below the `labelFadePx` LOD threshold.
 
-Out of scope (deferred): animations, full stylesheets/mappers, `data()`
-(ids/source/target are first-class), arrows, compound nodes, bezier
-edges, non-grid layouts, graph algorithms.
+Out of scope (deferred): animations, full stylesheets/mappers beyond the
+label `data(key)` mapper, arrows, compound nodes, bezier edges, layouts
+beyond grid/preset, graph algorithms.
 
 ## Loading
 
 `options.elements` accepts the classic definition form (v3-style JSON) or
 a **columnar bulk-load form**: `{ columnar: true, nodes: { count, ids?,
-positions? }, edges: { count, ids?, sources, targets } }` with typed-array
-columns and edge endpoints as node *indices* — it ingests straight into
-the store (contiguous slot runs are memcpys) with no per-element objects
-and no id lookups per edge.  Columnar payloads are self-contained: every
+positions?, data? }, edges: { count, ids?, sources, targets, data? } }`
+with typed-array columns and edge endpoints as node *indices* — it
+ingests straight into the store (contiguous slot runs are memcpys) with
+no per-element objects and no id lookups per edge.  `data` holds sidecar
+columns by key (plain arrays, Float64Array with NaN holes, or
+dictionary-encoded string columns).  Columnar payloads are self-contained: every
 edge endpoint indexes a node in the same payload.  Convert classic JSON
 with `cytoscapeGpu.toColumnarElements(json)`.  There is also a **binary
 wire format** — `cytoscapeGpu.serializeElements(elements)` (takes either
@@ -68,7 +78,10 @@ so a graph can be served as a static binary asset and fed straight from
 deserialize as zero-copy views into the buffer, and ids stay packed all
 the way into the store — the id index is itself blob-native (UTF-8 bytes
 + an open-addressing probe table, no JS strings), so id strings are
-decoded lazily, only for elements actually touched via handles.  Either way, the
+decoded lazily, only for elements actually touched via handles.  The
+wire carries the data() sidecar too: numeric columns as f64, string
+columns as dictionaries (only the small dictionary decodes), the rest as
+JSON per present value.  Either way, the
 factory's load path materializes no per-element handles and emits no
 `add` events (nobody can be listening yet); `cy.add()` keeps full
 per-element semantics and takes all three forms.  ndex-x-large (19.6k
@@ -170,6 +183,7 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 
 ## Follow-up hooks
 
-- CSR adjacency (incremental per-node lists for now).
 - Slot compaction (tombstones + degenerate quads for now; the cull pass
-  already keeps tombstones out of the draw stream).
+  already keeps tombstones out of the draw stream).  Removal also leaks
+  id-blob bytes and freed CSR adjacency space until such a compaction —
+  the same tombstone policy throughout.

@@ -875,6 +875,255 @@ export class GpuCollection {
     return selector == null ? eles : eles.filter( selector );
   }
 
+  // -- DAG traversal --
+
+  /** Collection nodes with no non-loop incoming edge (whole-graph incidence, as in v3). */
+  roots( selector?: SelectorLike ): GpuCollection {
+    return this._dagExtremity( 'in', selector );
+  }
+
+  /** Collection nodes with no non-loop outgoing edge. */
+  leaves( selector?: SelectorLike ): GpuCollection {
+    return this._dagExtremity( 'out', selector );
+  }
+
+  private _dagExtremity( direction: 'in' | 'out', selector?: SelectorLike ): GpuCollection {
+    const store = this._store;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const refs: Ref[] = [];
+
+    for( const ref of this._liveRefs() ){
+      if( ref.group !== 'nodes' ){ continue; }
+
+      const edges = direction === 'in' ? store.adj.inEdges( ref.slot ) : store.adj.outEdges( ref.slot );
+      let disqualified = false;
+
+      for( const edgeSlot of edges ){
+        // a loop (source === target) never disqualifies
+        if( endpoints[ edgeSlot * 2 ] !== endpoints[ edgeSlot * 2 + 1 ] ){ disqualified = true; break; }
+      }
+
+      if( !disqualified ){ refs.push( ref ); }
+    }
+
+    const eles = this._spawn( refs );
+
+    return selector == null ? eles : eles.filter( selector );
+  }
+
+  successors( selector?: SelectorLike ): GpuCollection {
+    return this._dagAllHops( 'out', selector );
+  }
+
+  predecessors( selector?: SelectorLike ): GpuCollection {
+    return this._dagAllHops( 'in', selector );
+  }
+
+  private _dagAllHops( direction: 'out' | 'in', selector?: SelectorLike ): GpuCollection {
+    const acc: Ref[] = [];
+    const seen = new Set<string>();
+    const hop = ( eles: GpuCollection ): GpuCollection =>
+      direction === 'out' ? eles.outgoers() : eles.incomers();
+
+    let frontier = hop( this );
+
+    for( ;; ){
+      if( frontier.length === 0 ){ break; }
+
+      let newNext = false;
+
+      for( let i = 0; i < frontier.length; i++ ){
+        const key = refKey( frontier._refs[ i ] );
+
+        if( !seen.has( key ) ){
+          seen.add( key );
+          acc.push( frontier._refs[ i ] );
+          newNext = true;
+        }
+      }
+
+      if( !newNext ){ break; } // reached the closure
+
+      frontier = hop( frontier );
+    }
+
+    const out = this._spawn( acc );
+
+    return selector == null ? out : out.filter( selector );
+  }
+
+  // -- edge relations --
+
+  edgesWith( others: GpuCollection | string ): GpuCollection {
+    return this._edgesWith( others, false );
+  }
+
+  edgesTo( others: GpuCollection | string ): GpuCollection {
+    return this._edgesWith( others, true );
+  }
+
+  private _edgesWith( others: GpuCollection | string, thisIsSrc: boolean ): GpuCollection {
+    const store = this._store;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const otherColl = this._toEles( others );
+
+    const thisNodes = this._nodeSlotSet();
+    const otherNodes = otherColl._nodeSlotSet();
+    const refs: Ref[] = [];
+
+    for( const oref of otherColl._liveRefs() ){
+      if( oref.group !== 'nodes' ){ continue; }
+
+      for( const edgeSlot of store.adj.connectedEdges( oref.slot ) ){
+        const s = endpoints[ edgeSlot * 2 ];
+        const t = endpoints[ edgeSlot * 2 + 1 ];
+        const thisToOther = thisNodes.has( s ) && otherNodes.has( t );
+        const otherToThis = otherNodes.has( s ) && thisNodes.has( t );
+
+        if( !( thisToOther || otherToThis ) ){ continue; }
+        if( thisIsSrc && !thisToOther ){ continue; }
+
+        refs.push( store.ref( 'edges', edgeSlot ) );
+      }
+    }
+
+    return this._spawn( refs );
+  }
+
+  parallelEdges( selector?: SelectorLike ): GpuCollection {
+    return this._parallelEdges( false, selector );
+  }
+
+  codirectedEdges( selector?: SelectorLike ): GpuCollection {
+    return this._parallelEdges( true, selector );
+  }
+
+  private _parallelEdges( codirectedOnly: boolean, selector?: SelectorLike ): GpuCollection {
+    const store = this._store;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const refs: Ref[] = [];
+
+    for( const ref of this._liveRefs() ){
+      if( ref.group !== 'edges' ){ continue; }
+
+      const src1 = endpoints[ ref.slot * 2 ];
+      const tgt1 = endpoints[ ref.slot * 2 + 1 ];
+
+      // every edge parallel to this one is incident to its source node
+      for( const e2 of store.adj.connectedEdges( src1 ) ){
+        const s2 = endpoints[ e2 * 2 ];
+        const t2 = endpoints[ e2 * 2 + 1 ];
+        const codirected = s2 === src1 && t2 === tgt1;
+        const opposed = s2 === tgt1 && t2 === src1;
+
+        if( ( codirectedOnly && codirected ) || ( !codirectedOnly && ( codirected || opposed ) ) ){
+          refs.push( store.ref( 'edges', e2 ) );
+        }
+      }
+    }
+
+    const eles = this._spawn( refs );
+
+    return selector == null ? eles : eles.filter( selector );
+  }
+
+  // -- connected components --
+
+  /**
+   * Connected components within this collection (undirected), each as a
+   * collection of the reached nodes plus the collection's edges internal
+   * to that component.  `root` restricts the seed nodes.
+   */
+  components( root?: GpuCollection | string | null ): GpuCollection[] {
+    const store = this._store;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+    const nodeSlots = this._nodeSlotSet();
+    const edgeSlots: number[] = [];
+
+    for( const ref of this._liveRefs() ){
+      if( ref.group === 'edges' ){ edgeSlots.push( ref.slot ); }
+    }
+
+    let seeds: number[];
+
+    if( root == null ){
+      seeds = [ ...nodeSlots ];
+    } else {
+      const rootColl = this._toEles( root );
+      const rootNodes = rootColl._nodeSlotSet();
+
+      seeds = rootNodes.size > 0
+        ? [ ...rootNodes ].filter( s => nodeSlots.has( s ) )
+        // root has only edges: seed from their source-side nodes
+        : rootColl._liveRefs()
+          .filter( r => r.group === 'edges' )
+          .map( r => endpoints[ r.slot * 2 ] )
+          .filter( s => nodeSlots.has( s ) );
+    }
+
+    const visited = new Set<number>();
+    const comps: GpuCollection[] = [];
+
+    for( const seed of seeds ){
+      if( visited.has( seed ) ){ continue; }
+
+      const compNodes = new Set<number>();
+      const stack = [ seed ];
+
+      visited.add( seed );
+
+      while( stack.length > 0 ){
+        const n = stack.pop() as number;
+
+        compNodes.add( n );
+
+        for( const edgeSlot of store.adj.connectedEdges( n ) ){
+          const s = endpoints[ edgeSlot * 2 ];
+          const t = endpoints[ edgeSlot * 2 + 1 ];
+          const other = s === n ? t : s;
+
+          if( nodeSlots.has( other ) && !visited.has( other ) ){
+            visited.add( other );
+            stack.push( other );
+          }
+        }
+      }
+
+      const refs: Ref[] = [];
+
+      for( const s of compNodes ){ refs.push( store.ref( 'nodes', s ) ); }
+
+      for( const edgeSlot of edgeSlots ){
+        if( compNodes.has( endpoints[ edgeSlot * 2 ] ) && compNodes.has( endpoints[ edgeSlot * 2 + 1 ] ) ){
+          refs.push( store.ref( 'edges', edgeSlot ) );
+        }
+      }
+
+      comps.push( this._spawn( refs ) );
+    }
+
+    return comps;
+  }
+
+  declare componentsOf: this['components'];
+
+  /** The whole-graph connected component containing the first element. */
+  component(): GpuCollection {
+    if( this._first() == null ){ return this._spawn( [] ); }
+
+    return this._cy.elements().components( this )[ 0 ] ?? this._spawn( [] );
+  }
+
+  private _nodeSlotSet(): Set<number> {
+    const set = new Set<number>();
+
+    for( const ref of this._liveRefs() ){
+      if( ref.group === 'nodes' ){ set.add( ref.slot ); }
+    }
+
+    return set;
+  }
+
   // -- degree --
 
   degree( includeLoops: boolean = true ): number {
@@ -981,6 +1230,7 @@ GpuCollection.prototype.symdiff = GpuCollection.prototype.symmetricDifference;
 GpuCollection.prototype.xor = GpuCollection.prototype.symmetricDifference;
 GpuCollection.prototype.deselect = GpuCollection.prototype.unselect;
 GpuCollection.prototype.openNeighborhood = GpuCollection.prototype.neighborhood;
+GpuCollection.prototype.componentsOf = GpuCollection.prototype.components;
 GpuCollection.prototype.addListener = GpuCollection.prototype.on;
 GpuCollection.prototype.removeListener = GpuCollection.prototype.off;
 GpuCollection.prototype.trigger = GpuCollection.prototype.emit;

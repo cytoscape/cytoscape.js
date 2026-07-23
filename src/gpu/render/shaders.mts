@@ -300,24 +300,8 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   return vec4f(color.rgb * alpha, alpha); // premultiplied
 }
 
-@fragment
-fn fsNodePick(in: NodeVSOut) -> @location(0) u32 {
-  let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
-
-  var shape = shapes[in.instance];
-  var half = in.halfSize;
-
-  if (sizePx < frame.nodeLodPx) {
-    shape = 0u;
-    half = vec2f(max(in.halfSize.x, in.halfSize.y));
-  }
-
-  if (nodeSD(shape, in.local, half) > 0.0) {
-    discard;
-  }
-
-  return in.instance + 1u; // 0 = background
-}
+// (node picking is a synchronous CPU test — see cpu-pick.mts — so there is
+// no node pick fragment shader; the GPU pick pass draws edges only)
 
 // Conservative interior test for the depth prepass: true only when p is
 // at least m device px inside the shape.  Deliberately cheap — no Newton

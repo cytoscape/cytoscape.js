@@ -1,5 +1,6 @@
 import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
+import { pickNodeAt } from './cpu-pick.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
 import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
@@ -58,6 +59,12 @@ const DEFAULT_RENDER_SCALE_MAX = 1;
 /** after this long without redraws, re-render one frame at max scale */
 const SETTLE_TO_MAX_MS = 250;
 
+/** columns whose changes never affect pick coverage (keep the pick cache) */
+const PICK_NEUTRAL_COLUMNS = new Set( [
+  'node.fillColor', 'node.borderColor', 'node.borderWidth', 'node.opacity',
+  'edge.lineColor', 'edge.opacity'
+] );
+
 /**
  * Backpressure: at most this many scene submissions may be unfinished on
  * the GPU.  Without the cap, a GPU-bound graph accumulates an unbounded
@@ -103,7 +110,7 @@ export class Renderer {
   private labelPipeline: LabelPipeline | null;
   private cullKernels: CullKernels | null;
   private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
-  private pickCull: { node: CulledGroup; edge: CulledGroup } | null;
+  private pickCull: { edge: CulledGroup } | null;
   private scaleCtl: ScaleController;
   private settleTimer: ReturnType<typeof setTimeout> | null;
   private format: GPUTextureFormat | null;
@@ -175,6 +182,7 @@ export class Renderer {
     } );
     this.onViewport = () => {
       this.needsRedraw = true;
+      this.picking?.invalidateCache(); // cached pick tile is in device px
       this.schedule();
     };
     cy.on( 'viewport', this.onViewport );
@@ -245,20 +253,66 @@ export class Renderer {
   // -- picking --
 
   /**
-   * Async GPU pick at a rendered (CSS px) position.  Resolves with the
-   * element under the point, or null for background/unknown.  The pick
-   * pass draws only the cursor tile and submits ahead of any scene work,
-   * so latency is roughly one rAF plus the bounded in-flight GPU work
-   * (latest-wins coalescing; requests never queue up).
+   * Pick at a rendered (CSS px) position.  Resolves with the element under
+   * the point, or null for background/unknown.  Three stages, cheapest
+   * first:
+   *
+   * 1. nodes: synchronous CPU pick — exact, zero GPU work, answers in the
+   *    same microtask (nodes draw over edges, so a node hit shadows them);
+   * 2. the cached pick tile: while the cursor stays inside the last GPU
+   *    tile and nothing invalidated it, edge/background answers are
+   *    instant;
+   * 3. GPU edge pick: draws only the cursor tile, submits ahead of scene
+   *    work, so latency is ~one rAF plus bounded in-flight GPU work
+   *    (latest-wins coalescing; requests never queue up).
    */
   async pick( x: number, y: number ): Promise<GpuCollection | null> {
     if( this.destroyed || !this.isReady || this.picking == null ){ return null; }
 
-    const promise = this.picking.request( x * this.dpr, y * this.dpr );
+    const xPx = x * this.dpr;
+    const yPx = y * this.dpr;
+
+    const nodeSlot = this.cpuPickNode( xPx, yPx );
+
+    if( nodeSlot != null ){ return this.cy._ele( 'nodes', nodeSlot ); }
+
+    const cached = this.picking.cachedIdAt( xPx, yPx );
+
+    if( cached != null ){ return this.decodePick( cached ); }
+
+    const promise = this.picking.request( xPx, yPx );
 
     this.schedule(); // the pick pass runs with the next frame
 
     return this.decodePick( await promise );
+  }
+
+  /**
+   * Synchronous CPU node pick at a rendered (CSS px) position — exact and
+   * current (no in-flight staleness).  Edges are not considered; they
+   * resolve through the async `pick()`.
+   */
+  pickNodeSync( x: number, y: number ): GpuCollection | null {
+    if( this.destroyed || !this.isReady ){ return null; }
+
+    const slot = this.cpuPickNode( x * this.dpr, y * this.dpr );
+
+    return slot == null ? null : this.cy._ele( 'nodes', slot );
+  }
+
+  private cpuPickNode( xPx: number, yPx: number ): number | null {
+    const viewport = this.cy._viewport;
+    const pan = viewport.pan();
+    const opts = this.opts;
+
+    // same view state as writePickUniform: native device px, no renderScale
+    return pickNodeAt( this.cy._store, {
+      panXPx: pan.x * this.dpr,
+      panYPx: pan.y * this.dpr,
+      zoomDpr: viewport.zoom() * this.dpr,
+      hidePx: opts.hidePx ?? DEFAULT_HIDE_PX,
+      nodeLodPx: opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX
+    }, xPx, yPx );
   }
 
   private decodePick( id: number | null ): GpuCollection | null {
@@ -323,7 +377,7 @@ export class Renderer {
       glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' )
     };
     this.pickCull = {
-      node: new CulledGroup( kernels, 'node', 'pick-node' ),
+      // nodes pick synchronously on the CPU; only edges need the GPU pass
       edge: new CulledGroup( kernels, 'edge', 'pick-edge' )
     };
 
@@ -365,7 +419,17 @@ export class Renderer {
 
     if( store.hasDirty() ){
       this.needsRedraw = true;
-      mirror.sync( store.takeDelta() );
+
+      const delta = store.takeDelta();
+
+      // color/opacity-only changes can't alter pick coverage; anything
+      // else (geometry, flags, growth) drops the cached pick tile
+      if( delta.resized.nodes || delta.resized.edges ||
+          delta.spans.some( span => !PICK_NEUTRAL_COLUMNS.has( span.column ) ) ){
+        this.picking?.invalidateCache();
+      }
+
+      mirror.sync( delta );
     }
 
     this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
@@ -525,14 +589,14 @@ export class Renderer {
    */
   private encodeCulls(
     encoder: GPUCommandEncoder, uniform: GPUBuffer,
-    groups: { node: CulledGroup; edge: CulledGroup; glyph?: CulledGroup }, timed: boolean
+    groups: { node?: CulledGroup; edge: CulledGroup; glyph?: CulledGroup }, timed: boolean
   ): void {
     const mirror = this.mirror as ColumnMirror;
     const store = this.cy._store;
     const labelLayer = this.labelLayer;
     const mv = `${mirror.version}`;
 
-    groups.node.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
+    groups.node?.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
       mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ), mirror.buffer( 'node.flags' )
     ], mv );
     groups.edge.ensure( uniform, Math.max( 1, store.capacity( 'edges' ) ), [
@@ -553,7 +617,7 @@ export class Renderer {
       ...( timed && this.gpuTimer != null ? { timestampWrites: this.gpuTimer.computeTimestampWrites() } : {} )
     } );
 
-    groups.node.encode( pass, store.highWater( 'nodes' ) );
+    groups.node?.encode( pass, store.highWater( 'nodes' ) );
     groups.edge.encode( pass, store.highWater( 'edges' ) );
 
     if( groups.glyph != null && labelLayer != null ){
@@ -583,8 +647,8 @@ export class Renderer {
 
     const store = this.cy._store;
 
+    // edges only: node picks are answered synchronously on the CPU
     this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), pickCull.edge, true );
-    this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), pickCull.node, true );
     pass.end();
   }
 

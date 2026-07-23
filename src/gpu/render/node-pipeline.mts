@@ -31,12 +31,13 @@ export const PREMULTIPLIED_BLEND: GPUBlendState = {
 /** scene-pass depth buffer format (early-z; see the depth prepass) */
 export const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
 
-/** Node render + picking pipelines (vertex pulling through the culled
- * visible list at @group(1); indexed quad per instance, indirect draw). */
+/** Node render + depth-prepass pipelines (vertex pulling through the
+ * culled visible list at @group(1); indexed quad per instance, indirect
+ * draw).  Node picking is a synchronous CPU test (cpu-pick.mts), so there
+ * is no node pick pipeline. */
 export class NodePipeline {
   private pipeline: GPURenderPipeline;
   private depthPipeline: GPURenderPipeline;
-  private pickPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
@@ -85,14 +86,6 @@ export class NodePipeline {
       depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: true, depthCompare: 'always' }
     } );
 
-    this.pickPipeline = device.createRenderPipeline( {
-      label: 'cy-gpu:node-pick-pipeline',
-      layout,
-      vertex: { module, entryPoint: 'vsNode' },
-      fragment: { module, entryPoint: 'fsNodePick', targets: [ { format: 'r32uint' } ] },
-      primitive: { topology: 'triangle-list' }
-    } );
-
     this.bindGroups = new Map();
   }
 
@@ -123,11 +116,11 @@ export class NodePipeline {
 
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
-    mirror: ColumnMirror, instances: number, cull: CulledGroup, pick: boolean = false
+    mirror: ColumnMirror, instances: number, cull: CulledGroup
   ): void {
     if( instances === 0 ){ return; }
 
-    pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
+    pass.setPipeline( this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
     pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );

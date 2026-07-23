@@ -223,6 +223,36 @@ test.describe( 'WebGPU renderer', () => {
     expect( onBackground ).toBe( null );
   } );
 
+  test( 'pick() resolves an edge between nodes', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: [
+        { selector: 'node', style: { 'width': 30, 'height': 30 } },
+        { selector: 'edge', style: { 'width': 4 } }
+      ],
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the midpoint of the edge is far from both node bodies
+    const onEdge = await page.evaluate( async center => {
+      const ele = await window.cy.pick( center.x, center.y );
+
+      return ele == null ? null : ele.id();
+    }, center );
+
+    expect( onEdge ).toBe( 'ab' );
+  } );
+
   test( 'mouse drag moves the node in the model and on screen', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

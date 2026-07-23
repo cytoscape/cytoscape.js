@@ -60,8 +60,9 @@ edges, non-grid layouts, graph algorithms.
   Escape hatch: an optional `array<u32>` index-indirection pass later.
 - **Float32 positions**: ~7 significant digits of precision (pure-memcpy
   uploads are worth the trade at this stage).
-- **Pan-vs-grab staleness**: pointerdown consults the last *resolved* GPU
-  pick, which can be ≤2 frames stale; a cold start defaults to pan.
+- **Pan-vs-grab is exact**: pointerdown does a synchronous CPU node pick
+  (positions are CPU-canonical), so grab targeting has no staleness and a
+  cold start needs no resolved pick.
 - **Hover pauses during viewport gestures**: pan drags and wheel zooms are
   viewport-only ops with no mouseover/tap semantics, so no pick passes run
   mid-gesture; a wheel gesture re-picks under the cursor once it settles
@@ -75,15 +76,24 @@ edges, non-grid layouts, graph algorithms.
   `:unselected` and comma lists; style blocks are constants only.
 - **`cy.elements()` order**: nodes (insertion order) then edges, not the
   mixed insertion order of v3.
-- **Picking**: the pick pass draws a fixed 64×64 cursor-centered tile (a
-  pick-specific Frame uniform turns the cull pass's viewport test into
-  cursor-region culling, so picking costs O(region) not O(scene)) and
-  submits in its own command buffer ahead of any scene work; the center
-  texel reads back through a ring of 3 staging buffers (latest-wins;
-  requests drop to `null` when the ring is exhausted).  Scene submissions
-  are capped at 2 in flight — when the GPU is behind, the loop coalesces
-  state into the next frame instead of queueing deeper — so `pick()`/hover
-  resolve in ~1 rAF plus bounded GPU work even on GPU-bound graphs.
+- **Picking** resolves in three stages, cheapest first.  (1) Nodes pick
+  **synchronously on the CPU** — positions are CPU-canonical, and a
+  columnar scan replicating the shader semantics (flooring, plain-disc
+  LOD, shape inside-tests, topmost-slot-wins) answers in ~0.1 ms with
+  zero GPU work.  (2) The last GPU pick tile doubles as a **pick cache**:
+  while the cursor stays inside it and neither the viewport nor any
+  pick-affecting geometry changed, edge/background answers are instant
+  (color/opacity-only changes keep the cache).  (3) Otherwise the GPU
+  pick pass draws a fixed 64×64 cursor-centered tile — **edges only** — 
+  (a pick-specific Frame uniform turns the cull pass's viewport test into
+  cursor-region culling, O(region) not O(scene)), submits in its own
+  command buffer ahead of scene work, and reads the whole tile back
+  through a ring of 3 staging buffers (latest-wins; requests drop to
+  `null` when the ring is exhausted).  Scene submissions are capped at 2
+  in flight, so even stage-3 picks resolve in ~1 rAF plus bounded GPU
+  work on GPU-bound graphs.  Measured on ndex-x-large at dpr 2: node
+  hovers ~0 ms, cold background/edge ~7 ms, cached ~0.2 ms,
+  hover-while-panning median ~0 ms (was ~70 ms).
 - **Far-zoom edge decimation**: once width-floored (hairline) edges fall
   below half alpha, a hash-stable 1-in-N subset draws at N× alpha (N a
   power of two ≤ 64).  Aggregate edge density is preserved, but individual

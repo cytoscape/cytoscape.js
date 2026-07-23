@@ -12,9 +12,9 @@ Pointer/wheel interaction over the WebGPU canvas:
 - drag on background: pan
 - continuous throttled hover picking (latest-wins) drives the HOVERED flag
   plus mouseover/mouseout events
-- pointerdown consults the last *resolved* pick for pan-vs-grab — a
-  documented ≤2-frame staleness; a cold start (no resolved pick yet)
-  defaults to pan
+- pointerdown decides pan-vs-grab with a synchronous, exact CPU node pick
+  (no staleness); the last resolved async pick only supplies edge targets
+  for taps
 - node drag writes position through the core API (position events fire,
   dirty spans upload, edges follow on-GPU)
 - tap toggles selection (shift = additive); background tap clears
@@ -122,9 +122,8 @@ export class PointerHandler {
 
     const pos = this.eventPos( e );
 
-    // pan-vs-grab from the last resolved pick (≤2 frames stale; cold start pans)
-    const over = this.lastPick != null && this.lastPick.inside() ? this.lastPick : null;
-    const grabbed = over != null && over.isNode() ? over : null;
+    // pan-vs-grab from a synchronous CPU node pick: exact and current
+    const grabbed = this.renderer.pickNodeSync( pos.x, pos.y );
 
     this.down = {
       pointerId: e.pointerId,

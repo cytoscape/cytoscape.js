@@ -90,6 +90,15 @@ edges, non-grid layouts, graph algorithms.
   sub-half-alpha edges may neither draw nor pick at far zoom.  This removes
   the far-zoom worst case where every edge rasterized into a few hundred
   pixels and serialized at the blend stage (~33 ms → ~8 ms on 465k edges).
+- **Early-z**: a depth prepass writes depth for guaranteed-opaque node
+  interiors (skipping translucent fills/borders, LOD alpha and the AA
+  fringe — output is pixel-identical), and edges depth-test against it so
+  fragments under opaque nodes skip blending.  Depth values come from a
+  per-element **z-rank** (two ranks today: edges far, nodes near), which
+  is the same mechanism a future `z-index`/compound pass would use — more
+  ranks, more batches; content ranked above merely loses the occlusion
+  benefit, never correctness.  Nodes that can't occlude (translucent or
+  < 4 px) collapse out of the prepass so it costs ~nothing at far zoom.
 - **`renderScale`**: optional low-resolution rendering — the scene draws
   into an offscreen target at `renderScale` × native resolution
   (clamped [0.25, 1], default 1 = native, zero overhead) and a fullscreen

@@ -28,10 +28,14 @@ export const PREMULTIPLIED_BLEND: GPUBlendState = {
   alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }
 };
 
+/** scene-pass depth buffer format (early-z; see the depth prepass) */
+export const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
+
 /** Node render + picking pipelines (vertex pulling through the culled
  * visible list at @group(1); indexed quad per instance, indirect draw). */
 export class NodePipeline {
   private pipeline: GPURenderPipeline;
+  private depthPipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
@@ -66,7 +70,19 @@ export class NodePipeline {
       layout,
       vertex: { module, entryPoint: 'vsNode' },
       fragment: { module, entryPoint: 'fsNode', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
-      primitive: { topology: 'triangle-list' }
+      primitive: { topology: 'triangle-list' },
+      // nodes composite in slot order over everything below (no test)
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'always' }
+    } );
+
+    // early-z prepass: opaque node interiors write NODE_Z (color masked off)
+    this.depthPipeline = device.createRenderPipeline( {
+      label: 'cy-gpu:node-depth-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsNodeDepth' },
+      fragment: { module, entryPoint: 'fsNodeDepth', targets: [ { format, writeMask: 0 } ] },
+      primitive: { topology: 'triangle-list' },
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: true, depthCompare: 'always' }
     } );
 
     this.pickPipeline = device.createRenderPipeline( {
@@ -112,6 +128,20 @@ export class NodePipeline {
     if( instances === 0 ){ return; }
 
     pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
+    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
+    pass.setBindGroup( 1, cull.visibleBindGroup() );
+    pass.setIndexBuffer( this.quadIndex, 'uint16' );
+    pass.drawIndexedIndirect( cull.indirect, 0 );
+  }
+
+  /** The early-z depth prepass draw (before edges in the scene pass). */
+  drawDepthPrepass(
+    pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
+    mirror: ColumnMirror, instances: number, cull: CulledGroup
+  ): void {
+    if( instances === 0 ){ return; }
+
+    pass.setPipeline( this.depthPipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
     pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );

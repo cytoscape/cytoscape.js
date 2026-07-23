@@ -1,7 +1,7 @@
 import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
-import { NodePipeline } from './node-pipeline.mjs';
+import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
 import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
@@ -100,6 +100,7 @@ export class Renderer {
   private renderScale: number;
   private format: GPUTextureFormat | null;
   private sceneTarget: GPUTexture | null;
+  private depthTarget: GPUTexture | null;
   private upscaler: Upscaler | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
@@ -132,6 +133,7 @@ export class Renderer {
     this.renderScale = Math.min( 1, Math.max( 0.25, opts.renderScale ?? 1 ) );
     this.format = null;
     this.sceneTarget = null;
+    this.depthTarget = null;
     this.upscaler = null;
 
     this.dpr = opts.pixelRatio == null || opts.pixelRatio === 'auto'
@@ -213,6 +215,7 @@ export class Renderer {
 
     this.upscaler?.destroy();
     this.sceneTarget?.destroy();
+    this.depthTarget?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.pickUniform?.destroy();
@@ -399,13 +402,22 @@ export class Renderer {
           loadOp: 'clear',
           storeOp: 'store'
         } ],
+        depthStencilAttachment: {
+          view: this.ensureDepthTarget().createView(),
+          depthClearValue: 1.0,
+          depthLoadOp: 'clear',
+          depthStoreOp: 'discard' // only consumed within this pass
+        },
         ...( this.gpuTimer != null ? { timestampWrites: this.gpuTimer.timestampWrites() } : {} )
       } );
 
       // z-order: single pass, edges under nodes under labels, slot order
-      // within each group (the cull compaction preserves slot order)
+      // within each group (the cull compaction preserves slot order).
+      // The node depth prepass runs first so edge fragments under opaque
+      // node interiors are killed by early-z before blending.
       const uniform = this.uniform as GPUBuffer;
 
+      this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), this.sceneCull.node );
       this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), this.sceneCull.edge );
       this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), this.sceneCull.node );
 
@@ -557,6 +569,30 @@ export class Renderer {
         usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.TEXTURE_BINDING
       } );
       this.sceneTarget = target;
+
+      if( old != null ){ // may still be referenced by in-flight frames
+        void device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+      }
+    }
+
+    return target;
+  }
+
+  private ensureDepthTarget(): GPUTexture {
+    const device = this.device as GPUDevice;
+    const { w, h } = this.scaledSize(); // matches the scene color target
+    let target = this.depthTarget;
+
+    if( target == null || target.width !== w || target.height !== h ){
+      const old = target;
+
+      target = device.createTexture( {
+        label: 'cy-gpu:depth-target',
+        size: { width: w, height: h },
+        format: DEPTH_FORMAT,
+        usage: TEXTURE_USAGE.RENDER_ATTACHMENT
+      } );
+      this.depthTarget = target;
 
       if( old != null ){ // may still be referenced by in-flight frames
         void device.queue.onSubmittedWorkDone().then( () => old.destroy() );

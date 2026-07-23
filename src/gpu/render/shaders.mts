@@ -48,6 +48,13 @@ const SHOWN: u32 = 3u; // ALIVE | VISIBLE
 
 const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9
 
+// early-z depth ranks: the node depth prepass writes NODE_Z for opaque
+// node interiors; edges draw at EDGE_Z with a 'less' test so fragments
+// under opaque nodes are killed before blending.  A future z-index pass
+// generalizes this to depth = f(z-rank) with more batches.
+const NODE_Z = 0.5;
+const EDGE_Z = 0.9;
+
 fn modelToPx(frame: Frame, p: vec2f) -> vec2f {
   return p * frame.zoomDpr + frame.panPx;
 }
@@ -217,7 +224,34 @@ fn vsNode(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> N
   let ext = half + vec2f(margin);
   let local = quadCorner(vi) * ext;
 
-  out.position = vec4f(pxToClip(frame, centerPx + local), 0.0, 1.0);
+  out.position = vec4f(pxToClip(frame, centerPx + local), NODE_Z, 1.0);
+  out.local = local;
+  out.halfSize = half;
+  out.alphaComp = lod.z;
+  out.instance = slot;
+  return out;
+}
+
+// depth-prepass VS: collapses nodes that can't occlude anything —
+// LOD-translucent (sub-hidePx floored) or tiny — so the prepass costs
+// nothing in regimes it can't help (e.g. far zoom)
+@vertex
+fn vsNodeDepth(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> NodeVSOut {
+  var out: NodeVSOut;
+  let slot = visible[ii];
+  let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
+  let half = lod.xy;
+
+  if (lod.z < 1.0 || max(half.x, half.y) < 2.0) {
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0); // degenerate quad
+    return out;
+  }
+
+  let centerPx = modelToPx(frame, positions[slot]);
+  let ext = half + vec2f(2.0);
+  let local = quadCorner(vi) * ext;
+
+  out.position = vec4f(pxToClip(frame, centerPx + local), NODE_Z, 1.0);
   out.local = local;
   out.halfSize = half;
   out.alphaComp = lod.z;
@@ -284,6 +318,67 @@ fn fsNodePick(in: NodeVSOut) -> @location(0) u32 {
 
   return in.instance + 1u; // 0 = background
 }
+
+// Conservative interior test for the depth prepass: true only when p is
+// at least m device px inside the shape.  Deliberately cheap — no Newton
+// ellipse solver; the ellipse bound uses the normalized-space distance
+// (the map x -> x/half expands distances by at most 1/min(half), so
+// |q| <= 1 - m/min(half) guarantees true distance >= m).  Under-covering
+// only costs occlusion, never correctness.
+fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32) -> bool {
+  let minAxis = min(half.x, half.y);
+
+  if (minAxis <= m) { return false; }
+
+  switch shape {
+    case 2u: { // rectangle: exact shrink
+      let d = abs(p) - (half - vec2f(m));
+      return max(d.x, d.y) <= 0.0;
+    }
+    case 3u: { // round-rectangle: cheap exact SD
+      return roundRectangleSD(p, half, minAxis * 0.25) <= -m;
+    }
+    default: { // circle + ellipse: normalized-space bound (exact for circles)
+      let q = p / half;
+      let lim = 1.0 - m / minAxis;
+      return dot(q, q) <= lim * lim;
+    }
+  }
+}
+
+/**
+ * Early-z depth prepass: writes depth only where this node is guaranteed
+ * fully opaque — skips translucent nodes (style or LOD alpha), the AA
+ * fringe, and translucent border bands — so the later blended passes
+ * composite exactly as without the prepass.
+ */
+@fragment
+fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
+  let slot = in.instance;
+  let fill = unpack4x8unorm(fillColors[slot]);
+  let borderColor = unpack4x8unorm(borderColors[slot]);
+  let borderWidth = borderWidths[slot] * frame.zoomDpr;
+
+  if (opacities[slot] * in.alphaComp < 1.0 || fill.a < 1.0 ||
+      (borderWidth > 0.0 && borderColor.a < 1.0)) {
+    discard;
+  }
+
+  let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
+  var shape = shapes[slot];
+  var half = in.halfSize;
+
+  if (sizePx < frame.nodeLodPx) {
+    shape = 0u;
+    half = vec2f(max(in.halfSize.x, in.halfSize.y));
+  }
+
+  if (!nodeInterior(shape, in.local, half, 1.5)) { // stay inside the AA fringe
+    discard;
+  }
+
+  return vec4f(0.0); // color writes are masked off
+}
 `;
 
 export const EDGE_SHADER = `
@@ -337,7 +432,7 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   let t = (corner.x + 1.0) * 0.5; // 0 at source, 1 at target
   let s = corner.y * (halfW + 1.0); // screen-space extrusion incl. 1px AA margin
 
-  out.position = vec4f(pxToClip(frame, mix(a, b, t) + n * s), 0.0, 1.0);
+  out.position = vec4f(pxToClip(frame, mix(a, b, t) + n * s), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
 

@@ -1,7 +1,7 @@
 import { LABEL_SHADER } from './shaders.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
-import { PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
+import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { GlyphBuffer } from './glyph-buffer.mjs';
@@ -41,7 +41,9 @@ export class LabelPipeline {
       layout: device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } ),
       vertex: { module, entryPoint: 'vsLabel' },
       fragment: { module, entryPoint: 'fsLabel', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
-      primitive: { topology: 'triangle-list' }
+      primitive: { topology: 'triangle-list' },
+      // labels draw over everything (no depth test)
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'always' }
     } );
 
     this.bindGroup = null;

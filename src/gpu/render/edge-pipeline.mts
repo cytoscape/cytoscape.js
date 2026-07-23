@@ -1,7 +1,7 @@
 import { EDGE_SHADER } from './shaders.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
-import { PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
+import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
@@ -57,7 +57,10 @@ export class EdgePipeline {
       layout,
       vertex: { module, entryPoint: 'vsEdge' },
       fragment: { module, entryPoint: 'fsEdge', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
-      primitive: { topology: 'triangle-list' }
+      primitive: { topology: 'triangle-list' },
+      // early-z: edge fragments at EDGE_Z fail against opaque node
+      // interiors (NODE_Z from the depth prepass) and skip blending
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'less' }
     } );
 
     this.pickPipeline = device.createRenderPipeline( {

@@ -1,4 +1,5 @@
 import * as math from '../../math.mjs';
+import { hasListeners } from '../events.mjs';
 import type { BoundingBox, Position } from '../../types.mjs';
 import type { GpuGridLayoutOptions } from '../gpu-types.mjs';
 import type { GpuCollection } from '../collection.mjs';
@@ -7,9 +8,14 @@ import type { GpuCore } from '../core.mjs';
 /*
 Grid layout for the GPU prototype: the cell-packing math is ported verbatim
 from src/extensions/layout/grid.mts (lines 76-277); the plumbing is replaced
-with a bulk position write (one dirty span via eles.positions()) plus
-layoutstart/layoutready/layoutstop events.  Animation, label-aware sizing
-and compound handling are dropped.
+with a bulk position write (one dirty span) plus layoutstart/layoutready/
+layoutstop events.  Animation, label-aware sizing and compound handling are
+dropped.
+
+The default path never materializes element handles: cells are computed
+from the size/border columns by slot and written back with one
+`setPositions` call.  Only the `sort` and `position` callback options —
+which take handles by contract — fall back to the per-element path.
 */
 
 const defaults: Omit<GpuGridLayoutOptions, 'name'> = {
@@ -26,6 +32,8 @@ const defaults: Omit<GpuGridLayoutOptions, 'name'> = {
   sort: undefined // a sorting function to order the nodes
 };
 
+type RowCol = { row?: number; col?: number };
+
 export class GridLayout {
   options: GpuGridLayoutOptions;
 
@@ -40,29 +48,18 @@ export class GridLayout {
     const cy = this.cy;
     const options = this.options;
 
-    let nodeList = cy.nodes().toArray();
-
-    if( options.sort != null ){
-      nodeList = nodeList.sort( options.sort as ( a: GpuCollection, b: GpuCollection ) => number );
-    }
-
     cy.emit( { type: 'layoutstart', layout: this } );
 
     const bb = math.makeBoundingBox( options.boundingBox ?? {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } ) as BoundingBox;
 
-    const positions = this.cellPositions( nodeList, bb );
-
-    // bulk write: one coalesced dirty span; per-node position events only
-    // fire when position listeners exist
-    const indexOf = new Map<GpuCollection, number>( nodeList.map( ( node, i ) => [ node, i ] ) );
-
-    cy.nodes().positions( ( ele: GpuCollection ) => {
-      const index = indexOf.get( ele );
-
-      return index == null ? false : positions[ index ];
-    } );
+    // handles only when a callback option demands them
+    if( options.sort != null || options.position != null ){
+      this.runWithHandles( bb );
+    } else {
+      this.runBySlot( bb );
+    }
 
     if( options.fit !== false ){
       cy.fit( undefined, options.padding ?? 30 );
@@ -74,13 +71,80 @@ export class GridLayout {
     return this;
   }
 
-  /** The ported v3 grid cell-packing math. */
-  private cellPositions( nodes: GpuCollection[], bb: BoundingBox ): Position[] {
+  /** Columnar path: cell sizes from the size/border columns, one bulk write. */
+  private runBySlot( bb: BoundingBox ): void {
+    const cy = this.cy;
+    const store = cy._store;
+    const slots = store.slotsOrdered( 'nodes' );
+    const size = store.column( 'node.size' ) as Float32Array;
+    const border = store.column( 'node.borderWidth' ) as Float32Array;
+
+    const positions = this.cellPositions(
+      slots.length, bb,
+      i => size[ slots[ i ] * 2 ] + border[ slots[ i ] ],
+      i => size[ slots[ i ] * 2 + 1 ] + border[ slots[ i ] ],
+      null
+    );
+
+    const xy = new Float32Array( slots.length * 2 );
+
+    for( let i = 0; i < slots.length; i++ ){
+      xy[ i * 2 ] = positions[ i ].x;
+      xy[ i * 2 + 1 ] = positions[ i ].y;
+    }
+
+    store.setPositions( slots, xy );
+
+    if( hasListeners( cy._emitter, 'position' ) ){
+      for( const slot of slots ){
+        cy._emitOnEle( 'position', cy._ele( 'nodes', slot ) );
+      }
+    }
+  }
+
+  /** Per-element path for the `sort`/`position` callback options. */
+  private runWithHandles( bb: BoundingBox ): void {
+    const cy = this.cy;
     const options = this.options;
-    const cells = nodes.length;
+
+    let nodeList = cy.nodes().toArray();
+
+    if( options.sort != null ){
+      nodeList = nodeList.sort( options.sort as ( a: GpuCollection, b: GpuCollection ) => number );
+    }
+
+    const manRaw = options.position != null
+      ? nodeList.map( node => options.position!( node ) ?? undefined )
+      : null;
+
+    const positions = this.cellPositions(
+      nodeList.length, bb,
+      i => nodeList[ i ].outerWidth() ?? 0,
+      i => nodeList[ i ].outerHeight() ?? 0,
+      manRaw
+    );
+
+    const indexOf = new Map<GpuCollection, number>( nodeList.map( ( node, i ) => [ node, i ] ) );
+
+    cy.nodes().positions( ( ele: GpuCollection ) => {
+      const index = indexOf.get( ele );
+
+      return index == null ? false : positions[ index ];
+    } );
+  }
+
+  /** The ported v3 grid cell-packing math, indexed by node ordinal. */
+  private cellPositions(
+    cells: number,
+    bb: BoundingBox,
+    outerWidth: ( i: number ) => number,
+    outerHeight: ( i: number ) => number,
+    manRaw: ( RowCol | undefined )[] | null
+  ): Position[] {
+    const options = this.options;
 
     if( bb.h === 0 || bb.w === 0 || cells === 0 ){
-      return nodes.map( () => ( { x: bb.x1, y: bb.y1 } ) );
+      return Array.from( { length: cells }, () => ( { x: bb.x1, y: bb.y1 } ) );
     }
 
     // width/height * splits^2 = cells where splits is number of times to split width
@@ -169,13 +233,11 @@ export class GridLayout {
     }
 
     if( options.avoidOverlap !== false ){
-      for( const node of nodes ){
+      for( let i = 0; i < cells; i++ ){
         const p = options.avoidOverlapPadding ?? 0;
-        const w = ( node.outerWidth() ?? 0 ) + p;
-        const h = ( node.outerHeight() ?? 0 ) + p;
 
-        cellWidth = Math.max( cellWidth, w );
-        cellHeight = Math.max( cellHeight, h );
+        cellWidth = Math.max( cellWidth, outerWidth( i ) + p );
+        cellHeight = Math.max( cellHeight, outerHeight( i ) + p );
       }
     }
 
@@ -201,40 +263,39 @@ export class GridLayout {
       }
     };
 
-    // get a cache of all the manual positions
-    const id2manPos: Record<string, { row: number; col: number }> = {};
+    // resolve the manual positions (marking their cells used)
+    const manPos: ( { row: number; col: number } | undefined )[] | null = manRaw == null ? null : manRaw.map( rcPos => {
+      if( !rcPos || ( rcPos.row === undefined && rcPos.col === undefined ) ){ return undefined; } // must have at least row or col def'd
 
-    for( const node of nodes ){
-      const rcPos = options.position?.( node );
+      const pos = { row: rcPos.row, col: rcPos.col } as { row: number; col: number };
 
-      if( rcPos && ( rcPos.row !== undefined || rcPos.col !== undefined ) ){ // must have at least row or col def'd
-        const pos = { row: rcPos.row, col: rcPos.col } as { row: number; col: number };
+      if( pos.col === undefined ){ // find unused col
+        pos.col = 0;
 
-        if( pos.col === undefined ){ // find unused col
-          pos.col = 0;
-
-          while( used( pos.row, pos.col ) ){
-            pos.col++;
-          }
-        } else if( pos.row === undefined ){ // find unused row
-          pos.row = 0;
-
-          while( used( pos.row, pos.col ) ){
-            pos.row++;
-          }
+        while( used( pos.row, pos.col ) ){
+          pos.col++;
         }
+      } else if( pos.row === undefined ){ // find unused row
+        pos.row = 0;
 
-        id2manPos[ node.id() as string ] = pos;
-        use( pos.row, pos.col );
+        while( used( pos.row, pos.col ) ){
+          pos.row++;
+        }
       }
-    }
 
-    const raw: Position[] = nodes.map( node => {
+      use( pos.row, pos.col );
+
+      return pos;
+    } );
+
+    const raw: Position[] = [];
+
+    for( let i = 0; i < cells; i++ ){
       let x: number;
       let y: number;
 
       // see if we have a manual position set
-      const rcPos = id2manPos[ node.id() as string ];
+      const rcPos = manPos?.[ i ];
 
       if( rcPos ){
         x = rcPos.col * cellWidth + cellWidth / 2 + bb.x1;
@@ -242,19 +303,24 @@ export class GridLayout {
 
       } else { // otherwise set automatically
 
-        while( used( row, col ) ){
-          moveToNextCell();
+        // without manual positions no cell is ever pre-used, so the
+        // used-cell bookkeeping (string-keyed, O(cells) allocs) can be skipped
+        if( manPos != null ){
+          while( used( row, col ) ){
+            moveToNextCell();
+          }
         }
 
         x = col * cellWidth + cellWidth / 2 + bb.x1;
         y = row * cellHeight + cellHeight / 2 + bb.y1;
-        use( row, col );
+
+        if( manPos != null ){ use( row, col ); }
 
         moveToNextCell();
       }
 
-      return { x, y };
-    } );
+      raw.push( { x, y } );
+    }
 
     return this.applySpacing( raw );
   }

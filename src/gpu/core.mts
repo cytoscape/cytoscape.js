@@ -8,6 +8,7 @@ import type { GpuQualifier } from './events.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { GridLayout } from './layout/grid.mjs';
+import { PresetLayout } from './layout/preset.mjs';
 import type Emitter from '../emitter.mjs';
 import type { EventHandler } from '../emitter.mjs';
 import type Event from '../event.mjs';
@@ -15,7 +16,7 @@ import type { EventProps } from '../event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
-  GpuElementsInput, GpuGridLayoutOptions, GpuStyleBlock, Position
+  GpuElementsInput, GpuLayoutOptions, GpuStyleBlock, Position
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
@@ -91,15 +92,16 @@ export class GpuCore {
 
   // -- layout --
 
-  layout( options: GpuGridLayoutOptions ): GridLayout {
-    if( options == null || options.name !== 'grid' ){
-      throw new Error(
-        `Only the 'grid' layout is available in the GPU prototype` +
-        ( options?.name != null ? `; got '${options.name}'` : '' )
-      );
-    }
+  layout( options: GpuLayoutOptions ): GridLayout | PresetLayout {
+    if( options?.name === 'grid' ){ return new GridLayout( this, options ); }
+    if( options?.name === 'preset' ){ return new PresetLayout( this, options ); }
 
-    return new GridLayout( this, options );
+    const got = ( options as { name?: string } | null )?.name;
+
+    throw new Error(
+      `Only the 'grid' and 'preset' layouts are available in the GPU prototype` +
+      ( got != null ? `; got '${got}'` : '' )
+    );
   }
 
   // -- graph manipulation --

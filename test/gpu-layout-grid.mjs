@@ -149,6 +149,38 @@ describe('gpu/layout: grid', function(){
     expect( spans ).to.have.length(1);
   });
 
+  it('slot path matches the handle path position for position', function(){
+    var mk = () => cytoscapeGpu({
+      headlessWidth: 400,
+      headlessHeight: 400,
+      elements: [
+        { data: { id: 'a' } }, { data: { id: 'b' } }, { data: { id: 'c' } },
+        { data: { id: 'd' } }, { data: { id: 'e' } }
+      ],
+      style: [ { selector: '#c', style: { width: 90, height: 70, 'border-width': 4 } } ]
+    });
+
+    var bySlot = mk();
+    var byHandle = mk();
+
+    bySlot.layout({ name: 'grid', fit: false }).run();
+    // a stable no-op sort forces the per-element path with the same node order
+    byHandle.layout({ name: 'grid', fit: false, sort: () => 0 }).run();
+
+    for( var id of [ 'a', 'b', 'c', 'd', 'e' ] ){
+      expect( bySlot.$('#' + id).position(), id ).to.deep.equal( byHandle.$('#' + id).position() );
+    }
+  });
+
+  it('slot path emits position events per node when listened to', function(){
+    var ids = [];
+
+    cy.on('position', function( e ){ ids.push( e.target.id() ); });
+    cy.layout({ name: 'grid', fit: false }).run();
+
+    expect( ids.sort() ).to.deep.equal(['a', 'b', 'c', 'd']);
+  });
+
   it('runs via the layout init option', function(){
     var laidOut = cytoscapeGpu({
       headlessWidth: 400,

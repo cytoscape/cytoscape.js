@@ -108,6 +108,20 @@ export interface GpuGridLayoutOptions {
   sort?: ( a: unknown, b: unknown ) => number;
 }
 
+export interface GpuPresetLayoutOptions {
+  name: 'preset';
+  /** node id → position map, or a function of a node handle; absent nodes keep their position */
+  positions?: Record<string, Position> | ( ( node: unknown ) => Position | null | undefined );
+  /** zoom to set when fit is false */
+  zoom?: number;
+  /** pan to set when fit is false */
+  pan?: Position;
+  fit?: boolean;
+  padding?: number;
+}
+
+export type GpuLayoutOptions = GpuGridLayoutOptions | GpuPresetLayoutOptions;
+
 /** Renderer tuning knobs (all LOD values in device px). */
 export interface GpuRendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
@@ -151,7 +165,7 @@ export interface CytoscapeGpuOptions {
   container?: HTMLElement | null;
   elements?: GpuElementsInput;
   style?: GpuStyleBlock[];
-  layout?: GpuGridLayoutOptions;
+  layout?: GpuLayoutOptions;
   zoom?: number;
   pan?: Position;
   minZoom?: number;

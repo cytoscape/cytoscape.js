@@ -89,6 +89,41 @@ const waitFrames = async ( page, n = 3 ) => {
   }, n );
 };
 
+/** Count dark (text-ish) pixels in a horizontal band of the composited page. */
+const darkPixelsInBand = async ( page, x0, width, y ) => {
+  const b64 = ( await page.screenshot() ).toString( 'base64' );
+
+  return await page.evaluate( async ( { b64, x0, width, y } ) => {
+    const img = new Image();
+
+    img.src = 'data:image/png;base64,' + b64;
+    await img.decode();
+
+    const canvas = document.createElement( 'canvas' );
+
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    const ctx = canvas.getContext( '2d' );
+
+    ctx.drawImage( img, 0, 0 );
+
+    const scale = img.width / window.innerWidth;
+    const data = ctx.getImageData(
+      Math.round( x0 * scale ), Math.round( y * scale ),
+      Math.round( width * scale ), 1
+    ).data;
+
+    let dark = 0;
+
+    for( let i = 0; i < data.length; i += 4 ){
+      if( data[ i ] < 100 && data[ i + 1 ] < 100 && data[ i + 2 ] < 100 ){ dark++; }
+    }
+
+    return dark;
+  }, { b64, x0, width, y } );
+};
+
 test.describe( 'WebGPU renderer', () => {
 
   test.beforeEach( async ( { page } ) => {
@@ -227,6 +262,88 @@ test.describe( 'WebGPU renderer', () => {
     expect( movedPixel[1] ).toBeLessThan( 100 );
     expect( oldPixel[0] ).toBeGreaterThan( 240 );
     expect( oldPixel[1] ).toBeGreaterThan( 240 );
+  } );
+
+  test.describe( 'SDF labels', () => {
+    const LABELLED_GRAPH = {
+      elements: [ { data: { id: 'n0' }, position: { x: 0, y: 0 } } ],
+      style: [ { selector: 'node', style: {
+        'background-color': 'red', 'width': 60, 'height': 60,
+        'label': 'HELLO', 'font-size': 30, 'color': 'black'
+      } } ]
+    };
+
+    // node bottom edge is 30 below center; label top = +4 margin; mid-text ≈ +50
+    const LABEL_ROW_OFFSET = 50;
+
+    test( 'renders below the node', async ( { page } ) => {
+      test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+      await makeReadyCy( page, LABELLED_GRAPH );
+
+      const center = await centerPan( page );
+
+      await waitFrames( page );
+
+      const inLabelRow = await darkPixelsInBand( page, center.x - 120, 240, center.y + LABEL_ROW_OFFSET );
+      const aboveNode = await darkPixelsInBand( page, center.x - 120, 240, center.y - 100 );
+
+      expect( inLabelRow ).toBeGreaterThan( 5 );
+      expect( aboveNode ).toBe( 0 );
+
+      expect( await page.evaluate( () => window.cy._renderer.stats().glyphs ) ).toBe( 5 );
+    } );
+
+    test( 'follows a node move on-GPU without a glyph rebuild', async ( { page } ) => {
+      test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+      await makeReadyCy( page, LABELLED_GRAPH );
+
+      const center = await centerPan( page );
+
+      await waitFrames( page );
+
+      const uploadDelta = await page.evaluate( async () => {
+        const before = window.cy._renderer.stats().uploadedBytes;
+
+        window.cy.$( '#n0' ).position( { x: -150, y: -100 } );
+        await new Promise( resolve => { window.cy.one( 'render', () => resolve() ); } );
+
+        return window.cy._renderer.stats().uploadedBytes - before;
+      } );
+
+      // only the node's position row uploads; glyph instances are untouched
+      expect( uploadDelta ).toBeLessThanOrEqual( 64 );
+
+      await waitFrames( page );
+
+      const atNewSpot = await darkPixelsInBand(
+        page, center.x - 150 - 120, 240, center.y - 100 + LABEL_ROW_OFFSET
+      );
+      const atOldSpot = await darkPixelsInBand( page, center.x - 120, 240, center.y + LABEL_ROW_OFFSET );
+
+      expect( atNewSpot ).toBeGreaterThan( 5 );
+      expect( atOldSpot ).toBe( 0 );
+    } );
+
+    test( 'fades out below the LOD threshold', async ( { page } ) => {
+      test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+      await makeReadyCy( page, LABELLED_GRAPH );
+
+      const center = await centerPan( page );
+
+      await page.evaluate( () => window.cy.zoom( { level: 0.05, renderedPosition: window.cy.pan() } ) );
+      await waitFrames( page );
+
+      let dark = 0;
+
+      for( let dy = -10; dy <= 10; dy += 2 ){
+        dark += await darkPixelsInBand( page, center.x - 120, 240, center.y + dy );
+      }
+
+      expect( dark ).toBe( 0 );
+    } );
   } );
 
   test( 'tap selects and background tap clears', async ( { page } ) => {

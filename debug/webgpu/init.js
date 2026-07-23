@@ -31,6 +31,10 @@ const paramDefs = {
   edgeDimming: {
     default: 'false',
     control: '#edge-dim-check'
+  },
+  labels: {
+    default: 'false',
+    control: '#labels-check'
   }
 };
 
@@ -50,7 +54,8 @@ const paramDefs = {
 
   const SUPPORTED_PROPS = new Set([
     'background-color', 'width', 'height', 'shape', 'opacity',
-    'border-color', 'border-width', 'line-color'
+    'border-color', 'border-width', 'line-color',
+    'label', 'font-size', 'color'
   ]);
   const SUPPORTED_SHAPES = new Set([
     'ellipse', 'circle', 'rectangle', 'round-rectangle', 'roundrectangle'
@@ -70,7 +75,7 @@ const paramDefs = {
 
       for(const [prop, value] of Object.entries(block.style || block.css || {})) {
         if(!SUPPORTED_PROPS.has(prop)) { continue; }
-        if(typeof value === 'string' && /(mapData|data)\s*\(/.test(value)) { continue; } // no mappers
+        if(typeof value === 'string' && /(mapData|data)\s*\(/.test(value) && value !== 'data(id)') { continue; } // no mappers (except data(id))
         if(prop === 'shape' && !SUPPORTED_SHAPES.has(value)) { continue; }
 
         style[prop] = value;
@@ -148,6 +153,12 @@ const paramDefs = {
   function loadNetwork(gpuElements, style) {
     console.time('cytoscapeGpu init');
 
+    if(params.labels === 'true') {
+      style = (style || []).concat([
+        { selector: 'node', style: { 'label': 'data(id)', 'font-size': 10, 'color': '#333' } }
+      ]);
+    }
+
     cy = cytoscapeGpu({
       container: $('#cytoscape'),
       elements: { nodes: gpuElements.nodes, edges: gpuElements.edges },
@@ -213,7 +224,7 @@ const paramDefs = {
       lastTime = now;
 
       $('#stats').textContent =
-        `${stats.nodes} nodes, ${stats.edges} edges\n` +
+        `${stats.nodes} nodes, ${stats.edges} edges, ${stats.glyphs} glyphs\n` +
         `${fps.toFixed(0)} fps (rendered), ${stats.lastFrameMs.toFixed(2)} ms/frame\n` +
         `${kbps.toFixed(1)} KiB/s uploaded (${(stats.uploadedBytes / 1024 / 1024).toFixed(1)} MiB total)\n` +
         `pick latency ${stats.pickLatencyMs.toFixed(1)} ms`;

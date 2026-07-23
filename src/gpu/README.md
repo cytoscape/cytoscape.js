@@ -28,11 +28,19 @@ events, graph manipulation, `style()` (constrained blocks), `layout()`
 (grid only), `pick()`, `destroy()`, `width()`/`height()`.
 Collections: events, graph manipulation, position/dimensions, iteration,
 comparison, building/filtering, basic traversal (`outgoers` etc.),
-`select`/`unselect`.
+`select`/`unselect`, `label()` (read-only).
+
+Node labels (SDF): the `label` style prop takes constant strings or the
+single mapper `data(id)`; `font-size` and `color` are constants.  Glyphs
+come from a runtime SDF atlas (canvas-2D raster → Euclidean distance
+transform → one r8 texture) and live in a persistent instance buffer keyed
+by node slot — the label vertex shader reads the node position buffer, so
+labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
+below the `labelFadePx` LOD threshold.
 
 Out of scope (deferred): animations, full stylesheets/mappers, `data()`
-(ids/source/target are first-class), labels, arrows, compound nodes,
-bezier edges, non-grid layouts, graph algorithms.
+(ids/source/target are first-class), arrows, compound nodes, bezier
+edges, non-grid layouts, graph algorithms.
 
 ## Known deviations from v3 (accepted for pass 1)
 
@@ -54,6 +62,11 @@ bezier edges, non-grid layouts, graph algorithms.
 - **Picking latency**: `pick()`/hover resolve 1–2 frames later
   (latest-wins, ring of 3 staging buffers; requests drop to `null` when the
   ring is exhausted).
+- **Labels**: nodes only, single line (newlines collapse to spaces), fixed
+  placement (horizontally centered below the node), not pickable, and the
+  glyph atlas is a fixed 1024² texture — once full, new glyphs stop
+  rendering with a console warning.  Label color/text bake into glyph
+  instances, so `:selected`/hover styling does not restyle label text.
 - Pinch zoom is deferred; wheel/drag/hover/tap/grab are implemented.
 - No device-loss recovery: the instance goes dead and emits an `error`
   event.

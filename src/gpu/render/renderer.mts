@@ -1,5 +1,6 @@
 import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
+import { CulledGroup, CullKernels } from './cull.mjs';
 import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
 import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
@@ -18,14 +19,16 @@ The frame graph: a render-on-dirty rAF loop.
 A frame is scheduled when the store invalidates (dirty columns), on any
 viewport event, on resize, or when a pick is pending; nothing renders while
 clean.  Order within a frame: sync dirty spans to the GPU mirror → rebuild
-dirty label glyph runs → if a pick is pending, encode + submit the
-cursor-tile pick pass in its own command buffer (so its readback maps as
-soon as it executes) → if anything changed visually, write the Frame
-uniform and run the scene pass (edges then nodes then labels, no depth
-buffer).  Pick-only frames skip the scene pass entirely, so hover picking
-over a static graph costs O(cursor region) per tick.  Frames before
-`.ready` resolves are no-ops; readiness triggers the first frame.  Device
-loss makes the instance dead (an `error` event fires; no recovery).
+dirty label glyph runs → if a pick is pending, encode + submit (in its own
+command buffer, so its readback maps as soon as it executes) the pick cull
+compute pass + the cursor-tile pick pass → if anything changed visually,
+write the Frame uniform and encode the scene cull compute pass (compacting
+each group's visible slots + indirect draw args) followed by the scene
+render pass (edges then nodes then labels, all indirect, no depth buffer).
+Pick-only frames skip the scene work entirely, so hover picking over a
+static graph costs O(cursor region) per tick.  Frames before `.ready`
+resolves are no-ops; readiness triggers the first frame.  Device loss
+makes the instance dead (an `error` event fires; no recovery).
 */
 
 interface RendererStats {
@@ -89,6 +92,9 @@ export class Renderer {
   private inFlightFrames: number;
   private labelLayer: LabelLayer | null;
   private labelPipeline: LabelPipeline | null;
+  private cullKernels: CullKernels | null;
+  private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
+  private pickCull: { node: CulledGroup; edge: CulledGroup } | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -114,6 +120,9 @@ export class Renderer {
     this.inFlightFrames = 0;
     this.labelLayer = null;
     this.labelPipeline = null;
+    this.cullKernels = null;
+    this.sceneCull = null;
+    this.pickCull = null;
 
     this.dpr = opts.pixelRatio == null || opts.pixelRatio === 'auto'
       ? ( globalThis.devicePixelRatio || 1 )
@@ -185,6 +194,13 @@ export class Renderer {
     this.picking?.destroy();
     this.gpuTimer?.destroy();
     this.labelLayer?.destroy();
+
+    for( const group of [
+      ...Object.values( this.sceneCull ?? {} ), ...Object.values( this.pickCull ?? {} )
+    ] ){
+      group.destroy();
+    }
+
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.pickUniform?.destroy();
@@ -264,10 +280,23 @@ export class Renderer {
       usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
     } );
 
-    this.nodePipeline = new NodePipeline( device, format );
-    this.edgePipeline = new EdgePipeline( device, format );
+    const kernels = new CullKernels( device );
+
+    this.cullKernels = kernels;
+    this.sceneCull = {
+      node: new CulledGroup( kernels, 'node', 'scene-node' ),
+      edge: new CulledGroup( kernels, 'edge', 'scene-edge' ),
+      glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' )
+    };
+    this.pickCull = {
+      node: new CulledGroup( kernels, 'node', 'pick-node' ),
+      edge: new CulledGroup( kernels, 'edge', 'pick-edge' )
+    };
+
+    this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
+    this.edgePipeline = new EdgePipeline( device, format, kernels.visibleLayout );
     this.labelLayer = new LabelLayer( device, this.cy._store );
-    this.labelPipeline = new LabelPipeline( device, format );
+    this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
     this.picking = new Picking( device );
     this.gpuTimer = GpuTimer.isSupported( device ) ? new GpuTimer( device ) : null;
 
@@ -310,11 +339,14 @@ export class Renderer {
     const picking = this.picking;
     const pending = picking?.peekPending() ?? null;
 
-    if( picking != null && pending != null ){
+    if( picking != null && pending != null && this.pickCull != null ){
       this.writePickUniform( pending.xPx, pending.yPx );
 
       const pickEncoder = device.createCommandEncoder( { label: 'cy-gpu:pick' } );
 
+      // the pick-tile Frame uniform turns the cull predicates' viewport
+      // test into cursor-region culling: the pick draw stays O(region)
+      this.encodeCulls( pickEncoder, this.pickUniform as GPUBuffer, this.pickCull, false );
       this.drawPickPasses( pickEncoder, picking.targetView() );
 
       const copy = picking.encodeCopy( pickEncoder );
@@ -330,11 +362,15 @@ export class Renderer {
     // preserved while hover picking runs over a static graph.  When the GPU
     // is behind, keep needsRedraw and retry next rAF rather than queueing
     // deeper (state coalesces; latency stays bounded).
-    if( this.needsRedraw && this.inFlightFrames < MAX_IN_FLIGHT_FRAMES ){
+    if( this.needsRedraw && this.inFlightFrames < MAX_IN_FLIGHT_FRAMES && this.sceneCull != null ){
       this.needsRedraw = false;
       this.writeFrameUniform();
 
       const encoder = device.createCommandEncoder( { label: 'cy-gpu:frame' } );
+
+      // compact each group's visible slots + indirect args before drawing
+      this.encodeCulls( encoder, this.uniform as GPUBuffer, this.sceneCull, true );
+
       const view = context.getCurrentTexture().createView();
       const pass = encoder.beginRenderPass( {
         label: 'cy-gpu:render-pass',
@@ -348,14 +384,16 @@ export class Renderer {
       } );
 
       // z-order: single pass, edges under nodes under labels, slot order
-      // within each group
+      // within each group (the cull compaction preserves slot order)
       const uniform = this.uniform as GPUBuffer;
 
-      this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ) );
-      this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ) );
+      this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), this.sceneCull.edge );
+      this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), this.sceneCull.node );
 
       if( this.labelLayer != null && this.labelPipeline != null ){
-        this.labelPipeline.draw( pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas );
+        this.labelPipeline.draw(
+          pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas, this.sceneCull.glyph
+        );
       }
 
       pass.end();
@@ -380,12 +418,59 @@ export class Renderer {
     }
   }
 
+  /**
+   * Ensure + encode the cull compaction for a set of groups against a
+   * Frame uniform (the scene frame or the pick tile).  The compute pass is
+   * always opened when it may be timed — timestamp queries persist, so a
+   * skipped pass would leave stale values in the frame timing sum.
+   */
+  private encodeCulls(
+    encoder: GPUCommandEncoder, uniform: GPUBuffer,
+    groups: { node: CulledGroup; edge: CulledGroup; glyph?: CulledGroup }, timed: boolean
+  ): void {
+    const mirror = this.mirror as ColumnMirror;
+    const store = this.cy._store;
+    const labelLayer = this.labelLayer;
+    const mv = `${mirror.version}`;
+
+    groups.node.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
+      mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ), mirror.buffer( 'node.flags' )
+    ], mv );
+    groups.edge.ensure( uniform, Math.max( 1, store.capacity( 'edges' ) ), [
+      mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'edge.width' ), mirror.buffer( 'edge.flags' ),
+      mirror.buffer( 'node.position' ), mirror.buffer( 'node.flags' )
+    ], mv );
+
+    if( groups.glyph != null && labelLayer != null ){
+      const glyphs = labelLayer.glyphs;
+
+      groups.glyph.ensure( uniform, Math.max( 1, glyphs.buffer().size / 40 ), [
+        glyphs.buffer(), mirror.buffer( 'node.position' ), mirror.buffer( 'node.flags' )
+      ], `${mv}:${glyphs.version}` );
+    }
+
+    const pass = encoder.beginComputePass( {
+      label: 'cy-gpu:cull-pass',
+      ...( timed && this.gpuTimer != null ? { timestampWrites: this.gpuTimer.computeTimestampWrites() } : {} )
+    } );
+
+    groups.node.encode( pass, store.highWater( 'nodes' ) );
+    groups.edge.encode( pass, store.highWater( 'edges' ) );
+
+    if( groups.glyph != null && labelLayer != null ){
+      groups.glyph.encode( pass, labelLayer.glyphs.highWater );
+    }
+
+    pass.end();
+  }
+
   private drawPickPasses( encoder: GPUCommandEncoder, targetView: GPUTextureView ): void {
     const device = this.device;
     const mirror = this.mirror;
     const uniform = this.pickUniform;
+    const pickCull = this.pickCull;
 
-    if( device == null || mirror == null || uniform == null ){ return; }
+    if( device == null || mirror == null || uniform == null || pickCull == null ){ return; }
 
     const pass = encoder.beginRenderPass( {
       label: 'cy-gpu:pick-pass',
@@ -399,8 +484,8 @@ export class Renderer {
 
     const store = this.cy._store;
 
-    this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), true );
-    this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), true );
+    this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), pickCull.edge, true );
+    this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), pickCull.node, true );
     pass.end();
   }
 

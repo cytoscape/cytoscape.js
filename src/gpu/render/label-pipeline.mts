@@ -3,6 +3,7 @@ import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import { PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
+import type { CulledGroup } from './cull.mjs';
 import type { GlyphBuffer } from './glyph-buffer.mjs';
 import type { GlyphAtlas } from './glyph-atlas.mjs';
 
@@ -19,7 +20,7 @@ export class LabelPipeline {
   private bindGroup: GPUBindGroup | null;
   private bindKey: string;
 
-  constructor( device: GPUDevice, format: GPUTextureFormat ){
+  constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:label-shader', code: LABEL_SHADER } );
 
     this.quadIndex = createQuadIndexBuffer( device );
@@ -28,17 +29,16 @@ export class LabelPipeline {
       label: 'cy-gpu:label-bind-layout',
       entries: [
         { binding: 0, visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT, buffer: { type: 'uniform' } },
-        { binding: 1, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'read-only-storage' } },
-        { binding: 2, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'read-only-storage' } },
-        { binding: 3, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'read-only-storage' } },
-        { binding: 4, visibility: SHADER_STAGE.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 5, visibility: SHADER_STAGE.FRAGMENT, sampler: { type: 'filtering' } }
+        { binding: 1, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'read-only-storage' } }, // glyphs
+        { binding: 2, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'read-only-storage' } }, // node positions
+        { binding: 3, visibility: SHADER_STAGE.FRAGMENT, texture: { sampleType: 'float' } },
+        { binding: 4, visibility: SHADER_STAGE.FRAGMENT, sampler: { type: 'filtering' } }
       ]
     } );
 
     this.pipeline = device.createRenderPipeline( {
       label: 'cy-gpu:label-pipeline',
-      layout: device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout ] } ),
+      layout: device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } ),
       vertex: { module, entryPoint: 'vsLabel' },
       fragment: { module, entryPoint: 'fsLabel', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
       primitive: { topology: 'triangle-list' }
@@ -62,9 +62,8 @@ export class LabelPipeline {
           { binding: 0, resource: { buffer: uniform } },
           { binding: 1, resource: { buffer: glyphs.buffer() } },
           { binding: 2, resource: { buffer: mirror.buffer( 'node.position' ) } },
-          { binding: 3, resource: { buffer: mirror.buffer( 'node.flags' ) } },
-          { binding: 4, resource: atlas.texture.createView() },
-          { binding: 5, resource: atlas.sampler }
+          { binding: 3, resource: atlas.texture.createView() },
+          { binding: 4, resource: atlas.sampler }
         ]
       } );
 
@@ -76,13 +75,14 @@ export class LabelPipeline {
 
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
-    glyphs: GlyphBuffer, mirror: ColumnMirror, atlas: GlyphAtlas
+    glyphs: GlyphBuffer, mirror: ColumnMirror, atlas: GlyphAtlas, cull: CulledGroup
   ): void {
     if( glyphs.highWater === 0 ){ return; }
 
     pass.setPipeline( this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, glyphs, mirror, atlas ) );
+    pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );
-    pass.drawIndexed( 6, glyphs.highWater );
+    pass.drawIndexedIndirect( cull.indirect, 0 );
   }
 }

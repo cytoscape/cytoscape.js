@@ -2,18 +2,25 @@ import { NODE_SHADER } from './shaders.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
+import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 
-/** Storage-buffer bindings 1..8, in binding order (0 is the Frame uniform). */
-const NODE_COLUMNS: ColumnId[] = [
-  'node.position',
-  'node.size',
-  'node.fillColor',
-  'node.borderColor',
-  'node.borderWidth',
-  'node.opacity',
-  'node.shape',
-  'node.flags'
+/**
+ * Storage-buffer bindings 1..8, in binding order (0 is the Frame uniform).
+ * Geometry columns bind to the vertex stage; decoration columns bind to
+ * the fragment stage (fetched via the flat instance index) so each stage
+ * stays within the baseline 8-storage-buffer limit alongside the
+ * @group(1) visible list.
+ */
+const NODE_COLUMNS: { id: ColumnId; visibility: number }[] = [
+  { id: 'node.position', visibility: SHADER_STAGE.VERTEX },
+  { id: 'node.size', visibility: SHADER_STAGE.VERTEX },
+  { id: 'node.fillColor', visibility: SHADER_STAGE.FRAGMENT },
+  { id: 'node.borderColor', visibility: SHADER_STAGE.FRAGMENT },
+  { id: 'node.borderWidth', visibility: SHADER_STAGE.FRAGMENT },
+  { id: 'node.opacity', visibility: SHADER_STAGE.FRAGMENT },
+  { id: 'node.shape', visibility: SHADER_STAGE.FRAGMENT },
+  { id: 'node.flags', visibility: SHADER_STAGE.FRAGMENT }
 ];
 
 export const PREMULTIPLIED_BLEND: GPUBlendState = {
@@ -21,7 +28,8 @@ export const PREMULTIPLIED_BLEND: GPUBlendState = {
   alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }
 };
 
-/** Node render + picking pipelines (vertex pulling; indexed quad per instance). */
+/** Node render + picking pipelines (vertex pulling through the culled
+ * visible list at @group(1); indexed quad per instance, indirect draw). */
 export class NodePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
@@ -30,7 +38,7 @@ export class NodePipeline {
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
   private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
 
-  constructor( device: GPUDevice, format: GPUTextureFormat ){
+  constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:node-shader', code: NODE_SHADER } );
 
     this.quadIndex = createQuadIndexBuffer( device );
@@ -43,15 +51,15 @@ export class NodePipeline {
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
           buffer: { type: 'uniform' }
         },
-        ...NODE_COLUMNS.map( ( id, i ) => ( {
+        ...NODE_COLUMNS.map( ( column, i ) => ( {
           binding: i + 1,
-          visibility: SHADER_STAGE.VERTEX,
+          visibility: column.visibility,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         } ) )
       ]
     } );
 
-    const layout = device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout ] } );
+    const layout = device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } );
 
     this.pipeline = device.createRenderPipeline( {
       label: 'cy-gpu:node-pipeline',
@@ -85,9 +93,9 @@ export class NodePipeline {
       layout: this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        ...NODE_COLUMNS.map( ( id, i ) => ( {
+        ...NODE_COLUMNS.map( ( column, i ) => ( {
           binding: i + 1,
-          resource: { buffer: mirror.buffer( id ) }
+          resource: { buffer: mirror.buffer( column.id ) }
         } ) )
       ]
     } );
@@ -99,13 +107,14 @@ export class NodePipeline {
 
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
-    mirror: ColumnMirror, instances: number, pick: boolean = false
+    mirror: ColumnMirror, instances: number, cull: CulledGroup, pick: boolean = false
   ): void {
     if( instances === 0 ){ return; }
 
     pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
+    pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );
-    pass.drawIndexed( 6, instances );
+    pass.drawIndexedIndirect( cull.indirect, 0 );
   }
 }

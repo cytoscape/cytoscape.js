@@ -32,7 +32,10 @@ struct Frame {
 }
 `;
 
-const COMMON = `
+/** Shared WGSL prelude: flags, transforms, quad corners and the LOD
+ * functions used by both the cull-pass predicates and the vertex shaders
+ * (they must agree exactly on what is drawn and at what alpha). */
+export const COMMON = `
 ${FRAME_STRUCT}
 
 const FLAG_ALIVE: u32 = 1u;
@@ -52,8 +55,6 @@ fn pxToClip(frame: Frame, px: vec2f) -> vec2f {
   return vec2f(px.x / frame.viewportPx.x * 2.0 - 1.0, 1.0 - px.y / frame.viewportPx.y * 2.0);
 }
 
-const DEGENERATE = vec4f(2.0, 2.0, 0.0, 1.0); // constant clip position -> zero-area quad
-
 // 4 unique corners, indexed [0,1,2, 2,1,3] (see quad-index.mts): drawIndexed
 // lets vertex reuse collapse the 6 index entries to 4 VS invocations
 fn quadCorner(vi: u32) -> vec2f {
@@ -64,6 +65,62 @@ fn quadCorner(vi: u32) -> vec2f {
     default: { return vec2f(1.0, 1.0); }
   }
 }
+
+// LOD: floored half-size + alpha compensation for sub-hidePx nodes,
+// as (half.x, half.y, alphaComp)
+fn nodeLod(halfIn: vec2f, hidePx: f32) -> vec3f {
+  let maxDim = max(halfIn.x, halfIn.y) * 2.0;
+
+  if (maxDim < hidePx) {
+    return vec3f(hidePx * 0.5, hidePx * 0.5, max(maxDim / hidePx, 0.05));
+  }
+
+  return vec3f(halfIn, 1.0);
+}
+
+// LOD for edges under the width floor, as (keep 0/1, alphaComp).
+// Decimation ladder: once floored edges fall below half alpha, a
+// hash-stable 1-in-N subset draws at N x alpha (N a power of two <= 64) —
+// aggregate coverage is preserved while the massed same-pixel blend cost
+// at far zoom drops ~N-fold.
+fn edgeLod(slot: u32, widthPx: f32, floorPx: f32) -> vec2f {
+  if (widthPx >= floorPx) { return vec2f(1.0, 1.0); }
+
+  var alphaComp = max(widthPx / floorPx, 0.0);
+  var n = 1u;
+
+  while (alphaComp * f32(n) < 0.5 && n < 64u) { n = n * 2u; }
+
+  if (n > 1u) {
+    let h = slot * 2654435761u; // Knuth hash decorrelates from slot order
+
+    if (((h >> 16u) & (n - 1u)) != 0u) { return vec2f(0.0, 0.0); }
+
+    alphaComp = alphaComp * f32(n);
+  }
+
+  return vec2f(1.0, alphaComp);
+}
+
+// LOD: labels fade out (and cull away) as the on-screen glyph shrinks
+fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
+  return smoothstep(fadePx * 0.5, fadePx, heightPx);
+}
+`;
+
+/** Glyph instance layout, shared by the label shader and the glyph cull
+ * pass; matches GlyphBuffer's CPU layout (10 words / 40 bytes per glyph). */
+export const GLYPH_STRUCT = `
+struct Glyph {
+  nodeSlot: u32,   // 0xffffffff = dead (tombstoned run)
+  color: u32,      // packed RGBA bytes
+  offset: vec2f,   // quad top-left from the node center, model px
+  size: vec2f,     // model px
+  uv0: vec2f,
+  uv1: vec2f,
+}
+
+const DEAD_GLYPH: u32 = 0xffffffffu;
 `;
 
 // SDFs ported from shader-sdf.mts (https://iquilezles.org/articles/distfunctions2d/)
@@ -118,6 +175,10 @@ export const NODE_SHADER = `
 ${COMMON}
 ${SDF}
 
+// VS reads only geometry columns; decoration columns (colors, border,
+// shape, opacity, flags) are fetched in the FS via the flat instance
+// index — that keeps each stage within the 8-storage-buffer limit and
+// drops interpolated varyings to a minimum
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> positions: array<vec2f>;
 @group(0) @binding(2) var<storage, read> sizes: array<vec2f>;
@@ -132,67 +193,44 @@ struct NodeVSOut {
   @builtin(position) position: vec4f,
   @location(0) local: vec2f,      // device-px offset from the node center
   @location(1) halfSize: vec2f,   // device px
-  @location(2) fill: vec4f,
-  @location(3) borderColor: vec4f,
-  @location(4) borderWidth: f32,  // device px
-  @location(5) opacity: f32,
-  @location(6) @interpolate(flat) shape: u32,
-  @location(7) @interpolate(flat) flags: u32,
-  @location(8) @interpolate(flat) instance: u32,
+  @location(2) alphaComp: f32,    // sub-hidePx LOD alpha compensation
+  @location(3) @interpolate(flat) instance: u32,
 }
+
+@group(1) @binding(0) var<storage, read> visible: array<u32>;
 
 @vertex
 fn vsNode(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> NodeVSOut {
   var out: NodeVSOut;
-  let flags = nodeFlags[ii];
 
-  if ((flags & SHOWN) != SHOWN) { // tombstone or hidden
-    out.position = DEGENERATE;
-    return out;
-  }
-
-  var half = sizes[ii] * 0.5 * frame.zoomDpr;
-  var alphaComp = 1.0;
-  let maxDim = max(half.x, half.y) * 2.0;
+  // the cull pass compacted the live on-screen slots (slot order preserved),
+  // so there are no collapse branches here
+  let slot = visible[ii];
 
   // LOD: floor sub-pixel nodes to a visible minimum, compensating with alpha
-  if (maxDim < frame.hidePx) {
-    alphaComp = max(maxDim / frame.hidePx, 0.05);
-    half = vec2f(frame.hidePx * 0.5);
-  }
+  let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
+  let half = lod.xy;
 
-  let centerPx = modelToPx(frame, positions[ii]);
+  let centerPx = modelToPx(frame, positions[slot]);
   let margin = 2.0; // AA + accent-ring slack, device px
   let ext = half + vec2f(margin);
-
-  // conservative off-viewport collapse
-  if (centerPx.x + ext.x < 0.0 || centerPx.x - ext.x > frame.viewportPx.x ||
-      centerPx.y + ext.y < 0.0 || centerPx.y - ext.y > frame.viewportPx.y) {
-    out.position = DEGENERATE;
-    return out;
-  }
-
   let local = quadCorner(vi) * ext;
 
   out.position = vec4f(pxToClip(frame, centerPx + local), 0.0, 1.0);
   out.local = local;
   out.halfSize = half;
-  out.fill = unpack4x8unorm(fillColors[ii]);
-  out.borderColor = unpack4x8unorm(borderColors[ii]);
-  out.borderWidth = borderWidths[ii] * frame.zoomDpr;
-  out.opacity = opacities[ii] * alphaComp;
-  out.shape = shapes[ii];
-  out.flags = flags;
-  out.instance = ii;
+  out.alphaComp = lod.z;
+  out.instance = slot;
   return out;
 }
 
 @fragment
 fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
+  let slot = in.instance;
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
   let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc, no decorations
 
-  var shape = in.shape;
+  var shape = shapes[slot];
   var half = in.halfSize;
 
   if (plain) {
@@ -201,26 +239,29 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let sd = nodeSD(shape, in.local, half);
-  var color = in.fill;
+  var color = unpack4x8unorm(fillColors[slot]);
 
   if (!plain) {
+    let borderWidth = borderWidths[slot] * frame.zoomDpr;
+    let flags = nodeFlags[slot];
+
     // border band, drawn inward from the shape boundary
-    if (in.borderWidth > 0.0 && sd > -in.borderWidth) {
-      color = in.borderColor;
+    if (borderWidth > 0.0 && sd > -borderWidth) {
+      color = unpack4x8unorm(borderColors[slot]);
     }
 
     // selection accent ring at the boundary
-    if ((in.flags & FLAG_SELECTED) != 0u && sd > -max(2.0, in.borderWidth)) {
+    if ((flags & FLAG_SELECTED) != 0u && sd > -max(2.0, borderWidth)) {
       color = vec4f(SELECT_ACCENT, 1.0);
     }
 
     // hover/grab brighten
-    if ((in.flags & (FLAG_HOVERED | FLAG_GRABBED)) != 0u) {
+    if ((flags & (FLAG_HOVERED | FLAG_GRABBED)) != 0u) {
       color = vec4f(min(color.rgb + vec3f(0.15), vec3f(1.0)), color.a);
     }
   }
 
-  let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * in.opacity * color.a;
+  let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * opacities[slot] * in.alphaComp * color.a;
   return vec4f(color.rgb * alpha, alpha); // premultiplied
 }
 
@@ -228,7 +269,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
 fn fsNodePick(in: NodeVSOut) -> @location(0) u32 {
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
 
-  var shape = in.shape;
+  var shape = shapes[in.instance];
   var half = in.halfSize;
 
   if (sizePx < frame.nodeLodPx) {
@@ -247,14 +288,14 @@ fn fsNodePick(in: NodeVSOut) -> @location(0) u32 {
 export const EDGE_SHADER = `
 ${COMMON}
 
+// flags columns are not bound here: the cull pass already dropped dead or
+// hidden edges (and edges with dead/hidden endpoints)
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>; // source,target node slots
 @group(0) @binding(2) var<storage, read> lineColors: array<u32>;
 @group(0) @binding(3) var<storage, read> widths: array<f32>;
 @group(0) @binding(4) var<storage, read> opacities: array<f32>;
-@group(0) @binding(5) var<storage, read> edgeFlags: array<u32>;
-@group(0) @binding(6) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(7) var<storage, read> nodeFlags: array<u32>;
+@group(0) @binding(5) var<storage, read> nodePositions: array<vec2f>;
 
 struct EdgeVSOut {
   @builtin(position) position: vec4f,
@@ -264,71 +305,31 @@ struct EdgeVSOut {
   @location(3) @interpolate(flat) instance: u32,
 }
 
+@group(1) @binding(0) var<storage, read> visible: array<u32>;
+
 @vertex
 fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
   var out: EdgeVSOut;
 
-  var widthPx = widths[ii] * frame.zoomDpr;
-  var alphaComp = 1.0;
+  // the cull pass compacted the shown, on-screen, non-decimated,
+  // non-degenerate edges (slot order preserved): no collapse branches here
+  let slot = visible[ii];
 
-  // LOD: floor hairline edges, compensating with alpha
-  if (widthPx < frame.edgeWidthFloor) {
-    alphaComp = max(widthPx / frame.edgeWidthFloor, 0.0);
-    widthPx = frame.edgeWidthFloor;
+  // LOD: floor hairline edges; edgeLod's alpha compensation must match the
+  // cull predicate's decimation decision (shared WGSL)
+  let lod = edgeLod(slot, widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
 
-    // decimation ladder: once floored edges fall below half alpha, draw a
-    // hash-stable 1-in-N subset at N x alpha (N a power of two <= 64).
-    // Aggregate coverage is preserved — (count/N) * (alpha*N) — while the
-    // massed same-pixel blend cost at far zoom drops ~N-fold.  Runs before
-    // any endpoint fetch so dropped instances cost no memory traffic.
-    var n = 1u;
-    while (alphaComp * f32(n) < 0.5 && n < 64u) { n = n * 2u; }
-
-    if (n > 1u) {
-      let h = ii * 2654435761u; // Knuth hash decorrelates from slot order
-
-      if (((h >> 16u) & (n - 1u)) != 0u) {
-        out.position = DEGENERATE;
-        return out;
-      }
-
-      alphaComp = alphaComp * f32(n);
-    }
-  }
-
-  let ends = endpoints[ii];
-
-  // hidden when the edge or either endpoint is dead/hidden
-  if ((edgeFlags[ii] & SHOWN) != SHOWN ||
-      (nodeFlags[ends.x] & SHOWN) != SHOWN ||
-      (nodeFlags[ends.y] & SHOWN) != SHOWN) {
-    out.position = DEGENERATE;
-    return out;
-  }
+  let ends = endpoints[slot];
 
   // endpoints are read from the node position buffer: dragging a node
   // uploads one row and its edges follow on-GPU
   let a = modelToPx(frame, nodePositions[ends.x]);
   let b = modelToPx(frame, nodePositions[ends.y]);
   let ab = b - a;
-  let len = length(ab);
-
-  if (len < 1e-4) {
-    out.position = DEGENERATE;
-    return out;
-  }
+  let len = max(length(ab), 1e-4); // zero-length edges were culled
 
   let halfW = widthPx * 0.5;
-  let m = halfW + 1.0;
-
-  // conservative off-viewport collapse (both endpoints beyond the same side)
-  if ((a.x < -m && b.x < -m) || (a.y < -m && b.y < -m) ||
-      (a.x > frame.viewportPx.x + m && b.x > frame.viewportPx.x + m) ||
-      (a.y > frame.viewportPx.y + m && b.y > frame.viewportPx.y + m)) {
-    out.position = DEGENERATE;
-    return out;
-  }
-
   let dir = ab / len;
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -339,10 +340,10 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   out.v = s;
   out.halfWidth = halfW;
 
-  let c = unpack4x8unorm(lineColors[ii]);
+  let c = unpack4x8unorm(lineColors[slot]);
 
-  out.color = vec4f(c.rgb, c.a * opacities[ii] * alphaComp * (1.0 - frame.edgeDim));
-  out.instance = ii;
+  out.color = vec4f(c.rgb, c.a * opacities[slot] * lod.y * (1.0 - frame.edgeDim));
+  out.instance = slot;
   return out;
 }
 
@@ -364,25 +365,15 @@ fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
 
 export const LABEL_SHADER = `
 ${COMMON}
+${GLYPH_STRUCT}
 
-// matches GlyphBuffer's CPU layout: 10 words / 40 bytes per glyph
-struct Glyph {
-  nodeSlot: u32,   // 0xffffffff = dead (tombstoned run)
-  color: u32,      // packed RGBA bytes
-  offset: vec2f,   // quad top-left from the node center, model px
-  size: vec2f,     // model px
-  uv0: vec2f,
-  uv1: vec2f,
-}
-
-const DEAD_GLYPH: u32 = 0xffffffffu;
-
+// node flags are not bound here: the cull pass already dropped glyphs of
+// dead/hidden nodes
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
 @group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(3) var<storage, read> nodeFlags: array<u32>;
-@group(0) @binding(4) var atlas: texture_2d<f32>;
-@group(0) @binding(5) var atlasSampler: sampler;
+@group(0) @binding(3) var atlas: texture_2d<f32>;
+@group(0) @binding(4) var atlasSampler: sampler;
 
 struct LabelVSOut {
   @builtin(position) position: vec4f,
@@ -391,36 +382,22 @@ struct LabelVSOut {
   @location(2) fade: f32,
 }
 
+@group(1) @binding(0) var<storage, read> visible: array<u32>;
+
 @vertex
 fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LabelVSOut {
   var out: LabelVSOut;
-  let g = glyphs[ii];
 
-  if (g.nodeSlot == DEAD_GLYPH || (nodeFlags[g.nodeSlot] & SHOWN) != SHOWN) {
-    out.position = DEGENERATE;
-    return out;
-  }
+  // the cull pass compacted live, on-screen, non-faded glyphs
+  let g = glyphs[visible[ii]];
 
-  // LOD: fade out (and finally collapse) as the on-screen glyph shrinks
+  // LOD: fade out as the on-screen glyph shrinks (fully-faded glyphs were culled)
   let heightPx = g.size.y * frame.zoomDpr;
-  let fade = smoothstep(frame.labelFadePx * 0.5, frame.labelFadePx, heightPx);
-
-  if (fade <= 0.001) {
-    out.position = DEGENERATE;
-    return out;
-  }
+  let fade = labelFade(heightPx, frame.labelFadePx);
 
   // glyphs read the node position buffer: labels follow drags/layouts on-GPU
   let originPx = modelToPx(frame, nodePositions[g.nodeSlot]) + g.offset * frame.zoomDpr;
   let sizePx = g.size * frame.zoomDpr;
-
-  // conservative off-viewport collapse
-  if (originPx.x + sizePx.x < 0.0 || originPx.x > frame.viewportPx.x ||
-      originPx.y + sizePx.y < 0.0 || originPx.y > frame.viewportPx.y) {
-    out.position = DEGENERATE;
-    return out;
-  }
-
   let t = (quadCorner(vi) + vec2f(1.0)) * 0.5;
 
   out.position = vec4f(pxToClip(frame, originPx + t * sizePx), 0.0, 1.0);

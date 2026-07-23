@@ -6,8 +6,15 @@ prototype core with a **CPU-canonical columnar model** (typed-array columns,
 stable slots, per-column coalesced dirty spans) written through to
 **persistent GPU buffers**, rendered by a **WebGPU pipeline** (SDF node
 shapes, straight edges reading endpoints from the node position buffer
-on-GPU, GPU picking, VS culling + LOD).  The existing v3 core, collection
-and renderers are untouched.
+on-GPU, GPU picking, compute culling + indirect draws + LOD).  The
+existing v3 core, collection and renderers are untouched.
+
+Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
+drawable slots into a visible list + `drawIndexedIndirect` args — a
+deterministic three-dispatch stream compaction that preserves slot order
+(the in-group z-order), with an exact segment-vs-rect test for edges — so
+the render pass draws exactly what's visible instead of running the vertex
+shader over every allocated slot.
 
 - Entry point: `cytoscapeGpu(options)` from `src/gpu/index.mts`
   (`import cytoscapeGpu from 'cytoscape/gpu'`, UMD global `cytoscapeGpu`).
@@ -69,7 +76,7 @@ edges, non-grid layouts, graph algorithms.
 - **`cy.elements()` order**: nodes (insertion order) then edges, not the
   mixed insertion order of v3.
 - **Picking**: the pick pass draws a fixed 64×64 cursor-centered tile (a
-  pick-specific Frame uniform turns the shaders' viewport culling into
+  pick-specific Frame uniform turns the cull pass's viewport test into
   cursor-region culling, so picking costs O(region) not O(scene)) and
   submits in its own command buffer ahead of any scene work; the center
   texel reads back through a ring of 3 staging buffers (latest-wins;
@@ -94,7 +101,6 @@ edges, non-grid layouts, graph algorithms.
 
 ## Follow-up hooks
 
-- Compute-shader culling + `drawIndirect` (documented follow-up; the VS
-  conservative collapse + LOD uniforms are the pass-1 stand-ins).
 - CSR adjacency (incremental per-node lists for now).
-- Slot compaction (tombstones + degenerate quads for now).
+- Slot compaction (tombstones + degenerate quads for now; the cull pass
+  already keeps tombstones out of the draw stream).

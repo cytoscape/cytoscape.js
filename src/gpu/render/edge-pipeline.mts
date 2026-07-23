@@ -3,21 +3,21 @@ import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import { PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
+import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 
 /**
- * Storage-buffer bindings 1..7 (0 is the Frame uniform).  The edge vertex
+ * Storage-buffer bindings 1..5 (0 is the Frame uniform).  The edge vertex
  * shader reads endpoint positions straight from the node position buffer,
- * so a node drag uploads one row and its edges follow on-GPU.
+ * so a node drag uploads one row and its edges follow on-GPU.  Flags
+ * columns are not bound: the cull pass already filtered on them.
  */
 const EDGE_COLUMNS: ColumnId[] = [
   'edge.endpoints',
   'edge.lineColor',
   'edge.width',
   'edge.opacity',
-  'edge.flags',
-  'node.position',
-  'node.flags'
+  'node.position'
 ];
 
 /** Edge render + picking pipelines (screen-space extruded quads). */
@@ -29,7 +29,7 @@ export class EdgePipeline {
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
   private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
 
-  constructor( device: GPUDevice, format: GPUTextureFormat ){
+  constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:edge-shader', code: EDGE_SHADER } );
 
     this.quadIndex = createQuadIndexBuffer( device );
@@ -50,7 +50,7 @@ export class EdgePipeline {
       ]
     } );
 
-    const layout = device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout ] } );
+    const layout = device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } );
 
     this.pipeline = device.createRenderPipeline( {
       label: 'cy-gpu:edge-pipeline',
@@ -97,13 +97,14 @@ export class EdgePipeline {
 
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
-    mirror: ColumnMirror, instances: number, pick: boolean = false
+    mirror: ColumnMirror, instances: number, cull: CulledGroup, pick: boolean = false
   ): void {
     if( instances === 0 ){ return; }
 
     pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
+    pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );
-    pass.drawIndexed( 6, instances );
+    pass.drawIndexedIndirect( cull.indirect, 0 );
   }
 }

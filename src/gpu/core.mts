@@ -427,7 +427,13 @@ export class GpuCore {
   }
 
   private _boundsOf( eles?: GpuCollection | string ): ReturnType<GpuCollection['boundingBox']> | null {
-    const collection = eles == null ? this.elements() : this._toCollection( eles );
+    if( eles == null ){
+      // whole-graph fast path: columnar scan in the store, skipping the
+      // per-element handle layer entirely
+      return this._store.boundingBox();
+    }
+
+    const collection = this._toCollection( eles );
 
     if( collection.length === 0 ){ return null; }
 

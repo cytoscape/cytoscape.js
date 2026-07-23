@@ -230,6 +230,72 @@ describe('gpu/store: GraphStore', function(){
     });
   });
 
+  describe('boundingBox', function(){
+    it('returns null for an empty store', function(){
+      expect( store.boundingBox() ).to.equal(null);
+    });
+
+    it('bounds nodes by position, size and border', function(){
+      var a = store.addNode('a', 0, 0);
+      var b = store.addNode('b', 100, 50);
+
+      store.setPair('node.size', a, 30, 30);
+      store.setPair('node.size', b, 10, 20);
+      store.setScalar('node.borderWidth', b, 4);
+
+      var bb = store.boundingBox();
+
+      expect( bb.x1 ).to.equal(-15);
+      expect( bb.y1 ).to.equal(-15);
+      expect( bb.x2 ).to.equal(107); // 100 + 10/2 + 4/2
+      expect( bb.y2 ).to.equal(62);  // 50 + 20/2 + 4/2
+      expect( bb.w ).to.equal(122);
+      expect( bb.h ).to.equal(77);
+    });
+
+    it('includes edge extent (endpoint centers for straight edges)', function(){
+      store.addNode('a', 0, 0);
+      store.addNode('b', 100, 50);
+      store.addEdge('ab', 'a', 'b');
+
+      // straight edges span node centers, already inside the node bounds
+      var bb = store.boundingBox();
+
+      expect( bb.x1 ).to.be.at.most(0);
+      expect( bb.x2 ).to.be.at.least(100);
+      expect( bb.y2 ).to.be.at.least(50);
+    });
+
+    it('skips removed elements', function(){
+      var a = store.addNode('a', 0, 0);
+      store.addNode('b', 10, 10);
+      var far = store.addNode('far', 1000, 1000);
+
+      store.setPair('node.size', a, 0, 0);
+      store.setPair('node.size', 1, 0, 0);
+      store.setPair('node.size', far, 0, 0);
+      store.removeNode(far);
+
+      var bb = store.boundingBox();
+
+      expect( bb.x2 ).to.equal(10);
+      expect( bb.y2 ).to.equal(10);
+    });
+
+    it('matches the collection bounding box through the core', async function(){
+      var cytoscapeGpu = (await import('../src/gpu/index.mjs')).default;
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: -5, y: 8 } },
+          { data: { id: 'b' }, position: { x: 40, y: -20 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ]
+      });
+
+      expect( cy._store.boundingBox() ).to.deep.equal( cy.elements().boundingBox() );
+    });
+  });
+
   describe('growth', function(){
     it('grows capacity and preserves data', function(){
       var initialCap = store.capacity('nodes');

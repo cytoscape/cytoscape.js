@@ -339,6 +339,55 @@ export class GraphStore implements ModelView {
     return slots;
   }
 
+  /**
+   * Whole-graph bounding box as a direct columnar scan — no element
+   * handles (a no-arg fit() on a 500k-element graph is a fraction of a
+   * millisecond instead of hundreds).  Nodes contribute position ±
+   * (size/2 + border/2).  Edges contribute their own extent as a
+   * first-class term: today that is the two endpoint node centers (edges
+   * are straight center-to-center segments), and future edge geometry —
+   * bezier control points, arrow heads — extends the edge term here and
+   * in GpuCollection.boundingBox together.  Returns null when empty.
+   */
+  boundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+    const pos = this.column( 'node.position' ) as Float32Array;
+    const size = this.column( 'node.size' ) as Float32Array;
+    const border = this.column( 'node.borderWidth' ) as Float32Array;
+
+    this.forEachAlive( 'nodes', slot => {
+      const x = pos[ slot * 2 ];
+      const y = pos[ slot * 2 + 1 ];
+      const hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
+      const hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+
+      if( x - hw < x1 ){ x1 = x - hw; }
+      if( y - hh < y1 ){ y1 = y - hh; }
+      if( x + hw > x2 ){ x2 = x + hw; }
+      if( y + hh > y2 ){ y2 = y + hh; }
+    } );
+
+    const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
+
+    this.forEachAlive( 'edges', slot => {
+      for( let end = 0; end < 2; end++ ){
+        const node = endpoints[ slot * 2 + end ];
+        const x = pos[ node * 2 ];
+        const y = pos[ node * 2 + 1 ];
+
+        if( x < x1 ){ x1 = x; }
+        if( y < y1 ){ y1 = y; }
+        if( x > x2 ){ x2 = x; }
+        if( y > y2 ){ y2 = y; }
+      }
+    } );
+
+    if( x1 === Infinity ){ return null; }
+
+    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+  }
+
   // -- internals --
 
   private allocSlot( group: GroupName, id: string ): { slot: number; resized: boolean } {

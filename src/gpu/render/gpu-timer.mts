@@ -144,20 +144,21 @@ export class GpuTimer {
       // serializes the passes, so the span is the honest frame GPU time
       // under either implementation.
       const pairs = slot.post ? 3 : 2;
-      let begin = 0n;
-      let end = 0n;
+      const zero = BigInt( 0 ); // no 0n literal: predates the build target
+      let begin = zero;
+      let end = zero;
 
       for( let i = 0; i < pairs; i++ ){
         const b = stamps[ 2 * i ];
         const e = stamps[ 2 * i + 1 ];
 
-        if( b === 0n && e === 0n ){ continue; } // pass unavailable this frame
+        if( b === zero && e === zero ){ continue; } // pass unavailable this frame
 
-        if( begin === 0n || b < begin ){ begin = b; }
+        if( begin === zero || b < begin ){ begin = b; }
         if( e > end ){ end = e; }
       }
 
-      const ns = begin === 0n ? 0 : Number( end - begin );
+      const ns = begin === zero ? 0 : Number( end - begin );
 
       slot.buffer.unmap();
 

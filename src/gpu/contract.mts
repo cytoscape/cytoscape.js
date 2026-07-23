@@ -42,7 +42,9 @@ export type ColumnId =
   | 'edge.lineColor' // Uint8Array(4·cap)
   | 'edge.width' // Float32Array(cap)
   | 'edge.opacity' // Float32Array(cap)
-  | 'edge.flags'; // Uint32Array(cap)
+  | 'edge.flags' // Uint32Array(cap)
+  | 'edge.sourceArrow' // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
+  | 'edge.targetArrow'; // Uint8Array(4·cap)
 
 export type ColumnArray = Float32Array | Uint32Array | Uint8Array;
 
@@ -76,7 +78,9 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),
   spec( 'edge.width', 'edges', Float32Array, 1 ),
   spec( 'edge.opacity', 'edges', Float32Array, 1 ),
-  spec( 'edge.flags', 'edges', Uint32Array, 1 )
+  spec( 'edge.flags', 'edges', Uint32Array, 1 ),
+  spec( 'edge.sourceArrow', 'edges', Uint8Array, 4 ),
+  spec( 'edge.targetArrow', 'edges', Uint8Array, 4 )
 ];
 
 const specsById = new Map<ColumnId, ColumnSpec>( COLUMN_SPECS.map( s => [ s.id, s ] ) );

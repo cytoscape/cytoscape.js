@@ -443,6 +443,106 @@ fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
 }
 `;
 
+export const ARROW_SHADER = `
+${COMMON}
+
+// One arrowhead quad per visible edge, per end: reuses the edge cull
+// pass's visible list and indirect args (indexCount 6, one quad per
+// instance).  Which end this draw covers comes from the tiny End
+// uniform (two cached bind groups, one draw call each).  Edges whose
+// arrow color has a=0 (shape 'none') collapse to a degenerate quad.
+// this end's arrow colors bind at 7 (source or target column per bind
+// group).  The vertex stage stays at WebGPU's base limit of 8 storage
+// buffers (7 columns + the visible list in group 1); edge opacity is
+// folded into the stored arrow alpha at style-write time for the same
+// reason.
+@group(0) @binding(0) var<uniform> frame: Frame;
+@group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
+@group(0) @binding(2) var<storage, read> edgeWidths: array<f32>;
+@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(4) var<storage, read> nodeSizes: array<vec2f>;
+@group(0) @binding(5) var<storage, read> nodeBorders: array<f32>;
+@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;
+@group(0) @binding(7) var<storage, read> arrows: array<u32>;
+
+struct End { isSource: u32 }
+@group(0) @binding(8) var<uniform> end: End;
+
+@group(1) @binding(0) var<storage, read> visible: array<u32>;
+
+struct ArrowVSOut {
+  @builtin(position) position: vec4f,
+  @location(0) v: f32,      // signed lateral offset, device px
+  @location(1) limit: f32,  // lateral half-width at this longitudinal t, device px
+  @location(2) color: vec4f,
+}
+
+// distance from the node center to its boundary along unit direction d
+fn boundaryOffset(shape: u32, half: vec2f, d: vec2f) -> f32 {
+  switch shape {
+    case 2u, 3u: { // rectangle (round-rect approximated as its box)
+      let inv = 1.0 / max(abs(d), vec2f(1e-4));
+      return min(half.x * inv.x, half.y * inv.y);
+    }
+    default: { // circle + ellipse: exact radius along d
+      return 1.0 / max(length(d / max(half, vec2f(1e-4))), 1e-6);
+    }
+  }
+}
+
+@vertex
+fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
+  var out: ArrowVSOut;
+
+  let slot = visible[ii];
+  let isSource = end.isSource == 1u;
+  let c = unpack4x8unorm(arrows[slot]);
+
+  if (c.a == 0.0) { // no arrow at this end: degenerate, clipped
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  let ends = endpoints[slot];
+  let tipSlot = select(ends.y, ends.x, isSource);
+  let fromSlot = select(ends.x, ends.y, isSource);
+  let tipC = modelToPx(frame, nodePositions[tipSlot]);
+  let fromC = modelToPx(frame, nodePositions[fromSlot]);
+  let toTip = tipC - fromC;
+  let len = max(length(toTip), 1e-4); // zero-length edges were culled
+  let dir = toTip / len;
+
+  // the tip sits on the tip node's boundary (border straddles half in, half out)
+  let half = (nodeSizes[tipSlot] * 0.5 + vec2f(nodeBorders[tipSlot] * 0.5)) * frame.zoomDpr;
+  let tip = tipC - dir * boundaryOffset(nodeShapes[tipSlot], half, dir);
+
+  // sizing follows the drawn (floored) edge width; alpha matches the edge LOD
+  let lod = edgeLod(slot, edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let arrowLen = widthPx * 3.0 + 2.0;
+  let halfBase = widthPx * 1.5 + 1.0;
+
+  let n = vec2f(-dir.y, dir.x);
+  let corner = quadCorner(vi);
+  let t = (corner.y + 1.0) * 0.5; // 0 at base, 1 at tip
+  let limit = halfBase * (1.0 - t);
+  let lateral = corner.x * (limit + 1.0); // 1px AA margin
+
+  out.position = vec4f(pxToClip(frame, tip - dir * arrowLen * (1.0 - t) + n * lateral), EDGE_Z, 1.0);
+  out.v = lateral;
+  out.limit = limit;
+  // edge opacity is pre-folded into c.a at style-write time
+  out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
+  return out;
+}
+
+@fragment
+fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
+  let alpha = in.color.a * (1.0 - smoothstep(in.limit - 0.75, in.limit + 0.75, abs(in.v)));
+  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
+}
+`;
+
 export const LABEL_SHADER = `
 ${COMMON}
 ${GLYPH_STRUCT}

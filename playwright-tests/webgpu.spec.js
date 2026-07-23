@@ -353,6 +353,56 @@ test.describe( 'WebGPU renderer', () => {
     expect( picked ).toEqual( { node: 'a', edge: 'ab' } );
   } );
 
+  test( 'target arrowheads render at the node boundary', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const graph = arrows => ( {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: [
+        { selector: 'node', style: { 'width': 30, 'height': 30, 'background-color': '#00ff00' } },
+        {
+          selector: 'edge',
+          style: {
+            'width': 8,
+            'line-color': '#0000ff',
+            ...( arrows ? { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ff0000' } : {} )
+          }
+        }
+      ],
+      zoom: 1
+    } );
+
+    await makeReadyCy( page, graph( true ) );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // just behind the target node boundary (node radius 15): inside the arrowhead
+    const arrowX = center.x + 150 - 15 - 8;
+    const arrowPixel = await pixelAt( page, arrowX, center.y );
+    const linePixel = await pixelAt( page, center.x, center.y );
+
+    expect( arrowPixel[0] ).toBeGreaterThan( 180 ); // red arrowhead over the line
+    expect( arrowPixel[2] ).toBeLessThan( 80 );
+    expect( linePixel[2] ).toBeGreaterThan( 180 ); // the line itself stays blue
+
+    // control: same spot without arrows shows the blue line
+    await page.evaluate( () => window.cy.destroy() );
+    await makeReadyCy( page, graph( false ) );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const controlPixel = await pixelAt( page, arrowX, center.y );
+
+    expect( controlPixel[2] ).toBeGreaterThan( 180 );
+    expect( controlPixel[0] ).toBeLessThan( 80 );
+  } );
+
   test( 'mouse drag moves the node in the model and on screen', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

@@ -4,6 +4,7 @@ import { pickNodeAt } from './cpu-pick.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
 import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
+import { ArrowPipeline } from './arrow-pipeline.mjs';
 import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
@@ -91,6 +92,7 @@ export class Renderer {
   private context: GPUCanvasContext | null;
   private nodePipeline: NodePipeline | null;
   private edgePipeline: EdgePipeline | null;
+  private arrowPipeline: ArrowPipeline | null;
   private uniform: GPUBuffer | null;
   private frameData: Float32Array;
   private isReady: boolean;
@@ -127,6 +129,7 @@ export class Renderer {
     this.mirror = null;
     this.nodePipeline = null;
     this.edgePipeline = null;
+    this.arrowPipeline = null;
     this.uniform = null;
     this.frameData = new Float32Array( 12 );
     this.isReady = false;
@@ -383,6 +386,7 @@ export class Renderer {
 
     this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
     this.edgePipeline = new EdgePipeline( device, format, kernels.visibleLayout );
+    this.arrowPipeline = new ArrowPipeline( device, format, kernels.visibleLayout );
     this.labelLayer = new LabelLayer( device, this.cy._store );
     this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
     this.picking = new Picking( device );
@@ -502,6 +506,12 @@ export class Renderer {
 
       this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), this.sceneCull.node );
       this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), this.sceneCull.edge );
+      // arrowheads over the lines, under the nodes; whole draws skipped
+      // per end when no style block enables that end
+      this.arrowPipeline?.draw(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), this.sceneCull.edge,
+        this.cy._styleEngine.arrowEnds
+      );
       this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), this.sceneCull.node );
 
       if( this.labelLayer != null && this.labelPipeline != null ){

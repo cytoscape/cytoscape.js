@@ -32,6 +32,10 @@ const paramDefs = {
     default: 'false',
     control: '#edge-dim-check'
   },
+  arrows: {
+    default: 'false',
+    control: '#arrows-check'
+  },
   labels: {
     default: 'false',
     control: '#labels-check'
@@ -75,8 +79,10 @@ const paramDefs = {
   const SUPPORTED_PROPS = new Set([
     'background-color', 'width', 'height', 'shape', 'opacity',
     'border-color', 'border-width', 'line-color',
-    'label', 'font-size', 'color'
+    'label', 'font-size', 'color',
+    'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color'
   ]);
+  const SUPPORTED_ARROW_SHAPES = new Set([ 'none', 'triangle' ]);
   const SUPPORTED_SHAPES = new Set([
     'ellipse', 'circle', 'rectangle', 'round-rectangle', 'roundrectangle'
   ]);
@@ -99,6 +105,7 @@ const paramDefs = {
         if(typeof value === 'string' && /mapData\s*\(/.test(value)) { continue; }
         if(typeof value === 'string' && /data\s*\(/.test(value) && !(prop === 'label' && /^\s*data\s*\(\s*[\w-]+\s*\)\s*$/.test(value))) { continue; }
         if(prop === 'shape' && !SUPPORTED_SHAPES.has(value)) { continue; }
+        if(/-arrow-shape$/.test(prop) && !SUPPORTED_ARROW_SHAPES.has(value)) { continue; }
 
         style[prop] = value;
       }
@@ -179,6 +186,12 @@ const paramDefs = {
     if(params.labels === 'true') {
       style = (style || []).concat([
         { selector: 'node', style: { 'label': 'data(id)', 'font-size': 10, 'color': '#333' } }
+      ]);
+    }
+
+    if(params.arrows === 'true') {
+      style = (style || []).concat([
+        { selector: 'edge', style: { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#666' } }
       ]);
     }
 

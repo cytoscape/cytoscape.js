@@ -54,8 +54,8 @@ labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
 below the `labelFadePx` LOD threshold.
 
 Out of scope (deferred): animations, full stylesheets/mappers beyond the
-label `data(key)` mapper, arrows, compound nodes, bezier edges, layouts
-beyond grid/preset, graph algorithms.
+label `data(key)` mapper, compound nodes, bezier edges, layouts beyond
+grid/preset, graph algorithms.
 
 ## Loading
 
@@ -177,6 +177,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
   rendering with a console warning.  Label color/text bake into glyph
   instances, so `:selected`/hover styling does not restyle label text.
+- **Arrowheads**: `source/target-arrow-shape` supports `triangle` and
+  `none` only, with constant `source/target-arrow-color` (v3-like `#999`
+  default).  One quad per visible edge per enabled end, reusing the edge
+  cull stream; the tip sits on the endpoint node's boundary (round-rect
+  approximated by its box).  Arrows draw *over* the line — a translucent
+  arrow shows the line through it — are not pickable (the GPU pick pass
+  stays edges-only), and size with the drawn (floored) edge width.
 - Pinch zoom is deferred; wheel/drag/hover/tap/grab are implemented.
 - No device-loss recovery: the instance goes dead and emits an `error`
   event.

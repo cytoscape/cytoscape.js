@@ -40,7 +40,13 @@ interface EdgeComputed {
   lineColor: RGBA;
   width: number;
   opacity: number;
+  sourceArrowShape: ArrowShape;
+  sourceArrowColor: RGBA;
+  targetArrowShape: ArrowShape;
+  targetArrowColor: RGBA;
 }
+
+type ArrowShape = 'none' | 'triangle';
 
 const NODE_DEFAULTS: NodeComputed = {
   fillColor: [ 153, 153, 153, 255 ], // #999
@@ -64,8 +70,14 @@ const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
   width: 2,
-  opacity: 1
+  opacity: 1,
+  sourceArrowShape: 'none',
+  sourceArrowColor: [ 153, 153, 153, 255 ], // #999, as v3
+  targetArrowShape: 'none',
+  targetArrowColor: [ 153, 153, 153, 255 ]
 };
+
+const NO_ARROW: RGBA = [ 0, 0, 0, 0 ]; // a=0 collapses the arrow in the shader
 
 /** data() value → label text ('' for absent) */
 const stringify = ( value: unknown ): string => {
@@ -121,6 +133,19 @@ const parseShape = ( value: string | number ): number => {
     throw new Error(
       `The shape '${value}' is unsupported in the GPU prototype; ` +
       `use one of: ${Object.keys( SHAPES ).join( ', ' )}`
+    );
+  }
+
+  return shape;
+};
+
+const parseArrowShape = ( prop: string, value: string | number ): ArrowShape => {
+  const shape = String( value );
+
+  if( shape !== 'none' && shape !== 'triangle' ){
+    throw new Error(
+      `The ${prop} '${shape}' is unsupported in the GPU prototype; ` +
+      `only 'triangle' and 'none' are allowed`
     );
   }
 
@@ -203,6 +228,24 @@ const compileProp = ( prop: string, value: string | number ): Setter => {
 
       return computed => { computed.lineColor = color; };
     }
+    case 'source-arrow-shape':
+    case 'target-arrow-shape': {
+      const shape = parseArrowShape( prop, value );
+
+      return prop === 'source-arrow-shape'
+        ? computed => { computed.sourceArrowShape = shape; }
+        : computed => { computed.targetArrowShape = shape; };
+    }
+    case 'source-arrow-color': {
+      const color = parseColor( prop, value );
+
+      return computed => { computed.sourceArrowColor = color; };
+    }
+    case 'target-arrow-color': {
+      const color = parseColor( prop, value );
+
+      return computed => { computed.targetArrowColor = color; };
+    }
 
     default:
       throw new Error( `The style property '${prop}' is unsupported in the GPU prototype` );
@@ -215,6 +258,7 @@ export class StyleEngine {
   private compiled: CompiledBlock[];
 
   private dataMappers = false;
+  private arrows = { source: false, target: false };
 
   constructor( store: GraphStore ){
     this.store = store;
@@ -238,6 +282,13 @@ export class StyleEngine {
       return mapped != null && mapped[ 1 ] !== 'id';
     } );
 
+    // which arrow ends can any edge have at all — the renderer skips
+    // whole arrow draw calls per end when no block enables it
+    this.arrows = {
+      source: blocks.some( block => block.style?.[ 'source-arrow-shape' ] === 'triangle' ),
+      target: blocks.some( block => block.style?.[ 'target-arrow-shape' ] === 'triangle' )
+    };
+
     this.blocks = blocks;
     this.applyAll();
   }
@@ -245,6 +296,11 @@ export class StyleEngine {
   /** True when a data() write can change a computed label. */
   get usesDataMappers(): boolean {
     return this.dataMappers;
+  }
+
+  /** Which arrow ends the current stylesheet can enable. */
+  get arrowEnds(): { source: boolean; target: boolean } {
+    return this.arrows;
   }
 
   json(): GpuStyleBlock[] {
@@ -377,6 +433,13 @@ export class StyleEngine {
       store.setColor( 'edge.lineColor', slot, ...computed.lineColor );
       store.setScalar( 'edge.width', slot, computed.width );
       store.setScalar( 'edge.opacity', slot, computed.opacity );
+      // edge opacity folds into the stored alpha (the arrow shader has no
+      // spare storage-buffer binding for the opacity column)
+      const arrow = ( shape: ArrowShape, color: RGBA ): RGBA => shape !== 'triangle' ? NO_ARROW
+        : [ color[ 0 ], color[ 1 ], color[ 2 ], Math.round( color[ 3 ] * computed.opacity ) ];
+
+      store.setColor( 'edge.sourceArrow', slot, ...arrow( computed.sourceArrowShape, computed.sourceArrowColor ) );
+      store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
     }
   }
 }

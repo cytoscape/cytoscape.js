@@ -152,8 +152,14 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    contiguous-slot memcpy ingest) with the compat converter
    `cytoscapeGpu.toColumnarElements(json)` — init 236 → 80 ms, and ~76 ms
    with a prebuilt payload (what fetching a binary format would enable;
-   `JSON.parse` itself is 90–113 ms on this fixture).  A serialized wire
-   layout for the columnar form (one ArrayBuffer + header) is the natural
-   follow-up if fetch-to-render matters more later.
+   `JSON.parse` itself is 90–113 ms on this fixture).  The serialized
+   wire layout for the columnar form is also **done**: one little-endian
+   ArrayBuffer (header + columns; ids as a UTF-8 blob + prefix offsets
+   with an ASCII fast path) via `cytoscapeGpu.serializeElements` /
+   `deserializeElements`, accepted directly by
+   `options.elements`/`cy.add()`.  Numeric columns deserialize as
+   zero-copy views; deserialize is ~5 ms on this fixture (replacing the
+   90–113 ms parse + 27–48 ms convert of the JSON path) and the payload
+   is 9.2 MB vs 30 MB JSON.
 4. `data()` sidecar → unlocks style mappers and fixture labels beyond `data(id)`.
 5. Cheap wins: preset layout, arrows, pinch zoom.

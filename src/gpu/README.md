@@ -58,14 +58,21 @@ columns and edge endpoints as node *indices* — it ingests straight into
 the store (contiguous slot runs are memcpys) with no per-element objects
 and no id lookups per edge.  Columnar payloads are self-contained: every
 edge endpoint indexes a node in the same payload.  Convert classic JSON
-with `cytoscapeGpu.toColumnarElements(json)` (also what a binary wire
-format would deserialize into).  Either way, the factory's load path
-materializes no per-element handles and emits no `add` events (nobody can
-be listening yet); `cy.add()` keeps full per-element semantics and takes
-both forms.  ndex-x-large (19.6k nodes / 465k edges, 28.6 MB JSON):
-definition-form init 236 ms, columnar init 80 ms (~76 ms with the payload
-prebuilt, i.e. fetched as binary) — down from 662 ms before the bulk
-path.
+with `cytoscapeGpu.toColumnarElements(json)`.  There is also a **binary
+wire format** — `cytoscapeGpu.serializeElements(elements)` (takes either
+form) produces one little-endian ArrayBuffer (fixed header + columns; ids
+as a UTF-8 blob with prefix offsets), and `options.elements`/`cy.add()`
+accept the buffer directly (or use `deserializeElements` to inspect it) —
+so a graph can be served as a static binary asset and fed straight from
+`fetch(...).arrayBuffer()` with no JSON parse.  Numeric columns
+deserialize as zero-copy views into the buffer.  Either way, the
+factory's load path materializes no per-element handles and emits no
+`add` events (nobody can be listening yet); `cy.add()` keeps full
+per-element semantics and takes all three forms.  ndex-x-large (19.6k
+nodes / 465k edges, 28.6 MB JSON): definition-form init 236 ms, columnar
+init 80 ms — down from 662 ms before the bulk path.  The wire form of the
+same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
+90–113 ms parse + 27–48 ms convert.
 
 ## Known deviations from v3 (accepted for pass 1)
 

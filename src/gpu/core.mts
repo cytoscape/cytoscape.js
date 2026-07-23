@@ -1,6 +1,7 @@
 import { GraphStore } from './store/graph-store.mjs';
 import { GpuCollection } from './collection.mjs';
 import { isColumnarElements } from './columnar.mjs';
+import { deserializeElements, isSerializedElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, selectorQualifier } from './events.mjs';
 import type { GpuQualifier } from './events.mjs';
@@ -14,7 +15,7 @@ import type { EventProps } from '../event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
-  GpuGridLayoutOptions, GpuStyleBlock, Position
+  GpuElementsInput, GpuGridLayoutOptions, GpuStyleBlock, Position
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
@@ -103,7 +104,8 @@ export class GpuCore {
 
   // -- graph manipulation --
 
-  add( defs: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements ): GpuCollection {
+  add( input: GpuElementsInput ): GpuCollection {
+    const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
     const refs = isColumnarElements( defs )
       ? this._columnarRefs( this._addColumnar( defs ) )
       : this._addDefs( defs );
@@ -125,7 +127,9 @@ export class GpuCore {
    * and the caller uses none of it.  `add` events still fire per element
    * when anyone is listening (never the case at construction time).
    */
-  _bulkAdd( defs: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements ): void {
+  _bulkAdd( input: GpuElementsInput ): void {
+    const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
+
     if( isColumnarElements( defs ) ){
       const { nodeSlots, edgeSlots } = this._addColumnar( defs );
 

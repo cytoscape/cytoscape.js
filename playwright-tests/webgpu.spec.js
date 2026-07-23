@@ -300,6 +300,59 @@ test.describe( 'WebGPU renderer', () => {
     expect( picked ).toEqual( { node: 'a', edge: 'ab' } );
   } );
 
+  test( 'binary elements payload fetches, loads and picks', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await page.evaluate( async () => {
+      const wire = window.cytoscapeGpu.serializeElements( {
+        nodes: [
+          { data: { id: 'a' }, position: { x: -150, y: 0 } },
+          { data: { id: 'b' }, position: { x: 150, y: 0 } }
+        ],
+        edges: [ { data: { id: 'ab', source: 'a', target: 'b' } } ]
+      } );
+
+      // round trip through a real binary fetch, as a producer would serve it
+      const url = URL.createObjectURL( new Blob( [ wire ] ) );
+      const fetched = await ( await fetch( url ) ).arrayBuffer();
+
+      URL.revokeObjectURL( url );
+
+      const cy = window.makeCy( {
+        elements: fetched,
+        style: [
+          { selector: 'node', style: { 'width': 30, 'height': 30 } },
+          { selector: 'edge', style: { 'width': 4 } }
+        ],
+        zoom: 1
+      } );
+
+      await cy.ready;
+
+      await new Promise( resolve => {
+        cy.one( 'render', () => resolve() );
+        cy.panBy( { x: 1, y: 0 } );
+        cy.panBy( { x: -1, y: 0 } );
+      } );
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const picked = await page.evaluate( async center => {
+      const node = await window.cy.pick( center.x - 150, center.y );
+      const edge = await window.cy.pick( center.x, center.y );
+
+      return {
+        node: node == null ? null : node.id(),
+        edge: edge == null ? null : edge.id()
+      };
+    }, center );
+
+    expect( picked ).toEqual( { node: 'a', edge: 'ab' } );
+  } );
+
   test( 'mouse drag moves the node in the model and on screen', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

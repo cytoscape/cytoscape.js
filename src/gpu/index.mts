@@ -2,6 +2,7 @@ import { GpuCore } from './core.mjs';
 import { Renderer } from './render/renderer.mjs';
 import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
+import { deserializeElements, serializeElements } from './wire.mjs';
 import type { CytoscapeGpuOptions } from './gpu-types.mjs';
 
 export type * from './gpu-types.mjs';
@@ -55,6 +56,8 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
   return cy;
 }
 
-// exposed as a property (v3-style, like cytoscape.use) so the UMD global
+// exposed as properties (v3-style, like cytoscape.use) so the UMD global
 // stays a plain callable
 cytoscapeGpu.toColumnarElements = toColumnarElements;
+cytoscapeGpu.serializeElements = serializeElements;
+cytoscapeGpu.deserializeElements = deserializeElements;

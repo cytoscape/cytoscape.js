@@ -40,6 +40,10 @@ const paramDefs = {
     default: 'false',
     control: '#columnar-check'
   },
+  binary: {
+    default: 'false',
+    control: '#binary-check'
+  },
   labelMinPx: {
     default: '0',
     control: '#label-min-input'
@@ -181,6 +185,13 @@ const paramDefs = {
       console.time('toColumnarElements');
       elements = cytoscapeGpu.toColumnarElements(elements);
       console.timeEnd('toColumnarElements');
+    }
+
+    if(params.binary === 'true') {
+      console.time('serializeElements');
+      elements = cytoscapeGpu.serializeElements(elements);
+      console.timeEnd('serializeElements');
+      console.log('serialized elements: ' + (elements.byteLength / 1048576).toFixed(1) + ' MB');
     }
 
     cy = cytoscapeGpu({

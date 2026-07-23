@@ -68,6 +68,19 @@ export interface GpuColumnarElements {
 }
 
 /**
+ * Any accepted `elements` input: the definition form (v3-style JSON), a
+ * single definition, the columnar bulk-load form, or a binary buffer from
+ * `cytoscapeGpu.serializeElements` (one little-endian ArrayBuffer +
+ * header — fetch it as binary and pass it straight in; no JSON parse).
+ */
+export type GpuElementsInput =
+  | GpuElementsDefinition
+  | GpuElementDefinition
+  | GpuColumnarElements
+  | ArrayBuffer
+  | ArrayBufferView;
+
+/**
  * A constrained compiled-style block: constant values only (no mappers).
  * Supported selectors: `node`, `edge`, `node:selected`, `edge:selected`, `#id`.
  * Node props: background-color, width, height, shape, opacity, border-color,
@@ -136,7 +149,7 @@ export interface CytoscapeGpuOptions {
    * is headless (works in Node, never throws for missing GPU).
    */
   container?: HTMLElement | null;
-  elements?: GpuElementsDefinition | GpuColumnarElements;
+  elements?: GpuElementsInput;
   style?: GpuStyleBlock[];
   layout?: GpuGridLayoutOptions;
   zoom?: number;

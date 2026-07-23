@@ -25,6 +25,7 @@ Pinch is deferred.
 const TAP_THRESHOLD = 4; // css px of movement before a press becomes a drag
 const HOVER_THROTTLE_MS = 25;
 const WHEEL_SENSITIVITY = 500; // higher = slower zoom
+const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last wheel tick
 
 interface DownState {
   pointerId: number;
@@ -47,6 +48,8 @@ export class PointerHandler {
   private pickInFlight: boolean;
   private lastHoverAt: number;
   private down: DownState | null;
+  private wheelingUntil: number;
+  private wheelSettleTimer: ReturnType<typeof setTimeout> | null;
   private cleanups: ( () => void )[];
 
   constructor( cy: GpuCore, renderer: Renderer ){
@@ -58,6 +61,8 @@ export class PointerHandler {
     this.pickInFlight = false;
     this.lastHoverAt = 0;
     this.down = null;
+    this.wheelingUntil = 0;
+    this.wheelSettleTimer = null;
     this.cleanups = [];
 
     this.listen( 'wheel', e => this.onWheel( e as WheelEvent ), { passive: false } );
@@ -69,6 +74,11 @@ export class PointerHandler {
   }
 
   destroy(): void {
+    if( this.wheelSettleTimer != null ){
+      clearTimeout( this.wheelSettleTimer );
+      this.wheelSettleTimer = null;
+    }
+
     for( const cleanup of this.cleanups ){ cleanup(); }
 
     this.cleanups = [];
@@ -79,12 +89,29 @@ export class PointerHandler {
   private onWheel( e: WheelEvent ): void {
     e.preventDefault();
 
+    const pos = this.eventPos( e );
+
+    // a wheel zoom is a viewport-only gesture: no mouseover/tap semantics
+    // apply mid-gesture, so hover picking pauses (no pick passes at all)
+    // until the wheel settles, then re-picks under the cursor once
+    this.wheelingUntil = performance.now() + WHEEL_SETTLE_MS;
+
+    if( this.wheelSettleTimer != null ){
+      clearTimeout( this.wheelSettleTimer );
+    }
+
+    this.wheelSettleTimer = setTimeout( () => {
+      this.wheelSettleTimer = null;
+      this.wheelingUntil = 0; // reopen hover before the settle re-pick
+      this.hoverPick( pos );
+    }, WHEEL_SETTLE_MS );
+
     const zoom = this.cy.zoom() as number;
     const dy = e.deltaY * ( e.deltaMode === 1 ? 33 : 1 ); // lines -> px-ish
 
     this.cy.zoom( {
       level: zoom * Math.pow( 10, -dy / WHEEL_SENSITIVITY ),
-      renderedPosition: this.eventPos( e )
+      renderedPosition: pos
     } );
   }
 
@@ -211,6 +238,10 @@ export class PointerHandler {
 
   private hoverPick( pos: Position ): void {
     const now = performance.now();
+
+    // no hover during viewport gestures (pan drags never reach here; wheel
+    // zooms are suppressed via the settle window)
+    if( now < this.wheelingUntil ){ return; }
 
     if( this.pickInFlight || now - this.lastHoverAt < HOVER_THROTTLE_MS ){ return; }
 

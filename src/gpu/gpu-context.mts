@@ -33,7 +33,11 @@ export const initGpuContext = async (
     );
   }
 
-  const device = await adapter.requestDevice();
+  // optional profiling feature: real GPU frame times for stats() (see gpu-timer.mts)
+  const requiredFeatures: GPUFeatureName[] =
+    adapter.features.has( 'timestamp-query' ) ? [ 'timestamp-query' ] : [];
+
+  const device = await adapter.requestDevice( { requiredFeatures } );
 
   device.lost.then( info => {
     if( info.reason !== 'destroyed' ){

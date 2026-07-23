@@ -55,6 +55,15 @@ edges, non-grid layouts, graph algorithms.
   uploads are worth the trade at this stage).
 - **Pan-vs-grab staleness**: pointerdown consults the last *resolved* GPU
   pick, which can be ≤2 frames stale; a cold start defaults to pan.
+- **Hover pauses during viewport gestures**: pan drags and wheel zooms are
+  viewport-only ops with no mouseover/tap semantics, so no pick passes run
+  mid-gesture; a wheel gesture re-picks under the cursor once it settles
+  (~200 ms after the last tick).
+- **Frame timing in `stats()`**: `cpuFrameMs` is the encode/submit cost
+  (submission is fire-and-forget, so it stays ~0.1 ms by design);
+  `gpuFrameMs` is real scene-pass GPU time via the optional
+  `timestamp-query` feature (0 when unsupported).  Reconcile fps against
+  `gpuFrameMs`, not `cpuFrameMs`.
 - **Selectors/styles**: only `node`, `edge`, `*`, `#id`, `:selected`,
   `:unselected` and comma lists; style blocks are constants only.
 - **`cy.elements()` order**: nodes (insertion order) then edges, not the

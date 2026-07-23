@@ -3,6 +3,7 @@ import { ColumnMirror } from './column-mirror.mjs';
 import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
 import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
+import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
 import { BUFFER_USAGE } from './webgpu-constants.mjs';
@@ -29,7 +30,10 @@ loss makes the instance dead (an `error` event fires; no recovery).
 
 interface RendererStats {
   frames: number;
-  lastFrameMs: number;
+  /** CPU cost of building + submitting the last frame (encoding is fire-and-forget) */
+  cpuFrameMs: number;
+  /** GPU execution time of the last measured scene pass; 0 when 'timestamp-query' is unavailable */
+  gpuFrameMs: number;
   uploadedBytes: number;
   nodes: number;
   edges: number;
@@ -76,7 +80,8 @@ export class Renderer {
   private offInvalidate: () => void;
   private onViewport: () => void;
   private frameCount: number;
-  private lastFrameMs: number;
+  private cpuFrameMs: number;
+  private gpuTimer: GpuTimer | null;
   private picking: Picking | null;
   private pickUniform: GPUBuffer | null;
   private pickFrameData: Float32Array;
@@ -100,7 +105,8 @@ export class Renderer {
     this.frameRequested = false;
     this.destroyed = false;
     this.frameCount = 0;
-    this.lastFrameMs = 0;
+    this.cpuFrameMs = 0;
+    this.gpuTimer = null;
     this.picking = null;
     this.pickUniform = null;
     this.pickFrameData = new Float32Array( 12 );
@@ -151,7 +157,8 @@ export class Renderer {
   stats(): RendererStats {
     return {
       frames: this.frameCount,
-      lastFrameMs: this.lastFrameMs,
+      cpuFrameMs: this.cpuFrameMs,
+      gpuFrameMs: this.gpuTimer?.lastMs ?? 0,
       uploadedBytes: ( this.mirror?.uploadedBytes ?? 0 ) + ( this.labelLayer?.uploadedBytes() ?? 0 ),
       nodes: this.cy._store.count( 'nodes' ),
       edges: this.cy._store.count( 'edges' ),
@@ -176,6 +183,7 @@ export class Renderer {
     this.offInvalidate();
     this.cy.off( 'viewport', this.onViewport );
     this.picking?.destroy();
+    this.gpuTimer?.destroy();
     this.labelLayer?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
@@ -261,6 +269,7 @@ export class Renderer {
     this.labelLayer = new LabelLayer( device, this.cy._store );
     this.labelPipeline = new LabelPipeline( device, format );
     this.picking = new Picking( device );
+    this.gpuTimer = GpuTimer.isSupported( device ) ? new GpuTimer( device ) : null;
 
     this.isReady = true;
     this.needsRedraw = true;
@@ -334,7 +343,8 @@ export class Renderer {
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: 'clear',
           storeOp: 'store'
-        } ]
+        } ],
+        ...( this.gpuTimer != null ? { timestampWrites: this.gpuTimer.timestampWrites() } : {} )
       } );
 
       // z-order: single pass, edges under nodes under labels, slot order
@@ -349,7 +359,11 @@ export class Renderer {
       }
 
       pass.end();
+
+      const finishTiming = this.gpuTimer?.encodeResolve( encoder ) ?? null;
+
       device.queue.submit( [ encoder.finish() ] );
+      finishTiming?.();
 
       this.inFlightFrames++;
       device.queue.onSubmittedWorkDone()
@@ -359,7 +373,7 @@ export class Renderer {
       this.cy.emit( 'render' );
     }
 
-    this.lastFrameMs = performance.now() - t0;
+    this.cpuFrameMs = performance.now() - t0;
 
     if( store.hasDirty() || this.needsRedraw || ( picking?.hasPending() ?? false ) ){
       this.schedule();

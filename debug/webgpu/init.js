@@ -223,9 +223,11 @@ const paramDefs = {
       lastBytes = stats.uploadedBytes;
       lastTime = now;
 
+      const gpuMs = stats.gpuFrameMs > 0 ? `${stats.gpuFrameMs.toFixed(1)} ms GPU` : 'GPU n/a';
+
       $('#stats').textContent =
         `${stats.nodes} nodes, ${stats.edges} edges, ${stats.glyphs} glyphs\n` +
-        `${fps.toFixed(0)} fps (rendered), ${stats.lastFrameMs.toFixed(2)} ms/frame\n` +
+        `${fps.toFixed(0)} fps (rendered), ${stats.cpuFrameMs.toFixed(2)} ms CPU / ${gpuMs} per frame\n` +
         `${kbps.toFixed(1)} KiB/s uploaded (${(stats.uploadedBytes / 1024 / 1024).toFixed(1)} MiB total)\n` +
         `pick latency ${stats.pickLatencyMs.toFixed(1)} ms`;
     }, 500);

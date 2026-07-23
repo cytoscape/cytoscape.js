@@ -267,6 +267,35 @@ struct EdgeVSOut {
 @vertex
 fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
   var out: EdgeVSOut;
+
+  var widthPx = widths[ii] * frame.zoomDpr;
+  var alphaComp = 1.0;
+
+  // LOD: floor hairline edges, compensating with alpha
+  if (widthPx < frame.edgeWidthFloor) {
+    alphaComp = max(widthPx / frame.edgeWidthFloor, 0.0);
+    widthPx = frame.edgeWidthFloor;
+
+    // decimation ladder: once floored edges fall below half alpha, draw a
+    // hash-stable 1-in-N subset at N x alpha (N a power of two <= 64).
+    // Aggregate coverage is preserved — (count/N) * (alpha*N) — while the
+    // massed same-pixel blend cost at far zoom drops ~N-fold.  Runs before
+    // any endpoint fetch so dropped instances cost no memory traffic.
+    var n = 1u;
+    while (alphaComp * f32(n) < 0.5 && n < 64u) { n = n * 2u; }
+
+    if (n > 1u) {
+      let h = ii * 2654435761u; // Knuth hash decorrelates from slot order
+
+      if (((h >> 16u) & (n - 1u)) != 0u) {
+        out.position = DEGENERATE;
+        return out;
+      }
+
+      alphaComp = alphaComp * f32(n);
+    }
+  }
+
   let ends = endpoints[ii];
 
   // hidden when the edge or either endpoint is dead/hidden
@@ -287,15 +316,6 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   if (len < 1e-4) {
     out.position = DEGENERATE;
     return out;
-  }
-
-  var widthPx = widths[ii] * frame.zoomDpr;
-  var alphaComp = 1.0;
-
-  // LOD: floor hairline edges, compensating with alpha
-  if (widthPx < frame.edgeWidthFloor) {
-    alphaComp = max(widthPx / frame.edgeWidthFloor, 0.0);
-    widthPx = frame.edgeWidthFloor;
   }
 
   let halfW = widthPx * 0.5;

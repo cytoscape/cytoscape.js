@@ -77,6 +77,12 @@ edges, non-grid layouts, graph algorithms.
   are capped at 2 in flight — when the GPU is behind, the loop coalesces
   state into the next frame instead of queueing deeper — so `pick()`/hover
   resolve in ~1 rAF plus bounded GPU work even on GPU-bound graphs.
+- **Far-zoom edge decimation**: once width-floored (hairline) edges fall
+  below half alpha, a hash-stable 1-in-N subset draws at N× alpha (N a
+  power of two ≤ 64).  Aggregate edge density is preserved, but individual
+  sub-half-alpha edges may neither draw nor pick at far zoom.  This removes
+  the far-zoom worst case where every edge rasterized into a few hundred
+  pixels and serialized at the blend stage (~33 ms → ~8 ms on 465k edges).
 - **Labels**: nodes only, single line (newlines collapse to spaces), fixed
   placement (horizontally centered below the node), not pickable, and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop

@@ -29,14 +29,17 @@ var networks = {
     desc: 'NDEX large',
     nodes: 3238,
     edges: 68641,
-    url: 'https://pub-835fc16db602427ba8b9a874e4754257.r2.dev/network-ndex-large.json',
+    url: '../webgl/network-ndex-large.json',
     styleUrl: '../webgl/network-ndex-large-style.json'
   },
   'ndex-x-large': {
+    // local copy slimmed to the fields the gpu prototype reads
+    // (id/source/target/position); the full-fat original lives at
+    // https://pub-835fc16db602427ba8b9a874e4754257.r2.dev/network-ndex-x-large.json
     desc: 'NDEX x-large',
     nodes: 19607,
     edges: 464657,
-    url: 'https://pub-835fc16db602427ba8b9a874e4754257.r2.dev/network-ndex-x-large.json',
+    url: 'network-ndex-x-large.json',
     styleUrl: '../webgl/network-ndex-x-large-style.json'
   },
   'gen': {

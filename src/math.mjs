@@ -1,3 +1,5 @@
+import * as is from './is.mjs';
+
 export const arePositionsSame = ( p1, p2 ) =>
   p1.x === p2.x && p1.y === p2.y;
 
@@ -114,15 +116,18 @@ export const gcd = ( a, b ) => {
 };
 
 // finds the GCD of an array of numbers: https://stackoverflow.com/a/4885641
-export const gcdMultiple = ( arr ) => {
+//
+// if any of the numbers are not integers, this returns zero (since even if
+// you try to take the GCD of two floating-point numbers you will end up with
+// either zero or some extremely small number that is almost zero)
+export const gcdMultipleZeroIfNonInt = ( arr ) => {
   var out = arr[0];
-  for ( var i = 1; i < arr.length; i++ ) {
-      // finding a 1 means we can bail early
-      // https://www.geeksforgeeks.org/dsa/gcd-two-array-numbers/
-      if ( out === 1 ) {
-        return out;
+  for ( var i = 0; i < arr.length; i++ ) {
+      if ( !is.integer( arr[i] ) ) {
+        return 0;
+      } else if (i > 0) {
+        out = gcd( out, arr[i] );
       }
-      out = gcd( out, arr[i] );
   }
   return out;
 };

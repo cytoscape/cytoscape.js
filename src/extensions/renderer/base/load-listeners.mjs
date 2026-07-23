@@ -1053,6 +1053,16 @@ BRp.load = function(){
     return true;
   }
 
+  var allAreSameMagnitude = function(list) {
+    var firstMag = Math.abs(list[0]);
+    for (var i = 1; i < list.length; i++) {
+      if (Math.abs(list[i]) !== firstMag) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   var wheelHandler = function( e ){
     var clamp = false;
     var delta = e.deltaY;
@@ -1077,7 +1087,16 @@ BRp.load = function(){
 
         if (!inaccurateScrollDevice) { // check for all large values with common divisor magnitude
           if (wds[0] > 5) {
-            var factor = math.gcdMultiple(wds);
+            var factor;
+            // an array of equal integers "x" will have a GCD of x, so in that
+            // case there is no need to have a separate "allAreSameMagnitude"
+            // check. but the GCD function only supports integers, so keeping
+            // both checks allows arrays of equal floating-point numbers
+            if (allAreSameMagnitude(wds)) {
+              factor = wds[0];
+            } else {
+              factor = math.gcdMultipleZeroIfNonInt(wds);
+            }
             if (factor > 1) {
               inaccurateScrollDevice = true;
               inaccurateScrollFactor = factor;

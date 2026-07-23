@@ -178,4 +178,18 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    endpoints column, with a per-node overlay for incremental adds
    (~15.5 MB of per-node arrays → ~4 MB).  Wire-payload init on
    ndex-x-large: ~106 → 68 ms median (deserialize itself ~0 ms).
-6. Cheap wins remaining: arrows, pinch zoom.
+6. ~~Cheap wins remaining: arrows, pinch zoom~~ — **done**.  Triangle
+   source/target arrowheads render as one quad per visible edge per
+   enabled end off the edge cull stream, tips on the endpoint node's
+   boundary computed on-GPU (drags/layouts need no rebuild); the vertex
+   stage stays within WebGPU's base 8-storage-buffer limit (per-end
+   color column binding; edge opacity folded into stored arrow alpha).
+   Two-finger pinch zooms about the touch midpoint with grab
+   cancellation and an inert leftover finger.  Playwright also runs on
+   WebKit now (classic renderer specs green; WebGPU specs soft-skip
+   until Playwright's WebKit build ships navigator.gpu).
+
+All follow-ups are done.  Open hooks beyond pass 1: slot/blob/CSR
+compaction, z-index ranks, animations, mappers beyond label data(key),
+compound nodes, bezier edges, more layouts, a binary export of live
+graphs (serializeElements already covers payloads).

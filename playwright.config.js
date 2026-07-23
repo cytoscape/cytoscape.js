@@ -65,14 +65,27 @@ export default defineConfig({
       },
     },
 
+    /*
+     * The same WebGPU specs on WebKit (Safari's engine, WebGPU on Metal).
+     * Specs soft-skip when the build exposes no adapter, so this project
+     * is safe wherever WebKit lacks WebGPU.
+     */
+    {
+      name: 'webgpu-webkit',
+      testMatch: /webgpu\.spec\.js/,
+      use: { ...devices['Desktop Safari'] },
+    },
+
+    /* The classic (canvas) renderer specs on WebKit. */
+    {
+      name: 'webkit',
+      testIgnore: /webgpu\.spec\.js/,
+      use: { ...devices['Desktop Safari'] },
+    },
+
     // {
     //   name: 'firefox',
     //   use: { ...devices['Desktop Firefox'] },
-    // },
-
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
     // },
 
     /* Test against mobile viewports. */

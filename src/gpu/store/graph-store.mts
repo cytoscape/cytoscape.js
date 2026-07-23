@@ -247,13 +247,13 @@ export class GraphStore implements ModelView {
 
     for( let i = 0; i < count; i++ ){
       const slot = slots[ i ];
-      const source = nodeSlots[ cols.sources[ i ] ];
-      const target = nodeSlots[ cols.targets[ i ] ];
 
-      endpoints[ slot * 2 ] = source;
-      endpoints[ slot * 2 + 1 ] = target;
-      this.adj.addEdge( slot, source, target );
+      endpoints[ slot * 2 ] = nodeSlots[ cols.sources[ i ] ];
+      endpoints[ slot * 2 + 1 ] = nodeSlots[ cols.targets[ i ] ];
     }
+
+    // fresh index: builds CSR in two counting passes; otherwise overlays
+    this.adj.addBulk( slots, endpoints, this.nodes.cap );
 
     this.writeBulkFlags( 'edges', slots, contiguousFrom, cols );
 

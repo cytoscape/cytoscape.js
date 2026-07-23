@@ -1,0 +1,114 @@
+import { expect } from 'chai';
+import cytoscapeGpu from '../src/gpu/index.mjs';
+import { toColumnarElements } from '../src/gpu/columnar.mjs';
+import { Adjacency } from '../src/gpu/store/adjacency.mjs';
+
+const FIXTURE = {
+  nodes: [ { data: { id: 'a' } }, { data: { id: 'b' } }, { data: { id: 'c' } } ],
+  edges: [
+    { data: { id: 'ab', source: 'a', target: 'b' } },
+    { data: { id: 'ac', source: 'a', target: 'c' } },
+    { data: { id: 'bc', source: 'b', target: 'c' } },
+    { data: { id: 'cc', source: 'c', target: 'c' } } // loop
+  ]
+};
+
+describe('gpu/store: adjacency (CSR + overlay)', function(){
+
+  it('CSR build matches the incremental path query for query', function(){
+    const bulk = cytoscapeGpu( { elements: toColumnarElements( FIXTURE ) } ); // CSR
+    const inc = cytoscapeGpu();
+
+    inc.add( FIXTURE.nodes );
+    for( const e of FIXTURE.edges ){ inc.add( e ); } // one-by-one: overlay only
+
+    for( const id of [ 'a', 'b', 'c' ] ){
+      const b = bulk.getElementById( id );
+      const i = inc.getElementById( id );
+
+      expect( b.connectedEdges().map( e => e.id() ), id ).to.deep.equal( i.connectedEdges().map( e => e.id() ) );
+      expect( b.outgoers( 'edge' ).map( e => e.id() ), id ).to.deep.equal( i.outgoers( 'edge' ).map( e => e.id() ) );
+      expect( b.incomers( 'edge' ).map( e => e.id() ), id ).to.deep.equal( i.incomers( 'edge' ).map( e => e.id() ) );
+      expect( b.degree( true ), id ).to.equal( i.degree( true ) );
+    }
+  });
+
+  it('counts a loop edge once in connectedEdges on the CSR path', function(){
+    const cy = cytoscapeGpu( { elements: toColumnarElements( FIXTURE ) } );
+
+    expect( cy.getElementById( 'c' ).connectedEdges().map( e => e.id() ).sort() )
+      .to.deep.equal([ 'ac', 'bc', 'cc' ]);
+  });
+
+  it('overlays post-build edges on top of CSR', function(){
+    const cy = cytoscapeGpu( { elements: toColumnarElements( FIXTURE ) } );
+
+    cy.add( { data: { id: 'ab2', source: 'a', target: 'b' } } );
+
+    expect( cy.getElementById( 'a' ).outgoers( 'edge' ).map( e => e.id() ) )
+      .to.deep.equal([ 'ab', 'ac', 'ab2' ]); // CSR first, then overlay, insertion order
+    expect( cy.getElementById( 'b' ).incomers( 'edge' ).map( e => e.id() ) )
+      .to.deep.equal([ 'ab', 'ab2' ]);
+  });
+
+  it('removes edges from the CSR run preserving order', function(){
+    const cy = cytoscapeGpu( { elements: toColumnarElements( FIXTURE ) } );
+
+    cy.getElementById( 'ab' ).remove();
+
+    expect( cy.getElementById( 'a' ).outgoers( 'edge' ).map( e => e.id() ) ).to.deep.equal([ 'ac' ]);
+    expect( cy.getElementById( 'b' ).degree( true ) ).to.equal( 1 );
+  });
+
+  it('cascades node removal through CSR-indexed edges', function(){
+    const cy = cytoscapeGpu( { elements: toColumnarElements( FIXTURE ) } );
+
+    cy.getElementById( 'c' ).remove(); // removes ac, bc, cc with it
+
+    expect( cy.edges().map( e => e.id() ) ).to.deep.equal([ 'ab' ]);
+    expect( cy.getElementById( 'a' ).degree( true ) ).to.equal( 1 );
+  });
+
+  it('a second bulk add on a built index overlays correctly', function(){
+    const cy = cytoscapeGpu( { elements: toColumnarElements( FIXTURE ) } );
+
+    cy.add( toColumnarElements( {
+      nodes: [ { data: { id: 'd' } } ],
+      edges: [ { data: { id: 'dd', source: 'd', target: 'd' } } ]
+    } ) );
+
+    expect( cy.getElementById( 'd' ).connectedEdges().map( e => e.id() ) ).to.deep.equal([ 'dd' ]);
+    expect( cy.getElementById( 'a' ).outgoers( 'edge' ) ).to.have.length( 2 );
+  });
+
+  it('unit: bulk build + removal + re-add on raw slots', function(){
+    const adj = new Adjacency();
+    // edges 0..3 over nodes 0..2: 0->1, 0->2, 1->2, 2->2
+    const endpoints = new Uint32Array([ 0, 1, 0, 2, 1, 2, 2, 2 ]);
+
+    adj.addBulk( new Uint32Array([ 0, 1, 2, 3 ]), endpoints, 3 );
+
+    expect( Array.from( adj.outEdges( 0 ) ) ).to.deep.equal([ 0, 1 ]);
+    expect( Array.from( adj.inEdges( 2 ) ) ).to.deep.equal([ 1, 2, 3 ]);
+    expect( adj.outDegree( 2 ) ).to.equal( 1 );
+
+    adj.removeEdge( 1, 0, 2 ); // from the CSR runs
+
+    expect( Array.from( adj.outEdges( 0 ) ) ).to.deep.equal([ 0 ]);
+    expect( Array.from( adj.inEdges( 2 ) ) ).to.deep.equal([ 2, 3 ]);
+
+    adj.addEdge( 4, 0, 2 ); // overlay on a CSR node
+
+    expect( Array.from( adj.outEdges( 0 ) ) ).to.deep.equal([ 0, 4 ]);
+    expect( adj.inDegree( 2 ) ).to.equal( 3 );
+
+    adj.removeEdge( 4, 0, 2 ); // from the overlay
+
+    expect( Array.from( adj.outEdges( 0 ) ) ).to.deep.equal([ 0 ]);
+
+    adj.clearNode( 2 );
+
+    expect( adj.inDegree( 2 ) ).to.equal( 0 );
+    expect( adj.outDegree( 2 ) ).to.equal( 0 );
+  });
+});

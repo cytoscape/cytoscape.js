@@ -105,6 +105,28 @@ export const median = ( arr, begin = 0, end = arr.length, copy = true, sort = tr
   }
 };
 
+// https://en.wikipedia.org/wiki/Greatest_common_divisor#Euclidean_algorithm
+export const gcd = ( a, b ) => {
+  if( b === 0 ) {
+    return a;
+  }
+  return gcd( b, a % b );
+};
+
+// finds the GCD of an array of numbers: https://stackoverflow.com/a/4885641
+export const gcdMultiple = ( arr ) => {
+  var out = arr[0];
+  for ( var i = 1; i < arr.length; i++ ) {
+      // finding a 1 means we can bail early
+      // https://www.geeksforgeeks.org/dsa/gcd-two-array-numbers/
+      if ( out === 1 ) {
+        return out;
+      }
+      out = gcd( out, arr[i] );
+  }
+  return out;
+};
+
 export const deg2rad = deg =>
   Math.PI * deg / 180;
 

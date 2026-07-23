@@ -1053,23 +1053,6 @@ BRp.load = function(){
     return true;
   }
 
-  // https://en.wikipedia.org/wiki/Greatest_common_divisor#Euclidean_algorithm
-  var gcd = function( a, b ) {
-    if( b === 0 ) {
-      return a;
-    }
-    return gcd(b, a % b);
-  }
-
-  // Finds the GCD of a list of numbers: https://stackoverflow.com/a/4885641
-  var gcdMultiple = function( list ) {
-    var out = list[0];
-    for ( var i = 1; i < list.length; i++ ) {
-        out = gcd(out, list[i]);
-    }
-    return out;
-  }
-
   var wheelHandler = function( e ){
     var clamp = false;
     var delta = e.deltaY;
@@ -1094,7 +1077,7 @@ BRp.load = function(){
 
         if (!inaccurateScrollDevice) { // check for all large values with common divisor magnitude
           if (wds[0] > 5) {
-            var factor = gcdMultiple(wds);
+            var factor = math.gcdMultiple(wds);
             if (factor > 1) {
               inaccurateScrollDevice = true;
               inaccurateScrollFactor = factor;
@@ -1105,7 +1088,7 @@ BRp.load = function(){
           }
         }
         
-        if ( isfUnset && inaccurateScrollDevice ) {
+        if (isfUnset && inaccurateScrollDevice) {
           for (var i = 0; i < wds.length; i++) {
             inaccurateScrollFactor = Math.min(wds[i], inaccurateScrollFactor);
           }

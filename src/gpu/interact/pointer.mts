@@ -18,8 +18,10 @@ Pointer/wheel interaction over the WebGPU canvas:
 - node drag writes position through the core API (position events fire,
   dirty spans upload, edges follow on-GPU)
 - tap toggles selection (shift = additive); background tap clears
-
-Pinch is deferred.
+- two touch pointers pinch-zoom about their midpoint (and pan with it);
+  a second finger cancels any pan/grab in progress, and the finger left
+  over after a pinch stays inert until lifted (no pan jump).  Trackpad
+  pinches arrive as ctrl+wheel and take the wheel path.
 */
 
 const TAP_THRESHOLD = 4; // css px of movement before a press becomes a drag
@@ -48,6 +50,9 @@ export class PointerHandler {
   private pickInFlight: boolean;
   private lastHoverAt: number;
   private down: DownState | null;
+  private touches: Map<number, Position>;
+  private pinch: { dist: number; mid: Position } | null;
+  private deadTouch: number | null;
   private wheelingUntil: number;
   private wheelSettleTimer: ReturnType<typeof setTimeout> | null;
   private cleanups: ( () => void )[];
@@ -61,6 +66,9 @@ export class PointerHandler {
     this.pickInFlight = false;
     this.lastHoverAt = 0;
     this.down = null;
+    this.touches = new Map();
+    this.pinch = null;
+    this.deadTouch = null;
     this.wheelingUntil = 0;
     this.wheelSettleTimer = null;
     this.cleanups = [];
@@ -116,9 +124,23 @@ export class PointerHandler {
   }
 
   private onPointerDown( e: PointerEvent ): void {
+    if( e.pointerType === 'touch' ){
+      this.touches.set( e.pointerId, this.eventPos( e ) );
+
+      if( this.touches.size === 2 && this.pinch == null ){
+        this.capture( e.pointerId );
+        this.beginPinch();
+
+        return;
+      }
+
+      // extra fingers mid-pinch (or after one) just get tracked
+      if( this.pinch != null || this.deadTouch != null ){ return; }
+    }
+
     if( e.button !== 0 || this.down != null ){ return; }
 
-    this.canvas.setPointerCapture( e.pointerId );
+    this.capture( e.pointerId );
 
     const pos = this.eventPos( e );
 
@@ -144,6 +166,19 @@ export class PointerHandler {
 
   private onPointerMove( e: PointerEvent ): void {
     const pos = this.eventPos( e );
+
+    if( e.pointerType === 'touch' && this.touches.has( e.pointerId ) ){
+      this.touches.set( e.pointerId, pos );
+
+      if( this.pinch != null ){
+        this.pinchMove();
+
+        return;
+      }
+
+      if( this.deadTouch === e.pointerId ){ return; }
+    }
+
     const down = this.down;
 
     if( down == null || down.pointerId !== e.pointerId ){
@@ -177,6 +212,8 @@ export class PointerHandler {
   }
 
   private onPointerUp( e: PointerEvent ): void {
+    if( this.endTouch( e ) ){ return; }
+
     const down = this.down;
 
     if( down == null || down.pointerId !== e.pointerId ){ return; }
@@ -193,6 +230,8 @@ export class PointerHandler {
   }
 
   private onPointerCancel( e: PointerEvent ): void {
+    if( this.endTouch( e ) ){ return; }
+
     const down = this.down;
 
     if( down == null || down.pointerId !== e.pointerId ){ return; }
@@ -202,6 +241,73 @@ export class PointerHandler {
     if( down.grabbed != null ){
       this.setFlagOn( down.grabbed, FLAG_GRABBED, false );
     }
+  }
+
+  // -- pinch --
+
+  /** A second finger turns any pan/grab into a pinch. */
+  private beginPinch(): void {
+    const down = this.down;
+
+    if( down != null ){
+      if( down.grabbed != null ){ this.setFlagOn( down.grabbed, FLAG_GRABBED, false ); }
+
+      this.down = null;
+    }
+
+    this.updateHover( null ); // a pinch is a viewport-only gesture
+    this.pinch = this.pinchBase();
+  }
+
+  private pinchBase(): { dist: number; mid: Position } {
+    const [ a, b ] = [ ...this.touches.values() ];
+
+    return {
+      dist: Math.hypot( b.x - a.x, b.y - a.y ),
+      mid: { x: ( a.x + b.x ) / 2, y: ( a.y + b.y ) / 2 }
+    };
+  }
+
+  private pinchMove(): void {
+    const pinch = this.pinch!;
+    const { dist, mid } = this.pinchBase();
+
+    if( pinch.dist > 0 && dist > 0 ){
+      this.cy.zoom( {
+        level: ( this.cy.zoom() as number ) * dist / pinch.dist,
+        renderedPosition: mid
+      } );
+    }
+
+    this.cy.panBy( { x: mid.x - pinch.mid.x, y: mid.y - pinch.mid.y } );
+    this.pinch = { dist, mid };
+  }
+
+  /** Touch bookkeeping on up/cancel; true when the event is consumed by pinch state. */
+  private endTouch( e: PointerEvent ): boolean {
+    if( e.pointerType !== 'touch' ){ return false; }
+
+    const wasPinching = this.pinch != null && this.touches.has( e.pointerId );
+
+    this.touches.delete( e.pointerId );
+
+    if( this.deadTouch === e.pointerId ){
+      this.deadTouch = null;
+
+      return true;
+    }
+
+    if( !wasPinching ){ return false; }
+
+    if( this.touches.size >= 2 ){
+      this.pinch = this.pinchBase(); // rebase on the remaining pair, no jump
+    } else {
+      this.pinch = null;
+      // the leftover finger stays inert until lifted (no pan jump)
+      this.deadTouch = this.touches.keys().next().value ?? null;
+    }
+
+    return true;
   }
 
   // -- helpers --
@@ -279,6 +385,14 @@ export class PointerHandler {
 
     if( ref != null && ele.inside() ){
       this.cy._store.setFlag( ref.group, ref.slot, bit, on );
+    }
+  }
+
+  private capture( pointerId: number ): void {
+    try {
+      this.canvas.setPointerCapture( pointerId );
+    } catch {
+      // inactive pointers (synthetic events, already-lifted fingers) throw
     }
   }
 

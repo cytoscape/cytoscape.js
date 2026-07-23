@@ -526,6 +526,71 @@ test.describe( 'WebGPU renderer', () => {
     } );
   } );
 
+  test( 'two-finger pinch zooms about the midpoint', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const result = await page.evaluate( async center => {
+      const canvas = document.querySelector( 'canvas' );
+      const rect = canvas.getBoundingClientRect();
+      const fire = ( type, id, x, y ) => canvas.dispatchEvent( new PointerEvent( type, {
+        pointerId: id,
+        pointerType: 'touch',
+        clientX: rect.left + x,
+        clientY: rect.top + y,
+        button: 0,
+        buttons: 1,
+        bubbles: true
+      } ) );
+
+      const before = {
+        zoom: window.cy.zoom(),
+        underMid: window.cy._viewport.renderedToModel( center )
+      };
+
+      // two fingers 100 apart widen to 200 apart: zoom should double
+      fire( 'pointerdown', 11, center.x - 50, center.y );
+      fire( 'pointerdown', 12, center.x + 50, center.y );
+
+      for( let step = 1; step <= 5; step++ ){
+        const spread = 50 + step * 10;
+
+        fire( 'pointermove', 11, center.x - spread, center.y );
+        fire( 'pointermove', 12, center.x + spread, center.y );
+      }
+
+      fire( 'pointerup', 11, center.x - 100, center.y );
+
+      // the leftover finger must be inert: moving it must not pan
+      const panBeforeDrag = window.cy.pan();
+
+      fire( 'pointermove', 12, center.x + 40, center.y + 40 );
+
+      const panAfterDrag = window.cy.pan();
+
+      fire( 'pointerup', 12, center.x + 40, center.y + 40 );
+
+      return {
+        before,
+        after: {
+          zoom: window.cy.zoom(),
+          underMid: window.cy._viewport.renderedToModel( center )
+        },
+        deadTouchPanned: panAfterDrag.x !== panBeforeDrag.x || panAfterDrag.y !== panBeforeDrag.y
+      };
+    }, center );
+
+    expect( result.after.zoom ).toBeCloseTo( result.before.zoom * 2, 1 );
+    expect( result.after.underMid.x ).toBeCloseTo( result.before.underMid.x, 0 );
+    expect( result.after.underMid.y ).toBeCloseTo( result.before.underMid.y, 0 );
+    expect( result.deadTouchPanned ).toBe( false );
+  } );
+
   test( 'tap selects and background tap clears', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

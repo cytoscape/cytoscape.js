@@ -184,7 +184,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   approximated by its box).  Arrows draw *over* the line — a translucent
   arrow shows the line through it — are not pickable (the GPU pick pass
   stays edges-only), and size with the drawn (floored) edge width.
-- Pinch zoom is deferred; wheel/drag/hover/tap/grab are implemented.
+- **Pinch zoom**: two touch pointers zoom about their midpoint (panning
+  with it); a second finger cancels any pan/grab in progress, and the
+  finger left over after a pinch stays inert until lifted.  Like other
+  viewport gestures, no hover/tap semantics apply mid-pinch.  Trackpad
+  pinches arrive as ctrl+wheel and take the wheel path.
 - No device-loss recovery: the instance goes dead and emits an `error`
   event.
 

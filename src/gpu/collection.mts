@@ -34,6 +34,8 @@ export class GpuCollection {
   _refs: Ref[];
   _id: string | undefined;
   _group: GroupName | undefined;
+  /** per-element scratchpad, lazily created on the interned singleton handle */
+  _scratch?: Record<string, unknown>;
 
   constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean } = {} ){
     this._cy = cy;
@@ -262,6 +264,41 @@ export class GpuCollection {
 
   group(): GroupName | undefined {
     return this[0]?._group;
+  }
+
+  /** Plain-object form of the first element (undefined when empty). */
+  json(): Record<string, unknown> | undefined {
+    const ref = this._first();
+
+    if( ref == null ){ return undefined; }
+
+    const group = this._group ?? ref.group;
+    const data = ( this.data() as Record<string, unknown> ) ?? { id: this.id() };
+    const json: Record<string, unknown> = {
+      group,
+      data,
+      removed: this.removed(),
+      selected: this.selected(),
+      selectable: this.selectable(),
+      classes: ''
+    };
+
+    if( group === 'nodes' ){
+      json.position = ( this.position() as Position | undefined ) ?? { x: 0, y: 0 };
+    }
+
+    return json;
+  }
+
+  /** Plain-object form of every element. */
+  jsons(): ( Record<string, unknown> | undefined )[] {
+    const out: ( Record<string, unknown> | undefined )[] = [];
+
+    for( let i = 0; i < this.length; i++ ){
+      out.push( this[ i ].json() );
+    }
+
+    return out;
   }
 
   isNode(): boolean {
@@ -752,6 +789,80 @@ export class GpuCollection {
 
       if( hasListeners( cy._emitter, 'data' ) ){
         cy._emitOnEle( 'data', this[ i ] );
+      }
+    }
+
+    return this;
+  }
+
+  /** Remove named sidecar keys (space-separated), or all of them when omitted. */
+  removeData( names?: string ): this {
+    const store = this._store;
+    const requested = names == null ? null : names.split( /\s+/ ).filter( n => n !== '' );
+
+    for( let i = 0; i < this.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( !store.isCurrent( ref ) ){ continue; }
+
+      const keys = requested ?? Object.keys( store.data.object( ref.group, ref.slot ) );
+      const patch: Record<string, unknown> = {};
+
+      for( const k of keys ){ patch[ k ] = undefined; }
+
+      if( Object.keys( patch ).length > 0 ){ this[ i ]._setData( patch ); }
+    }
+
+    return this;
+  }
+
+  declare attr: this['data'];
+  declare removeAttr: this['removeData'];
+
+  /**
+   * Per-element scratchpad (plain JS, not a column): `scratch()` reads the
+   * first element's whole object, `scratch(ns)` one namespace, `scratch(ns,
+   * val)` / `scratch(obj)` write to every element.
+   */
+  scratch(
+    ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ]
+  ): unknown {
+    const [ ns, value ] = args;
+
+    // whole-object getter
+    if( args.length === 0 ){
+      return this[ 0 ]?._scratch ?? {};
+    }
+
+    // single-namespace getter
+    if( typeof ns === 'string' && args.length === 1 ){
+      return this[ 0 ]?._scratch?.[ ns ];
+    }
+
+    const patch: Record<string, unknown> = typeof ns === 'string'
+      ? { [ ns ]: value }
+      : ns as Record<string, unknown>;
+
+    for( let i = 0; i < this.length; i++ ){
+      const ele = this[ i ];
+
+      ele._scratch ??= {};
+      Object.assign( ele._scratch, patch );
+    }
+
+    return this;
+  }
+
+  removeScratch( namespace?: string ): this {
+    for( let i = 0; i < this.length; i++ ){
+      const ele = this[ i ];
+
+      if( ele._scratch == null ){ continue; }
+
+      if( namespace == null ){
+        ele._scratch = {};
+      } else {
+        delete ele._scratch[ namespace ];
       }
     }
 
@@ -1516,6 +1627,10 @@ export class GpuCollection {
     return this;
   }
 
+  declare once: this['one'];
+  declare listen: this['on'];
+  declare bind: this['on'];
+
   off( events: string, callback?: EventHandler ): this {
     for( const ref of this._refs ){
       this._cy._emitter.off( events, refQualifier( ref ), callback );
@@ -1525,6 +1640,8 @@ export class GpuCollection {
   }
 
   declare removeListener: this['off'];
+  declare unlisten: this['off'];
+  declare unbind: this['off'];
 
   emit( events: string, extraParams?: unknown[] ): this {
     for( let i = 0; i < this.length; i++ ){
@@ -1545,6 +1662,8 @@ export class GpuCollection {
       this.one( events, event => resolve( event ) );
     } );
   }
+
+  declare pon: this['promiseOn'];
 }
 
 GpuCollection.prototype.each = GpuCollection.prototype.forEach;
@@ -1579,3 +1698,11 @@ GpuCollection.prototype.componentsOf = GpuCollection.prototype.components;
 GpuCollection.prototype.addListener = GpuCollection.prototype.on;
 GpuCollection.prototype.removeListener = GpuCollection.prototype.off;
 GpuCollection.prototype.trigger = GpuCollection.prototype.emit;
+GpuCollection.prototype.once = GpuCollection.prototype.one;
+GpuCollection.prototype.listen = GpuCollection.prototype.on;
+GpuCollection.prototype.bind = GpuCollection.prototype.on;
+GpuCollection.prototype.unlisten = GpuCollection.prototype.off;
+GpuCollection.prototype.unbind = GpuCollection.prototype.off;
+GpuCollection.prototype.pon = GpuCollection.prototype.promiseOn;
+GpuCollection.prototype.attr = GpuCollection.prototype.data;
+GpuCollection.prototype.removeAttr = GpuCollection.prototype.removeData;

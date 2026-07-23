@@ -15,7 +15,7 @@ unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
  * footguns); computed CPU-side from the core viewport + device pixel ratio.
  * Layout must match Renderer's Float32Array(12): viewportPx, panPx, zoomDpr,
- * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, 3 pads — 48 bytes.
+ * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, 2 pads — 48 bytes.
  */
 export const FRAME_STRUCT = `
 struct Frame {
@@ -26,7 +26,7 @@ struct Frame {
   nodeLodPx: f32,        // LOD: below this device-px size nodes are plain AA discs
   hidePx: f32,           // LOD: below this device-px size sizes are floored + alpha-compensated
   edgeDim: f32,          // LOD: zoom-based edge dimming [0,1)
-  pad0: f32,
+  labelFadePx: f32,      // LOD: labels fade out as glyph height drops below this, device px
   pad1: f32,
   pad2: f32,
 }
@@ -339,5 +339,85 @@ fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
   }
 
   return (in.instance + 1u) | 0x80000000u; // high bit marks edges
+}
+`;
+
+export const LABEL_SHADER = `
+${COMMON}
+
+// matches GlyphBuffer's CPU layout: 10 words / 40 bytes per glyph
+struct Glyph {
+  nodeSlot: u32,   // 0xffffffff = dead (tombstoned run)
+  color: u32,      // packed RGBA bytes
+  offset: vec2f,   // quad top-left from the node center, model px
+  size: vec2f,     // model px
+  uv0: vec2f,
+  uv1: vec2f,
+}
+
+const DEAD_GLYPH: u32 = 0xffffffffu;
+
+@group(0) @binding(0) var<uniform> frame: Frame;
+@group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
+@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(3) var<storage, read> nodeFlags: array<u32>;
+@group(0) @binding(4) var atlas: texture_2d<f32>;
+@group(0) @binding(5) var atlasSampler: sampler;
+
+struct LabelVSOut {
+  @builtin(position) position: vec4f,
+  @location(0) uv: vec2f,
+  @location(1) color: vec4f,
+  @location(2) fade: f32,
+}
+
+@vertex
+fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LabelVSOut {
+  var out: LabelVSOut;
+  let g = glyphs[ii];
+
+  if (g.nodeSlot == DEAD_GLYPH || (nodeFlags[g.nodeSlot] & SHOWN) != SHOWN) {
+    out.position = DEGENERATE;
+    return out;
+  }
+
+  // LOD: fade out (and finally collapse) as the on-screen glyph shrinks
+  let heightPx = g.size.y * frame.zoomDpr;
+  let fade = smoothstep(frame.labelFadePx * 0.5, frame.labelFadePx, heightPx);
+
+  if (fade <= 0.001) {
+    out.position = DEGENERATE;
+    return out;
+  }
+
+  // glyphs read the node position buffer: labels follow drags/layouts on-GPU
+  let originPx = modelToPx(frame, nodePositions[g.nodeSlot]) + g.offset * frame.zoomDpr;
+  let sizePx = g.size * frame.zoomDpr;
+
+  // conservative off-viewport collapse
+  if (originPx.x + sizePx.x < 0.0 || originPx.x > frame.viewportPx.x ||
+      originPx.y + sizePx.y < 0.0 || originPx.y > frame.viewportPx.y) {
+    out.position = DEGENERATE;
+    return out;
+  }
+
+  let t = (quadCorner(vi) + vec2f(1.0)) * 0.5;
+
+  out.position = vec4f(pxToClip(frame, originPx + t * sizePx), 0.0, 1.0);
+  out.uv = mix(g.uv0, g.uv1, t);
+  out.color = unpack4x8unorm(g.color);
+  out.fade = fade;
+  return out;
+}
+
+@fragment
+fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
+  // the SDF encodes the glyph edge at 0.5; fwidth-based smoothing keeps
+  // text crisp at any zoom from the one 32px-per-glyph atlas
+  let s = textureSample(atlas, atlasSampler, in.uv).r;
+  let w = max(fwidth(s), 1e-4);
+  let alpha = clamp((s - 0.5) / w + 0.5, 0.0, 1.0) * in.fade * in.color.a;
+
+  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
 }
 `;

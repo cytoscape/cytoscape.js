@@ -66,6 +66,8 @@ export interface GpuRendererOptions {
   hidePx?: number;
   /** dim edges as zoom decreases below 1 (default false) */
   edgeDimming?: boolean;
+  /** labels fade out as on-screen glyph height drops below this (default 6) */
+  labelFadePx?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
 }

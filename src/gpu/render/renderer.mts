@@ -4,6 +4,8 @@ import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
 import { EDGE_PICK_BIT, Picking } from './picking.mjs';
 import type { InFlightCopy } from './picking.mjs';
+import { LabelLayer } from './label-layer.mjs';
+import { LabelPipeline } from './label-pipeline.mjs';
 import { BUFFER_USAGE } from './webgpu-constants.mjs';
 import { FLAG_ALIVE } from '../contract.mjs';
 import type { GpuCore } from '../core.mjs';
@@ -27,12 +29,14 @@ interface RendererStats {
   uploadedBytes: number;
   nodes: number;
   edges: number;
+  glyphs: number;
   pickLatencyMs: number;
 }
 
 const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
 const DEFAULT_NODE_LOD_PX = 3;
 const DEFAULT_HIDE_PX = 1;
+const DEFAULT_LABEL_FADE_PX = 6;
 
 export class Renderer {
   /** resolves when the device is acquired and the first frame can draw */
@@ -61,6 +65,8 @@ export class Renderer {
   private lastFrameMs: number;
   private picking: Picking | null;
   private inFlightCopy: InFlightCopy | null;
+  private labelLayer: LabelLayer | null;
+  private labelPipeline: LabelPipeline | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -80,6 +86,8 @@ export class Renderer {
     this.lastFrameMs = 0;
     this.picking = null;
     this.inFlightCopy = null;
+    this.labelLayer = null;
+    this.labelPipeline = null;
 
     this.dpr = opts.pixelRatio == null || opts.pixelRatio === 'auto'
       ? ( globalThis.devicePixelRatio || 1 )
@@ -118,9 +126,10 @@ export class Renderer {
     return {
       frames: this.frameCount,
       lastFrameMs: this.lastFrameMs,
-      uploadedBytes: this.mirror?.uploadedBytes ?? 0,
+      uploadedBytes: ( this.mirror?.uploadedBytes ?? 0 ) + ( this.labelLayer?.uploadedBytes() ?? 0 ),
       nodes: this.cy._store.count( 'nodes' ),
       edges: this.cy._store.count( 'edges' ),
+      glyphs: this.labelLayer?.count() ?? 0,
       pickLatencyMs: this.pickLatencyMs()
     };
   }
@@ -141,6 +150,7 @@ export class Renderer {
     this.offInvalidate();
     this.cy.off( 'viewport', this.onViewport );
     this.picking?.destroy();
+    this.labelLayer?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.device?.destroy();
@@ -246,6 +256,8 @@ export class Renderer {
 
     this.nodePipeline = new NodePipeline( device, format );
     this.edgePipeline = new EdgePipeline( device, format );
+    this.labelLayer = new LabelLayer( device, this.cy._store );
+    this.labelPipeline = new LabelPipeline( device, format );
 
     this.isReady = true;
     this.onReady();
@@ -278,6 +290,8 @@ export class Renderer {
       mirror.sync( store.takeDelta() );
     }
 
+    this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
+
     this.writeFrameUniform();
 
     const encoder = device.createCommandEncoder( { label: 'cy-gpu:frame' } );
@@ -292,13 +306,19 @@ export class Renderer {
       } ]
     } );
 
-    // z-order: single pass, edges under nodes, slot order within each group
+    // z-order: single pass, edges under nodes under labels, slot order
+    // within each group
     const nodeCount = store.highWater( 'nodes' );
     const edgeCount = store.highWater( 'edges' );
     const uniform = this.uniform as GPUBuffer;
 
     this.edgePipeline?.draw( pass, device, uniform, mirror, edgeCount );
     this.nodePipeline?.draw( pass, device, uniform, mirror, nodeCount );
+
+    if( this.labelLayer != null && this.labelPipeline != null ){
+      this.labelPipeline.draw( pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas );
+    }
+
     pass.end();
 
     this.encodeExtraPasses( encoder );
@@ -365,7 +385,8 @@ export class Renderer {
     f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
     f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
     f[8] = opts.edgeDimming ? Math.min( 0.85, Math.max( 0, 1 - zoom ) * 0.85 ) : 0;
-    // f[9..11]: padding
+    f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
+    // f[10..11]: padding
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
   }

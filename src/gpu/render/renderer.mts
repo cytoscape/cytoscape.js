@@ -2,8 +2,7 @@ import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
 import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
-import { EDGE_PICK_BIT, Picking } from './picking.mjs';
-import type { InFlightCopy } from './picking.mjs';
+import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
 import { BUFFER_USAGE } from './webgpu-constants.mjs';
@@ -16,11 +15,16 @@ import type { GpuRendererOptions } from '../gpu-types.mjs';
 The frame graph: a render-on-dirty rAF loop.
 
 A frame is scheduled when the store invalidates (dirty columns), on any
-viewport event, or on resize; nothing renders while clean.  Pass order in a
-frame: sync dirty spans to the GPU mirror → write the Frame uniform → one
-render pass (edges then nodes, no depth buffer).  Frames before `.ready`
-resolves are no-ops; readiness triggers the first frame.  Device loss makes
-the instance dead (an `error` event fires; no recovery).
+viewport event, on resize, or when a pick is pending; nothing renders while
+clean.  Order within a frame: sync dirty spans to the GPU mirror → rebuild
+dirty label glyph runs → if a pick is pending, encode + submit the
+cursor-tile pick pass in its own command buffer (so its readback maps as
+soon as it executes) → if anything changed visually, write the Frame
+uniform and run the scene pass (edges then nodes then labels, no depth
+buffer).  Pick-only frames skip the scene pass entirely, so hover picking
+over a static graph costs O(cursor region) per tick.  Frames before
+`.ready` resolves are no-ops; readiness triggers the first frame.  Device
+loss makes the instance dead (an `error` event fires; no recovery).
 */
 
 interface RendererStats {
@@ -37,6 +41,16 @@ const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
 const DEFAULT_NODE_LOD_PX = 3;
 const DEFAULT_HIDE_PX = 1;
 const DEFAULT_LABEL_FADE_PX = 6;
+
+/**
+ * Backpressure: at most this many scene submissions may be unfinished on
+ * the GPU.  Without the cap, a GPU-bound graph accumulates an unbounded
+ * queue of ~frame-sized submissions and every pick readback (and the
+ * visible viewport itself) falls further and further behind; with it, a
+ * behind GPU makes the loop skip encoding and coalesce viewport/model
+ * state into the next frame instead.
+ */
+const MAX_IN_FLIGHT_FRAMES = 2;
 
 export class Renderer {
   /** resolves when the device is acquired and the first frame can draw */
@@ -64,7 +78,10 @@ export class Renderer {
   private frameCount: number;
   private lastFrameMs: number;
   private picking: Picking | null;
-  private inFlightCopy: InFlightCopy | null;
+  private pickUniform: GPUBuffer | null;
+  private pickFrameData: Float32Array;
+  private needsRedraw: boolean;
+  private inFlightFrames: number;
   private labelLayer: LabelLayer | null;
   private labelPipeline: LabelPipeline | null;
 
@@ -85,7 +102,10 @@ export class Renderer {
     this.frameCount = 0;
     this.lastFrameMs = 0;
     this.picking = null;
-    this.inFlightCopy = null;
+    this.pickUniform = null;
+    this.pickFrameData = new Float32Array( 12 );
+    this.needsRedraw = true;
+    this.inFlightFrames = 0;
     this.labelLayer = null;
     this.labelPipeline = null;
 
@@ -110,8 +130,14 @@ export class Renderer {
     container.appendChild( this.canvas );
     this.applySize();
 
-    this.offInvalidate = cy._store.onInvalidate( () => this.schedule() );
-    this.onViewport = () => this.schedule();
+    this.offInvalidate = cy._store.onInvalidate( () => {
+      this.needsRedraw = true;
+      this.schedule();
+    } );
+    this.onViewport = () => {
+      this.needsRedraw = true;
+      this.schedule();
+    };
     cy.on( 'viewport', this.onViewport );
 
     this.resizeObserver = typeof ResizeObserver !== 'undefined'
@@ -138,7 +164,7 @@ export class Renderer {
     if( this.destroyed ){ return; }
 
     this.applySize();
-    this.onResized();
+    this.needsRedraw = true;
     this.schedule();
   }
 
@@ -153,6 +179,7 @@ export class Renderer {
     this.labelLayer?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
+    this.pickUniform?.destroy();
     this.device?.destroy();
     this.canvas.remove();
   }
@@ -161,8 +188,10 @@ export class Renderer {
 
   /**
    * Async GPU pick at a rendered (CSS px) position.  Resolves with the
-   * element under the point, or null for background/unknown.  Latency is
-   * 1–2 frames (latest-wins coalescing).
+   * element under the point, or null for background/unknown.  The pick
+   * pass draws only the cursor tile and submits ahead of any scene work,
+   * so latency is roughly one rAF plus the bounded in-flight GPU work
+   * (latest-wins coalescing; requests never queue up).
    */
   async pick( x: number, y: number ): Promise<GpuCollection | null> {
     if( this.destroyed || !this.isReady || this.picking == null ){ return null; }
@@ -188,39 +217,6 @@ export class Renderer {
     }
 
     return this.cy._ele( group, slot );
-  }
-
-  private onReady(): void {
-    this.picking = new Picking( this.device as GPUDevice );
-    this.picking.resize( this.canvas.width, this.canvas.height );
-  }
-
-  private onResized(): void {
-    this.picking?.resize( this.canvas.width, this.canvas.height );
-  }
-
-  private encodeExtraPasses( encoder: GPUCommandEncoder ): void {
-    const picking = this.picking;
-
-    if( picking == null || !picking.hasPending() ){ return; }
-
-    const targetView = picking.targetView();
-
-    if( targetView == null ){ return; }
-
-    this.drawPickPasses( encoder, targetView );
-    this.inFlightCopy = picking.encodeCopy( encoder );
-  }
-
-  private afterSubmit(): void {
-    if( this.inFlightCopy != null && this.picking != null ){
-      void this.picking.finish( this.inFlightCopy );
-      this.inFlightCopy = null;
-    }
-  }
-
-  private hasExtraWork(): boolean {
-    return this.picking?.hasPending() ?? false;
   }
 
   private pickLatencyMs(): number {
@@ -254,17 +250,24 @@ export class Renderer {
     this.mirror = new ColumnMirror( device, this.cy._store );
     this.cy._store.takeDelta();
 
+    this.pickUniform = device.createBuffer( {
+      label: 'cy-gpu:pick-frame-uniform',
+      size: this.pickFrameData.byteLength,
+      usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
+    } );
+
     this.nodePipeline = new NodePipeline( device, format );
     this.edgePipeline = new EdgePipeline( device, format );
     this.labelLayer = new LabelLayer( device, this.cy._store );
     this.labelPipeline = new LabelPipeline( device, format );
+    this.picking = new Picking( device );
 
     this.isReady = true;
-    this.onReady();
+    this.needsRedraw = true;
     this.schedule(); // first frame
   }
 
-  protected schedule(): void {
+  private schedule(): void {
     if( this.frameRequested || this.destroyed || !this.isReady ){ return; }
 
     this.frameRequested = true;
@@ -287,58 +290,86 @@ export class Renderer {
     const store = this.cy._store;
 
     if( store.hasDirty() ){
+      this.needsRedraw = true;
       mirror.sync( store.takeDelta() );
     }
 
     this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
 
-    this.writeFrameUniform();
+    // pick pass first, in its own submit: a tiny cursor-centered tile whose
+    // readback maps as soon as it executes, never queued behind a scene draw
+    const picking = this.picking;
+    const pending = picking?.peekPending() ?? null;
 
-    const encoder = device.createCommandEncoder( { label: 'cy-gpu:frame' } );
-    const view = context.getCurrentTexture().createView();
-    const pass = encoder.beginRenderPass( {
-      label: 'cy-gpu:render-pass',
-      colorAttachments: [ {
-        view,
-        clearValue: { r: 0, g: 0, b: 0, a: 0 },
-        loadOp: 'clear',
-        storeOp: 'store'
-      } ]
-    } );
+    if( picking != null && pending != null ){
+      this.writePickUniform( pending.xPx, pending.yPx );
 
-    // z-order: single pass, edges under nodes under labels, slot order
-    // within each group
-    const nodeCount = store.highWater( 'nodes' );
-    const edgeCount = store.highWater( 'edges' );
-    const uniform = this.uniform as GPUBuffer;
+      const pickEncoder = device.createCommandEncoder( { label: 'cy-gpu:pick' } );
 
-    this.edgePipeline?.draw( pass, device, uniform, mirror, edgeCount );
-    this.nodePipeline?.draw( pass, device, uniform, mirror, nodeCount );
+      this.drawPickPasses( pickEncoder, picking.targetView() );
 
-    if( this.labelLayer != null && this.labelPipeline != null ){
-      this.labelPipeline.draw( pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas );
+      const copy = picking.encodeCopy( pickEncoder );
+
+      device.queue.submit( [ pickEncoder.finish() ] );
+
+      if( copy != null ){
+        void picking.finish( copy );
+      }
     }
 
-    pass.end();
+    // scene pass only when something actually changed: render-on-dirty is
+    // preserved while hover picking runs over a static graph.  When the GPU
+    // is behind, keep needsRedraw and retry next rAF rather than queueing
+    // deeper (state coalesces; latency stays bounded).
+    if( this.needsRedraw && this.inFlightFrames < MAX_IN_FLIGHT_FRAMES ){
+      this.needsRedraw = false;
+      this.writeFrameUniform();
 
-    this.encodeExtraPasses( encoder );
+      const encoder = device.createCommandEncoder( { label: 'cy-gpu:frame' } );
+      const view = context.getCurrentTexture().createView();
+      const pass = encoder.beginRenderPass( {
+        label: 'cy-gpu:render-pass',
+        colorAttachments: [ {
+          view,
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
+          loadOp: 'clear',
+          storeOp: 'store'
+        } ]
+      } );
 
-    device.queue.submit( [ encoder.finish() ] );
-    this.afterSubmit();
+      // z-order: single pass, edges under nodes under labels, slot order
+      // within each group
+      const uniform = this.uniform as GPUBuffer;
 
-    this.frameCount++;
+      this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ) );
+      this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ) );
+
+      if( this.labelLayer != null && this.labelPipeline != null ){
+        this.labelPipeline.draw( pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas );
+      }
+
+      pass.end();
+      device.queue.submit( [ encoder.finish() ] );
+
+      this.inFlightFrames++;
+      device.queue.onSubmittedWorkDone()
+        .then( () => { this.inFlightFrames--; }, () => { this.inFlightFrames--; } );
+
+      this.frameCount++;
+      this.cy.emit( 'render' );
+    }
+
     this.lastFrameMs = performance.now() - t0;
-    this.cy.emit( 'render' );
 
-    if( store.hasDirty() || this.hasExtraWork() ){
+    if( store.hasDirty() || this.needsRedraw || ( picking?.hasPending() ?? false ) ){
       this.schedule();
     }
   }
 
-  protected drawPickPasses( encoder: GPUCommandEncoder, targetView: GPUTextureView ): void {
+  private drawPickPasses( encoder: GPUCommandEncoder, targetView: GPUTextureView ): void {
     const device = this.device;
     const mirror = this.mirror;
-    const uniform = this.uniform;
+    const uniform = this.pickUniform;
 
     if( device == null || mirror == null || uniform == null ){ return; }
 
@@ -389,5 +420,40 @@ export class Renderer {
     // f[10..11]: padding
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
+  }
+
+  /**
+   * The pick pass reuses the render shaders with a Frame whose viewport is
+   * the cursor-centered tile: pan is offset by the tile origin, so the
+   * shaders' own conservative viewport culling collapses every instance
+   * that doesn't overlap the cursor region — the pick pass costs
+   * O(region), not O(scene).  LOD values match the render frame so what
+   * you see is what you pick.
+   */
+  private writePickUniform( xPx: number, yPx: number ): void {
+    const viewport = this.cy._viewport;
+    const zoom = viewport.zoom();
+    const pan = viewport.pan();
+    const f = this.pickFrameData;
+    const opts = this.opts;
+
+    // floor keeps the cursor inside the center texel [TILE/2, TILE/2 + 1)
+    const tileX = Math.floor( xPx ) - PICK_TILE / 2;
+    const tileY = Math.floor( yPx ) - PICK_TILE / 2;
+
+    f[0] = PICK_TILE;
+    f[1] = PICK_TILE;
+    f[2] = pan.x * this.dpr - tileX;
+    f[3] = pan.y * this.dpr - tileY;
+    f[4] = zoom * this.dpr;
+    f[5] = opts.edgeWidthFloor ?? DEFAULT_EDGE_WIDTH_FLOOR;
+    f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
+    f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
+    f[8] = 0; // edge dimming never affects pick coverage
+    f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX; // labels aren't picked
+
+    ( this.device as GPUDevice ).queue.writeBuffer(
+      this.pickUniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength
+    );
   }
 }

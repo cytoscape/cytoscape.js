@@ -25,8 +25,8 @@ export class NodePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
-  private bindGroup: GPUBindGroup | null;
-  private bindVersion: number;
+  /** one cached bind group per uniform buffer (render frame vs pick frame) */
+  private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
 
   constructor( device: GPUDevice, format: GPUTextureFormat ){
     const module = device.createShaderModule( { label: 'cy-gpu:node-shader', code: NODE_SHADER } );
@@ -65,29 +65,32 @@ export class NodePipeline {
       primitive: { topology: 'triangle-list' }
     } );
 
-    this.bindGroup = null;
-    this.bindVersion = -1;
+    this.bindGroups = new Map();
   }
 
   /** Lazily (re)build the bind group when the mirror reallocated buffers. */
   private ensureBindGroup( device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror ): GPUBindGroup {
-    if( this.bindGroup == null || this.bindVersion !== mirror.version ){
-      this.bindGroup = device.createBindGroup( {
-        label: 'cy-gpu:node-bind-group',
-        layout: this.bindLayout,
-        entries: [
-          { binding: 0, resource: { buffer: uniform } },
-          ...NODE_COLUMNS.map( ( id, i ) => ( {
-            binding: i + 1,
-            resource: { buffer: mirror.buffer( id ) }
-          } ) )
-        ]
-      } );
+    const cached = this.bindGroups.get( uniform );
 
-      this.bindVersion = mirror.version;
+    if( cached != null && cached.version === mirror.version ){
+      return cached.group;
     }
 
-    return this.bindGroup;
+    const group = device.createBindGroup( {
+      label: 'cy-gpu:node-bind-group',
+      layout: this.bindLayout,
+      entries: [
+        { binding: 0, resource: { buffer: uniform } },
+        ...NODE_COLUMNS.map( ( id, i ) => ( {
+          binding: i + 1,
+          resource: { buffer: mirror.buffer( id ) }
+        } ) )
+      ]
+    } );
+
+    this.bindGroups.set( uniform, { group, version: mirror.version } );
+
+    return group;
   }
 
   draw(

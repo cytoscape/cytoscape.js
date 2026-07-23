@@ -59,9 +59,15 @@ edges, non-grid layouts, graph algorithms.
   `:unselected` and comma lists; style blocks are constants only.
 - **`cy.elements()` order**: nodes (insertion order) then edges, not the
   mixed insertion order of v3.
-- **Picking latency**: `pick()`/hover resolve 1–2 frames later
-  (latest-wins, ring of 3 staging buffers; requests drop to `null` when the
-  ring is exhausted).
+- **Picking**: the pick pass draws a fixed 64×64 cursor-centered tile (a
+  pick-specific Frame uniform turns the shaders' viewport culling into
+  cursor-region culling, so picking costs O(region) not O(scene)) and
+  submits in its own command buffer ahead of any scene work; the center
+  texel reads back through a ring of 3 staging buffers (latest-wins;
+  requests drop to `null` when the ring is exhausted).  Scene submissions
+  are capped at 2 in flight — when the GPU is behind, the loop coalesces
+  state into the next frame instead of queueing deeper — so `pick()`/hover
+  resolve in ~1 rAF plus bounded GPU work even on GPU-bound graphs.
 - **Labels**: nodes only, single line (newlines collapse to spaces), fixed
   placement (horizontally centered below the node), not pickable, and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop

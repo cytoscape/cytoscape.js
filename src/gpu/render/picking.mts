@@ -1,17 +1,26 @@
 import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
 
 /*
-GPU picking: an offscreen r32uint target drawn with the same order as the
-render pass (edges then nodes).  Ids: 0 = background, node = slot + 1,
-edge = (slot + 1) | 0x80000000.
+GPU picking against a small fixed tile.
 
-Readback copies a 64×1 texel region (256 bytes, layout-aligned) around the
-cursor into a ring of 3 staging buffers.  Requests within a frame coalesce
-latest-wins; when the ring is exhausted the request resolves null (unknown).
-Latency is 1–2 frames — fine for hover/tap.
+The pick pass draws into a fixed 64×64 r32uint tile *centered on the
+cursor*: the renderer binds a pick-specific Frame uniform whose viewport is
+the tile and whose pan is offset by the tile origin, so the shaders' own
+conservative viewport culling collapses everything that doesn't overlap the
+cursor region — the pick pass costs O(region), not O(scene).  Draw order
+matches the render pass (edges then nodes).  Ids: 0 = background,
+node = slot + 1, edge = (slot + 1) | 0x80000000.
+
+Readback copies the single center texel (the cursor) into a ring of 3
+staging buffers.  Requests within a frame coalesce latest-wins; when the
+ring is exhausted the request resolves null (unknown).  The pick pass is
+submitted in its own command buffer ahead of any scene draw, so mapAsync
+never waits behind a full-frame render.
 */
 
-const REGION = 64; // texels per copied row: 64 × 4 bytes = 256
+/** pick tile size, device px; the cursor sits at the center texel */
+export const PICK_TILE = 64;
+
 const RING = 3;
 
 export const EDGE_PICK_BIT = 0x80000000;
@@ -30,65 +39,54 @@ interface PendingRequest {
 
 export interface InFlightCopy {
   slot: RingSlot;
-  readIndex: number;
   resolvers: ( ( id: number | null ) => void )[];
   requestedAt: number;
 }
 
 export class Picking {
-  /** rendered-frame latency of the most recent resolved pick */
+  /** request-to-resolution latency of the most recent resolved pick */
   lastLatencyMs: number;
 
-  private device: GPUDevice;
-  private texture: GPUTexture | null;
-  private view: GPUTextureView | null;
-  private width: number;
-  private height: number;
+  private texture: GPUTexture;
+  private view: GPUTextureView;
   private ring: RingSlot[];
   private pending: PendingRequest | null;
   private destroyed: boolean;
 
   constructor( device: GPUDevice ){
-    this.device = device;
-    this.texture = null;
-    this.view = null;
-    this.width = 0;
-    this.height = 0;
     this.pending = null;
     this.destroyed = false;
     this.lastLatencyMs = 0;
 
+    this.texture = device.createTexture( {
+      label: 'cy-gpu:pick-tile',
+      size: { width: PICK_TILE, height: PICK_TILE },
+      format: 'r32uint',
+      usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.COPY_SRC
+    } );
+    this.view = this.texture.createView();
+
     this.ring = Array.from( { length: RING }, ( _, i ) => ( {
       buffer: device.createBuffer( {
         label: `cy-gpu:pick-staging-${i}`,
-        size: REGION * 4,
+        size: 4, // one r32uint texel: the cursor
         usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST
       } ),
       busy: false
     } ) );
   }
 
-  resize( width: number, height: number ): void {
-    if( this.destroyed || ( width === this.width && height === this.height ) ){ return; }
-
-    this.texture?.destroy();
-    this.width = width;
-    this.height = height;
-    this.texture = this.device.createTexture( {
-      label: 'cy-gpu:pick-target',
-      size: { width: Math.max( 1, width ), height: Math.max( 1, height ) },
-      format: 'r32uint',
-      usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.COPY_SRC
-    } );
-    this.view = this.texture.createView();
-  }
-
-  targetView(): GPUTextureView | null {
+  targetView(): GPUTextureView {
     return this.view;
   }
 
   hasPending(): boolean {
     return this.pending != null;
+  }
+
+  /** The coalesced pending cursor position (device px), for the pick uniform. */
+  peekPending(): { xPx: number; yPx: number } | null {
+    return this.pending == null ? null : { xPx: this.pending.xPx, yPx: this.pending.yPx };
   }
 
   /** Queue a pick at device-px coordinates; coalesces latest-wins within a frame. */
@@ -112,14 +110,14 @@ export class Picking {
   }
 
   /**
-   * Encode the staging copy for the pending request (call after the pick
-   * pass on the same encoder).  Returns the in-flight token to pass to
-   * `finish()` after submit, or null when idle or the ring is full.
+   * Encode the center-texel staging copy for the pending request (call after
+   * the pick pass on the same encoder).  Returns the in-flight token to pass
+   * to `finish()` after submit, or null when idle or the ring is full.
    */
   encodeCopy( encoder: GPUCommandEncoder ): InFlightCopy | null {
     const pending = this.pending;
 
-    if( pending == null || this.texture == null ){ return null; }
+    if( pending == null ){ return null; }
 
     this.pending = null;
 
@@ -131,20 +129,15 @@ export class Picking {
       return null;
     }
 
-    const x = clamp( Math.round( pending.xPx ), 0, this.width - 1 );
-    const y = clamp( Math.round( pending.yPx ), 0, this.height - 1 );
-    const copyWidth = Math.min( REGION, this.width );
-    const x0 = clamp( x - REGION / 2, 0, this.width - copyWidth );
-
     slot.busy = true;
 
     encoder.copyTextureToBuffer(
-      { texture: this.texture, origin: { x: x0, y } },
-      { buffer: slot.buffer }, // single-row copy: bytesPerRow not required
-      { width: copyWidth, height: 1 }
+      { texture: this.texture, origin: { x: PICK_TILE / 2, y: PICK_TILE / 2 } },
+      { buffer: slot.buffer },
+      { width: 1, height: 1 }
     );
 
-    return { slot, readIndex: x - x0, resolvers: pending.resolvers, requestedAt: pending.requestedAt };
+    return { slot, resolvers: pending.resolvers, requestedAt: pending.requestedAt };
   }
 
   /** Map the staging buffer and resolve the request (call after queue.submit). */
@@ -156,7 +149,7 @@ export class Picking {
 
       const data = new Uint32Array( inFlight.slot.buffer.getMappedRange() );
 
-      id = data[ inFlight.readIndex ];
+      id = data[ 0 ];
       inFlight.slot.buffer.unmap();
       this.lastLatencyMs = performance.now() - inFlight.requestedAt;
     } catch {
@@ -177,14 +170,10 @@ export class Picking {
       this.pending = null;
     }
 
-    this.texture?.destroy();
+    this.texture.destroy();
 
     for( const slot of this.ring ){
       slot.buffer.destroy();
     }
   }
 }
-
-const clamp = ( value: number, min: number, max: number ): number => {
-  return Math.max( min, Math.min( max, value ) );
-};

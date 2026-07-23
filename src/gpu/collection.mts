@@ -424,6 +424,15 @@ export class GpuCollection {
       : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot ];
   }
 
+  /** The node's resolved label text ('' when none); read-only in the prototype. */
+  label(): string | undefined {
+    const ref = this._first();
+
+    if( ref == null || ref.group !== 'nodes' || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    return this._store.labelAt( ref.slot )?.text ?? '';
+  }
+
   outerWidth(): number | undefined {
     const w = this.width();
 

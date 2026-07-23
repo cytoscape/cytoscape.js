@@ -28,6 +28,10 @@ interface NodeComputed {
   shape: number;
   opacity: number;
   borderWidth: number;
+  /** literal text, '' for none, or the special mapper 'data(id)' */
+  label: string;
+  fontSize: number;
+  textColor: RGBA;
 }
 
 interface EdgeComputed {
@@ -43,8 +47,16 @@ const NODE_DEFAULTS: NodeComputed = {
   height: 30,
   shape: SHAPE_ELLIPSE,
   opacity: 1,
-  borderWidth: 0
+  borderWidth: 0,
+  label: '', // no label
+  fontSize: 16,
+  textColor: [ 0, 0, 0, 255 ]
 };
+
+/** gap between the node's bottom edge and the label's top, model px */
+const LABEL_MARGIN = 4;
+
+const DATA_ID = 'data(id)';
 
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
@@ -66,6 +78,11 @@ interface CompiledBlock {
   selector: CompiledSelector;
   setters: Setter[];
 }
+
+/** RGBA bytes packed little-endian, matching WGSL unpack4x8unorm. */
+const packRgba = ( [ r, g, b, a ]: RGBA ): number => {
+  return ( r | ( g << 8 ) | ( b << 16 ) | ( a << 24 ) ) >>> 0;
+};
 
 const parseColor = ( prop: string, value: string | number ): RGBA => {
   const tuple = color2tuple( value as string );
@@ -139,6 +156,30 @@ const compileProp = ( prop: string, value: string | number ): Setter => {
       const num = parseNumber( prop, value );
 
       return computed => { computed.opacity = num; };
+    }
+    case 'label': {
+      // constants only, plus the single mapper 'data(id)' — ids are
+      // first-class while data() at large stays deferred
+      const text = String( value );
+
+      if( /^\s*(data|mapData)\s*\(/.test( text ) && text !== DATA_ID ){
+        throw new Error(
+          `The label value '${text}' is unsupported in the GPU prototype; ` +
+          `only constant strings and '${DATA_ID}' are allowed`
+        );
+      }
+
+      return computed => { computed.label = text; };
+    }
+    case 'font-size': {
+      const num = parseNumber( prop, value );
+
+      return computed => { computed.fontSize = num; };
+    }
+    case 'color': {
+      const color = parseColor( prop, value );
+
+      return computed => { computed.textColor = color; };
     }
 
     // edge properties
@@ -226,6 +267,17 @@ export class StyleEngine {
       store.setScalar( 'node.borderWidth', slot, computed.borderWidth );
       store.setScalar( 'node.opacity', slot, computed.opacity );
       store.setScalar( 'node.shape', slot, shape );
+
+      const text = computed.label === DATA_ID
+        ? ( store.idAt( 'nodes', slot ) ?? '' )
+        : computed.label;
+
+      store.setLabel( slot, text === '' ? null : {
+        text,
+        fontSize: computed.fontSize,
+        color: packRgba( computed.textColor ),
+        anchorY: computed.height / 2 + LABEL_MARGIN
+      } );
     } else {
       store.setColor( 'edge.lineColor', slot, ...computed.lineColor );
       store.setScalar( 'edge.width', slot, computed.width );

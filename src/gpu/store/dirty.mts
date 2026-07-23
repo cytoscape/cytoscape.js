@@ -17,12 +17,24 @@ export class DirtyTracker {
   private resized: { nodes: boolean; edges: boolean };
   private cbs: ( () => void )[];
   private scheduled: boolean;
+  private touched: boolean;
 
   constructor(){
     this.spans = new Map();
     this.resized = { nodes: false, edges: false };
     this.cbs = [];
     this.scheduled = false;
+    this.touched = false;
+  }
+
+  /**
+   * Mark non-column model state dirty (e.g. the label sidecar, which is
+   * consumed separately from the span delta) so a frame gets scheduled and
+   * `hasDirty()` reports work until the next `take()`.
+   */
+  touch(): void {
+    this.touched = true;
+    this.schedule();
   }
 
   mark( column: ColumnId, start: number, end: number = start + 1 ): void {
@@ -44,7 +56,7 @@ export class DirtyTracker {
   }
 
   hasDirty(): boolean {
-    return this.spans.size > 0 || this.resized.nodes || this.resized.edges;
+    return this.spans.size > 0 || this.resized.nodes || this.resized.edges || this.touched;
   }
 
   take( nodeHighWater: number, edgeHighWater: number ): StoreDelta {
@@ -63,6 +75,7 @@ export class DirtyTracker {
 
     this.spans = new Map();
     this.resized = { nodes: false, edges: false };
+    this.touched = false;
 
     return delta;
   }

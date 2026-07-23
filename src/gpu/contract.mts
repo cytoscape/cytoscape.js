@@ -117,6 +117,25 @@ export interface StoreDelta {
   edgeHighWater: number;
 }
 
+// -- labels --
+
+/**
+ * Per-node label state (model-only sidecar, never uploaded as a column).
+ * The renderer derives SDF glyph instances from it; glyph instances
+ * reference the node *slot*, so positions are read from the node position
+ * buffer on-GPU and labels follow drags/layouts without rebuilds.  Only
+ * text/style changes dirty a label.
+ */
+export interface LabelEntry {
+  text: string;
+  /** model px */
+  fontSize: number;
+  /** RGBA bytes packed little-endian (r | g<<8 | b<<16 | a<<24) */
+  color: number;
+  /** y offset of the text block's top from the node center, model px */
+  anchorY: number;
+}
+
 // -- the read surface the renderer consumes --
 
 /**
@@ -133,6 +152,10 @@ export interface ModelView {
   takeDelta(): StoreDelta;
   /** `cb` fires at most once per microtask when the model becomes dirty; returns an unsubscribe fn. */
   onInvalidate( cb: () => void ): () => void;
+  /** The node's label, or undefined when it has none. */
+  labelAt( slot: number ): LabelEntry | undefined;
+  /** Node slots whose labels changed since the last call; returns-and-clears. */
+  takeLabelDirty(): number[];
 }
 
 /** A validated reference to an element slot; stale when `gen` no longer matches. */

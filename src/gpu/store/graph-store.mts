@@ -6,7 +6,7 @@ import {
   columnSpec, columnSpecsForGroup,
   FLAG_ALIVE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
-import type { ColumnArray, ColumnId, GroupName, ModelView, Ref, StoreDelta } from '../contract.mjs';
+import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 
 export interface AddElementOpts {
   selected?: boolean;
@@ -37,6 +37,8 @@ export class GraphStore implements ModelView {
   readonly dirty: DirtyTracker;
 
   private order: { nodes: OrderList; edges: OrderList };
+  private labels: ( LabelEntry | undefined )[];
+  private labelDirty: Set<number>;
 
   constructor(){
     this.nodes = new ColumnTable( 'nodes', columnSpecsForGroup( 'nodes' ) );
@@ -45,6 +47,8 @@ export class GraphStore implements ModelView {
     this.adj = new Adjacency();
     this.dirty = new DirtyTracker();
     this.order = { nodes: emptyOrder(), edges: emptyOrder() };
+    this.labels = [];
+    this.labelDirty = new Set();
   }
 
   table( group: GroupName ): ColumnTable {
@@ -270,6 +274,43 @@ export class GraphStore implements ModelView {
     this.dirty.mark( id, slot );
   }
 
+  // -- labels (model-only sidecar; see LabelEntry in contract.mts) --
+
+  labelAt( slot: number ): LabelEntry | undefined {
+    return this.labels[ slot ];
+  }
+
+  /** Set or clear (null) a node's label; no-ops when nothing changed. */
+  setLabel( slot: number, entry: LabelEntry | null ): void {
+    const prev = this.labels[ slot ];
+
+    if( entry == null ){
+      if( prev == null ){ return; }
+
+      this.labels[ slot ] = undefined;
+    } else {
+      if(
+        prev != null && prev.text === entry.text && prev.fontSize === entry.fontSize &&
+        prev.color === entry.color && prev.anchorY === entry.anchorY
+      ){ return; }
+
+      this.labels[ slot ] = entry;
+    }
+
+    this.labelDirty.add( slot );
+    this.dirty.touch();
+  }
+
+  takeLabelDirty(): number[] {
+    if( this.labelDirty.size === 0 ){ return []; }
+
+    const slots = [ ...this.labelDirty ];
+
+    this.labelDirty.clear();
+
+    return slots;
+  }
+
   // -- iteration (insertion order) --
 
   count( group: GroupName ): number {
@@ -326,6 +367,10 @@ export class GraphStore implements ModelView {
     const id = this.ids.idAt( group, slot );
 
     if( id != null ){ this.ids.remove( id ); }
+
+    if( group === 'nodes' && this.labels[ slot ] != null ){
+      this.setLabel( slot, null );
+    }
 
     // tombstone: cleared flags (no ALIVE bit) collapse the instance to a degenerate quad
     const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';

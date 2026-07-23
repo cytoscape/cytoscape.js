@@ -152,7 +152,7 @@ describe('gpu/style', function(){
 
     it('throws on unsupported properties', function(){
       expect(function(){
-        cy.style([ { selector: 'node', style: { 'label': 'nope' } } ]);
+        cy.style([ { selector: 'node', style: { 'text-outline-width': 2 } } ]);
       }).to.throw();
     });
 

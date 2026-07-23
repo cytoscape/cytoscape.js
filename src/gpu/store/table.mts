@@ -43,6 +43,11 @@ export class ColumnTable {
     }
   }
 
+  /** number of freed slots available for reuse */
+  get freeCount(): number {
+    return this.free.length;
+  }
+
   column( id: ColumnId ): ColumnArray {
     const arr = this.arrays.get( id );
 
@@ -89,9 +94,24 @@ export class ColumnTable {
     this.count--;
   }
 
-  private grow(): void {
-    const newCap = this.cap * 2;
+  /**
+   * Grow capacity to at least `minCap` slots, staying on the ×2 growth
+   * curve — one realloc up front instead of a doubling cascade during a
+   * bulk add.  Returns whether the table grew (the caller marks resized).
+   */
+  reserve( minCap: number ): boolean {
+    if( minCap <= this.cap ){ return false; }
 
+    let newCap = this.cap;
+
+    while( newCap < minCap ){ newCap *= 2; }
+
+    this.grow( newCap );
+
+    return true;
+  }
+
+  private grow( newCap: number = this.cap * 2 ): void {
     for( const spec of this.specs ){
       const old = this.arrays.get( spec.id ) as ColumnArray;
       const grown = new spec.ctor( spec.components * newCap );

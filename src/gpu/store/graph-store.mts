@@ -106,6 +106,24 @@ export class GraphStore implements ModelView {
 
   // -- mutation --
 
+  /**
+   * Preallocate ahead of a bulk add: grows each table at most once for the
+   * incoming element counts (net of reusable free slots), so the adds
+   * themselves never hit the doubling cascade.
+   */
+  reserve( nodeCount: number, edgeCount: number ): void {
+    const minCap = ( table: ColumnTable, adding: number ): number =>
+      table.highWater + Math.max( 0, adding - table.freeCount );
+
+    if( this.nodes.reserve( minCap( this.nodes, nodeCount ) ) ){
+      this.dirty.markResized( 'nodes' );
+    }
+
+    if( this.edges.reserve( minCap( this.edges, edgeCount ) ) ){
+      this.dirty.markResized( 'edges' );
+    }
+  }
+
   addNode( id: string, x: number, y: number, opts: AddElementOpts = {} ): number {
     const { slot, resized } = this.allocSlot( 'nodes', id );
 

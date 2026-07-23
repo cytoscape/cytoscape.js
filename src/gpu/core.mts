@@ -1,5 +1,6 @@
 import { GraphStore } from './store/graph-store.mjs';
 import { GpuCollection } from './collection.mjs';
+import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, selectorQualifier } from './events.mjs';
 import type { GpuQualifier } from './events.mjs';
 import { Viewport } from './viewport.mjs';
@@ -102,47 +103,73 @@ export class GpuCore {
   // -- graph manipulation --
 
   add( defs: GpuElementsDefinition | GpuElementDefinition ): GpuCollection {
-    const list = normalizeDefs( defs );
+    const refs = this._addDefs( defs );
+    const added = new GpuCollection( this, refs, { unique: true } );
 
-    // nodes first so edges can reference nodes added in the same call
-    const ordered = [
-      ...list.filter( def => inferGroup( def ) === 'nodes' ),
-      ...list.filter( def => inferGroup( def ) === 'edges' )
-    ];
-
-    const refs: Ref[] = [];
-
-    for( const def of ordered ){
-      const group = inferGroup( def );
-      const data = def.data ?? {};
-      const id = data.id != null ? String( data.id ) : this._newId();
-      let slot: number;
-
-      if( group === 'nodes' ){
-        const pos = def.position ?? { x: 0, y: 0 };
-
-        slot = this._store.addNode( id, pos.x, pos.y, def );
-      } else {
-        if( data.source == null || data.target == null ){
-          throw new Error( `Can not create edge '${id}' without a source and target` );
-        }
-
-        slot = this._store.addEdge( id, String( data.source ), String( data.target ), def );
+    if( this._hasListeners( 'add' ) ){
+      for( let i = 0; i < added.length; i++ ){
+        this._emitOnEle( 'add', added[ i ] );
       }
-
-      const ref = this._store.ref( group, slot );
-
-      this._applyStyle( ref );
-      refs.push( ref );
-    }
-
-    const added = new GpuCollection( this, refs );
-
-    for( let i = 0; i < added.length; i++ ){
-      this._emitOnEle( 'add', added[ i ] );
     }
 
     return added;
+  }
+
+  /**
+   * Bulk load path (the factory's `options.elements`): adds without
+   * materializing per-element handles or a return collection — on a
+   * 500k-element load the handle layer costs more than the model writes
+   * and the caller uses none of it.  `add` events still fire per element
+   * when anyone is listening (never the case at construction time).
+   */
+  _bulkAdd( defs: GpuElementsDefinition | GpuElementDefinition ): void {
+    const refs = this._addDefs( defs );
+
+    if( this._hasListeners( 'add' ) ){
+      for( const ref of refs ){
+        this._emitOnEle( 'add', this._eleFromRef( ref ) );
+      }
+    }
+  }
+
+  /** Shared add loop: nodes first so edges can reference same-call nodes. */
+  private _addDefs( defs: GpuElementsDefinition | GpuElementDefinition ): Ref[] {
+    const { nodes: nodeDefs, edges: edgeDefs } = partitionDefs( defs );
+
+    this._store.reserve( nodeDefs.length, edgeDefs.length );
+
+    const refs: Ref[] = [];
+    const nodeSlots: number[] = [];
+    const edgeSlots: number[] = [];
+
+    for( const def of nodeDefs ){
+      const data = def.data ?? {};
+      const id = data.id != null ? String( data.id ) : this._newId();
+      const pos = def.position ?? { x: 0, y: 0 };
+      const slot = this._store.addNode( id, pos.x, pos.y, def );
+
+      nodeSlots.push( slot );
+      refs.push( this._store.ref( 'nodes', slot ) );
+    }
+
+    for( const def of edgeDefs ){
+      const data = def.data ?? {};
+      const id = data.id != null ? String( data.id ) : this._newId();
+
+      if( data.source == null || data.target == null ){
+        throw new Error( `Can not create edge '${id}' without a source and target` );
+      }
+
+      const slot = this._store.addEdge( id, String( data.source ), String( data.target ), def );
+
+      edgeSlots.push( slot );
+      refs.push( this._store.ref( 'edges', slot ) );
+    }
+
+    this._styleEngine.applyBulk( 'nodes', nodeSlots );
+    this._styleEngine.applyBulk( 'edges', edgeSlots );
+
+    return refs;
   }
 
   remove( eles: string | GpuCollection ): GpuCollection {
@@ -167,7 +194,7 @@ export class GpuCore {
     this._store.forEachAlive( 'nodes', slot => refs.push( this._store.ref( 'nodes', slot ) ) );
     this._store.forEachAlive( 'edges', slot => refs.push( this._store.ref( 'edges', slot ) ) );
 
-    const eles = new GpuCollection( this, refs );
+    const eles = new GpuCollection( this, refs, { unique: true } );
 
     return selector == null ? eles : eles.filter( selector );
   }
@@ -177,7 +204,7 @@ export class GpuCore {
 
     this._store.forEachAlive( 'nodes', slot => refs.push( this._store.ref( 'nodes', slot ) ) );
 
-    const eles = new GpuCollection( this, refs );
+    const eles = new GpuCollection( this, refs, { unique: true } );
 
     return selector == null ? eles : eles.filter( selector );
   }
@@ -187,7 +214,7 @@ export class GpuCore {
 
     this._store.forEachAlive( 'edges', slot => refs.push( this._store.ref( 'edges', slot ) ) );
 
-    const eles = new GpuCollection( this, refs );
+    const eles = new GpuCollection( this, refs, { unique: true } );
 
     return selector == null ? eles : eles.filter( selector );
   }
@@ -457,31 +484,3 @@ GpuCore.prototype.addListener = GpuCore.prototype.on;
 GpuCore.prototype.removeListener = GpuCore.prototype.off;
 GpuCore.prototype.trigger = GpuCore.prototype.emit;
 
-const inferGroup = ( def: GpuElementDefinition ): GroupName => {
-  if( def.group != null ){
-    if( def.group !== 'nodes' && def.group !== 'edges' ){
-      throw new Error( `An element must be of group 'nodes' or 'edges'; got '${def.group}'` );
-    }
-
-    return def.group;
-  }
-
-  return def.data?.source != null && def.data?.target != null ? 'edges' : 'nodes';
-};
-
-const normalizeDefs = ( defs: GpuElementsDefinition | GpuElementDefinition ): GpuElementDefinition[] => {
-  if( Array.isArray( defs ) ){
-    return defs;
-  }
-
-  const asMap = defs as { nodes?: GpuElementDefinition[]; edges?: GpuElementDefinition[] };
-
-  if( asMap.nodes != null || asMap.edges != null ){
-    return [
-      ...( asMap.nodes ?? [] ).map( def => ( { ...def, group: 'nodes' as const } ) ),
-      ...( asMap.edges ?? [] ).map( def => ( { ...def, group: 'edges' as const } ) )
-    ];
-  }
-
-  return [ defs as GpuElementDefinition ];
-};

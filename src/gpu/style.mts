@@ -1,6 +1,6 @@
 import { color2tuple } from '../util/colors.mjs';
 import {
-  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
+  FLAG_SELECTED, SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { matchesRef, parseSelector } from './selector.mjs';
@@ -226,8 +226,69 @@ export class StyleEngine {
   }
 
   applyAll(): void {
-    this.store.forEachAlive( 'nodes', slot => this.apply( this.store.ref( 'nodes', slot ) ) );
-    this.store.forEachAlive( 'edges', slot => this.apply( this.store.ref( 'edges', slot ) ) );
+    this.applyBulk( 'nodes', this.store.slotsOrdered( 'nodes' ) );
+    this.applyBulk( 'edges', this.store.slotsOrdered( 'edges' ) );
+  }
+
+  /**
+   * Bulk apply over *live* slots of one group.  With the mini selector
+   * language a match depends only on (group, selected) unless a block
+   * selects by #id — so the stylesheet resolves once per selectedness
+   * instead of once per element (the per-element cost drops to the column
+   * writes).  Falls back to per-element apply when any #id block exists.
+   */
+  applyBulk( group: GroupName, slots: ArrayLike<number> ): void {
+    if( slots.length === 0 ){ return; }
+
+    const hasIdBlock = this.compiled.some(
+      block => block.selector.terms.some( term => term.id != null )
+    );
+
+    if( hasIdBlock ){
+      for( let i = 0; i < slots.length; i++ ){
+        this.apply( this.store.ref( group, slots[ i ] ) );
+      }
+
+      return;
+    }
+
+    const resolve = ( selected: boolean ): NodeComputed & EdgeComputed => {
+      const computed: NodeComputed & EdgeComputed = {
+        ...NODE_DEFAULTS,
+        ...EDGE_DEFAULTS,
+        width: group === 'nodes' ? NODE_DEFAULTS.width : EDGE_DEFAULTS.width
+      };
+
+      for( const block of this.compiled ){
+        const matches = block.selector.terms.some( term =>
+          ( term.group == null || term.group === group ) &&
+          ( term.selected == null || term.selected === selected )
+        );
+
+        if( matches ){
+          for( const setter of block.setters ){
+            setter( computed );
+          }
+        }
+      }
+
+      return computed;
+    };
+
+    const byState: [ ( NodeComputed & EdgeComputed ) | null, ( NodeComputed & EdgeComputed ) | null ] = [ null, null ];
+
+    for( let i = 0; i < slots.length; i++ ){
+      const slot = slots[ i ];
+      const selected = this.store.hasFlag( group, slot, FLAG_SELECTED ) ? 1 : 0;
+      let computed = byState[ selected ];
+
+      if( computed == null ){
+        computed = resolve( selected === 1 );
+        byState[ selected ] = computed;
+      }
+
+      this.write( group, slot, computed );
+    }
   }
 
   /** Resolve defaults + matching blocks (in order) and write the element's channels. */

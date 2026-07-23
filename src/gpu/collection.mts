@@ -35,7 +35,7 @@ export class GpuCollection {
   _id: string | undefined;
   _group: GroupName | undefined;
 
-  constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean } = {} ){
+  constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean } = {} ){
     this._cy = cy;
 
     if( opts.singleton ){
@@ -50,20 +50,34 @@ export class GpuCollection {
       return;
     }
 
-    // dedupe while preserving order; intern per-element handles
-    const seen = new Set<string>();
-    const deduped: Ref[] = [];
-    let i = 0;
+    let deduped: Ref[];
 
-    for( const ref of refs ){
-      const key = refKey( ref );
+    if( opts.unique ){
+      // trusted internal path: the refs are known distinct (fresh adds,
+      // ordered-slot iteration), so skip the refKey/Set dedupe pass
+      deduped = refs;
 
-      if( seen.has( key ) ){ continue; }
+      for( let i = 0; i < refs.length; i++ ){
+        this[ i ] = cy._eleFromRef( refs[ i ] );
+      }
+    } else {
+      // dedupe while preserving order; intern per-element handles
+      const seen = new Set<string>();
 
-      seen.add( key );
-      deduped.push( ref );
-      this[ i ] = cy._eleFromRef( ref );
-      i++;
+      deduped = [];
+
+      let i = 0;
+
+      for( const ref of refs ){
+        const key = refKey( ref );
+
+        if( seen.has( key ) ){ continue; }
+
+        seen.add( key );
+        deduped.push( ref );
+        this[ i ] = cy._eleFromRef( ref );
+        i++;
+      }
     }
 
     this._refs = deduped;

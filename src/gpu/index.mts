@@ -30,7 +30,9 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
   const cy = new GpuCore( options );
 
   if( options.elements != null ){
-    cy.add( options.elements );
+    // bulk path: no per-element handles, no add events (nobody can be
+    // listening yet), one preallocation instead of a growth cascade
+    cy._bulkAdd( options.elements );
   }
 
   if( options.layout != null ){

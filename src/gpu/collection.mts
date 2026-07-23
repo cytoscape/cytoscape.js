@@ -112,6 +112,59 @@ export class GpuCollection {
     return new GpuCollection( this._cy, refs );
   }
 
+  // -- core reference & identity --
+
+  instanceString(): string {
+    return 'collection';
+  }
+
+  /** The core this collection belongs to. */
+  cy(): GpuCore {
+    return this._cy;
+  }
+
+  /** The renderer, or null when headless. */
+  renderer(): GpuCore['_renderer'] {
+    return this._cy._renderer;
+  }
+
+  /** The first element as a length-1 collection (empty collection when empty). */
+  element(): GpuCollection {
+    return this.eq( 0 );
+  }
+
+  /** An empty collection in the same core. */
+  collection(): GpuCollection {
+    return this._cy.collection();
+  }
+
+  hasElementWithId( id: string ): boolean {
+    return this.getElementById( id ).nonempty();
+  }
+
+  /** Index of `ele` (the first element of it) within this collection, or -1. */
+  indexOf( ele: GpuCollection ): number {
+    const ref = ele._first();
+
+    if( ref == null ){ return -1; }
+
+    const key = refKey( ref );
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      if( refKey( this._refs[ i ] ) === key ){ return i; }
+    }
+
+    return -1;
+  }
+
+  indexOfId( id: string ): number {
+    for( let i = 0; i < this.length; i++ ){
+      if( this[ i ]._id === id ){ return i; }
+    }
+
+    return -1;
+  }
+
   // -- iteration --
 
   size(): number {

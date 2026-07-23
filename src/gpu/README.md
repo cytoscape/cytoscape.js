@@ -99,14 +99,21 @@ edges, non-grid layouts, graph algorithms.
   ranks, more batches; content ranked above merely loses the occlusion
   benefit, never correctness.  Nodes that can't occlude (translucent or
   < 4 px) collapse out of the prepass so it costs ~nothing at far zoom.
-- **`renderScale`**: optional low-resolution rendering — the scene draws
-  into an offscreen target at `renderScale` × native resolution
-  (clamped [0.25, 1], default 1 = native, zero overhead) and a fullscreen
-  Catmull-Rom bicubic pass upscales it to the canvas, preserving SDF
-  borders and hairline edges far better than bilinear.  Fill cost scales
-  ~`renderScale²` (ndex-x-large fit-all at dpr 2: 38 → 10.6 ms GPU at
-  0.5).  LOD thresholds apply in render px; picking always runs at native
-  resolution.
+- **Adaptive render scale** (`renderScaleMin`/`renderScaleMax`, defaults
+  0.5/1): the renderer moves its resolution in quarter steps within the
+  band, driven by measured GPU frame time over ~400 ms windows — median
+  above ~14 ms steps down; stepping up requires the *projected* cost at
+  the higher step (~scale²) to fit under ~10 ms, so raises never pump
+  (backpressure stalls are the fallback signal without
+  `timestamp-query`).  Shortly after drawing stops (~250 ms) one frame
+  re-renders at max, so still images are always full resolution — low-res
+  frames only ever exist mid-interaction on expensive scenes.  Scaled
+  frames draw into an offscreen target and a fullscreen Catmull-Rom
+  bicubic pass upscales to the canvas (preserves SDF borders and
+  hairlines far better than bilinear).  LOD thresholds apply in render
+  px; picking always runs at native resolution.  Pin `min === max` for a
+  fixed scale.  (ndex-x-large fit-all pan at dpr 2: settles at 0.5 within
+  ~0.8 s, 25 → 76 fps; far-zoom and idle stay native.)
 - **Label LOD**: labels fade below `labelFadePx` (glyphs past the fade's
   zero point are culled in compute, not drawn at zero alpha); the optional
   `labelMinPx` renderer option hard-culls labels whose on-screen glyph

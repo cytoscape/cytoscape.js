@@ -72,12 +72,17 @@ export interface GpuRendererOptions {
    * too small to read anyway (default 0 = off; the fade's own cutoff at
    * labelFadePx/2 still applies) */
   labelMinPx?: number;
-  /** render the scene at this fraction of native resolution and upscale
-   * to the canvas with Catmull-Rom bicubic filtering — trades a little
-   * sharpness for fragment throughput (~1/scale² fill cost).  Clamped to
-   * [0.25, 1]; default 1 = native.  Picking always runs at native
-   * resolution. */
-  renderScale?: number;
+  /** adaptive resolution band, lower bound (default 0.5).  Under GPU
+   * load the renderer drops the render scale in quarter steps toward
+   * this; frames below the bound's cost budget raise it back.  Scenes
+   * render at scale × native resolution and upscale to the canvas with
+   * Catmull-Rom bicubic filtering (fill cost ~scale²).  Shortly after
+   * drawing stops, one frame re-renders at renderScaleMax so still
+   * images are always full-resolution.  Picking always runs at native
+   * resolution.  Set min === max to pin a fixed scale. */
+  renderScaleMin?: number;
+  /** adaptive resolution band, upper bound (default 1 = native) */
+  renderScaleMax?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
 }

@@ -12,9 +12,10 @@ is plenty for profiling.
 
 Every timed pass must run (even empty) whenever the frame is timed:
 timestamp queries persist across resolves, so a skipped pass would leave
-stale values behind and corrupt the sum.  The post (upscale) pair is only
-summed when the renderer declares it at construction (renderScale < 1),
-where the upscale pass runs every drawn frame.
+stale values behind and corrupt the reading.  The post (upscale) pair is
+per-frame optional — the renderer flags at encodeResolve() whether the
+upscale pass ran that frame (the adaptive render scale turns it on and
+off at runtime), and unflagged readings ignore the pair.
 
 This exists because CPU-side timing around queue.submit() only measures
 command encoding (~0.1 ms): submission is fire-and-forget and the actual
@@ -27,6 +28,8 @@ const RING = 2;
 interface RingSlot {
   buffer: GPUBuffer;
   busy: boolean;
+  /** whether the frame this slot is reading included the upscale pass */
+  post: boolean;
 }
 
 export class GpuTimer {
@@ -36,16 +39,14 @@ export class GpuTimer {
   private querySet: GPUQuerySet;
   private resolveBuffer: GPUBuffer;
   private ring: RingSlot[];
-  private includePost: boolean;
   private destroyed: boolean;
 
   static isSupported( device: GPUDevice ): boolean {
     return device.features.has( 'timestamp-query' );
   }
 
-  constructor( device: GPUDevice, includePost: boolean = false ){
+  constructor( device: GPUDevice ){
     this.lastMs = 0;
-    this.includePost = includePost;
     this.destroyed = false;
 
     this.querySet = device.createQuerySet( {
@@ -66,7 +67,8 @@ export class GpuTimer {
         size: 48,
         usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST
       } ),
-      busy: false
+      busy: false,
+      post: false
     } ) );
   }
 
@@ -99,10 +101,12 @@ export class GpuTimer {
 
   /**
    * Encode the query resolve + staging copy (call after pass.end(), before
-   * submit).  Returns an after-submit finisher, or null when the ring is
-   * busy (that frame just goes unmeasured).
+   * submit).  `hasPost` flags whether this frame ran the upscale pass (its
+   * timestamp pair is otherwise stale and ignored).  Returns an
+   * after-submit finisher, or null when the ring is busy (that frame just
+   * goes unmeasured).
    */
-  encodeResolve( encoder: GPUCommandEncoder ): ( () => void ) | null {
+  encodeResolve( encoder: GPUCommandEncoder, hasPost: boolean = false ): ( () => void ) | null {
     if( this.destroyed ){ return null; }
 
     const slot = this.ring.find( s => !s.busy );
@@ -110,6 +114,7 @@ export class GpuTimer {
     if( slot == null ){ return null; }
 
     slot.busy = true;
+    slot.post = hasPost;
     encoder.resolveQuerySet( this.querySet, 0, 6, this.resolveBuffer, 0 );
     encoder.copyBufferToBuffer( this.resolveBuffer, 0, slot.buffer, 0, 48 );
 
@@ -138,7 +143,7 @@ export class GpuTimer {
       // command-buffer granularity (e.g. Dawn on Metal); the queue
       // serializes the passes, so the span is the honest frame GPU time
       // under either implementation.
-      const pairs = this.includePost ? 3 : 2;
+      const pairs = slot.post ? 3 : 2;
       let begin = 0n;
       let end = 0n;
 

@@ -7,6 +7,7 @@ import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
+import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { BUFFER_USAGE, TEXTURE_USAGE } from './webgpu-constants.mjs';
 import { FLAG_ALIVE } from '../contract.mjs';
@@ -38,6 +39,8 @@ interface RendererStats {
   cpuFrameMs: number;
   /** GPU execution time of the last measured scene pass; 0 when 'timestamp-query' is unavailable */
   gpuFrameMs: number;
+  /** current adaptive render scale (fraction of native resolution) */
+  renderScale: number;
   uploadedBytes: number;
   nodes: number;
   edges: number;
@@ -50,6 +53,10 @@ const DEFAULT_NODE_LOD_PX = 3;
 const DEFAULT_HIDE_PX = 1;
 const DEFAULT_LABEL_FADE_PX = 6;
 const DEFAULT_LABEL_MIN_PX = 0; // 0 = no hard label cutoff
+const DEFAULT_RENDER_SCALE_MIN = 0.5;
+const DEFAULT_RENDER_SCALE_MAX = 1;
+/** after this long without redraws, re-render one frame at max scale */
+const SETTLE_TO_MAX_MS = 250;
 
 /**
  * Backpressure: at most this many scene submissions may be unfinished on
@@ -97,7 +104,8 @@ export class Renderer {
   private cullKernels: CullKernels | null;
   private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
   private pickCull: { node: CulledGroup; edge: CulledGroup } | null;
-  private renderScale: number;
+  private scaleCtl: ScaleController;
+  private settleTimer: ReturnType<typeof setTimeout> | null;
   private format: GPUTextureFormat | null;
   private sceneTarget: GPUTexture | null;
   private depthTarget: GPUTexture | null;
@@ -130,7 +138,11 @@ export class Renderer {
     this.cullKernels = null;
     this.sceneCull = null;
     this.pickCull = null;
-    this.renderScale = Math.min( 1, Math.max( 0.25, opts.renderScale ?? 1 ) );
+    this.scaleCtl = new ScaleController(
+      opts.renderScaleMin ?? DEFAULT_RENDER_SCALE_MIN,
+      opts.renderScaleMax ?? DEFAULT_RENDER_SCALE_MAX
+    );
+    this.settleTimer = null;
     this.format = null;
     this.sceneTarget = null;
     this.depthTarget = null;
@@ -180,6 +192,7 @@ export class Renderer {
       frames: this.frameCount,
       cpuFrameMs: this.cpuFrameMs,
       gpuFrameMs: this.gpuTimer?.lastMs ?? 0,
+      renderScale: this.scaleCtl.scale,
       uploadedBytes: ( this.mirror?.uploadedBytes ?? 0 ) + ( this.labelLayer?.uploadedBytes() ?? 0 ),
       nodes: this.cy._store.count( 'nodes' ),
       edges: this.cy._store.count( 'edges' ),
@@ -200,6 +213,12 @@ export class Renderer {
     if( this.destroyed ){ return; }
 
     this.destroyed = true;
+
+    if( this.settleTimer != null ){
+      clearTimeout( this.settleTimer );
+      this.settleTimer = null;
+    }
+
     this.resizeObserver?.disconnect();
     this.offInvalidate();
     this.cy.off( 'viewport', this.onViewport );
@@ -314,8 +333,8 @@ export class Renderer {
     this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
     this.picking = new Picking( device );
     this.format = format;
-    this.upscaler = this.renderScale < 1 ? new Upscaler( device, format ) : null;
-    this.gpuTimer = GpuTimer.isSupported( device ) ? new GpuTimer( device, this.renderScale < 1 ) : null;
+    this.upscaler = this.scaleCtl.min < 1 ? new Upscaler( device, format ) : null;
+    this.gpuTimer = GpuTimer.isSupported( device ) ? new GpuTimer( device ) : null;
 
     this.isReady = true;
     this.needsRedraw = true;
@@ -388,9 +407,9 @@ export class Renderer {
       // compact each group's visible slots + indirect args before drawing
       this.encodeCulls( encoder, this.uniform as GPUBuffer, this.sceneCull, true );
 
-      // renderScale < 1: draw into a low-res offscreen target, then a
+      // render scale < 1: draw into a low-res offscreen target, then a
       // Catmull-Rom upscale pass resamples it to the swapchain
-      const scaled = this.upscaler != null;
+      const scaled = this.upscaler != null && this.scaleCtl.scale < 1;
       const view = scaled
         ? ( this.ensureSceneTarget() as GPUTexture ).createView()
         : context.getCurrentTexture().createView();
@@ -445,7 +464,7 @@ export class Renderer {
         upscalePass.end();
       }
 
-      const finishTiming = this.gpuTimer?.encodeResolve( encoder ) ?? null;
+      const finishTiming = this.gpuTimer?.encodeResolve( encoder, scaled ) ?? null;
 
       device.queue.submit( [ encoder.finish() ] );
       finishTiming?.();
@@ -456,6 +475,20 @@ export class Renderer {
 
       this.frameCount++;
       this.cy.emit( 'render' );
+
+      // adaptive resolution: feed the drawn frame's GPU cost to the
+      // controller and rearm the idle settle-to-max timer
+      if( this.scaleCtl.frameDrawn( t0, this.gpuTimer?.lastMs ?? 0 ) != null ){
+        this.needsRedraw = true;
+      }
+
+      this.armSettleTimer();
+    } else if( this.needsRedraw ){
+      // wanted to draw but the GPU is behind: a stall tick is the
+      // adaptive-scale fallback signal when GPU timing is unavailable
+      if( this.scaleCtl.frameStalled( t0 ) != null ){
+        this.needsRedraw = true;
+      }
     }
 
     this.cpuFrameMs = performance.now() - t0;
@@ -463,6 +496,25 @@ export class Renderer {
     if( store.hasDirty() || this.needsRedraw || ( picking?.hasPending() ?? false ) ){
       this.schedule();
     }
+  }
+
+  /** Shortly after drawing stops, re-render one frame at max scale so
+   * the still image the user actually inspects is full-resolution. */
+  private armSettleTimer(): void {
+    if( this.settleTimer != null ){
+      clearTimeout( this.settleTimer );
+    }
+
+    this.settleTimer = setTimeout( () => {
+      this.settleTimer = null;
+
+      if( this.destroyed || !this.isReady || this.needsRedraw ){ return; }
+
+      if( this.scaleCtl.settleToMax() != null ){
+        this.needsRedraw = true;
+        this.schedule();
+      }
+    }, SETTLE_TO_MAX_MS );
   }
 
   /**
@@ -548,9 +600,11 @@ export class Renderer {
 
   /** Low-res scene target dimensions (must match writeFrameUniform). */
   private scaledSize(): { w: number; h: number } {
+    const scale = this.scaleCtl.scale;
+
     return {
-      w: Math.max( 1, Math.round( this.canvas.width * this.renderScale ) ),
-      h: Math.max( 1, Math.round( this.canvas.height * this.renderScale ) )
+      w: Math.max( 1, Math.round( this.canvas.width * scale ) ),
+      h: Math.max( 1, Math.round( this.canvas.height * scale ) )
     };
   }
 
@@ -609,10 +663,10 @@ export class Renderer {
     const f = this.frameData;
     const opts = this.opts;
 
-    // with renderScale < 1 the scene renders in scaled device px; LOD
+    // with render scale < 1 the scene renders in scaled device px; LOD
     // thresholds stay in render px (a floored 1px edge is 1 low-res px)
     const { w, h } = this.scaledSize();
-    const dprScale = this.dpr * this.renderScale;
+    const dprScale = this.dpr * this.scaleCtl.scale;
 
     f[0] = w;
     f[1] = h;

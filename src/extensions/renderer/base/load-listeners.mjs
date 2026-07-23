@@ -1038,7 +1038,7 @@ BRp.load = function(){
 
   }, false );
 
-  var wheelDeltas = []; // log of first N wheel deltas
+  var wheelDeltas = []; // log of first N wheel deltas' magnitudes
   var wheelDeltaN = 4; // how many events to log
   var inaccurateScrollDevice;
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
@@ -1053,16 +1053,23 @@ BRp.load = function(){
     return true;
   }
 
-  var allAreSameMagnitude = function(list) {
-    var firstMag = Math.abs(list[0]);
-    for (var i = 1; i < list.length; i++) {
-      if (Math.abs(list[i]) !== firstMag) {
-        return false;
-      }
+  // https://en.wikipedia.org/wiki/Greatest_common_divisor#Euclidean_algorithm
+  var gcd = function( a, b ) {
+    if( b === 0 ) {
+      return a;
     }
-    return true;
+    return gcd(b, a % b);
   }
-      
+
+  // Finds the GCD of a list of numbers: https://stackoverflow.com/a/4885641
+  var gcdMultiple = function( list ) {
+    var out = list[0];
+    for ( var i = 1; i < list.length; i++ ) {
+        out = gcd(out, list[i]);
+    }
+    return out;
+  }
+
   var wheelHandler = function( e ){
     var clamp = false;
     var delta = e.deltaY;
@@ -1083,16 +1090,24 @@ BRp.load = function(){
       if (wheelDeltas.length >= wheelDeltaN) { // use log to determine if inaccurate
         var wds = wheelDeltas;
         inaccurateScrollDevice = allAreDivisibleBy(wds, 5);
+        var isfUnset = true;
 
-        if (!inaccurateScrollDevice) { // check for all large values of exact same magnitude
-          var firstMag = Math.abs(wds[0]);
-
-          inaccurateScrollDevice = allAreSameMagnitude(wds) && firstMag > 5;
+        if (!inaccurateScrollDevice) { // check for all large values with common divisor magnitude
+          if (wds[0] > 5) {
+            var factor = gcdMultiple(wds);
+            if (factor > 1) {
+              inaccurateScrollDevice = true;
+              inaccurateScrollFactor = factor;
+              // use this flag to indicate that we already have a scroll factor
+              // set -- no need to go through the list again
+              isfUnset = false;
+            }
+          }
         }
         
-        if (inaccurateScrollDevice) {
+        if ( isfUnset && inaccurateScrollDevice ) {
           for (var i = 0; i < wds.length; i++) {
-            inaccurateScrollFactor = Math.min(Math.abs(wds[i]), inaccurateScrollFactor);
+            inaccurateScrollFactor = Math.min(wds[i], inaccurateScrollFactor);
           }
         }
 
@@ -1100,7 +1115,7 @@ BRp.load = function(){
         // console.log('inaccurateScrollDevice:', inaccurateScrollDevice);
         // console.log('inaccurateScrollFactor:', inaccurateScrollFactor);
       } else { // clamp and log until we reach N
-        wheelDeltas.push(delta);
+        wheelDeltas.push(Math.abs(delta));
         clamp = true;
         // console.log('Clamping initial wheel events until we get a good sample');
       }

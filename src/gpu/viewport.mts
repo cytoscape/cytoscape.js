@@ -118,25 +118,50 @@ export class Viewport {
     return this.setPan( { x: this._pan.x + ( delta.x || 0 ), y: this._pan.y + ( delta.y || 0 ) } );
   }
 
-  /** Compute-and-apply a fit to the given bounds; returns true when the state changed. */
-  fit( bb: BoundsLike, padding: number = 0 ): boolean {
+  /** Set the min zoom bound and re-clamp the current zoom; true when zoom changed. */
+  setMinZoom( min: number ): boolean {
+    this.minZoom = min;
+
+    return this.reclampZoom();
+  }
+
+  /** Set the max zoom bound and re-clamp the current zoom; true when zoom changed. */
+  setMaxZoom( max: number ): boolean {
+    this.maxZoom = max;
+
+    return this.reclampZoom();
+  }
+
+  private reclampZoom(): boolean {
+    const clamped = this.clampZoom( this._zoom );
+
+    if( clamped === this._zoom ){ return false; }
+
+    this._zoom = clamped;
+
+    return true;
+  }
+
+  /** The { zoom, pan } that would fit the given bounds — computed, not applied. */
+  fitViewport( bb: BoundsLike, padding: number = 0 ): { zoom: number; pan: Position } {
     const w = this.host.width();
     const h = this.host.height();
 
     if( bb.w === 0 && bb.h === 0 ){
-      // nothing to scale to; just center on the point
-      return this.centerOn( bb );
+      // nothing to scale to; keep zoom and just center on the point
+      return { zoom: this._zoom, pan: this.centerPan( bb, this._zoom ) };
     }
 
     const zoomW = bb.w === 0 ? Infinity : ( w - 2 * padding ) / bb.w;
     const zoomH = bb.h === 0 ? Infinity : ( h - 2 * padding ) / bb.h;
     const zoom = this.clampZoom( Math.min( zoomW, zoomH ) );
 
-    const pan = {
-      x: ( w - zoom * ( bb.x1 + bb.x2 ) ) / 2,
-      y: ( h - zoom * ( bb.y1 + bb.y2 ) ) / 2
-    };
+    return { zoom, pan: this.centerPan( bb, zoom ) };
+  }
 
+  /** Compute-and-apply a fit to the given bounds; returns true when the state changed. */
+  fit( bb: BoundsLike, padding: number = 0 ): boolean {
+    const { zoom, pan } = this.fitViewport( bb, padding );
     const changed = zoom !== this._zoom || pan.x !== this._pan.x || pan.y !== this._pan.y;
 
     this._zoom = zoom;
@@ -145,12 +170,25 @@ export class Viewport {
     return changed;
   }
 
+  /** The pan that would center the given bounds at `zoom` (current zoom by default). */
+  centerPan( bb: BoundsLike, zoom: number = this._zoom ): Position {
+    return {
+      x: ( this.host.width() - zoom * ( bb.x1 + bb.x2 ) ) / 2,
+      y: ( this.host.height() - zoom * ( bb.y1 + bb.y2 ) ) / 2
+    };
+  }
+
   /** Pan (keeping zoom) so the given bounds are centered; returns true when the state changed. */
   centerOn( bb: BoundsLike ): boolean {
-    return this.setPan( {
-      x: ( this.host.width() - this._zoom * ( bb.x1 + bb.x2 ) ) / 2,
-      y: ( this.host.height() - this._zoom * ( bb.y1 + bb.y2 ) ) / 2
-    } );
+    return this.setPan( this.centerPan( bb ) );
+  }
+
+  /** The rendered (on-screen) viewport rectangle. */
+  renderedExtent(): Extent {
+    const w = this.host.width();
+    const h = this.host.height();
+
+    return { x1: 0, y1: 0, x2: w, y2: h, w, h };
   }
 
   /** The model-coordinate rectangle currently visible. */

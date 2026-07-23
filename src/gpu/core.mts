@@ -389,16 +389,81 @@ export class GpuCore {
     return this;
   }
 
+  declare centre: this['center'];
+
   extent(): ReturnType<Viewport['extent']> {
     return this._viewport.extent();
   }
 
-  minZoom(): number {
-    return this._viewport.minZoom;
+  /** The rendered (on-screen) viewport rectangle. */
+  renderedExtent(): ReturnType<Viewport['renderedExtent']> {
+    return this._viewport.renderedExtent();
   }
 
-  maxZoom(): number {
-    return this._viewport.maxZoom;
+  /** Rendered dimensions as { width, height }. */
+  size(): { width: number; height: number } {
+    return { width: this.width(), height: this.height() };
+  }
+
+  minZoom( zoom?: number ): number | this {
+    if( zoom === undefined ){ return this._viewport.minZoom; }
+
+    if( this._viewport.setMinZoom( zoom ) ){ this._emitViewportEvents( [ 'zoom' ] ); }
+
+    return this;
+  }
+
+  maxZoom( zoom?: number ): number | this {
+    if( zoom === undefined ){ return this._viewport.maxZoom; }
+
+    if( this._viewport.setMaxZoom( zoom ) ){ this._emitViewportEvents( [ 'zoom' ] ); }
+
+    return this;
+  }
+
+  /** Set both zoom bounds; accepts (min, max) or { min, max }. */
+  zoomRange( min: number | { min?: number; max?: number }, max?: number ): this {
+    const lo = typeof min === 'object' ? min.min : min;
+    const hi = typeof min === 'object' ? min.max : max;
+    let changed = false;
+
+    if( lo != null && this._viewport.setMinZoom( lo ) ){ changed = true; }
+    if( hi != null && this._viewport.setMaxZoom( hi ) ){ changed = true; }
+
+    if( changed ){ this._emitViewportEvents( [ 'zoom' ] ); }
+
+    return this;
+  }
+
+  /** Set zoom and/or pan together, emitting once. */
+  viewport( opts: { zoom?: number; pan?: Position } ): this {
+    const events: string[] = [];
+
+    if( opts.zoom != null && this._viewport.setZoom( opts.zoom ) ){ events.push( 'zoom' ); }
+    if( opts.pan != null && this._viewport.setPan( opts.pan ) ){ events.push( 'pan' ); }
+
+    if( events.length > 0 ){ this._emitViewportEvents( events ); }
+
+    return this;
+  }
+
+  /** Reset the viewport to zoom 1, pan (0, 0). */
+  reset(): this {
+    return this.viewport( { zoom: 1, pan: { x: 0, y: 0 } } );
+  }
+
+  /** The { zoom, pan } that would fit the given elements (null when empty) — computed, not applied. */
+  getFitViewport( eles?: GpuCollection | string, padding: number = 0 ): { zoom: number; pan: Position } | null {
+    const bb = this._boundsOf( eles );
+
+    return bb == null ? null : this._viewport.fitViewport( bb, padding );
+  }
+
+  /** The pan that would center the given elements at `zoom` (null when empty). */
+  getCenterPan( eles?: GpuCollection | string, zoom?: number ): Position | null {
+    const bb = this._boundsOf( eles );
+
+    return bb == null ? null : this._viewport.centerPan( bb, zoom );
   }
 
   /**
@@ -534,6 +599,7 @@ export class GpuCore {
 }
 
 GpuCore.prototype.$ = GpuCore.prototype.filter;
+GpuCore.prototype.centre = GpuCore.prototype.center;
 GpuCore.prototype.addListener = GpuCore.prototype.on;
 GpuCore.prototype.removeListener = GpuCore.prototype.off;
 GpuCore.prototype.trigger = GpuCore.prototype.emit;

@@ -1,4 +1,5 @@
 import { NODE_SHADER } from './shaders.mjs';
+import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
 import type { ColumnId } from '../contract.mjs';
@@ -20,16 +21,19 @@ export const PREMULTIPLIED_BLEND: GPUBlendState = {
   alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }
 };
 
-/** Node render + picking pipelines (vertex pulling; 6 verts per instance). */
+/** Node render + picking pipelines (vertex pulling; indexed quad per instance). */
 export class NodePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
+  private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
   private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
 
   constructor( device: GPUDevice, format: GPUTextureFormat ){
     const module = device.createShaderModule( { label: 'cy-gpu:node-shader', code: NODE_SHADER } );
+
+    this.quadIndex = createQuadIndexBuffer( device );
 
     this.bindLayout = device.createBindGroupLayout( {
       label: 'cy-gpu:node-bind-layout',
@@ -101,6 +105,7 @@ export class NodePipeline {
 
     pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
-    pass.draw( 6, instances );
+    pass.setIndexBuffer( this.quadIndex, 'uint16' );
+    pass.drawIndexed( 6, instances );
   }
 }

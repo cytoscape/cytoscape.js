@@ -1,4 +1,5 @@
 import { EDGE_SHADER } from './shaders.mjs';
+import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import { PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
@@ -24,11 +25,14 @@ export class EdgePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
+  private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
   private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
 
   constructor( device: GPUDevice, format: GPUTextureFormat ){
     const module = device.createShaderModule( { label: 'cy-gpu:edge-shader', code: EDGE_SHADER } );
+
+    this.quadIndex = createQuadIndexBuffer( device );
 
     this.bindLayout = device.createBindGroupLayout( {
       label: 'cy-gpu:edge-bind-layout',
@@ -99,6 +103,7 @@ export class EdgePipeline {
 
     pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
-    pass.draw( 6, instances );
+    pass.setIndexBuffer( this.quadIndex, 'uint16' );
+    pass.drawIndexed( 6, instances );
   }
 }

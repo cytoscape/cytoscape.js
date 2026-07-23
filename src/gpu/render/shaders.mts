@@ -54,13 +54,13 @@ fn pxToClip(frame: Frame, px: vec2f) -> vec2f {
 
 const DEGENERATE = vec4f(2.0, 2.0, 0.0, 1.0); // constant clip position -> zero-area quad
 
+// 4 unique corners, indexed [0,1,2, 2,1,3] (see quad-index.mts): drawIndexed
+// lets vertex reuse collapse the 6 index entries to 4 VS invocations
 fn quadCorner(vi: u32) -> vec2f {
   switch vi {
     case 0u: { return vec2f(-1.0, -1.0); }
     case 1u: { return vec2f(1.0, -1.0); }
     case 2u: { return vec2f(-1.0, 1.0); }
-    case 3u: { return vec2f(-1.0, 1.0); }
-    case 4u: { return vec2f(1.0, -1.0); }
     default: { return vec2f(1.0, 1.0); }
   }
 }

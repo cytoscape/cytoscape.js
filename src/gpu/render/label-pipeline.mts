@@ -1,4 +1,5 @@
 import { LABEL_SHADER } from './shaders.mjs';
+import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import { PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
 import type { ColumnMirror } from './column-mirror.mjs';
@@ -14,11 +15,14 @@ import type { GlyphAtlas } from './glyph-atlas.mjs';
 export class LabelPipeline {
   private pipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
+  private quadIndex: GPUBuffer;
   private bindGroup: GPUBindGroup | null;
   private bindKey: string;
 
   constructor( device: GPUDevice, format: GPUTextureFormat ){
     const module = device.createShaderModule( { label: 'cy-gpu:label-shader', code: LABEL_SHADER } );
+
+    this.quadIndex = createQuadIndexBuffer( device );
 
     this.bindLayout = device.createBindGroupLayout( {
       label: 'cy-gpu:label-bind-layout',
@@ -78,6 +82,7 @@ export class LabelPipeline {
 
     pass.setPipeline( this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, glyphs, mirror, atlas ) );
-    pass.draw( 6, glyphs.highWater );
+    pass.setIndexBuffer( this.quadIndex, 'uint16' );
+    pass.drawIndexed( 6, glyphs.highWater );
   }
 }

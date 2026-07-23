@@ -513,6 +513,19 @@ export class GpuCollection {
   // -- position and dimensions --
 
   position( dim?: string | Position, value?: number ): Position | number | undefined | this {
+    return this._positionImpl( dim, value, false );
+  }
+
+  silentPosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
+    return this._positionImpl( dim, value, true );
+  }
+
+  declare modelPosition: this['position'];
+  declare point: this['position'];
+
+  private _positionImpl(
+    dim: string | Position | undefined, value: number | undefined, silent: boolean
+  ): Position | number | undefined | this {
     // getter forms
     if( dim === undefined || ( typeof dim === 'string' && value === undefined ) ){
       const ref = this._first();
@@ -528,20 +541,31 @@ export class GpuCollection {
     if( typeof dim === 'string' ){
       const partial: Position = { x: NaN, y: NaN };
 
-      return this.positions( ele => {
+      return this._positions( ele => {
         const prev = ele.position() as Position;
 
         partial.x = dim === 'x' ? ( value as number ) : prev.x;
         partial.y = dim === 'y' ? ( value as number ) : prev.y;
 
         return partial;
-      } );
+      }, silent );
     }
 
-    return this.positions( dim );
+    return this._positions( dim, silent );
   }
 
   positions( pos: Position | ElePositionFn ): this {
+    return this._positions( pos, false );
+  }
+
+  silentPositions( pos: Position | ElePositionFn ): this {
+    return this._positions( pos, true );
+  }
+
+  declare modelPositions: this['positions'];
+  declare points: this['positions'];
+
+  private _positions( pos: Position | ElePositionFn, silent: boolean ): this {
     const store = this._store;
     const slots: number[] = [];
     const xy: number[] = [];
@@ -563,7 +587,7 @@ export class GpuCollection {
 
     store.setPositions( slots, xy );
 
-    if( hasListeners( this._cy._emitter, 'position' ) ){
+    if( !silent && hasListeners( this._cy._emitter, 'position' ) ){
       for( const ele of moved ){
         this._cy._emitOnEle( 'position', ele );
       }
@@ -572,16 +596,66 @@ export class GpuCollection {
     return this;
   }
 
-  renderedPosition(): Position | undefined {
-    const pos = this.position() as Position | undefined;
+  /** Offset positions by a vector or a single dimension. */
+  shift( dim: string | Position, value?: number ): this {
+    return this._shift( dim, value, false );
+  }
 
-    if( pos == null ){ return undefined; }
+  silentShift( dim: string | Position, value?: number ): this {
+    return this._shift( dim, value, true );
+  }
 
+  private _shift( dim: string | Position, value: number | undefined, silent: boolean ): this {
+    const delta: Position = typeof dim === 'string'
+      ? { x: dim === 'x' ? ( value as number ) : 0, y: dim === 'y' ? ( value as number ) : 0 }
+      : { x: dim.x || 0, y: dim.y || 0 };
+
+    return this._positions( ele => {
+      const p = ele.position() as Position;
+
+      return { x: p.x + delta.x, y: p.y + delta.y };
+    }, silent );
+  }
+
+  /** Without compound nodes, relative position is the model position. */
+  relativePosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
+    return this._positionImpl( dim, value, false );
+  }
+
+  declare relativePoint: this['relativePosition'];
+
+  renderedPosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
     const zoom = this._cy.zoom() as number;
     const pan = this._cy.pan() as Position;
 
-    return { x: pos.x * zoom + pan.x, y: pos.y * zoom + pan.y };
+    // getter forms
+    if( dim === undefined || ( typeof dim === 'string' && value === undefined ) ){
+      const pos = this.position() as Position | undefined;
+
+      if( pos == null ){ return undefined; }
+
+      const rendered = { x: pos.x * zoom + pan.x, y: pos.y * zoom + pan.y };
+
+      return typeof dim === 'string' ? rendered[ dim as 'x' | 'y' ] : rendered;
+    }
+
+    // setter forms: rendered → model
+    const toModel = ( rx: number, ry: number ): Position => ( { x: ( rx - pan.x ) / zoom, y: ( ry - pan.y ) / zoom } );
+
+    if( typeof dim === 'string' ){
+      return this._positions( ele => {
+        const prev = ele.renderedPosition() as Position;
+        const rx = dim === 'x' ? ( value as number ) : prev.x;
+        const ry = dim === 'y' ? ( value as number ) : prev.y;
+
+        return toModel( rx, ry );
+      }, false );
+    }
+
+    return this._positions( toModel( dim.x, dim.y ), false );
   }
+
+  declare renderedPoint: this['renderedPosition'];
 
   width(): number | undefined {
     const ref = this._first();
@@ -748,6 +822,98 @@ export class GpuCollection {
     }
 
     return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+  }
+
+  /** boundingBox() transformed into rendered (on-screen) coordinates. */
+  renderedBoundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+    const bb = this.boundingBox();
+    const zoom = this._cy.zoom() as number;
+    const pan = this._cy.pan() as Position;
+    const x1 = bb.x1 * zoom + pan.x;
+    const y1 = bb.y1 * zoom + pan.y;
+    const x2 = bb.x2 * zoom + pan.x;
+    const y2 = bb.y2 * zoom + pan.y;
+
+    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+  }
+
+  declare renderedBoundingbox: this['renderedBoundingBox'];
+
+  renderedWidth(): number | undefined {
+    return this._rendered( this.width() );
+  }
+
+  renderedHeight(): number | undefined {
+    return this._rendered( this.height() );
+  }
+
+  renderedOuterWidth(): number | undefined {
+    return this._rendered( this.outerWidth() );
+  }
+
+  renderedOuterHeight(): number | undefined {
+    return this._rendered( this.outerHeight() );
+  }
+
+  private _rendered( modelLength: number | undefined ): number | undefined {
+    return modelLength == null ? undefined : modelLength * ( this._cy.zoom() as number );
+  }
+
+  /** Midpoint of the edge (endpoint node centers; edges are straight in the prototype). */
+  midpoint(): Position | undefined {
+    const ref = this._first();
+
+    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
+    const s = endpoints[ ref.slot * 2 ];
+    const t = endpoints[ ref.slot * 2 + 1 ];
+
+    return {
+      x: ( this._store.getX( s ) + this._store.getX( t ) ) / 2,
+      y: ( this._store.getY( s ) + this._store.getY( t ) ) / 2
+    };
+  }
+
+  renderedMidpoint(): Position | undefined {
+    return this._toRenderedPoint( this.midpoint() );
+  }
+
+  /** The edge's source-side endpoint (node center approximation for straight edges). */
+  sourceEndpoint(): Position | undefined {
+    return this._endpointPoint( 0 );
+  }
+
+  targetEndpoint(): Position | undefined {
+    return this._endpointPoint( 1 );
+  }
+
+  renderedSourceEndpoint(): Position | undefined {
+    return this._toRenderedPoint( this.sourceEndpoint() );
+  }
+
+  renderedTargetEndpoint(): Position | undefined {
+    return this._toRenderedPoint( this.targetEndpoint() );
+  }
+
+  private _endpointPoint( which: 0 | 1 ): Position | undefined {
+    const ref = this._first();
+
+    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
+    const node = endpoints[ ref.slot * 2 + which ];
+
+    return { x: this._store.getX( node ), y: this._store.getY( node ) };
+  }
+
+  private _toRenderedPoint( pos: Position | undefined ): Position | undefined {
+    if( pos == null ){ return undefined; }
+
+    const zoom = this._cy.zoom() as number;
+    const pan = this._cy.pan() as Position;
+
+    return { x: pos.x * zoom + pan.x, y: pos.y * zoom + pan.y };
   }
 
   // -- selection --
@@ -1396,6 +1562,13 @@ GpuCollection.prototype.abscomp = GpuCollection.prototype.absoluteComplement;
 GpuCollection.prototype.equal = GpuCollection.prototype.same;
 GpuCollection.prototype.equals = GpuCollection.prototype.same;
 GpuCollection.prototype.allAreNeighbours = GpuCollection.prototype.allAreNeighbors;
+GpuCollection.prototype.modelPosition = GpuCollection.prototype.position;
+GpuCollection.prototype.point = GpuCollection.prototype.position;
+GpuCollection.prototype.modelPositions = GpuCollection.prototype.positions;
+GpuCollection.prototype.points = GpuCollection.prototype.positions;
+GpuCollection.prototype.relativePoint = GpuCollection.prototype.relativePosition;
+GpuCollection.prototype.renderedPoint = GpuCollection.prototype.renderedPosition;
+GpuCollection.prototype.renderedBoundingbox = GpuCollection.prototype.renderedBoundingBox;
 GpuCollection.prototype.intersect = GpuCollection.prototype.intersection;
 GpuCollection.prototype.and = GpuCollection.prototype.intersection;
 GpuCollection.prototype.symdiff = GpuCollection.prototype.symmetricDifference;

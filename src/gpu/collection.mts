@@ -208,6 +208,14 @@ export class GpuCollection {
     return this._spawn( this._refs.slice( start, end ) );
   }
 
+  sort( sortFn: ( a: GpuCollection, b: GpuCollection ) => number ): GpuCollection {
+    if( typeof sortFn !== 'function' ){ return this; }
+
+    const sorted = this.toArray().sort( sortFn );
+
+    return this._spawn( sorted.map( ele => ele._refs[ 0 ] ) );
+  }
+
   eq( i: number ): GpuCollection {
     return this[ i ] ?? this._spawn( [] );
   }
@@ -264,6 +272,25 @@ export class GpuCollection {
     return this.group() === 'edges';
   }
 
+  isLoop(): boolean {
+    return this._isLoop( true );
+  }
+
+  isSimple(): boolean {
+    return this._isLoop( false );
+  }
+
+  private _isLoop( wantLoop: boolean ): boolean {
+    const ref = this._first();
+
+    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return false; }
+
+    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
+    const isLoop = endpoints[ ref.slot * 2 ] === endpoints[ ref.slot * 2 + 1 ];
+
+    return wantLoop ? isLoop : !isLoop;
+  }
+
   removed(): boolean {
     const ref = this._first();
 
@@ -299,6 +326,18 @@ export class GpuCollection {
   }
 
   declare has: this['contains'];
+  declare equal: this['same'];
+  declare equals: this['same'];
+
+  /** Whether every element of `other` is in this collection's neighborhood. */
+  allAreNeighbors( other: GpuCollection | string ): boolean {
+    const coll = this._toEles( other );
+    const nhood = this.neighborhood();
+
+    return coll.every( ele => nhood.hasElementWithId( ele.id() as string ) );
+  }
+
+  declare allAreNeighbours: this['allAreNeighbors'];
 
   allAre( selector: SelectorLike ): boolean {
     const compiled = compile( selector );
@@ -323,6 +362,7 @@ export class GpuCollection {
   declare u: this['union'];
   declare or: this['union'];
   declare add: this['union'];
+  declare merge: this['union'];
 
   difference( other: GpuCollection | string ): GpuCollection {
     const keys = new Set( this._toEles( other )._refs.map( refKey ) );
@@ -332,6 +372,8 @@ export class GpuCollection {
 
   declare not: this['difference'];
   declare subtract: this['difference'];
+  declare unmerge: this['difference'];
+  declare relativeComplement: this['difference'];
 
   intersection( other: GpuCollection | string ): GpuCollection {
     const keys = new Set( this._toEles( other )._refs.map( refKey ) );
@@ -392,6 +434,76 @@ export class GpuCollection {
     }
 
     return this._spawn( [] );
+  }
+
+  /** Split into { nodes, edges }. */
+  byGroup(): { nodes: GpuCollection; edges: GpuCollection } {
+    return { nodes: this.nodes(), edges: this.edges() };
+  }
+
+  /** All elements of the graph not in this collection. */
+  absoluteComplement(): GpuCollection {
+    return this._cy.elements().difference( this );
+  }
+
+  declare complement: this['absoluteComplement'];
+  declare abscomp: this['absoluteComplement'];
+
+  /** { left: only in this, right: only in other, both: in both }. */
+  diff( other: GpuCollection | string ): {
+    left: GpuCollection; right: GpuCollection; both: GpuCollection;
+  } {
+    const otherColl = this._toEles( other );
+    const mine = new Set( this._refs.map( refKey ) );
+    const theirs = new Set( otherColl._refs.map( refKey ) );
+
+    return {
+      left: this._spawn( this._refs.filter( ref => !theirs.has( refKey( ref ) ) ) ),
+      right: this._spawn( otherColl._refs.filter( ref => !mine.has( refKey( ref ) ) ) ),
+      both: this._spawn( this._refs.filter( ref => theirs.has( refKey( ref ) ) ) )
+    };
+  }
+
+  reduce<T>( fn: ( acc: T, ele: GpuCollection, i: number, eles: GpuCollection ) => T, initial: T ): T {
+    let val = initial;
+
+    for( let i = 0; i < this.length; i++ ){
+      val = fn( val, this[ i ], i, this );
+    }
+
+    return val;
+  }
+
+  /** The element maximizing `valFn`, with its value ({ value: -Infinity, ele: undefined } when empty). */
+  max(
+    valFn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => number, thisArg?: unknown
+  ): { value: number; ele: GpuCollection | undefined } {
+    return this._extremum( valFn, thisArg, 1 );
+  }
+
+  min(
+    valFn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => number, thisArg?: unknown
+  ): { value: number; ele: GpuCollection | undefined } {
+    return this._extremum( valFn, thisArg, -1 );
+  }
+
+  private _extremum(
+    valFn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => number,
+    thisArg: unknown, sign: 1 | -1
+  ): { value: number; ele: GpuCollection | undefined } {
+    let best = sign * -Infinity;
+    let bestEle: GpuCollection | undefined;
+
+    for( let i = 0; i < this.length; i++ ){
+      const val = valFn.call( thisArg ?? this[ i ], this[ i ], i, this );
+
+      if( sign * val > sign * best ){
+        best = val;
+        bestEle = this[ i ];
+      }
+    }
+
+    return { value: best, ele: bestEle };
   }
 
   private _toEles( other: GpuCollection | string ): GpuCollection {
@@ -1139,6 +1251,58 @@ export class GpuCollection {
     return this._degree( includeLoops, ( store, slot ) => store.adj.inDegree( slot ), 'in' );
   }
 
+  minDegree( includeLoops: boolean = true ): number | undefined {
+    return this._degreeBound( 'degree', includeLoops, -1 );
+  }
+
+  maxDegree( includeLoops: boolean = true ): number | undefined {
+    return this._degreeBound( 'degree', includeLoops, 1 );
+  }
+
+  minIndegree( includeLoops: boolean = true ): number | undefined {
+    return this._degreeBound( 'indegree', includeLoops, -1 );
+  }
+
+  maxIndegree( includeLoops: boolean = true ): number | undefined {
+    return this._degreeBound( 'indegree', includeLoops, 1 );
+  }
+
+  minOutdegree( includeLoops: boolean = true ): number | undefined {
+    return this._degreeBound( 'outdegree', includeLoops, -1 );
+  }
+
+  maxOutdegree( includeLoops: boolean = true ): number | undefined {
+    return this._degreeBound( 'outdegree', includeLoops, 1 );
+  }
+
+  totalDegree( includeLoops: boolean = true ): number {
+    let total = 0;
+
+    for( let i = 0; i < this.length; i++ ){
+      if( this[ i ].isNode() ){ total += this[ i ].degree( includeLoops ); }
+    }
+
+    return total;
+  }
+
+  private _degreeBound(
+    fn: 'degree' | 'indegree' | 'outdegree', includeLoops: boolean, sign: 1 | -1
+  ): number | undefined {
+    let ret: number | undefined;
+
+    for( let i = 0; i < this.length; i++ ){
+      if( !this[ i ].isNode() ){ continue; }
+
+      const degree = fn === 'degree'
+        ? this[ i ].degree( includeLoops )
+        : fn === 'indegree' ? this[ i ].indegree( includeLoops ) : this[ i ].outdegree( includeLoops );
+
+      if( ret === undefined || sign * degree > sign * ret ){ ret = degree; }
+    }
+
+    return ret;
+  }
+
   private _degree(
     includeLoops: boolean,
     count: ( store: GpuCore['_store'], slot: number ) => number,
@@ -1222,8 +1386,16 @@ GpuCollection.prototype.has = GpuCollection.prototype.contains;
 GpuCollection.prototype.u = GpuCollection.prototype.union;
 GpuCollection.prototype.or = GpuCollection.prototype.union;
 GpuCollection.prototype.add = GpuCollection.prototype.union;
+GpuCollection.prototype.merge = GpuCollection.prototype.union;
 GpuCollection.prototype.not = GpuCollection.prototype.difference;
 GpuCollection.prototype.subtract = GpuCollection.prototype.difference;
+GpuCollection.prototype.unmerge = GpuCollection.prototype.difference;
+GpuCollection.prototype.relativeComplement = GpuCollection.prototype.difference;
+GpuCollection.prototype.complement = GpuCollection.prototype.absoluteComplement;
+GpuCollection.prototype.abscomp = GpuCollection.prototype.absoluteComplement;
+GpuCollection.prototype.equal = GpuCollection.prototype.same;
+GpuCollection.prototype.equals = GpuCollection.prototype.same;
+GpuCollection.prototype.allAreNeighbours = GpuCollection.prototype.allAreNeighbors;
 GpuCollection.prototype.intersect = GpuCollection.prototype.intersection;
 GpuCollection.prototype.and = GpuCollection.prototype.intersection;
 GpuCollection.prototype.symdiff = GpuCollection.prototype.symmetricDifference;

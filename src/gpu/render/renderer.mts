@@ -220,6 +220,14 @@ export class Renderer {
     this.schedule();
   }
 
+  /** Force a redraw on the next frame (the loop is otherwise render-on-dirty). */
+  requestRender(): void {
+    if( this.destroyed ){ return; }
+
+    this.needsRedraw = true;
+    this.schedule();
+  }
+
   destroy(): void {
     if( this.destroyed ){ return; }
 

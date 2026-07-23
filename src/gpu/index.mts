@@ -50,7 +50,11 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
 
     cy.on( 'destroy', () => pointer.destroy() );
     cy._renderer = renderer;
-    cy.ready = renderer.ready.then( () => cy );
+    cy.ready = renderer.ready.then( () => {
+      cy._readyResolved = true;
+
+      return cy;
+    } );
   }
 
   return cy;

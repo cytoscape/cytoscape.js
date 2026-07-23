@@ -24,6 +24,8 @@ import type { EleFilterFn } from './collection.mjs';
 export interface RendererLike {
   destroy(): void;
   pick( x: number, y: number ): Promise<GpuCollection | null>;
+  requestRender(): void;
+  resize(): void;
 }
 
 export interface LayoutLike {
@@ -48,12 +50,18 @@ export class GpuCore {
   /** resolves once the render pipeline is usable (immediately when headless) */
   ready: Promise<GpuCore>;
 
+  /** true once the render pipeline is usable (immediately when headless) */
+  _readyResolved: boolean;
+
   private _pool: { nodes: Map<number, GpuCollection>; edges: Map<number, GpuCollection> };
   private _container: HTMLElement | null;
+  private _options: CytoscapeGpuOptions;
   private _headlessWidth: number;
   private _headlessHeight: number;
   private _destroyed: boolean;
   private _idCounter: number;
+  private _scratch: Record<string, unknown>;
+  private _graphData: Record<string, unknown>;
 
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
@@ -62,10 +70,14 @@ export class GpuCore {
     this._renderer = null;
     this._pool = { nodes: new Map(), edges: new Map() };
     this._container = options.container ?? null;
+    this._options = options;
     this._headlessWidth = options.headlessWidth ?? DEFAULT_HEADLESS_WIDTH;
     this._headlessHeight = options.headlessHeight ?? DEFAULT_HEADLESS_HEIGHT;
     this._destroyed = false;
     this._idCounter = 0;
+    this._scratch = {};
+    this._graphData = {};
+    this._readyResolved = this._container == null; // headless is ready immediately
     this._viewport = new Viewport( this, {
       zoom: options.zoom,
       pan: options.pan,
@@ -103,6 +115,9 @@ export class GpuCore {
       ( got != null ? `; got '${got}'` : '' )
     );
   }
+
+  declare makeLayout: this['layout'];
+  declare createLayout: this['layout'];
 
   // -- graph manipulation --
 
@@ -286,6 +301,9 @@ export class GpuCore {
 
   declare addListener: this['on'];
 
+  declare listen: this['on'];
+  declare bind: this['on'];
+
   one( events: string, selectorOrCb?: string | EventHandler, callback?: EventHandler ): this {
     if( typeof selectorOrCb === 'string' ){
       this._emitter.one( events, selectorQualifier( selectorOrCb ), callback );
@@ -295,6 +313,8 @@ export class GpuCore {
 
     return this;
   }
+
+  declare once: this['one'];
 
   off( events: string, selectorOrCb?: string | EventHandler, callback?: EventHandler ): this {
     if( typeof selectorOrCb === 'string' ){
@@ -307,6 +327,8 @@ export class GpuCore {
   }
 
   declare removeListener: this['off'];
+  declare unlisten: this['off'];
+  declare unbind: this['off'];
 
   removeAllListeners(): this {
     this._emitter.removeAllListeners();
@@ -331,6 +353,8 @@ export class GpuCore {
       }
     } );
   }
+
+  declare pon: this['promiseOn'];
 
   // -- viewport --
 
@@ -474,7 +498,128 @@ export class GpuCore {
     return this._renderer != null ? this._renderer.pick( x, y ) : Promise.resolve( null );
   }
 
+  // -- renderer --
+
+  renderer(): RendererLike | null {
+    return this._renderer;
+  }
+
+  /** Force a redraw next frame (no-op when headless; the loop is render-on-dirty). */
+  forceRender(): this {
+    this._renderer?.requestRender();
+
+    return this;
+  }
+
+  /** Re-measure the container and redraw (no-op when headless). */
+  resize(): this {
+    this._renderer?.resize();
+    this.emit( 'resize' );
+
+    return this;
+  }
+
+  declare invalidateSize: this['resize'];
+
+  onRender( callback: EventHandler ): this {
+    return this.on( 'render', callback );
+  }
+
+  offRender( callback?: EventHandler ): this {
+    return this.off( 'render', callback );
+  }
+
+  // -- graph-level data & scratch (plain objects, not columns) --
+
+  data( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
+    return this._objectAccess( this._graphData, args, 'data' );
+  }
+
+  removeData( names?: string ): this {
+    return this._objectRemove( this._graphData, names, 'data' );
+  }
+
+  declare attr: this['data'];
+  declare removeAttr: this['removeData'];
+
+  scratch( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
+    return this._objectAccess( this._scratch, args, null );
+  }
+
+  removeScratch( names?: string ): this {
+    return this._objectRemove( this._scratch, names, null );
+  }
+
+  private _objectAccess(
+    target: Record<string, unknown>,
+    args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ],
+    event: string | null
+  ): unknown {
+    const [ key, value ] = args;
+
+    if( args.length === 0 ){ return target; }
+    if( typeof key === 'string' && args.length === 1 ){ return target[ key ]; }
+
+    const patch: Record<string, unknown> = typeof key === 'string' ? { [ key ]: value } : key as Record<string, unknown>;
+
+    Object.assign( target, patch );
+
+    if( event != null ){ this.emit( event ); }
+
+    return this;
+  }
+
+  private _objectRemove( target: Record<string, unknown>, names: string | undefined, event: string | null ): this {
+    const keys = names == null ? Object.keys( target ) : names.split( /\s+/ ).filter( n => n !== '' );
+
+    for( const k of keys ){ delete target[ k ]; }
+
+    if( event != null && keys.length > 0 ){ this.emit( event ); }
+
+    return this;
+  }
+
   // -- environment --
+
+  instanceString(): string {
+    return 'core';
+  }
+
+  isReady(): boolean {
+    return this._readyResolved;
+  }
+
+  headless(): boolean {
+    return this._container == null;
+  }
+
+  styleEnabled(): boolean {
+    return true;
+  }
+
+  hasCompoundNodes(): boolean {
+    return false;
+  }
+
+  hasElementWithId( id: string ): boolean {
+    return this._store.lookup( id ) != null;
+  }
+
+  declare $id: this['getElementById'];
+
+  /** All elements (the prototype has no immutable/"read-only" collections). */
+  mutableElements(): GpuCollection {
+    return this.elements();
+  }
+
+  window(): ( Window & typeof globalThis ) | null {
+    return typeof window !== 'undefined' ? window : null;
+  }
+
+  /** The options the instance was constructed with. */
+  options(): CytoscapeGpuOptions {
+    return this._options;
+  }
 
   container(): HTMLElement | null {
     return this._container;
@@ -601,6 +746,18 @@ export class GpuCore {
 GpuCore.prototype.$ = GpuCore.prototype.filter;
 GpuCore.prototype.centre = GpuCore.prototype.center;
 GpuCore.prototype.addListener = GpuCore.prototype.on;
+GpuCore.prototype.listen = GpuCore.prototype.on;
+GpuCore.prototype.bind = GpuCore.prototype.on;
 GpuCore.prototype.removeListener = GpuCore.prototype.off;
+GpuCore.prototype.unlisten = GpuCore.prototype.off;
+GpuCore.prototype.unbind = GpuCore.prototype.off;
+GpuCore.prototype.once = GpuCore.prototype.one;
+GpuCore.prototype.pon = GpuCore.prototype.promiseOn;
 GpuCore.prototype.trigger = GpuCore.prototype.emit;
+GpuCore.prototype.$id = GpuCore.prototype.getElementById;
+GpuCore.prototype.makeLayout = GpuCore.prototype.layout;
+GpuCore.prototype.createLayout = GpuCore.prototype.layout;
+GpuCore.prototype.invalidateSize = GpuCore.prototype.resize;
+GpuCore.prototype.attr = GpuCore.prototype.data;
+GpuCore.prototype.removeAttr = GpuCore.prototype.removeData;
 

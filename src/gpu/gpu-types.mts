@@ -66,9 +66,12 @@ export interface GpuRendererOptions {
   hidePx?: number;
   /** dim edges as zoom decreases below 1 (default false) */
   edgeDimming?: boolean;
-  /** labels fade out as on-screen glyph height drops below this (default 6) */
+  /** labels fade out as displayed glyph height drops below this
+   * (default 6).  Displayed px: measured after any adaptive render-scale
+   * upscale, so labels never pop out just because the resolution dropped
+   * mid-gesture. */
   labelFadePx?: number;
-  /** labels below this on-screen glyph height are not rendered at all —
+  /** labels below this displayed glyph height are not rendered at all —
    * too small to read anyway (default 0 = off; the fade's own cutoff at
    * labelFadePx/2 still applies) */
   labelMinPx?: number;

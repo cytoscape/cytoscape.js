@@ -677,8 +677,13 @@ export class Renderer {
     f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
     f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
     f[8] = opts.edgeDimming ? Math.min( 0.85, Math.max( 0, 1 - zoom ) * 0.85 ) : 0;
-    f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
-    f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
+    // label thresholds are readability criteria, so they live in *displayed*
+    // px regardless of the adaptive render scale: scaling them into render
+    // px here makes the shader/cull comparisons (which are in render px)
+    // equivalent to native-px ones.  The node/edge raster floors above stay
+    // in render px on purpose — sub-render-pixel geometry can't rasterize.
+    f[9] = ( opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX ) * this.scaleCtl.scale;
+    f[10] = ( opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX ) * this.scaleCtl.scale;
     // f[11]: padding
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );

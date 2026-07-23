@@ -110,9 +110,12 @@ edges, non-grid layouts, graph algorithms.
   frames only ever exist mid-interaction on expensive scenes.  Scaled
   frames draw into an offscreen target and a fullscreen Catmull-Rom
   bicubic pass upscales to the canvas (preserves SDF borders and
-  hairlines far better than bilinear).  LOD thresholds apply in render
-  px; picking always runs at native resolution.  Pin `min === max` for a
-  fixed scale.  (ndex-x-large fit-all pan at dpr 2: settles at 0.5 within
+  hairlines far better than bilinear).  Raster LOD floors (edge width,
+  node size) apply in render px; label thresholds (`labelFadePx`,
+  `labelMinPx`) are readability criteria and apply in *displayed* px, so
+  labels don't blink out when the scale drops mid-gesture.  Picking
+  always runs at native resolution.  Pin `min === max` for a fixed
+  scale.  (ndex-x-large fit-all pan at dpr 2: settles at 0.5 within
   ~0.8 s, 25 → 76 fps; far-zoom and idle stay native.)
 - **Label LOD**: labels fade below `labelFadePx` (glyphs past the fade's
   zero point are culled in compute, not drawn at zero alpha); the optional

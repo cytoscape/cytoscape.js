@@ -36,6 +36,10 @@ const paramDefs = {
     default: 'false',
     control: '#labels-check'
   },
+  columnar: {
+    default: 'false',
+    control: '#columnar-check'
+  },
   labelMinPx: {
     default: '0',
     control: '#label-min-input'
@@ -171,9 +175,17 @@ const paramDefs = {
       ]);
     }
 
+    let elements = { nodes: gpuElements.nodes, edges: gpuElements.edges };
+
+    if(params.columnar === 'true') {
+      console.time('toColumnarElements');
+      elements = cytoscapeGpu.toColumnarElements(elements);
+      console.timeEnd('toColumnarElements');
+    }
+
     cy = cytoscapeGpu({
       container: $('#cytoscape'),
-      elements: { nodes: gpuElements.nodes, edges: gpuElements.edges },
+      elements: elements,
       style: style,
       layout: gpuElements.hasPositions ? undefined : { name: 'grid' },
       renderer: {

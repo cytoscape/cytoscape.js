@@ -28,6 +28,45 @@ export type GpuElementsDefinition =
   | GpuElementDefinition[]
   | { nodes?: GpuElementDefinition[]; edges?: GpuElementDefinition[] };
 
+/** Columnar node payload; all arrays are index-aligned with `count`. */
+export interface GpuColumnarNodes {
+  count: number;
+  /** unique ids; missing entries (or the whole array) are auto-generated */
+  ids?: ( string | undefined )[];
+  /** interleaved x,y pairs, length 2 × count; omitted = all (0, 0) */
+  positions?: Float32Array;
+  /** 1 = selected; omitted = all unselected */
+  selected?: Uint8Array;
+  /** 0 = unselectable; omitted = all selectable */
+  selectable?: Uint8Array;
+}
+
+/** Columnar edge payload; endpoints are indices into the payload's nodes. */
+export interface GpuColumnarEdges {
+  count: number;
+  ids?: ( string | undefined )[];
+  /** source node index per edge (into the payload's nodes), length count */
+  sources: Uint32Array;
+  /** target node index per edge (into the payload's nodes), length count */
+  targets: Uint32Array;
+  selected?: Uint8Array;
+  selectable?: Uint8Array;
+}
+
+/**
+ * Columnar bulk-load form of `elements`: typed-array columns ingest
+ * directly into the store with no per-element objects, and edges resolve
+ * endpoints by index with no id lookups.  Payloads are self-contained —
+ * every edge endpoint must index a node in the same payload.  Convert
+ * definition-form JSON with `cytoscapeGpu.toColumnarElements(json)`.
+ */
+export interface GpuColumnarElements {
+  /** discriminant so the loader can tell the forms apart */
+  columnar: true;
+  nodes?: GpuColumnarNodes;
+  edges?: GpuColumnarEdges;
+}
+
 /**
  * A constrained compiled-style block: constant values only (no mappers).
  * Supported selectors: `node`, `edge`, `node:selected`, `edge:selected`, `#id`.
@@ -97,7 +136,7 @@ export interface CytoscapeGpuOptions {
    * is headless (works in Node, never throws for missing GPU).
    */
   container?: HTMLElement | null;
-  elements?: GpuElementsDefinition;
+  elements?: GpuElementsDefinition | GpuColumnarElements;
   style?: GpuStyleBlock[];
   layout?: GpuGridLayoutOptions;
   zoom?: number;

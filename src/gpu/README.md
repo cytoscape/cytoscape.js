@@ -49,6 +49,24 @@ Out of scope (deferred): animations, full stylesheets/mappers, `data()`
 (ids/source/target are first-class), arrows, compound nodes, bezier
 edges, non-grid layouts, graph algorithms.
 
+## Loading
+
+`options.elements` accepts the classic definition form (v3-style JSON) or
+a **columnar bulk-load form**: `{ columnar: true, nodes: { count, ids?,
+positions? }, edges: { count, ids?, sources, targets } }` with typed-array
+columns and edge endpoints as node *indices* — it ingests straight into
+the store (contiguous slot runs are memcpys) with no per-element objects
+and no id lookups per edge.  Columnar payloads are self-contained: every
+edge endpoint indexes a node in the same payload.  Convert classic JSON
+with `cytoscapeGpu.toColumnarElements(json)` (also what a binary wire
+format would deserialize into).  Either way, the factory's load path
+materializes no per-element handles and emits no `add` events (nobody can
+be listening yet); `cy.add()` keeps full per-element semantics and takes
+both forms.  ndex-x-large (19.6k nodes / 465k edges, 28.6 MB JSON):
+definition-form init 236 ms, columnar init 80 ms (~76 ms with the payload
+prebuilt, i.e. fetched as binary) — down from 662 ms before the bulk
+path.
+
 ## Known deviations from v3 (accepted for pass 1)
 
 - **Listener firing order**: one core emitter with ref/selector-qualified

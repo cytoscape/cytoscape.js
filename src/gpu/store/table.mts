@@ -87,6 +87,43 @@ export class ColumnTable {
     return { slot, resized };
   }
 
+  /**
+   * Allocate `count` slots at once: freed slots first (zeroed, like
+   * alloc()), then one contiguous fresh run at highWater — fresh slots
+   * have never been written, so they skip the per-slot zeroing loop
+   * entirely.  Returns the slots in allocation order; entries from
+   * `contiguousFrom` on are the ascending fresh run.
+   */
+  allocBulk( count: number ): { slots: Uint32Array; resized: boolean; contiguousFrom: number } {
+    const slots = new Uint32Array( count );
+    let n = 0;
+
+    while( n < count && this.free.length > 0 ){
+      const slot = this.free.pop() as number;
+
+      for( const spec of this.specs ){
+        const arr = this.arrays.get( spec.id ) as ColumnArray;
+
+        arr.fill( 0, slot * spec.components, ( slot + 1 ) * spec.components );
+      }
+
+      slots[ n++ ] = slot;
+    }
+
+    const contiguousFrom = n;
+    const fresh = count - n;
+    const resized = this.reserve( this.highWater + fresh );
+
+    for( let i = 0; i < fresh; i++ ){
+      slots[ n + i ] = this.highWater + i;
+    }
+
+    this.highWater += fresh;
+    this.count += count;
+
+    return { slots, resized, contiguousFrom };
+  }
+
   /** Free a slot for reuse; bumps its generation so outstanding refs go stale. */
   freeSlot( slot: number ): void {
     this.gen[ slot ]++;

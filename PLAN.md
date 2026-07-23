@@ -128,7 +128,32 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 
 ## Follow-ups (informed by the benchmark)
 
-1. Compute-shader culling + `drawIndirect` — the ~1M-instance VS cost is what caps 100k×300k at ~40 fps.
-2. Batch the one-time glyph build (~40 µs/label; per-label scratch allocation dominates the ~4 s at 100k labels).
-3. `data()` sidecar → unlocks style mappers and fixture labels beyond `data(id)`.
-4. Cheap wins: preset layout, arrows, pinch zoom.
+1. ~~Compute-shader culling + `drawIndirect`~~ — done (see the culling/LOD
+   section above).
+2. ~~Batch the one-time glyph build~~ — **dead on re-measurement**: 100k
+   labels (588,890 glyphs) build in ~160 ms (~1.6 µs/label; init-time delta
+   110 ms wall), not the ~4.1 s / ~40 µs per label originally recorded.  The
+   build path is unchanged since labels landed, so the original figure did
+   not survive a controlled re-measurement (runtime `style()` apply → stable
+   frame, CPU-profiled).  SDF raster/EDT is per *unique* glyph and cached in
+   the atlas; per-label work is layout + instance emission only.
+3. ~~Bulk element load~~ — **done** (the actual init bottleneck).
+   Profiling the ndex-x-large load (28.6 MB JSON, 19.6k nodes / 465k
+   edges, ~960 ms end to end) showed `cytoscapeGpu` init at 662 ms —
+   dominated not by the columnar model but by eager per-element handle
+   materialization (`GpuCollection` interning for 484k elements the loader
+   never touches), a per-element `add` emit with no listener early-out,
+   def-clone churn and the ~110 ms GC echo.  Landed as two pieces: (a) a
+   bulk add path — no handles or emits on the factory load, clone-free def
+   partitioning, one up-front table reservation, and `applyBulk` (the mini
+   selector language resolves per (group, selected), not per element) —
+   init 662 → 236 ms; (b) a **columnar elements form** (`{ columnar:
+   true, ... }`, typed-array columns, integer-indexed edge endpoints,
+   contiguous-slot memcpy ingest) with the compat converter
+   `cytoscapeGpu.toColumnarElements(json)` — init 236 → 80 ms, and ~76 ms
+   with a prebuilt payload (what fetching a binary format would enable;
+   `JSON.parse` itself is 90–113 ms on this fixture).  A serialized wire
+   layout for the columnar form (one ArrayBuffer + header) is the natural
+   follow-up if fetch-to-render matters more later.
+4. `data()` sidecar → unlocks style mappers and fixture labels beyond `data(id)`.
+5. Cheap wins: preset layout, arrows, pinch zoom.

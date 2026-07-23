@@ -7,6 +7,7 @@ import {
   FLAG_ALIVE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
 import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
+import type { GpuColumnarEdges, GpuColumnarNodes } from '../gpu-types.mjs';
 
 export interface AddElementOpts {
   selected?: boolean;
@@ -171,6 +172,97 @@ export class GraphStore implements ModelView {
     }
 
     return slot;
+  }
+
+  /**
+   * Columnar bulk node add: typed-array columns write straight into the
+   * store (one memcpy for the contiguous fresh run), with no per-element
+   * def objects.  Returns the allocated slots, index-aligned with the
+   * payload arrays.  On error the graph may be partially mutated (as with
+   * a mid-list throw in the def path).
+   */
+  addNodesColumnar( cols: GpuColumnarNodes, newId: () => string ): Uint32Array {
+    const count = cols.count;
+    const { slots, resized, contiguousFrom } = this.nodes.allocBulk( count );
+
+    if( resized ){ this.dirty.markResized( 'nodes' ); }
+
+    this.registerBulk( 'nodes', slots, cols.ids, newId );
+
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+
+    if( cols.positions != null ){
+      if( cols.positions.length < count * 2 ){
+        throw new Error( `Columnar node positions must hold ${count * 2} floats; got ${cols.positions.length}` );
+      }
+
+      if( contiguousFrom < count ){ // fresh run: one memcpy
+        pos.set( cols.positions.subarray( contiguousFrom * 2, count * 2 ), slots[ contiguousFrom ] * 2 );
+      }
+
+      for( let i = 0; i < contiguousFrom; i++ ){ // reused slots: scattered
+        pos[ slots[ i ] * 2 ] = cols.positions[ i * 2 ];
+        pos[ slots[ i ] * 2 + 1 ] = cols.positions[ i * 2 + 1 ];
+      }
+    }
+
+    this.writeBulkFlags( 'nodes', slots, contiguousFrom, cols );
+
+    if( !resized ){
+      this.markBulk( 'node.position', slots );
+      this.markBulk( 'node.flags', slots );
+    }
+
+    return slots;
+  }
+
+  /**
+   * Columnar bulk edge add: endpoints are indices into `nodeSlots` (the
+   * same payload's nodes) — no id lookups per edge.
+   */
+  addEdgesColumnar( cols: GpuColumnarEdges, nodeSlots: Uint32Array, newId: () => string ): Uint32Array {
+    const count = cols.count;
+
+    if( cols.sources == null || cols.targets == null || cols.sources.length < count || cols.targets.length < count ){
+      throw new Error( `Columnar edges must provide ${count} sources and targets` );
+    }
+
+    for( let i = 0; i < count; i++ ){
+      if( cols.sources[ i ] >= nodeSlots.length || cols.targets[ i ] >= nodeSlots.length ){
+        throw new Error(
+          `Columnar edge ${i} references node index ` +
+          `${Math.max( cols.sources[ i ], cols.targets[ i ] )} but the payload has ${nodeSlots.length} nodes ` +
+          `(columnar payloads are self-contained; use the definition form for cross-references)`
+        );
+      }
+    }
+
+    const { slots, resized, contiguousFrom } = this.edges.allocBulk( count );
+
+    if( resized ){ this.dirty.markResized( 'edges' ); }
+
+    this.registerBulk( 'edges', slots, cols.ids, newId );
+
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+
+    for( let i = 0; i < count; i++ ){
+      const slot = slots[ i ];
+      const source = nodeSlots[ cols.sources[ i ] ];
+      const target = nodeSlots[ cols.targets[ i ] ];
+
+      endpoints[ slot * 2 ] = source;
+      endpoints[ slot * 2 + 1 ] = target;
+      this.adj.addEdge( slot, source, target );
+    }
+
+    this.writeBulkFlags( 'edges', slots, contiguousFrom, cols );
+
+    if( !resized ){
+      this.markBulk( 'edge.endpoints', slots );
+      this.markBulk( 'edge.flags', slots );
+    }
+
+    return slots;
   }
 
   removeEdge( slot: number ): void {
@@ -407,6 +499,71 @@ export class GraphStore implements ModelView {
   }
 
   // -- internals --
+
+  /** Register bulk-allocated slots: ids (auto-generated on holes) + insertion order. */
+  private registerBulk(
+    group: GroupName, slots: Uint32Array,
+    ids: ( string | undefined )[] | undefined, newId: () => string
+  ): void {
+    const order = this.order[ group ];
+    const gen = this.table( group ).gen;
+
+    for( let i = 0; i < slots.length; i++ ){
+      const slot = slots[ i ];
+
+      this.ids.set( ids?.[ i ] ?? newId(), group, slot ); // throws on a duplicate id
+      order.slots.push( slot );
+      order.gens.push( gen[ slot ] );
+    }
+  }
+
+  /** Default flags for the whole bulk, then per-element deviations. */
+  private writeBulkFlags(
+    group: GroupName, slots: Uint32Array, contiguousFrom: number,
+    cols: { selected?: Uint8Array; selectable?: Uint8Array }
+  ): void {
+    const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const flags = this.table( group ).column( flagsId ) as Uint32Array;
+    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_SELECTABLE;
+    const count = slots.length;
+
+    if( contiguousFrom < count ){ // fresh run: one fill
+      flags.fill( defaults, slots[ contiguousFrom ], slots[ count - 1 ] + 1 );
+    }
+
+    for( let i = 0; i < contiguousFrom; i++ ){
+      flags[ slots[ i ] ] = defaults;
+    }
+
+    if( cols.selected != null ){
+      for( let i = 0; i < count; i++ ){
+        if( cols.selected[ i ] !== 0 ){ flags[ slots[ i ] ] |= FLAG_SELECTED; }
+      }
+    }
+
+    if( cols.selectable != null ){
+      for( let i = 0; i < count; i++ ){
+        if( cols.selectable[ i ] === 0 ){ flags[ slots[ i ] ] &= ~FLAG_SELECTABLE; }
+      }
+    }
+  }
+
+  /** One coalesced dirty span covering all of `slots`. */
+  private markBulk( id: ColumnId, slots: Uint32Array ): void {
+    if( slots.length === 0 ){ return; }
+
+    let min = slots[ 0 ];
+    let max = slots[ 0 ];
+
+    for( let i = 1; i < slots.length; i++ ){
+      const slot = slots[ i ];
+
+      if( slot < min ){ min = slot; }
+      if( slot > max ){ max = slot; }
+    }
+
+    this.dirty.mark( id, min, max + 1 );
+  }
 
   private allocSlot( group: GroupName, id: string ): { slot: number; resized: boolean } {
     if( this.ids.has( id ) ){

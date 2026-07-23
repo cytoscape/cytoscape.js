@@ -1,5 +1,6 @@
 import { GraphStore } from './store/graph-store.mjs';
 import { GpuCollection } from './collection.mjs';
+import { isColumnarElements } from './columnar.mjs';
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, selectorQualifier } from './events.mjs';
 import type { GpuQualifier } from './events.mjs';
@@ -12,8 +13,8 @@ import type Event from '../event.mjs';
 import type { EventProps } from '../event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
-  CytoscapeGpuOptions, GpuElementDefinition, GpuElementsDefinition, GpuGridLayoutOptions,
-  GpuStyleBlock, Position
+  CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
+  GpuGridLayoutOptions, GpuStyleBlock, Position
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
@@ -102,8 +103,10 @@ export class GpuCore {
 
   // -- graph manipulation --
 
-  add( defs: GpuElementsDefinition | GpuElementDefinition ): GpuCollection {
-    const refs = this._addDefs( defs );
+  add( defs: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements ): GpuCollection {
+    const refs = isColumnarElements( defs )
+      ? this._columnarRefs( this._addColumnar( defs ) )
+      : this._addDefs( defs );
     const added = new GpuCollection( this, refs, { unique: true } );
 
     if( this._hasListeners( 'add' ) ){
@@ -122,7 +125,18 @@ export class GpuCore {
    * and the caller uses none of it.  `add` events still fire per element
    * when anyone is listening (never the case at construction time).
    */
-  _bulkAdd( defs: GpuElementsDefinition | GpuElementDefinition ): void {
+  _bulkAdd( defs: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements ): void {
+    if( isColumnarElements( defs ) ){
+      const { nodeSlots, edgeSlots } = this._addColumnar( defs );
+
+      if( this._hasListeners( 'add' ) ){
+        for( const slot of nodeSlots ){ this._emitOnEle( 'add', this._ele( 'nodes', slot ) ); }
+        for( const slot of edgeSlots ){ this._emitOnEle( 'add', this._ele( 'edges', slot ) ); }
+      }
+
+      return;
+    }
+
     const refs = this._addDefs( defs );
 
     if( this._hasListeners( 'add' ) ){
@@ -130,6 +144,31 @@ export class GpuCore {
         this._emitOnEle( 'add', this._eleFromRef( ref ) );
       }
     }
+  }
+
+  /** Columnar ingest: store-level bulk adds + one bulk style pass. */
+  private _addColumnar( elements: GpuColumnarElements ): { nodeSlots: Uint32Array; edgeSlots: Uint32Array } {
+    const newId = (): string => this._newId();
+    const nodeSlots = elements.nodes != null && elements.nodes.count > 0
+      ? this._store.addNodesColumnar( elements.nodes, newId )
+      : new Uint32Array( 0 );
+    const edgeSlots = elements.edges != null && elements.edges.count > 0
+      ? this._store.addEdgesColumnar( elements.edges, nodeSlots, newId )
+      : new Uint32Array( 0 );
+
+    this._styleEngine.applyBulk( 'nodes', nodeSlots );
+    this._styleEngine.applyBulk( 'edges', edgeSlots );
+
+    return { nodeSlots, edgeSlots };
+  }
+
+  private _columnarRefs( { nodeSlots, edgeSlots }: { nodeSlots: Uint32Array; edgeSlots: Uint32Array } ): Ref[] {
+    const refs: Ref[] = [];
+
+    for( const slot of nodeSlots ){ refs.push( this._store.ref( 'nodes', slot ) ); }
+    for( const slot of edgeSlots ){ refs.push( this._store.ref( 'edges', slot ) ); }
+
+    return refs;
   }
 
   /** Shared add loop: nodes first so edges can reference same-call nodes. */

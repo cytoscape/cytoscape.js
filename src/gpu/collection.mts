@@ -438,6 +438,87 @@ export class GpuCollection {
       : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot ];
   }
 
+  /**
+   * data() over the sidecar columns.  `id` (and `source`/`target` on
+   * edges) are first-class and immutable — reading them works, writing
+   * them throws.  Setters apply to every element in the collection and
+   * emit `data` per element; a write refreshes data-mapped labels.
+   */
+  data( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
+    const [ key, value ] = args;
+
+    // whole-object getter
+    if( args.length === 0 ){
+      const ref = this._first();
+
+      if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+
+      const out: Record<string, unknown> = { id: this._store.idAt( ref.group, ref.slot ) };
+
+      if( ref.group === 'edges' ){
+        out.source = this.source().id();
+        out.target = this.target().id();
+      }
+
+      return Object.assign( out, this._store.data.object( ref.group, ref.slot ) );
+    }
+
+    // single-key getter
+    if( typeof key === 'string' && args.length === 1 ){
+      const ref = this._first();
+
+      if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+      if( key === 'id' ){ return this._store.idAt( ref.group, ref.slot ); }
+
+      if( ref.group === 'edges' && ( key === 'source' || key === 'target' ) ){
+        return ( key === 'source' ? this.source() : this.target() ).id();
+      }
+
+      return this._store.data.get( ref.group, ref.slot, key );
+    }
+
+    // setter forms: one key (undefined clears it) or an object of keys
+    const patch: Record<string, unknown> = typeof key === 'string'
+      ? { [ key ]: value }
+      : key as Record<string, unknown>;
+
+    return this._setData( patch );
+  }
+
+  private _setData( patch: Record<string, unknown> ): this {
+    const store = this._store;
+    const cy = this._cy;
+    const keys = Object.keys( patch );
+
+    for( const k of keys ){
+      if( k === 'id' ){
+        throw new Error( `Can not change the immutable data field 'id'` );
+      }
+    }
+
+    for( let i = 0; i < this.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( !store.isCurrent( ref ) ){ continue; }
+
+      for( const k of keys ){
+        if( ref.group === 'edges' && ( k === 'source' || k === 'target' ) ){
+          throw new Error( `Can not change the immutable data field '${k}' of an edge` );
+        }
+
+        store.data.set( ref.group, ref.slot, k, patch[ k ] );
+      }
+
+      cy._onDataChanged( ref );
+
+      if( hasListeners( cy._emitter, 'data' ) ){
+        cy._emitOnEle( 'data', this[ i ] );
+      }
+    }
+
+    return this;
+  }
+
   /** The node's resolved label text ('' when none); read-only in the prototype. */
   label(): string | undefined {
     const ref = this._first();

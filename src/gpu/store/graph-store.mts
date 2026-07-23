@@ -1,13 +1,14 @@
 import { ColumnTable } from './table.mjs';
 import { IdMap } from './id-map.mjs';
 import { Adjacency } from './adjacency.mjs';
+import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import {
   columnSpec, columnSpecsForGroup,
   FLAG_ALIVE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
 import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
-import type { GpuColumnarEdges, GpuColumnarNodes, GpuPackedIds } from '../gpu-types.mjs';
+import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
 
 export interface AddElementOpts {
   selected?: boolean;
@@ -35,6 +36,7 @@ export class GraphStore implements ModelView {
   readonly edges: ColumnTable;
   readonly ids: IdMap;
   readonly adj: Adjacency;
+  readonly data: DataStore;
   readonly dirty: DirtyTracker;
 
   private order: { nodes: OrderList; edges: OrderList };
@@ -46,6 +48,7 @@ export class GraphStore implements ModelView {
     this.edges = new ColumnTable( 'edges', columnSpecsForGroup( 'edges' ) );
     this.ids = new IdMap();
     this.adj = new Adjacency();
+    this.data = new DataStore();
     this.dirty = new DirtyTracker();
     this.order = { nodes: emptyOrder(), edges: emptyOrder() };
     this.labels = [];
@@ -207,6 +210,7 @@ export class GraphStore implements ModelView {
     }
 
     this.writeBulkFlags( 'nodes', slots, contiguousFrom, cols );
+    this.ingestDataColumns( 'nodes', slots, cols.data );
 
     if( !resized ){
       this.markBulk( 'node.position', slots );
@@ -256,6 +260,7 @@ export class GraphStore implements ModelView {
     this.adj.addBulk( slots, endpoints, this.nodes.cap );
 
     this.writeBulkFlags( 'edges', slots, contiguousFrom, cols );
+    this.ingestDataColumns( 'edges', slots, cols.data );
 
     if( !resized ){
       this.markBulk( 'edge.endpoints', slots );
@@ -500,6 +505,28 @@ export class GraphStore implements ModelView {
 
   // -- internals --
 
+  /** Sidecar data() values from a def's data object (id/source/target stay first-class). */
+  setDefData( group: GroupName, slot: number, data: Record<string, unknown> | undefined ): void {
+    if( data == null ){ return; }
+
+    for( const key of Object.keys( data ) ){
+      if( key === 'id' || key === 'source' || key === 'target' ){ continue; }
+
+      this.data.set( group, slot, key, data[ key ] );
+    }
+  }
+
+  private ingestDataColumns(
+    group: GroupName, slots: Uint32Array,
+    data: Record<string, GpuDataColumn> | undefined
+  ): void {
+    if( data == null ){ return; }
+
+    for( const key of Object.keys( data ) ){
+      this.data.ingestColumn( group, slots, key, data[ key ] );
+    }
+  }
+
   /** Register bulk-allocated slots: ids (auto-generated on holes) + insertion order. */
   private registerBulk(
     group: GroupName, slots: Uint32Array,
@@ -592,6 +619,8 @@ export class GraphStore implements ModelView {
     const id = this.ids.idAt( group, slot );
 
     if( id != null ){ this.ids.remove( id ); }
+
+    this.data.clearSlot( group, slot );
 
     if( group === 'nodes' && this.labels[ slot ] != null ){
       this.setLabel( slot, null );

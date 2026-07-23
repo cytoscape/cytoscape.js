@@ -56,6 +56,10 @@ export const toColumnarElements = (
 
   applySelectionColumns( nodesOut, nodes );
 
+  const nodeData = collectDataColumns( nodes );
+
+  if( nodeData != null ){ nodesOut.data = nodeData; }
+
   const edgeIds = new Array<string | undefined>( edges.length );
   const edgesOut: GpuColumnarEdges = {
     count: edges.length,
@@ -93,7 +97,30 @@ export const toColumnarElements = (
 
   applySelectionColumns( edgesOut, edges );
 
+  const edgeData = collectDataColumns( edges );
+
+  if( edgeData != null ){ edgesOut.data = edgeData; }
+
   return { columnar: true, nodes: nodesOut, edges: edgesOut };
+};
+
+/** Sidecar data() keys → sparse index-aligned columns (id/source/target stay first-class). */
+const collectDataColumns = ( defs: GpuElementDefinition[] ): Record<string, unknown[]> | undefined => {
+  let cols: Record<string, unknown[]> | undefined;
+
+  for( let i = 0; i < defs.length; i++ ){
+    const data = defs[ i ].data;
+
+    if( data == null ){ continue; }
+
+    for( const key of Object.keys( data ) ){
+      if( key === 'id' || key === 'source' || key === 'target' || data[ key ] === undefined ){ continue; }
+
+      ( ( cols ??= {} )[ key ] ??= new Array( defs.length ) )[ i ] = data[ key ];
+    }
+  }
+
+  return cols;
 };
 
 /** Build selected/selectable arrays only when some def deviates from the defaults. */

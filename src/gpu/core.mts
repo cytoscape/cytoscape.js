@@ -193,6 +193,7 @@ export class GpuCore {
       const pos = def.position ?? { x: 0, y: 0 };
       const slot = this._store.addNode( id, pos.x, pos.y, def );
 
+      this._store.setDefData( 'nodes', slot, data );
       nodeSlots.push( slot );
       refs.push( this._store.ref( 'nodes', slot ) );
     }
@@ -207,6 +208,7 @@ export class GpuCore {
 
       const slot = this._store.addEdge( id, String( data.source ), String( data.target ), def );
 
+      this._store.setDefData( 'edges', slot, data );
       edgeSlots.push( slot );
       refs.push( this._store.ref( 'edges', slot ) );
     }
@@ -482,6 +484,13 @@ export class GpuCore {
 
   _applyStyle( ref: Ref ): void {
     this._styleEngine.apply( ref );
+  }
+
+  /** Refresh anything computed from data(): today that is mapped node labels. */
+  _onDataChanged( ref: Ref ): void {
+    if( ref.group === 'nodes' && this._styleEngine.usesDataMappers ){
+      this._styleEngine.apply( ref );
+    }
   }
 
   _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps> ): void {

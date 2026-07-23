@@ -12,6 +12,8 @@ export interface GpuElementData {
   source?: string;
   /** edges only; required for edges */
   target?: string;
+  /** anything else lands in the data() sidecar */
+  [key: string]: unknown;
 }
 
 export interface GpuElementDefinition {
@@ -39,6 +41,23 @@ export interface GpuPackedIds {
   blob: Uint8Array;
 }
 
+/**
+ * A dictionary-encoded string data column: `indices[i]` is a 1-based
+ * index into `dict` (0 = absent).  Data values repeat heavily, so this
+ * is both the compact in-memory shape and the wire shape.
+ */
+export interface GpuDictColumn {
+  dict: string[];
+  indices: Uint32Array;
+}
+
+/**
+ * One data() column, index-aligned with the payload: a plain array
+ * (holes/undefined = absent), a Float64Array (NaN = absent), or a
+ * dictionary-encoded string column.
+ */
+export type GpuDataColumn = ArrayLike<unknown> | Float64Array | GpuDictColumn;
+
 /** Columnar node payload; all arrays are index-aligned with `count`. */
 export interface GpuColumnarNodes {
   count: number;
@@ -50,6 +69,8 @@ export interface GpuColumnarNodes {
   selected?: Uint8Array;
   /** 0 = unselectable; omitted = all selectable */
   selectable?: Uint8Array;
+  /** data() sidecar columns by key */
+  data?: Record<string, GpuDataColumn>;
 }
 
 /** Columnar edge payload; endpoints are indices into the payload's nodes. */
@@ -62,6 +83,8 @@ export interface GpuColumnarEdges {
   targets: Uint32Array;
   selected?: Uint8Array;
   selectable?: Uint8Array;
+  /** data() sidecar columns by key */
+  data?: Record<string, GpuDataColumn>;
 }
 
 /**

@@ -28,8 +28,10 @@ interface NodeComputed {
   shape: number;
   opacity: number;
   borderWidth: number;
-  /** literal text, '' for none, or the special mapper 'data(id)' */
+  /** literal label text ('' for none) when labelKey is null */
   label: string;
+  /** `data(key)` mapper key ('id' reads the first-class id) */
+  labelKey: string | null;
   fontSize: number;
   textColor: RGBA;
 }
@@ -49,6 +51,7 @@ const NODE_DEFAULTS: NodeComputed = {
   opacity: 1,
   borderWidth: 0,
   label: '', // no label
+  labelKey: null,
   fontSize: 16,
   textColor: [ 0, 0, 0, 255 ]
 };
@@ -56,12 +59,17 @@ const NODE_DEFAULTS: NodeComputed = {
 /** gap between the node's bottom edge and the label's top, model px */
 const LABEL_MARGIN = 4;
 
-const DATA_ID = 'data(id)';
+const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
   width: 2,
   opacity: 1
+};
+
+/** data() value → label text ('' for absent) */
+const stringify = ( value: unknown ): string => {
+  return value == null ? '' : String( value );
 };
 
 const SHAPES: Record<string, number> = {
@@ -158,18 +166,25 @@ const compileProp = ( prop: string, value: string | number ): Setter => {
       return computed => { computed.opacity = num; };
     }
     case 'label': {
-      // constants only, plus the single mapper 'data(id)' — ids are
-      // first-class while data() at large stays deferred
+      // constant strings, or the data(key) mapper reading the sidecar
+      // ('id' reads the first-class id); mapData stays unsupported
       const text = String( value );
+      const mapped = DATA_MAPPER.exec( text );
 
-      if( /^\s*(data|mapData)\s*\(/.test( text ) && text !== DATA_ID ){
+      if( mapped != null ){
+        const key = mapped[ 1 ];
+
+        return computed => { computed.label = ''; computed.labelKey = key; };
+      }
+
+      if( /^\s*(data|mapData)\s*\(/.test( text ) ){
         throw new Error(
           `The label value '${text}' is unsupported in the GPU prototype; ` +
-          `only constant strings and '${DATA_ID}' are allowed`
+          `only constant strings and 'data(key)' are allowed`
         );
       }
 
-      return computed => { computed.label = text; };
+      return computed => { computed.label = text; computed.labelKey = null; };
     }
     case 'font-size': {
       const num = parseNumber( prop, value );
@@ -199,6 +214,8 @@ export class StyleEngine {
   private blocks: GpuStyleBlock[];
   private compiled: CompiledBlock[];
 
+  private dataMappers = false;
+
   constructor( store: GraphStore ){
     this.store = store;
     this.blocks = [];
@@ -212,8 +229,22 @@ export class StyleEngine {
       setters: Object.entries( block.style ).map( ( [ prop, value ] ) => compileProp( prop, value ) )
     } ) );
 
+    // does any label map a mutable data() key? (id is immutable, so
+    // data(id) labels never need a refresh on data writes)
+    this.dataMappers = blocks.some( block => {
+      const label = block.style?.[ 'label' ];
+      const mapped = label != null ? DATA_MAPPER.exec( String( label ) ) : null;
+
+      return mapped != null && mapped[ 1 ] !== 'id';
+    } );
+
     this.blocks = blocks;
     this.applyAll();
+  }
+
+  /** True when a data() write can change a computed label. */
+  get usesDataMappers(): boolean {
+    return this.dataMappers;
   }
 
   json(): GpuStyleBlock[] {
@@ -329,9 +360,12 @@ export class StyleEngine {
       store.setScalar( 'node.opacity', slot, computed.opacity );
       store.setScalar( 'node.shape', slot, shape );
 
-      const text = computed.label === DATA_ID
-        ? ( store.idAt( 'nodes', slot ) ?? '' )
-        : computed.label;
+      const key = computed.labelKey;
+      const text = key == null
+        ? computed.label
+        : key === 'id'
+          ? ( store.idAt( 'nodes', slot ) ?? '' )
+          : stringify( store.data.get( 'nodes', slot, key ) );
 
       store.setLabel( slot, text === '' ? null : {
         text,

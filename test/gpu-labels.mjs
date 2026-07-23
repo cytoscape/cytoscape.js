@@ -42,10 +42,10 @@ describe('gpu/labels: model', function(){
       expect( labelOf('b').text ).to.equal('b');
     });
 
-    it('rejects any other mapper', function(){
+    it('accepts data(key) mappers but rejects mapData', function(){
       expect(function(){
         cy.style([ { selector: 'node', style: { label: 'data(name)' } } ]);
-      }).to.throw();
+      }).to.not.throw();
 
       expect(function(){
         cy.style([ { selector: 'node', style: { label: 'mapData(w, 0, 1, a, b)' } } ]);

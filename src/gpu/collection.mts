@@ -617,8 +617,24 @@ export class GpuCollection {
 
       if( p == null || p === false ){ continue; }
 
+      // a partial object (e.g. { y: 3 }) leaves the omitted axis unchanged,
+      // matching v3's position() merge semantics
+      const pp = p as { x?: number; y?: number };
+      let px: number;
+      let py: number;
+
+      if( pp.x == null || pp.y == null ){
+        const prev = this[ i ].position() as Position;
+
+        px = pp.x == null ? prev.x : pp.x;
+        py = pp.y == null ? prev.y : pp.y;
+      } else {
+        px = pp.x;
+        py = pp.y;
+      }
+
       slots.push( ref.slot );
-      xy.push( p.x, p.y );
+      xy.push( px, py );
       moved.push( this[ i ] );
     }
 

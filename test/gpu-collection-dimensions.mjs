@@ -37,10 +37,36 @@ describe('gpu/collection: rendered dimensions, shift, endpoints', function(){
     expect( cy.$('#n1').position() ).to.deep.equal({ x: 100, y: 100 });
   });
 
+  it('position({}) sets one dimension, leaving the other unchanged', function(){
+    cy.$('#n1').position({ y: 234 });
+
+    expect( cy.$('#n1').position() ).to.deep.equal({ x: 100, y: 234 });
+  });
+
+  it('position({}) sets all elements in a collection', function(){
+    cy.nodes().position({ x: 50, y: 60 });
+
+    expect( cy.$('#n1').position() ).to.deep.equal({ x: 50, y: 60 });
+    expect( cy.$('#n2').position() ).to.deep.equal({ x: 50, y: 60 });
+  });
+
+  it('positions(fn) returning false leaves that element unchanged', function(){
+    cy.nodes().positions( ele => ele.id() === 'n1' ? { x: 7, y: 8 } : false );
+
+    expect( cy.$('#n1').position() ).to.deep.equal({ x: 7, y: 8 });
+    expect( cy.$('#n2').position() ).to.deep.equal({ x: 300, y: 200 }); // unchanged
+  });
+
   it('shift() offsets by a vector', function(){
     cy.$('#n1').shift({ x: 5, y: -10 });
 
     expect( cy.$('#n1').position() ).to.deep.equal({ x: 105, y: 90 });
+  });
+
+  it('shift({}) offsets only the passed dimension', function(){
+    cy.$('#n1').shift({ x: 100 });
+
+    expect( cy.$('#n1').position() ).to.deep.equal({ x: 200, y: 100 });
   });
 
   it('shift() offsets by a single dim', function(){

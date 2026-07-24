@@ -97,6 +97,8 @@ export class PointerHandler {
   private onWheel( e: WheelEvent ): void {
     e.preventDefault();
 
+    if( this.cy.userZoomingEnabled() !== true ){ return; }
+
     const pos = this.eventPos( e );
 
     // a wheel zoom is a viewport-only gesture: no mouseover/tap semantics
@@ -220,7 +222,7 @@ export class PointerHandler {
     down.lastY = pos.y;
 
     if( down.mode === 'pan' ){
-      this.cy.panBy( { x: dx, y: dy } );
+      if( this.cy.userPanningEnabled() === true ){ this.cy.panBy( { x: dx, y: dy } ); }
     } else if( down.grabbed != null && down.grabbed.inside() ){
       const zoom = this.cy.zoom() as number;
       const p = down.grabbed.position() as Position;
@@ -290,14 +292,17 @@ export class PointerHandler {
     const pinch = this.pinch!;
     const { dist, mid } = this.pinchBase();
 
-    if( pinch.dist > 0 && dist > 0 ){
+    if( pinch.dist > 0 && dist > 0 && this.cy.userZoomingEnabled() === true ){
       this.cy.zoom( {
         level: ( this.cy.zoom() as number ) * dist / pinch.dist,
         renderedPosition: mid
       } );
     }
 
-    this.cy.panBy( { x: mid.x - pinch.mid.x, y: mid.y - pinch.mid.y } );
+    if( this.cy.userPanningEnabled() === true ){
+      this.cy.panBy( { x: mid.x - pinch.mid.x, y: mid.y - pinch.mid.y } );
+    }
+
     this.pinch = { dist, mid };
   }
 

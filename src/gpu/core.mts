@@ -65,6 +65,11 @@ export class GpuCore {
   private _autolock: boolean;
   private _autoungrabify: boolean;
   private _autounselectify: boolean;
+  private _panningEnabled: boolean;
+  private _userPanningEnabled: boolean;
+  private _zoomingEnabled: boolean;
+  private _userZoomingEnabled: boolean;
+  private _boxSelectionEnabled: boolean;
 
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
@@ -83,6 +88,11 @@ export class GpuCore {
     this._autolock = options.autolock ?? false;
     this._autoungrabify = options.autoungrabify ?? false;
     this._autounselectify = options.autounselectify ?? false;
+    this._panningEnabled = options.panningEnabled ?? true;
+    this._userPanningEnabled = options.userPanningEnabled ?? true;
+    this._zoomingEnabled = options.zoomingEnabled ?? true;
+    this._userZoomingEnabled = options.userZoomingEnabled ?? true;
+    this._boxSelectionEnabled = options.boxSelectionEnabled ?? true;
     this._readyResolved = this._container == null; // headless is ready immediately
     this._viewport = new Viewport( this, {
       zoom: options.zoom,
@@ -369,7 +379,7 @@ export class GpuCore {
       return this._viewport.zoom();
     }
 
-    if( this._viewport.setZoom( zoom ) ){
+    if( this._zoomingEnabled && this._viewport.setZoom( zoom ) ){
       this._emitViewportEvents( [ 'zoom' ] );
     }
 
@@ -381,7 +391,7 @@ export class GpuCore {
       return this._viewport.pan();
     }
 
-    if( this._viewport.setPan( pan ) ){
+    if( this._panningEnabled && this._viewport.setPan( pan ) ){
       this._emitViewportEvents( [ 'pan' ] );
     }
 
@@ -389,7 +399,7 @@ export class GpuCore {
   }
 
   panBy( delta: Position ): this {
-    if( this._viewport.panBy( delta ) ){
+    if( this._panningEnabled && this._viewport.panBy( delta ) ){
       this._emitViewportEvents( [ 'pan' ] );
     }
 
@@ -613,6 +623,46 @@ export class GpuCore {
 
   declare autolockNodes: this['autolock'];
   declare autoungrabifyNodes: this['autoungrabify'];
+
+  panningEnabled( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._panningEnabled; }
+
+    this._panningEnabled = bool;
+
+    return this;
+  }
+
+  userPanningEnabled( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._userPanningEnabled; }
+
+    this._userPanningEnabled = bool;
+
+    return this;
+  }
+
+  zoomingEnabled( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._zoomingEnabled; }
+
+    this._zoomingEnabled = bool;
+
+    return this;
+  }
+
+  userZoomingEnabled( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._userZoomingEnabled; }
+
+    this._userZoomingEnabled = bool;
+
+    return this;
+  }
+
+  boxSelectionEnabled( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._boxSelectionEnabled; }
+
+    this._boxSelectionEnabled = bool;
+
+    return this;
+  }
 
   // -- environment --
 

@@ -212,6 +212,16 @@ export interface CytoscapeGpuOptions {
   autoungrabify?: boolean;
   /** disable selection globally (default false) */
   autounselectify?: boolean;
+  /** allow panning at all — programmatic and user (default true) */
+  panningEnabled?: boolean;
+  /** allow user (pointer) panning (default true) */
+  userPanningEnabled?: boolean;
+  /** allow zooming at all — programmatic and user (default true) */
+  zoomingEnabled?: boolean;
+  /** allow user (wheel/pinch) zooming (default true) */
+  userZoomingEnabled?: boolean;
+  /** allow box selection (default true; box selection itself is not yet implemented) */
+  boxSelectionEnabled?: boolean;
   /** rendered dimensions used when headless */
   headlessWidth?: number;
   headlessHeight?: number;

@@ -7,6 +7,8 @@ import { compileQuery, planMatchesRef } from './matcher.mjs';
 import type { GpuQuery } from './matcher.mjs';
 import { hasListeners, refQualifier } from './events.mjs';
 import { normalizeProp as normalizeCss } from './style.mjs';
+import { Animation } from './animation.mjs';
+import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from '../types.mjs';
 import type { GpuCore } from './core.mjs';
 import type { EventHandler } from '../emitter.mjs';
@@ -731,6 +733,61 @@ export class GpuCollection {
 
   declare modelPositions: this['positions'];
   declare points: this['positions'];
+
+  // -- animation --
+
+  /**
+   * Animate these elements' style/position to explicit targets over
+   * `duration` ms, easing the normalized time.  Queues per element (a
+   * second animate() on the same element runs after the first).  Returns
+   * the collection; use `animation()` for a handle with `.promise()`.
+   * Animatable: position, node opacity, border-width, background-color,
+   * border-color, line-color.
+   */
+  animate( opts: AnimateOptions ): this {
+    this.animation( opts ).play();
+
+    return this;
+  }
+
+  /** Build an animation for these elements without starting it (call `.play()`). */
+  animation( opts: AnimateOptions ): AnimationHandle {
+    const cy = this._cy;
+    const ani = new Animation( cy._store, null, this._liveRefs(), false, opts );
+
+    return {
+      play: () => { cy._animations.enqueue( ani ); return ani.promise(); },
+      stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
+      promise: () => ani.promise(),
+      playing: () => ani.running
+    };
+  }
+
+  /** A no-op tween of `duration` ms — chains a pause into an element's queue. */
+  delay( duration: number, complete?: () => void ): this {
+    return this.animate( { duration, complete } );
+  }
+
+  /** Like delay(), but returns the animation handle instead of chaining. */
+  delayAnimation( duration: number, complete?: () => void ): AnimationHandle {
+    return this.animation( { duration, complete } );
+  }
+
+  /** True when any of these elements has a running or queued animation. */
+  animated(): boolean {
+    for( const ref of this._refs ){
+      if( this._cy._animations.isAnimating( ref ) ){ return true; }
+    }
+
+    return false;
+  }
+
+  /** Stop (and optionally clear the queue / jump to end) animations on these elements. */
+  stop( clearQueue: boolean = true, jumpToEnd: boolean = false ): this {
+    this._cy._animations.stop( this._liveRefs(), clearQueue, jumpToEnd );
+
+    return this;
+  }
 
   private _positions( pos: Partial<Position> | ElePositionFn, silent: boolean ): this {
     const store = this._store;

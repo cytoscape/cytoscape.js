@@ -9,6 +9,8 @@ import { compileQuery } from './matcher.mjs';
 import type { FlagTest, GpuQuery } from './matcher.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
+import { Animation, AnimationManager } from './animation.mjs';
+import type { AnimateOptions } from './animation.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
 import type Emitter from '../emitter.mjs';
@@ -88,11 +90,13 @@ export class GpuCore {
   private _selectionType: 'single' | 'additive';
   private _batchDepth: number;
   private _batchPending: BatchPending | null;
+  _animations: AnimationManager;
 
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
     this._emitter = makeCoreEmitter<GpuCore>( this );
     this._styleEngine = new StyleEngine( this._store );
+    this._animations = new AnimationManager( () => this._afterAnimationTick() );
     this._renderer = null;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;
@@ -585,6 +589,44 @@ export class GpuCore {
   }
 
   declare centre: this['center'];
+
+  // -- animation (viewport) --
+
+  /**
+   * Animate the viewport (`pan`/`zoom`) over `duration` ms.  Element
+   * animation is on the collection (`eles.animate`).  Tweens are
+   * CPU-canonical; a data write / manual pan mid-animation is not
+   * prevented but will be overwritten by the next tick.
+   */
+  animate( opts: AnimateOptions ): this {
+    if( opts.pan != null && !this._panningEnabled ){ return this; }
+    if( opts.zoom != null && !this._zoomingEnabled ){ return this; }
+
+    this._animations.enqueue( new Animation( this._store, this._viewport, [], true, opts ) );
+
+    return this;
+  }
+
+  /** True while the viewport is animating. */
+  animated(): boolean {
+    return this._animations.isViewportAnimating();
+  }
+
+  /** Stop the viewport animation. */
+  stop( clearQueue: boolean = true, jumpToEnd: boolean = false ): this {
+    this._animations.stopViewport( clearQueue, jumpToEnd );
+
+    return this;
+  }
+
+  /** Called after each animation tick: redraw, and emit viewport events while it pans/zooms. */
+  private _afterAnimationTick(): void {
+    if( this._animations.isViewportAnimating() ){
+      this._emitViewportEvents( [ 'pan', 'zoom', 'viewport' ] );
+    }
+
+    this._renderer?.requestRender();
+  }
 
   extent(): ReturnType<Viewport['extent']> {
     return this._viewport.extent();

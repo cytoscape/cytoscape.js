@@ -813,6 +813,40 @@ test.describe( 'WebGPU renderer', () => {
     expect( after[ 1 ] ).toBeGreaterThan( 150 );
   } );
 
+  test( 'animate() tweens a node position to the target over time', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: -100, y: 0 } } ],
+      style: { nodes: { 'background-color': 'red', 'width': 60, 'height': 60, 'shape': 'rectangle' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // red node vs white page: the green channel distinguishes (node g≈0,
+    // background g≈255).  Node starts 100px left of centre.
+    expect( ( await pixelAt( page, center.x - 100, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+    expect( ( await pixelAt( page, center.x, center.y ) )[ 1 ] ).toBeGreaterThan( 200 );
+
+    // animate to centre and wait for completion
+    await page.evaluate( async () => {
+      await window.cy.$id( 'a' ).animation( { position: { x: 0, y: 0 }, duration: 200 } ).play();
+    } );
+    await waitFrames( page );
+
+    const finalPos = await page.evaluate( () => window.cy.$id( 'a' ).position() );
+
+    expect( finalPos.x ).toBeCloseTo( 0, 3 );
+
+    // the red node is now at centre (green drops there)
+    expect( ( await pixelAt( page, center.x, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( false );
+  } );
+
   test( 'mapped colors render the OKLab interpolation the getters report', async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );

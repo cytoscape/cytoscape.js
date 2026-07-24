@@ -208,6 +208,10 @@ export class PointerHandler {
 
     if( ref == null ){ return false; }
 
+    // grabbing is forbidden while the element animates (the tween holds
+    // the position lease; a drag override can't fight it)
+    if( this.cy._animations.isAnimating( ref ) ){ return false; }
+
     const store = this.cy._store;
 
     return store.hasFlag( ref.group, ref.slot, FLAG_GRABBABLE )

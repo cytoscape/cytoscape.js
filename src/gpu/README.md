@@ -128,7 +128,12 @@ seen-set — no intermediate handles, no packRef dedupe pass — and
 `successors`/`predecessors` is a raw slot BFS with no per-hop collection
 spawns (a 2k-node whole-graph closure is ~350 µs vs ~92 ms before,
 ~725× v3).  Single-hop ops run ~2–5× v3 and a 100-node-band
-`roots()` ~110×.
+`roots()` ~110×.  The ~2–5× is a structural ceiling rather than headroom:
+v3 traversal is already O(degree) off per-element adjacency arrays, and
+returning a v3-shaped collection costs a ref + interned handle per output
+element on either side — unlike bulk writes, which touch columns and
+return nothing.  Going further would mean lazy slot-backed collections
+(an API-shape change, noted in PLAN.md under "needs a call").
 
 ## Loading
 

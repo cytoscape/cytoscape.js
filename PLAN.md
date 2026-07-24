@@ -364,7 +364,17 @@ magnitude.  On a 2k-node/4k-edge graph:
   flipped (100-node-band `connectedEdges` 1.2–1.5× loss → 1.3–1.5× win,
   band `sources` 1.1–1.3× loss → 1.3× win), and the rest widened —
   `neighborhood` 2× → ~4×, `outgoers`/`incomers` ~3.4× → ~4.5×, band
-  `neighborhood` 2.5× → ~5.4×, band `roots` ~64× → ~110×.
+  `neighborhood` 2.5× → ~5.4×, band `roots` ~64× → ~110×.  The ~2–5×
+  ceiling on single-hop traversal is structural, not unfinished work: v3
+  is already O(degree) there (each element object holds its incident
+  edges as a direct array), and a traversal must *return* a v3-shaped
+  collection — per output element the gpu side allocates a ref, dedupes
+  and interns a handle, a floor comparable to v3 assembling its result
+  from already-materialized objects.  Bulk writes have no such floor
+  (they touch columns and return nothing), which is why `shift` can be
+  ~106× while `outgoers` is ~4.7×; the big traversal multipliers only
+  appear where an *algorithmic* layer was removed (the per-hop collection
+  machinery in `successors`).
 - **Residual v3 wins** (micro-ops at 20k, accepted): `forEach` (~1.8×),
   `pan()` get (~4×, allocates the returned object), `getElementById`
   (~1.4×), `data()`/`position()` get (~1.1×, noise-level).
@@ -394,6 +404,13 @@ magnitude.  On a 2k-node/4k-edge graph:
   new readback path.
 - **`mount`/`unmount`**: the container is fixed at construction today;
   re-mounting means renderer teardown/re-init.
+- **Lazy / slot-backed collections**: the only way past traversal's ~2–5×
+  handle-materialization floor (see round 4b) is returning collections
+  that hold slot lists and intern handles on demand — an API-shape change
+  (it moves the cost of `eles[i]`/`forEach` from build time to access
+  time, and complicates the "handles are interned singletons" invariant).
+  Only worth a call if traversal-heavy workloads show up hot in real
+  profiles.
 - Odds and ends that each need a small feature, not just wiring:
   `selectionType` + box selection, `active`/`activate` and `pannable`/
   `panify`, `multiClickDebounceTime` (multi-click), `eles.layout()`/

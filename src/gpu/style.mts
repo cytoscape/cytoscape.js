@@ -362,6 +362,20 @@ interface BoundMapper {
   channel: MappableChannel;
 }
 
+/**
+ * Paint channels: props whose stored bytes no CPU path reads back except
+ * the style getters — the GPU-eligible half of the mapper split.  (The
+ * geometry channels — size, border-width, shape, edge width — feed
+ * culling, CPU picking and columnar scans, so they stay CPU-evaluated.)
+ */
+const PAINT_PROPS: Record<GroupName, ReadonlySet<string>> = {
+  nodes: new Set( [ 'background-color', 'border-color', 'opacity' ] ),
+  edges: new Set( [
+    'line-color', 'opacity',
+    'source-arrow-color', 'target-arrow-color', 'source-arrow-shape', 'target-arrow-shape'
+  ] )
+};
+
 const compileChannel = ( group: GroupName, prop: string, spec: GpuMapper ): BoundMapper => {
   const channel = MAPPABLE[ prop ];
 
@@ -477,6 +491,14 @@ export class StyleEngine {
 
     this.sheet = sheet;
     this.defs = defs;
+
+    // the store coalesces write spans for paint-mapped keys so the GPU
+    // eval pass knows what to re-evaluate without a CPU restyle
+    for( const group of [ 'nodes', 'edges' ] as const ){
+      this.store.watchDataKeys( group, defs[ group ].mappers
+        .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) )
+        .map( bm => bm.m.key ) );
+    }
 
     if( apply ){ this.applyAll(); }
   }

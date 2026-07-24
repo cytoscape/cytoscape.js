@@ -35,6 +35,14 @@ const emptyOrder = (): OrderList => ( { slots: [], gens: [], stale: 0 } );
  * reads always hit these typed-array columns; the store works headless (no
  * GPU, Node-testable).  The store itself never emits events — the core does.
  */
+/** A coalesced [start, end) span of data writes to one watched (group, key). */
+export interface MapperSpan {
+  group: GroupName;
+  key: string;
+  start: number;
+  end: number;
+}
+
 export class GraphStore implements ModelView {
   readonly nodes: ColumnTable;
   readonly edges: ColumnTable;
@@ -46,6 +54,10 @@ export class GraphStore implements ModelView {
   private order: { nodes: OrderList; edges: OrderList };
   private labels: ( LabelEntry | undefined )[];
   private labelDirty: Set<number>;
+  /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
+  private watchedKeys: Record<GroupName, ReadonlySet<string>>;
+  /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
+  private mapperSpans: Map<string, MapperSpan>;
 
   constructor(){
     this.nodes = new ColumnTable( 'nodes', columnSpecsForGroup( 'nodes' ) );
@@ -57,6 +69,8 @@ export class GraphStore implements ModelView {
     this.order = { nodes: emptyOrder(), edges: emptyOrder() };
     this.labels = [];
     this.labelDirty = new Set();
+    this.watchedKeys = { nodes: new Set(), edges: new Set() };
+    this.mapperSpans = new Map();
   }
 
   table( group: GroupName ): ColumnTable {
@@ -87,6 +101,56 @@ export class GraphStore implements ModelView {
 
   onInvalidate( cb: () => void ): () => void {
     return this.dirty.onInvalidate( cb );
+  }
+
+  // -- mapper data-write spans (the GPU eval pass's dirty channel) --
+
+  /**
+   * Register the data keys whose writes feed GPU-evaluated mappers.
+   * Replaces the group's whole set (the StyleEngine re-derives it per
+   * sheet).  Writes to unwatched keys cost one Set lookup and nothing
+   * else.
+   */
+  watchDataKeys( group: GroupName, keys: Iterable<string> ): void {
+    this.watchedKeys[ group ] = new Set( keys );
+  }
+
+  /** Data write through the mapper-span choke point (the collection's data setter). */
+  setData( group: GroupName, slot: number, key: string, value: unknown ): void {
+    this.data.set( group, slot, key, value );
+    this.markDataWrite( group, key, slot, slot + 1 );
+  }
+
+  /**
+   * Coalesce a watched-key write span.  Schedules a frame via touch() —
+   * deliberately not a column span, so paint-only data writes leave the
+   * pick-tile cache valid.
+   */
+  markDataWrite( group: GroupName, key: string, start: number, end: number ): void {
+    if( !this.watchedKeys[ group ].has( key ) ){ return; }
+
+    const id = `${group}:${key}`;
+    const span = this.mapperSpans.get( id );
+
+    if( span == null ){
+      this.mapperSpans.set( id, { group, key, start, end } );
+    } else {
+      span.start = Math.min( span.start, start );
+      span.end = Math.max( span.end, end );
+    }
+
+    this.dirty.touch();
+  }
+
+  /** Pending watched-key write spans, returned and cleared. */
+  takeMapperSpans(): MapperSpan[] {
+    if( this.mapperSpans.size === 0 ){ return []; }
+
+    const spans = [ ...this.mapperSpans.values() ];
+
+    this.mapperSpans.clear();
+
+    return spans;
   }
 
   // -- refs --
@@ -732,6 +796,7 @@ export class GraphStore implements ModelView {
       if( key === 'id' || key === 'source' || key === 'target' ){ continue; }
 
       this.data.set( group, slot, key, data[ key ] );
+      this.markDataWrite( group, key, slot, slot + 1 );
     }
   }
 
@@ -741,8 +806,20 @@ export class GraphStore implements ModelView {
   ): void {
     if( data == null ){ return; }
 
+    let min = Infinity;
+    let max = -Infinity;
+
+    if( this.watchedKeys[ group ].size > 0 && slots.length > 0 ){
+      for( let i = 0; i < slots.length; i++ ){
+        if( slots[ i ] < min ){ min = slots[ i ]; }
+        if( slots[ i ] > max ){ max = slots[ i ]; }
+      }
+    }
+
     for( const key of Object.keys( data ) ){
       this.data.ingestColumn( group, slots, key, data[ key ] );
+
+      if( max >= 0 ){ this.markDataWrite( group, key, min, max + 1 ); }
     }
   }
 

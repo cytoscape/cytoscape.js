@@ -601,6 +601,49 @@ describe('gpu/mappers', function(){
       expect( cy2.$id('x').numericStyle('width') ).to.equal( 60 );
     });
 
+    it('coalesces data-write spans for paint-mapped keys, per (group, key)', function(){
+      const cy = graph( { nodes: { 'background-color': { data: 'w', domain: [ 0, 10 ], range: [ '#000000', '#ffffff' ] } } } );
+      const slotOf = id => cy.$id( id )._refs[ 0 ].slot;
+
+      cy._store.takeMapperSpans(); // clear the load-time ingest spans
+
+      cy.$id('a').data( 'w', 1 );
+      cy.$id('c').data( 'w', 2 );
+
+      const spans = cy._store.takeMapperSpans();
+
+      expect( spans ).to.have.length( 1 );
+      expect( spans[ 0 ] ).to.deep.equal( {
+        group: 'nodes', key: 'w',
+        start: Math.min( slotOf('a'), slotOf('c') ),
+        end: Math.max( slotOf('a'), slotOf('c') ) + 1
+      } );
+      expect( cy._store.takeMapperSpans() ).to.have.length( 0 ); // returned-and-cleared
+    });
+
+    it('marks no spans for geometry-mapped or unmapped keys', function(){
+      const cy = graph( { nodes: { width: { data: 'w', domain: [ 0, 10 ], range: [ 10, 110 ] } } } );
+
+      cy._store.takeMapperSpans();
+
+      cy.$id('a').data( 'w', 1 ); // geometry stays CPU-evaluated: no span
+      cy.$id('a').data( 'other', 1 );
+
+      expect( cy._store.takeMapperSpans() ).to.have.length( 0 );
+    });
+
+    it('marks spans for data ingested after the sheet is set', function(){
+      const cy = graph( { nodes: { opacity: { data: 'w', domain: [ 0, 10 ], range: [ 0, 1 ] } } }, [] );
+
+      cy._store.takeMapperSpans();
+      cy.add( { data: { id: 'x', w: 5 } } );
+
+      const spans = cy._store.takeMapperSpans();
+
+      expect( spans ).to.have.length( 1 );
+      expect( spans[ 0 ].key ).to.equal( 'w' );
+    });
+
     it('throws on invalid mapper placements', function(){
       expect( () => graph( { nodes: { label: { data: 'w', range: [ 0, 1 ] } } } ) )
         .to.throw( /passthrough/ );

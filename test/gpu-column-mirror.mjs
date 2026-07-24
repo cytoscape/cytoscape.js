@@ -99,6 +99,30 @@ describe('gpu/render: ColumnMirror', function(){
     expect( write.size ).to.equal( 1 * bps );
   });
 
+  it('skips span uploads for GPU-owned columns, but realloc re-uploads them', function(){
+    mock.writes.length = 0;
+
+    mirror.setGpuOwned( [ 'node.fillColor' ] );
+    store.setColor( 'node.fillColor', 0, 1, 2, 3, 4 );
+    store.setPosition( 1, 50, 60 );
+
+    mirror.sync( store.takeDelta() );
+
+    expect( mock.writes ).to.have.length( 1 );
+    expect( mock.writes[0].buffer ).to.equal( mirror.buffer('node.position') );
+
+    // capacity growth still uploads the CPU base of owned columns in full
+    // (the renderer schedules a full re-eval on resize)
+    for( let i = 0; i < 200; i++ ){ store.addNode( 'grow' + i, 0, 0 ); }
+
+    mock.writes.length = 0;
+    mirror.sync( store.takeDelta() );
+
+    expect( mock.writes.some( write =>
+      write.buffer === mirror.buffer('node.fillColor') && write.bufferOffset === 0
+    ) ).to.be.true;
+  });
+
   it('uploads coalesced spans as one write', function(){
     mock.writes.length = 0;
 

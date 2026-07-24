@@ -983,7 +983,7 @@ export class GpuCollection {
           throw new Error( `Can not change the immutable data field '${k}' of an edge` );
         }
 
-        store.data.set( ref.group, ref.slot, k, patch[ k ] );
+        store.setData( ref.group, ref.slot, k, patch[ k ] );
       }
 
       touched[ ref.group ]?.push( ref.slot );

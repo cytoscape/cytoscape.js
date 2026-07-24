@@ -37,6 +37,7 @@ export class ColumnMirror {
   private buffers: Map<ColumnId, GPUBuffer>;
   private capacities: { nodes: number; edges: number };
   private destroyed: boolean;
+  private gpuOwned: ReadonlySet<ColumnId>;
 
   constructor( device: MirrorDevice, view: ModelView ){
     this.device = device;
@@ -46,9 +47,20 @@ export class ColumnMirror {
     this.buffers = new Map();
     this.capacities = { nodes: 0, edges: 0 };
     this.destroyed = false;
+    this.gpuOwned = new Set();
 
     this.realloc( 'nodes' );
     this.realloc( 'edges' );
+  }
+
+  /**
+   * Columns whose bytes the mapper eval kernel owns on-GPU: span uploads
+   * skip them, so CPU-side fallback writes never clobber evaluated bytes.
+   * realloc() still uploads the CPU base in full — the caller schedules a
+   * full re-eval for owned columns whenever a group resizes.
+   */
+  setGpuOwned( ids: Iterable<ColumnId> ): void {
+    this.gpuOwned = new Set( ids );
   }
 
   buffer( id: ColumnId ): GPUBuffer {
@@ -75,6 +87,8 @@ export class ColumnMirror {
       const spec = columnSpec( span.column );
 
       if( delta.resized[ spec.group ] ){ continue; } // covered by the full re-upload
+
+      if( this.gpuOwned.has( span.column ) ){ continue; } // the eval kernel owns these bytes
 
       const arr = this.view.column( span.column );
       const byteStart = span.start * spec.bytesPerSlot;

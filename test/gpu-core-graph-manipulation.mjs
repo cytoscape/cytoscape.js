@@ -38,6 +38,28 @@ describe('gpu/core: graph manipulation', function(){
       expect( sized.width() ).to.equal(400);
       expect( sized.height() ).to.equal(300);
     });
+
+    it('loads an empty graph', function(){
+      var empty = cytoscapeGpu({});
+
+      expect( empty.elements() ).to.have.length(0);
+    });
+
+    it('sets minZoom / maxZoom from options', function(){
+      var zoomed = cytoscapeGpu({ minZoom: 0.5, maxZoom: 4 });
+
+      expect( zoomed.minZoom() ).to.equal(0.5);
+      expect( zoomed.maxZoom() ).to.equal(4);
+    });
+
+    it('throws on an edge with a bad endpoint at init', function(){
+      expect(function(){
+        cytoscapeGpu({ elements: [
+          { data: { id: 'n1' } },
+          { data: { id: 'e', source: 'n1', target: 'bogus' } }
+        ] });
+      }).to.throw();
+    });
   });
 
   describe('cy.add()', function(){
@@ -90,6 +112,26 @@ describe('gpu/core: graph manipulation', function(){
 
     it('throws on an edge with a nonexistant endpoint', function(){
       expect(function(){ cy.add({ data: { id: 'e', source: 'n1', target: 'bogus' } }); }).to.throw();
+    });
+
+    it('coerces an integer node id to a string', function(){
+      cy.add({ data: { id: 0 } });
+
+      expect( cy.$('#0').id() ).to.equal('0');
+    });
+
+    it('coerces integer edge endpoints to strings', function(){
+      cy.add([
+        { data: { id: 10 } },
+        { data: { id: 11 } },
+        { data: { id: 12, source: 10, target: 11 } }
+      ]);
+
+      var edge = cy.$('#12');
+
+      expect( edge.isEdge() ).to.be.true;
+      expect( edge.source().id() ).to.equal('10');
+      expect( edge.target().id() ).to.equal('11');
     });
 
     it('emits add per element', function(){
@@ -181,6 +223,26 @@ describe('gpu/core: graph manipulation', function(){
       expect( cy.$('#n1') ).to.have.length(0);
     });
 
+    it('removes via core with a collection argument', function(){
+      cy.remove( cy.$('#n1') );
+
+      expect( cy.$('#n1') ).to.have.length(0);
+      expect( cy.nodes() ).to.have.length(2);
+    });
+
+    it('removes one of two parallel edges, leaving the other', function(){
+      cy.add([
+        { data: { id: 'p1', source: 'n1', target: 'n2' } },
+        { data: { id: 'p2', source: 'n1', target: 'n2' } }
+      ]);
+
+      cy.$('#p1').remove();
+
+      expect( cy.$('#p1') ).to.have.length(0);
+      expect( cy.$('#p2') ).to.have.length(1);
+      expect( cy.$('#p2').source().id() ).to.equal('n1');
+    });
+
     it('supports re-adding an id after removal', function(){
       var old = cy.$('#n1');
 
@@ -192,6 +254,23 @@ describe('gpu/core: graph manipulation', function(){
       expect( fresh ).to.have.length(1);
       expect( fresh.position() ).to.deep.equal({ x: 9, y: 9 });
       expect( old.same( fresh ) ).to.be.false; // stale handle !== new element
+    });
+  });
+
+  describe('cy accessors', function(){
+    it('take a selector argument', function(){
+      expect( cy.nodes('#n1').map( n => n.id() ) ).to.deep.equal(['n1']);
+      expect( cy.edges('#n1n2').map( e => e.id() ) ).to.deep.equal(['n1n2']);
+      expect( cy.elements('node').map( n => n.id() ).sort() ).to.deep.equal(['n1', 'n2', 'n3']);
+    });
+
+    it('cy.$() returns an immutable snapshot', function(){
+      var before = cy.nodes();
+
+      cy.add({ data: { id: 'later' } });
+
+      expect( before ).to.have.length(3); // not grown by the later add
+      expect( cy.nodes() ).to.have.length(4);
     });
   });
 

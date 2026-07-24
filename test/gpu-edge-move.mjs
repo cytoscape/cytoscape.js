@@ -66,6 +66,26 @@ describe('gpu/collection: edge move() (re-endpoint)', function(){
     expect( fired ).to.equal( 1 );
   });
 
+  it('preserves primitive scratch data across a move', function(){
+    var edge = cy.$('#e1');
+
+    edge.scratch('foo', 'bar');
+    edge.move({ source: 'n3' });
+
+    expect( edge.scratch('foo') ).to.equal('bar');
+    expect( cy.$('#e1').scratch('foo') ).to.equal('bar');
+  });
+
+  it('preserves object scratch data across a move', function(){
+    var edge = cy.$('#e1');
+    var payload = { nested: [1, 2, 3] };
+
+    edge.scratch('obj', payload);
+    edge.move({ target: 'n3' });
+
+    expect( cy.$('#e1').scratch('obj') ).to.equal( payload );
+  });
+
   it('removing the edge after a move cascades from the new node', function(){
     var edge = cy.$('#e1');
 

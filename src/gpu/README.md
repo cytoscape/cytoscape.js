@@ -225,6 +225,76 @@ each is deliberate, not a pass-1 deferral:
     (width/height circle-collapse) and arrow-folded channels are a
     follow-up.  Colors tween per-channel in sRGB.  Only position has the
     GPU fast path so far; paint/size tween on the CPU path.
+  - **Paint tween next; size tween is a geometry-tier project.**  The GPU
+    tween runtime extends cleanly to *paint* (`node.opacity`, fill/border/
+    line color, `edge.opacity`) — those channels have **no CPU consumer**
+    (nothing in cull, CPU pick, or a columnar scan reads paint, which is
+    why they went GPU-evaluable in the mapper split), so a paint tween can
+    own its column with no staleness risk; the work is only the wider
+    `fromTo` layout for color and an ownership-precedence rule where a
+    tween must win over the mapper eval kernel for the same channel.
+    *Size* (`width`/`height`/`border-width`, `edge.width`) is **not** a
+    peer of paint: it is geometry, read by cull, CPU pick, and every
+    columnar scan (`width()`/`height()`, `boundingBox`/fit, box select),
+    so a GPU-owned size tween reopens the same store→style layering seam
+    R8.5 flagged and belongs with that geometry work, not with paint.
+- **Synchronous reads reflect writes; staleness is scoped to motion,
+  never to a frame.**  A frame-stale read contract was considered
+  (let the GPU own expensive geometry and read back a frame later) and
+  **rejected as a default**: read-after-write is pervasive and
+  load-bearing (`data()` then `width()`/`bb()` in one tick must see the
+  write — layouts and extensions rely on it), headless has no frame or
+  readback so it would still need the full CPU implementation *plus* a
+  weaker contract, and "a frame stale" is undefined in synchronous code
+  (build-graph → query-bbs loops never reach a frame, so the staleness is
+  unbounded).  Staleness is admitted only where a value is already in
+  **frame-driven motion** — the position tween lease is exactly this, and
+  `edge.bb()` mid-tween inheriting that staleness is consistent, not a new
+  rule.  A discrete user write is never stale.  The escape hatch for
+  callers who want GPU-exact geometry after a batch of writes is an
+  explicit `await` on a settle/flush, not a relaxed sync contract.
+- **Expensive GPU-computed geometry uses dual implementations, not
+  readback.**  Some geometry is both *expensive* and read by `.bb()` —
+  multiline label metrics (line breaking + block extent) and bundled
+  bezier control points (a v4-but-not-yet direction).  Unlike a position
+  tween, these are not cheaply CPU-reproducible, so the position lease's
+  no-readback trick does not apply directly; the safe model is **two
+  deterministic implementations that agree by construction** (WGSL for
+  the render path, a CPU implementation for reads), each run on the same
+  inputs — never one side reading back the other's result.  This is the
+  same discipline already used for the OKLab LUT, mapper stop tables and
+  easing curves, generalized to expensive computations; the cost is
+  keeping the two impls bit-agreeable (divergence shows as bb-doesn't-
+  match-pixels), which is the real gate on whether GPU is worth it per
+  case.  Two consumer tiers keep it affordable: **cull/fit read a cheap
+  conservative CPU over-approximation** (guaranteed to contain the true
+  box — e.g. label: node size + charcount × max advance; bezier: endpoint
+  hull + control-offset bound), while **public `.bb()` triggers the exact
+  lazy CPU compute, memoized per element**.  For bezier, control points
+  are `f(positions, membership)`, so mid-position-tween they are stale via
+  the lease (consistent) and settle when positions are reclaimed;
+  bundle *membership* is a cheap CPU structural index rebuilt on
+  add/remove edge, not per frame.
+- **Labels are model-space only.**  `font-size` and the wrap width are
+  both in model coordinates (v3 parity), and there is **no viewport-fixed
+  label mode**.  This is load-bearing three ways: (1) line breaking is
+  then zoom-invariant (font-size and wrap width share a space), so label
+  shaping — the expensive part — **memoizes** and the GPU metrics pass
+  runs on text/font/wrap writes, not per frame (a *mixed* space would
+  reflow on every zoom and defeat both the CPU memo and the GPU offload);
+  (2) **image export is WYSIWYG** — a `full`/high-`scale` export is the
+  screen arrangement at a different transform over *identical* shaping, so
+  figures for scientific publishing don't reflow between screen and
+  export, and the export path reuses the screen memo verbatim; (3) it
+  matches v3, so existing figures reproduce.  Screen-space labels were
+  rejected because they break export WYSIWYG (labels reflow at a scale ≠
+  current zoom) and their apparent legibility win on dense graphs is
+  really overlap that makes a *worse* figure — unreadable labels on a
+  huge network are a data-density limit answered editorially (export
+  resolution, label a subset, `min-zoomed-font-size`), not by a
+  coordinate system.  Open sub-decision (visibility, not sizing): whether
+  `min-zoomed-font-size` culls at **export scale** (self-consistent
+  figure, lean) or **screen zoom** (matches what was on screen).
 - **GPU layouts: logged for later.**  A force layout is *stateful*
   (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
   cheaply CPU-reproducible — the GPU would be authoritative during a run
@@ -258,11 +328,16 @@ predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.
 
-Out of scope (deferred): compound nodes, bezier edges, layouts beyond
-grid/preset (GPU layouts logged for later), graph algorithms,
+Out of scope (deferred): compound nodes, graph algorithms,
 string-formatting label mappers beyond the passthrough, and the GPU
 tween fast path for paint/size channels (position already offloads;
-the CPU path covers the rest).
+the CPU path covers the rest — paint is the clean next extension, size
+is a geometry-tier project, see the design decisions above).  Multiline
+labels and bundled bezier edges are a v4 direction (single-line labels
+and straight edges today); both are the *expensive GPU-computed
+geometry* tier — dual CPU/WGSL implementations with a conservative CPU
+bound for cull/fit and exact lazy CPU eval for public `.bb()`, no
+readback — and GPU layouts remain logged for later.
 
 ## Benchmarks
 

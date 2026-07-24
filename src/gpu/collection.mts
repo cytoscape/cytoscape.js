@@ -6,6 +6,7 @@ import type { GroupName, Ref } from './contract.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
 import type { GpuQuery } from './matcher.mjs';
 import { hasListeners, refQualifier } from './events.mjs';
+import { normalizeProp as normalizeCss } from './style.mjs';
 import type { Position } from '../types.mjs';
 import type { GpuCore } from './core.mjs';
 import type { EventHandler } from '../emitter.mjs';
@@ -24,6 +25,9 @@ type FilterLike = GpuQuery | EleFilterFn;
 // gen < 2^24 — far beyond any practical graph.
 const packRef = ( r: Ref ): number =>
   ( r.group === 'nodes' ? 0 : 0x10000000000000 ) + r.slot * 0x1000000 + r.gen;
+
+/** Model-px style props that renderedStyle() scales by the zoom. */
+const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set( [ 'width', 'height', 'border-width', 'font-size' ] );
 
 const refSet = ( refs: Ref[] ): Set<number> => {
   const set = new Set<number>();
@@ -1067,6 +1071,92 @@ export class GpuCollection {
     }
 
     return this;
+  }
+
+  // -- style (read-only) --
+
+  /**
+   * Resolved style read off the stored channels: `style()` returns all of
+   * the first element's group props, `style(name)` one value (numbers for
+   * numeric props, `rgb()`/`rgba()` strings for colors, keywords
+   * otherwise).  Setter forms throw — v4 has no per-element bypass; use
+   * the fn form of the stylesheet.
+   */
+  style( name?: string | Record<string, unknown>, value?: unknown ): unknown {
+    if( value !== undefined || ( name != null && typeof name !== 'string' ) ){
+      throw new Error(
+        'Per-element style bypass is not supported in the GPU prototype; ' +
+        'use the function form of the stylesheet for per-element styling'
+      );
+    }
+
+    const ref = this._first();
+
+    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    const engine = this._cy.style();
+
+    return name == null ? engine.readProps( ref ) : engine.readProp( ref, name );
+  }
+
+  declare css: this['style'];
+
+  /**
+   * Like `style()`, but with length props (width, height, border-width,
+   * font-size) scaled into rendered (on-screen) px by the zoom.
+   */
+  renderedStyle( name?: string ): unknown {
+    const value = this.style( name );
+
+    if( value === undefined ){ return undefined; }
+
+    const zoom = this._cy.zoom() as number;
+
+    if( name != null ){
+      return RENDERED_LENGTH_PROPS.has( normalizeCss( name ) ) ? ( value as number ) * zoom : value;
+    }
+
+    const props = value as Record<string, string | number>;
+
+    for( const prop of RENDERED_LENGTH_PROPS ){
+      if( typeof props[ prop ] === 'number' ){ props[ prop ] = ( props[ prop ] as number ) * zoom; }
+    }
+
+    return props;
+  }
+
+  declare renderedCss: this['renderedStyle'];
+
+  /** The numeric value of a numeric style prop (throws for colors/keywords). */
+  numericStyle( name: string ): number | undefined {
+    const value = this.style( name );
+
+    if( value === undefined ){ return undefined; }
+
+    if( typeof value !== 'number' ){
+      throw new Error( `The style property '${name}' is not numeric` );
+    }
+
+    return value;
+  }
+
+  /** Without compound nodes, effective opacity is the element's own opacity. */
+  effectiveOpacity(): number | undefined {
+    return this.numericStyle( 'opacity' );
+  }
+
+  transparent(): boolean {
+    return this.effectiveOpacity() === 0;
+  }
+
+  /** Hidden elements are culled from drawing and picking, so only visible ones take up space. */
+  takesUpSpace(): boolean {
+    return this.visible();
+  }
+
+  /** Whether the element can be interacted with (visible; v4 has no 'events' prop). */
+  interactive(): boolean {
+    return this.visible();
   }
 
   /** The node's resolved label text ('' when none); read-only in the prototype. */
@@ -2182,3 +2272,5 @@ GpuCollection.prototype.unbind = GpuCollection.prototype.off;
 GpuCollection.prototype.pon = GpuCollection.prototype.promiseOn;
 GpuCollection.prototype.attr = GpuCollection.prototype.data;
 GpuCollection.prototype.removeAttr = GpuCollection.prototype.removeData;
+GpuCollection.prototype.css = GpuCollection.prototype.style;
+GpuCollection.prototype.renderedCss = GpuCollection.prototype.renderedStyle;

@@ -107,6 +107,30 @@ const packRgba = ( [ r, g, b, a ]: RGBA ): number => {
   return ( r | ( g << 8 ) | ( b << 16 ) | ( a << 24 ) ) >>> 0;
 };
 
+/** RGBA bytes → the v3-style resolved color string. */
+const formatRgba = ( r: number, g: number, b: number, a: number ): string => {
+  return a === 255 ? `rgb(${r},${g},${b})` : `rgba(${r},${g},${b},${Math.round( a / 255 * 1000 ) / 1000})`;
+};
+
+/** Stored shape id → resolved keyword (the exact-circle compile collapses back to 'ellipse'). */
+const SHAPE_NAMES: Record<number, string> = {
+  [ SHAPE_CIRCLE ]: 'ellipse',
+  [ SHAPE_ELLIPSE ]: 'ellipse',
+  [ SHAPE_RECTANGLE ]: 'rectangle',
+  [ SHAPE_ROUND_RECTANGLE ]: 'round-rectangle'
+};
+
+/** Readable props per group ('width' and 'opacity' exist for both). */
+const NODE_READ: ReadonlySet<string> = new Set( [
+  'background-color', 'border-color', 'border-width', 'width', 'height',
+  'shape', 'opacity', 'label', 'font-size', 'color'
+] );
+
+const EDGE_READ: ReadonlySet<string> = new Set( [
+  'line-color', 'width', 'opacity',
+  'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color'
+] );
+
 const parseColor = ( prop: string, value: unknown ): RGBA => {
   const tuple = color2tuple( value as string );
 
@@ -156,7 +180,7 @@ const parseArrowShape = ( prop: string, value: unknown ): ArrowShape => {
 };
 
 /** camelCase → kebab-case ('backgroundColor' → 'background-color'). */
-const normalizeProp = ( prop: string ): string => {
+export const normalizeProp = ( prop: string ): string => {
   return prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
 };
 
@@ -394,6 +418,104 @@ export class StyleEngine {
     for( let i = 0; i < slots.length; i++ ){
       this.writeLabel( slots[ i ], computed );
     }
+  }
+
+  // -- read-back (the collection's read-only style getters) --
+
+  /*
+  Style reads report the *stored* channels — the resolved values the
+  renderer draws from — not the sheet's declarations.  Consequences: an
+  equal-radii 'circle'/'ellipse' reads back as 'ellipse'; arrow getters
+  derive from the stored arrow color (whose alpha folds in edge opacity),
+  so a fully transparent arrow reads as shape 'none' and color
+  rgba(...,0); label channels ('font-size', 'color') come from the label
+  sidecar when the node is labelled, else they resolve through the sheet
+  (evaluating a fn sheet for that element).
+  */
+
+  /** One resolved prop for a live element (undefined when the prop belongs to the other group). */
+  readProp( ref: Ref, propRaw: string ): string | number | undefined {
+    const prop = normalizeProp( propRaw );
+
+    if( !NODE_READ.has( prop ) && !EDGE_READ.has( prop ) ){
+      throw new Error( `The style property '${prop}' is unsupported in the GPU prototype` );
+    }
+
+    const forGroup = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
+
+    if( !forGroup.has( prop ) ){ return undefined; }
+
+    const store = this.store;
+    const slot = ref.slot;
+    const scalar = ( id: Parameters<GraphStore['column']>[0] ): number =>
+      ( store.column( id ) as Float32Array | Uint32Array )[ slot ];
+    const pair = ( id: Parameters<GraphStore['column']>[0], i: 0 | 1 ): number =>
+      ( store.column( id ) as Float32Array )[ slot * 2 + i ];
+    const color = ( id: Parameters<GraphStore['column']>[0] ): string => {
+      const bytes = store.column( id ) as Uint8Array;
+
+      return formatRgba( bytes[ slot * 4 ], bytes[ slot * 4 + 1 ], bytes[ slot * 4 + 2 ], bytes[ slot * 4 + 3 ] );
+    };
+    const alphaOf = ( id: Parameters<GraphStore['column']>[0] ): number =>
+      ( store.column( id ) as Uint8Array )[ slot * 4 + 3 ];
+
+    switch( prop ){
+      // node channels
+      case 'background-color': return color( 'node.fillColor' );
+      case 'border-color': return color( 'node.borderColor' );
+      case 'border-width': return scalar( 'node.borderWidth' );
+      case 'height': return pair( 'node.size', 1 );
+      case 'shape': return SHAPE_NAMES[ scalar( 'node.shape' ) ];
+      case 'label': return store.labelAt( slot )?.text ?? '';
+      case 'font-size': return this.labelChannels( ref ).fontSize;
+      case 'color': return this.labelChannels( ref ).color;
+
+      // shared names, resolved per group
+      case 'width': return ref.group === 'nodes' ? pair( 'node.size', 0 ) : scalar( 'edge.width' );
+      case 'opacity': return scalar( ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
+
+      // edge channels
+      case 'line-color': return color( 'edge.lineColor' );
+      case 'source-arrow-shape': return alphaOf( 'edge.sourceArrow' ) > 0 ? 'triangle' : 'none';
+      case 'target-arrow-shape': return alphaOf( 'edge.targetArrow' ) > 0 ? 'triangle' : 'none';
+      case 'source-arrow-color': return color( 'edge.sourceArrow' );
+      case 'target-arrow-color': return color( 'edge.targetArrow' );
+    }
+
+    return undefined;
+  }
+
+  /** All resolved props of a live element's group. */
+  readProps( ref: Ref ): Record<string, string | number> {
+    const props = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
+    const out: Record<string, string | number> = {};
+
+    for( const prop of props ){
+      out[ prop ] = this.readProp( ref, prop ) as string | number;
+    }
+
+    return out;
+  }
+
+  /** Resolved label channels: the sidecar when labelled, else the sheet. */
+  private labelChannels( ref: Ref ): { fontSize: number; color: string } {
+    const entry = this.store.labelAt( ref.slot );
+
+    if( entry != null ){
+      const packed = entry.color;
+
+      return {
+        fontSize: entry.fontSize,
+        color: formatRgba( packed & 0xff, ( packed >>> 8 ) & 0xff, ( packed >>> 16 ) & 0xff, ( packed >>> 24 ) & 0xff )
+      };
+    }
+
+    const def = this.defs.nodes;
+    const computed = def.fn == null
+      ? def.computed
+      : this.resolveConst( 'nodes', def.fn( this.eleFor( 'nodes', ref.slot ) ) ?? {} );
+
+    return { fontSize: computed.fontSize, color: formatRgba( ...computed.textColor ) };
   }
 
   /** Defaults + props for one group ('width' is shared; the group's own default wins). */

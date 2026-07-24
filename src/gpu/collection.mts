@@ -241,9 +241,11 @@ export class GpuCollection {
   forEach( fn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => void | false, thisArg?: unknown ): this {
     const n = this.length;
 
-    // exit early like v3 when the callback returns false
-    if( thisArg === undefined ){
-      for( let i = 0; i < n; i++ ){ if( fn.call( this[ i ], this[ i ], i, this ) === false ){ break; } }
+    // exit early like v3 when the callback returns false; a plain call when
+    // there is no thisArg, like v3 — rebinding the receiver per element via
+    // fn.call() costs ~2x on large collections
+    if( thisArg == null ){
+      for( let i = 0; i < n; i++ ){ if( fn( this[ i ], i, this ) === false ){ break; } }
     } else {
       for( let i = 0; i < n; i++ ){ if( fn.call( thisArg, this[ i ], i, this ) === false ){ break; } }
     }
@@ -294,8 +296,8 @@ export class GpuCollection {
     const n = this.length;
     const array: T[] = new Array( n );
 
-    if( thisArg === undefined ){
-      for( let i = 0; i < n; i++ ){ array[ i ] = fn.call( this[ i ], this[ i ], i, this ); }
+    if( thisArg == null ){
+      for( let i = 0; i < n; i++ ){ array[ i ] = fn( this[ i ], i, this ); }
     } else {
       for( let i = 0; i < n; i++ ){ array[ i ] = fn.call( thisArg, this[ i ], i, this ); }
     }
@@ -305,7 +307,9 @@ export class GpuCollection {
 
   some( fn: EleFilterFn, thisArg?: unknown ): boolean {
     for( let i = 0; i < this.length; i++ ){
-      if( fn.call( thisArg ?? this[ i ], this[ i ], i, this ) ){ return true; }
+      const ret = thisArg == null ? fn( this[ i ], i, this ) : fn.call( thisArg, this[ i ], i, this );
+
+      if( ret ){ return true; }
     }
 
     return false;
@@ -313,7 +317,9 @@ export class GpuCollection {
 
   every( fn: EleFilterFn, thisArg?: unknown ): boolean {
     for( let i = 0; i < this.length; i++ ){
-      if( !fn.call( thisArg ?? this[ i ], this[ i ], i, this ) ){ return false; }
+      const ret = thisArg == null ? fn( this[ i ], i, this ) : fn.call( thisArg, this[ i ], i, this );
+
+      if( !ret ){ return false; }
     }
 
     return true;
@@ -525,10 +531,11 @@ export class GpuCollection {
     if( typeof selector === 'function' ){
       const refs: Ref[] = [];
       const n = this.length;
-      const ctx = thisArg;
 
       for( let i = 0; i < n; i++ ){
-        if( selector.call( ctx ?? this[ i ], this[ i ], i, this ) ){
+        const include = thisArg == null ? selector( this[ i ], i, this ) : selector.call( thisArg, this[ i ], i, this );
+
+        if( include ){
           refs.push( this._refs[ i ] );
         }
       }
@@ -650,7 +657,7 @@ export class GpuCollection {
     let bestEle: GpuCollection | undefined;
 
     for( let i = 0; i < this.length; i++ ){
-      const val = valFn.call( thisArg ?? this[ i ], this[ i ], i, this );
+      const val = thisArg == null ? valFn( this[ i ], i, this ) : valFn.call( thisArg, this[ i ], i, this );
 
       if( sign * val > sign * best ){
         best = val;

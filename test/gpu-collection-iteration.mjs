@@ -44,7 +44,7 @@ describe('gpu/collection: iteration', function(){
       ids.push( ele.id() );
       indexes.push( i );
       expect( eles ).to.have.length(3);
-      expect( this ).to.equal( ele ); // context is the element
+      expect( this ).to.be.undefined; // plain call without thisArg, like v3
     });
 
     expect( ids ).to.deep.equal(['a', 'b', 'c']);

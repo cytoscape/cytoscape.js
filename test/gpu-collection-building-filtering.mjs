@@ -62,7 +62,7 @@ describe('gpu/collection: building and filtering', function(){
   it('filters with a function', function(){
     var eles = cy.nodes().filter(function( ele, i, all ){
       expect( all ).to.have.length(3);
-      expect( this ).to.equal( ele );
+      expect( this ).to.be.undefined; // plain call without thisArg, like v3
 
       return i !== 1;
     });

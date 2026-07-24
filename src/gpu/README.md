@@ -87,8 +87,13 @@ it, arrow getters derive from the stored arrow color (alpha folds in
 edge opacity, so a fully transparent arrow reads shape `'none'`), and
 label channels (`font-size`, `color`) come from the label sidecar when
 the node is labelled, else resolve through the sheet (a fn sheet
-evaluates for that element).  The setter forms throw: v4 has no
-per-element bypass — per-element styling is the fn form of the sheet.
+evaluates for that element; mapped channels evaluate for that slot).
+When the GPU eval kernel owns a paint channel (see the mapper DSL
+below), its stored bytes go stale after data writes and the getter
+evaluates the shared mapper IR lazily instead — same math as the
+kernel, agreeing with rendered pixels within ±1 per RGBA byte.  The
+setter forms throw: v4 has no per-element bypass — per-element styling
+is the fn form of the sheet.
 
 ## Design decisions (v4 API direction)
 
@@ -127,16 +132,45 @@ each is deliberate, not a pass-1 deferral:
   and mappers stay fresh automatically; opaque functions re-run only on
   an explicit `cy.style(sheet)` / `cy.style().update()`* — never on
   select/unselect (the accent ring is shader-drawn) or on data writes.
-- **Mappers become a serializable DSL, evaluated GPU-side.**  The label
-  `data(key)` mapper is the first of a planned family (e.g.
-  `backgroundColor: 'mapData(weight, red, blue)'`, or an equivalent
-  chained builder API).  Mapper strings/builders compile to a small
-  mapper IR; because the IR is analyzable, dependency-gated refresh is
-  exact (only writes of mapped keys recompute), and because it is
-  serializable it can ship with a wire payload and be uploaded to the
-  GPU — the plan is to mirror mapped data columns and evaluate `mapData`
-  in the shader, so a bulk data write uploads only the data column and
-  restyle cost is zero (the same trick labels use for node moves).
+- **Mappers are a serializable object DSL, evaluated GPU-side** (landed;
+  design decided 2026-07-24).  A style prop value can be a plain object
+  spec — `{ data, scale?, domain?, range?, ... }` — no string parsing,
+  no builder; the spec is JSON-round-trippable and compiles to a
+  closure-free IR (`style-scales.mts`).  Scales: `linear` (default),
+  `log`, `sqrt`, `pow`, `symlog`, `diverging` ([min, mid, max] domain),
+  `ordinal` (categories), `threshold` and `quantize` (bins).  Colors
+  interpolate in **OKLab** by default (`interpolate: 'srgb'` opts out)
+  with named schemes (`viridis`/`plasma`/`magma`/`inferno`, ColorBrewer
+  ramps, `category10`/`dark2`) and multi-stop ranges (pairwise when
+  domain and range lengths match, evenly spread otherwise).  Semantics:
+  clamp by default; missing/unmappable data resolves to `fallback` else
+  the channel default (never keep-previous — refresh is idempotent);
+  `domain` omitted/'auto' is a **live extent** (Vega-Lite semantics):
+  the data extent re-checks on writes of the mapped key and a moved
+  extent re-derives the whole channel (log auto-extents use positive
+  values only).  Refresh is dependency-gated per (group, key, channel);
+  edge data writes refresh edge channels; fn sheets may not return
+  mapper objects (the fn is already the per-element mechanism), and
+  `label` takes the passthrough form only (`{ data: key }`, or the
+  legacy `'data(key)'` string sugar).
+- **GPU evaluation: the paint/geometry split.**  Paint channels — fill,
+  border and line colors, opacities, arrow colors — are evaluated by a
+  per-group compute kernel that interprets the packed program array
+  (`render/mapper-runtime.mts`, `mapper-shaders.mts`) and writes the
+  *existing* channel storage buffers: render pipelines are untouched and
+  there are zero pipeline permutations.  A bulk data write uploads only
+  the touched data bytes (f32 shadow + present mask; dict indices for
+  string ordinals) and dispatches once — no CPU restyle (200k color
+  write: 78.5 → 15.9 ms, the rest being the data-write loop itself).
+  Geometry channels (size, border-width, shape, edge width) and the
+  label sidecar stay eagerly CPU-evaluated — the invariant: *anything
+  read by a cull predicate, the CPU pick replica, or a columnar scan
+  (fit, box selection, grid layout) stays CPU-canonical.*  Arrow alpha
+  folds in-kernel (evaluated or constant opacity; a mapped arrow
+  *shape* demotes all edge paint to the CPU, as does a mapped column
+  promoting to mixed).  Headless or adapterless instances run the whole
+  DSL eagerly on the CPU — the kernel is an optimization layer, not a
+  requirement.
 
 `data()`: element data lives in a **columnar sidecar** — per-(group, key)
 columns, not per-element objects: numbers as Float64Array, strings
@@ -144,10 +178,12 @@ dictionary-encoded, a plain-array fallback for the rest, each column
 adapting to what it holds.  `id` (and `source`/`target` on edges) stay
 first-class and immutable.  Setters emit `data` per element.
 
-Node labels (SDF): the `label` style prop takes constant strings or a
-`data(key)` mapper (any sidecar key; `data(id)` reads the first-class
-id); mapped labels refresh on data writes (fn styles do not — see the
-refresh policy above).  `font-size` and `color` are constants.  Glyphs
+Node labels (SDF): the `label` style prop takes constant strings or the
+passthrough mapper (`{ data: key }`, or the legacy `'data(key)'` string;
+`id` reads the first-class id); mapped labels refresh on data writes (fn
+styles do not — see the refresh policy above).  `font-size` and `color`
+take constants or mappers (CPU-evaluated — the label sidecar is not a
+GPU column).  Glyphs
 come from a runtime SDF atlas (canvas-2D raster → Euclidean distance
 transform → one r8 texture) and live in a persistent instance buffer keyed
 by node slot — the label vertex shader reads the node position buffer, so
@@ -161,9 +197,9 @@ predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.
 
-Out of scope (deferred): animations, full stylesheets/mappers beyond the
-label `data(key)` mapper, compound nodes, bezier edges, layouts beyond
-grid/preset, graph algorithms.
+Out of scope (deferred): animations, compound nodes, bezier edges,
+layouts beyond grid/preset, graph algorithms, string-formatting label
+mappers beyond the passthrough.
 
 ## Benchmarks
 
@@ -218,9 +254,13 @@ and per-element emit cost is ~85 ns/listener call.  The sweep also
 settled the lazy-collection question (handle materialization is ~4–6%
 of the worst trace — not worth the API change) and exposed the
 data-write label path, since fixed: mapped-label refresh on `data()`
-writes is now a label-only bulk pass gated on the written keys
-(`StyleEngine.refreshLabels`), not a full per-element style apply —
-a 200k bulk write under a mapped label dropped 85 → 37 ms.
+writes is a label-only bulk pass gated on the written keys, not a full
+per-element style apply — a 200k bulk write under a mapped label
+dropped 85 → 37 ms.  (The mapper DSL later generalized this into
+`StyleEngine.refreshMapped` — per-group, per-key gating for every
+mapped channel, with the label-only fast path preserved; see
+`benchmark/gpu/mappers.mjs` for the write-cost sweep per evaluation
+policy.)
 
 Traversal walks (`connectedEdges`, `outgoers`/`incomers`,
 `neighborhood`, `roots`/`leaves`, `successors`/`predecessors`, edge
@@ -296,8 +336,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 - **No selector strings** (a v4 decision, not a gap — see "Design
   decisions" above): queries are structured objects ({ group, selected }
   today), everything richer is a predicate function, ids go through
-  `$id`.  Style prop values are constants except the label `data(key)`
-  mapper; per-element styling is the fn form of the sheet.
+  `$id`.  Style prop values are constants or mapper objects (see the
+  mapper DSL above); per-element styling is the fn form of the sheet.
 - **`cy.elements()` order**: nodes (insertion order) then edges, not the
   mixed insertion order of v3.
 - **Picking** resolves in three stages, cheapest first.  (1) Nodes pick

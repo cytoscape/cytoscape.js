@@ -30,6 +30,8 @@ src/gpu/
   events.mts             # single core Emitter (reuse src/emitter.mts) with ref/selector-qualified listeners
   selector.mts           # mini selector: node|edge|*, #id, :selected/:unselected, comma lists
   style.mts              # StyleEngine: constant-value blocks compiled into channel columns + label sidecar
+  style-scales.mts       # mapper DSL: object specs compiled to a closure-free IR + CPU evaluator
+  style-schemes.mts      # named color schemes (viridis, ColorBrewer, ...) + sRGB↔OKLab
   layout/grid.mts        # ported grid layout (cell-packing math from src/extensions/layout/grid.mts)
   store/
     graph-store.mts      # GraphStore: NodeTable + EdgeTable + IdMap + Adjacency + label sidecar; mutation API
@@ -45,6 +47,8 @@ src/gpu/
     node-pipeline.mts    # node render + picking pipelines (vertex pulling, 6 verts/instance)
     edge-pipeline.mts    # edge render + picking pipelines (endpoints fetched from node position buffer)
     label-pipeline.mts   # SDF label pipeline (glyph instances; draws after nodes; not pickable)
+    mapper-runtime.mts   # GPU mapper eval: program/stop/data packing + the per-frame runtime
+    mapper-shaders.mts   # the eval kernel WGSL (scale math mirrors style-scales.mts)
     label-layer.mts      # consumes the label-dirty channel; lays out glyphs into the GlyphBuffer
     label-layout.mts     # pure single-line centered glyph layout (Node-testable)
     glyph-atlas.mts      # runtime SDF atlas: canvas-2D raster → exact EDT → shelf-packed r8 texture
@@ -191,9 +195,9 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    until Playwright's WebKit build ships navigator.gpu).
 
 All follow-ups are done.  Open hooks beyond pass 1: slot/blob/CSR
-compaction, z-index ranks, animations, mappers beyond label data(key),
-compound nodes, bezier edges, more layouts, a binary export of live
-graphs (serializeElements already covers payloads).
+compaction, z-index ranks, animations, compound nodes, bezier edges,
+more layouts, a binary export of live graphs (serializeElements already
+covers payloads).  (Mappers landed as the round-7 object DSL below.)
 
 ## API gaps vs v3
 
@@ -524,13 +528,8 @@ decisions, explicitly:
   declarative values/mappers auto-refresh (mapped labels on data
   writes, key-gated); **fn styles re-run only on explicit
   `cy.style(sheet)` / `.update()`** — never on select or data writes.
-- **Mapper DSL direction**: style prop values will grow a serializable
-  mapper family (`'mapData(weight, red, blue)'` strings and/or a chained
-  builder), compiled to a mapper IR that (a) makes dependency-gated
-  refresh exact and (b) serializes to the GPU — mirror the mapped data
-  column, evaluate the mapper in the shader, so bulk data writes upload
-  only data bytes with zero restyle cost.  The label `data(key)` mapper
-  is the existing first member.
+- ~~**Mapper DSL direction**~~ — landed in round 7 (below), as a plain
+  object spec rather than strings/builder.
 
 Verification: typecheck, lint, `test:js` (1221 passing, incl. the new
 `gpu-query.mjs` matcher suite and rewritten style/events/flag-scan
@@ -538,6 +537,46 @@ suites), and all 17 Playwright webgpu specs on a real adapter.
 Benchmarks compare idiomatic forms per side now (`cmp(name, v3Op,
 gpuOp)` where they differ); `pointer.mts` tap-clear uses
 `elements({ selected: true })`.
+
+## Landed (round 7 — the mapper DSL, 2026-07-24)
+
+Ten isolated commits (after a `{ nodes, edges }` sheet-key rename to
+match the group names): OKLab + scheme tables → mapper compile/IR →
+engine integration → data-write plumbing → program packing → GPU eval
+(scalars, then colors) → ordinal dict path + mixed demotion → benchmark
+→ docs.  All green throughout: typecheck, lint, `test:js` (1360 tests;
+three new mapper suites), `test:modules`, 20 Playwright webgpu specs on
+a real adapter.  `src/gpu/README.md` ("Design decisions") is the
+maintained record; the shape, briefly:
+
+- **Spec**: plain serializable objects as style prop values —
+  `{ data, scale?, domain?, range?, clamp?, fallback?, ... }`.  Scales:
+  linear/log/sqrt/pow/symlog, diverging ([min, mid, max]), ordinal,
+  threshold, quantize.  Colors interpolate in OKLab (opt-out
+  `interpolate: 'srgb'`) with named schemes (viridis family, ColorBrewer
+  ramps, category10/dark2) and multi-stop ranges.  Missing/unmappable
+  data → `fallback` else the channel default.  `domain` omitted/'auto'
+  is a **live extent** (Vega-Lite semantics): re-checked on writes of
+  the mapped key, whole-channel re-derive when moved.  Compiles to a
+  closure-free IR (`style-scales.mts`): everything continuous lowers to
+  one piecewise program over transformed stops; refresh is gated per
+  (group, key); edge data writes now refresh edge channels; fn-sheet
+  returns may not contain mappers; `label` takes the passthrough only.
+- **GPU eval — the paint/geometry split**: paint channels (fill/border/
+  line colors, opacities, arrow colors) evaluate in a per-group compute
+  kernel that interprets a packed program array (64 B uniform structs +
+  vec4 stop/LUT tables + f32 data-region shadows with present masks)
+  and writes the *existing* channel buffers — render pipelines
+  untouched, zero permutations, fits base device limits.  Data writes
+  upload only the touched bytes and dispatch once (200k color write:
+  78.5 → 15.9 ms; the getter answers by evaluating the shared IR
+  lazily, within ±1/byte of pixels — Playwright-pinned).  Geometry
+  (size, border-width, shape, edge width) + labels stay eagerly
+  CPU-evaluated: anything read by culling, CPU picking, or columnar
+  scans stays CPU-canonical.  Arrow alpha folds in-kernel; mapped arrow
+  *shapes* and mixed-promoted columns demote to CPU; string ordinals
+  run as dict-index LUTs (dict growth repacks); headless stays fully
+  CPU-correct with no renderer.
 
 ### Deferred by design (out of scope for the prototype)
 

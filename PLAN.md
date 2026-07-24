@@ -264,8 +264,8 @@ Collection:
   change.
 - `move()` for edges (re-endpoint in place via `store.moveEdge`).
 
-Not yet ported from the small list (each a small feature, not just
-wiring): `active`/`activate`, `pannable`/`panify`, `inactive`.
+Not yet ported from the small list: ~~`active`/`activate`,
+`pannable`/`panify`, `inactive`~~ — landed in round 6 (below).
 
 ### Collection/core API performance
 
@@ -408,6 +408,47 @@ magnitude.  On a 2k-node/4k-edge graph:
   `getElementById` (~1.4×), `data()`/`position()` get (~1.1×,
   noise-level).
 
+### Landed (round 6 — the needs-a-call tier)
+
+Five isolated commits (2026-07-24), each with Node tests; box selection
+also has a Playwright spec (18 webgpu specs total, all green on a real
+adapter).  `src/gpu/README.md` records the policies.
+
+- **`active`/`pannable` states**: `FLAG_ACTIVE`/`FLAG_PANNABLE` bits;
+  `activate`/`unactivate`/`active`/`inactive`, `panify`/`unpanify`/
+  `pannable` through the bulk flag path.  v3 defaults (edges pannable,
+  nodes not; per-def override); pannable overrides `grabbable()` and
+  drag eligibility, so dragging a pannable element pans.
+- **Batching** (`startBatch`/`endBatch`/`batch`/`batchData`/
+  `batching`): v3 semantics — defers style application (first apply of
+  added elements, sheet re-application, mapped-label refresh) to one
+  bulk flush at the outermost `endBatch`, filtered to live refs; events
+  keep firing; a sheet set mid-batch flushes as one `applyAll`.
+  Renderer scheduling needed no deferral (the dirty tracker already
+  coalesces per microtask), so `notify`/`noNotifications` have no v4
+  counterpart.
+- **Read-only style getters**: `style`/`css`, `renderedStyle`
+  (length props × zoom), `numericStyle`, `effectiveOpacity`/
+  `transparent`/`takesUpSpace`/`interactive`.  Values read back from
+  the stored channels (columns + label sidecar); label channels of
+  unlabelled nodes resolve through the sheet.  Setter forms throw — no
+  per-element bypass in v4 (the fn sheet is the per-element mechanism).
+- **Core `json()` export**: elements (grouped, or flat via
+  `json(true)`), sheet, graph data, viewport, gating flags; element
+  json gained `locked`/raw `grabbable`/`pannable` (v3 parity).  The
+  import/restore form throws (needs stored defs); exported elements
+  round-trip through the definition form.
+- **`selectionType` + box selection**: validated
+  `'single'`/`'additive'` (ctor option; additive taps toggle without
+  clearing, mult-sel keys shift/ctrl/cmd match v3);
+  `GraphStore.refsInBox` answers the box query in one columnar scan
+  over shown elements (v3 'contain': node bb incl. border fully
+  inside, straight edges by both endpoint centers), public as
+  `cy.elementsInBox`; the pointer boxes on mult-sel-key drags (or when
+  panning is disabled) with a DOM overlay box and the v3 event flow
+  (`boxstart`/`boxend`, `box`/`boxselect` per element).  Mouse/pen
+  only.
+
 ### Needs a call — note only, don't build yet
 
 - **Classes** (`classes`/`addClass`/`removeClass`/`toggleClass`/
@@ -415,20 +456,18 @@ magnitude.  On a 2k-node/4k-edge graph:
   selectors in the mini-selector + restyle on change.  Couples to the
   constrained (constants-only) style engine.  **Call made: not in v4** —
   see "Selector removal + stylesheet reshape" below.
-- **Style getters** (`style`/`renderedStyle`/`numericStyle`/`pstyle`,
-  `effectiveOpacity`, `transparent`, `takesUpSpace`, `interactive`):
-  reading a resolved channel per prop from the compiled columns is
-  doable, but the returned shape (parsed vs rendered vs numeric) is a
-  design choice; `bypass`/per-element style setters are the bigger
-  stylesheet question.
-- **Batching** (`startBatch`/`endBatch`/`batch`/`batchData`/`notify`/
-  `noNotifications`/`batching`): the dirty tracker already coalesces per
-  microtask, but batch semantics (defer style-apply + event emission
-  across a user block) need a policy.
-- **Core `json()` import/export** and element `clone`/`copy`/`restore`:
-  export is derivable from the columns; the import/restore *setter*
-  (rebuild from a JSON snapshot, incl. restoring removed elements) needs
-  stored defs.
+- ~~**Style getters**~~ — the read-only surface landed in round 6
+  (shape call: stored-channel truth, numbers + `rgb()` strings);
+  `bypass`/per-element style *setters* remain out by design (the fn
+  sheet is the per-element mechanism; `pstyle` stays internal-only in
+  v3 and has no v4 counterpart).
+- ~~**Batching**~~ — landed in round 6 with the v3 policy (defer style
+  apply, keep events); `notify`/`noNotifications` deliberately have no
+  v4 counterpart (the renderer is dirty-driven).
+- **Core `json()` *import*** and element `clone`/`copy`/`restore`:
+  export landed in round 6; the import/restore *setter* (rebuild from a
+  JSON snapshot, incl. restoring removed elements) still needs stored
+  defs.
 - **Image export** (`png`/`jpg`/`jpeg`/`renderTo`): feasible on the
   webgpu flow via an offscreen render + buffer readback, but that's a
   new readback path.
@@ -446,11 +485,12 @@ magnitude.  On a 2k-node/4k-edge graph:
   scan) — ~4–6% of the trace — and the traversal-heavy explore trace runs
   a 200k click-interaction in ~45 µs median, 34× v3.  Revisit only if a
   real profile ever disagrees.
-- Odds and ends that each need a small feature, not just wiring:
-  `selectionType` + box selection, `active`/`activate` and `pannable`/
-  `panify`, `multiClickDebounceTime` (multi-click), `eles.layout()`/
-  `layoutPositions`/`layoutDimensions`, `boundingBoxAt` (bbox at a
-  hypothetical position), `sortByZIndex`/`zDepth` (needs z-index),
+- Odds and ends that each need a small feature, not just wiring
+  (~~`selectionType` + box selection, `active`/`activate`, `pannable`/
+  `panify`~~ — landed in round 6): `multiClickDebounceTime`
+  (multi-click), `eles.layout()`/`layoutPositions`/`layoutDimensions`,
+  `boundingBoxAt` (bbox at a hypothetical position),
+  `sortByZIndex`/`zDepth` (needs z-index),
   `padding`/`paddedWidth`/`paddedHeight`.
 
 ## Selector removal + stylesheet reshape (v4 API direction)

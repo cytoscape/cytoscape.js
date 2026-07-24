@@ -37,7 +37,10 @@ plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 manipulation, `style()` (the `{ node, edge }` sheet), `layout()`/
 `makeLayout` (grid and preset), `pick()`,
 `renderer()`/`forceRender()`/`resize()`, graph-level
-`data()`/`scratch()`, interaction gating
+`data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/
+`batchData`/`batching` — see below), `json()` (export-only),
+box selection (`elementsInBox` + the pointer gesture) and
+`selectionType`, interaction gating
 (`autolock`/`autoungrabify`/`autounselectify`,
 `panningEnabled`/`zoomingEnabled` + `user*` variants,
 `boxSelectionEnabled`), introspection (`instanceString`, `isReady`,
@@ -54,7 +57,38 @@ traversal (`outgoers`/`incomers`, `roots`/`leaves`,
 (`degree`/`indegree`/`outdegree` are singular first-element accessors as
 in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
 `select`/`unselect`/`selectify`, `grabbable`/`lock`,
-`show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only).
+`active`/`activate`, `pannable`/`panify`,
+`show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only),
+read-only style getters (`style`/`css`, `renderedStyle`,
+`numericStyle`, `effectiveOpacity`/`transparent`/`takesUpSpace`/
+`interactive` — see below).
+
+Batching (v3 semantics): a `startBatch()`/`endBatch()` pair (or
+`cy.batch(fn)`) defers *style application* — the first apply of
+elements added inside the batch, sheet re-application (`cy.style(sheet)`
+compiles and validates immediately, applies at the flush), and
+data-mapped label refresh — into one bulk pass at the outermost
+`endBatch`, filtered to still-live elements.  Events keep firing during
+the batch, and style-derived reads (`width()`, `label()`, `style()`)
+may be stale inside it.  Renderer scheduling needs no batch deferral:
+the dirty tracker already coalesces per microtask, which fires after
+the batch's synchronous block anyway.  v3's `notify`/`noNotifications`
+have no v4 counterpart for the same reason.
+
+Style getters read the **stored channels** — the resolved values the
+renderer draws from — not the sheet's declarations: `style(name)`
+returns numbers for numeric props, `rgb()`/`rgba()` strings for colors
+and keywords otherwise; `style()` returns the whole group's props;
+`renderedStyle` scales length props (width, height, border-width,
+font-size) by the zoom; `numericStyle` returns the number (throws for
+non-numeric props).  Consequences of reading stored truth: an
+equal-radii ellipse reads back as `'ellipse'` whatever keyword compiled
+it, arrow getters derive from the stored arrow color (alpha folds in
+edge opacity, so a fully transparent arrow reads shape `'none'`), and
+label channels (`font-size`, `color`) come from the label sidecar when
+the node is labelled, else resolve through the sheet (a fn sheet
+evaluates for that element).  The setter forms throw: v4 has no
+per-element bypass — per-element styling is the fn form of the sheet.
 
 ## Design decisions (v4 API direction)
 
@@ -333,6 +367,28 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   approximated by its box).  Arrows draw *over* the line — a translucent
   arrow shows the line through it — are not pickable (the GPU pick pass
   stays edges-only), and size with the drawn (floored) edge width.
+- **Box selection**: with `boxSelectionEnabled` (default on), a drag
+  while a multiple-select key (shift/ctrl/cmd) is held — or any drag
+  when panning is disabled — draws a selection box (a DOM overlay above
+  the canvas) and on release selects the contained elements with the v3
+  event flow (`boxstart`/`boxend` on the core, `box`/`boxselect` per
+  element).  Geometry is v3's default 'contain' semantics answered by
+  one columnar scan (`cy.elementsInBox(x1, y1, x2, y2)`, model
+  coordinates): a node counts when its bounding box (incl. border) lies
+  fully inside; a straight edge when both endpoint node *centers* do
+  (v3 tests the on-boundary endpoints; centers are the straight-edge
+  approximation used elsewhere in the prototype).  `selectionType()`
+  is 'single' (tap/box replaces the selection) or 'additive' (taps
+  toggle, boxes add).  Mouse/pen only — v3's three-finger touch box
+  gesture is not implemented.
+- **Batch flush granularity**: `endBatch` re-applies style to elements
+  added during the batch and refreshes mapped labels; a sheet set during
+  the batch flushes as one whole-graph `applyAll`.  Unlike v3 there is
+  no per-notification queue to replay — the renderer is dirty-driven.
+- **`cy.json()` is export-only**: the import/restore form throws
+  (rebuilding from a snapshot needs stored defs the prototype does not
+  keep).  Exported element jsons round-trip through the definition form
+  of `elements`/`cy.add()`.
 - **Pinch zoom**: two touch pointers zoom about their midpoint (panning
   with it); a second finger cancels any pan/grab in progress, and the
   finger left over after a pinch stays inert until lifted.  Like other

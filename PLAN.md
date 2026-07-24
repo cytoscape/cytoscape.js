@@ -292,9 +292,32 @@ magnitude.  On a 2k-node/4k-edge graph:
   (`filter`/`nodes`/`edges`/`slice`/`difference`/`intersection`) spawn via a
   dedupe-skipping `_spawnUnique`; `map`/`forEach`/`filter` preallocate and
   hoist the `thisArg` branch; `position()` reads its column once.
-- **Residual v3 wins** (accepted; design trade for v4's fast collection
-  construction): whole-graph materializers `elements()` (~2.6×) and
-  `$(':selected')` (~2×), which v3 serves from maintained sets.
+- **Columnar flag-selector scan (perf round 3)** — closed the residual
+  whole-graph losses without copying v3's maintained-set approach.  The
+  mini-selector language minus `#id` (which keeps its id-index path) is
+  entirely (group, flag-mask) predicates, so `compileFlagPlan` compiles any
+  flag-only selector to per-group `(mask, want)` tests and
+  `GraphStore.scanRefsInto` answers them with one preallocated pass over
+  the flags column — no handles, no per-element term matching; today's
+  pseudos always collapse to one test per group (a multi-flag language
+  would generalize to a test list).  `cy.elements/nodes/edges/filter/$`
+  route through it (`_select`: id index → flag scan → materialize+match
+  fallback for mixed id+flag comma lists), collection `filter(selector)`
+  tests refs against the plan directly, the interned-handle pool went
+  `Map` → dense slot-indexed array, and scan-built collections skip
+  `_eleFromRef` (refs known current).  Callback iteration
+  (`forEach`/`map`/`filter(fn)`/`some`/`every`/min/max) now plain-calls
+  when no `thisArg` is given, matching v3's semantics (`this` is
+  undefined, not the element) — rebinding the receiver per element via
+  `fn.call()` cost ~2× at 20k.  Verified at N = 2k/20k/200k (the focused
+  `benchmark/gpu/materializers.mjs` sweep runs where the full suite
+  can't): `$(':selected')` ~2× slower → 16–59× faster, `$('node')` →
+  9–14×, `$('node:selected')` → 46–166×, `nodes(':selected')` → 70–198×,
+  `nodes()`/`edges()` → 3–9×, `elements()` ~2.6× slower → ~parity-to-2×
+  faster, `filter(fn)` flipped to a win, `forEach` ~3.3× slower → ~1.8×.
+- **Residual v3 wins** (micro-ops at 20k, accepted): `forEach` (~1.8×),
+  `pan()` get (~4×, allocates the returned object), `getElementById`
+  (~1.4×), `data()`/`position()` get (~1.1×, noise-level).
 
 ### Needs a call — note only, don't build yet
 

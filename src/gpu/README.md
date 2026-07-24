@@ -83,16 +83,28 @@ grid/preset, graph algorithms.
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
 core/collection op against its v3 analogue in `src/`. See
-`benchmark/gpu/`.  Read-heavy structure ops are where v4 pulls ahead:
+`benchmark/gpu/` (`materializers.mjs` is a focused standalone sweep that
+stays runnable at `BENCH_N=200000`).  Read-heavy structure ops are where
+v4 pulls ahead:
 `degree`/`totalDegree` are O(1) off the adjacency index (~100–200× v3),
 `components`/`add`+`remove` ~25–35×, set operations up to ~25×.  Collection
 identity keys on a packed `{group, slot, gen}` integer (not a string) and
 each collection lazily caches its membership Set (sound because `_refs` is
 immutable), so `same`/`contains`/`intersection`/`difference` beat v3 once a
 collection is reused.  Pure `#id` selectors resolve through the O(1) id
-index rather than materializing and scanning the graph.  The residual v3
-wins are the whole-graph materializers (`elements()`, `$(':selected')`),
-which v3 serves from maintained sets.
+index rather than materializing and scanning the graph; every other
+selector the mini-language supports is (group, flag-mask) predicates, so
+flag-only selectors compile to per-group `(mask, want)` tests answered by
+one preallocated scan over the flags column (`GraphStore.scanRefsInto`) —
+no element handles, no per-element term matching.  With that scan behind
+`elements/nodes/edges/filter/$` (and the interned-handle pool an array
+indexed by slot instead of a Map), the whole-graph materializers and flag
+selectors all beat v3 — e.g. at 200k nodes `$('node:selected')` is ~140×
+v3 — and no maintained membership sets (v3's approach) are needed.
+Callback iteration (`forEach`/`map`/...) plain-calls the callback when no
+`thisArg` is given, matching v3's semantics (`this` is undefined inside
+the callback) — rebinding the receiver per element cost ~2× on large
+collections.
 
 ## Loading
 

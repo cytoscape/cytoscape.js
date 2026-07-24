@@ -1,0 +1,188 @@
+import { expect } from 'chai';
+import {
+  packPrograms, buildDataRegions, updateDataRegion, alignSlots,
+  PROGRAM_WORDS, PROGRAM_BYTES, KIND, FLAG
+} from '../src/gpu/render/mapper-runtime.mjs';
+import { compileMapper } from '../src/gpu/style-scales.mjs';
+import { srgbToOklab } from '../src/gpu/style-schemes.mjs';
+import { DataStore } from '../src/gpu/store/data-store.mjs';
+
+// exact byte layout of the GPU eval pass's inputs (no device needed)
+
+const NUM_OPACITY = { kind: 'number', prop: 'opacity' };
+const COLOR_BG = { kind: 'color', prop: 'background-color' };
+
+const dataWith = ( values, key = 'w' ) => {
+  const data = new DataStore();
+
+  values.forEach( ( value, slot ) => {
+    if( value !== undefined ){ data.set( 'nodes', slot, key, value ); }
+  } );
+
+  return data;
+};
+
+const input = ( spec, opts, fallback = 1 ) => ( { m: compileMapper( spec, opts ), fallback } );
+
+describe('gpu/mapper-pack', function(){
+
+  it('packs a linear scalar program with exact word offsets', function(){
+    const packed = packPrograms( 'nodes',
+      [ input( { data: 'w', domain: [ 2, 10 ], range: [ 0.2, 1 ] }, NUM_OPACITY, 0.5 ) ],
+      dataWith( [ 3 ] ), 6 );
+
+    expect( packed.programCount ).to.equal( 1 );
+    expect( packed.programData.byteLength ).to.equal( PROGRAM_BYTES );
+
+    const u32 = new Uint32Array( packed.programData );
+    const f32 = new Float32Array( packed.programData );
+
+    expect( u32[ 0 ] ).to.equal( 2 );               // node opacity target
+    expect( u32[ 1 ] ).to.equal( KIND.IDENTITY );
+    expect( u32[ 2 ] ).to.equal( FLAG.CLAMP );      // scalar, clamped by default
+    expect( u32[ 3 ] ).to.equal( 0 );               // dataBase
+    expect( f32[ 4 ] ).to.equal( 2 );               // lo
+    expect( f32[ 5 ] ).to.equal( 10 );              // hi
+    expect( u32[ 8 ] ).to.equal( 1 );               // outBase (after 1 vec4 of inStops)
+    expect( u32[ 9 ] ).to.equal( 2 );               // stop count
+    expect( u32[ 10 ] ).to.equal( 0 );              // inBase
+    expect( f32[ 12 ] ).to.equal( 0.5 );            // fallback scalar
+
+    expect( [ ...packed.stopData ] ).to.deep.equal( [
+      2, 10, 0, 0,     // inStops, vec4-padded
+      0.2, 0, 0, 0,    // out stop 0
+      1, 0, 0, 0       // out stop 1
+    ].map( Math.fround ) );
+
+    expect( packed.ownedColumns ).to.deep.equal( [ 'node.opacity' ] );
+    expect( packed.keys ).to.deep.equal( [ 'w' ] );
+  });
+
+  it('packs transform params (log base, pow exponent)', function(){
+    const packed = packPrograms( 'nodes', [
+      input( { data: 'w', scale: 'log', base: 2, domain: [ 1, 1024 ], range: [ 0, 1 ] }, NUM_OPACITY ),
+      input( { data: 'w', scale: 'pow', exponent: 3, domain: [ 0, 10 ], range: [ 0, 1 ] }, NUM_OPACITY )
+    ], dataWith( [ 3 ] ), 4 );
+
+    const u32 = new Uint32Array( packed.programData );
+    const f32 = new Float32Array( packed.programData );
+
+    expect( u32[ 1 ] ).to.equal( KIND.LOG );
+    expect( f32[ 6 ] ).to.equal( 2 );
+
+    expect( u32[ PROGRAM_WORDS + 1 ] ).to.equal( KIND.POW );
+    expect( f32[ PROGRAM_WORDS + 6 ] ).to.equal( 3 );
+  });
+
+  it('packs OKLab color stops (and sRGB under interpolate: srgb)', function(){
+    const packed = packPrograms( 'nodes',
+      [ input( { data: 'w', domain: [ 0, 1 ], range: 'viridis' }, COLOR_BG, [ 0, 0, 0, 255 ] ) ],
+      dataWith( [ 0.5 ] ), 4 );
+
+    const u32 = new Uint32Array( packed.programData );
+
+    expect( u32[ 2 ] ).to.equal( FLAG.COLOR | FLAG.CLAMP );
+    expect( u32[ 9 ] ).to.equal( 10 );  // viridis stop count
+    expect( u32[ 10 ] ).to.equal( 0 );  // inStops first
+    expect( u32[ 8 ] ).to.equal( 3 );   // ceil(10/4) vec4s of inStops
+
+    const [ L ] = srgbToOklab( 0x44, 0x01, 0x54 );
+
+    expect( packed.stopData[ 3 * 4 ] ).to.be.closeTo( L, 1e-6 );   // first stop's L
+    expect( packed.stopData[ 3 * 4 + 3 ] ).to.equal( 1 );          // alpha
+
+    const srgb = packPrograms( 'nodes',
+      [ input( { data: 'w', domain: [ 0, 1 ], range: [ '#000000', '#ffffff' ], interpolate: 'srgb' }, COLOR_BG, [ 0, 0, 0, 255 ] ) ],
+      dataWith( [ 0.5 ] ), 4 );
+
+    expect( new Uint32Array( srgb.programData )[ 2 ] ).to.equal( FLAG.COLOR | FLAG.CLAMP | FLAG.SRGB );
+    expect( srgb.stopData[ 2 * 4 ] ).to.equal( 1 ); // white stop, normalized sRGB
+  });
+
+  it('packs discrete outputs as exact normalized sRGB', function(){
+    const packed = packPrograms( 'nodes',
+      [ input( { data: 'w', scale: 'threshold', domain: [ 0, 10 ], range: [ '#000000', '#808080', '#ffffff' ] }, COLOR_BG, [ 0, 0, 0, 255 ] ) ],
+      dataWith( [ 5 ] ), 4 );
+
+    const u32 = new Uint32Array( packed.programData );
+
+    expect( u32[ 1 ] ).to.equal( KIND.DISCRETE );
+    expect( u32[ 9 ] ).to.equal( 3 );
+    expect( u32[ 10 ] ).to.equal( 0 );  // cuts
+    expect( u32[ 8 ] ).to.equal( 1 );   // outputs after 1 vec4 of cuts
+
+    expect( packed.stopData[ 0 ] ).to.equal( 0 );
+    expect( packed.stopData[ 1 ] ).to.equal( 10 );
+    expect( packed.stopData[ 2 * 4 ] ).to.equal( Math.fround( 128 / 255 ) ); // middle bin
+  });
+
+  it('orders opacity programs first and dedupes data regions by key', function(){
+    const packed = packPrograms( 'nodes', [
+      input( { data: 'w', domain: [ 0, 1 ], range: [ '#000000', '#ffffff' ] }, COLOR_BG, [ 0, 0, 0, 255 ] ),
+      input( { data: 'w', domain: [ 0, 1 ], range: [ 0, 1 ] }, NUM_OPACITY ),
+      input( { data: 'z', domain: [ 0, 1 ], range: [ '#000000', '#ffffff' ] }, { kind: 'color', prop: 'border-color' }, [ 0, 0, 0, 255 ] )
+    ], dataWith( [ 0.5 ] ), 5 );
+
+    const u32 = new Uint32Array( packed.programData );
+
+    expect( u32[ 0 ] ).to.equal( 2 ); // opacity packed first
+    expect( u32[ 3 ] ).to.equal( 0 ); // dataBase for 'w'
+    expect( u32[ PROGRAM_WORDS + 3 ] ).to.equal( 0 );      // same key 'w' shares the region
+    expect( u32[ 2 * PROGRAM_WORDS + 3 ] ).to.equal( 8 );  // 'z' at alignSlots(5) = 8
+
+    expect( packed.keys ).to.deep.equal( [ 'w', 'z' ] );
+  });
+
+  it('skips non-paint props, string/mixed columns and ordinal programs', function(){
+    const data = dataWith( [ 1 ] );
+
+    data.set( 'nodes', 0, 's', 'abc' );          // string column
+    data.set( 'nodes', 0, 'm', 1 );
+    data.set( 'nodes', 0, 'm', true );           // promotes to mixed
+
+    const packed = packPrograms( 'nodes', [
+      input( { data: 'w', domain: [ 0, 1 ], range: [ 1, 5 ] }, { kind: 'number', prop: 'width' } ),
+      input( { data: 's', domain: [ 0, 1 ], range: [ 0, 1 ] }, NUM_OPACITY ),
+      input( { data: 'm', domain: [ 0, 1 ], range: [ 0, 1 ] }, NUM_OPACITY ),
+      input( { data: 'w', scale: 'ordinal', domain: [ 1 ], range: [ 0.5 ] }, NUM_OPACITY ),
+      input( { data: 'w', domain: [ 0, 1 ], range: [ 0, 1 ] }, NUM_OPACITY )
+    ], data, 4 );
+
+    expect( packed.programCount ).to.equal( 1 );
+    expect( packed.skipped.map( m => m.prop + ':' + m.program.kind ) ).to.deep.equal( [
+      'width:continuous', 'opacity:continuous', 'opacity:continuous', 'opacity:ordinal'
+    ] );
+  });
+
+  it('builds and refreshes packed data regions', function(){
+    const data = dataWith( [ 1 / 3, undefined, 2 ] );
+
+    data.set( 'nodes', 1, 's', 'b' );
+    data.set( 'nodes', 0, 's', 'a' );
+
+    const regions = buildDataRegions( 'nodes', [ 'w', 's' ], data, 5 );
+
+    expect( regions.capAligned ).to.equal( alignSlots( 5 ) ).and.to.equal( 8 );
+    expect( regions.values[ 0 ] ).to.equal( Math.fround( 1 / 3 ) );
+    expect( regions.present[ 0 ] ).to.equal( 1 );
+    expect( regions.present[ 1 ] ).to.equal( 0 ); // absent
+    expect( regions.values[ 2 ] ).to.equal( 2 );
+
+    // dict indices bitcast into the same buffer
+    const u32 = new Uint32Array( regions.values.buffer );
+
+    expect( u32[ 8 + 1 ] ).to.equal( 1 );  // 'b' interned first
+    expect( u32[ 8 + 0 ] ).to.equal( 2 );
+    expect( regions.present[ 8 + 2 ] ).to.equal( 0 );
+
+    // span refresh reports the touched value bytes
+    data.set( 'nodes', 1, 'w', 7 );
+
+    const range = updateDataRegion( regions, 'nodes', 0, data, 1, 2 );
+
+    expect( regions.values[ 1 ] ).to.equal( 7 );
+    expect( regions.present[ 1 ] ).to.equal( 1 );
+    expect( range ).to.deep.equal( { valueByteStart: 4, valueByteEnd: 8 } );
+  });
+
+});

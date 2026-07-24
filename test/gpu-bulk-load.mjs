@@ -145,17 +145,12 @@ describe('gpu/bulk-load', function(){
       return store;
     };
 
-    // a minimal handle stub for fn styles in store-only tests (no core)
-    const eleFor = store => ( group, slot ) => ( {
-      id: () => store.idAt( group, slot )
-    } );
-
     it('matches per-element apply exactly', function(){
       const bulk = storeWith();
       const perEle = storeWith();
 
-      const bulkEngine = new StyleEngine( bulk, eleFor( bulk ) );
-      const perEleEngine = new StyleEngine( perEle, eleFor( perEle ) );
+      const bulkEngine = new StyleEngine( bulk );
+      const perEleEngine = new StyleEngine( perEle );
 
       bulkEngine.setSheet( sheet ); // applyAll routes through applyBulk
 
@@ -170,12 +165,14 @@ describe('gpu/bulk-load', function(){
       }
     });
 
-    it('evaluates fn styles per element', function(){
+    it('evaluates per-element case mappers', function(){
       const store = storeWith();
-      const engine = new StyleEngine( store, eleFor( store ) );
+      const engine = new StyleEngine( store );
 
       engine.setSheet( {
-        nodes: ele => ( { 'background-color': ele.id() === 'a' ? '#ff0' : '#00f' } )
+        nodes: { 'background-color': {
+          case: [ { when: { data: 'id', eq: 'a' }, then: '#ff0' } ], else: '#00f'
+        } }
       } );
 
       const fill = store.column( 'node.fillColor' );
@@ -186,12 +183,14 @@ describe('gpu/bulk-load', function(){
       expect( Array.from( fill.slice( b * 4, b * 4 + 3 ) ) ).to.deep.equal([ 0, 0, 255 ]);
     });
 
-    it('a nullish fn return falls back to group defaults', function(){
+    it('an else-less case falls back to the channel default', function(){
       const store = storeWith();
-      const engine = new StyleEngine( store, eleFor( store ) );
+      const engine = new StyleEngine( store );
 
       engine.setSheet( {
-        nodes: ele => ele.id() === 'a' ? { 'background-color': '#ff0' } : null
+        nodes: { 'background-color': {
+          case: [ { when: { data: 'id', eq: 'a' }, then: '#ff0' } ], else: '#999'
+        } }
       } );
 
       const fill = store.column( 'node.fillColor' );
@@ -199,7 +198,7 @@ describe('gpu/bulk-load', function(){
       const b = store.lookup( 'b' ).slot;
 
       expect( Array.from( fill.slice( a * 4, a * 4 + 3 ) ) ).to.deep.equal([ 255, 255, 0 ]);
-      expect( Array.from( fill.slice( b * 4, b * 4 + 3 ) ) ).to.deep.equal([ 153, 153, 153 ]); // #999 default
+      expect( Array.from( fill.slice( b * 4, b * 4 + 3 ) ) ).to.deep.equal([ 153, 153, 153 ]); // #999
     });
   });
 

@@ -123,7 +123,7 @@ describe('gpu/labels: model', function(){
       var calls = 0;
 
       cy._store.onInvalidate(function(){ calls++; });
-      cy.style({ nodes: ele => ele.id() === 'a' ? { label: 'x' } : null });
+      cy.style({ nodes: { label: 'x' } });
 
       expect( cy._store.hasDirty() ).to.be.true;
 

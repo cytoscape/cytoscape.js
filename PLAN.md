@@ -436,7 +436,7 @@ adapter).  `src/gpu/README.md` records the policies.
   `transparent`/`takesUpSpace`/`interactive`.  Values read back from
   the stored channels (columns + label sidecar); label channels of
   unlabelled nodes resolve through the sheet.  Setter forms throw — no
-  per-element bypass in v4 (the fn sheet is the per-element mechanism).
+  per-element bypass in v4 (mappers are the per-element mechanism).
 - **Core `json()` export**: elements (grouped, or flat via
   `json(true)`), sheet, graph data, viewport, gating flags; element
   json gained `locked`/raw `grabbable`/`pannable` (v3 parity).  The
@@ -463,7 +463,7 @@ adapter).  `src/gpu/README.md` records the policies.
 - ~~**Style getters**~~ — the read-only surface landed in round 6
   (shape call: stored-channel truth, numbers + `rgb()` strings);
   `bypass`/per-element style *setters* remain out by design (the fn
-  sheet is the per-element mechanism; `pstyle` stays internal-only in
+  mapper is the per-element mechanism; `pstyle` stays internal-only in
   v3 and has no v4 counterpart).
 - ~~**Batching**~~ — landed in round 6 with the v3 policy (defer style
   apply, keep events); `notify`/`noNotifications` deliberately have no
@@ -505,7 +505,7 @@ decisions, explicitly:
 
 - **v4 has no classes.**  The class system (`addClass`/class selectors)
   is not coming to v4; user-defined state lives in the columnar `data()`
-  sidecar, with fn styles and predicates supplying the styling/filtering
+  sidecar, with mappers and predicates supplying the styling/filtering
   behaviour classes provided in v3.
 - **v4 has no selector strings at all.**  Rather than porting a dialect
   of the v3 selector language, the language is gone: `selector.mts` was
@@ -521,15 +521,17 @@ decisions, explicitly:
   terms) extends the IR; any frontend (chained builder, serialized
   query) compiles to it.
 - **Style is `{ nodes, edges }`** (keys renamed from `{ node, edge }`
-  2026-07-24 to match the group names) — each key a props object (constants,
-  camelCase or kebab-case) or `(ele) => props`.  Selector blocks,
-  `:selected` restyling and `#id` blocks are gone (the accent ring is
-  shader-drawn; per-element styling is the fn form).  Refresh policy:
-  declarative values/mappers auto-refresh (mapped labels on data
-  writes, key-gated); **fn styles re-run only on explicit
-  `cy.style(sheet)` / `.update()`** — never on select or data writes.
+  2026-07-24 to match the group names) — each key a props object
+  (constants, camelCase or kebab-case, and mapper objects).  Selector
+  blocks, `:selected` restyling and `#id` blocks are gone (the accent
+  ring is shader-drawn).  The `(ele) => props` **function form was
+  removed in round 8** (below): all per-element styling is declarative
+  (`case` conditionals, `data(key)` scales), so every value is
+  analyzable, serializable, and GPU-evaluable.  Refresh: a data write
+  re-derives the affected mapped channels, key-gated.
 - ~~**Mapper DSL direction**~~ — landed in round 7 (below), as a plain
-  object spec rather than strings/builder.
+  object spec rather than strings/builder; round 8 added conditionals
+  and removed the fn form.
 
 Verification: typecheck, lint, `test:js` (1221 passing, incl. the new
 `gpu-query.mjs` matcher suite and rewritten style/events/flag-scan
@@ -577,6 +579,42 @@ maintained record; the shape, briefly:
   *shapes* and mixed-promoted columns demote to CPU; string ordinals
   run as dict-index LUTs (dict growth repacks); headless stays fully
   CPU-correct with no renderer.
+
+## Landed (round 8 — conditionals + fn removal, 2026-07-24)
+
+Direction set in discussion: maximize GPU offload / minimize CPU resolve
+by making the analyzable mapper IR the *only* way to style, and removing
+the one construct that can never be offloaded — the opaque style
+function.  Isolated commits; all green (typecheck, lint, `test:js`,
+`test:modules`, 20 Playwright webgpu specs).
+
+- **CPU-evaluable invariant (established).**  Every mapper must be cheaply
+  CPU-evaluable.  That is what keeps `ele.style()` synchronous, keeps
+  headless mode and Node tests working (one IR runs on CPU, GPU, and in
+  tests), and keeps determinism.  Reads stay **sync** — async reads were
+  considered and rejected (viral, reentrancy windows, breaks
+  headless/testability, and unnecessary while the IR is CPU-evaluable).
+  GPU eval is an optimization over the IR, never a value source the CPU
+  can't reproduce.  Async is reserved for genuinely GPU-only reads
+  (rendered pixels, image export).
+- **`case` conditional mapper.**  `{ case: [{ when: { data,
+  gt/lt/eq/ne/in/... }, then }], else }` — ordered clauses, conditions
+  AND-ed within a clause, first match wins; `when` reads any data key or
+  the first-class `id`.  The declarative replacement for `(ele) => cond ?
+  a : b` and the form for typed edges.  Compiles to a closure-free
+  program; CPU-evaluated (multi-key), so the GPU eval kernel is
+  untouched.  Dependency tracking generalized to `CompiledMapper.keys`.
+- **The `(ele) => props` fn form removed.**  `GpuStyleFn` is gone; the
+  sheet is props-only.  The engine collapsed to one path (no `def.fn`
+  branches in applyBulk/refreshMapped/labelChannels/setSheet, no
+  fn-return throw, `eleFor` dropped).  Selection-dependent recolouring
+  is intentionally gone (the accent ring is shader-drawn); id-based
+  styling migrates to `case` on `data: 'id'`.  Tests/docs migrated.
+- **Deferred:** derived-data *expression* mappers (arithmetic over keys —
+  no current use needs them); and geometry channels → GPU eval (the
+  direct ~48 ms/200k offload, but it inverts the store→style layering
+  since `boundingBox`/`refsInBox`/CPU-pick read resolved size — a later
+  round).
 
 ### Deferred by design (out of scope for the prototype)
 

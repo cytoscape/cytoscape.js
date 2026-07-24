@@ -9,25 +9,27 @@ import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './styl
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { GpuStyleProps, GpuStylesheet, GpuMapper, GpuMapperSpec } from './gpu-types.mjs';
-import type { GpuCollection } from './collection.mjs';
 
 /*
-StyleEngine: the v4 stylesheet is `{ nodes, edges }` — no selectors.  Each
-key holds either a props object (constants and mapper objects, applied to
-the whole group) or a function `(ele) => props` for per-element styling.
-Prop names are kebab-case or camelCase; values are constants or mapper
-specs (style-scales.mts; `label` additionally takes the legacy
-`data(key)` string, which normalizes to the `{ data: key }` passthrough).
+StyleEngine: the v4 stylesheet is `{ nodes, edges }` — no selectors, no
+style functions.  Each key is a props object whose values are constants
+or mapper objects; all per-element variation is declarative (style-
+scales.mts: `data(key)` scales and `case` conditionals), so every value
+is analyzable, serializable, and GPU-evaluable.  Prop names are kebab-
+case or camelCase; `label` additionally takes the legacy `data(key)`
+string, which normalizes to the `{ data: key }` passthrough.
 
-Refresh policy: constant props and declarative mappers stay fresh
-automatically — a data() write re-derives the mapped channels of exactly
-the written slots, gated per group on the mapped keys, and a change in a
-live auto-domain extent re-derives the whole channel.  Function styles
-are opaque — they are evaluated when the sheet is set and when elements
-are added, and re-run only on an explicit `cy.style(sheet)` /
-`cy.style().update()` (mapper objects inside a fn return throw: the fn is
-already the per-element mechanism).  A select never restyles (the
-`:selected` accent ring is drawn by the shader).
+Every mapper is cheaply CPU-evaluable — that invariant keeps `ele.style()`
+synchronous, keeps headless mode and Node tests working (the same IR runs
+on CPU, GPU, and in tests), and keeps determinism.  GPU evaluation is an
+optimization layered over the CPU-evaluable IR, never a source of values
+the CPU can't reproduce.
+
+Refresh: constant props and declarative mappers stay fresh automatically —
+a data() write re-derives the mapped channels of exactly the written
+slots, gated per group on the mapped keys, and a change in a live
+auto-domain extent re-derives the whole channel.  A select never restyles
+(the `:selected` accent ring is drawn by the shader).
 
 Defaults ≈ v3: gray 30×30 ellipse nodes, 2px gray lines.
 */
@@ -390,28 +392,18 @@ const compileChannel = ( group: GroupName, prop: string, spec: GpuMapperSpec ): 
   };
 };
 
-/** A per-group stylesheet entry as stored: constants resolved, or the fn. */
-type GroupDef =
-  | {
-    fn: null;
-    computed: Computed;
-    mappers: BoundMapper[];
-    /** data key → what depends on it (null when nothing does) */
-    deps: Map<string, { label: boolean; mappers: boolean }> | null;
-  }
-  | {
-    fn: ( ele: GpuCollection ) => GpuStyleProps | null | undefined;
-    computed: null;
-    mappers: BoundMapper[]; // always empty: fn styles are opaque
-    deps: null;
-  };
+/** A per-group stylesheet entry as stored: the resolved base + compiled mappers. */
+interface GroupDef {
+  computed: Computed;
+  mappers: BoundMapper[];
+  /** data key → what depends on it (null when nothing does) */
+  deps: Map<string, { label: boolean; mappers: boolean }> | null;
+}
 
 const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges' ] );
 
 export class StyleEngine {
   private store: GraphStore;
-  /** interned handle provider (injected by the core; used to evaluate fn styles) */
-  private eleFor: ( group: GroupName, slot: number ) => GpuCollection;
   private sheet: GpuStylesheet;
   private defs: { nodes: GroupDef; edges: GroupDef };
 
@@ -436,13 +428,12 @@ export class StyleEngine {
   private readValue: ValueReader = ( group, slot, key ) =>
     key === 'id' ? this.store.idAt( group, slot ) : this.store.data.get( group, slot, key );
 
-  constructor( store: GraphStore, eleFor: ( group: GroupName, slot: number ) => GpuCollection ){
+  constructor( store: GraphStore ){
     this.store = store;
-    this.eleFor = eleFor;
     this.sheet = {};
     this.defs = {
-      nodes: { fn: null, computed: this.resolveConst( 'nodes', {} ), mappers: [], deps: null },
-      edges: { fn: null, computed: this.resolveConst( 'edges', {} ), mappers: [], deps: null }
+      nodes: { computed: this.resolveConst( 'nodes', {}, [] ), mappers: [], deps: null },
+      edges: { computed: this.resolveConst( 'edges', {}, [] ), mappers: [], deps: null }
     };
 
     // a mixed column can't evaluate in the kernel: demote its group's
@@ -458,8 +449,8 @@ export class StyleEngine {
 
   /**
    * Replace the stylesheet and (re-)apply to all alive elements — the
-   * explicit refresh for fn styles too.  `apply: false` compiles and
-   * validates without applying (the core defers the apply while batching).
+   * mapped channels too.  `apply: false` compiles and validates without
+   * applying (the core defers the apply while batching).
    */
   setSheet( sheet: GpuStylesheet, apply: boolean = true ): void {
     for( const key of Object.keys( sheet ) ){
@@ -469,17 +460,12 @@ export class StyleEngine {
     }
 
     const compile = ( group: GroupName, def: GpuStylesheet['nodes'] ): GroupDef => {
-      if( typeof def === 'function' ){
-        return { fn: def, computed: null, mappers: [], deps: null };
-      }
-
       const mappers: BoundMapper[] = [];
       const computed = this.resolveConst( group, def ?? {}, mappers );
 
       // which mutable data() keys the group's style derives from — the
-      // data-write refresh gate (id is immutable and never registers; fn
-      // styles are opaque, so by policy they refresh on style set only)
-      let deps: Extract<GroupDef, { fn: null }>['deps'] = null;
+      // data-write refresh gate (id is immutable and never registers)
+      let deps: GroupDef['deps'] = null;
       const dep = ( key: string, what: 'label' | 'mappers' ): void => {
         if( key === 'id' ){ return; }
 
@@ -497,7 +483,7 @@ export class StyleEngine {
         for( const key of bm.m.keys ){ dep( key, 'mappers' ); }
       }
 
-      return { fn: null, computed, mappers, deps };
+      return { computed, mappers, deps };
     };
 
     const defs = {
@@ -506,19 +492,16 @@ export class StyleEngine {
     };
 
     // which arrow ends can any edge have at all — the renderer skips whole
-    // arrow draw calls per end when nothing enables it; a fn edge style is
-    // opaque, so both ends stay enabled (per-element arrows still collapse
-    // in the shader via zero alpha), and a mapped arrow shape enables its
-    // end the same conservative way
+    // arrow draw calls per end when nothing enables it; a mapped arrow
+    // shape conservatively enables its end (per-element arrows still
+    // collapse in the shader via zero alpha)
     const mapsProp = ( def: GroupDef, prop: string ): boolean =>
       def.mappers.some( bm => bm.m.prop === prop );
 
-    this.arrows = defs.edges.fn != null
-      ? { source: true, target: true }
-      : {
-        source: defs.edges.computed.sourceArrowShape === 'triangle' || mapsProp( defs.edges, 'source-arrow-shape' ),
-        target: defs.edges.computed.targetArrowShape === 'triangle' || mapsProp( defs.edges, 'target-arrow-shape' )
-      };
+    this.arrows = {
+      source: defs.edges.computed.sourceArrowShape === 'triangle' || mapsProp( defs.edges, 'source-arrow-shape' ),
+      target: defs.edges.computed.targetArrowShape === 'triangle' || mapsProp( defs.edges, 'target-arrow-shape' )
+    };
 
     this.sheet = sheet;
     this.defs = defs;
@@ -616,7 +599,7 @@ export class StyleEngine {
     return this.sheet;
   }
 
-  /** Re-apply the current sheet — the explicit re-run hook for fn styles. */
+  /** Re-apply the current sheet (e.g. to re-snapshot live auto-domain extents). */
   update(): void {
     this.applyAll();
   }
@@ -627,36 +610,25 @@ export class StyleEngine {
   }
 
   /**
-   * Bulk apply over *live* slots of one group.  Constant sheets resolve
-   * once per group (the per-element cost is only the column writes); a fn
-   * sheet evaluates per element against the interned handle.
+   * Bulk apply over *live* slots of one group.  The group resolves once
+   * (the per-element cost is only the column writes); mapped channels
+   * evaluate per element in applyMapped.
    */
   applyBulk( group: GroupName, slots: ArrayLike<number> ): void {
     if( slots.length === 0 ){ return; }
 
     const def = this.defs[ group ];
 
-    if( def.fn == null ){
-      if( def.mappers.length > 0 ){
-        this.applyMapped( group, def, slots );
-
-        return;
-      }
-
-      const computed = def.computed;
-
-      for( let i = 0; i < slots.length; i++ ){
-        this.write( group, slots[ i ], computed );
-      }
+    if( def.mappers.length > 0 ){
+      this.applyMapped( group, def, slots );
 
       return;
     }
 
-    for( let i = 0; i < slots.length; i++ ){
-      const slot = slots[ i ];
-      const props = def.fn( this.eleFor( group, slot ) );
+    const computed = def.computed;
 
-      this.write( group, slot, this.resolveConst( group, props ?? {} ) );
+    for( let i = 0; i < slots.length; i++ ){
+      this.write( group, slots[ i ], computed );
     }
   }
 
@@ -668,7 +640,7 @@ export class StyleEngine {
    * the pass to the whole group (every slot's mapping moved).
    */
   private applyMapped(
-    group: GroupName, def: Extract<GroupDef, { fn: null }>, slots: ArrayLike<number>,
+    group: GroupName, def: GroupDef, slots: ArrayLike<number>,
     skipOwned: boolean = false
   ): void {
     const store = this.store;
@@ -716,7 +688,7 @@ export class StyleEngine {
    * on a GPU-owned program also bumps paintVersion so the runtime repacks
    * its program uniform and re-evaluates in full.
    */
-  private checkAutoExtents( group: GroupName, def: Extract<GroupDef, { fn: null }> ): boolean {
+  private checkAutoExtents( group: GroupName, def: GroupDef ): boolean {
     let moved = false;
 
     for( const bm of def.mappers ){
@@ -743,17 +715,16 @@ export class StyleEngine {
 
   /**
    * The data-write refresh: re-derive the mapped channels of the written
-   * slots, gated per group on the written keys (fn sheets never
-   * auto-refresh by policy).  A label-only dependency pays just the label
-   * text recompute (setLabel no-ops when the entry is unchanged); mapped
-   * channels re-evaluate through the whole-element scratch pass, which
-   * also escalates to the full group when a live auto-domain extent
-   * moved.
+   * slots, gated per group on the written keys.  A label-only dependency
+   * pays just the label text recompute (setLabel no-ops when the entry is
+   * unchanged); mapped channels re-evaluate through the whole-element
+   * scratch pass, which also escalates to the full group when a live
+   * auto-domain extent moved.
    */
   refreshMapped( group: GroupName, slots: ArrayLike<number>, keys: string[] ): void {
     const def = this.defs[ group ];
 
-    if( slots.length === 0 || def.fn != null || def.deps == null ){ return; }
+    if( slots.length === 0 || def.deps == null ){ return; }
 
     let label = false;
     let mapped = false;
@@ -939,9 +910,7 @@ export class StyleEngine {
     const def = this.defs.nodes;
     let computed: Computed;
 
-    if( def.fn != null ){
-      computed = this.resolveConst( 'nodes', def.fn( this.eleFor( 'nodes', ref.slot ) ) ?? {} );
-    } else if( def.mappers.length > 0 ){
+    if( def.mappers.length > 0 ){
       // an unlabelled node still reads mapped font-size/color truthfully
       const scratch: Computed = { ...def.computed };
 
@@ -959,12 +928,10 @@ export class StyleEngine {
 
   /**
    * Defaults + props for one group ('width' is shared; the group's own
-   * default wins).  Mapper specs compile into `mappersOut` (setSheet
-   * path); without it — a fn style's return — they throw: the fn is
-   * already the per-element mechanism, and a mapper inside it would hide
-   * data dependencies inside an opaque closure.
+   * default wins).  Mapper specs compile into `mappersOut`; the label
+   * passthrough rides the labelKey channel instead.
    */
-  private resolveConst( group: GroupName, props: GpuStyleProps, mappersOut?: BoundMapper[] ): Computed {
+  private resolveConst( group: GroupName, props: GpuStyleProps, mappersOut: BoundMapper[] ): Computed {
     const computed: Computed = {
       ...NODE_DEFAULTS,
       ...EDGE_DEFAULTS,
@@ -976,13 +943,6 @@ export class StyleEngine {
       const value = props[ prop ];
 
       if( isMapperSpec( value ) ){
-        if( mappersOut == null ){
-          throw new Error(
-            `Mapper objects are not allowed in function style returns; ` +
-            `the function is already evaluated per element`
-          );
-        }
-
         if( norm === 'label' ){
           // the label passthrough rides the existing labelKey channel
           const asScale = value as GpuMapper;

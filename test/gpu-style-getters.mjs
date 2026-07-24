@@ -88,16 +88,17 @@ describe('gpu/style-getters', function(){
       expect( b.style('color') ).to.equal( 'rgb(51,51,51)' );
     });
 
-    it('reports the stored channels for fn sheets', function(){
+    it('reports the stored channels for mapped sheets', function(){
       cy.style({
-        nodes: function( ele ){
-          return ele.id() === 'a' ? { backgroundColor: '#0ff', width: 11, height: 11 } : {};
+        nodes: {
+          backgroundColor: { case: [ { when: { data: 'id', eq: 'a' }, then: '#0ff' } ], else: '#999' },
+          width: { case: [ { when: { data: 'id', eq: 'a' }, then: 11 } ], else: 30 }
         }
       });
 
       expect( cy.$id('a').style('background-color') ).to.equal( 'rgb(0,255,255)' );
       expect( cy.$id('a').style('width') ).to.equal( 11 );
-      expect( cy.$id('b').style('width') ).to.equal( 30 ); // group default
+      expect( cy.$id('b').style('width') ).to.equal( 30 );
     });
 
     it('returns undefined for props of the other group', function(){

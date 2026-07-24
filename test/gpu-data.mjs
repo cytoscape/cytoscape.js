@@ -217,20 +217,20 @@ describe('gpu/data', function(){
       expect( cy.$id('a').label() ).to.equal( before );
     });
 
-    it('function styles do not auto-refresh on data writes; update() re-runs them', function(){
+    it('mapped labels auto-refresh on data writes', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { nodes: ele => ({ label: String( ele.data('name') ?? '' ) }) }
+        style: { nodes: { label: { data: 'name' } } }
       });
 
       expect( cy.$id('a').label() ).to.equal('Alpha');
 
       cy.$id('a').data('name', 'Renamed');
 
-      // opaque fn: by policy, data writes do not re-run it
-      expect( cy.$id('a').label() ).to.equal('Alpha');
+      // declarative mapper: the write refreshes the label, gated on 'name'
+      expect( cy.$id('a').label() ).to.equal('Renamed');
 
-      cy.style().update(); // explicit re-run
+      cy.style().update();
 
       expect( cy.$id('a').label() ).to.equal('Renamed');
     });

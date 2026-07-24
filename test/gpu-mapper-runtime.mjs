@@ -56,7 +56,7 @@ const setup = ( sheet ) => {
   store.setData( 'nodes', 0, 'w', 2 );
   store.setData( 'nodes', 1, 'w', 8 );
 
-  const engine = new StyleEngine( store, () => null );
+  const engine = new StyleEngine( store );
 
   engine.setSheet( sheet );
   store.takeDelta();
@@ -192,7 +192,7 @@ describe('gpu/mapper-runtime', function(){
     store.addEdge( 'ab', 'a', 'b' );
     store.setData( 'edges', 0, 'o', 0.5 );
 
-    const engine = new StyleEngine( store, () => null );
+    const engine = new StyleEngine( store );
 
     engine.setSheet( {
       nodes: { 'background-color': { data: 'w', domain: [ 0, 1 ], range: 'viridis' } },

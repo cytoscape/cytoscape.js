@@ -3,7 +3,6 @@ Public option/type surface of the GPU prototype entry point.
 */
 
 import type { Position } from '../types.mjs';
-import type { GpuCollection } from './collection.mjs';
 
 export type { Position };
 
@@ -213,20 +212,18 @@ export type GpuStylePropValue = string | number | GpuMapperSpec;
  */
 export type GpuStyleProps = Record<string, GpuStylePropValue>;
 
-/** Per-element style function; a nullish return means group defaults. */
-export type GpuStyleFn = ( ele: GpuCollection ) => GpuStyleProps | null | undefined;
-
 /**
- * The v4 stylesheet — no selectors.  Each group key holds either a props
- * object (constants for the whole group) or a per-element function.
- * Constant props and declarative mappers stay fresh automatically;
- * function styles are evaluated when the sheet is set and when elements
- * are added, and re-run only on an explicit `cy.style(sheet)` /
- * `cy.style().update()`.
+ * The v4 stylesheet — no selectors, no style functions.  Each group key
+ * is a props object whose values are constants or mapper objects; all
+ * per-element variation is expressed declaratively through mappers
+ * ({@link GpuMapper} scales, {@link GpuCaseMapper} conditionals), which
+ * are analyzable, serializable, and evaluated on the GPU where possible.
+ * Everything stays fresh automatically: a data write re-derives the
+ * mapped channels of the affected elements (gated on the mapped keys).
  */
 export interface GpuStylesheet {
-  nodes?: GpuStyleProps | GpuStyleFn;
-  edges?: GpuStyleProps | GpuStyleFn;
+  nodes?: GpuStyleProps;
+  edges?: GpuStyleProps;
 }
 
 export interface GpuGridLayoutOptions {

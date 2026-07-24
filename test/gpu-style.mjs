@@ -67,11 +67,12 @@ describe('gpu/style', function(){
       expect( cy.$id('ab').width() ).to.equal(5);
     });
 
-    it('evaluates fn styles per element', function(){
+    it('evaluates per-element case mappers', function(){
       cy.style({
-        nodes: ele => ( {
-          'background-color': ele.id() === 'a' ? 'rgb(0, 255, 0)' : 'red'
-        } )
+        nodes: { 'background-color': {
+          case: [ { when: { data: 'id', eq: 'a' }, then: 'rgb(0, 255, 0)' } ],
+          else: 'red'
+        } }
       });
 
       expect( fillOf('a') ).to.deep.equal([0, 255, 0, 255]);
@@ -97,7 +98,10 @@ describe('gpu/style', function(){
 
     it('supports shapes', function(){
       cy.style({
-        nodes: ele => ( { shape: ele.id() === 'a' ? 'rectangle' : 'round-rectangle' } )
+        nodes: { shape: {
+          case: [ { when: { data: 'id', eq: 'a' }, then: 'rectangle' } ],
+          else: 'round-rectangle'
+        } }
       });
 
       expect( shapeOf('a') ).to.equal(SHAPE_RECTANGLE);
@@ -117,20 +121,15 @@ describe('gpu/style', function(){
     });
 
     it('does not restyle on selection change (accent ring is shader-drawn)', function(){
-      cy.style({
-        // even a fn reading selected() re-runs only on explicit style set
-        nodes: ele => ( { 'background-color': ele.selected() ? 'blue' : 'red' } )
-      });
+      // v4 has no selection-dependent styling: selection is drawn by the
+      // shader accent ring, so a select never touches the stored channels
+      cy.style({ nodes: { 'background-color': 'red' } });
 
       expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]);
 
       cy.$id('a').select();
 
-      expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]); // unchanged by policy
-
-      cy.style().update(); // explicit re-run picks the state up
-
-      expect( fillOf('a') ).to.deep.equal([0, 0, 255, 255]);
+      expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]); // unchanged
     });
 
     it('emits a style event', function(){

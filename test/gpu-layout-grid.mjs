@@ -157,7 +157,11 @@ describe('gpu/layout: grid', function(){
         { data: { id: 'a' } }, { data: { id: 'b' } }, { data: { id: 'c' } },
         { data: { id: 'd' } }, { data: { id: 'e' } }
       ],
-      style: { nodes: ele => ele.id() === 'c' ? { width: 90, height: 70, 'border-width': 4 } : null }
+      style: { nodes: {
+        width: { case: [ { when: { data: 'id', eq: 'c' }, then: 90 } ], else: 30 },
+        height: { case: [ { when: { data: 'id', eq: 'c' }, then: 70 } ], else: 30 },
+        'border-width': { case: [ { when: { data: 'id', eq: 'c' }, then: 4 } ], else: 0 }
+      } }
     });
 
     var bySlot = mk();

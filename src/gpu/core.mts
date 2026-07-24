@@ -92,7 +92,7 @@ export class GpuCore {
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
     this._emitter = makeCoreEmitter<GpuCore>( this );
-    this._styleEngine = new StyleEngine( this._store, ( group, slot ) => this._ele( group, slot ) );
+    this._styleEngine = new StyleEngine( this._store );
     this._renderer = null;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;

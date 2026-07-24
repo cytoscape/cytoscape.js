@@ -86,14 +86,14 @@ equal-radii ellipse reads back as `'ellipse'` whatever keyword compiled
 it, arrow getters derive from the stored arrow color (alpha folds in
 edge opacity, so a fully transparent arrow reads shape `'none'`), and
 label channels (`font-size`, `color`) come from the label sidecar when
-the node is labelled, else resolve through the sheet (a fn sheet
-evaluates for that element; mapped channels evaluate for that slot).
-When the GPU eval kernel owns a paint channel (see the mapper DSL
-below), its stored bytes go stale after data writes and the getter
-evaluates the shared mapper IR lazily instead — same math as the
-kernel, agreeing with rendered pixels within ±1 per RGBA byte.  The
-setter forms throw: v4 has no per-element bypass — per-element styling
-is the fn form of the sheet.
+the node is labelled, else resolve through the sheet (mapped channels
+evaluate for that slot).  When the GPU eval kernel owns
+a paint channel (see the mapper DSL below), its stored bytes go stale
+after data writes and the getter evaluates the shared mapper IR lazily
+instead — same math as the kernel, agreeing with rendered pixels within
+±1 per RGBA byte.  The setter forms throw: v4 has no per-element bypass —
+per-element styling is a mapper (`case` conditionals, `data(key)`
+scales).
 
 ## Design decisions (v4 API direction)
 
@@ -125,13 +125,30 @@ each is deliberate, not a pass-1 deferral:
 - **No classes in v4** (`addClass`/`removeClass`/class selectors).  The
   role classes played in v3 — user-defined state driving filtering and
   styling — belongs to the columnar `data()` sidecar (for state) plus
-  fn styles and predicates (for behaviour).
-- **Style is `{ nodes, edges }`, no selector blocks.**  Each key is either
-  a props object (constants for the group) or a per-element function
-  `(ele) => props`.  The refresh line is explicit: *declarative values
-  and mappers stay fresh automatically; opaque functions re-run only on
-  an explicit `cy.style(sheet)` / `cy.style().update()`* — never on
-  select/unselect (the accent ring is shader-drawn) or on data writes.
+  mappers and predicates (for behaviour).
+- **Style is `{ nodes, edges }`, no selector blocks and no style
+  functions.**  Each key is a props object whose values are constants or
+  mapper objects; all per-element variation is declarative (scales and
+  `case` conditionals), so every value is analyzable, serializable, and
+  GPU-evaluable.  The opaque `(ele) => props` form was removed — its
+  cases are covered by mappers (`case` for conditionals, `data(id)` for
+  identity), and selection-dependent recolouring is intentionally gone
+  (the `:selected` accent ring is shader-drawn).  Everything stays fresh
+  automatically: a data write re-derives the affected mapped channels,
+  gated on the mapped keys.
+- **Every mapper is cheaply CPU-evaluable — a load-bearing invariant.**
+  It is what keeps `ele.style()` (and `numericStyle`/`renderedStyle`)
+  *synchronous*, keeps headless mode and Node tests working (the same IR
+  runs on CPU, on the GPU, and in tests), and keeps determinism.  Reads
+  are **not** async: an async read would be viral across every call site,
+  open reentrancy windows, and break headless/testability — all to
+  answer a question the CPU can already answer from the IR in
+  nanoseconds.  GPU evaluation is an optimization layered over the
+  CPU-evaluable IR, never a source of values the CPU can't reproduce; a
+  mapper that can't be GPU-packed (conditional, multi-key, mixed column)
+  simply stays CPU-evaluated.  Async is reserved for genuinely GPU-only
+  reads (rendered pixels, image export — already async), a different
+  category from resolved-style reads.
 - **Mappers are a serializable object DSL, evaluated GPU-side** (landed;
   design decided 2026-07-24).  A style prop value can be a plain object
   spec — `{ data, scale?, domain?, range?, ... }` — no string parsing,
@@ -149,10 +166,16 @@ each is deliberate, not a pass-1 deferral:
   the data extent re-checks on writes of the mapped key and a moved
   extent re-derives the whole channel (log auto-extents use positive
   values only).  Refresh is dependency-gated per (group, key, channel);
-  edge data writes refresh edge channels; fn sheets may not return
-  mapper objects (the fn is already the per-element mechanism), and
-  `label` takes the passthrough form only (`{ data: key }`, or the
-  legacy `'data(key)'` string sugar).
+  edge data writes refresh edge channels; `label` takes the passthrough
+  form only (`{ data: key }`, or the legacy `'data(key)'` string sugar).
+- **Conditionals: the `case` mapper.**  `{ case: [{ when: { data,
+  gt/lt/eq/ne/in/... }, then }], else }` — clauses in order, conditions
+  AND-ed within a clause, first match wins; `when` reads any data key or
+  the first-class `id`.  The declarative replacement for
+  `(ele) => cond ? a : b`, and the natural form for typed edges
+  (`type == 'activation' → ...`).  CPU-evaluated (multi-key,
+  conditional), so it stays off the GPU eval kernel and refreshes via the
+  CPU path.
 - **GPU evaluation: the paint/geometry split.**  Paint channels — fill,
   border and line colors, opacities, arrow colors — are evaluated by a
   per-group compute kernel that interprets the packed program array
@@ -337,7 +360,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   decisions" above): queries are structured objects ({ group, selected }
   today), everything richer is a predicate function, ids go through
   `$id`.  Style prop values are constants or mapper objects (see the
-  mapper DSL above); per-element styling is the fn form of the sheet.
+  mapper DSL above); per-element styling is declarative (there are no
+  style functions).
 - **`cy.elements()` order**: nodes (insertion order) then edges, not the
   mixed insertion order of v3.
 - **Picking** resolves in three stages, cheapest first.  (1) Nodes pick

@@ -839,8 +839,6 @@ describe('gpu/mappers', function(){
         .to.throw( /does not support mappers/ );
       expect( () => graph( { nodes: { shape: { data: 'w', domain: [ 0, 1 ], range: [ 'ellipse', 'rectangle' ] } } } ) )
         .to.throw( /cannot be continuously interpolated/ );
-      expect( () => graph( { nodes: () => ( { width: { data: 'w' } } ) } ) )
-        .to.throw( /function style returns/ );
     });
   });
 

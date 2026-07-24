@@ -4,7 +4,7 @@ import {
 import type { GroupName, Ref } from './contract.mjs';
 import { matchesRef, parseSelector } from './selector.mjs';
 import type { CompiledSelector } from './selector.mjs';
-import { hasListeners, refKey, refQualifier } from './events.mjs';
+import { hasListeners, refQualifier } from './events.mjs';
 import type { Position } from '../types.mjs';
 import type { GpuCore } from './core.mjs';
 import type { EventHandler } from '../emitter.mjs';
@@ -17,6 +17,22 @@ type SelectorLike = string | CompiledSelector;
 
 const compile = ( selector: SelectorLike ): CompiledSelector => {
   return typeof selector === 'string' ? parseSelector( selector ) : selector;
+};
+
+// Pack a ref into a single safe integer (group in bit 52, slot in bits 24..51,
+// gen in bits 0..23) for set membership. Avoids the per-element string
+// allocation of refKey() in the hot dedupe and set-operation paths, while still
+// keying on the full {group, slot, gen} identity. Safe for slot < 2^28 and
+// gen < 2^24 — far beyond any practical graph.
+const packRef = ( r: Ref ): number =>
+  ( r.group === 'nodes' ? 0 : 0x10000000000000 ) + r.slot * 0x1000000 + r.gen;
+
+const refSet = ( refs: Ref[] ): Set<number> => {
+  const set = new Set<number>();
+
+  for( let i = 0; i < refs.length; i++ ){ set.add( packRef( refs[ i ] ) ); }
+
+  return set;
 };
 
 /**
@@ -64,14 +80,14 @@ export class GpuCollection {
       }
     } else {
       // dedupe while preserving order; intern per-element handles
-      const seen = new Set<string>();
+      const seen = new Set<number>();
 
       deduped = [];
 
       let i = 0;
 
       for( const ref of refs ){
-        const key = refKey( ref );
+        const key = packRef( ref );
 
         if( seen.has( key ) ){ continue; }
 
@@ -150,10 +166,10 @@ export class GpuCollection {
 
     if( ref == null ){ return -1; }
 
-    const key = refKey( ref );
+    const key = packRef( ref );
 
     for( let i = 0; i < this._refs.length; i++ ){
-      if( refKey( this._refs[ i ] ) === key ){ return i; }
+      if( packRef( this._refs[ i ] ) === key ){ return i; }
     }
 
     return -1;
@@ -343,23 +359,44 @@ export class GpuCollection {
   // -- comparison --
 
   same( other: GpuCollection ): boolean {
+    if( this === other ){ return true; }
     if( this.length !== other.length ){ return false; }
 
-    const keys = new Set( this._refs.map( refKey ) );
+    const keys = refSet( this._refs );
+    const or = other._refs;
 
-    return other._refs.every( ref => keys.has( refKey( ref ) ) );
+    for( let i = 0; i < or.length; i++ ){
+      if( !keys.has( packRef( or[ i ] ) ) ){ return false; }
+    }
+
+    return true;
   }
 
   anySame( other: GpuCollection ): boolean {
-    const keys = new Set( this._refs.map( refKey ) );
+    if( this === other ){ return this.length > 0; }
 
-    return other._refs.some( ref => keys.has( refKey( ref ) ) );
+    const keys = refSet( this._refs );
+    const or = other._refs;
+
+    for( let i = 0; i < or.length; i++ ){
+      if( keys.has( packRef( or[ i ] ) ) ){ return true; }
+    }
+
+    return false;
   }
 
   contains( other: GpuCollection ): boolean {
-    const keys = new Set( this._refs.map( refKey ) );
+    if( this === other ){ return true; }
+    if( other.length > this.length ){ return false; }
 
-    return other._refs.every( ref => keys.has( refKey( ref ) ) );
+    const keys = refSet( this._refs );
+    const or = other._refs;
+
+    for( let i = 0; i < or.length; i++ ){
+      if( !keys.has( packRef( or[ i ] ) ) ){ return false; }
+    }
+
+    return true;
   }
 
   declare has: this['contains'];
@@ -402,9 +439,9 @@ export class GpuCollection {
   declare merge: this['union'];
 
   difference( other: GpuCollection | string ): GpuCollection {
-    const keys = new Set( this._toEles( other )._refs.map( refKey ) );
+    const keys = refSet( this._toEles( other )._refs );
 
-    return this._spawn( this._refs.filter( ref => !keys.has( refKey( ref ) ) ) );
+    return this._spawn( this._refs.filter( ref => !keys.has( packRef( ref ) ) ) );
   }
 
   declare not: this['difference'];
@@ -413,9 +450,9 @@ export class GpuCollection {
   declare relativeComplement: this['difference'];
 
   intersection( other: GpuCollection | string ): GpuCollection {
-    const keys = new Set( this._toEles( other )._refs.map( refKey ) );
+    const keys = refSet( this._toEles( other )._refs );
 
-    return this._spawn( this._refs.filter( ref => keys.has( refKey( ref ) ) ) );
+    return this._spawn( this._refs.filter( ref => keys.has( packRef( ref ) ) ) );
   }
 
   declare intersect: this['intersection'];
@@ -423,12 +460,12 @@ export class GpuCollection {
 
   symmetricDifference( other: GpuCollection | string ): GpuCollection {
     const otherEles = this._toEles( other );
-    const mine = new Set( this._refs.map( refKey ) );
-    const theirs = new Set( otherEles._refs.map( refKey ) );
+    const mine = refSet( this._refs );
+    const theirs = refSet( otherEles._refs );
 
     return this._spawn( [
-      ...this._refs.filter( ref => !theirs.has( refKey( ref ) ) ),
-      ...otherEles._refs.filter( ref => !mine.has( refKey( ref ) ) )
+      ...this._refs.filter( ref => !theirs.has( packRef( ref ) ) ),
+      ...otherEles._refs.filter( ref => !mine.has( packRef( ref ) ) )
     ] );
   }
 
@@ -491,13 +528,13 @@ export class GpuCollection {
     left: GpuCollection; right: GpuCollection; both: GpuCollection;
   } {
     const otherColl = this._toEles( other );
-    const mine = new Set( this._refs.map( refKey ) );
-    const theirs = new Set( otherColl._refs.map( refKey ) );
+    const mine = refSet( this._refs );
+    const theirs = refSet( otherColl._refs );
 
     return {
-      left: this._spawn( this._refs.filter( ref => !theirs.has( refKey( ref ) ) ) ),
-      right: this._spawn( otherColl._refs.filter( ref => !mine.has( refKey( ref ) ) ) ),
-      both: this._spawn( this._refs.filter( ref => theirs.has( refKey( ref ) ) ) )
+      left: this._spawn( this._refs.filter( ref => !theirs.has( packRef( ref ) ) ) ),
+      right: this._spawn( otherColl._refs.filter( ref => !mine.has( packRef( ref ) ) ) ),
+      both: this._spawn( this._refs.filter( ref => theirs.has( packRef( ref ) ) ) )
     };
   }
 
@@ -1182,10 +1219,10 @@ export class GpuCollection {
     // build the closure: requested live elements + incident edges of removed nodes
     const edgeHandles: GpuCollection[] = [];
     const nodeHandles: GpuCollection[] = [];
-    const seen = new Set<string>();
+    const seen = new Set<number>();
 
     const addEdge = ( ele: GpuCollection ): void => {
-      const key = refKey( ele._refs[0] );
+      const key = packRef( ele._refs[0] );
 
       if( !seen.has( key ) ){
         seen.add( key );
@@ -1449,7 +1486,7 @@ export class GpuCollection {
 
   private _dagAllHops( direction: 'out' | 'in', selector?: SelectorLike ): GpuCollection {
     const acc: Ref[] = [];
-    const seen = new Set<string>();
+    const seen = new Set<number>();
     const hop = ( eles: GpuCollection ): GpuCollection =>
       direction === 'out' ? eles.outgoers() : eles.incomers();
 
@@ -1461,7 +1498,7 @@ export class GpuCollection {
       let newNext = false;
 
       for( let i = 0; i < frontier.length; i++ ){
-        const key = refKey( frontier._refs[ i ] );
+        const key = packRef( frontier._refs[ i ] );
 
         if( !seen.has( key ) ){
           seen.add( key );

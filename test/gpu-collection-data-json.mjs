@@ -31,6 +31,15 @@ describe('gpu/collection: removeData, scratch, json', function(){
     expect( cy.$('#n1').data('id') ).to.equal('n1');
   });
 
+  it('removeData() on an edge leaves id/source/target intact', function(){
+    cy.$('#e1').removeData();
+
+    expect( cy.$('#e1').data('weight') ).to.equal( undefined ); // sidecar cleared
+    expect( cy.$('#e1').data('id') ).to.equal('e1');
+    expect( cy.$('#e1').data('source') ).to.equal('n1');
+    expect( cy.$('#e1').data('target') ).to.equal('n2');
+  });
+
   it('removeAttr alias', function(){
     cy.$('#n1').removeAttr('bar');
     expect( cy.$('#n1').data('bar') ).to.equal( undefined );

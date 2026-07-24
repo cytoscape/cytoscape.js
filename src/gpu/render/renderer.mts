@@ -9,6 +9,7 @@ import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
+import { MapperRuntime } from './mapper-runtime.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { BUFFER_USAGE, TEXTURE_USAGE } from './webgpu-constants.mjs';
@@ -48,6 +49,10 @@ interface RendererStats {
   edges: number;
   glyphs: number;
   pickLatencyMs: number;
+  /** data bytes uploaded for GPU mapper evaluation (paint-channel restyles) */
+  mapperUploadedBytes: number;
+  /** mapper eval dispatches encoded */
+  mapperDispatches: number;
 }
 
 const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
@@ -59,6 +64,11 @@ const DEFAULT_RENDER_SCALE_MIN = 0.5;
 const DEFAULT_RENDER_SCALE_MAX = 1;
 /** after this long without redraws, re-render one frame at max scale */
 const SETTLE_TO_MAX_MS = 250;
+
+const EMPTY_DELTA = {
+  resized: { nodes: false, edges: false },
+  spans: [] as { column: never; start: number; end: number }[]
+};
 
 /** columns whose changes never affect pick coverage (keep the pick cache) */
 const PICK_NEUTRAL_COLUMNS = new Set( [
@@ -111,6 +121,7 @@ export class Renderer {
   private labelLayer: LabelLayer | null;
   private labelPipeline: LabelPipeline | null;
   private cullKernels: CullKernels | null;
+  private mapperRuntime: MapperRuntime | null;
   private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
   private pickCull: { edge: CulledGroup } | null;
   private scaleCtl: ScaleController;
@@ -146,6 +157,7 @@ export class Renderer {
     this.labelLayer = null;
     this.labelPipeline = null;
     this.cullKernels = null;
+    this.mapperRuntime = null;
     this.sceneCull = null;
     this.pickCull = null;
     this.scaleCtl = new ScaleController(
@@ -208,7 +220,9 @@ export class Renderer {
       nodes: this.cy._store.count( 'nodes' ),
       edges: this.cy._store.count( 'edges' ),
       glyphs: this.labelLayer?.count() ?? 0,
-      pickLatencyMs: this.pickLatencyMs()
+      pickLatencyMs: this.pickLatencyMs(),
+      mapperUploadedBytes: this.mapperRuntime?.uploadedBytes ?? 0,
+      mapperDispatches: this.mapperRuntime?.dispatches ?? 0
     };
   }
 
@@ -254,6 +268,7 @@ export class Renderer {
     this.upscaler?.destroy();
     this.sceneTarget?.destroy();
     this.depthTarget?.destroy();
+    this.mapperRuntime?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.pickUniform?.destroy();
@@ -373,6 +388,11 @@ export class Renderer {
     this.mirror = new ColumnMirror( device, this.cy._store );
     this.cy._store.takeDelta();
 
+    // the CPU-applied base is current at init, so pre-ready data spans are
+    // covered too; the runtime's first update() configures + fully evaluates
+    this.mapperRuntime = new MapperRuntime( device, this.cy._store, this.cy._styleEngine, this.mirror );
+    this.cy._store.takeMapperSpans();
+
     this.pickUniform = device.createBuffer( {
       label: 'cy-gpu:pick-frame-uniform',
       size: this.pickFrameData.byteLength,
@@ -428,11 +448,12 @@ export class Renderer {
 
     const t0 = performance.now();
     const store = this.cy._store;
+    let delta: ReturnType<typeof store.takeDelta> | null = null;
 
     if( store.hasDirty() ){
       this.needsRedraw = true;
 
-      const delta = store.takeDelta();
+      delta = store.takeDelta();
 
       // color/opacity-only changes can't alter pick coverage; anything
       // else (geometry, flags, growth) drops the cached pick tile
@@ -443,6 +464,10 @@ export class Renderer {
 
       mirror.sync( delta );
     }
+
+    // unconditional: a sheet change reconfigures on the next frame even
+    // when the store itself is clean
+    this.mapperRuntime?.update( delta ?? EMPTY_DELTA );
 
     this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
 
@@ -634,6 +659,11 @@ export class Renderer {
       label: 'cy-gpu:cull-pass',
       ...( timed && this.gpuTimer != null ? { timestampWrites: this.gpuTimer.computeTimestampWrites() } : {} )
     } );
+
+    // mapper eval first (scene invocation only): paint channels must be
+    // evaluated before the render pass reads them; pick frames skip it
+    // (paint never affects pick coverage)
+    if( timed ){ this.mapperRuntime?.encode( pass ); }
 
     groups.node?.encode( pass, store.highWater( 'nodes' ) );
     groups.edge.encode( pass, store.highWater( 'edges' ) );

@@ -417,6 +417,18 @@ export class StyleEngine {
 
   private arrows = { source: false, target: false };
 
+  /**
+   * Bumps when the paint-mapper state changes (sheet set, or a GPU-owned
+   * live auto-domain extent moved) — the renderer's mapper runtime pulls
+   * on this to repack its program buffers.
+   */
+  paintVersion = 0;
+
+  /** props per group the GPU eval kernel currently owns (set by the runtime). */
+  private gpuOwnedProps: Record<GroupName, ReadonlySet<string>> = {
+    nodes: new Set(), edges: new Set()
+  };
+
   constructor( store: GraphStore, eleFor: ( group: GroupName, slot: number ) => GpuCollection ){
     this.store = store;
     this.eleFor = eleFor;
@@ -493,14 +505,35 @@ export class StyleEngine {
     this.defs = defs;
 
     // the store coalesces write spans for paint-mapped keys so the GPU
-    // eval pass knows what to re-evaluate without a CPU restyle
+    // eval pass knows what to re-evaluate without a CPU restyle; owned
+    // props reset until the runtime re-configures against the new sheet
     for( const group of [ 'nodes', 'edges' ] as const ){
       this.store.watchDataKeys( group, defs[ group ].mappers
         .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) )
         .map( bm => bm.m.key ) );
+      this.gpuOwnedProps[ group ] = new Set();
     }
 
+    this.paintVersion++;
+
     if( apply ){ this.applyAll(); }
+  }
+
+  /** Paint-channel mappers with resolved fallbacks (the runtime's pack input). */
+  paintInputs( group: GroupName ): { m: CompiledMapper; fallback: Evaluated }[] {
+    return this.defs[ group ].mappers
+      .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) )
+      .map( bm => ( { m: bm.m, fallback: bm.m.fallback ?? bm.channel.default( group ) } ) );
+  }
+
+  /**
+   * The runtime reports which props its kernel evaluates: the data-write
+   * refresh skips their CPU evaluation (the whole point of GPU eval) and
+   * the read-back getters evaluate the shared IR lazily instead of
+   * trusting the stale stored bytes.
+   */
+  setGpuOwned( group: GroupName, props: Iterable<string> ): void {
+    this.gpuOwnedProps[ group ] = new Set( props );
   }
 
   /** True when writing any of these data() keys can change the group's computed style. */
@@ -572,24 +605,23 @@ export class StyleEngine {
    * Live auto-domain extents re-check here; a changed extent escalates
    * the pass to the whole group (every slot's mapping moved).
    */
-  private applyMapped( group: GroupName, def: Extract<GroupDef, { fn: null }>, slots: ArrayLike<number> ): void {
+  private applyMapped(
+    group: GroupName, def: Extract<GroupDef, { fn: null }>, slots: ArrayLike<number>,
+    skipOwned: boolean = false
+  ): void {
     const store = this.store;
-    let target = slots;
+    const target = this.checkAutoExtents( group, def ) ? store.slotsOrdered( group ) : slots;
 
-    for( const bm of def.mappers ){
-      const program = bm.m.program;
-
-      if( ( program.kind === 'continuous' || program.kind === 'discrete' ) && program.autoDomain ){
-        if( applyAutoExtent( program, ...autoExtentFor( bm.m, store.data, group ) ) ){
-          target = store.slotsOrdered( group );
-        }
-      }
-    }
-
-    // one scratch record: every mapped channel is reassigned per slot and
-    // unmapped channels keep the constant base
+    // one scratch record: every evaluated channel is reassigned per slot
+    // and the rest keep the constant base.  GPU-owned channels skip CPU
+    // evaluation on data-write refreshes (the kernel re-derives them);
+    // their stored bytes go stale, which the getters compensate for.
+    const owned = this.gpuOwnedProps[ group ];
+    const active = skipOwned
+      ? def.mappers.filter( bm => !owned.has( bm.m.prop ) )
+      : def.mappers;
     const scratch: Computed = { ...def.computed };
-    const evals = def.mappers.map( bm => ( {
+    const evals = active.map( bm => ( {
       set: bm.channel.set,
       ev: bindEvaluator( bm.m, store.data, group, bm.channel.default( group ) )
     } ) );
@@ -603,6 +635,30 @@ export class StyleEngine {
 
       this.write( group, slot, scratch );
     }
+  }
+
+  /**
+   * Re-check live auto-domain extents against the data; returns true when
+   * any moved (the caller escalates to the whole group).  A moved extent
+   * on a GPU-owned program also bumps paintVersion so the runtime repacks
+   * its program uniform and re-evaluates in full.
+   */
+  private checkAutoExtents( group: GroupName, def: Extract<GroupDef, { fn: null }> ): boolean {
+    let moved = false;
+
+    for( const bm of def.mappers ){
+      const program = bm.m.program;
+
+      if( ( program.kind === 'continuous' || program.kind === 'discrete' ) && program.autoDomain ){
+        if( applyAutoExtent( program, ...autoExtentFor( bm.m, this.store.data, group ) ) ){
+          moved = true;
+
+          if( this.gpuOwnedProps[ group ].has( bm.m.prop ) ){ this.paintVersion++; }
+        }
+      }
+    }
+
+    return moved;
   }
 
   /** Resolve and write one element's channels (no-op for stale refs). */
@@ -639,7 +695,21 @@ export class StyleEngine {
     }
 
     if( mapped ){
-      this.applyMapped( group, def, slots );
+      const owned = this.gpuOwnedProps[ group ];
+
+      if( def.mappers.some( bm => !owned.has( bm.m.prop ) ) ){
+        this.applyMapped( group, def, slots, true );
+      } else {
+        // every mapped channel is GPU-owned: no CPU restyle at all — the
+        // data-write spans drive the kernel; only the extents need a look
+        this.checkAutoExtents( group, def );
+
+        if( label ){
+          for( let i = 0; i < slots.length; i++ ){
+            this.writeLabel( slots[ i ], def.computed );
+          }
+        }
+      }
     } else if( label ){
       for( let i = 0; i < slots.length; i++ ){
         this.writeLabel( slots[ i ], def.computed );
@@ -671,6 +741,18 @@ export class StyleEngine {
     const forGroup = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
 
     if( !forGroup.has( prop ) ){ return undefined; }
+
+    // GPU-owned channels: the stored bytes go stale after data writes, so
+    // evaluate the shared IR lazily (same math the kernel runs, ±1/byte)
+    if( this.gpuOwnedProps[ ref.group ].has( prop ) ){
+      const bm = this.defs[ ref.group ].mappers.find( bm => bm.m.prop === prop );
+
+      if( bm != null ){
+        const value = bindEvaluator( bm.m, this.store.data, ref.group, bm.channel.default( ref.group ) )( ref.slot );
+
+        return typeof value === 'number' ? value : formatRgba( value[ 0 ], value[ 1 ], value[ 2 ], value[ 3 ] );
+      }
+    }
 
     const store = this.store;
     const slot = ref.slot;

@@ -758,4 +758,59 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.cy.elements( { selected: true } ).length ) ).toBe( 0 );
   } );
 
+  test( 'mapped opacity evaluates on the GPU: a data write repaints without a CPU restyle', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a', o: 1 }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'background-color': 'red', 'width': 100, 'height': 100, 'shape': 'rectangle',
+        'opacity': { data: 'o', domain: [ 0, 1 ], range: [ 0, 1 ] }
+      } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const before = await pixelAt( page, center.x, center.y );
+
+    expect( before[ 0 ] ).toBeGreaterThan( 200 ); // opaque red
+    expect( before[ 1 ] ).toBeLessThan( 60 );
+
+    const stats = await page.evaluate( async () => {
+      const cy = window.cy;
+      const renderer = cy.renderer();
+      const s0 = renderer.stats();
+
+      await new Promise( resolve => {
+        cy.one( 'render', () => resolve() );
+        cy.$id( 'a' ).data( 'o', 0.1 );
+      } );
+
+      const s1 = renderer.stats();
+
+      return {
+        mapperBytes: s1.mapperUploadedBytes - s0.mapperUploadedBytes,
+        dispatches: s1.mapperDispatches - s0.mapperDispatches,
+        opacityRead: cy.$id( 'a' ).numericStyle( 'opacity' )
+      };
+    } );
+
+    // the write cost data bytes + a dispatch, not a column restyle
+    expect( stats.dispatches ).toBeGreaterThan( 0 );
+    expect( stats.mapperBytes ).toBeGreaterThan( 0 );
+    expect( stats.mapperBytes ).toBeLessThan( 64 );
+    expect( stats.opacityRead ).toBeCloseTo( 0.1, 2 ); // lazy IR getter
+
+    await waitFrames( page );
+
+    // 10% red over the white page: green floods in
+    const after = await pixelAt( page, center.x, center.y );
+
+    expect( after[ 1 ] ).toBeGreaterThan( 150 );
+  } );
+
 } );

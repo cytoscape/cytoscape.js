@@ -1,4 +1,6 @@
 import { srgbToOklab } from '../style-schemes.mjs';
+import { NODE_EVAL_SHADER, EDGE_EVAL_SHADER, TARGET_BINDINGS, MAX_PROGRAMS } from './mapper-shaders.mjs';
+import { BUFFER_USAGE, SHADER_STAGE } from './webgpu-constants.mjs';
 import type { GroupName, ColumnId } from '../contract.mjs';
 import type { DataStore } from '../store/data-store.mjs';
 import type { CompiledMapper, Evaluated, Program, Transform, RGBA } from '../style-scales.mjs';
@@ -100,6 +102,8 @@ export interface PackedPrograms {
   keys: string[];
   /** columns the kernel writes — the mirror's gpu-owned set */
   ownedColumns: ColumnId[];
+  /** the packed props, program order (the engine's gpu-owned prop set) */
+  props: string[];
   /** mappers that stay CPU-evaluated (unsupported prop/kind/column) */
   skipped: CompiledMapper[];
 }
@@ -213,6 +217,7 @@ export const packPrograms = (
   const u32 = new Uint32Array( programData );
   const f32 = new Float32Array( programData );
   const ownedColumns: ColumnId[] = [];
+  const props: string[] = [];
   const capAligned = alignSlots( cap );
 
   for( let p = 0; p < eligible.length; p++ ){
@@ -224,6 +229,7 @@ export const packPrograms = (
     const dataBase = keyIndex( m.key ) * capAligned;
 
     ownedColumns.push( column );
+    props.push( m.prop );
 
     let kind: number;
     let flags = isColor ? FLAG.COLOR : 0;
@@ -305,6 +311,7 @@ export const packPrograms = (
     stopData: Float32Array.from( table.length > 0 ? table : [ 0, 0, 0, 0 ] ),
     keys,
     ownedColumns,
+    props,
     skipped
   };
 };
@@ -389,3 +396,378 @@ export const updateDataRegion = (
     valueByteEnd: ( base + to ) * 4
   };
 };
+
+// -- the device-side runtime --
+
+/** The StyleEngine surface the runtime pulls from (structural; no render→style import cycle). */
+export interface PaintSource {
+  /** bumps on setSheet and when a GPU-owned auto-domain extent moves */
+  paintVersion: number;
+  paintInputs( group: GroupName ): PackInput[];
+  /** told which props the kernel owns, so CPU refresh skips them and getters evaluate lazily */
+  setGpuOwned( group: GroupName, props: Iterable<string> ): void;
+}
+
+/** The GraphStore surface the runtime needs. */
+export interface EvalStore {
+  data: DataStore;
+  capacity( group: GroupName ): number;
+  takeMapperSpans(): { group: GroupName; key: string; start: number; end: number }[];
+}
+
+/** The ColumnMirror surface the runtime needs. */
+export interface EvalMirror {
+  version: number;
+  buffer( id: ColumnId ): GPUBuffer;
+  setGpuOwned( ids: Iterable<ColumnId> ): void;
+}
+
+/** Narrow device surface (mock-testable, like MirrorDevice). */
+export interface EvalDevice {
+  createBuffer( descriptor: { size: number; usage: number; label?: string } ): GPUBuffer;
+  createBindGroupLayout( descriptor: GPUBindGroupLayoutDescriptor ): GPUBindGroupLayout;
+  createPipelineLayout( descriptor: GPUPipelineLayoutDescriptor ): GPUPipelineLayout;
+  createShaderModule( descriptor: GPUShaderModuleDescriptor ): GPUShaderModule;
+  createComputePipeline( descriptor: GPUComputePipelineDescriptor ): GPUComputePipeline;
+  createBindGroup( descriptor: GPUBindGroupDescriptor ): GPUBindGroup;
+  queue: {
+    writeBuffer(
+      buffer: GPUBuffer, bufferOffset: number,
+      data: ArrayBufferLike | ArrayBufferView, dataOffset?: number, size?: number
+    ): void;
+  };
+}
+
+interface GroupState {
+  packed: PackedPrograms | null;
+  regions: DataRegions | null;
+  programBuffer: GPUBuffer;
+  infoBuffer: GPUBuffer;
+  stopBuffer: GPUBuffer | null;
+  valuesBuffer: GPUBuffer | null;
+  presentBuffer: GPUBuffer | null;
+  bindGroup: GPUBindGroup | null;
+  bindKey: string;
+  /** local buffer generation (bumped when values/present/stop buffers are recreated) */
+  gen: number;
+  /** coalesced slot range awaiting a kernel dispatch; start > end means none */
+  pendingStart: number;
+  pendingEnd: number;
+}
+
+const WG_SIZE = 256;
+const GROUPS: readonly GroupName[] = [ 'nodes', 'edges' ];
+
+/**
+ * The GPU-resident restyle: owns the packed program/stop/data buffers and
+ * the per-group eval pipelines, pulls reconfiguration from the
+ * StyleEngine by version, converts data-write spans and owned-column CPU
+ * spans into coalesced eval dispatches, and encodes them at the top of
+ * the scene compute pass.  A bulk data write therefore costs only the
+ * data-byte upload plus one dispatch — zero per-element CPU restyle.
+ */
+export class MapperRuntime {
+  /** stats: data bytes uploaded for mapper evaluation */
+  uploadedBytes = 0;
+  /** stats: eval dispatches encoded */
+  dispatches = 0;
+
+  private device: EvalDevice;
+  private store: EvalStore;
+  private engine: PaintSource;
+  private mirror: EvalMirror;
+  private layouts: Record<GroupName, GPUBindGroupLayout>;
+  private pipelines: Record<GroupName, GPUComputePipeline>;
+  private states: Record<GroupName, GroupState>;
+  private lastVersion = -1;
+  private destroyed = false;
+
+  constructor( device: EvalDevice, store: EvalStore, engine: PaintSource, mirror: EvalMirror ){
+    this.device = device;
+    this.store = store;
+    this.engine = engine;
+    this.mirror = mirror;
+
+    const layoutFor = ( group: GroupName ): GPUBindGroupLayout => device.createBindGroupLayout( {
+      label: `cy-gpu:${group}-mapper-eval-layout`,
+      entries: [
+        { binding: 0, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'uniform' } },
+        { binding: 1, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'uniform' } },
+        { binding: 2, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'read-only-storage' } },
+        { binding: 3, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'read-only-storage' } },
+        { binding: 4, visibility: SHADER_STAGE.COMPUTE, buffer: { type: 'read-only-storage' } },
+        ...TARGET_BINDINGS[ group ].map( ( _, i ) => ( {
+          binding: 5 + i,
+          visibility: SHADER_STAGE.COMPUTE,
+          buffer: { type: 'storage' as GPUBufferBindingType }
+        } ) )
+      ]
+    } );
+
+    this.layouts = { nodes: layoutFor( 'nodes' ), edges: layoutFor( 'edges' ) };
+    this.pipelines = {} as Record<GroupName, GPUComputePipeline>;
+
+    for( const group of GROUPS ){
+      this.pipelines[ group ] = device.createComputePipeline( {
+        label: `cy-gpu:${group}-mapper-eval`,
+        layout: device.createPipelineLayout( { bindGroupLayouts: [ this.layouts[ group ] ] } ),
+        compute: {
+          module: device.createShaderModule( {
+            label: `cy-gpu:${group}-mapper-eval-shader`,
+            code: group === 'nodes' ? NODE_EVAL_SHADER : EDGE_EVAL_SHADER
+          } ),
+          entryPoint: 'csEval'
+        }
+      } );
+    }
+
+    const stateFor = ( group: GroupName ): GroupState => ( {
+      packed: null,
+      regions: null,
+      programBuffer: device.createBuffer( {
+        label: `cy-gpu:${group}-mapper-programs`,
+        size: MAX_PROGRAMS * PROGRAM_BYTES,
+        usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
+      } ),
+      infoBuffer: device.createBuffer( {
+        label: `cy-gpu:${group}-mapper-info`,
+        size: 16,
+        usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
+      } ),
+      stopBuffer: null,
+      valuesBuffer: null,
+      presentBuffer: null,
+      bindGroup: null,
+      bindKey: '',
+      gen: 0,
+      pendingStart: 1,
+      pendingEnd: 0
+    } );
+
+    this.states = { nodes: stateFor( 'nodes' ), edges: stateFor( 'edges' ) };
+  }
+
+  /** True when any group currently evaluates on the GPU. */
+  active(): boolean {
+    return this.states.nodes.packed != null || this.states.edges.packed != null;
+  }
+
+  /**
+   * Pull-based per-frame update (after mirror.sync): reconfigure when the
+   * engine's paint state changed, rebuild data regions on capacity
+   * growth, ingest data-write spans (upload only the touched bytes) and
+   * turn owned-column CPU spans (element adds, sheet applies) into eval
+   * requests.
+   */
+  update( delta: { resized: Record<GroupName, boolean>; spans: { column: ColumnId; start: number; end: number }[] } ): void {
+    if( this.destroyed ){ return; }
+
+    if( this.engine.paintVersion !== this.lastVersion ){
+      this.lastVersion = this.engine.paintVersion;
+      this.configure();
+    }
+
+    for( const group of GROUPS ){
+      const state = this.states[ group ];
+
+      if( state.packed == null ){ continue; }
+
+      if( delta.resized[ group ] ){
+        this.rebuildData( group );
+        this.queue( group, 0, this.store.capacity( group ) );
+      }
+    }
+
+    for( const span of delta.spans ){
+      for( const group of GROUPS ){
+        const state = this.states[ group ];
+
+        if( state.packed != null && state.packed.ownedColumns.includes( span.column ) ){
+          this.queue( group, span.start, span.end );
+          break;
+        }
+      }
+    }
+
+    for( const span of this.store.takeMapperSpans() ){
+      const state = this.states[ span.group ];
+      const regions = state.regions;
+
+      if( state.packed == null || regions == null ){ continue; }
+
+      const keyIndex = regions.keys.indexOf( span.key );
+
+      if( keyIndex < 0 ){ continue; }
+
+      const range = updateDataRegion( regions, span.group, keyIndex, this.store.data, span.start, span.end );
+      const byteLength = range.valueByteEnd - range.valueByteStart;
+
+      if( byteLength <= 0 ){ continue; }
+
+      this.device.queue.writeBuffer(
+        state.valuesBuffer as GPUBuffer, range.valueByteStart,
+        regions.values.buffer, range.valueByteStart, byteLength );
+
+      // present bytes: 1 per slot at the same slot offsets, word-aligned
+      const pStart = ( keyIndex * regions.capAligned + span.start ) & ~3;
+      const pEnd = Math.min( ( keyIndex * regions.capAligned + span.end + 3 ) & ~3, regions.present.length );
+
+      this.device.queue.writeBuffer(
+        state.presentBuffer as GPUBuffer, pStart,
+        regions.present.buffer, pStart, pEnd - pStart );
+
+      this.uploadedBytes += byteLength + ( pEnd - pStart );
+      this.queue( span.group, span.start, span.end );
+    }
+  }
+
+  /** Encode pending eval dispatches (the top of the scene compute pass). */
+  encode( pass: GPUComputePassEncoder ): void {
+    if( this.destroyed ){ return; }
+
+    for( const group of GROUPS ){
+      const state = this.states[ group ];
+      const packed = state.packed;
+
+      if( packed == null || state.pendingStart > state.pendingEnd ){ continue; }
+
+      const start = Math.max( 0, state.pendingStart );
+      const end = Math.min( state.pendingEnd, this.store.capacity( group ) );
+      const count = end - start;
+
+      state.pendingStart = 1;
+      state.pendingEnd = 0;
+
+      if( count <= 0 ){ continue; }
+
+      this.device.queue.writeBuffer(
+        state.infoBuffer, 0, new Uint32Array( [ start, count, packed.programCount, 0 ] ) );
+
+      this.ensureBindGroup( group );
+
+      pass.setPipeline( this.pipelines[ group ] );
+      pass.setBindGroup( 0, state.bindGroup as GPUBindGroup );
+      pass.dispatchWorkgroups( Math.ceil( count / WG_SIZE ) );
+      this.dispatches++;
+    }
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+
+    for( const group of GROUPS ){
+      const state = this.states[ group ];
+
+      state.programBuffer.destroy();
+      state.infoBuffer.destroy();
+      state.stopBuffer?.destroy();
+      state.valuesBuffer?.destroy();
+      state.presentBuffer?.destroy();
+    }
+  }
+
+  // -- internals --
+
+  private queue( group: GroupName, start: number, end: number ): void {
+    const state = this.states[ group ];
+
+    if( state.pendingStart > state.pendingEnd ){
+      state.pendingStart = start;
+      state.pendingEnd = end;
+    } else {
+      state.pendingStart = Math.min( state.pendingStart, start );
+      state.pendingEnd = Math.max( state.pendingEnd, end );
+    }
+  }
+
+  private configure(): void {
+    const owned: ColumnId[] = [];
+
+    for( const group of GROUPS ){
+      const state = this.states[ group ];
+      // colors join once the kernel's color path lands; scalars only for now
+      const inputs = this.engine.paintInputs( group ).filter( input => input.m.kind === 'number' );
+      const packed = packPrograms( group, inputs, this.store.data, this.store.capacity( group ) );
+
+      if( packed.programCount === 0 ){
+        state.packed = null;
+        state.regions = null;
+        state.bindGroup = null;
+        this.engine.setGpuOwned( group, [] );
+        continue;
+      }
+
+      state.packed = packed;
+      this.engine.setGpuOwned( group, packed.props );
+      owned.push( ...packed.ownedColumns );
+
+      this.device.queue.writeBuffer( state.programBuffer, 0, packed.programData );
+      this.uploadedBytes += packed.programData.byteLength;
+
+      state.stopBuffer?.destroy();
+      state.stopBuffer = this.device.createBuffer( {
+        label: `cy-gpu:${group}-mapper-stops`,
+        size: packed.stopData.byteLength,
+        usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
+      } );
+      this.device.queue.writeBuffer( state.stopBuffer, 0, packed.stopData.buffer, packed.stopData.byteOffset, packed.stopData.byteLength );
+      this.uploadedBytes += packed.stopData.byteLength;
+
+      this.rebuildData( group );
+      this.queue( group, 0, this.store.capacity( group ) );
+    }
+
+    this.mirror.setGpuOwned( owned );
+  }
+
+  private rebuildData( group: GroupName ): void {
+    const state = this.states[ group ];
+    const packed = state.packed as PackedPrograms;
+    const regions = buildDataRegions( group, packed.keys, this.store.data, this.store.capacity( group ) );
+
+    state.regions = regions;
+    state.valuesBuffer?.destroy();
+    state.presentBuffer?.destroy();
+    state.valuesBuffer = this.device.createBuffer( {
+      label: `cy-gpu:${group}-mapper-values`,
+      size: regions.values.byteLength,
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
+    } );
+    state.presentBuffer = this.device.createBuffer( {
+      label: `cy-gpu:${group}-mapper-present`,
+      size: Math.max( 4, ( regions.present.length + 3 ) & ~3 ),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
+    } );
+
+    // present length is a whole number of words (capAligned is 4-aligned)
+    this.device.queue.writeBuffer( state.valuesBuffer, 0, regions.values.buffer, 0, regions.values.byteLength );
+    this.device.queue.writeBuffer( state.presentBuffer, 0, regions.present.buffer, 0, regions.present.length );
+    this.uploadedBytes += regions.values.byteLength + regions.present.length;
+    state.gen++;
+    state.bindGroup = null;
+  }
+
+  private ensureBindGroup( group: GroupName ): void {
+    const state = this.states[ group ];
+    const key = `${this.mirror.version}:${state.gen}`;
+
+    if( state.bindGroup != null && state.bindKey === key ){ return; }
+
+    state.bindGroup = this.device.createBindGroup( {
+      label: `cy-gpu:${group}-mapper-eval-bind`,
+      layout: this.layouts[ group ],
+      entries: [
+        { binding: 0, resource: { buffer: state.infoBuffer } },
+        { binding: 1, resource: { buffer: state.programBuffer } },
+        { binding: 2, resource: { buffer: state.valuesBuffer as GPUBuffer } },
+        { binding: 3, resource: { buffer: state.presentBuffer as GPUBuffer } },
+        { binding: 4, resource: { buffer: state.stopBuffer as GPUBuffer } },
+        ...TARGET_BINDINGS[ group ].map( ( id, i ) => ( {
+          binding: 5 + i,
+          resource: { buffer: this.mirror.buffer( id as ColumnId ) }
+        } ) )
+      ]
+    } );
+    state.bindKey = key;
+  }
+}

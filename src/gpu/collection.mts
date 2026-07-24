@@ -130,6 +130,14 @@ export class GpuCollection {
     return new GpuCollection( this._cy, refs );
   }
 
+  /**
+   * Like `_spawn`, but for refs already known to be distinct (a subset of this
+   * collection's deduped refs). Skips the dedupe Set build.
+   */
+  _spawnUnique( refs: Ref[] ): GpuCollection {
+    return new GpuCollection( this._cy, refs, { unique: true } );
+  }
+
   // -- core reference & identity --
 
   instanceString(): string {
@@ -198,10 +206,13 @@ export class GpuCollection {
   }
 
   forEach( fn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => void | false, thisArg?: unknown ): this {
-    for( let i = 0; i < this.length; i++ ){
-      const ret = fn.call( thisArg ?? this[ i ], this[ i ], i, this );
+    const n = this.length;
 
-      if( ret === false ){ break; } // exit early like v3
+    // exit early like v3 when the callback returns false
+    if( thisArg === undefined ){
+      for( let i = 0; i < n; i++ ){ if( fn.call( this[ i ], this[ i ], i, this ) === false ){ break; } }
+    } else {
+      for( let i = 0; i < n; i++ ){ if( fn.call( thisArg, this[ i ], i, this ) === false ){ break; } }
     }
 
     return this;
@@ -223,7 +234,7 @@ export class GpuCollection {
     if( start < 0 ){ start = this.length + start; }
     if( end < 0 ){ end = this.length + end; }
 
-    return this._spawn( this._refs.slice( start, end ) );
+    return this._spawnUnique( this._refs.slice( start, end ) );
   }
 
   sort( sortFn: ( a: GpuCollection, b: GpuCollection ) => number ): GpuCollection {
@@ -247,10 +258,13 @@ export class GpuCollection {
   }
 
   map<T>( fn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => T, thisArg?: unknown ): T[] {
-    const array: T[] = [];
+    const n = this.length;
+    const array: T[] = new Array( n );
 
-    for( let i = 0; i < this.length; i++ ){
-      array.push( fn.call( thisArg ?? this[ i ], this[ i ], i, this ) );
+    if( thisArg === undefined ){
+      for( let i = 0; i < n; i++ ){ array[ i ] = fn.call( this[ i ], this[ i ], i, this ); }
+    } else {
+      for( let i = 0; i < n; i++ ){ array[ i ] = fn.call( thisArg, this[ i ], i, this ); }
     }
 
     return array;
@@ -441,7 +455,7 @@ export class GpuCollection {
   difference( other: GpuCollection | string ): GpuCollection {
     const keys = refSet( this._toEles( other )._refs );
 
-    return this._spawn( this._refs.filter( ref => !keys.has( packRef( ref ) ) ) );
+    return this._spawnUnique( this._refs.filter( ref => !keys.has( packRef( ref ) ) ) );
   }
 
   declare not: this['difference'];
@@ -452,7 +466,7 @@ export class GpuCollection {
   intersection( other: GpuCollection | string ): GpuCollection {
     const keys = refSet( this._toEles( other )._refs );
 
-    return this._spawn( this._refs.filter( ref => keys.has( packRef( ref ) ) ) );
+    return this._spawnUnique( this._refs.filter( ref => keys.has( packRef( ref ) ) ) );
   }
 
   declare intersect: this['intersection'];
@@ -473,31 +487,35 @@ export class GpuCollection {
   declare xor: this['symmetricDifference'];
 
   filter( selector: SelectorLike | EleFilterFn, thisArg?: unknown ): GpuCollection {
+    // the result is a subset of this collection's (already unique) refs
     if( typeof selector === 'function' ){
       const refs: Ref[] = [];
+      const n = this.length;
+      const ctx = thisArg;
 
-      for( let i = 0; i < this.length; i++ ){
-        if( selector.call( thisArg ?? this[ i ], this[ i ], i, this ) ){
+      for( let i = 0; i < n; i++ ){
+        if( selector.call( ctx ?? this[ i ], this[ i ], i, this ) ){
           refs.push( this._refs[ i ] );
         }
       }
 
-      return this._spawn( refs );
+      return this._spawnUnique( refs );
     }
 
     const compiled = compile( selector );
+    const store = this._store;
 
-    return this._spawn( this._refs.filter( ref => matchesRef( this._store, ref, compiled ) ) );
+    return this._spawnUnique( this._refs.filter( ref => matchesRef( store, ref, compiled ) ) );
   }
 
   nodes( selector?: SelectorLike ): GpuCollection {
-    const nodes = this._spawn( this._refs.filter( ref => ref.group === 'nodes' ) );
+    const nodes = this._spawnUnique( this._refs.filter( ref => ref.group === 'nodes' ) );
 
     return selector == null ? nodes : nodes.filter( selector );
   }
 
   edges( selector?: SelectorLike ): GpuCollection {
-    const edges = this._spawn( this._refs.filter( ref => ref.group === 'edges' ) );
+    const edges = this._spawnUnique( this._refs.filter( ref => ref.group === 'edges' ) );
 
     return selector == null ? edges : edges.filter( selector );
   }
@@ -602,11 +620,15 @@ export class GpuCollection {
   ): Position | number | undefined | this {
     // getter forms
     if( dim === undefined || ( typeof dim === 'string' && value === undefined ) ){
-      const ref = this._first();
+      const ref = this._refs[ 0 ];
+      const store = this._store;
 
-      if( ref == null || ref.group !== 'nodes' || !this._store.isCurrent( ref ) ){ return undefined; }
+      if( ref == null || ref.group !== 'nodes' || !store.isCurrent( ref ) ){ return undefined; }
 
-      const pos = { x: this._store.getX( ref.slot ), y: this._store.getY( ref.slot ) };
+      // one column fetch instead of getX()+getY() (two Map.gets)
+      const xy = store.nodes.column( 'node.position' ) as Float32Array;
+      const slot = ref.slot;
+      const pos = { x: xy[ slot * 2 ], y: xy[ slot * 2 + 1 ] };
 
       return typeof dim === 'string' ? pos[ dim as 'x' | 'y' ] : pos;
     }

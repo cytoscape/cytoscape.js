@@ -279,6 +279,23 @@ export class GraphStore implements ModelView {
     this.freeSlot( 'edges', slot );
   }
 
+  /** Re-point an existing edge at new endpoint node slots (updates adjacency in place). */
+  moveEdge( slot: number, source: number, target: number ): void {
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const oldSource = endpoints[ slot * 2 ];
+    const oldTarget = endpoints[ slot * 2 + 1 ];
+
+    if( oldSource === source && oldTarget === target ){ return; }
+
+    this.adj.removeEdge( slot, oldSource, oldTarget );
+
+    endpoints[ slot * 2 ] = source;
+    endpoints[ slot * 2 + 1 ] = target;
+
+    this.adj.addEdge( slot, source, target );
+    this.dirty.mark( 'edge.endpoints', slot );
+  }
+
   /** The node must have no incident edges left; the caller cascades removal of them first. */
   removeNode( slot: number ): void {
     if( this.adj.outDegree( slot ) > 0 || this.adj.inDegree( slot ) > 0 ){

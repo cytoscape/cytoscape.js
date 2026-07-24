@@ -1209,6 +1209,48 @@ export class GpuCollection {
     return this._spawn( [ ...edgeHandles, ...nodeHandles ].map( ele => ele._refs[0] ) );
   }
 
+  /**
+   * Re-point edges at a new source and/or target node (by id), in place —
+   * the edge keeps its slot, id and data.  Node `parent` moves (compounds)
+   * are out of scope and ignored.  Returns this collection.
+   */
+  move( opts: { source?: string; target?: string } ): this {
+    const store = this._store;
+
+    if( opts.source == null && opts.target == null ){ return this; }
+
+    const newSource = opts.source != null ? this._resolveNode( opts.source, 'source' ) : null;
+    const newTarget = opts.target != null ? this._resolveNode( opts.target, 'target' ) : null;
+
+    for( let i = 0; i < this.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'edges' || !store.isCurrent( ref ) ){ continue; }
+
+      const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+
+      store.moveEdge(
+        ref.slot,
+        newSource ?? endpoints[ ref.slot * 2 ],
+        newTarget ?? endpoints[ ref.slot * 2 + 1 ]
+      );
+
+      if( hasListeners( this._cy._emitter, 'move' ) ){ this._cy._emitOnEle( 'move', this[ i ] ); }
+    }
+
+    return this;
+  }
+
+  private _resolveNode( id: string, role: string ): number {
+    const ref = this._store.lookup( id );
+
+    if( ref == null || ref.group !== 'nodes' ){
+      throw new Error( `Can not move edge to nonexistant ${role} node '${id}'` );
+    }
+
+    return ref.slot;
+  }
+
   // -- traversal --
 
   source(): GpuCollection {

@@ -83,6 +83,7 @@ export class GpuCore {
   private _zoomingEnabled: boolean;
   private _userZoomingEnabled: boolean;
   private _boxSelectionEnabled: boolean;
+  private _selectionType: 'single' | 'additive';
   private _batchDepth: number;
   private _batchPending: BatchPending | null;
 
@@ -108,8 +109,13 @@ export class GpuCore {
     this._zoomingEnabled = options.zoomingEnabled ?? true;
     this._userZoomingEnabled = options.userZoomingEnabled ?? true;
     this._boxSelectionEnabled = options.boxSelectionEnabled ?? true;
+    this._selectionType = 'single';
     this._batchDepth = 0;
     this._batchPending = null;
+
+    if( options.selectionType != null ){
+      this.selectionType( options.selectionType );
+    }
     this._readyResolved = this._container == null; // headless is ready immediately
     this._viewport = new Viewport( this, {
       zoom: options.zoom,
@@ -411,6 +417,17 @@ export class GpuCore {
     const plan = compileQuery( query ?? {}, restrict );
 
     return this._scanCollection( plan.nodes, plan.edges );
+  }
+
+  /**
+   * Live, visible elements contained in the model-coordinate box (corners
+   * in any order): the box-selection query, answered by one columnar
+   * scan.  Nodes count when their bounding box lies fully inside; edges
+   * when both endpoint node centers do (v3's default 'contain'
+   * semantics, with straight-edge endpoints taken at the node centers).
+   */
+  elementsInBox( x1: number, y1: number, x2: number, y2: number ): GpuCollection {
+    return new GpuCollection( this, this._store.refsInBox( x1, y1, x2, y2 ), { unique: true, live: true } );
   }
 
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
@@ -794,6 +811,23 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * How user selection composes: 'single' (a tap or box replaces the
+   * selection) or 'additive' (taps toggle and boxes add, as if a
+   * multiple-select key were always held).
+   */
+  selectionType( type?: 'single' | 'additive' ): ( 'single' | 'additive' ) | this {
+    if( type === undefined ){ return this._selectionType; }
+
+    if( type !== 'single' && type !== 'additive' ){
+      throw new Error( `Invalid selection type '${String( type )}'; use 'single' or 'additive'` );
+    }
+
+    this._selectionType = type;
+
+    return this;
+  }
+
   // -- environment --
 
   instanceString(): string {
@@ -867,6 +901,7 @@ export class GpuCore {
       panningEnabled: this._panningEnabled,
       userPanningEnabled: this._userPanningEnabled,
       boxSelectionEnabled: this._boxSelectionEnabled,
+      selectionType: this._selectionType,
       autolock: this._autolock,
       autoungrabify: this._autoungrabify,
       autounselectify: this._autounselectify,

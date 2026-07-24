@@ -238,8 +238,10 @@ export interface CytoscapeGpuOptions {
   zoomingEnabled?: boolean;
   /** allow user (wheel/pinch) zooming (default true) */
   userZoomingEnabled?: boolean;
-  /** allow box selection (default true; box selection itself is not yet implemented) */
+  /** allow box selection (default true) */
   boxSelectionEnabled?: boolean;
+  /** 'single' (tap/box replaces the selection) or 'additive' (taps toggle, boxes add); default 'single' */
+  selectionType?: 'single' | 'additive';
   /** rendered dimensions used when headless */
   headlessWidth?: number;
   headlessHeight?: number;

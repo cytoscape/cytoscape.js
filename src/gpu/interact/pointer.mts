@@ -17,7 +17,14 @@ Pointer/wheel interaction over the WebGPU canvas:
   for taps
 - node drag writes position through the core API (position events fire,
   dirty spans upload, edges follow on-GPU)
-- tap toggles selection (shift = additive); background tap clears
+- tap toggles selection (multiple-select key or selectionType 'additive'
+  = additive); background tap clears (selectionType 'single' only)
+- box selection: with boxSelectionEnabled, a drag while a
+  multiple-select key (shift/ctrl/cmd) is held — or while panning is
+  disabled — draws a selection box (a DOM overlay above the canvas) and
+  on release selects the contained elements with v3 semantics
+  (boxstart/boxend on the core, box/boxselect per element); mouse/pen
+  only for now
 - two touch pointers pinch-zoom about their midpoint (and pan with it);
   a second finger cancels any pan/grab in progress, and the finger left
   over after a pinch stays inert until lifted (no pan jump).  Trackpad
@@ -31,7 +38,8 @@ const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last w
 
 interface DownState {
   pointerId: number;
-  mode: 'pan' | 'grab';
+  mode: 'pan' | 'grab' | 'box';
+  /** the node under the press: the drag subject in 'grab' mode, the tap target otherwise */
   grabbed: GpuCollection | null;
   startX: number;
   startY: number;
@@ -39,7 +47,14 @@ interface DownState {
   lastY: number;
   moved: boolean;
   shift: boolean;
+  /** boxstart has been emitted for this gesture */
+  boxStarted?: boolean;
 }
+
+/** Whether a multiple-select key is held (as in v3). */
+const isMultSelKeyDown = ( e: PointerEvent ): boolean => {
+  return e.shiftKey || e.metaKey || e.ctrlKey;
+};
 
 export class PointerHandler {
   private cy: GpuCore;
@@ -50,6 +65,7 @@ export class PointerHandler {
   private pickInFlight: boolean;
   private lastHoverAt: number;
   private down: DownState | null;
+  private boxEl: HTMLDivElement | null;
   private touches: Map<number, Position>;
   private pinch: { dist: number; mid: Position } | null;
   private deadTouch: number | null;
@@ -66,6 +82,7 @@ export class PointerHandler {
     this.pickInFlight = false;
     this.lastHoverAt = 0;
     this.down = null;
+    this.boxEl = null;
     this.touches = new Map();
     this.pinch = null;
     this.deadTouch = null;
@@ -90,6 +107,11 @@ export class PointerHandler {
     for( const cleanup of this.cleanups ){ cleanup(); }
 
     this.cleanups = [];
+
+    if( this.boxEl != null ){
+      this.boxEl.remove();
+      this.boxEl = null;
+    }
   }
 
   // -- handlers --
@@ -148,14 +170,22 @@ export class PointerHandler {
 
     // pan-vs-grab from a synchronous CPU node pick: exact and current
     const picked = this.renderer.pickNodeSync( pos.x, pos.y );
+    // box selection overrides grabbing (as in v3): a multiple-select-key
+    // press boxes even over a node, as does any press when panning is
+    // disabled; mouse/pen only for now (v4 has no touch box gesture)
+    const boxing = e.pointerType !== 'touch'
+      && this.cy.boxSelectionEnabled() === true
+      && ( isMultSelKeyDown( e )
+        || this.cy.panningEnabled() !== true
+        || this.cy.userPanningEnabled() !== true );
     // a node under the cursor is only *dragged* when grabbable and unlocked
     // (and not globally auto-locked/ungrabified); otherwise the press pans,
     // but the node is still remembered as the tap target for selection
-    const canDrag = picked != null && this.canDrag( picked );
+    const canDrag = !boxing && picked != null && this.canDrag( picked );
 
     this.down = {
       pointerId: e.pointerId,
-      mode: canDrag ? 'grab' : 'pan',
+      mode: boxing ? 'box' : canDrag ? 'grab' : 'pan',
       grabbed: picked,
       startX: pos.x,
       startY: pos.y,
@@ -224,6 +254,8 @@ export class PointerHandler {
 
     if( down.mode === 'pan' ){
       if( this.cy.userPanningEnabled() === true ){ this.cy.panBy( { x: dx, y: dy } ); }
+    } else if( down.mode === 'box' ){
+      this.boxUpdate( down, pos );
     } else if( down.grabbed != null && down.grabbed.inside() ){
       const zoom = this.cy.zoom() as number;
       const p = down.grabbed.position() as Position;
@@ -247,6 +279,8 @@ export class PointerHandler {
 
     if( !down.moved ){
       this.tap( down.grabbed ?? ( this.lastPick?.inside() ? this.lastPick : null ), e );
+    } else if( down.mode === 'box' ){
+      this.boxEnd( down, e );
     }
   }
 
@@ -261,6 +295,10 @@ export class PointerHandler {
 
     if( down.grabbed != null ){
       this.setFlagOn( down.grabbed, FLAG_GRABBED, false );
+    }
+
+    if( this.boxEl != null ){
+      this.boxEl.style.display = 'none';
     }
   }
 
@@ -334,6 +372,84 @@ export class PointerHandler {
     return true;
   }
 
+  // -- box selection --
+
+  private boxElement(): HTMLDivElement {
+    if( this.boxEl == null ){
+      const el = this.canvas.ownerDocument.createElement( 'div' );
+      const s = el.style;
+
+      s.position = 'absolute';
+      s.display = 'none';
+      s.pointerEvents = 'none';
+      s.zIndex = '1'; // above the (unpositioned) canvas
+      s.background = 'rgba(221, 221, 221, 0.35)'; // ≈ v3's #ddd selection box
+      s.border = '1px solid #aaa';
+      s.boxSizing = 'border-box';
+
+      // the canvas fills the container from (0, 0), so container-absolute
+      // coordinates are the same rendered coordinates events use
+      ( this.canvas.parentElement ?? this.canvas ).appendChild( el );
+      this.boxEl = el;
+    }
+
+    return this.boxEl;
+  }
+
+  private boxUpdate( down: DownState, pos: Position ): void {
+    const cy = this.cy;
+
+    if( down.boxStarted !== true ){
+      down.boxStarted = true;
+      cy.emit( {
+        type: 'boxstart',
+        position: cy._viewport.renderedToModel( { x: down.startX, y: down.startY } )
+      } );
+    }
+
+    const el = this.boxElement();
+
+    el.style.display = 'block';
+    el.style.left = Math.min( down.startX, pos.x ) + 'px';
+    el.style.top = Math.min( down.startY, pos.y ) + 'px';
+    el.style.width = Math.abs( pos.x - down.startX ) + 'px';
+    el.style.height = Math.abs( pos.y - down.startY ) + 'px';
+  }
+
+  /** Apply the released box with v3 semantics (boxend, box, boxselect). */
+  private boxEnd( down: DownState, e: PointerEvent ): void {
+    const cy = this.cy;
+
+    if( this.boxEl != null ){ this.boxEl.style.display = 'none'; }
+
+    const p1 = cy._viewport.renderedToModel( { x: down.startX, y: down.startY } );
+    const p2 = cy._viewport.renderedToModel( { x: down.lastX, y: down.lastY } );
+    const position = p2;
+    const box = cy.elementsInBox( p1.x, p1.y, p2.x, p2.y );
+
+    cy.emit( { type: 'boxend', position } );
+
+    for( let i = 0; i < box.length; i++ ){
+      cy._emitOnEle( 'box', box[ i ], undefined, { position } );
+    }
+
+    if( cy.autounselectify() === true ){ return; }
+
+    const additive = isMultSelKeyDown( e ) || cy.selectionType() === 'additive';
+
+    if( !additive ){
+      cy.elements( { selected: true } ).difference( box ).unselect();
+    }
+
+    const toSelect = box.filter( ele => ele.selectable() && !ele.selected() );
+
+    toSelect.select();
+
+    for( let i = 0; i < toSelect.length; i++ ){
+      cy._emitOnEle( 'boxselect', toSelect[ i ], undefined, { position } );
+    }
+  }
+
   // -- helpers --
 
   private tap( target: GpuCollection | null, e: PointerEvent ): void {
@@ -341,11 +457,12 @@ export class PointerHandler {
     const position = cy._viewport.renderedToModel( this.eventPos( e ) );
 
     const selectionEnabled = cy.autounselectify() !== true;
+    const additive = isMultSelKeyDown( e ) || cy.selectionType() === 'additive';
 
     if( target == null ){ // background tap
       cy.emit( { type: 'tap', position } );
 
-      if( selectionEnabled && !e.shiftKey ){
+      if( selectionEnabled && !additive ){
         cy.elements( { selected: true } ).unselect();
       }
 
@@ -359,7 +476,7 @@ export class PointerHandler {
     if( target.selected() ){
       target.unselect(); // toggle off
     } else {
-      if( !e.shiftKey ){
+      if( !additive ){
         cy.elements( { selected: true } ).difference( target ).unselect();
       }
 

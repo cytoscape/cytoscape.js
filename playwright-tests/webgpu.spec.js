@@ -702,4 +702,60 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.cy.$id( 'a' ).selected() ) ).toBe( false );
   } );
 
+  test( 'shift-drag box-selects the contained elements', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -30, y: -30 } },
+        { data: { id: 'b' }, position: { x: 30, y: 30 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'far' }, position: { x: 300, y: 0 } }
+      ],
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__boxEvents = [];
+      window.cy.on( 'boxstart', e => window.__boxEvents.push( e.type ) );
+      window.cy.on( 'boxend', e => window.__boxEvents.push( e.type ) );
+      window.cy.on( 'boxselect', e => window.__boxEvents.push( 'boxselect:' + e.target.id() ) );
+    } );
+
+    await page.keyboard.down( 'Shift' );
+    await page.mouse.move( center.x - 100, center.y - 100 );
+    await page.mouse.down();
+    await page.mouse.move( center.x + 100, center.y + 100, { steps: 8 } );
+    await page.mouse.up();
+    await page.keyboard.up( 'Shift' );
+
+    const selected = await page.evaluate(
+      () => window.cy.elements( { selected: true } ).map( ele => ele.id() ).sort()
+    );
+
+    expect( selected ).toEqual( [ 'a', 'ab', 'b' ] );
+
+    const events = await page.evaluate( () => window.__boxEvents );
+
+    expect( events[ 0 ] ).toBe( 'boxstart' );
+    expect( events ).toContain( 'boxend' );
+    expect( events ).toContain( 'boxselect:a' );
+    expect( events ).toContain( 'boxselect:b' );
+
+    // the gesture boxed, not panned
+    const pan = await page.evaluate( () => window.cy.pan() );
+
+    expect( pan.x ).toBeCloseTo( center.x, 0 );
+    expect( pan.y ).toBeCloseTo( center.y, 0 );
+
+    // a plain background tap clears the box selection (selectionType single)
+    await page.mouse.click( center.x - 150, center.y - 150 );
+
+    expect( await page.evaluate( () => window.cy.elements( { selected: true } ).length ) ).toBe( 0 );
+  } );
+
 } );

@@ -600,6 +600,70 @@ export class GraphStore implements ModelView {
     return n;
   }
 
+  /**
+   * Live, visible elements contained in the model-coordinate box — the
+   * box-selection query, answered by one columnar scan.  v3's default
+   * 'contain' semantics: a node counts when its bounding box (position ±
+   * size/2 ± border/2) lies fully inside the box; an edge counts when
+   * both endpoint node centers do (edges are straight center-to-center
+   * segments in the prototype).  Corners may be given in any order.
+   */
+  refsInBox( x1: number, y1: number, x2: number, y2: number ): Ref[] {
+    const lx = Math.min( x1, x2 );
+    const hx = Math.max( x1, x2 );
+    const ly = Math.min( y1, y2 );
+    const hy = Math.max( y1, y2 );
+    const shown = FLAG_ALIVE | FLAG_VISIBLE;
+    const out: Ref[] = [];
+
+    const pos = this.column( 'node.position' ) as Float32Array;
+    const size = this.column( 'node.size' ) as Float32Array;
+    const border = this.column( 'node.borderWidth' ) as Float32Array;
+    const nodeFlags = this.column( 'node.flags' ) as Uint32Array;
+    const nodeOrder = this.order.nodes;
+    const nodeGen = this.nodes.gen;
+
+    for( let i = 0; i < nodeOrder.slots.length; i++ ){
+      const slot = nodeOrder.slots[ i ];
+      const g = nodeOrder.gens[ i ];
+
+      if( nodeGen[ slot ] !== g || ( nodeFlags[ slot ] & shown ) !== shown ){ continue; }
+
+      const hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
+      const hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+      const x = pos[ slot * 2 ];
+      const y = pos[ slot * 2 + 1 ];
+
+      if( x - hw >= lx && x + hw <= hx && y - hh >= ly && y + hh <= hy ){
+        out.push( { group: 'nodes', slot, gen: g } );
+      }
+    }
+
+    const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
+    const edgeFlags = this.column( 'edge.flags' ) as Uint32Array;
+    const edgeOrder = this.order.edges;
+    const edgeGen = this.edges.gen;
+    const centerIn = ( node: number ): boolean => {
+      const x = pos[ node * 2 ];
+      const y = pos[ node * 2 + 1 ];
+
+      return x >= lx && x <= hx && y >= ly && y <= hy;
+    };
+
+    for( let i = 0; i < edgeOrder.slots.length; i++ ){
+      const slot = edgeOrder.slots[ i ];
+      const g = edgeOrder.gens[ i ];
+
+      if( edgeGen[ slot ] !== g || ( edgeFlags[ slot ] & shown ) !== shown ){ continue; }
+
+      if( centerIn( endpoints[ slot * 2 ] ) && centerIn( endpoints[ slot * 2 + 1 ] ) ){
+        out.push( { group: 'edges', slot, gen: g } );
+      }
+    }
+
+    return out;
+  }
+
   /** Live slots in insertion order (reused slots re-appear at their re-insertion position). */
   slotsOrdered( group: GroupName ): number[] {
     const slots: number[] = [];

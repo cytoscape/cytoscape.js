@@ -1657,16 +1657,19 @@ export class GpuCollection {
 
   // -- degree --
 
-  degree( includeLoops: boolean = true ): number {
+  // degree()/indegree()/outdegree() are singular accessors: they report the
+  // FIRST element's degree (undefined if it isn't a live node), as in v3. The
+  // whole-collection sum is totalDegree().
+  degree( includeLoops: boolean = true ): number | undefined {
     return this._degree( includeLoops, ( store, slot ) =>
       store.adj.outDegree( slot ) + store.adj.inDegree( slot ) );
   }
 
-  outdegree( includeLoops: boolean = true ): number {
+  outdegree( includeLoops: boolean = true ): number | undefined {
     return this._degree( includeLoops, ( store, slot ) => store.adj.outDegree( slot ), 'out' );
   }
 
-  indegree( includeLoops: boolean = true ): number {
+  indegree( includeLoops: boolean = true ): number | undefined {
     return this._degree( includeLoops, ( store, slot ) => store.adj.inDegree( slot ), 'in' );
   }
 
@@ -1698,7 +1701,9 @@ export class GpuCollection {
     let total = 0;
 
     for( let i = 0; i < this.length; i++ ){
-      if( this[ i ].isNode() ){ total += this[ i ].degree( includeLoops ); }
+      const d = this[ i ].degree( includeLoops );
+
+      if( d !== undefined ){ total += d; }
     }
 
     return total;
@@ -1716,6 +1721,8 @@ export class GpuCollection {
         ? this[ i ].degree( includeLoops )
         : fn === 'indegree' ? this[ i ].indegree( includeLoops ) : this[ i ].outdegree( includeLoops );
 
+      if( degree === undefined ){ continue; }
+
       if( ret === undefined || sign * degree > sign * ret ){ ret = degree; }
     }
 
@@ -1726,22 +1733,22 @@ export class GpuCollection {
     includeLoops: boolean,
     count: ( store: GpuCore['_store'], slot: number ) => number,
     direction?: 'out' | 'in'
-  ): number {
+  ): number | undefined {
     const store = this._store;
-    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
-    let total = 0;
+    const ref = this._first();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'nodes' ){ continue; }
+    // first element must be a live node, else undefined (as in v3)
+    if( ref == null || ref.group !== 'nodes' || !store.isCurrent( ref ) ){ return undefined; }
 
-      total += count( store, ref.slot );
+    let total = count( store, ref.slot );
 
-      if( !includeLoops ){
-        // a loop contributes 1 to outdegree, 1 to indegree, 2 to degree
-        for( const edgeSlot of store.adj.outEdges( ref.slot ) ){
-          if( endpoints[ edgeSlot * 2 ] === endpoints[ edgeSlot * 2 + 1 ] ){
-            total -= direction == null ? 2 : 1;
-          }
+    if( !includeLoops ){
+      const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+
+      // a loop contributes 1 to outdegree, 1 to indegree, 2 to degree
+      for( const edgeSlot of store.adj.outEdges( ref.slot ) ){
+        if( endpoints[ edgeSlot * 2 ] === endpoints[ edgeSlot * 2 + 1 ] ){
+          total -= direction == null ? 2 : 1;
         }
       }
     }

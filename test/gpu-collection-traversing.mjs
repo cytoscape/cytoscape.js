@@ -129,8 +129,15 @@ describe('gpu/collection: traversing', function(){
       expect( cy.$('#n1').outdegree() ).to.equal(1);
     });
 
-    it('sums over a collection', function(){
-      expect( cy.nodes().degree() ).to.equal(6);
+    it('degree() reports the first element; totalDegree() sums', function(){
+      // singular accessor: first element's degree (each node has degree 2), not the sum
+      expect( cy.nodes().degree() ).to.equal(2);
+      expect( cy.nodes().totalDegree() ).to.equal(6);
+    });
+
+    it('degree() is undefined for an empty collection or non-node first element', function(){
+      expect( cy.collection().degree() ).to.equal( undefined );
+      expect( cy.edges().degree() ).to.equal( undefined ); // first element is an edge
     });
 
     it('counts loops twice in degree, once per direction', function(){

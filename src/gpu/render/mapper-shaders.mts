@@ -154,6 +154,54 @@ fn evalProgram(p: MapperProgram, slot: u32) -> vec4f {
 
   return a + (b - a) * iu.y;
 }
+
+// -- color output: OKLab → sRGB (keep in sync with style-schemes.mts) --
+
+fn linearToSrgbNorm(c: vec3f) -> vec3f {
+  let lo = c * 12.92;
+  let hi = 1.055 * pow(max(c, vec3f(0.0)), vec3f(1.0 / 2.4)) - 0.055;
+
+  return clamp(select(hi, lo, c <= vec3f(0.0031308)), vec3f(0.0), vec3f(1.0));
+}
+
+fn oklabToSrgbNorm(lab: vec3f) -> vec3f {
+  let l_ = lab.x + 0.3963377774 * lab.y + 0.2158037573 * lab.z;
+  let m_ = lab.x - 0.1055613458 * lab.y - 0.0638541728 * lab.z;
+  let s_ = lab.x - 0.0894841775 * lab.y - 1.2914855480 * lab.z;
+  let l = l_ * l_ * l_;
+  let m = m_ * m_ * m_;
+  let s = s_ * s_ * s_;
+  let lin = vec3f(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+  );
+
+  return linearToSrgbNorm(lin);
+}
+
+/**
+ * Resolve a program's evaluated vec4 to packed rgba8 bytes.  OKLab
+ * programs convert; FLAG_SRGB programs (srgb interpolation, discrete
+ * outputs, constants) are already normalized sRGB.  The alpha folds in
+ * either the evaluated opacity (FLAG_MUL_ALPHA — arrow programs when the
+ * edge opacity is mapped) or the packed constant multiplier (domain.w).
+ */
+fn resolveColor(p: MapperProgram, v: vec4f, opacityNow: f32) -> u32 {
+  var rgb = v.xyz;
+
+  if ((p.head.z & FLAG_SRGB) == 0u) { rgb = oklabToSrgbNorm(rgb); }
+
+  var a = v.w;
+
+  if ((p.head.z & FLAG_MUL_ALPHA) != 0u) {
+    a = a * max(opacityNow, 0.0);
+  } else {
+    a = a * p.domain.w;
+  }
+
+  return pack4x8unorm(vec4f(rgb, a));
+}
 `;
 
 const NODE_TARGETS = `
@@ -171,8 +219,10 @@ const EDGE_TARGETS = `
 
 /** target ids match TARGETS in mapper-runtime.mts */
 const NODE_WRITE = `
-fn writeTarget(tgt: u32, slot: u32, v: vec4f, opacityNow: f32) {
-  switch tgt {
+fn writeTarget(prog: MapperProgram, slot: u32, v: vec4f, opacityNow: f32) {
+  switch prog.head.x {
+    case 0u: { fillColor[slot] = resolveColor(prog, v, opacityNow); }
+    case 1u: { borderColor[slot] = resolveColor(prog, v, opacityNow); }
     case 2u: { opacity[slot] = v.x; }
     default: {}
   }
@@ -180,9 +230,12 @@ fn writeTarget(tgt: u32, slot: u32, v: vec4f, opacityNow: f32) {
 `;
 
 const EDGE_WRITE = `
-fn writeTarget(tgt: u32, slot: u32, v: vec4f, opacityNow: f32) {
-  switch tgt {
+fn writeTarget(prog: MapperProgram, slot: u32, v: vec4f, opacityNow: f32) {
+  switch prog.head.x {
+    case 0u: { lineColor[slot] = resolveColor(prog, v, opacityNow); }
     case 1u: { opacity[slot] = v.x; }
+    case 2u: { sourceArrow[slot] = resolveColor(prog, v, opacityNow); }
+    case 3u: { targetArrow[slot] = resolveColor(prog, v, opacityNow); }
     default: {}
   }
 }
@@ -200,7 +253,7 @@ fn csEval(@builtin(global_invocation_id) gid: vec3u) {
     let prog = programs[p];
     let v = evalProgram(prog, slot);
 
-    writeTarget(prog.head.x, slot, v, opacityNow);
+    writeTarget(prog, slot, v, opacityNow);
 
     // remember the evaluated opacity for downstream alpha folding
     if ((prog.head.z & FLAG_COLOR) == 0u) { opacityNow = v.x; }

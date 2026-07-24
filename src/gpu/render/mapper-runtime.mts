@@ -80,10 +80,26 @@ export const TARGETS: Record<GroupName, Record<string, { target: number; column:
   },
   edges: {
     'line-color': { target: 0, column: 'edge.lineColor' },
-    'opacity': { target: 1, column: 'edge.opacity' }
-    // source/target arrows join with the in-kernel alpha folding
+    'opacity': { target: 1, column: 'edge.opacity' },
+    'source-arrow-color': { target: 2, column: 'edge.sourceArrow' },
+    'target-arrow-color': { target: 3, column: 'edge.targetArrow' }
   }
 };
+
+/**
+ * Edge-sheet context for the in-kernel arrow-alpha folding: the stored
+ * arrow bytes carry `colorAlpha × edge opacity`, so arrow programs need
+ * the opacity (evaluated when mapped, constant otherwise), and a mapped
+ * opacity with *constant* arrow colors needs a synthesized constant
+ * program per enabled end to re-fold on opacity writes.  (Mapped arrow
+ * *shapes* demote all edge paint to the CPU — the engine's rule.)
+ */
+export interface EdgeArrowContext {
+  opacityMapped: boolean;
+  constOpacity: number;
+  source: { enabled: boolean; colorMapped: boolean; constColor: RGBA };
+  target: { enabled: boolean; colorMapped: boolean; constColor: RGBA };
+}
 
 export interface PackInput {
   m: CompiledMapper;
@@ -139,7 +155,7 @@ const packable = ( group: GroupName, m: CompiledMapper, data: DataStore ): boole
   switch( m.program.kind ){
     case 'passthrough': return m.kind === 'number';
     case 'continuous':
-    case 'discrete': return true;
+    case 'discrete': return m.kind === 'number' || m.kind === 'color';
     default: return false;
   }
 };
@@ -186,7 +202,8 @@ const fallbackVec4 = ( fallback: Evaluated ): number[] => {
  * (edge opacity) sort first so the fold reads an evaluated value.
  */
 export const packPrograms = (
-  group: GroupName, inputs: PackInput[], data: DataStore, cap: number
+  group: GroupName, inputs: PackInput[], data: DataStore, cap: number,
+  ctx: EdgeArrowContext | null = null
 ): PackedPrograms => {
   const eligible: PackInput[] = [];
   const skipped: CompiledMapper[] = [];
@@ -199,9 +216,29 @@ export const packPrograms = (
     }
   }
 
-  // opacity first: arrow programs (commit-later) multiply by its result
+  // opacity first: arrow programs multiply by its result in-kernel
   eligible.sort( ( a, b ) =>
     ( a.m.prop === 'opacity' ? 0 : 1 ) - ( b.m.prop === 'opacity' ? 0 : 1 ) );
+
+  // a mapped edge opacity with constant arrow colors: synthesize one
+  // constant program per enabled end so the fold tracks opacity writes
+  const synthesized: { prop: string; target: number; column: ColumnId; color: RGBA }[] = [];
+
+  if( group === 'edges' && ctx != null && ctx.opacityMapped ){
+    for( const end of [ 'source', 'target' ] as const ){
+      const arrow = ctx[ end ];
+
+      if( arrow.enabled && !arrow.colorMapped ){
+        const prop = `${end}-arrow-color`;
+
+        synthesized.push( { prop, ...TARGETS.edges[ prop ], color: arrow.constColor } );
+      }
+    }
+  }
+
+  while( eligible.length + synthesized.length > MAX_PROGRAMS ){
+    skipped.push( ( eligible.pop() as PackInput ).m ); // backstop; never hit by real sheets
+  }
 
   const keys: string[] = [];
   const keyIndex = ( key: string ): number => {
@@ -213,12 +250,14 @@ export const packPrograms = (
   };
 
   const table: number[] = [];
-  const programData = new ArrayBuffer( Math.max( eligible.length, 1 ) * PROGRAM_BYTES );
+  const programCount = eligible.length + synthesized.length;
+  const programData = new ArrayBuffer( Math.max( programCount, 1 ) * PROGRAM_BYTES );
   const u32 = new Uint32Array( programData );
   const f32 = new Float32Array( programData );
   const ownedColumns: ColumnId[] = [];
   const props: string[] = [];
   const capAligned = alignSlots( cap );
+  const isArrowProp = ( prop: string ): boolean => prop.endsWith( '-arrow-color' );
 
   for( let p = 0; p < eligible.length; p++ ){
     const { m, fallback } = eligible[ p ];
@@ -236,10 +275,21 @@ export const packPrograms = (
     let lo = 0;
     let hi = 0;
     let p0 = 0;
-    let p1 = 0;
+    // domain.w: the constant alpha multiplier for color programs (arrow
+    // programs fold the constant edge opacity here; FLAG.MUL_ALPHA
+    // switches to the evaluated opacity instead)
+    let alphaMul = isColor ? 1 : 0;
     let outBase = 0;
     let count = 0;
     let inBase = 0;
+
+    if( group === 'edges' && isArrowProp( m.prop ) && ctx != null ){
+      if( ctx.opacityMapped ){
+        flags |= FLAG.MUL_ALPHA;
+      } else {
+        alphaMul = ctx.constOpacity;
+      }
+    }
 
     if( program.kind === 'passthrough' ){
       kind = KIND.PASSTHROUGH;
@@ -281,6 +331,9 @@ export const packPrograms = (
       inBase = appendPacked( table, discrete.cuts );
       outBase = appendVec4s( table, discrete.outputs.map( out =>
         typeof out === 'number' ? [ out, 0, 0, 0 ] : colorVec4( out, false ) ) );
+
+      // discrete color outputs are exact normalized sRGB, never OKLab
+      if( isColor ){ flags |= FLAG.SRGB; }
     }
 
     u32[ at ] = target;
@@ -290,13 +343,43 @@ export const packPrograms = (
     f32[ at + 4 ] = lo;
     f32[ at + 5 ] = hi;
     f32[ at + 6 ] = p0;
-    f32[ at + 7 ] = p1;
+    f32[ at + 7 ] = alphaMul;
     u32[ at + 8 ] = outBase;
     u32[ at + 9 ] = count;
     u32[ at + 10 ] = inBase;
     u32[ at + 11 ] = 0;
 
-    const fb = fallbackVec4( fallback );
+    // the fallback rides in the same space the program's outputs use, so
+    // resolveColor applies one conversion path per program
+    const oklabFallback = isColor && ( flags & FLAG.SRGB ) === 0;
+    const fb = oklabFallback
+      ? ( () => {
+        const [ r, g, b, a ] = fallback as RGBA;
+        const [ L, A, B ] = srgbToOklab( r, g, b );
+
+        return [ L, A, B, a / 255 ];
+      } )()
+      : fallbackVec4( fallback );
+
+    f32[ at + 12 ] = fb[ 0 ];
+    f32[ at + 13 ] = fb[ 1 ];
+    f32[ at + 14 ] = fb[ 2 ];
+    f32[ at + 15 ] = fb[ 3 ];
+  }
+
+  for( let s = 0; s < synthesized.length; s++ ){
+    const synth = synthesized[ s ];
+    const at = ( eligible.length + s ) * PROGRAM_WORDS;
+
+    ownedColumns.push( synth.column );
+    props.push( synth.prop );
+
+    u32[ at ] = synth.target;
+    u32[ at + 1 ] = KIND.CONSTANT;
+    u32[ at + 2 ] = FLAG.COLOR | FLAG.SRGB | FLAG.MUL_ALPHA;
+    f32[ at + 7 ] = 1;
+
+    const fb = fallbackVec4( synth.color );
 
     f32[ at + 12 ] = fb[ 0 ];
     f32[ at + 13 ] = fb[ 1 ];
@@ -307,7 +390,7 @@ export const packPrograms = (
   return {
     group,
     programData,
-    programCount: eligible.length,
+    programCount,
     stopData: Float32Array.from( table.length > 0 ? table : [ 0, 0, 0, 0 ] ),
     keys,
     ownedColumns,
@@ -404,6 +487,8 @@ export interface PaintSource {
   /** bumps on setSheet and when a GPU-owned auto-domain extent moves */
   paintVersion: number;
   paintInputs( group: GroupName ): PackInput[];
+  /** edge-sheet constants for the in-kernel arrow-alpha folding */
+  paintContext( group: GroupName ): EdgeArrowContext | null;
   /** told which props the kernel owns, so CPU refresh skips them and getters evaluate lazily */
   setGpuOwned( group: GroupName, props: Iterable<string> ): void;
 }
@@ -685,9 +770,10 @@ export class MapperRuntime {
 
     for( const group of GROUPS ){
       const state = this.states[ group ];
-      // colors join once the kernel's color path lands; scalars only for now
-      const inputs = this.engine.paintInputs( group ).filter( input => input.m.kind === 'number' );
-      const packed = packPrograms( group, inputs, this.store.data, this.store.capacity( group ) );
+      const inputs = this.engine.paintInputs( group );
+      const packed = packPrograms(
+        group, inputs, this.store.data, this.store.capacity( group ),
+        this.engine.paintContext( group ) );
 
       if( packed.programCount === 0 ){
         state.packed = null;

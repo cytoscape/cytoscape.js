@@ -154,6 +154,74 @@ describe('gpu/mapper-pack', function(){
     ] );
   });
 
+  it('packs OKLab fallbacks in OKLab space, with a unit alpha multiplier', function(){
+    const packed = packPrograms( 'nodes',
+      [ input( { data: 'w', domain: [ 0, 1 ], range: 'viridis' }, COLOR_BG, [ 0x44, 0x01, 0x54, 255 ] ) ],
+      dataWith( [ 0.5 ] ), 4 );
+
+    const f32 = new Float32Array( packed.programData );
+    const [ L, A, B ] = srgbToOklab( 0x44, 0x01, 0x54 );
+
+    expect( f32[ 7 ] ).to.equal( 1 ); // alphaMul
+    expect( f32[ 12 ] ).to.be.closeTo( L, 1e-6 );
+    expect( f32[ 13 ] ).to.be.closeTo( A, 1e-6 );
+    expect( f32[ 14 ] ).to.be.closeTo( B, 1e-6 );
+    expect( f32[ 15 ] ).to.equal( 1 );
+  });
+
+  it('flags discrete color outputs as sRGB', function(){
+    const packed = packPrograms( 'nodes',
+      [ input( { data: 'w', scale: 'threshold', domain: [ 5 ], range: [ '#000000', '#ffffff' ] }, COLOR_BG, [ 0, 0, 0, 255 ] ) ],
+      dataWith( [ 1 ] ), 4 );
+
+    expect( new Uint32Array( packed.programData )[ 2 ] ).to.equal( FLAG.COLOR | FLAG.SRGB );
+  });
+
+  it('synthesizes constant arrow programs when edge opacity is mapped', function(){
+    const ctx = {
+      opacityMapped: true,
+      constOpacity: 1,
+      source: { enabled: false, colorMapped: false, constColor: [ 0, 0, 0, 255 ] },
+      target: { enabled: true, colorMapped: false, constColor: [ 255, 0, 0, 255 ] }
+    };
+    const packed = packPrograms( 'edges',
+      [ input( { data: 'o', domain: [ 0, 1 ], range: [ 0, 1 ] }, { kind: 'number', prop: 'opacity' } ) ],
+      dataWith( [ 0.5 ], 'o' ), 4, ctx );
+
+    expect( packed.programCount ).to.equal( 2 );
+    expect( packed.props ).to.deep.equal( [ 'opacity', 'target-arrow-color' ] );
+    expect( packed.ownedColumns ).to.deep.equal( [ 'edge.opacity', 'edge.targetArrow' ] );
+
+    const u32 = new Uint32Array( packed.programData );
+    const f32 = new Float32Array( packed.programData );
+    const at = PROGRAM_WORDS;
+
+    expect( u32[ at ] ).to.equal( 3 );                 // targetArrow
+    expect( u32[ at + 1 ] ).to.equal( KIND.CONSTANT );
+    expect( u32[ at + 2 ] ).to.equal( FLAG.COLOR | FLAG.SRGB | FLAG.MUL_ALPHA );
+    expect( f32[ at + 12 ] ).to.equal( 1 );            // red, normalized
+    expect( f32[ at + 15 ] ).to.equal( 1 );
+  });
+
+  it('folds a constant edge opacity into mapped arrow colors via alphaMul', function(){
+    const ctx = {
+      opacityMapped: false,
+      constOpacity: 0.5,
+      source: { enabled: true, colorMapped: true, constColor: [ 0, 0, 0, 255 ] },
+      target: { enabled: false, colorMapped: false, constColor: [ 0, 0, 0, 255 ] }
+    };
+    const packed = packPrograms( 'edges',
+      [ input( { data: 'o', domain: [ 0, 1 ], range: [ '#000000', '#ffffff' ] }, { kind: 'color', prop: 'source-arrow-color' }, [ 0, 0, 0, 255 ] ) ],
+      dataWith( [ 0.5 ], 'o' ), 4, ctx );
+
+    const u32 = new Uint32Array( packed.programData );
+    const f32 = new Float32Array( packed.programData );
+
+    expect( packed.programCount ).to.equal( 1 ); // no synthesis without mapped opacity
+    expect( u32[ 2 ] & FLAG.MUL_ALPHA ).to.equal( 0 );
+    expect( f32[ 7 ] ).to.equal( 0.5 );
+  });
+
   it('builds and refreshes packed data regions', function(){
     const data = dataWith( [ 1 / 3, undefined, 2 ] );
 

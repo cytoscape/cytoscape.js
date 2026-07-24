@@ -184,6 +184,63 @@ describe('gpu/mapper-runtime', function(){
     expect( pass.dispatches ).to.deep.equal( [ Math.ceil( store.capacity('nodes') / 256 ) ] );
   });
 
+  it('owns color channels and answers arrow getters with the folded IR', function(){
+    const store = new GraphStore();
+
+    store.addNode( 'a', 0, 0 );
+    store.addNode( 'b', 10, 0 );
+    store.addEdge( 'ab', 'a', 'b' );
+    store.setData( 'edges', 0, 'o', 0.5 );
+
+    const engine = new StyleEngine( store, () => null );
+
+    engine.setSheet( {
+      nodes: { 'background-color': { data: 'w', domain: [ 0, 1 ], range: 'viridis' } },
+      edges: {
+        'opacity': { data: 'o', domain: [ 0, 1 ], range: [ 0, 1 ] },
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': '#ff0000'
+      }
+    } );
+    store.takeDelta();
+    store.takeMapperSpans();
+
+    const mock = makeMockDevice();
+    const mirror = makeMockMirror();
+    const runtime = new MapperRuntime( mock.device, store, engine, mirror );
+
+    runtime.update( emptyDelta );
+
+    expect( mirror.owned ).to.deep.equal( [ 'node.fillColor', 'edge.opacity', 'edge.targetArrow' ] );
+
+    const edge = store.ref( 'edges', 0 );
+
+    expect( engine.readProp( edge, 'target-arrow-color' ) ).to.equal( 'rgba(255,0,0,0.502)' );
+    expect( engine.readProp( edge, 'target-arrow-shape' ) ).to.equal( 'triangle' );
+
+    store.setData( 'edges', 0, 'o', 0 );
+    engine.refreshMapped( 'edges', [ 0 ], [ 'o' ] );
+
+    expect( engine.readProp( edge, 'target-arrow-shape' ) ).to.equal( 'none' );
+  });
+
+  it('demotes all edge paint to the CPU when an arrow shape is mapped', function(){
+    const { store, runtime, mirror, engine } = setup( {
+      edges: {
+        'opacity': { data: 'o', domain: [ 0, 1 ], range: [ 0, 1 ] },
+        'target-arrow-shape': { data: 't', scale: 'ordinal', domain: [ 'yes' ], range: [ 'triangle' ] }
+      }
+    } );
+
+    store.addEdge( 'ab', 'a', 'b' );
+    store.takeDelta();
+    runtime.update( emptyDelta );
+
+    expect( runtime.active() ).to.be.false;
+    expect( mirror.owned ).to.deep.equal( [] );
+    expect( engine.paintInputs( 'edges' ) ).to.deep.equal( [] );
+  });
+
   it('skips CPU evaluation of owned channels but keeps getters truthful', function(){
     const { store, engine, runtime } = setup( {
       nodes: { opacity: { data: 'w', domain: [ 0, 10 ], range: [ 0, 1 ] } }

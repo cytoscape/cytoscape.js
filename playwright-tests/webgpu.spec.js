@@ -813,4 +813,50 @@ test.describe( 'WebGPU renderer', () => {
     expect( after[ 1 ] ).toBeGreaterThan( 150 );
   } );
 
+  test( 'mapped colors render the OKLab interpolation the getters report', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a', s: 0 }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'width': 100, 'height': 100, 'shape': 'rectangle',
+        'background-color': { data: 's', domain: [ 0, 1 ], range: 'viridis' }
+      } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+    const readRgb = async () => await page.evaluate( () => {
+      const match = /rgb\((\d+),(\d+),(\d+)\)/.exec( window.cy.$id( 'a' ).style( 'background-color' ) );
+
+      return [ Number( match[ 1 ] ), Number( match[ 2 ] ), Number( match[ 3 ] ) ];
+    } );
+
+    await waitFrames( page );
+
+    const before = await pixelAt( page, center.x, center.y );
+
+    expect( before.slice( 0, 3 ) ).toEqual( [ 0x44, 0x01, 0x54 ] ); // viridis start, exact
+
+    await page.evaluate( async () => {
+      await new Promise( resolve => {
+        window.cy.one( 'render', () => resolve() );
+        window.cy.$id( 'a' ).data( 's', 0.5 );
+      } );
+    } );
+    await waitFrames( page );
+
+    // the rendered pixel and the lazily-evaluated getter agree ±1/byte
+    const expected = await readRgb();
+    const after = await pixelAt( page, center.x, center.y );
+
+    for( let c = 0; c < 3; c++ ){
+      expect( Math.abs( after[ c ] - expected[ c ] ) ).toBeLessThanOrEqual( 1 );
+    }
+
+    // and it is an OKLab midpoint, not the old bytes
+    expect( Math.abs( after[ 1 ] - before[ 1 ] ) ).toBeGreaterThan( 40 );
+  } );
+
 } );

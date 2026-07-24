@@ -519,11 +519,52 @@ export class StyleEngine {
     if( apply ){ this.applyAll(); }
   }
 
-  /** Paint-channel mappers with resolved fallbacks (the runtime's pack input). */
+  /**
+   * Paint-channel mappers with resolved fallbacks (the runtime's pack
+   * input).  A mapped arrow *shape* demotes all edge paint to the CPU:
+   * the shape gates the stored arrow alpha, and splitting that fold
+   * between CPU and kernel would race.
+   */
   paintInputs( group: GroupName ): { m: CompiledMapper; fallback: Evaluated }[] {
-    return this.defs[ group ].mappers
+    const def = this.defs[ group ];
+
+    if( group === 'edges' && def.mappers.some( bm => bm.m.prop.endsWith( '-arrow-shape' ) ) ){
+      return [];
+    }
+
+    return def.mappers
       .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) )
       .map( bm => ( { m: bm.m, fallback: bm.m.fallback ?? bm.channel.default( group ) } ) );
+  }
+
+  /** Edge-sheet constants for the kernel's arrow-alpha folding. */
+  paintContext( group: GroupName ): {
+    opacityMapped: boolean;
+    constOpacity: number;
+    source: { enabled: boolean; colorMapped: boolean; constColor: RGBA };
+    target: { enabled: boolean; colorMapped: boolean; constColor: RGBA };
+  } | null {
+    const def = this.defs.edges;
+
+    if( group !== 'edges' || def.computed == null ){ return null; }
+
+    const computed = def.computed;
+    const mapped = ( prop: string ): boolean => def.mappers.some( bm => bm.m.prop === prop );
+
+    return {
+      opacityMapped: mapped( 'opacity' ),
+      constOpacity: computed.opacity,
+      source: {
+        enabled: computed.sourceArrowShape === 'triangle',
+        colorMapped: mapped( 'source-arrow-color' ),
+        constColor: computed.sourceArrowColor
+      },
+      target: {
+        enabled: computed.targetArrowShape === 'triangle',
+        colorMapped: mapped( 'target-arrow-color' ),
+        constColor: computed.targetArrowColor
+      }
+    };
   }
 
   /**
@@ -743,8 +784,22 @@ export class StyleEngine {
     if( !forGroup.has( prop ) ){ return undefined; }
 
     // GPU-owned channels: the stored bytes go stale after data writes, so
-    // evaluate the shared IR lazily (same math the kernel runs, ±1/byte)
-    if( this.gpuOwnedProps[ ref.group ].has( prop ) ){
+    // evaluate the shared IR lazily (same math the kernel runs, ±1/byte).
+    // Arrow getters need the fold: stored alpha = colorAlpha × opacity,
+    // either of which may be kernel-owned.
+    const owned = this.gpuOwnedProps[ ref.group ];
+
+    if( ref.group === 'edges' && /-arrow-(color|shape)$/.test( prop ) ){
+      const colorProp = prop.replace( '-shape', '-color' );
+
+      if( owned.has( colorProp ) || owned.has( 'opacity' ) ){
+        const [ r, g, b, a ] = this.foldedArrow( ref, colorProp );
+
+        return prop.endsWith( '-shape' )
+          ? ( a > 0 ? 'triangle' : 'none' )
+          : formatRgba( r, g, b, a );
+      }
+    } else if( owned.has( prop ) ){
       const bm = this.defs[ ref.group ].mappers.find( bm => bm.m.prop === prop );
 
       if( bm != null ){
@@ -804,6 +859,36 @@ export class StyleEngine {
     }
 
     return out;
+  }
+
+  /**
+   * The stored-arrow-bytes truth when the kernel owns edge paint: color
+   * (mapped or constant) with alpha folded by the (mapped or constant)
+   * opacity; a 'none' shape stays fully transparent.  Shapes are never
+   * kernel-owned (mapped shapes demote edge paint to the CPU), so the
+   * computed constants decide the gate.
+   */
+  private foldedArrow( ref: Ref, colorProp: string ): RGBA {
+    const def = this.defs.edges;
+    const computed = def.computed as Computed;
+    const source = colorProp.startsWith( 'source' );
+    const shape = source ? computed.sourceArrowShape : computed.targetArrowShape;
+
+    if( shape !== 'triangle' ){ return NO_ARROW; }
+
+    const evalProp = ( prop: string, constant: number | RGBA ): number | RGBA => {
+      const bm = def.mappers.find( bm => bm.m.prop === prop );
+
+      return bm == null
+        ? constant
+        : bindEvaluator( bm.m, this.store.data, 'edges', bm.channel.default( 'edges' ) )( ref.slot );
+    };
+
+    const opacity = evalProp( 'opacity', computed.opacity ) as number;
+    const [ r, g, b, a ] = evalProp(
+      colorProp, source ? computed.sourceArrowColor : computed.targetArrowColor ) as RGBA;
+
+    return [ r, g, b, Math.round( a * opacity ) ];
   }
 
   /** Resolved label channels: the sidecar when labelled, else the sheet. */

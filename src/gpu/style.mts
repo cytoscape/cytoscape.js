@@ -258,6 +258,7 @@ export class StyleEngine {
   private compiled: CompiledBlock[];
 
   private dataMappers = false;
+  private selectionDependent = false;
   private arrows = { source: false, target: false };
 
   constructor( store: GraphStore ){
@@ -282,6 +283,13 @@ export class StyleEngine {
       return mapped != null && mapped[ 1 ] !== 'id';
     } );
 
+    // does any block match on :selected/:unselected?  If not, a selection
+    // change can never alter computed style, so select/unselect skips the
+    // restyle pass entirely (the accent ring is drawn by the shader)
+    this.selectionDependent = this.compiled.some(
+      block => block.selector.terms.some( term => term.selected != null )
+    );
+
     // which arrow ends can any edge have at all — the renderer skips
     // whole arrow draw calls per end when no block enables it
     this.arrows = {
@@ -296,6 +304,11 @@ export class StyleEngine {
   /** True when a data() write can change a computed label. */
   get usesDataMappers(): boolean {
     return this.dataMappers;
+  }
+
+  /** True when a select/unselect can change computed style. */
+  get dependsOnSelection(): boolean {
+    return this.selectionDependent;
   }
 
   /** Which arrow ends the current stylesheet can enable. */

@@ -853,6 +853,16 @@ export class GpuCore {
     this._styleEngine.apply( ref );
   }
 
+  /** Restyle many slots of one group, resolving once per (group, selected). */
+  _applyStyleBulk( group: GroupName, slots: ArrayLike<number> ): void {
+    this._styleEngine.applyBulk( group, slots );
+  }
+
+  /** Whether select/unselect can change computed style under the current blocks. */
+  _styleDependsOnSelection(): boolean {
+    return this._styleEngine.dependsOnSelection;
+  }
+
   /** Refresh anything computed from data(): today that is mapped node labels. */
   _onDataChanged( ref: Ref ): void {
     if( ref.group === 'nodes' && this._styleEngine.usesDataMappers ){

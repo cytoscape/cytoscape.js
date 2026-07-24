@@ -346,6 +346,51 @@ export class GraphStore implements ModelView {
     this.dirty.mark( 'node.position', min, max + 1 );
   }
 
+  /**
+   * Bulk constant/axis position write over node slots: sets x and/or y
+   * (null leaves that axis unchanged) with one coalesced dirty span.
+   */
+  setPositionsConst( slots: ArrayLike<number>, x: number | null, y: number | null ): void {
+    if( slots.length === 0 || ( x == null && y == null ) ){ return; }
+
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    let min = Infinity;
+    let max = -1;
+
+    for( let i = 0; i < slots.length; i++ ){
+      const slot = slots[ i ];
+
+      if( x != null ){ pos[ slot * 2 ] = x; }
+      if( y != null ){ pos[ slot * 2 + 1 ] = y; }
+
+      if( slot < min ){ min = slot; }
+      if( slot > max ){ max = slot; }
+    }
+
+    this.dirty.mark( 'node.position', min, max + 1 );
+  }
+
+  /** Bulk position offset over node slots: one coalesced dirty span. */
+  shiftPositions( slots: ArrayLike<number>, dx: number, dy: number ): void {
+    if( slots.length === 0 ){ return; }
+
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    let min = Infinity;
+    let max = -1;
+
+    for( let i = 0; i < slots.length; i++ ){
+      const slot = slots[ i ];
+
+      pos[ slot * 2 ] += dx;
+      pos[ slot * 2 + 1 ] += dy;
+
+      if( slot < min ){ min = slot; }
+      if( slot > max ){ max = slot; }
+    }
+
+    this.dirty.mark( 'node.position', min, max + 1 );
+  }
+
   // -- flags --
 
   flags( group: GroupName, slot: number ): number {
@@ -368,6 +413,66 @@ export class GraphStore implements ModelView {
 
     arr[ slot ] = next;
     this.dirty.mark( id, slot );
+  }
+
+  /**
+   * Bulk flag write over a refs array (a collection's _refs): sets or
+   * clears `bit` on every live ref, with the flags/gen columns hoisted out
+   * of the loop and one coalesced dirty span per touched group.  Refs
+   * lacking `requireBit` (when non-zero) are skipped, as are refs already
+   * in the target state.  When `changedIdx` is given, the refs-array index
+   * of each changed ref is appended (for per-element restyle/emit).
+   * Returns the changed count.
+   */
+  flagRefs(
+    refs: readonly Ref[], bit: number, on: boolean,
+    requireBit = 0, changedIdx: number[] | null = null
+  ): number {
+    const nodeFlags = this.nodes.column( 'node.flags' ) as Uint32Array;
+    const edgeFlags = this.edges.column( 'edge.flags' ) as Uint32Array;
+    const nodeGen = this.nodes.gen;
+    const edgeGen = this.edges.gen;
+    let nMin = Infinity;
+    let nMax = -1;
+    let eMin = Infinity;
+    let eMax = -1;
+    let changed = 0;
+
+    for( let i = 0; i < refs.length; i++ ){
+      const ref = refs[ i ];
+      const slot = ref.slot;
+      const isNode = ref.group === 'nodes';
+      const gen = isNode ? nodeGen : edgeGen;
+
+      if( gen[ slot ] !== ref.gen ){ continue; }
+
+      const flags = isNode ? nodeFlags : edgeFlags;
+      const prev = flags[ slot ];
+
+      if( requireBit !== 0 && ( prev & requireBit ) === 0 ){ continue; }
+
+      const next = on ? ( prev | bit ) : ( prev & ~bit );
+
+      if( next === prev ){ continue; }
+
+      flags[ slot ] = next;
+      changed++;
+
+      if( isNode ){
+        if( slot < nMin ){ nMin = slot; }
+        if( slot > nMax ){ nMax = slot; }
+      } else {
+        if( slot < eMin ){ eMin = slot; }
+        if( slot > eMax ){ eMax = slot; }
+      }
+
+      if( changedIdx != null ){ changedIdx.push( i ); }
+    }
+
+    if( nMax >= 0 ){ this.dirty.mark( 'node.flags', nMin, nMax + 1 ); }
+    if( eMax >= 0 ){ this.dirty.mark( 'edge.flags', eMin, eMax + 1 ); }
+
+    return changed;
   }
 
   // -- style channel writers --

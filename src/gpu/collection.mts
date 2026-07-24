@@ -162,6 +162,15 @@ export class GpuCollection {
   }
 
   /**
+   * Like `_spawnUnique`, but for refs also known to be current (freshly
+   * read off the store, e.g. traversal output): interning skips the
+   * per-element gen re-validation of `_eleFromRef`.
+   */
+  _spawnLive( refs: Ref[] ): GpuCollection {
+    return new GpuCollection( this._cy, refs, { unique: true, live: true } );
+  }
+
+  /**
    * A cached Set of this collection's packed element keys, for set membership.
    * Sound to cache: `_refs` is fixed at construction, and a packed key encodes
    * the ref's own {group, slot, gen}, so it stays valid even as the store
@@ -705,16 +714,7 @@ export class GpuCollection {
 
     // setter forms
     if( typeof dim === 'string' ){
-      const partial: Position = { x: NaN, y: NaN };
-
-      return this._positions( ele => {
-        const prev = ele.position() as Position;
-
-        partial.x = dim === 'x' ? ( value as number ) : prev.x;
-        partial.y = dim === 'y' ? ( value as number ) : prev.y;
-
-        return partial;
-      }, silent );
+      return this._positions( dim === 'x' ? { x: value } : { y: value }, silent );
     }
 
     return this._positions( dim, silent );
@@ -731,47 +731,73 @@ export class GpuCollection {
   declare modelPositions: this['positions'];
   declare points: this['positions'];
 
-  private _positions( pos: Position | ElePositionFn, silent: boolean ): this {
+  private _positions( pos: Partial<Position> | ElePositionFn, silent: boolean ): this {
     const store = this._store;
+    const wantEmit = !silent && hasListeners( this._cy._emitter, 'position' );
+
+    // constant (possibly partial) object: direct columnar write — no
+    // per-element handles, callbacks, or Position allocations
+    if( typeof pos !== 'function' ){
+      const x = pos.x ?? null;
+      const y = pos.y ?? null;
+
+      if( x == null && y == null ){ return this; }
+
+      const slots: number[] = [];
+      const emitIdx: number[] | null = wantEmit ? [] : null;
+
+      for( let i = 0; i < this.length; i++ ){
+        const ref = this._refs[ i ];
+
+        if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+        slots.push( ref.slot );
+
+        if( emitIdx != null ){ emitIdx.push( i ); }
+      }
+
+      store.setPositionsConst( slots, x, y );
+
+      if( emitIdx != null ){
+        for( const i of emitIdx ){
+          this._cy._emitOnEle( 'position', this[ i ] );
+        }
+      }
+
+      return this;
+    }
+
+    const posCol = store.column( 'node.position' ) as Float32Array;
     const slots: number[] = [];
     const xy: number[] = [];
-    const moved: GpuCollection[] = [];
+    const emitIdx: number[] | null = wantEmit ? [] : null;
 
     for( let i = 0; i < this.length; i++ ){
       const ref = this._refs[ i ];
 
       if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
 
-      const p = typeof pos === 'function' ? pos( this[ i ], i ) : pos;
+      const p = pos( this[ i ], i );
 
-      if( p == null || p === false ){ continue; }
+      if( p == null || ( p as unknown ) === false ){ continue; }
 
       // a partial object (e.g. { y: 3 }) leaves the omitted axis unchanged,
       // matching v3's position() merge semantics
       const pp = p as { x?: number; y?: number };
-      let px: number;
-      let py: number;
-
-      if( pp.x == null || pp.y == null ){
-        const prev = this[ i ].position() as Position;
-
-        px = pp.x == null ? prev.x : pp.x;
-        py = pp.y == null ? prev.y : pp.y;
-      } else {
-        px = pp.x;
-        py = pp.y;
-      }
+      const px = pp.x ?? posCol[ ref.slot * 2 ];
+      const py = pp.y ?? posCol[ ref.slot * 2 + 1 ];
 
       slots.push( ref.slot );
       xy.push( px, py );
-      moved.push( this[ i ] );
+
+      if( emitIdx != null ){ emitIdx.push( i ); }
     }
 
     store.setPositions( slots, xy );
 
-    if( !silent && hasListeners( this._cy._emitter, 'position' ) ){
-      for( const ele of moved ){
-        this._cy._emitOnEle( 'position', ele );
+    if( emitIdx != null ){
+      for( const i of emitIdx ){
+        this._cy._emitOnEle( 'position', this[ i ] );
       }
     }
 
@@ -788,15 +814,36 @@ export class GpuCollection {
   }
 
   private _shift( dim: string | Position, value: number | undefined, silent: boolean ): this {
-    const delta: Position = typeof dim === 'string'
-      ? { x: dim === 'x' ? ( value as number ) : 0, y: dim === 'y' ? ( value as number ) : 0 }
-      : { x: dim.x || 0, y: dim.y || 0 };
+    const dx = typeof dim === 'string' ? ( dim === 'x' ? ( value as number ) : 0 ) : ( dim.x || 0 );
+    const dy = typeof dim === 'string' ? ( dim === 'y' ? ( value as number ) : 0 ) : ( dim.y || 0 );
 
-    return this._positions( ele => {
-      const p = ele.position() as Position;
+    if( dx === 0 && dy === 0 ){ return this; }
 
-      return { x: p.x + delta.x, y: p.y + delta.y };
-    }, silent );
+    // direct columnar offset — no callbacks or per-element Position objects
+    const store = this._store;
+    const wantEmit = !silent && hasListeners( this._cy._emitter, 'position' );
+    const slots: number[] = [];
+    const emitIdx: number[] | null = wantEmit ? [] : null;
+
+    for( let i = 0; i < this.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      slots.push( ref.slot );
+
+      if( emitIdx != null ){ emitIdx.push( i ); }
+    }
+
+    store.shiftPositions( slots, dx, dy );
+
+    if( emitIdx != null ){
+      for( const i of emitIdx ){
+        this._cy._emitOnEle( 'position', this[ i ] );
+      }
+    }
+
+    return this;
   }
 
   /** Without compound nodes, relative position is the model position. */
@@ -910,6 +957,7 @@ export class GpuCollection {
     const store = this._store;
     const cy = this._cy;
     const keys = Object.keys( patch );
+    const wantEmit = hasListeners( cy._emitter, 'data' );
 
     for( const k of keys ){
       if( k === 'id' ){
@@ -932,7 +980,7 @@ export class GpuCollection {
 
       cy._onDataChanged( ref );
 
-      if( hasListeners( cy._emitter, 'data' ) ){
+      if( wantEmit ){
         cy._emitOnEle( 'data', this[ i ] );
       }
     }
@@ -1268,30 +1316,42 @@ export class GpuCollection {
   }
 
   private _setBit( bit: number, on: boolean ): this {
-    const store = this._store;
-
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
-
-      if( store.isCurrent( ref ) ){ store.setFlag( ref.group, ref.slot, bit, on ); }
-    }
+    this._store.flagRefs( this._refs, bit, on );
 
     return this;
   }
 
   private _setSelected( selected: boolean ): this {
-    const store = this._store;
+    const cy = this._cy;
+    const changedIdx: number[] = [];
 
-    for( let i = 0; i < this.length; i++ ){
-      const ref = this._refs[ i ];
+    this._store.flagRefs( this._refs, FLAG_SELECTED, selected, FLAG_SELECTABLE, changedIdx );
 
-      if( !store.isCurrent( ref ) ){ continue; }
-      if( !store.hasFlag( ref.group, ref.slot, FLAG_SELECTABLE ) ){ continue; }
-      if( store.hasFlag( ref.group, ref.slot, FLAG_SELECTED ) === selected ){ continue; }
+    if( changedIdx.length === 0 ){ return this; }
 
-      store.setFlag( ref.group, ref.slot, FLAG_SELECTED, selected );
-      this._cy._applyStyle( ref );
-      this._cy._emitOnEle( selected ? 'select' : 'unselect', this[ i ] );
+    // with the mini style language a selection change only alters computed
+    // style when some block matches on :selected/:unselected — otherwise
+    // the restyle pass is skipped outright (the accent ring is shader-drawn)
+    if( cy._styleDependsOnSelection() ){
+      const nodeSlots: number[] = [];
+      const edgeSlots: number[] = [];
+
+      for( const i of changedIdx ){
+        const ref = this._refs[ i ];
+
+        ( ref.group === 'nodes' ? nodeSlots : edgeSlots ).push( ref.slot );
+      }
+
+      cy._applyStyleBulk( 'nodes', nodeSlots );
+      cy._applyStyleBulk( 'edges', edgeSlots );
+    }
+
+    const type = selected ? 'select' : 'unselect';
+
+    if( cy._hasListeners( type ) ){
+      for( const i of changedIdx ){
+        cy._emitOnEle( type, this[ i ] );
+      }
     }
 
     return this;
@@ -1425,46 +1485,91 @@ export class GpuCollection {
   }
 
   private _endpoints( which: 0 | 1 ): GpuCollection {
-    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
+    const store = this._store;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
+    const seen = new Set<number>();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'edges' ){ continue; }
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
 
-      refs.push( this._store.ref( 'nodes', endpoints[ ref.slot * 2 + which ] ) );
-    }
+      if( ref.group !== 'edges' || !store.isCurrent( ref ) ){ continue; }
 
-    return this._spawn( refs );
-  }
+      const nodeSlot = endpoints[ ref.slot * 2 + which ];
 
-  connectedEdges( selector?: SelectorLike ): GpuCollection {
-    const refs: Ref[] = [];
-
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'nodes' ){ continue; }
-
-      for( const edgeSlot of this._store.adj.connectedEdges( ref.slot ) ){
-        refs.push( this._store.ref( 'edges', edgeSlot ) );
+      if( !seen.has( nodeSlot ) ){
+        seen.add( nodeSlot );
+        refs.push( store.ref( 'nodes', nodeSlot ) );
       }
     }
 
-    const eles = this._spawn( refs );
+    return this._spawnLive( refs );
+  }
+
+  connectedEdges( selector?: SelectorLike ): GpuCollection {
+    const store = this._store;
+    const adj = store.adj;
+    const refs: Ref[] = [];
+    const seen = new Set<number>(); // edge slots: dedupes loops and shared edges alike
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      const out = adj.outEdges( ref.slot );
+      const inn = adj.inEdges( ref.slot );
+
+      for( let j = 0; j < out.length; j++ ){
+        const edgeSlot = out[ j ];
+
+        if( !seen.has( edgeSlot ) ){
+          seen.add( edgeSlot );
+          refs.push( store.ref( 'edges', edgeSlot ) );
+        }
+      }
+
+      for( let j = 0; j < inn.length; j++ ){
+        const edgeSlot = inn[ j ];
+
+        if( !seen.has( edgeSlot ) ){
+          seen.add( edgeSlot );
+          refs.push( store.ref( 'edges', edgeSlot ) );
+        }
+      }
+    }
+
+    const eles = this._spawnLive( refs );
 
     return selector == null ? eles : eles.filter( selector );
   }
 
   connectedNodes( selector?: SelectorLike ): GpuCollection {
-    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
+    const store = this._store;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
+    const seen = new Set<number>();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'edges' ){ continue; }
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
 
-      refs.push( this._store.ref( 'nodes', endpoints[ ref.slot * 2 ] ) );
-      refs.push( this._store.ref( 'nodes', endpoints[ ref.slot * 2 + 1 ] ) );
+      if( ref.group !== 'edges' || !store.isCurrent( ref ) ){ continue; }
+
+      const source = endpoints[ ref.slot * 2 ];
+      const target = endpoints[ ref.slot * 2 + 1 ];
+
+      if( !seen.has( source ) ){
+        seen.add( source );
+        refs.push( store.ref( 'nodes', source ) );
+      }
+
+      if( !seen.has( target ) ){
+        seen.add( target );
+        refs.push( store.ref( 'nodes', target ) );
+      }
     }
 
-    const eles = this._spawn( refs );
+    const eles = this._spawnLive( refs );
 
     return selector == null ? eles : eles.filter( selector );
   }
@@ -1479,47 +1584,88 @@ export class GpuCollection {
 
   private _goers( direction: 'out' | 'in', selector?: SelectorLike ): GpuCollection {
     const store = this._store;
+    const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
+    // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1
+    const seen = new Set<number>();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'nodes' ){ continue; }
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
 
-      const edgeSlots = direction === 'out' ? store.adj.outEdges( ref.slot ) : store.adj.inEdges( ref.slot );
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
 
-      for( const edgeSlot of edgeSlots ){
+      const edgeSlots = direction === 'out' ? adj.outEdges( ref.slot ) : adj.inEdges( ref.slot );
+
+      for( let j = 0; j < edgeSlots.length; j++ ){
+        const edgeSlot = edgeSlots[ j ];
         const otherSlot = direction === 'out' ? endpoints[ edgeSlot * 2 + 1 ] : endpoints[ edgeSlot * 2 ];
 
-        refs.push( store.ref( 'edges', edgeSlot ) );
-        refs.push( store.ref( 'nodes', otherSlot ) );
+        if( !seen.has( edgeSlot * 2 + 1 ) ){
+          seen.add( edgeSlot * 2 + 1 );
+          refs.push( store.ref( 'edges', edgeSlot ) );
+        }
+
+        if( !seen.has( otherSlot * 2 ) ){
+          seen.add( otherSlot * 2 );
+          refs.push( store.ref( 'nodes', otherSlot ) );
+        }
       }
     }
 
-    const eles = this._spawn( refs );
+    const eles = this._spawnLive( refs );
 
     return selector == null ? eles : eles.filter( selector );
   }
 
   neighborhood( selector?: SelectorLike ): GpuCollection {
     const store = this._store;
+    const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
+    // packed (group, slot) keys; the collection's own live elements are
+    // pre-seeded so the open neighborhood excludes them during the walk
+    const seen = new Set<number>();
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'nodes' ){ continue; }
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
 
-      for( const edgeSlot of store.adj.connectedEdges( ref.slot ) ){
-        const source = endpoints[ edgeSlot * 2 ];
-        const target = endpoints[ edgeSlot * 2 + 1 ];
-        const otherSlot = source === ref.slot ? target : source;
-
-        refs.push( store.ref( 'edges', edgeSlot ) );
-        refs.push( store.ref( 'nodes', otherSlot ) );
+      if( store.isCurrent( ref ) ){
+        seen.add( ref.group === 'nodes' ? ref.slot * 2 : ref.slot * 2 + 1 );
       }
     }
 
-    // open neighborhood: exclude the collection's own elements
-    const eles = this._spawn( refs ).difference( this );
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      const out = adj.outEdges( ref.slot );
+      const inn = adj.inEdges( ref.slot );
+
+      for( let pass = 0; pass < 2; pass++ ){
+        const edgeSlots = pass === 0 ? out : inn;
+
+        for( let j = 0; j < edgeSlots.length; j++ ){
+          const edgeSlot = edgeSlots[ j ];
+          const source = endpoints[ edgeSlot * 2 ];
+          const target = endpoints[ edgeSlot * 2 + 1 ];
+          const otherSlot = source === ref.slot ? target : source;
+
+          if( !seen.has( edgeSlot * 2 + 1 ) ){
+            seen.add( edgeSlot * 2 + 1 );
+            refs.push( store.ref( 'edges', edgeSlot ) );
+          }
+
+          if( !seen.has( otherSlot * 2 ) ){
+            seen.add( otherSlot * 2 );
+            refs.push( store.ref( 'nodes', otherSlot ) );
+          }
+        }
+      }
+    }
+
+    const eles = this._spawnLive( refs );
 
     return selector == null ? eles : eles.filter( selector );
   }
@@ -1546,16 +1692,21 @@ export class GpuCollection {
 
   private _dagExtremity( direction: 'in' | 'out', selector?: SelectorLike ): GpuCollection {
     const store = this._store;
+    const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
 
-    for( const ref of this._liveRefs() ){
-      if( ref.group !== 'nodes' ){ continue; }
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
 
-      const edges = direction === 'in' ? store.adj.inEdges( ref.slot ) : store.adj.outEdges( ref.slot );
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      const edges = direction === 'in' ? adj.inEdges( ref.slot ) : adj.outEdges( ref.slot );
       let disqualified = false;
 
-      for( const edgeSlot of edges ){
+      for( let j = 0; j < edges.length; j++ ){
+        const edgeSlot = edges[ j ];
+
         // a loop (source === target) never disqualifies
         if( endpoints[ edgeSlot * 2 ] !== endpoints[ edgeSlot * 2 + 1 ] ){ disqualified = true; break; }
       }
@@ -1563,7 +1714,7 @@ export class GpuCollection {
       if( !disqualified ){ refs.push( ref ); }
     }
 
-    const eles = this._spawn( refs );
+    const eles = this._spawnLive( refs );
 
     return selector == null ? eles : eles.filter( selector );
   }
@@ -1577,34 +1728,49 @@ export class GpuCollection {
   }
 
   private _dagAllHops( direction: 'out' | 'in', selector?: SelectorLike ): GpuCollection {
+    const store = this._store;
+    const adj = store.adj;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const acc: Ref[] = [];
+    // packed (group, slot) keys: node = slot * 2, edge = slot * 2 + 1;
+    // a raw slot BFS — no per-hop collection spawns or handle interning
     const seen = new Set<number>();
-    const hop = ( eles: GpuCollection ): GpuCollection =>
-      direction === 'out' ? eles.outgoers() : eles.incomers();
+    let frontier: number[] = [];
 
-    let frontier = hop( this );
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
 
-    for( ;; ){
-      if( frontier.length === 0 ){ break; }
+      if( ref.group === 'nodes' && store.isCurrent( ref ) ){ frontier.push( ref.slot ); }
+    }
 
-      let newNext = false;
+    while( frontier.length > 0 ){
+      const next: number[] = [];
 
       for( let i = 0; i < frontier.length; i++ ){
-        const key = packRef( frontier._refs[ i ] );
+        const nodeSlot = frontier[ i ];
+        const edgeSlots = direction === 'out' ? adj.outEdges( nodeSlot ) : adj.inEdges( nodeSlot );
 
-        if( !seen.has( key ) ){
-          seen.add( key );
-          acc.push( frontier._refs[ i ] );
-          newNext = true;
+        for( let j = 0; j < edgeSlots.length; j++ ){
+          const edgeSlot = edgeSlots[ j ];
+          const otherSlot = direction === 'out' ? endpoints[ edgeSlot * 2 + 1 ] : endpoints[ edgeSlot * 2 ];
+
+          if( !seen.has( edgeSlot * 2 + 1 ) ){
+            seen.add( edgeSlot * 2 + 1 );
+            acc.push( store.ref( 'edges', edgeSlot ) );
+          }
+
+          if( !seen.has( otherSlot * 2 ) ){
+            seen.add( otherSlot * 2 );
+            acc.push( store.ref( 'nodes', otherSlot ) );
+            next.push( otherSlot );
+          }
         }
       }
 
-      if( !newNext ){ break; } // reached the closure
-
-      frontier = hop( frontier );
+      frontier = next;
     }
 
-    const out = this._spawn( acc );
+    const out = this._spawnLive( acc );
 
     return selector == null ? out : out.filter( selector );
   }

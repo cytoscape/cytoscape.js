@@ -48,5 +48,8 @@ export function makeGpu( elements ){
   return cytoscapeGpu( { elements: clone( elements ) } );
 }
 
-// A representative id in the middle of the graph, for single-element lookups.
-export const MID = 'n' + Math.floor( N / 2 );
+// A representative node index/id in the middle of the graph, for single-element
+// lookups. Benchmarks rotate over a small band of ids starting here so the JIT
+// can't hoist a loop-invariant pure call out of the measured region.
+export const MIDNUM = Math.floor( N / 2 );
+export const MID = 'n' + MIDNUM;

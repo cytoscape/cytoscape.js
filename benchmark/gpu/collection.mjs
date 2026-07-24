@@ -1,13 +1,22 @@
 // Collection-API micro-benchmarks: v3 (src/) vs GPU/v4 (src/gpu/).
 //
 // Each group compares the same logical operation on both implementations.
-// Element handles and operands are precomputed per instance so the timed
-// region is the operation itself, not the selection that feeds it. Mutating
-// ops get dedicated instances and are written as reversible round-trips so the
-// graph state returns to baseline every iteration.
+//
+// Methodology — defeating the JIT:
+//   Pure, allocation-free calls (same(), degree(), data()) on a fixed operand
+//   are loop-invariant, so V8 hoists them out of the measured loop and reports
+//   a few nanoseconds regardless of the real cost. To prevent that, every
+//   comparison rotates over a small POOL of distinct operands (K of them);
+//   because the receiver/args change each iteration the call can't be hoisted.
+//   Binary ops (same/contains/union) compare DISTINCT collections of equal
+//   membership so an identity short-circuit (v3 has one; v4 doesn't) doesn't
+//   make a self-comparison look artificially free.
+//
+// Element handles and operands are resolved in setup(), outside the timed
+// region. Mutations run on dedicated instances as reversible round-trips.
 
 import { bench, group, summary, do_not_optimize } from 'mitata';
-import { buildElements, makeV3, makeGpu, MID, N } from './graph.mjs';
+import { buildElements, makeV3, makeGpu, MIDNUM, N } from './graph.mjs';
 
 const elements = buildElements();
 
@@ -15,31 +24,29 @@ const elements = buildElements();
 const v3 = makeV3( elements );
 const gpu = makeGpu( elements );
 
-// precomputed single-element handles
-const v3mid = v3.$( '#' + MID );
-const gpumid = gpu.$( '#' + MID );
+const K = 8;              // rotation pool size (power of two)
+const MASK = K - 1;
 
-// precomputed set-operation operands (overlapping node ranges)
-const v3A = v3.nodes().slice( 0, 100 ), v3B = v3.nodes().slice( 50, 150 );
-const gpuA = gpu.nodes().slice( 0, 100 ), gpuB = gpu.nodes().slice( 50, 150 );
+/**
+ * Compare `op` across both implementations, rotating over K distinct operands
+ * built by `setup(cy, k)` so the call is never loop-invariant.
+ */
+function cmp( name, setup, op ){
+  const vs = Array.from( { length: K }, ( _, k ) => setup( v3, k ) );
+  const gs = Array.from( { length: K }, ( _, k ) => setup( gpu, k ) );
+  let i = 0;
 
-// precomputed whole collections for iteration/comparison
-const v3nodes = v3.nodes(), gpunodes = gpu.nodes();
-const v3all = v3.elements(), gpuall = gpu.elements();
-
-/** Compare one operation across the two implementations. */
-function cmp( name, v3fn, gpufn ){
   group( name, () => {
     summary( () => {
-      bench( 'v3',  () => do_not_optimize( v3fn() ) );
-      bench( 'gpu', () => do_not_optimize( gpufn() ) );
+      bench( 'v3',  () => { const k = ( i++ ) & MASK; return do_not_optimize( op( vs[ k ], k ) ); } );
+      bench( 'gpu', () => { const k = ( i++ ) & MASK; return do_not_optimize( op( gs[ k ], k ) ); } );
     } );
   } );
 }
 
 /**
  * Compare a reversible element mutation on dedicated instances. The target
- * handle is resolved once, OUTSIDE the timed region, so the measurement is the
+ * handle is resolved once, outside the timed region, so the measurement is the
  * mutation itself and not the selection that finds the element.
  */
 function cmpMutEle( name, setup, fn ){
@@ -56,42 +63,48 @@ function cmpMutEle( name, setup, fn ){
   } );
 }
 
+// operand builders
+const node = ( cy, k ) => cy.$( '#n' + ( MIDNUM + k ) );        // K distinct nodes → distinct handles
+const nodes = cy => cy.nodes();                                  // fresh collection each call
+const allEles = cy => cy.elements();
+const overlap = cy => ( { a: cy.nodes().slice( 0, 100 ), b: cy.nodes().slice( 50, 150 ) } );
+const equalPair = cy => ( { a: cy.nodes(), b: cy.nodes() } );    // distinct objects, equal membership
+const superSub = cy => ( { a: cy.nodes(), b: cy.nodes().slice( 0, 100 ) } );
+
 console.log( `\n== collection API — v3 vs gpu (N=${N} nodes, ${2 * N} edges) ==` );
 
 // -- traversal --
-cmp( 'traverse: neighborhood()',    () => v3mid.neighborhood(),    () => gpumid.neighborhood() );
-cmp( 'traverse: connectedEdges()',  () => v3mid.connectedEdges(),  () => gpumid.connectedEdges() );
-cmp( 'traverse: outgoers()',        () => v3mid.outgoers(),        () => gpumid.outgoers() );
-cmp( 'traverse: incomers()',        () => v3mid.incomers(),        () => gpumid.incomers() );
-cmp( 'traverse: components()',      () => v3all.components(),      () => gpuall.components() );
+cmp( 'traverse: neighborhood()',    node, n => n.neighborhood() );
+cmp( 'traverse: connectedEdges()',  node, n => n.connectedEdges() );
+cmp( 'traverse: outgoers()',        node, n => n.outgoers() );
+cmp( 'traverse: incomers()',        node, n => n.incomers() );
+cmp( 'traverse: components()',      allEles, e => e.components() );
 
 // -- degree --
-cmp( 'degree: node.degree()',       () => v3mid.degree(),          () => gpumid.degree() );
-cmp( 'degree: nodes.totalDegree()', () => v3nodes.totalDegree(),   () => gpunodes.totalDegree() );
-cmp( 'degree: nodes.maxDegree()',   () => v3nodes.maxDegree(),     () => gpunodes.maxDegree() );
+cmp( 'degree: node.degree()',       node,  n => n.degree() );
+cmp( 'degree: nodes.totalDegree()', nodes, n => n.totalDegree() );
+cmp( 'degree: nodes.maxDegree()',   nodes, n => n.maxDegree() );
 
 // -- data / position reads --
-cmp( 'data: get',                   () => v3mid.data( 'foo' ),     () => gpumid.data( 'foo' ) );
-cmp( 'position: get',               () => v3mid.position(),        () => gpumid.position() );
-cmp( 'json: element',               () => v3mid.json(),            () => gpumid.json() );
+cmp( 'data: get',                   node, n => n.data( 'foo' ) );
+cmp( 'position: get',               node, n => n.position() );
+cmp( 'json: element',               node, n => n.json() );
 
-// -- set operations --
-cmp( 'set: union()',                () => v3A.union( v3B ),        () => gpuA.union( gpuB ) );
-cmp( 'set: intersection()',         () => v3A.intersection( v3B ), () => gpuA.intersection( gpuB ) );
-cmp( 'set: difference()',           () => v3A.difference( v3B ),   () => gpuA.difference( gpuB ) );
+// -- set operations (distinct operands) --
+cmp( 'set: union()',                overlap, o => o.a.union( o.b ) );
+cmp( 'set: intersection()',         overlap, o => o.a.intersection( o.b ) );
+cmp( 'set: difference()',           overlap, o => o.a.difference( o.b ) );
 
 // -- iteration / comparison --
-cmp( 'iter: map()',                 () => v3nodes.map( e => e.id() ), () => gpunodes.map( e => e.id() ) );
-cmp( 'iter: forEach()',             () => { let k = 0; v3nodes.forEach( () => k++ ); return k; },
-                                    () => { let k = 0; gpunodes.forEach( () => k++ ); return k; } );
-cmp( 'iter: filter(fn)',            () => v3nodes.filter( e => e.data( 'foo' ) % 2 === 0 ),
-                                    () => gpunodes.filter( e => e.data( 'foo' ) % 2 === 0 ) );
-cmp( 'compare: same()',             () => v3nodes.same( v3nodes ), () => gpunodes.same( gpunodes ) );
-cmp( 'compare: contains()',         () => v3nodes.contains( v3A ), () => gpunodes.contains( gpuA ) );
+cmp( 'iter: map()',                 nodes, n => n.map( e => e.id() ) );
+cmp( 'iter: forEach()',             nodes, n => { let k = 0; n.forEach( () => k++ ); return k; } );
+cmp( 'iter: filter(fn)',            nodes, n => n.filter( e => e.data( 'foo' ) % 2 === 0 ) );
+cmp( 'compare: same()',             equalPair, o => o.a.same( o.b ) );
+cmp( 'compare: contains()',         superSub, o => o.a.contains( o.b ) );
 
 // -- mutations (target resolved once, outside the timed region) --
-const findMid = cy => cy.$( '#' + MID );
+const midOf = cy => cy.$( '#n' + MIDNUM );
 
-cmpMutEle( 'mut: data set',          findMid, n => n.data( 'foo', 1 ) );
-cmpMutEle( 'mut: position set',      findMid, n => n.position( { x: 1, y: 2 } ) );
-cmpMutEle( 'mut: select + unselect', findMid, n => { n.select(); n.unselect(); } );
+cmpMutEle( 'mut: data set',          midOf, n => n.data( 'foo', 1 ) );
+cmpMutEle( 'mut: position set',      midOf, n => n.position( { x: 1, y: 2 } ) );
+cmpMutEle( 'mut: select + unselect', midOf, n => { n.select(); n.unselect(); } );

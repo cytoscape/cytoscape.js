@@ -1787,10 +1787,15 @@ export class GpuCollection {
 
   emit( events: string, extraParams?: unknown[] ): this {
     for( let i = 0; i < this.length; i++ ){
-      for( const type of events.split( /\s+/ ) ){
-        if( type !== '' ){
-          this._cy._emitOnEle( type, this[ i ], extraParams );
-        }
+      for( const evt of events.split( /\s+/ ) ){
+        if( evt === '' ){ continue; }
+
+        // split "type.namespace" so namespaced element listeners match, as in v3
+        const dot = evt.indexOf( '.' );
+        const type = dot === -1 ? evt : evt.slice( 0, dot );
+        const namespace = dot === -1 ? null : evt.slice( dot );
+
+        this._cy._emitOnEle( type, this[ i ], extraParams, { namespace } );
       }
     }
 

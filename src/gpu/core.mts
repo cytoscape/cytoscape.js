@@ -62,6 +62,9 @@ export class GpuCore {
   private _idCounter: number;
   private _scratch: Record<string, unknown>;
   private _graphData: Record<string, unknown>;
+  private _autolock: boolean;
+  private _autoungrabify: boolean;
+  private _autounselectify: boolean;
 
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
@@ -77,6 +80,9 @@ export class GpuCore {
     this._idCounter = 0;
     this._scratch = {};
     this._graphData = {};
+    this._autolock = options.autolock ?? false;
+    this._autoungrabify = options.autoungrabify ?? false;
+    this._autounselectify = options.autounselectify ?? false;
     this._readyResolved = this._container == null; // headless is ready immediately
     this._viewport = new Viewport( this, {
       zoom: options.zoom,
@@ -579,6 +585,35 @@ export class GpuCore {
     return this;
   }
 
+  // -- interaction gating --
+
+  autolock( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._autolock; }
+
+    this._autolock = bool;
+
+    return this;
+  }
+
+  autoungrabify( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._autoungrabify; }
+
+    this._autoungrabify = bool;
+
+    return this;
+  }
+
+  autounselectify( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._autounselectify; }
+
+    this._autounselectify = bool;
+
+    return this;
+  }
+
+  declare autolockNodes: this['autolock'];
+  declare autoungrabifyNodes: this['autoungrabify'];
+
   // -- environment --
 
   instanceString(): string {
@@ -760,4 +795,6 @@ GpuCore.prototype.createLayout = GpuCore.prototype.layout;
 GpuCore.prototype.invalidateSize = GpuCore.prototype.resize;
 GpuCore.prototype.attr = GpuCore.prototype.data;
 GpuCore.prototype.removeAttr = GpuCore.prototype.removeData;
+GpuCore.prototype.autolockNodes = GpuCore.prototype.autolock;
+GpuCore.prototype.autoungrabifyNodes = GpuCore.prototype.autoungrabify;
 

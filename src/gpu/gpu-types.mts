@@ -24,6 +24,8 @@ export interface GpuElementDefinition {
   position?: Position;
   selected?: boolean;
   selectable?: boolean;
+  grabbable?: boolean;
+  locked?: boolean;
 }
 
 export type GpuElementsDefinition =
@@ -204,6 +206,12 @@ export interface CytoscapeGpuOptions {
   pan?: Position;
   minZoom?: number;
   maxZoom?: number;
+  /** disable node dragging globally (default false) */
+  autolock?: boolean;
+  /** make all nodes ungrabbable globally (default false) */
+  autoungrabify?: boolean;
+  /** disable selection globally (default false) */
+  autounselectify?: boolean;
   /** rendered dimensions used when headless */
   headlessWidth?: number;
   headlessHeight?: number;

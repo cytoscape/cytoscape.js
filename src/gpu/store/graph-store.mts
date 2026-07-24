@@ -5,7 +5,7 @@ import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import {
   columnSpec, columnSpecsForGroup,
-  FLAG_ALIVE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ALIVE, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
 import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
@@ -14,6 +14,8 @@ export interface AddElementOpts {
   selected?: boolean;
   selectable?: boolean;
   visible?: boolean;
+  grabbable?: boolean;
+  locked?: boolean;
 }
 
 /** Insertion-order slot list with tombstone skipping and lazy compaction. */
@@ -552,7 +554,7 @@ export class GraphStore implements ModelView {
   ): void {
     const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
     const flags = this.table( group ).column( flagsId ) as Uint32Array;
-    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_SELECTABLE;
+    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_SELECTABLE | FLAG_GRABBABLE;
     const count = slots.length;
 
     if( contiguousFrom < count ){ // fresh run: one fill
@@ -668,6 +670,8 @@ const initialFlags = ( opts: AddElementOpts ): number => {
   if( opts.visible !== false ){ flags |= FLAG_VISIBLE; }
   if( opts.selectable !== false ){ flags |= FLAG_SELECTABLE; }
   if( opts.selected === true ){ flags |= FLAG_SELECTED; }
+  if( opts.grabbable !== false ){ flags |= FLAG_GRABBABLE; }
+  if( opts.locked === true ){ flags |= FLAG_LOCKED; }
 
   return flags;
 };

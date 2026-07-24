@@ -444,6 +444,41 @@ test.describe( 'WebGPU renderer', () => {
     expect( oldPixel[1] ).toBeGreaterThan( 240 );
   } );
 
+  test( 'a locked node does not drag; the gesture pans instead', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.cy.$( '#a' ).lock();
+      window.__hovered = false;
+      window.cy.on( 'mouseover', () => { window.__hovered = true; } );
+    } );
+
+    await page.mouse.move( center.x - 10, center.y - 10 );
+    await page.mouse.move( center.x, center.y, { steps: 5 } );
+    await expect.poll( () => page.evaluate( () => window.__hovered ), { timeout: 5000 } ).toBe( true );
+
+    const panBefore = await page.evaluate( () => window.cy.pan() );
+
+    // drag by (+120, +60): a locked node stays put and the viewport pans
+    await page.mouse.down();
+    await page.mouse.move( center.x + 120, center.y + 60, { steps: 10 } );
+    await page.mouse.up();
+
+    const pos = await page.evaluate( () => window.cy.$( '#a' ).position() );
+    const panAfter = await page.evaluate( () => window.cy.pan() );
+
+    expect( pos.x ).toBeCloseTo( 0, 0 ); // model position unchanged
+    expect( pos.y ).toBeCloseTo( 0, 0 );
+    expect( panAfter.x - panBefore.x ).toBeCloseTo( 120, 0 ); // the viewport panned
+    expect( panAfter.y - panBefore.y ).toBeCloseTo( 60, 0 );
+  } );
+
   test.describe( 'SDF labels', () => {
     const LABELLED_GRAPH = {
       elements: [ { data: { id: 'n0' }, position: { x: 0, y: 0 } } ],

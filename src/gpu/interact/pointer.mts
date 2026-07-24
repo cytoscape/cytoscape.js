@@ -1,4 +1,4 @@
-import { FLAG_GRABBED, FLAG_HOVERED } from '../contract.mjs';
+import { FLAG_GRABBABLE, FLAG_GRABBED, FLAG_HOVERED, FLAG_LOCKED } from '../contract.mjs';
 import type { GpuCore } from '../core.mjs';
 import type { GpuCollection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
@@ -145,12 +145,16 @@ export class PointerHandler {
     const pos = this.eventPos( e );
 
     // pan-vs-grab from a synchronous CPU node pick: exact and current
-    const grabbed = this.renderer.pickNodeSync( pos.x, pos.y );
+    const picked = this.renderer.pickNodeSync( pos.x, pos.y );
+    // a node under the cursor is only *dragged* when grabbable and unlocked
+    // (and not globally auto-locked/ungrabified); otherwise the press pans,
+    // but the node is still remembered as the tap target for selection
+    const canDrag = picked != null && this.canDrag( picked );
 
     this.down = {
       pointerId: e.pointerId,
-      mode: grabbed != null ? 'grab' : 'pan',
-      grabbed,
+      mode: canDrag ? 'grab' : 'pan',
+      grabbed: picked,
       startX: pos.x,
       startY: pos.y,
       lastX: pos.x,
@@ -159,9 +163,23 @@ export class PointerHandler {
       shift: e.shiftKey
     };
 
-    if( grabbed != null ){
-      this.setFlagOn( grabbed, FLAG_GRABBED, true );
+    if( canDrag ){
+      this.setFlagOn( picked, FLAG_GRABBED, true );
     }
+  }
+
+  /** Whether a picked node may be dragged: grabbable, unlocked, not globally gated. */
+  private canDrag( ele: GpuCollection ): boolean {
+    if( this.cy.autolock() === true || this.cy.autoungrabify() === true ){ return false; }
+
+    const ref = ele._eventRef();
+
+    if( ref == null ){ return false; }
+
+    const store = this.cy._store;
+
+    return store.hasFlag( ref.group, ref.slot, FLAG_GRABBABLE )
+      && !store.hasFlag( ref.group, ref.slot, FLAG_LOCKED );
   }
 
   private onPointerMove( e: PointerEvent ): void {
@@ -316,10 +334,12 @@ export class PointerHandler {
     const cy = this.cy;
     const position = cy._viewport.renderedToModel( this.eventPos( e ) );
 
+    const selectionEnabled = cy.autounselectify() !== true;
+
     if( target == null ){ // background tap
       cy.emit( { type: 'tap', position } );
 
-      if( !e.shiftKey ){
+      if( selectionEnabled && !e.shiftKey ){
         cy.$( ':selected' ).unselect();
       }
 
@@ -328,7 +348,7 @@ export class PointerHandler {
 
     cy._emitOnEle( 'tap', target, undefined, { position } );
 
-    if( !target.selectable() ){ return; }
+    if( !selectionEnabled || !target.selectable() ){ return; }
 
     if( target.selected() ){
       target.unselect(); // toggle off

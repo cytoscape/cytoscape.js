@@ -1,5 +1,5 @@
 import {
-  FLAG_SELECTABLE, FLAG_SELECTED
+  FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { matchesRef, parseSelector } from './selector.mjs';
@@ -1052,6 +1052,62 @@ export class GpuCollection {
   }
 
   declare deselect: this['unselect'];
+
+  selectify(): this {
+    return this._setBit( FLAG_SELECTABLE, true );
+  }
+
+  unselectify(): this {
+    return this._setBit( FLAG_SELECTABLE, false );
+  }
+
+  // -- grab / lock --
+
+  grabbable(): boolean {
+    return this._hasBit( FLAG_GRABBABLE );
+  }
+
+  grabbed(): boolean {
+    return this._hasBit( FLAG_GRABBED );
+  }
+
+  grabify(): this {
+    return this._setBit( FLAG_GRABBABLE, true );
+  }
+
+  ungrabify(): this {
+    return this._setBit( FLAG_GRABBABLE, false );
+  }
+
+  locked(): boolean {
+    return this._hasBit( FLAG_LOCKED );
+  }
+
+  lock(): this {
+    return this._setBit( FLAG_LOCKED, true );
+  }
+
+  unlock(): this {
+    return this._setBit( FLAG_LOCKED, false );
+  }
+
+  private _hasBit( bit: number ): boolean {
+    const ref = this._first();
+
+    return ref != null && this._store.isCurrent( ref ) && this._store.hasFlag( ref.group, ref.slot, bit );
+  }
+
+  private _setBit( bit: number, on: boolean ): this {
+    const store = this._store;
+
+    for( let i = 0; i < this.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( store.isCurrent( ref ) ){ store.setFlag( ref.group, ref.slot, bit, on ); }
+    }
+
+    return this;
+  }
 
   private _setSelected( selected: boolean ): this {
     const store = this._store;

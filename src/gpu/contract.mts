@@ -19,6 +19,8 @@ export const FLAG_SELECTED = 4;
 export const FLAG_SELECTABLE = 8;
 export const FLAG_GRABBED = 16;
 export const FLAG_HOVERED = 32;
+export const FLAG_GRABBABLE = 64;
+export const FLAG_LOCKED = 128;
 
 // -- node shape ids (u32 because WGSL can't index u8 arrays) --
 

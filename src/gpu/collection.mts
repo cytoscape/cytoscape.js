@@ -1786,16 +1786,12 @@ export class GpuCollection {
   declare unbind: this['off'];
 
   emit( events: string, extraParams?: unknown[] ): this {
+    // v4 does not support event namespaces (see PLAN.md); types are emitted verbatim
     for( let i = 0; i < this.length; i++ ){
-      for( const evt of events.split( /\s+/ ) ){
-        if( evt === '' ){ continue; }
-
-        // split "type.namespace" so namespaced element listeners match, as in v3
-        const dot = evt.indexOf( '.' );
-        const type = dot === -1 ? evt : evt.slice( 0, dot );
-        const namespace = dot === -1 ? null : evt.slice( dot );
-
-        this._cy._emitOnEle( type, this[ i ], extraParams, { namespace } );
+      for( const type of events.split( /\s+/ ) ){
+        if( type !== '' ){
+          this._cy._emitOnEle( type, this[ i ], extraParams );
+        }
       }
     }
 

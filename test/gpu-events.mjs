@@ -52,13 +52,12 @@ describe('gpu/events', function(){
       expect( called ).to.equal(2);
     });
 
-    it('has namespace and timeStamp on the event object', function(){
+    it('has a timeStamp on the event object', function(){
       var evt = null;
 
       cy.on('foo', function( e ){ evt = e; });
-      cy.emit('foo.ns');
+      cy.emit('foo');
 
-      expect( evt.namespace ).to.equal('.ns');
       expect( evt.timeStamp ).to.be.a('number');
     });
 
@@ -106,27 +105,6 @@ describe('gpu/events', function(){
       cy.emit('foo');
 
       expect( called ).to.equal(0);
-    });
-
-    it('supports namespaces (v3 semantics)', function(){
-      var ns = 0;
-      var plain = 0;
-
-      cy.on('foo.ns', function(){ ns++; });
-      cy.on('foo', function(){ plain++; });
-
-      cy.emit('foo.ns'); // fires both
-      expect( ns ).to.equal(1);
-      expect( plain ).to.equal(1);
-
-      cy.emit('foo'); // unnamespaced emit does not fire namespaced listeners
-      expect( ns ).to.equal(1);
-      expect( plain ).to.equal(2);
-
-      cy.off('foo.ns');
-      cy.emit('foo.ns');
-      expect( ns ).to.equal(1);
-      expect( plain ).to.equal(3);
     });
 
     it('supports promiseOn()', function(){
@@ -266,18 +244,6 @@ describe('gpu/events', function(){
       cy.$('#a').emit('foo');
 
       expect( called ).to.equal(0);
-    });
-
-    it('matches an element listener by namespace', function(){
-      var called = 0;
-
-      cy.$('#a').on('foo.bar', function(){ called++; });
-
-      cy.$('#a').emit('foo.bar');
-      expect( called ).to.equal(1);
-
-      cy.$('#a').emit('foo'); // unnamespaced emit does not fire the namespaced listener
-      expect( called ).to.equal(1);
     });
 
     it('passes extra params to an element listener', function(){

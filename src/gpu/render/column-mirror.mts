@@ -38,6 +38,7 @@ export class ColumnMirror {
   private capacities: { nodes: number; edges: number };
   private destroyed: boolean;
   private gpuOwned: ReadonlySet<ColumnId>;
+  private tweenOwned: ReadonlySet<ColumnId>;
 
   constructor( device: MirrorDevice, view: ModelView ){
     this.device = device;
@@ -48,6 +49,7 @@ export class ColumnMirror {
     this.capacities = { nodes: 0, edges: 0 };
     this.destroyed = false;
     this.gpuOwned = new Set();
+    this.tweenOwned = new Set();
 
     this.realloc( 'nodes' );
     this.realloc( 'edges' );
@@ -61,6 +63,15 @@ export class ColumnMirror {
    */
   setGpuOwned( ids: Iterable<ColumnId> ): void {
     this.gpuOwned = new Set( ids );
+  }
+
+  /**
+   * Columns the GPU tween runtime owns while an animation runs (a
+   * separate set from the mapper-owned one so the two can't clobber each
+   * other); span uploads skip a column owned by either.
+   */
+  setTweenOwned( ids: Iterable<ColumnId> ): void {
+    this.tweenOwned = new Set( ids );
   }
 
   buffer( id: ColumnId ): GPUBuffer {
@@ -88,7 +99,7 @@ export class ColumnMirror {
 
       if( delta.resized[ spec.group ] ){ continue; } // covered by the full re-upload
 
-      if( this.gpuOwned.has( span.column ) ){ continue; } // the eval kernel owns these bytes
+      if( this.gpuOwned.has( span.column ) || this.tweenOwned.has( span.column ) ){ continue; } // owned on-GPU
 
       const arr = this.view.column( span.column );
       const byteStart = span.start * spec.bytesPerSlot;

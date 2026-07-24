@@ -32,6 +32,7 @@ src/gpu/
   style.mts              # StyleEngine: constant-value blocks compiled into channel columns + label sidecar
   style-scales.mts       # mapper DSL: object specs compiled to a closure-free IR + CPU evaluator
   style-schemes.mts      # named color schemes (viridis, ColorBrewer, ...) + sRGB↔OKLab
+  animation.mts          # Animation + AnimationManager: CPU tween + queue; routes position to the GPU sink
   layout/grid.mts        # ported grid layout (cell-packing math from src/extensions/layout/grid.mts)
   store/
     graph-store.mts      # GraphStore: NodeTable + EdgeTable + IdMap + Adjacency + label sidecar; mutation API
@@ -49,6 +50,7 @@ src/gpu/
     label-pipeline.mts   # SDF label pipeline (glyph instances; draws after nodes; not pickable)
     mapper-runtime.mts   # GPU mapper eval: program/stop/data packing + the per-frame runtime
     mapper-shaders.mts   # the eval kernel WGSL (scale math mirrors style-scales.mts)
+    gpu-tween.mts        # GPU position tween runtime + kernel (per-slot from/to, now uniform)
     label-layer.mts      # consumes the label-dirty channel; lays out glyphs into the GlyphBuffer
     label-layout.mts     # pure single-line centered glyph layout (Node-testable)
     glyph-atlas.mts      # runtime SDF atlas: canvas-2D raster → exact EDT → shelf-packed r8 texture
@@ -642,12 +644,22 @@ the API.
   (later) GPU layouts.  **Grabbing is forbidden while an element
   animates** (`pointer.canDrag` consults `isAnimating`), removing the
   two-way drag-feedback boundary.
-- **Deferred:** the GPU tween fast path (`now` uniform + tween program in
-  the eval kernel; upload params once, settle-on-complete, pre-cull
-  position eval, continuous loop) — the CPU path is complete and is its
-  reference.  And **GPU layouts** (stateful, not CPU-reproducible →
-  GPU-authoritative-with-readback + a CPU reference for headless) — reuse
-  the lease machinery; per-algorithm kernels are a future round.
+- **GPU position fast path** (`render/gpu-tween.mts`, landed).  Position
+  animations offload to a compute pass: per-slot from/to uploaded once, a
+  `now` uniform bumped per frame, `node.position = mix(from, to, ease(t))`
+  on-device in its own pre-cull pass (barrier → cull + edges read the
+  tweened positions).  `node.position` is GPU-owned during the tween (the
+  mirror skips its uploads), CPU reads stale, settle-on-complete
+  re-derives the exact final on the CPU (no readback — tween is
+  CPU-reproducible).  The renderer drives the frame clock while active;
+  the manager routes position-only animations to the sink and cedes its
+  auto-loop.  Playwright proves the lease on a real adapter (CPU
+  `position()` stays at start mid-flight while the node moves; settles
+  after).  Paint/size GPU tweens are a follow-up.
+- **Deferred:** GPU tween for paint/size channels; and **GPU layouts**
+  (stateful, not CPU-reproducible → GPU-authoritative-with-readback + a
+  CPU reference for headless) — reuse the lease machinery; per-algorithm
+  kernels are a future round.
 
 ### Deferred by design (out of scope for the prototype)
 

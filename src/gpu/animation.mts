@@ -118,10 +118,16 @@ interface CompiledStyle {
   channel: StyleChannel;
   toScalar?: number;
   toColor?: RGBA;
-  /** captured at start */
-  fromScalar?: number;
-  fromColor?: RGBA;
+  /** captured start value per ref (parallel to `refs`) */
+  fromScalar?: number[];
+  fromColor?: RGBA[];
 }
+
+/** Easing ids shared with the GPU tween kernel (gpu-tween.mts). */
+export const EASING_IDS: Record<string, number> = {
+  'linear': 0, 'ease': 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4,
+  'ease-in-sine': 5, 'ease-out-sine': 6, 'ease-in-out-sine': 7
+};
 
 const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
 
@@ -154,11 +160,17 @@ export class Animation {
 
   private startTime: number | null = null; // set on first post-delay tick
   private started = false;
-  private fromPos: Position | null = null;
+  private fromPos: Position[] | null = null; // per ref
   private fromPan: Position | null = null;
   private fromZoom: number | null = null;
   private _done = false;
   private resolvers: ( () => void )[] = [];
+  readonly durationMs: number;
+  readonly easingId: number;
+  /** set when the renderer's GPU tween runtime drives this animation */
+  gpuDriven = false;
+  /** batch id in the GPU tween runtime (null until registered) */
+  gpuId: number | null = null;
 
   constructor(
     store: GraphStore, viewport: Viewport | null,
@@ -169,7 +181,9 @@ export class Animation {
     this.refs = refs;
     this.isViewport = isViewport;
     this.duration = Math.max( 0, opts.duration ?? 400 );
+    this.durationMs = this.duration;
     this.easing = resolveEasing( opts.easing );
+    this.easingId = typeof opts.easing === 'string' ? ( EASING_IDS[ opts.easing ] ?? 1 ) : 1;
     this.delay = Math.max( 0, opts.delay ?? 0 );
     this.position = opts.position ?? null;
     this.pan = opts.pan ?? null;
@@ -239,31 +253,78 @@ export class Animation {
     this.finish();
   }
 
+  /** Whether this animation only tweens node position (the GPU-eligible case). */
+  get positionOnly(): boolean {
+    return this.position != null && this.style.length === 0 && !this.isViewport
+      && this.refs.every( r => r.group === 'nodes' );
+  }
+
+  /**
+   * Build the per-slot from/to position buffer for the GPU tween runtime,
+   * capturing current positions.  Sets the start clock so CPU settle and
+   * GPU evaluation share it.
+   */
+  gpuPositionData( now: number ): { slots: Uint32Array; fromTo: Float32Array } {
+    if( this.startTime == null ){ this.startTime = now + this.delay; }
+
+    this.capture();
+
+    const from = this.fromPos as Position[];
+    const slots = new Uint32Array( this.refs.length );
+    const fromTo = new Float32Array( this.refs.length * 4 );
+
+    for( let i = 0; i < this.refs.length; i++ ){
+      slots[ i ] = this.refs[ i ].slot;
+      fromTo[ i * 4 ] = from[ i ].x;
+      fromTo[ i * 4 + 1 ] = from[ i ].y;
+      fromTo[ i * 4 + 2 ] = this.position?.x ?? from[ i ].x;
+      fromTo[ i * 4 + 3 ] = this.position?.y ?? from[ i ].y;
+    }
+
+    return { slots, fromTo };
+  }
+
+  /** Start time in the shared clock (set once captured); ms. */
+  get startMs(): number { return this.startTime ?? 0; }
+
+  /**
+   * Settle a GPU-driven animation onto the CPU columns at `now` and finish
+   * it — the tween is CPU-reproducible, so the exact current value is
+   * `lerp(from, to, ease(t))` (t = 1 on natural completion).
+   */
+  settleGpu( now: number ): void {
+    if( this._done ){ return; }
+
+    if( !this.started ){ this.capture(); this.started = true; }
+
+    const t = this.duration === 0 ? 1 : clamp01( ( now - ( this.startTime ?? now ) ) / this.duration );
+
+    this.apply( this.easing( t ) );
+    this.finish();
+  }
+
   // -- internals --
 
   private capture(): void {
     const store = this.store;
 
     for( const s of this.style ){
-      if( this.refs.length === 0 ){ continue; }
-
-      const slot = this.refs[ 0 ].slot; // uniform target: capture from the first, apply per ref
       const col = store.column( s.channel.column );
 
       if( s.channel.kind === 'scalar' ){
-        s.fromScalar = ( col as Float32Array )[ slot ];
+        s.fromScalar = this.refs.map( r => ( col as Float32Array )[ r.slot ] );
       } else {
         const b = col as Uint8Array;
 
-        s.fromColor = [ b[ slot * 4 ], b[ slot * 4 + 1 ], b[ slot * 4 + 2 ], b[ slot * 4 + 3 ] ];
+        s.fromColor = this.refs.map( r =>
+          [ b[ r.slot * 4 ], b[ r.slot * 4 + 1 ], b[ r.slot * 4 + 2 ], b[ r.slot * 4 + 3 ] ] as RGBA );
       }
     }
 
-    if( this.position != null && this.refs.length > 0 ){
+    if( this.position != null ){
       const pos = store.column( 'node.position' ) as Float32Array;
-      const slot = this.refs[ 0 ].slot;
 
-      this.fromPos = { x: pos[ slot * 2 ], y: pos[ slot * 2 + 1 ] };
+      this.fromPos = this.refs.map( r => ( { x: pos[ r.slot * 2 ], y: pos[ r.slot * 2 + 1 ] } ) );
     }
 
     if( this.viewport != null ){
@@ -275,15 +336,17 @@ export class Animation {
   private apply( e: number ): void {
     const store = this.store;
 
-    // style channels (per captured 'from', shared target across the refs)
+    // each channel tweens per ref from its own captured start value
     for( const s of this.style ){
-      for( const ref of this.refs ){
+      for( let i = 0; i < this.refs.length; i++ ){
+        const ref = this.refs[ i ];
+
         if( !store.isCurrent( ref ) || ref.group !== s.channel.group ){ continue; }
 
         if( s.channel.kind === 'scalar' && s.fromScalar != null && s.toScalar != null ){
-          store.setScalar( s.channel.column, ref.slot, lerp( s.fromScalar, s.toScalar, e ) );
+          store.setScalar( s.channel.column, ref.slot, lerp( s.fromScalar[ i ], s.toScalar, e ) );
         } else if( s.channel.kind === 'color' && s.fromColor != null && s.toColor != null ){
-          const [ r, g, b, a ] = lerpColor( s.fromColor, s.toColor, e );
+          const [ r, g, b, a ] = lerpColor( s.fromColor[ i ], s.toColor, e );
 
           store.setColor( s.channel.column, ref.slot, r, g, b, a );
         }
@@ -291,13 +354,14 @@ export class Animation {
     }
 
     if( this.position != null && this.fromPos != null ){
-      const toX = this.position.x ?? this.fromPos.x;
-      const toY = this.position.y ?? this.fromPos.y;
-      const x = lerp( this.fromPos.x, toX, e );
-      const y = lerp( this.fromPos.y, toY, e );
+      for( let i = 0; i < this.refs.length; i++ ){
+        const ref = this.refs[ i ];
 
-      for( const ref of this.refs ){
-        if( ref.group === 'nodes' && store.isCurrent( ref ) ){ store.setPosition( ref.slot, x, y ); }
+        if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+        const f = this.fromPos[ i ];
+
+        store.setPosition( ref.slot, lerp( f.x, this.position.x ?? f.x, e ), lerp( f.y, this.position.y ?? f.y, e ) );
       }
     }
 
@@ -332,12 +396,23 @@ export class Animation {
  * rAF (or setTimeout when headless) while anything is active; tests can
  * drive `tick(now)` directly.
  */
+/** The renderer's GPU tween executor, seen by the manager. */
+export interface GpuTweenSink {
+  register( id: number, slots: Uint32Array, fromTo: Float32Array, start: number, duration: number, easingId: number ): void;
+  unregister( id: number ): void;
+}
+
 export class AnimationManager {
   private queues = new Map<number, Animation[]>(); // packed ref → queue
   private viewportQueue: Animation[] = [];
   private onTick: () => void;
   private ticking = false;
   private raf: ( ( cb: ( t: number ) => void ) => void ) | null;
+  /** the renderer's GPU tween runtime (position animations offload here) */
+  private sink: GpuTweenSink | null = null;
+  /** true while the renderer drives ticks (its frame clock replaces the auto-loop) */
+  private driven = false;
+  private gpuCounter = 0;
 
   constructor( onTick: () => void ){
     this.onTick = onTick;
@@ -349,7 +424,23 @@ export class AnimationManager {
       : cb => { setTimeout( () => cb( now() ), 16 ); };
   }
 
-  /** Enqueue an animation; starts driving the loop if idle. */
+  /** The renderer takes over the clock and provides the GPU tween sink. */
+  attachDriver( sink: GpuTweenSink ): void {
+    this.sink = sink;
+    this.driven = true;
+  }
+
+  detachDriver(): void {
+    // settle anything GPU-driven back to the CPU before the sink goes away
+    for( const q of this.queues.values() ){
+      if( q[ 0 ]?.gpuId != null ){ q[ 0 ].settleGpu( now() ); }
+    }
+
+    this.sink = null;
+    this.driven = false;
+  }
+
+  /** Enqueue an animation; nudges the driver (or starts the auto-loop). */
   enqueue( ani: Animation ): void {
     if( ani.isViewport ){
       this.viewportQueue.push( ani );
@@ -362,7 +453,7 @@ export class AnimationManager {
       }
     }
 
-    this.schedule();
+    if( this.driven ){ this.onTick(); } else { this.schedule(); } // wake the renderer, or auto-loop
   }
 
   /** True while any animation is active or queued. */
@@ -390,9 +481,18 @@ export class AnimationManager {
 
       if( q == null ){ continue; }
 
+      this.releaseGpu( q[ 0 ] );
       q[ 0 ]?.stop( jumpToEnd );
 
       if( clearQueue ){ this.queues.delete( key ); } else { q.shift(); if( q.length === 0 ){ this.queues.delete( key ); } }
+    }
+  }
+
+  /** Release a GPU-driven animation from the sink (before a CPU stop/settle). */
+  private releaseGpu( ani: Animation | undefined ): void {
+    if( ani?.gpuId != null && this.sink != null ){
+      this.sink.unregister( ani.gpuId );
+      ani.gpuId = null;
     }
   }
 
@@ -404,25 +504,49 @@ export class AnimationManager {
 
   /**
    * Advance every queue head to `now`; dequeue finished animations so the
-   * next queued one starts on the following tick.  Returns true if any
-   * animation remains active.
+   * next queued one starts on the following tick.  Position animations
+   * route to the GPU sink when one is attached (registered once, driven
+   * on-device, completion detected here from the shared clock).  Returns
+   * true if any animation remains active.
    */
   tick( now: number ): boolean {
     for( const [ key, q ] of this.queues ){
-      const head = q[ 0 ];
+      while( q.length > 0 && this.advanceHead( q[ 0 ], now ) ){ q.shift(); }
 
-      if( head != null && head.tick( now ) ){
-        q.shift();
-
-        if( q.length === 0 ){ this.queues.delete( key ); }
-      }
+      if( q.length === 0 ){ this.queues.delete( key ); }
     }
 
-    const vHead = this.viewportQueue[ 0 ];
-
-    if( vHead != null && vHead.tick( now ) ){ this.viewportQueue.shift(); }
+    while( this.viewportQueue.length > 0 && this.advanceHead( this.viewportQueue[ 0 ], now ) ){
+      this.viewportQueue.shift();
+    }
 
     return this.active();
+  }
+
+  /** Advance one head; returns true when it is finished (dequeue it). */
+  private advanceHead( ani: Animation, now: number ): boolean {
+    if( ani.done ){ return true; } // completed (possibly via another queue, or stopped)
+
+    if( this.sink != null && ani.positionOnly ){
+      if( ani.gpuId == null ){
+        const { slots, fromTo } = ani.gpuPositionData( now ); // sets the start clock
+
+        ani.gpuId = ++this.gpuCounter;
+        ani.gpuDriven = true;
+        this.sink.register( ani.gpuId, slots, fromTo, ani.startMs, ani.durationMs, ani.easingId );
+      }
+
+      if( now >= ani.startMs + ani.durationMs ){
+        this.sink.unregister( ani.gpuId );
+        ani.gpuId = null;
+        ani.settleGpu( now ); // writes the exact final onto the CPU columns
+        return true;
+      }
+
+      return false;
+    }
+
+    return ani.tick( now );
   }
 
   private schedule(): void {
@@ -431,6 +555,8 @@ export class AnimationManager {
     this.ticking = true;
 
     const loop = ( t: number ): void => {
+      if( this.driven ){ this.ticking = false; return; } // renderer took over the clock
+
       const stillActive = this.tick( t );
 
       this.onTick();

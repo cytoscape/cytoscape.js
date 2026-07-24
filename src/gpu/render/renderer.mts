@@ -10,6 +10,7 @@ import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
 import { MapperRuntime } from './mapper-runtime.mjs';
+import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { BUFFER_USAGE, TEXTURE_USAGE } from './webgpu-constants.mjs';
@@ -122,6 +123,7 @@ export class Renderer {
   private labelPipeline: LabelPipeline | null;
   private cullKernels: CullKernels | null;
   private mapperRuntime: MapperRuntime | null;
+  private tweenRuntime: GpuTweenRuntime | null;
   private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
   private pickCull: { edge: CulledGroup } | null;
   private scaleCtl: ScaleController;
@@ -158,6 +160,7 @@ export class Renderer {
     this.labelPipeline = null;
     this.cullKernels = null;
     this.mapperRuntime = null;
+    this.tweenRuntime = null;
     this.sceneCull = null;
     this.pickCull = null;
     this.scaleCtl = new ScaleController(
@@ -268,7 +271,9 @@ export class Renderer {
     this.upscaler?.destroy();
     this.sceneTarget?.destroy();
     this.depthTarget?.destroy();
+    this.cy._animations.detachDriver();
     this.mapperRuntime?.destroy();
+    this.tweenRuntime?.destroy();
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.pickUniform?.destroy();
@@ -391,6 +396,13 @@ export class Renderer {
     // the CPU-applied base is current at init, so pre-ready data spans are
     // covered too; the runtime's first update() configures + fully evaluates
     this.mapperRuntime = new MapperRuntime( device, this.cy._store, this.cy._styleEngine, this.mirror );
+
+    // GPU position tweens: node.position buffer + mirror version (rebinds
+    // on realloc).  Attaching makes the animation manager route position
+    // animations here and cede its clock to this frame loop.
+    this.tweenRuntime = new GpuTweenRuntime(
+      device, () => ( this.mirror as ColumnMirror ).buffer( 'node.position' ), () => ( this.mirror as ColumnMirror ).version );
+    this.cy._animations.attachDriver( this.tweenRuntime );
     this.cy._store.takeMapperSpans();
 
     this.pickUniform = device.createBuffer( {
@@ -450,6 +462,14 @@ export class Renderer {
     const store = this.cy._store;
     let delta: ReturnType<typeof store.takeDelta> | null = null;
 
+    // advance animations on our frame clock (CPU tweens write columns →
+    // dirty; GPU position tweens register/settle here); node.position is
+    // GPU-owned while a tween batch runs so the mirror won't clobber it
+    this.cy._animations.tick( t0 );
+    mirror.setTweenOwned( this.tweenRuntime?.ownedColumns() ?? [] );
+
+    if( this.cy._animations.active() ){ this.needsRedraw = true; }
+
     if( store.hasDirty() ){
       this.needsRedraw = true;
 
@@ -504,6 +524,16 @@ export class Renderer {
       this.writeFrameUniform();
 
       const encoder = device.createCommandEncoder( { label: 'cy-gpu:frame' } );
+
+      // GPU position tweens: their own compute pass, before cull — the
+      // pass boundary is the barrier so cull (and the edge shaders) read
+      // the freshly-tweened node.position
+      if( this.tweenRuntime != null && this.tweenRuntime.active() ){
+        const tweenPass = encoder.beginComputePass( { label: 'cy-gpu:tween-pass' } );
+
+        this.tweenRuntime.encode( tweenPass, t0 );
+        tweenPass.end();
+      }
 
       // compact each group's visible slots + indirect args before drawing
       this.encodeCulls( encoder, this.uniform as GPUBuffer, this.sceneCull, true );
@@ -600,7 +630,8 @@ export class Renderer {
 
     this.cpuFrameMs = performance.now() - t0;
 
-    if( store.hasDirty() || this.needsRedraw || ( picking?.hasPending() ?? false ) ){
+    if( store.hasDirty() || this.needsRedraw || this.cy._animations.active()
+        || ( picking?.hasPending() ?? false ) ){
       this.schedule();
     }
   }

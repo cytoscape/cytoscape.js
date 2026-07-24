@@ -194,25 +194,37 @@ each is deliberate, not a pass-1 deferral:
   promoting to mixed).  Headless or adapterless instances run the whole
   DSL eagerly on the CPU — the kernel is an optimization layer, not a
   requirement.
-- **Animation is CPU-canonical, with a transient GPU lease planned.**  An
-  animation tweens element style/position (or the viewport) from captured
-  start values to explicit targets over a duration, easing normalized
-  time (`eles.animate/animation/animated/stop/delay`, `cy.animate` for
-  the viewport).  Because a tween is a *pure function of time*, it is
-  CPU-reproducible — so the CPU columns stay authoritative and every tick
-  just writes them (works headless, Node-testable).  A GPU fast path
-  (uploading tween params once + a `now` uniform, evaluating on-device)
-  is the planned optimization; it changes *where* the tween runs, not the
-  contract.  Ownership follows a **transient lease**: default
-  CPU-authoritative; a GPU position episode (animation now, GPU layout
-  later) would take the lease for its duration with the CPU columns a
-  stale mirror, and settle back on completion.  **Grabbing is forbidden
-  while an element animates** (the tween holds the position lease; a drag
-  override can't fight it) — the pointer's drag test consults
-  `isAnimating`.  Animatable today: `position`, node `opacity`,
-  `border-width`, and `background/border/line-color` — the coupling-free
-  channels; size (width/height circle-collapse) and arrow-folded channels
-  are a follow-up.  Colors tween per-channel in sRGB.
+- **Animation: CPU-canonical, with a GPU position fast path under a
+  transient lease.**  An animation tweens element style/position (or the
+  viewport) from captured start values to explicit targets over a
+  duration, easing normalized time (`eles.animate/animation/animated/
+  stop/delay`, `cy.animate` for the viewport).  Because a tween is a
+  *pure function of time*, it is CPU-reproducible — the CPU is always the
+  reference (works headless, Node-testable), and there is **no readback**
+  (a settle/stop re-derives the exact current value on the CPU).
+  - **CPU path**: each tick writes the store columns (dirty → redraw).
+    The default headless path, and the path for paint/size tweens.
+  - **GPU position fast path** (`render/gpu-tween.mts`): when a renderer
+    is present, position animations offload to a compute pass — per-slot
+    from/to uploaded once, a `now` uniform bumped per frame, and
+    `node.position = mix(from, to, ease(t))` evaluated on-device before
+    cull (its own pass, so the barrier lets cull and the edge shaders
+    read the tweened positions; edges follow for free).  Per-frame CPU
+    cost is ~zero (no tween loop, no column upload) — the layout-
+    transition-at-scale case.
+  - **Transient lease**: `node.position` is GPU-owned while a tween runs
+    (the mirror skips its CPU uploads), so sync reads (`position()`,
+    pick, extent) are a stale mirror during the animation; on
+    completion/stop the CPU settles the exact final value and reclaims
+    ownership.  **Grabbing is forbidden while an element animates**
+    (`pointer.canDrag` consults `isAnimating`), removing the two-way
+    drag-feedback boundary.  The renderer drives the frame clock while
+    animations are active (the manager cedes its auto-loop).
+  - Animatable today: `position`, node `opacity`, `border-width`,
+    `background/border/line-color` — the coupling-free channels; size
+    (width/height circle-collapse) and arrow-folded channels are a
+    follow-up.  Colors tween per-channel in sRGB.  Only position has the
+    GPU fast path so far; paint/size tween on the CPU path.
 - **GPU layouts: logged for later.**  A force layout is *stateful*
   (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
   cheaply CPU-reproducible — the GPU would be authoritative during a run
@@ -249,7 +261,8 @@ the predicate, while live state reads report false.
 Out of scope (deferred): compound nodes, bezier edges, layouts beyond
 grid/preset (GPU layouts logged for later), graph algorithms,
 string-formatting label mappers beyond the passthrough, and the GPU
-tween fast path (the CPU animation path is complete).
+tween fast path for paint/size channels (position already offloads;
+the CPU path covers the rest).
 
 ## Benchmarks
 

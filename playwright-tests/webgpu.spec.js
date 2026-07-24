@@ -847,6 +847,43 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( false );
   } );
 
+  test( 'GPU position tween holds the lease: CPU position stays stale while the node moves', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: -120, y: 0 } } ],
+      style: { nodes: { 'background-color': 'red', 'width': 50, 'height': 50, 'shape': 'rectangle' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // a long animation so we can sample mid-flight
+    await page.evaluate( () => window.cy.$id( 'a' ).animate( { position: { x: 120, y: 0 }, duration: 1500, easing: 'linear' } ) );
+    await page.waitForTimeout( 400 );
+    await waitFrames( page );
+
+    // the node has visibly left its start location...
+    expect( ( await pixelAt( page, center.x - 120, center.y ) )[ 1 ] ).toBeGreaterThan( 150 );
+
+    // ...but the CPU position column is still the start value: the GPU owns
+    // node.position during the tween (the lease), so sync reads are stale
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).position().x ) ).toBe( -120 );
+
+    // grabbing is forbidden while it animates
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).grabbed() ) ).toBe( false );
+
+    // finishing settles the final value onto the CPU columns
+    await page.evaluate( () => window.cy.$id( 'a' ).animation( { position: { x: 120, y: 0 }, duration: 1 } ).play() );
+    await waitFrames( page );
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).position().x ) ).toBeCloseTo( 120, 0 );
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( false );
+  } );
+
   test( 'mapped colors render the OKLab interpolation the getters report', async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );

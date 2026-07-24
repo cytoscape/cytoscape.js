@@ -37,6 +37,16 @@ export interface LayoutLike {
 const DEFAULT_HEADLESS_WIDTH = 800;
 const DEFAULT_HEADLESS_HEIGHT = 600;
 
+/** Style work deferred by an open batch (flushed once at the outermost endBatch). */
+interface BatchPending {
+  /** the sheet changed during the batch: one applyAll() subsumes the per-slot work */
+  sheet: boolean;
+  /** freshly-added elements awaiting their first style apply */
+  style: Ref[];
+  /** nodes whose data()-mapped labels need recomputing */
+  labels: Ref[];
+}
+
 /**
  * The GpuCore facade: the familiar synchronous core API over the columnar
  * store.  Scope (pass 1 of #3486): viewport fns, events, graph manipulation
@@ -73,6 +83,8 @@ export class GpuCore {
   private _zoomingEnabled: boolean;
   private _userZoomingEnabled: boolean;
   private _boxSelectionEnabled: boolean;
+  private _batchDepth: number;
+  private _batchPending: BatchPending | null;
 
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
@@ -96,6 +108,8 @@ export class GpuCore {
     this._zoomingEnabled = options.zoomingEnabled ?? true;
     this._userZoomingEnabled = options.userZoomingEnabled ?? true;
     this._boxSelectionEnabled = options.boxSelectionEnabled ?? true;
+    this._batchDepth = 0;
+    this._batchPending = null;
     this._readyResolved = this._container == null; // headless is ready immediately
     this._viewport = new Viewport( this, {
       zoom: options.zoom,
@@ -114,11 +128,108 @@ export class GpuCore {
 
   style( sheet?: GpuStylesheet ): StyleEngine {
     if( sheet != null ){
-      this._styleEngine.setSheet( sheet );
+      if( this._batchPending != null ){
+        // compile (and validate) now; apply once at the outermost endBatch
+        this._styleEngine.setSheet( sheet, false );
+        this._batchPending.sheet = true;
+      } else {
+        this._styleEngine.setSheet( sheet );
+      }
+
       this.emit( 'style' );
     }
 
     return this._styleEngine;
+  }
+
+  // -- batching --
+
+  /*
+  Batch semantics (as in v3): a batch defers *style application* — the
+  first style apply of added elements, sheet re-application, and
+  data-mapped label refresh — until the outermost endBatch(), where the
+  deferred work flushes as one bulk pass.  Events still fire during the
+  batch, and reads of style-derived state (width(), label(), ...) may be
+  stale inside it.  Renderer scheduling needs no deferral: the dirty
+  tracker already coalesces per microtask, after the batch's synchronous
+  block.
+  */
+
+  /** True while inside a startBatch()/endBatch() pair. */
+  batching(): boolean {
+    return this._batchDepth > 0;
+  }
+
+  startBatch(): this {
+    if( this._batchDepth === 0 ){
+      this._batchPending = { sheet: false, style: [], labels: [] };
+    }
+
+    this._batchDepth++;
+
+    return this;
+  }
+
+  endBatch(): this {
+    if( this._batchDepth === 0 ){ return this; }
+
+    this._batchDepth--;
+
+    if( this._batchDepth > 0 ){ return this; }
+
+    const pending = this._batchPending as BatchPending;
+
+    this._batchPending = null;
+
+    if( pending.sheet ){
+      this._styleEngine.applyAll(); // covers every live element, so the per-slot work is subsumed
+
+      return this;
+    }
+
+    const store = this._store;
+    const nodeSlots: number[] = [];
+    const edgeSlots: number[] = [];
+
+    for( const ref of pending.style ){
+      if( !store.isCurrent( ref ) ){ continue; } // added then removed within the batch
+
+      ( ref.group === 'nodes' ? nodeSlots : edgeSlots ).push( ref.slot );
+    }
+
+    this._styleEngine.applyBulk( 'nodes', nodeSlots );
+    this._styleEngine.applyBulk( 'edges', edgeSlots );
+
+    const labelSlots: number[] = [];
+
+    for( const ref of pending.labels ){
+      if( store.isCurrent( ref ) ){ labelSlots.push( ref.slot ); }
+    }
+
+    this._styleEngine.refreshLabels( labelSlots );
+
+    return this;
+  }
+
+  batch( fn: () => void ): this {
+    this.startBatch();
+
+    try {
+      fn();
+    } finally {
+      this.endBatch();
+    }
+
+    return this;
+  }
+
+  /** v3 compat: per-id data() patches applied in one batch. */
+  batchData( map: Record<string, Record<string, unknown>> ): this {
+    return this.batch( () => {
+      for( const id of Object.keys( map ) ){
+        this.getElementById( id ).data( map[ id ] );
+      }
+    } );
   }
 
   // -- layout --
@@ -196,8 +307,8 @@ export class GpuCore {
       ? this._store.addEdgesColumnar( elements.edges, nodeSlots, newId )
       : new Uint32Array( 0 );
 
-    this._styleEngine.applyBulk( 'nodes', nodeSlots );
-    this._styleEngine.applyBulk( 'edges', edgeSlots );
+    this._applyStyle( 'nodes', nodeSlots );
+    this._applyStyle( 'edges', edgeSlots );
 
     return { nodeSlots, edgeSlots };
   }
@@ -247,8 +358,8 @@ export class GpuCore {
       refs.push( this._store.ref( 'edges', slot ) );
     }
 
-    this._styleEngine.applyBulk( 'nodes', nodeSlots );
-    this._styleEngine.applyBulk( 'edges', edgeSlots );
+    this._applyStyle( 'nodes', nodeSlots );
+    this._applyStyle( 'edges', edgeSlots );
 
     return refs;
   }
@@ -799,7 +910,28 @@ export class GpuCore {
 
   /** Refresh anything computed from data() — today that is mapped node labels. */
   _refreshMappedLabels( nodeSlots: number[] ): void {
+    if( this._batchPending != null ){
+      for( const slot of nodeSlots ){
+        this._batchPending.labels.push( this._store.ref( 'nodes', slot ) );
+      }
+
+      return;
+    }
+
     this._styleEngine.refreshLabels( nodeSlots );
+  }
+
+  /** First style apply for freshly-added slots, deferred while batching. */
+  private _applyStyle( group: GroupName, slots: ArrayLike<number> ): void {
+    if( this._batchPending != null ){
+      for( let i = 0; i < slots.length; i++ ){
+        this._batchPending.style.push( this._store.ref( group, slots[ i ] ) );
+      }
+
+      return;
+    }
+
+    this._styleEngine.applyBulk( group, slots );
   }
 
   _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps> ): void {

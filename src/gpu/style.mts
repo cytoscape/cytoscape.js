@@ -266,8 +266,12 @@ export class StyleEngine {
     };
   }
 
-  /** Replace the stylesheet and (re-)apply to all alive elements — the explicit refresh for fn styles too. */
-  setSheet( sheet: GpuStylesheet ): void {
+  /**
+   * Replace the stylesheet and (re-)apply to all alive elements — the
+   * explicit refresh for fn styles too.  `apply: false` compiles and
+   * validates without applying (the core defers the apply while batching).
+   */
+  setSheet( sheet: GpuStylesheet, apply: boolean = true ): void {
     for( const key of Object.keys( sheet ) ){
       if( !SHEET_KEYS.has( key ) ){
         throw new Error( `Unknown stylesheet key '${key}'; supported keys: node, edge` );
@@ -308,7 +312,8 @@ export class StyleEngine {
 
     this.sheet = sheet;
     this.defs = defs;
-    this.applyAll();
+
+    if( apply ){ this.applyAll(); }
   }
 
   /** True when writing any of these data() keys can change a computed label. */

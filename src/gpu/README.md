@@ -49,8 +49,10 @@ iteration (`sort`, `reduce`, `max`/`min`), comparison, building/
 filtering (`byGroup`, `diff`, `absoluteComplement`, set aliases),
 traversal (`outgoers`/`incomers`, `roots`/`leaves`,
 `successors`/`predecessors`, `edgesWith`/`edgesTo`,
-`parallelEdges`/`codirectedEdges`, `components`), degree (+min/max
-stats), `select`/`unselect`/`selectify`, `grabbable`/`lock`,
+`parallelEdges`/`codirectedEdges`, `components`), degree
+(`degree`/`indegree`/`outdegree` are singular first-element accessors as
+in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
+`select`/`unselect`/`selectify`, `grabbable`/`lock`,
 `show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only).
 
 `data()`: element data lives in a **columnar sidecar** — per-(group, key)
@@ -69,9 +71,28 @@ by node slot — the label vertex shader reads the node position buffer, so
 labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
 below the `labelFadePx` LOD threshold.
 
+Events: no namespaces — v4 drops the `'tap.foo'` form (unused, and a
+per-emit parse cost). Listen/emit with plain type names; the shared
+`src/emitter.mts` keeps namespace parsing only for v3.
+
 Out of scope (deferred): animations, full stylesheets/mappers beyond the
 label `data(key)` mapper, compound nodes, bezier edges, layouts beyond
 grid/preset, graph algorithms.
+
+## Benchmarks
+
+`npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
+core/collection op against its v3 analogue in `src/`. See
+`benchmark/gpu/`.  Read-heavy structure ops are where v4 pulls ahead:
+`degree`/`totalDegree` are O(1) off the adjacency index (~100–200× v3),
+`components`/`add`+`remove` ~25–35×, set operations up to ~25×.  Collection
+identity keys on a packed `{group, slot, gen}` integer (not a string) and
+each collection lazily caches its membership Set (sound because `_refs` is
+immutable), so `same`/`contains`/`intersection`/`difference` beat v3 once a
+collection is reused.  Pure `#id` selectors resolve through the O(1) id
+index rather than materializing and scanning the graph.  The residual v3
+wins are the whole-graph materializers (`elements()`, `$(':selected')`),
+which v3 serves from maintained sets.
 
 ## Loading
 

@@ -244,7 +244,9 @@ Collection:
   `abscomp`), `diff`, `reduce`, `max`/`min` ({value,ele}), `sort`,
   `merge`/`unmerge`/`relativeComplement` aliases, `isLoop`/`isSimple`,
   `equal`/`equals`, `min/maxDegree`/`min/max{In,Out}degree`/
-  `totalDegree`.
+  `totalDegree`.  `degree`/`indegree`/`outdegree` are **singular**
+  first-element accessors (undefined when the first element isn't a live
+  node), as in v3 — the whole-collection sum is `totalDegree`.
 - Dimensions: `renderedBoundingBox`, `renderedWidth`/`renderedHeight`
   (+outer), `renderedPosition` setter, `shift`/`silentShift`,
   `silentPosition(s)`, `midpoint`/`renderedMidpoint`, `source`/
@@ -264,6 +266,35 @@ Collection:
 
 Not yet ported from the small list (each a small feature, not just
 wiring): `active`/`activate`, `pannable`/`panify`, `inactive`.
+
+### Collection/core API performance
+
+Benchmarked against the v3 analogue in `src/` via Mitata
+(`npm run benchmark:gpu`, `BENCH_N` scales the graph; suites in
+`benchmark/gpu/`).  The harness rotates over a pool of distinct operands
+so V8 can't hoist pure loop-invariant calls out of the measured region —
+without that, allocation-free ops (e.g. `same()`) mis-report by 5 orders of
+magnitude.  On a 2k-node/4k-edge graph:
+
+- **Where v4 wins big**: `degree`/`totalDegree`/`maxDegree` ~100–230× (O(1)
+  off the adjacency index vs v3 rebuilding `connectedEdges`); `add`+`remove`
+  ~32×; `components` ~30×; `intersection`/`difference` ~24×; `collection()`
+  ~14×; mutations (`data`/`position` set) ~10–12×; `map` ~2.6×; traversal
+  1.5–4×.
+- **Optimizations applied** (each its own commit, all revealed by the
+  benchmark): pure `#id` selectors resolve through the O(1) id index instead
+  of materializing + scanning the graph (`$('#id')` went ~420× slower →
+  ~3× faster than v3); set membership keys on a packed `{group, slot, gen}`
+  integer instead of a `group:slot:gen` string; each collection lazily
+  caches its membership `Set` (sound — `_refs` is immutable), so
+  `same`/`contains`/set ops are O(other) once a collection is reused
+  (`contains` ~13× slower → ~4× faster); subset results
+  (`filter`/`nodes`/`edges`/`slice`/`difference`/`intersection`) spawn via a
+  dedupe-skipping `_spawnUnique`; `map`/`forEach`/`filter` preallocate and
+  hoist the `thisArg` branch; `position()` reads its column once.
+- **Residual v3 wins** (accepted; design trade for v4's fast collection
+  construction): whole-graph materializers `elements()` (~2.6×) and
+  `$(':selected')` (~2×), which v3 serves from maintained sets.
 
 ### Needs a call — note only, don't build yet
 

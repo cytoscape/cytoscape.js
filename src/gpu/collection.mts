@@ -1567,9 +1567,10 @@ export class GpuCollection {
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const nodeSlots = this._nodeSlotSet();
     const edgeSlots: number[] = [];
+    const edgeSlotSet = new Set<number>();
 
     for( const ref of this._liveRefs() ){
-      if( ref.group === 'edges' ){ edgeSlots.push( ref.slot ); }
+      if( ref.group === 'edges' ){ edgeSlots.push( ref.slot ); edgeSlotSet.add( ref.slot ); }
     }
 
     let seeds: number[];
@@ -1606,6 +1607,8 @@ export class GpuCollection {
         compNodes.add( n );
 
         for( const edgeSlot of store.adj.connectedEdges( n ) ){
+          if( !edgeSlotSet.has( edgeSlot ) ){ continue; } // only walk edges within this collection
+
           const s = endpoints[ edgeSlot * 2 ];
           const t = endpoints[ edgeSlot * 2 + 1 ];
           const other = s === n ? t : s;

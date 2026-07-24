@@ -68,6 +68,56 @@ describe('gpu/collection: traversing', function(){
     expect( ids( cy.$('#n2').connectedEdges() ) ).to.deep.equal(['n2n3']);
   });
 
+  describe('edgesWith / edgesTo across collections', function(){
+    it('edgesWith() with identical node collections on both sides', function(){
+      expect( ids( cy.$('#n1, #n2').edgesWith('#n1, #n2') ) ).to.deep.equal(['n1n2']);
+    });
+
+    it('edgesWith() with intersecting collections', function(){
+      expect( ids( cy.$('#n1, #n2').edgesWith('#n1') ) ).to.deep.equal(['n1n2']);
+    });
+
+    it('edgesWith() is empty when no edge joins the two collections', function(){
+      cy.add({ data: { id: 'n4' } });
+
+      expect( cy.$('#n1').edgesWith('#n4').empty() ).to.be.true;
+    });
+
+    it('edgesTo() with identical node collections respects direction', function(){
+      expect( ids( cy.$('#n1, #n2').edgesTo('#n1, #n2') ) ).to.deep.equal(['n1n2']);
+    });
+
+    it('edgesTo() with intersecting collections respects direction', function(){
+      // n1->n2 counts; the reverse (n2->n1) does not exist
+      expect( ids( cy.$('#n1, #n2').edgesTo('#n2') ) ).to.deep.equal(['n1n2']);
+    });
+
+    it('edgesTo() is empty in the wrong direction', function(){
+      expect( cy.$('#n2').edgesTo('#n1').empty() ).to.be.true;
+    });
+  });
+
+  describe('components restricted to the collection', function(){
+    it('splits a sub-collection into its internal components', function(){
+      // only n1n2 is internal to the collection; n3 is isolated within it
+      var comps = cy.$('#n1, #n2, #n1n2, #n3').components();
+
+      expect( comps.length ).to.equal(2);
+      expect( comps.map( c => c.length ).sort() ).to.deep.equal([1, 3]);
+    });
+
+    it('yields singletons when the connecting edge is excluded', function(){
+      var comps = cy.$('#n1, #n2').components();
+
+      expect( comps.length ).to.equal(2);
+      comps.forEach( c => expect( c.nodes().length ).to.equal(1) );
+    });
+
+    it('of an empty collection has no components', function(){
+      expect( cy.collection().components().length ).to.equal(0);
+    });
+  });
+
   describe('degree', function(){
     it('node.degree()', function(){
       expect( cy.$('#n1').degree() ).to.equal(2);

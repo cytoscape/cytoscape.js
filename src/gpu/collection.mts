@@ -1,5 +1,5 @@
 import {
-  FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED
+  FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { matchesRef, parseSelector } from './selector.mjs';
@@ -1077,6 +1077,31 @@ export class GpuCollection {
 
   ungrabify(): this {
     return this._setBit( FLAG_GRABBABLE, false );
+  }
+
+  // -- visibility --
+
+  /**
+   * Whether the first element is shown (FLAG_VISIBLE).  The renderer's cull
+   * pass and CPU picking both mask on ALIVE|VISIBLE, so hiding removes an
+   * element from drawing and picking; edges of a hidden node also drop out.
+   */
+  visible(): boolean {
+    return this._hasBit( FLAG_VISIBLE );
+  }
+
+  hidden(): boolean {
+    const ref = this._first();
+
+    return ref == null || !this._store.isCurrent( ref ) || !this._store.hasFlag( ref.group, ref.slot, FLAG_VISIBLE );
+  }
+
+  show(): this {
+    return this._setBit( FLAG_VISIBLE, true );
+  }
+
+  hide(): this {
+    return this._setBit( FLAG_VISIBLE, false );
   }
 
   locked(): boolean {

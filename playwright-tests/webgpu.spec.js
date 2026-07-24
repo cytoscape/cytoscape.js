@@ -479,6 +479,51 @@ test.describe( 'WebGPU renderer', () => {
     expect( panAfter.y - panBefore.y ).toBeCloseTo( 60, 0 );
   } );
 
+  test( 'hide() removes a node from both rendering and picking', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // visible first: red pixels + a node pick
+    const shownPixel = await pixelAt( page, center.x, center.y );
+
+    expect( shownPixel[0] ).toBeGreaterThan( 150 );
+    expect( shownPixel[1] ).toBeLessThan( 100 );
+
+    const shownPick = await page.evaluate( async ( { x, y } ) => {
+      const ele = await window.cy.pick( x, y );
+
+      return ele == null ? null : ele.id();
+    }, center );
+
+    expect( shownPick ).toBe( 'a' );
+
+    // hide, then it's gone from pixels and picks as background
+    await page.evaluate( () => new Promise( resolve => {
+      window.cy.one( 'render', () => resolve() );
+      window.cy.$( '#a' ).hide();
+    } ) );
+
+    await waitFrames( page );
+
+    const hiddenPixel = await pixelAt( page, center.x, center.y );
+
+    expect( hiddenPixel[0] ).toBeGreaterThan( 240 ); // white background
+    expect( hiddenPixel[1] ).toBeGreaterThan( 240 );
+
+    const hiddenPick = await page.evaluate( async ( { x, y } ) => {
+      const ele = await window.cy.pick( x, y );
+
+      return ele == null ? null : ele.id();
+    }, center );
+
+    expect( hiddenPick ).toBe( null );
+  } );
+
   test.describe( 'SDF labels', () => {
     const LABELLED_GRAPH = {
       elements: [ { data: { id: 'n0' }, position: { x: 0, y: 0 } } ],

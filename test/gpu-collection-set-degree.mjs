@@ -29,11 +29,11 @@ describe('gpu/collection: set ops, iteration, degree stats', function(){
   it('absoluteComplement() / complement / abscomp', function(){
     expect( ids( cy.nodes().absoluteComplement() ) ).to.deep.equal(['e12', 'e13']);
     expect( ids( cy.nodes().complement() ) ).to.deep.equal(['e12', 'e13']);
-    expect( ids( cy.$('#n1').abscomp() ) ).to.deep.equal(['e12', 'e13', 'n2', 'n3']);
+    expect( ids( cy.$id('n1').abscomp() ) ).to.deep.equal(['e12', 'e13', 'n2', 'n3']);
   });
 
   it('diff()', function(){
-    var d = cy.$('#n1, #n2').diff( cy.$('#n2, #n3') );
+    var d = cy.$id('n1').union( cy.$id('n2') ).diff( cy.$id('n2').union( cy.$id('n3') ) );
 
     expect( ids( d.left ) ).to.deep.equal(['n1']);
     expect( ids( d.right ) ).to.deep.equal(['n3']);
@@ -47,9 +47,9 @@ describe('gpu/collection: set ops, iteration, degree stats', function(){
   });
 
   it('max() returns { value, ele }', function(){
-    cy.$('#n1').data('w', 5);
-    cy.$('#n2').data('w', 9);
-    cy.$('#n3').data('w', 1);
+    cy.$id('n1').data('w', 5);
+    cy.$id('n2').data('w', 9);
+    cy.$id('n3').data('w', 1);
 
     var m = cy.nodes().max( ele => ele.data('w') );
 
@@ -58,9 +58,9 @@ describe('gpu/collection: set ops, iteration, degree stats', function(){
   });
 
   it('min() returns { value, ele }', function(){
-    cy.$('#n1').data('w', 5);
-    cy.$('#n2').data('w', 9);
-    cy.$('#n3').data('w', 1);
+    cy.$id('n1').data('w', 5);
+    cy.$id('n2').data('w', 9);
+    cy.$id('n3').data('w', 1);
 
     var m = cy.nodes().min( ele => ele.data('w') );
 
@@ -82,8 +82,8 @@ describe('gpu/collection: set ops, iteration, degree stats', function(){
   });
 
   it('merge (union alias) and unmerge (difference alias)', function(){
-    expect( ids( cy.$('#n1').merge( cy.$('#n2') ) ) ).to.deep.equal(['n1', 'n2']);
-    expect( ids( cy.nodes().unmerge( cy.$('#n2') ) ) ).to.deep.equal(['n1', 'n3']);
+    expect( ids( cy.$id('n1').merge( cy.$id('n2') ) ) ).to.deep.equal(['n1', 'n2']);
+    expect( ids( cy.nodes().unmerge( cy.$id('n2') ) ) ).to.deep.equal(['n1', 'n3']);
   });
 
   it('isLoop() / isSimple()', function(){
@@ -94,22 +94,22 @@ describe('gpu/collection: set ops, iteration, degree stats', function(){
       { data: { id: 'ab', source: 'a', target: 'b' } }
     ] });
 
-    expect( cy2.$('#loop').isLoop() ).to.equal( true );
-    expect( cy2.$('#loop').isSimple() ).to.equal( false );
-    expect( cy2.$('#ab').isLoop() ).to.equal( false );
-    expect( cy2.$('#ab').isSimple() ).to.equal( true );
-    expect( cy2.$('#a').isLoop() ).to.equal( false );
+    expect( cy2.$id('loop').isLoop() ).to.equal( true );
+    expect( cy2.$id('loop').isSimple() ).to.equal( false );
+    expect( cy2.$id('ab').isLoop() ).to.equal( false );
+    expect( cy2.$id('ab').isSimple() ).to.equal( true );
+    expect( cy2.$id('a').isLoop() ).to.equal( false );
   });
 
   it('equal / equals alias for same', function(){
-    expect( cy.$('#n1, #n2').equal( cy.$('#n2, #n1') ) ).to.equal( true );
-    expect( cy.$('#n1').equals( cy.$('#n2') ) ).to.equal( false );
+    expect( cy.$id('n1').union( cy.$id('n2') ).equal( cy.$id('n2').union( cy.$id('n1') ) ) ).to.equal( true );
+    expect( cy.$id('n1').equals( cy.$id('n2') ) ).to.equal( false );
   });
 
   it('allAreNeighbors()', function(){
     // n2 and n3 are both neighbors of n1
-    expect( cy.$('#n1').allAreNeighbors('#n2, #n3') ).to.equal( true );
-    expect( cy.$('#n1').allAreNeighbors( cy.$('#n1') ) ).to.equal( false );
+    expect( cy.$id('n1').allAreNeighbors( cy.$id('n2').union( cy.$id('n3') ) ) ).to.equal( true );
+    expect( cy.$id('n1').allAreNeighbors( cy.$id('n1') ) ).to.equal( false );
   });
 
   it('degree stats: min/max degree, indegree, outdegree, totalDegree', function(){

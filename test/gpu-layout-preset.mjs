@@ -30,9 +30,9 @@ describe('gpu/layout: preset', function(){
       positions: { a: { x: 10, y: 20 }, c: { x: 30, y: 40 } }
     }).run();
 
-    expect( cy.$('#a').position() ).to.deep.equal({ x: 10, y: 20 });
-    expect( cy.$('#b').position() ).to.deep.equal({ x: 2, y: 2 });
-    expect( cy.$('#c').position() ).to.deep.equal({ x: 30, y: 40 });
+    expect( cy.$id('a').position() ).to.deep.equal({ x: 10, y: 20 });
+    expect( cy.$id('b').position() ).to.deep.equal({ x: 2, y: 2 });
+    expect( cy.$id('c').position() ).to.deep.equal({ x: 30, y: 40 });
   });
 
   it('applies a positions function; null keeps the position', function(){
@@ -42,8 +42,8 @@ describe('gpu/layout: preset', function(){
       positions: node => node.id() === 'b' ? { x: 99, y: 98 } : null
     }).run();
 
-    expect( cy.$('#a').position() ).to.deep.equal({ x: 1, y: 1 });
-    expect( cy.$('#b').position() ).to.deep.equal({ x: 99, y: 98 });
+    expect( cy.$id('a').position() ).to.deep.equal({ x: 1, y: 1 });
+    expect( cy.$id('b').position() ).to.deep.equal({ x: 99, y: 98 });
   });
 
   it('keeps all positions and fits by default', function(){
@@ -52,7 +52,7 @@ describe('gpu/layout: preset', function(){
     cy.on('fit', function(){ fits++; });
     cy.layout({ name: 'preset' }).run();
 
-    expect( cy.$('#a').position() ).to.deep.equal({ x: 1, y: 1 });
+    expect( cy.$id('a').position() ).to.deep.equal({ x: 1, y: 1 });
     expect( fits ).to.equal(1);
   });
 
@@ -98,6 +98,6 @@ describe('gpu/layout: preset', function(){
       layout: { name: 'preset', fit: false, positions: { x: { x: 42, y: 43 } } }
     });
 
-    expect( laidOut.$('#x').position() ).to.deep.equal({ x: 42, y: 43 });
+    expect( laidOut.$id('x').position() ).to.deep.equal({ x: 42, y: 43 });
   });
 });

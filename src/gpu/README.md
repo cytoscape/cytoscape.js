@@ -33,8 +33,9 @@ shader over every allocated slot.
 Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`,
 plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 `renderedExtent`, `size`), events (with the usual aliases +
-`onRender`/`offRender`), graph manipulation, `style()` (constrained
-blocks), `layout()`/`makeLayout` (grid and preset), `pick()`,
+`onRender`/`offRender`; delegation via predicate functions), graph
+manipulation, `style()` (the `{ node, edge }` sheet), `layout()`/
+`makeLayout` (grid and preset), `pick()`,
 `renderer()`/`forceRender()`/`resize()`, graph-level
 `data()`/`scratch()`, interaction gating
 (`autolock`/`autoungrabify`/`autounselectify`,
@@ -55,6 +56,54 @@ in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
 `select`/`unselect`/`selectify`, `grabbable`/`lock`,
 `show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only).
 
+## Design decisions (v4 API direction)
+
+Decisions made for the v4 direction and reflected in this prototype;
+each is deliberate, not a pass-1 deferral:
+
+- **No selector strings, anywhere.**  v4 drops the selector language
+  outright — there is no parser, no dialect of v3 selectors, and no plan
+  to grow one back.  The replacements, by role:
+  - *Queries* (evaluate now → collection): structured **query objects**
+    compiled to the matcher IR — `cy.nodes({ selected: true })`,
+    `cy.filter({ group: 'edges' })`, `eles.filter({ selected: false })`.
+    Unknown query keys throw (a typo must not silently match-all).
+  - *Predicates* (evaluate per element, lodash-style): plain functions —
+    `cy.filter( ele => ele.data('weight') > 0.5 )`, and event delegation
+    `cy.on('tap', ele => ele.isNode(), handler)` (predicates compare by
+    function identity in `off()`, so removing a delegated handler takes
+    the same `(events, predicate, handler)` triple).
+  - *Id lookup*: `cy.$id(id)` / `getElementById` (the O(1) id index).
+  - `cy.$()` is gone; set ops and `edgesWith`-style methods take
+    collections, not selector strings.
+- **The matcher IR is the contract, not a syntax.**  `matcher.mts`
+  compiles a query to per-group `(mask, want)` flag tests answered by
+  one columnar scan (`GraphStore.scanRefsInto`) — no element handles, no
+  per-element matching.  Richer predicates later (data over the sidecar
+  columns, structural terms) extend the IR with more test kinds; any
+  future frontend (chained builder, serialized JSON query) compiles to
+  it rather than growing its own matching.
+- **No classes in v4** (`addClass`/`removeClass`/class selectors).  The
+  role classes played in v3 — user-defined state driving filtering and
+  styling — belongs to the columnar `data()` sidecar (for state) plus
+  fn styles and predicates (for behaviour).
+- **Style is `{ node, edge }`, no selector blocks.**  Each key is either
+  a props object (constants for the group) or a per-element function
+  `(ele) => props`.  The refresh line is explicit: *declarative values
+  and mappers stay fresh automatically; opaque functions re-run only on
+  an explicit `cy.style(sheet)` / `cy.style().update()`* — never on
+  select/unselect (the accent ring is shader-drawn) or on data writes.
+- **Mappers become a serializable DSL, evaluated GPU-side.**  The label
+  `data(key)` mapper is the first of a planned family (e.g.
+  `backgroundColor: 'mapData(weight, red, blue)'`, or an equivalent
+  chained builder API).  Mapper strings/builders compile to a small
+  mapper IR; because the IR is analyzable, dependency-gated refresh is
+  exact (only writes of mapped keys recompute), and because it is
+  serializable it can ship with a wire payload and be uploaded to the
+  GPU — the plan is to mirror mapped data columns and evaluate `mapData`
+  in the shader, so a bulk data write uploads only the data column and
+  restyle cost is zero (the same trick labels use for node moves).
+
 `data()`: element data lives in a **columnar sidecar** — per-(group, key)
 columns, not per-element objects: numbers as Float64Array, strings
 dictionary-encoded, a plain-array fallback for the rest, each column
@@ -63,8 +112,8 @@ first-class and immutable.  Setters emit `data` per element.
 
 Node labels (SDF): the `label` style prop takes constant strings or a
 `data(key)` mapper (any sidecar key; `data(id)` reads the first-class
-id); mapped labels refresh on data writes.  `font-size` and `color` are
-constants.  Glyphs
+id); mapped labels refresh on data writes (fn styles do not — see the
+refresh policy above).  `font-size` and `color` are constants.  Glyphs
 come from a runtime SDF atlas (canvas-2D raster → Euclidean distance
 transform → one r8 texture) and live in a persistent instance buffer keyed
 by node slot — the label vertex shader reads the node position buffer, so
@@ -73,7 +122,10 @@ below the `labelFadePx` LOD threshold.
 
 Events: no namespaces — v4 drops the `'tap.foo'` form (unused, and a
 per-emit parse cost). Listen/emit with plain type names; the shared
-`src/emitter.mts` keeps namespace parsing only for v3.
+`src/emitter.mts` keeps namespace parsing only for v3.  Delegation is
+predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
+events the target handle's cached `id()`/`group()` stay readable inside
+the predicate, while live state reads report false.
 
 Out of scope (deferred): animations, full stylesheets/mappers beyond the
 label `data(key)` mapper, compound nodes, bezier edges, layouts beyond
@@ -91,16 +143,18 @@ v4 pulls ahead:
 identity keys on a packed `{group, slot, gen}` integer (not a string) and
 each collection lazily caches its membership Set (sound because `_refs` is
 immutable), so `same`/`contains`/`intersection`/`difference` beat v3 once a
-collection is reused.  Pure `#id` selectors resolve through the O(1) id
-index rather than materializing and scanning the graph; every other
-selector the mini-language supports is (group, flag-mask) predicates, so
-flag-only selectors compile to per-group `(mask, want)` tests answered by
-one preallocated scan over the flags column (`GraphStore.scanRefsInto`) —
-no element handles, no per-element term matching.  With that scan behind
-`elements/nodes/edges/filter/$` (and the interned-handle pool an array
-indexed by slot instead of a Map), the whole-graph materializers and flag
-selectors all beat v3 — e.g. at 200k nodes `$('node:selected')` is ~140×
-v3 — and no maintained membership sets (v3's approach) are needed.
+collection is reused.  `$id` resolves through the O(1) id index rather
+than materializing and scanning the graph; structured queries are
+(group, flag-mask) predicates, so they compile through the matcher IR to
+per-group `(mask, want)` tests answered by one preallocated scan over
+the flags column (`GraphStore.scanRefsInto`) — no element handles, no
+per-element matching.  With that scan behind
+`elements/nodes/edges/filter` (and the interned-handle pool an array
+indexed by slot instead of a Map), the whole-graph materializers and
+flag queries all beat v3 — e.g. at 200k nodes
+`filter({ group: 'nodes', selected: true })` is ~140× v3's
+`$('node:selected')` — and no maintained membership sets (v3's approach)
+are needed.
 Callback iteration (`forEach`/`map`/...) plain-calls the callback when no
 `thisArg` is given, matching v3's semantics (`this` is undefined inside
 the callback) — rebinding the receiver per element cost ~2× on large
@@ -184,7 +238,7 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 
 ## Known deviations from v3 (accepted for pass 1)
 
-- **Listener firing order**: one core emitter with ref/selector-qualified
+- **Listener firing order**: one core emitter with ref/predicate-qualified
   listeners; element-vs-core listeners fire in plain registration order, not
   v3 bubble order.
 - **No z-index**: edges always draw under nodes; within a group draw order
@@ -205,8 +259,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `gpuFrameMs` is real scene-pass GPU time via the optional
   `timestamp-query` feature (0 when unsupported).  Reconcile fps against
   `gpuFrameMs`, not `cpuFrameMs`.
-- **Selectors/styles**: only `node`, `edge`, `*`, `#id`, `:selected`,
-  `:unselected` and comma lists; style blocks are constants only.
+- **No selector strings** (a v4 decision, not a gap — see "Design
+  decisions" above): queries are structured objects ({ group, selected }
+  today), everything richer is a predicate function, ids go through
+  `$id`.  Style prop values are constants except the label `data(key)`
+  mapper; per-element styling is the fn form of the sheet.
 - **`cy.elements()` order**: nodes (insertion order) then edges, not the
   mixed insertion order of v3.
 - **Picking** resolves in three stages, cheapest first.  (1) Nodes pick

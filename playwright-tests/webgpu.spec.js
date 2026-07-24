@@ -12,9 +12,9 @@ const PAGE = 'http://127.0.0.1:3333/playwright-page/webgpu.html';
 
 const RED_NODE_GRAPH = {
   elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
-  style: [ { selector: 'node', style: {
+  style: { node: {
     'background-color': 'red', 'width': 100, 'height': 100, 'shape': 'rectangle'
-  } } ],
+  } },
   zoom: 1
 };
 
@@ -232,10 +232,10 @@ test.describe( 'WebGPU renderer', () => {
         { data: { id: 'b' }, position: { x: 150, y: 0 } },
         { data: { id: 'ab', source: 'a', target: 'b' } }
       ],
-      style: [
-        { selector: 'node', style: { 'width': 30, 'height': 30 } },
-        { selector: 'edge', style: { 'width': 4 } }
-      ],
+      style: {
+        node: { 'width': 30, 'height': 30 },
+        edge: { 'width': 4 }
+        },
       zoom: 1
     } );
 
@@ -267,10 +267,10 @@ test.describe( 'WebGPU renderer', () => {
       } );
       const cy = window.makeCy( {
         elements: columnar,
-        style: [
-          { selector: 'node', style: { 'width': 30, 'height': 30 } },
-          { selector: 'edge', style: { 'width': 4 } }
-        ],
+        style: {
+          node: { 'width': 30, 'height': 30 },
+          edge: { 'width': 4 }
+          },
         zoom: 1
       } );
 
@@ -320,10 +320,10 @@ test.describe( 'WebGPU renderer', () => {
 
       const cy = window.makeCy( {
         elements: fetched,
-        style: [
-          { selector: 'node', style: { 'width': 30, 'height': 30 } },
-          { selector: 'edge', style: { 'width': 4 } }
-        ],
+        style: {
+          node: { 'width': 30, 'height': 30 },
+          edge: { 'width': 4 }
+          },
         zoom: 1
       } );
 
@@ -362,17 +362,14 @@ test.describe( 'WebGPU renderer', () => {
         { data: { id: 'b' }, position: { x: 150, y: 0 } },
         { data: { id: 'ab', source: 'a', target: 'b' } }
       ],
-      style: [
-        { selector: 'node', style: { 'width': 30, 'height': 30, 'background-color': '#00ff00' } },
-        {
-          selector: 'edge',
-          style: {
-            'width': 8,
-            'line-color': '#0000ff',
-            ...( arrows ? { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ff0000' } : {} )
-          }
+      style: {
+        node: { 'width': 30, 'height': 30, 'background-color': '#00ff00' },
+        edge: {
+          'width': 8,
+          'line-color': '#0000ff',
+          ...( arrows ? { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ff0000' } : {} )
         }
-      ],
+      },
       zoom: 1
     } );
 
@@ -427,7 +424,7 @@ test.describe( 'WebGPU renderer', () => {
     await page.mouse.move( center.x + 120, center.y + 60, { steps: 10 } );
     await page.mouse.up();
 
-    const pos = await page.evaluate( () => window.cy.$( '#a' ).position() );
+    const pos = await page.evaluate( () => window.cy.$id( 'a' ).position() );
 
     expect( pos.x ).toBeCloseTo( 120, 0 );
     expect( pos.y ).toBeCloseTo( 60, 0 );
@@ -454,7 +451,7 @@ test.describe( 'WebGPU renderer', () => {
     await waitFrames( page );
 
     await page.evaluate( () => {
-      window.cy.$( '#a' ).lock();
+      window.cy.$id( 'a' ).lock();
       window.__hovered = false;
       window.cy.on( 'mouseover', () => { window.__hovered = true; } );
     } );
@@ -470,7 +467,7 @@ test.describe( 'WebGPU renderer', () => {
     await page.mouse.move( center.x + 120, center.y + 60, { steps: 10 } );
     await page.mouse.up();
 
-    const pos = await page.evaluate( () => window.cy.$( '#a' ).position() );
+    const pos = await page.evaluate( () => window.cy.$id( 'a' ).position() );
     const panAfter = await page.evaluate( () => window.cy.pan() );
 
     expect( pos.x ).toBeCloseTo( 0, 0 ); // model position unchanged
@@ -505,7 +502,7 @@ test.describe( 'WebGPU renderer', () => {
     // hide, then it's gone from pixels and picks as background
     await page.evaluate( () => new Promise( resolve => {
       window.cy.one( 'render', () => resolve() );
-      window.cy.$( '#a' ).hide();
+      window.cy.$id( 'a' ).hide();
     } ) );
 
     await waitFrames( page );
@@ -527,10 +524,10 @@ test.describe( 'WebGPU renderer', () => {
   test.describe( 'SDF labels', () => {
     const LABELLED_GRAPH = {
       elements: [ { data: { id: 'n0' }, position: { x: 0, y: 0 } } ],
-      style: [ { selector: 'node', style: {
+      style: { node: {
         'background-color': 'red', 'width': 60, 'height': 60,
         'label': 'HELLO', 'font-size': 30, 'color': 'black'
-      } } ]
+      } }
     };
 
     // node bottom edge is 30 below center; label top = +4 margin; mid-text ≈ +50
@@ -566,7 +563,7 @@ test.describe( 'WebGPU renderer', () => {
       const uploadDelta = await page.evaluate( async () => {
         const before = window.cy._renderer.stats().uploadedBytes;
 
-        window.cy.$( '#n0' ).position( { x: -150, y: -100 } );
+        window.cy.$id( 'n0' ).position( { x: -150, y: -100 } );
         await new Promise( resolve => { window.cy.one( 'render', () => resolve() ); } );
 
         return window.cy._renderer.stats().uploadedBytes - before;
@@ -691,7 +688,7 @@ test.describe( 'WebGPU renderer', () => {
 
     await page.mouse.click( center.x, center.y );
 
-    expect( await page.evaluate( () => window.cy.$( '#a' ).selected() ) ).toBe( true );
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).selected() ) ).toBe( true );
 
     // background tap clears; wait for the hover pick to resolve off the node
     await page.mouse.move( 10, 10 );
@@ -702,7 +699,7 @@ test.describe( 'WebGPU renderer', () => {
 
     await page.mouse.click( 10, 10 );
 
-    expect( await page.evaluate( () => window.cy.$( '#a' ).selected() ) ).toBe( false );
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).selected() ) ).toBe( false );
   } );
 
 } );

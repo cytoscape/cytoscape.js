@@ -413,7 +413,8 @@ magnitude.  On a 2k-node/4k-edge graph:
 - **Classes** (`classes`/`addClass`/`removeClass`/`toggleClass`/
   `hasClass`/`flashClass`): new per-element class storage + class
   selectors in the mini-selector + restyle on change.  Couples to the
-  constrained (constants-only) style engine.
+  constrained (constants-only) style engine.  **Call made: not in v4** —
+  see "Selector removal + stylesheet reshape" below.
 - **Style getters** (`style`/`renderedStyle`/`numericStyle`/`pstyle`,
   `effectiveOpacity`, `transparent`, `takesUpSpace`, `interactive`):
   reading a resolved channel per prop from the compiled columns is
@@ -451,6 +452,51 @@ magnitude.  On a 2k-node/4k-edge graph:
   `layoutPositions`/`layoutDimensions`, `boundingBoxAt` (bbox at a
   hypothetical position), `sortByZIndex`/`zDepth` (needs z-index),
   `padding`/`paddedWidth`/`paddedHeight`.
+
+## Selector removal + stylesheet reshape (v4 API direction)
+
+Decided in design discussion (2026-07-24) and implemented in one pass;
+`src/gpu/README.md` ("Design decisions") is the maintained record.  The
+decisions, explicitly:
+
+- **v4 has no classes.**  The class system (`addClass`/class selectors)
+  is not coming to v4; user-defined state lives in the columnar `data()`
+  sidecar, with fn styles and predicates supplying the styling/filtering
+  behaviour classes provided in v3.
+- **v4 has no selector strings at all.**  Rather than porting a dialect
+  of the v3 selector language, the language is gone: `selector.mts` was
+  deleted and replaced by `matcher.mts` — a **matcher IR** of structured
+  queries (`{ group, selected }` today) compiled to the round-3 columnar
+  flag scans.  Query objects answer whole-graph queries
+  (`cy.nodes({ selected: true })`, throwing on unknown keys), predicate
+  functions cover everything richer (lodash-style), including event
+  delegation (`cy.on('tap', ele => ele.isNode(), cb)`, identity-compared
+  in `off()`), and ids go through `$id`/`getElementById`.  `cy.$()` and
+  string arguments to set ops/`edgesWith`/`components`/`remove`/`fit`
+  were removed.  Future richer matching (data predicates, structural
+  terms) extends the IR; any frontend (chained builder, serialized
+  query) compiles to it.
+- **Style is `{ node, edge }`** — each key a props object (constants,
+  camelCase or kebab-case) or `(ele) => props`.  Selector blocks,
+  `:selected` restyling and `#id` blocks are gone (the accent ring is
+  shader-drawn; per-element styling is the fn form).  Refresh policy:
+  declarative values/mappers auto-refresh (mapped labels on data
+  writes, key-gated); **fn styles re-run only on explicit
+  `cy.style(sheet)` / `.update()`** — never on select or data writes.
+- **Mapper DSL direction**: style prop values will grow a serializable
+  mapper family (`'mapData(weight, red, blue)'` strings and/or a chained
+  builder), compiled to a mapper IR that (a) makes dependency-gated
+  refresh exact and (b) serializes to the GPU — mirror the mapped data
+  column, evaluate the mapper in the shader, so bulk data writes upload
+  only data bytes with zero restyle cost.  The label `data(key)` mapper
+  is the existing first member.
+
+Verification: typecheck, lint, `test:js` (1221 passing, incl. the new
+`gpu-query.mjs` matcher suite and rewritten style/events/flag-scan
+suites), and all 17 Playwright webgpu specs on a real adapter.
+Benchmarks compare idiomatic forms per side now (`cmp(name, v3Op,
+gpuOp)` where they differ); `pointer.mts` tap-clear uses
+`elements({ selected: true })`.
 
 ### Deferred by design (out of scope for the prototype)
 

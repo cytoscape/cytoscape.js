@@ -64,7 +64,7 @@ function cmpMutEle( name, setup, fn ){
 }
 
 // operand builders
-const node = ( cy, k ) => cy.$( '#n' + ( MIDNUM + k ) );        // K distinct nodes → distinct handles
+const node = ( cy, k ) => cy.$id( 'n' + ( MIDNUM + k ) );        // K distinct nodes → distinct handles
 const nodes = cy => cy.nodes();                                  // fresh collection each call
 const allEles = cy => cy.elements();
 const overlap = cy => ( { a: cy.nodes().slice( 0, 100 ), b: cy.nodes().slice( 50, 150 ) } );
@@ -103,7 +103,7 @@ cmp( 'compare: same()',             equalPair, o => o.a.same( o.b ) );
 cmp( 'compare: contains()',         superSub, o => o.a.contains( o.b ) );
 
 // -- mutations (target resolved once, outside the timed region) --
-const midOf = cy => cy.$( '#n' + MIDNUM );
+const midOf = cy => cy.$id( 'n' + MIDNUM );
 
 cmpMutEle( 'mut: data set',          midOf, n => n.data( 'foo', 1 ) );
 cmpMutEle( 'mut: position set',      midOf, n => n.position( { x: 1, y: 2 } ) );

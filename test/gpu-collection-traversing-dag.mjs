@@ -43,34 +43,34 @@ describe('gpu/collection: DAG traversal, edge relations, components', function()
   });
 
   it('successors() = transitive outgoing closure (nodes + edges)', function(){
-    expect( ids( cy.$('#n1').successors().nodes() ) ).to.deep.equal(['n1', 'n2', 'n3']);
-    expect( ids( cy.$('#n1').successors('node') ) ).to.deep.equal(['n1', 'n2', 'n3']);
+    expect( ids( cy.$id('n1').successors().nodes() ) ).to.deep.equal(['n1', 'n2', 'n3']);
+    expect( ids( cy.$id('n1').successors({ group: 'nodes' }) ) ).to.deep.equal(['n1', 'n2', 'n3']);
   });
 
   it('predecessors() = transitive incoming closure', function(){
-    expect( ids( cy.$('#n3').predecessors('node') ) ).to.deep.equal(['n1', 'n2']);
+    expect( ids( cy.$id('n3').predecessors({ group: 'nodes' }) ) ).to.deep.equal(['n1', 'n2']);
   });
 
   it('parallelEdges() includes the edge itself + same-direction + opposite', function(){
     // e12 shares endpoints with e12b (parallel, same dir) and e21 (opposite)
-    expect( ids( cy.$('#e12').parallelEdges() ) ).to.deep.equal(['e12', 'e12b', 'e21']);
+    expect( ids( cy.$id('e12').parallelEdges() ) ).to.deep.equal(['e12', 'e12b', 'e21']);
   });
 
   it('codirectedEdges() only same direction', function(){
-    expect( ids( cy.$('#e12').codirectedEdges() ) ).to.deep.equal(['e12', 'e12b']);
+    expect( ids( cy.$id('e12').codirectedEdges() ) ).to.deep.equal(['e12', 'e12b']);
   });
 
   it('edgesWith() = edges connecting this to others, either direction', function(){
-    expect( ids( cy.$('#n1').edgesWith( cy.$('#n2') ) ) ).to.deep.equal(['e12', 'e12b', 'e21']);
+    expect( ids( cy.$id('n1').edgesWith( cy.$id('n2') ) ) ).to.deep.equal(['e12', 'e12b', 'e21']);
   });
 
   it('edgesTo() = directed edges from this to others', function(){
-    expect( ids( cy.$('#n1').edgesTo( cy.$('#n2') ) ) ).to.deep.equal(['e12', 'e12b']);
-    expect( ids( cy.$('#n2').edgesTo( cy.$('#n1') ) ) ).to.deep.equal(['e21']);
+    expect( ids( cy.$id('n1').edgesTo( cy.$id('n2') ) ) ).to.deep.equal(['e12', 'e12b']);
+    expect( ids( cy.$id('n2').edgesTo( cy.$id('n1') ) ) ).to.deep.equal(['e21']);
   });
 
-  it('edgesWith() accepts a selector string', function(){
-    expect( ids( cy.$('#n2').edgesWith('#n3') ) ).to.deep.equal(['e23']);
+  it('edgesWith() accepts another collection', function(){
+    expect( ids( cy.$id('n2').edgesWith( cy.$id('n3') ) ) ).to.deep.equal(['e23']);
   });
 
   it('components() splits the graph into connected components', function(){
@@ -90,8 +90,8 @@ describe('gpu/collection: DAG traversal, edge relations, components', function()
   });
 
   it('component() = whole-graph component containing the element', function(){
-    expect( ids( cy.$('#n2').component().nodes() ) ).to.deep.equal(['n1', 'n2', 'n3']);
-    expect( ids( cy.$('#n4').component().nodes() ) ).to.deep.equal(['n4']);
+    expect( ids( cy.$id('n2').component().nodes() ) ).to.deep.equal(['n1', 'n2', 'n3']);
+    expect( ids( cy.$id('n4').component().nodes() ) ).to.deep.equal(['n4']);
   });
 
 });

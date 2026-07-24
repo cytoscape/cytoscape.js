@@ -18,62 +18,62 @@ describe('gpu/selection', function(){
   });
 
   it('respects the initial selected state', function(){
-    expect( cy.$('#c').selected() ).to.be.true;
-    expect( cy.$('#a').selected() ).to.be.false;
-    expect( cy.$(':selected') ).to.have.length(1);
+    expect( cy.$id('c').selected() ).to.be.true;
+    expect( cy.$id('a').selected() ).to.be.false;
+    expect( cy.filter({ selected: true }) ).to.have.length(1);
   });
 
   it('selects and unselects', function(){
-    cy.$('#a').select();
+    cy.$id('a').select();
 
-    expect( cy.$('#a').selected() ).to.be.true;
+    expect( cy.$id('a').selected() ).to.be.true;
 
-    cy.$('#a').unselect();
+    cy.$id('a').unselect();
 
-    expect( cy.$('#a').selected() ).to.be.false;
+    expect( cy.$id('a').selected() ).to.be.false;
   });
 
   it('selects a whole collection', function(){
     cy.nodes().select();
 
-    expect( cy.$('node:selected') ).to.have.length(3); // locked is not selectable
+    expect( cy.filter({ group: 'nodes', selected: true }) ).to.have.length(3); // locked is not selectable
   });
 
   it('does not select unselectable elements', function(){
-    expect( cy.$('#locked').selectable() ).to.be.false;
+    expect( cy.$id('locked').selectable() ).to.be.false;
 
-    cy.$('#locked').select();
+    cy.$id('locked').select();
 
-    expect( cy.$('#locked').selected() ).to.be.false;
+    expect( cy.$id('locked').selected() ).to.be.false;
   });
 
   it('selects edges', function(){
-    cy.$('#ab').select();
+    cy.$id('ab').select();
 
-    expect( cy.$('edge:selected') ).to.have.length(1);
+    expect( cy.filter({ group: 'edges', selected: true }) ).to.have.length(1);
   });
 
   it('unselectify() freezes selection state in both directions', function(){
-    cy.$('#a').select();
-    cy.$('#a').unselectify();
+    cy.$id('a').select();
+    cy.$id('a').unselectify();
 
     // an already-selected node cannot be unselected while unselectable
-    cy.$('#a').unselect();
-    expect( cy.$('#a').selected() ).to.be.true;
+    cy.$id('a').unselect();
+    expect( cy.$id('a').selected() ).to.be.true;
 
     // and an unselected one cannot be selected
-    expect( cy.$('#b').selectable() ).to.be.true;
-    cy.$('#b').unselectify().select();
-    expect( cy.$('#b').selected() ).to.be.false;
+    expect( cy.$id('b').selectable() ).to.be.true;
+    cy.$id('b').unselectify().select();
+    expect( cy.$id('b').selected() ).to.be.false;
   });
 
   it('selectify() restores mutable selection state', function(){
-    cy.$('#a').select();
-    cy.$('#a').unselectify();
-    cy.$('#a').selectify();
+    cy.$id('a').select();
+    cy.$id('a').unselectify();
+    cy.$id('a').selectify();
 
-    cy.$('#a').unselect();
-    expect( cy.$('#a').selected() ).to.be.false;
+    cy.$id('a').unselect();
+    expect( cy.$id('a').selected() ).to.be.false;
   });
 
   it('emits select and unselect per state change only', function(){
@@ -83,13 +83,13 @@ describe('gpu/selection', function(){
     cy.on('select', function(){ selects++; });
     cy.on('unselect', function(){ unselects++; });
 
-    cy.$('#a').select();
-    cy.$('#a').select(); // no-op
+    cy.$id('a').select();
+    cy.$id('a').select(); // no-op
 
     expect( selects ).to.equal(1);
 
-    cy.$('#a').unselect();
-    cy.$('#a').unselect(); // no-op
+    cy.$id('a').unselect();
+    cy.$id('a').unselect(); // no-op
 
     expect( unselects ).to.equal(1);
   });
@@ -98,7 +98,7 @@ describe('gpu/selection', function(){
     var target = null;
 
     cy.on('select', function( e ){ target = e.target; });
-    cy.$('#a').select();
+    cy.$id('a').select();
 
     expect( target.id() ).to.equal('a');
   });
@@ -106,12 +106,12 @@ describe('gpu/selection', function(){
   it('supports element-level select listeners', function(){
     var called = 0;
 
-    cy.$('#a').on('select', function(){ called++; });
+    cy.$id('a').on('select', function(){ called++; });
 
-    cy.$('#b').select();
+    cy.$id('b').select();
     expect( called ).to.equal(0);
 
-    cy.$('#a').select();
+    cy.$id('a').select();
     expect( called ).to.equal(1);
   });
 

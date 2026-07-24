@@ -33,7 +33,7 @@ describe('gpu/collection: iteration', function(){
   });
 
   it('interns element handles (same slot ⇒ same object)', function(){
-    expect( cy.$('#a')[0] ).to.equal( cy.nodes()[0] );
+    expect( cy.$id('a')[0] ).to.equal( cy.nodes()[0] );
   });
 
   it('iterates with forEach in insertion order', function(){
@@ -112,7 +112,7 @@ describe('gpu/collection: iteration', function(){
   });
 
   it('dedupes elements in collections', function(){
-    var doubled = cy.$('#a').union( cy.$('#a') );
+    var doubled = cy.$id('a').union( cy.$id('a') );
 
     expect( doubled ).to.have.length(1);
   });

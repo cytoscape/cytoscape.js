@@ -40,10 +40,10 @@ describe('gpu/style', function(){
 
   describe('defaults', function(){
     it('applies v3-like defaults on add', function(){
-      expect( cy.$('#a').width() ).to.equal(30);
-      expect( cy.$('#a').height() ).to.equal(30);
+      expect( cy.$id('a').width() ).to.equal(30);
+      expect( cy.$id('a').height() ).to.equal(30);
       expect( fillOf('a') ).to.deep.equal([153, 153, 153, 255]); // #999
-      expect( cy.$('#ab').width() ).to.equal(2);
+      expect( cy.$id('ab').width() ).to.equal(2);
       expect( lineOf('ab') ).to.deep.equal([153, 153, 153, 255]);
     });
 
@@ -53,32 +53,42 @@ describe('gpu/style', function(){
   });
 
   describe('cy.style()', function(){
-    it('applies constant blocks to matching elements', function(){
-      cy.style([
-        { selector: 'node', style: { 'background-color': 'red', 'width': 50, 'height': 40 } },
-        { selector: 'edge', style: { 'line-color': '#00f', 'width': 5 } }
-      ]);
+    it('applies constant group props', function(){
+      cy.style({
+        node: { 'background-color': 'red', 'width': 50, 'height': 40 },
+        edge: { 'line-color': '#00f', 'width': 5 }
+      });
 
       expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]);
-      expect( cy.$('#a').width() ).to.equal(50);
-      expect( cy.$('#a').height() ).to.equal(40);
+      expect( cy.$id('a').width() ).to.equal(50);
+      expect( cy.$id('a').height() ).to.equal(40);
       expect( shapeOf('a') ).to.equal(SHAPE_ELLIPSE); // unequal ⇒ true ellipse
       expect( lineOf('ab') ).to.deep.equal([0, 0, 255, 255]);
-      expect( cy.$('#ab').width() ).to.equal(5);
+      expect( cy.$id('ab').width() ).to.equal(5);
     });
 
-    it('applies later blocks over earlier ones', function(){
-      cy.style([
-        { selector: 'node', style: { 'background-color': 'red' } },
-        { selector: '#a', style: { 'background-color': 'rgb(0, 255, 0)' } }
-      ]);
+    it('evaluates fn styles per element', function(){
+      cy.style({
+        node: ele => ( {
+          'background-color': ele.id() === 'a' ? 'rgb(0, 255, 0)' : 'red'
+        } )
+      });
 
       expect( fillOf('a') ).to.deep.equal([0, 255, 0, 255]);
       expect( fillOf('b') ).to.deep.equal([255, 0, 0, 255]);
     });
 
+    it('accepts camelCase prop names', function(){
+      cy.style({ node: { backgroundColor: 'red', borderWidth: 2 } });
+
+      var ref = cy._store.lookup('a');
+
+      expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]);
+      expect( cy._store.column('node.borderWidth')[ref.slot] ).to.equal(2);
+    });
+
     it('applies to elements added later', function(){
-      cy.style([ { selector: 'node', style: { 'background-color': 'black' } } ]);
+      cy.style({ node: { 'background-color': 'black' } });
 
       cy.add({ data: { id: 'c' } });
 
@@ -86,86 +96,85 @@ describe('gpu/style', function(){
     });
 
     it('supports shapes', function(){
-      cy.style([
-        { selector: '#a', style: { shape: 'rectangle' } },
-        { selector: '#b', style: { shape: 'round-rectangle' } }
-      ]);
+      cy.style({
+        node: ele => ( { shape: ele.id() === 'a' ? 'rectangle' : 'round-rectangle' } )
+      });
 
       expect( shapeOf('a') ).to.equal(SHAPE_RECTANGLE);
       expect( shapeOf('b') ).to.equal(SHAPE_ROUND_RECTANGLE);
     });
 
     it('supports border and opacity channels', function(){
-      cy.style([
-        { selector: 'node', style: { 'border-width': 3, 'border-color': 'white', 'opacity': 0.5 } }
-      ]);
+      cy.style({
+        node: { 'border-width': 3, 'border-color': 'white', 'opacity': 0.5 }
+      });
 
       var ref = cy._store.lookup('a');
 
       expect( cy._store.column('node.borderWidth')[ref.slot] ).to.equal(3);
       expect( cy._store.column('node.opacity')[ref.slot] ).to.equal(0.5);
-      expect( cy.$('#a').outerWidth() ).to.equal(33);
+      expect( cy.$id('a').outerWidth() ).to.equal(33);
     });
 
-    it('re-applies on selection change (:selected blocks)', function(){
-      cy.style([
-        { selector: 'node', style: { 'background-color': 'red' } },
-        { selector: 'node:selected', style: { 'background-color': 'blue' } }
-      ]);
+    it('does not restyle on selection change (accent ring is shader-drawn)', function(){
+      cy.style({
+        // even a fn reading selected() re-runs only on explicit style set
+        node: ele => ( { 'background-color': ele.selected() ? 'blue' : 'red' } )
+      });
 
       expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]);
 
-      cy.$('#a').select();
+      cy.$id('a').select();
+
+      expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]); // unchanged by policy
+
+      cy.style().update(); // explicit re-run picks the state up
 
       expect( fillOf('a') ).to.deep.equal([0, 0, 255, 255]);
-
-      cy.$('#a').unselect();
-
-      expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]);
     });
 
     it('emits a style event', function(){
       var emitted = 0;
 
       cy.on('style', function(){ emitted++; });
-      cy.style([]);
+      cy.style({});
 
       expect( emitted ).to.equal(1);
     });
 
-    it('returns the current blocks from json()', function(){
-      var blocks = [ { selector: 'node', style: { width: 10 } } ];
+    it('returns the current sheet from json()', function(){
+      var sheet = { node: { width: 10 } };
 
-      cy.style( blocks );
+      cy.style( sheet );
 
-      expect( cy.style().json() ).to.deep.equal( blocks );
+      expect( cy.style().json() ).to.deep.equal( sheet );
     });
 
     it('honours the style init option', function(){
       var styled = cytoscapeGpu({
-        style: [ { selector: 'node', style: { width: 77 } } ],
+        style: { node: { width: 77 } },
         elements: [ { data: { id: 'x' } } ]
       });
 
-      expect( styled.$('#x').width() ).to.equal(77);
+      expect( styled.$id('x').width() ).to.equal(77);
     });
 
     it('throws on unsupported properties', function(){
       expect(function(){
-        cy.style([ { selector: 'node', style: { 'text-outline-width': 2 } } ]);
+        cy.style({ node: { 'text-outline-width': 2 } });
       }).to.throw();
     });
 
     it('throws on mapper-style values', function(){
       expect(function(){
-        cy.style([ { selector: 'node', style: { 'width': 'data(weight)' } } ]);
+        cy.style({ node: { 'width': 'data(weight)' } });
       }).to.throw();
     });
 
-    it('throws on unsupported selectors', function(){
+    it('throws on unknown stylesheet keys', function(){
       expect(function(){
-        cy.style([ { selector: '.cls', style: { 'width': 10 } } ]);
-      }).to.throw();
+        cy.style({ nodes: { 'width': 10 } }); // 'node', not 'nodes'
+      }).to.throw(/Unknown stylesheet key/);
     });
   });
 

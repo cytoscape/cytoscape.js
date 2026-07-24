@@ -32,7 +32,7 @@ const elements = buildElements();
  */
 const OP = process.env.BENCH_OP;
 
-function cmpMut( name, setup, fn, v3opts ){
+function cmpMut( name, setup, fn, v3opts, gpuFn = fn ){
   if( OP != null && !name.includes( OP ) ){ return; }
 
   const a = makeV3( elements, v3opts );
@@ -44,7 +44,7 @@ function cmpMut( name, setup, fn, v3opts ){
   group( name, () => {
     summary( () => {
       bench( 'v3',  () => { fn( ta, i++, a ); } );
-      bench( 'gpu', () => { fn( tb, i++, b ); } );
+      bench( 'gpu', () => { gpuFn( tb, i++, b ); } );
     } );
   } );
 }
@@ -78,17 +78,29 @@ cmpMut( 'mut-bulk: data set', nodes, ( n, i ) => n.data( 'foo', i & 7 ) );
 const BAND = Math.min( 256, Math.floor( N / 4 ) );
 const bandSel = Array.from( { length: BAND }, ( _, i ) => '#n' + i ).join( ', ' );
 
+// idiomatic v4 band resolution: per-id index lookups + union (no selector
+// strings in v4); both sides go through their id fast path either way
+const bandOf = cy => {
+  let eles = cy.collection();
+
+  for( let i = 0; i < BAND; i++ ){ eles = eles.union( cy.$id( 'n' + i ) ); }
+
+  return eles;
+};
+
 function setupRemove( cy ){
   // capture defs of the full removal closure (band + incident edges) up
   // front — jsons() after removal loses edge endpoints on the gpu side
-  const band = cy.$( bandSel );
+  const band = bandOf( cy );
   const closure = band.union( band.connectedEdges() );
 
   return closure.jsons();
 }
 
 cmpMut( `mut-bulk: remove + re-add (${BAND} nodes + cascade)`, setupRemove,
-  ( defs, i, cy ) => { cy.$( bandSel ).remove(); cy.add( defs ); } );
+  ( defs, i, cy ) => { cy.$( bandSel ).remove(); cy.add( defs ); },
+  undefined,
+  ( defs, i, cy ) => { bandOf( cy ).remove(); cy.add( defs ); } );
 
 await run();
 

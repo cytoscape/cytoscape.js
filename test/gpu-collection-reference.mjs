@@ -16,16 +16,16 @@ describe('gpu/collection: core reference & identity', function(){
   });
 
   it('instanceString()', function(){
-    expect( cy.$('#n1').instanceString() ).to.equal('collection');
+    expect( cy.$id('n1').instanceString() ).to.equal('collection');
   });
 
   it('cy() returns the owning core', function(){
-    expect( cy.$('#n1').cy() ).to.equal( cy );
+    expect( cy.$id('n1').cy() ).to.equal( cy );
     expect( cy.elements().cy() ).to.equal( cy );
   });
 
   it('renderer() is null when headless', function(){
-    expect( cy.$('#n1').renderer() ).to.equal( null );
+    expect( cy.$id('n1').renderer() ).to.equal( null );
   });
 
   it('element() returns the first element as a length-1 collection', function(){
@@ -40,7 +40,7 @@ describe('gpu/collection: core reference & identity', function(){
   });
 
   it('collection() returns an empty collection in the same core', function(){
-    var empty = cy.$('#n1').collection();
+    var empty = cy.$id('n1').collection();
 
     expect( empty.length ).to.equal( 0 );
     expect( empty.cy() ).to.equal( cy );
@@ -55,9 +55,9 @@ describe('gpu/collection: core reference & identity', function(){
   it('indexOf()', function(){
     var nodes = cy.nodes();
 
-    expect( nodes.indexOf( cy.$('#n1') ) ).to.equal( 0 );
-    expect( nodes.indexOf( cy.$('#n2') ) ).to.equal( 1 );
-    expect( nodes.indexOf( cy.$('#e1') ) ).to.equal( -1 );
+    expect( nodes.indexOf( cy.$id('n1') ) ).to.equal( 0 );
+    expect( nodes.indexOf( cy.$id('n2') ) ).to.equal( 1 );
+    expect( nodes.indexOf( cy.$id('e1') ) ).to.equal( -1 );
   });
 
   it('indexOfId()', function(){

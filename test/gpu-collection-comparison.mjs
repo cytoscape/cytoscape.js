@@ -18,41 +18,41 @@ describe('gpu/collection: comparison', function(){
 
   describe('eles.same()', function(){
     it('is true for equal sets regardless of order', function(){
-      expect( cy.$('#a, #b').same( cy.$('#b, #a') ) ).to.be.true;
+      expect( cy.$id('a').union( cy.$id('b') ).same( cy.$id('b').union( cy.$id('a') ) ) ).to.be.true;
     });
 
     it('is false for different sets', function(){
-      expect( cy.$('#a').same( cy.$('#b') ) ).to.be.false;
-      expect( cy.$('#a, #b').same( cy.$('#a') ) ).to.be.false;
+      expect( cy.$id('a').same( cy.$id('b') ) ).to.be.false;
+      expect( cy.$id('a').union( cy.$id('b') ).same( cy.$id('a') ) ).to.be.false;
     });
   });
 
   describe('eles.anySame()', function(){
     it('is true on overlap', function(){
-      expect( cy.$('#a, #b').anySame( cy.$('#b, #c') ) ).to.be.true;
+      expect( cy.$id('a').union( cy.$id('b') ).anySame( cy.$id('b').union( cy.$id('c') ) ) ).to.be.true;
     });
 
     it('is false on disjoint sets', function(){
-      expect( cy.$('#a').anySame( cy.$('#b, #c') ) ).to.be.false;
+      expect( cy.$id('a').anySame( cy.$id('b').union( cy.$id('c') ) ) ).to.be.false;
     });
   });
 
   describe('eles.contains()', function(){
     it('is true for subsets', function(){
-      expect( cy.nodes().contains( cy.$('#a') ) ).to.be.true;
+      expect( cy.nodes().contains( cy.$id('a') ) ).to.be.true;
       expect( cy.elements().has( cy.nodes() ) ).to.be.true;
     });
 
     it('is false otherwise', function(){
-      expect( cy.$('#a').contains( cy.nodes() ) ).to.be.false;
+      expect( cy.$id('a').contains( cy.nodes() ) ).to.be.false;
     });
   });
 
   describe('eles.allAre()', function(){
     it('checks every element against a selector', function(){
-      expect( cy.nodes().allAre('node') ).to.be.true;
-      expect( cy.elements().allAre('node') ).to.be.false;
-      expect( cy.collection().allAre('node') ).to.be.true; // vacuously true, as in v3
+      expect( cy.nodes().allAre({ group: 'nodes' }) ).to.be.true;
+      expect( cy.elements().allAre({ group: 'nodes' }) ).to.be.false;
+      expect( cy.collection().allAre({ group: 'nodes' }) ).to.be.true; // vacuously true, as in v3
     });
   });
 
@@ -79,9 +79,9 @@ describe('gpu/collection: comparison', function(){
 
   describe('eles.is()', function(){
     it('checks whether any element matches', function(){
-      expect( cy.elements().is('edge') ).to.be.true;
-      expect( cy.nodes().is('edge') ).to.be.false;
-      expect( cy.nodes().is(':selected') ).to.be.true;
+      expect( cy.elements().is({ group: 'edges' }) ).to.be.true;
+      expect( cy.nodes().is({ group: 'edges' }) ).to.be.false;
+      expect( cy.nodes().is({ selected: true }) ).to.be.true;
     });
   });
 

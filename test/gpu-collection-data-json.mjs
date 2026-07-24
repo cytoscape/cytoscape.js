@@ -16,72 +16,72 @@ describe('gpu/collection: removeData, scratch, json', function(){
   });
 
   it('removeData(names) clears named keys', function(){
-    cy.$('#n1').removeData('foo');
+    cy.$id('n1').removeData('foo');
 
-    expect( cy.$('#n1').data('foo') ).to.equal( undefined );
-    expect( cy.$('#n1').data('bar') ).to.equal('x');
+    expect( cy.$id('n1').data('foo') ).to.equal( undefined );
+    expect( cy.$id('n1').data('bar') ).to.equal('x');
   });
 
   it('removeData() with no args clears all sidecar keys', function(){
-    cy.$('#n1').removeData();
+    cy.$id('n1').removeData();
 
-    expect( cy.$('#n1').data('foo') ).to.equal( undefined );
-    expect( cy.$('#n1').data('bar') ).to.equal( undefined );
+    expect( cy.$id('n1').data('foo') ).to.equal( undefined );
+    expect( cy.$id('n1').data('bar') ).to.equal( undefined );
     // id stays first-class
-    expect( cy.$('#n1').data('id') ).to.equal('n1');
+    expect( cy.$id('n1').data('id') ).to.equal('n1');
   });
 
   it('removeData() on an edge leaves id/source/target intact', function(){
-    cy.$('#e1').removeData();
+    cy.$id('e1').removeData();
 
-    expect( cy.$('#e1').data('weight') ).to.equal( undefined ); // sidecar cleared
-    expect( cy.$('#e1').data('id') ).to.equal('e1');
-    expect( cy.$('#e1').data('source') ).to.equal('n1');
-    expect( cy.$('#e1').data('target') ).to.equal('n2');
+    expect( cy.$id('e1').data('weight') ).to.equal( undefined ); // sidecar cleared
+    expect( cy.$id('e1').data('id') ).to.equal('e1');
+    expect( cy.$id('e1').data('source') ).to.equal('n1');
+    expect( cy.$id('e1').data('target') ).to.equal('n2');
   });
 
   it('removeAttr alias', function(){
-    cy.$('#n1').removeAttr('bar');
-    expect( cy.$('#n1').data('bar') ).to.equal( undefined );
+    cy.$id('n1').removeAttr('bar');
+    expect( cy.$id('n1').data('bar') ).to.equal( undefined );
   });
 
   it('removeData emits data', function(){
     var fired = 0;
-    cy.$('#n1').on('data', () => fired++);
-    cy.$('#n1').removeData('foo');
+    cy.$id('n1').on('data', () => fired++);
+    cy.$id('n1').removeData('foo');
     expect( fired ).to.equal( 1 );
   });
 
   it('scratch() set/get whole and namespaced', function(){
-    cy.$('#n1').scratch('_layout', { x: 5 });
+    cy.$id('n1').scratch('_layout', { x: 5 });
 
-    expect( cy.$('#n1').scratch('_layout') ).to.deep.equal({ x: 5 });
-    expect( cy.$('#n1').scratch() ).to.deep.equal({ _layout: { x: 5 } });
+    expect( cy.$id('n1').scratch('_layout') ).to.deep.equal({ x: 5 });
+    expect( cy.$id('n1').scratch() ).to.deep.equal({ _layout: { x: 5 } });
   });
 
   it('scratch(obj) merges', function(){
-    cy.$('#n1').scratch({ a: 1 });
-    cy.$('#n1').scratch({ b: 2 });
+    cy.$id('n1').scratch({ a: 1 });
+    cy.$id('n1').scratch({ b: 2 });
 
-    expect( cy.$('#n1').scratch() ).to.deep.equal({ a: 1, b: 2 });
+    expect( cy.$id('n1').scratch() ).to.deep.equal({ a: 1, b: 2 });
   });
 
   it('scratch persists across handle lookups (interned)', function(){
-    cy.$('#n1').scratch('k', 42);
+    cy.$id('n1').scratch('k', 42);
     expect( cy.getElementById('n1').scratch('k') ).to.equal( 42 );
   });
 
   it('removeScratch(namespace) and removeScratch()', function(){
-    cy.$('#n1').scratch({ a: 1, b: 2 });
-    cy.$('#n1').removeScratch('a');
-    expect( cy.$('#n1').scratch() ).to.deep.equal({ b: 2 });
+    cy.$id('n1').scratch({ a: 1, b: 2 });
+    cy.$id('n1').removeScratch('a');
+    expect( cy.$id('n1').scratch() ).to.deep.equal({ b: 2 });
 
-    cy.$('#n1').removeScratch();
-    expect( cy.$('#n1').scratch() ).to.deep.equal({});
+    cy.$id('n1').removeScratch();
+    expect( cy.$id('n1').scratch() ).to.deep.equal({});
   });
 
   it('json() for a node', function(){
-    var j = cy.$('#n1').json();
+    var j = cy.$id('n1').json();
 
     expect( j.group ).to.equal('nodes');
     expect( j.data.id ).to.equal('n1');
@@ -93,7 +93,7 @@ describe('gpu/collection: removeData, scratch, json', function(){
   });
 
   it('json() for an edge carries source/target', function(){
-    var j = cy.$('#e1').json();
+    var j = cy.$id('e1').json();
 
     expect( j.group ).to.equal('edges');
     expect( j.data.source ).to.equal('n1');

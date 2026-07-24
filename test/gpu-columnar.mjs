@@ -141,7 +141,7 @@ describe('gpu/columnar', function(){
     it('builds adjacency', function(){
       const cy = cytoscapeGpu( { elements: toColumnarElements( FIXTURE ) } );
 
-      expect( cy.getElementById( 'b' ).outgoers( 'node' )[0].id() ).to.equal( 'c' );
+      expect( cy.getElementById( 'b' ).outgoers({ group: 'nodes' })[0].id() ).to.equal( 'c' );
       expect( cy.getElementById( 'ab' ).source().id() ).to.equal( 'a' );
       expect( cy.getElementById( 'ab' ).target().id() ).to.equal( 'b' );
     });
@@ -206,7 +206,7 @@ describe('gpu/columnar', function(){
     it('styles apply to columnar-loaded elements', function(){
       const cy = cytoscapeGpu( {
         elements: toColumnarElements( FIXTURE ),
-        style: [ { selector: 'node', style: { 'width': 21, 'height': 22 } } ]
+        style: { node: { 'width': 21, 'height': 22 } }
       } );
 
       expect( cy.getElementById( 'a' ).width() ).to.equal( 21 );

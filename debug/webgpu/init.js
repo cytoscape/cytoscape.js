@@ -86,16 +86,22 @@ const paramDefs = {
   const SUPPORTED_SHAPES = new Set([
     'ellipse', 'circle', 'rectangle', 'round-rectangle', 'roundrectangle'
   ]);
-  const SUPPORTED_SELECTOR = /^(\*|node|edge|#[^\s:#,[\]]+)?(:(selected|unselected))*$/;
-
-  // keep only constant values of in-scope props on in-scope selectors
+  // best-effort conversion of a v3 block stylesheet into the v4 sheet
+  // ({ node, edge }): constant values of in-scope props on plain group
+  // selectors fold into the group's props (later blocks win, as in v3
+  // document order); #id/:selected/class blocks are dropped — v4 styles
+  // per element via fn styles, which a fixture stylesheet can't express
   function sanitizeStyle(blocks) {
-    const out = [];
+    const sheet = {};
+
+    const mergeInto = (groupKey, style) => {
+      sheet[groupKey] = Object.assign(sheet[groupKey] || {}, style);
+    };
 
     for(const block of blocks || []) {
       const selector = (block.selector || '').trim();
 
-      if(!SUPPORTED_SELECTOR.test(selector) || selector === '') { continue; }
+      if(selector !== 'node' && selector !== 'edge' && selector !== '*') { continue; }
 
       const style = {};
 
@@ -110,12 +116,13 @@ const paramDefs = {
         style[prop] = value;
       }
 
-      if(Object.keys(style).length > 0) {
-        out.push({ selector, style });
-      }
+      if(Object.keys(style).length === 0) { continue; }
+
+      if(selector === 'node' || selector === '*') { mergeInto('node', style); }
+      if(selector === 'edge' || selector === '*') { mergeInto('edge', style); }
     }
 
-    return out;
+    return sheet;
   }
 
   function toGpuElements(elements) {
@@ -170,10 +177,10 @@ const paramDefs = {
       } });
     }
 
-    const style = [
-      { selector: 'node', style: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' } },
-      { selector: 'edge', style: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 } }
-    ];
+    const style = {
+      node: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' },
+      edge: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 }
+    };
 
     return { nodes, edges, hasPositions: true, style };
   }
@@ -183,16 +190,14 @@ const paramDefs = {
   function loadNetwork(gpuElements, style) {
     console.time('cytoscapeGpu init');
 
+    style = style || {};
+
     if(params.labels === 'true') {
-      style = (style || []).concat([
-        { selector: 'node', style: { 'label': 'data(id)', 'font-size': 10, 'color': '#333' } }
-      ]);
+      style = { ...style, node: { ...style.node, 'label': 'data(id)', 'font-size': 10, 'color': '#333' } };
     }
 
     if(params.arrows === 'true') {
-      style = (style || []).concat([
-        { selector: 'edge', style: { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#666' } }
-      ]);
+      style = { ...style, edge: { ...style.edge, 'target-arrow-shape': 'triangle', 'target-arrow-color': '#666' } };
     }
 
     let elements = { nodes: gpuElements.nodes, edges: gpuElements.edges };

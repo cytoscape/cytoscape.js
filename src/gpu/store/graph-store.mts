@@ -573,8 +573,8 @@ export class GraphStore implements ModelView {
    * Scan one group's flags column, writing a ref into `out` (from index
    * `at`) for every live slot (insertion order) whose flags satisfy
    * (flags & mask) === want.  Returns the index one past the last write —
-   * the columnar scan behind the whole-graph materializers and flag-only
-   * selectors, callable back to back so `out` covers several groups.  The
+   * the columnar scan behind the whole-graph materializers and structured
+   * queries, callable back to back so `out` covers several groups.  The
    * caller preallocates `out` to the live count (the exact match count for
    * a mask-0 scan, an upper bound otherwise) and trims afterwards.
    */

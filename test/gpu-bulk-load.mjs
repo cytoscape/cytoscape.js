@@ -130,11 +130,10 @@ describe('gpu/bulk-load', function(){
   });
 
   describe('StyleEngine.applyBulk', function(){
-    const blocks = [
-      { selector: 'node', style: { 'width': 11, 'height': 12, 'background-color': '#f00' } },
-      { selector: 'edge', style: { 'width': 3, 'line-color': '#0f0' } },
-      { selector: 'node:selected', style: { 'background-color': '#00f' } }
-    ];
+    const sheet = {
+      node: { 'width': 11, 'height': 12, 'background-color': '#f00' },
+      edge: { 'width': 3, 'line-color': '#0f0' }
+    };
 
     const storeWith = () => {
       const store = new GraphStore();
@@ -146,18 +145,23 @@ describe('gpu/bulk-load', function(){
       return store;
     };
 
+    // a minimal handle stub for fn styles in store-only tests (no core)
+    const eleFor = store => ( group, slot ) => ( {
+      id: () => store.idAt( group, slot )
+    } );
+
     it('matches per-element apply exactly', function(){
       const bulk = storeWith();
       const perEle = storeWith();
 
-      const bulkEngine = new StyleEngine( bulk );
-      const perEleEngine = new StyleEngine( perEle );
+      const bulkEngine = new StyleEngine( bulk, eleFor( bulk ) );
+      const perEleEngine = new StyleEngine( perEle, eleFor( perEle ) );
 
-      bulkEngine.setBlocks( blocks ); // applyAll routes through applyBulk
+      bulkEngine.setSheet( sheet ); // applyAll routes through applyBulk
 
       // the per-element reference: apply() per ref overwrites whatever
-      // setBlocks wrote, so the columns end up as pure apply() output
-      perEleEngine.setBlocks( blocks );
+      // setSheet wrote, so the columns end up as pure apply() output
+      perEleEngine.setSheet( sheet );
       perEle.forEachAlive( 'nodes', slot => perEleEngine.apply( perEle.ref( 'nodes', slot ) ) );
       perEle.forEachAlive( 'edges', slot => perEleEngine.apply( perEle.ref( 'edges', slot ) ) );
 
@@ -166,25 +170,13 @@ describe('gpu/bulk-load', function(){
       }
     });
 
-    it('applies :selected variants per element', function(){
+    it('evaluates fn styles per element', function(){
       const store = storeWith();
-      const engine = new StyleEngine( store );
+      const engine = new StyleEngine( store, eleFor( store ) );
 
-      engine.setBlocks( blocks );
-
-      const fill = store.column( 'node.fillColor' );
-      const a = store.lookup( 'a' ).slot;
-      const b = store.lookup( 'b' ).slot;
-
-      expect( Array.from( fill.slice( a * 4, a * 4 + 3 ) ) ).to.deep.equal([ 255, 0, 0 ]);
-      expect( Array.from( fill.slice( b * 4, b * 4 + 3 ) ) ).to.deep.equal([ 0, 0, 255 ]);
-    });
-
-    it('falls back to per-element apply for #id blocks', function(){
-      const store = storeWith();
-      const engine = new StyleEngine( store );
-
-      engine.setBlocks( [ ...blocks, { selector: '#a', style: { 'background-color': '#ff0' } } ] );
+      engine.setSheet( {
+        node: ele => ( { 'background-color': ele.id() === 'a' ? '#ff0' : '#00f' } )
+      } );
 
       const fill = store.column( 'node.fillColor' );
       const a = store.lookup( 'a' ).slot;
@@ -192,6 +184,22 @@ describe('gpu/bulk-load', function(){
 
       expect( Array.from( fill.slice( a * 4, a * 4 + 3 ) ) ).to.deep.equal([ 255, 255, 0 ]);
       expect( Array.from( fill.slice( b * 4, b * 4 + 3 ) ) ).to.deep.equal([ 0, 0, 255 ]);
+    });
+
+    it('a nullish fn return falls back to group defaults', function(){
+      const store = storeWith();
+      const engine = new StyleEngine( store, eleFor( store ) );
+
+      engine.setSheet( {
+        node: ele => ele.id() === 'a' ? { 'background-color': '#ff0' } : null
+      } );
+
+      const fill = store.column( 'node.fillColor' );
+      const a = store.lookup( 'a' ).slot;
+      const b = store.lookup( 'b' ).slot;
+
+      expect( Array.from( fill.slice( a * 4, a * 4 + 3 ) ) ).to.deep.equal([ 255, 255, 0 ]);
+      expect( Array.from( fill.slice( b * 4, b * 4 + 3 ) ) ).to.deep.equal([ 153, 153, 153 ]); // #999 default
     });
   });
 
@@ -204,7 +212,7 @@ describe('gpu/bulk-load', function(){
         ],
         edges: [ { data: { id: 'ab', source: 'a', target: 'b' } } ]
       },
-      style: [ { selector: 'node', style: { 'width': 20, 'height': 20 } } ]
+      style: { node: { 'width': 20, 'height': 20 } }
     } );
 
     it('loads elements without add events and with styles applied', function(){

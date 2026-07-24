@@ -51,7 +51,7 @@ describe('gpu/viewport', function(){
     });
 
     it('zooms about a rendered position, keeping the point fixed', function(){
-      var node = cy.$('#b');
+      var node = cy.$id('b');
       var before = node.renderedPosition();
 
       cy.zoom({ level: 2, renderedPosition: before });
@@ -66,7 +66,7 @@ describe('gpu/viewport', function(){
     it('zooms about a model position', function(){
       cy.zoom({ level: 4, position: { x: 100, y: 50 } });
 
-      expect( cy.$('#b').renderedPosition() ).to.deep.equal({ x: 100, y: 50 });
+      expect( cy.$id('b').renderedPosition() ).to.deep.equal({ x: 100, y: 50 });
     });
   });
 
@@ -118,10 +118,10 @@ describe('gpu/viewport', function(){
     });
 
     it('fits to a sub-collection', function(){
-      cy.fit( cy.$('#a') ); // 30×30 bb about (0,0) ⇒ zoom = 600/30 = 20, centered
+      cy.fit( cy.$id('a') ); // 30×30 bb about (0,0) ⇒ zoom = 600/30 = 20, centered
 
       expect( cy.zoom() ).to.equal(20);
-      expect( cy.$('#a').renderedPosition() ).to.deep.equal({ x: 400, y: 300 });
+      expect( cy.$id('a').renderedPosition() ).to.deep.equal({ x: 400, y: 300 });
     });
 
     it('centers without changing zoom', function(){

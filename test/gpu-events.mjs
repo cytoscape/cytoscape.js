@@ -118,13 +118,16 @@ describe('gpu/events', function(){
     });
   });
 
-  describe('selector-qualified core listeners', function(){
+  describe('predicate-qualified core listeners (delegation)', function(){
+    var isNode = ele => ele.isNode();
+    var isEdge = ele => ele.isEdge();
+
     it('restricts to matching targets', function(){
       var nodeAdds = 0;
       var edgeAdds = 0;
 
-      cy.on('add', 'node', function(){ nodeAdds++; });
-      cy.on('add', 'edge', function(){ edgeAdds++; });
+      cy.on('add', isNode, function(){ nodeAdds++; });
+      cy.on('add', isEdge, function(){ edgeAdds++; });
 
       cy.add([ { data: { id: 'x' } }, { data: { id: 'y' } } ]);
 
@@ -135,9 +138,10 @@ describe('gpu/events', function(){
     it('matches remove events on just-removed elements', function(){
       var removedIds = [];
 
-      cy.on('remove', 'node', function( e ){ removedIds.push( e.target.id() ); });
+      // cached group()/id() stay readable on the removed target handle
+      cy.on('remove', ele => ele.group() === 'nodes', function( e ){ removedIds.push( e.target.id() ); });
 
-      cy.$('#a').remove();
+      cy.$id('a').remove();
 
       expect( removedIds ).to.deep.equal(['a']);
     });
@@ -145,53 +149,66 @@ describe('gpu/events', function(){
     it('sets the matching element as callback context', function(){
       var ctx = null;
 
-      cy.on('select', 'node', function(){ ctx = this; });
-      cy.$('#a').select();
+      cy.on('select', isNode, function(){ ctx = this; });
+      cy.$id('a').select();
 
       expect( ctx.id() ).to.equal('a');
     });
 
-    it('supports a one-shot selector-qualified listener', function(){
+    it('can delegate on element state', function(){
+      var selectedTaps = 0;
+
+      cy.on('foo', ele => ele.selected(), function(){ selectedTaps++; });
+
+      cy.$id('a').emit('foo'); // unselected: no match
+      cy.$id('a').select();
+      cy.$id('a').emit('foo'); // selected: match
+
+      expect( selectedTaps ).to.equal(1);
+    });
+
+    it('supports a one-shot predicate-qualified listener', function(){
       var nodeAdds = 0;
 
-      cy.one('add', 'node', function(){ nodeAdds++; });
+      cy.one('add', isNode, function(){ nodeAdds++; });
 
       cy.add([ { data: { id: 'x' } }, { data: { id: 'y' } } ]);
 
       expect( nodeAdds ).to.equal(1); // fires once then unbinds
     });
 
-    it('off() with a selector removes the delegated handler', function(){
+    it('off() with the predicate and handler removes the delegated handler', function(){
       var nodeAdds = 0;
+      var cb = function(){ nodeAdds++; };
 
-      cy.on('add', 'node', function(){ nodeAdds++; });
-      cy.off('add', 'node');
+      cy.on('add', isNode, cb);
+      cy.off('add', isNode, cb); // predicates compare by identity
 
       cy.add({ data: { id: 'x' } });
 
       expect( nodeAdds ).to.equal(0);
     });
 
-    it('off() with a selector leaves a non-delegated handler intact (#1980)', function(){
+    it('off() with a predicate leaves a non-delegated handler intact (#1980)', function(){
       var plain = 0;
       var delegated = 0;
       var dcb = function(){ delegated++; };
 
       cy.on('foo', function(){ plain++; });
-      cy.on('foo', 'node', dcb);
+      cy.on('foo', isNode, dcb);
 
-      cy.off('foo', 'node', dcb); // remove only the delegated handler
+      cy.off('foo', isNode, dcb); // remove only the delegated handler
 
-      cy.$('#a').emit('foo'); // bubbles to the unqualified core listener
+      cy.$id('a').emit('foo'); // bubbles to the unqualified core listener
 
       expect( plain ).to.equal(1);
       expect( delegated ).to.equal(0);
     });
 
-    it('does not fire selector-qualified listeners for core-target events', function(){
+    it('does not fire predicate-qualified listeners for core-target events', function(){
       var called = 0;
 
-      cy.on('foo', 'node', function(){ called++; });
+      cy.on('foo', isNode, function(){ called++; });
       cy.emit('foo');
 
       expect( called ).to.equal(0);
@@ -202,14 +219,14 @@ describe('gpu/events', function(){
     it('listens on an element', function(){
       var called = 0;
 
-      cy.$('#a').on('foo', function( e ){
+      cy.$id('a').on('foo', function( e ){
         called++;
         expect( e.target.id() ).to.equal('a');
         expect( this.id() ).to.equal('a');
       });
 
-      cy.$('#a').emit('foo');
-      cy.$('#b').emit('foo'); // must not fire a's listener
+      cy.$id('a').emit('foo');
+      cy.$id('b').emit('foo'); // must not fire a's listener
 
       expect( called ).to.equal(1);
     });
@@ -229,9 +246,9 @@ describe('gpu/events', function(){
 
       cy.nodes().one('foo', function(){ called++; });
 
-      cy.$('#a').emit('foo');
-      cy.$('#a').emit('foo');
-      cy.$('#b').emit('foo');
+      cy.$id('a').emit('foo');
+      cy.$id('a').emit('foo');
+      cy.$id('b').emit('foo');
 
       expect( called ).to.equal(2); // once for a, once for b
     });
@@ -239,9 +256,9 @@ describe('gpu/events', function(){
     it('supports off()', function(){
       var called = 0;
 
-      cy.$('#a').on('foo', function(){ called++; });
-      cy.$('#a').off('foo');
-      cy.$('#a').emit('foo');
+      cy.$id('a').on('foo', function(){ called++; });
+      cy.$id('a').off('foo');
+      cy.$id('a').emit('foo');
 
       expect( called ).to.equal(0);
     });
@@ -249,16 +266,16 @@ describe('gpu/events', function(){
     it('passes extra params to an element listener', function(){
       var got;
 
-      cy.$('#a').on('foo', function( e, x, y ){ got = [x, y]; });
-      cy.$('#a').trigger('foo', ['bar', 'baz']);
+      cy.$id('a').on('foo', function( e, x, y ){ got = [x, y]; });
+      cy.$id('a').trigger('foo', ['bar', 'baz']);
 
       expect( got ).to.deep.equal(['bar', 'baz']);
     });
 
     it('supports promiseOn() on an element', function(){
-      var promise = cy.$('#a').promiseOn('foo');
+      var promise = cy.$id('a').promiseOn('foo');
 
-      cy.$('#a').emit('foo');
+      cy.$id('a').emit('foo');
 
       return promise.then(function( e ){
         expect( e.target.id() ).to.equal('a');
@@ -273,7 +290,7 @@ describe('gpu/events', function(){
         expect( e.target.id() ).to.equal('a');
       });
 
-      cy.$('#a').emit('foo');
+      cy.$id('a').emit('foo');
 
       expect( called ).to.equal(1);
     });
@@ -282,7 +299,7 @@ describe('gpu/events', function(){
       var got;
 
       cy.on('foo', function( e, x, y ){ got = [x, y]; });
-      cy.$('#a').trigger('foo', ['bar', 'baz']);
+      cy.$id('a').trigger('foo', ['bar', 'baz']);
 
       expect( got ).to.deep.equal(['bar', 'baz']);
     });
@@ -290,19 +307,19 @@ describe('gpu/events', function(){
     it('auto-emits data when an element data() setter runs', function(){
       var called = 0;
 
-      cy.$('#a').on('data', function(){ called++; });
-      cy.$('#a').data('k', 'v');
+      cy.$id('a').on('data', function(){ called++; });
+      cy.$id('a').data('k', 'v');
 
       expect( called ).to.equal(1);
     });
 
     it('does not fire for a reused slot after removal', function(){
       var called = 0;
-      var a = cy.$('#a');
+      var a = cy.$id('a');
 
       a.on('foo', function(){ called++; });
 
-      cy.$('#ab').remove();
+      cy.$id('ab').remove();
       a.remove();
 
       var fresh = cy.add({ data: { id: 'a2' } }); // may reuse a's slot

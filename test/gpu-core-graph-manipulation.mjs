@@ -117,7 +117,7 @@ describe('gpu/core: graph manipulation', function(){
     it('coerces an integer node id to a string', function(){
       cy.add({ data: { id: 0 } });
 
-      expect( cy.$('#0').id() ).to.equal('0');
+      expect( cy.$id('0').id() ).to.equal('0');
     });
 
     it('coerces integer edge endpoints to strings', function(){
@@ -127,7 +127,7 @@ describe('gpu/core: graph manipulation', function(){
         { data: { id: 12, source: 10, target: 11 } }
       ]);
 
-      var edge = cy.$('#12');
+      var edge = cy.$id('12');
 
       expect( edge.isEdge() ).to.be.true;
       expect( edge.source().id() ).to.equal('10');
@@ -147,34 +147,34 @@ describe('gpu/core: graph manipulation', function(){
 
   describe('eles.remove()', function(){
     it('removes a single element', function(){
-      cy.$('#n1').remove();
+      cy.$id('n1').remove();
 
-      expect( cy.$('#n1') ).to.have.length(0);
+      expect( cy.$id('n1') ).to.have.length(0);
       expect( cy.nodes() ).to.have.length(2);
     });
 
     it('removes several elements', function(){
-      cy.$('#n1, #n2').remove();
+      cy.$id('n1').union( cy.$id('n2') ).remove();
 
-      expect( cy.$('#n1') ).to.have.length(0);
-      expect( cy.$('#n2') ).to.have.length(0);
+      expect( cy.$id('n1') ).to.have.length(0);
+      expect( cy.$id('n2') ).to.have.length(0);
     });
 
     it('removes edges connected to a removed node', function(){
-      cy.$('#n1').remove();
+      cy.$id('n1').remove();
 
-      expect( cy.$('#n1n2') ).to.have.length(0);
+      expect( cy.$id('n1n2') ).to.have.length(0);
       expect( cy.edges() ).to.have.length(1);
     });
 
     it('returns the removed elements including cascaded edges', function(){
-      var removed = cy.$('#n2').remove();
+      var removed = cy.$id('n2').remove();
 
       expect( removed ).to.have.length(3); // n2 + both edges
     });
 
     it('does not emit remove on an already removed element', function(){
-      var n1 = cy.$('#n1');
+      var n1 = cy.$id('n1');
       var emitted = false;
 
       n1.remove();
@@ -185,7 +185,7 @@ describe('gpu/core: graph manipulation', function(){
     });
 
     it('only emits the remove event once', function(){
-      var n1 = cy.$('#n1');
+      var n1 = cy.$id('n1');
       var emits = 0;
 
       n1.on('remove', function(){ emits++; });
@@ -197,7 +197,7 @@ describe('gpu/core: graph manipulation', function(){
     });
 
     it('updates removed() and inside()', function(){
-      var n1 = cy.$('#n1');
+      var n1 = cy.$id('n1');
 
       expect( n1.removed() ).to.be.false;
       expect( n1.inside() ).to.be.true;
@@ -209,7 +209,7 @@ describe('gpu/core: graph manipulation', function(){
     });
 
     it('keeps id() readable on removed elements', function(){
-      var n1 = cy.$('#n1');
+      var n1 = cy.$id('n1');
 
       n1.remove();
 
@@ -217,16 +217,10 @@ describe('gpu/core: graph manipulation', function(){
       expect( n1.isNode() ).to.be.true;
     });
 
-    it('removes via core with a selector', function(){
-      cy.remove('#n1');
-
-      expect( cy.$('#n1') ).to.have.length(0);
-    });
-
     it('removes via core with a collection argument', function(){
-      cy.remove( cy.$('#n1') );
+      cy.remove( cy.$id('n1') );
 
-      expect( cy.$('#n1') ).to.have.length(0);
+      expect( cy.$id('n1') ).to.have.length(0);
       expect( cy.nodes() ).to.have.length(2);
     });
 
@@ -236,20 +230,20 @@ describe('gpu/core: graph manipulation', function(){
         { data: { id: 'p2', source: 'n1', target: 'n2' } }
       ]);
 
-      cy.$('#p1').remove();
+      cy.$id('p1').remove();
 
-      expect( cy.$('#p1') ).to.have.length(0);
-      expect( cy.$('#p2') ).to.have.length(1);
-      expect( cy.$('#p2').source().id() ).to.equal('n1');
+      expect( cy.$id('p1') ).to.have.length(0);
+      expect( cy.$id('p2') ).to.have.length(1);
+      expect( cy.$id('p2').source().id() ).to.equal('n1');
     });
 
     it('supports re-adding an id after removal', function(){
-      var old = cy.$('#n1');
+      var old = cy.$id('n1');
 
       old.remove();
       cy.add({ data: { id: 'n1' }, position: { x: 9, y: 9 } });
 
-      var fresh = cy.$('#n1');
+      var fresh = cy.$id('n1');
 
       expect( fresh ).to.have.length(1);
       expect( fresh.position() ).to.deep.equal({ x: 9, y: 9 });
@@ -258,13 +252,13 @@ describe('gpu/core: graph manipulation', function(){
   });
 
   describe('cy accessors', function(){
-    it('take a selector argument', function(){
-      expect( cy.nodes('#n1').map( n => n.id() ) ).to.deep.equal(['n1']);
-      expect( cy.edges('#n1n2').map( e => e.id() ) ).to.deep.equal(['n1n2']);
-      expect( cy.elements('node').map( n => n.id() ).sort() ).to.deep.equal(['n1', 'n2', 'n3']);
+    it('take a query or predicate argument', function(){
+      expect( cy.nodes( n => n.id() === 'n1' ).map( n => n.id() ) ).to.deep.equal(['n1']);
+      expect( cy.edges( e => e.id() === 'n1n2' ).map( e => e.id() ) ).to.deep.equal(['n1n2']);
+      expect( cy.elements({ group: 'nodes' }).map( n => n.id() ).sort() ).to.deep.equal(['n1', 'n2', 'n3']);
     });
 
-    it('cy.$() returns an immutable snapshot', function(){
+    it('materializers return an immutable snapshot', function(){
       var before = cy.nodes();
 
       cy.add({ data: { id: 'later' } });
@@ -276,7 +270,7 @@ describe('gpu/core: graph manipulation', function(){
 
   describe('positions', function(){
     it('gets and sets position', function(){
-      var n1 = cy.$('#n1');
+      var n1 = cy.$id('n1');
 
       expect( n1.position() ).to.deep.equal({ x: 1, y: 1 });
 
@@ -287,7 +281,7 @@ describe('gpu/core: graph manipulation', function(){
     });
 
     it('sets a single dimension', function(){
-      var n1 = cy.$('#n1');
+      var n1 = cy.$id('n1');
 
       n1.position('x', 42);
 
@@ -299,19 +293,19 @@ describe('gpu/core: graph manipulation', function(){
         return { x: i * 100, y: 7 };
       });
 
-      expect( cy.$('#n1').position().x ).to.equal(0);
-      expect( cy.$('#n3').position().x ).to.equal(200);
+      expect( cy.$id('n1').position().x ).to.equal(0);
+      expect( cy.$id('n3').position().x ).to.equal(200);
     });
 
     it('returns undefined position for edges', function(){
-      expect( cy.$('#n1n2').position() ).to.be.undefined;
+      expect( cy.$id('n1n2').position() ).to.be.undefined;
     });
 
     it('emits position when a listener is registered', function(){
       var emits = 0;
 
       cy.on('position', function(){ emits++; });
-      cy.$('#n1').position({ x: 5, y: 5 });
+      cy.$id('n1').position({ x: 5, y: 5 });
 
       expect( emits ).to.equal(1);
     });

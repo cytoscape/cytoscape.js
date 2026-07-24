@@ -33,7 +33,7 @@ function cmp( name, setup, op ){
 }
 
 // operand builders
-const node = ( cy, k ) => cy.$( '#n' + ( MIDNUM + k ) );
+const node = ( cy, k ) => cy.$id( 'n' + ( MIDNUM + k ) );
 const nodeBand = ( cy, k ) => cy.nodes().slice( k * 50, k * 50 + 100 );
 const edgeBand = ( cy, k ) => cy.edges().slice( k * 50, k * 50 + 100 );
 

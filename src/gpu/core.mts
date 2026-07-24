@@ -3,10 +3,10 @@ import { GpuCollection } from './collection.mjs';
 import { isColumnarElements } from './columnar.mjs';
 import { deserializeElements, isSerializedElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
-import { hasListeners, makeCoreEmitter, selectorQualifier } from './events.mjs';
-import type { GpuQualifier } from './events.mjs';
-import { compileFlagPlan, matchesTerm, parseSelector } from './selector.mjs';
-import type { CompiledSelector, FlagTest } from './selector.mjs';
+import { hasListeners, makeCoreEmitter, predicateQualifier } from './events.mjs';
+import type { ElePredicate, GpuQualifier } from './events.mjs';
+import { compileQuery } from './matcher.mjs';
+import type { FlagTest, GpuQuery } from './matcher.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { GridLayout } from './layout/grid.mjs';
@@ -18,7 +18,7 @@ import type { EventProps } from '../event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
-  GpuElementsInput, GpuLayoutOptions, GpuStyleBlock, Position
+  GpuElementsInput, GpuLayoutOptions, GpuStylesheet, Position
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
@@ -36,9 +36,6 @@ export interface LayoutLike {
 
 const DEFAULT_HEADLESS_WIDTH = 800;
 const DEFAULT_HEADLESS_HEIGHT = 600;
-
-/** The flags test every live slot passes (whole-group scans). */
-const MATCH_ALL: FlagTest = { mask: 0, want: 0 };
 
 /**
  * The GpuCore facade: the familiar synchronous core API over the columnar
@@ -80,7 +77,7 @@ export class GpuCore {
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
     this._emitter = makeCoreEmitter<GpuCore>( this );
-    this._styleEngine = new StyleEngine( this._store );
+    this._styleEngine = new StyleEngine( this._store, ( group, slot ) => this._ele( group, slot ) );
     this._renderer = null;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;
@@ -109,15 +106,15 @@ export class GpuCore {
     this.ready = Promise.resolve( this );
 
     if( options.style != null ){
-      this._styleEngine.setBlocks( options.style );
+      this._styleEngine.setSheet( options.style );
     }
   }
 
   // -- style --
 
-  style( blocks?: GpuStyleBlock[] ): StyleEngine {
-    if( blocks != null ){
-      this._styleEngine.setBlocks( blocks );
+  style( sheet?: GpuStylesheet ): StyleEngine {
+    if( sheet != null ){
+      this._styleEngine.setSheet( sheet );
       this.emit( 'style' );
     }
 
@@ -256,8 +253,8 @@ export class GpuCore {
     return refs;
   }
 
-  remove( eles: string | GpuCollection ): GpuCollection {
-    return this._toCollection( eles ).remove();
+  remove( eles: GpuCollection ): GpuCollection {
+    return eles.remove();
   }
 
   // -- collections --
@@ -272,64 +269,37 @@ export class GpuCore {
     return ref == null ? this.collection() : this._ele( ref.group, ref.slot );
   }
 
-  elements( selector?: string ): GpuCollection {
-    return selector == null
-      ? this._scanCollection( MATCH_ALL, MATCH_ALL )
-      : this._select( parseSelector( selector ), null );
+  elements( query?: GpuQuery | EleFilterFn ): GpuCollection {
+    return this._query( query, null );
   }
 
-  nodes( selector?: string ): GpuCollection {
-    return selector == null
-      ? this._scanCollection( MATCH_ALL, null )
-      : this._select( parseSelector( selector ), 'nodes' );
+  nodes( query?: GpuQuery | EleFilterFn ): GpuCollection {
+    return this._query( query, 'nodes' );
   }
 
-  edges( selector?: string ): GpuCollection {
-    return selector == null
-      ? this._scanCollection( null, MATCH_ALL )
-      : this._select( parseSelector( selector ), 'edges' );
+  edges( query?: GpuQuery | EleFilterFn ): GpuCollection {
+    return this._query( query, 'edges' );
   }
 
-  filter( selector: string | EleFilterFn ): GpuCollection {
-    if( typeof selector === 'string' ){
-      return this._select( parseSelector( selector ), null );
-    }
-
-    return this.elements().filter( selector );
+  filter( query: GpuQuery | EleFilterFn ): GpuCollection {
+    return this._query( query, null );
   }
-
-  declare $: this['filter'];
 
   /**
-   * Resolve a whole-graph selector, cheapest path first: pure-`#id` selectors
-   * through the O(1) id index; flag-only selectors (group + :selected /
-   * :unselected) through a columnar flags scan; only mixed id+flag comma
-   * lists fall back to materialize-and-match.  `restrict` narrows the result
-   * to one group (for `cy.nodes(sel)` / `cy.edges(sel)`).
+   * Resolve a whole-graph query.  Structured queries compile to per-group
+   * (mask, want) flag tests answered by one columnar scan — no element
+   * handles, no per-element matching.  Predicate functions materialize
+   * the group(s) and filter per element.  `restrict` narrows the result
+   * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
    */
-  private _select( compiled: CompiledSelector, restrict: GroupName | null ): GpuCollection {
-    const byId = this._selectByIds( compiled );
-
-    if( byId != null ){
-      const refs = restrict == null ? byId : byId.filter( ref => ref.group === restrict );
-
-      return new GpuCollection( this, refs, { unique: true, live: true } );
+  private _query( query: GpuQuery | EleFilterFn | undefined, restrict: GroupName | null ): GpuCollection {
+    if( typeof query === 'function' ){
+      return this._query( undefined, restrict ).filter( query );
     }
 
-    const plan = compileFlagPlan( compiled );
+    const plan = compileQuery( query ?? {}, restrict );
 
-    if( plan != null ){
-      return this._scanCollection(
-        restrict === 'edges' ? null : plan.nodes,
-        restrict === 'nodes' ? null : plan.edges
-      );
-    }
-
-    const base = restrict === 'nodes' ? this.nodes()
-      : restrict === 'edges' ? this.edges()
-      : this.elements();
-
-    return base.filter( compiled );
+    return this._scanCollection( plan.nodes, plan.edges );
   }
 
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
@@ -348,40 +318,17 @@ export class GpuCore {
     return new GpuCollection( this, refs, { unique: true, live: true } );
   }
 
-  /**
-   * If every term of `compiled` pins a concrete `#id`, resolve the selector
-   * through the O(1) id index instead of materializing and scanning the whole
-   * graph. Returns the matching refs, or `null` when any term is not id-pinned
-   * (in which case the caller falls back to a full scan).
-   */
-  private _selectByIds( compiled: CompiledSelector ): Ref[] | null {
-    const terms = compiled.terms;
-
-    for( let i = 0; i < terms.length; i++ ){
-      if( terms[ i ].id == null ){ return null; }
-    }
-
-    const refs: Ref[] = [];
-
-    for( let i = 0; i < terms.length; i++ ){
-      const term = terms[ i ];
-      const ref = this._store.lookup( term.id as string );
-
-      if( ref != null && matchesTerm( this._store, ref, term ) ){
-        refs.push( ref );
-      }
-    }
-
-    return refs;
-  }
-
   // -- events --
 
-  on( events: string, selectorOrCb?: string | EventHandler, callback?: EventHandler ): this {
-    if( typeof selectorOrCb === 'string' ){
-      this._emitter.on( events, selectorQualifier( selectorOrCb ), callback );
+  // Delegation is predicate-based (no selector strings): with a trailing
+  // callback, the middle argument is a predicate over the event target,
+  // e.g. `cy.on('tap', ele => ele.isNode(), cb)`.  Predicates compare by
+  // function identity in off().
+  on( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
+    if( callback != null ){
+      this._emitter.on( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
     } else {
-      this._emitter.on( events, null, selectorOrCb );
+      this._emitter.on( events, null, predicateOrCb as EventHandler | undefined );
     }
 
     return this;
@@ -392,11 +339,11 @@ export class GpuCore {
   declare listen: this['on'];
   declare bind: this['on'];
 
-  one( events: string, selectorOrCb?: string | EventHandler, callback?: EventHandler ): this {
-    if( typeof selectorOrCb === 'string' ){
-      this._emitter.one( events, selectorQualifier( selectorOrCb ), callback );
+  one( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
+    if( callback != null ){
+      this._emitter.one( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
     } else {
-      this._emitter.one( events, null, selectorOrCb );
+      this._emitter.one( events, null, predicateOrCb as EventHandler | undefined );
     }
 
     return this;
@@ -404,11 +351,11 @@ export class GpuCore {
 
   declare once: this['one'];
 
-  off( events: string, selectorOrCb?: string | EventHandler, callback?: EventHandler ): this {
-    if( typeof selectorOrCb === 'string' ){
-      this._emitter.off( events, selectorQualifier( selectorOrCb ), callback );
+  off( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
+    if( callback != null ){
+      this._emitter.off( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
     } else {
-      this._emitter.off( events, null, selectorOrCb );
+      this._emitter.off( events, null, predicateOrCb as EventHandler | undefined );
     }
 
     return this;
@@ -432,12 +379,12 @@ export class GpuCore {
 
   declare trigger: this['emit'];
 
-  promiseOn( events: string, selector?: string ): Promise<Event> {
+  promiseOn( events: string, predicate?: ElePredicate ): Promise<Event> {
     return new Promise( resolve => {
-      if( selector != null ){
-        this.one( events, selector, event => resolve( event ) );
+      if( predicate != null ){
+        this.one( events, predicate, event => resolve( event ) );
       } else {
-        this.one( events, event => resolve( event ) );
+        this.one( events, ( event: Event ) => resolve( event ) );
       }
     } );
   }
@@ -478,7 +425,7 @@ export class GpuCore {
     return this;
   }
 
-  fit( eles?: GpuCollection | string, padding: number = 0 ): this {
+  fit( eles?: GpuCollection, padding: number = 0 ): this {
     const bb = this._boundsOf( eles );
 
     if( bb == null ){ return this; }
@@ -489,7 +436,7 @@ export class GpuCore {
     return this;
   }
 
-  center( eles?: GpuCollection | string ): this {
+  center( eles?: GpuCollection ): this {
     const bb = this._boundsOf( eles );
 
     if( bb == null ){ return this; }
@@ -565,14 +512,14 @@ export class GpuCore {
   }
 
   /** The { zoom, pan } that would fit the given elements (null when empty) — computed, not applied. */
-  getFitViewport( eles?: GpuCollection | string, padding: number = 0 ): { zoom: number; pan: Position } | null {
+  getFitViewport( eles?: GpuCollection, padding: number = 0 ): { zoom: number; pan: Position } | null {
     const bb = this._boundsOf( eles );
 
     return bb == null ? null : this._viewport.fitViewport( bb, padding );
   }
 
   /** The pan that would center the given elements at `zoom` (null when empty). */
-  getCenterPan( eles?: GpuCollection | string, zoom?: number ): Position | null {
+  getCenterPan( eles?: GpuCollection, zoom?: number ): Position | null {
     const bb = this._boundsOf( eles );
 
     return bb == null ? null : this._viewport.centerPan( bb, zoom );
@@ -845,24 +792,6 @@ export class GpuCore {
     return new GpuCollection( this, [ ref ], { singleton: true } );
   }
 
-  _toCollection( eles: string | GpuCollection ): GpuCollection {
-    return typeof eles === 'string' ? this.$( eles ) : eles;
-  }
-
-  _applyStyle( ref: Ref ): void {
-    this._styleEngine.apply( ref );
-  }
-
-  /** Restyle many slots of one group, resolving once per (group, selected). */
-  _applyStyleBulk( group: GroupName, slots: ArrayLike<number> ): void {
-    this._styleEngine.applyBulk( group, slots );
-  }
-
-  /** Whether select/unselect can change computed style under the current blocks. */
-  _styleDependsOnSelection(): boolean {
-    return this._styleEngine.dependsOnSelection;
-  }
-
   /** True when writing any of these data() keys can change a computed label. */
   _labelsDependOnData( keys: string[] ): boolean {
     return this._styleEngine.labelDependsOn( keys );
@@ -887,18 +816,16 @@ export class GpuCore {
     }
   }
 
-  private _boundsOf( eles?: GpuCollection | string ): ReturnType<GpuCollection['boundingBox']> | null {
+  private _boundsOf( eles?: GpuCollection ): ReturnType<GpuCollection['boundingBox']> | null {
     if( eles == null ){
       // whole-graph fast path: columnar scan in the store, skipping the
       // per-element handle layer entirely
       return this._store.boundingBox();
     }
 
-    const collection = this._toCollection( eles );
+    if( eles.length === 0 ){ return null; }
 
-    if( collection.length === 0 ){ return null; }
-
-    return collection.boundingBox();
+    return eles.boundingBox();
   }
 
   private _newId(): string {
@@ -913,7 +840,6 @@ export class GpuCore {
   }
 }
 
-GpuCore.prototype.$ = GpuCore.prototype.filter;
 GpuCore.prototype.centre = GpuCore.prototype.center;
 GpuCore.prototype.addListener = GpuCore.prototype.on;
 GpuCore.prototype.listen = GpuCore.prototype.on;

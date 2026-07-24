@@ -27,8 +27,8 @@ describe('gpu/store: adjacency (CSR + overlay)', function(){
       const i = inc.getElementById( id );
 
       expect( b.connectedEdges().map( e => e.id() ), id ).to.deep.equal( i.connectedEdges().map( e => e.id() ) );
-      expect( b.outgoers( 'edge' ).map( e => e.id() ), id ).to.deep.equal( i.outgoers( 'edge' ).map( e => e.id() ) );
-      expect( b.incomers( 'edge' ).map( e => e.id() ), id ).to.deep.equal( i.incomers( 'edge' ).map( e => e.id() ) );
+      expect( b.outgoers({ group: 'edges' }).map( e => e.id() ), id ).to.deep.equal( i.outgoers({ group: 'edges' }).map( e => e.id() ) );
+      expect( b.incomers({ group: 'edges' }).map( e => e.id() ), id ).to.deep.equal( i.incomers({ group: 'edges' }).map( e => e.id() ) );
       expect( b.degree( true ), id ).to.equal( i.degree( true ) );
     }
   });
@@ -45,9 +45,9 @@ describe('gpu/store: adjacency (CSR + overlay)', function(){
 
     cy.add( { data: { id: 'ab2', source: 'a', target: 'b' } } );
 
-    expect( cy.getElementById( 'a' ).outgoers( 'edge' ).map( e => e.id() ) )
+    expect( cy.getElementById( 'a' ).outgoers({ group: 'edges' }).map( e => e.id() ) )
       .to.deep.equal([ 'ab', 'ac', 'ab2' ]); // CSR first, then overlay, insertion order
-    expect( cy.getElementById( 'b' ).incomers( 'edge' ).map( e => e.id() ) )
+    expect( cy.getElementById( 'b' ).incomers({ group: 'edges' }).map( e => e.id() ) )
       .to.deep.equal([ 'ab', 'ab2' ]);
   });
 
@@ -56,7 +56,7 @@ describe('gpu/store: adjacency (CSR + overlay)', function(){
 
     cy.getElementById( 'ab' ).remove();
 
-    expect( cy.getElementById( 'a' ).outgoers( 'edge' ).map( e => e.id() ) ).to.deep.equal([ 'ac' ]);
+    expect( cy.getElementById( 'a' ).outgoers({ group: 'edges' }).map( e => e.id() ) ).to.deep.equal([ 'ac' ]);
     expect( cy.getElementById( 'b' ).degree( true ) ).to.equal( 1 );
   });
 
@@ -78,7 +78,7 @@ describe('gpu/store: adjacency (CSR + overlay)', function(){
     } ) );
 
     expect( cy.getElementById( 'd' ).connectedEdges().map( e => e.id() ) ).to.deep.equal([ 'dd' ]);
-    expect( cy.getElementById( 'a' ).outgoers( 'edge' ) ).to.have.length( 2 );
+    expect( cy.getElementById( 'a' ).outgoers({ group: 'edges' }) ).to.have.length( 2 );
   });
 
   it('unit: bulk build + removal + re-add on raw slots', function(){

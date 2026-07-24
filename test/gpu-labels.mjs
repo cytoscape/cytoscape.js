@@ -25,18 +25,18 @@ describe('gpu/labels: model', function(){
   describe('style compilation', function(){
     it('has no label by default', function(){
       expect( labelOf('a') ).to.be.undefined;
-      expect( cy.$('#a').label() ).to.equal('');
+      expect( cy.$id('a').label() ).to.equal('');
     });
 
     it('applies constant labels', function(){
-      cy.style([ { selector: 'node', style: { label: 'hello' } } ]);
+      cy.style({ node: { label: 'hello' } });
 
       expect( labelOf('a').text ).to.equal('hello');
-      expect( cy.$('#a').label() ).to.equal('hello');
+      expect( cy.$id('a').label() ).to.equal('hello');
     });
 
     it('resolves the data(id) mapper to the element id', function(){
-      cy.style([ { selector: 'node', style: { label: 'data(id)' } } ]);
+      cy.style({ node: { label: 'data(id)' } });
 
       expect( labelOf('a').text ).to.equal('a');
       expect( labelOf('b').text ).to.equal('b');
@@ -44,41 +44,41 @@ describe('gpu/labels: model', function(){
 
     it('accepts data(key) mappers but rejects mapData', function(){
       expect(function(){
-        cy.style([ { selector: 'node', style: { label: 'data(name)' } } ]);
+        cy.style({ node: { label: 'data(name)' } });
       }).to.not.throw();
 
       expect(function(){
-        cy.style([ { selector: 'node', style: { label: 'mapData(w, 0, 1, a, b)' } } ]);
+        cy.style({ node: { label: 'mapData(w, 0, 1, a, b)' } });
       }).to.throw();
     });
 
     it('applies font-size and color with v3-like defaults', function(){
-      cy.style([ { selector: 'node', style: { label: 'x' } } ]);
+      cy.style({ node: { label: 'x' } });
 
       expect( labelOf('a').fontSize ).to.equal(16);
       expect( labelOf('a').color ).to.equal(0xff000000); // opaque black, packed LE
 
-      cy.style([ { selector: 'node', style: { label: 'x', 'font-size': 10, color: 'red' } } ]);
+      cy.style({ node: { label: 'x', 'font-size': 10, color: 'red' } });
 
       expect( labelOf('a').fontSize ).to.equal(10);
       expect( labelOf('a').color ).to.equal(0xff0000ff); // a<<24 | b<<16 | g<<8 | r
     });
 
     it('anchors below the node body', function(){
-      cy.style([ { selector: 'node', style: { label: 'x', height: 50 } } ]);
+      cy.style({ node: { label: 'x', height: 50 } });
 
       expect( labelOf('a').anchorY ).to.equal(29); // h/2 + 4px margin
     });
 
     it('clears the label when styled back to empty', function(){
-      cy.style([ { selector: 'node', style: { label: 'x' } } ]);
-      cy.style([ { selector: 'node', style: {} } ]);
+      cy.style({ node: { label: 'x' } });
+      cy.style({ node: {} });
 
       expect( labelOf('a') ).to.be.undefined;
     });
 
     it('labels added elements', function(){
-      cy.style([ { selector: 'node', style: { label: 'data(id)' } } ]);
+      cy.style({ node: { label: 'data(id)' } });
 
       cy.add({ data: { id: 'c' } });
 
@@ -88,7 +88,7 @@ describe('gpu/labels: model', function(){
 
   describe('dirty channel', function(){
     it('marks labelled slots dirty and clears on take', function(){
-      cy.style([ { selector: 'node', style: { label: 'data(id)' } } ]);
+      cy.style({ node: { label: 'data(id)' } });
 
       var dirty = cy._store.takeLabelDirty();
 
@@ -97,21 +97,21 @@ describe('gpu/labels: model', function(){
     });
 
     it('does not re-mark unchanged labels', function(){
-      cy.style([ { selector: 'node', style: { label: 'data(id)' } } ]);
+      cy.style({ node: { label: 'data(id)' } });
       cy._store.takeLabelDirty();
 
-      cy.style([ { selector: 'node', style: { label: 'data(id)' } } ]); // same computed values
+      cy.style({ node: { label: 'data(id)' } }); // same computed values
 
       expect( cy._store.takeLabelDirty() ).to.have.length(0);
     });
 
     it('marks on removal of a labelled node', function(){
-      cy.style([ { selector: 'node', style: { label: 'data(id)' } } ]);
+      cy.style({ node: { label: 'data(id)' } });
       cy._store.takeLabelDirty();
 
       var slot = cy._store.lookup('a').slot;
 
-      cy.$('#a').remove();
+      cy.$id('a').remove();
 
       expect( cy._store.takeLabelDirty() ).to.deep.equal([ slot ]);
       expect( cy._store.labelAt(slot) ).to.be.undefined;
@@ -123,7 +123,7 @@ describe('gpu/labels: model', function(){
       var calls = 0;
 
       cy._store.onInvalidate(function(){ calls++; });
-      cy.style([ { selector: '#a', style: { label: 'x' } } ]);
+      cy.style({ node: ele => ele.id() === 'a' ? { label: 'x' } : null });
 
       expect( cy._store.hasDirty() ).to.be.true;
 
@@ -137,10 +137,10 @@ describe('gpu/labels: model', function(){
     });
 
     it('marks when only the anchor height changes', function(){
-      cy.style([ { selector: 'node', style: { label: 'x' } } ]);
+      cy.style({ node: { label: 'x' } });
       cy._store.takeLabelDirty();
 
-      cy.style([ { selector: 'node', style: { label: 'x', height: 60 } } ]);
+      cy.style({ node: { label: 'x', height: 60 } });
 
       expect( cy._store.takeLabelDirty() ).to.have.length(2);
       expect( labelOf('a').anchorY ).to.equal(34);

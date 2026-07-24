@@ -60,7 +60,7 @@ describe('gpu/layout: grid', function(){
   });
 
   it('avoids overlap using node dimensions', function(){
-    cy.style([ { selector: 'node', style: { width: 100, height: 100 } } ]);
+    cy.style({ node: { width: 100, height: 100 } });
     cy.layout({ name: 'grid', fit: false, rows: 1, cols: 4, boundingBox: { x1: 0, y1: 0, w: 10, h: 10 }, avoidOverlapPadding: 0 }).run();
 
     var xs = cy.nodes().map( n => n.position().x ).sort( (a, b) => a - b );
@@ -83,7 +83,7 @@ describe('gpu/layout: grid', function(){
       }
     }).run();
 
-    expect( cy.$('#a').position() ).to.deep.equal({ x: 150, y: 150 });
+    expect( cy.$id('a').position() ).to.deep.equal({ x: 150, y: 150 });
   });
 
   it('supports sorting', function(){
@@ -157,7 +157,7 @@ describe('gpu/layout: grid', function(){
         { data: { id: 'a' } }, { data: { id: 'b' } }, { data: { id: 'c' } },
         { data: { id: 'd' } }, { data: { id: 'e' } }
       ],
-      style: [ { selector: '#c', style: { width: 90, height: 70, 'border-width': 4 } } ]
+      style: { node: ele => ele.id() === 'c' ? { width: 90, height: 70, 'border-width': 4 } : null }
     });
 
     var bySlot = mk();
@@ -168,7 +168,7 @@ describe('gpu/layout: grid', function(){
     byHandle.layout({ name: 'grid', fit: false, sort: () => 0 }).run();
 
     for( var id of [ 'a', 'b', 'c', 'd', 'e' ] ){
-      expect( bySlot.$('#' + id).position(), id ).to.deep.equal( byHandle.$('#' + id).position() );
+      expect( bySlot.$id(id).position(), id ).to.deep.equal( byHandle.$id(id).position() );
     }
   });
 
@@ -189,8 +189,8 @@ describe('gpu/layout: grid', function(){
       layout: { name: 'grid', fit: false }
     });
 
-    var xPos = laidOut.$('#x').position();
-    var yPos = laidOut.$('#y').position();
+    var xPos = laidOut.$id('x').position();
+    var yPos = laidOut.$id('y').position();
 
     expect( xPos ).to.not.deep.equal( yPos );
   });

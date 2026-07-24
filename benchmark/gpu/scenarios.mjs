@@ -45,14 +45,17 @@ const states = [];
  * Compare a composed trace on dedicated instances.  `setup(cy)` registers
  * listeners and resolves surviving operands outside the timed region,
  * returning a state object; `fn(state, i, cy)` runs one trace iteration.
+ * `opts.gpuSetup`/`opts.gpuFn` override the gpu side where the idiomatic
+ * v4 form differs (v4 has no selector strings).
  */
-function scenario( name, setup, fn ){
+function scenario( name, setup, fn, opts = {} ){
   if( OP != null && !name.includes( OP ) ){ return; }
 
   const a = makeV3( elements, V3_OPTS );
   const b = makeGpu( elements );
   const sa = setup( a );
-  const sb = setup( b );
+  const sb = ( opts.gpuSetup ?? setup )( b );
+  const gpuFn = opts.gpuFn ?? fn;
   let i = 0;
 
   states.push( { name, v3: sa, gpu: sb } );
@@ -60,7 +63,7 @@ function scenario( name, setup, fn ){
   group( name, () => {
     summary( () => {
       bench( 'v3',  () => { fn( sa, i++, a ); } );
-      bench( 'gpu', () => { fn( sb, i++, b ); } );
+      bench( 'gpu', () => { gpuFn( sb, i++, b ); } );
     } );
   } );
 }
@@ -84,7 +87,7 @@ scenario( 'scn: explore (expand 2-hop + select + fit)',
     return { cy, counts, prev: cy.collection() };
   },
   ( s, i ) => {
-    const n = s.cy.$( '#n' + ( MIDNUM + ( i & 63 ) ) );
+    const n = s.cy.$id( 'n' + ( MIDNUM + ( i & 63 ) ) );
     const hood = n.closedNeighborhood();
     const hood2 = hood.union( hood.nodes().neighborhood() );
 
@@ -111,10 +114,15 @@ scenario( 'scn: select-all + fit (listeners on)',
     return { cy, counts };
   },
   s => {
-    s.cy.$( 'node' ).select();
+    s.cy.nodes().select();
     s.cy.fit();
-    s.cy.$( 'node:selected' ).unselect();
-  } );
+    s.cy.nodes( ':selected' ).unselect();
+  },
+  { gpuFn: s => {
+    s.cy.nodes().select();
+    s.cy.fit();
+    s.cy.nodes( { selected: true } ).unselect();
+  } } );
 
 // -- drag: select a band, drag it in 8 shift steps (position listener), ----
 // -- drop it ----------------------------------------------------------------
@@ -123,7 +131,16 @@ scenario( 'scn: select-all + fit (listeners on)',
 // per iteration on top of the columnar shift.  Direction alternates so the
 // net offset stays bounded.
 const DRAG_BAND = Math.min( 100, Math.floor( N / 4 ) );
-const dragSel = Array.from( { length: DRAG_BAND }, ( _, i ) => '#n' + i ).join( ', ' );
+
+// id-band resolution that is idiomatic on both sides (v4 has no selector
+// strings): per-id index lookups + union
+const bandOf = ( cy, n ) => {
+  let eles = cy.collection();
+
+  for( let i = 0; i < n; i++ ){ eles = eles.union( cy.$id( 'n' + i ) ); }
+
+  return eles;
+};
 
 scenario( `scn: drag (select band of ${DRAG_BAND} + 8-step shift, position listener)`,
   cy => {
@@ -132,7 +149,7 @@ scenario( `scn: drag (select band of ${DRAG_BAND} + 8-step shift, position liste
     cy.on( 'position', () => { counts.position++; } );
 
     // position/flag writes never invalidate handles on either side
-    return { cy, counts, band: cy.$( dragSel ) };
+    return { cy, counts, band: bandOf( cy, DRAG_BAND ) };
   },
   ( s, i ) => {
     s.band.select();
@@ -161,7 +178,7 @@ scenario( `scn: edit (remove + re-add ${EDIT_BAND} nodes + cascade, add/remove l
     cy.on( 'remove', () => { counts.remove++; } );
 
     // capture defs of the full removal closure up front (see mutators.mjs)
-    const band = cy.$( editSel );
+    const band = bandOf( cy, EDIT_BAND );
     const defs = band.union( band.connectedEdges() ).jsons();
 
     return { cy, counts, defs };
@@ -169,7 +186,11 @@ scenario( `scn: edit (remove + re-add ${EDIT_BAND} nodes + cascade, add/remove l
   ( s ) => {
     s.cy.$( editSel ).remove();
     s.cy.add( s.defs );
-  } );
+  },
+  { gpuFn: ( s ) => {
+    bandOf( s.cy, EDIT_BAND ).remove();
+    s.cy.add( s.defs );
+  } } );
 
 // -- refresh: bulk data write under a mapped label + data listener, --------
 // -- then filter and fit to the hot subset ----------------------------------
@@ -177,6 +198,14 @@ scenario( `scn: edit (remove + re-add ${EDIT_BAND} nodes + cascade, add/remove l
 // element; the label 'data(foo)' mapper makes every write refresh label
 // state on both sides), then the view narrows to a data-derived subset.
 // filter(fn) reads data per element — the handle floor again, at N scale.
+const refreshFn = ( s, i ) => {
+  s.nodes.data( 'foo', i & 7 );
+
+  const hot = s.nodes.filter( ele => ele.data( 'weight' ) === 3 ); // ~N/7
+
+  s.cy.fit( hot, 10 );
+};
+
 scenario( 'scn: refresh (bulk data write + mapped labels + filter + fit, data listener)',
   cy => {
     const counts = { data: 0 };
@@ -186,13 +215,15 @@ scenario( 'scn: refresh (bulk data write + mapped labels + filter + fit, data li
 
     return { cy, counts, nodes: cy.nodes() };
   },
-  ( s, i ) => {
-    s.nodes.data( 'foo', i & 7 );
+  refreshFn,
+  { gpuSetup: cy => {
+    const counts = { data: 0 };
 
-    const hot = s.nodes.filter( ele => ele.data( 'weight' ) === 3 ); // ~N/7
+    cy.style( { node: { label: 'data(foo)' } } ); // the v4 sheet shape
+    cy.on( 'data', () => { counts.data++; } );
 
-    s.cy.fit( hot, 10 );
-  } );
+    return { cy, counts, nodes: cy.nodes() };
+  } } );
 
 await run();
 

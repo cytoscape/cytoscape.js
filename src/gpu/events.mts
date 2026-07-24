@@ -2,28 +2,36 @@ import Emitter from '../emitter.mjs';
 import type Event from '../event.mjs';
 import type { Listener } from '../emitter.mjs';
 import type { GroupName, Ref } from './contract.mjs';
-import { matchesRef, parseSelector } from './selector.mjs';
-import type { CompiledSelector } from './selector.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
+import type { GpuCollection } from './collection.mjs';
 import type { CoreShim } from '../types.mjs';
 
 /*
 A single core Emitter (reusing src/emitter.mts unmodified) with
-slot/selector-qualified listeners instead of per-element emitters.
+slot/predicate-qualified listeners instead of per-element emitters.
 
 - `cy.on(events, cb)`                → unqualified listener
-- `cy.on(events, selector, cb)`     → selector qualifier
+- `cy.on(events, predicate, cb)`    → predicate qualifier (delegation)
 - `eles.on(events, cb)`             → one listener per element, ref qualifier
+
+v4 has no selector strings: delegation takes a predicate function over
+the event target, e.g. `cy.on('tap', ele => ele.isNode(), cb)`.  The
+predicate only runs for element targets; on `remove` events the target
+handle's cached `id()`/`group()` stay readable, while live state reads
+(`selected()` etc.) report the removed element as not having the state.
 
 Known deviation from v3: element-vs-core listener firing order is plain
 registration order on the single emitter, not v3 bubble order.
 */
 
-/** What a listener is restricted to: a single element ref, or a selector. */
+/** A delegation predicate over an element event target. */
+export type ElePredicate = ( ele: GpuCollection ) => boolean;
+
+/** What a listener is restricted to: a single element ref, or a predicate. */
 export interface GpuQualifier {
-  key: string;
+  key?: string;
   ref?: Ref;
-  selector?: CompiledSelector;
+  fn?: ElePredicate;
 }
 
 /** The face an element handle shows the event system. */
@@ -37,9 +45,8 @@ export const refKey = ( ref: Ref ): string => `${ref.group}:${ref.slot}:${ref.ge
 
 export const refQualifier = ( ref: Ref ): GpuQualifier => ( { key: 'ref:' + refKey( ref ), ref } );
 
-export const selectorQualifier = ( selector: string ): GpuQualifier => (
-  { key: 'sel:' + selector, selector: parseSelector( selector ) }
-);
+/** Predicate qualifiers compare by function identity (for off()). */
+export const predicateQualifier = ( fn: ElePredicate ): GpuQualifier => ( { fn } );
 
 const isEleTarget = ( target: unknown ): target is EleEventTarget => {
   return target != null && typeof ( target as EleEventTarget )._eventRef === 'function';
@@ -47,26 +54,6 @@ const isEleTarget = ( target: unknown ): target is EleEventTarget => {
 
 const sameRef = ( a: Ref, b: Ref ): boolean => {
   return a.group === b.group && a.slot === b.slot && a.gen === b.gen;
-};
-
-// Matches against the handle's cached id/group (not store lookups) so that
-// e.g. `cy.on('remove', 'node', ...)` still matches the just-removed target.
-const matchesSelectorTarget = (
-  store: GraphStore, target: EleEventTarget, ref: Ref, selector: CompiledSelector
-): boolean => {
-  if( store.isCurrent( ref ) ){
-    return matchesRef( store, ref, selector );
-  }
-
-  return selector.terms.some( term => {
-    if( term.group != null && target.group() !== term.group ){ return false; }
-    if( term.id != null && target.id() !== term.id ){ return false; }
-    if( term.selected != null ){
-      return false; // removed elements can't satisfy live state checks
-    }
-
-    return true;
-  } );
 };
 
 /** The face the core shows the event system (the emitter context and default target). */
@@ -81,6 +68,10 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy
     qualifierCompare: ( q1, q2 ) => {
       if( q1 == null || q2 == null ){
         return q1 == null && q2 == null;
+      }
+
+      if( q1.fn != null || q2.fn != null ){
+        return q1.fn === q2.fn;
       }
 
       return q1.key === q2.key;
@@ -103,8 +94,8 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy
         return sameRef( qualifier.ref, ref );
       }
 
-      if( qualifier.selector != null ){
-        return matchesSelectorTarget( ctx._store, target, ref, qualifier.selector );
+      if( qualifier.fn != null ){
+        return qualifier.fn( target as unknown as GpuCollection );
       }
 
       return false;

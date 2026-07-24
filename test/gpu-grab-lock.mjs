@@ -15,39 +15,39 @@ describe('gpu: grabbable / locked / selectify + core auto* gating', function(){
   });
 
   it('nodes are grabbable, unlocked by default', function(){
-    expect( cy.$('#n1').grabbable() ).to.equal( true );
-    expect( cy.$('#n1').locked() ).to.equal( false );
-    expect( cy.$('#n1').grabbed() ).to.equal( false );
+    expect( cy.$id('n1').grabbable() ).to.equal( true );
+    expect( cy.$id('n1').locked() ).to.equal( false );
+    expect( cy.$id('n1').grabbed() ).to.equal( false );
   });
 
   it('def flags: locked / grabbable:false / selectable:false honored', function(){
-    expect( cy.$('#n2').locked() ).to.equal( true );
-    expect( cy.$('#n2').grabbable() ).to.equal( false );
-    expect( cy.$('#n2').selectable() ).to.equal( false );
+    expect( cy.$id('n2').locked() ).to.equal( true );
+    expect( cy.$id('n2').grabbable() ).to.equal( false );
+    expect( cy.$id('n2').selectable() ).to.equal( false );
   });
 
   it('grabify / ungrabify toggle grabbable', function(){
-    cy.$('#n1').ungrabify();
-    expect( cy.$('#n1').grabbable() ).to.equal( false );
+    cy.$id('n1').ungrabify();
+    expect( cy.$id('n1').grabbable() ).to.equal( false );
 
-    cy.$('#n1').grabify();
-    expect( cy.$('#n1').grabbable() ).to.equal( true );
+    cy.$id('n1').grabify();
+    expect( cy.$id('n1').grabbable() ).to.equal( true );
   });
 
   it('lock / unlock toggle locked', function(){
-    cy.$('#n1').lock();
-    expect( cy.$('#n1').locked() ).to.equal( true );
+    cy.$id('n1').lock();
+    expect( cy.$id('n1').locked() ).to.equal( true );
 
-    cy.$('#n1').unlock();
-    expect( cy.$('#n1').locked() ).to.equal( false );
+    cy.$id('n1').unlock();
+    expect( cy.$id('n1').locked() ).to.equal( false );
   });
 
   it('selectify / unselectify toggle selectable', function(){
-    cy.$('#n2').selectify();
-    expect( cy.$('#n2').selectable() ).to.equal( true );
+    cy.$id('n2').selectify();
+    expect( cy.$id('n2').selectable() ).to.equal( true );
 
-    cy.$('#n2').unselectify();
-    expect( cy.$('#n2').selectable() ).to.equal( false );
+    cy.$id('n2').unselectify();
+    expect( cy.$id('n2').selectable() ).to.equal( false );
   });
 
   it('setters apply across a collection', function(){
@@ -56,9 +56,9 @@ describe('gpu: grabbable / locked / selectify + core auto* gating', function(){
   });
 
   it('unselectify prevents selection', function(){
-    cy.$('#n1').unselectify();
-    cy.$('#n1').select();
-    expect( cy.$('#n1').selected() ).to.equal( false );
+    cy.$id('n1').unselectify();
+    cy.$id('n1').select();
+    expect( cy.$id('n1').selected() ).to.equal( false );
   });
 
   it('core autolock / autoungrabify / autounselectify getters & setters', function(){

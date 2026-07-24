@@ -345,7 +345,7 @@ export class PointerHandler {
       cy.emit( { type: 'tap', position } );
 
       if( selectionEnabled && !e.shiftKey ){
-        cy.$( ':selected' ).unselect();
+        cy.elements( { selected: true } ).unselect();
       }
 
       return;
@@ -359,7 +359,7 @@ export class PointerHandler {
       target.unselect(); // toggle off
     } else {
       if( !e.shiftKey ){
-        cy.$( ':selected' ).difference( target ).unselect();
+        cy.elements( { selected: true } ).difference( target ).unselect();
       }
 
       target.select();

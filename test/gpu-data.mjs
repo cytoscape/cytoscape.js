@@ -25,31 +25,31 @@ describe('gpu/data', function(){
     });
 
     it('reads single keys and first-class fields', function(){
-      expect( cy.$('#a').data('name') ).to.equal('Alpha');
-      expect( cy.$('#a').data('weight') ).to.equal(1.5);
-      expect( cy.$('#a').data('id') ).to.equal('a');
-      expect( cy.$('#a').data('nope') ).to.be.undefined;
-      expect( cy.$('#c').data('name') ).to.be.undefined;
-      expect( cy.$('#ab').data('source') ).to.equal('a');
-      expect( cy.$('#ab').data('target') ).to.equal('b');
-      expect( cy.$('#ab').data('kind') ).to.equal('likes');
+      expect( cy.$id('a').data('name') ).to.equal('Alpha');
+      expect( cy.$id('a').data('weight') ).to.equal(1.5);
+      expect( cy.$id('a').data('id') ).to.equal('a');
+      expect( cy.$id('a').data('nope') ).to.be.undefined;
+      expect( cy.$id('c').data('name') ).to.be.undefined;
+      expect( cy.$id('ab').data('source') ).to.equal('a');
+      expect( cy.$id('ab').data('target') ).to.equal('b');
+      expect( cy.$id('ab').data('kind') ).to.equal('likes');
     });
 
     it('assembles the whole data object', function(){
-      expect( cy.$('#b').data() ).to.deep.equal({ id: 'b', name: 'Beta', weight: 2.5, flagged: true });
-      expect( cy.$('#ab').data() ).to.deep.equal({ id: 'ab', source: 'a', target: 'b', kind: 'likes' });
-      expect( cy.$('#c').data() ).to.deep.equal({ id: 'c' });
+      expect( cy.$id('b').data() ).to.deep.equal({ id: 'b', name: 'Beta', weight: 2.5, flagged: true });
+      expect( cy.$id('ab').data() ).to.deep.equal({ id: 'ab', source: 'a', target: 'b', kind: 'likes' });
+      expect( cy.$id('c').data() ).to.deep.equal({ id: 'c' });
     });
 
     it('sets a key and an object patch across a collection', function(){
-      cy.$('#a').data('name', 'Alef');
+      cy.$id('a').data('name', 'Alef');
 
-      expect( cy.$('#a').data('name') ).to.equal('Alef');
+      expect( cy.$id('a').data('name') ).to.equal('Alef');
 
       cy.nodes().data({ tier: 3 });
 
-      expect( cy.$('#c').data('tier') ).to.equal(3);
-      expect( cy.$('#b').data() ).to.include({ tier: 3, name: 'Beta' });
+      expect( cy.$id('c').data('tier') ).to.equal(3);
+      expect( cy.$id('b').data() ).to.include({ tier: 3, name: 'Beta' });
     });
 
     it('emits data per element when listened to', function(){
@@ -62,26 +62,26 @@ describe('gpu/data', function(){
     });
 
     it('throws on immutable fields', function(){
-      expect( () => cy.$('#a').data('id', 'zz') ).to.throw(/immutable data field 'id'/);
-      expect( () => cy.$('#ab').data('source', 'c') ).to.throw(/immutable data field 'source'/);
-      expect( () => cy.$('#ab').data({ target: 'a' }) ).to.throw(/immutable data field 'target'/);
+      expect( () => cy.$id('a').data('id', 'zz') ).to.throw(/immutable data field 'id'/);
+      expect( () => cy.$id('ab').data('source', 'c') ).to.throw(/immutable data field 'source'/);
+      expect( () => cy.$id('ab').data({ target: 'a' }) ).to.throw(/immutable data field 'target'/);
     });
 
     it('nodes may use source/target as ordinary keys', function(){
-      cy.$('#a').data('source', 'the-well');
+      cy.$id('a').data('source', 'the-well');
 
-      expect( cy.$('#a').data('source') ).to.equal('the-well');
+      expect( cy.$id('a').data('source') ).to.equal('the-well');
     });
 
     it('clears a key with undefined and clears all data on removal', function(){
-      cy.$('#a').data('name', undefined);
+      cy.$id('a').data('name', undefined);
 
-      expect( cy.$('#a').data('name') ).to.be.undefined;
+      expect( cy.$id('a').data('name') ).to.be.undefined;
 
-      cy.$('#c').remove();
+      cy.$id('c').remove();
       cy.add({ data: { id: 'c2' } }); // may reuse the slot
 
-      expect( cy.$('#c2').data() ).to.deep.equal({ id: 'c2' });
+      expect( cy.$id('c2').data() ).to.deep.equal({ id: 'c2' });
     });
   });
 
@@ -100,7 +100,7 @@ describe('gpu/data', function(){
       const viaCol = cytoscapeGpu({ elements: toColumnarElements( FIXTURE ) });
 
       for( const id of ['a', 'b', 'c', 'ab', 'bc'] ){
-        expect( viaCol.$('#' + id).data(), id ).to.deep.equal( viaDefs.$('#' + id).data() );
+        expect( viaCol.$id(id).data(), id ).to.deep.equal( viaDefs.$id(id).data() );
       }
     });
 
@@ -112,9 +112,9 @@ describe('gpu/data', function(){
         }
       });
 
-      expect( cy.$('#x').data('score') ).to.equal(7);
-      expect( cy.$('#y').data('score') ).to.be.undefined;
-      expect( cy.$('#z').data('score') ).to.equal(9);
+      expect( cy.$id('x').data('score') ).to.equal(7);
+      expect( cy.$id('y').data('score') ).to.be.undefined;
+      expect( cy.$id('z').data('score') ).to.equal(9);
     });
 
     it('ingests dictionary columns index-for-index', function(){
@@ -128,9 +128,9 @@ describe('gpu/data', function(){
         }
       });
 
-      expect( cy.$('#x').data('kind') ).to.equal('gene');
-      expect( cy.$('#y').data('kind') ).to.be.undefined;
-      expect( cy.$('#z').data('kind') ).to.equal('drug');
+      expect( cy.$id('x').data('kind') ).to.equal('gene');
+      expect( cy.$id('y').data('kind') ).to.be.undefined;
+      expect( cy.$id('z').data('kind') ).to.equal('drug');
     });
   });
 
@@ -177,77 +177,82 @@ describe('gpu/data', function(){
     it('data(key) labels resolve from the sidecar', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: [ { selector: 'node', style: { label: 'data(name)' } } ]
+        style: { node: { label: 'data(name)' } }
       });
 
-      expect( cy.$('#a').label() ).to.equal('Alpha');
-      expect( cy.$('#c').label() ).to.equal(''); // absent -> no label
+      expect( cy.$id('a').label() ).to.equal('Alpha');
+      expect( cy.$id('c').label() ).to.equal(''); // absent -> no label
     });
 
     it('numbers stringify in labels', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: [ { selector: 'node', style: { label: 'data(weight)' } } ]
+        style: { node: { label: 'data(weight)' } }
       });
 
-      expect( cy.$('#b').label() ).to.equal('2.5');
+      expect( cy.$id('b').label() ).to.equal('2.5');
     });
 
     it('a data write refreshes mapped labels', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: [ { selector: 'node', style: { label: 'data(name)' } } ]
+        style: { node: { label: 'data(name)' } }
       });
 
-      cy.$('#a').data('name', 'Renamed');
+      cy.$id('a').data('name', 'Renamed');
 
-      expect( cy.$('#a').label() ).to.equal('Renamed');
+      expect( cy.$id('a').label() ).to.equal('Renamed');
     });
 
     it('a write of an unmapped key leaves labels untouched', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: [ { selector: 'node', style: { label: 'data(name)' } } ]
+        style: { node: { label: 'data(name)' } }
       });
 
-      const before = cy.$('#a').label();
+      const before = cy.$id('a').label();
 
-      cy.$('#a').data('unrelated', 'x'); // skips the label refresh pass
+      cy.$id('a').data('unrelated', 'x'); // skips the label refresh pass
 
-      expect( cy.$('#a').label() ).to.equal( before );
+      expect( cy.$id('a').label() ).to.equal( before );
     });
 
-    it('a mapper in a :selected block still refreshes on data writes', function(){
+    it('function styles do not auto-refresh on data writes; update() re-runs them', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: [ { selector: 'node:selected', style: { label: 'data(name)' } } ]
+        style: { node: ele => ({ label: String( ele.data('name') ?? '' ) }) }
       });
 
-      cy.$('#a').select();
+      expect( cy.$id('a').label() ).to.equal('Alpha');
 
-      cy.$('#a').data('name', 'Selected label');
+      cy.$id('a').data('name', 'Renamed');
 
-      expect( cy.$('#a').label() ).to.equal('Selected label');
+      // opaque fn: by policy, data writes do not re-run it
+      expect( cy.$id('a').label() ).to.equal('Alpha');
+
+      cy.style().update(); // explicit re-run
+
+      expect( cy.$id('a').label() ).to.equal('Renamed');
     });
 
     it('removeData of the mapped key clears the label', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: [ { selector: 'node', style: { label: 'data(name)' } } ]
+        style: { node: { label: 'data(name)' } }
       });
 
-      cy.$('#a').removeData('name');
+      cy.$id('a').removeData('name');
 
-      expect( cy.$('#a').label() ).to.equal('');
+      expect( cy.$id('a').label() ).to.equal('');
     });
 
     it('data(id) still resolves and stays immutable', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: [ { selector: 'node', style: { label: 'data(id)' } } ]
+        style: { node: { label: 'data(id)' } }
       });
 
-      expect( cy.$('#a').label() ).to.equal('a');
+      expect( cy.$id('a').label() ).to.equal('a');
     });
   });
 });

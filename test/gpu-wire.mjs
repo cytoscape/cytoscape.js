@@ -160,7 +160,7 @@ describe('gpu/wire', function(){
       const viaWire = cytoscapeGpu( { elements: serializeElements( DATA_FIXTURE ) } );
 
       for( const id of [ 'a', 'b', 'c', 'ab' ] ){
-        expect( viaWire.$( '#' + id ).data(), id ).to.deep.equal( viaDefs.$( '#' + id ).data() );
+        expect( viaWire.$id( id ).data(), id ).to.deep.equal( viaDefs.$id( id ).data() );
       }
     });
 

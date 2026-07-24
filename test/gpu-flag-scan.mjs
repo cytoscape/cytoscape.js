@@ -1,47 +1,9 @@
 import { expect } from 'chai';
 import { GraphStore } from '../src/gpu/store/graph-store.mjs';
-import { parseSelector, compileFlagPlan } from '../src/gpu/selector.mjs';
 import { FLAG_SELECTED } from '../src/gpu/contract.mjs';
 import cytoscapeGpu from '../src/gpu/index.mjs';
 
 describe('gpu/flag-scan', function(){
-
-  describe('compileFlagPlan', function(){
-    var plan = sel => compileFlagPlan( parseSelector(sel) );
-
-    it('compiles group heads to per-group match-alls', function(){
-      expect( plan('node') ).to.deep.equal({ nodes: { mask: 0, want: 0 }, edges: null });
-      expect( plan('edge') ).to.deep.equal({ nodes: null, edges: { mask: 0, want: 0 } });
-      expect( plan('*') ).to.deep.equal({ nodes: { mask: 0, want: 0 }, edges: { mask: 0, want: 0 } });
-    });
-
-    it('compiles selection pseudos to FLAG_SELECTED tests', function(){
-      expect( plan('node:selected') ).to.deep.equal({
-        nodes: { mask: FLAG_SELECTED, want: FLAG_SELECTED }, edges: null
-      });
-      expect( plan(':unselected') ).to.deep.equal({
-        nodes: { mask: FLAG_SELECTED, want: 0 },
-        edges: { mask: FLAG_SELECTED, want: 0 }
-      });
-    });
-
-    it('unions comma-list terms per group', function(){
-      expect( plan('node:selected, edge') ).to.deep.equal({
-        nodes: { mask: FLAG_SELECTED, want: FLAG_SELECTED },
-        edges: { mask: 0, want: 0 }
-      });
-
-      // selected ∪ unselected collapses to match-all
-      expect( plan('node:selected, node:unselected') ).to.deep.equal({
-        nodes: { mask: 0, want: 0 }, edges: null
-      });
-    });
-
-    it('returns null when any term pins an id', function(){
-      expect( plan('#a') ).to.be.null;
-      expect( plan('#a, node') ).to.be.null;
-    });
-  });
 
   describe('GraphStore.scanRefsInto', function(){
     var store;
@@ -98,7 +60,7 @@ describe('gpu/flag-scan', function(){
     });
   });
 
-  describe('core selection routing', function(){
+  describe('core query routing', function(){
     var cy;
 
     beforeEach(function(){
@@ -113,31 +75,36 @@ describe('gpu/flag-scan', function(){
 
     var ids = eles => eles.map( e => e.id() );
 
-    it('resolves flag selectors on the core', function(){
-      expect( ids( cy.$(':selected') ) ).to.deep.equal([ 'b' ]);
-      expect( ids( cy.$('node:unselected') ) ).to.deep.equal([ 'a' ]);
-      expect( ids( cy.$('node:selected, edge') ) ).to.deep.equal([ 'b', 'ab' ]);
+    it('resolves structured queries on the core', function(){
+      expect( ids( cy.filter({ selected: true }) ) ).to.deep.equal([ 'b' ]);
+      expect( ids( cy.elements({ group: 'nodes', selected: false }) ) ).to.deep.equal([ 'a' ]);
+      expect( ids( cy.elements({ group: 'edges' }) ) ).to.deep.equal([ 'ab' ]);
     });
 
-    it('group-restricts selectors on nodes()/edges()', function(){
-      expect( ids( cy.nodes(':selected') ) ).to.deep.equal([ 'b' ]);
-      expect( ids( cy.edges(':selected') ) ).to.deep.equal([]);
-      expect( ids( cy.nodes('#ab') ) ).to.deep.equal([]); // edge id restricted away
-      expect( ids( cy.edges('#ab') ) ).to.deep.equal([ 'ab' ]);
+    it('group-restricts queries on nodes()/edges()', function(){
+      expect( ids( cy.nodes({ selected: true }) ) ).to.deep.equal([ 'b' ]);
+      expect( ids( cy.edges({ selected: true }) ) ).to.deep.equal([]);
+      expect( ids( cy.nodes({ group: 'edges' }) ) ).to.deep.equal([]); // contradiction matches nothing
+      expect( ids( cy.edges({ group: 'edges' }) ) ).to.deep.equal([ 'ab' ]);
     });
 
-    it('falls back on mixed id + flag comma lists', function(){
-      expect( ids( cy.$('#ab, node:selected') ) ).to.deep.equal([ 'b', 'ab' ]);
+    it('resolves predicate functions per element', function(){
+      expect( ids( cy.elements( ele => ele.id() === 'ab' || ele.selected() ) ) ).to.deep.equal([ 'b', 'ab' ]);
+      expect( ids( cy.nodes( ele => ele.selected() ) ) ).to.deep.equal([ 'b' ]);
+    });
+
+    it('throws on typo\'d query keys instead of matching all', function(){
+      expect(function(){ cy.elements({ selectd: true }); }).to.throw(/Unknown query key/);
     });
 
     it('follows selection changes and removals', function(){
-      cy.$('#a').select();
+      cy.$id('a').select();
 
-      expect( ids( cy.$('node:selected') ) ).to.deep.equal([ 'a', 'b' ]);
+      expect( ids( cy.filter({ group: 'nodes', selected: true }) ) ).to.deep.equal([ 'a', 'b' ]);
 
-      cy.$('#b').remove();
+      cy.$id('b').remove();
 
-      expect( ids( cy.$('node:selected') ) ).to.deep.equal([ 'a' ]);
+      expect( ids( cy.filter({ group: 'nodes', selected: true }) ) ).to.deep.equal([ 'a' ]);
       expect( ids( cy.elements() ) ).to.deep.equal([ 'a' ]);
     });
   });

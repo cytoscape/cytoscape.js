@@ -2,8 +2,8 @@ import {
   FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
-import { compileFlagPlan, matchesRef, parseSelector } from './selector.mjs';
-import type { CompiledSelector } from './selector.mjs';
+import { compileQuery, planMatchesRef } from './matcher.mjs';
+import type { GpuQuery } from './matcher.mjs';
 import { hasListeners, refQualifier } from './events.mjs';
 import type { Position } from '../types.mjs';
 import type { GpuCore } from './core.mjs';
@@ -13,11 +13,8 @@ import type Event from '../event.mjs';
 export type EleFilterFn = ( ele: GpuCollection, i: number, eles: GpuCollection ) => boolean;
 export type ElePositionFn = ( ele: GpuCollection, i: number ) => Position | false | undefined;
 
-type SelectorLike = string | CompiledSelector;
-
-const compile = ( selector: SelectorLike ): CompiledSelector => {
-  return typeof selector === 'string' ? parseSelector( selector ) : selector;
-};
+/** A subset criterion: a structured query or a per-element predicate. */
+type FilterLike = GpuQuery | EleFilterFn;
 
 // Pack a ref into a single safe integer (group in bit 52, slot in bits 24..51,
 // gen in bits 0..23) for set membership. Avoids the per-element string
@@ -466,33 +463,38 @@ export class GpuCollection {
   declare equals: this['same'];
 
   /** Whether every element of `other` is in this collection's neighborhood. */
-  allAreNeighbors( other: GpuCollection | string ): boolean {
-    const coll = this._toEles( other );
+  allAreNeighbors( other: GpuCollection ): boolean {
     const nhood = this.neighborhood();
 
-    return coll.every( ele => nhood.hasElementWithId( ele.id() as string ) );
+    return other.every( ele => nhood.hasElementWithId( ele.id() as string ) );
   }
 
   declare allAreNeighbours: this['allAreNeighbors'];
 
-  allAre( selector: SelectorLike ): boolean {
-    const compiled = compile( selector );
+  allAre( criterion: FilterLike ): boolean {
+    if( typeof criterion === 'function' ){
+      return this.every( criterion );
+    }
 
-    return this._refs.every( ref => matchesRef( this._store, ref, compiled ) );
+    const plan = compileQuery( criterion );
+
+    return this._refs.every( ref => planMatchesRef( this._store, ref, plan ) );
   }
 
-  is( selector: SelectorLike ): boolean {
-    const compiled = compile( selector );
+  is( criterion: FilterLike ): boolean {
+    if( typeof criterion === 'function' ){
+      return this.some( criterion );
+    }
 
-    return this._refs.some( ref => matchesRef( this._store, ref, compiled ) );
+    const plan = compileQuery( criterion );
+
+    return this._refs.some( ref => planMatchesRef( this._store, ref, plan ) );
   }
 
   // -- building and filtering --
 
-  union( other: GpuCollection | string ): GpuCollection {
-    const otherEles = this._toEles( other );
-
-    return this._spawn( [ ...this._refs, ...otherEles._refs ] );
+  union( other: GpuCollection ): GpuCollection {
+    return this._spawn( [ ...this._refs, ...other._refs ] );
   }
 
   declare u: this['union'];
@@ -500,8 +502,8 @@ export class GpuCollection {
   declare add: this['union'];
   declare merge: this['union'];
 
-  difference( other: GpuCollection | string ): GpuCollection {
-    const keys = this._toEles( other )._keySet();
+  difference( other: GpuCollection ): GpuCollection {
+    const keys = other._keySet();
 
     return this._spawnUnique( this._refs.filter( ref => !keys.has( packRef( ref ) ) ) );
   }
@@ -511,8 +513,8 @@ export class GpuCollection {
   declare unmerge: this['difference'];
   declare relativeComplement: this['difference'];
 
-  intersection( other: GpuCollection | string ): GpuCollection {
-    const keys = this._toEles( other )._keySet();
+  intersection( other: GpuCollection ): GpuCollection {
+    const keys = other._keySet();
 
     return this._spawnUnique( this._refs.filter( ref => keys.has( packRef( ref ) ) ) );
   }
@@ -520,8 +522,8 @@ export class GpuCollection {
   declare intersect: this['intersection'];
   declare and: this['intersection'];
 
-  symmetricDifference( other: GpuCollection | string ): GpuCollection {
-    const otherEles = this._toEles( other );
+  symmetricDifference( other: GpuCollection ): GpuCollection {
+    const otherEles = other;
     const mine = this._keySet();
     const theirs = otherEles._keySet();
 
@@ -535,14 +537,14 @@ export class GpuCollection {
   declare symdiff: this['symmetricDifference'];
   declare xor: this['symmetricDifference'];
 
-  filter( selector: SelectorLike | EleFilterFn, thisArg?: unknown ): GpuCollection {
+  filter( criterion: FilterLike, thisArg?: unknown ): GpuCollection {
     // the result is a subset of this collection's (already unique) refs
-    if( typeof selector === 'function' ){
+    if( typeof criterion === 'function' ){
       const refs: Ref[] = [];
       const n = this.length;
 
       for( let i = 0; i < n; i++ ){
-        const include = thisArg == null ? selector( this[ i ], i, this ) : selector.call( thisArg, this[ i ], i, this );
+        const include = thisArg == null ? criterion( this[ i ], i, this ) : criterion.call( thisArg, this[ i ], i, this );
 
         if( include ){
           refs.push( this._refs[ i ] );
@@ -552,51 +554,45 @@ export class GpuCollection {
       return this._spawnUnique( refs );
     }
 
-    const compiled = compile( selector );
+    // structured query: test each ref against its group's (mask, want)
+    // directly on the flags column — no per-ref handles or closures
     const store = this._store;
-    const plan = compileFlagPlan( compiled );
+    const plan = compileQuery( criterion );
+    const nodeTest = plan.nodes;
+    const edgeTest = plan.edges;
+    const nodeGen = store.nodes.gen;
+    const edgeGen = store.edges.gen;
+    const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
+    const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
+    const refs: Ref[] = [];
 
-    if( plan != null ){
-      // flag-only selector: test each ref against its group's (mask, want)
-      // directly on the flags column — no per-ref term matching closures
-      const nodeTest = plan.nodes;
-      const edgeTest = plan.edges;
-      const nodeGen = store.nodes.gen;
-      const edgeGen = store.edges.gen;
-      const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
-      const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
-      const refs: Ref[] = [];
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+      const isNode = ref.group === 'nodes';
+      const test = isNode ? nodeTest : edgeTest;
 
-      for( let i = 0; i < this._refs.length; i++ ){
-        const ref = this._refs[ i ];
-        const isNode = ref.group === 'nodes';
-        const test = isNode ? nodeTest : edgeTest;
+      if( test == null ){ continue; }
 
-        if( test == null ){ continue; }
+      if( ( isNode ? nodeGen : edgeGen )[ ref.slot ] !== ref.gen ){ continue; } // stale
 
-        if( ( isNode ? nodeGen : edgeGen )[ ref.slot ] !== ref.gen ){ continue; } // stale
+      const flags = ( isNode ? nodeFlags : edgeFlags )[ ref.slot ];
 
-        const flags = ( isNode ? nodeFlags : edgeFlags )[ ref.slot ];
-
-        if( ( flags & test.mask ) === test.want ){ refs.push( ref ); }
-      }
-
-      return this._spawnUnique( refs );
+      if( ( flags & test.mask ) === test.want ){ refs.push( ref ); }
     }
 
-    return this._spawnUnique( this._refs.filter( ref => matchesRef( store, ref, compiled ) ) );
+    return this._spawnUnique( refs );
   }
 
-  nodes( selector?: SelectorLike ): GpuCollection {
+  nodes( criterion?: FilterLike ): GpuCollection {
     const nodes = this._spawnUnique( this._refs.filter( ref => ref.group === 'nodes' ) );
 
-    return selector == null ? nodes : nodes.filter( selector );
+    return criterion == null ? nodes : nodes.filter( criterion );
   }
 
-  edges( selector?: SelectorLike ): GpuCollection {
+  edges( criterion?: FilterLike ): GpuCollection {
     const edges = this._spawnUnique( this._refs.filter( ref => ref.group === 'edges' ) );
 
-    return selector == null ? edges : edges.filter( selector );
+    return criterion == null ? edges : edges.filter( criterion );
   }
 
   getElementById( id: string ): GpuCollection {
@@ -621,10 +617,10 @@ export class GpuCollection {
   declare abscomp: this['absoluteComplement'];
 
   /** { left: only in this, right: only in other, both: in both }. */
-  diff( other: GpuCollection | string ): {
+  diff( other: GpuCollection ): {
     left: GpuCollection; right: GpuCollection; both: GpuCollection;
   } {
-    const otherColl = this._toEles( other );
+    const otherColl = other;
     const mine = this._keySet();
     const theirs = otherColl._keySet();
 
@@ -675,10 +671,6 @@ export class GpuCollection {
     }
 
     return { value: best, ele: bestEle };
-  }
-
-  private _toEles( other: GpuCollection | string ): GpuCollection {
-    return typeof other === 'string' ? this._cy.$( other ) : other;
   }
 
   // -- position and dimensions --
@@ -1343,22 +1335,9 @@ export class GpuCollection {
 
     if( changedIdx.length === 0 ){ return this; }
 
-    // with the mini style language a selection change only alters computed
-    // style when some block matches on :selected/:unselected — otherwise
-    // the restyle pass is skipped outright (the accent ring is shader-drawn)
-    if( cy._styleDependsOnSelection() ){
-      const nodeSlots: number[] = [];
-      const edgeSlots: number[] = [];
-
-      for( const i of changedIdx ){
-        const ref = this._refs[ i ];
-
-        ( ref.group === 'nodes' ? nodeSlots : edgeSlots ).push( ref.slot );
-      }
-
-      cy._applyStyleBulk( 'nodes', nodeSlots );
-      cy._applyStyleBulk( 'edges', edgeSlots );
-    }
+    // a selection change never restyles: the v4 sheet has no selection
+    // terms (the accent ring is shader-drawn), and fn styles by policy
+    // re-run only on an explicit style set, not on state changes
 
     const type = selected ? 'select' : 'unselect';
 
@@ -1520,7 +1499,7 @@ export class GpuCollection {
     return this._spawnLive( refs );
   }
 
-  connectedEdges( selector?: SelectorLike ): GpuCollection {
+  connectedEdges( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const adj = store.adj;
     const refs: Ref[] = [];
@@ -1555,10 +1534,10 @@ export class GpuCollection {
 
     const eles = this._spawnLive( refs );
 
-    return selector == null ? eles : eles.filter( selector );
+    return criterion == null ? eles : eles.filter( criterion );
   }
 
-  connectedNodes( selector?: SelectorLike ): GpuCollection {
+  connectedNodes( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
@@ -1585,18 +1564,18 @@ export class GpuCollection {
 
     const eles = this._spawnLive( refs );
 
-    return selector == null ? eles : eles.filter( selector );
+    return criterion == null ? eles : eles.filter( criterion );
   }
 
-  outgoers( selector?: SelectorLike ): GpuCollection {
-    return this._goers( 'out', selector );
+  outgoers( criterion?: FilterLike ): GpuCollection {
+    return this._goers( 'out', criterion );
   }
 
-  incomers( selector?: SelectorLike ): GpuCollection {
-    return this._goers( 'in', selector );
+  incomers( criterion?: FilterLike ): GpuCollection {
+    return this._goers( 'in', criterion );
   }
 
-  private _goers( direction: 'out' | 'in', selector?: SelectorLike ): GpuCollection {
+  private _goers( direction: 'out' | 'in', criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -1629,10 +1608,10 @@ export class GpuCollection {
 
     const eles = this._spawnLive( refs );
 
-    return selector == null ? eles : eles.filter( selector );
+    return criterion == null ? eles : eles.filter( criterion );
   }
 
-  neighborhood( selector?: SelectorLike ): GpuCollection {
+  neighborhood( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -1681,30 +1660,30 @@ export class GpuCollection {
 
     const eles = this._spawnLive( refs );
 
-    return selector == null ? eles : eles.filter( selector );
+    return criterion == null ? eles : eles.filter( criterion );
   }
 
   declare openNeighborhood: this['neighborhood'];
 
-  closedNeighborhood( selector?: SelectorLike ): GpuCollection {
+  closedNeighborhood( criterion?: FilterLike ): GpuCollection {
     const eles = this.neighborhood().union( this.nodes() );
 
-    return selector == null ? eles : eles.filter( selector );
+    return criterion == null ? eles : eles.filter( criterion );
   }
 
   // -- DAG traversal --
 
   /** Collection nodes with no non-loop incoming edge (whole-graph incidence, as in v3). */
-  roots( selector?: SelectorLike ): GpuCollection {
-    return this._dagExtremity( 'in', selector );
+  roots( criterion?: FilterLike ): GpuCollection {
+    return this._dagExtremity( 'in', criterion );
   }
 
   /** Collection nodes with no non-loop outgoing edge. */
-  leaves( selector?: SelectorLike ): GpuCollection {
-    return this._dagExtremity( 'out', selector );
+  leaves( criterion?: FilterLike ): GpuCollection {
+    return this._dagExtremity( 'out', criterion );
   }
 
-  private _dagExtremity( direction: 'in' | 'out', selector?: SelectorLike ): GpuCollection {
+  private _dagExtremity( direction: 'in' | 'out', criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -1730,18 +1709,18 @@ export class GpuCollection {
 
     const eles = this._spawnLive( refs );
 
-    return selector == null ? eles : eles.filter( selector );
+    return criterion == null ? eles : eles.filter( criterion );
   }
 
-  successors( selector?: SelectorLike ): GpuCollection {
-    return this._dagAllHops( 'out', selector );
+  successors( criterion?: FilterLike ): GpuCollection {
+    return this._dagAllHops( 'out', criterion );
   }
 
-  predecessors( selector?: SelectorLike ): GpuCollection {
-    return this._dagAllHops( 'in', selector );
+  predecessors( criterion?: FilterLike ): GpuCollection {
+    return this._dagAllHops( 'in', criterion );
   }
 
-  private _dagAllHops( direction: 'out' | 'in', selector?: SelectorLike ): GpuCollection {
+  private _dagAllHops( direction: 'out' | 'in', criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -1786,23 +1765,23 @@ export class GpuCollection {
 
     const out = this._spawnLive( acc );
 
-    return selector == null ? out : out.filter( selector );
+    return criterion == null ? out : out.filter( criterion );
   }
 
   // -- edge relations --
 
-  edgesWith( others: GpuCollection | string ): GpuCollection {
+  edgesWith( others: GpuCollection ): GpuCollection {
     return this._edgesWith( others, false );
   }
 
-  edgesTo( others: GpuCollection | string ): GpuCollection {
+  edgesTo( others: GpuCollection ): GpuCollection {
     return this._edgesWith( others, true );
   }
 
-  private _edgesWith( others: GpuCollection | string, thisIsSrc: boolean ): GpuCollection {
+  private _edgesWith( others: GpuCollection, thisIsSrc: boolean ): GpuCollection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
-    const otherColl = this._toEles( others );
+    const otherColl = others;
 
     const thisNodes = this._nodeSlotSet();
     const otherNodes = otherColl._nodeSlotSet();
@@ -1827,15 +1806,15 @@ export class GpuCollection {
     return this._spawn( refs );
   }
 
-  parallelEdges( selector?: SelectorLike ): GpuCollection {
-    return this._parallelEdges( false, selector );
+  parallelEdges( criterion?: FilterLike ): GpuCollection {
+    return this._parallelEdges( false, criterion );
   }
 
-  codirectedEdges( selector?: SelectorLike ): GpuCollection {
-    return this._parallelEdges( true, selector );
+  codirectedEdges( criterion?: FilterLike ): GpuCollection {
+    return this._parallelEdges( true, criterion );
   }
 
-  private _parallelEdges( codirectedOnly: boolean, selector?: SelectorLike ): GpuCollection {
+  private _parallelEdges( codirectedOnly: boolean, criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
@@ -1861,7 +1840,7 @@ export class GpuCollection {
 
     const eles = this._spawn( refs );
 
-    return selector == null ? eles : eles.filter( selector );
+    return criterion == null ? eles : eles.filter( criterion );
   }
 
   // -- connected components --
@@ -1871,7 +1850,7 @@ export class GpuCollection {
    * collection of the reached nodes plus the collection's edges internal
    * to that component.  `root` restricts the seed nodes.
    */
-  components( root?: GpuCollection | string | null ): GpuCollection[] {
+  components( root?: GpuCollection | null ): GpuCollection[] {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const nodeSlots = this._nodeSlotSet();
@@ -1887,7 +1866,7 @@ export class GpuCollection {
     if( root == null ){
       seeds = [ ...nodeSlots ];
     } else {
-      const rootColl = this._toEles( root );
+      const rootColl = root;
       const rootNodes = rootColl._nodeSlotSet();
 
       seeds = rootNodes.size > 0

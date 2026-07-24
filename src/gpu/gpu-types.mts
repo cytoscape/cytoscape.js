@@ -3,6 +3,7 @@ Public option/type surface of the GPU prototype entry point.
 */
 
 import type { Position } from '../types.mjs';
+import type { GpuCollection } from './collection.mjs';
 
 export type { Position };
 
@@ -117,14 +118,29 @@ export type GpuElementsInput =
   | ArrayBufferView;
 
 /**
- * A constrained compiled-style block: constant values only (no mappers).
- * Supported selectors: `node`, `edge`, `node:selected`, `edge:selected`, `#id`.
- * Node props: background-color, width, height, shape, opacity, border-color,
- * border-width.  Edge props: line-color, width, opacity.
+ * Style props for one element or group; names are kebab-case or
+ * camelCase.  Values are constants, except `label`, which also takes the
+ * `data(key)` mapper string ('id' reads the first-class id).
+ * Node props: background-color, width, height, shape, opacity,
+ * border-color, border-width, label, font-size, color.  Edge props:
+ * line-color, width, opacity, source/target-arrow-shape and -color.
  */
-export interface GpuStyleBlock {
-  selector: string;
-  style: Record<string, string | number>;
+export type GpuStyleProps = Record<string, string | number>;
+
+/** Per-element style function; a nullish return means group defaults. */
+export type GpuStyleFn = ( ele: GpuCollection ) => GpuStyleProps | null | undefined;
+
+/**
+ * The v4 stylesheet — no selectors.  Each group key holds either a props
+ * object (constants for the whole group) or a per-element function.
+ * Constant props and declarative mappers stay fresh automatically;
+ * function styles are evaluated when the sheet is set and when elements
+ * are added, and re-run only on an explicit `cy.style(sheet)` /
+ * `cy.style().update()`.
+ */
+export interface GpuStylesheet {
+  node?: GpuStyleProps | GpuStyleFn;
+  edge?: GpuStyleProps | GpuStyleFn;
 }
 
 export interface GpuGridLayoutOptions {
@@ -200,7 +216,7 @@ export interface CytoscapeGpuOptions {
    */
   container?: HTMLElement | null;
   elements?: GpuElementsInput;
-  style?: GpuStyleBlock[];
+  style?: GpuStylesheet;
   layout?: GpuLayoutOptions;
   zoom?: number;
   pan?: Position;

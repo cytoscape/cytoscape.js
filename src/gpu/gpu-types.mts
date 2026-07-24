@@ -27,6 +27,8 @@ export interface GpuElementDefinition {
   selectable?: boolean;
   grabbable?: boolean;
   locked?: boolean;
+  /** dragging this element pans the graph instead (default: true for edges, false for nodes) */
+  pannable?: boolean;
 }
 
 export type GpuElementsDefinition =

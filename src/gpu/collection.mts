@@ -1,5 +1,6 @@
 import {
-  FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ACTIVE, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_PANNABLE, FLAG_SELECTABLE,
+  FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
@@ -1262,8 +1263,9 @@ export class GpuCollection {
 
   // -- grab / lock --
 
+  /** Pannable elements are not draggable, so pannable overrides grabbable (as in v3). */
   grabbable(): boolean {
-    return this._hasBit( FLAG_GRABBABLE );
+    return this._hasBit( FLAG_GRABBABLE ) && !this._hasBit( FLAG_PANNABLE );
   }
 
   grabbed(): boolean {
@@ -1313,6 +1315,42 @@ export class GpuCollection {
 
   unlock(): this {
     return this._setBit( FLAG_LOCKED, false );
+  }
+
+  // -- active / pannable --
+
+  /** Whether the first element is in the transient pressed ("active") state. */
+  active(): boolean {
+    return this._hasBit( FLAG_ACTIVE );
+  }
+
+  /** True when the first element is live and not active (v3 `inactive()`). */
+  inactive(): boolean {
+    const ref = this._first();
+
+    return ref != null && this._store.isCurrent( ref )
+      && !this._store.hasFlag( ref.group, ref.slot, FLAG_ACTIVE );
+  }
+
+  activate(): this {
+    return this._setBit( FLAG_ACTIVE, true );
+  }
+
+  unactivate(): this {
+    return this._setBit( FLAG_ACTIVE, false );
+  }
+
+  /** Whether dragging the first element pans the graph instead of grabbing it. */
+  pannable(): boolean {
+    return this._hasBit( FLAG_PANNABLE );
+  }
+
+  panify(): this {
+    return this._setBit( FLAG_PANNABLE, true );
+  }
+
+  unpanify(): this {
+    return this._setBit( FLAG_PANNABLE, false );
   }
 
   private _hasBit( bit: number ): boolean {

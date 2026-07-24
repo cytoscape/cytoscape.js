@@ -1,4 +1,4 @@
-import { FLAG_GRABBABLE, FLAG_GRABBED, FLAG_HOVERED, FLAG_LOCKED } from '../contract.mjs';
+import { FLAG_GRABBABLE, FLAG_GRABBED, FLAG_HOVERED, FLAG_LOCKED, FLAG_PANNABLE } from '../contract.mjs';
 import type { GpuCore } from '../core.mjs';
 import type { GpuCollection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
@@ -181,7 +181,8 @@ export class PointerHandler {
     const store = this.cy._store;
 
     return store.hasFlag( ref.group, ref.slot, FLAG_GRABBABLE )
-      && !store.hasFlag( ref.group, ref.slot, FLAG_LOCKED );
+      && !store.hasFlag( ref.group, ref.slot, FLAG_LOCKED )
+      && !store.hasFlag( ref.group, ref.slot, FLAG_PANNABLE ); // pannable elements pan, never drag
   }
 
   private onPointerMove( e: PointerEvent ): void {

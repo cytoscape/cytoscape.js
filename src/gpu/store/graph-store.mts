@@ -5,7 +5,7 @@ import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import {
   columnSpec, columnSpecsForGroup,
-  FLAG_ALIVE, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ALIVE, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
 import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
@@ -16,6 +16,8 @@ export interface AddElementOpts {
   visible?: boolean;
   grabbable?: boolean;
   locked?: boolean;
+  /** defaults true for edges, false for nodes (as in v3) */
+  pannable?: boolean;
 }
 
 /** Insertion-order slot list with tombstone skipping and lazy compaction. */
@@ -138,7 +140,7 @@ export class GraphStore implements ModelView {
     pos[ slot * 2 ] = x;
     pos[ slot * 2 + 1 ] = y;
 
-    ( this.nodes.column( 'node.flags' ) as Uint32Array )[ slot ] = initialFlags( opts );
+    ( this.nodes.column( 'node.flags' ) as Uint32Array )[ slot ] = initialFlags( opts, false );
 
     if( !resized ){ // resized already implies a full re-upload
       this.dirty.mark( 'node.position', slot );
@@ -167,7 +169,7 @@ export class GraphStore implements ModelView {
     endpoints[ slot * 2 ] = source.slot;
     endpoints[ slot * 2 + 1 ] = target.slot;
 
-    ( this.edges.column( 'edge.flags' ) as Uint32Array )[ slot ] = initialFlags( opts );
+    ( this.edges.column( 'edge.flags' ) as Uint32Array )[ slot ] = initialFlags( opts, true );
 
     this.adj.addEdge( slot, source.slot, target.slot );
 
@@ -705,7 +707,8 @@ export class GraphStore implements ModelView {
   ): void {
     const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
     const flags = this.table( group ).column( flagsId ) as Uint32Array;
-    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_SELECTABLE | FLAG_GRABBABLE;
+    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_SELECTABLE | FLAG_GRABBABLE
+      | ( group === 'edges' ? FLAG_PANNABLE : 0 ); // edges default pannable, as in v3
     const count = slots.length;
 
     if( contiguousFrom < count ){ // fresh run: one fill
@@ -815,7 +818,7 @@ export class GraphStore implements ModelView {
   }
 }
 
-const initialFlags = ( opts: AddElementOpts ): number => {
+const initialFlags = ( opts: AddElementOpts, pannableDefault: boolean ): number => {
   let flags = FLAG_ALIVE;
 
   if( opts.visible !== false ){ flags |= FLAG_VISIBLE; }
@@ -823,6 +826,7 @@ const initialFlags = ( opts: AddElementOpts ): number => {
   if( opts.selected === true ){ flags |= FLAG_SELECTED; }
   if( opts.grabbable !== false ){ flags |= FLAG_GRABBABLE; }
   if( opts.locked === true ){ flags |= FLAG_LOCKED; }
+  if( opts.pannable ?? pannableDefault ){ flags |= FLAG_PANNABLE; }
 
   return flags;
 };

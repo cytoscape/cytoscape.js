@@ -222,6 +222,26 @@ describe('gpu/mapper-pack', function(){
     expect( f32[ 7 ] ).to.equal( 0.5 );
   });
 
+  it('packs string ordinals as dict-index LUTs with fallback holes', function(){
+    const data = dataWith( [ 'a', 'b' ], 'cat' );
+    const packed = packPrograms( 'nodes',
+      [ input(
+        { data: 'cat', scale: 'ordinal', domain: [ 'a' ], range: [ '#ff0000' ] },
+        COLOR_BG, [ 0, 0, 255, 255 ] ) ],
+      data, 4 );
+
+    const u32 = new Uint32Array( packed.programData );
+
+    expect( packed.programCount ).to.equal( 1 );
+    expect( u32[ 1 ] ).to.equal( KIND.ORDINAL );
+    expect( u32[ 2 ] ).to.equal( FLAG.COLOR | FLAG.DICT | FLAG.SRGB );
+    expect( u32[ 9 ] ).to.equal( 2 ); // LUT covers the whole dict
+    expect( packed.dictSizes ).to.deep.equal( { cat: 2 } );
+
+    // dict entry 'a' → red; 'b' is unlisted → the fallback rides the LUT
+    expect( [ ...packed.stopData.slice( 0, 8 ) ] ).to.deep.equal( [ 1, 0, 0, 1, 0, 0, 1, 1 ] );
+  });
+
   it('builds and refreshes packed data regions', function(){
     const data = dataWith( [ 1 / 3, undefined, 2 ] );
 

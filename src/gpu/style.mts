@@ -429,6 +429,9 @@ export class StyleEngine {
     nodes: new Set(), edges: new Set()
   };
 
+  /** a mapped key's column promoted to mixed while kernel-owned: re-derive on CPU */
+  private demoted: Record<GroupName, boolean> = { nodes: false, edges: false };
+
   constructor( store: GraphStore, eleFor: ( group: GroupName, slot: number ) => GpuCollection ){
     this.store = store;
     this.eleFor = eleFor;
@@ -436,6 +439,16 @@ export class StyleEngine {
     this.defs = {
       nodes: { fn: null, computed: this.resolveConst( 'nodes', {} ), mappers: [], deps: null },
       edges: { fn: null, computed: this.resolveConst( 'edges', {} ), mappers: [], deps: null }
+    };
+
+    // a mixed column can't evaluate in the kernel: demote its group's
+    // mapped channels back to eager CPU (the runtime repacks on the
+    // version bump; the next mapped pass re-derives every slot)
+    store.data.onPromote = ( group, key ) => {
+      if( this.defs[ group ].deps?.has( key ) && this.gpuOwnedProps[ group ].size > 0 ){
+        this.demoted[ group ] = true;
+        this.paintVersion++;
+      }
     };
   }
 
@@ -651,6 +664,17 @@ export class StyleEngine {
     skipOwned: boolean = false
   ): void {
     const store = this.store;
+
+    if( this.demoted[ group ] ){
+      // formerly kernel-owned bytes are stale everywhere: one full CPU
+      // pass re-derives them; ownership stays clear until the runtime
+      // re-configures against the mixed column
+      this.demoted[ group ] = false;
+      this.gpuOwnedProps[ group ] = new Set();
+      slots = store.slotsOrdered( group );
+      skipOwned = false;
+    }
+
     const target = this.checkAutoExtents( group, def ) ? store.slotsOrdered( group ) : slots;
 
     // one scratch record: every evaluated channel is reassigned per slot
@@ -738,7 +762,7 @@ export class StyleEngine {
     if( mapped ){
       const owned = this.gpuOwnedProps[ group ];
 
-      if( def.mappers.some( bm => !owned.has( bm.m.prop ) ) ){
+      if( this.demoted[ group ] || def.mappers.some( bm => !owned.has( bm.m.prop ) ) ){
         this.applyMapped( group, def, slots, true );
       } else {
         // every mapped channel is GPU-owned: no CPU restyle at all — the

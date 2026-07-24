@@ -241,6 +241,61 @@ describe('gpu/mapper-runtime', function(){
     expect( engine.paintInputs( 'edges' ) ).to.deep.equal( [] );
   });
 
+  it('repacks the ordinal LUT when the dict grows', function(){
+    const { store, runtime, mock } = setup( {
+      nodes: { 'background-color': {
+        data: 'cat', scale: 'ordinal', domain: [ 'x', 'y' ], range: [ '#ff0000', '#00ff00' ]
+      } }
+    } );
+
+    store.setData( 'nodes', 0, 'cat', 'x' );
+    store.takeDelta();
+    store.takeMapperSpans();
+    runtime.update( emptyDelta ); // configure sees dict [x]
+    runtime.encode( makeMockPass() );
+    mock.writes.length = 0;
+
+    store.setData( 'nodes', 1, 'cat', 'y' ); // new category: dict grows
+    store.takeDelta();
+    runtime.update( emptyDelta );
+
+    expect( mock.writes.some( w => w.label === 'cy-gpu:nodes-mapper-programs' ) ).to.be.true;
+
+    const pass = makeMockPass();
+
+    runtime.encode( pass );
+
+    expect( pass.dispatches ).to.deep.equal( [ Math.ceil( store.capacity('nodes') / 256 ) ] );
+  });
+
+  it('demotes to eager CPU when a mapped column promotes to mixed', function(){
+    const { store, engine, runtime, mirror } = setup( {
+      nodes: { 'background-color': { data: 'w', domain: [ 0, 10 ], range: 'viridis' } }
+    } );
+
+    runtime.update( emptyDelta );
+
+    expect( mirror.owned ).to.deep.equal( [ 'node.fillColor' ] );
+
+    const ref1 = store.ref( 'nodes', 1 );
+    const lazyBefore = engine.readProp( ref1, 'background-color' );
+
+    store.setData( 'nodes', 0, 'w', 'oops' ); // promotes the column to mixed
+    engine.refreshMapped( 'nodes', [ 0 ], [ 'w' ] ); // the data-write path
+
+    // ownership cleared and the stored bytes re-derived on the CPU
+    expect( engine.readProp( ref1, 'background-color' ) ).to.equal( lazyBefore );
+
+    const bytes = store.column( 'node.fillColor' );
+    const rgb = `rgb(${bytes[ 4 ]},${bytes[ 5 ]},${bytes[ 6 ]})`;
+
+    expect( rgb ).to.equal( lazyBefore );
+
+    runtime.update( store.takeDelta() );
+
+    expect( mirror.owned ).to.deep.equal( [] ); // the runtime repacked against the mixed column
+  });
+
   it('skips CPU evaluation of owned channels but keeps getters truthful', function(){
     const { store, engine, runtime } = setup( {
       nodes: { opacity: { data: 'w', domain: [ 0, 10 ], range: [ 0, 1 ] } }

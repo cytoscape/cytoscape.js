@@ -120,6 +120,8 @@ export interface PackedPrograms {
   ownedColumns: ColumnId[];
   /** the packed props, program order (the engine's gpu-owned prop set) */
   props: string[];
+  /** dict length per ordinal key at pack time (growth ⇒ the LUT must repack) */
+  dictSizes: Record<string, number>;
   /** mappers that stay CPU-evaluated (unsupported prop/kind/column) */
   skipped: CompiledMapper[];
 }
@@ -148,14 +150,18 @@ const packable = ( group: GroupName, m: CompiledMapper, data: DataStore ): boole
 
   const col = data.column( group, m.key );
 
-  // mixed columns and the string paths (ordinal/passthrough dict LUTs)
-  // stay CPU-evaluated until the dict path lands
-  if( col != null && col.kind !== 'number' ){ return false; }
+  // mixed columns always stay CPU-evaluated (arbitrary JS values)
+  if( col?.kind === 'mixed' ){ return false; }
 
   switch( m.program.kind ){
-    case 'passthrough': return m.kind === 'number';
+    case 'passthrough': return m.kind === 'number' && col?.kind !== 'string';
     case 'continuous':
-    case 'discrete': return m.kind === 'number' || m.kind === 'color';
+    case 'discrete':
+      return ( m.kind === 'number' || m.kind === 'color' ) && col?.kind !== 'string';
+    case 'ordinal':
+      // dict-index LUT: needs the string column to exist (its dict is the
+      // LUT's index space); number-keyed ordinals stay on the CPU
+      return col?.kind === 'string' && ( m.kind === 'number' || m.kind === 'color' );
     default: return false;
   }
 };
@@ -256,6 +262,7 @@ export const packPrograms = (
   const f32 = new Float32Array( programData );
   const ownedColumns: ColumnId[] = [];
   const props: string[] = [];
+  const dictSizes: Record<string, number> = {};
   const capAligned = alignSlots( cap );
   const isArrowProp = ( prop: string ): boolean => prop.endsWith( '-arrow-color' );
 
@@ -293,6 +300,25 @@ export const packPrograms = (
 
     if( program.kind === 'passthrough' ){
       kind = KIND.PASSTHROUGH;
+    } else if( program.kind === 'ordinal' ){
+      // dict-index LUT: entry i answers dict index i+1; unlisted
+      // categories resolve to the program fallback like absent data
+      const col = data.column( group, m.key );
+      const dict = col?.kind === 'string' ? col.dict : [];
+      const map = ( program as Extract<Program, { kind: 'ordinal' }> ).map;
+
+      kind = KIND.ORDINAL;
+      flags |= FLAG.DICT;
+
+      if( isColor ){ flags |= FLAG.SRGB; } // LUT colors are exact normalized sRGB
+
+      count = dict.length;
+      outBase = appendVec4s( table, dict.map( entry => {
+        const out = map.get( entry ) ?? fallback;
+
+        return typeof out === 'number' ? [ out, 0, 0, 0 ] : colorVec4( out as RGBA, false );
+      } ) );
+      dictSizes[ m.key ] = dict.length;
     } else if( program.kind === 'continuous' ){
       kind = transformKind( program.transform );
       lo = program.lo;
@@ -395,6 +421,7 @@ export const packPrograms = (
     keys,
     ownedColumns,
     props,
+    dictSizes,
     skipped
   };
 };
@@ -682,7 +709,27 @@ export class MapperRuntime {
 
       const keyIndex = regions.keys.indexOf( span.key );
 
-      if( keyIndex < 0 ){ continue; }
+      if( keyIndex < 0 ){
+        // a watched key that wasn't packable at configure time (e.g. its
+        // column didn't exist yet): reconfigure on the next frame
+        this.lastVersion = -1;
+        continue;
+      }
+
+      // ordinal LUTs index by dict entry: a grown dict (new category)
+      // needs a repacked LUT, so re-run configure against the new dict
+      // (rare — once per new category); it rebuilds the data regions and
+      // queues a full eval, which covers this span too
+      const packedDict = state.packed.dictSizes[ span.key ];
+
+      if( packedDict != null ){
+        const col = this.store.data.column( span.group, span.key );
+
+        if( col?.kind === 'string' && col.dict.length !== packedDict ){
+          this.configure();
+          continue;
+        }
+      }
 
       const range = updateDataRegion( regions, span.group, keyIndex, this.store.data, span.start, span.end );
       const byteLength = range.valueByteEnd - range.valueByteStart;

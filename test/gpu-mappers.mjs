@@ -2,8 +2,378 @@ import { expect } from 'chai';
 import {
   SCHEMES, resolveScheme, hexToRgb, srgbToOklab, oklabToSrgb
 } from '../src/gpu/style-schemes.mjs';
+import {
+  compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
+} from '../src/gpu/style-scales.mjs';
+import { DataStore } from '../src/gpu/store/data-store.mjs';
+
+// pure compile/eval coverage against a bare DataStore; the engine-level
+// behaviour (sheet integration, refresh, getters) lives in later suites
+
+const NUM = { kind: 'number', prop: 'width' };
+const COLOR = { kind: 'color', prop: 'background-color' };
+const ENUM = {
+  kind: 'enum', prop: 'shape',
+  parseEnum: v => ( { circle: 0, square: 2 }[ v ] ?? null )
+};
+
+/** DataStore with nodes' key 'w' set per slot from the given list. */
+const dataWith = ( values, key = 'w' ) => {
+  const data = new DataStore();
+
+  values.forEach( ( value, slot ) => {
+    if( value !== undefined ){ data.set( 'nodes', slot, key, value ); }
+  } );
+
+  return data;
+};
+
+const evaluator = ( spec, opts, values, fallback = -1 ) => {
+  return bindEvaluator( compileMapper( spec, opts ), dataWith( values ), 'nodes', fallback );
+};
 
 describe('gpu/mappers', function(){
+
+  describe('isMapperSpec', function(){
+    it('detects plain objects with a string data field', function(){
+      expect( isMapperSpec( { data: 'w' } ) ).to.be.true;
+      expect( isMapperSpec( { data: 'w', range: [ 0, 1 ] } ) ).to.be.true;
+      expect( isMapperSpec( 'data(w)' ) ).to.be.false;
+      expect( isMapperSpec( 5 ) ).to.be.false;
+      expect( isMapperSpec( null ) ).to.be.false;
+      expect( isMapperSpec( [ 1, 2 ] ) ).to.be.false;
+      expect( isMapperSpec( { range: [ 0, 1 ] } ) ).to.be.false;
+    });
+  });
+
+  describe('compile validation', function(){
+    const bad = ( spec, opts, re ) => {
+      expect( () => compileMapper( spec, opts ), JSON.stringify( spec ) ).to.throw( re );
+    };
+
+    it('throws on unknown scales and schemes', function(){
+      bad( { data: 'w', scale: 'exp', range: [ 0, 1 ] }, NUM, /unknown scale 'exp'/ );
+      bad( { data: 'w', range: 'nope' }, COLOR, /scheme 'nope'/ );
+    });
+
+    it('throws on a scaled mapper without a range', function(){
+      bad( { data: 'w', scale: 'log' }, NUM, /needs a range/ );
+      bad( { data: 'w', domain: [ 0, 1 ] }, NUM, /needs a range/ );
+    });
+
+    it('throws on continuous scales over enum channels', function(){
+      bad( { data: 'w', domain: [ 0, 1 ], range: [ 'circle', 'square' ] }, ENUM, /cannot be continuously interpolated/ );
+    });
+
+    it('throws on log domains touching zero', function(){
+      bad( { data: 'w', scale: 'log', domain: [ 0, 10 ], range: [ 0, 1 ] }, NUM, /symlog/ );
+      bad( { data: 'w', scale: 'log', domain: [ -1, 1 ], range: [ 0, 1 ] }, NUM, /symlog/ );
+    });
+
+    it('throws on malformed domains', function(){
+      bad( { data: 'w', domain: [ 1, 1 ], range: [ 0, 1 ] }, NUM, /ascending/ );
+      bad( { data: 'w', domain: [ 2, 1 ], range: [ 0, 1 ] }, NUM, /ascending/ );
+      bad( { data: 'w', domain: [ 0, 'x' ], range: [ 0, 1 ] }, NUM, /finite numbers/ );
+      bad( { data: 'w', scale: 'diverging', domain: [ 0, 1 ], range: [ 0, 1, 2 ] }, NUM, /min, mid, max/ );
+    });
+
+    it('throws on pairing violations', function(){
+      bad( { data: 'w', domain: [ 0, 1, 2 ], range: [ 0, 1 ] }, NUM, /pair 1:1/ );
+      bad( { data: 'w', scale: 'ordinal', domain: [ 'a', 'b' ], range: [ 1 ] }, NUM, /pair 1:1/ );
+      bad( { data: 'w', scale: 'threshold', domain: [ 10 ], range: [ 1, 2, 3 ] }, NUM, /domain.length \+ 1/ );
+    });
+
+    it('throws on scheme misuse', function(){
+      bad( { data: 'w', range: 'viridis' }, NUM, /only valid for color/ );
+      bad( { data: 'w', range: 'category10' }, COLOR, /categorical scheme/ );
+      bad( { data: 'w', scale: 'quantize', domain: [ 0, 1 ], range: 'viridis' }, COLOR, /bins/ );
+    });
+
+    it('throws on unparsable range entries and fallbacks', function(){
+      bad( { data: 'w', domain: [ 0, 1 ], range: [ 0, 'wide' ] }, NUM, /not a valid number/ );
+      bad( { data: 'w', domain: [ 0, 1 ], range: [ '#000', 'nocolor' ] }, COLOR, /not a valid color/ );
+      bad( { data: 'w', scale: 'ordinal', domain: [ 'a' ], range: [ 'hexagon' ] }, ENUM, /not a valid enum/ );
+      bad( { data: 'w', fallback: 'wide' }, NUM, /not a valid number/ );
+      bad( { data: '' }, NUM, /non-empty/ );
+    });
+  });
+
+  describe('continuous scales', function(){
+    it('linear: endpoints, midpoint, default clamp', function(){
+      const ev = evaluator( { data: 'w', domain: [ 0, 10 ], range: [ 0, 100 ] }, NUM, [ 0, 5, 10, 20, -3 ] );
+
+      expect( ev( 0 ) ).to.equal( 0 );
+      expect( ev( 1 ) ).to.equal( 50 );
+      expect( ev( 2 ) ).to.equal( 100 );
+      expect( ev( 3 ) ).to.equal( 100 ); // clamped
+      expect( ev( 4 ) ).to.equal( 0 );
+    });
+
+    it('clamp: false extrapolates the end segments', function(){
+      const ev = evaluator( { data: 'w', domain: [ 0, 10 ], range: [ 0, 100 ], clamp: false }, NUM, [ 20, -5 ] );
+
+      expect( ev( 0 ) ).to.equal( 200 );
+      expect( ev( 1 ) ).to.equal( -50 );
+    });
+
+    it('multi-stop: pairwise and even-spread', function(){
+      const pairwise = evaluator(
+        { data: 'w', domain: [ 0, 10, 100 ], range: [ 0, 1, 10 ] }, NUM, [ 55 ] );
+      const spread = evaluator(
+        { data: 'w', domain: [ 0, 10 ], range: [ 0, 1, 10 ] }, NUM, [ 7.5 ] );
+
+      expect( pairwise( 0 ) ).to.equal( 5.5 );
+      expect( spread( 0 ) ).to.equal( 5.5 );
+    });
+
+    it('log maps in log space', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'log', domain: [ 1, 1000 ], range: [ 0, 30 ] },
+        NUM, [ Math.pow( 10, 1.5 ), 1, 1000, 0.5, -5 ] );
+
+      expect( ev( 0 ) ).to.be.closeTo( 15, 1e-9 );
+      expect( ev( 1 ) ).to.equal( 0 );
+      expect( ev( 2 ) ).to.equal( 30 );
+      expect( ev( 3 ) ).to.equal( 0 ); // clamped up to the domain
+      expect( ev( 4 ) ).to.equal( 0 ); // sign mismatch clamps too
+    });
+
+    it('log with clamp: false treats non-positive data as missing', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'log', domain: [ 1, 1000 ], range: [ 0, 30 ], clamp: false, fallback: 99 },
+        NUM, [ -5, 0 ] );
+
+      expect( ev( 0 ) ).to.equal( 99 );
+      expect( ev( 1 ) ).to.equal( 99 );
+    });
+
+    it('sqrt and pow', function(){
+      const sqrt = evaluator( { data: 'w', scale: 'sqrt', domain: [ 0, 100 ], range: [ 0, 10 ] }, NUM, [ 25 ] );
+      const pow = evaluator( { data: 'w', scale: 'pow', exponent: 2, domain: [ 0, 10 ], range: [ 0, 100 ] }, NUM, [ 5 ] );
+
+      expect( sqrt( 0 ) ).to.equal( 5 );
+      expect( pow( 0 ) ).to.equal( 25 );
+    });
+
+    it('symlog crosses zero', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'symlog', domain: [ -10, 10 ], range: [ 0, 10 ] }, NUM, [ 0, -10, 10 ] );
+
+      expect( ev( 0 ) ).to.be.closeTo( 5, 1e-9 );
+      expect( ev( 1 ) ).to.equal( 0 );
+      expect( ev( 2 ) ).to.equal( 10 );
+    });
+
+    it('diverging centers the range at the midpoint of an asymmetric domain', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'diverging', domain: [ -1, 0, 10 ], range: [ 0, 50, 100 ] },
+        NUM, [ 0, -0.5, 5, -1, 10 ] );
+
+      expect( ev( 0 ) ).to.equal( 50 );
+      expect( ev( 1 ) ).to.equal( 25 );
+      expect( ev( 2 ) ).to.equal( 75 );
+      expect( ev( 3 ) ).to.equal( 0 );
+      expect( ev( 4 ) ).to.equal( 100 );
+    });
+  });
+
+  describe('discrete scales', function(){
+    it('threshold: d3 boundary semantics', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'threshold', domain: [ 0, 10 ], range: [ 1, 2, 3 ] },
+        NUM, [ -1, 0, 9.99, 10 ] );
+
+      expect( ev( 0 ) ).to.equal( 1 );
+      expect( ev( 1 ) ).to.equal( 2 );
+      expect( ev( 2 ) ).to.equal( 2 );
+      expect( ev( 3 ) ).to.equal( 3 );
+    });
+
+    it('quantize: uniform bins from the range length', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'quantize', domain: [ 0, 10 ], range: [ 1, 2 ] }, NUM, [ 4.9, 5 ] );
+
+      expect( ev( 0 ) ).to.equal( 1 );
+      expect( ev( 1 ) ).to.equal( 2 );
+    });
+
+    it('quantize: scheme range with bins', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'quantize', domain: [ 0, 1 ], range: 'viridis', bins: 3 },
+        COLOR, [ 0.1, 0.9 ] );
+
+      expect( ev( 0 ) ).to.deep.equal( [ 0x44, 0x01, 0x54, 255 ] );
+      expect( ev( 1 ) ).to.deep.equal( [ 0xfd, 0xe7, 0x25, 255 ] );
+    });
+
+    it('discrete families work on enum channels', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'threshold', domain: [ 10 ], range: [ 'circle', 'square' ] },
+        ENUM, [ 5, 15 ] );
+
+      expect( ev( 0 ) ).to.equal( 0 );
+      expect( ev( 1 ) ).to.equal( 2 );
+    });
+  });
+
+  describe('ordinal', function(){
+    it('maps string categories through the dictionary', function(){
+      const ev = bindEvaluator(
+        compileMapper( { data: 'w', scale: 'ordinal', domain: [ 'a', 'b' ], range: [ 'circle', 'square' ] }, ENUM ),
+        dataWith( [ 'a', 'b', 'c', undefined ] ), 'nodes', -1 );
+
+      expect( ev( 0 ) ).to.equal( 0 );
+      expect( ev( 1 ) ).to.equal( 2 );
+      expect( ev( 2 ) ).to.equal( -1 ); // unknown category → channel default
+      expect( ev( 3 ) ).to.equal( -1 ); // absent
+    });
+
+    it('maps numeric categories', function(){
+      const ev = evaluator(
+        { data: 'w', scale: 'ordinal', domain: [ 1, 2 ], range: [ 10, 20 ], fallback: 0 }, NUM, [ 1, 2, 3 ] );
+
+      expect( ev( 0 ) ).to.equal( 10 );
+      expect( ev( 1 ) ).to.equal( 20 );
+      expect( ev( 2 ) ).to.equal( 0 ); // fallback beats the channel default
+    });
+
+    it('takes categorical schemes from the start', function(){
+      const ev = bindEvaluator(
+        compileMapper( { data: 'w', scale: 'ordinal', domain: [ 'a', 'b' ], range: 'category10' }, COLOR ),
+        dataWith( [ 'a', 'b' ] ), 'nodes', [ 0, 0, 0, 255 ] );
+
+      expect( ev( 0 ) ).to.deep.equal( [ 0x1f, 0x77, 0xb4, 255 ] );
+      expect( ev( 1 ) ).to.deep.equal( [ 0xff, 0x7f, 0x0e, 255 ] );
+    });
+  });
+
+  describe('colors', function(){
+    it('scheme endpoints are exact', function(){
+      const ev = evaluator( { data: 'w', domain: [ 0, 1 ], range: 'viridis' }, COLOR, [ 0, 1 ] );
+
+      expect( ev( 0 ) ).to.deep.equal( [ 0x44, 0x01, 0x54, 255 ] );
+      expect( ev( 1 ) ).to.deep.equal( [ 0xfd, 0xe7, 0x25, 255 ] );
+    });
+
+    it('OKLab midpoints avoid the gray sRGB midpoint', function(){
+      const oklab = evaluator( { data: 'w', domain: [ 0, 1 ], range: [ 'blue', 'yellow' ] }, COLOR, [ 0.5 ] );
+      const srgb = evaluator(
+        { data: 'w', domain: [ 0, 1 ], range: [ 'blue', 'yellow' ], interpolate: 'srgb' }, COLOR, [ 0.5 ] );
+
+      expect( srgb( 0 ) ).to.deep.equal( [ 128, 128, 128 , 255 ] );
+
+      const [ r, g, b ] = oklab( 0 );
+      const spread = Math.max( r, g, b ) - Math.min( r, g, b );
+
+      expect( spread, `oklab mid rgb(${r},${g},${b}) should not be gray` ).to.be.above( 30 );
+    });
+
+    it('interpolates alpha', function(){
+      const ev = evaluator(
+        { data: 'w', domain: [ 0, 1 ], range: [ 'rgba(255, 0, 0, 0)', 'rgba(255, 0, 0, 1)' ] },
+        COLOR, [ 0.5 ] );
+
+      expect( ev( 0 )[ 3 ] ).to.be.closeTo( 128, 1 );
+    });
+
+    it('keeps irregular color stops exact (piecewise, not resampled)', function(){
+      const ev = evaluator(
+        { data: 'w', domain: [ 0, 1, 100 ], range: [ '#000000', '#808080', '#ffffff' ] },
+        COLOR, [ 0, 100, 1 ] );
+
+      expect( ev( 0 ) ).to.deep.equal( [ 0, 0, 0, 255 ] );
+      expect( ev( 1 ) ).to.deep.equal( [ 255, 255, 255, 255 ] );
+
+      const [ r, g, b ] = ev( 2 ); // the stop squeezed into 1% of the span survives
+
+      expect( r ).to.be.closeTo( 128, 1 );
+      expect( g ).to.be.closeTo( 128, 1 );
+      expect( b ).to.be.closeTo( 128, 1 );
+    });
+  });
+
+  describe('passthrough & fallback', function(){
+    it('passes numeric data through, with fallback then channel default', function(){
+      const plain = evaluator( { data: 'w' }, NUM, [ 42, undefined ], 30 );
+      const fb = evaluator( { data: 'w', fallback: 7 }, NUM, [ 42, undefined ], 30 );
+
+      expect( plain( 0 ) ).to.equal( 42 );
+      expect( plain( 1 ) ).to.equal( 30 );
+      expect( fb( 1 ) ).to.equal( 7 );
+    });
+
+    it('parses string data per channel kind', function(){
+      const color = evaluator( { data: 'w' }, COLOR, [ 'red', 'nocolor' ], [ 9, 9, 9, 255 ] );
+      const num = evaluator( { data: 'w' }, NUM, [ '5' ] , -1 );
+
+      expect( color( 0 ) ).to.deep.equal( [ 255, 0, 0, 255 ] );
+      expect( color( 1 ) ).to.deep.equal( [ 9, 9, 9, 255 ] );
+      expect( num( 0 ) ).to.equal( 5 );
+    });
+
+    it('treats non-numeric data as missing under numeric scales', function(){
+      const ev = evaluator( { data: 'w', domain: [ 0, 1 ], range: [ 0, 100 ], fallback: -5 }, NUM, [ 'oops' ] );
+
+      expect( ev( 0 ) ).to.equal( -5 );
+    });
+  });
+
+  describe('live auto domain', function(){
+    it('binds against the data extent', function(){
+      const ev = evaluator( { data: 'w', range: [ 0, 100 ] }, NUM, [ 2, 7, 12 ] );
+
+      expect( ev( 0 ) ).to.equal( 0 );
+      expect( ev( 2 ) ).to.equal( 100 );
+      expect( ev( 1 ) ).to.equal( 50 );
+    });
+
+    it('detects extent changes for full-channel refresh', function(){
+      const m = compileMapper( { data: 'w', range: [ 0, 100 ] }, NUM );
+      const data = dataWith( [ 2, 12 ] );
+
+      bindEvaluator( m, data, 'nodes', 0 );
+
+      expect( applyAutoExtent( m.program, ...autoExtentFor( m, data, 'nodes' ) ) ).to.be.false;
+
+      data.set( 'nodes', 2, 'w', 22 );
+
+      expect( autoExtentFor( m, data, 'nodes' ) ).to.deep.equal( [ 2, 22 ] );
+      expect( applyAutoExtent( m.program, 2, 22 ) ).to.be.true;
+      expect( bindEvaluator( m, data, 'nodes', 0 )( 1 ) ).to.equal( 50 );
+    });
+
+    it('log auto extents use positive values only', function(){
+      const m = compileMapper( { data: 'w', scale: 'log', range: [ 0, 10 ] }, NUM );
+
+      expect( autoExtentFor( m, dataWith( [ -5, 0, 1, 100 ] ), 'nodes' ) ).to.deep.equal( [ 1, 100 ] );
+      expect( autoExtentFor( m, dataWith( [ -5, 0 ] ), 'nodes' ) ).to.deep.equal( [ 1, 10 ] );
+    });
+
+    it('degenerate extents map to the center of the range', function(){
+      const ev = evaluator( { data: 'w', range: [ 0, 100 ] }, NUM, [ 5, 5 ] );
+
+      expect( ev( 0 ) ).to.equal( 50 );
+    });
+
+    it('never rebuilds explicit domains', function(){
+      const m = compileMapper( { data: 'w', domain: [ 0, 10 ], range: [ 0, 100 ] }, NUM );
+
+      expect( applyAutoExtent( m.program, 5, 500 ) ).to.be.false;
+      expect( bindEvaluator( m, dataWith( [ 5 ] ), 'nodes', 0 )( 0 ) ).to.equal( 50 );
+    });
+
+    it('does not mutate the spec object', function(){
+      const spec = { data: 'w', range: [ 0, 100 ] };
+      const m = compileMapper( spec, NUM );
+
+      bindEvaluator( m, dataWith( [ 1, 9 ] ), 'nodes', 0 );
+
+      expect( spec ).to.deep.equal( { data: 'w', range: [ 0, 100 ] } );
+      expect( m.spec ).to.equal( spec );
+    });
+  });
+
+
 
   describe('schemes', function(){
     it('tables are well-formed', function(){

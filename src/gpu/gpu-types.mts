@@ -120,14 +120,59 @@ export type GpuElementsInput =
   | ArrayBufferView;
 
 /**
+ * A data-driven style mapping: a plain serializable object appearing as a
+ * prop value in the sheet.  `{ data: key }` alone is a passthrough (the
+ * datum is the value; 'id' reads the first-class id — label only);
+ * adding `range` (and usually `domain`) scales the datum.
+ *
+ * Scales: 'linear' (default) | 'log' | 'sqrt' | 'pow' | 'symlog'
+ * (continuous), 'diverging' (three-point [min, mid, max] domain),
+ * 'ordinal' (categories → outputs), 'threshold' (cut points → bins),
+ * 'quantize' (uniform bins).  `domain` omitted or 'auto' tracks the live
+ * data extent.  Color ranges take color stops or a named scheme
+ * ('viridis', 'plasma', 'magma', 'inferno', ColorBrewer ramps,
+ * 'category10', 'dark2') and interpolate in OKLab unless
+ * `interpolate: 'srgb'`.  Missing or unmappable data resolves to
+ * `fallback`, else the channel default.
+ */
+export interface GpuMapper {
+  /** data() sidecar key to read */
+  data: string;
+  scale?: 'linear' | 'log' | 'sqrt' | 'pow' | 'symlog'
+    | 'diverging' | 'ordinal' | 'threshold' | 'quantize';
+  /** ascending numeric stops (categories for 'ordinal'); 'auto'/omitted = live data extent */
+  domain?: ( string | number )[] | 'auto';
+  /** output stops (numbers, colors, or keywords), or a named color scheme */
+  range?: ( string | number )[] | string;
+  /** clamp input to the domain (default true) */
+  clamp?: boolean;
+  /** pow only (default 2) */
+  exponent?: number;
+  /** log only (default 10) */
+  base?: number;
+  /** symlog linear-region constant (default 1) */
+  constant?: number;
+  /** color interpolation space (default 'oklab') */
+  interpolate?: 'oklab' | 'srgb';
+  /** bin count when a quantize range is a scheme name */
+  bins?: number;
+  /** output for missing/unmappable data (default: the channel default) */
+  fallback?: string | number;
+}
+
+/** A style prop value: a constant, or a mapper object. */
+export type GpuStylePropValue = string | number | GpuMapper;
+
+/**
  * Style props for one element or group; names are kebab-case or
- * camelCase.  Values are constants, except `label`, which also takes the
- * `data(key)` mapper string ('id' reads the first-class id).
+ * camelCase.  Values are constants or mapper objects ({@link GpuMapper});
+ * `label` also takes the `data(key)` mapper string ('id' reads the
+ * first-class id).
  * Node props: background-color, width, height, shape, opacity,
  * border-color, border-width, label, font-size, color.  Edge props:
  * line-color, width, opacity, source/target-arrow-shape and -color.
  */
-export type GpuStyleProps = Record<string, string | number>;
+export type GpuStyleProps = Record<string, GpuStylePropValue>;
 
 /** Per-element style function; a nullish return means group defaults. */
 export type GpuStyleFn = ( ele: GpuCollection ) => GpuStyleProps | null | undefined;

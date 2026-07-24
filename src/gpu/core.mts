@@ -836,6 +836,45 @@ export class GpuCore {
     return this._options;
   }
 
+  /**
+   * Export the graph as a plain object (elements, stylesheet, viewport,
+   * gating flags, graph-level data).  `json(true)` exports elements as one
+   * flat array instead of `{ nodes, edges }` (as in v3).  The v3 import/
+   * restore form (`json(obj)`) is not supported — rebuilding from a
+   * snapshot needs stored defs, which the prototype does not keep.
+   */
+  json( flat?: boolean ): Record<string, unknown> {
+    if( flat != null && typeof flat !== 'boolean' ){
+      throw new Error(
+        'cy.json() is export-only in the GPU prototype; the import/restore form is not supported'
+      );
+    }
+
+    const elements = flat === true
+      ? this.elements().jsons()
+      : { nodes: this.nodes().jsons(), edges: this.edges().jsons() };
+
+    return {
+      elements,
+      style: this._styleEngine.json(),
+      data: { ...this._graphData },
+      zoom: this._viewport.zoom(),
+      pan: { ...( this._viewport.pan() as Position ) },
+      minZoom: this._viewport.minZoom,
+      maxZoom: this._viewport.maxZoom,
+      zoomingEnabled: this._zoomingEnabled,
+      userZoomingEnabled: this._userZoomingEnabled,
+      panningEnabled: this._panningEnabled,
+      userPanningEnabled: this._userPanningEnabled,
+      boxSelectionEnabled: this._boxSelectionEnabled,
+      autolock: this._autolock,
+      autoungrabify: this._autoungrabify,
+      autounselectify: this._autounselectify,
+      headless: this.headless(),
+      styleEnabled: this.styleEnabled()
+    };
+  }
+
   container(): HTMLElement | null {
     return this._container;
   }

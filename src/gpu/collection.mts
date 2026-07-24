@@ -360,6 +360,10 @@ export class GpuCollection {
       removed: this.removed(),
       selected: this.selected(),
       selectable: this.selectable(),
+      locked: this.locked(),
+      // the raw grabbable field, not the pannable-overridden getter (as in v3 json)
+      grabbable: this._hasBit( FLAG_GRABBABLE ),
+      pannable: this.pannable(),
       classes: ''
     };
 

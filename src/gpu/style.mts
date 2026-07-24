@@ -258,6 +258,7 @@ export class StyleEngine {
   private compiled: CompiledBlock[];
 
   private dataMappers = false;
+  private labelKeys = new Set<string>();
   private selectionDependent = false;
   private arrows = { source: false, target: false };
 
@@ -274,14 +275,19 @@ export class StyleEngine {
       setters: Object.entries( block.style ).map( ( [ prop, value ] ) => compileProp( prop, value ) )
     } ) );
 
-    // does any label map a mutable data() key? (id is immutable, so
+    // which mutable data() keys do labels map? (id is immutable, so
     // data(id) labels never need a refresh on data writes)
-    this.dataMappers = blocks.some( block => {
-      const label = block.style?.[ 'label' ];
-      const mapped = label != null ? DATA_MAPPER.exec( String( label ) ) : null;
+    this.labelKeys = new Set(
+      blocks
+        .map( block => {
+          const label = block.style?.[ 'label' ];
 
-      return mapped != null && mapped[ 1 ] !== 'id';
-    } );
+          return label != null ? DATA_MAPPER.exec( String( label ) ) : null;
+        } )
+        .filter( mapped => mapped != null && mapped[ 1 ] !== 'id' )
+        .map( mapped => mapped![ 1 ] )
+    );
+    this.dataMappers = this.labelKeys.size > 0;
 
     // does any block match on :selected/:unselected?  If not, a selection
     // change can never alter computed style, so select/unselect skips the
@@ -301,9 +307,11 @@ export class StyleEngine {
     this.applyAll();
   }
 
-  /** True when a data() write can change a computed label. */
-  get usesDataMappers(): boolean {
-    return this.dataMappers;
+  /** True when writing any of these data() keys can change a computed label. */
+  labelDependsOn( keys: string[] ): boolean {
+    if( !this.dataMappers ){ return false; }
+
+    return keys.some( key => this.labelKeys.has( key ) );
   }
 
   /** True when a select/unselect can change computed style. */
@@ -340,40 +348,13 @@ export class StyleEngine {
   applyBulk( group: GroupName, slots: ArrayLike<number> ): void {
     if( slots.length === 0 ){ return; }
 
-    const hasIdBlock = this.compiled.some(
-      block => block.selector.terms.some( term => term.id != null )
-    );
-
-    if( hasIdBlock ){
+    if( this.hasIdBlock() ){
       for( let i = 0; i < slots.length; i++ ){
         this.apply( this.store.ref( group, slots[ i ] ) );
       }
 
       return;
     }
-
-    const resolve = ( selected: boolean ): NodeComputed & EdgeComputed => {
-      const computed: NodeComputed & EdgeComputed = {
-        ...NODE_DEFAULTS,
-        ...EDGE_DEFAULTS,
-        width: group === 'nodes' ? NODE_DEFAULTS.width : EDGE_DEFAULTS.width
-      };
-
-      for( const block of this.compiled ){
-        const matches = block.selector.terms.some( term =>
-          ( term.group == null || term.group === group ) &&
-          ( term.selected == null || term.selected === selected )
-        );
-
-        if( matches ){
-          for( const setter of block.setters ){
-            setter( computed );
-          }
-        }
-      }
-
-      return computed;
-    };
 
     const byState: [ ( NodeComputed & EdgeComputed ) | null, ( NodeComputed & EdgeComputed ) | null ] = [ null, null ];
 
@@ -383,12 +364,76 @@ export class StyleEngine {
       let computed = byState[ selected ];
 
       if( computed == null ){
-        computed = resolve( selected === 1 );
+        computed = this.resolveState( group, selected === 1 );
         byState[ selected ] = computed;
       }
 
       this.write( group, slot, computed );
     }
+  }
+
+  /**
+   * Refresh data-mapped node labels only — the data-write path.  A data
+   * write can't change any other channel (blocks are constants), so this
+   * skips the full per-element apply: the stylesheet resolves once per
+   * selectedness (as in applyBulk) and each slot pays only the label text
+   * recompute; setLabel no-ops when the entry is unchanged.
+   */
+  refreshLabels( slots: ArrayLike<number> ): void {
+    if( slots.length === 0 || !this.dataMappers ){ return; }
+
+    if( this.hasIdBlock() ){
+      for( let i = 0; i < slots.length; i++ ){
+        this.apply( this.store.ref( 'nodes', slots[ i ] ) );
+      }
+
+      return;
+    }
+
+    const byState: [ NodeComputed | null, NodeComputed | null ] = [ null, null ];
+
+    for( let i = 0; i < slots.length; i++ ){
+      const slot = slots[ i ];
+      const selected = this.store.hasFlag( 'nodes', slot, FLAG_SELECTED ) ? 1 : 0;
+      let computed = byState[ selected ];
+
+      if( computed == null ){
+        computed = this.resolveState( 'nodes', selected === 1 );
+        byState[ selected ] = computed;
+      }
+
+      this.writeLabel( slot, computed );
+    }
+  }
+
+  private hasIdBlock(): boolean {
+    return this.compiled.some(
+      block => block.selector.terms.some( term => term.id != null )
+    );
+  }
+
+  /** Resolve defaults + blocks for one (group, selected) state — valid only without #id blocks. */
+  private resolveState( group: GroupName, selected: boolean ): NodeComputed & EdgeComputed {
+    const computed: NodeComputed & EdgeComputed = {
+      ...NODE_DEFAULTS,
+      ...EDGE_DEFAULTS,
+      width: group === 'nodes' ? NODE_DEFAULTS.width : EDGE_DEFAULTS.width
+    };
+
+    for( const block of this.compiled ){
+      const matches = block.selector.terms.some( term =>
+        ( term.group == null || term.group === group ) &&
+        ( term.selected == null || term.selected === selected )
+      );
+
+      if( matches ){
+        for( const setter of block.setters ){
+          setter( computed );
+        }
+      }
+    }
+
+    return computed;
   }
 
   /** Resolve defaults + matching blocks (in order) and write the element's channels. */
@@ -429,19 +474,7 @@ export class StyleEngine {
       store.setScalar( 'node.opacity', slot, computed.opacity );
       store.setScalar( 'node.shape', slot, shape );
 
-      const key = computed.labelKey;
-      const text = key == null
-        ? computed.label
-        : key === 'id'
-          ? ( store.idAt( 'nodes', slot ) ?? '' )
-          : stringify( store.data.get( 'nodes', slot, key ) );
-
-      store.setLabel( slot, text === '' ? null : {
-        text,
-        fontSize: computed.fontSize,
-        color: packRgba( computed.textColor ),
-        anchorY: computed.height / 2 + LABEL_MARGIN
-      } );
+      this.writeLabel( slot, computed );
     } else {
       store.setColor( 'edge.lineColor', slot, ...computed.lineColor );
       store.setScalar( 'edge.width', slot, computed.width );
@@ -454,5 +487,23 @@ export class StyleEngine {
       store.setColor( 'edge.sourceArrow', slot, ...arrow( computed.sourceArrowShape, computed.sourceArrowColor ) );
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
     }
+  }
+
+  /** Resolve a node's label text from its computed channels and store it. */
+  private writeLabel( slot: number, computed: NodeComputed ): void {
+    const store = this.store;
+    const key = computed.labelKey;
+    const text = key == null
+      ? computed.label
+      : key === 'id'
+        ? ( store.idAt( 'nodes', slot ) ?? '' )
+        : stringify( store.data.get( 'nodes', slot, key ) );
+
+    store.setLabel( slot, text === '' ? null : {
+      text,
+      fontSize: computed.fontSize,
+      color: packRgba( computed.textColor ),
+      anchorY: computed.height / 2 + LABEL_MARGIN
+    } );
   }
 }

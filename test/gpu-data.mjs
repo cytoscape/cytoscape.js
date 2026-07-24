@@ -204,6 +204,43 @@ describe('gpu/data', function(){
       expect( cy.$('#a').label() ).to.equal('Renamed');
     });
 
+    it('a write of an unmapped key leaves labels untouched', function(){
+      const cy = cytoscapeGpu({
+        elements: FIXTURE,
+        style: [ { selector: 'node', style: { label: 'data(name)' } } ]
+      });
+
+      const before = cy.$('#a').label();
+
+      cy.$('#a').data('unrelated', 'x'); // skips the label refresh pass
+
+      expect( cy.$('#a').label() ).to.equal( before );
+    });
+
+    it('a mapper in a :selected block still refreshes on data writes', function(){
+      const cy = cytoscapeGpu({
+        elements: FIXTURE,
+        style: [ { selector: 'node:selected', style: { label: 'data(name)' } } ]
+      });
+
+      cy.$('#a').select();
+
+      cy.$('#a').data('name', 'Selected label');
+
+      expect( cy.$('#a').label() ).to.equal('Selected label');
+    });
+
+    it('removeData of the mapped key clears the label', function(){
+      const cy = cytoscapeGpu({
+        elements: FIXTURE,
+        style: [ { selector: 'node', style: { label: 'data(name)' } } ]
+      });
+
+      cy.$('#a').removeData('name');
+
+      expect( cy.$('#a').label() ).to.equal('');
+    });
+
     it('data(id) still resolves and stays immutable', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,

@@ -958,6 +958,9 @@ export class GpuCollection {
     const cy = this._cy;
     const keys = Object.keys( patch );
     const wantEmit = hasListeners( cy._emitter, 'data' );
+    // a data write can only change computed style through a label data(key)
+    // mapper on one of the written keys — decided once, not per element
+    const nodeSlots: number[] | null = cy._labelsDependOnData( keys ) ? [] : null;
 
     for( const k of keys ){
       if( k === 'id' ){
@@ -978,10 +981,21 @@ export class GpuCollection {
         store.data.set( ref.group, ref.slot, k, patch[ k ] );
       }
 
-      cy._onDataChanged( ref );
+      if( nodeSlots != null && ref.group === 'nodes' ){
+        nodeSlots.push( ref.slot );
+      }
+    }
 
-      if( wantEmit ){
-        cy._emitOnEle( 'data', this[ i ] );
+    // labels refresh before emits so data listeners observe fresh state
+    if( nodeSlots != null && nodeSlots.length > 0 ){
+      cy._refreshMappedLabels( nodeSlots );
+    }
+
+    if( wantEmit ){
+      for( let i = 0; i < this.length; i++ ){
+        if( store.isCurrent( this._refs[ i ] ) ){
+          cy._emitOnEle( 'data', this[ i ] );
+        }
       }
     }
 

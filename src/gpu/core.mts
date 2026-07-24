@@ -863,11 +863,14 @@ export class GpuCore {
     return this._styleEngine.dependsOnSelection;
   }
 
-  /** Refresh anything computed from data(): today that is mapped node labels. */
-  _onDataChanged( ref: Ref ): void {
-    if( ref.group === 'nodes' && this._styleEngine.usesDataMappers ){
-      this._styleEngine.apply( ref );
-    }
+  /** True when writing any of these data() keys can change a computed label. */
+  _labelsDependOnData( keys: string[] ): boolean {
+    return this._styleEngine.labelDependsOn( keys );
+  }
+
+  /** Refresh anything computed from data() — today that is mapped node labels. */
+  _refreshMappedLabels( nodeSlots: number[] ): void {
+    this._styleEngine.refreshLabels( nodeSlots );
   }
 
   _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps> ): void {

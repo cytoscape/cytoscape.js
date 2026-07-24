@@ -5,7 +5,7 @@ import {
 import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
 } from './style-scales.mjs';
-import type { CompiledMapper, ChannelKind, Evaluated } from './style-scales.mjs';
+import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './style-scales.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { GpuStyleProps, GpuStylesheet, GpuMapper, GpuMapperSpec } from './gpu-types.mjs';
@@ -432,6 +432,10 @@ export class StyleEngine {
   /** a mapped key's column promoted to mixed while kernel-owned: re-derive on CPU */
   private demoted: Record<GroupName, boolean> = { nodes: false, edges: false };
 
+  /** value reader for mapper/condition keys ('id' is first-class, not in the sidecar) */
+  private readValue: ValueReader = ( group, slot, key ) =>
+    key === 'id' ? this.store.idAt( group, slot ) : this.store.data.get( group, slot, key );
+
   constructor( store: GraphStore, eleFor: ( group: GroupName, slot: number ) => GpuCollection ){
     this.store = store;
     this.eleFor = eleFor;
@@ -692,7 +696,7 @@ export class StyleEngine {
     const scratch: Computed = { ...def.computed };
     const evals = active.map( bm => ( {
       set: bm.channel.set,
-      ev: bindEvaluator( bm.m, store.data, group, bm.channel.default( group ) )
+      ev: bindEvaluator( bm.m, store.data, group, bm.channel.default( group ), this.readValue )
     } ) );
 
     for( let i = 0; i < target.length; i++ ){
@@ -831,7 +835,7 @@ export class StyleEngine {
       const bm = this.defs[ ref.group ].mappers.find( bm => bm.m.prop === prop );
 
       if( bm != null ){
-        const value = bindEvaluator( bm.m, this.store.data, ref.group, bm.channel.default( ref.group ) )( ref.slot );
+        const value = bindEvaluator( bm.m, this.store.data, ref.group, bm.channel.default( ref.group ), this.readValue )( ref.slot );
 
         return typeof value === 'number' ? value : formatRgba( value[ 0 ], value[ 1 ], value[ 2 ], value[ 3 ] );
       }
@@ -909,7 +913,7 @@ export class StyleEngine {
 
       return bm == null
         ? constant
-        : bindEvaluator( bm.m, this.store.data, 'edges', bm.channel.default( 'edges' ) )( ref.slot );
+        : bindEvaluator( bm.m, this.store.data, 'edges', bm.channel.default( 'edges' ), this.readValue )( ref.slot );
     };
 
     const opacity = evalProp( 'opacity', computed.opacity ) as number;
@@ -942,7 +946,7 @@ export class StyleEngine {
       const scratch: Computed = { ...def.computed };
 
       for( const bm of def.mappers ){
-        bm.channel.set( scratch, bindEvaluator( bm.m, this.store.data, 'nodes', bm.channel.default( 'nodes' ) )( ref.slot ) );
+        bm.channel.set( scratch, bindEvaluator( bm.m, this.store.data, 'nodes', bm.channel.default( 'nodes' ), this.readValue )( ref.slot ) );
       }
 
       computed = scratch;

@@ -759,13 +759,16 @@ const testCondition = ( cond: CompiledCondition, v: unknown ): boolean => {
   }
 };
 
+/** Reads a slot's value for a mapper/condition key ('id' is first-class, not in the sidecar). */
+export type ValueReader = ( group: GroupName, slot: number, key: string ) => unknown;
+
 /**
- * Bind a conditional program.  Reads the condition keys per slot straight
- * off the data store (multi-key, no single-column hoist); the first clause
+ * Bind a conditional program.  Reads the condition keys per slot through
+ * the value reader (multi-key, no single-column hoist); the first clause
  * whose conditions all hold supplies the value, else the else value.
  */
 const bindCase = (
-  program: Extract<Program, { kind: 'case' }>, data: DataStore, group: GroupName
+  program: Extract<Program, { kind: 'case' }>, read: ValueReader, group: GroupName
 ): ( slot: number ) => Evaluated => {
   const { clauses, elseValue } = program;
 
@@ -775,7 +778,7 @@ const bindCase = (
       let all = true;
 
       for( let i = 0; i < conds.length; i++ ){
-        if( !testCondition( conds[ i ], data.get( group, slot, conds[ i ].key ) ) ){
+        if( !testCondition( conds[ i ], read( group, slot, conds[ i ].key ) ) ){
           all = false;
           break;
         }
@@ -796,7 +799,7 @@ const bindCase = (
  */
 export const bindEvaluator = (
   m: CompiledMapper, data: DataStore, group: GroupName,
-  channelDefault: Evaluated
+  channelDefault: Evaluated, read?: ValueReader
 ): ( slot: number ) => Evaluated => {
   const program = m.program;
   const missing = m.fallback ?? channelDefault;
@@ -808,7 +811,9 @@ export const bindEvaluator = (
   }
 
   if( program.kind === 'case' ){
-    return bindCase( program, data, group );
+    // conditions read through the value reader so 'id' resolves (it's
+    // first-class, not in the data sidecar); default to the sidecar
+    return bindCase( program, read ?? ( ( g, slot, key ) => data.get( g, slot, key ) ), group );
   }
 
   if( ( program.kind === 'continuous' || program.kind === 'discrete' ) && program.applied == null ){

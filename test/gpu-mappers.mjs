@@ -811,6 +811,18 @@ describe('gpu/mappers', function(){
       expect( cy.$id('a').style('background-color') ).to.equal( 'rgb(0,0,0)' );
     });
 
+    it('reads the first-class id in conditions', function(){
+      const cy = cytoscapeGpu( {
+        elements: [ { data: { id: 'a' } }, { data: { id: 'b' } } ],
+        style: { nodes: { 'background-color': {
+          case: [ { when: { data: 'id', eq: 'a' }, then: '#00ff00' } ], else: '#ff0000'
+        } } }
+      } );
+
+      expect( cy.$id('a').style('background-color') ).to.equal( 'rgb(0,255,0)' );
+      expect( cy.$id('b').style('background-color') ).to.equal( 'rgb(255,0,0)' );
+    });
+
     it('round-trips case sheets through json()', function(){
       const sheet = { nodes: { shape: {
         case: [ { when: { data: 't', eq: 'box' }, then: 'rectangle' } ], else: 'ellipse'

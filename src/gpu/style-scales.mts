@@ -3,7 +3,7 @@ import { resolveScheme, hexToRgb, srgbToOklab, oklabToSrgb } from './style-schem
 import type { SchemeDef } from './style-schemes.mjs';
 import type { GroupName } from './contract.mjs';
 import type { DataStore } from './store/data-store.mjs';
-import type { GpuMapper } from './gpu-types.mjs';
+import type { GpuMapper, GpuCaseMapper, GpuMapperSpec, GpuCondition } from './gpu-types.mjs';
 
 /*
 The mapper DSL's compiled form and CPU evaluator.  A mapper spec is a
@@ -52,8 +52,22 @@ export type OutputStops =
     alpha: Float64Array;
   };
 
+/** A compiled condition over one data key (data-only; CPU-evaluated). */
+export type CompiledCondition = {
+  key: string;
+  op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
+  value: string | number | ( string | number )[];
+};
+
 export type Program =
   | { kind: 'passthrough' }
+  | { kind: 'const'; value: number | RGBA }
+  | {
+    kind: 'case';
+    /** ordered clauses; conds AND-ed within a clause, first matching wins */
+    clauses: { conds: CompiledCondition[]; value: number | RGBA }[];
+    elseValue: number | RGBA;
+  }
   | {
     kind: 'continuous';
     transform: Transform;
@@ -91,8 +105,10 @@ export interface CompileOpts {
 }
 
 export interface CompiledMapper {
-  /** data() sidecar key */
+  /** primary data key (a single-key scale mapper; '' for conditionals) — the GPU-pack path */
   key: string;
+  /** every data key this mapper reads — the refresh-dependency set */
+  keys: string[];
   kind: ChannelKind;
   prop: string;
   program: Program;
@@ -100,17 +116,25 @@ export interface CompiledMapper {
   fallback: number | RGBA | null;
   parseEnum: ( ( value: unknown ) => number | null ) | null;
   /** the original spec object, never mutated (json() fidelity) */
-  spec: GpuMapper;
+  spec: GpuMapperSpec;
 }
 
 /** Output of a bound evaluator: the channel value for one slot. */
 export type Evaluated = number | RGBA;
 
-/** Mapper specs are plain objects with a string `data` field. */
-export const isMapperSpec = ( value: unknown ): value is GpuMapper => {
-  return value != null && typeof value === 'object' && !Array.isArray( value )
-    && typeof ( value as GpuMapper ).data === 'string';
+/** Mapper specs are plain objects with a string `data` field or a `case` array. */
+export const isMapperSpec = ( value: unknown ): value is GpuMapperSpec => {
+  if( value == null || typeof value !== 'object' || Array.isArray( value ) ){ return false; }
+
+  return typeof ( value as GpuMapper ).data === 'string'
+    || Array.isArray( ( value as GpuCaseMapper ).case );
 };
+
+const isCaseSpec = ( spec: GpuMapperSpec ): spec is GpuCaseMapper => {
+  return Array.isArray( ( spec as GpuCaseMapper ).case );
+};
+
+const CONDITION_OPS: ReadonlySet<string> = new Set( [ 'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in' ] );
 
 const CONTINUOUS_SCALES: ReadonlySet<string> = new Set( [ 'linear', 'log', 'sqrt', 'pow', 'symlog' ] );
 const SCALES: ReadonlySet<string> = new Set( [
@@ -440,7 +464,87 @@ const compileOrdinal = ( opts: CompileOpts, spec: GpuMapper ): Program => {
   return { kind: 'ordinal', map };
 };
 
-export const compileMapper = ( spec: GpuMapper, opts: CompileOpts ): CompiledMapper => {
+const compileCondition = ( opts: CompileOpts, cond: GpuCondition ): CompiledCondition => {
+  if( cond == null || typeof cond.data !== 'string' || cond.data === '' ){
+    throw err( opts.prop, `each case condition needs a non-empty 'data' key` );
+  }
+
+  const ops = ( Object.keys( cond ) as ( keyof GpuCondition )[] ).filter( k => CONDITION_OPS.has( k ) );
+
+  if( ops.length !== 1 ){
+    throw err( opts.prop, `each case condition needs exactly one comparison ` +
+      `(${[ ...CONDITION_OPS ].join( ', ' )}); got ${ops.length}` );
+  }
+
+  const op = ops[ 0 ] as CompiledCondition['op'];
+  const raw = cond[ op ];
+
+  if( op === 'in' ){
+    if( !Array.isArray( raw ) || raw.length === 0 ){
+      throw err( opts.prop, `'in' needs a non-empty array of values` );
+    }
+
+    return { key: cond.data, op, value: raw as ( string | number )[] };
+  }
+
+  if( ( op === 'lt' || op === 'lte' || op === 'gt' || op === 'gte' ) && typeof raw !== 'number' ){
+    throw err( opts.prop, `'${op}' needs a numeric value` );
+  }
+
+  return { key: cond.data, op, value: raw as string | number };
+};
+
+const compileCase = ( opts: CompileOpts, spec: GpuCaseMapper ): { program: Program; keys: string[] } => {
+  if( spec.case.length === 0 ){
+    throw err( opts.prop, `a case mapper needs at least one clause` );
+  }
+
+  const keys = new Set<string>();
+  const clauses = spec.case.map( clause => {
+    if( clause == null || clause.when == null || !( 'then' in clause ) ){
+      throw err( opts.prop, `each case clause needs 'when' and 'then'` );
+    }
+
+    const conds = ( Array.isArray( clause.when ) ? clause.when : [ clause.when ] ).map( c => {
+      const compiled = compileCondition( opts, c );
+
+      keys.add( compiled.key );
+
+      return compiled;
+    } );
+
+    return { conds, value: parseOutput( opts, clause.then ) };
+  } );
+
+  const elseValue = spec.else !== undefined ? parseOutput( opts, spec.else )
+    : spec.fallback !== undefined ? parseOutput( opts, spec.fallback )
+    : channelDefaultOf( opts );
+
+  return { program: { kind: 'case', clauses, elseValue }, keys: [ ...keys ] };
+};
+
+/** The channel's own default output, used when a case has no `else`/`fallback`. */
+const channelDefaultOf = ( opts: CompileOpts ): number | RGBA => {
+  // a neutral, valid output per kind; sheets that care set an explicit else
+  return opts.kind === 'color' ? [ 0, 0, 0, 255 ] : 0;
+};
+
+export const compileMapper = ( spec: GpuMapperSpec, opts: CompileOpts ): CompiledMapper => {
+  if( isCaseSpec( spec ) ){
+    const { program, keys } = compileCase( opts, spec );
+
+    return {
+      key: '', // conditionals are never GPU-packed; the primary-key slot is unused
+      keys,
+      kind: opts.kind,
+      prop: opts.prop,
+      program,
+      fallback: spec.fallback === undefined ? null : parseOutput( opts, spec.fallback ),
+      parseEnum: opts.parseEnum ?? null,
+      spec
+    };
+  }
+
   if( spec.data === '' ){ throw err( opts.prop, `the data key must be a non-empty string` ); }
 
   const scale = spec.scale;
@@ -464,6 +568,7 @@ export const compileMapper = ( spec: GpuMapper, opts: CompileOpts ): CompiledMap
 
   return {
     key: spec.data,
+    keys: [ spec.data ],
     kind: opts.kind,
     prop: opts.prop,
     program,
@@ -639,6 +744,50 @@ const discreteEval = ( program: Extract<Program, { kind: 'discrete' }> ) => {
   };
 };
 
+/** Test one compiled condition against a data value (missing fails every op). */
+const testCondition = ( cond: CompiledCondition, v: unknown ): boolean => {
+  if( v === undefined ){ return false; }
+
+  switch( cond.op ){
+    case 'eq': return v === cond.value;
+    case 'ne': return v !== cond.value;
+    case 'in': return ( cond.value as ( string | number )[] ).includes( v as string | number );
+    case 'lt': return typeof v === 'number' && v < ( cond.value as number );
+    case 'lte': return typeof v === 'number' && v <= ( cond.value as number );
+    case 'gt': return typeof v === 'number' && v > ( cond.value as number );
+    case 'gte': return typeof v === 'number' && v >= ( cond.value as number );
+  }
+};
+
+/**
+ * Bind a conditional program.  Reads the condition keys per slot straight
+ * off the data store (multi-key, no single-column hoist); the first clause
+ * whose conditions all hold supplies the value, else the else value.
+ */
+const bindCase = (
+  program: Extract<Program, { kind: 'case' }>, data: DataStore, group: GroupName
+): ( slot: number ) => Evaluated => {
+  const { clauses, elseValue } = program;
+
+  return slot => {
+    for( let c = 0; c < clauses.length; c++ ){
+      const conds = clauses[ c ].conds;
+      let all = true;
+
+      for( let i = 0; i < conds.length; i++ ){
+        if( !testCondition( conds[ i ], data.get( group, slot, conds[ i ].key ) ) ){
+          all = false;
+          break;
+        }
+      }
+
+      if( all ){ return clauses[ c ].value; }
+    }
+
+    return elseValue;
+  };
+};
+
 /**
  * Bind a compiled mapper to its data column for bulk evaluation.  Hoists
  * the column arrays out of the per-slot loop; dictionary-encoded string
@@ -651,6 +800,16 @@ export const bindEvaluator = (
 ): ( slot: number ) => Evaluated => {
   const program = m.program;
   const missing = m.fallback ?? channelDefault;
+
+  if( program.kind === 'const' ){
+    const value = program.value;
+
+    return () => value;
+  }
+
+  if( program.kind === 'case' ){
+    return bindCase( program, data, group );
+  }
 
   if( ( program.kind === 'continuous' || program.kind === 'discrete' ) && program.applied == null ){
     applyAutoExtent( program, ...autoExtentFor( m, data, group ) );

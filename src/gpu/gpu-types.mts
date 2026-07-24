@@ -160,14 +160,53 @@ export interface GpuMapper {
   fallback?: string | number;
 }
 
+/**
+ * A condition over one data key: exactly one comparison operator.  String
+ * data supports `eq`/`ne`/`in`; numeric data supports all.  Missing data
+ * fails every comparison (so an unset key never matches).
+ */
+export interface GpuCondition {
+  data: string;
+  eq?: string | number;
+  ne?: string | number;
+  lt?: number;
+  lte?: number;
+  gt?: number;
+  gte?: number;
+  in?: ( string | number )[];
+}
+
+/** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */
+export interface GpuCaseClause {
+  when: GpuCondition | GpuCondition[];
+  then: string | number;
+}
+
+/**
+ * A conditional mapper: the first clause whose `when` holds supplies the
+ * value, else `else` (or the channel default).  Clauses are tried in
+ * order.  CPU-evaluated (multi-key, data-driven) — the declarative
+ * replacement for `(ele) => cond ? a : b` style functions, and the
+ * natural form for typed edges (`type == 'activation' → ...`).
+ */
+export interface GpuCaseMapper {
+  case: GpuCaseClause[];
+  else?: string | number;
+  /** value for missing/unmappable data (defaults to `else` then the channel default) */
+  fallback?: string | number;
+}
+
+/** Any data-driven style value: a scale mapper or a conditional. */
+export type GpuMapperSpec = GpuMapper | GpuCaseMapper;
+
 /** A style prop value: a constant, or a mapper object. */
-export type GpuStylePropValue = string | number | GpuMapper;
+export type GpuStylePropValue = string | number | GpuMapperSpec;
 
 /**
  * Style props for one element or group; names are kebab-case or
- * camelCase.  Values are constants or mapper objects ({@link GpuMapper});
- * `label` also takes the `data(key)` mapper string ('id' reads the
- * first-class id).
+ * camelCase.  Values are constants, scale mappers ({@link GpuMapper}), or
+ * conditionals ({@link GpuCaseMapper}); `label` also takes the
+ * `data(key)` mapper string ('id' reads the first-class id).
  * Node props: background-color, width, height, shape, opacity,
  * border-color, border-width, label, font-size, color.  Edge props:
  * line-color, width, opacity, source/target-arrow-shape and -color.

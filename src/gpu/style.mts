@@ -8,7 +8,7 @@ import {
 import type { CompiledMapper, ChannelKind, Evaluated } from './style-scales.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
-import type { GpuStyleProps, GpuStylesheet, GpuMapper } from './gpu-types.mjs';
+import type { GpuStyleProps, GpuStylesheet, GpuMapper, GpuMapperSpec } from './gpu-types.mjs';
 import type { GpuCollection } from './collection.mjs';
 
 /*
@@ -376,7 +376,7 @@ const PAINT_PROPS: Record<GroupName, ReadonlySet<string>> = {
   ] )
 };
 
-const compileChannel = ( group: GroupName, prop: string, spec: GpuMapper ): BoundMapper => {
+const compileChannel = ( group: GroupName, prop: string, spec: GpuMapperSpec ): BoundMapper => {
   const channel = MAPPABLE[ prop ];
 
   if( channel == null || !channel.groups.includes( group ) ){
@@ -489,7 +489,9 @@ export class StyleEngine {
 
       if( computed.labelKey != null ){ dep( computed.labelKey, 'label' ); }
 
-      for( const bm of mappers ){ dep( bm.m.key, 'mappers' ); }
+      for( const bm of mappers ){
+        for( const key of bm.m.keys ){ dep( key, 'mappers' ); }
+      }
 
       return { fn: null, computed, mappers, deps };
     };
@@ -519,10 +521,12 @@ export class StyleEngine {
 
     // the store coalesces write spans for paint-mapped keys so the GPU
     // eval pass knows what to re-evaluate without a CPU restyle; owned
-    // props reset until the runtime re-configures against the new sheet
+    // props reset until the runtime re-configures against the new sheet.
+    // Only single-key scale mappers can be GPU-evaluated — conditionals
+    // (case, '' key / multi-key) stay CPU-evaluated, so they aren't watched.
     for( const group of [ 'nodes', 'edges' ] as const ){
       this.store.watchDataKeys( group, defs[ group ].mappers
-        .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) )
+        .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) && bm.m.program.kind !== 'case' )
         .map( bm => bm.m.key ) );
       this.gpuOwnedProps[ group ] = new Set();
     }
@@ -977,12 +981,16 @@ export class StyleEngine {
 
         if( norm === 'label' ){
           // the label passthrough rides the existing labelKey channel
-          if( value.scale != null || value.domain != null || value.range != null ){
+          const asScale = value as GpuMapper;
+          const passthrough = !( 'case' in value ) && typeof asScale.data === 'string'
+            && asScale.scale == null && asScale.domain == null && asScale.range == null;
+
+          if( !passthrough ){
             throw new Error( `Only the passthrough mapper ({ data: key }) is supported for 'label'` );
           }
 
           computed.label = '';
-          computed.labelKey = value.data;
+          computed.labelKey = asScale.data;
           continue;
         }
 

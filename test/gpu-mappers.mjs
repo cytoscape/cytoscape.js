@@ -447,6 +447,109 @@ describe('gpu/mappers', function(){
     });
   });
 
+  describe('case (conditional) mapper', function(){
+    const evalCase = ( spec, opts, rows ) => {
+      const data = new DataStore();
+
+      rows.forEach( ( row, slot ) => {
+        for( const [ k, v ] of Object.entries( row ) ){
+          if( v !== undefined ){ data.set( 'nodes', slot, k, v ); }
+        }
+      } );
+
+      return bindEvaluator( compileMapper( spec, opts ), data, 'nodes', -1 );
+    };
+
+    it('detects case specs and tracks all condition keys', function(){
+      expect( isMapperSpec( { case: [], else: 1 } ) ).to.be.true;
+
+      const m = compileMapper( {
+        case: [ { when: [ { data: 'a', gt: 0 }, { data: 'b', eq: 'x' } ], then: 5 } ],
+        else: 0
+      }, NUM );
+
+      expect( m.key ).to.equal( '' );
+      expect( m.keys.sort() ).to.deep.equal( [ 'a', 'b' ] );
+    });
+
+    it('picks the first matching clause, else the else', function(){
+      const ev = evalCase( {
+        case: [
+          { when: { data: 'w', gte: 10 }, then: 100 },
+          { when: { data: 'w', gte: 5 }, then: 50 }
+        ],
+        else: 1
+      }, NUM, [ { w: 12 }, { w: 7 }, { w: 2 }, {} ] );
+
+      expect( ev( 0 ) ).to.equal( 100 );
+      expect( ev( 1 ) ).to.equal( 50 );
+      expect( ev( 2 ) ).to.equal( 1 );
+      expect( ev( 3 ) ).to.equal( 1 ); // missing → else
+    });
+
+    it('AND-s multiple conditions in a clause', function(){
+      const ev = evalCase( {
+        case: [ { when: [ { data: 'a', gt: 0 }, { data: 'b', lt: 10 } ], then: 9 } ],
+        else: 0
+      }, NUM, [ { a: 1, b: 5 }, { a: 1, b: 20 }, { a: -1, b: 5 } ] );
+
+      expect( ev( 0 ) ).to.equal( 9 );
+      expect( ev( 1 ) ).to.equal( 0 );
+      expect( ev( 2 ) ).to.equal( 0 );
+    });
+
+    it('maps typed edges to colors and enums (the biological case)', function(){
+      const color = evalCase( {
+        case: [
+          { when: { data: 'type', eq: 'activation' }, then: '#00ff00' },
+          { when: { data: 'type', eq: 'inhibition' }, then: '#ff0000' }
+        ],
+        else: '#999999'
+      }, COLOR, [ { type: 'activation' }, { type: 'inhibition' }, { type: 'other' } ] );
+
+      expect( color( 0 ) ).to.deep.equal( [ 0, 255, 0, 255 ] );
+      expect( color( 1 ) ).to.deep.equal( [ 255, 0, 0, 255 ] );
+      expect( color( 2 ) ).to.deep.equal( [ 0x99, 0x99, 0x99, 255 ] );
+
+      const shape = evalCase( {
+        case: [ { when: { data: 'type', in: [ 'a', 'b' ] }, then: 'square' } ],
+        else: 'circle'
+      }, ENUM, [ { type: 'a' }, { type: 'b' }, { type: 'c' } ] );
+
+      expect( shape( 0 ) ).to.equal( 2 );
+      expect( shape( 1 ) ).to.equal( 2 );
+      expect( shape( 2 ) ).to.equal( 0 );
+    });
+
+    it('falls back to the channel default when no else is given', function(){
+      const ev = evalCase( { case: [ { when: { data: 'w', gt: 100 }, then: 5 } ] }, NUM, [ { w: 1 } ] );
+
+      expect( ev( 0 ) ).to.equal( 0 ); // numeric channel default
+    });
+
+    it('validates clause and condition shapes', function(){
+      const bad = ( spec, re ) => expect( () => compileMapper( spec, NUM ), JSON.stringify( spec ) ).to.throw( re );
+
+      bad( { case: [] }, /at least one clause/ );
+      bad( { case: [ { then: 1 } ] }, /'when' and 'then'/ );
+      bad( { case: [ { when: { data: 'w' }, then: 1 } ] }, /exactly one comparison/ );
+      bad( { case: [ { when: { data: 'w', gt: 1, lt: 5 }, then: 1 } ] }, /exactly one comparison/ );
+      bad( { case: [ { when: { data: 'w', gt: 'x' }, then: 1 } ] }, /numeric value/ );
+      bad( { case: [ { when: { data: '', eq: 1 }, then: 1 } ] }, /non-empty 'data'/ );
+      bad( { case: [ { when: { data: 'w', in: [] }, then: 1 } ] }, /non-empty array/ );
+      bad( { case: [ { when: { data: 'w', eq: 1 }, then: 'notanumber' } ] }, /not a valid number/ );
+    });
+
+    it('is rejected on label (passthrough only)', function(){
+      const cy = cytoscapeGpu( {
+        elements: [ { data: { id: 'a', t: 'x' } } ]
+      } );
+
+      expect( () => cy.style( { nodes: { label: { case: [ { when: { data: 't', eq: 'x' }, then: 'hi' } ] } } } ) )
+        .to.throw( /passthrough/ );
+    });
+  });
+
   describe('stylesheet integration', function(){
     const graph = ( style, elements ) => cytoscapeGpu( {
       elements: elements ?? [
@@ -642,6 +745,79 @@ describe('gpu/mappers', function(){
 
       expect( spans ).to.have.length( 1 );
       expect( spans[ 0 ].key ).to.equal( 'w' );
+    });
+
+    it('drives typed-edge styling and refreshes on the condition key', function(){
+      const cy = cytoscapeGpu( {
+        elements: [
+          { data: { id: 'a' } }, { data: { id: 'b' } }, { data: { id: 'c' } },
+          { data: { id: 'ab', source: 'a', target: 'b', kind: 'activation' } },
+          { data: { id: 'bc', source: 'b', target: 'c', kind: 'inhibition' } }
+        ],
+        style: { edges: {
+          'line-color': {
+            case: [
+              { when: { data: 'kind', eq: 'activation' }, then: '#00ff00' },
+              { when: { data: 'kind', eq: 'inhibition' }, then: '#ff0000' }
+            ],
+            else: '#999999'
+          }
+        } }
+      } );
+
+      expect( cy.$id('ab').style('line-color') ).to.equal( 'rgb(0,255,0)' );
+      expect( cy.$id('bc').style('line-color') ).to.equal( 'rgb(255,0,0)' );
+
+      cy.$id('ab').data( 'kind', 'inhibition' );
+
+      expect( cy.$id('ab').style('line-color') ).to.equal( 'rgb(255,0,0)' );
+    });
+
+    it('refreshes a case mapper when any of its keys changes', function(){
+      const cy = cytoscapeGpu( {
+        elements: [ { data: { id: 'a', hi: 0, lo: 0 } } ],
+        style: { nodes: {
+          width: {
+            case: [ { when: [ { data: 'hi', gt: 5 }, { data: 'lo', lt: 3 } ], then: 90 } ],
+            else: 10
+          }
+        } }
+      } );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 10 );
+
+      cy.$id('a').data( 'hi', 8 );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 90 ); // second key already qualifies
+
+      cy.$id('a').data( 'lo', 4 );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 10 ); // now disqualified
+    });
+
+    it('keeps a paint case mapper CPU-evaluated (not GPU-owned)', function(){
+      const cy = cytoscapeGpu( {
+        elements: [ { data: { id: 'a', t: 'x' } } ],
+        style: { nodes: { 'background-color': {
+          case: [ { when: { data: 't', eq: 'x' }, then: '#ff0000' } ], else: '#000000'
+        } } }
+      } );
+
+      // no watched keys and no mapper spans: case mappers refresh via the CPU path
+      cy._store.takeMapperSpans();
+      cy.$id('a').data( 't', 'y' );
+
+      expect( cy._store.takeMapperSpans() ).to.have.length( 0 );
+      expect( cy.$id('a').style('background-color') ).to.equal( 'rgb(0,0,0)' );
+    });
+
+    it('round-trips case sheets through json()', function(){
+      const sheet = { nodes: { shape: {
+        case: [ { when: { data: 't', eq: 'box' }, then: 'rectangle' } ], else: 'ellipse'
+      } } };
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a', t: 'box' } } ], style: sheet } );
+
+      expect( cy.json().style ).to.deep.equal( sheet );
     });
 
     it('throws on invalid mapper placements', function(){

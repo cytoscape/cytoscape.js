@@ -141,8 +141,8 @@ export type GpuStyleFn = ( ele: GpuCollection ) => GpuStyleProps | null | undefi
  * `cy.style().update()`.
  */
 export interface GpuStylesheet {
-  node?: GpuStyleProps | GpuStyleFn;
-  edge?: GpuStyleProps | GpuStyleFn;
+  nodes?: GpuStyleProps | GpuStyleFn;
+  edges?: GpuStyleProps | GpuStyleFn;
 }
 
 export interface GpuGridLayoutOptions {

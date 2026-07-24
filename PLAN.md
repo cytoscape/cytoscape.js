@@ -516,7 +516,8 @@ decisions, explicitly:
   were removed.  Future richer matching (data predicates, structural
   terms) extends the IR; any frontend (chained builder, serialized
   query) compiles to it.
-- **Style is `{ node, edge }`** — each key a props object (constants,
+- **Style is `{ nodes, edges }`** (keys renamed from `{ node, edge }`
+  2026-07-24 to match the group names) — each key a props object (constants,
   camelCase or kebab-case) or `(ele) => props`.  Selector blocks,
   `:selected` restyling and `#id` blocks are gone (the accent ring is
   shader-drawn; per-element styling is the fn form).  Refresh policy:

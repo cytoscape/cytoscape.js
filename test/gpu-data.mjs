@@ -177,7 +177,7 @@ describe('gpu/data', function(){
     it('data(key) labels resolve from the sidecar', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { node: { label: 'data(name)' } }
+        style: { nodes: { label: 'data(name)' } }
       });
 
       expect( cy.$id('a').label() ).to.equal('Alpha');
@@ -187,7 +187,7 @@ describe('gpu/data', function(){
     it('numbers stringify in labels', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { node: { label: 'data(weight)' } }
+        style: { nodes: { label: 'data(weight)' } }
       });
 
       expect( cy.$id('b').label() ).to.equal('2.5');
@@ -196,7 +196,7 @@ describe('gpu/data', function(){
     it('a data write refreshes mapped labels', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { node: { label: 'data(name)' } }
+        style: { nodes: { label: 'data(name)' } }
       });
 
       cy.$id('a').data('name', 'Renamed');
@@ -207,7 +207,7 @@ describe('gpu/data', function(){
     it('a write of an unmapped key leaves labels untouched', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { node: { label: 'data(name)' } }
+        style: { nodes: { label: 'data(name)' } }
       });
 
       const before = cy.$id('a').label();
@@ -220,7 +220,7 @@ describe('gpu/data', function(){
     it('function styles do not auto-refresh on data writes; update() re-runs them', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { node: ele => ({ label: String( ele.data('name') ?? '' ) }) }
+        style: { nodes: ele => ({ label: String( ele.data('name') ?? '' ) }) }
       });
 
       expect( cy.$id('a').label() ).to.equal('Alpha');
@@ -238,7 +238,7 @@ describe('gpu/data', function(){
     it('removeData of the mapped key clears the label', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { node: { label: 'data(name)' } }
+        style: { nodes: { label: 'data(name)' } }
       });
 
       cy.$id('a').removeData('name');
@@ -249,7 +249,7 @@ describe('gpu/data', function(){
     it('data(id) still resolves and stays immutable', function(){
       const cy = cytoscapeGpu({
         elements: FIXTURE,
-        style: { node: { label: 'data(id)' } }
+        style: { nodes: { label: 'data(id)' } }
       });
 
       expect( cy.$id('a').label() ).to.equal('a');

@@ -34,7 +34,7 @@ Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`,
 plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 `renderedExtent`, `size`), events (with the usual aliases +
 `onRender`/`offRender`; delegation via predicate functions), graph
-manipulation, `style()` (the `{ node, edge }` sheet), `layout()`/
+manipulation, `style()` (the `{ nodes, edges }` sheet), `layout()`/
 `makeLayout` (grid and preset), `pick()`,
 `renderer()`/`forceRender()`/`resize()`, graph-level
 `data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/
@@ -121,7 +121,7 @@ each is deliberate, not a pass-1 deferral:
   role classes played in v3 — user-defined state driving filtering and
   styling — belongs to the columnar `data()` sidecar (for state) plus
   fn styles and predicates (for behaviour).
-- **Style is `{ node, edge }`, no selector blocks.**  Each key is either
+- **Style is `{ nodes, edges }`, no selector blocks.**  Each key is either
   a props object (constants for the group) or a per-element function
   `(ele) => props`.  The refresh line is explicit: *declarative values
   and mappers stay fresh automatically; opaque functions re-run only on

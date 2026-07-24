@@ -87,7 +87,7 @@ const paramDefs = {
     'ellipse', 'circle', 'rectangle', 'round-rectangle', 'roundrectangle'
   ]);
   // best-effort conversion of a v3 block stylesheet into the v4 sheet
-  // ({ node, edge }): constant values of in-scope props on plain group
+  // ({ nodes, edges }): constant values of in-scope props on plain group
   // selectors fold into the group's props (later blocks win, as in v3
   // document order); #id/:selected/class blocks are dropped — v4 styles
   // per element via fn styles, which a fixture stylesheet can't express
@@ -118,8 +118,8 @@ const paramDefs = {
 
       if(Object.keys(style).length === 0) { continue; }
 
-      if(selector === 'node' || selector === '*') { mergeInto('node', style); }
-      if(selector === 'edge' || selector === '*') { mergeInto('edge', style); }
+      if(selector === 'node' || selector === '*') { mergeInto('nodes', style); }
+      if(selector === 'edge' || selector === '*') { mergeInto('edges', style); }
     }
 
     return sheet;
@@ -178,8 +178,8 @@ const paramDefs = {
     }
 
     const style = {
-      node: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' },
-      edge: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 }
+      nodes: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' },
+      edges: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 }
     };
 
     return { nodes, edges, hasPositions: true, style };
@@ -193,11 +193,11 @@ const paramDefs = {
     style = style || {};
 
     if(params.labels === 'true') {
-      style = { ...style, node: { ...style.node, 'label': 'data(id)', 'font-size': 10, 'color': '#333' } };
+      style = { ...style, nodes: { ...style.nodes, 'label': 'data(id)', 'font-size': 10, 'color': '#333' } };
     }
 
     if(params.arrows === 'true') {
-      style = { ...style, edge: { ...style.edge, 'target-arrow-shape': 'triangle', 'target-arrow-color': '#666' } };
+      style = { ...style, edges: { ...style.edges, 'target-arrow-shape': 'triangle', 'target-arrow-color': '#666' } };
     }
 
     let elements = { nodes: gpuElements.nodes, edges: gpuElements.edges };

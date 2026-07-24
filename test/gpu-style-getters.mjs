@@ -13,7 +13,7 @@ describe('gpu/style-getters', function(){
         { data: { id: 'ab', source: 'a', target: 'b' } }
       ],
       style: {
-        node: {
+        nodes: {
           'background-color': 'red',
           width: 40,
           height: 20,
@@ -24,7 +24,7 @@ describe('gpu/style-getters', function(){
           'font-size': 12,
           color: '#333'
         },
-        edge: {
+        edges: {
           'line-color': 'rgb(10,20,30)',
           width: 3,
           opacity: 0.5,
@@ -90,7 +90,7 @@ describe('gpu/style-getters', function(){
 
     it('reports the stored channels for fn sheets', function(){
       cy.style({
-        node: function( ele ){
+        nodes: function( ele ){
           return ele.id() === 'a' ? { backgroundColor: '#0ff', width: 11, height: 11 } : {};
         }
       });
@@ -165,7 +165,7 @@ describe('gpu/style-getters', function(){
       expect( cy.$id('a').transparent() ).to.be.false;
       expect( cy.$id('ab').effectiveOpacity() ).to.equal( 0.5 );
 
-      cy.style({ node: { opacity: 0 } });
+      cy.style({ nodes: { opacity: 0 } });
 
       expect( cy.$id('a').effectiveOpacity() ).to.equal( 0 );
       expect( cy.$id('a').transparent() ).to.be.true;

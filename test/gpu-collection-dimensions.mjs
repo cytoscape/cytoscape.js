@@ -12,7 +12,7 @@ describe('gpu/collection: rendered dimensions, shift, endpoints', function(){
         { data: { id: 'n2' }, position: { x: 300, y: 200 } },
         { data: { id: 'e1', source: 'n1', target: 'n2' } }
       ],
-      style: { node: { width: 40, height: 20 } },
+      style: { nodes: { width: 40, height: 20 } },
       zoom: 2,
       pan: { x: 10, y: 5 }
     });

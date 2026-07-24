@@ -8,7 +8,7 @@ import type { GpuStyleProps, GpuStylesheet } from './gpu-types.mjs';
 import type { GpuCollection } from './collection.mjs';
 
 /*
-StyleEngine: the v4 stylesheet is `{ node, edge }` — no selectors.  Each
+StyleEngine: the v4 stylesheet is `{ nodes, edges }` — no selectors.  Each
 key holds either a props object (constants, applied to the whole group)
 or a function `(ele) => props` for per-element styling.  Prop names are
 kebab-case or camelCase; values are constants, except `label`, which also
@@ -266,7 +266,7 @@ type GroupDef =
   | { fn: null; computed: Computed }
   | { fn: ( ele: GpuCollection ) => GpuStyleProps | null | undefined; computed: null };
 
-const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'node', 'edge' ] );
+const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges' ] );
 
 export class StyleEngine {
   private store: GraphStore;
@@ -298,11 +298,11 @@ export class StyleEngine {
   setSheet( sheet: GpuStylesheet, apply: boolean = true ): void {
     for( const key of Object.keys( sheet ) ){
       if( !SHEET_KEYS.has( key ) ){
-        throw new Error( `Unknown stylesheet key '${key}'; supported keys: node, edge` );
+        throw new Error( `Unknown stylesheet key '${key}'; supported keys: nodes, edges` );
       }
     }
 
-    const compile = ( group: GroupName, def: GpuStylesheet['node'] ): GroupDef => {
+    const compile = ( group: GroupName, def: GpuStylesheet['nodes'] ): GroupDef => {
       if( typeof def === 'function' ){
         return { fn: def, computed: null };
       }
@@ -311,8 +311,8 @@ export class StyleEngine {
     };
 
     const defs = {
-      nodes: compile( 'nodes', sheet.node ),
-      edges: compile( 'edges', sheet.edge )
+      nodes: compile( 'nodes', sheet.nodes ),
+      edges: compile( 'edges', sheet.edges )
     };
 
     // which mutable data() keys do constant labels map? (id is immutable,

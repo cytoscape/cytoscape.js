@@ -219,7 +219,7 @@ scenario( 'scn: refresh (bulk data write + mapped labels + filter + fit, data li
   { gpuSetup: cy => {
     const counts = { data: 0 };
 
-    cy.style( { node: { label: 'data(foo)' } } ); // the v4 sheet shape
+    cy.style( { nodes: { label: 'data(foo)' } } ); // the v4 sheet shape
     cy.on( 'data', () => { counts.data++; } );
 
     return { cy, counts, nodes: cy.nodes() };

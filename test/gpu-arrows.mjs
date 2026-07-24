@@ -26,7 +26,7 @@ describe('gpu/style: arrows', function(){
   it('triangle shape writes the arrow color; v3-like default #999', function(){
     const cy = cytoscapeGpu( {
       elements: GRAPH,
-      style: { edge: { 'target-arrow-shape': 'triangle' } }
+      style: { edges: { 'target-arrow-shape': 'triangle' } }
     } );
 
     expect( arrowColor( cy, 'edge.targetArrow' ) ).to.deep.equal( [ 153, 153, 153, 255 ] );
@@ -38,7 +38,7 @@ describe('gpu/style: arrows', function(){
     const cy = cytoscapeGpu( {
       elements: GRAPH,
       style: {
-        edge: {
+        edges: {
           'source-arrow-shape': 'triangle',
           'source-arrow-color': '#ff0000',
           'target-arrow-shape': 'triangle',
@@ -55,7 +55,7 @@ describe('gpu/style: arrows', function(){
   it('shape none suppresses the arrow even with a color set', function(){
     const cy = cytoscapeGpu( {
       elements: GRAPH,
-      style: { edge: { 'target-arrow-shape': 'none', 'target-arrow-color': '#f00' } }
+      style: { edges: { 'target-arrow-shape': 'none', 'target-arrow-color': '#f00' } }
     } );
 
     expect( arrowColor( cy, 'edge.targetArrow' )[ 3 ] ).to.equal( 0 );
@@ -64,7 +64,7 @@ describe('gpu/style: arrows', function(){
   it('a later stylesheet clears previously applied arrows', function(){
     const cy = cytoscapeGpu( {
       elements: GRAPH,
-      style: { edge: { 'target-arrow-shape': 'triangle' } }
+      style: { edges: { 'target-arrow-shape': 'triangle' } }
     } );
 
     cy.style( {} );
@@ -76,7 +76,7 @@ describe('gpu/style: arrows', function(){
   it('rejects unsupported arrow shapes', function(){
     const cy = cytoscapeGpu( { elements: GRAPH } );
 
-    expect( () => cy.style( { edge: { 'target-arrow-shape': 'tee' } } ) )
+    expect( () => cy.style( { edges: { 'target-arrow-shape': 'tee' } } ) )
       .to.throw( /only 'triangle' and 'none'/ );
   });
 });

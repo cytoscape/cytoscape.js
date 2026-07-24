@@ -65,7 +65,7 @@ describe('gpu/box-select', function(){
     });
 
     it('accounts for the border width in the node bounding box', function(){
-      cy.style({ node: { 'border-width': 20 } });
+      cy.style({ nodes: { 'border-width': 20 } });
 
       // 30/2 + 20/2 = 25 half-extent; in1 at (50,50) no longer fits in x >= 30
       expect( cy.elementsInBox( 30, 0, 100, 100 ).getElementById('in1') ).to.have.length( 0 );

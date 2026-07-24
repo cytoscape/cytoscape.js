@@ -60,7 +60,7 @@ describe('gpu/layout: grid', function(){
   });
 
   it('avoids overlap using node dimensions', function(){
-    cy.style({ node: { width: 100, height: 100 } });
+    cy.style({ nodes: { width: 100, height: 100 } });
     cy.layout({ name: 'grid', fit: false, rows: 1, cols: 4, boundingBox: { x1: 0, y1: 0, w: 10, h: 10 }, avoidOverlapPadding: 0 }).run();
 
     var xs = cy.nodes().map( n => n.position().x ).sort( (a, b) => a - b );
@@ -157,7 +157,7 @@ describe('gpu/layout: grid', function(){
         { data: { id: 'a' } }, { data: { id: 'b' } }, { data: { id: 'c' } },
         { data: { id: 'd' } }, { data: { id: 'e' } }
       ],
-      style: { node: ele => ele.id() === 'c' ? { width: 90, height: 70, 'border-width': 4 } : null }
+      style: { nodes: ele => ele.id() === 'c' ? { width: 90, height: 70, 'border-width': 4 } : null }
     });
 
     var bySlot = mk();

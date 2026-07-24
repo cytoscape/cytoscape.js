@@ -55,8 +55,8 @@ describe('gpu/style', function(){
   describe('cy.style()', function(){
     it('applies constant group props', function(){
       cy.style({
-        node: { 'background-color': 'red', 'width': 50, 'height': 40 },
-        edge: { 'line-color': '#00f', 'width': 5 }
+        nodes: { 'background-color': 'red', 'width': 50, 'height': 40 },
+        edges: { 'line-color': '#00f', 'width': 5 }
       });
 
       expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]);
@@ -69,7 +69,7 @@ describe('gpu/style', function(){
 
     it('evaluates fn styles per element', function(){
       cy.style({
-        node: ele => ( {
+        nodes: ele => ( {
           'background-color': ele.id() === 'a' ? 'rgb(0, 255, 0)' : 'red'
         } )
       });
@@ -79,7 +79,7 @@ describe('gpu/style', function(){
     });
 
     it('accepts camelCase prop names', function(){
-      cy.style({ node: { backgroundColor: 'red', borderWidth: 2 } });
+      cy.style({ nodes: { backgroundColor: 'red', borderWidth: 2 } });
 
       var ref = cy._store.lookup('a');
 
@@ -88,7 +88,7 @@ describe('gpu/style', function(){
     });
 
     it('applies to elements added later', function(){
-      cy.style({ node: { 'background-color': 'black' } });
+      cy.style({ nodes: { 'background-color': 'black' } });
 
       cy.add({ data: { id: 'c' } });
 
@@ -97,7 +97,7 @@ describe('gpu/style', function(){
 
     it('supports shapes', function(){
       cy.style({
-        node: ele => ( { shape: ele.id() === 'a' ? 'rectangle' : 'round-rectangle' } )
+        nodes: ele => ( { shape: ele.id() === 'a' ? 'rectangle' : 'round-rectangle' } )
       });
 
       expect( shapeOf('a') ).to.equal(SHAPE_RECTANGLE);
@@ -106,7 +106,7 @@ describe('gpu/style', function(){
 
     it('supports border and opacity channels', function(){
       cy.style({
-        node: { 'border-width': 3, 'border-color': 'white', 'opacity': 0.5 }
+        nodes: { 'border-width': 3, 'border-color': 'white', 'opacity': 0.5 }
       });
 
       var ref = cy._store.lookup('a');
@@ -119,7 +119,7 @@ describe('gpu/style', function(){
     it('does not restyle on selection change (accent ring is shader-drawn)', function(){
       cy.style({
         // even a fn reading selected() re-runs only on explicit style set
-        node: ele => ( { 'background-color': ele.selected() ? 'blue' : 'red' } )
+        nodes: ele => ( { 'background-color': ele.selected() ? 'blue' : 'red' } )
       });
 
       expect( fillOf('a') ).to.deep.equal([255, 0, 0, 255]);
@@ -143,7 +143,7 @@ describe('gpu/style', function(){
     });
 
     it('returns the current sheet from json()', function(){
-      var sheet = { node: { width: 10 } };
+      var sheet = { nodes: { width: 10 } };
 
       cy.style( sheet );
 
@@ -152,7 +152,7 @@ describe('gpu/style', function(){
 
     it('honours the style init option', function(){
       var styled = cytoscapeGpu({
-        style: { node: { width: 77 } },
+        style: { nodes: { width: 77 } },
         elements: [ { data: { id: 'x' } } ]
       });
 
@@ -161,19 +161,19 @@ describe('gpu/style', function(){
 
     it('throws on unsupported properties', function(){
       expect(function(){
-        cy.style({ node: { 'text-outline-width': 2 } });
+        cy.style({ nodes: { 'text-outline-width': 2 } });
       }).to.throw();
     });
 
     it('throws on mapper-style values', function(){
       expect(function(){
-        cy.style({ node: { 'width': 'data(weight)' } });
+        cy.style({ nodes: { 'width': 'data(weight)' } });
       }).to.throw();
     });
 
     it('throws on unknown stylesheet keys', function(){
       expect(function(){
-        cy.style({ nodes: { 'width': 10 } }); // 'node', not 'nodes'
+        cy.style({ node: { 'width': 10 } }); // 'nodes', not 'node'
       }).to.throw(/Unknown stylesheet key/);
     });
   });

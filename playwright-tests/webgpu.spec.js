@@ -12,7 +12,7 @@ const PAGE = 'http://127.0.0.1:3333/playwright-page/webgpu.html';
 
 const RED_NODE_GRAPH = {
   elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
-  style: { node: {
+  style: { nodes: {
     'background-color': 'red', 'width': 100, 'height': 100, 'shape': 'rectangle'
   } },
   zoom: 1
@@ -233,8 +233,8 @@ test.describe( 'WebGPU renderer', () => {
         { data: { id: 'ab', source: 'a', target: 'b' } }
       ],
       style: {
-        node: { 'width': 30, 'height': 30 },
-        edge: { 'width': 4 }
+        nodes: { 'width': 30, 'height': 30 },
+        edges: { 'width': 4 }
         },
       zoom: 1
     } );
@@ -268,8 +268,8 @@ test.describe( 'WebGPU renderer', () => {
       const cy = window.makeCy( {
         elements: columnar,
         style: {
-          node: { 'width': 30, 'height': 30 },
-          edge: { 'width': 4 }
+          nodes: { 'width': 30, 'height': 30 },
+          edges: { 'width': 4 }
           },
         zoom: 1
       } );
@@ -321,8 +321,8 @@ test.describe( 'WebGPU renderer', () => {
       const cy = window.makeCy( {
         elements: fetched,
         style: {
-          node: { 'width': 30, 'height': 30 },
-          edge: { 'width': 4 }
+          nodes: { 'width': 30, 'height': 30 },
+          edges: { 'width': 4 }
           },
         zoom: 1
       } );
@@ -363,8 +363,8 @@ test.describe( 'WebGPU renderer', () => {
         { data: { id: 'ab', source: 'a', target: 'b' } }
       ],
       style: {
-        node: { 'width': 30, 'height': 30, 'background-color': '#00ff00' },
-        edge: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#00ff00' },
+        edges: {
           'width': 8,
           'line-color': '#0000ff',
           ...( arrows ? { 'target-arrow-shape': 'triangle', 'target-arrow-color': '#ff0000' } : {} )
@@ -524,7 +524,7 @@ test.describe( 'WebGPU renderer', () => {
   test.describe( 'SDF labels', () => {
     const LABELLED_GRAPH = {
       elements: [ { data: { id: 'n0' }, position: { x: 0, y: 0 } } ],
-      style: { node: {
+      style: { nodes: {
         'background-color': 'red', 'width': 60, 'height': 60,
         'label': 'HELLO', 'font-size': 30, 'color': 'black'
       } }

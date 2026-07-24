@@ -206,7 +206,7 @@ describe('gpu/columnar', function(){
     it('styles apply to columnar-loaded elements', function(){
       const cy = cytoscapeGpu( {
         elements: toColumnarElements( FIXTURE ),
-        style: { node: { 'width': 21, 'height': 22 } }
+        style: { nodes: { 'width': 21, 'height': 22 } }
       } );
 
       expect( cy.getElementById( 'a' ).width() ).to.equal( 21 );

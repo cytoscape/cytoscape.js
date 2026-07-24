@@ -131,8 +131,8 @@ describe('gpu/bulk-load', function(){
 
   describe('StyleEngine.applyBulk', function(){
     const sheet = {
-      node: { 'width': 11, 'height': 12, 'background-color': '#f00' },
-      edge: { 'width': 3, 'line-color': '#0f0' }
+      nodes: { 'width': 11, 'height': 12, 'background-color': '#f00' },
+      edges: { 'width': 3, 'line-color': '#0f0' }
     };
 
     const storeWith = () => {
@@ -175,7 +175,7 @@ describe('gpu/bulk-load', function(){
       const engine = new StyleEngine( store, eleFor( store ) );
 
       engine.setSheet( {
-        node: ele => ( { 'background-color': ele.id() === 'a' ? '#ff0' : '#00f' } )
+        nodes: ele => ( { 'background-color': ele.id() === 'a' ? '#ff0' : '#00f' } )
       } );
 
       const fill = store.column( 'node.fillColor' );
@@ -191,7 +191,7 @@ describe('gpu/bulk-load', function(){
       const engine = new StyleEngine( store, eleFor( store ) );
 
       engine.setSheet( {
-        node: ele => ele.id() === 'a' ? { 'background-color': '#ff0' } : null
+        nodes: ele => ele.id() === 'a' ? { 'background-color': '#ff0' } : null
       } );
 
       const fill = store.column( 'node.fillColor' );
@@ -212,7 +212,7 @@ describe('gpu/bulk-load', function(){
         ],
         edges: [ { data: { id: 'ab', source: 'a', target: 'b' } } ]
       },
-      style: { node: { 'width': 20, 'height': 20 } }
+      style: { nodes: { 'width': 20, 'height': 20 } }
     } );
 
     it('loads elements without add events and with styles applied', function(){

@@ -12,7 +12,7 @@ describe('gpu/json', function(){
         { data: { id: 'b' }, selected: true, locked: true },
         { data: { id: 'ab', source: 'a', target: 'b' } }
       ],
-      style: { node: { width: 40, height: 40 } },
+      style: { nodes: { width: 40, height: 40 } },
       zoom: 2,
       pan: { x: 5, y: 6 },
       minZoom: 0.5,
@@ -60,7 +60,7 @@ describe('gpu/json', function(){
   it('exports the stylesheet, viewport and gating flags', function(){
     var json = cy.json();
 
-    expect( json.style ).to.deep.equal( { node: { width: 40, height: 40 } } );
+    expect( json.style ).to.deep.equal( { nodes: { width: 40, height: 40 } } );
     expect( json.zoom ).to.equal( 2 );
     expect( json.pan ).to.deep.equal( { x: 5, y: 6 } );
     expect( json.minZoom ).to.equal( 0.5 );

@@ -57,7 +57,7 @@ describe('gpu/batch', function(){
 
   it('defers sheet application to endBatch', function(){
     cy.startBatch();
-    cy.style({ node: { width: 50, height: 50 } });
+    cy.style({ nodes: { width: 50, height: 50 } });
 
     expect( cy.$id('a').width() ).to.equal( 30 ); // not yet applied
 
@@ -69,7 +69,7 @@ describe('gpu/batch', function(){
   it('a sheet set during the batch also styles elements added during it', function(){
     cy.startBatch();
     cy.add({ data: { id: 'c' } });
-    cy.style({ node: { width: 50, height: 50 } });
+    cy.style({ nodes: { width: 50, height: 50 } });
     cy.endBatch();
 
     expect( cy.$id('c').width() ).to.equal( 50 );
@@ -79,14 +79,14 @@ describe('gpu/batch', function(){
     cy.startBatch();
 
     expect( function(){
-      cy.style({ node: { 'bogus-prop': 1 } });
+      cy.style({ nodes: { 'bogus-prop': 1 } });
     } ).to.throw();
 
     cy.endBatch();
   });
 
   it('defers data-mapped label refresh to endBatch', function(){
-    cy.style({ node: { label: 'data(name)' } });
+    cy.style({ nodes: { label: 'data(name)' } });
     cy.$id('a').data('name', 'before');
 
     expect( cy.$id('a').label() ).to.equal( 'before' );

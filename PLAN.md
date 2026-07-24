@@ -315,6 +315,56 @@ magnitude.  On a 2k-node/4k-edge graph:
   9–14×, `$('node:selected')` → 46–166×, `nodes(':selected')` → 70–198×,
   `nodes()`/`edges()` → 3–9×, `elements()` ~2.6× slower → ~parity-to-2×
   faster, `filter(fn)` flipped to a win, `forEach` ~3.3× slower → ~1.8×.
+- **Columnar bulk writes (perf round 4)** — the write-side counterpart of
+  round 3, driven by a new `benchmark/gpu/mutators.mjs` sweep (whole-graph
+  mutation round-trips vs v3 at 2k/20k/200k; `BENCH_OP` runs one group per
+  process at 200k, where eight v3 instances exceed the heap).  The sweep
+  exposed `eles.select()` as the one outright loss: per-element
+  `_applyStyle` (a defaults-spread + full block match per element) and an
+  unconditional per-element emit made 200k-node select+unselect 178 ms —
+  behind v3 at 2k and only ~1.4× ahead at 200k.  Fixes, each revealed by a
+  benchmark line: (a) `GraphStore.flagRefs` — one bulk flag pass over a
+  collection's refs with the flags/gen columns hoisted out of the loop, a
+  `requireBit` filter (selectable-only for selection), changed-index
+  collection and one coalesced dirty span per group — now backs
+  select/unselect *and* all `_setBit` mutators (`show/hide`, `lock`,
+  `grabify`, `selectify`); (b) select/unselect skips restyle outright
+  unless some block matches on `:selected/:unselected`
+  (`StyleEngine.dependsOnSelection`; the accent ring is shader-drawn, so
+  the default stylesheet never restyles), else restyles only the changed
+  slots via `applyBulk`; emits are gated on registered listeners;
+  (c) `shift()` and constant/partial `positions()` write the position
+  column directly (`GraphStore.shiftPositions`/`setPositionsConst` — no
+  per-element handles, callbacks or Position allocations) and the
+  `positions(fn)` path reads previous coords off the column instead of
+  allocating via `position()`.  At 200k vs v3: select+unselect 178 → 6.2 ms
+  (1.4× → 38×), hide+show 2.4 ms (~1400×; v3 pays a style bypass per
+  element), lock 96×, positions(obj) 71×, positions(fn) 44×, shift
+  18.8 → 2.6 ms (106×), remove+re-add of a 256-node band ~1000×.  The gpu
+  side improved 3–54× per op at 2k (select 54×, shift 5×, lock 8×,
+  hide 6×); `data set` is dominated by per-(group,key) column resolution
+  and stayed ~1× (16–22× over v3; its 200k timing is GC-noisy on both
+  sides).
+- **Slot-native traversal (round 4b)** — traversal walks built results by
+  pushing refs per adjacency hit and re-deduping in `_spawn` (a
+  packRef-keyed Set over ref objects), iterated CSR runs through the
+  iterator protocol, and `successors/predecessors` spawned a full
+  collection per hop — ~10.5 s for one 20k-node closure on the benchmark
+  ring (diameter ~N/3; v3 ~40 s).  Now every walk (`connectedEdges`/
+  `connectedNodes`, `outgoers`/`incomers`, `neighborhood`,
+  `roots`/`leaves`, `sources`/`targets`, `successors`/`predecessors`)
+  collects current refs straight off CSR with an int-packed (group, slot)
+  seen-set and index loops, and spawns through `_spawnLive` — a trusted
+  `{unique, live}` constructor path that skips per-element
+  `_eleFromRef` re-validation.  `neighborhood` pre-seeds the seen-set
+  with its own elements instead of a `difference()` post-pass, and
+  `successors/predecessors` is a raw slot BFS (no per-hop collections at
+  all): 2k-node closure 92.7 ms → 352 µs (2.9× → ~725× vs v3).  Verified
+  by `benchmark/gpu/traversal.mjs` at 2k/20k: the two residual v3 wins
+  flipped (100-node-band `connectedEdges` 1.2–1.5× loss → 1.3–1.5× win,
+  band `sources` 1.1–1.3× loss → 1.3× win), and the rest widened —
+  `neighborhood` 2× → ~4×, `outgoers`/`incomers` ~3.4× → ~4.5×, band
+  `neighborhood` 2.5× → ~5.4×, band `roots` ~64× → ~110×.
 - **Residual v3 wins** (micro-ops at 20k, accepted): `forEach` (~1.8×),
   `pan()` get (~4×, allocates the returned object), `getElementById`
   (~1.4×), `data()`/`position()` get (~1.1×, noise-level).

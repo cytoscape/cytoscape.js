@@ -106,6 +106,30 @@ Callback iteration (`forEach`/`map`/...) plain-calls the callback when no
 the callback) — rebinding the receiver per element cost ~2× on large
 collections.
 
+Collection-scale *writes* are columnar too (`benchmark/gpu/mutators.mjs`
+sweeps them at up to 200k nodes; `BENCH_OP` runs one group per process at
+that scale).  Flag mutators (`select`/`unselect`, `show`/`hide`, `lock`,
+`grabify`, `selectify`) go through one bulk pass over the flags column
+(`GraphStore.flagRefs`: hoisted columns, one coalesced dirty span per
+group); select/unselect skips its restyle pass entirely unless some style
+block matches on `:selected`/`:unselected` (the selected accent ring is
+drawn by the shader, so the default stylesheet never restyles) and only
+emits when someone is listening.  `shift()` and constant `positions()`
+are direct column arithmetic — no per-element handles or Position
+objects.  At 200k nodes vs v3: select+unselect ~38×, lock ~96×, shift
+~106×, hide+show ~1400× (v3 pays a style bypass per element), and
+removing + re-adding a 256-node band with its incident edges ~1000×.
+
+Traversal walks (`connectedEdges`, `outgoers`/`incomers`,
+`neighborhood`, `roots`/`leaves`, `successors`/`predecessors`, edge
+endpoints) are slot-native (`benchmark/gpu/traversal.mjs`): they collect
+current refs straight off the CSR index with an int-packed (group, slot)
+seen-set — no intermediate handles, no packRef dedupe pass — and
+`successors`/`predecessors` is a raw slot BFS with no per-hop collection
+spawns (a 2k-node whole-graph closure is ~350 µs vs ~92 ms before,
+~725× v3).  Single-hop ops run ~2–5× v3 and a 100-node-band
+`roots()` ~110×.
+
 ## Loading
 
 `options.elements` accepts the classic definition form (v3-style JSON) or

@@ -125,7 +125,8 @@
     "benchmark:all:exec": "node benchmark/all",
     "benchmark:all": "run-s benchmark:download benchmark:all:exec",
     "benchmark:single:exec": "node benchmark/single",
-    "benchmark:single": "run-s benchmark:download benchmark:single:exec"
+    "benchmark:single": "run-s benchmark:download benchmark:single:exec",
+    "benchmark:gpu": "node --import tsx benchmark/gpu/index.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -146,6 +147,7 @@
     "livereload": "^0.10.3",
     "lodash": "^4.17.21",
     "marked": "^18.0.6",
+    "mitata": "^1.0.34",
     "npm-run-all": "^4.1.5",
     "oxlint": "^1.73.0",
     "rimraf": "^6.1.3",

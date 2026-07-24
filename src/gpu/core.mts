@@ -5,6 +5,8 @@ import { deserializeElements, isSerializedElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, selectorQualifier } from './events.mjs';
 import type { GpuQualifier } from './events.mjs';
+import { matchesTerm, parseSelector } from './selector.mjs';
+import type { CompiledSelector } from './selector.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { GridLayout } from './layout/grid.mjs';
@@ -298,10 +300,47 @@ export class GpuCore {
   }
 
   filter( selector: string | EleFilterFn ): GpuCollection {
+    if( typeof selector === 'string' ){
+      const compiled = parseSelector( selector );
+      const byId = this._selectByIds( compiled );
+
+      // pure-id selectors resolve through the id index — no whole-graph scan
+      if( byId != null ){ return new GpuCollection( this, byId, { unique: true } ); }
+
+      return this.elements().filter( compiled );
+    }
+
     return this.elements().filter( selector );
   }
 
   declare $: this['filter'];
+
+  /**
+   * If every term of `compiled` pins a concrete `#id`, resolve the selector
+   * through the O(1) id index instead of materializing and scanning the whole
+   * graph. Returns the matching refs, or `null` when any term is not id-pinned
+   * (in which case the caller falls back to a full scan).
+   */
+  private _selectByIds( compiled: CompiledSelector ): Ref[] | null {
+    const terms = compiled.terms;
+
+    for( let i = 0; i < terms.length; i++ ){
+      if( terms[ i ].id == null ){ return null; }
+    }
+
+    const refs: Ref[] = [];
+
+    for( let i = 0; i < terms.length; i++ ){
+      const term = terms[ i ];
+      const ref = this._store.lookup( term.id as string );
+
+      if( ref != null && matchesTerm( this._store, ref, term ) ){
+        refs.push( ref );
+      }
+    }
+
+    return refs;
+  }
 
   // -- events --
 

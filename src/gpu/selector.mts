@@ -68,7 +68,7 @@ export const parseSelector = ( text: string ): CompiledSelector => {
   return { text, terms };
 };
 
-const matchesTerm = ( store: GraphStore, ref: Ref, term: SelectorTerm ): boolean => {
+export const matchesTerm = ( store: GraphStore, ref: Ref, term: SelectorTerm ): boolean => {
   if( term.group != null && ref.group !== term.group ){ return false; }
 
   if( term.id != null && store.idAt( ref.group, ref.slot ) !== term.id ){ return false; }

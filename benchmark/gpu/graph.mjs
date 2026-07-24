@@ -40,8 +40,8 @@ const clone = els => els.map( e => ( {
   position: e.position ? { ...e.position } : undefined
 } ) );
 
-export function makeV3( elements ){
-  return cytoscape( { elements: clone( elements ), headless: true } );
+export function makeV3( elements, opts = {} ){
+  return cytoscape( { elements: clone( elements ), headless: true, ...opts } );
 }
 
 export function makeGpu( elements ){

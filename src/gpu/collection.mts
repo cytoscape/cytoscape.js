@@ -2,7 +2,7 @@ import {
   FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
-import { matchesRef, parseSelector } from './selector.mjs';
+import { compileFlagPlan, matchesRef, parseSelector } from './selector.mjs';
 import type { CompiledSelector } from './selector.mjs';
 import { hasListeners, refQualifier } from './events.mjs';
 import type { Position } from '../types.mjs';
@@ -55,7 +55,7 @@ export class GpuCollection {
   /** lazily-built packed-key membership set; safe to cache since _refs is immutable */
   _keys?: Set<number>;
 
-  constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean } = {} ){
+  constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {} ){
     this._cy = cy;
 
     if( opts.singleton ){
@@ -77,8 +77,29 @@ export class GpuCollection {
       // ordered-slot iteration), so skip the refKey/Set dedupe pass
       deduped = refs;
 
-      for( let i = 0; i < refs.length; i++ ){
-        this[ i ] = cy._eleFromRef( refs[ i ] );
+      if( opts.live ){
+        // trusted further: the refs are current (store-scan / id-index
+        // output), so intern with the pool and gen lookups hoisted out of
+        // the per-element path instead of going through _eleFromRef
+        const nodePool = cy._pool.nodes;
+        const edgePool = cy._pool.edges;
+
+        for( let i = 0; i < refs.length; i++ ){
+          const ref = refs[ i ];
+          const pool = ref.group === 'nodes' ? nodePool : edgePool;
+          let ele = pool[ ref.slot ];
+
+          if( ele == null || ele._refs[0].gen !== ref.gen ){
+            ele = new GpuCollection( cy, [ ref ], { singleton: true } );
+            pool[ ref.slot ] = ele;
+          }
+
+          this[ i ] = ele;
+        }
+      } else {
+        for( let i = 0; i < refs.length; i++ ){
+          this[ i ] = cy._eleFromRef( refs[ i ] );
+        }
       }
     } else {
       // dedupe while preserving order; intern per-element handles
@@ -517,6 +538,35 @@ export class GpuCollection {
 
     const compiled = compile( selector );
     const store = this._store;
+    const plan = compileFlagPlan( compiled );
+
+    if( plan != null ){
+      // flag-only selector: test each ref against its group's (mask, want)
+      // directly on the flags column — no per-ref term matching closures
+      const nodeTest = plan.nodes;
+      const edgeTest = plan.edges;
+      const nodeGen = store.nodes.gen;
+      const edgeGen = store.edges.gen;
+      const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
+      const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
+      const refs: Ref[] = [];
+
+      for( let i = 0; i < this._refs.length; i++ ){
+        const ref = this._refs[ i ];
+        const isNode = ref.group === 'nodes';
+        const test = isNode ? nodeTest : edgeTest;
+
+        if( test == null ){ continue; }
+
+        if( ( isNode ? nodeGen : edgeGen )[ ref.slot ] !== ref.gen ){ continue; } // stale
+
+        const flags = ( isNode ? nodeFlags : edgeFlags )[ ref.slot ];
+
+        if( ( flags & test.mask ) === test.want ){ refs.push( ref ); }
+      }
+
+      return this._spawnUnique( refs );
+    }
 
     return this._spawnUnique( this._refs.filter( ref => matchesRef( store, ref, compiled ) ) );
   }

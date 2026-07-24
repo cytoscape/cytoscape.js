@@ -5,8 +5,8 @@ import { deserializeElements, isSerializedElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, selectorQualifier } from './events.mjs';
 import type { GpuQualifier } from './events.mjs';
-import { matchesTerm, parseSelector } from './selector.mjs';
-import type { CompiledSelector } from './selector.mjs';
+import { compileFlagPlan, matchesTerm, parseSelector } from './selector.mjs';
+import type { CompiledSelector, FlagTest } from './selector.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { GridLayout } from './layout/grid.mjs';
@@ -37,6 +37,9 @@ export interface LayoutLike {
 const DEFAULT_HEADLESS_WIDTH = 800;
 const DEFAULT_HEADLESS_HEIGHT = 600;
 
+/** The flags test every live slot passes (whole-group scans). */
+const MATCH_ALL: FlagTest = { mask: 0, want: 0 };
+
 /**
  * The GpuCore facade: the familiar synchronous core API over the columnar
  * store.  Scope (pass 1 of #3486): viewport fns, events, graph manipulation
@@ -55,7 +58,8 @@ export class GpuCore {
   /** true once the render pipeline is usable (immediately when headless) */
   _readyResolved: boolean;
 
-  private _pool: { nodes: Map<number, GpuCollection>; edges: Map<number, GpuCollection> };
+  /** interned singleton handles, dense by slot (slots are dense, so an array beats a Map) */
+  _pool: { nodes: ( GpuCollection | undefined )[]; edges: ( GpuCollection | undefined )[] };
   private _container: HTMLElement | null;
   private _options: CytoscapeGpuOptions;
   private _headlessWidth: number;
@@ -78,7 +82,7 @@ export class GpuCore {
     this._emitter = makeCoreEmitter<GpuCore>( this );
     this._styleEngine = new StyleEngine( this._store );
     this._renderer = null;
-    this._pool = { nodes: new Map(), edges: new Map() };
+    this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;
     this._options = options;
     this._headlessWidth = options.headlessWidth ?? DEFAULT_HEADLESS_WIDTH;
@@ -269,51 +273,80 @@ export class GpuCore {
   }
 
   elements( selector?: string ): GpuCollection {
-    const refs: Ref[] = [];
-
-    this._store.forEachAlive( 'nodes', slot => refs.push( this._store.ref( 'nodes', slot ) ) );
-    this._store.forEachAlive( 'edges', slot => refs.push( this._store.ref( 'edges', slot ) ) );
-
-    const eles = new GpuCollection( this, refs, { unique: true } );
-
-    return selector == null ? eles : eles.filter( selector );
+    return selector == null
+      ? this._scanCollection( MATCH_ALL, MATCH_ALL )
+      : this._select( parseSelector( selector ), null );
   }
 
   nodes( selector?: string ): GpuCollection {
-    const refs: Ref[] = [];
-
-    this._store.forEachAlive( 'nodes', slot => refs.push( this._store.ref( 'nodes', slot ) ) );
-
-    const eles = new GpuCollection( this, refs, { unique: true } );
-
-    return selector == null ? eles : eles.filter( selector );
+    return selector == null
+      ? this._scanCollection( MATCH_ALL, null )
+      : this._select( parseSelector( selector ), 'nodes' );
   }
 
   edges( selector?: string ): GpuCollection {
-    const refs: Ref[] = [];
-
-    this._store.forEachAlive( 'edges', slot => refs.push( this._store.ref( 'edges', slot ) ) );
-
-    const eles = new GpuCollection( this, refs, { unique: true } );
-
-    return selector == null ? eles : eles.filter( selector );
+    return selector == null
+      ? this._scanCollection( null, MATCH_ALL )
+      : this._select( parseSelector( selector ), 'edges' );
   }
 
   filter( selector: string | EleFilterFn ): GpuCollection {
     if( typeof selector === 'string' ){
-      const compiled = parseSelector( selector );
-      const byId = this._selectByIds( compiled );
-
-      // pure-id selectors resolve through the id index — no whole-graph scan
-      if( byId != null ){ return new GpuCollection( this, byId, { unique: true } ); }
-
-      return this.elements().filter( compiled );
+      return this._select( parseSelector( selector ), null );
     }
 
     return this.elements().filter( selector );
   }
 
   declare $: this['filter'];
+
+  /**
+   * Resolve a whole-graph selector, cheapest path first: pure-`#id` selectors
+   * through the O(1) id index; flag-only selectors (group + :selected /
+   * :unselected) through a columnar flags scan; only mixed id+flag comma
+   * lists fall back to materialize-and-match.  `restrict` narrows the result
+   * to one group (for `cy.nodes(sel)` / `cy.edges(sel)`).
+   */
+  private _select( compiled: CompiledSelector, restrict: GroupName | null ): GpuCollection {
+    const byId = this._selectByIds( compiled );
+
+    if( byId != null ){
+      const refs = restrict == null ? byId : byId.filter( ref => ref.group === restrict );
+
+      return new GpuCollection( this, refs, { unique: true, live: true } );
+    }
+
+    const plan = compileFlagPlan( compiled );
+
+    if( plan != null ){
+      return this._scanCollection(
+        restrict === 'edges' ? null : plan.nodes,
+        restrict === 'nodes' ? null : plan.edges
+      );
+    }
+
+    const base = restrict === 'nodes' ? this.nodes()
+      : restrict === 'edges' ? this.edges()
+      : this.elements();
+
+    return base.filter( compiled );
+  }
+
+  /** Collection of the live slots matching per-group flag tests (null matches nothing). */
+  private _scanCollection( nodeTest: FlagTest | null, edgeTest: FlagTest | null ): GpuCollection {
+    const store = this._store;
+    const cap = ( nodeTest == null ? 0 : store.count( 'nodes' ) )
+      + ( edgeTest == null ? 0 : store.count( 'edges' ) );
+    const refs: Ref[] = new Array( cap );
+    let n = 0;
+
+    if( nodeTest != null ){ n = store.scanRefsInto( refs, n, 'nodes', nodeTest.mask, nodeTest.want ); }
+    if( edgeTest != null ){ n = store.scanRefsInto( refs, n, 'edges', edgeTest.mask, edgeTest.want ); }
+
+    if( n !== refs.length ){ refs.length = n; }
+
+    return new GpuCollection( this, refs, { unique: true, live: true } );
+  }
 
   /**
    * If every term of `compiled` pins a concrete `#id`, resolve the selector
@@ -787,11 +820,11 @@ export class GpuCore {
   _ele( group: GroupName, slot: number ): GpuCollection {
     const pool = this._pool[ group ];
     const gen = this._store.table( group ).gen[ slot ];
-    let ele = pool.get( slot );
+    let ele = pool[ slot ];
 
     if( ele == null || ele._refs[0].gen !== gen ){
       ele = new GpuCollection( this, [ this._store.ref( group, slot ) ], { singleton: true } );
-      pool.set( slot, ele );
+      pool[ slot ] = ele;
     }
 
     return ele;
@@ -803,7 +836,7 @@ export class GpuCore {
       return this._ele( ref.group, ref.slot );
     }
 
-    const pooled = this._pool[ ref.group ].get( ref.slot );
+    const pooled = this._pool[ ref.group ][ ref.slot ];
 
     if( pooled != null && pooled._refs[0].gen === ref.gen ){
       return pooled;

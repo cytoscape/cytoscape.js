@@ -464,6 +464,35 @@ export class GraphStore implements ModelView {
     }
   }
 
+  /**
+   * Scan one group's flags column, writing a ref into `out` (from index
+   * `at`) for every live slot (insertion order) whose flags satisfy
+   * (flags & mask) === want.  Returns the index one past the last write —
+   * the columnar scan behind the whole-graph materializers and flag-only
+   * selectors, callable back to back so `out` covers several groups.  The
+   * caller preallocates `out` to the live count (the exact match count for
+   * a mask-0 scan, an upper bound otherwise) and trims afterwards.
+   */
+  scanRefsInto( out: Ref[], at: number, group: GroupName, mask: number, want: number ): number {
+    const order = this.order[ group ];
+    const slots = order.slots;
+    const gens = order.gens;
+    const gen = this.table( group ).gen;
+    const flags = this.column( group === 'nodes' ? 'node.flags' : 'edge.flags' ) as Uint32Array;
+    let n = at;
+
+    for( let i = 0; i < slots.length; i++ ){
+      const slot = slots[ i ];
+      const g = gens[ i ];
+
+      if( gen[ slot ] === g && ( flags[ slot ] & mask ) === want ){
+        out[ n++ ] = { group, slot, gen: g };
+      }
+    }
+
+    return n;
+  }
+
   /** Live slots in insertion order (reused slots re-appear at their re-insertion position). */
   slotsOrdered( group: GroupName ): number[] {
     const slots: number[] = [];

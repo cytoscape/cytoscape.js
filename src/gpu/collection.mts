@@ -52,6 +52,8 @@ export class GpuCollection {
   _group: GroupName | undefined;
   /** per-element scratchpad, lazily created on the interned singleton handle */
   _scratch?: Record<string, unknown>;
+  /** lazily-built packed-key membership set; safe to cache since _refs is immutable */
+  _keys?: Set<number>;
 
   constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean } = {} ){
     this._cy = cy;
@@ -136,6 +138,16 @@ export class GpuCollection {
    */
   _spawnUnique( refs: Ref[] ): GpuCollection {
     return new GpuCollection( this._cy, refs, { unique: true } );
+  }
+
+  /**
+   * A cached Set of this collection's packed element keys, for set membership.
+   * Sound to cache: `_refs` is fixed at construction, and a packed key encodes
+   * the ref's own {group, slot, gen}, so it stays valid even as the store
+   * mutates. Built lazily — collections that never do a set op pay nothing.
+   */
+  _keySet(): Set<number> {
+    return ( this._keys ??= refSet( this._refs ) );
   }
 
   // -- core reference & identity --
@@ -376,7 +388,7 @@ export class GpuCollection {
     if( this === other ){ return true; }
     if( this.length !== other.length ){ return false; }
 
-    const keys = refSet( this._refs );
+    const keys = this._keySet();
     const or = other._refs;
 
     for( let i = 0; i < or.length; i++ ){
@@ -389,7 +401,7 @@ export class GpuCollection {
   anySame( other: GpuCollection ): boolean {
     if( this === other ){ return this.length > 0; }
 
-    const keys = refSet( this._refs );
+    const keys = this._keySet();
     const or = other._refs;
 
     for( let i = 0; i < or.length; i++ ){
@@ -403,7 +415,7 @@ export class GpuCollection {
     if( this === other ){ return true; }
     if( other.length > this.length ){ return false; }
 
-    const keys = refSet( this._refs );
+    const keys = this._keySet();
     const or = other._refs;
 
     for( let i = 0; i < or.length; i++ ){
@@ -453,7 +465,7 @@ export class GpuCollection {
   declare merge: this['union'];
 
   difference( other: GpuCollection | string ): GpuCollection {
-    const keys = refSet( this._toEles( other )._refs );
+    const keys = this._toEles( other )._keySet();
 
     return this._spawnUnique( this._refs.filter( ref => !keys.has( packRef( ref ) ) ) );
   }
@@ -464,7 +476,7 @@ export class GpuCollection {
   declare relativeComplement: this['difference'];
 
   intersection( other: GpuCollection | string ): GpuCollection {
-    const keys = refSet( this._toEles( other )._refs );
+    const keys = this._toEles( other )._keySet();
 
     return this._spawnUnique( this._refs.filter( ref => keys.has( packRef( ref ) ) ) );
   }
@@ -474,10 +486,11 @@ export class GpuCollection {
 
   symmetricDifference( other: GpuCollection | string ): GpuCollection {
     const otherEles = this._toEles( other );
-    const mine = refSet( this._refs );
-    const theirs = refSet( otherEles._refs );
+    const mine = this._keySet();
+    const theirs = otherEles._keySet();
 
-    return this._spawn( [
+    // the two parts are disjoint by construction, so the result is unique
+    return this._spawnUnique( [
       ...this._refs.filter( ref => !theirs.has( packRef( ref ) ) ),
       ...otherEles._refs.filter( ref => !mine.has( packRef( ref ) ) )
     ] );
@@ -546,13 +559,13 @@ export class GpuCollection {
     left: GpuCollection; right: GpuCollection; both: GpuCollection;
   } {
     const otherColl = this._toEles( other );
-    const mine = refSet( this._refs );
-    const theirs = refSet( otherColl._refs );
+    const mine = this._keySet();
+    const theirs = otherColl._keySet();
 
     return {
-      left: this._spawn( this._refs.filter( ref => !theirs.has( packRef( ref ) ) ) ),
-      right: this._spawn( otherColl._refs.filter( ref => !mine.has( packRef( ref ) ) ) ),
-      both: this._spawn( this._refs.filter( ref => theirs.has( packRef( ref ) ) ) )
+      left: this._spawnUnique( this._refs.filter( ref => !theirs.has( packRef( ref ) ) ) ),
+      right: this._spawnUnique( otherColl._refs.filter( ref => !mine.has( packRef( ref ) ) ) ),
+      both: this._spawnUnique( this._refs.filter( ref => theirs.has( packRef( ref ) ) ) )
     };
   }
 

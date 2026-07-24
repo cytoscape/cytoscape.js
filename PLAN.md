@@ -129,7 +129,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 - Pan-vs-grab uses the ≤2-frame-stale resolved pick.
 - `cy.elements()` returns nodes then edges, not mixed insertion order.
 - Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.
-- `data()`, arrows, compounds, bezier, animations, non-grid layouts: still deferred.
+- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged).
 
 ## Follow-ups (informed by the benchmark)
 
@@ -195,7 +195,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    until Playwright's WebKit build ships navigator.gpu).
 
 All follow-ups are done.  Open hooks beyond pass 1: slot/blob/CSR
-compaction, z-index ranks, animations, compound nodes, bezier edges,
+compaction, z-index ranks, compound nodes, bezier edges,
 more layouts, a binary export of live graphs (serializeElements already
 covers payloads).  (Mappers landed as the round-7 object DSL below.)
 
@@ -616,14 +616,46 @@ function.  Isolated commits; all green (typecheck, lint, `test:js`,
   since `boundingBox`/`refsInBox`/CPU-pick read resolved size — a later
   round).
 
+## Landed (round 9 — animation, 2026-07-24)
+
+Direction (discussion): animation is a v4 priority and should scale.  API
+first, on the CPU-canonical path (complete + correct + Node-testable); a
+GPU tween fast path is the planned optimization underneath, transparent to
+the API.
+
+- **Animation API + CPU tweening** (`src/gpu/animation.mts`).  Tween
+  element style/position (and the viewport) from captured start values to
+  explicit targets over a duration, easing normalized time.  Collection:
+  `animate`/`animation`/`animated`/`stop`/`delay`/`delayAnimation` +
+  `promise()` + a per-element queue; core: `animate` (viewport pan/zoom),
+  `animated`, `stop`.  Each tick writes the store columns (works headless;
+  a rAF-or-timeout auto-driver, plus a deterministic `tick(now)` for
+  tests).  Standard easings.  Animatable: `position`, node `opacity`,
+  `border-width`, `background/border/line-color` — the coupling-free set;
+  size (width/height circle-collapse) and arrow-folded channels are a
+  follow-up.
+- **Ownership: transient lease** (design set this round).  A tween is
+  CPU-reproducible (pure fn of time), so the CPU columns stay
+  authoritative on the CPU path.  The lease model — default
+  CPU-authoritative, GPU-authoritative during a position episode with
+  readback-on-settle — is the shared substrate for the GPU tween path and
+  (later) GPU layouts.  **Grabbing is forbidden while an element
+  animates** (`pointer.canDrag` consults `isAnimating`), removing the
+  two-way drag-feedback boundary.
+- **Deferred:** the GPU tween fast path (`now` uniform + tween program in
+  the eval kernel; upload params once, settle-on-complete, pre-cull
+  position eval, continuous loop) — the CPU path is complete and is its
+  reference.  And **GPU layouts** (stateful, not CPU-reproducible →
+  GPU-authoritative-with-readback + a CPU reference for headless) — reuse
+  the lease machinery; per-algorithm kernels are a future round.
+
 ### Deferred by design (out of scope for the prototype)
 
 - **Compounds**: `parent`/`parents`/`children`/`descendants`/
   `commonAncestors`/`siblings`/`orphans`/`nonorphans`/`isParent`/
   `isChild`/`isChildless`/`isOrphan`, and compound-relative
   `relativePosition`/`padding`/bounds.
-- **Animations**: `animate`/`animation`/`animated`/`delay`/
-  `delayAnimation`/`stop`/`clearQueue` (core + collection).
+- ~~**Animations**~~ — landed in round 9 (CPU-canonical path; below).
 - **Graph algorithms** (`src/collection/algorithms/*`): bfs/dfs,
   dijkstra, aStar, kruskal, bellmanFord, floydWarshall, pageRank, all
   centralities (degree/closeness/betweenness), all clustering

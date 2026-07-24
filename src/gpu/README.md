@@ -194,6 +194,32 @@ each is deliberate, not a pass-1 deferral:
   promoting to mixed).  Headless or adapterless instances run the whole
   DSL eagerly on the CPU — the kernel is an optimization layer, not a
   requirement.
+- **Animation is CPU-canonical, with a transient GPU lease planned.**  An
+  animation tweens element style/position (or the viewport) from captured
+  start values to explicit targets over a duration, easing normalized
+  time (`eles.animate/animation/animated/stop/delay`, `cy.animate` for
+  the viewport).  Because a tween is a *pure function of time*, it is
+  CPU-reproducible — so the CPU columns stay authoritative and every tick
+  just writes them (works headless, Node-testable).  A GPU fast path
+  (uploading tween params once + a `now` uniform, evaluating on-device)
+  is the planned optimization; it changes *where* the tween runs, not the
+  contract.  Ownership follows a **transient lease**: default
+  CPU-authoritative; a GPU position episode (animation now, GPU layout
+  later) would take the lease for its duration with the CPU columns a
+  stale mirror, and settle back on completion.  **Grabbing is forbidden
+  while an element animates** (the tween holds the position lease; a drag
+  override can't fight it) — the pointer's drag test consults
+  `isAnimating`.  Animatable today: `position`, node `opacity`,
+  `border-width`, and `background/border/line-color` — the coupling-free
+  channels; size (width/height circle-collapse) and arrow-folded channels
+  are a follow-up.  Colors tween per-channel in sRGB.
+- **GPU layouts: logged for later.**  A force layout is *stateful*
+  (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
+  cheaply CPU-reproducible — the GPU would be authoritative during a run
+  with a readback on convergence, and headless would fall back to a CPU
+  reference implementation (which doubles as the spec the kernel must
+  match).  It reuses this round's lease + readback machinery, but the
+  per-algorithm kernels and convergence detection are a future round.
 
 `data()`: element data lives in a **columnar sidecar** — per-(group, key)
 columns, not per-element objects: numbers as Float64Array, strings
@@ -220,9 +246,10 @@ predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.
 
-Out of scope (deferred): animations, compound nodes, bezier edges,
-layouts beyond grid/preset, graph algorithms, string-formatting label
-mappers beyond the passthrough.
+Out of scope (deferred): compound nodes, bezier edges, layouts beyond
+grid/preset (GPU layouts logged for later), graph algorithms,
+string-formatting label mappers beyond the passthrough, and the GPU
+tween fast path (the CPU animation path is complete).
 
 ## Benchmarks
 

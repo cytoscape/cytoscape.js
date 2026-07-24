@@ -959,9 +959,13 @@ export class GpuCollection {
     const cy = this._cy;
     const keys = Object.keys( patch );
     const wantEmit = hasListeners( cy._emitter, 'data' );
-    // a data write can only change computed style through a label data(key)
-    // mapper on one of the written keys — decided once, not per element
-    const nodeSlots: number[] | null = cy._labelsDependOnData( keys ) ? [] : null;
+    // a data write can only change computed style through a mapper (or a
+    // mapped label) on one of the written keys — decided once per group,
+    // not per element
+    const touched: Record<'nodes' | 'edges', number[] | null> = {
+      nodes: cy._stylesDependOnData( 'nodes', keys ) ? [] : null,
+      edges: cy._stylesDependOnData( 'edges', keys ) ? [] : null
+    };
 
     for( const k of keys ){
       if( k === 'id' ){
@@ -982,14 +986,16 @@ export class GpuCollection {
         store.data.set( ref.group, ref.slot, k, patch[ k ] );
       }
 
-      if( nodeSlots != null && ref.group === 'nodes' ){
-        nodeSlots.push( ref.slot );
-      }
+      touched[ ref.group ]?.push( ref.slot );
     }
 
-    // labels refresh before emits so data listeners observe fresh state
-    if( nodeSlots != null && nodeSlots.length > 0 ){
-      cy._refreshMappedLabels( nodeSlots );
+    // mapped style refreshes before emits so data listeners observe fresh state
+    for( const group of [ 'nodes', 'edges' ] as const ){
+      const slots = touched[ group ];
+
+      if( slots != null && slots.length > 0 ){
+        cy._refreshMappedStyles( group, slots, keys );
+      }
     }
 
     if( wantEmit ){

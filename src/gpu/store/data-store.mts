@@ -30,6 +30,9 @@ export class DataStore {
     nodes: new Map(), edges: new Map()
   };
 
+  /** Fires when a column promotes to mixed (a GPU-mirrored key must demote to CPU eval). */
+  onPromote: ( ( group: GroupName, key: string ) => void ) | null = null;
+
   get( group: GroupName, slot: number, key: string ): unknown {
     const col = this.cols[ group ].get( key );
 
@@ -191,6 +194,7 @@ export class DataStore {
     const mixed: MixedCol = { kind: 'mixed', values };
 
     this.cols[ group ].set( key, mixed );
+    this.onPromote?.( group, key );
 
     return mixed;
   }

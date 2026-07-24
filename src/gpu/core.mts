@@ -43,8 +43,10 @@ interface BatchPending {
   sheet: boolean;
   /** freshly-added elements awaiting their first style apply */
   style: Ref[];
-  /** nodes whose data()-mapped labels need recomputing */
-  labels: Ref[];
+  /** elements whose data()-mapped style channels need re-deriving */
+  mapped: Ref[];
+  /** the data keys those writes touched (refresh gates per group on them) */
+  mappedKeys: Set<string>;
 }
 
 /**
@@ -168,7 +170,7 @@ export class GpuCore {
 
   startBatch(): this {
     if( this._batchDepth === 0 ){
-      this._batchPending = { sheet: false, style: [], labels: [] };
+      this._batchPending = { sheet: false, style: [], mapped: [], mappedKeys: new Set() };
     }
 
     this._batchDepth++;
@@ -206,13 +208,19 @@ export class GpuCore {
     this._styleEngine.applyBulk( 'nodes', nodeSlots );
     this._styleEngine.applyBulk( 'edges', edgeSlots );
 
-    const labelSlots: number[] = [];
+    const mappedNodes: number[] = [];
+    const mappedEdges: number[] = [];
 
-    for( const ref of pending.labels ){
-      if( store.isCurrent( ref ) ){ labelSlots.push( ref.slot ); }
+    for( const ref of pending.mapped ){
+      if( !store.isCurrent( ref ) ){ continue; }
+
+      ( ref.group === 'nodes' ? mappedNodes : mappedEdges ).push( ref.slot );
     }
 
-    this._styleEngine.refreshLabels( labelSlots );
+    const keys = [ ...pending.mappedKeys ];
+
+    this._styleEngine.refreshMapped( 'nodes', mappedNodes, keys );
+    this._styleEngine.refreshMapped( 'edges', mappedEdges, keys );
 
     return this;
   }
@@ -977,22 +985,26 @@ export class GpuCore {
     return new GpuCollection( this, [ ref ], { singleton: true } );
   }
 
-  /** True when writing any of these data() keys can change a computed label. */
-  _labelsDependOnData( keys: string[] ): boolean {
-    return this._styleEngine.labelDependsOn( keys );
+  /** True when writing any of these data() keys can change the group's computed style. */
+  _stylesDependOnData( group: GroupName, keys: string[] ): boolean {
+    return this._styleEngine.stylesDependOnData( group, keys );
   }
 
-  /** Refresh anything computed from data() — today that is mapped node labels. */
-  _refreshMappedLabels( nodeSlots: number[] ): void {
+  /** Refresh style channels computed from data() (mapped channels + labels), deferred while batching. */
+  _refreshMappedStyles( group: GroupName, slots: number[], keys: string[] ): void {
     if( this._batchPending != null ){
-      for( const slot of nodeSlots ){
-        this._batchPending.labels.push( this._store.ref( 'nodes', slot ) );
+      for( const slot of slots ){
+        this._batchPending.mapped.push( this._store.ref( group, slot ) );
+      }
+
+      for( const key of keys ){
+        this._batchPending.mappedKeys.add( key );
       }
 
       return;
     }
 
-    this._styleEngine.refreshLabels( nodeSlots );
+    this._styleEngine.refreshMapped( group, slots, keys );
   }
 
   /** First style apply for freshly-added slots, deferred while batching. */

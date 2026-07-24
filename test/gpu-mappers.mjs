@@ -6,6 +6,7 @@ import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
 } from '../src/gpu/style-scales.mjs';
 import { DataStore } from '../src/gpu/store/data-store.mjs';
+import cytoscapeGpu from '../src/gpu/index.mjs';
 
 // pure compile/eval coverage against a bare DataStore; the engine-level
 // behaviour (sheet integration, refresh, getters) lives in later suites
@@ -443,6 +444,172 @@ describe('gpu/mappers', function(){
         expect( c ).to.be.within( 0, 255 );
         expect( c % 1 ).to.equal( 0 );
       }
+    });
+  });
+
+  describe('stylesheet integration', function(){
+    const graph = ( style, elements ) => cytoscapeGpu( {
+      elements: elements ?? [
+        { data: { id: 'a', w: 0 } },
+        { data: { id: 'b', w: 5 } },
+        { data: { id: 'c', w: 10 } },
+        { data: { id: 'ab', source: 'a', target: 'b', ew: 0 } },
+        { data: { id: 'bc', source: 'b', target: 'c', ew: 10 } }
+      ],
+      style
+    } );
+
+    it('maps numeric node channels', function(){
+      const cy = graph( { nodes: { width: { data: 'w', domain: [ 0, 10 ], range: [ 10, 110 ] } } } );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 10 );
+      expect( cy.$id('b').numericStyle('width') ).to.equal( 60 );
+      expect( cy.$id('c').numericStyle('width') ).to.equal( 110 );
+    });
+
+    it('maps color channels through schemes', function(){
+      const cy = graph( { nodes: { 'background-color': { data: 'w', domain: [ 0, 10 ], range: 'viridis' } } } );
+
+      expect( cy.$id('a').style('background-color') ).to.equal( 'rgb(68,1,84)' );
+      expect( cy.$id('c').style('background-color') ).to.equal( 'rgb(253,231,37)' );
+    });
+
+    it('maps shapes ordinally, keeping the circle collapse', function(){
+      const cy = graph(
+        { nodes: {
+          width: 40, height: 40,
+          shape: { data: 't', scale: 'ordinal', domain: [ 'round', 'boxy' ], range: [ 'ellipse', 'rectangle' ] }
+        } },
+        [ { data: { id: 'a', t: 'round' } }, { data: { id: 'b', t: 'boxy' } } ]
+      );
+
+      expect( cy.$id('a').style('shape') ).to.equal( 'ellipse' );
+      expect( cy.$id('b').style('shape') ).to.equal( 'rectangle' );
+      // equal radii + mapped ellipse still compile to the exact-circle SDF
+      expect( cy._store.column('node.shape')[ cy.$id('a')._refs[ 0 ].slot ] ).to.equal( 0 );
+    });
+
+    it('refreshes mapped channels on data writes, per group', function(){
+      const cy = graph( {
+        nodes: { width: { data: 'w', domain: [ 0, 10 ], range: [ 10, 110 ] } },
+        edges: {
+          width: { data: 'ew', domain: [ 0, 10 ], range: [ 1, 5 ] },
+          'line-color': { data: 'ew', domain: [ 0, 10 ], range: [ '#000000', '#ffffff' ] }
+        }
+      } );
+
+      cy.$id('a').data( 'w', 10 );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 110 );
+
+      cy.$id('ab').data( 'ew', 10 );
+
+      expect( cy.$id('ab').numericStyle('width') ).to.equal( 5 );
+      expect( cy.$id('ab').style('line-color') ).to.equal( 'rgb(255,255,255)' );
+
+      // a node-key write leaves edge channels untouched
+      cy.$id('bc').data( 'w', 3 );
+
+      expect( cy.$id('bc').numericStyle('width') ).to.equal( 5 );
+    });
+
+    it('folds mapped edge opacity into the stored arrow alpha', function(){
+      const cy = graph( { edges: {
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': '#ff0000',
+        opacity: { data: 'ew', domain: [ 0, 10 ], range: [ 0, 1 ] }
+      } } );
+
+      cy.$id('ab').data( 'ew', 5 );
+
+      expect( cy.$id('ab').numericStyle('opacity') ).to.equal( 0.5 );
+      expect( cy.$id('ab').style('target-arrow-color') ).to.match( /^rgba\(255,0,0,0\.50/ );
+    });
+
+    it('removeData reverts to the fallback', function(){
+      const cy = graph( { nodes: { width: { data: 'w', domain: [ 0, 10 ], range: [ 10, 110 ], fallback: 77 } } } );
+
+      cy.$id('b').removeData('w');
+
+      expect( cy.$id('b').numericStyle('width') ).to.equal( 77 );
+      expect( cy.$id('c').numericStyle('width') ).to.equal( 110 );
+    });
+
+    it('live auto domains re-evaluate the whole channel when the extent moves', function(){
+      const cy = graph( { nodes: { width: { data: 'w', range: [ 0, 100 ] } } } );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 0 );
+      expect( cy.$id('b').numericStyle('width') ).to.equal( 50 );
+
+      // writing one element moves the extent to [5, 20]: the *untouched*
+      // elements re-map too
+      cy.$id('a').data( 'w', 20 );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 100 );
+      expect( cy.$id('b').numericStyle('width') ).to.equal( 0 );
+      expect( cy.$id('c').numericStyle('width') ).to.be.closeTo( 100 / 3, 1e-5 ); // f32 column
+    });
+
+    it('auto domains see data ingested after the sheet', function(){
+      const cy = graph( { nodes: { width: { data: 'w', range: [ 0, 100 ] } } }, [] );
+
+      cy.add( [ { data: { id: 'x', w: 1 } }, { data: { id: 'y', w: 3 } } ] );
+
+      expect( cy.$id('x').numericStyle('width') ).to.equal( 0 );
+      expect( cy.$id('y').numericStyle('width') ).to.equal( 100 );
+    });
+
+    it('defers mapped refresh while batching', function(){
+      const cy = graph( { nodes: { width: { data: 'w', domain: [ 0, 10 ], range: [ 10, 110 ] } } } );
+
+      cy.batch( () => {
+        cy.$id('a').data( 'w', 10 );
+
+        expect( cy.$id('a').numericStyle('width') ).to.equal( 10 ); // stale inside the batch
+      } );
+
+      expect( cy.$id('a').numericStyle('width') ).to.equal( 110 );
+    });
+
+    it('reads mapped label channels on unlabelled nodes', function(){
+      const cy = graph( { nodes: { 'font-size': { data: 'w', domain: [ 0, 10 ], range: [ 10, 30 ] } } } );
+
+      expect( cy.$id('b').numericStyle('font-size') ).to.equal( 20 );
+    });
+
+    it('accepts the object passthrough for labels, like the data() string', function(){
+      const cy = graph(
+        { nodes: { label: { data: 'name' } } },
+        [ { data: { id: 'a', name: 'Ada' } } ]
+      );
+
+      expect( cy.$id('a').style('label') ).to.equal( 'Ada' );
+
+      cy.$id('a').data( 'name', 'Grace' );
+
+      expect( cy.$id('a').style('label') ).to.equal( 'Grace' );
+    });
+
+    it('round-trips mapper sheets through json()', function(){
+      const sheet = { nodes: { width: { data: 'w', domain: [ 0, 10 ], range: [ 10, 110 ] } } };
+      const cy = graph( sheet );
+
+      expect( cy.json().style ).to.deep.equal( sheet );
+
+      const cy2 = cytoscapeGpu( { elements: [ { data: { id: 'x', w: 5 } } ], style: cy.json().style } );
+
+      expect( cy2.$id('x').numericStyle('width') ).to.equal( 60 );
+    });
+
+    it('throws on invalid mapper placements', function(){
+      expect( () => graph( { nodes: { label: { data: 'w', range: [ 0, 1 ] } } } ) )
+        .to.throw( /passthrough/ );
+      expect( () => graph( { nodes: { 'line-color': { data: 'w', domain: [ 0, 1 ], range: [ '#000', '#fff' ] } } } ) )
+        .to.throw( /does not support mappers/ );
+      expect( () => graph( { nodes: { shape: { data: 'w', domain: [ 0, 1 ], range: [ 'ellipse', 'rectangle' ] } } } ) )
+        .to.throw( /cannot be continuously interpolated/ );
+      expect( () => graph( { nodes: () => ( { width: { data: 'w' } } ) } ) )
+        .to.throw( /function style returns/ );
     });
   });
 

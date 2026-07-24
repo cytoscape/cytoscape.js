@@ -120,6 +120,20 @@ objects.  At 200k nodes vs v3: select+unselect ~38×, lock ~96×, shift
 ~106×, hide+show ~1400× (v3 pays a style bypass per element), and
 removing + re-adding a 256-node band with its incident edges ~1000×.
 
+Composed traces hold up too (`benchmark/gpu/scenarios.mjs`: five
+interaction scenarios — explore/click-expand, select-all + fit, band
+drag, remove/re-add, dashboard refresh — replayed **with core listeners
+attached**, the axis the micro suites exclude since their emits are
+listener-gated).  At 200k nodes the gpu side wins every trace 6–530×:
+a click-expand-select-fit interaction runs in ~45 µs median (34× v3),
+and per-element emit cost is ~85 ns/listener call.  The sweep also
+settled the lazy-collection question (handle materialization is ~4–6%
+of the worst trace — not worth the API change) and exposed the
+data-write label path, since fixed: mapped-label refresh on `data()`
+writes is now a label-only bulk pass gated on the written keys
+(`StyleEngine.refreshLabels`), not a full per-element style apply —
+a 200k bulk write under a mapped label dropped 85 → 37 ms.
+
 Traversal walks (`connectedEdges`, `outgoers`/`incomers`,
 `neighborhood`, `roots`/`leaves`, `successors`/`predecessors`, edge
 endpoints) are slot-native (`benchmark/gpu/traversal.mjs`): they collect

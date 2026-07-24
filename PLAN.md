@@ -375,9 +375,38 @@ magnitude.  On a 2k-node/4k-edge graph:
   ~106× while `outgoers` is ~4.7×; the big traversal multipliers only
   appear where an *algorithmic* layer was removed (the per-hop collection
   machinery in `successors`).
+- **Scenario sweep (round 5)** — with the micro surface swept, the open
+  question was whether the wins survive *composition* and the
+  listener-gated emit paths the micro suites deliberately exclude (their
+  emits never fire — no listeners are registered).
+  `benchmark/gpu/scenarios.mjs` replays five composed traces with core
+  listeners attached, at 2k/20k/200k (`BENCH_OP` one-group-per-process at
+  200k; v3 instances styleEnabled + preset layout — the realistic app
+  config, and required for meaningful v3 bounds headless).  Results (× vs
+  v3): explore (2-hop expand + select + fit) 8.4/5.3/34×; select-all +
+  whole-graph fit with 2N emits per iter 18/10/12.6×; 100-band drag with
+  a position listener (800 emits/iter) 8.5/7.3/10.6×; remove + re-add
+  256 + cascade with add/remove listeners 20/162/529×; dashboard refresh
+  (bulk data write + mapped labels + filter(fn) + fit, data listener)
+  3.8/4.0/4.2× before the fix below, 9.5/6.4× at 20k/200k after.  Emit
+  cost itself is ~85 ns/listener call (~17 ms for 200k emits) — no
+  batching policy is urgently needed.  Two fixes fell out: (a) `pan()`
+  get returned a fresh `{x,y}` per call — now returns the live internal
+  object (v3 parity; setters always swap in a new object), ~4× slower →
+  ~2.3× faster; (b) the refresh trace exposed the **data-write label
+  path**: `_onDataChanged` ran a *full* per-element style apply (defaults
+  spread, every block matched, all six node channels + dirty spans
+  rewritten) per element per write whenever any label mapped any data
+  key — 64 ms of an 85 ms 200k bulk write.  Now the StyleEngine tracks
+  which keys labels map (`labelDependsOn(keys)`, decided once per
+  `_setData` call), and `refreshLabels(slots)` recomputes only the label
+  sidecar, resolving the stylesheet once per selectedness like
+  `applyBulk` (per-element fallback only under `#id` blocks); writes of
+  unmapped keys skip the pass outright.  200k bulk write with
+  mapper+listener: 85 → 37 ms.
 - **Residual v3 wins** (micro-ops at 20k, accepted): `forEach` (~1.8×),
-  `pan()` get (~4×, allocates the returned object), `getElementById`
-  (~1.4×), `data()`/`position()` get (~1.1×, noise-level).
+  `getElementById` (~1.4×), `data()`/`position()` get (~1.1×,
+  noise-level).
 
 ### Needs a call — note only, don't build yet
 
@@ -409,8 +438,13 @@ magnitude.  On a 2k-node/4k-edge graph:
   that hold slot lists and intern handles on demand — an API-shape change
   (it moves the cost of `eles[i]`/`forEach` from build time to access
   time, and complicates the "handles are interned singletons" invariant).
-  Only worth a call if traversal-heavy workloads show up hot in real
-  profiles.
+  **Call made (round 5): not warranted.**  The scenario sweep measured
+  the floor in composed traces: in the worst one (dashboard refresh, the
+  narrowest win) the per-element handle reads in `filter(fn)` cost
+  5.2 ms of a ~90 ms iteration at 200k (vs 1.9 ms for a direct columnar
+  scan) — ~4–6% of the trace — and the traversal-heavy explore trace runs
+  a 200k click-interaction in ~45 µs median, 34× v3.  Revisit only if a
+  real profile ever disagrees.
 - Odds and ends that each need a small feature, not just wiring:
   `selectionType` + box selection, `active`/`activate` and `pannable`/
   `panify`, `multiClickDebounceTime` (multi-click), `eles.layout()`/

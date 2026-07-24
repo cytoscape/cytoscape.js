@@ -53,6 +53,29 @@ describe('gpu/selection', function(){
     expect( cy.$('edge:selected') ).to.have.length(1);
   });
 
+  it('unselectify() freezes selection state in both directions', function(){
+    cy.$('#a').select();
+    cy.$('#a').unselectify();
+
+    // an already-selected node cannot be unselected while unselectable
+    cy.$('#a').unselect();
+    expect( cy.$('#a').selected() ).to.be.true;
+
+    // and an unselected one cannot be selected
+    expect( cy.$('#b').selectable() ).to.be.true;
+    cy.$('#b').unselectify().select();
+    expect( cy.$('#b').selected() ).to.be.false;
+  });
+
+  it('selectify() restores mutable selection state', function(){
+    cy.$('#a').select();
+    cy.$('#a').unselectify();
+    cy.$('#a').selectify();
+
+    cy.$('#a').unselect();
+    expect( cy.$('#a').selected() ).to.be.false;
+  });
+
   it('emits select and unselect per state change only', function(){
     var selects = 0;
     var unselects = 0;

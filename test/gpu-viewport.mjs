@@ -81,12 +81,15 @@ describe('gpu/viewport', function(){
       expect( cy.pan() ).to.deep.equal({ x: 10, y: -5 });
     });
 
-    it('returns a defensive copy', function(){
+    it('returns the live pan object (v3 parity, allocation-free get)', function(){
       var pan = cy.pan();
 
-      pan.x = 999;
+      expect( cy.pan() ).to.equal( pan ); // same object while pan is unchanged
 
-      expect( cy.pan().x ).to.equal(0);
+      cy.pan({ x: 10, y: -5 });
+
+      expect( cy.pan() ).to.not.equal( pan ); // setters swap in a fresh object
+      expect( pan ).to.deep.equal({ x: 0, y: 0 }); // held references keep the old value
     });
 
     it('pans by a delta', function(){

@@ -56,8 +56,9 @@ export class Viewport {
     return this._zoom;
   }
 
+  /** The current pan.  Live internal object (as in v3) — treat as read-only. */
   pan(): Position {
-    return { x: this._pan.x, y: this._pan.y };
+    return this._pan;
   }
 
   /** Returns true when the state changed. */

@@ -30,12 +30,28 @@ shader over every allocated slot.
 
 ## API scope (pass 1)
 
-Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`),
-events, graph manipulation, `style()` (constrained blocks), `layout()`
-(grid and preset), `pick()`, `destroy()`, `width()`/`height()`.
-Collections: events, graph manipulation, position/dimensions, iteration,
-comparison, building/filtering, basic traversal (`outgoers` etc.),
-`select`/`unselect`, `data()`, `label()` (read-only).
+Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`,
+plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
+`renderedExtent`, `size`), events (with the usual aliases +
+`onRender`/`offRender`), graph manipulation, `style()` (constrained
+blocks), `layout()`/`makeLayout` (grid and preset), `pick()`,
+`renderer()`/`forceRender()`/`resize()`, graph-level
+`data()`/`scratch()`, interaction gating
+(`autolock`/`autoungrabify`/`autounselectify`,
+`panningEnabled`/`zoomingEnabled` + `user*` variants,
+`boxSelectionEnabled`), introspection (`instanceString`, `isReady`,
+`headless`, `mutableElements`, `hasElementWithId`/`$id`, `options`),
+`destroy()`, `width()`/`height()`.
+Collections: `cy()`/`renderer()`/`element()`, events, graph
+manipulation (incl. edge `move()`), position/dimensions (model +
+rendered, `shift`, silent variants, edge `midpoint`/endpoints),
+iteration (`sort`, `reduce`, `max`/`min`), comparison, building/
+filtering (`byGroup`, `diff`, `absoluteComplement`, set aliases),
+traversal (`outgoers`/`incomers`, `roots`/`leaves`,
+`successors`/`predecessors`, `edgesWith`/`edgesTo`,
+`parallelEdges`/`codirectedEdges`, `components`), degree (+min/max
+stats), `select`/`unselect`/`selectify`, `grabbable`/`lock`,
+`show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only).
 
 `data()`: element data lives in a **columnar sidecar** — per-(group, key)
 columns, not per-element objects: numbers as Float64Array, strings

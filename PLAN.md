@@ -193,3 +193,123 @@ All follow-ups are done.  Open hooks beyond pass 1: slot/blob/CSR
 compaction, z-index ranks, animations, mappers beyond label data(key),
 compound nodes, bezier edges, more layouts, a binary export of live
 graphs (serializeElements already covers payloads).
+
+## API gaps vs v3
+
+Pass-1 scope held, but a lot of the familiar v3 core/collection surface
+was missing.  The **LHF** (buildable on the existing columnar/flag/
+adjacency model with no new architecture) and **small-touch** (one
+localized store/renderer/pointer change, no new subsystem) tiers are now
+**done** — see "Landed" below.  What remains is split into **needs a
+call** (a new selector type, storage, lifecycle, or readback path) and
+**deferred** (already-declared out-of-scope blocks, for completeness).
+
+### Landed (LHF + small-touch)
+
+Done across 11 isolated commits, each with Node tests (interaction-gated
+behaviour also covered by Playwright).
+
+Core:
+- Viewport math/setters: `reset`, `viewport({zoom,pan})`, `minZoom(v)`/
+  `maxZoom(v)`/`zoomRange` setters, `getFitViewport`/`getCenterPan`
+  (compute without committing), `renderedExtent`, `size`, `centre`.
+  (`getZoomedViewport` skipped — internal in v3.)
+- Introspection/aliases: `instanceString`, `isReady` (via a
+  `_readyResolved` flag), `headless`, `styleEnabled`,
+  `hasCompoundNodes`, `hasElementWithId`, `$id`, `mutableElements`,
+  `window`, `options`.
+- Events: `once`, `listen`/`bind`, `unlisten`/`unbind`, `pon`;
+  `onRender`/`offRender`.
+- `renderer()`, `forceRender()` (renderer got a public `requestRender`),
+  `resize()`/`invalidateSize`, `makeLayout`/`createLayout`.
+- Graph-level `data`/`removeData`/`scratch`/`removeScratch` (+`attr`/
+  `removeAttr`), plain objects on the core.
+- Interaction gating: `autolock`/`autoungrabify`/`autounselectify`
+  (+`*Nodes` aliases) and `panningEnabled`/`userPanningEnabled`/
+  `zoomingEnabled`/`userZoomingEnabled`/`boxSelectionEnabled`; all ctor
+  options too.  `pan`/`panBy`/`zoom` gate on the programmatic flags; the
+  pointer gates drag-pan/wheel/pinch on the `user*` flags and drag on
+  grabbable+unlocked; `autounselectify` suppresses tap selection.
+
+Collection:
+- Reference/identity: `cy()` (was absent), `renderer()`, `element()`,
+  `collection()`, `instanceString`, `hasElementWithId`, `indexOf`/
+  `indexOfId`.
+- Traversal (existing CSR adjacency): `roots`, `leaves`, `successors`,
+  `predecessors`, `edgesWith`, `edgesTo`, `parallelEdges`,
+  `codirectedEdges`, `components`/`component`/`componentsOf`,
+  `allAreNeighbors`.
+- Set/iter/degree: `byGroup`, `absoluteComplement` (+`complement`/
+  `abscomp`), `diff`, `reduce`, `max`/`min` ({value,ele}), `sort`,
+  `merge`/`unmerge`/`relativeComplement` aliases, `isLoop`/`isSimple`,
+  `equal`/`equals`, `min/maxDegree`/`min/max{In,Out}degree`/
+  `totalDegree`.
+- Dimensions: `renderedBoundingBox`, `renderedWidth`/`renderedHeight`
+  (+outer), `renderedPosition` setter, `shift`/`silentShift`,
+  `silentPosition(s)`, `midpoint`/`renderedMidpoint`, `source`/
+  `targetEndpoint` (+rendered; node-center approx), `relativePosition`,
+  `point`/`modelPosition` aliases.
+- Data/scratch/json: `removeData` (+`attr`/`removeAttr`), per-element
+  `scratch`/`removeScratch` (plain JS on the interned handle),
+  `json`/`jsons`; `once`/`pon`/`listen`/`bind`/`unlisten`/`unbind`.
+- Flags: `selectify`/`unselectify`, `grabbable`/`grabify`/`ungrabify`,
+  `locked`/`lock`/`unlock`, `grabbed` getter, `show`/`hide`/`visible`/
+  `hidden`.  `FLAG_GRABBABLE`/`FLAG_LOCKED` added; grabbable defaults on;
+  def/ctor-level `grabbable`/`locked`.  `show`/`hide` turned out to be
+  pure LHF — the cull kernels and CPU pick already mask on
+  `SHOWN = ALIVE|VISIBLE`, so toggling `FLAG_VISIBLE` needed no shader
+  change.
+- `move()` for edges (re-endpoint in place via `store.moveEdge`).
+
+Not yet ported from the small list (each a small feature, not just
+wiring): `active`/`activate`, `pannable`/`panify`, `inactive`.
+
+### Needs a call — note only, don't build yet
+
+- **Classes** (`classes`/`addClass`/`removeClass`/`toggleClass`/
+  `hasClass`/`flashClass`): new per-element class storage + class
+  selectors in the mini-selector + restyle on change.  Couples to the
+  constrained (constants-only) style engine.
+- **Style getters** (`style`/`renderedStyle`/`numericStyle`/`pstyle`,
+  `effectiveOpacity`, `transparent`, `takesUpSpace`, `interactive`):
+  reading a resolved channel per prop from the compiled columns is
+  doable, but the returned shape (parsed vs rendered vs numeric) is a
+  design choice; `bypass`/per-element style setters are the bigger
+  stylesheet question.
+- **Batching** (`startBatch`/`endBatch`/`batch`/`batchData`/`notify`/
+  `noNotifications`/`batching`): the dirty tracker already coalesces per
+  microtask, but batch semantics (defer style-apply + event emission
+  across a user block) need a policy.
+- **Core `json()` import/export** and element `clone`/`copy`/`restore`:
+  export is derivable from the columns; the import/restore *setter*
+  (rebuild from a JSON snapshot, incl. restoring removed elements) needs
+  stored defs.
+- **Image export** (`png`/`jpg`/`jpeg`/`renderTo`): feasible on the
+  webgpu flow via an offscreen render + buffer readback, but that's a
+  new readback path.
+- **`mount`/`unmount`**: the container is fixed at construction today;
+  re-mounting means renderer teardown/re-init.
+- Odds and ends that each need a small feature, not just wiring:
+  `selectionType` + box selection, `active`/`activate` and `pannable`/
+  `panify`, `multiClickDebounceTime` (multi-click), `eles.layout()`/
+  `layoutPositions`/`layoutDimensions`, `boundingBoxAt` (bbox at a
+  hypothetical position), `sortByZIndex`/`zDepth` (needs z-index),
+  `padding`/`paddedWidth`/`paddedHeight`.
+
+### Deferred by design (out of scope for the prototype)
+
+- **Compounds**: `parent`/`parents`/`children`/`descendants`/
+  `commonAncestors`/`siblings`/`orphans`/`nonorphans`/`isParent`/
+  `isChild`/`isChildless`/`isOrphan`, and compound-relative
+  `relativePosition`/`padding`/bounds.
+- **Animations**: `animate`/`animation`/`animated`/`delay`/
+  `delayAnimation`/`stop`/`clearQueue` (core + collection).
+- **Graph algorithms** (`src/collection/algorithms/*`): bfs/dfs,
+  dijkstra, aStar, kruskal, bellmanFord, floydWarshall, pageRank, all
+  centralities (degree/closeness/betweenness), all clustering
+  (markov/k-means/k-medoids/fuzzy-c-means/hierarchical/affinity), tarjan
+  & hopcroft-tarjan, hierholzer, kargerStein.
+- **Bezier/segment geometry**: `controlPoints`/`segmentPoints`/
+  `isBundledBezier` and curved edge rendering.
+- **Full stylesheet + mappers** beyond the constant blocks and the label
+  `data(key)` mapper; layouts beyond grid/preset.

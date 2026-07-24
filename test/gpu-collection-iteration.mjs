@@ -71,12 +71,26 @@ describe('gpu/collection: iteration', function(){
     expect( nodes.eq(99) ).to.have.length(0);
   });
 
+  it('runs forEach bound to an explicit thisArg', function(){
+    var ctx = { tag: 'ctx' };
+    var seen = [];
+
+    cy.nodes().forEach(function( ele ){
+      seen.push( this.tag );
+      expect( this ).to.equal( ctx );
+    }, ctx);
+
+    expect( seen ).to.deep.equal(['ctx', 'ctx', 'ctx']);
+  });
+
   it('supports slice', function(){
     var nodes = cy.nodes();
 
     expect( nodes.slice(1).map( n => n.id() ) ).to.deep.equal(['b', 'c']);
     expect( nodes.slice(0, 2).map( n => n.id() ) ).to.deep.equal(['a', 'b']);
     expect( nodes.slice(-1).map( n => n.id() ) ).to.deep.equal(['c']);
+    expect( nodes.slice().map( n => n.id() ) ).to.deep.equal(['a', 'b', 'c']); // no-arg copies
+    expect( nodes.slice(1, -1).map( n => n.id() ) ).to.deep.equal(['b']); // negative end
   });
 
   it('supports toArray', function(){

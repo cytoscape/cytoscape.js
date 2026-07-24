@@ -44,6 +44,10 @@ describe('gpu/collection: building and filtering', function(){
     expect( ids( cy.nodes().and('#a, #b') ) ).to.deep.equal(['a', 'b']);
   });
 
+  it('intersecting with an empty collection is empty', function(){
+    expect( cy.nodes().intersect( cy.collection() ).empty() ).to.be.true;
+  });
+
   it('takes symmetric differences', function(){
     expect( ids( cy.$('#a, #b').symmetricDifference('#b, #c') ) ).to.deep.equal(['a', 'c']);
     expect( ids( cy.$('#a, #b').xor('#b, #c') ) ).to.deep.equal(['a', 'c']);

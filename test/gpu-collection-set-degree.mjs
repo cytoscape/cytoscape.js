@@ -119,6 +119,7 @@ describe('gpu/collection: set ops, iteration, degree stats', function(){
     expect( cy.nodes().maxOutdegree() ).to.equal( 2 );
     expect( cy.nodes().maxIndegree() ).to.equal( 1 );
     expect( cy.nodes().minOutdegree() ).to.equal( 0 );
+    expect( cy.nodes().minIndegree() ).to.equal( 0 ); // n1 has no incoming edges
     expect( cy.nodes().totalDegree() ).to.equal( 4 );
     expect( cy.collection().maxDegree() ).to.equal( undefined );
   });

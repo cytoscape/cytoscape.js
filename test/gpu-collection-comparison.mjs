@@ -56,6 +56,27 @@ describe('gpu/collection: comparison', function(){
     });
   });
 
+  describe('eles.some() / eles.every()', function(){
+    it('pass (ele, i, eles) to the callback', function(){
+      var nodes = cy.nodes();
+
+      nodes.some(function( ele, i, eles ){
+        expect( ele.isNode() ).to.be.true;
+        expect( i ).to.be.a('number');
+        expect( eles.same( nodes ) ).to.be.true;
+
+        return false; // visit them all
+      });
+
+      nodes.every(function( ele, i, eles ){
+        expect( ele.length ).to.equal(1);
+        expect( eles.length ).to.equal( nodes.length );
+
+        return true;
+      });
+    });
+  });
+
   describe('eles.is()', function(){
     it('checks whether any element matches', function(){
       expect( cy.elements().is('edge') ).to.be.true;

@@ -1043,16 +1043,6 @@ BRp.load = function(){
   var inaccurateScrollDevice;
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
 
-  var allAreDivisibleBy = function( list, factor ){
-    for( var i = 0; i < list.length; i++ ){
-      if( list[i] % factor !== 0 ){
-        return false;
-      }
-    }
-
-    return true;
-  }
-
   var allAreSameMagnitude = function(list) {
     var firstMag = Math.abs(list[0]);
     for (var i = 1; i < list.length; i++) {
@@ -1081,38 +1071,25 @@ BRp.load = function(){
 
     if (inaccurateScrollDevice == null) {
       if (wheelDeltas.length >= wheelDeltaN) { // use log to determine if inaccurate
+        inaccurateScrollDevice = false;
         var wds = wheelDeltas;
-        inaccurateScrollDevice = allAreDivisibleBy(wds, 5);
-        var isfUnset = true;
 
-        if (!inaccurateScrollDevice) { // check for all large values of same or common-divisor magnitude
-          if (wds[0] > 5) {
-            var factor;
-            // an array of equal integers "x" will have a GCD of x, so in that
-            // case there is no need to have a separate "allAreSameMagnitude"
-            // check. but the GCD function only supports integers, so keeping
-            // both checks allows arrays of equal floating-point numbers
-            if (allAreSameMagnitude(wds)) {
-              factor = wds[0];
-            } else {
-              factor = math.gcdMultipleZeroIfNonInt(wds);
-            }
-            if (factor > 1) {
-              inaccurateScrollDevice = true;
-              inaccurateScrollFactor = factor;
-              // use this flag to indicate that we already have a scroll factor
-              // set -- no need to go through the list again
-              isfUnset = false;
-            }
+        if (wds[0] >= 5) {
+          var factor;
+          // an array of equal integers "x" will have a GCD of x, so in that
+          // case there is no need to have a separate "allAreSameMagnitude"
+          // check. but the GCD function only supports integers, so keeping
+          // both checks allows arrays of equal floating-point numbers
+          if (allAreSameMagnitude(wds)) {
+            factor = wds[0];
+          } else {
+            factor = math.gcdMultipleZeroIfNonInt(wds);
+          }
+          if (factor > 1) {
+            inaccurateScrollDevice = true;
+            inaccurateScrollFactor = factor;
           }
         }
-        
-        if (isfUnset && inaccurateScrollDevice) {
-          for (var i = 0; i < wds.length; i++) {
-            inaccurateScrollFactor = Math.min(wds[i], inaccurateScrollFactor);
-          }
-        }
-
         // console.log('Sampled wheel deltas:', wds);
         // console.log('inaccurateScrollDevice:', inaccurateScrollDevice);
         // console.log('inaccurateScrollFactor:', inaccurateScrollFactor);

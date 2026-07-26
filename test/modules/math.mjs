@@ -54,6 +54,8 @@ describe('Math', function(){
             expect( gcd( 552, 138 ) ).equals( 138 );
             // https://en.wikipedia.org/wiki/Greatest_common_divisor#Euclidean_algorithm
             expect( gcd( 48, 18 ) ).equals( 6 );
+            expect( gcd( 45, 15 ) ).equals( 15 );
+            expect( gcd( 40, 15 ) ).equals( 5 );
             expect( gcd( 6, 5 ) ).equals( 1 );
             expect( gcd( 6, 1 ) ).equals( 1 );
             expect( gcd( 6, 0 ) ).equals( 6 );
@@ -61,6 +63,8 @@ describe('Math', function(){
         it('gcd(a, b) for integers a < b', function(){
             expect( gcd( 138, 552 ) ).equals( 138 );
             expect( gcd( 18, 48 ) ).equals( 6 );
+            expect( gcd( 15, 45 ) ).equals( 15 );
+            expect( gcd( 15, 40 ) ).equals( 5 );
             expect( gcd( 5, 6 ) ).equals( 1 );
             expect( gcd( 1, 6 ) ).equals( 1 );
             expect( gcd( 0, 6 ) ).equals( 6 );
@@ -79,6 +83,7 @@ describe('Math', function(){
             expect ( gcdMultipleZeroIfNonInt( [ 276, 276, 1242, 966 ] ) ).equals( 138 );
             expect ( gcdMultipleZeroIfNonInt( [ 276, 276, 0, 1242, 966 ] ) ).equals( 138 );
             expect ( gcdMultipleZeroIfNonInt( [ 276, 276, 1, 1242, 966 ] ) ).equals( 1 );
+            expect ( gcdMultipleZeroIfNonInt( [ 45, 15, 50, 25, 100 ] ) ).equals( 5 );
             expect ( gcdMultipleZeroIfNonInt( [ 138, 138 ] ) ).equals( 138 );
             expect ( gcdMultipleZeroIfNonInt( [ 5, 5 ] ) ).equals( 5 );
             expect ( gcdMultipleZeroIfNonInt( [ 5, 6 ] ) ).equals( 1 );

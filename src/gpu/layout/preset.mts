@@ -39,9 +39,11 @@ export class PresetLayout {
 
     cy.emit( { type: 'layoutstart', layout: this } );
 
+    const scope = ( options.eles as GpuCollection | undefined ) ?? cy;
+
     if( typeof positions === 'function' ){
       // function form takes handles by contract
-      cy.nodes().positions( ( ele: GpuCollection ) => {
+      scope.nodes().positions( ( ele: GpuCollection ) => {
         return ( positions as ( node: GpuCollection ) => Position | null | undefined )( ele ) ?? false;
       } );
     } else if( positions != null ){
@@ -70,7 +72,7 @@ export class PresetLayout {
     }
 
     if( options.fit !== false ){
-      cy.fit( undefined, options.padding ?? 30 );
+      cy.fit( options.eles as GpuCollection | undefined, options.padding ?? 30 );
     } else {
       if( options.zoom != null ){ cy.zoom( options.zoom ); }
       if( options.pan != null ){ cy.pan( options.pan ); }

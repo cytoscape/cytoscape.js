@@ -10,6 +10,7 @@ import { normalizeProp as normalizeCss } from './style.mjs';
 import { Animation } from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from '../types.mjs';
+import type { GpuLayoutBaseOptions, GpuLayoutOptions } from './gpu-types.mjs';
 import {
   search as searchImpl, dijkstra as dijkstraImpl, aStar as aStarImpl,
   bellmanFord as bellmanFordImpl, floydWarshall as floydWarshallImpl, kruskal as kruskalImpl,
@@ -2163,6 +2164,166 @@ export class GpuCollection {
     return set;
   }
 
+  // -- layouts --
+
+  /** Node dimensions for layout spacing, as v3's layoutDimensions. */
+  layoutDimensions( options: { nodeDimensionsIncludeLabels?: boolean } = {} ): { w: number; h: number } {
+    let dims: { w: number; h: number };
+
+    if( !this.takesUpSpace() ){
+      dims = { w: 0, h: 0 };
+    } else if( options.nodeDimensionsIncludeLabels ){
+      const bb = this.boundingBox();
+
+      dims = { w: bb.w, h: bb.h };
+    } else {
+      dims = { w: this.outerWidth() ?? 0, h: this.outerHeight() ?? 0 };
+    }
+
+    // sanitise for layouts (avoid division by zero)
+    if( dims.w === 0 || dims.h === 0 ){
+      dims.w = dims.h = 1;
+    }
+
+    return dims;
+  }
+
+  /**
+   * Apply a layout's position function to this collection's nodes with the
+   * standard layout options (spacingFactor, transform, fit/zoom/pan, animate)
+   * and the layoutstart/layoutready/layoutstop event flow — v3's helper.
+   * With `animate: true` the viewport applies at layoutstop (an *animated*
+   * fit is the viewport-animation-targets follow-up).
+   */
+  layoutPositions(
+    layout: object,
+    options: GpuLayoutBaseOptions,
+    fn: ( node: GpuCollection, i: number ) => Position
+  ): this {
+    const cy = this._cy;
+    const nodes = this.nodes();
+    const eles = ( options.eles as GpuCollection | undefined ) ?? this;
+
+    cy.emit( { type: 'layoutstart', layout } );
+
+    // memoize by handle: handles are interned singletons
+    const rawMemo = new Map<GpuCollection, Position>();
+
+    const rawPos = ( node: GpuCollection, i: number ): Position => {
+      let p = rawMemo.get( node );
+
+      if( p == null ){
+        p = fn( node, i );
+        rawMemo.set( node, p );
+      }
+
+      return p;
+    };
+
+    const factor = options.spacingFactor;
+    const useSpacing = factor != null && factor !== 1 && nodes.length > 0;
+    let center: Position | null = null;
+
+    if( useSpacing ){
+      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+      for( let i = 0; i < nodes.length; i++ ){
+        const p = rawPos( nodes[ i ], i );
+
+        x1 = Math.min( x1, p.x ); x2 = Math.max( x2, p.x );
+        y1 = Math.min( y1, p.y ); y2 = Math.max( y2, p.y );
+      }
+
+      center = { x: ( x1 + x2 ) / 2, y: ( y1 + y2 ) / 2 };
+    }
+
+    const finalMemo = new Map<GpuCollection, Position>();
+
+    const getFinalPos = ( node: GpuCollection, i: number ): Position => {
+      let p = finalMemo.get( node );
+
+      if( p != null ){ return p; }
+
+      p = rawPos( node, i );
+
+      if( useSpacing && center != null ){
+        const spacing = Math.abs( factor as number );
+
+        p = {
+          x: center.x + ( p.x - center.x ) * spacing,
+          y: center.y + ( p.y - center.y ) * spacing
+        };
+      }
+
+      if( options.transform != null ){
+        p = options.transform( node, p );
+      }
+
+      finalMemo.set( node, p );
+
+      return p;
+    };
+
+    const applyViewport = (): void => {
+      if( options.fit ){
+        cy.fit( eles, options.padding ?? 30 );
+      } else {
+        if( options.zoom != null ){ cy.zoom( options.zoom ); }
+        if( options.pan != null ){ cy.pan( options.pan ); }
+      }
+    };
+
+    if( options.animate ){
+      const anis: AnimationHandle[] = [];
+
+      for( let i = 0; i < nodes.length; i++ ){
+        const node = nodes[ i ];
+        const newPos = getFinalPos( node, i );
+        const animateNode = options.animateFilter == null || options.animateFilter( node, i );
+
+        if( animateNode ){
+          anis.push( node.animation( {
+            position: newPos,
+            duration: options.animationDuration ?? 500,
+            easing: options.animationEasing
+          } ) );
+        } else {
+          node.position( newPos );
+        }
+      }
+
+      for( const ani of anis ){ ani.play(); }
+
+      options.ready?.();
+      cy.emit( { type: 'layoutready', layout } );
+
+      Promise.all( anis.map( ani => ani.promise() ) ).then( () => {
+        applyViewport();
+        options.stop?.();
+        cy.emit( { type: 'layoutstop', layout } );
+      } );
+    } else {
+      nodes.positions( getFinalPos );
+      applyViewport();
+
+      options.ready?.();
+      cy.emit( { type: 'layoutready', layout } );
+
+      options.stop?.();
+      cy.emit( { type: 'layoutstop', layout } );
+    }
+
+    return this;
+  }
+
+  /** A layout scoped to this collection (`options.eles` is set to it). */
+  layout( options: GpuLayoutOptions ): ReturnType<GpuCore['layout']> {
+    return this._cy.layout( { ...options, eles: this } );
+  }
+
+  declare makeLayout: this['layout'];
+  declare createLayout: this['layout'];
+
   // -- graph algorithms (slot-native implementations in ./algorithms/) --
 
   breadthFirstSearch( ...args: SearchArgs ): SearchResult {
@@ -2478,6 +2639,8 @@ GpuCollection.prototype.xor = GpuCollection.prototype.symmetricDifference;
 GpuCollection.prototype.deselect = GpuCollection.prototype.unselect;
 GpuCollection.prototype.openNeighborhood = GpuCollection.prototype.neighborhood;
 GpuCollection.prototype.componentsOf = GpuCollection.prototype.components;
+GpuCollection.prototype.makeLayout = GpuCollection.prototype.layout;
+GpuCollection.prototype.createLayout = GpuCollection.prototype.layout;
 GpuCollection.prototype.bfs = GpuCollection.prototype.breadthFirstSearch;
 GpuCollection.prototype.dfs = GpuCollection.prototype.depthFirstSearch;
 GpuCollection.prototype.tsc = GpuCollection.prototype.tarjanStronglyConnected;

@@ -1118,11 +1118,22 @@ Each entry converts into a "Landed" record as it ships:
   2.1×, hierholzer 2–3×.  The dense-matrix ops are parity, as expected
   (identical math dominates): pageRank/floydWarshall/markov/
   hierarchical/kMeans all within ±1.2× at N=500.
-- [ ] **A6 Layouts** — `circle`, `concentric`, `breadthfirst`, `random`
-  ported to the slot-native bulk `setPositions` path (the grid-port
-  pattern), plus `eles.layout()`/`layoutPositions` for subset layouts.
-  Non-animated first; `animate: true` only if it falls out of the
-  existing animation system cheaply, else noted as deferred.
+- [x] **A6 Layouts** — landed 2026-07-27.  `circle`, `concentric`,
+  `breadthfirst`, `random` (handle-level ports of the v3 math — these
+  layouts are per-node-callback-shaped, unlike grid's slot path), plus
+  the v3 plumbing on the collection: `layoutDimensions`,
+  `layoutPositions` (spacingFactor scaling, `transform`, fit/zoom/pan,
+  the layoutstart/ready/stop event flow, and `animate: true` via the
+  existing animation system — handle-memoized, `animateFilter`
+  honored; the fit applies at layoutstop until A7's animated fit), and
+  `eles.layout()`/`makeLayout`/`createLayout` (grid and preset honor
+  `eles` scoping too, incl. fit-to-eles).  Two corrections vs the
+  repo's v3 files, both noted in code: circle calls layoutPositions on
+  the *sorted* collection (upstream v3 behavior — the repo's TS port
+  calls it on the unsorted one, so `sort` does nothing there), and
+  breadthfirst compacts the nulls left by maximal shifts before
+  sorting a depth (v3 passes them into its comparator).  28 specs in
+  `test/gpu-layouts.mjs` (1584 Node tests green).
 - [ ] **A7 Viewport animation targets** —
   `cy.animate({ fit: { eles, padding } })` / `{ center: { eles } }` and
   animated `fit()`/`center()` options, over the existing viewport

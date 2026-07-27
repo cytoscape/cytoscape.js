@@ -13,6 +13,13 @@ import { Animation, AnimationManager } from './animation.mjs';
 import type { AnimateOptions } from './animation.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
+import { CircleLayout } from './layout/circle.mjs';
+import { ConcentricLayout } from './layout/concentric.mjs';
+import { BreadthFirstLayout } from './layout/breadthfirst.mjs';
+import { RandomLayout } from './layout/random.mjs';
+
+export type GpuLayout =
+  GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
 import type Emitter from '../emitter.mjs';
 import type { EventHandler } from '../emitter.mjs';
 import type Event from '../event.mjs';
@@ -253,14 +260,19 @@ export class GpuCore {
 
   // -- layout --
 
-  layout( options: GpuLayoutOptions ): GridLayout | PresetLayout {
+  layout( options: GpuLayoutOptions ): GpuLayout {
     if( options?.name === 'grid' ){ return new GridLayout( this, options ); }
     if( options?.name === 'preset' ){ return new PresetLayout( this, options ); }
+    if( options?.name === 'circle' ){ return new CircleLayout( this, options ); }
+    if( options?.name === 'concentric' ){ return new ConcentricLayout( this, options ); }
+    if( options?.name === 'breadthfirst' ){ return new BreadthFirstLayout( this, options ); }
+    if( options?.name === 'random' ){ return new RandomLayout( this, options ); }
 
     const got = ( options as { name?: string } | null )?.name;
 
     throw new Error(
-      `Only the 'grid' and 'preset' layouts are available in the GPU prototype` +
+      `Only the 'grid', 'preset', 'circle', 'concentric', 'breadthfirst' and 'random' ` +
+      `layouts are available in the GPU prototype` +
       ( got != null ? `; got '${got}'` : '' )
     );
   }

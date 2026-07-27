@@ -42,7 +42,11 @@ plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 `renderedExtent`, `size`), events (with the usual aliases +
 `onRender`/`offRender`; delegation via predicate functions), graph
 manipulation, `style()` (the `{ nodes, edges }` sheet), `layout()`/
-`makeLayout` (grid and preset), `pick()`, `png()`/`jpg()` (async image
+`makeLayout` (grid, preset, circle, concentric, breadthfirst, random —
+plus `eles.layout()` for subset scopes and the v3 `layoutPositions`
+plumbing with spacingFactor/transform/animate; with `animate: true`
+the fit applies at layoutstop rather than animating, until viewport
+animation targets land), `pick()`, `png()`/`jpg()` (async image
 export — see the design decisions below),
 `renderer()`/`forceRender()`/`resize()`, graph-level
 `data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/

@@ -54,15 +54,15 @@ export class GridLayout {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } ) as BoundingBox;
 
-    // handles only when a callback option demands them
-    if( options.sort != null || options.position != null ){
+    // handles when a callback option demands them, or on a subset scope
+    if( options.sort != null || options.position != null || options.eles != null ){
       this.runWithHandles( bb );
     } else {
       this.runBySlot( bb );
     }
 
     if( options.fit !== false ){
-      cy.fit( undefined, options.padding ?? 30 );
+      cy.fit( options.eles as GpuCollection | undefined, options.padding ?? 30 );
     }
 
     cy.emit( { type: 'layoutready', layout: this } );
@@ -102,12 +102,13 @@ export class GridLayout {
     }
   }
 
-  /** Per-element path for the `sort`/`position` callback options. */
+  /** Per-element path for the `sort`/`position` callback options and subset scopes. */
   private runWithHandles( bb: BoundingBox ): void {
     const cy = this.cy;
     const options = this.options;
+    const scope = ( options.eles as GpuCollection | undefined ) ?? cy;
 
-    let nodeList = cy.nodes().toArray();
+    let nodeList = scope.nodes().toArray();
 
     if( options.sort != null ){
       nodeList = nodeList.sort( options.sort as ( a: GpuCollection, b: GpuCollection ) => number );

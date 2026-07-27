@@ -255,14 +255,40 @@ export interface GpuExportOptions {
   quality?: number;
 }
 
-export interface GpuGridLayoutOptions {
-  name: 'grid';
+export type GpuBoundingBoxInput = { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
+
+/** Options shared by the discrete layouts (scope, fit, spacing, animation). */
+export interface GpuLayoutBaseOptions {
+  /** the elements to lay out (set automatically by `eles.layout()`); defaults to the whole graph */
+  eles?: unknown;
   fit?: boolean;
   padding?: number;
-  boundingBox?: { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
+  boundingBox?: GpuBoundingBoxInput;
+  /** include labels in node dimensions (v4 note: label metrics are not in bb yet) */
+  nodeDimensionsIncludeLabels?: boolean;
+  spacingFactor?: number;
+  /** transform a computed position (e.g. to flip an axis) */
+  transform?: ( node: unknown, position: Position ) => Position;
+  /** whether to animate node positions into place */
+  animate?: boolean;
+  animationDuration?: number;
+  animationEasing?: string;
+  /** which nodes animate (others jump); all by default */
+  animateFilter?: ( node: unknown, i: number ) => boolean;
+  /** callback on layoutready */
+  ready?: () => void;
+  /** callback on layoutstop */
+  stop?: () => void;
+  /** zoom to set when fit is false */
+  zoom?: number;
+  /** pan to set when fit is false */
+  pan?: Position;
+}
+
+export interface GpuGridLayoutOptions extends GpuLayoutBaseOptions {
+  name: 'grid';
   avoidOverlap?: boolean;
   avoidOverlapPadding?: number;
-  spacingFactor?: number;
   condense?: boolean;
   rows?: number;
   cols?: number;
@@ -272,19 +298,75 @@ export interface GpuGridLayoutOptions {
   sort?: ( a: unknown, b: unknown ) => number;
 }
 
-export interface GpuPresetLayoutOptions {
+export interface GpuPresetLayoutOptions extends GpuLayoutBaseOptions {
   name: 'preset';
   /** node id → position map, or a function of a node handle; absent nodes keep their position */
   positions?: Record<string, Position> | ( ( node: unknown ) => Position | null | undefined );
-  /** zoom to set when fit is false */
-  zoom?: number;
-  /** pan to set when fit is false */
-  pan?: Position;
-  fit?: boolean;
-  padding?: number;
 }
 
-export type GpuLayoutOptions = GpuGridLayoutOptions | GpuPresetLayoutOptions;
+export interface GpuCircleLayoutOptions extends GpuLayoutBaseOptions {
+  name: 'circle';
+  avoidOverlap?: boolean;
+  /** the circle's radius (computed when omitted) */
+  radius?: number;
+  /** where nodes start in radians (default 3/2 π) */
+  startAngle?: number;
+  /** radians between the first and last node (default: full circle) */
+  sweep?: number;
+  clockwise?: boolean;
+  counterclockwise?: boolean;
+  /** comparator over node handles ordering the nodes around the circle */
+  sort?: ( a: unknown, b: unknown ) => number;
+}
+
+export interface GpuConcentricLayoutOptions extends GpuLayoutBaseOptions {
+  name: 'concentric';
+  startAngle?: number;
+  sweep?: number;
+  clockwise?: boolean;
+  counterclockwise?: boolean;
+  /** whether levels are an equal radial distance apart */
+  equidistant?: boolean;
+  /** min spacing between node outsides (radius adjustment) */
+  minNodeSpacing?: number;
+  avoidOverlap?: boolean;
+  /** height/width of the layout area (override the container) */
+  height?: number;
+  width?: number;
+  /** numeric value per node handle; higher values sit closer to the center (default: degree) */
+  concentric?: ( node: unknown ) => number;
+  /** the variation of concentric values per level (default: maxDegree / 4) */
+  levelWidth?: ( nodes: unknown ) => number;
+}
+
+export interface GpuBreadthFirstLayoutOptions extends GpuLayoutBaseOptions {
+  name: 'breadthfirst';
+  /** whether the tree is directed downwards (default false) */
+  directed?: boolean;
+  /** drawing direction of the tree (default 'downward') */
+  direction?: 'downward' | 'upward' | 'rightward' | 'leftward';
+  /** put depths in concentric circles instead of rows */
+  circle?: boolean;
+  /** place the DAG on an even grid (circle: false only) */
+  grid?: boolean;
+  avoidOverlap?: boolean;
+  /** the tree roots: a collection, or an array of node ids */
+  roots?: unknown;
+  /** comparator ordering nodes within a depth */
+  depthSort?: ( a: unknown, b: unknown ) => number;
+  /** shift nodes down to their maximal depths (DAGs only) */
+  maximal?: boolean;
+  /** with maximal: the graph is known acyclic (no cycle bail-out) */
+  acyclic?: boolean;
+}
+
+export interface GpuRandomLayoutOptions extends GpuLayoutBaseOptions {
+  name: 'random';
+}
+
+export type GpuLayoutOptions =
+  GpuGridLayoutOptions | GpuPresetLayoutOptions | GpuCircleLayoutOptions |
+  GpuConcentricLayoutOptions | GpuBreadthFirstLayoutOptions | GpuRandomLayoutOptions;
 
 /** Renderer tuning knobs (all LOD values in device px). */
 export interface GpuRendererOptions {

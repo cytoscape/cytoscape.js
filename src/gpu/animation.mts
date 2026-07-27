@@ -1,5 +1,7 @@
 import { color2tuple } from '../util/colors.mjs';
+import { compileEasing } from './easing.mjs';
 import { oklabToSrgb, srgbToOklab } from './style-schemes.mjs';
+import type { Easing, EasingProgram } from './easing.mjs';
 import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { StyleEngine } from './style.mjs';
@@ -31,32 +33,14 @@ Animatable: `position`, `opacity` (both groups), `background-color`,
 OKLab — the same space mappers ramp in by default — so an animation to a
 colour and a mapper ramp to it take the same path.  Size (width/height,
 circle collapse) and label channels are a follow-up.
+
+Easing curves live in easing.mts, which compiles a name (or
+`cubic-bezier()`/`linear()`/`spring()`) into the one form both executors
+evaluate.  A spring's `duration` is perceptual, so `durationMs` is the
+requested duration times the easing's `durationScale`.
 */
 
-export type Easing = ( t: number ) => number;
-
 const clamp01 = ( t: number ): number => t < 0 ? 0 : t > 1 ? 1 : t;
-
-/** Standard easings; a string names one, or pass a custom function. */
-export const EASINGS: Record<string, Easing> = {
-  'linear': t => t,
-  'ease': t => easeInOutCubicBezier( t ),
-  'ease-in': t => t * t * t,
-  'ease-out': t => 1 - Math.pow( 1 - t, 3 ),
-  'ease-in-out': t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow( -2 * t + 2, 3 ) / 2,
-  'ease-in-sine': t => 1 - Math.cos( ( t * Math.PI ) / 2 ),
-  'ease-out-sine': t => Math.sin( ( t * Math.PI ) / 2 ),
-  'ease-in-out-sine': t => -( Math.cos( Math.PI * t ) - 1 ) / 2
-};
-
-// a cheap approximation of CSS ease (cubic-bezier 0.25,0.1,0.25,1)
-const easeInOutCubicBezier = ( t: number ): number => t * t * ( 3 - 2 * t );
-
-export const resolveEasing = ( easing: string | Easing | undefined ): Easing => {
-  if( typeof easing === 'function' ){ return easing; }
-
-  return EASINGS[ easing ?? 'ease' ] ?? EASINGS.ease;
-};
 
 type RGBA = [ number, number, number, number ];
 
@@ -78,14 +62,22 @@ interface StyleChannel {
   columns: Partial<Record<GroupName, ColumnId>>;
   kind: 'scalar' | 'color';
   tier: 'paint' | 'geometry';
+  /**
+   * Valid range for a scalar channel.  A bouncy easing overshoots its
+   * endpoints on purpose — fine for position, but an opacity of 1.04 or a
+   * negative border width is not a value the renderer should ever see, so
+   * scalars clamp (as v3 does, via each property's own min/max).
+   */
+  min?: number;
+  max?: number;
 }
 
 const STYLE_CHANNELS: Record<string, StyleChannel> = {
-  'opacity': { columns: { nodes: 'node.opacity', edges: 'edge.opacity' }, kind: 'scalar', tier: 'paint' },
+  'opacity': { columns: { nodes: 'node.opacity', edges: 'edge.opacity' }, kind: 'scalar', tier: 'paint', min: 0, max: 1 },
   'background-color': { columns: { nodes: 'node.fillColor' }, kind: 'color', tier: 'paint' },
   'border-color': { columns: { nodes: 'node.borderColor' }, kind: 'color', tier: 'paint' },
   'line-color': { columns: { edges: 'edge.lineColor' }, kind: 'color', tier: 'paint' },
-  'border-width': { columns: { nodes: 'node.borderWidth' }, kind: 'scalar', tier: 'geometry' }
+  'border-width': { columns: { nodes: 'node.borderWidth' }, kind: 'scalar', tier: 'geometry', min: 0 }
 };
 
 const normalizeProp = ( prop: string ): string => prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
@@ -127,7 +119,13 @@ export interface AnimateOptions {
   pan?: Position;
   zoom?: number;
   duration?: number;
-  easing?: string | Easing;
+  /**
+   * A name from the v3 enum, `cubic-bezier()`, `linear()` or
+   * `spring(bounce)`.  For a spring, `duration` is the *perceptual*
+   * duration and the animation runs on past it to settle, so its total
+   * length is longer (see `durationMs`).
+   */
+  easing?: string;
   delay?: number;
   complete?: () => void;
 }
@@ -138,12 +136,6 @@ interface CompiledStyle {
   toScalar?: number;
   toColor?: RGBA;
 }
-
-/** Easing ids shared with the GPU tween kernel (gpu-tween.mts). */
-export const EASING_IDS: Record<string, number> = {
-  'linear': 0, 'ease': 1, 'ease-in': 2, 'ease-out': 3, 'ease-in-out': 4,
-  'ease-in-sine': 5, 'ease-out-sine': 6, 'ease-in-out-sine': 7
-};
 
 export type WriteKind = 'position' | 'scalar' | 'color';
 
@@ -165,15 +157,23 @@ export interface ChannelWrite {
   refs: Ref[];
   slots: Uint32Array;
   data: Float32Array;
+  /** scalar bounds against easing overshoot (see StyleChannel) */
+  min: number;
+  max: number;
 }
 
 const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
 
+const clampTo = ( v: number, lo: number, hi: number ): number => v < lo ? lo : v > hi ? hi : v;
+
 /** Floats per slot in `ChannelWrite.data`, by kind. */
 export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8 };
 
-const blankWrite = ( column: ColumnId, kind: WriteKind, paint: boolean, refs: Ref[] ): ChannelWrite => ( {
-  column, kind, paint, refs,
+const blankWrite = (
+  column: ColumnId, kind: WriteKind, paint: boolean, refs: Ref[],
+  min = -Infinity, max = Infinity
+): ChannelWrite => ( {
+  column, kind, paint, refs, min, max,
   slots: Uint32Array.from( refs, r => r.slot ),
   data: new Float32Array( refs.length * STRIDE[ kind ] )
 } );
@@ -205,7 +205,8 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
     lerp( data[ i + 1 ], data[ i + 5 ], e ),
     lerp( data[ i + 2 ], data[ i + 6 ], e ) );
 
-  return [ r, g, b, Math.round( lerp( data[ i + 3 ], data[ i + 7 ], e ) * 255 ) ];
+  // the rgb conversion clamps on its own; alpha would wrap in a byte column
+  return [ r, g, b, Math.round( clampTo( lerp( data[ i + 3 ], data[ i + 7 ], e ), 0, 1 ) * 255 ) ];
 };
 
 /**
@@ -237,10 +238,14 @@ export class Animation {
   private fromZoom: number | null = null;
   private _done = false;
   private resolvers: ( () => void )[] = [];
+  /**
+   * The animation's real length: the requested duration times the easing's
+   * `durationScale`, which is 1 for every curve except a spring (whose
+   * duration is perceptual — the pace of the key movement — leaving the
+   * settling tail to run past it).
+   */
   readonly durationMs: number;
-  readonly easingId: number;
-  /** a custom easing function can't be offloaded (the kernel knows ids only) */
-  private readonly easingOffloadable: boolean;
+  readonly easingProgram: EasingProgram;
   /** set when the renderer's GPU tween runtime drives this animation */
   gpuDriven = false;
   /** batch id in the GPU tween runtime (null until registered) */
@@ -256,11 +261,10 @@ export class Animation {
     this.viewport = viewport;
     this.refs = refs;
     this.isViewport = isViewport;
-    this.duration = Math.max( 0, opts.duration ?? 400 );
+    this.easingProgram = compileEasing( opts.easing );
+    this.easing = this.easingProgram.fn;
+    this.duration = Math.max( 0, opts.duration ?? 400 ) * this.easingProgram.durationScale;
     this.durationMs = this.duration;
-    this.easing = resolveEasing( opts.easing );
-    this.easingId = typeof opts.easing === 'string' ? ( EASING_IDS[ opts.easing ] ?? 1 ) : 1;
-    this.easingOffloadable = typeof opts.easing !== 'function';
     this.delay = Math.max( 0, opts.delay ?? 0 );
     this.position = opts.position ?? null;
     this.pan = opts.pan ?? null;
@@ -339,7 +343,7 @@ export class Animation {
    * style channels and the viewport do not.
    */
   get gpuEligible(): boolean {
-    if( this.isViewport || !this.easingOffloadable ){ return false; }
+    if( this.isViewport ){ return false; }
 
     if( this.position == null && this.style.length === 0 ){ return false; } // a bare delay
 
@@ -414,7 +418,7 @@ export class Animation {
 
         this.writes.push( s.channel.kind === 'color'
           ? this.colorWrite( column, refs, paint, () => s.toColor as RGBA )
-          : this.scalarWrite( column, refs, paint, s.toScalar as number ) );
+          : this.scalarWrite( column, refs, paint, s.toScalar as number, s.channel ) );
 
         // edge opacity is pre-folded into the stored arrow alpha (the arrow
         // vertex stage has no spare storage binding for the opacity column),
@@ -454,8 +458,10 @@ export class Animation {
     return write;
   }
 
-  private scalarWrite( column: ColumnId, refs: Ref[], paint: boolean, to: number ): ChannelWrite {
-    const write = blankWrite( column, 'scalar', paint, refs );
+  private scalarWrite(
+    column: ColumnId, refs: Ref[], paint: boolean, to: number, channel: StyleChannel
+  ): ChannelWrite {
+    const write = blankWrite( column, 'scalar', paint, refs, channel.min, channel.max );
 
     for( let i = 0; i < refs.length; i++ ){
       write.data[ i * 2 ] = readScalar( this.store, column, refs[ i ].slot );
@@ -513,7 +519,8 @@ export class Animation {
               lerp( w.data[ i * 4 + 1 ], w.data[ i * 4 + 3 ], e ) );
             break;
           case 'scalar':
-            store.setScalar( w.column, slot, lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ) );
+            store.setScalar( w.column, slot,
+              clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
             break;
           case 'color': {
             const [ r, g, b, a ] = mixOklab( w.data, i * 8, e );
@@ -558,7 +565,10 @@ export class Animation {
  */
 /** The renderer's GPU tween executor, seen by the manager. */
 export interface GpuTweenSink {
-  register( id: number, writes: readonly ChannelWrite[], start: number, duration: number, easingId: number ): void;
+  register(
+    id: number, writes: readonly ChannelWrite[],
+    start: number, duration: number, easing: EasingProgram
+  ): void;
   unregister( id: number ): void;
 }
 
@@ -703,7 +713,7 @@ export class AnimationManager {
 
         ani.gpuId = ++this.gpuCounter;
         ani.gpuDriven = true;
-        this.sink.register( ani.gpuId, writes, ani.startMs, ani.durationMs, ani.easingId );
+        this.sink.register( ani.gpuId, writes, ani.startMs, ani.durationMs, ani.easingProgram );
       }
 
       if( now >= ani.startMs + ani.durationMs ){

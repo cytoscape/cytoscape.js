@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import cytoscapeGpu from '../src/gpu/index.mjs';
-import { Animation, AnimationManager, EASINGS, EASING_IDS, resolveEasing } from '../src/gpu/animation.mjs';
+import { Animation, AnimationManager } from '../src/gpu/animation.mjs';
+import { compileEasing, EASINGS, EASING_KIND, resolveEasing } from '../src/gpu/easing.mjs';
 import { GpuTweenRuntime, TWEEN_SHADERS } from '../src/gpu/render/gpu-tween.mjs';
 import { GraphStore } from '../src/gpu/store/graph-store.mjs';
 
@@ -10,12 +11,14 @@ import { GraphStore } from '../src/gpu/store/graph-store.mjs';
 describe('gpu/animation', function(){
 
   describe('easings', function(){
-    it('resolves names and functions, defaulting to ease', function(){
+    it('resolves names, defaulting to ease', function(){
       expect( resolveEasing('linear') ).to.equal( EASINGS.linear );
-      const custom = t => t;
-      expect( resolveEasing( custom ) ).to.equal( custom );
       expect( resolveEasing( undefined ) ).to.equal( EASINGS.ease );
-      expect( resolveEasing('nope') ).to.equal( EASINGS.ease );
+    });
+
+    it('rejects unknown names and custom functions', function(){
+      expect( () => resolveEasing('nope') ).to.throw( /not a known easing/ );
+      expect( () => resolveEasing( t => t ) ).to.throw( /custom easing function/ );
     });
 
     it('all easings pin 0→0 and 1→1', function(){
@@ -150,6 +153,98 @@ describe('gpu/animation', function(){
     });
   });
 
+  describe('overshooting easings', function(){
+    const nodeWith = () => {
+      const s = new GraphStore();
+      s.addNode( 'a', 0, 0 );
+      return { store: s, ref: s.ref( 'nodes', s.lookup('a').slot ) };
+    };
+    // sample densely: an overshoot lives between the endpoints
+    const sweep = ( ani, ms, read ) => {
+      const seen = [];
+
+      for( let i = 0; i <= 40; i++ ){ ani.tick( ( i / 40 ) * ms ); seen.push( read() ); }
+
+      return seen;
+    };
+
+    it('runs a spring past its perceptual duration, to let it settle', function(){
+      const { store, ref } = nodeWith();
+      const ani = new Animation( store, null, [ ref ], false,
+        { position: { x: 100, y: 0 }, duration: 100, easing: 'spring(0.5)' } );
+
+      expect( ani.durationMs ).to.be.above( 150 ); // ~1.95× for this bounce
+      ani.tick( 0 );
+      expect( ani.tick( 100 ) ).to.be.false;       // still ringing at the perceptual mark
+      expect( ani.tick( ani.durationMs ) ).to.be.true;
+      expect( store.column('node.position')[ ref.slot*2 ] ).to.equal( 100 );
+    });
+
+    it('lets position overshoot — that is the point of a spring', function(){
+      const { store, ref } = nodeWith();
+      const ani = new Animation( store, null, [ ref ], false,
+        { position: { x: 100, y: 0 }, duration: 100, easing: 'spring(0.6)' } );
+
+      ani.tick( 0 );
+
+      const xs = sweep( ani, ani.durationMs, () => store.column('node.position')[ ref.slot*2 ] );
+
+      expect( Math.max( ...xs ) ).to.be.above( 100 );
+      expect( xs[ xs.length - 1 ] ).to.equal( 100 );
+    });
+
+    it('clamps opacity into [0, 1] under a bouncy curve', function(){
+      const { store, ref } = nodeWith();
+      store.setScalar( 'node.opacity', ref.slot, 1 );
+
+      const ani = new Animation( store, null, [ ref ], false,
+        { style: { opacity: 0 }, duration: 100, easing: 'spring(0.7)' } );
+
+      ani.tick( 0 );
+
+      const vals = sweep( ani, ani.durationMs, () => store.column('node.opacity')[ ref.slot ] );
+
+      expect( Math.min( ...vals ) ).to.equal( 0 );        // the undershoot is clamped, not negative
+      expect( Math.max( ...vals ) ).to.be.at.most( 1 );
+    });
+
+    it('clamps border-width at zero (a negative width would flip the stroke)', function(){
+      const { store, ref } = nodeWith();
+      store.setScalar( 'node.borderWidth', ref.slot, 6 );
+
+      const ani = new Animation( store, null, [ ref ], false,
+        { style: { 'border-width': 0 }, duration: 100, easing: 'cubic-bezier(0.3, 1.5, 0.7, -0.6)' } );
+
+      ani.tick( 0 );
+
+      const vals = sweep( ani, ani.durationMs, () => store.column('node.borderWidth')[ ref.slot ] );
+
+      expect( Math.min( ...vals ) ).to.equal( 0 );
+    });
+
+    it('clamps a colour\'s bytes, so alpha cannot wrap', function(){
+      const { store, ref } = nodeWith();
+      store.setColor( 'node.fillColor', ref.slot, 255, 0, 0, 255 );
+
+      const ani = new Animation( store, null, [ ref ], false,
+        { style: { 'background-color': 'rgba(0, 0, 255, 0)' }, duration: 100, easing: 'spring(0.8)' } );
+
+      ani.tick( 0 );
+
+      const seen = sweep( ani, ani.durationMs, () => {
+        const c = store.column('node.fillColor');
+        return Array.from( c.subarray( ref.slot*4, ref.slot*4 + 4 ) );
+      } );
+
+      for( const px of seen ){
+        for( const b of px ){ expect( b ).to.be.within( 0, 255 ); }
+      }
+
+      // the final frame is the exact target, wrapping or not
+      expect( seen[ seen.length - 1 ] ).to.deep.equal( [ 0, 0, 255, 0 ] );
+    });
+  });
+
   describe('GpuTweenRuntime (mock device)', function(){
     const makeMock = () => {
       const writes = [];
@@ -174,11 +269,18 @@ describe('gpu/animation', function(){
       data: new Float32Array( data )
     } );
 
-    it('every easing id is defined in every kernel', function(){
+    it('every easing kind is handled in every kernel', function(){
       for( const [ kind, code ] of Object.entries( TWEEN_SHADERS ) ){
-        for( const id of Object.values( EASING_IDS ) ){
-          expect( code, `${kind} easing ${id}` ).to.match( new RegExp( `case ${id}u:|default:` ) );
+        for( const id of Object.values( EASING_KIND ) ){
+          expect( code, `${kind} easing kind ${id}` ).to.match( new RegExp( `case ${id}u:|default:` ) );
         }
+      }
+    });
+
+    it('the kernels carry a WGSL twin of both CPU evaluators', function(){
+      for( const [ kind, code ] of Object.entries( TWEEN_SHADERS ) ){
+        expect( code, kind ).to.include('fn bezierAt');  // the enum + cubic-bezier()
+        expect( code, kind ).to.include('fn pointsAt');  // linear() + spring()
       }
     });
 
@@ -203,7 +305,8 @@ describe('gpu/animation', function(){
       expect( rt.active() ).to.be.false;
       expect( rt.ownedColumns() ).to.deep.equal( [] );
 
-      rt.register( 1, [ write( 'node.position', 'position', [ 2, 5 ], [ 0,0,10,10, 0,0,20,20 ] ) ], 1000, 200, 0 );
+      rt.register( 1, [ write( 'node.position', 'position', [ 2, 5 ], [ 0,0,10,10, 0,0,20,20 ] ) ],
+        1000, 200, compileEasing('linear') );
 
       expect( rt.active() ).to.be.true;
       expect( rt.hasPositions() ).to.be.true;
@@ -212,14 +315,15 @@ describe('gpu/animation', function(){
       rt.encode( mock.pass, 1100, 'position' );
       expect( mock.dispatches ).to.deep.equal( [ 1 ] ); // ceil(2/256)
 
-      // the params uniform carries start/duration/now/easingId
-      const params = mock.writes.find( w => w.label === 'cy-gpu:tween-params:1' && w.data.length === 4 );
+      // the params uniform carries the clock plus the whole curve
+      const params = mock.writes.find( w => w.label === 'cy-gpu:tween-params:1' );
       const f = new Float32Array( params.data.buffer );
       const u = new Uint32Array( params.data.buffer );
       expect( f[0] ).to.equal( 1000 ); // start
       expect( f[1] ).to.equal( 200 );  // duration
       expect( f[2] ).to.equal( 1100 ); // now
-      expect( u[3] ).to.equal( 0 );    // easingId (linear)
+      expect( u[3] ).to.equal( EASING_KIND.linear );
+      expect( u[8] ).to.equal( 0 );    // no progression array
 
       rt.unregister( 1 );
       expect( rt.active() ).to.be.false;
@@ -233,7 +337,7 @@ describe('gpu/animation', function(){
         write( 'node.position', 'position', [ 1 ], [ 0,0,10,10 ] ),
         write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ),
         write( 'node.fillColor', 'color', [ 1 ], [ 0,0,0,1, 1,0,0,1 ] )
-      ], 0, 100, 1 );
+      ], 0, 100, compileEasing('ease') );
 
       expect( rt.ownedColumns() ).to.have.members(
         [ 'node.position', 'node.opacity', 'node.fillColor' ] );
@@ -253,7 +357,8 @@ describe('gpu/animation', function(){
       const mock = makeMock();
       const rt = new GpuTweenRuntime( mock.device, id => ( { label: id } ), () => 0 );
 
-      rt.register( 1, [ write( 'edge.lineColor', 'color', [ 3 ], [ 0,0,0,1, 1,0,0,1 ] ) ], 0, 100, 1 );
+      rt.register( 1, [ write( 'edge.lineColor', 'color', [ 3 ], [ 0,0,0,1, 1,0,0,1 ] ) ],
+        0, 100, compileEasing('ease') );
 
       expect( rt.active() ).to.be.true;
       expect( rt.hasPositions() ).to.be.false;
@@ -269,7 +374,7 @@ describe('gpu/animation', function(){
       const device = { ...mock.device, createBindGroup: () => { binds++; return {}; } };
       const rt = new GpuTweenRuntime( device, id => ( { label: id } ), () => version );
 
-      rt.register( 1, [ write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ) ], 0, 100, 0 );
+      rt.register( 1, [ write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ) ], 0, 100, compileEasing('linear') );
 
       rt.encode( mock.pass, 10, 'paint' );
       rt.encode( mock.pass, 20, 'paint' );
@@ -290,11 +395,49 @@ describe('gpu/animation', function(){
       rt.register( 1, [
         write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ),
         write( 'node.fillColor', 'color', [ 1 ], [ 0,0,0,1, 1,0,0,1 ] )
-      ], 0, 100, 0 );
+      ], 0, 100, compileEasing('linear') );
 
-      expect( created ).to.have.length( 5 ); // 2 slot + 2 data + 1 params
+      // the shared dummy points buffer comes from the constructor
+      const batch = created.filter( b => b.label !== 'cy-gpu:tween-points-none' );
+
+      expect( batch ).to.have.length( 5 ); // 2 slot + 2 data + 1 params
       rt.unregister( 1 );
+      expect( batch.every( b => b.destroyed ) ).to.be.true;
+      expect( created.find( b => b.label === 'cy-gpu:tween-points-none' ).destroyed ).to.be.false;
+
+      rt.destroy();
       expect( created.every( b => b.destroyed ) ).to.be.true;
+    });
+
+    it('uploads a progression array only for the points kinds, and frees it', function(){
+      const created = [];
+      const mock = makeMock();
+      const device = { ...mock.device,
+        createBuffer: d => { const b = { label: d.label, size: d.size, destroyed: false, destroy(){ this.destroyed = true; } }; created.push( b ); return b; },
+        queue: mock.device.queue };
+      const rt = new GpuTweenRuntime( device, id => ( { label: id } ), () => 0 );
+      const w = () => [ write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ) ];
+
+      rt.register( 1, w(), 0, 100, compileEasing('ease-in-out') );
+      expect( created.some( b => b.label === 'cy-gpu:tween-points:1' ) ).to.be.false;
+
+      const spring = compileEasing('spring(0.4)');
+
+      rt.register( 2, w(), 0, 100, spring );
+
+      const points = created.find( b => b.label === 'cy-gpu:tween-points:2' );
+
+      expect( points.size ).to.equal( spring.points.byteLength );
+
+      rt.encode( mock.pass, 50, 'paint' );
+
+      const params = mock.writes.filter( p => p.label === 'cy-gpu:tween-params:2' ).pop();
+
+      expect( new Uint32Array( params.data.buffer )[ 3 ] ).to.equal( EASING_KIND.points );
+      expect( new Uint32Array( params.data.buffer )[ 8 ] ).to.equal( spring.points.length / 2 );
+
+      rt.unregister( 2 );
+      expect( points.destroyed ).to.be.true;
     });
   });
 
@@ -322,10 +465,16 @@ describe('gpu/animation', function(){
       expect( ani( { style: { opacity: 0, 'border-width': 4 }, position: { x: 1, y: 1 } } ).gpuEligible ).to.be.false;
     });
 
-    it('never offloads the viewport, a custom easing function, or a bare delay', function(){
+    it('never offloads the viewport or a bare delay', function(){
       expect( ani( { pan: { x: 10, y: 0 } }, true ).gpuEligible ).to.be.false;
-      expect( ani( { position: { x: 1, y: 1 }, easing: t => t } ).gpuEligible ).to.be.false;
       expect( ani( { duration: 100 } ).gpuEligible ).to.be.false;
+    });
+
+    it('offloads every easing, since they all compile to a device program', function(){
+      for( const easing of [ 'linear', 'ease-in-out-circ', 'cubic-bezier(0.2, 1.4, 0.6, 1)',
+        'linear(0, 0.25, 1)', 'spring(0.5)' ] ){
+        expect( ani( { position: { x: 1, y: 1 }, easing } ).gpuEligible, easing ).to.be.true;
+      }
     });
   });
 

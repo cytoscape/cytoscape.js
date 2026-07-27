@@ -806,8 +806,8 @@ geometry-seam work.
   at the start value while the device buffers held the last frame drawn, with
   nothing to reconcile them (it now settles, matching v3's leave-it-where-it-got
   -to); a custom easing **function** was silently downgraded to `'ease'` on the
-  GPU (such animations are now ineligible, since only named easings exist in
-  WGSL); and the GPU path captured start values *before* the delay elapsed,
+  GPU (made ineligible here, then dropped from the API in R9.5); and the GPU
+  path captured start values *before* the delay elapsed,
   unlike the CPU path.
 - **A reserved-word trap, and the guard for it.**  `target` is a WGSL reserved
   keyword: all three tween pipelines failed to compile, the dispatches became
@@ -824,3 +824,58 @@ geometry-seam work.
   channel on stop).
 - **Still deferred:** the *size* tween (`width`/`height`, `border-width`,
   `edge.width`) with the R8.5 geometry seam, and GPU layouts.
+
+## Landed (round 9.5 — the easing layer, 2026-07-27)
+
+Round 9 shipped eight ad-hoc easings, with the four names shared with v3 drawn
+as *different curves* (max deviation 0.33 for `ease`) and unknown names falling
+back to `ease` silently.  This round replaces that with one curve layer
+(`src/gpu/easing.mts`) that both executors run.
+
+- **v3's enum, verbatim.**  `linear` plus the 25 named cubic-beziers, using v3's
+  own control points, so every named curve is now identical to v3's (pinned by a
+  test that samples both implementations across t).  One exact Newton solve
+  covers the whole enum *and* `cubic-bezier(x1, y1, x2, y2)`, so there is no
+  per-name code — the 8 hand-written curves and their WGSL twins are gone.
+- **`linear(...)` progression arrays**, in the full CSS form: bare values,
+  explicit `%` stops, two stops on one entry for a flat segment, and the CSS
+  fill rules (first stop 0, last 1, runs spread evenly, every stop pulled up to
+  the largest one before it, so a decreasing stop reads as a jump).
+- **`spring(bounce)` replaces v3's `spring(tension, friction)`** with Apple's
+  perceptual parameterization (via kvin.me): mass 1, stiffness (2π/D)², damping
+  4π(1 − bounce)/D — which reduces to a damping ratio of exactly `1 − bounce`.
+  So one number sets the shape: 0 is critically damped, positive rings,
+  negative is overdamped.  **A spring compiles to a progression array on the
+  CPU** — the closed-form step response sampled over the whole settling window,
+  densely enough that the chord error stays under the residual that counts as
+  settled — so the kernel needs no physics and a spring costs exactly what
+  `linear()` costs.
+- **`duration` is perceptual for springs** (the article's model, and SwiftUI's):
+  it sets the pace of the key movement and is held constant as bounce changes,
+  so the animation runs on past it while the ringing decays —
+  `durationMs = duration × durationScale`, where the scale is the settling
+  window measured in perceptual units.
+- **One program, two evaluators.**  `compileEasing` returns
+  `{kind, bezier, points, durationScale, fn}`; the CPU calls `fn`, and the
+  kernel reads kind/bezier out of its params (now 48 bytes) with progression
+  arrays on a storage buffer at binding 4 (a shared 8-byte dummy when the curve
+  needs none).  The WGSL mirrors the CPU step for step — same 11-sample bracket
+  and Newton refinement, same binary-search lerp — so they agree to float
+  precision; the ends are exact on both sides and a settle re-derives anyway.
+- **No custom easing functions** (a v3 feature, and an API break here).  A
+  closure cannot cross to the device, so keeping it would mean a curve that
+  silently depends on whether the animation was offloaded; with `cubic-bezier()`
+  and `linear()` covering any drawable curve, parity is worth more than the
+  escape hatch.  Unknown names now **throw** with the list, rather than
+  animating on the wrong curve.
+- **Overshoot handling.**  Bouncy curves pass their endpoints: position is let
+  through (that is the point), while scalar channels clamp to per-property
+  bounds on both executors (`opacity` [0,1], `border-width` ≥ 0), mirroring v3's
+  `type.min`/`type.max`; color bytes clamp on pack, with alpha clamped
+  explicitly (a `Uint8Array` write would wrap).
+- **Verification**: 1448 Node tests (28 new easing specs + 5 overshoot specs) +
+  47 module tests, typecheck and lint clean, 26/26 webgpu Playwright on
+  SwiftShader — including a spring spec (the node visibly passes the target,
+  still animating past its perceptual duration, then settles exactly on it) and
+  a steep-bezier spec (`ease-in-expo` has barely moved at 40% of the time),
+  which together prove both device evaluators.

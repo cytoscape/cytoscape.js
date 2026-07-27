@@ -1005,6 +1005,76 @@ test.describe( 'WebGPU renderer', () => {
     expect( ( await pixelAt( page, center.x, center.y ) )[ 0 ] ).toBeGreaterThan( 200 );
   } );
 
+  test( 'spring() overshoots on the device: the node passes the target, then settles on it', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: -100, y: 0 } } ],
+      style: { nodes: { 'background-color': 'red', 'width': 40, 'height': 40, 'shape': 'rectangle' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    /*
+    A spring compiles to a progression array on the CPU, so this exercises the
+    kernel's points evaluator.  bounce 0.7 is ζ=0.3, whose first peak is 37%
+    past the target half a perceptual duration in — and the curve is flat
+    around that peak, so a wide sampling window still lands well past 1.
+    */
+    await page.evaluate( () => window.cy.$id( 'a' ).animate( {
+      position: { x: 0, y: 0 }, duration: 2000, easing: 'spring(0.7)' } ) );
+    await page.waitForTimeout( 1000 );
+    await waitFrames( page );
+
+    // 35px past the target: only an overshoot puts the node here
+    expect( ( await pixelAt( page, center.x + 35, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+
+    // it also runs past its perceptual duration while the ringing decays
+    await page.waitForTimeout( 1200 );
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( true );
+
+    // and it lands exactly on the target, overshoot or not
+    await page.evaluate( () => window.cy.$id( 'a' ).stop( true, true ) );
+    await waitFrames( page );
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).position().x ) ).toBeCloseTo( 0, 3 );
+    expect( ( await pixelAt( page, center.x + 35, center.y ) )[ 1 ] ).toBeGreaterThan( 200 );
+    expect( ( await pixelAt( page, center.x, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+  } );
+
+  test( 'a steep named easing is evaluated on the device, not treated as linear', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: -100, y: 0 } } ],
+      style: { nodes: { 'background-color': 'red', 'width': 40, 'height': 40, 'shape': 'rectangle' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // ease-in-expo is ~0.03 of the way at 40% of the time; linear would be at
+    // 0.4, which is 76px further along — far more than the node is wide
+    await page.evaluate( () => window.cy.$id( 'a' ).animate( {
+      position: { x: 100, y: 0 }, duration: 2000, easing: 'ease-in-expo' } ) );
+    await page.waitForTimeout( 800 );
+    await waitFrames( page );
+
+    expect( ( await pixelAt( page, center.x - 95, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+    expect( ( await pixelAt( page, center.x - 20, center.y ) )[ 1 ] ).toBeGreaterThan( 200 );
+
+    await page.evaluate( () => window.cy.$id( 'a' ).stop( true, true ) );
+    await waitFrames( page );
+
+    expect( ( await pixelAt( page, center.x + 100, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+  } );
 
   test( 'mapped colors render the OKLab interpolation the getters report', async ( { page } ) => {
     await page.goto( PAGE );

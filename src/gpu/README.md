@@ -212,7 +212,7 @@ each is deliberate, not a pass-1 deferral:
   - **GPU fast path** (`render/gpu-tween.mts`): when a renderer is
     present, three kernels (`position`/`scalar`/`color`) evaluate
     `mix(from, to, ease(t))` on-device — per-slot from/to uploaded once, a
-    per-batch params buffer holding `{start, duration, now, easingId}`
+    per-batch params buffer holding `{start, duration, now, curve}`
     bumped per frame.  Per-frame CPU cost is ~zero (no tween loop, no
     column upload) — the layout-transition-and-fade-at-scale case.
     Dispatch counts come from WGSL `arrayLength(&slots)`, *not* a uniform:
@@ -231,8 +231,39 @@ each is deliberate, not a pass-1 deferral:
     select), so a GPU-owned size tween reopens the store→style layering
     seam R8.5 flagged and belongs with that geometry work.  Eligibility is
     **all-or-nothing per animation** (`gpuEligible`), so a column is never
-    half-owned; a custom easing *function* is also ineligible, since only
-    the named easings exist in WGSL.
+    half-owned.  Easings never affect eligibility: every accepted form
+    compiles to something both executors can run.
+  - **One curve layer, two executors** (`easing.mts`).  `compileEasing`
+    turns an easing into an `EasingProgram` — `kind` plus a bezier tuple or
+    a progression array — which the CPU calls directly and the kernel reads
+    out of its params (progression arrays ride a storage buffer).  Accepted:
+    v3's full enum (`linear` plus 25 named cubic-beziers, the same control
+    points, so the curves are unchanged), `cubic-bezier(x1, y1, x2, y2)`,
+    CSS `linear(...)` progression arrays (stops and all), and
+    `spring(bounce)`.  The two evaluators mirror each other step for step
+    (the same 11-sample bracket and Newton refinement; the same
+    binary-search lerp) and agree to float precision, not bit-exactly —
+    invisible mid-flight, and moot at the ends, where t=0/t=1 are exact on
+    both sides and a settle re-derives on the CPU.
+  - **Easings are names only** — a custom easing *function* is rejected
+    (v3 accepted one).  A closure cannot cross to the device, so keeping it
+    would mean a curve that silently depends on whether the animation got
+    offloaded; `cubic-bezier()`/`linear()` cover any curve you can draw.
+  - **`spring(bounce)` is perceptual, and compiles on the CPU.**  It
+    replaces v3's `spring(tension, friction)` with Apple's parameterization,
+    which reduces to a damping ratio of exactly `1 − bounce` (0 is
+    critically damped, positive rings, negative is overdamped).  The
+    compiler samples the closed-form step response over the whole settling
+    window into a progression array, so the kernel needs no physics and
+    springs cost exactly what `linear()` costs.  `duration` is the
+    *perceptual* duration — the pace of the key movement, held constant as
+    bounce changes — so the animation runs on past it while the ringing
+    decays (`durationMs = duration × durationScale`).
+  - **Bouncy curves overshoot, and scalars clamp.**  Position is let
+    through (overshoot is the point of a spring); scalar channels clamp to
+    their property bounds on both executors (`opacity` to [0,1],
+    `border-width` at 0), as v3 does via each property's `min`/`max`, and
+    color bytes clamp on pack.
   - **Transient lease**: a tweened column is GPU-owned while the tween
     runs (the mirror skips its CPU uploads), so sync reads are a stale
     mirror during the animation — `position()`/pick/extent for position,

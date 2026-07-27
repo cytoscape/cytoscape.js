@@ -473,10 +473,14 @@ adapter).  `src/gpu/README.md` records the policies.
 - ~~**Batching**~~ — landed in round 6 with the v3 policy (defer style
   apply, keep events); `notify`/`noNotifications` deliberately have no
   v4 counterpart (the renderer is dirty-driven).
-- **Core `json()` *import*** and element `clone`/`copy`/`restore`:
-  export landed in round 6; the import/restore *setter* (rebuild from a
-  JSON snapshot, incl. restoring removed elements) still needs stored
-  defs.
+- ~~**Core `json()` *import*** and element `clone`/`copy`/`restore`~~ —
+  **call made (round 10 planning, 2026-07-27): not in v4.**  Removed
+  elements are terminally dead (see the design decision in
+  `src/gpu/README.md`): their column bytes are tombstoned and the slot
+  free-listed, so nothing keeps a removed element readable or
+  restorable.  `restore()`/`clone()` and the import form of `cy.json()`
+  are permanently closed; re-adding from kept definitions is the app's
+  job (exported element json round-trips through `cy.add()`).
 - ~~**Image export** (`png`/`jpg`/`jpeg`/`renderTo`)~~ — landed in round
   9.6 (below) as the offscreen render + buffer readback path;
   `renderTo` remains out.
@@ -1005,3 +1009,199 @@ via the endpoint delta, but with flip-when-upside-down readability
 rules — is a separate follow-up call.  Sequencing: after 9.7, so the
 label goldens/WYSIWYG harness exists to verify it; the edge-label round
 then just adds a golden scene.
+
+## Round 10 plan — autonomous parity sprint (planned 2026-07-27)
+
+Scope criteria set with the user: this round is composed **only of items
+whose design is already decided** (or is a mechanical v3 port) **and
+that are easily verifiable in the existing harnesses** — Node
+`test/gpu-*.mjs`, the `webgpu`/`webgpu-visual` Playwright projects,
+`benchmark/gpu/` — so the round can run autonomously as far as
+possible.  Anything needing iterative design discussion is deferred and
+logged (see the compaction section below and the deferred list at the
+end).  Two design calls were made during planning:
+
+- **Removed elements are terminally dead in v4** (recorded in
+  `src/gpu/README.md`, "Design decisions"): only the handle's cached
+  `id()`/`group()` survive removal.  This permanently closes
+  `restore()`/`clone()`/`cy.json()` import — the needs-a-call entry
+  above is closed.
+- **Compaction is out of this round** — the motivation analysis is
+  logged below with all policy calls left explicitly open.
+
+Process (user-set):
+
+- **Per-item cadence, full verify.**  Each item lands as its own
+  isolated commit(s) on `v4`, gated on typecheck + lint + `test:js`
+  (+ `test:modules` where relevant) + the relevant Playwright projects.
+  Goldens are regenerated/added autonomously when a visual change is
+  intended (`UPDATE_GOLDENS=1`), noted in the commit message.
+- **Docs land in the same commit as the code they describe**:
+  `src/gpu/README.md` (scope / deviations / design decisions) and this
+  file's round record are updated per commit, not batched at the end.
+- **Escalation rule**: if an item turns out to need a real design call
+  mid-implementation, stop that item, log the question under "Needs a
+  call", and move on to the next item — API semantics are never
+  improvised autonomously.
+- Perf-relevant items run the matching `benchmark/gpu/` sweep and
+  record numbers here.
+
+Items, in execution order — CPU-first (banks autonomous wins with zero
+renderer risk), then shader/golden work, then interaction/lifecycle.
+Each entry converts into a "Landed" record as it ships:
+
+**Phase A — pure CPU, Node-testable**
+
+- [ ] **A1 Algorithms: search + paths** — `bfs`, `dfs`, `dijkstra`,
+  `aStar`, `bellmanFord`, `floydWarshall`, `kruskal`, ported from
+  `src/collection/algorithms/` to slot-native CSR walks on
+  `GraphStore`; v3 API shapes (options objects; `weight` as a plain
+  function, consistent with v4's predicate philosophy); tests ported
+  from the v3 fixtures.
+- [ ] **A2 Algorithms: structure** — tarjan SCC, hopcroft-tarjan
+  biconnected, hierholzer, kargerStein.
+- [ ] **A3 Algorithms: pageRank + centralities** — pageRank,
+  degree/closeness/betweenness centrality (+ normalized variants).
+- [ ] **A4 Algorithms: clustering** — markov, k-means, k-medoids,
+  fuzzy c-means, hierarchical, affinity propagation (+ the shared
+  distance helpers).
+- [ ] **A5 Algorithm benchmark** — `benchmark/gpu/algorithms.mjs` vs v3
+  (at least bfs/dijkstra/pageRank/tarjan).
+- [ ] **A6 Layouts** — `circle`, `concentric`, `breadthfirst`, `random`
+  ported to the slot-native bulk `setPositions` path (the grid-port
+  pattern), plus `eles.layout()`/`layoutPositions` for subset layouts.
+  Non-animated first; `animate: true` only if it falls out of the
+  existing animation system cheaply, else noted as deferred.
+- [ ] **A7 Viewport animation targets** —
+  `cy.animate({ fit: { eles, padding } })` / `{ center: { eles } }` and
+  animated `fit()`/`center()` options, over the existing viewport
+  tween; deterministic-tick Node tests.
+- [ ] **A8 Data query predicates** — the matcher IR extension named in
+  the selector-removal section: `cy.nodes({ data: { weight: { gt:
+  0.5 } } })` (+ bare-value equality shorthand), `gt/lt/gte/lte/eq/ne/
+  in` vocabulary shared with `case` mappers, answered during the
+  columnar scan against the sidecar columns; unknown keys keep
+  throwing.
+- [ ] **A9 Small items** — `boundingBoxAt`; `padding()`/`paddedWidth`/
+  `paddedHeight` (smallest v3-consistent form; investigate whether
+  padding is a geometry channel or accessor-only without compounds);
+  live-graph binary export `cy.serialize()` → wire ArrayBuffer
+  (round-trips through `options.elements`/`add()`); the
+  `document.fonts.ready` atlas re-raster hook logged in round 9.7.
+
+**Phase B — renderer/shader work, golden-verified**
+
+- [ ] **B1 Node shape parity** — closed-form SDFs: regular polygons
+  (`triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`),
+  `diamond`, `star`, `vee`, `rhomboid`, `tag`; `round-*` variants via
+  SDF shrink+offset where closed-form allows.  `contract.mts` shape ids
+  first; new golden scene.
+- [ ] **B2 `line-style: solid | dashed | dotted`** — fract-along-length
+  in the edge FS, v3 default pattern.  `border-style` is stretch-only
+  (`double` is easy in SDF; dashed borders need perimeter
+  parameterization on arbitrary shapes — skip if not clean, note in
+  deviations).
+- [ ] **B3 Label visuals** — `text-outline-width`/`-color`(/`-opacity`)
+  (a second SDF distance threshold), `text-background-color`/
+  `-opacity`/`-padding` (one background quad per label run off the
+  extent the layout already computes), `text-margin-x/y`.  Constants
+  through the label sidecar; label-tier golden bound.
+- [ ] **B4 Arrow shape parity** — `vee`, `chevron`, `circle`, `square`,
+  `diamond`, `tee` as SDFs in the arrow quad FS (compound shapes like
+  `triangle-tee`/`circle-triangle`/`backcurve` are stretch).  Golden
+  scene update.
+- [ ] **B5 Edge labels pass 1** — the logged direction above, built:
+  second glyph stream (own instance buffer + cull group + draw call),
+  midpoint computed in the VS from the endpoints, cull = edge SHOWN +
+  both endpoints SHOWN, shared atlas, group-keyed label sidecar /
+  label-dirty channel / StyleEngine label channels.  Horizontal only
+  (autorotate stays deferred).  Golden scene + follows-drag + LOD
+  specs; the WYSIWYG self-diff already covers glyphs.
+
+**Phase C — interaction & lifecycle, Playwright-verified**
+
+- [ ] **C1 Gesture parity** — `cxttap`/`cxttapstart`/`cxttapend`,
+  `taphold`, `dbltap` + the `multiClickDebounceTime` option, and v3's
+  drag-all-selected (dragging a selected node moves the whole
+  selection).  `interact/pointer.mts`; Playwright specs per gesture.
+- [ ] **C2 `mount`/`unmount`** — `unmount()` tears down the renderer
+  (instance becomes headless); `mount(container)` re-inits and rebuilds
+  mirrors/atlas from CPU-canonical state (the ColumnMirror full-upload
+  path already exists).  Playwright: render → unmount → mutate → mount
+  → pixels reflect the mutations.
+- [ ] **C3 Device-loss recovery** — proposed policy, to be recorded as
+  the decision when it lands: auto-recover **once per loss** —
+  re-acquire adapter/device, rebuild mirrors/pipelines/atlas from
+  CPU-canonical state, emit `devicelost` + `devicerestored`; if
+  re-acquisition fails, today's behavior (dead instance + `error`).
+  Playwright via `device.destroy()`.
+
+Deferred out of this round (logged, not built): compaction (below);
+autorotated edge labels; multiline labels; bezier edges; compounds;
+z-index; GPU layouts; size tweens (the R8.5 geometry seam); `renderTo`;
+restore/clone/json-import (closed — not in v4); the three-finger touch
+box gesture.
+
+## Logged — compaction (analysis only; out of round 10)
+
+Discussed 2026-07-27 while planning round 10 and **deliberately left
+out of the sprint**: the analysis below is settled, but the policy
+calls are **open** — none of the options named here is decided.
+
+**When compaction is motivated** — three distinct profiles:
+
+1. **Shrink** (big removals without re-add — e.g. a filter UI cuts 200k
+   elements to 20k).  Dead slots pile up and `highWater` never falls:
+   every compute dispatch (cull count/scan/scatter, mapper eval) still
+   runs over `highWater` lanes; every CPU columnar scan
+   (`scanRefsInto`, `boundingBox`, `refsInBox`, CPU pick) still
+   iterates `highWater` slots — cost proportional to the *peak* graph,
+   not the current one.  CPU columns and GPU mirrors stay at peak
+   capacity, and one-coalesced-span dirty tracking uploads dead bytes
+   when writes straddle dead regions.
+2. **Churn** (sustained remove+add at stable size — streaming /
+   sliding-window dashboards, expand/collapse exploration).  The
+   free-list recycles slots, so the tables don't grow — but three
+   append-only structures leak unboundedly in *time*: the **id blob**
+   (removed ids' UTF-8 bytes + probe entries never reclaimed; new ids
+   append fresh bytes), the **CSR adjacency** (removed edges strand CSR
+   space; incremental adds accumulate in the per-node overlay), and
+   **string-dictionary data columns** (dictionaries only grow).  This
+   is the most motivated real-world case — and it is invisible to a
+   dead-slot-ratio meter, since slots recycle.
+3. **Peak-then-small memory reclaim** (transient huge load, then
+   narrow): capacity stays at peak until slots compact and columns
+   realloc down.
+
+Not motivated: add-only or stable graphs (zero waste), and moderate
+removal on big graphs (cull already keeps draw cost O(visible); dead
+slots only cost pass-iteration width and memory).
+
+**The tier split** — the tiers differ by trigger meter, not just
+difficulty.  Blob/CSR/dictionary compaction is **slot-stable**: no
+identity moves, no renderer or ref implications, metered by plain waste
+counters — it could safely run automatically.  **Slot compaction**
+moves live elements, is metered by dead-slot ratio, and carries all the
+policy weight: outstanding refs (plain `{group, slot, gen}` objects in
+user-held collections, plus packed-int membership-set caches — they
+cannot be found and rewritten eagerly), z-order (slot order is draw
+order), GPU full re-upload (the existing `resized` path), and remap of
+in-flight animation slot lists.
+
+**Open policy questions** (options discussed, none chosen): (a) ref
+survival across a slot move — a forwarding table with lazy ref repair +
+an epoch stamp invalidating cached membership sets, vs
+handles-survive-collections-stale, vs everything-stale; (b) trigger —
+explicit `cy.compact()` vs auto thresholds (with slot-stable tiers
+plausibly auto regardless); (c) draw order after compacting — stable
+(visually a no-op) vs restore-insertion-order (heals the recycled-slot
+z-order wart at the cost of a visible change and a per-slot sequence
+number).
+
+**Settled adjacent question**: removed-element readability is
+*orthogonal* to compaction — v4 already gave it up when it chose
+tombstones + a free-list (the next add may recycle the slot), and the
+round-10 design call above makes that permanent.  Compaction changes
+nothing for removed refs under any option: a removed ref matches no
+forwarding entry and its generation is already stale, and the cached
+`id()`/`group()` live on the JS handle, not in the columns.

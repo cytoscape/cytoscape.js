@@ -408,6 +408,18 @@ each is deliberate, not a pass-1 deferral:
   scope is v3's default look: horizontal text at the midpoint;
   autorotate (and its flip-when-upside-down readability rules) is a
   separate follow-up call.
+- **Removed elements are terminally dead** (decided 2026-07-27).  An
+  element's substance lives in the columns, not the handle, and
+  `remove()` tombstones the slot, bumps its generation and free-lists
+  it — the next `add()` may recycle and overwrite those bytes.  So v4
+  does not keep removed elements readable: a ref held in an old
+  collection fails generation validation and reads as dead, and only
+  the handle's cached `id()`/`group()` stay readable (kept for
+  `remove`-event handlers and predicates).  This closes v3's
+  hold-a-removed-element pattern permanently: `restore()`/`clone()` and
+  the import form of `cy.json()` are not coming to v4 — re-adding from
+  kept definitions is the app's job (exported element json round-trips
+  through `cy.add()`).
 - **GPU layouts: logged for later.**  A force layout is *stateful*
   (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
   cheaply CPU-reproducible — the GPU would be authoritative during a run
@@ -703,4 +715,7 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 - Slot compaction (tombstones + degenerate quads for now; the cull pass
   already keeps tombstones out of the draw stream).  Removal also leaks
   id-blob bytes and freed CSR adjacency space until such a compaction —
-  the same tombstone policy throughout.
+  the same tombstone policy throughout.  The motivation analysis and
+  tier split (slot-stable blob/CSR/dictionary reclaim vs slot-moving
+  compaction) are logged in `PLAN.md` ("Logged — compaction"); the
+  policy calls (ref survival, trigger, z-order) are explicitly open.

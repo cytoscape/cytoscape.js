@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { decodePng, diffPngs, writeDiffArtifacts } from './lib/image-diff.mjs';
 
 /*
 WebGPU prototype specs.  Run under the 'webgpu' Playwright project
@@ -1281,6 +1282,49 @@ test.describe( 'WebGPU renderer', () => {
     expect( forms.blobType ).toBe( 'image/png' );
     expect( forms.base64Head ).not.toContain( 'data:' );
     expect( forms.base64Decodes ).toBe( true );
+  } );
+
+  test( 'export WYSIWYG: a viewport export at scale 1 pixel-matches the screen', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // nodes + edge + arrow + label: every pipeline contributes pixels
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'left lbl' }, position: { x: -120, y: 0 } },
+        { data: { id: 'right lbl' }, position: { x: 120, y: 40 } },
+        { data: { id: 'e', source: 'left lbl', target: 'right lbl' } }
+      ],
+      style: {
+        nodes: {
+          'width': 60, 'height': 60, 'shape': 'round-rectangle',
+          'background-color': '#c0392b', 'border-width': 4, 'border-color': '#2c3e50',
+          'label': { data: 'id' }, 'font-size': 14, 'color': '#222'
+        },
+        edges: { 'width': 3, 'line-color': '#7f8c8d', 'target-arrow-shape': 'triangle' }
+      },
+      zoom: 1
+    } );
+    await centerPan( page );
+    await waitFrames( page );
+
+    // the export and the screen render from the same uniforms at dpr 1 /
+    // scale 1, so the pixels must agree — this pins the export path to the
+    // screen path (and vice versa) with no golden needed
+    const uri = await page.evaluate( () => window.cy.png( { bg: '#ffffff' } ) );
+    const clip = await page.evaluate( () => {
+      const rect = document.getElementById( 'cytoscape' ).getBoundingClientRect();
+
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    } );
+    const actual = decodePng( uri );
+    const expected = decodePng( await page.screenshot( { clip } ) );
+    const { ratio, diff } = diffPngs( actual, expected, { threshold: 0.1 } );
+
+    if( ratio > 0.001 ){
+      writeDiffArtifacts( testInfo.outputPath( '' ), 'wysiwyg', actual, expected, diff );
+    }
+
+    expect( ratio ).toBeLessThanOrEqual( 0.001 );
   } );
 
   test( 'png() export mid-animation snapshots the GPU-owned position', async ( { page } ) => {

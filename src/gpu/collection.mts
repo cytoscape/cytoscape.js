@@ -2164,6 +2164,57 @@ export class GpuCollection {
     return set;
   }
 
+  /**
+   * The bounding box this collection would have if its nodes sat at the
+   * given hypothetical positions (a position fn or one shared position) —
+   * v3's boundingBoxAt, computed directly with no store writes.  Edges
+   * span their endpoints' hypothetical (or, outside the collection,
+   * current) positions.
+   */
+  boundingBoxAt(
+    fn: Position | ( ( node: GpuCollection, i: number ) => Position )
+  ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+    const nodes = this.nodes();
+    const posFn = typeof fn === 'function' ? fn : () => fn;
+    const posMap = new Map<GpuCollection, Position>();
+
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+    const expandPoint = ( x: number, y: number ): void => {
+      x1 = Math.min( x1, x ); x2 = Math.max( x2, x );
+      y1 = Math.min( y1, y ); y2 = Math.max( y2, y );
+    };
+
+    for( let i = 0; i < nodes.length; i++ ){
+      const node = nodes[ i ];
+      const pos = posFn( node, i );
+
+      posMap.set( node, pos );
+
+      const halfW = ( node.outerWidth() ?? 0 ) / 2;
+      const halfH = ( node.outerHeight() ?? 0 ) / 2;
+
+      expandPoint( pos.x - halfW, pos.y - halfH );
+      expandPoint( pos.x + halfW, pos.y + halfH );
+    }
+
+    for( const ref of this._liveRefs() ){
+      if( ref.group !== 'edges' ){ continue; }
+
+      const edge = this._cy._ele( 'edges', ref.slot );
+
+      for( const endpoint of [ edge.source(), edge.target() ] ){
+        const pos = posMap.get( endpoint ) ?? ( endpoint.position() as Position );
+
+        expandPoint( pos.x, pos.y );
+      }
+    }
+
+    if( x1 === Infinity ){ x1 = y1 = x2 = y2 = 0; }
+
+    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+  }
+
   // -- layouts --
 
   /** Node dimensions for layout spacing, as v3's layoutDimensions. */
@@ -2192,8 +2243,8 @@ export class GpuCollection {
    * Apply a layout's position function to this collection's nodes with the
    * standard layout options (spacingFactor, transform, fit/zoom/pan, animate)
    * and the layoutstart/layoutready/layoutstop event flow — v3's helper.
-   * With `animate: true` the viewport applies at layoutstop (an *animated*
-   * fit is the viewport-animation-targets follow-up).
+   * With `animate: true` the viewport animates concurrently (a fit targets
+   * the bounding box at the *final* positions, as v3 does).
    */
   layoutPositions(
     layout: object,
@@ -2292,13 +2343,29 @@ export class GpuCollection {
         }
       }
 
+      // the viewport animates alongside the nodes: a fit targets the box at
+      // the final positions (v3 semantics)
+      if( options.fit ){
+        anis.push( cy.animation( {
+          fit: { boundingBox: eles.boundingBoxAt( getFinalPos ), padding: options.padding ?? 30 },
+          duration: options.animationDuration ?? 500,
+          easing: options.animationEasing
+        } ) );
+      } else if( options.zoom != null && options.pan != null ){
+        anis.push( cy.animation( {
+          zoom: options.zoom,
+          pan: options.pan,
+          duration: options.animationDuration ?? 500,
+          easing: options.animationEasing
+        } ) );
+      }
+
       for( const ani of anis ){ ani.play(); }
 
       options.ready?.();
       cy.emit( { type: 'layoutready', layout } );
 
       Promise.all( anis.map( ani => ani.promise() ) ).then( () => {
-        applyViewport();
         options.stop?.();
         cy.emit( { type: 'layoutstop', layout } );
       } );

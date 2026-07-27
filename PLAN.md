@@ -1134,10 +1134,22 @@ Each entry converts into a "Landed" record as it ships:
   breadthfirst compacts the nulls left by maximal shifts before
   sorting a depth (v3 passes them into its comparator).  28 specs in
   `test/gpu-layouts.mjs` (1584 Node tests green).
-- [ ] **A7 Viewport animation targets** —
-  `cy.animate({ fit: { eles, padding } })` / `{ center: { eles } }` and
-  animated `fit()`/`center()` options, over the existing viewport
-  tween; deterministic-tick Node tests.
+- [x] **A7 Viewport animation targets** — landed 2026-07-27.
+  `cy.animate`/`cy.animation` (the handle form is new, mirroring
+  `eles.animation`) take `fit: { eles | boundingBox, padding }` and
+  `center: { eles }`, resolved to concrete pan/zoom at creation time
+  (v3 semantics — pinned by a spec that moves a node after creating
+  the animation); fit/center bypass the pan/zoom gating flags, like
+  `fit()` itself.  `eles.boundingBoxAt(posOrFn)` landed with it
+  (side-effect-free direct computation, edges spanning out-of-
+  collection endpoints at current positions) — pulled forward from A9
+  because the animated layout fit needs it: `layoutPositions` with
+  `animate: true` now animates the viewport to the final arrangement's
+  box concurrently with the node tweens, exactly v3's shape (the A6
+  fit-at-layoutstop compromise is gone).  Note: v3's animated
+  `fit()`/`center()` *options* don't exist in v3 either — the target
+  form is the parity surface.  9 specs in
+  `test/gpu-viewport-animation.mjs` (1593 Node tests green).
 - [ ] **A8 Data query predicates** — the matcher IR extension named in
   the selector-removal section: `cy.nodes({ data: { weight: { gt:
   0.5 } } })` (+ bare-value equality shorthand), `gt/lt/gte/lte/eq/ne/

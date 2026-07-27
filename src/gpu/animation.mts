@@ -118,6 +118,18 @@ export interface AnimateOptions {
   /** viewport targets (core.animate) */
   pan?: Position;
   zoom?: number;
+  /**
+   * viewport target: animate to the viewport that fits the given elements
+   * (or an explicit model-space box).  Resolved to pan/zoom when the
+   * animation is created, as v3 does.
+   */
+  fit?: {
+    eles?: unknown;
+    boundingBox?: { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
+    padding?: number;
+  };
+  /** viewport target: animate the pan that centers the given elements */
+  center?: { eles?: unknown };
   duration?: number;
   /**
    * A name from the v3 enum, `cubic-bezier()`, `linear()` or

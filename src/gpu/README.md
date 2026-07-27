@@ -44,9 +44,9 @@ plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 manipulation, `style()` (the `{ nodes, edges }` sheet), `layout()`/
 `makeLayout` (grid, preset, circle, concentric, breadthfirst, random —
 plus `eles.layout()` for subset scopes and the v3 `layoutPositions`
-plumbing with spacingFactor/transform/animate; with `animate: true`
-the fit applies at layoutstop rather than animating, until viewport
-animation targets land), `pick()`, `png()`/`jpg()` (async image
+plumbing with spacingFactor/transform/animate — an animated layout
+fits by animating the viewport to the box at the *final* positions,
+concurrently with the node tweens), `pick()`, `png()`/`jpg()` (async image
 export — see the design decisions below),
 `renderer()`/`forceRender()`/`resize()`, graph-level
 `data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/
@@ -318,6 +318,13 @@ each is deliberate, not a pass-1 deferral:
     `background-color`/`border-color`, `edge.line-color`, node
     `border-width`.  Size (width/height circle-collapse) is a follow-up
     with the geometry seam.
+  - **Viewport targets** (round 10): `cy.animate`/`cy.animation` take
+    `pan`/`zoom`, plus `fit: { eles | boundingBox, padding }` and
+    `center: { eles }` — resolved to concrete pan/zoom when the
+    animation is *created* (v3 semantics), so later graph changes don't
+    retarget a queued fit.  `eles.boundingBoxAt(posOrFn)` computes the
+    box at hypothetical positions (no store writes), which is what an
+    animated layout fit targets.
 - **Synchronous reads reflect writes; staleness is scoped to motion,
   never to a frame.**  A frame-stale read contract was considered
   (let the GPU own expensive geometry and read back a frame later) and

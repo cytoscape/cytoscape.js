@@ -10,7 +10,9 @@ import type { FlagTest, GpuQuery } from './matcher.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { Animation, AnimationManager } from './animation.mjs';
-import type { AnimateOptions } from './animation.mjs';
+import type { AnimateOptions, AnimationHandle } from './animation.mjs';
+import * as math from '../math.mjs';
+import type { BoundsLike } from './viewport.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
 import { CircleLayout } from './layout/circle.mjs';
@@ -612,12 +614,49 @@ export class GpuCore {
    * prevented but will be overwritten by the next tick.
    */
   animate( opts: AnimateOptions ): this {
-    if( opts.pan != null && !this._panningEnabled ){ return this; }
-    if( opts.zoom != null && !this._zoomingEnabled ){ return this; }
+    if( opts.fit == null && opts.center == null ){
+      if( opts.pan != null && !this._panningEnabled ){ return this; }
+      if( opts.zoom != null && !this._zoomingEnabled ){ return this; }
+    }
 
-    this._animations.enqueue( new Animation( this._store, this._viewport, [], true, opts ) );
+    this._animations.enqueue(
+      new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) ) );
 
     return this;
+  }
+
+  /**
+   * Like `animate`, but returns a handle with `play`/`stop`/`promise` —
+   * the viewport counterpart of `eles.animation`.
+   */
+  animation( opts: AnimateOptions ): AnimationHandle {
+    const ani = new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) );
+
+    return {
+      play: () => { this._animations.enqueue( ani ); return ani.promise(); },
+      stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
+      promise: () => ani.promise(),
+      playing: () => ani.running
+    };
+  }
+
+  /** Resolve `fit`/`center` targets to concrete pan/zoom at creation time, as v3 does. */
+  private _resolveViewportTargets( opts: AnimateOptions ): AnimateOptions {
+    if( opts.fit != null ){
+      const fit = opts.fit;
+      const padding = fit.padding ?? 0;
+      const fv = fit.boundingBox != null
+        ? this._viewport.fitViewport( math.makeBoundingBox( fit.boundingBox ) as BoundsLike, padding )
+        : this.getFitViewport( fit.eles as GpuCollection | undefined, padding );
+
+      if( fv != null ){ return { ...opts, pan: fv.pan, zoom: fv.zoom }; }
+    } else if( opts.center != null ){
+      const pan = this.getCenterPan( opts.center.eles as GpuCollection | undefined );
+
+      if( pan != null ){ return { ...opts, pan }; }
+    }
+
+    return opts;
   }
 
   /** True while the viewport is animating. */

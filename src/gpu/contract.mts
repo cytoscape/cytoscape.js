@@ -160,8 +160,20 @@ export interface LabelEntry {
   fontSize: number;
   /** RGBA bytes packed little-endian (r | g<<8 | b<<16 | a<<24) */
   color: number;
-  /** y offset of the text block's top from the node center, model px */
+  /** y offset of the text block's top from the node center, model px (includes marginY) */
   anchorY: number;
+  /** text-margin-x, model px (shifts the run horizontally) */
+  marginX: number;
+  /** text-margin-y, model px (kept for readback; already folded into anchorY) */
+  marginY: number;
+  /** text-outline width in model px (0 = none) */
+  outlineWidth: number;
+  /** packed outline RGBA (text-outline-opacity folded into alpha) */
+  outlineColor: number;
+  /** packed background RGBA (text-background-opacity folded; a=0 = none) */
+  bgColor: number;
+  /** text-background-padding, model px */
+  bgPadding: number;
 }
 
 // -- the read surface the renderer consumes --

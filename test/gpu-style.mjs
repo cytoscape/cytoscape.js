@@ -200,9 +200,33 @@ describe('gpu/style', function(){
       expect( styled.$id('x').width() ).to.equal(77);
     });
 
+    it('supports the label visual props (round 10)', function(){
+      cy.style({ nodes: {
+        label: 'hi',
+        'text-outline-width': 2, 'text-outline-color': 'red', 'text-outline-opacity': 0.5,
+        'text-background-color': 'blue', 'text-background-opacity': 0.25, 'text-background-padding': 3,
+        'text-margin-x': 5, 'text-margin-y': 7
+      } });
+
+      var entry = cy._store.labelAt( cy._store.lookup('a').slot );
+
+      expect( entry.outlineWidth ).to.equal( 2 );
+      expect( ( entry.outlineColor >>> 24 ) & 0xff ).to.equal( 128 ); // opacity folded
+      expect( entry.marginX ).to.equal( 5 );
+      expect( entry.marginY ).to.equal( 7 );
+      expect( entry.anchorY ).to.equal( 30 / 2 + 4 + 7 ); // height/2 + margin const + text-margin-y
+      expect( entry.bgPadding ).to.equal( 3 );
+      expect( ( entry.bgColor >>> 24 ) & 0xff ).to.equal( 64 );
+
+      expect( cy.$id('a').style('text-outline-width') ).to.equal( 2 );
+      expect( cy.$id('a').style('text-margin-y') ).to.equal( 7 );
+      expect( cy.$id('a').style('text-outline-opacity') ).to.be.closeTo( 0.5, 0.01 );
+      expect( cy.$id('a').style('text-background-color') ).to.equal('rgba(0,0,255,0.251)');
+    });
+
     it('throws on unsupported properties', function(){
       expect(function(){
-        cy.style({ nodes: { 'text-outline-width': 2 } });
+        cy.style({ nodes: { 'text-wrap': 'wrap' } });
       }).to.throw();
     });
 

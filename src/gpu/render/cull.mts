@@ -198,7 +198,7 @@ fn isVisible(slot: u32) -> bool {
   if (g.nodeSlot == DEAD_GLYPH) { return false; }
   if ((nodeFlags[g.nodeSlot] & SHOWN) != SHOWN) { return false; }
 
-  let heightPx = g.size.y * frame.zoomDpr;
+  let heightPx = glyphLodHeight(g) * frame.zoomDpr;
 
   // hard minimum: below this the text is too small to read, don't draw it
   if (heightPx < frame.labelMinPx) { return false; }

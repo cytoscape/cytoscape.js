@@ -1217,11 +1217,22 @@ Each entry converts into a "Landed" record as it ships:
   records it.  `line-styles` golden (three styles + a wide diagonal
   dashed edge proving the pattern runs along the edge); 1618 Node +
   47 module tests, 43 Playwright specs green.
-- [ ] **B3 Label visuals** — `text-outline-width`/`-color`(/`-opacity`)
-  (a second SDF distance threshold), `text-background-color`/
-  `-opacity`/`-padding` (one background quad per label run off the
-  extent the layout already computes), `text-margin-x/y`.  Constants
-  through the label sidecar; label-tier golden bound.
+- [x] **B3 Label visuals** — landed 2026-07-27.  `text-outline-width`/
+  `-color`/`-opacity` (second SDF threshold in the label FS; width
+  precomputed CPU-side into SDF sample units), `text-background-color`
+  /`-opacity`/`-padding` (a solid quad instance preceding the run's
+  glyphs — a negative-u0 sentinel skips the atlas sample; it carries
+  the glyph block's height so LOD fade/cull match the text exactly),
+  `text-margin-x/y` (margin-y folds into the anchor; both kept in the
+  entry for readback).  All eight props are **mapper-capable** (added
+  to the MAPPABLE table; `applyMapped` writes whole elements so the
+  label sidecar rebuilds through the existing path).  Glyph instances
+  grew 40 → 48 bytes (outline color + width).  Two WGSL
+  uniform-control-flow traps hit and fixed: `textureSample` and
+  `fwidth` both hoisted above the solid-quad branch (caught by the
+  validation-error guard).  `label-visuals` golden (outline, boxed,
+  margin-shifted) at the label tolerance tier; 1619 Node + 47 module
+  tests, 44 Playwright specs green.
 - [ ] **B4 Arrow shape parity** — `vee`, `chevron`, `circle`, `square`,
   `diamond`, `tee` as SDFs in the arrow quad FS (compound shapes like
   `triangle-tee`/`circle-triangle`/`backcurve` are stretch).  Golden

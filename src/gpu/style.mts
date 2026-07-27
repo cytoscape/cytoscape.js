@@ -56,6 +56,14 @@ interface NodeComputed {
   textColor: RGBA;
   /** effectively global: one font per glyph atlas (keyed by character) */
   fontFamily: string;
+  textOutlineWidth: number;
+  textOutlineColor: RGBA;
+  textOutlineOpacity: number;
+  textBgColor: RGBA;
+  textBgOpacity: number;
+  textBgPadding: number;
+  textMarginX: number;
+  textMarginY: number;
 }
 
 interface EdgeComputed {
@@ -86,7 +94,15 @@ const NODE_DEFAULTS: NodeComputed = {
   labelKey: null,
   fontSize: 16,
   textColor: [ 0, 0, 0, 255 ],
-  fontFamily: 'sans-serif'
+  fontFamily: 'sans-serif',
+  textOutlineWidth: 0,
+  textOutlineColor: [ 0, 0, 0, 255 ],
+  textOutlineOpacity: 1,
+  textBgColor: [ 0, 0, 0, 255 ],
+  textBgOpacity: 0, // background off by default, as v3
+  textBgPadding: 0,
+  textMarginX: 0,
+  textMarginY: 0
 };
 
 /** gap between the node's bottom edge and the label's top, model px */
@@ -162,7 +178,10 @@ const SHAPE_NAMES: Record<number, string> = {
 /** Readable props per group ('width' and 'opacity' exist for both). */
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
-  'shape', 'opacity', 'label', 'font-size', 'font-family', 'color'
+  'shape', 'opacity', 'label', 'font-size', 'font-family', 'color',
+  'text-outline-width', 'text-outline-color', 'text-outline-opacity',
+  'text-background-color', 'text-background-opacity', 'text-background-padding',
+  'text-margin-x', 'text-margin-y'
 ] );
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
@@ -267,6 +286,30 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'shape':
       computed.shape = parseShape( value );
+      break;
+    case 'text-outline-width':
+      computed.textOutlineWidth = parseNumber( prop, value );
+      break;
+    case 'text-outline-color':
+      computed.textOutlineColor = parseColor( prop, value );
+      break;
+    case 'text-outline-opacity':
+      computed.textOutlineOpacity = parseNumber( prop, value );
+      break;
+    case 'text-background-color':
+      computed.textBgColor = parseColor( prop, value );
+      break;
+    case 'text-background-opacity':
+      computed.textBgOpacity = parseNumber( prop, value );
+      break;
+    case 'text-background-padding':
+      computed.textBgPadding = parseNumber( prop, value );
+      break;
+    case 'text-margin-x':
+      computed.textMarginX = parseNumber( prop, value );
+      break;
+    case 'text-margin-y':
+      computed.textMarginY = parseNumber( prop, value );
       break;
     case 'border-width':
       computed.borderWidth = parseNumber( prop, value );
@@ -397,6 +440,46 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'color', groups: [ 'nodes' ],
     set: ( c, v ) => { c.textColor = v as RGBA; },
     default: () => NODE_DEFAULTS.textColor
+  },
+  'text-outline-width': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textOutlineWidth = v as number; },
+    default: () => NODE_DEFAULTS.textOutlineWidth
+  },
+  'text-outline-color': {
+    kind: 'color', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textOutlineColor = v as RGBA; },
+    default: () => NODE_DEFAULTS.textOutlineColor
+  },
+  'text-outline-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textOutlineOpacity = v as number; },
+    default: () => NODE_DEFAULTS.textOutlineOpacity
+  },
+  'text-background-color': {
+    kind: 'color', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textBgColor = v as RGBA; },
+    default: () => NODE_DEFAULTS.textBgColor
+  },
+  'text-background-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textBgOpacity = v as number; },
+    default: () => NODE_DEFAULTS.textBgOpacity
+  },
+  'text-background-padding': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textBgPadding = v as number; },
+    default: () => NODE_DEFAULTS.textBgPadding
+  },
+  'text-margin-x': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textMarginX = v as number; },
+    default: () => NODE_DEFAULTS.textMarginX
+  },
+  'text-margin-y': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.textMarginY = v as number; },
+    default: () => NODE_DEFAULTS.textMarginY
   },
   'line-color': {
     kind: 'color', groups: [ 'edges' ],
@@ -905,6 +988,8 @@ export class StyleEngine {
     };
     const alphaOf = ( id: Parameters<GraphStore['column']>[0] ): number =>
       ( store.column( id ) as Uint8Array )[ slot * 4 + 3 ];
+    const packedColor = ( packed: number ): string =>
+      formatRgba( packed & 0xff, ( packed >>> 8 ) & 0xff, ( packed >>> 16 ) & 0xff, ( packed >>> 24 ) & 0xff );
 
     switch( prop ){
       // node channels
@@ -917,6 +1002,42 @@ export class StyleEngine {
       case 'font-size': return this.labelChannels( ref ).fontSize;
       case 'font-family': return store.labelFont;
       case 'color': return this.labelChannels( ref ).color;
+
+      // label visual props (constants; sidecar when labelled, else the sheet
+      // constants — opacities read back folded into the stored alpha, like
+      // arrow colors)
+      case 'text-outline-width':
+        return store.labelAt( slot )?.outlineWidth ?? this.defs.nodes.computed.textOutlineWidth;
+      case 'text-outline-color': {
+        const entry = store.labelAt( slot );
+
+        return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defs.nodes.computed.textOutlineColor );
+      }
+      case 'text-outline-opacity': {
+        const entry = store.labelAt( slot );
+
+        return entry != null
+          ? Math.round( ( ( entry.outlineColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+          : this.defs.nodes.computed.textOutlineOpacity;
+      }
+      case 'text-background-color': {
+        const entry = store.labelAt( slot );
+
+        return entry != null ? packedColor( entry.bgColor ) : formatRgba( ...this.defs.nodes.computed.textBgColor );
+      }
+      case 'text-background-opacity': {
+        const entry = store.labelAt( slot );
+
+        return entry != null
+          ? Math.round( ( ( entry.bgColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+          : this.defs.nodes.computed.textBgOpacity;
+      }
+      case 'text-background-padding':
+        return store.labelAt( slot )?.bgPadding ?? this.defs.nodes.computed.textBgPadding;
+      case 'text-margin-x':
+        return store.labelAt( slot )?.marginX ?? this.defs.nodes.computed.textMarginX;
+      case 'text-margin-y':
+        return store.labelAt( slot )?.marginY ?? this.defs.nodes.computed.textMarginY;
 
       // shared names, resolved per group
       case 'width': return ref.group === 'nodes' ? pair( 'node.size', 0 ) : scalar( 'edge.width' );
@@ -1118,11 +1239,20 @@ export class StyleEngine {
         ? ( store.idAt( 'nodes', slot ) ?? '' )
         : stringify( store.data.get( 'nodes', slot, key ) );
 
+    const fold = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>
+      packRgba( [ r, g, b, Math.round( a * Math.max( 0, Math.min( 1, opacity ) ) ) ] );
+
     store.setLabel( slot, text === '' ? null : {
       text,
       fontSize: computed.fontSize,
       color: packRgba( computed.textColor ),
-      anchorY: computed.height / 2 + LABEL_MARGIN
+      anchorY: computed.height / 2 + LABEL_MARGIN + computed.textMarginY,
+      marginX: computed.textMarginX,
+      marginY: computed.textMarginY,
+      outlineWidth: computed.textOutlineWidth,
+      outlineColor: fold( computed.textOutlineColor, computed.textOutlineOpacity ),
+      bgColor: fold( computed.textBgColor, computed.textBgOpacity ),
+      bgPadding: computed.textBgPadding
     } );
   }
 }

@@ -719,11 +719,21 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   (approximation); the depth prepass treats polygon interiors exactly
   via their SDF.
 - **Labels**: nodes only, single line (newlines collapse to spaces), fixed
-  placement (horizontally centered below the node), not pickable, one
+  placement (horizontally centered below the node, offset by
+  `text-margin-x/y`), not pickable, one
   global `font-family` (the atlas holds one font), and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
   rendering with a console warning.  Label color/text bake into glyph
   instances, so `:selected`/hover styling does not restyle label text.
+  Label visuals (round 10): `text-outline-width`/`-color`/`-opacity`
+  (a second SDF distance threshold — near-free), `text-background-
+  color`/`-opacity`/`-padding` (one solid quad instance preceding the
+  run's glyphs, riding the same buffer/cull/draw; it carries the glyph
+  block's height so it fades and culls exactly with its text), and
+  `text-margin-x/y` — all mapper-capable (CPU-evaluated, like
+  font-size).  Outline and background opacities fold into their stored
+  alphas, so their getters read back folded (the arrow-color
+  precedent).
 - **Arrowheads**: `source/target-arrow-shape` supports `triangle` and
   `none` only, with constant `source/target-arrow-color` (v3-like `#999`
   default).  One quad per visible edge per enabled end, reusing the edge

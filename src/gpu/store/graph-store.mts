@@ -621,7 +621,10 @@ export class GraphStore implements ModelView {
     } else {
       if(
         prev != null && prev.text === entry.text && prev.fontSize === entry.fontSize &&
-        prev.color === entry.color && prev.anchorY === entry.anchorY
+        prev.color === entry.color && prev.anchorY === entry.anchorY &&
+        prev.marginX === entry.marginX && prev.marginY === entry.marginY &&
+        prev.outlineWidth === entry.outlineWidth && prev.outlineColor === entry.outlineColor &&
+        prev.bgColor === entry.bgColor && prev.bgPadding === entry.bgPadding
       ){ return; }
 
       this.labels[ slot ] = entry;

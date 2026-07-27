@@ -375,6 +375,48 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: label visuals (outline, background, margins)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'outlined', kind: 'outline' }, position: { x: -100, y: -60 } },
+        { data: { id: 'boxed', kind: 'bg' }, position: { x: 100, y: -60 } },
+        { data: { id: 'shifted', kind: 'margin' }, position: { x: 0, y: 60 } }
+      ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 30, 'background-color': '#dfe6e9',
+          'label': { data: 'id' }, 'font-size': 16, 'color': '#ffffff',
+          'font-family': `'Open Sans', sans-serif`,
+          'text-outline-width': { case: [ { when: { data: 'kind', eq: 'outline' }, then: 3 } ], else: 0 },
+          'text-outline-color': '#c0392b',
+          'text-background-color': '#2c3e50',
+          'text-background-opacity': { case: [ { when: { data: 'kind', eq: 'bg' }, then: 1 } ], else: 0 },
+          'text-background-padding': 3,
+          'text-margin-x': { case: [ { when: { data: 'kind', eq: 'margin' }, then: 30 } ], else: 0 },
+          'text-margin-y': { case: [ { when: { data: 'kind', eq: 'margin' }, then: -60 } ], else: 0 }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'label-visuals', await exportPng( page, { bg: '#888' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

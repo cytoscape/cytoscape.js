@@ -122,15 +122,23 @@ fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
  * pass; matches GlyphBuffer's CPU layout (10 words / 40 bytes per glyph). */
 export const GLYPH_STRUCT = `
 struct Glyph {
-  nodeSlot: u32,   // 0xffffffff = dead (tombstoned run)
-  color: u32,      // packed RGBA bytes
-  offset: vec2f,   // quad top-left from the node center, model px
-  size: vec2f,     // model px
-  uv0: vec2f,
+  nodeSlot: u32,     // 0xffffffff = dead (tombstoned run)
+  color: u32,        // packed RGBA bytes
+  offset: vec2f,     // quad top-left from the node center, model px
+  size: vec2f,       // model px
+  uv0: vec2f,        // uv0.x < 0: solid background quad; uv0.y = LOD height
   uv1: vec2f,
+  outlineColor: u32, // packed RGBA (a=0: no outline)
+  outlineWidth: f32, // half-width in SDF sample units (0 = none)
 }
 
 const DEAD_GLYPH: u32 = 0xffffffffu;
+
+// backgrounds carry the run's glyph-block height for LOD so they fade and
+// cull exactly with their text
+fn glyphLodHeight(g: Glyph) -> f32 {
+  return select(g.size.y, g.uv0.y, g.uv0.x < 0.0);
+}
 `;
 
 // Polygon shape SDFs, generated from the shared unit point tables so the
@@ -639,6 +647,9 @@ struct LabelVSOut {
   @location(0) uv: vec2f,
   @location(1) color: vec4f,
   @location(2) fade: f32,
+  @location(3) outlineColor: vec4f,
+  @location(4) @interpolate(flat) outlineWidth: f32,
+  @location(5) @interpolate(flat) solid: u32, // 1: background quad, no atlas sample
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -651,7 +662,7 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let g = glyphs[visible[ii]];
 
   // LOD: fade out as the on-screen glyph shrinks (fully-faded glyphs were culled)
-  let heightPx = g.size.y * frame.zoomDpr;
+  let heightPx = glyphLodHeight(g) * frame.zoomDpr;
   let fade = labelFade(heightPx, frame.labelFadePx);
 
   // glyphs read the node position buffer: labels follow drags/layouts on-GPU
@@ -660,20 +671,39 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let t = (quadCorner(vi) + vec2f(1.0)) * 0.5;
 
   out.position = vec4f(pxToClip(frame, originPx + t * sizePx), 0.0, 1.0);
-  out.uv = mix(g.uv0, g.uv1, t);
+  out.uv = mix(max(g.uv0, vec2f(0.0)), max(g.uv1, vec2f(0.0)), t);
   out.color = unpack4x8unorm(g.color);
   out.fade = fade;
+  out.outlineColor = unpack4x8unorm(g.outlineColor);
+  out.outlineWidth = g.outlineWidth;
+  out.solid = select(0u, 1u, g.uv0.x < 0.0);
   return out;
 }
 
 @fragment
 fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
   // the SDF encodes the glyph edge at 0.5; fwidth-based smoothing keeps
-  // text crisp at any zoom from the one 32px-per-glyph atlas
+  // text crisp at any zoom from the one 32px-per-glyph atlas.  (Sampled
+  // unconditionally: a branch around textureSample would be non-uniform.)
   let s = textureSample(atlas, atlasSampler, in.uv).r;
-  let w = max(fwidth(s), 1e-4);
-  let alpha = clamp((s - 0.5) / w + 0.5, 0.0, 1.0) * in.fade * in.color.a;
+  let w = max(fwidth(s), 1e-4); // derivatives before any non-uniform branch
 
-  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
+  if (in.solid == 1u) { // text background quad
+    let a = in.color.a * in.fade;
+    return vec4f(in.color.rgb * a, a);
+  }
+  let fillA = clamp((s - 0.5) / w + 0.5, 0.0, 1.0);
+  var rgb = in.color.rgb;
+  var alpha = fillA * in.color.a;
+
+  // text-outline: a second, lower distance threshold ringing the glyph
+  if (in.outlineWidth > 0.0 && in.outlineColor.a > 0.0) {
+    let outerA = clamp((s - (0.5 - in.outlineWidth)) / w + 0.5, 0.0, 1.0);
+    rgb = mix(in.outlineColor.rgb, in.color.rgb, fillA);
+    alpha = max(alpha, outerA * in.outlineColor.a);
+  }
+
+  alpha = alpha * in.fade;
+  return vec4f(rgb * alpha, alpha); // premultiplied
 }
 `;

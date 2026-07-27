@@ -42,7 +42,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: /webgpu\.spec\.js/,
+      testIgnore: /webgpu.*\.spec\.js/,
       use: { ...devices['Desktop Chrome'] },
     },
 
@@ -79,8 +79,31 @@ export default defineConfig({
     /* The classic (canvas) renderer specs on WebKit. */
     {
       name: 'webkit',
-      testIgnore: /webgpu\.spec\.js/,
+      testIgnore: /webgpu.*\.spec\.js/,
       use: { ...devices['Desktop Safari'] },
+    },
+
+    /*
+     * Visual regression specs (golden diffs + v3-vs-v4 parity) for the
+     * WebGPU prototype.  Pinned to the SwiftShader software adapter so the
+     * rasterization — and therefore the checked-in goldens — is
+     * deterministic across machines (a hardware adapter would produce
+     * per-GPU AA differences).  Regenerate goldens with UPDATE_GOLDENS=1.
+     */
+    {
+      name: 'webgpu-visual',
+      testMatch: /webgpu-visual\.spec\.js/,
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chromium',
+        launchOptions: {
+          args: [
+            '--enable-unsafe-webgpu',
+            '--enable-unsafe-swiftshader',
+            '--use-webgpu-adapter=swiftshader',
+          ],
+        },
+      },
     },
 
     // {

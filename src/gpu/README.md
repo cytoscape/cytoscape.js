@@ -69,7 +69,11 @@ in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
 `show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only),
 read-only style getters (`style`/`css`, `renderedStyle`,
 `numericStyle`, `effectiveOpacity`/`transparent`/`takesUpSpace`/
-`interactive` — see below).
+`interactive` — see below), and graph algorithms (round 10, growing):
+`bfs`/`dfs` (+ long aliases), `dijkstra`, `aStar`, `bellmanFord`,
+`floydWarshall`, `kruskal` — slot-native over the CSR adjacency with
+v3 option/result shapes, except that node arguments are collections
+(selector strings throw) and `weight`/`heuristic` are plain functions.
 
 Batching (v3 semantics): a `startBatch()`/`endBatch()` pair (or
 `cy.batch(fn)`) defers *style application* — the first apply of
@@ -455,7 +459,8 @@ predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.
 
-Out of scope (deferred): compound nodes, graph algorithms,
+Out of scope (deferred): compound nodes, the remaining graph
+algorithms (structure/centrality/clustering land through round 10),
 string-formatting label mappers beyond the passthrough, and the GPU
 tween fast path for *size* channels (position and paint offload today;
 size is a geometry-tier project, see the design decisions above).  Multiline

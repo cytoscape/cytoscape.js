@@ -1052,12 +1052,23 @@ Each entry converts into a "Landed" record as it ships:
 
 **Phase A — pure CPU, Node-testable**
 
-- [ ] **A1 Algorithms: search + paths** — `bfs`, `dfs`, `dijkstra`,
-  `aStar`, `bellmanFord`, `floydWarshall`, `kruskal`, ported from
-  `src/collection/algorithms/` to slot-native CSR walks on
-  `GraphStore`; v3 API shapes (options objects; `weight` as a plain
-  function, consistent with v4's predicate philosophy); tests ported
-  from the v3 fixtures.
+- [x] **A1 Algorithms: search + paths** — landed 2026-07-27.
+  `bfs`/`dfs` (+ `breadthFirstSearch`/`depthFirstSearch`), `dijkstra`,
+  `aStar`, `bellmanFord`, `floydWarshall`, `kruskal` in
+  `src/gpu/algorithms/` (a shared `SubgraphView` — dense node index +
+  edge membership over the calling collection — plus an indexed
+  binary min-heap in `algo-shared.mts`; one file per algorithm), all
+  slot-native over CSR with dense typed-array state, no per-node
+  string ids.  v3 option/result shapes preserved, including the
+  positional bfs/dijkstra forms, bfs's exact multi-root queue
+  mechanics, bellmanFord's same-edge relax guard and canonical
+  negative-cycle rotation, and pathTo edge cases (unreachable
+  dijkstra target → `[target]`, unreachable bellmanFord target →
+  empty).  v4 deltas: node args are collections (strings throw),
+  missing required roots/goals throw, and cycle collections dedupe
+  the closing node (v4 collections are sets).  39 specs in
+  `test/gpu-algorithms.mjs` ported from the v3 fixtures (1500 Node
+  tests total green).
 - [ ] **A2 Algorithms: structure** — tarjan SCC, hopcroft-tarjan
   biconnected, hierholzer, kargerStein.
 - [ ] **A3 Algorithms: pageRank + centralities** — pageRank,

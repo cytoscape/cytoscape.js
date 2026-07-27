@@ -10,6 +10,14 @@ import { normalizeProp as normalizeCss } from './style.mjs';
 import { Animation } from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from '../types.mjs';
+import {
+  search as searchImpl, dijkstra as dijkstraImpl, aStar as aStarImpl,
+  bellmanFord as bellmanFordImpl, floydWarshall as floydWarshallImpl, kruskal as kruskalImpl
+} from './algorithms/index.mjs';
+import type {
+  SearchArgs, SearchResult, DijkstraArgs, DijkstraResult, AStarOptions, AStarResult,
+  BellmanFordOptions, BellmanFordResult, FloydWarshallOptions, FloydWarshallResult, WeightFn
+} from './algorithms/index.mjs';
 import type { GpuCore } from './core.mjs';
 import type { EventHandler } from '../emitter.mjs';
 import type Event from '../event.mjs';
@@ -2138,6 +2146,39 @@ export class GpuCollection {
     return set;
   }
 
+  // -- graph algorithms (slot-native implementations in ./algorithms/) --
+
+  breadthFirstSearch( ...args: SearchArgs ): SearchResult {
+    return searchImpl( this, true, args );
+  }
+
+  depthFirstSearch( ...args: SearchArgs ): SearchResult {
+    return searchImpl( this, false, args );
+  }
+
+  declare bfs: this['breadthFirstSearch'];
+  declare dfs: this['depthFirstSearch'];
+
+  dijkstra( ...args: DijkstraArgs ): DijkstraResult {
+    return dijkstraImpl( this, args );
+  }
+
+  aStar( options?: AStarOptions ): AStarResult {
+    return aStarImpl( this, options );
+  }
+
+  bellmanFord( options?: BellmanFordOptions ): BellmanFordResult {
+    return bellmanFordImpl( this, options );
+  }
+
+  floydWarshall( options?: FloydWarshallOptions ): FloydWarshallResult {
+    return floydWarshallImpl( this, options );
+  }
+
+  kruskal( weight?: WeightFn ): GpuCollection {
+    return kruskalImpl( this, weight );
+  }
+
   // -- degree --
 
   // degree()/indegree()/outdegree() are singular accessors: they report the
@@ -2328,6 +2369,8 @@ GpuCollection.prototype.xor = GpuCollection.prototype.symmetricDifference;
 GpuCollection.prototype.deselect = GpuCollection.prototype.unselect;
 GpuCollection.prototype.openNeighborhood = GpuCollection.prototype.neighborhood;
 GpuCollection.prototype.componentsOf = GpuCollection.prototype.components;
+GpuCollection.prototype.bfs = GpuCollection.prototype.breadthFirstSearch;
+GpuCollection.prototype.dfs = GpuCollection.prototype.depthFirstSearch;
 GpuCollection.prototype.addListener = GpuCollection.prototype.on;
 GpuCollection.prototype.removeListener = GpuCollection.prototype.off;
 GpuCollection.prototype.trigger = GpuCollection.prototype.emit;

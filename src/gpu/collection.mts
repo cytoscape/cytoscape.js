@@ -5,6 +5,7 @@ import {
 import type { GroupName, Ref } from './contract.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
 import type { GpuQuery } from './matcher.mjs';
+import { testCondition } from './style-scales.mjs';
 import { hasListeners, refQualifier } from './events.mjs';
 import { normalizeProp as normalizeCss } from './style.mjs';
 import { Animation } from './animation.mjs';
@@ -601,6 +602,7 @@ export class GpuCollection {
     const edgeGen = store.edges.gen;
     const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
     const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
+    const dataConds = plan.data;
     const refs: Ref[] = [];
 
     for( let i = 0; i < this._refs.length; i++ ){
@@ -614,7 +616,19 @@ export class GpuCollection {
 
       const flags = ( isNode ? nodeFlags : edgeFlags )[ ref.slot ];
 
-      if( ( flags & test.mask ) === test.want ){ refs.push( ref ); }
+      if( ( flags & test.mask ) !== test.want ){ continue; }
+
+      if( dataConds != null ){
+        let pass = true;
+
+        for( const cond of dataConds ){
+          if( !testCondition( cond, store.data.get( ref.group, ref.slot, cond.key ) ) ){ pass = false; break; }
+        }
+
+        if( !pass ){ continue; }
+      }
+
+      refs.push( ref );
     }
 
     return this._spawnUnique( refs );

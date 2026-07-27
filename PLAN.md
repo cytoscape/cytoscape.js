@@ -1150,12 +1150,17 @@ Each entry converts into a "Landed" record as it ships:
   `fit()`/`center()` *options* don't exist in v3 either — the target
   form is the parity surface.  9 specs in
   `test/gpu-viewport-animation.mjs` (1593 Node tests green).
-- [ ] **A8 Data query predicates** — the matcher IR extension named in
-  the selector-removal section: `cy.nodes({ data: { weight: { gt:
-  0.5 } } })` (+ bare-value equality shorthand), `gt/lt/gte/lte/eq/ne/
-  in` vocabulary shared with `case` mappers, answered during the
-  columnar scan against the sidecar columns; unknown keys keep
-  throwing.
+- [x] **A8 Data query predicates** — landed 2026-07-27.  `GpuQuery`
+  gains `data: { key: value | { eq/ne/lt/lte/gt/gte/in } }` (bare
+  value = `eq`; keys AND together), compiled to `CompiledCondition[]`
+  on the plan and evaluated with the *same* `testCondition` the `case`
+  mapper uses (missing value fails every op, `ne` included; exactly
+  one op per condition; `in` non-empty; ordinal ops numeric — all
+  throwing as the mapper does).  The whole-graph scan
+  (`scanRefsInto`) takes the tests with per-key column readers hoisted
+  out of the loop (`DataStore.reader`); the collection-filter and
+  `planMatchesRef` paths apply them too.  10 specs in
+  `test/gpu-query-data.mjs` (1603 Node tests green).
 - [ ] **A9 Small items** — `boundingBoxAt`; `padding()`/`paddedWidth`/
   `paddedHeight` (smallest v3-consistent form; investigate whether
   padding is a geometry channel or accessor-only without compounds);

@@ -745,7 +745,7 @@ const discreteEval = ( program: Extract<Program, { kind: 'discrete' }> ) => {
 };
 
 /** Test one compiled condition against a data value (missing fails every op). */
-const testCondition = ( cond: CompiledCondition, v: unknown ): boolean => {
+export const testCondition = ( cond: CompiledCondition, v: unknown ): boolean => {
   if( v === undefined ){ return false; }
 
   switch( cond.op ){

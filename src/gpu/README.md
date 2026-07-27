@@ -130,7 +130,13 @@ each is deliberate, not a pass-1 deferral:
   to grow one back.  The replacements, by role:
   - *Queries* (evaluate now → collection): structured **query objects**
     compiled to the matcher IR — `cy.nodes({ selected: true })`,
-    `cy.filter({ group: 'edges' })`, `eles.filter({ selected: false })`.
+    `cy.filter({ group: 'edges' })`, `eles.filter({ selected: false })`,
+    and data conditions over the sidecar columns (round 10):
+    `cy.nodes({ data: { weight: { gt: 0.5 } } })` — one of
+    `eq/ne/lt/lte/gt/gte/in` per key (a bare value means `eq`; keys AND
+    together), sharing the `case` mapper's vocabulary and semantics
+    (a missing value fails every op, `ne` included), answered inside
+    the columnar scan with per-key readers hoisted out of the loop.
     Unknown query keys throw (a typo must not silently match-all).
   - *Predicates* (evaluate per element, lodash-style): plain functions —
     `cy.filter( ele => ele.data('weight') > 0.5 )`, and event delegation

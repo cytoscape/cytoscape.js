@@ -665,7 +665,10 @@ export class GraphStore implements ModelView {
    * caller preallocates `out` to the live count (the exact match count for
    * a mask-0 scan, an upper bound otherwise) and trims afterwards.
    */
-  scanRefsInto( out: Ref[], at: number, group: GroupName, mask: number, want: number ): number {
+  scanRefsInto(
+    out: Ref[], at: number, group: GroupName, mask: number, want: number,
+    dataTests?: { test: ( v: unknown ) => boolean; key: string }[]
+  ): number {
     const order = this.order[ group ];
     const slots = order.slots;
     const gens = order.gens;
@@ -673,13 +676,28 @@ export class GraphStore implements ModelView {
     const flags = this.column( group === 'nodes' ? 'node.flags' : 'edge.flags' ) as Uint32Array;
     let n = at;
 
+    // hoist a per-slot reader per condition key out of the scan loop
+    const readers = dataTests == null || dataTests.length === 0
+      ? null
+      : dataTests.map( t => ( { test: t.test, read: this.data.reader( group, t.key ) } ) );
+
     for( let i = 0; i < slots.length; i++ ){
       const slot = slots[ i ];
       const g = gens[ i ];
 
-      if( gen[ slot ] === g && ( flags[ slot ] & mask ) === want ){
-        out[ n++ ] = { group, slot, gen: g };
+      if( gen[ slot ] !== g || ( flags[ slot ] & mask ) !== want ){ continue; }
+
+      if( readers != null ){
+        let pass = true;
+
+        for( let t = 0; t < readers.length; t++ ){
+          if( !readers[ t ].test( readers[ t ].read( slot ) ) ){ pass = false; break; }
+        }
+
+        if( !pass ){ continue; }
       }
+
+      out[ n++ ] = { group, slot, gen: g };
     }
 
     return n;

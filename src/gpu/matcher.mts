@@ -1,21 +1,37 @@
 import { FLAG_SELECTED } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
+import { testCondition } from './style-scales.mjs';
+import type { CompiledCondition } from './style-scales.mjs';
 
 /*
 The matcher IR: structured element queries over the columnar model.
 
 v4 has no selector strings.  A query is a plain object of columnar
-predicates — { group, selected } today — compiled once into per-group
-(mask, want) tests over the flags column, the same tests the whole-graph
-scan (GraphStore.scanRefsInto) answers with no element handles.  Anything
-a query can't express is a predicate function at the collection/event
+predicates — { group, selected, data } — compiled once into per-group
+(mask, want) tests over the flags column plus data-sidecar condition
+tests, the tests the whole-graph scan (GraphStore.scanRefsInto) answers
+with no element handles.  Data conditions use the case-mapper vocabulary
+(one of eq/ne/lt/lte/gt/gte/in per key; a bare value is `eq`) and its
+semantics (a missing value fails every op, `ne` included).  Anything a
+query can't express is a predicate function at the collection/event
 layer (as in lodash), which pays the per-element handle cost instead.
-A future richer query language (data predicates over the sidecar
-columns, class-like bitsets, ...) would extend this IR with more test
-kinds; frontends (chained builders, serialized JSON queries) should
-compile to it rather than growing their own matching.
+Future richer matching (structural terms, class-like bitsets, ...)
+extends this IR with more test kinds; frontends (chained builders,
+serialized JSON queries) should compile to it rather than growing their
+own matching.
 */
+
+/** One data comparison; exactly one op per condition object. */
+export interface GpuDataCondition {
+  eq?: unknown;
+  ne?: unknown;
+  lt?: number;
+  lte?: number;
+  gt?: number;
+  gte?: number;
+  in?: ( string | number )[];
+}
 
 /** A structured element query; every present key must hold. */
 export interface GpuQuery {
@@ -23,6 +39,8 @@ export interface GpuQuery {
   group?: GroupName;
   /** require the element (not) to be selected */
   selected?: boolean;
+  /** data-sidecar conditions per key; a bare value means equality */
+  data?: Record<string, GpuDataCondition | string | number | boolean | null>;
 }
 
 /** A flags-column test: a slot matches when (flags & mask) === want. */
@@ -35,12 +53,57 @@ export interface FlagTest {
 export interface FlagPlan {
   nodes: FlagTest | null;
   edges: FlagTest | null;
+  /** data-sidecar conditions, all of which must hold (null: none) */
+  data: CompiledCondition[] | null;
 }
 
 /** The flags test every live slot passes (whole-group scans). */
 export const MATCH_ALL: FlagTest = { mask: 0, want: 0 };
 
-const QUERY_KEYS: ReadonlySet<string> = new Set( [ 'group', 'selected' ] );
+const QUERY_KEYS: ReadonlySet<string> = new Set( [ 'group', 'selected', 'data' ] );
+const CONDITION_OPS: ReadonlySet<string> = new Set( [ 'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in' ] );
+
+const isBareValue = ( v: unknown ): boolean =>
+  v == null || typeof v !== 'object';
+
+/** Compile one query data entry into a condition (case-mapper rules). */
+const compileDataCondition = ( key: string, spec: GpuDataCondition | string | number | boolean | null ): CompiledCondition => {
+  if( isBareValue( spec ) ){
+    return { key, op: 'eq', value: spec as string | number };
+  }
+
+  const cond = spec as GpuDataCondition;
+  const ops = Object.keys( cond );
+
+  for( const op of ops ){
+    if( !CONDITION_OPS.has( op ) ){
+      throw new Error( `Unknown data condition op '${op}' for key '${key}'; ` +
+        `supported: ${[ ...CONDITION_OPS ].join( ', ' )}` );
+    }
+  }
+
+  if( ops.length !== 1 ){
+    throw new Error( `A data condition needs exactly one comparison ` +
+      `(${[ ...CONDITION_OPS ].join( ', ' )}); got ${ops.length} for key '${key}'` );
+  }
+
+  const op = ops[ 0 ] as CompiledCondition['op'];
+  const raw = cond[ op as keyof GpuDataCondition ];
+
+  if( op === 'in' ){
+    if( !Array.isArray( raw ) || raw.length === 0 ){
+      throw new Error( `'in' needs a non-empty array of values for key '${key}'` );
+    }
+
+    return { key, op, value: raw as ( string | number )[] };
+  }
+
+  if( ( op === 'lt' || op === 'lte' || op === 'gt' || op === 'gte' ) && typeof raw !== 'number' ){
+    throw new Error( `'${op}' needs a numeric value for key '${key}'` );
+  }
+
+  return { key, op, value: raw as string | number };
+};
 
 /**
  * Compile a query into per-group flags-column tests.  `restrict` narrows
@@ -52,7 +115,7 @@ const QUERY_KEYS: ReadonlySet<string> = new Set( [ 'group', 'selected' ] );
 export const compileQuery = ( query: GpuQuery, restrict: GroupName | null = null ): FlagPlan => {
   for( const key of Object.keys( query ) ){
     if( !QUERY_KEYS.has( key ) ){
-      throw new Error( `Unknown query key '${key}'; supported keys: group, selected` );
+      throw new Error( `Unknown query key '${key}'; supported keys: group, selected, data` );
     }
   }
 
@@ -69,9 +132,18 @@ export const compileQuery = ( query: GpuQuery, restrict: GroupName | null = null
   const allows = ( g: GroupName ): boolean =>
     ( group == null || group === g ) && ( restrict == null || restrict === g );
 
+  let data: CompiledCondition[] | null = null;
+
+  if( query.data != null ){
+    data = Object.keys( query.data ).map( key => compileDataCondition( key, query.data![ key ] ) );
+
+    if( data.length === 0 ){ data = null; }
+  }
+
   return {
     nodes: allows( 'nodes' ) ? test : null,
-    edges: allows( 'edges' ) ? test : null
+    edges: allows( 'edges' ) ? test : null,
+    data
   };
 };
 
@@ -83,5 +155,13 @@ export const planMatchesRef = ( store: GraphStore, ref: Ref, plan: FlagPlan ): b
 
   const flags = ( store.column( ref.group === 'nodes' ? 'node.flags' : 'edge.flags' ) as Uint32Array )[ ref.slot ];
 
-  return ( flags & test.mask ) === test.want;
+  if( ( flags & test.mask ) !== test.want ){ return false; }
+
+  if( plan.data != null ){
+    for( const cond of plan.data ){
+      if( !testCondition( cond, store.data.get( ref.group, ref.slot, cond.key ) ) ){ return false; }
+    }
+  }
+
+  return true;
 };

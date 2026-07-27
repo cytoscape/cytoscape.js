@@ -20,33 +20,34 @@ describe('gpu/matcher', function(){
 
   describe('compileQuery', function(){
     it('compiles the empty query to per-group match-alls', function(){
-      expect( compileQuery({}) ).to.deep.equal({ nodes: MATCH_ALL, edges: MATCH_ALL });
+      expect( compileQuery({}) ).to.deep.equal({ nodes: MATCH_ALL, edges: MATCH_ALL, data: null });
     });
 
     it('compiles group restrictions', function(){
-      expect( compileQuery({ group: 'nodes' }) ).to.deep.equal({ nodes: MATCH_ALL, edges: null });
-      expect( compileQuery({ group: 'edges' }) ).to.deep.equal({ nodes: null, edges: MATCH_ALL });
+      expect( compileQuery({ group: 'nodes' }) ).to.deep.equal({ nodes: MATCH_ALL, edges: null, data: null });
+      expect( compileQuery({ group: 'edges' }) ).to.deep.equal({ nodes: null, edges: MATCH_ALL, data: null });
     });
 
     it('compiles selected to FLAG_SELECTED tests', function(){
       expect( compileQuery({ group: 'nodes', selected: true }) ).to.deep.equal({
-        nodes: { mask: FLAG_SELECTED, want: FLAG_SELECTED }, edges: null
+        nodes: { mask: FLAG_SELECTED, want: FLAG_SELECTED }, edges: null, data: null
       });
       expect( compileQuery({ selected: false }) ).to.deep.equal({
         nodes: { mask: FLAG_SELECTED, want: 0 },
-        edges: { mask: FLAG_SELECTED, want: 0 }
+        edges: { mask: FLAG_SELECTED, want: 0 },
+        data: null
       });
     });
 
     it('narrows to the restrict group', function(){
-      expect( compileQuery({}, 'nodes') ).to.deep.equal({ nodes: MATCH_ALL, edges: null });
+      expect( compileQuery({}, 'nodes') ).to.deep.equal({ nodes: MATCH_ALL, edges: null, data: null });
       expect( compileQuery({ selected: true }, 'edges') ).to.deep.equal({
-        nodes: null, edges: { mask: FLAG_SELECTED, want: FLAG_SELECTED }
+        nodes: null, edges: { mask: FLAG_SELECTED, want: FLAG_SELECTED }, data: null
       });
     });
 
     it('compiles a contradicting group + restrict to a match-nothing plan', function(){
-      expect( compileQuery({ group: 'edges' }, 'nodes') ).to.deep.equal({ nodes: null, edges: null });
+      expect( compileQuery({ group: 'edges' }, 'nodes') ).to.deep.equal({ nodes: null, edges: null, data: null });
     });
 
     it('throws on unknown query keys', function(){

@@ -7,6 +7,8 @@ import { hasListeners, makeCoreEmitter, predicateQualifier } from './events.mjs'
 import type { ElePredicate, GpuQualifier } from './events.mjs';
 import { compileQuery } from './matcher.mjs';
 import type { FlagTest, GpuQuery } from './matcher.mjs';
+import { testCondition } from './style-scales.mjs';
+import type { CompiledCondition } from './style-scales.mjs';
 import { Viewport } from './viewport.mjs';
 import { StyleEngine } from './style.mjs';
 import { Animation, AnimationManager } from './animation.mjs';
@@ -443,7 +445,7 @@ export class GpuCore {
 
     const plan = compileQuery( query ?? {}, restrict );
 
-    return this._scanCollection( plan.nodes, plan.edges );
+    return this._scanCollection( plan.nodes, plan.edges, plan.data );
   }
 
   /**
@@ -458,15 +460,21 @@ export class GpuCore {
   }
 
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
-  private _scanCollection( nodeTest: FlagTest | null, edgeTest: FlagTest | null ): GpuCollection {
+  private _scanCollection(
+    nodeTest: FlagTest | null, edgeTest: FlagTest | null,
+    dataConds: CompiledCondition[] | null = null
+  ): GpuCollection {
     const store = this._store;
     const cap = ( nodeTest == null ? 0 : store.count( 'nodes' ) )
       + ( edgeTest == null ? 0 : store.count( 'edges' ) );
     const refs: Ref[] = new Array( cap );
+    const dataTests = dataConds == null
+      ? undefined
+      : dataConds.map( cond => ( { key: cond.key, test: ( v: unknown ) => testCondition( cond, v ) } ) );
     let n = 0;
 
-    if( nodeTest != null ){ n = store.scanRefsInto( refs, n, 'nodes', nodeTest.mask, nodeTest.want ); }
-    if( edgeTest != null ){ n = store.scanRefsInto( refs, n, 'edges', edgeTest.mask, edgeTest.want ); }
+    if( nodeTest != null ){ n = store.scanRefsInto( refs, n, 'nodes', nodeTest.mask, nodeTest.want, dataTests ); }
+    if( edgeTest != null ){ n = store.scanRefsInto( refs, n, 'edges', edgeTest.mask, edgeTest.want, dataTests ); }
 
     if( n !== refs.length ){ refs.length = n; }
 

@@ -51,6 +51,29 @@ export class DataStore {
     }
   }
 
+  /**
+   * A per-slot value reader for one key, with the column resolution
+   * hoisted out of the loop — for columnar scans over data conditions.
+   */
+  reader( group: GroupName, key: string ): ( slot: number ) => unknown {
+    const col = this.cols[ group ].get( key );
+
+    if( col == null ){ return () => undefined; }
+
+    switch( col.kind ){
+      case 'number':
+        return slot => ( col.present[ slot ] ? col.values[ slot ] : undefined );
+      case 'string':
+        return slot => {
+          const i = slot < col.indices.length ? col.indices[ slot ] : 0;
+
+          return i === 0 ? undefined : col.dict[ i - 1 ];
+        };
+      case 'mixed':
+        return slot => col.values[ slot ];
+    }
+  }
+
   /** All present values at a slot, as a fresh object. */
   object( group: GroupName, slot: number ): Record<string, unknown> {
     const out: Record<string, unknown> = {};

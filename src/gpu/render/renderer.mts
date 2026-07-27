@@ -13,11 +13,12 @@ import { MapperRuntime } from './mapper-runtime.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
-import { BUFFER_USAGE, TEXTURE_USAGE } from './webgpu-constants.mjs';
+import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
 import { FLAG_ALIVE } from '../contract.mjs';
+import { color2tuple } from '../../util/colors.mjs';
 import type { GpuCore } from '../core.mjs';
 import type { GpuCollection } from '../collection.mjs';
-import type { GpuRendererOptions } from '../gpu-types.mjs';
+import type { GpuExportOptions, GpuRendererOptions } from '../gpu-types.mjs';
 
 /*
 The frame graph: a render-on-dirty rAF loop.
@@ -36,6 +37,30 @@ static graph costs O(cursor region) per tick.  Frames before `.ready`
 resolves are no-ops; readiness triggers the first frame.  Device loss
 makes the instance dead (an `error` event fires; no recovery).
 */
+
+/** raw straight-alpha RGBA pixels of a finished export */
+export interface ExportedImage {
+  data: Uint8ClampedArray<ArrayBuffer>;
+  width: number;
+  height: number;
+}
+
+/** resolved export viewport: output px dimensions + the Frame transform */
+interface ExportView {
+  wPx: number;
+  hPx: number;
+  panX: number;
+  panY: number;
+  zoom: number;
+  /** [r, g, b] 0..255 + alpha 0..1, or null for transparent */
+  bg: [ number, number, number, number ] | null;
+}
+
+interface ExportJob {
+  view: ExportView;
+  resolve: ( image: ExportedImage ) => void;
+  reject: ( err: Error ) => void;
+}
 
 interface RendererStats {
   frames: number;
@@ -89,6 +114,25 @@ const PICK_NEUTRAL_COLUMNS = new Set( [
  */
 const MAX_IN_FLIGHT_FRAMES = 2;
 
+/** v3 semantics: maxWidth/maxHeight override scale; else scale (default 1). */
+const exportScale = ( w: number, h: number, opts: GpuExportOptions ): number => {
+  const { maxWidth, maxHeight } = opts;
+  let scale = opts.scale ?? 1;
+
+  if( maxWidth != null || maxHeight != null ){
+    const scaleW = maxWidth != null ? maxWidth / w : Infinity;
+    const scaleH = maxHeight != null ? maxHeight / h : Infinity;
+
+    scale = Math.min( scaleW, scaleH );
+  }
+
+  if( typeof scale !== 'number' || !isFinite( scale ) || scale <= 0 ){
+    throw new Error( `Invalid image export scale ${String( scale )}` );
+  }
+
+  return scale;
+};
+
 export class Renderer {
   /** resolves when the device is acquired and the first frame can draw */
   ready: Promise<void>;
@@ -134,6 +178,10 @@ export class Renderer {
   private sceneTarget: GPUTexture | null;
   private depthTarget: GPUTexture | null;
   private upscaler: Upscaler | null;
+  private pendingExports: ExportJob[];
+  private exportUniform: GPUBuffer | null;
+  private exportFrameData: Float32Array;
+  private exportCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -174,6 +222,10 @@ export class Renderer {
     this.sceneTarget = null;
     this.depthTarget = null;
     this.upscaler = null;
+    this.pendingExports = [];
+    this.exportUniform = null;
+    this.exportFrameData = new Float32Array( 12 );
+    this.exportCull = null;
 
     this.dpr = opts.pixelRatio == null || opts.pixelRatio === 'auto'
       ? ( globalThis.devicePixelRatio || 1 )
@@ -265,10 +317,17 @@ export class Renderer {
     this.labelLayer?.destroy();
 
     for( const group of [
-      ...Object.values( this.sceneCull ?? {} ), ...Object.values( this.pickCull ?? {} )
+      ...Object.values( this.sceneCull ?? {} ), ...Object.values( this.pickCull ?? {} ),
+      ...Object.values( this.exportCull ?? {} )
     ] ){
       group.destroy();
     }
+
+    for( const job of this.pendingExports ){
+      job.reject( new Error( 'The renderer was destroyed before the image export completed' ) );
+    }
+
+    this.pendingExports = [];
 
     this.upscaler?.destroy();
     this.sceneTarget?.destroy();
@@ -279,6 +338,7 @@ export class Renderer {
     this.mirror?.destroy();
     this.uniform?.destroy();
     this.pickUniform?.destroy();
+    this.exportUniform?.destroy();
     this.device?.destroy();
     this.canvas.remove();
   }
@@ -366,6 +426,257 @@ export class Renderer {
 
   private pickLatencyMs(): number {
     return this.picking?.lastLatencyMs ?? 0;
+  }
+
+  // -- image export --
+
+  /**
+   * Render the scene into an offscreen texture at the requested viewport
+   * (the on-screen one, or the whole graph with `full`) and read the
+   * pixels back.  Resolves with straight-alpha RGBA rows (no padding).
+   *
+   * The export is encoded inside the frame loop, after any pending scene
+   * work for that frame, so it sees exactly the state the screen shows —
+   * including GPU-owned columns mid-animation.  It always renders at
+   * native resolution (the adaptive render scale never applies) and label
+   * LOD thresholds evaluate at the *export* scale, so a full/high-scale
+   * export is a self-consistent figure rather than a copy of the screen's
+   * label culling.
+   */
+  async exportImage( opts: GpuExportOptions = {} ): Promise<ExportedImage> {
+    await this.ready;
+
+    if( this.destroyed || this.device == null ){
+      throw new Error( 'Cannot export an image: the renderer is destroyed' );
+    }
+
+    const view = this.computeExportView( opts );
+
+    return new Promise( ( resolve, reject ) => {
+      this.pendingExports.push( { view, resolve, reject } );
+      this.schedule();
+    } );
+  }
+
+  /** Resolve the export options to output dimensions + Frame transform. */
+  private computeExportView( opts: GpuExportOptions ): ExportView {
+    const device = this.device as GPUDevice;
+    let bg: ExportView['bg'] = null;
+
+    if( opts.bg != null ){
+      const tuple = color2tuple( opts.bg );
+
+      if( tuple == null ){
+        throw new Error( `The value '${String( opts.bg )}' is not a valid colour for 'bg'` );
+      }
+
+      bg = [ tuple[0], tuple[1], tuple[2], tuple[3] ?? 1 ];
+    }
+
+    let w: number, h: number, panX: number, panY: number, zoom: number;
+
+    if( opts.full === true ){
+      const bb = this.cy._store.boundingBox();
+
+      if( bb == null ){
+        throw new Error( 'Cannot export a full-graph image of an empty graph' );
+      }
+
+      const scale = exportScale( bb.w, bb.h, opts );
+
+      w = bb.w * scale;
+      h = bb.h * scale;
+      panX = -bb.x1 * scale;
+      panY = -bb.y1 * scale;
+      zoom = scale;
+    } else {
+      const cw = this.container.clientWidth;
+      const ch = this.container.clientHeight;
+
+      if( cw === 0 || ch === 0 ){
+        throw new Error( 'Cannot export the viewport of a zero-sized container' );
+      }
+
+      const scale = exportScale( cw, ch, opts );
+      const viewport = this.cy._viewport;
+      const pan = viewport.pan();
+
+      w = cw * scale;
+      h = ch * scale;
+      panX = pan.x * scale;
+      panY = pan.y * scale;
+      zoom = viewport.zoom() * scale;
+    }
+
+    const wPx = Math.max( 1, Math.round( w ) );
+    const hPx = Math.max( 1, Math.round( h ) );
+    const limit = device.limits.maxTextureDimension2D;
+
+    if( wPx > limit || hPx > limit ){
+      throw new Error(
+        `The export dimensions ${wPx}×${hPx} exceed the device's ${limit}px texture limit; ` +
+        `use maxWidth/maxHeight or a smaller scale`
+      );
+    }
+
+    return { wPx, hPx, panX, panY, zoom, bg };
+  }
+
+  /** The export Frame uniform: output px viewport, dpr-free transform,
+   * LOD thresholds in export px (see exportImage). */
+  private writeExportUniform( view: ExportView ): void {
+    const device = this.device as GPUDevice;
+    const opts = this.opts;
+    const f = this.exportFrameData;
+
+    if( this.exportUniform == null ){
+      this.exportUniform = device.createBuffer( {
+        label: 'cy-gpu:export-frame-uniform',
+        size: f.byteLength,
+        usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
+      } );
+    }
+
+    f[0] = view.wPx;
+    f[1] = view.hPx;
+    f[2] = view.panX;
+    f[3] = view.panY;
+    f[4] = view.zoom;
+    f[5] = opts.edgeWidthFloor ?? DEFAULT_EDGE_WIDTH_FLOOR;
+    f[6] = opts.nodeLodPx ?? DEFAULT_NODE_LOD_PX;
+    f[7] = opts.hidePx ?? DEFAULT_HIDE_PX;
+    f[8] = opts.edgeDimming ? Math.min( 0.85, Math.max( 0, 1 - view.zoom ) * 0.85 ) : 0;
+    f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
+    f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
+    // f[11]: padding
+
+    device.queue.writeBuffer( this.exportUniform, 0, f.buffer, f.byteOffset, f.byteLength );
+  }
+
+  /**
+   * Encode + submit one export: cull against the export uniform, draw the
+   * scene into a transient offscreen target, copy to a staging buffer.
+   * Synchronous up to the submit (so per-job uniform writes order
+   * correctly against per-job submits); the readback resolves async.
+   */
+  private renderExport( job: ExportJob ): void {
+    const device = this.device as GPUDevice;
+    const { wPx, hPx, bg } = job.view;
+
+    try {
+      this.writeExportUniform( job.view );
+
+      if( this.exportCull == null ){
+        const kernels = this.cullKernels as CullKernels;
+
+        this.exportCull = {
+          node: new CulledGroup( kernels, 'node', 'export-node' ),
+          edge: new CulledGroup( kernels, 'edge', 'export-edge' ),
+          glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' )
+        };
+      }
+
+      const format = this.format as GPUTextureFormat;
+      const texture = device.createTexture( {
+        label: 'cy-gpu:export-target',
+        size: { width: wPx, height: hPx },
+        format,
+        usage: TEXTURE_USAGE.RENDER_ATTACHMENT | TEXTURE_USAGE.COPY_SRC
+      } );
+      const depth = device.createTexture( {
+        label: 'cy-gpu:export-depth',
+        size: { width: wPx, height: hPx },
+        format: DEPTH_FORMAT,
+        usage: TEXTURE_USAGE.RENDER_ATTACHMENT
+      } );
+      const bytesPerRow = Math.ceil( wPx * 4 / 256 ) * 256;
+      const staging = device.createBuffer( {
+        label: 'cy-gpu:export-staging',
+        size: bytesPerRow * hPx,
+        usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST
+      } );
+
+      const encoder = device.createCommandEncoder( { label: 'cy-gpu:export' } );
+
+      this.encodeCulls( encoder, this.exportUniform as GPUBuffer, this.exportCull, false );
+
+      // the clear color is premultiplied, like everything the pipelines blend
+      const a = bg == null ? 0 : bg[3];
+      const pass = encoder.beginRenderPass( {
+        label: 'cy-gpu:export-pass',
+        colorAttachments: [ {
+          view: texture.createView(),
+          clearValue: bg == null
+            ? { r: 0, g: 0, b: 0, a: 0 }
+            : { r: bg[0] / 255 * a, g: bg[1] / 255 * a, b: bg[2] / 255 * a, a },
+          loadOp: 'clear',
+          storeOp: 'store'
+        } ],
+        depthStencilAttachment: {
+          view: depth.createView(),
+          depthClearValue: 1.0,
+          depthLoadOp: 'clear',
+          depthStoreOp: 'discard'
+        }
+      } );
+
+      this.drawScene( pass, this.exportUniform as GPUBuffer, this.exportCull );
+      pass.end();
+
+      encoder.copyTextureToBuffer(
+        { texture },
+        { buffer: staging, bytesPerRow },
+        { width: wPx, height: hPx }
+      );
+
+      device.queue.submit( [ encoder.finish() ] );
+
+      void this.readbackExport( job, staging, texture, depth, bytesPerRow );
+    } catch( err ){
+      job.reject( err as Error );
+    }
+  }
+
+  /** Map the staging buffer, strip row padding, convert to straight-alpha RGBA. */
+  private async readbackExport(
+    job: ExportJob, staging: GPUBuffer, texture: GPUTexture, depth: GPUTexture, bytesPerRow: number
+  ): Promise<void> {
+    const { wPx, hPx } = job.view;
+
+    try {
+      await staging.mapAsync( MAP_MODE.READ );
+
+      const mapped = new Uint8Array( staging.getMappedRange() );
+      const data = new Uint8ClampedArray( wPx * hPx * 4 );
+      const bgra = ( this.format as string ).startsWith( 'bgra' );
+
+      for( let y = 0; y < hPx; y++ ){
+        const src = y * bytesPerRow;
+        const dst = y * wPx * 4;
+
+        for( let x = 0; x < wPx; x++ ){
+          const s = src + x * 4;
+          const d = dst + x * 4;
+          const a = mapped[ s + 3 ];
+          // rendered colors are premultiplied; image pixels want straight alpha
+          const un = a === 0 || a === 255 ? 1 : 255 / a;
+
+          data[ d ] = mapped[ s + ( bgra ? 2 : 0 ) ] * un;
+          data[ d + 1 ] = mapped[ s + 1 ] * un;
+          data[ d + 2 ] = mapped[ s + ( bgra ? 0 : 2 ) ] * un;
+          data[ d + 3 ] = a;
+        }
+      }
+
+      staging.unmap();
+      job.resolve( { data, width: wPx, height: hPx } );
+    } catch( err ){
+      job.reject( err as Error ); // device lost or destroyed mid-flight
+    } finally {
+      staging.destroy();
+      texture.destroy();
+      depth.destroy();
+    }
   }
 
   // -- internals --
@@ -566,28 +877,7 @@ export class Renderer {
         ...( this.gpuTimer != null ? { timestampWrites: this.gpuTimer.timestampWrites() } : {} )
       } );
 
-      // z-order: single pass, edges under nodes under labels, slot order
-      // within each group (the cull compaction preserves slot order).
-      // The node depth prepass runs first so edge fragments under opaque
-      // node interiors are killed by early-z before blending.
-      const uniform = this.uniform as GPUBuffer;
-
-      this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), this.sceneCull.node );
-      this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), this.sceneCull.edge );
-      // arrowheads over the lines, under the nodes; whole draws skipped
-      // per end when no style block enables that end
-      this.arrowPipeline?.draw(
-        pass, device, uniform, mirror, store.highWater( 'edges' ), this.sceneCull.edge,
-        this.cy._styleEngine.arrowEnds
-      );
-      this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), this.sceneCull.node );
-
-      if( this.labelLayer != null && this.labelPipeline != null ){
-        this.labelPipeline.draw(
-          pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas, this.sceneCull.glyph
-        );
-      }
-
+      this.drawScene( pass, this.uniform as GPUBuffer, this.sceneCull );
       pass.end();
 
       if( scaled ){
@@ -633,11 +923,58 @@ export class Renderer {
       }
     }
 
+    // exports see exactly this frame's state: when the scene drew, the
+    // mapper/tween dispatches above are already encoded ahead of the
+    // export submit; when nothing was dirty, the buffers were already
+    // current.  A skipped scene pass (backpressure) leaves needsRedraw
+    // set, deferring the export to a coherent later frame.
+    if( this.pendingExports.length > 0 && !this.needsRedraw ){
+      const jobs = this.pendingExports;
+
+      this.pendingExports = [];
+
+      for( const job of jobs ){
+        this.renderExport( job );
+      }
+    }
+
     this.cpuFrameMs = performance.now() - t0;
 
     if( store.hasDirty() || this.needsRedraw || this.cy._animations.active()
-        || ( picking?.hasPending() ?? false ) ){
+        || ( picking?.hasPending() ?? false ) || this.pendingExports.length > 0 ){
       this.schedule();
+    }
+  }
+
+  /**
+   * The scene draw sequence against a Frame uniform + culled groups —
+   * shared by the on-screen frame and image export.  Z-order: edges under
+   * arrows under nodes under labels, slot order within each group (the
+   * cull compaction preserves slot order).  The node depth prepass runs
+   * first so edge fragments under opaque node interiors are killed by
+   * early-z before blending; arrow draws are skipped per end when no
+   * style block enables that end.
+   */
+  private drawScene(
+    pass: GPURenderPassEncoder, uniform: GPUBuffer,
+    cull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup }
+  ): void {
+    const device = this.device as GPUDevice;
+    const mirror = this.mirror as ColumnMirror;
+    const store = this.cy._store;
+
+    this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
+    this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge );
+    this.arrowPipeline?.draw(
+      pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge,
+      this.cy._styleEngine.arrowEnds
+    );
+    this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
+
+    if( this.labelLayer != null && this.labelPipeline != null ){
+      this.labelPipeline.draw(
+        pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas, cull.glyph
+      );
     }
   }
 

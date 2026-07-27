@@ -20,7 +20,7 @@ import type { EventProps } from '../event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
-  GpuElementsInput, GpuLayoutOptions, GpuStylesheet, Position
+  GpuElementsInput, GpuExportOptions, GpuLayoutOptions, GpuStylesheet, Position
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
@@ -30,6 +30,7 @@ export interface RendererLike {
   pick( x: number, y: number ): Promise<GpuCollection | null>;
   requestRender(): void;
   resize(): void;
+  exportImage( options: GpuExportOptions ): Promise<{ data: Uint8ClampedArray<ArrayBuffer>; width: number; height: number }>;
 }
 
 export interface LayoutLike {
@@ -742,6 +743,71 @@ export class GpuCore {
     return this.off( 'render', callback );
   }
 
+  // -- image export --
+
+  /**
+   * Export the rendered graph as a PNG.  Async — the pixels live on the
+   * GPU (offscreen render + readback), unlike v3's synchronous base64
+   * form; every output form resolves through the returned promise.
+   * Options as in v3: `bg`, `full`, `scale` or `maxWidth`/`maxHeight`,
+   * `output` ('base64uri' default | 'base64' | 'blob'; 'blob-promise' is
+   * an accepted alias of 'blob').  Headless instances reject — there is
+   * no renderer to export from.
+   */
+  png( options: GpuExportOptions = {} ): Promise<string | Blob> {
+    return this._exportImage( 'image/png', options );
+  }
+
+  /** Export as JPEG: as {@link png}, plus `quality` (0..1) and a white
+   * default `bg` (JPEG has no alpha channel). */
+  jpg( options: GpuExportOptions = {} ): Promise<string | Blob> {
+    return this._exportImage( 'image/jpeg', { bg: '#fff', ...options } );
+  }
+
+  declare jpeg: this['jpg'];
+
+  private async _exportImage( mime: string, options: GpuExportOptions ): Promise<string | Blob> {
+    const output = options.output ?? 'base64uri';
+
+    if( output !== 'base64uri' && output !== 'base64' && output !== 'blob' && output !== 'blob-promise' ){
+      throw new Error(
+        `Invalid image export output '${String( output )}'; use 'base64uri', 'base64' or 'blob'`
+      );
+    }
+
+    if( this._renderer == null ){
+      throw new Error( 'An image can only be exported from a rendered instance; this instance is headless' );
+    }
+
+    const { data, width, height } = await this._renderer.exportImage( options );
+    const doc = ( this._container as HTMLElement ).ownerDocument as Document;
+    const canvas = doc.createElement( 'canvas' );
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext( '2d' ) as CanvasRenderingContext2D;
+
+    context.putImageData( new ImageData( data, width, height ), 0, 0 );
+
+    const quality = options.quality;
+
+    if( output === 'blob' || output === 'blob-promise' ){
+      return new Promise( ( resolve, reject ) => {
+        canvas.toBlob(
+          blob => blob != null
+            ? resolve( blob )
+            : reject( new Error( `Could not encode the exported image as ${mime}` ) ),
+          mime, quality
+        );
+      } );
+    }
+
+    const uri = canvas.toDataURL( mime, quality );
+
+    return output === 'base64' ? uri.substring( uri.indexOf( ',' ) + 1 ) : uri;
+  }
+
   // -- graph-level data & scratch (plain objects, not columns) --
 
   data( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
@@ -1118,4 +1184,5 @@ GpuCore.prototype.attr = GpuCore.prototype.data;
 GpuCore.prototype.removeAttr = GpuCore.prototype.removeData;
 GpuCore.prototype.autolockNodes = GpuCore.prototype.autolock;
 GpuCore.prototype.autoungrabifyNodes = GpuCore.prototype.autoungrabify;
+GpuCore.prototype.jpeg = GpuCore.prototype.jpg;
 

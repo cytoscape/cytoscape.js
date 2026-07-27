@@ -226,6 +226,33 @@ export interface GpuStylesheet {
   edges?: GpuStyleProps;
 }
 
+/**
+ * Options for `cy.png()`/`cy.jpg()` image export.  Export is async (the
+ * pixels are rendered on and read back from the GPU) and only available
+ * on rendered instances — headless instances reject.
+ */
+export interface GpuExportOptions {
+  /** result form: a data-URI string (default), the raw base64 payload,
+   * or a Blob ('blob-promise' is accepted as an alias of 'blob' — every
+   * output form resolves through the returned promise) */
+  output?: 'base64uri' | 'base64' | 'blob' | 'blob-promise';
+  /** background color under the graph (any CSS color).  Default:
+   * transparent for png; white for jpg (JPEG has no alpha) */
+  bg?: string;
+  /** export the whole graph's bounds instead of the current viewport (default false) */
+  full?: boolean;
+  /** output pixels per rendered CSS px (viewport export) or per model
+   * unit (full export); default 1.  Ignored when maxWidth/maxHeight are
+   * given */
+  scale?: number;
+  /** cap the output width in px (the scale is computed to fit; overrides `scale`) */
+  maxWidth?: number;
+  /** cap the output height in px (the scale is computed to fit; overrides `scale`) */
+  maxHeight?: number;
+  /** jpg only: encode quality in [0, 1] (default: the browser's) */
+  quality?: number;
+}
+
 export interface GpuGridLayoutOptions {
   name: 'grid';
   fit?: boolean;

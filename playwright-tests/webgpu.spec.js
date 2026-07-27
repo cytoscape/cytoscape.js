@@ -1122,4 +1122,199 @@ test.describe( 'WebGPU renderer', () => {
     expect( Math.abs( after[ 1 ] - before[ 1 ] ) ).toBeGreaterThan( 40 );
   } );
 
+  /** Export a png in-page, decode it, and sample pixels at output coords. */
+  const pngAndSample = async ( page, opts, samples ) => {
+    return await page.evaluate( async ( { opts, samples } ) => {
+      const uri = await window.cy.png( opts );
+      const img = new Image();
+
+      img.src = uri;
+      await img.decode();
+
+      const canvas = document.createElement( 'canvas' );
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext( '2d' );
+
+      ctx.drawImage( img, 0, 0 );
+
+      const pixels = samples.map( ( [ x, y ] ) => {
+        const d = ctx.getImageData( x, y, 1, 1 ).data;
+
+        return [ d[0], d[1], d[2], d[3] ];
+      } );
+
+      return { width: img.width, height: img.height, pixels, prefix: uri.slice( 0, 22 ) };
+    }, { opts, samples } );
+  };
+
+  test( 'png() exports the viewport: dimensions, node pixels, transparent background', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const { width, height, pixels, prefix } = await pngAndSample(
+      page, {}, [ [ center.x, center.y ], [ 5, 5 ] ]
+    );
+
+    expect( prefix ).toBe( 'data:image/png;base64,' );
+    expect( width ).toBe( 800 );
+    expect( height ).toBe( 600 );
+
+    // node body: red, opaque
+    expect( pixels[0][0] ).toBeGreaterThan( 200 );
+    expect( pixels[0][1] ).toBeLessThan( 60 );
+    expect( pixels[0][2] ).toBeLessThan( 60 );
+    expect( pixels[0][3] ).toBe( 255 );
+
+    // background: transparent (no bg option)
+    expect( pixels[1][3] ).toBe( 0 );
+  } );
+
+  test( 'png() full export sizes to the graph bounds; scale and maxWidth apply', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', kind: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', kind: 'b' }, position: { x: 200, y: 100 } }
+      ],
+      style: { nodes: {
+        'width': 100, 'height': 100, 'shape': 'rectangle',
+        'background-color': { data: 'kind', scale: 'ordinal', domain: [ 'a', 'b' ], range: [ 'red', 'blue' ] }
+      } },
+      zoom: 1
+    } );
+    await waitFrames( page );
+
+    // bb: x -50..250, y -50..150 → 300×200 at scale 1, panned to the origin
+    const full = await pngAndSample( page, { full: true }, [ [ 50, 50 ], [ 250, 150 ] ] );
+
+    expect( full.width ).toBe( 300 );
+    expect( full.height ).toBe( 200 );
+
+    // node a (red) at model (0,0) → export px (50,50)
+    expect( full.pixels[0][0] ).toBeGreaterThan( 200 );
+    expect( full.pixels[0][2] ).toBeLessThan( 60 );
+
+    // node b (blue) at model (200,100) → export px (250,150)
+    expect( full.pixels[1][0] ).toBeLessThan( 60 );
+    expect( full.pixels[1][2] ).toBeGreaterThan( 200 );
+
+    const scaled = await pngAndSample( page, { full: true, scale: 2 }, [ [ 100, 100 ] ] );
+
+    expect( scaled.width ).toBe( 600 );
+    expect( scaled.height ).toBe( 400 );
+    expect( scaled.pixels[0][0] ).toBeGreaterThan( 200 ); // node a still red at 2×
+
+    const capped = await pngAndSample( page, { full: true, maxWidth: 150 }, [] );
+
+    expect( capped.width ).toBe( 150 );
+    expect( capped.height ).toBe( 100 );
+  } );
+
+  test( 'png() bg option fills the background; jpg() defaults to white', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const { pixels } = await pngAndSample( page, { bg: '#00ff00' }, [ [ 5, 5 ] ] );
+
+    expect( pixels[0] ).toEqual( [ 0, 255, 0, 255 ] );
+
+    const jpg = await page.evaluate( async () => {
+      const uri = await window.cy.jpg( { quality: 0.9 } );
+      const img = new Image();
+
+      img.src = uri;
+      await img.decode();
+
+      const canvas = document.createElement( 'canvas' );
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext( '2d' );
+
+      ctx.drawImage( img, 0, 0 );
+
+      const d = ctx.getImageData( 5, 5, 1, 1 ).data;
+
+      return { prefix: uri.slice( 0, 23 ), corner: [ d[0], d[1], d[2] ] };
+    } );
+
+    expect( jpg.prefix ).toBe( 'data:image/jpeg;base64,' );
+
+    // JPEG has no alpha: the default white bg shows at the corner
+    for( const channel of jpg.corner ){
+      expect( channel ).toBeGreaterThan( 240 );
+    }
+  } );
+
+  test( 'png() output forms: blob and raw base64', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+    await waitFrames( page );
+
+    const forms = await page.evaluate( async () => {
+      const blob = await window.cy.png( { output: 'blob' } );
+      const base64 = await window.cy.png( { output: 'base64' } );
+
+      return {
+        isBlob: blob instanceof Blob,
+        blobType: blob.type,
+        base64Head: base64.slice( 0, 5 ),
+        base64Decodes: atob( base64 ).length > 0
+      };
+    } );
+
+    expect( forms.isBlob ).toBe( true );
+    expect( forms.blobType ).toBe( 'image/png' );
+    expect( forms.base64Head ).not.toContain( 'data:' );
+    expect( forms.base64Decodes ).toBe( true );
+  } );
+
+  test( 'png() export mid-animation snapshots the GPU-owned position', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: -200, y: 0 } } ],
+      style: { nodes: { 'background-color': 'red', 'width': 120, 'height': 60, 'shape': 'rectangle' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // a slow linear tween: at export time the node is somewhere between the
+    // endpoints — the export must show it there (the lease's stale CPU
+    // position would put it at the start)
+    await page.evaluate( () => window.cy.$id( 'a' ).animate( {
+      position: { x: 200, y: 0 }, duration: 4000, easing: 'linear'
+    } ) );
+    await page.waitForTimeout( 1800 );
+
+    const { pixels } = await pngAndSample(
+      page, {}, [ [ center.x - 200, center.y ], [ center.x, center.y ] ]
+    );
+
+    // not at the start any more...
+    expect( pixels[0][3] ).toBe( 0 );
+    // ...and covering the midpoint by now (the 120px body gives the timing
+    // a ±0.15 window around t = 0.5)
+    expect( pixels[1][0] ).toBeGreaterThan( 200 );
+
+    await page.evaluate( () => window.cy.$id( 'a' ).stop( true, true ) );
+  } );
+
 } );

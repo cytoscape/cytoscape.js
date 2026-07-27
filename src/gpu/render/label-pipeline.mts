@@ -17,8 +17,8 @@ export class LabelPipeline {
   private pipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
-  private bindGroup: GPUBindGroup | null;
-  private bindKey: string;
+  /** one cached bind group per uniform buffer (scene frame vs export frame) */
+  private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; key: string }>;
 
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:label-shader', code: LABEL_SHADER } );
@@ -46,8 +46,7 @@ export class LabelPipeline {
       depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'always' }
     } );
 
-    this.bindGroup = null;
-    this.bindKey = '';
+    this.bindGroups = new Map();
   }
 
   private ensureBindGroup(
@@ -55,24 +54,27 @@ export class LabelPipeline {
     glyphs: GlyphBuffer, mirror: ColumnMirror, atlas: GlyphAtlas
   ): GPUBindGroup {
     const key = `${mirror.version}:${glyphs.version}`;
+    const cached = this.bindGroups.get( uniform );
 
-    if( this.bindGroup == null || this.bindKey !== key ){
-      this.bindGroup = device.createBindGroup( {
-        label: 'cy-gpu:label-bind-group',
-        layout: this.bindLayout,
-        entries: [
-          { binding: 0, resource: { buffer: uniform } },
-          { binding: 1, resource: { buffer: glyphs.buffer() } },
-          { binding: 2, resource: { buffer: mirror.buffer( 'node.position' ) } },
-          { binding: 3, resource: atlas.texture.createView() },
-          { binding: 4, resource: atlas.sampler }
-        ]
-      } );
-
-      this.bindKey = key;
+    if( cached != null && cached.key === key ){
+      return cached.group;
     }
 
-    return this.bindGroup;
+    const group = device.createBindGroup( {
+      label: 'cy-gpu:label-bind-group',
+      layout: this.bindLayout,
+      entries: [
+        { binding: 0, resource: { buffer: uniform } },
+        { binding: 1, resource: { buffer: glyphs.buffer() } },
+        { binding: 2, resource: { buffer: mirror.buffer( 'node.position' ) } },
+        { binding: 3, resource: atlas.texture.createView() },
+        { binding: 4, resource: atlas.sampler }
+      ]
+    } );
+
+    this.bindGroups.set( uniform, { group, key } );
+
+    return group;
   }
 
   draw(

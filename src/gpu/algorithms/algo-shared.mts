@@ -89,6 +89,30 @@ export const eachIncident = (
 };
 
 /**
+ * All incident subgraph edges of node slot `u`, loops included once —
+ * v3's `connectedEdges().intersection(eles)`.
+ */
+export const incidentEdgesInView = ( view: SubgraphView, u: number ): number[] => {
+  const { store, endpoints, edgeIn } = view;
+  const out = store.adj.outEdges( u );
+  const inn = store.adj.inEdges( u );
+  const edges: number[] = [];
+
+  for( let i = 0; i < out.length; i++ ){
+    if( edgeIn.has( out[ i ] ) ){ edges.push( out[ i ] ); }
+  }
+
+  for( let i = 0; i < inn.length; i++ ){
+    const e = inn[ i ];
+
+    // loops already appeared in the out pass
+    if( endpoints[ e * 2 ] !== u && edgeIn.has( e ) ){ edges.push( e ); }
+  }
+
+  return edges;
+};
+
+/**
  * The first live node slot of an argument collection, or undefined.  v4 takes
  * collections only — a string argument throws, consistent with the matcher.
  */

@@ -1069,8 +1069,20 @@ Each entry converts into a "Landed" record as it ships:
   the closing node (v4 collections are sets).  39 specs in
   `test/gpu-algorithms.mjs` ported from the v3 fixtures (1500 Node
   tests total green).
-- [ ] **A2 Algorithms: structure** — tarjan SCC, hopcroft-tarjan
-  biconnected, hierholzer, kargerStein.
+- [x] **A2 Algorithms: structure** — landed 2026-07-27.
+  `tarjanStronglyConnected` (+`tsc`/`tscc`/long alias; converted to an
+  **iterative** DFS so deep graphs can't overflow the JS stack —
+  component sets identical to v3's recursive form, verified against
+  the v3 fixtures including exact component order),
+  `hopcroftTarjanBiconnected` (+`htbc`/`htb`/long alias; recursive
+  like v3, quirks preserved: parent edges skipped incl. parallels,
+  non-cut vertices' edges absorbed), `hierholzer` (slot-keyed literal
+  port; trail dedupes to first-traversal order as v3's does),
+  `kargerStein` (index-based port; throws on <2 nodes as v3's error()
+  does).  Tests assert order-independent graph-theoretic results
+  (blocks, cut vertices, Eulerian properties) where v3 pinned
+  traversal-order sequences; 12 specs in
+  `test/gpu-algorithms-structure.mjs` (1512 Node tests green).
 - [ ] **A3 Algorithms: pageRank + centralities** — pageRank,
   degree/closeness/betweenness centrality (+ normalized variants).
 - [ ] **A4 Algorithms: clustering** — markov, k-means, k-medoids,

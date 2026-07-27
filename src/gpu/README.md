@@ -71,7 +71,10 @@ read-only style getters (`style`/`css`, `renderedStyle`,
 `numericStyle`, `effectiveOpacity`/`transparent`/`takesUpSpace`/
 `interactive` — see below), and graph algorithms (round 10, growing):
 `bfs`/`dfs` (+ long aliases), `dijkstra`, `aStar`, `bellmanFord`,
-`floydWarshall`, `kruskal` — slot-native over the CSR adjacency with
+`floydWarshall`, `kruskal`, `tarjanStronglyConnected` (+`tsc` etc.,
+iterative — deep graphs cannot overflow the JS stack),
+`hopcroftTarjanBiconnected` (+`htbc` etc.), `hierholzer`,
+`kargerStein` — slot-native over the CSR adjacency with
 v3 option/result shapes, except that node arguments are collections
 (selector strings throw) and `weight`/`heuristic` are plain functions.
 

@@ -12,11 +12,15 @@ import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from '../types.mjs';
 import {
   search as searchImpl, dijkstra as dijkstraImpl, aStar as aStarImpl,
-  bellmanFord as bellmanFordImpl, floydWarshall as floydWarshallImpl, kruskal as kruskalImpl
+  bellmanFord as bellmanFordImpl, floydWarshall as floydWarshallImpl, kruskal as kruskalImpl,
+  tarjanStronglyConnected as tarjanImpl, hopcroftTarjanBiconnected as hopcroftTarjanImpl,
+  hierholzer as hierholzerImpl, kargerStein as kargerSteinImpl
 } from './algorithms/index.mjs';
 import type {
   SearchArgs, SearchResult, DijkstraArgs, DijkstraResult, AStarOptions, AStarResult,
-  BellmanFordOptions, BellmanFordResult, FloydWarshallOptions, FloydWarshallResult, WeightFn
+  BellmanFordOptions, BellmanFordResult, FloydWarshallOptions, FloydWarshallResult, WeightFn,
+  TarjanStronglyConnectedResult, HopcroftTarjanBiconnectedResult, HierholzerArgs,
+  HierholzerResult, KargerSteinResult
 } from './algorithms/index.mjs';
 import type { GpuCore } from './core.mjs';
 import type { EventHandler } from '../emitter.mjs';
@@ -2179,6 +2183,30 @@ export class GpuCollection {
     return kruskalImpl( this, weight );
   }
 
+  tarjanStronglyConnected(): TarjanStronglyConnectedResult {
+    return tarjanImpl( this );
+  }
+
+  declare tsc: this['tarjanStronglyConnected'];
+  declare tscc: this['tarjanStronglyConnected'];
+  declare tarjanStronglyConnectedComponents: this['tarjanStronglyConnected'];
+
+  hopcroftTarjanBiconnected(): HopcroftTarjanBiconnectedResult {
+    return hopcroftTarjanImpl( this );
+  }
+
+  declare htbc: this['hopcroftTarjanBiconnected'];
+  declare htb: this['hopcroftTarjanBiconnected'];
+  declare hopcroftTarjanBiconnectedComponents: this['hopcroftTarjanBiconnected'];
+
+  hierholzer( ...args: HierholzerArgs ): HierholzerResult {
+    return hierholzerImpl( this, args );
+  }
+
+  kargerStein(): KargerSteinResult {
+    return kargerSteinImpl( this );
+  }
+
   // -- degree --
 
   // degree()/indegree()/outdegree() are singular accessors: they report the
@@ -2371,6 +2399,12 @@ GpuCollection.prototype.openNeighborhood = GpuCollection.prototype.neighborhood;
 GpuCollection.prototype.componentsOf = GpuCollection.prototype.components;
 GpuCollection.prototype.bfs = GpuCollection.prototype.breadthFirstSearch;
 GpuCollection.prototype.dfs = GpuCollection.prototype.depthFirstSearch;
+GpuCollection.prototype.tsc = GpuCollection.prototype.tarjanStronglyConnected;
+GpuCollection.prototype.tscc = GpuCollection.prototype.tarjanStronglyConnected;
+GpuCollection.prototype.tarjanStronglyConnectedComponents = GpuCollection.prototype.tarjanStronglyConnected;
+GpuCollection.prototype.htbc = GpuCollection.prototype.hopcroftTarjanBiconnected;
+GpuCollection.prototype.htb = GpuCollection.prototype.hopcroftTarjanBiconnected;
+GpuCollection.prototype.hopcroftTarjanBiconnectedComponents = GpuCollection.prototype.hopcroftTarjanBiconnected;
 GpuCollection.prototype.addListener = GpuCollection.prototype.on;
 GpuCollection.prototype.removeListener = GpuCollection.prototype.off;
 GpuCollection.prototype.trigger = GpuCollection.prototype.emit;

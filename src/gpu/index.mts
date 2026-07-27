@@ -41,20 +41,34 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
     cy.layout( options.layout ).run();
   }
 
-  if( options.container != null ){
-    const renderer = new Renderer( cy, options.container, {
+  // (re)attach a renderer + pointer to a container — used at creation and
+  // by cy.mount() after an unmount()
+  cy._attachFn = ( container: HTMLElement ) => {
+    const nav = ( globalThis as { navigator?: { gpu?: unknown } } ).navigator;
+
+    if( nav?.gpu == null ){
+      throw new Error(
+        'WebGPU is required to render but is unavailable in this browser; ' +
+        'omit the container option to run headless'
+      );
+    }
+
+    const renderer = new Renderer( cy, container, {
       pixelRatio: options.pixelRatio,
       ...options.renderer
     } );
-    const pointer = new PointerHandler( cy, renderer );
 
-    cy.on( 'destroy', () => pointer.destroy() );
+    cy._pointer = new PointerHandler( cy, renderer );
     cy._renderer = renderer;
     cy.ready = renderer.ready.then( () => {
       cy._readyResolved = true;
 
       return cy;
     } );
+  };
+
+  if( options.container != null ){
+    cy._attachFn( options.container );
   }
 
   return cy;

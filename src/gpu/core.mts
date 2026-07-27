@@ -74,6 +74,10 @@ export class GpuCore {
   _emitter: Emitter<GpuCore, GpuQualifier>;
   _styleEngine: StyleEngine;
   _renderer: RendererLike | null;
+  /** the pointer handler paired with the renderer (torn down on unmount) */
+  _pointer: { destroy(): void } | null;
+  /** wired by the factory: (re)attaches a renderer + pointer to a container */
+  _attachFn: ( ( container: HTMLElement ) => void ) | null;
   _viewport: Viewport;
 
   /** resolves once the render pipeline is usable (immediately when headless) */
@@ -112,6 +116,8 @@ export class GpuCore {
     this._styleEngine = new StyleEngine( this._store );
     this._animations = new AnimationManager( () => this._afterAnimationTick() );
     this._renderer = null;
+    this._pointer = null;
+    this._attachFn = null;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;
     this._options = options;
@@ -1175,6 +1181,54 @@ export class GpuCore {
     };
   }
 
+  /**
+   * Detach the renderer: the instance becomes headless (the model is
+   * CPU-canonical, so nothing is lost).  No-op when already headless.
+   */
+  unmount(): this {
+    if( this._container == null ){ return this; }
+
+    this._pointer?.destroy();
+    this._pointer = null;
+    this._renderer?.destroy();
+    this._renderer = null;
+    this._container = null;
+    this._readyResolved = true; // headless is ready by definition
+    this.ready = Promise.resolve( this );
+
+    return this;
+  }
+
+  /**
+   * (Re)attach a renderer to a container.  Re-mounting to a different
+   * container unmounts first; the fresh renderer re-uploads every column
+   * from the CPU-canonical model and rebuilds all glyph runs.
+   */
+  mount( container: HTMLElement ): this {
+    if( container == null ){
+      throw new Error( 'mount() needs a container element' );
+    }
+
+    if( this._attachFn == null ){
+      throw new Error( 'This instance cannot mount (it was not created via the cytoscapeGpu factory)' );
+    }
+
+    if( this._container != null ){
+      if( this._container === container ){ return this; }
+
+      this.unmount();
+    }
+
+    this._container = container;
+    this._readyResolved = false;
+    // the old label layer consumed the dirty channel; a fresh one starts
+    // empty, so every labelled slot must queue for a glyph rebuild
+    this._store.markAllLabelsDirty();
+    this._attachFn( container );
+
+    return this;
+  }
+
   container(): HTMLElement | null {
     return this._container;
   }
@@ -1196,6 +1250,9 @@ export class GpuCore {
 
     this.emit( 'destroy' );
     this._emitter.removeAllListeners();
+
+    this._pointer?.destroy();
+    this._pointer = null;
 
     if( this._renderer != null ){
       this._renderer.destroy();

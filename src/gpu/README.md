@@ -798,6 +798,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   8192 px — the export throws rather than tiling; `maxWidth`/`maxHeight`
   are the tool to stay under it), and a viewport export of a zero-sized
   container throws.  `renderTo` is not implemented.
+- **`mount`/`unmount`** (round 10): `cy.unmount()` tears down the
+  renderer and pointer — the instance becomes headless, with nothing
+  lost (the model is CPU-canonical); `cy.mount(container)` re-attaches
+  a fresh renderer, which re-uploads every column and rebuilds all
+  glyph runs from the model, so mutations made while headless render
+  on re-mount.  Re-mounting to the same container is a no-op;
+  a different container unmounts first.
 - No device-loss recovery: the instance goes dead and emits an `error`
   event.
 

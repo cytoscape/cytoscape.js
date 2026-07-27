@@ -459,6 +459,82 @@ test.describe( 'WebGPU renderer', () => {
     expect( oldPixel[1] ).toBeGreaterThan( 240 );
   } );
 
+  test( 'unmount() goes headless; mount() rebuilds from the CPU-canonical model (round 10)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a', name: 'A' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'width': 60, 'height': 60, 'background-color': 'red', 'shape': 'rectangle',
+        'label': { data: 'name' }, 'font-size': 20, 'color': '#000'
+      } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // unmount: headless, canvas gone, png rejects
+    const afterUnmount = await page.evaluate( async () => {
+      window.cy.unmount();
+
+      let pngRejected = false;
+
+      try { await window.cy.png(); } catch ( _e ){ pngRejected = true; }
+
+      return {
+        headless: window.cy.headless(),
+        canvases: document.querySelectorAll( 'canvas' ).length,
+        pngRejected
+      };
+    } );
+
+    expect( afterUnmount.headless ).toBe( true );
+    expect( afterUnmount.canvases ).toBe( 0 );
+    expect( afterUnmount.pngRejected ).toBe( true );
+
+    // mutate while headless: move the node, recolor, relabel, add another
+    await page.evaluate( () => {
+      window.cy.$id( 'a' ).position( { x: 80, y: 40 } );
+      window.cy.$id( 'a' ).data( 'name', 'MOVED' );
+      window.cy.add( { data: { id: 'b' }, position: { x: -80, y: -40 }, selected: true } );
+    } );
+
+    // re-mount to the same container and wait for the fresh pipeline
+    await page.evaluate( async () => {
+      window.cy.mount( document.getElementById( 'cytoscape' ) );
+      await window.cy.ready;
+    } );
+    await waitFrames( page );
+    await waitFrames( page );
+
+    // the red rectangle renders at its headless-move position...
+    const moved = await pixelAt( page, center.x + 80, center.y + 40 );
+    const old = await pixelAt( page, center.x - 20, center.y - 20 );
+
+    expect( moved[0] ).toBeGreaterThan( 150 );
+    expect( moved[1] ).toBeLessThan( 100 );
+    expect( old[0] ).toBeGreaterThan( 240 );
+    expect( old[1] ).toBeGreaterThan( 240 );
+
+    // ...and the node added while headless renders too (red, per the sheet)
+    const added = await pixelAt( page, center.x - 80, center.y - 40 );
+
+    expect( added[0] ).toBeGreaterThan( 150 );
+    expect( added[1] ).toBeLessThan( 100 );
+
+    // label glyphs rebuilt after mount: dark pixels exist below the node
+    const png = decodePng( await page.evaluate( () => window.cy.png( { bg: '#fff' } ) ) );
+    let dark = 0;
+
+    for( let i = 0; i < png.data.length; i += 4 ){
+      if( png.data[ i ] < 100 && png.data[ i + 1 ] < 100 && png.data[ i + 2 ] < 100 ){ dark++; }
+    }
+
+    expect( dark ).toBeGreaterThan( 50 );
+  } );
+
   test( 'gesture parity: cxttap family, dbltap, taphold (round 10)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

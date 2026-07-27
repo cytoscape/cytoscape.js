@@ -1288,11 +1288,20 @@ Each entry converts into a "Landed" record as it ships:
   spec; 1629 Node + 47 module tests, 49 Playwright specs green
   (serial run; parallel runs on this loaded machine flake one
   arbitrary visual spec — an env issue, not a code one).
-- [ ] **C2 `mount`/`unmount`** — `unmount()` tears down the renderer
-  (instance becomes headless); `mount(container)` re-inits and rebuilds
-  mirrors/atlas from CPU-canonical state (the ColumnMirror full-upload
-  path already exists).  Playwright: render → unmount → mutate → mount
-  → pixels reflect the mutations.
+- [x] **C2 `mount`/`unmount`** — landed 2026-07-27.  The factory's
+  renderer+pointer wiring moved into a reusable `_attachFn` on the
+  core (with the WebGPU-availability check at attach time);
+  `unmount()` destroys pointer + renderer and the instance reads
+  headless with a resolved `ready`; `mount(container)` re-attaches a
+  fresh renderer — the new ColumnMirror's from-zero realloc re-uploads
+  every column, and `markAllLabelsDirty()` requeues every glyph run
+  (the old LabelLayer had consumed the dirty channel).  Same-container
+  re-mount no-ops; a different container unmounts first;
+  `cy.destroy()` now also tears the pointer down.  Playwright spec:
+  render → unmount (headless, canvas removed, png rejects) → move/
+  relabel/add while headless → mount → the moved node, its rebuilt
+  label, and the headless-added node all render.  1629 Node + 47
+  module tests, 50 Playwright specs green (serial).
 - [ ] **C3 Device-loss recovery** — proposed policy, to be recorded as
   the decision when it lands: auto-recover **once per loss** —
   re-acquire adapter/device, rebuild mirrors/pipelines/atlas from

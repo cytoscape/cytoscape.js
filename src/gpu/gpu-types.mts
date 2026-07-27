@@ -434,6 +434,8 @@ export interface CytoscapeGpuOptions {
   boxSelectionEnabled?: boolean;
   /** 'single' (tap/box replaces the selection) or 'additive' (taps toggle, boxes add); default 'single' */
   selectionType?: 'single' | 'additive';
+  /** the dbltap/onetap debounce window in ms (default 250, as v3) */
+  multiClickDebounceTime?: number;
   /** rendered dimensions used when headless */
   headlessWidth?: number;
   headlessHeight?: number;

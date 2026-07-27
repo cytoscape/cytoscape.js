@@ -101,6 +101,7 @@ export class GpuCore {
   private _userZoomingEnabled: boolean;
   private _boxSelectionEnabled: boolean;
   private _selectionType: 'single' | 'additive';
+  private _multiClickDebounceTime: number;
   private _batchDepth: number;
   private _batchPending: BatchPending | null;
   _animations: AnimationManager;
@@ -129,11 +130,16 @@ export class GpuCore {
     this._userZoomingEnabled = options.userZoomingEnabled ?? true;
     this._boxSelectionEnabled = options.boxSelectionEnabled ?? true;
     this._selectionType = 'single';
+    this._multiClickDebounceTime = 250; // v3's default
     this._batchDepth = 0;
     this._batchPending = null;
 
     if( options.selectionType != null ){
       this.selectionType( options.selectionType );
+    }
+
+    if( options.multiClickDebounceTime != null ){
+      this.multiClickDebounceTime( options.multiClickDebounceTime );
     }
     this._readyResolved = this._container == null; // headless is ready immediately
     this._viewport = new Viewport( this, {
@@ -1003,6 +1009,19 @@ export class GpuCore {
 
     return this;
   }
+  /** The dbltap/onetap debounce window in ms (v3 parity; default 250). */
+  multiClickDebounceTime( ms?: number ): number | this {
+    if( ms === undefined ){ return this._multiClickDebounceTime; }
+
+    if( typeof ms !== 'number' || !isFinite( ms ) || ms < 0 ){
+      throw new Error( `multiClickDebounceTime must be a non-negative number; got '${String( ms )}'` );
+    }
+
+    this._multiClickDebounceTime = ms;
+
+    return this;
+  }
+
 
   // -- environment --
 

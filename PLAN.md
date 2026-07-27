@@ -1274,10 +1274,20 @@ Each entry converts into a "Landed" record as it ships:
 
 **Phase C — interaction & lifecycle, Playwright-verified**
 
-- [ ] **C1 Gesture parity** — `cxttap`/`cxttapstart`/`cxttapend`,
-  `taphold`, `dbltap` + the `multiClickDebounceTime` option, and v3's
-  drag-all-selected (dragging a selected node moves the whole
-  selection).  `interact/pointer.mts`; Playwright specs per gesture.
+- [x] **C1 Gesture parity** — landed 2026-07-27.  Right button:
+  `cxttapstart`/`cxtdrag`/`cxttapend` + `cxttap` (no-move), with the
+  canvas context menu suppressed; `taphold` after a 500 ms unmoved
+  press; `dbltap` on a same-target second tap within
+  `cy.multiClickDebounceTime()` (default 250 ms; new ctor option +
+  validated getter/setter) plus the debounced `onetap`; and
+  drag-all-selected — grabbing a selected node collects every
+  draggable selected node into a drag set moved by one bulk `shift`
+  per pointermove (all flagged grabbed, unflagged on release/cancel).
+  Verified by two Playwright specs (the event-order cxttap/dbltap/
+  taphold sweep and a three-node drag-set spec) + a Node accessor
+  spec; 1629 Node + 47 module tests, 49 Playwright specs green
+  (serial run; parallel runs on this loaded machine flake one
+  arbitrary visual spec — an env issue, not a code one).
 - [ ] **C2 `mount`/`unmount`** — `unmount()` tears down the renderer
   (instance becomes headless); `mount(container)` re-inits and rebuilds
   mirrors/atlas from CPU-canonical state (the ColumnMirror full-upload

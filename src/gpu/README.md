@@ -753,6 +753,17 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   ellipse).  Arrows draw *over* the line — a translucent
   arrow shows the line through it — are not pickable (the GPU pick pass
   stays edges-only), and size with the drawn (floored) edge width.
+- **Gestures** (round 10 additions): the **cxttap family** — right
+  button emits `cxttapstart` / `cxtdrag` (once moving) / `cxttapend`,
+  plus `cxttap` when the press never moved; the browser context menu is
+  suppressed on the canvas.  **`taphold`** fires after a 500 ms
+  unmoved press (v3's duration).  **`dbltap`** fires on a second tap
+  on the same target within `cy.multiClickDebounceTime()` (default
+  250 ms; ctor option + getter/setter), and the debounced **`onetap`**
+  fires when no second tap arrives — plain `tap` always fires
+  immediately, as v3.  **Dragging a selected node drags every
+  draggable selected node** (the whole set moves via one bulk shift
+  per pointer move, all flagged grabbed).
 - **Box selection**: with `boxSelectionEnabled` (default on), a drag
   while a multiple-select key (shift/ctrl/cmd) is held — or any drag
   when panning is disabled — draws a selection box (a DOM overlay above

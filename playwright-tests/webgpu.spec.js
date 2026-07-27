@@ -459,6 +459,103 @@ test.describe( 'WebGPU renderer', () => {
     expect( oldPixel[1] ).toBeGreaterThan( 240 );
   } );
 
+  test( 'gesture parity: cxttap family, dbltap, taphold (round 10)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__events = [];
+
+      for( const type of [ 'cxttapstart', 'cxttap', 'cxttapend', 'cxtdrag', 'dbltap', 'onetap', 'taphold' ] ){
+        window.cy.on( type, e => window.__events.push( type + ':' + ( e.target === window.cy ? 'cy' : e.target.id() ) ) );
+      }
+    } );
+
+    // right-click on the node: cxttapstart + cxttapend + cxttap
+    await page.mouse.click( center.x, center.y, { button: 'right' } );
+
+    await expect.poll( () => page.evaluate( () => window.__events.join() ) )
+      .toContain( 'cxttapstart:a,cxttapend:a,cxttap:a' );
+
+    // right-drag on the background: cxtdrag, no cxttap
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.move( center.x + 150, center.y );
+    await page.mouse.down( { button: 'right' } );
+    await page.mouse.move( center.x + 190, center.y + 40, { steps: 5 } );
+    await page.mouse.up( { button: 'right' } );
+
+    const cxtDragged = await page.evaluate( () => window.__events );
+
+    expect( cxtDragged.join() ).toContain( 'cxtdrag:cy' );
+    expect( cxtDragged.join() ).toContain( 'cxttapend:cy' );
+    expect( cxtDragged.join() ).not.toContain( 'cxttap:cy,' );
+
+    // double-click the node: two taps then dbltap on the same target
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.click( center.x, center.y );
+    await page.mouse.click( center.x, center.y );
+
+    await expect.poll( () => page.evaluate( () => window.__events.join() ) ).toContain( 'dbltap:a' );
+
+    // press and hold: taphold after ~500ms without moving
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.move( center.x, center.y );
+    await page.mouse.down();
+    await page.waitForTimeout( 700 );
+    await page.mouse.up();
+
+    await expect.poll( () => page.evaluate( () => window.__events.join() ) ).toContain( 'taphold:a' );
+  } );
+
+  test( 'dragging a selected node drags the whole selection (round 10)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 }, selected: true },
+        { data: { id: 'b' }, position: { x: 100, y: 0 }, selected: true },
+        { data: { id: 'c' }, position: { x: 0, y: 100 } } // unselected: stays put
+      ],
+      style: { nodes: { 'width': 40, 'height': 40, 'background-color': 'red' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__hovered = false;
+      window.cy.on( 'mouseover', () => { window.__hovered = true; } );
+    } );
+    await page.mouse.move( center.x - 10, center.y - 10 );
+    await page.mouse.move( center.x, center.y, { steps: 5 } );
+    await expect.poll( () => page.evaluate( () => window.__hovered ), { timeout: 5000 } ).toBe( true );
+
+    await page.mouse.down();
+    await page.mouse.move( center.x + 50, center.y + 30, { steps: 8 } );
+    await page.mouse.up();
+
+    const positions = await page.evaluate( () => ( {
+      a: window.cy.$id( 'a' ).position(),
+      b: window.cy.$id( 'b' ).position(),
+      c: window.cy.$id( 'c' ).position()
+    } ) );
+
+    // both selected nodes moved by the drag delta; the unselected one didn't
+    expect( positions.a.x ).toBeCloseTo( 50, 0 );
+    expect( positions.a.y ).toBeCloseTo( 30, 0 );
+    expect( positions.b.x ).toBeCloseTo( 150, 0 );
+    expect( positions.b.y ).toBeCloseTo( 30, 0 );
+    expect( positions.c.x ).toBeCloseTo( 0, 0 );
+    expect( positions.c.y ).toBeCloseTo( 100, 0 );
+  } );
+
   test( 'a locked node does not drag; the gesture pans instead', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

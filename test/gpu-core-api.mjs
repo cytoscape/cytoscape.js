@@ -144,4 +144,17 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function()
     expect( cy.createLayout ).to.equal( cy.layout );
   });
 
+  it('multiClickDebounceTime is a validated getter/setter with a ctor option', function(){
+    var cy = cytoscapeGpu({});
+
+    expect( cy.multiClickDebounceTime() ).to.equal( 250 ); // v3's default
+    expect( cy.multiClickDebounceTime( 400 ) ).to.equal( cy );
+    expect( cy.multiClickDebounceTime() ).to.equal( 400 );
+    expect( () => cy.multiClickDebounceTime( -1 ) ).to.throw();
+
+    var cy2 = cytoscapeGpu({ multiClickDebounceTime: 100 });
+
+    expect( cy2.multiClickDebounceTime() ).to.equal( 100 );
+  });
+
 });

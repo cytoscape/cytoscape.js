@@ -1083,8 +1083,17 @@ Each entry converts into a "Landed" record as it ships:
   (blocks, cut vertices, Eulerian properties) where v3 pinned
   traversal-order sequences; 12 specs in
   `test/gpu-algorithms-structure.mjs` (1512 Node tests green).
-- [ ] **A3 Algorithms: pageRank + centralities** — pageRank,
-  degree/closeness/betweenness centrality (+ normalized variants).
+- [x] **A3 Algorithms: pageRank + centralities** — landed 2026-07-27.
+  `pageRank` (dense power method on Float64Arrays), `degreeCentrality`
+  /`degreeCentralityNormalized` (+`dc`/`dcn`/`...Normalised`; Opsahl's
+  alpha, loops counted on both directed sides as v3), `closeness
+  Centrality`/`closenessCentralityNormalized` (+`cc`/`ccn`; harmonic
+  default; dijkstra per root, floydWarshall for normalized),
+  `betweennessCentrality` (+`bc`; Brandes over deduped neighbor lists
+  with first-edge weight pick as v3, but a proper decrease-key heap so
+  S is truly distance-ordered).  19 specs pin v3's exact numeric
+  expectations (all matched, incl. the multiple-shortest-paths case);
+  `test/gpu-algorithms-centralities.mjs` (1531 Node tests green).
 - [ ] **A4 Algorithms: clustering** — markov, k-means, k-medoids,
   fuzzy c-means, hierarchical, affinity propagation (+ the shared
   distance helpers).

@@ -14,13 +14,21 @@ import {
   search as searchImpl, dijkstra as dijkstraImpl, aStar as aStarImpl,
   bellmanFord as bellmanFordImpl, floydWarshall as floydWarshallImpl, kruskal as kruskalImpl,
   tarjanStronglyConnected as tarjanImpl, hopcroftTarjanBiconnected as hopcroftTarjanImpl,
-  hierholzer as hierholzerImpl, kargerStein as kargerSteinImpl
+  hierholzer as hierholzerImpl, kargerStein as kargerSteinImpl,
+  pageRank as pageRankImpl, degreeCentrality as degreeCentralityImpl,
+  degreeCentralityNormalized as degreeCentralityNormalizedImpl,
+  closenessCentrality as closenessCentralityImpl,
+  closenessCentralityNormalized as closenessCentralityNormalizedImpl,
+  betweennessCentrality as betweennessCentralityImpl
 } from './algorithms/index.mjs';
 import type {
   SearchArgs, SearchResult, DijkstraArgs, DijkstraResult, AStarOptions, AStarResult,
   BellmanFordOptions, BellmanFordResult, FloydWarshallOptions, FloydWarshallResult, WeightFn,
   TarjanStronglyConnectedResult, HopcroftTarjanBiconnectedResult, HierholzerArgs,
-  HierholzerResult, KargerSteinResult
+  HierholzerResult, KargerSteinResult, PageRankOptions, PageRankResult,
+  DegreeCentralityOptions, DegreeCentralityResult, DegreeCentralityNormalizedResult,
+  ClosenessCentralityOptions, ClosenessCentralityNormalizedResult,
+  BetweennessCentralityOptions, BetweennessCentralityResult
 } from './algorithms/index.mjs';
 import type { GpuCore } from './core.mjs';
 import type { EventHandler } from '../emitter.mjs';
@@ -2207,6 +2215,42 @@ export class GpuCollection {
     return kargerSteinImpl( this );
   }
 
+  pageRank( options?: PageRankOptions ): PageRankResult {
+    return pageRankImpl( this, options );
+  }
+
+  degreeCentrality( options?: DegreeCentralityOptions ): DegreeCentralityResult {
+    return degreeCentralityImpl( this, options );
+  }
+
+  declare dc: this['degreeCentrality'];
+
+  degreeCentralityNormalized( options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult {
+    return degreeCentralityNormalizedImpl( this, options );
+  }
+
+  declare dcn: this['degreeCentralityNormalized'];
+  declare degreeCentralityNormalised: this['degreeCentralityNormalized'];
+
+  closenessCentrality( options?: ClosenessCentralityOptions ): number {
+    return closenessCentralityImpl( this, options );
+  }
+
+  declare cc: this['closenessCentrality'];
+
+  closenessCentralityNormalized( options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult {
+    return closenessCentralityNormalizedImpl( this, options );
+  }
+
+  declare ccn: this['closenessCentralityNormalized'];
+  declare closenessCentralityNormalised: this['closenessCentralityNormalized'];
+
+  betweennessCentrality( options?: BetweennessCentralityOptions ): BetweennessCentralityResult {
+    return betweennessCentralityImpl( this, options );
+  }
+
+  declare bc: this['betweennessCentrality'];
+
   // -- degree --
 
   // degree()/indegree()/outdegree() are singular accessors: they report the
@@ -2405,6 +2449,13 @@ GpuCollection.prototype.tarjanStronglyConnectedComponents = GpuCollection.protot
 GpuCollection.prototype.htbc = GpuCollection.prototype.hopcroftTarjanBiconnected;
 GpuCollection.prototype.htb = GpuCollection.prototype.hopcroftTarjanBiconnected;
 GpuCollection.prototype.hopcroftTarjanBiconnectedComponents = GpuCollection.prototype.hopcroftTarjanBiconnected;
+GpuCollection.prototype.dc = GpuCollection.prototype.degreeCentrality;
+GpuCollection.prototype.dcn = GpuCollection.prototype.degreeCentralityNormalized;
+GpuCollection.prototype.degreeCentralityNormalised = GpuCollection.prototype.degreeCentralityNormalized;
+GpuCollection.prototype.cc = GpuCollection.prototype.closenessCentrality;
+GpuCollection.prototype.ccn = GpuCollection.prototype.closenessCentralityNormalized;
+GpuCollection.prototype.closenessCentralityNormalised = GpuCollection.prototype.closenessCentralityNormalized;
+GpuCollection.prototype.bc = GpuCollection.prototype.betweennessCentrality;
 GpuCollection.prototype.addListener = GpuCollection.prototype.on;
 GpuCollection.prototype.removeListener = GpuCollection.prototype.off;
 GpuCollection.prototype.trigger = GpuCollection.prototype.emit;

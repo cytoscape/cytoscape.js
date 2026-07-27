@@ -17,4 +17,18 @@ export { hierholzer } from './hierholzer.mjs';
 export type { HierholzerArgs, HierholzerOptions, HierholzerResult } from './hierholzer.mjs';
 export { kargerStein } from './karger-stein.mjs';
 export type { KargerSteinResult } from './karger-stein.mjs';
+export { pageRank } from './page-rank.mjs';
+export type { PageRankOptions, PageRankResult } from './page-rank.mjs';
+export { degreeCentrality, degreeCentralityNormalized } from './degree-centrality.mjs';
+export type {
+  DegreeCentralityOptions, DegreeCentralityResult, DegreeCentralityNormalizedResult
+} from './degree-centrality.mjs';
+export { closenessCentrality, closenessCentralityNormalized } from './closeness-centrality.mjs';
+export type {
+  ClosenessCentralityOptions, ClosenessCentralityNormalizedResult
+} from './closeness-centrality.mjs';
+export { betweennessCentrality } from './betweenness-centrality.mjs';
+export type {
+  BetweennessCentralityOptions, BetweennessCentralityResult
+} from './betweenness-centrality.mjs';
 export type { WeightFn } from './algo-shared.mjs';

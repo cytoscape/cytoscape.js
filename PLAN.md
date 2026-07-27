@@ -943,14 +943,14 @@ stale against the v3 code actually in the repo.
   clean, 32/32 `webgpu` + 6/6 `webgpu-visual` Playwright specs; goldens
   byte-stable across repeat runs.
 
-## Round 9.7 (2026-07-27) — label testability + `font-family`
+## Landed (round 9.7 — label testability + `font-family`, 2026-07-27)
 
 Direction set in discussion (amendment to round 9.6: "it's important to
 test labels").  The 9.6 goldens excluded labels because the atlas
-hardcodes `32px sans-serif` — the browser's *generic* sans-serif, which
+hardcoded `32px sans-serif` — the browser's *generic* sans-serif, which
 resolves to a different font per OS, making label pixels unpinnable even
-in principle.  The plan, with the load-bearing piece being a missing API,
-not harness design:
+in principle.  The package, with the load-bearing piece being a missing
+API, not harness design:
 
 - **`font-family` as a constant, effectively global node style prop**
   (default `sans-serif`) — the atlas is keyed by character, one font per
@@ -978,6 +978,11 @@ not harness design:
   (same-machine export-vs-screen, includes glyphs) and the behavioural
   label specs (placement, follow-on-drag, LOD fade).  v3 parity keeps
   excluding labels — raster and placement differ by design.
+- **Verification**: 1461 Node tests (9 new font-family specs) + 47
+  module tests, typecheck and lint clean; 33/33 `webgpu` (incl. the
+  font-swap spec) and 7/7 `webgpu-visual` specs (incl. the
+  `labels-open-sans` golden), the visual project stable across three
+  consecutive runs.
 
 ## Logged direction — edge labels (a future round; nodes-only today)
 

@@ -427,7 +427,9 @@ passthrough mapper (`{ data: key }`, or the legacy `'data(key)'` string;
 `id` reads the first-class id); mapped labels refresh on data writes (fn
 styles do not — see the refresh policy above).  `font-size` and `color`
 take constants or mappers (CPU-evaluated — the label sidecar is not a
-GPU column).  Glyphs
+GPU column); `font-family` is a constant and effectively global (one
+font per atlas, default `sans-serif` — a change resets the atlas and
+re-lays-out every label; see the fonts design decision above).  Glyphs
 come from a runtime SDF atlas (canvas-2D raster → Euclidean distance
 transform → one r8 texture) and live in a persistent instance buffer keyed
 by node slot — the label vertex shader reads the node position buffer, so
@@ -647,7 +649,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `labelMinPx` renderer option hard-culls labels whose on-screen glyph
   height is below it — too small to read anyway (default 0 = off).
 - **Labels**: nodes only, single line (newlines collapse to spaces), fixed
-  placement (horizontally centered below the node), not pickable, and the
+  placement (horizontally centered below the node), not pickable, one
+  global `font-family` (the atlas holds one font), and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
   rendering with a console warning.  Label color/text bake into glyph
   instances, so `:selected`/hover styling does not restyle label text.

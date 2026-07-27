@@ -1380,6 +1380,71 @@ test.describe( 'WebGPU renderer', () => {
     expect( ratio ).toBeGreaterThan( 0.0005 );
   } );
 
+  test( 'glyphs re-raster when a web font finishes loading after label build', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // 'Late Font' is not registered yet, so glyphs raster from the
+    // sans-serif fallback and are cached in the atlas (an @font-face
+    // family would already start loading from the atlas's own canvas use)
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'width': 40, 'height': 40, 'background-color': '#ddd',
+        'label': 'Wide Label', 'font-size': 20, 'color': '#000',
+        'font-family': `'Late Font', sans-serif`
+      } },
+      zoom: 1
+    } );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const shot = async () => decodePng( await page.evaluate( () => window.cy.png( { bg: '#fff' } ) ) );
+    const before = await shot();
+
+    // registering + loading the face fires document.fonts 'loadingdone',
+    // which the renderer hooks to reset the atlas and rebuild every glyph run
+    await page.evaluate( async () => {
+      const face = new FontFace( 'Late Font',
+        `url('../node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2') format('woff2')` );
+
+      document.fonts.add( face );
+
+      const rendered = new Promise( resolve => window.cy.one( 'render', resolve ) );
+
+      // a set-initiated load, so the FontFaceSet fires 'loadingdone'
+      await document.fonts.load( `32px 'Late Font'` );
+
+      if( !document.fonts.check( `32px 'Late Font'` ) ){
+        throw new Error( 'Late Font did not load' );
+      }
+
+      await rendered; // the hook re-rastered and redrew
+    } );
+    await waitFrames( page );
+    await waitFrames( page );
+
+    const after = await shot();
+
+    // label pixels exist in both renders, and they changed (fallback face
+    // vs Open Sans) — the re-raster happened without any style write
+    const darkCount = png => {
+      let n = 0;
+
+      for( let i = 0; i < png.data.length; i += 4 ){
+        if( png.data[ i ] < 100 && png.data[ i + 1 ] < 100 && png.data[ i + 2 ] < 100 ){ n++; }
+      }
+
+      return n;
+    };
+
+    expect( darkCount( before ) ).toBeGreaterThan( 100 );
+    expect( darkCount( after ) ).toBeGreaterThan( 100 );
+
+    const { ratio } = diffPngs( after, before, { threshold: 0.1 } );
+
+    expect( ratio ).toBeGreaterThan( 0.0005 );
+  } );
+
   test( 'png() export mid-animation snapshots the GPU-owned position', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

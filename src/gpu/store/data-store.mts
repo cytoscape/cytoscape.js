@@ -1,5 +1,5 @@
 import type { GroupName } from '../contract.mjs';
-import type { GpuDictColumn } from '../gpu-types.mjs';
+import type { GpuDataColumn, GpuDictColumn } from '../gpu-types.mjs';
 
 /*
 The data() sidecar: per-(group, key) columns instead of a per-element
@@ -89,6 +89,50 @@ export class DataStore {
 
   keys( group: GroupName ): string[] {
     return [ ...this.cols[ group ].keys() ];
+  }
+
+  /**
+   * Index-aligned wire/columnar export: `out[key][i]` is slot `slots[i]`'s
+   * value.  Numbers export as Float64Array with NaN holes, strings as a
+   * dictionary column, mixed as a plain array — the shapes `ingestColumn`
+   * and the wire already accept.  Undefined when there are no columns.
+   */
+  exportColumns( group: GroupName, slots: ArrayLike<number> ): Record<string, GpuDataColumn> | undefined {
+    const cols = this.cols[ group ];
+
+    if( cols.size === 0 ){ return undefined; }
+
+    const out: Record<string, GpuDataColumn> = {};
+
+    for( const [ key, col ] of cols ){
+      switch( col.kind ){
+        case 'number': {
+          const values = new Float64Array( slots.length ).fill( NaN );
+
+          for( let i = 0; i < slots.length; i++ ){
+            if( col.present[ slots[ i ] ] ){ values[ i ] = col.values[ slots[ i ] ]; }
+          }
+
+          out[ key ] = values;
+          break;
+        }
+        case 'string': {
+          const indices = new Uint32Array( slots.length );
+
+          for( let i = 0; i < slots.length; i++ ){
+            indices[ i ] = slots[ i ] < col.indices.length ? col.indices[ slots[ i ] ] : 0;
+          }
+
+          out[ key ] = { dict: [ ...col.dict ], indices };
+          break;
+        }
+        case 'mixed':
+          out[ key ] = Array.from( slots as ArrayLike<number>, slot => col.values[ slot ] );
+          break;
+      }
+    }
+
+    return out;
   }
 
   set( group: GroupName, slot: number, key: string, value: unknown ): void {

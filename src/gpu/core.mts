@@ -1,7 +1,7 @@
 import { GraphStore } from './store/graph-store.mjs';
 import { GpuCollection } from './collection.mjs';
 import { isColumnarElements } from './columnar.mjs';
-import { deserializeElements, isSerializedElements } from './wire.mjs';
+import { deserializeElements, isSerializedElements, serializeElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, predicateQualifier } from './events.mjs';
 import type { ElePredicate, GpuQualifier } from './events.mjs';
@@ -28,6 +28,7 @@ import type Emitter from '../emitter.mjs';
 import type { EventHandler } from '../emitter.mjs';
 import type Event from '../event.mjs';
 import type { EventProps } from '../event.mjs';
+import { FLAG_SELECTABLE, FLAG_SELECTED } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
@@ -1052,6 +1053,76 @@ export class GpuCore {
    * restore form (`json(obj)`) is not supported — rebuilding from a
    * snapshot needs stored defs, which the prototype does not keep.
    */
+  /**
+   * Export the live graph as the binary wire format (the buffer
+   * `options.elements`/`add()` accept directly): the columnar counterpart
+   * of `json()`.  Carries ids, positions, selection state and the data()
+   * sidecar; style, viewport and scratch are not part of the wire.
+   */
+  serialize(): ArrayBuffer {
+    const store = this._store;
+    const nodeSlots = store.slotsOrdered( 'nodes' );
+    const edgeSlots = store.slotsOrdered( 'edges' );
+    const pos = store.column( 'node.position' ) as Float32Array;
+    const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
+    const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
+    const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+
+    const nodeIds: string[] = new Array( nodeSlots.length );
+    const positions = new Float32Array( nodeSlots.length * 2 );
+    const nodeSelected = new Uint8Array( nodeSlots.length );
+    const nodeSelectable = new Uint8Array( nodeSlots.length );
+    const indexOfSlot = new Map<number, number>();
+
+    for( let i = 0; i < nodeSlots.length; i++ ){
+      const slot = nodeSlots[ i ];
+
+      indexOfSlot.set( slot, i );
+      nodeIds[ i ] = store.idAt( 'nodes', slot ) as string;
+      positions[ i * 2 ] = pos[ slot * 2 ];
+      positions[ i * 2 + 1 ] = pos[ slot * 2 + 1 ];
+      nodeSelected[ i ] = ( nodeFlags[ slot ] & FLAG_SELECTED ) !== 0 ? 1 : 0;
+      nodeSelectable[ i ] = ( nodeFlags[ slot ] & FLAG_SELECTABLE ) !== 0 ? 1 : 0;
+    }
+
+    const edgeIds: string[] = new Array( edgeSlots.length );
+    const sources = new Uint32Array( edgeSlots.length );
+    const targets = new Uint32Array( edgeSlots.length );
+    const edgeSelected = new Uint8Array( edgeSlots.length );
+    const edgeSelectable = new Uint8Array( edgeSlots.length );
+
+    for( let i = 0; i < edgeSlots.length; i++ ){
+      const slot = edgeSlots[ i ];
+
+      edgeIds[ i ] = store.idAt( 'edges', slot ) as string;
+      sources[ i ] = indexOfSlot.get( endpoints[ slot * 2 ] ) as number;
+      targets[ i ] = indexOfSlot.get( endpoints[ slot * 2 + 1 ] ) as number;
+      edgeSelected[ i ] = ( edgeFlags[ slot ] & FLAG_SELECTED ) !== 0 ? 1 : 0;
+      edgeSelectable[ i ] = ( edgeFlags[ slot ] & FLAG_SELECTABLE ) !== 0 ? 1 : 0;
+    }
+
+    return serializeElements( {
+      columnar: true,
+      nodes: {
+        count: nodeSlots.length,
+        ids: nodeIds,
+        positions,
+        selected: nodeSelected,
+        selectable: nodeSelectable,
+        data: store.data.exportColumns( 'nodes', nodeSlots )
+      },
+      edges: {
+        count: edgeSlots.length,
+        ids: edgeIds,
+        sources,
+        targets,
+        selected: edgeSelected,
+        selectable: edgeSelectable,
+        data: store.data.exportColumns( 'edges', edgeSlots )
+      }
+    } );
+  }
+
   json( flat?: boolean ): Record<string, unknown> {
     if( flat != null && typeof flat !== 'boolean' ){
       throw new Error(

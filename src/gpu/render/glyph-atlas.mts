@@ -196,7 +196,20 @@ export class GlyphAtlas {
     if( family === this.fontFamily ){ return; }
 
     this.fontFamily = family;
-    this.ctx.font = `${SDF_FONT_SIZE}px ${family}`;
+    this.reset();
+  }
+
+  /**
+   * Re-raster with the *same* family: clears the cache so glyphs that were
+   * rasterized before a web font finished loading (and so cached from the
+   * fallback font) rebuild against the now-loaded face.
+   */
+  reraster(): void {
+    this.reset();
+  }
+
+  private reset(): void {
+    this.ctx.font = `${SDF_FONT_SIZE}px ${this.fontFamily}`;
     this.cache.clear();
     this.penX = 0;
     this.penY = 0;

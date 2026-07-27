@@ -598,7 +598,11 @@ export class GraphStore implements ModelView {
     if( font === this.labelFont ){ return; }
 
     this.labelFont = font;
+    this.markAllLabelsDirty();
+  }
 
+  /** Queue every labelled slot for a glyph-run rebuild (font change / re-raster). */
+  markAllLabelsDirty(): void {
     for( let slot = 0; slot < this.labels.length; slot++ ){
       if( this.labels[ slot ] != null ){ this.labelDirty.add( slot ); }
     }

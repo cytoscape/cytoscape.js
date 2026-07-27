@@ -25,6 +25,15 @@ export class LabelLayer {
     return this.glyphs.count();
   }
 
+  /**
+   * Rebuild every glyph run against freshly rasterized glyphs — for fonts
+   * that finish loading after glyphs were cached from the fallback face.
+   */
+  reraster(): void {
+    this.atlas.reraster();
+    this.store.markAllLabelsDirty();
+  }
+
   uploadedBytes(): number {
     return this.glyphs.uploadedBytes;
   }

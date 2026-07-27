@@ -166,6 +166,7 @@ export class Renderer {
   private needsRedraw: boolean;
   private inFlightFrames: number;
   private labelLayer: LabelLayer | null;
+  private onFontsLoadingDone: ( () => void ) | null = null;
   private labelPipeline: LabelPipeline | null;
   private cullKernels: CullKernels | null;
   private mapperRuntime: MapperRuntime | null;
@@ -226,6 +227,18 @@ export class Renderer {
     this.exportUniform = null;
     this.exportFrameData = new Float32Array( 12 );
     this.exportCull = null;
+
+    // re-raster glyph runs when web fonts finish loading: glyphs cached
+    // before a FontFace resolves were rasterized from the fallback face
+    if( typeof document !== 'undefined' && document.fonts?.addEventListener != null ){
+      this.onFontsLoadingDone = () => {
+        if( this.destroyed || this.labelLayer == null ){ return; }
+
+        this.labelLayer.reraster();
+        this.requestRender();
+      };
+      document.fonts.addEventListener( 'loadingdone', this.onFontsLoadingDone );
+    }
 
     this.dpr = opts.pixelRatio == null || opts.pixelRatio === 'auto'
       ? ( globalThis.devicePixelRatio || 1 )
@@ -312,6 +325,11 @@ export class Renderer {
     this.resizeObserver?.disconnect();
     this.offInvalidate();
     this.cy.off( 'viewport', this.onViewport );
+
+    if( this.onFontsLoadingDone != null ){
+      document.fonts.removeEventListener( 'loadingdone', this.onFontsLoadingDone );
+      this.onFontsLoadingDone = null;
+    }
     this.picking?.destroy();
     this.gpuTimer?.destroy();
     this.labelLayer?.destroy();

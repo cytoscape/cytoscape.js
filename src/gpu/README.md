@@ -422,9 +422,11 @@ each is deliberate, not a pass-1 deferral:
   reserve escape hatch if CI proves that insufficient).  Footgun, and
   why specs pre-load the font: the atlas rasters glyphs lazily and
   caches them forever, so a glyph rasterized before the web font
-  finishes loading is cached from the fallback font with no
-  invalidation — a `document.fonts.ready` re-raster hook is logged as a
-  library follow-up.
+  finishes loading is cached from the fallback font — **but** (round
+  10) the renderer listens for the font set's `loadingdone` event and
+  re-rasters the atlas + rebuilds every glyph run when a web font
+  finishes loading, so late-loading fonts self-correct.  Specs still
+  pre-load to keep goldens deterministic.
 - **Edge labels: committed direction, not yet built** (labels are
   nodes-only today).  The shape: a second glyph stream parallel to the
   node one (own instance buffer + cull group + draw call); edge glyphs
@@ -598,7 +600,12 @@ columns as dictionaries (only the small dictionary decodes), the rest as
 JSON per present value.  Either way, the
 factory's load path materializes no per-element handles and emits no
 `add` events (nobody can be listening yet); `cy.add()` keeps full
-per-element semantics and takes all three forms.  ndex-x-large (19.6k
+per-element semantics and takes all three forms.  The reverse
+direction exists too (round 10): **`cy.serialize()`** exports the live
+graph as the wire buffer — ids, positions, selection state and the
+data() sidecar (style/viewport/scratch are not part of the wire) — and
+the result feeds straight back into `options.elements`/`cy.add()`.
+ndex-x-large (19.6k
 nodes / 465k edges, 28.6 MB JSON): definition-form init 236 ms, columnar
 init 80 ms — down from 662 ms before the bulk path.  The wire form of the
 same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's

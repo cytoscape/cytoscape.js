@@ -1275,6 +1275,23 @@ export class GpuCollection {
     return this._store.labelAt( ref.slot )?.text ?? '';
   }
 
+  /**
+   * v3-parity accessor: node padding.  v4 has no `padding` style prop
+   * (a compounds-era feature), so the padding is always 0 and the
+   * padded dimensions equal the plain ones — kept so v3 call sites work.
+   */
+  padding(): number | undefined {
+    return this._first() == null ? undefined : 0;
+  }
+
+  paddedWidth(): number | undefined {
+    return this.width();
+  }
+
+  paddedHeight(): number | undefined {
+    return this.height();
+  }
+
   outerWidth(): number | undefined {
     const w = this.width();
 

@@ -1161,12 +1161,26 @@ Each entry converts into a "Landed" record as it ships:
   out of the loop (`DataStore.reader`); the collection-filter and
   `planMatchesRef` paths apply them too.  10 specs in
   `test/gpu-query-data.mjs` (1603 Node tests green).
-- [ ] **A9 Small items** — `boundingBoxAt`; `padding()`/`paddedWidth`/
-  `paddedHeight` (smallest v3-consistent form; investigate whether
-  padding is a geometry channel or accessor-only without compounds);
-  live-graph binary export `cy.serialize()` → wire ArrayBuffer
-  (round-trips through `options.elements`/`add()`); the
-  `document.fonts.ready` atlas re-raster hook logged in round 9.7.
+- [x] **A9 Small items** — landed 2026-07-27.  (`boundingBoxAt` landed
+  with A7.)  `padding()`/`paddedWidth`/`paddedHeight`: accessor-only —
+  v4 has no `padding` style prop (compounds-era), so padding reads 0
+  and padded dims equal plain dims; kept so v3 call sites work.
+  **`cy.serialize()`**: live-graph export to the wire ArrayBuffer
+  (ids, positions, selected/selectable flags, and the data() sidecar
+  via `DataStore.exportColumns` — numbers as f64+NaN holes, strings as
+  dictionary columns, mixed as arrays), round-tripping through
+  `options.elements`/`cy.add()`; 7 Node specs incl. selection state,
+  post-load mutations and empty graphs.  **Web-font re-raster hook**:
+  the renderer listens for `document.fonts`'s `loadingdone` and
+  re-rasters the atlas + rebuilds all glyph runs (`GlyphAtlas.
+  reraster`, `store.markAllLabelsDirty`), closing 9.7's
+  cached-fallback-glyph footgun; removed on destroy.  Playwright spec
+  registers a FontFace *after* the label renders and pins the pixel
+  change (an @font-face family can't test this — the atlas's own
+  canvas use starts its load).  Verified: 1610 Node + 47 module tests,
+  34 webgpu + 7 webgpu-visual Playwright specs on a fresh bundle
+  (note: a stale http-server on :3333 silently serves an old bundle to
+  Playwright — kill it before trusting a run).
 
 **Phase B — renderer/shader work, golden-verified**
 

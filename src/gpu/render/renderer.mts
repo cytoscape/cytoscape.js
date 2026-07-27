@@ -9,6 +9,7 @@ import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
+import { GLYPH_BYTES } from './glyph-buffer.mjs';
 import { MapperRuntime } from './mapper-runtime.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { ScaleController } from './scale-controller.mjs';
@@ -168,10 +169,11 @@ export class Renderer {
   private labelLayer: LabelLayer | null;
   private onFontsLoadingDone: ( () => void ) | null = null;
   private labelPipeline: LabelPipeline | null;
+  private edgeLabelPipeline: LabelPipeline | null;
   private cullKernels: CullKernels | null;
   private mapperRuntime: MapperRuntime | null;
   private tweenRuntime: GpuTweenRuntime | null;
-  private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
+  private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup; edgeGlyph: CulledGroup } | null;
   private pickCull: { edge: CulledGroup } | null;
   private scaleCtl: ScaleController;
   private settleTimer: ReturnType<typeof setTimeout> | null;
@@ -182,7 +184,7 @@ export class Renderer {
   private pendingExports: ExportJob[];
   private exportUniform: GPUBuffer | null;
   private exportFrameData: Float32Array;
-  private exportCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup } | null;
+  private exportCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup; edgeGlyph: CulledGroup } | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -209,6 +211,7 @@ export class Renderer {
     this.inFlightFrames = 0;
     this.labelLayer = null;
     this.labelPipeline = null;
+    this.edgeLabelPipeline = null;
     this.cullKernels = null;
     this.mapperRuntime = null;
     this.tweenRuntime = null;
@@ -590,7 +593,8 @@ export class Renderer {
         this.exportCull = {
           node: new CulledGroup( kernels, 'node', 'export-node' ),
           edge: new CulledGroup( kernels, 'edge', 'export-edge' ),
-          glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' )
+          glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' ),
+          edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-edge-glyph' )
         };
       }
 
@@ -748,7 +752,8 @@ export class Renderer {
     this.sceneCull = {
       node: new CulledGroup( kernels, 'node', 'scene-node' ),
       edge: new CulledGroup( kernels, 'edge', 'scene-edge' ),
-      glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' )
+      glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' ),
+      edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-edge-glyph' )
     };
     this.pickCull = {
       // nodes pick synchronously on the CPU; only edges need the GPU pass
@@ -760,6 +765,7 @@ export class Renderer {
     this.arrowPipeline = new ArrowPipeline( device, format, kernels.visibleLayout );
     this.labelLayer = new LabelLayer( device, this.cy._store );
     this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
+    this.edgeLabelPipeline = new LabelPipeline( device, format, kernels.visibleLayout, 'edge' );
     this.picking = new Picking( device );
     this.format = format;
     this.upscaler = this.scaleCtl.min < 1 ? new Upscaler( device, format ) : null;
@@ -975,7 +981,7 @@ export class Renderer {
    */
   private drawScene(
     pass: GPURenderPassEncoder, uniform: GPUBuffer,
-    cull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup }
+    cull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup; edgeGlyph: CulledGroup }
   ): void {
     const device = this.device as GPUDevice;
     const mirror = this.mirror as ColumnMirror;
@@ -992,6 +998,12 @@ export class Renderer {
     if( this.labelLayer != null && this.labelPipeline != null ){
       this.labelPipeline.draw(
         pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas, cull.glyph
+      );
+    }
+
+    if( this.labelLayer != null && this.edgeLabelPipeline != null ){
+      this.edgeLabelPipeline.draw(
+        pass, device, uniform, this.labelLayer.edgeGlyphs, mirror, this.labelLayer.atlas, cull.edgeGlyph
       );
     }
   }
@@ -1023,7 +1035,7 @@ export class Renderer {
    */
   private encodeCulls(
     encoder: GPUCommandEncoder, uniform: GPUBuffer,
-    groups: { node?: CulledGroup; edge: CulledGroup; glyph?: CulledGroup }, timed: boolean,
+    groups: { node?: CulledGroup; edge: CulledGroup; glyph?: CulledGroup; edgeGlyph?: CulledGroup }, timed: boolean,
     now: number = 0
   ): void {
     const mirror = this.mirror as ColumnMirror;
@@ -1042,8 +1054,17 @@ export class Renderer {
     if( groups.glyph != null && labelLayer != null ){
       const glyphs = labelLayer.glyphs;
 
-      groups.glyph.ensure( uniform, Math.max( 1, glyphs.buffer().size / 40 ), [
+      groups.glyph.ensure( uniform, Math.max( 1, glyphs.buffer().size / GLYPH_BYTES ), [
         glyphs.buffer(), mirror.buffer( 'node.position' ), mirror.buffer( 'node.flags' )
+      ], `${mv}:${glyphs.version}` );
+    }
+
+    if( groups.edgeGlyph != null && labelLayer != null ){
+      const glyphs = labelLayer.edgeGlyphs;
+
+      groups.edgeGlyph.ensure( uniform, Math.max( 1, glyphs.buffer().size / GLYPH_BYTES ), [
+        glyphs.buffer(), mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'node.position' ),
+        mirror.buffer( 'edge.flags' ), mirror.buffer( 'node.flags' )
       ], `${mv}:${glyphs.version}` );
     }
 
@@ -1068,6 +1089,10 @@ export class Renderer {
 
     if( groups.glyph != null && labelLayer != null ){
       groups.glyph.encode( pass, labelLayer.glyphs.highWater );
+    }
+
+    if( groups.edgeGlyph != null && labelLayer != null ){
+      groups.edgeGlyph.encode( pass, labelLayer.edgeGlyphs.highWater );
     }
 
     pass.end();

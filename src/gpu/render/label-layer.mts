@@ -2,6 +2,7 @@ import { GlyphAtlas, SDF_FONT_SIZE, SDF_RADIUS } from './glyph-atlas.mjs';
 import { layoutLabel } from './label-layout.mjs';
 import { GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
+import type { GroupName } from '../contract.mjs';
 
 /**
  * Consumes the model's label-dirty channel each frame: lays out changed
@@ -12,6 +13,8 @@ import type { GraphStore } from '../store/graph-store.mjs';
 export class LabelLayer {
   atlas: GlyphAtlas;
   glyphs: GlyphBuffer;
+  /** the edge label stream: same instance layout, keyed by edge slot */
+  edgeGlyphs: GlyphBuffer;
 
   private store: GraphStore;
 
@@ -19,10 +22,11 @@ export class LabelLayer {
     this.store = store;
     this.atlas = new GlyphAtlas( device );
     this.glyphs = new GlyphBuffer( device );
+    this.edgeGlyphs = new GlyphBuffer( device );
   }
 
   count(): number {
-    return this.glyphs.count();
+    return this.glyphs.count() + this.edgeGlyphs.count();
   }
 
   /**
@@ -35,22 +39,27 @@ export class LabelLayer {
   }
 
   uploadedBytes(): number {
-    return this.glyphs.uploadedBytes;
+    return this.glyphs.uploadedBytes + this.edgeGlyphs.uploadedBytes;
   }
 
-  /** Rebuild glyph runs for label-dirty nodes and upload; no-op when clean. */
+  /** Rebuild glyph runs for label-dirty elements and upload; no-op when clean. */
   process(): void {
     // a font change arrives with every labelled slot already label-dirty,
     // so the reset and the rebuild land in this same pass
     this.atlas.setFont( this.store.labelFont );
 
-    const dirty = this.store.takeLabelDirty();
+    this.processGroup( 'nodes', this.glyphs );
+    this.processGroup( 'edges', this.edgeGlyphs );
+  }
+
+  private processGroup( group: GroupName, glyphs: GlyphBuffer ): void {
+    const dirty = this.store.takeLabelDirty( group );
 
     for( const slot of dirty ){
-      const entry = this.store.labelAt( slot );
+      const entry = this.store.labelAt( slot, group );
 
       if( entry == null ){
-        this.glyphs.set( slot, null );
+        glyphs.set( slot, null );
 
         continue;
       }
@@ -58,7 +67,7 @@ export class LabelLayer {
       const laid = layoutLabel( entry.text, ch => this.atlas.metrics( ch ), this.atlas.ascent );
 
       if( laid.length === 0 ){
-        this.glyphs.set( slot, null );
+        glyphs.set( slot, null );
 
         continue;
       }
@@ -124,14 +133,15 @@ export class LabelLayer {
         at += GLYPH_WORDS;
       }
 
-      this.glyphs.set( slot, u32 );
+      glyphs.set( slot, u32 );
     }
 
-    this.glyphs.sync();
+    glyphs.sync();
   }
 
   destroy(): void {
     this.glyphs.destroy();
+    this.edgeGlyphs.destroy();
     this.atlas.destroy();
   }
 }

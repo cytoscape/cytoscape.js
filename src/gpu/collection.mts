@@ -1270,9 +1270,9 @@ export class GpuCollection {
   label(): string | undefined {
     const ref = this._first();
 
-    if( ref == null || ref.group !== 'nodes' || !this._store.isCurrent( ref ) ){ return undefined; }
+    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
 
-    return this._store.labelAt( ref.slot )?.text ?? '';
+    return this._store.labelAt( ref.slot, ref.group )?.text ?? '';
   }
 
   /**

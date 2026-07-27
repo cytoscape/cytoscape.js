@@ -1249,13 +1249,28 @@ Each entry converts into a "Landed" record as it ships:
   shapes not ported (README lists them).  `arrow-shapes` golden (7
   target shapes + a source-end chevron pinning the byte order);
   1621 Node + 47 module tests, 45 Playwright specs green.
-- [ ] **B5 Edge labels pass 1** — the logged direction above, built:
-  second glyph stream (own instance buffer + cull group + draw call),
-  midpoint computed in the VS from the endpoints, cull = edge SHOWN +
-  both endpoints SHOWN, shared atlas, group-keyed label sidecar /
-  label-dirty channel / StyleEngine label channels.  Horizontal only
-  (autorotate stays deferred).  Golden scene + follows-drag + LOD
-  specs; the WYSIWYG self-diff already covers glyphs.
+- [x] **B5 Edge labels pass 1** — landed 2026-07-27, exactly the
+  logged shape.  Model: the label sidecar, label-dirty channel and
+  `setLabel`/`labelAt`/`takeLabelDirty` are **group-keyed** (trailing
+  group param defaulting to 'nodes', so node call sites read
+  unchanged); StyleEngine's label channels — the passthrough `label`,
+  `font-size`, `color` and all the B3 text visuals — now compile for
+  edges too (the edge write path calls the shared `writeLabel`, edges
+  centering on the midpoint by font size).  Renderer: a second
+  GlyphBuffer in the LabelLayer, an `edgeGlyph` cull kind (predicate =
+  edge SHOWN + both endpoints SHOWN + fade/min-height + viewport at
+  the midpoint), and the label shader generated for both streams from
+  one template — the edge variant binds `edge.endpoints` and computes
+  the **midpoint anchor in the VS**, so edge labels follow drags/
+  layouts/position tweens on-GPU with zero rebuild (spec-pinned: an
+  endpoint move re-uploads ≤64 B and the label lands at the new
+  midpoint).  Also fixed en route: a hardcoded 40-byte glyph stride in
+  the renderer's cull-capacity math (stale since B3's 48-byte
+  instances; benign over-allocation) now uses GLYPH_BYTES.  Horizontal
+  only — autorotate stays the separate follow-up.  7 model specs
+  (`test/gpu-edge-labels.mjs`), the follows-drag webgpu spec, and an
+  `edge-labels` golden (midpoint + background box on a diagonal edge);
+  1628 Node + 47 module tests, 47 Playwright specs green (twice).
 
 **Phase C — interaction & lifecycle, Playwright-verified**
 

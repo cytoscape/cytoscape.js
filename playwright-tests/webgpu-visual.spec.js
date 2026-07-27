@@ -422,6 +422,52 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: edge labels at midpoints (round 10)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -140, y: -70 } },
+        { data: { id: 'b' }, position: { x: 140, y: -70 } },
+        { data: { id: 'c' }, position: { x: -140, y: 30 } },
+        { data: { id: 'd' }, position: { x: 140, y: 110 } },
+        { data: { id: 'ab', source: 'a', target: 'b', lbl: 'connects', boxed: 0 } },
+        { data: { id: 'cd', source: 'c', target: 'd', lbl: 'diagonal', boxed: 1 } }
+      ],
+      style: {
+        // the shared atlas font is the node sheet's font-family (one font
+        // per atlas), even though only edges are labelled here
+        nodes: {
+          'width': 20, 'height': 20, 'background-color': '#b2bec3',
+          'font-family': `'Open Sans', sans-serif`
+        },
+        edges: {
+          'width': 2, 'line-color': '#b2bec3',
+          'label': { data: 'lbl' }, 'font-size': 14, 'color': '#2d3436',
+          'text-background-color': '#ffeaa7',
+          'text-background-opacity': { case: [ { when: { data: 'boxed', eq: 1 }, then: 1 } ], else: 0 },
+          'text-background-padding': 2
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'edge-labels', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
   test( 'golden: label visuals (outline, background, margins)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

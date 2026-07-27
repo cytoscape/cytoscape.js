@@ -1445,6 +1445,61 @@ test.describe( 'WebGPU renderer', () => {
     expect( ratio ).toBeGreaterThan( 0.0005 );
   } );
 
+  test( 'edge labels render at the midpoint and follow endpoint moves on-GPU', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -100, y: 0 } },
+        { data: { id: 'b' }, position: { x: 100, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 10, 'height': 10, 'background-color': '#eee' },
+        edges: { 'width': 1, 'line-color': '#eee', 'label': 'MIDPOINT', 'font-size': 24, 'color': '#000' }
+      },
+      zoom: 1
+    } );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const darkRows = png => {
+      // dark-pixel count in the top and bottom halves
+      let top = 0, bottom = 0;
+
+      for( let y = 0; y < png.height; y++ ){
+        for( let x = 0; x < png.width; x++ ){
+          const i = ( y * png.width + x ) * 4;
+
+          if( png.data[ i ] < 100 && png.data[ i + 1 ] < 100 && png.data[ i + 2 ] < 100 ){
+            if( y < png.height / 2 ){ top++; } else { bottom++; }
+          }
+        }
+      }
+
+      return { top, bottom };
+    };
+
+    const shot = async () => decodePng( await page.evaluate( () => window.cy.png( { bg: '#fff' } ) ) );
+    const before = darkRows( await shot() );
+
+    // the label sits at the midpoint, i.e. the vertical center
+    expect( before.top + before.bottom ).toBeGreaterThan( 100 );
+
+    // move one endpoint down: the midpoint (and so the label) moves into
+    // the bottom half — a position write only, no label rebuild
+    const uploadedBefore = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    await page.evaluate( () => window.cy.$id( 'b' ).position( { x: 100, y: 260 } ) );
+    await waitFrames( page );
+
+    const after = darkRows( await shot() );
+    const uploadedAfter = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    expect( after.bottom ).toBeGreaterThan( before.bottom + 50 );
+    expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 ); // one position row, no glyph re-upload
+  } );
+
   test( 'png() export mid-animation snapshots the GPU-owned position', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

@@ -52,8 +52,8 @@ export class GraphStore implements ModelView {
   readonly dirty: DirtyTracker;
 
   private order: { nodes: OrderList; edges: OrderList };
-  private labels: ( LabelEntry | undefined )[];
-  private labelDirty: Set<number>;
+  private labels: Record<GroupName, ( LabelEntry | undefined )[]>;
+  private labelDirty: Record<GroupName, Set<number>>;
   /** global label font-family (one font per glyph atlas); style-owned */
   labelFont: string;
   /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
@@ -69,8 +69,8 @@ export class GraphStore implements ModelView {
     this.data = new DataStore();
     this.dirty = new DirtyTracker();
     this.order = { nodes: emptyOrder(), edges: emptyOrder() };
-    this.labels = [];
-    this.labelDirty = new Set();
+    this.labels = { nodes: [], edges: [] };
+    this.labelDirty = { nodes: new Set(), edges: new Set() };
     this.labelFont = 'sans-serif';
     this.watchedKeys = { nodes: new Set(), edges: new Set() };
     this.mapperSpans = new Map();
@@ -583,9 +583,12 @@ export class GraphStore implements ModelView {
   }
 
   // -- labels (model-only sidecar; see LabelEntry in contract.mts) --
+  // Group-keyed since round 10: edges carry labels too (anchored at the
+  // edge midpoint, which the renderer computes on-GPU).  The group param
+  // defaults to 'nodes' so node-side call sites read unchanged.
 
-  labelAt( slot: number ): LabelEntry | undefined {
-    return this.labels[ slot ];
+  labelAt( slot: number, group: GroupName = 'nodes' ): LabelEntry | undefined {
+    return this.labels[ group ][ slot ];
   }
 
   /**
@@ -601,23 +604,29 @@ export class GraphStore implements ModelView {
     this.markAllLabelsDirty();
   }
 
-  /** Queue every labelled slot for a glyph-run rebuild (font change / re-raster). */
+  /** Queue every labelled slot (both groups) for a glyph-run rebuild. */
   markAllLabelsDirty(): void {
-    for( let slot = 0; slot < this.labels.length; slot++ ){
-      if( this.labels[ slot ] != null ){ this.labelDirty.add( slot ); }
+    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
+      const labels = this.labels[ group ];
+      const dirty = this.labelDirty[ group ];
+
+      for( let slot = 0; slot < labels.length; slot++ ){
+        if( labels[ slot ] != null ){ dirty.add( slot ); }
+      }
     }
 
     this.dirty.touch();
   }
 
-  /** Set or clear (null) a node's label; no-ops when nothing changed. */
-  setLabel( slot: number, entry: LabelEntry | null ): void {
-    const prev = this.labels[ slot ];
+  /** Set or clear (null) an element's label; no-ops when nothing changed. */
+  setLabel( slot: number, entry: LabelEntry | null, group: GroupName = 'nodes' ): void {
+    const labels = this.labels[ group ];
+    const prev = labels[ slot ];
 
     if( entry == null ){
       if( prev == null ){ return; }
 
-      this.labels[ slot ] = undefined;
+      labels[ slot ] = undefined;
     } else {
       if(
         prev != null && prev.text === entry.text && prev.fontSize === entry.fontSize &&
@@ -627,19 +636,21 @@ export class GraphStore implements ModelView {
         prev.bgColor === entry.bgColor && prev.bgPadding === entry.bgPadding
       ){ return; }
 
-      this.labels[ slot ] = entry;
+      labels[ slot ] = entry;
     }
 
-    this.labelDirty.add( slot );
+    this.labelDirty[ group ].add( slot );
     this.dirty.touch();
   }
 
-  takeLabelDirty(): number[] {
-    if( this.labelDirty.size === 0 ){ return []; }
+  takeLabelDirty( group: GroupName = 'nodes' ): number[] {
+    const dirty = this.labelDirty[ group ];
 
-    const slots = [ ...this.labelDirty ];
+    if( dirty.size === 0 ){ return []; }
 
-    this.labelDirty.clear();
+    const slots = [ ...dirty ];
+
+    dirty.clear();
 
     return slots;
   }
@@ -965,8 +976,8 @@ export class GraphStore implements ModelView {
 
     this.data.clearSlot( group, slot );
 
-    if( group === 'nodes' && this.labels[ slot ] != null ){
-      this.setLabel( slot, null );
+    if( this.labels[ group ][ slot ] != null ){
+      this.setLabel( slot, null, group );
     }
 
     // tombstone: cleared flags (no ALIVE bit) collapse the instance to a degenerate quad

@@ -427,19 +427,21 @@ each is deliberate, not a pass-1 deferral:
   re-rasters the atlas + rebuilds every glyph run when a web font
   finishes loading, so late-loading fonts self-correct.  Specs still
   pre-load to keep goldens deterministic.
-- **Edge labels: committed direction, not yet built** (labels are
-  nodes-only today).  The shape: a second glyph stream parallel to the
-  node one (own instance buffer + cull group + draw call); edge glyphs
-  anchor at the edge midpoint computed in the vertex shader from the two
-  endpoint positions — the same on-GPU trick that lets node labels
-  follow drags with zero rebuild extends to edge labels whose endpoints
-  move.  The cull predicate mirrors the edge cull (edge SHOWN + both
-  endpoint nodes SHOWN); the atlas is shared as-is; the model side
-  generalizes the label sidecar, label-dirty channel and StyleEngine
-  label channels by group — group-keying, not new architecture.  Pass-1
-  scope is v3's default look: horizontal text at the midpoint;
-  autorotate (and its flip-when-upside-down readability rules) is a
-  separate follow-up call.
+- **Edge labels: built (round 10, pass 1)** — exactly the committed
+  shape: a second glyph stream parallel to the node one (own instance
+  buffer, own cull group, own draw call, shared atlas); edge glyphs
+  anchor at the edge midpoint computed **in the vertex shader** from
+  the two endpoint positions, so edge labels follow drags, layouts and
+  position tweens on-GPU with zero rebuild (spec-pinned: an endpoint
+  move re-uploads ≤ 64 bytes and the label lands at the new midpoint).
+  The cull predicate mirrors the edge cull (edge SHOWN + both endpoint
+  nodes SHOWN); the model side group-keys the label sidecar,
+  label-dirty channel and StyleEngine label channels (the `label`
+  passthrough, `font-size`, `color` and all the round-10 text visuals
+  work for edges; the text block centers on the midpoint by font
+  size).  Horizontal text only — autorotate (with its
+  flip-when-upside-down readability rules) stays a separate follow-up
+  call.  Edge labels are not pickable, like node labels.
 - **Removed elements are terminally dead** (decided 2026-07-27).  An
   element's substance lives in the columns, not the handle, and
   `remove()` tombstones the slot, bumps its generation and free-lists
@@ -718,8 +720,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   polygon nodes sit on the inscribed *ellipse* boundary
   (approximation); the depth prepass treats polygon interiors exactly
   via their SDF.
-- **Labels**: nodes only, single line (newlines collapse to spaces), fixed
-  placement (horizontally centered below the node, offset by
+- **Labels**: nodes *and edges* (round 10 — edge labels draw
+  horizontally at the midpoint, following endpoint moves on-GPU),
+  single line (newlines collapse to spaces), fixed
+  placement (nodes: horizontally centered below the node; edges:
+  centered on the midpoint; both offset by
   `text-margin-x/y`), not pickable, one
   global `font-family` (the atlas holds one font), and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop

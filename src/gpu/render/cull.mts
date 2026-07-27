@@ -28,10 +28,10 @@ culling: pick draws stay O(region).
 
 const WG_SIZE = 256;
 
-export type CullKind = 'node' | 'edge' | 'glyph';
+export type CullKind = 'node' | 'edge' | 'glyph' | 'edgeGlyph';
 
 /** ordered storage-buffer inputs per kind (bindings 2..N-4 of the cull layout) */
-const INPUT_COUNTS: Record<CullKind, number> = { node: 3, edge: 5, glyph: 3 };
+const INPUT_COUNTS: Record<CullKind, number> = { node: 3, edge: 5, glyph: 3, edgeGlyph: 5 };
 
 const SCAFFOLD = `
 struct CullInfo { count: u32 }
@@ -242,10 +242,55 @@ fn csScan() {
 }
 `;
 
+const EDGE_GLYPH_CULL = `
+${COMMON}
+${GLYPH_STRUCT}
+@group(0) @binding(0) var<uniform> frame: Frame;
+@group(0) @binding(1) var<uniform> info: CullInfo;
+@group(0) @binding(2) var<storage, read> glyphs: array<Glyph>;
+@group(0) @binding(3) var<storage, read> endpoints: array<vec2u>;
+@group(0) @binding(4) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(5) var<storage, read> edgeFlags: array<u32>;
+@group(0) @binding(6) var<storage, read> nodeFlags: array<u32>;
+@group(0) @binding(7) var<storage, read_write> wgCounts: array<u32>;
+@group(0) @binding(8) var<storage, read_write> wgOffsets: array<u32>;
+@group(0) @binding(9) var<storage, read_write> visible: array<u32>;
+
+// edge-label glyphs: the owner is an edge; it draws when the edge and both
+// endpoint nodes are shown (mirroring the edge cull), positioned at the
+// edge midpoint
+fn isVisible(slot: u32) -> bool {
+  let g = glyphs[slot];
+
+  if (g.nodeSlot == DEAD_GLYPH) { return false; }
+  if ((edgeFlags[g.nodeSlot] & SHOWN) != SHOWN) { return false; }
+
+  let ends = endpoints[g.nodeSlot];
+
+  if ((nodeFlags[ends.x] & SHOWN) != SHOWN) { return false; }
+  if ((nodeFlags[ends.y] & SHOWN) != SHOWN) { return false; }
+
+  let heightPx = glyphLodHeight(g) * frame.zoomDpr;
+
+  if (heightPx < frame.labelMinPx) { return false; }
+
+  if (labelFade(heightPx, frame.labelFadePx) <= 0.001) { return false; }
+
+  let mid = (nodePositions[ends.x] + nodePositions[ends.y]) * 0.5;
+  let originPx = modelToPx(frame, mid) + g.offset * frame.zoomDpr;
+  let sizePx = g.size * frame.zoomDpr;
+
+  return !(originPx.x + sizePx.x < 0.0 || originPx.x > frame.viewportPx.x ||
+           originPx.y + sizePx.y < 0.0 || originPx.y > frame.viewportPx.y);
+}
+${SCAFFOLD}
+`;
+
 const CULL_SHADERS: Record<CullKind, string> = {
   node: NODE_CULL,
   edge: EDGE_CULL,
-  glyph: GLYPH_CULL
+  glyph: GLYPH_CULL,
+  edgeGlyph: EDGE_GLYPH_CULL
 };
 
 /** Compiled cull pipelines + the group(1) visible-list layout shared with
@@ -282,7 +327,7 @@ export class CullKernels {
     this.countPipelines = {} as Record<CullKind, GPUComputePipeline>;
     this.scatterPipelines = {} as Record<CullKind, GPUComputePipeline>;
 
-    for( const kind of [ 'node', 'edge', 'glyph' ] as CullKind[] ){
+    for( const kind of [ 'node', 'edge', 'glyph', 'edgeGlyph' ] as CullKind[] ){
       const inputs = INPUT_COUNTS[ kind ];
       const layout = device.createBindGroupLayout( {
         label: `cy-gpu:${kind}-cull-layout`,

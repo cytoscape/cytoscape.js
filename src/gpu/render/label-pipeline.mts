@@ -1,4 +1,4 @@
-import { LABEL_SHADER } from './shaders.mjs';
+import { EDGE_LABEL_SHADER, LABEL_SHADER } from './shaders.mjs';
 import { createQuadIndexBuffer } from './quad-index.mjs';
 import { SHADER_STAGE } from './webgpu-constants.mjs';
 import { DEPTH_FORMAT, PREMULTIPLIED_BLEND } from './node-pipeline.mjs';
@@ -17,27 +17,43 @@ export class LabelPipeline {
   private pipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
+  private edge: boolean;
   /** one cached bind group per uniform buffer (scene frame vs export frame) */
   private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; key: string }>;
 
-  constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
-    const module = device.createShaderModule( { label: 'cy-gpu:label-shader', code: LABEL_SHADER } );
+  constructor(
+    device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout,
+    variant: 'node' | 'edge' = 'node'
+  ){
+    this.edge = variant === 'edge';
+
+    const module = device.createShaderModule( {
+      label: `cy-gpu:${variant}-label-shader`,
+      code: this.edge ? EDGE_LABEL_SHADER : LABEL_SHADER
+    } );
 
     this.quadIndex = createQuadIndexBuffer( device );
 
+    // edge labels bind the edge endpoints ahead of the node positions, so
+    // the VS can compute the midpoint anchor on-GPU
+    const storageCount = this.edge ? 3 : 2;
+
     this.bindLayout = device.createBindGroupLayout( {
-      label: 'cy-gpu:label-bind-layout',
+      label: `cy-gpu:${variant}-label-bind-layout`,
       entries: [
         { binding: 0, visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT, buffer: { type: 'uniform' } },
-        { binding: 1, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'read-only-storage' } }, // glyphs
-        { binding: 2, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'read-only-storage' } }, // node positions
-        { binding: 3, visibility: SHADER_STAGE.FRAGMENT, texture: { sampleType: 'float' } },
-        { binding: 4, visibility: SHADER_STAGE.FRAGMENT, sampler: { type: 'filtering' } }
+        ...Array.from( { length: storageCount }, ( _, i ) => ( {
+          binding: i + 1,
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        } ) ),
+        { binding: storageCount + 1, visibility: SHADER_STAGE.FRAGMENT, texture: { sampleType: 'float' as GPUTextureSampleType } },
+        { binding: storageCount + 2, visibility: SHADER_STAGE.FRAGMENT, sampler: { type: 'filtering' as GPUSamplerBindingType } }
       ]
     } );
 
     this.pipeline = device.createRenderPipeline( {
-      label: 'cy-gpu:label-pipeline',
+      label: `cy-gpu:${variant}-label-pipeline`,
       layout: device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } ),
       vertex: { module, entryPoint: 'vsLabel' },
       fragment: { module, entryPoint: 'fsLabel', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
@@ -60,15 +76,18 @@ export class LabelPipeline {
       return cached.group;
     }
 
+    const storages: GPUBuffer[] = this.edge
+      ? [ glyphs.buffer(), mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'node.position' ) ]
+      : [ glyphs.buffer(), mirror.buffer( 'node.position' ) ];
+
     const group = device.createBindGroup( {
       label: 'cy-gpu:label-bind-group',
       layout: this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        { binding: 1, resource: { buffer: glyphs.buffer() } },
-        { binding: 2, resource: { buffer: mirror.buffer( 'node.position' ) } },
-        { binding: 3, resource: atlas.texture.createView() },
-        { binding: 4, resource: atlas.sampler }
+        ...storages.map( ( buffer, i ) => ( { binding: i + 1, resource: { buffer } } ) ),
+        { binding: storages.length + 1, resource: atlas.texture.createView() },
+        { binding: storages.length + 2, resource: atlas.sampler }
       ]
     } );
 

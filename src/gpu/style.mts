@@ -78,6 +78,19 @@ interface EdgeComputed {
   sourceArrowColor: RGBA;
   targetArrowShape: ArrowShape;
   targetArrowColor: RGBA;
+  // edge labels (round 10): anchored at the edge midpoint on-GPU
+  label: string;
+  labelKey: string | null;
+  fontSize: number;
+  textColor: RGBA;
+  textOutlineWidth: number;
+  textOutlineColor: RGBA;
+  textOutlineOpacity: number;
+  textBgColor: RGBA;
+  textBgOpacity: number;
+  textBgPadding: number;
+  textMarginX: number;
+  textMarginY: number;
 }
 
 type Computed = NodeComputed & EdgeComputed;
@@ -120,7 +133,19 @@ const EDGE_DEFAULTS: EdgeComputed = {
   sourceArrowShape: 'none',
   sourceArrowColor: [ 153, 153, 153, 255 ], // #999, as v3
   targetArrowShape: 'none',
-  targetArrowColor: [ 153, 153, 153, 255 ]
+  targetArrowColor: [ 153, 153, 153, 255 ],
+  label: '',
+  labelKey: null,
+  fontSize: 16,
+  textColor: [ 0, 0, 0, 255 ],
+  textOutlineWidth: 0,
+  textOutlineColor: [ 0, 0, 0, 255 ],
+  textOutlineOpacity: 1,
+  textBgColor: [ 0, 0, 0, 255 ],
+  textBgOpacity: 0,
+  textBgPadding: 0,
+  textMarginX: 0,
+  textMarginY: 0
 };
 
 const NO_ARROW: RGBA = [ 0, 0, 0, 0 ]; // a=0 collapses the arrow in the shader
@@ -188,7 +213,11 @@ const NODE_READ: ReadonlySet<string> = new Set( [
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-color', 'line-style', 'width', 'opacity',
-  'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color'
+  'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color',
+  'label', 'font-size', 'color',
+  'text-outline-width', 'text-outline-color', 'text-outline-opacity',
+  'text-background-color', 'text-background-opacity', 'text-background-padding',
+  'text-margin-x', 'text-margin-y'
 ] );
 
 const parseColor = ( prop: string, value: unknown ): RGBA => {
@@ -456,52 +485,52 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => NODE_DEFAULTS.shape
   },
   'font-size': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.fontSize = v as number; },
     default: () => NODE_DEFAULTS.fontSize
   },
   'color': {
-    kind: 'color', groups: [ 'nodes' ],
+    kind: 'color', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textColor = v as RGBA; },
     default: () => NODE_DEFAULTS.textColor
   },
   'text-outline-width': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textOutlineWidth = v as number; },
     default: () => NODE_DEFAULTS.textOutlineWidth
   },
   'text-outline-color': {
-    kind: 'color', groups: [ 'nodes' ],
+    kind: 'color', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textOutlineColor = v as RGBA; },
     default: () => NODE_DEFAULTS.textOutlineColor
   },
   'text-outline-opacity': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textOutlineOpacity = v as number; },
     default: () => NODE_DEFAULTS.textOutlineOpacity
   },
   'text-background-color': {
-    kind: 'color', groups: [ 'nodes' ],
+    kind: 'color', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textBgColor = v as RGBA; },
     default: () => NODE_DEFAULTS.textBgColor
   },
   'text-background-opacity': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textBgOpacity = v as number; },
     default: () => NODE_DEFAULTS.textBgOpacity
   },
   'text-background-padding': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textBgPadding = v as number; },
     default: () => NODE_DEFAULTS.textBgPadding
   },
   'text-margin-x': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textMarginX = v as number; },
     default: () => NODE_DEFAULTS.textMarginX
   },
   'text-margin-y': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textMarginY = v as number; },
     default: () => NODE_DEFAULTS.textMarginY
   },
@@ -937,13 +966,13 @@ export class StyleEngine {
 
         if( label ){
           for( let i = 0; i < slots.length; i++ ){
-            this.writeLabel( slots[ i ], def.computed );
+            this.writeLabel( slots[ i ], def.computed, group );
           }
         }
       }
     } else if( label ){
       for( let i = 0; i < slots.length; i++ ){
-        this.writeLabel( slots[ i ], def.computed );
+        this.writeLabel( slots[ i ], def.computed, group );
       }
     }
   }
@@ -1022,7 +1051,7 @@ export class StyleEngine {
       case 'border-width': return scalar( 'node.borderWidth' );
       case 'height': return pair( 'node.size', 1 );
       case 'shape': return SHAPE_NAMES[ scalar( 'node.shape' ) ];
-      case 'label': return store.labelAt( slot )?.text ?? '';
+      case 'label': return store.labelAt( slot, ref.group )?.text ?? '';
       case 'font-size': return this.labelChannels( ref ).fontSize;
       case 'font-family': return store.labelFont;
       case 'color': return this.labelChannels( ref ).color;
@@ -1031,37 +1060,37 @@ export class StyleEngine {
       // constants — opacities read back folded into the stored alpha, like
       // arrow colors)
       case 'text-outline-width':
-        return store.labelAt( slot )?.outlineWidth ?? this.defs.nodes.computed.textOutlineWidth;
+        return store.labelAt( slot, ref.group )?.outlineWidth ?? this.defs[ ref.group ].computed.textOutlineWidth;
       case 'text-outline-color': {
-        const entry = store.labelAt( slot );
+        const entry = store.labelAt( slot, ref.group );
 
-        return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defs.nodes.computed.textOutlineColor );
+        return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defs[ ref.group ].computed.textOutlineColor );
       }
       case 'text-outline-opacity': {
-        const entry = store.labelAt( slot );
+        const entry = store.labelAt( slot, ref.group );
 
         return entry != null
           ? Math.round( ( ( entry.outlineColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defs.nodes.computed.textOutlineOpacity;
+          : this.defs[ ref.group ].computed.textOutlineOpacity;
       }
       case 'text-background-color': {
-        const entry = store.labelAt( slot );
+        const entry = store.labelAt( slot, ref.group );
 
-        return entry != null ? packedColor( entry.bgColor ) : formatRgba( ...this.defs.nodes.computed.textBgColor );
+        return entry != null ? packedColor( entry.bgColor ) : formatRgba( ...this.defs[ ref.group ].computed.textBgColor );
       }
       case 'text-background-opacity': {
-        const entry = store.labelAt( slot );
+        const entry = store.labelAt( slot, ref.group );
 
         return entry != null
           ? Math.round( ( ( entry.bgColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defs.nodes.computed.textBgOpacity;
+          : this.defs[ ref.group ].computed.textBgOpacity;
       }
       case 'text-background-padding':
-        return store.labelAt( slot )?.bgPadding ?? this.defs.nodes.computed.textBgPadding;
+        return store.labelAt( slot, ref.group )?.bgPadding ?? this.defs[ ref.group ].computed.textBgPadding;
       case 'text-margin-x':
-        return store.labelAt( slot )?.marginX ?? this.defs.nodes.computed.textMarginX;
+        return store.labelAt( slot, ref.group )?.marginX ?? this.defs[ ref.group ].computed.textMarginX;
       case 'text-margin-y':
-        return store.labelAt( slot )?.marginY ?? this.defs.nodes.computed.textMarginY;
+        return store.labelAt( slot, ref.group )?.marginY ?? this.defs[ ref.group ].computed.textMarginY;
 
       // shared names, resolved per group
       case 'width': return ref.group === 'nodes' ? pair( 'node.size', 0 ) : scalar( 'edge.width' );
@@ -1141,7 +1170,7 @@ export class StyleEngine {
 
   /** Resolved label channels: the sidecar when labelled, else the sheet. */
   private labelChannels( ref: Ref ): { fontSize: number; color: string } {
-    const entry = this.store.labelAt( ref.slot );
+    const entry = this.store.labelAt( ref.slot, ref.group );
 
     if( entry != null ){
       const packed = entry.color;
@@ -1152,15 +1181,15 @@ export class StyleEngine {
       };
     }
 
-    const def = this.defs.nodes;
+    const def = this.defs[ ref.group ];
     let computed: Computed;
 
     if( def.mappers.length > 0 ){
-      // an unlabelled node still reads mapped font-size/color truthfully
+      // an unlabelled element still reads mapped font-size/color truthfully
       const scratch: Computed = { ...def.computed };
 
       for( const bm of def.mappers ){
-        bm.channel.set( scratch, bindEvaluator( bm.m, this.store.data, 'nodes', bm.channel.default( 'nodes' ), this.readValue )( ref.slot ) );
+        bm.channel.set( scratch, bindEvaluator( bm.m, this.store.data, ref.group, bm.channel.default( ref.group ), this.readValue )( ref.slot ) );
       }
 
       computed = scratch;
@@ -1258,33 +1287,41 @@ export class StyleEngine {
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
       store.setScalar( 'edge.arrowShapes', slot,
         ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) );
+
+      this.writeLabel( slot, computed, 'edges' );
     }
   }
 
-  /** Resolve a node's label text from its computed channels and store it. */
-  private writeLabel( slot: number, computed: NodeComputed ): void {
+  /** Resolve an element's label text from its computed channels and store it. */
+  private writeLabel( slot: number, computed: NodeComputed | Computed, group: GroupName = 'nodes' ): void {
     const store = this.store;
     const key = computed.labelKey;
     const text = key == null
       ? computed.label
       : key === 'id'
-        ? ( store.idAt( 'nodes', slot ) ?? '' )
-        : stringify( store.data.get( 'nodes', slot, key ) );
+        ? ( store.idAt( group, slot ) ?? '' )
+        : stringify( store.data.get( group, slot, key ) );
 
     const fold = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>
       packRgba( [ r, g, b, Math.round( a * Math.max( 0, Math.min( 1, opacity ) ) ) ] );
+
+    // nodes: text-block top sits below the node; edges: the text centers
+    // (approximately, by font size) on the midpoint the shader computes
+    const anchorY = group === 'nodes'
+      ? ( computed as NodeComputed ).height / 2 + LABEL_MARGIN + computed.textMarginY
+      : -computed.fontSize / 2 + computed.textMarginY;
 
     store.setLabel( slot, text === '' ? null : {
       text,
       fontSize: computed.fontSize,
       color: packRgba( computed.textColor ),
-      anchorY: computed.height / 2 + LABEL_MARGIN + computed.textMarginY,
+      anchorY,
       marginX: computed.textMarginX,
       marginY: computed.textMarginY,
       outlineWidth: computed.textOutlineWidth,
       outlineColor: fold( computed.textOutlineColor, computed.textOutlineOpacity ),
       bgColor: fold( computed.textBgColor, computed.textBgOpacity ),
       bgPadding: computed.textBgPadding
-    } );
+    }, group );
   }
 }

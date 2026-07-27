@@ -206,9 +206,9 @@ export interface ModelView {
   /** `cb` fires at most once per microtask when the model becomes dirty; returns an unsubscribe fn. */
   onInvalidate( cb: () => void ): () => void;
   /** The node's label, or undefined when it has none. */
-  labelAt( slot: number ): LabelEntry | undefined;
-  /** Node slots whose labels changed since the last call; returns-and-clears. */
-  takeLabelDirty(): number[];
+  labelAt( slot: number, group?: GroupName ): LabelEntry | undefined;
+  /** Slots whose labels changed since the last call; returns-and-clears (default: nodes). */
+  takeLabelDirty( group?: GroupName ): number[];
 }
 
 /** A validated reference to an element slot; stale when `gen` no longer matches. */

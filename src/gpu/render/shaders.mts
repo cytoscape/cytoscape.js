@@ -692,17 +692,21 @@ ${ ARROW_POLY.cases }
 }
 `;
 
-export const LABEL_SHADER = `
+/**
+ * The label shader, generated for both streams: node labels anchor at the
+ * node position, edge labels at the midpoint of the edge's endpoints —
+ * computed here in the VS, so edge labels follow drags/layouts/position
+ * tweens on-GPU with zero rebuild.
+ */
+const labelShader = ( edge: boolean ): string => `
 ${COMMON}
 ${GLYPH_STRUCT}
 
-// node flags are not bound here: the cull pass already dropped glyphs of
-// dead/hidden nodes
+// flags columns are not bound here: the cull pass already dropped glyphs
+// of dead/hidden owners
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(3) var atlas: texture_2d<f32>;
-@group(0) @binding(4) var atlasSampler: sampler;
+${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var atlas: texture_2d<f32>;\n@group(0) @binding(5) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
 
 struct LabelVSOut {
   @builtin(position) position: vec4f,
@@ -727,8 +731,11 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let heightPx = glyphLodHeight(g) * frame.zoomDpr;
   let fade = labelFade(heightPx, frame.labelFadePx);
 
-  // glyphs read the node position buffer: labels follow drags/layouts on-GPU
-  let originPx = modelToPx(frame, nodePositions[g.nodeSlot]) + g.offset * frame.zoomDpr;
+  // glyphs read live positions: labels follow drags/layouts on-GPU
+  ${ edge
+    ? 'let ends = endpoints[g.nodeSlot];\n  let anchor = (nodePositions[ends.x] + nodePositions[ends.y]) * 0.5;'
+    : 'let anchor = nodePositions[g.nodeSlot];' }
+  let originPx = modelToPx(frame, anchor) + g.offset * frame.zoomDpr;
   let sizePx = g.size * frame.zoomDpr;
   let t = (quadCorner(vi) + vec2f(1.0)) * 0.5;
 
@@ -754,6 +761,7 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
     let a = in.color.a * in.fade;
     return vec4f(in.color.rgb * a, a);
   }
+
   let fillA = clamp((s - 0.5) / w + 0.5, 0.0, 1.0);
   var rgb = in.color.rgb;
   var alpha = fillA * in.color.a;
@@ -769,3 +777,6 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
   return vec4f(rgb * alpha, alpha); // premultiplied
 }
 `;
+
+export const LABEL_SHADER = labelShader( false );
+export const EDGE_LABEL_SHADER = labelShader( true );

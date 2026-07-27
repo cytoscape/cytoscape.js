@@ -203,6 +203,46 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'polygon-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: edge line styles (solid, dashed, dotted)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const rows = [ 'solid', 'dashed', 'dotted' ];
+    const elements = [];
+
+    for( let i = 0; i < rows.length; i++ ){
+      const y = i * 60 - 60;
+
+      elements.push(
+        { data: { id: `l${ i }`, ls: rows[ i ] }, position: { x: -160, y } },
+        { data: { id: `r${ i }`, ls: rows[ i ] }, position: { x: 160, y } },
+        { data: { id: `e${ i }`, source: `l${ i }`, target: `r${ i }`, ls: rows[ i ] } }
+      );
+    }
+
+    // a diagonal wide dashed edge: the pattern runs along the edge, not an axis
+    elements.push( { data: { id: 'e-diag', source: 'l0', target: 'r2', ls: 'dashed' } } );
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: { 'width': 16, 'height': 16, 'background-color': '#7f8c8d' },
+        edges: {
+          'width': { case: [ { when: { data: 'id', eq: 'e-diag' }, then: 6 } ], else: 3 },
+          'line-color': '#2c3e50',
+          'line-style': { case: [
+            { when: { data: 'ls', eq: 'dashed' }, then: 'dashed' },
+            { when: { data: 'ls', eq: 'dotted' }, then: 'dotted' }
+          ], else: 'solid' }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'line-styles', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: GPU-evaluated color mappers (viridis scale)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

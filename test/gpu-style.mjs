@@ -129,6 +129,27 @@ describe('gpu/style', function(){
       expect( () => cy.style({ nodes: { shape: 'barrel' } }) ).to.throw(/unsupported/);
     });
 
+    it('supports line-style with readback (round 10)', function(){
+      var styleIdOf = id => {
+        var ref = cy._store.lookup(id);
+
+        return cy._store.column('edge.lineStyle')[ref.slot];
+      };
+
+      expect( cy.$id('ab').style('line-style') ).to.equal('solid'); // default
+
+      cy.style({ edges: { 'line-style': 'dashed' } });
+      expect( styleIdOf('ab') ).to.equal( 1 );
+      expect( cy.$id('ab').style('line-style') ).to.equal('dashed');
+
+      cy.style({ edges: { 'line-style': {
+        case: [ { when: { data: 'id', eq: 'ab' }, then: 'dotted' } ], else: 'solid'
+      } } });
+      expect( cy.$id('ab').style('line-style') ).to.equal('dotted');
+
+      expect( () => cy.style({ edges: { 'line-style': 'double' } }) ).to.throw(/unsupported/);
+    });
+
     it('supports border and opacity channels', function(){
       cy.style({
         nodes: { 'border-width': 3, 'border-color': 'white', 'opacity': 0.5 }

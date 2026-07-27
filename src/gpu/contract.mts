@@ -43,6 +43,12 @@ export const SHAPE_VEE = 11;
 export const SHAPE_STAR = 12;
 export const SHAPE_TAG = 13;
 
+// -- edge line-style ids (round 10) --
+
+export const LINE_SOLID = 0;
+export const LINE_DASHED = 1;
+export const LINE_DOTTED = 2;
+
 // -- columns --
 
 export type ColumnId =
@@ -60,7 +66,8 @@ export type ColumnId =
   | 'edge.opacity' // Float32Array(cap)
   | 'edge.flags' // Uint32Array(cap)
   | 'edge.sourceArrow' // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
-  | 'edge.targetArrow'; // Uint8Array(4·cap)
+  | 'edge.targetArrow' // Uint8Array(4·cap)
+  | 'edge.lineStyle'; // Uint32Array(cap), LINE_* ids
 
 export type ColumnArray = Float32Array | Uint32Array | Uint8Array;
 
@@ -96,7 +103,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.opacity', 'edges', Float32Array, 1 ),
   spec( 'edge.flags', 'edges', Uint32Array, 1 ),
   spec( 'edge.sourceArrow', 'edges', Uint8Array, 4 ),
-  spec( 'edge.targetArrow', 'edges', Uint8Array, 4 )
+  spec( 'edge.targetArrow', 'edges', Uint8Array, 4 ),
+  spec( 'edge.lineStyle', 'edges', Uint32Array, 1 )
 ];
 
 const specsById = new Map<ColumnId, ColumnSpec>( COLUMN_SPECS.map( s => [ s.id, s ] ) );

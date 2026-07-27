@@ -1205,11 +1205,18 @@ Each entry converts into a "Landed" record as it ships:
   golden (11 nodes incl. a selected star's accent ring and a stretched
   hexagon), stable across repeat runs; 1617 Node + 47 module tests,
   42 Playwright specs green.
-- [ ] **B2 `line-style: solid | dashed | dotted`** — fract-along-length
-  in the edge FS, v3 default pattern.  `border-style` is stretch-only
-  (`double` is easy in SDF; dashed borders need perimeter
-  parameterization on arbitrary shapes — skip if not clean, note in
-  deviations).
+- [x] **B2 `line-style: solid | dashed | dotted`** — landed
+  2026-07-27.  New `edge.lineStyle` column (contract LINE_* ids) with
+  the full style plumbing (keyword parse, case mappers, stored-truth
+  readback); the edge VS emits a model-px longitudinal varying and a
+  flat style id, and the FS applies an AA'd dash mask (v3's patterns:
+  dashed [6, 3], dotted [1, 1], model units so dashes zoom with
+  content).  Picking ignores gaps as v3 does; the pick FS is
+  untouched.  `border-style` skipped per the plan's stretch clause
+  (dashing an SDF boundary needs perimeter parameterization) — README
+  records it.  `line-styles` golden (three styles + a wide diagonal
+  dashed edge proving the pattern runs along the edge); 1618 Node +
+  47 module tests, 43 Playwright specs green.
 - [ ] **B3 Label visuals** — `text-outline-width`/`-color`(/`-opacity`)
   (a second SDF distance threshold), `text-background-color`/
   `-opacity`/`-padding` (one background quad per label run off the

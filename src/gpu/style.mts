@@ -1,5 +1,6 @@
 import { color2tuple } from '../util/colors.mjs';
 import {
+  LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
   SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID,
   SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
@@ -61,6 +62,8 @@ interface EdgeComputed {
   lineColor: RGBA;
   width: number;
   opacity: number;
+  /** 0 solid, 1 dashed, 2 dotted (contract LINE_* ids) */
+  lineStyle: number;
   sourceArrowShape: ArrowShape;
   sourceArrowColor: RGBA;
   targetArrowShape: ArrowShape;
@@ -95,6 +98,7 @@ const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
   width: 2,
   opacity: 1,
+  lineStyle: LINE_SOLID,
   sourceArrowShape: 'none',
   sourceArrowColor: [ 153, 153, 153, 255 ], // #999, as v3
   targetArrowShape: 'none',
@@ -162,7 +166,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
 ] );
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
-  'line-color', 'width', 'opacity',
+  'line-color', 'line-style', 'width', 'opacity',
   'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color'
 ] );
 
@@ -199,6 +203,32 @@ const parseShape = ( value: unknown ): number => {
   }
 
   return shape;
+};
+
+const LINE_STYLES: Record<string, number> = {
+  'solid': LINE_SOLID,
+  'dashed': LINE_DASHED,
+  'dotted': LINE_DOTTED
+};
+
+/** Stored line-style id → resolved keyword. */
+const LINE_STYLE_NAMES: Record<number, string> = {
+  [ LINE_SOLID ]: 'solid',
+  [ LINE_DASHED ]: 'dashed',
+  [ LINE_DOTTED ]: 'dotted'
+};
+
+const parseLineStyle = ( value: unknown ): number => {
+  const style = LINE_STYLES[ String( value ) ];
+
+  if( style == null ){
+    throw new Error(
+      `The line-style '${String( value )}' is unsupported in the GPU prototype; ` +
+      `use one of: ${Object.keys( LINE_STYLES ).join( ', ' )}`
+    );
+  }
+
+  return style;
 };
 
 const parseArrowShape = ( prop: string, value: unknown ): ArrowShape => {
@@ -288,6 +318,9 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'line-color':
       computed.lineColor = parseColor( prop, value );
       break;
+    case 'line-style':
+      computed.lineStyle = parseLineStyle( value );
+      break;
     case 'source-arrow-shape':
       computed.sourceArrowShape = parseArrowShape( prop, value );
       break;
@@ -369,6 +402,12 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'color', groups: [ 'edges' ],
     set: ( c, v ) => { c.lineColor = v as RGBA; },
     default: () => EDGE_DEFAULTS.lineColor
+  },
+  'line-style': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => LINE_STYLES[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.lineStyle = v as number; },
+    default: () => EDGE_DEFAULTS.lineStyle
   },
   'source-arrow-color': {
     kind: 'color', groups: [ 'edges' ],
@@ -885,6 +924,7 @@ export class StyleEngine {
 
       // edge channels
       case 'line-color': return color( 'edge.lineColor' );
+      case 'line-style': return LINE_STYLE_NAMES[ scalar( 'edge.lineStyle' ) ];
       case 'source-arrow-shape': return alphaOf( 'edge.sourceArrow' ) > 0 ? 'triangle' : 'none';
       case 'target-arrow-shape': return alphaOf( 'edge.targetArrow' ) > 0 ? 'triangle' : 'none';
       case 'source-arrow-color': return color( 'edge.sourceArrow' );
@@ -1057,6 +1097,7 @@ export class StyleEngine {
       store.setColor( 'edge.lineColor', slot, ...computed.lineColor );
       store.setScalar( 'edge.width', slot, computed.width );
       store.setScalar( 'edge.opacity', slot, computed.opacity );
+      store.setScalar( 'edge.lineStyle', slot, computed.lineStyle );
       // edge opacity folds into the stored alpha (the arrow shader has no
       // spare storage-buffer binding for the opacity column)
       const arrow = ( shape: ArrowShape, color: RGBA ): RGBA => shape !== 'triangle' ? NO_ARROW

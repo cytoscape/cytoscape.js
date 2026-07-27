@@ -7,7 +7,7 @@ import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 
 /**
- * Storage-buffer bindings 1..5 (0 is the Frame uniform).  The edge vertex
+ * Storage-buffer bindings 1..6 (0 is the Frame uniform).  The edge vertex
  * shader reads endpoint positions straight from the node position buffer,
  * so a node drag uploads one row and its edges follow on-GPU.  Flags
  * columns are not bound: the cull pass already filtered on them.
@@ -17,7 +17,8 @@ const EDGE_COLUMNS: ColumnId[] = [
   'edge.lineColor',
   'edge.width',
   'edge.opacity',
-  'node.position'
+  'node.position',
+  'edge.lineStyle'
 ];
 
 /** Edge render + picking pipelines (screen-space extruded quads). */

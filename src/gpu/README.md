@@ -697,6 +697,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   zero point are culled in compute, not drawn at zero alpha); the optional
   `labelMinPx` renderer option hard-culls labels whose on-screen glyph
   height is below it — too small to read anyway (default 0 = off).
+- **Edge `line-style`** (round 10): `solid` (default) | `dashed` |
+  `dotted`, with v3's patterns ([6, 3] and [1, 1] in model px, so
+  dashes zoom with content as v3's model-space canvas dashes do),
+  drawn as an AA'd mask in the edge fragment stage.  Picking ignores
+  the gaps, as v3 does.  `border-style` is not ported (dashing an
+  arbitrary SDF boundary needs perimeter parameterization).
 - **Node shapes** (round 10): `ellipse`/`circle`, `rectangle`/`square`,
   `round-rectangle`, plus the polygon family — `triangle`, `pentagon`,
   `hexagon`, `heptagon`, `octagon`, `diamond`, `rhomboid`, `vee`,

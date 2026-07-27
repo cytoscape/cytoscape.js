@@ -429,6 +429,7 @@ ${COMMON}
 @group(0) @binding(3) var<storage, read> widths: array<f32>;
 @group(0) @binding(4) var<storage, read> opacities: array<f32>;
 @group(0) @binding(5) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(6) var<storage, read> lineStyles: array<u32>; // LINE_* ids
 
 struct EdgeVSOut {
   @builtin(position) position: vec4f,
@@ -436,6 +437,8 @@ struct EdgeVSOut {
   @location(1) halfWidth: f32,  // device px
   @location(2) color: vec4f,    // straight-alpha rgba with opacity/LOD applied to a
   @location(3) @interpolate(flat) instance: u32,
+  @location(4) u: f32,          // longitudinal distance from the source, model px
+  @location(5) @interpolate(flat) lineStyle: u32,
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -477,12 +480,35 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
 
   out.color = vec4f(c.rgb, c.a * opacities[slot] * lod.y * (1.0 - frame.edgeDim));
   out.instance = slot;
+  out.u = t * (len / frame.zoomDpr); // model px along the edge
+  out.lineStyle = lineStyles[slot];
   return out;
+}
+
+// AA'd on/off mask for a dash period (lengths in model px, as v3's canvas
+// dashes: setLineDash in the model-space-transformed context)
+fn dashMask(u: f32, onLen: f32, offLen: f32, aaModel: f32) -> f32 {
+  let period = onLen + offLen;
+  let x = fract(u / period) * period;
+  // signed distance to the nearest on/off boundary: + inside the on segment
+  var sd = 0.0;
+  if (x < onLen) { sd = min(x, onLen - x); }
+  else { sd = -min(x - onLen, period - x); }
+  return smoothstep(-aaModel, aaModel, sd);
 }
 
 @fragment
 fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
-  let alpha = in.color.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+  var alpha = in.color.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+
+  // line-style: dashed [6, 3] / dotted [1, 1] in model px (v3's patterns);
+  // picking ignores the gaps, as v3 does
+  if (in.lineStyle == 1u) {
+    alpha = alpha * dashMask(in.u, 6.0, 3.0, 0.75 / frame.zoomDpr);
+  } else if (in.lineStyle == 2u) {
+    alpha = alpha * dashMask(in.u, 1.0, 1.0, 0.75 / frame.zoomDpr);
+  }
+
   return vec4f(in.color.rgb * alpha, alpha); // premultiplied
 }
 

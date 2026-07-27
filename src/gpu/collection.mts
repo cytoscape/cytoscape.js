@@ -19,7 +19,10 @@ import {
   degreeCentralityNormalized as degreeCentralityNormalizedImpl,
   closenessCentrality as closenessCentralityImpl,
   closenessCentralityNormalized as closenessCentralityNormalizedImpl,
-  betweennessCentrality as betweennessCentralityImpl
+  betweennessCentrality as betweennessCentralityImpl,
+  kMeans as kMeansImpl, kMedoids as kMedoidsImpl, fuzzyCMeans as fuzzyCMeansImpl,
+  hierarchicalClustering as hierarchicalClusteringImpl,
+  markovClustering as markovClusteringImpl, affinityPropagation as affinityPropagationImpl
 } from './algorithms/index.mjs';
 import type {
   SearchArgs, SearchResult, DijkstraArgs, DijkstraResult, AStarOptions, AStarResult,
@@ -28,7 +31,9 @@ import type {
   HierholzerResult, KargerSteinResult, PageRankOptions, PageRankResult,
   DegreeCentralityOptions, DegreeCentralityResult, DegreeCentralityNormalizedResult,
   ClosenessCentralityOptions, ClosenessCentralityNormalizedResult,
-  BetweennessCentralityOptions, BetweennessCentralityResult
+  BetweennessCentralityOptions, BetweennessCentralityResult,
+  KClusteringOptions, FuzzyCMeansResult, HierarchicalClusteringOptions,
+  MarkovClusteringOptions, AffinityPropagationOptions
 } from './algorithms/index.mjs';
 import type { GpuCore } from './core.mjs';
 import type { EventHandler } from '../emitter.mjs';
@@ -2251,6 +2256,38 @@ export class GpuCollection {
 
   declare bc: this['betweennessCentrality'];
 
+  kMeans( options?: KClusteringOptions ): GpuCollection[] {
+    return kMeansImpl( this, options );
+  }
+
+  kMedoids( options?: KClusteringOptions ): GpuCollection[] {
+    return kMedoidsImpl( this, options );
+  }
+
+  fuzzyCMeans( options?: KClusteringOptions ): FuzzyCMeansResult {
+    return fuzzyCMeansImpl( this, options );
+  }
+
+  declare fcm: this['fuzzyCMeans'];
+
+  hierarchicalClustering( options?: HierarchicalClusteringOptions ): GpuCollection[] {
+    return hierarchicalClusteringImpl( this, options );
+  }
+
+  declare hca: this['hierarchicalClustering'];
+
+  markovClustering( options?: MarkovClusteringOptions ): GpuCollection[] {
+    return markovClusteringImpl( this, options );
+  }
+
+  declare mcl: this['markovClustering'];
+
+  affinityPropagation( options?: AffinityPropagationOptions ): GpuCollection[] {
+    return affinityPropagationImpl( this, options );
+  }
+
+  declare ap: this['affinityPropagation'];
+
   // -- degree --
 
   // degree()/indegree()/outdegree() are singular accessors: they report the
@@ -2456,6 +2493,10 @@ GpuCollection.prototype.cc = GpuCollection.prototype.closenessCentrality;
 GpuCollection.prototype.ccn = GpuCollection.prototype.closenessCentralityNormalized;
 GpuCollection.prototype.closenessCentralityNormalised = GpuCollection.prototype.closenessCentralityNormalized;
 GpuCollection.prototype.bc = GpuCollection.prototype.betweennessCentrality;
+GpuCollection.prototype.fcm = GpuCollection.prototype.fuzzyCMeans;
+GpuCollection.prototype.hca = GpuCollection.prototype.hierarchicalClustering;
+GpuCollection.prototype.mcl = GpuCollection.prototype.markovClustering;
+GpuCollection.prototype.ap = GpuCollection.prototype.affinityPropagation;
 GpuCollection.prototype.addListener = GpuCollection.prototype.on;
 GpuCollection.prototype.removeListener = GpuCollection.prototype.off;
 GpuCollection.prototype.trigger = GpuCollection.prototype.emit;

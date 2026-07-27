@@ -31,4 +31,15 @@ export { betweennessCentrality } from './betweenness-centrality.mjs';
 export type {
   BetweennessCentralityOptions, BetweennessCentralityResult
 } from './betweenness-centrality.mjs';
+export { kMeans, kMedoids, fuzzyCMeans } from './k-clustering.mjs';
+export type {
+  KClusteringOptions, KAttributeFn, FeatureCentroid, FuzzyCMeansResult
+} from './k-clustering.mjs';
+export { hierarchicalClustering } from './hierarchical-clustering.mjs';
+export type { HierarchicalClusteringOptions } from './hierarchical-clustering.mjs';
+export { markovClustering } from './markov-clustering.mjs';
+export type { MarkovClusteringOptions } from './markov-clustering.mjs';
+export { affinityPropagation } from './affinity-propagation.mjs';
+export type { AffinityPropagationOptions } from './affinity-propagation.mjs';
+export type { DistanceMetric } from './clustering-distances.mjs';
 export type { WeightFn } from './algo-shared.mjs';

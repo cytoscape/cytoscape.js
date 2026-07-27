@@ -75,10 +75,14 @@ read-only style getters (`style`/`css`, `renderedStyle`,
 iterative — deep graphs cannot overflow the JS stack),
 `hopcroftTarjanBiconnected` (+`htbc` etc.), `hierholzer`,
 `kargerStein`, `pageRank`, `degreeCentrality`/`dc` (+normalized),
-`closenessCentrality`/`cc` (+normalized), `betweennessCentrality`/`bc`
-— slot-native over the CSR adjacency with
-v3 option/result shapes, except that node arguments are collections
-(selector strings throw) and `weight`/`heuristic` are plain functions.
+`closenessCentrality`/`cc` (+normalized), `betweennessCentrality`/`bc`,
+`kMeans`, `kMedoids`, `fuzzyCMeans`/`fcm`, `hierarchicalClustering`/
+`hca`, `markovClustering`/`mcl`, `affinityPropagation`/`ap`
+— the full v3 algorithm surface.  Graph walks are slot-native over the
+CSR adjacency; the attribute-space clustering algorithms work on
+handles as v3 does.  v3 option/result shapes are kept, except that
+node arguments are collections (selector strings throw) and
+`weight`/`heuristic`/`attributes` are plain functions.
 
 Batching (v3 semantics): a `startBatch()`/`endBatch()` pair (or
 `cy.batch(fn)`) defers *style application* — the first apply of
@@ -464,8 +468,7 @@ predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.
 
-Out of scope (deferred): compound nodes, the remaining graph
-algorithms (structure/centrality/clustering land through round 10),
+Out of scope (deferred): compound nodes,
 string-formatting label mappers beyond the passthrough, and the GPU
 tween fast path for *size* channels (position and paint offload today;
 size is a geometry-tier project, see the design decisions above).  Multiline

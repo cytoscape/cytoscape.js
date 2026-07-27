@@ -1094,9 +1094,21 @@ Each entry converts into a "Landed" record as it ships:
   S is truly distance-ordered).  19 specs pin v3's exact numeric
   expectations (all matched, incl. the multiple-shortest-paths case);
   `test/gpu-algorithms-centralities.mjs` (1531 Node tests green).
-- [ ] **A4 Algorithms: clustering** — markov, k-means, k-medoids,
-  fuzzy c-means, hierarchical, affinity propagation (+ the shared
-  distance helpers).
+- [x] **A4 Algorithms: clustering** — landed 2026-07-27.  `kMeans`,
+  `kMedoids`, `fuzzyCMeans`/`fcm`, `hierarchicalClustering`/`hca`
+  (threshold + dendrogram modes, `addDendrogram`), `markovClustering`/
+  `mcl` (Float64Array matrices), `affinityPropagation`/`ap`, plus the
+  shared `clustering-distances` metric module.  The attribute-space
+  algorithms stay handle-level like v3 (they're feature-space, not
+  adjacency walks); markov builds its matrix off the slot view.  v3
+  quirks preserved: raw-option validation for affinity (damping and
+  preference effectively required), the 2-arg custom distance form
+  when no attributes are given, kMedoids' k>n throw.  25 specs pin the
+  v3 fixtures' numeric expectations (k-means/k-medoids/fcm/markov
+  cluster memberships in exact order, dendrogram levels 0–10);
+  affinity gets a compact deterministic fixture instead of v3's
+  700-line one.  `test/gpu-algorithms-clustering.mjs` (1556 Node tests
+  green).
 - [ ] **A5 Algorithm benchmark** — `benchmark/gpu/algorithms.mjs` vs v3
   (at least bfs/dijkstra/pageRank/tarjan).
 - [ ] **A6 Layouts** — `circle`, `concentric`, `breadthfirst`, `random`

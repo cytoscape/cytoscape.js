@@ -203,6 +203,53 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'polygon-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: arrowhead shapes (round 10)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const shapes = [ 'triangle', 'vee', 'chevron', 'circle', 'square', 'diamond', 'tee' ];
+    const elements = [];
+
+    for( let i = 0; i < shapes.length; i++ ){
+      const y = i * 36 - 108;
+
+      elements.push(
+        { data: { id: `l${ i }` }, position: { x: -140, y } },
+        { data: { id: `r${ i }` }, position: { x: 140, y } },
+        { data: { id: `e${ i }`, source: `l${ i }`, target: `r${ i }`, shape: shapes[ i ] } }
+      );
+    }
+
+    // one source-end arrow: pins the source/target byte order in the packed column
+    elements.push( { data: { id: 'e-src', source: 'l0', target: 'r6', shape: 'vee', atSource: 1 } } );
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: { 'width': 14, 'height': 14, 'background-color': '#95a5a6' },
+        edges: {
+          'width': 4, 'line-color': '#7f8c8d',
+          'target-arrow-shape': { case: [
+            { when: { data: 'atSource', eq: 1 }, then: 'none' },
+            { when: { data: 'shape', eq: 'vee' }, then: 'vee' },
+            { when: { data: 'shape', eq: 'chevron' }, then: 'chevron' },
+            { when: { data: 'shape', eq: 'circle' }, then: 'circle' },
+            { when: { data: 'shape', eq: 'square' }, then: 'square' },
+            { when: { data: 'shape', eq: 'diamond' }, then: 'diamond' },
+            { when: { data: 'shape', eq: 'tee' }, then: 'tee' }
+          ], else: 'triangle' },
+          'target-arrow-color': '#8e44ad',
+          'source-arrow-shape': { case: [ { when: { data: 'atSource', eq: 1 }, then: 'chevron' } ], else: 'none' },
+          'source-arrow-color': '#c0392b'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'arrow-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: edge line styles (solid, dashed, dotted)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

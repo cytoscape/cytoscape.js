@@ -49,6 +49,17 @@ export const LINE_SOLID = 0;
 export const LINE_DASHED = 1;
 export const LINE_DOTTED = 2;
 
+// -- arrowhead shape ids (round 10; packed source | target<<8 in edge.arrowShapes) --
+
+export const ARROW_NONE = 0;
+export const ARROW_TRIANGLE = 1;
+export const ARROW_VEE = 2;
+export const ARROW_CHEVRON = 3;
+export const ARROW_CIRCLE = 4;
+export const ARROW_SQUARE = 5;
+export const ARROW_DIAMOND = 6;
+export const ARROW_TEE = 7;
+
 // -- columns --
 
 export type ColumnId =
@@ -67,7 +78,8 @@ export type ColumnId =
   | 'edge.flags' // Uint32Array(cap)
   | 'edge.sourceArrow' // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
   | 'edge.targetArrow' // Uint8Array(4·cap)
-  | 'edge.lineStyle'; // Uint32Array(cap), LINE_* ids
+  | 'edge.lineStyle' // Uint32Array(cap), LINE_* ids
+  | 'edge.arrowShapes'; // Uint32Array(cap), ARROW_* ids packed source | target<<8
 
 export type ColumnArray = Float32Array | Uint32Array | Uint8Array;
 
@@ -104,7 +116,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.flags', 'edges', Uint32Array, 1 ),
   spec( 'edge.sourceArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.targetArrow', 'edges', Uint8Array, 4 ),
-  spec( 'edge.lineStyle', 'edges', Uint32Array, 1 )
+  spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
+  spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 )
 ];
 
 const specsById = new Map<ColumnId, ColumnSpec>( COLUMN_SPECS.map( s => [ s.id, s ] ) );

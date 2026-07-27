@@ -734,11 +734,18 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   font-size).  Outline and background opacities fold into their stored
   alphas, so their getters read back folded (the arrow-color
   precedent).
-- **Arrowheads**: `source/target-arrow-shape` supports `triangle` and
-  `none` only, with constant `source/target-arrow-color` (v3-like `#999`
-  default).  One quad per visible edge per enabled end, reusing the edge
-  cull stream; the tip sits on the endpoint node's boundary (round-rect
-  approximated by its box).  Arrows draw *over* the line — a translucent
+- **Arrowheads**: `source/target-arrow-shape` supports `triangle`
+  (+`arrow` alias), `vee`, `chevron`, `circle`, `square`, `diamond`,
+  `tee` and `none` (round 10 — SDFs generated from v3's arrow point
+  tables and evaluated in the fragment stage; the shape ids ride a
+  fragment-only storage binding, keeping the vertex stage at its
+  8-buffer budget).  Compound shapes (`triangle-tee`,
+  `circle-triangle`, `triangle-cross`, `triangle-backcurve`) are not
+  ported.  `source/target-arrow-color` as before (v3-like `#999`
+  default).  One quad per visible edge per enabled end, reusing the
+  edge cull stream; the tip sits on the endpoint node's boundary
+  (round-rect approximated by its box, polygons by their inscribed
+  ellipse).  Arrows draw *over* the line — a translucent
   arrow shows the line through it — are not pickable (the GPU pick pass
   stays edges-only), and size with the drawn (floored) edge width.
 - **Box selection**: with `boxSelectionEnabled` (default on), a drag

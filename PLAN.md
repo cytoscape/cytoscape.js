@@ -1233,10 +1233,22 @@ Each entry converts into a "Landed" record as it ships:
   validation-error guard).  `label-visuals` golden (outline, boxed,
   margin-shifted) at the label tolerance tier; 1619 Node + 47 module
   tests, 44 Playwright specs green.
-- [ ] **B4 Arrow shape parity** — `vee`, `chevron`, `circle`, `square`,
-  `diamond`, `tee` as SDFs in the arrow quad FS (compound shapes like
-  `triangle-tee`/`circle-triangle`/`backcurve` are stretch).  Golden
-  scene update.
+- [x] **B4 Arrow shape parity** — landed 2026-07-27.  `vee`,
+  `chevron`, `circle`, `square`, `diamond`, `tee` (+ the `arrow`
+  alias), with WGSL SDFs generated from v3's arrow point tables
+  (shared `ARROW_POINTS` in shape-points.mts; tip-at-origin frame,
+  uniform scale — v4's arrow sizing turns out to be exactly uniform:
+  halfBase/0.15 == arrowLen/0.3).  The arrow FS now evaluates a
+  shape SDF in the arrow-local frame instead of the triangle's
+  lateral-taper mask (the triangle's geometry is unchanged, only its
+  AA method — nodes-edges-arrows golden regenerated); shape ids pack
+  source|target<<8 into a new `edge.arrowShapes` column bound
+  **fragment-only**, keeping the arrow VS at its 8-storage-buffer
+  budget.  Readback keeps the stored-truth rule (transparent arrow →
+  shape 'none'), now returning the real keyword otherwise.  Compound
+  shapes not ported (README lists them).  `arrow-shapes` golden (7
+  target shapes + a source-end chevron pinning the byte order);
+  1621 Node + 47 module tests, 45 Playwright specs green.
 - [ ] **B5 Edge labels pass 1** — the logged direction above, built:
   second glyph stream (own instance buffer + cull group + draw call),
   midpoint computed in the VS from the endpoints, cull = edge SHOWN +

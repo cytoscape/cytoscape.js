@@ -66,7 +66,16 @@ export class ArrowPipeline {
           visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         },
-        { binding: ARROW_COLUMNS.length + 2, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'uniform' } }
+        { // the End uniform: the fragment stage picks this end's shape byte
+          binding: ARROW_COLUMNS.length + 2,
+          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'uniform' }
+        },
+        { // arrow shape ids, fragment-only: keeps the vertex stage at its 8-buffer budget
+          binding: ARROW_COLUMNS.length + 3,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        }
       ]
     } );
 
@@ -103,7 +112,8 @@ export class ArrowPipeline {
           resource: { buffer: mirror.buffer( id ) }
         } ) ),
         { binding: ARROW_COLUMNS.length + 1, resource: { buffer: mirror.buffer( arrowColumn[ end ] ) } },
-        { binding: ARROW_COLUMNS.length + 2, resource: { buffer: endUniform } }
+        { binding: ARROW_COLUMNS.length + 2, resource: { buffer: endUniform } },
+        { binding: ARROW_COLUMNS.length + 3, resource: { buffer: mirror.buffer( 'edge.arrowShapes' ) } }
       ]
     } ) ) as [ GPUBindGroup, GPUBindGroup ];
 

@@ -11,7 +11,7 @@ Colour columns are RGBA bytes bound as array<u32> and expanded with
 unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
-import { POLYGON_POINTS } from '../shape-points.mjs';
+import { ARROW_POINTS, POLYGON_POINTS } from '../shape-points.mjs';
 
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
@@ -185,6 +185,46 @@ fn poly${ id }SD(p: vec2f, half: vec2f) -> f32 {
 };
 
 const POLY = polygonSdFns();
+
+// Arrowhead SDFs generated from the shared v3 point tables (tip at the
+// local origin, body toward negative y, scaled uniformly by `s`).
+const arrowSdFns = (): { fns: string; cases: string } => {
+  let fns = '';
+  let cases = '';
+
+  for( const [ id, pts ] of ARROW_POINTS ){
+    const n = pts.length / 2;
+    const lits = Array.from( { length: n }, ( _, i ) =>
+      `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+
+    fns += `
+fn arrow${ id }SD(p: vec2f, s: f32) -> f32 {
+  var v = array<vec2f, ${ n }>(${ lits });
+  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * s; }
+  var d = dot(p - v[0], p - v[0]);
+  var sgn = 1.0;
+  var j = ${ n - 1 };
+  for (var i = 0; i < ${ n }; i++) {
+    let e = v[j] - v[i];
+    let w = p - v[i];
+    let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(b, b));
+    let c1 = p.y >= v[i].y;
+    let c2 = p.y < v[j].y;
+    let c3 = e.x * w.y > e.y * w.x;
+    if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) { sgn = -sgn; }
+    j = i;
+  }
+  return sgn * sqrt(d);
+}
+`;
+    cases += `    case ${ id }u: { sd = arrow${ id }SD(p, s); }\n`;
+  }
+
+  return { fns, cases };
+};
+
+const ARROW_POLY = arrowSdFns();
 
 // SDFs ported from shader-sdf.mts (https://iquilezles.org/articles/distfunctions2d/)
 const SDF = `
@@ -554,15 +594,21 @@ ${COMMON}
 
 struct End { isSource: u32 }
 @group(0) @binding(8) var<uniform> end: End;
+// shape ids packed source | target<<8 — bound to the fragment stage only,
+// keeping the vertex stage at its 8-storage-buffer budget
+@group(0) @binding(9) var<storage, read> arrowShapes: array<u32>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
 struct ArrowVSOut {
   @builtin(position) position: vec4f,
-  @location(0) v: f32,      // signed lateral offset, device px
-  @location(1) limit: f32,  // lateral half-width at this longitudinal t, device px
-  @location(2) color: vec4f,
+  @location(0) p: vec2f,    // arrow-local device px: x lateral, y (≤0) behind the tip
+  @location(1) color: vec4f,
+  @location(2) @interpolate(flat) scale: f32, // device px per arrow unit
+  @location(3) @interpolate(flat) slot: u32,
 }
+
+${ ARROW_POLY.fns }
 
 // distance from the node center to its boundary along unit direction d
 fn boundaryOffset(shape: u32, half: vec2f, d: vec2f) -> f32 {
@@ -612,12 +658,16 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5; // 0 at base, 1 at tip
-  let limit = halfBase * (1.0 - t);
-  let lateral = corner.x * (limit + 1.0); // 1px AA margin
+  // arrow-local frame: y = 0 at the tip, negative behind (v3's arrow tables);
+  // 1px AA margin on every side
+  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  let lateral = corner.x * (halfBase + 1.0);
 
-  out.position = vec4f(pxToClip(frame, tip - dir * arrowLen * (1.0 - t) + n * lateral), EDGE_Z, 1.0);
-  out.v = lateral;
-  out.limit = limit;
+  out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
+  out.p = vec2f(lateral, yLocal);
+  // the sizing makes this uniform: halfBase / 0.15 == arrowLen / 0.3
+  out.scale = arrowLen / 0.3;
+  out.slot = slot;
   // edge opacity is pre-folded into c.a at style-write time
   out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
   return out;
@@ -625,7 +675,19 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
 @fragment
 fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
-  let alpha = in.color.a * (1.0 - smoothstep(in.limit - 0.75, in.limit + 0.75, abs(in.v)));
+  let pair = arrowShapes[in.slot];
+  let shape = select(pair >> 8u, pair & 0xffu, end.isSource == 1u);
+  let p = in.p;
+  let s = in.scale;
+  var sd = 1e6;
+
+  switch shape {
+${ ARROW_POLY.cases }
+    case 4u: { sd = length(p - vec2f(0.0, -0.15 * s)) - 0.15 * s; } // circle
+    default: { sd = 1e6; } // none (already degenerate in the VS)
+  }
+
+  let alpha = in.color.a * (1.0 - smoothstep(-0.75, 0.75, sd));
   return vec4f(in.color.rgb * alpha, alpha); // premultiplied
 }
 `;

@@ -1,5 +1,7 @@
 import { color2tuple } from '../util/colors.mjs';
 import {
+  ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
+  ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
   SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID,
@@ -80,7 +82,7 @@ interface EdgeComputed {
 
 type Computed = NodeComputed & EdgeComputed;
 
-type ArrowShape = 'none' | 'triangle';
+type ArrowShape = 'none' | 'triangle' | 'vee' | 'chevron' | 'circle' | 'square' | 'diamond' | 'tee';
 
 const NODE_DEFAULTS: NodeComputed = {
   fillColor: [ 153, 153, 153, 255 ], // #999
@@ -251,16 +253,16 @@ const parseLineStyle = ( value: unknown ): number => {
 };
 
 const parseArrowShape = ( prop: string, value: unknown ): ArrowShape => {
-  const shape = String( value );
+  const id = ARROW_ENUM[ String( value ) ];
 
-  if( shape !== 'none' && shape !== 'triangle' ){
+  if( id == null ){
     throw new Error(
-      `The ${prop} '${shape}' is unsupported in the GPU prototype; ` +
-      `only 'triangle' and 'none' are allowed`
+      `The ${prop} '${String( value )}' is unsupported in the GPU prototype; ` +
+      `use one of: ${Object.keys( ARROW_ENUM ).join( ', ' )}`
     );
   }
 
-  return shape;
+  return ARROW_NAMES[ id ];
 };
 
 /** camelCase → kebab-case ('backgroundColor' → 'background-color'). */
@@ -382,7 +384,29 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
   }
 };
 
-const ARROW_ENUM: Record<string, number> = { 'none': 0, 'triangle': 1 };
+const ARROW_ENUM: Record<string, number> = {
+  'none': ARROW_NONE,
+  'triangle': ARROW_TRIANGLE,
+  'arrow': ARROW_TRIANGLE, // v3 alias
+  'vee': ARROW_VEE,
+  'chevron': ARROW_CHEVRON,
+  'circle': ARROW_CIRCLE,
+  'square': ARROW_SQUARE,
+  'diamond': ARROW_DIAMOND,
+  'tee': ARROW_TEE
+};
+
+/** enum id → shape keyword (for enum-mapper writes and readback) */
+const ARROW_NAMES: Record<number, ArrowShape> = {
+  [ ARROW_NONE ]: 'none',
+  [ ARROW_TRIANGLE ]: 'triangle',
+  [ ARROW_VEE ]: 'vee',
+  [ ARROW_CHEVRON ]: 'chevron',
+  [ ARROW_CIRCLE ]: 'circle',
+  [ ARROW_SQUARE ]: 'square',
+  [ ARROW_DIAMOND ]: 'diamond',
+  [ ARROW_TEE ]: 'tee'
+};
 
 /** How a mapped prop lands on the computed record. */
 interface MappableChannel {
@@ -505,13 +529,13 @@ const MAPPABLE: Record<string, MappableChannel> = {
   'source-arrow-shape': {
     kind: 'enum', groups: [ 'edges' ],
     parseEnum: v => ARROW_ENUM[ String( v ) ] ?? null,
-    set: ( c, v ) => { c.sourceArrowShape = v === 1 ? 'triangle' : 'none'; },
+    set: ( c, v ) => { c.sourceArrowShape = ARROW_NAMES[ v as number ] ?? 'none'; },
     default: () => 0
   },
   'target-arrow-shape': {
     kind: 'enum', groups: [ 'edges' ],
     parseEnum: v => ARROW_ENUM[ String( v ) ] ?? null,
-    set: ( c, v ) => { c.targetArrowShape = v === 1 ? 'triangle' : 'none'; },
+    set: ( c, v ) => { c.targetArrowShape = ARROW_NAMES[ v as number ] ?? 'none'; },
     default: () => 0
   }
 };
@@ -1046,8 +1070,14 @@ export class StyleEngine {
       // edge channels
       case 'line-color': return color( 'edge.lineColor' );
       case 'line-style': return LINE_STYLE_NAMES[ scalar( 'edge.lineStyle' ) ];
-      case 'source-arrow-shape': return alphaOf( 'edge.sourceArrow' ) > 0 ? 'triangle' : 'none';
-      case 'target-arrow-shape': return alphaOf( 'edge.targetArrow' ) > 0 ? 'triangle' : 'none';
+      case 'source-arrow-shape':
+        return alphaOf( 'edge.sourceArrow' ) > 0
+          ? ARROW_NAMES[ scalar( 'edge.arrowShapes' ) & 0xff ]
+          : 'none';
+      case 'target-arrow-shape':
+        return alphaOf( 'edge.targetArrow' ) > 0
+          ? ARROW_NAMES[ ( scalar( 'edge.arrowShapes' ) >>> 8 ) & 0xff ]
+          : 'none';
       case 'source-arrow-color': return color( 'edge.sourceArrow' );
       case 'target-arrow-color': return color( 'edge.targetArrow' );
     }
@@ -1221,11 +1251,13 @@ export class StyleEngine {
       store.setScalar( 'edge.lineStyle', slot, computed.lineStyle );
       // edge opacity folds into the stored alpha (the arrow shader has no
       // spare storage-buffer binding for the opacity column)
-      const arrow = ( shape: ArrowShape, color: RGBA ): RGBA => shape !== 'triangle' ? NO_ARROW
+      const arrow = ( shape: ArrowShape, color: RGBA ): RGBA => shape === 'none' ? NO_ARROW
         : [ color[ 0 ], color[ 1 ], color[ 2 ], Math.round( color[ 3 ] * computed.opacity ) ];
 
       store.setColor( 'edge.sourceArrow', slot, ...arrow( computed.sourceArrowShape, computed.sourceArrowColor ) );
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
+      store.setScalar( 'edge.arrowShapes', slot,
+        ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) );
     }
   }
 

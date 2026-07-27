@@ -2,6 +2,7 @@ import {
   fitPolygonToSquare, generateUnitNgonPoints, generateUnitNgonPointsFitToSquare
 } from '../math.mjs';
 import {
+  ARROW_CHEVRON, ARROW_DIAMOND, ARROW_SQUARE, ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
   SHAPE_DIAMOND, SHAPE_HEPTAGON, SHAPE_HEXAGON, SHAPE_OCTAGON, SHAPE_PENTAGON,
   SHAPE_RHOMBOID, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
@@ -51,6 +52,21 @@ export const POLYGON_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
   [ SHAPE_VEE, [ -1, -1, 0, -0.333, 1, -1, 0, 1 ] ],
   [ SHAPE_STAR, star5() ],
   [ SHAPE_TAG, [ -1, -1, 0.25, -1, 1, 0, 0.25, 1, -1, 1 ] ]
+] );
+
+/**
+ * Arrowhead polygon points per ARROW_* id, in v3's arrow frame: the tip at
+ * (0, 0), the body extending toward negative y, lateral extent ±0.15 —
+ * exactly v3's arrow-shapes tables.  ARROW_CIRCLE is analytic (radius 0.15
+ * centered at (0, -0.15)) and has no entry here.
+ */
+export const ARROW_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
+  [ ARROW_TRIANGLE, [ -0.15, -0.3, 0, 0, 0.15, -0.3 ] ],
+  [ ARROW_VEE, [ -0.15, -0.3, 0, 0, 0.15, -0.3, 0, -0.15 ] ],
+  [ ARROW_CHEVRON, [ 0, 0, -0.15, -0.15, -0.1, -0.2, 0, -0.1, 0.1, -0.2, 0.15, -0.15 ] ],
+  [ ARROW_SQUARE, [ -0.15, 0, 0.15, 0, 0.15, -0.3, -0.15, -0.3 ] ],
+  [ ARROW_DIAMOND, [ -0.15, -0.15, 0, -0.3, 0.15, -0.15, 0, 0 ] ],
+  [ ARROW_TEE, [ -0.15, 0, -0.15, -0.1, 0.15, -0.1, 0.15, 0 ] ]
 ] );
 
 /**

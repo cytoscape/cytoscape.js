@@ -35,8 +35,10 @@ each group's visible slots + indirect draw args) followed by the scene
 render pass (edges then nodes then labels, all indirect, no depth buffer).
 Pick-only frames skip the scene work entirely, so hover picking over a
 static graph costs O(cursor region) per tick.  Frames before `.ready`
-resolves are no-ops; readiness triggers the first frame.  Device loss
-makes the instance dead (an `error` event fires; no recovery).
+resolves are no-ops; readiness triggers the first frame.  An external
+device loss is handed to the core (`onDeviceLost`), which recovers by
+re-mounting a fresh renderer; without that hook the instance goes dead
+with an `error` event.
 */
 
 /** raw straight-alpha RGBA pixels of a finished export */

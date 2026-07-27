@@ -66,8 +66,9 @@ interface BatchPending {
 
 /**
  * The GpuCore facade: the familiar synchronous core API over the columnar
- * store.  Scope (pass 1 of #3486): viewport fns, events, graph manipulation
- * and the grid layout; no animations, no compound nodes, no `data()`.
+ * store (#3486).  See src/gpu/README.md for the maintained API scope —
+ * viewport, events, graph manipulation, style/mappers, layouts,
+ * animation, algorithms, image export, mount/unmount; no compound nodes.
  */
 export class GpuCore {
   _store: GraphStore;

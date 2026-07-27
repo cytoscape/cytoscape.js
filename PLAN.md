@@ -37,6 +37,9 @@ src/gpu/
   style-schemes.mts      # named color schemes (viridis, ColorBrewer, ...) + sRGB↔OKLab
   animation.mts          # Animation + AnimationManager: CPU tween + queue; routes position to the GPU sink
   layout/grid.mts        # ported grid layout (cell-packing math from src/extensions/layout/grid.mts)
+  layout/                # + preset (round 5) and circle/concentric/breadthfirst/random (round 10)
+  algorithms/            # round 10: the full v3 algorithm surface, slot-native over CSR
+  shape-points.mts       # round 10: unit polygon + arrowhead point tables shared by WGSL gen + CPU pick
   store/
     graph-store.mts      # GraphStore: NodeTable + EdgeTable + IdMap + Adjacency + label sidecar; mutation API
     table.mts            # ColumnTable: typed-array columns, x2 growth, free-list, generations
@@ -133,8 +136,8 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 - Float32 position precision (~7 significant digits).
 - Pan-vs-grab uses the ≤2-frame-stale resolved pick.
 - `cy.elements()` returns nodes then edges, not mixed insertion order.
-- Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.
-- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged).
+- Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.  (Since superseded: edge labels + label visuals landed in round 10.)
+- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged; circle/concentric/breadthfirst/random layouts landed round 10 — compounds and bezier remain).
 
 ## Follow-ups (informed by the benchmark)
 
@@ -760,7 +763,9 @@ record.
   impls, conservative CPU bound for cull/fit, exact lazy CPU `.bb()`,
   membership as a structural index.
 - **Full stylesheet + mappers** beyond the constant blocks and the label
-  `data(key)` mapper; layouts beyond grid/preset.
+  `data(key)` mapper; layouts beyond grid/preset.  (Since superseded:
+  mappers landed round 7–8; circle/concentric/breadthfirst/random
+  layouts landed round 10.)
 
 ## Landed (round 9.4 — GPU paint tweens, 2026-07-27)
 
@@ -992,7 +997,7 @@ API, not harness design:
   `labels-open-sans` golden), the visual project stable across three
   consecutive runs.
 
-## Logged direction — edge labels (a future round; nodes-only today)
+## Logged direction — edge labels (built in round 10 B5, exactly this shape)
 
 Needed regardless (discussion, 2026-07-27).  A generalization, not new
 architecture: a **second glyph stream** parallel to the node one (own

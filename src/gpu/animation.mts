@@ -1,6 +1,8 @@
 import { color2tuple } from '../util/colors.mjs';
+import { oklabToSrgb, srgbToOklab } from './style-schemes.mjs';
 import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
+import type { StyleEngine } from './style.mjs';
 import type { Viewport } from './viewport.mjs';
 
 /*
@@ -10,22 +12,25 @@ An animation interpolates element style channels and/or position (or the
 viewport) from their captured start values to explicit targets over a
 duration, easing the normalized time.  Each tick writes the store columns
 (scheduling a redraw through the dirty tracker), so animation works
-headless and is fully Node-testable; a GPU fast path (round 9.2) can later
-evaluate the same tweens on-device without changing this contract — every
-tween is a pure function of time, so the CPU remains the reference.
+headless and is fully Node-testable.
 
-Ownership: a tween is CPU-reproducible, so the CPU columns stay
-authoritative while it runs (unlike a GPU layout).  On completion the
-final values are already in the columns; nothing to settle on the CPU
-path.  Position animations take the "grab forbidden while animating" lease
-(the core checks `animated()` before starting a drag) so an interactive
-override can't fight the tween.
+Every tween is a pure function of time, so the CPU stays the reference even
+when the GPU evaluates it: `capture()` resolves the animation into a list
+of per-slot `ChannelWrite`s that the CPU lerps directly and the GPU tween
+runtime (render/gpu-tween.mts) consumes verbatim.  One set of numbers, two
+executors.
 
-Animatable, MVP: `position`, node `opacity`, `border-width`, and the
-`background-color` / `border-color` / `line-color` channels — the
-coupling-free set (fade, move, recolour).  Size (width/height, circle
-collapse), edge opacity (arrow-alpha fold) and label channels are a
-follow-up.  Colors interpolate per-channel in sRGB (as v3).
+Ownership: a GPU-driven animation leases its columns for the duration —
+CPU reads go stale mid-flight and `settleGpu` re-derives the exact value on
+the CPU when it ends (no readback).  Elements can't be grabbed while
+animating (the core checks `animated()` before starting a drag), so an
+interactive override can't fight the tween.
+
+Animatable: `position`, `opacity` (both groups), `background-color`,
+`border-color`, `line-color`, `border-width`.  Colours interpolate in
+OKLab — the same space mappers ramp in by default — so an animation to a
+colour and a mapper ramp to it take the same path.  Size (width/height,
+circle collapse) and label channels are a follow-up.
 */
 
 export type Easing = ( t: number ) => number;
@@ -55,19 +60,32 @@ export const resolveEasing = ( easing: string | Easing | undefined ): Easing => 
 
 type RGBA = [ number, number, number, number ];
 
-/** Where an animatable style prop lands (coupling-free channels only). */
+const GROUPS: GroupName[] = [ 'nodes', 'edges' ];
+
+/**
+ * Where an animatable style prop lands, per group — a shared name like
+ * `opacity` resolves to a different column in each.
+ *
+ * `tier` decides GPU eligibility.  **Paint** channels have no CPU consumer:
+ * culling, CPU picking and the columnar scans (`boundingBox`, `refsInBox`)
+ * never read them, which is why they were the ones made GPU-evaluable in
+ * the mapper split — so a GPU tween can own the column outright while it
+ * runs.  **Geometry** channels are read by all three, so they stay
+ * CPU-canonical; a GPU-owned size tween reopens the store→style layering
+ * seam and belongs with that work, not here.
+ */
 interface StyleChannel {
-  group: GroupName;
-  column: ColumnId;
+  columns: Partial<Record<GroupName, ColumnId>>;
   kind: 'scalar' | 'color';
+  tier: 'paint' | 'geometry';
 }
 
 const STYLE_CHANNELS: Record<string, StyleChannel> = {
-  'opacity': { group: 'nodes', column: 'node.opacity', kind: 'scalar' },
-  'border-width': { group: 'nodes', column: 'node.borderWidth', kind: 'scalar' },
-  'background-color': { group: 'nodes', column: 'node.fillColor', kind: 'color' },
-  'border-color': { group: 'nodes', column: 'node.borderColor', kind: 'color' },
-  'line-color': { group: 'edges', column: 'edge.lineColor', kind: 'color' }
+  'opacity': { columns: { nodes: 'node.opacity', edges: 'edge.opacity' }, kind: 'scalar', tier: 'paint' },
+  'background-color': { columns: { nodes: 'node.fillColor' }, kind: 'color', tier: 'paint' },
+  'border-color': { columns: { nodes: 'node.borderColor' }, kind: 'color', tier: 'paint' },
+  'line-color': { columns: { edges: 'edge.lineColor' }, kind: 'color', tier: 'paint' },
+  'border-width': { columns: { nodes: 'node.borderWidth' }, kind: 'scalar', tier: 'geometry' }
 };
 
 const normalizeProp = ( prop: string ): string => prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
@@ -115,12 +133,10 @@ export interface AnimateOptions {
 }
 
 interface CompiledStyle {
+  prop: string;
   channel: StyleChannel;
   toScalar?: number;
   toColor?: RGBA;
-  /** captured start value per ref (parallel to `refs`) */
-  fromScalar?: number[];
-  fromColor?: RGBA[];
 }
 
 /** Easing ids shared with the GPU tween kernel (gpu-tween.mts). */
@@ -129,14 +145,68 @@ export const EASING_IDS: Record<string, number> = {
   'ease-in-sine': 5, 'ease-out-sine': 6, 'ease-in-out-sine': 7
 };
 
+export type WriteKind = 'position' | 'scalar' | 'color';
+
+/**
+ * One column's worth of resolved tween data, captured once at start.
+ *
+ * `data` is what both executors read.  Per slot: position `(fx, fy, tx,
+ * ty)`; scalar `(from, to)`; colour two OKLab vec4s `(L, a, b, alpha)`,
+ * alpha normalized — pre-converted on the CPU so the kernel only needs the
+ * OKLab→sRGB direction it already has, and so both sides interpolate the
+ * exact same numbers.
+ */
+export interface ChannelWrite {
+  column: ColumnId;
+  kind: WriteKind;
+  /** the column has no CPU consumer, so a GPU tween may own it outright */
+  paint: boolean;
+  /** parallel to `slots`; carries the generation for liveness checks */
+  refs: Ref[];
+  slots: Uint32Array;
+  data: Float32Array;
+}
+
 const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
 
-const lerpColor = ( a: RGBA, b: RGBA, t: number ): RGBA => [
-  Math.round( lerp( a[ 0 ], b[ 0 ], t ) ),
-  Math.round( lerp( a[ 1 ], b[ 1 ], t ) ),
-  Math.round( lerp( a[ 2 ], b[ 2 ], t ) ),
-  Math.round( lerp( a[ 3 ], b[ 3 ], t ) )
-];
+/** Floats per slot in `ChannelWrite.data`, by kind. */
+export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8 };
+
+const blankWrite = ( column: ColumnId, kind: WriteKind, paint: boolean, refs: Ref[] ): ChannelWrite => ( {
+  column, kind, paint, refs,
+  slots: Uint32Array.from( refs, r => r.slot ),
+  data: new Float32Array( refs.length * STRIDE[ kind ] )
+} );
+
+const readScalar = ( store: GraphStore, column: ColumnId, slot: number ): number =>
+  ( store.column( column ) as Float32Array )[ slot ];
+
+const readColor = ( store: GraphStore, column: ColumnId, slot: number ): RGBA => {
+  const bytes = store.column( column ) as Uint8Array;
+  const i = slot * 4;
+
+  return [ bytes[ i ], bytes[ i + 1 ], bytes[ i + 2 ], bytes[ i + 3 ] ];
+};
+
+/** Write an sRGB byte tuple into `out` at `i` as OKLab + normalized alpha. */
+const packOklab = ( out: Float32Array, i: number, rgba: RGBA ): void => {
+  const [ L, a, b ] = srgbToOklab( rgba[ 0 ], rgba[ 1 ], rgba[ 2 ] );
+
+  out[ i ] = L;
+  out[ i + 1 ] = a;
+  out[ i + 2 ] = b;
+  out[ i + 3 ] = rgba[ 3 ] / 255;
+};
+
+/** Interpolate one colour slot of `data` in OKLab, back to sRGB bytes. */
+const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
+  const [ r, g, b ] = oklabToSrgb(
+    lerp( data[ i ], data[ i + 4 ], e ),
+    lerp( data[ i + 1 ], data[ i + 5 ], e ),
+    lerp( data[ i + 2 ], data[ i + 6 ], e ) );
+
+  return [ r, g, b, Math.round( lerp( data[ i + 3 ], data[ i + 7 ], e ) * 255 ) ];
+};
 
 /**
  * One element (or viewport) animation.  `refs` is empty for a viewport
@@ -148,6 +218,7 @@ export class Animation {
   readonly refs: Ref[];
   readonly isViewport: boolean;
   private store: GraphStore;
+  private styleEngine: StyleEngine | null;
   private viewport: Viewport | null;
   private duration: number;
   private easing: Easing;
@@ -160,13 +231,16 @@ export class Animation {
 
   private startTime: number | null = null; // set on first post-delay tick
   private started = false;
-  private fromPos: Position[] | null = null; // per ref
+  private captured = false;
+  private writes: ChannelWrite[] = [];
   private fromPan: Position | null = null;
   private fromZoom: number | null = null;
   private _done = false;
   private resolvers: ( () => void )[] = [];
   readonly durationMs: number;
   readonly easingId: number;
+  /** a custom easing function can't be offloaded (the kernel knows ids only) */
+  private readonly easingOffloadable: boolean;
   /** set when the renderer's GPU tween runtime drives this animation */
   gpuDriven = false;
   /** batch id in the GPU tween runtime (null until registered) */
@@ -174,9 +248,11 @@ export class Animation {
 
   constructor(
     store: GraphStore, viewport: Viewport | null,
-    refs: Ref[], isViewport: boolean, opts: AnimateOptions
+    refs: Ref[], isViewport: boolean, opts: AnimateOptions,
+    styleEngine: StyleEngine | null = null
   ){
     this.store = store;
+    this.styleEngine = styleEngine;
     this.viewport = viewport;
     this.refs = refs;
     this.isViewport = isViewport;
@@ -184,6 +260,7 @@ export class Animation {
     this.durationMs = this.duration;
     this.easing = resolveEasing( opts.easing );
     this.easingId = typeof opts.easing === 'string' ? ( EASING_IDS[ opts.easing ] ?? 1 ) : 1;
+    this.easingOffloadable = typeof opts.easing !== 'function';
     this.delay = Math.max( 0, opts.delay ?? 0 );
     this.position = opts.position ?? null;
     this.pan = opts.pan ?? null;
@@ -203,8 +280,8 @@ export class Animation {
       const value = ( opts.style as Record<string, unknown> )[ prop ];
 
       this.style.push( channel.kind === 'color'
-        ? { channel, toColor: parseColor( value ) }
-        : { channel, toScalar: parseNumber( value ) } );
+        ? { prop: norm, channel, toColor: parseColor( value ) }
+        : { prop: norm, channel, toScalar: parseNumber( value ) } );
     }
   }
 
@@ -253,44 +330,51 @@ export class Animation {
     this.finish();
   }
 
-  /** Whether this animation only tweens node position (the GPU-eligible case). */
-  get positionOnly(): boolean {
-    return this.position != null && this.style.length === 0 && !this.isViewport
-      && this.refs.every( r => r.group === 'nodes' );
+  /**
+   * Whether the GPU tween runtime can drive this animation outright.
+   * All-or-nothing: a single non-offloadable channel keeps the whole
+   * animation on the CPU, so a column is never half-owned.  Position
+   * qualifies under the round-9 lease (cull reads the tweened positions
+   * on-GPU); paint qualifies because nothing on the CPU reads it; geometry
+   * style channels and the viewport do not.
+   */
+  get gpuEligible(): boolean {
+    if( this.isViewport || !this.easingOffloadable ){ return false; }
+
+    if( this.position == null && this.style.length === 0 ){ return false; } // a bare delay
+
+    return this.style.every( s => s.channel.tier === 'paint' );
   }
 
   /**
-   * Build the per-slot from/to position buffer for the GPU tween runtime,
-   * capturing current positions.  Sets the start clock so CPU settle and
-   * GPU evaluation share it.
+   * Resolve this animation into per-column GPU batches, capturing start
+   * values.  Sets the start clock so CPU settle and GPU evaluation share
+   * it.
    */
-  gpuPositionData( now: number ): { slots: Uint32Array; fromTo: Float32Array } {
+  gpuBatches( now: number ): ChannelWrite[] {
     if( this.startTime == null ){ this.startTime = now + this.delay; }
 
     this.capture();
+    this.started = true;
 
-    const from = this.fromPos as Position[];
-    const slots = new Uint32Array( this.refs.length );
-    const fromTo = new Float32Array( this.refs.length * 4 );
-
-    for( let i = 0; i < this.refs.length; i++ ){
-      slots[ i ] = this.refs[ i ].slot;
-      fromTo[ i * 4 ] = from[ i ].x;
-      fromTo[ i * 4 + 1 ] = from[ i ].y;
-      fromTo[ i * 4 + 2 ] = this.position?.x ?? from[ i ].x;
-      fromTo[ i * 4 + 3 ] = this.position?.y ?? from[ i ].y;
-    }
-
-    return { slots, fromTo };
+    return this.writes;
   }
 
-  /** Start time in the shared clock (set once captured); ms. */
+  /** Pin the start clock on the first tick, so `startMs` reads true before capture. */
+  schedule( now: number ): void {
+    if( this.startTime == null ){ this.startTime = now + this.delay; }
+  }
+
+  /** Start time in the shared clock (set once scheduled); ms. */
   get startMs(): number { return this.startTime ?? 0; }
 
   /**
    * Settle a GPU-driven animation onto the CPU columns at `now` and finish
    * it — the tween is CPU-reproducible, so the exact current value is
-   * `lerp(from, to, ease(t))` (t = 1 on natural completion).
+   * `lerp(from, to, ease(t))` (t = 1 on natural completion).  Also how an
+   * interrupted animation lands: without it the CPU would keep the start
+   * values while the GPU buffers hold the last frame drawn, and nothing
+   * would ever dirty the column to reconcile them.
    */
   settleGpu( now: number ): void {
     if( this._done ){ return; }
@@ -305,26 +389,46 @@ export class Animation {
 
   // -- internals --
 
+  /**
+   * Resolve the animation into `ChannelWrite`s against the live elements.
+   * Idempotent — the first capture wins, so a queued animation still picks
+   * up the state its predecessor left, and a GPU-driven animation settles
+   * against the values it registered with.
+   */
   private capture(): void {
-    const store = this.store;
+    if( this.captured ){ return; }
+
+    this.captured = true;
 
     for( const s of this.style ){
-      const col = store.column( s.channel.column );
+      for( const group of GROUPS ){
+        const column = s.channel.columns[ group ];
 
-      if( s.channel.kind === 'scalar' ){
-        s.fromScalar = this.refs.map( r => ( col as Float32Array )[ r.slot ] );
-      } else {
-        const b = col as Uint8Array;
+        if( column == null ){ continue; }
 
-        s.fromColor = this.refs.map( r =>
-          [ b[ r.slot * 4 ], b[ r.slot * 4 + 1 ], b[ r.slot * 4 + 2 ], b[ r.slot * 4 + 3 ] ] as RGBA );
+        const refs = this.refs.filter( r => r.group === group && this.store.isCurrent( r ) );
+
+        if( refs.length === 0 ){ continue; }
+
+        const paint = s.channel.tier === 'paint';
+
+        this.writes.push( s.channel.kind === 'color'
+          ? this.colorWrite( column, refs, paint, () => s.toColor as RGBA )
+          : this.scalarWrite( column, refs, paint, s.toScalar as number ) );
+
+        // edge opacity is pre-folded into the stored arrow alpha (the arrow
+        // vertex stage has no spare storage binding for the opacity column),
+        // so tweening it has to carry the arrows along.  The fold is linear
+        // in opacity, so each arrow rides as a plain colour tween from its
+        // stored bytes to base × the target opacity.
+        if( column === 'edge.opacity' ){ this.captureArrowFold( refs, s.toScalar as number ); }
       }
     }
 
     if( this.position != null ){
-      const pos = store.column( 'node.position' ) as Float32Array;
+      const refs = this.refs.filter( r => r.group === 'nodes' && this.store.isCurrent( r ) );
 
-      this.fromPos = this.refs.map( r => ( { x: pos[ r.slot * 2 ], y: pos[ r.slot * 2 + 1 ] } ) );
+      if( refs.length > 0 ){ this.writes.push( this.positionWrite( refs ) ); }
     }
 
     if( this.viewport != null ){
@@ -333,35 +437,91 @@ export class Animation {
     }
   }
 
+  private positionWrite( refs: Ref[] ): ChannelWrite {
+    const pos = this.store.column( 'node.position' ) as Float32Array;
+    const write = blankWrite( 'node.position', 'position', true, refs );
+
+    for( let i = 0; i < refs.length; i++ ){
+      const x = pos[ refs[ i ].slot * 2 ];
+      const y = pos[ refs[ i ].slot * 2 + 1 ];
+
+      write.data[ i * 4 ] = x;
+      write.data[ i * 4 + 1 ] = y;
+      write.data[ i * 4 + 2 ] = this.position?.x ?? x;
+      write.data[ i * 4 + 3 ] = this.position?.y ?? y;
+    }
+
+    return write;
+  }
+
+  private scalarWrite( column: ColumnId, refs: Ref[], paint: boolean, to: number ): ChannelWrite {
+    const write = blankWrite( column, 'scalar', paint, refs );
+
+    for( let i = 0; i < refs.length; i++ ){
+      write.data[ i * 2 ] = readScalar( this.store, column, refs[ i ].slot );
+      write.data[ i * 2 + 1 ] = to;
+    }
+
+    return write;
+  }
+
+  private colorWrite( column: ColumnId, refs: Ref[], paint: boolean, to: ( ref: Ref ) => RGBA ): ChannelWrite {
+    const write = blankWrite( column, 'color', paint, refs );
+
+    for( let i = 0; i < refs.length; i++ ){
+      packOklab( write.data, i * 8, readColor( this.store, column, refs[ i ].slot ) );
+      packOklab( write.data, i * 8 + 4, to( refs[ i ] ) );
+    }
+
+    return write;
+  }
+
+  /** Arrow colour writes that keep the pre-folded alpha in step with an edge-opacity tween. */
+  private captureArrowFold( refs: Ref[], toOpacity: number ): void {
+    const engine = this.styleEngine;
+    const ends = engine?.arrowEnds;
+
+    if( engine == null || ends == null ){ return; }
+
+    for( const [ enabled, column, colorProp ] of [
+      [ ends.source, 'edge.sourceArrow', 'source-arrow-color' ],
+      [ ends.target, 'edge.targetArrow', 'target-arrow-color' ]
+    ] as const ){
+      if( !enabled ){ continue; }
+
+      this.writes.push( this.colorWrite( column, refs, true, ref => {
+        const [ r, g, b, baseAlpha ] = engine.arrowBase( ref, colorProp );
+
+        return [ r, g, b, Math.round( baseAlpha * toOpacity ) ];
+      } ) );
+    }
+  }
+
   private apply( e: number ): void {
     const store = this.store;
 
-    // each channel tweens per ref from its own captured start value
-    for( const s of this.style ){
-      for( let i = 0; i < this.refs.length; i++ ){
-        const ref = this.refs[ i ];
+    for( const w of this.writes ){
+      for( let i = 0; i < w.refs.length; i++ ){
+        const slot = w.slots[ i ];
 
-        if( !store.isCurrent( ref ) || ref.group !== s.channel.group ){ continue; }
+        if( !store.isCurrent( w.refs[ i ] ) ){ continue; }
 
-        if( s.channel.kind === 'scalar' && s.fromScalar != null && s.toScalar != null ){
-          store.setScalar( s.channel.column, ref.slot, lerp( s.fromScalar[ i ], s.toScalar, e ) );
-        } else if( s.channel.kind === 'color' && s.fromColor != null && s.toColor != null ){
-          const [ r, g, b, a ] = lerpColor( s.fromColor[ i ], s.toColor, e );
+        switch( w.kind ){
+          case 'position':
+            store.setPosition( slot,
+              lerp( w.data[ i * 4 ], w.data[ i * 4 + 2 ], e ),
+              lerp( w.data[ i * 4 + 1 ], w.data[ i * 4 + 3 ], e ) );
+            break;
+          case 'scalar':
+            store.setScalar( w.column, slot, lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ) );
+            break;
+          case 'color': {
+            const [ r, g, b, a ] = mixOklab( w.data, i * 8, e );
 
-          store.setColor( s.channel.column, ref.slot, r, g, b, a );
+            store.setColor( w.column, slot, r, g, b, a );
+            break;
+          }
         }
-      }
-    }
-
-    if( this.position != null && this.fromPos != null ){
-      for( let i = 0; i < this.refs.length; i++ ){
-        const ref = this.refs[ i ];
-
-        if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
-
-        const f = this.fromPos[ i ];
-
-        store.setPosition( ref.slot, lerp( f.x, this.position.x ?? f.x, e ), lerp( f.y, this.position.y ?? f.y, e ) );
       }
     }
 
@@ -398,7 +558,7 @@ export class Animation {
  */
 /** The renderer's GPU tween executor, seen by the manager. */
 export interface GpuTweenSink {
-  register( id: number, slots: Uint32Array, fromTo: Float32Array, start: number, duration: number, easingId: number ): void;
+  register( id: number, writes: readonly ChannelWrite[], start: number, duration: number, easingId: number ): void;
   unregister( id: number ): void;
 }
 
@@ -481,19 +641,24 @@ export class AnimationManager {
 
       if( q == null ){ continue; }
 
-      this.releaseGpu( q[ 0 ] );
-      q[ 0 ]?.stop( jumpToEnd );
+      if( q[ 0 ] != null ){ this.stopOne( q[ 0 ], jumpToEnd ); }
 
       if( clearQueue ){ this.queues.delete( key ); } else { q.shift(); if( q.length === 0 ){ this.queues.delete( key ); } }
     }
   }
 
-  /** Release a GPU-driven animation from the sink (before a CPU stop/settle). */
-  private releaseGpu( ani: Animation | undefined ): void {
-    if( ani?.gpuId != null && this.sink != null ){
-      this.sink.unregister( ani.gpuId );
-      ani.gpuId = null;
-    }
+  /**
+   * Stop one animation.  A GPU-driven one settles instead of plain-stopping:
+   * its columns are leased to the device, so it has to write the value it
+   * actually reached back onto the CPU (v3 leaves a stopped animation where
+   * it got to) or the two would diverge with nothing to reconcile them.
+   */
+  private stopOne( ani: Animation, jumpToEnd: boolean ): void {
+    if( ani.gpuId == null ){ ani.stop( jumpToEnd ); return; }
+
+    this.sink?.unregister( ani.gpuId );
+    ani.gpuId = null;
+    ani.settleGpu( jumpToEnd ? ani.startMs + ani.durationMs : now() );
   }
 
   stopViewport( clearQueue: boolean, jumpToEnd: boolean ): void {
@@ -504,10 +669,10 @@ export class AnimationManager {
 
   /**
    * Advance every queue head to `now`; dequeue finished animations so the
-   * next queued one starts on the following tick.  Position animations
-   * route to the GPU sink when one is attached (registered once, driven
-   * on-device, completion detected here from the shared clock).  Returns
-   * true if any animation remains active.
+   * next queued one starts on the following tick.  Position and paint
+   * animations route to the GPU sink when one is attached (registered once,
+   * driven on-device, completion detected here from the shared clock).
+   * Returns true if any animation remains active.
    */
   tick( now: number ): boolean {
     for( const [ key, q ] of this.queues ){
@@ -527,13 +692,18 @@ export class AnimationManager {
   private advanceHead( ani: Animation, now: number ): boolean {
     if( ani.done ){ return true; } // completed (possibly via another queue, or stopped)
 
-    if( this.sink != null && ani.positionOnly ){
+    if( this.sink != null && ani.gpuEligible ){
       if( ani.gpuId == null ){
-        const { slots, fromTo } = ani.gpuPositionData( now ); // sets the start clock
+        ani.schedule( now );
+
+        // capture after the delay, as the CPU path does
+        if( now < ani.startMs ){ return false; }
+
+        const writes = ani.gpuBatches( now );
 
         ani.gpuId = ++this.gpuCounter;
         ani.gpuDriven = true;
-        this.sink.register( ani.gpuId, slots, fromTo, ani.startMs, ani.durationMs, ani.easingId );
+        this.sink.register( ani.gpuId, writes, ani.startMs, ani.durationMs, ani.easingId );
       }
 
       if( now >= ani.startMs + ani.durationMs ){

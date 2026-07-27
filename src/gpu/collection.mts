@@ -741,8 +741,8 @@ export class GpuCollection {
    * `duration` ms, easing the normalized time.  Queues per element (a
    * second animate() on the same element runs after the first).  Returns
    * the collection; use `animation()` for a handle with `.promise()`.
-   * Animatable: position, node opacity, border-width, background-color,
-   * border-color, line-color.
+   * Animatable: position, opacity, background-color, border-color,
+   * line-color, border-width.  Colours interpolate in OKLab.
    */
   animate( opts: AnimateOptions ): this {
     this.animation( opts ).play();
@@ -753,7 +753,7 @@ export class GpuCollection {
   /** Build an animation for these elements without starting it (call `.play()`). */
   animation( opts: AnimateOptions ): AnimationHandle {
     const cy = this._cy;
-    const ani = new Animation( cy._store, null, this._liveRefs(), false, opts );
+    const ani = new Animation( cy._store, null, this._liveRefs(), false, opts, cy._styleEngine );
 
     return {
       play: () => { cy._animations.enqueue( ani ); return ani.promise(); },

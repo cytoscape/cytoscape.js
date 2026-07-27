@@ -865,13 +865,13 @@ export class StyleEngine {
   }
 
   /**
-   * The stored-arrow-bytes truth when the kernel owns edge paint: color
-   * (mapped or constant) with alpha folded by the (mapped or constant)
-   * opacity; a 'none' shape stays fully transparent.  Shapes are never
-   * kernel-owned (mapped shapes demote edge paint to the CPU), so the
-   * computed constants decide the gate.
+   * An arrow's colour *before* the edge-opacity fold — the base the stored
+   * bytes are derived from (`stored.a = base.a × opacity`).  A 'none' shape
+   * is fully transparent.  Animating edge opacity needs this: the stored
+   * alpha alone can't recover the base when the opacity it was folded with
+   * was 0.
    */
-  private foldedArrow( ref: Ref, colorProp: string ): RGBA {
+  arrowBase( ref: Ref, colorProp: string ): RGBA {
     const def = this.defs.edges;
     const computed = def.computed as Computed;
     const source = colorProp.startsWith( 'source' );
@@ -879,19 +879,31 @@ export class StyleEngine {
 
     if( shape !== 'triangle' ){ return NO_ARROW; }
 
-    const evalProp = ( prop: string, constant: number | RGBA ): number | RGBA => {
-      const bm = def.mappers.find( bm => bm.m.prop === prop );
+    return this.evalEdgeProp(
+      ref, colorProp, source ? computed.sourceArrowColor : computed.targetArrowColor ) as RGBA;
+  }
 
-      return bm == null
-        ? constant
-        : bindEvaluator( bm.m, this.store.data, 'edges', bm.channel.default( 'edges' ), this.readValue )( ref.slot );
-    };
-
-    const opacity = evalProp( 'opacity', computed.opacity ) as number;
-    const [ r, g, b, a ] = evalProp(
-      colorProp, source ? computed.sourceArrowColor : computed.targetArrowColor ) as RGBA;
+  /**
+   * The stored-arrow-bytes truth when the kernel owns edge paint: the base
+   * colour with alpha folded by the (mapped or constant) opacity.  Shapes
+   * are never kernel-owned (mapped shapes demote edge paint to the CPU), so
+   * the computed constants decide the gate.
+   */
+  private foldedArrow( ref: Ref, colorProp: string ): RGBA {
+    const [ r, g, b, a ] = this.arrowBase( ref, colorProp );
+    const computed = this.defs.edges.computed as Computed;
+    const opacity = this.evalEdgeProp( ref, 'opacity', computed.opacity ) as number;
 
     return [ r, g, b, Math.round( a * opacity ) ];
+  }
+
+  /** One edge prop for a slot: the mapper's value when mapped, else the constant. */
+  private evalEdgeProp( ref: Ref, prop: string, constant: number | RGBA ): number | RGBA {
+    const bm = this.defs.edges.mappers.find( bm => bm.m.prop === prop );
+
+    return bm == null
+      ? constant
+      : bindEvaluator( bm.m, this.store.data, 'edges', bm.channel.default( 'edges' ), this.readValue )( ref.slot );
   }
 
   /** Resolved label channels: the sidecar when labelled, else the sheet. */

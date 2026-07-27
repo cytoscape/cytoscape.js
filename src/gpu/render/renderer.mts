@@ -74,7 +74,9 @@ const EMPTY_DELTA = {
 /** columns whose changes never affect pick coverage (keep the pick cache) */
 const PICK_NEUTRAL_COLUMNS = new Set( [
   'node.fillColor', 'node.borderColor', 'node.borderWidth', 'node.opacity',
-  'edge.lineColor', 'edge.opacity'
+  'edge.lineColor', 'edge.opacity',
+  // arrows are never pickable, and the pick pass draws edges only
+  'edge.sourceArrow', 'edge.targetArrow'
 ] );
 
 /**
@@ -397,11 +399,11 @@ export class Renderer {
     // covered too; the runtime's first update() configures + fully evaluates
     this.mapperRuntime = new MapperRuntime( device, this.cy._store, this.cy._styleEngine, this.mirror );
 
-    // GPU position tweens: node.position buffer + mirror version (rebinds
-    // on realloc).  Attaching makes the animation manager route position
-    // animations here and cede its clock to this frame loop.
+    // GPU tweens: any mirrored column + the mirror version (rebinds on
+    // realloc).  Attaching makes the animation manager route position and
+    // paint animations here and cede its clock to this frame loop.
     this.tweenRuntime = new GpuTweenRuntime(
-      device, () => ( this.mirror as ColumnMirror ).buffer( 'node.position' ), () => ( this.mirror as ColumnMirror ).version );
+      device, id => ( this.mirror as ColumnMirror ).buffer( id ), () => ( this.mirror as ColumnMirror ).version );
     this.cy._animations.attachDriver( this.tweenRuntime );
     this.cy._store.takeMapperSpans();
 
@@ -463,8 +465,10 @@ export class Renderer {
     let delta: ReturnType<typeof store.takeDelta> | null = null;
 
     // advance animations on our frame clock (CPU tweens write columns →
-    // dirty; GPU position tweens register/settle here); node.position is
-    // GPU-owned while a tween batch runs so the mirror won't clobber it
+    // dirty; GPU tweens register/settle here).  A tweened column is
+    // GPU-owned while its batch runs so the mirror won't clobber it; the
+    // settle in tick() releases ownership before setTweenOwned below, so
+    // the settled values upload on this same frame
     this.cy._animations.tick( t0 );
     mirror.setTweenOwned( this.tweenRuntime?.ownedColumns() ?? [] );
 
@@ -527,16 +531,17 @@ export class Renderer {
 
       // GPU position tweens: their own compute pass, before cull — the
       // pass boundary is the barrier so cull (and the edge shaders) read
-      // the freshly-tweened node.position
-      if( this.tweenRuntime != null && this.tweenRuntime.active() ){
+      // the freshly-tweened node.position.  Paint tweens don't need it and
+      // ride the cull pass instead (see encodeCulls).
+      if( this.tweenRuntime != null && this.tweenRuntime.hasPositions() ){
         const tweenPass = encoder.beginComputePass( { label: 'cy-gpu:tween-pass' } );
 
-        this.tweenRuntime.encode( tweenPass, t0 );
+        this.tweenRuntime.encode( tweenPass, t0, 'position' );
         tweenPass.end();
       }
 
       // compact each group's visible slots + indirect args before drawing
-      this.encodeCulls( encoder, this.uniform as GPUBuffer, this.sceneCull, true );
+      this.encodeCulls( encoder, this.uniform as GPUBuffer, this.sceneCull, true, t0 );
 
       // render scale < 1: draw into a low-res offscreen target, then a
       // Catmull-Rom upscale pass resamples it to the swapchain
@@ -663,7 +668,8 @@ export class Renderer {
    */
   private encodeCulls(
     encoder: GPUCommandEncoder, uniform: GPUBuffer,
-    groups: { node?: CulledGroup; edge: CulledGroup; glyph?: CulledGroup }, timed: boolean
+    groups: { node?: CulledGroup; edge: CulledGroup; glyph?: CulledGroup }, timed: boolean,
+    now: number = 0
   ): void {
     const mirror = this.mirror as ColumnMirror;
     const store = this.cy._store;
@@ -693,8 +699,14 @@ export class Renderer {
 
     // mapper eval first (scene invocation only): paint channels must be
     // evaluated before the render pass reads them; pick frames skip it
-    // (paint never affects pick coverage)
-    if( timed ){ this.mapperRuntime?.encode( pass ); }
+    // (paint never affects pick coverage).  Paint tweens dispatch straight
+    // after, in the same pass — dispatches within a pass see each other's
+    // writes, so an animation's slots outrank a mapper writing the same
+    // channel for as long as it holds the lease
+    if( timed ){
+      this.mapperRuntime?.encode( pass );
+      this.tweenRuntime?.encode( pass, now, 'paint' );
+    }
 
     groups.node?.encode( pass, store.highWater( 'nodes' ) );
     groups.edge.encode( pass, store.highWater( 'edges' ) );

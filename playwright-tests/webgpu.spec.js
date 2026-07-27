@@ -126,11 +126,28 @@ const darkPixelsInBand = async ( page, x0, width, y ) => {
 
 test.describe( 'WebGPU renderer', () => {
 
+  // device-side validation (a bad shader, a bad bind group) only reaches the
+  // console: without this an invalid pipeline is a silent no-op and a spec can
+  // still pass on stale buffer contents
+  let deviceErrors = [];
+
   test.beforeEach( async ( { page } ) => {
-    page.on( 'console', msg => console.log( `[browser] ${msg.text()}` ) );
+    deviceErrors = [];
+
+    page.on( 'console', msg => {
+      const text = msg.text();
+
+      console.log( `[browser] ${text}` );
+
+      if( /WGSL|is invalid|Validation error/i.test( text ) ){ deviceErrors.push( text ); }
+    } );
 
     await page.setViewportSize( { width: 800, height: 600 } );
     await page.goto( PAGE );
+  } );
+
+  test.afterEach( () => {
+    expect( deviceErrors, 'WebGPU reported validation errors' ).toEqual( [] );
   } );
 
   test( 'hard error when WebGPU is unavailable', async ( { page } ) => {
@@ -883,6 +900,111 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.cy.$id( 'a' ).position().x ) ).toBeCloseTo( 120, 0 );
     expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( false );
   } );
+
+  test( 'GPU paint tween holds the lease: pixels fade while the CPU style stays stale', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'background-color': 'rgb(0,0,255)', 'width': 100, 'height': 100, 'shape': 'rectangle' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // blue node on the white page
+    expect( ( await pixelAt( page, center.x, center.y ) ).slice( 0, 3 ) ).toEqual( [ 0, 0, 255 ] );
+
+    // a long tween towards yellow, so we can sample mid-flight
+    await page.evaluate( () => window.cy.$id( 'a' ).animate( {
+      style: { 'background-color': 'rgb(255,255,0)' }, duration: 2000, easing: 'linear' } ) );
+    await page.waitForTimeout( 900 );
+    await waitFrames( page );
+
+    const mid = await pixelAt( page, center.x, center.y );
+
+    // the paint has visibly moved off blue (≈[93,180,206] at t=0.45)
+    expect( mid[ 0 ] ).toBeGreaterThan( 30 );
+    expect( mid[ 2 ] ).toBeLessThan( 245 );
+
+    // ...and it went through OKLab, not per-channel sRGB: at any point on the
+    // blue→yellow OKLab path green leads red (sRGB would keep them equal)
+    expect( mid[ 1 ] ).toBeGreaterThan( mid[ 0 ] );
+
+    // but the CPU column is still the start colour: the device owns
+    // node.fillColor for the flight, so style() reads are stale
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).style( 'background-color' ) ) )
+      .toBe( 'rgb(0,0,255)' );
+
+    // finishing settles the exact target onto the CPU columns, and the mapper
+    // pass has nothing to reclaim here (a constant, not a mapping)
+    await page.evaluate( () => window.cy.$id( 'a' ).animation( {
+      style: { 'background-color': 'rgb(255,255,0)' }, duration: 1 } ).play() );
+    await waitFrames( page );
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).style( 'background-color' ) ) )
+      .toBe( 'rgb(255,255,0)' );
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( false );
+    expect( ( await pixelAt( page, center.x, center.y ) ).slice( 0, 3 ) ).toEqual( [ 255, 255, 0 ] );
+  } );
+
+  test( 'a paint tween outranks the mapper, and the mapper reclaims the channel on settle', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a', o: 1 }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'background-color': 'rgb(0,0,255)', 'width': 100, 'height': 100, 'shape': 'rectangle',
+        'opacity': { data: 'o', domain: [ 0, 1 ], range: [ 0, 1 ] }
+      } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // fully opaque blue: the mapper evaluates o=1
+    expect( ( await pixelAt( page, center.x, center.y ) )[ 2 ] ).toBeGreaterThan( 200 );
+
+    // the tween and the mapper both target node.opacity every frame; the tween
+    // is encoded after the eval dispatch in the same pass, so it wins
+    await page.evaluate( () => window.cy.$id( 'a' ).animate( {
+      style: { opacity: 0 }, duration: 2000, easing: 'linear' } ) );
+    await page.waitForTimeout( 700 );
+    await waitFrames( page );
+
+    const mid = await pixelAt( page, center.x, center.y );
+
+    expect( mid[ 0 ] ).toBeGreaterThan( 40 ); // white bleeding through
+    expect( mid[ 0 ] ).toBeLessThan( 220 );
+
+    // stopping releases the lease, and the settle's CPU write dirties an owned
+    // column — which is exactly the mapper's reclaim trigger, so the mapped
+    // value comes straight back with no extra machinery
+    await page.evaluate( () => window.cy.$id( 'a' ).stop() );
+    await waitFrames( page );
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( false );
+    expect( ( await pixelAt( page, center.x, center.y ) )[ 2 ] ).toBeGreaterThan( 200 );
+
+    // and the reclaimed channel still tracks data writes on the GPU
+    await page.evaluate( async () => {
+      await new Promise( resolve => {
+        window.cy.one( 'render', () => resolve() );
+        window.cy.$id( 'a' ).data( 'o', 0.1 );
+      } );
+    } );
+    await waitFrames( page );
+
+    expect( ( await pixelAt( page, center.x, center.y ) )[ 0 ] ).toBeGreaterThan( 200 );
+  } );
+
 
   test( 'mapped colors render the OKLab interpolation the getters report', async ( { page } ) => {
     await page.goto( PAGE );

@@ -18,6 +18,36 @@ Bindings (@group(0)):
 /** uniform-buffer program capacity (1 KB at 64 B each; plenty per group) */
 export const MAX_PROGRAMS = 16;
 
+/**
+ * OKLab → sRGB, the eval direction (keep in sync with style-schemes.mts,
+ * whose CPU version is fround-staged to match this step for step).  Shared
+ * with the GPU tween kernel, which interpolates colours in the same space.
+ */
+export const OKLAB_TO_SRGB_WGSL = `
+fn linearToSrgbNorm(c: vec3f) -> vec3f {
+  let lo = c * 12.92;
+  let hi = 1.055 * pow(max(c, vec3f(0.0)), vec3f(1.0 / 2.4)) - 0.055;
+
+  return clamp(select(hi, lo, c <= vec3f(0.0031308)), vec3f(0.0), vec3f(1.0));
+}
+
+fn oklabToSrgbNorm(lab: vec3f) -> vec3f {
+  let l_ = lab.x + 0.3963377774 * lab.y + 0.2158037573 * lab.z;
+  let m_ = lab.x - 0.1055613458 * lab.y - 0.0638541728 * lab.z;
+  let s_ = lab.x - 0.0894841775 * lab.y - 1.2914855480 * lab.z;
+  let l = l_ * l_ * l_;
+  let m = m_ * m_ * m_;
+  let s = s_ * s_ * s_;
+  let lin = vec3f(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+  );
+
+  return linearToSrgbNorm(lin);
+}
+`;
+
 const EVAL_COMMON = `
 struct MapperProgram {
   head: vec4u,     // target, kind, flags, dataBase
@@ -155,31 +185,7 @@ fn evalProgram(p: MapperProgram, slot: u32) -> vec4f {
   return a + (b - a) * iu.y;
 }
 
-// -- color output: OKLab → sRGB (keep in sync with style-schemes.mts) --
-
-fn linearToSrgbNorm(c: vec3f) -> vec3f {
-  let lo = c * 12.92;
-  let hi = 1.055 * pow(max(c, vec3f(0.0)), vec3f(1.0 / 2.4)) - 0.055;
-
-  return clamp(select(hi, lo, c <= vec3f(0.0031308)), vec3f(0.0), vec3f(1.0));
-}
-
-fn oklabToSrgbNorm(lab: vec3f) -> vec3f {
-  let l_ = lab.x + 0.3963377774 * lab.y + 0.2158037573 * lab.z;
-  let m_ = lab.x - 0.1055613458 * lab.y - 0.0638541728 * lab.z;
-  let s_ = lab.x - 0.0894841775 * lab.y - 1.2914855480 * lab.z;
-  let l = l_ * l_ * l_;
-  let m = m_ * m_ * m_;
-  let s = s_ * s_ * s_;
-  let lin = vec3f(
-    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
-    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
-  );
-
-  return linearToSrgbNorm(lin);
-}
-
+${OKLAB_TO_SRGB_WGSL}
 /**
  * Resolve a program's evaluated vec4 to packed rgba8 bytes.  OKLab
  * programs convert; FLAG_SRGB programs (srgb interpolation, discrete

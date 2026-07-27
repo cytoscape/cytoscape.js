@@ -194,50 +194,74 @@ each is deliberate, not a pass-1 deferral:
   promoting to mixed).  Headless or adapterless instances run the whole
   DSL eagerly on the CPU — the kernel is an optimization layer, not a
   requirement.
-- **Animation: CPU-canonical, with a GPU position fast path under a
-  transient lease.**  An animation tweens element style/position (or the
-  viewport) from captured start values to explicit targets over a
+- **Animation: CPU-canonical, with a GPU fast path for position and paint
+  under a transient lease.**  An animation tweens element style/position
+  (or the viewport) from captured start values to explicit targets over a
   duration, easing normalized time (`eles.animate/animation/animated/
   stop/delay`, `cy.animate` for the viewport).  Because a tween is a
   *pure function of time*, it is CPU-reproducible — the CPU is always the
   reference (works headless, Node-testable), and there is **no readback**
   (a settle/stop re-derives the exact current value on the CPU).
+  - **One capture, two executors.**  `capture()` snapshots start values
+    into per-channel `ChannelWrite`s (column, kind, slots, packed
+    from/to) *once*; the CPU tick and the GPU kernels then consume the
+    same numbers, so the two executors agree by construction rather than
+    by parallel implementations.
   - **CPU path**: each tick writes the store columns (dirty → redraw).
-    The default headless path, and the path for paint/size tweens.
-  - **GPU position fast path** (`render/gpu-tween.mts`): when a renderer
-    is present, position animations offload to a compute pass — per-slot
-    from/to uploaded once, a `now` uniform bumped per frame, and
-    `node.position = mix(from, to, ease(t))` evaluated on-device before
-    cull (its own pass, so the barrier lets cull and the edge shaders
-    read the tweened positions; edges follow for free).  Per-frame CPU
-    cost is ~zero (no tween loop, no column upload) — the layout-
-    transition-at-scale case.
-  - **Transient lease**: `node.position` is GPU-owned while a tween runs
-    (the mirror skips its CPU uploads), so sync reads (`position()`,
-    pick, extent) are a stale mirror during the animation; on
-    completion/stop the CPU settles the exact final value and reclaims
-    ownership.  **Grabbing is forbidden while an element animates**
+    The default headless path, and the path for geometry tweens.
+  - **GPU fast path** (`render/gpu-tween.mts`): when a renderer is
+    present, three kernels (`position`/`scalar`/`color`) evaluate
+    `mix(from, to, ease(t))` on-device — per-slot from/to uploaded once, a
+    per-batch params buffer holding `{start, duration, now, easingId}`
+    bumped per frame.  Per-frame CPU cost is ~zero (no tween loop, no
+    column upload) — the layout-transition-and-fade-at-scale case.
+    Dispatch counts come from WGSL `arrayLength(&slots)`, *not* a uniform:
+    `queue.writeBuffer` is ordered against submitted command buffers, not
+    against dispatches inside one, so a per-dispatch value cannot live in
+    a shared uniform.
+  - **Two tiers decide what may offload.**  *Position* runs in its own
+    pre-cull pass, so the pass barrier lets cull and the edge shaders read
+    the tweened positions (edges follow for free).  *Paint* (`opacity`,
+    fill/border/line color, and the arrow colors) is encoded **inside the
+    cull pass after `mapperRuntime.encode()`**: dispatches in one pass
+    observe prior dispatches' writes, so a live tween wins the channel
+    over the mapper eval kernel.  *Geometry* (`width`/`height`,
+    `border-width`, `edge.width`) stays CPU: it is read by cull, CPU pick,
+    and every columnar scan (`width()`/`height()`, `boundingBox`/fit, box
+    select), so a GPU-owned size tween reopens the store→style layering
+    seam R8.5 flagged and belongs with that geometry work.  Eligibility is
+    **all-or-nothing per animation** (`gpuEligible`), so a column is never
+    half-owned; a custom easing *function* is also ineligible, since only
+    the named easings exist in WGSL.
+  - **Transient lease**: a tweened column is GPU-owned while the tween
+    runs (the mirror skips its CPU uploads), so sync reads are a stale
+    mirror during the animation — `position()`/pick/extent for position,
+    `style('background-color')` for paint.  On completion *or* stop the
+    CPU settles the value it reached and reclaims ownership; the settle's
+    write dirties the column, which is already the mapper's re-evaluation
+    trigger, so a mapped channel reclaims itself with no extra machinery.
+    **Grabbing is forbidden while an element animates**
     (`pointer.canDrag` consults `isAnimating`), removing the two-way
     drag-feedback boundary.  The renderer drives the frame clock while
     animations are active (the manager cedes its auto-loop).
-  - Animatable today: `position`, node `opacity`, `border-width`,
-    `background/border/line-color` — the coupling-free channels; size
-    (width/height circle-collapse) and arrow-folded channels are a
-    follow-up.  Colors tween per-channel in sRGB.  Only position has the
-    GPU fast path so far; paint/size tween on the CPU path.
-  - **Paint tween next; size tween is a geometry-tier project.**  The GPU
-    tween runtime extends cleanly to *paint* (`node.opacity`, fill/border/
-    line color, `edge.opacity`) — those channels have **no CPU consumer**
-    (nothing in cull, CPU pick, or a columnar scan reads paint, which is
-    why they went GPU-evaluable in the mapper split), so a paint tween can
-    own its column with no staleness risk; the work is only the wider
-    `fromTo` layout for color and an ownership-precedence rule where a
-    tween must win over the mapper eval kernel for the same channel.
-    *Size* (`width`/`height`/`border-width`, `edge.width`) is **not** a
-    peer of paint: it is geometry, read by cull, CPU pick, and every
-    columnar scan (`width()`/`height()`, `boundingBox`/fit, box select),
-    so a GPU-owned size tween reopens the same store→style layering seam
-    R8.5 flagged and belongs with that geometry work, not with paint.
+  - **Colors tween in OKLab**, matching what color mappers already do by
+    default — one perceptual color model across the library rather than a
+    mapper/animation split.  Endpoints are converted on the CPU and packed
+    as two `vec4f` (L, a, b, alpha), so the kernel needs only the
+    OKLab→sRGB direction it already shares with the mapper kernel and both
+    executors mix identical numbers.  This deliberately diverges from v3,
+    which tweened per-channel in sRGB.
+  - Animating `edge.opacity` also tweens the arrow colors, because the
+    arrow vertex stage is at WebGPU's base 8-storage-buffer limit and so
+    edge opacity is *pre-folded* into stored arrow alpha
+    (`stored.a = base.a × opacity`).  The fold is linear in opacity, so
+    each arrow rides along as a plain color tween to `base × toOpacity`.
+    The base comes from `StyleEngine.arrowBase()`, not the stored bytes,
+    which cannot recover it when the folded opacity was 0.
+  - Animatable today: `position`, `opacity` (both groups), node
+    `background-color`/`border-color`, `edge.line-color`, node
+    `border-width`.  Size (width/height circle-collapse) is a follow-up
+    with the geometry seam.
 - **Synchronous reads reflect writes; staleness is scoped to motion,
   never to a frame.**  A frame-stale read contract was considered
   (let the GPU own expensive geometry and read back a frame later) and
@@ -330,9 +354,8 @@ the predicate, while live state reads report false.
 
 Out of scope (deferred): compound nodes, graph algorithms,
 string-formatting label mappers beyond the passthrough, and the GPU
-tween fast path for paint/size channels (position already offloads;
-the CPU path covers the rest — paint is the clean next extension, size
-is a geometry-tier project, see the design decisions above).  Multiline
+tween fast path for *size* channels (position and paint offload today;
+size is a geometry-tier project, see the design decisions above).  Multiline
 labels and bundled bezier edges are a v4 direction (single-line labels
 and straight edges today); both are the *expensive GPU-computed
 geometry* tier — dual CPU/WGSL implementations with a conservative CPU

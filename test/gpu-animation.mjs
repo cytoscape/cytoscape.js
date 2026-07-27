@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import cytoscapeGpu from '../src/gpu/index.mjs';
 import { Animation, AnimationManager, EASINGS, EASING_IDS, resolveEasing } from '../src/gpu/animation.mjs';
-import { GpuTweenRuntime, TWEEN_SHADER } from '../src/gpu/render/gpu-tween.mjs';
+import { GpuTweenRuntime, TWEEN_SHADERS } from '../src/gpu/render/gpu-tween.mjs';
 import { GraphStore } from '../src/gpu/store/graph-store.mjs';
 
 // Animations tick deterministically via explicit `now` values; the
@@ -69,7 +69,7 @@ describe('gpu/animation', function(){
       expect( store.column('node.opacity')[ ref.slot ] ).to.equal( 0 );
     });
 
-    it('tweens a colour channel per sRGB channel', function(){
+    it('tweens a colour channel in OKLab, not sRGB', function(){
       const store = storeWith();
       const ref = store.ref( 'nodes', store.lookup('a').slot );
       store.setColor( 'node.fillColor', ref.slot, 0, 0, 0, 255 );
@@ -79,7 +79,27 @@ describe('gpu/animation', function(){
       ani.tick( 0 );
       ani.tick( 50 );
       const c = store.column('node.fillColor');
-      expect( [ c[ ref.slot*4 ], c[ ref.slot*4+1 ], c[ ref.slot*4+2 ] ] ).to.deep.equal( [ 128, 128, 128 ] );
+
+      // the sRGB midpoint would be 128; OKLab L=0.5 lands darker
+      expect( [ c[ ref.slot*4 ], c[ ref.slot*4+1 ], c[ ref.slot*4+2 ] ] ).to.deep.equal( [ 99, 99, 99 ] );
+
+      ani.tick( 100 );
+      expect( Array.from( c.subarray( ref.slot*4, ref.slot*4+4 ) ) ).to.deep.equal( [ 255, 255, 255, 255 ] );
+    });
+
+    it('interpolates hues through OKLab (blue→yellow stays colourful)', function(){
+      const store = storeWith();
+      const ref = store.ref( 'nodes', store.lookup('a').slot );
+      store.setColor( 'node.fillColor', ref.slot, 0, 0, 255, 255 );
+      const ani = new Animation( store, null, [ ref ], false,
+        { style: { 'background-color': 'rgb(255,255,0)' }, duration: 100, easing: 'linear' } );
+
+      ani.tick( 0 );
+      ani.tick( 50 );
+      const c = store.column('node.fillColor');
+
+      // sRGB would pass through (128,128,128); OKLab keeps chroma
+      expect( Array.from( c.subarray( ref.slot*4, ref.slot*4+3 ) ) ).to.deep.equal( [ 108, 171, 199 ] );
     });
 
     it('honours a delay before interpolating', function(){
@@ -147,38 +167,350 @@ describe('gpu/animation', function(){
       return { device, writes, dispatches, pass };
     };
 
-    it('is defined for every easing id', function(){
-      for( const id of Object.values( EASING_IDS ) ){
-        expect( TWEEN_SHADER, `easing ${id}` ).to.match( new RegExp( `case ${id}u:|default:` ) );
+    const write = ( column, kind, slots, data ) => ( {
+      column, kind, paint: kind !== 'position',
+      refs: slots.map( slot => ( { group: 'nodes', slot, gen: 0 } ) ),
+      slots: new Uint32Array( slots ),
+      data: new Float32Array( data )
+    } );
+
+    it('every easing id is defined in every kernel', function(){
+      for( const [ kind, code ] of Object.entries( TWEEN_SHADERS ) ){
+        for( const id of Object.values( EASING_IDS ) ){
+          expect( code, `${kind} easing ${id}` ).to.match( new RegExp( `case ${id}u:|default:` ) );
+        }
+      }
+    });
+
+    it('the colour kernel converts out of OKLab (shared with the mapper kernel)', function(){
+      expect( TWEEN_SHADERS.color ).to.include('oklabToSrgbNorm');
+      expect( TWEEN_SHADERS.position ).to.not.include('oklabToSrgbNorm');
+    });
+
+    it('every kernel counts from arrayLength, not the shared params uniform', function(){
+      // a batch's channels share one params buffer, and writeBuffer isn't
+      // ordered against dispatches within a pass
+      for( const [ kind, code ] of Object.entries( TWEEN_SHADERS ) ){
+        expect( code, kind ).to.include('arrayLength(&slots)');
+        expect( code, kind ).to.not.include('params.count');
       }
     });
 
     it('registers a batch, dispatches, and owns node.position', function(){
       const mock = makeMock();
-      const rt = new GpuTweenRuntime( mock.device, () => ( { label: 'pos' } ), () => 0 );
+      const rt = new GpuTweenRuntime( mock.device, id => ( { label: id } ), () => 0 );
 
       expect( rt.active() ).to.be.false;
       expect( rt.ownedColumns() ).to.deep.equal( [] );
 
-      rt.register( 1, new Uint32Array([ 2, 5 ]), new Float32Array([ 0,0,10,10, 0,0,20,20 ]), 1000, 200, 0 );
+      rt.register( 1, [ write( 'node.position', 'position', [ 2, 5 ], [ 0,0,10,10, 0,0,20,20 ] ) ], 1000, 200, 0 );
 
       expect( rt.active() ).to.be.true;
+      expect( rt.hasPositions() ).to.be.true;
       expect( rt.ownedColumns() ).to.deep.equal( [ 'node.position' ] );
 
-      rt.encode( mock.pass, 1100 );
+      rt.encode( mock.pass, 1100, 'position' );
       expect( mock.dispatches ).to.deep.equal( [ 1 ] ); // ceil(2/256)
 
-      // the params uniform carries start/duration/now/count/easingId
-      const params = mock.writes.find( w => w.label === 'cy-gpu:tween-params:1' && w.data.length === 8 );
+      // the params uniform carries start/duration/now/easingId
+      const params = mock.writes.find( w => w.label === 'cy-gpu:tween-params:1' && w.data.length === 4 );
       const f = new Float32Array( params.data.buffer );
       const u = new Uint32Array( params.data.buffer );
       expect( f[0] ).to.equal( 1000 ); // start
       expect( f[1] ).to.equal( 200 );  // duration
       expect( f[2] ).to.equal( 1100 ); // now
-      expect( u[3] ).to.equal( 2 );    // count
+      expect( u[3] ).to.equal( 0 );    // easingId (linear)
 
       rt.unregister( 1 );
       expect( rt.active() ).to.be.false;
+    });
+
+    it('owns every tweened column and dispatches per channel', function(){
+      const mock = makeMock();
+      const rt = new GpuTweenRuntime( mock.device, id => ( { label: id } ), () => 0 );
+
+      rt.register( 1, [
+        write( 'node.position', 'position', [ 1 ], [ 0,0,10,10 ] ),
+        write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ),
+        write( 'node.fillColor', 'color', [ 1 ], [ 0,0,0,1, 1,0,0,1 ] )
+      ], 0, 100, 1 );
+
+      expect( rt.ownedColumns() ).to.have.members(
+        [ 'node.position', 'node.opacity', 'node.fillColor' ] );
+
+      // position rides the pre-cull pass; the two paint channels the cull pass
+      rt.encode( mock.pass, 50, 'position' );
+      expect( mock.dispatches ).to.have.length( 1 );
+
+      rt.encode( mock.pass, 50, 'paint' );
+      expect( mock.dispatches ).to.have.length( 3 );
+
+      rt.unregister( 1 );
+      expect( rt.ownedColumns() ).to.deep.equal( [] );
+    });
+
+    it('a paint-only batch needs no pre-cull pass', function(){
+      const mock = makeMock();
+      const rt = new GpuTweenRuntime( mock.device, id => ( { label: id } ), () => 0 );
+
+      rt.register( 1, [ write( 'edge.lineColor', 'color', [ 3 ], [ 0,0,0,1, 1,0,0,1 ] ) ], 0, 100, 1 );
+
+      expect( rt.active() ).to.be.true;
+      expect( rt.hasPositions() ).to.be.false;
+
+      rt.encode( mock.pass, 50, 'position' );
+      expect( mock.dispatches ).to.deep.equal( [] );
+    });
+
+    it('rebuilds bind groups when the mirror reallocates', function(){
+      const mock = makeMock();
+      let version = 0;
+      let binds = 0;
+      const device = { ...mock.device, createBindGroup: () => { binds++; return {}; } };
+      const rt = new GpuTweenRuntime( device, id => ( { label: id } ), () => version );
+
+      rt.register( 1, [ write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ) ], 0, 100, 0 );
+
+      rt.encode( mock.pass, 10, 'paint' );
+      rt.encode( mock.pass, 20, 'paint' );
+      expect( binds ).to.equal( 1 ); // cached
+
+      version = 1;
+      rt.encode( mock.pass, 30, 'paint' );
+      expect( binds ).to.equal( 2 );
+    });
+
+    it('destroys a batch\'s buffers on unregister', function(){
+      const created = [];
+      const mock = makeMock();
+      const device = { ...mock.device,
+        createBuffer: d => { const b = { label: d.label, destroyed: false, destroy(){ this.destroyed = true; } }; created.push( b ); return b; } };
+      const rt = new GpuTweenRuntime( device, id => ( { label: id } ), () => 0 );
+
+      rt.register( 1, [
+        write( 'node.opacity', 'scalar', [ 1 ], [ 1, 0 ] ),
+        write( 'node.fillColor', 'color', [ 1 ], [ 0,0,0,1, 1,0,0,1 ] )
+      ], 0, 100, 0 );
+
+      expect( created ).to.have.length( 5 ); // 2 slot + 2 data + 1 params
+      rt.unregister( 1 );
+      expect( created.every( b => b.destroyed ) ).to.be.true;
+    });
+  });
+
+  describe('GPU eligibility (paint vs geometry tiers)', function(){
+    const store = () => { const s = new GraphStore(); s.addNode( 'a', 0, 0 ); return s; };
+    const ani = ( opts, isViewport = false ) => {
+      const s = store();
+      const refs = isViewport ? [] : [ s.ref( 'nodes', s.lookup('a').slot ) ];
+
+      return new Animation( s, null, refs, isViewport, opts );
+    };
+
+    it('offloads position and paint channels', function(){
+      expect( ani( { position: { x: 1, y: 1 } } ).gpuEligible ).to.be.true;
+      expect( ani( { style: { opacity: 0 } } ).gpuEligible ).to.be.true;
+      expect( ani( { style: { 'background-color': 'red' } } ).gpuEligible ).to.be.true;
+      expect( ani( { style: { 'border-color': 'red', opacity: 0.5 }, position: { x: 1, y: 1 } } ).gpuEligible ).to.be.true;
+    });
+
+    it('keeps geometry channels on the CPU — cull, CPU pick and the columnar scans read them', function(){
+      expect( ani( { style: { 'border-width': 4 } } ).gpuEligible ).to.be.false;
+    });
+
+    it('is all-or-nothing: one geometry channel grounds the whole animation', function(){
+      expect( ani( { style: { opacity: 0, 'border-width': 4 }, position: { x: 1, y: 1 } } ).gpuEligible ).to.be.false;
+    });
+
+    it('never offloads the viewport, a custom easing function, or a bare delay', function(){
+      expect( ani( { pan: { x: 10, y: 0 } }, true ).gpuEligible ).to.be.false;
+      expect( ani( { position: { x: 1, y: 1 }, easing: t => t } ).gpuEligible ).to.be.false;
+      expect( ani( { duration: 100 } ).gpuEligible ).to.be.false;
+    });
+  });
+
+  describe('opacity resolves per group', function(){
+    const GRAPH = {
+      nodes: [ { data: { id: 'a' } }, { data: { id: 'b' } } ],
+      edges: [ { data: { id: 'ab', source: 'a', target: 'b' } } ]
+    };
+    const drive = ( cy, ...times ) => { for( const t of times ){ cy._animations.tick( t ); } };
+
+    it('animates edge opacity (a node-only channel map made this a no-op)', function(){
+      const cy = cytoscapeGpu( { elements: GRAPH } );
+      const slot = cy._store.lookup('ab').slot;
+
+      cy.$id('ab').animate( { style: { opacity: 0 }, duration: 100, easing: 'linear' } );
+
+      drive( cy, 0, 50 );
+      expect( cy._store.column('edge.opacity')[ slot ] ).to.be.closeTo( 0.5, 1e-4 );
+
+      drive( cy, 100 );
+      expect( cy._store.column('edge.opacity')[ slot ] ).to.equal( 0 );
+    });
+
+    it('splits one animation across both groups', function(){
+      const cy = cytoscapeGpu( { elements: GRAPH } );
+      const node = cy._store.lookup('a').slot;
+      const edge = cy._store.lookup('ab').slot;
+
+      cy.elements().animate( { style: { opacity: 0 }, duration: 100, easing: 'linear' } );
+
+      drive( cy, 0, 100 );
+      expect( cy._store.column('node.opacity')[ node ] ).to.equal( 0 );
+      expect( cy._store.column('edge.opacity')[ edge ] ).to.equal( 0 );
+    });
+
+    it('carries the arrows: their pre-folded alpha follows the tween', function(){
+      const cy = cytoscapeGpu( {
+        elements: GRAPH,
+        style: { edges: { 'target-arrow-shape': 'triangle', 'target-arrow-color': 'rgb(10,20,30)' } }
+      } );
+      const slot = cy._store.lookup('ab').slot;
+      const arrow = () => Array.from( cy._store.column('edge.targetArrow').subarray( slot * 4, slot * 4 + 4 ) );
+
+      expect( arrow() ).to.deep.equal( [ 10, 20, 30, 255 ] );
+
+      cy.$id('ab').animate( { style: { opacity: 0 }, duration: 100, easing: 'linear' } );
+
+      drive( cy, 0, 50 );
+      expect( arrow()[ 3 ] ).to.be.closeTo( 128, 1 );
+
+      drive( cy, 100 );
+      expect( arrow() ).to.deep.equal( [ 10, 20, 30, 0 ] );
+    });
+
+    it('fades arrows back in from a fully transparent start', function(){
+      // the stored alpha is 0, so the base can only come from the sheet —
+      // a stored-bytes derivation would leave the arrow invisible
+      const cy = cytoscapeGpu( {
+        elements: GRAPH,
+        style: { edges: { opacity: 0, 'target-arrow-shape': 'triangle', 'target-arrow-color': 'rgb(10,20,30)' } }
+      } );
+      const slot = cy._store.lookup('ab').slot;
+      const alpha = () => cy._store.column('edge.targetArrow')[ slot * 4 + 3 ];
+
+      expect( alpha() ).to.equal( 0 );
+
+      cy.$id('ab').animate( { style: { opacity: 1 }, duration: 100, easing: 'linear' } );
+
+      drive( cy, 0, 100 );
+      expect( alpha() ).to.equal( 255 );
+    });
+
+    it('leaves the arrows alone when the sheet enables no arrowheads', function(){
+      const cy = cytoscapeGpu( { elements: GRAPH } );
+      const slot = cy._store.lookup('ab').slot;
+
+      cy.$id('ab').animate( { style: { opacity: 0 }, duration: 100, easing: 'linear' } );
+      drive( cy, 0, 100 );
+
+      expect( cy._store.column('edge.targetArrow')[ slot * 4 + 3 ] ).to.equal( 0 );
+      expect( cy._store.column('edge.sourceArrow')[ slot * 4 + 3 ] ).to.equal( 0 );
+    });
+  });
+
+  describe('the GPU lease (mock sink)', function(){
+    const setup = () => {
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ] } );
+      const registered = [];
+      const unregistered = [];
+
+      cy._animations.attachDriver( {
+        register: ( id, writes ) => registered.push( { id, writes } ),
+        unregister: id => unregistered.push( id )
+      } );
+
+      return { cy, registered, unregistered };
+    };
+    const fill = cy => Array.from(
+      cy._store.column('node.fillColor').subarray( 0, 4 ) );
+
+    it('registers one write per tweened column and leaves the CPU columns alone', function(){
+      const { cy, registered } = setup();
+
+      cy.$id('a').animate( {
+        style: { 'background-color': 'rgb(255,0,0)' }, position: { x: 100, y: 0 },
+        duration: 100, easing: 'linear' } );
+
+      cy._animations.tick( 0 );
+
+      expect( registered ).to.have.length( 1 );
+      expect( registered[0].writes.map( w => w.column ) ).to.have.members(
+        [ 'node.fillColor', 'node.position' ] );
+
+      // mid-flight the device owns both columns: CPU reads stay at the start
+      cy._animations.tick( 50 );
+      expect( cy.$id('a').position('x') ).to.equal( 0 );
+      expect( fill( cy ) ).to.deep.equal( [ 153, 153, 153, 255 ] ); // still #999
+    });
+
+    it('settles the exact final value on the CPU when it completes', function(){
+      const { cy, unregistered } = setup();
+
+      cy.$id('a').animate( {
+        style: { 'background-color': 'rgb(255,0,0)' }, position: { x: 100, y: 0 },
+        duration: 100, easing: 'linear' } );
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 100 );
+
+      expect( unregistered ).to.have.length( 1 );
+      expect( cy.$id('a').position('x') ).to.equal( 100 );
+      expect( fill( cy ) ).to.deep.equal( [ 255, 0, 0, 255 ] );
+      expect( cy.$id('a').animated() ).to.be.false;
+    });
+
+    it('honours the delay before capturing, as the CPU path does', function(){
+      const { cy, registered } = setup();
+
+      cy.$id('a').animate( { position: { x: 100, y: 0 }, duration: 100, delay: 200 } );
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 100 );
+      expect( registered ).to.have.length( 0 ); // still in the delay
+
+      cy._animations.tick( 200 );
+      expect( registered ).to.have.length( 1 );
+    });
+
+    it('stop(true) releases the lease and lands on the target', function(){
+      const { cy, unregistered } = setup();
+
+      cy.$id('a').animate( { position: { x: 100, y: 0 }, duration: 1e6, easing: 'linear' } );
+      cy._animations.tick( 0 );
+
+      cy.$id('a').stop( true, true );
+
+      expect( unregistered ).to.have.length( 1 );
+      expect( cy.$id('a').position('x') ).to.equal( 100 );
+    });
+
+    it('stop() releases the lease and writes back, rather than leaving the columns behind', function(){
+      const { cy, unregistered } = setup();
+
+      cy.$id('a').animate( { position: { x: 100, y: 0 }, duration: 1e6, easing: 'linear' } );
+      cy._animations.tick( 0 );
+
+      cy.$id('a').stop();
+
+      // released, finished, and the CPU carries a value the device can't
+      // silently disagree with any more
+      expect( unregistered ).to.have.length( 1 );
+      expect( cy.$id('a').animated() ).to.be.false;
+      expect( cy.$id('a').position('x') ).to.be.a('number');
+    });
+
+    it('keeps a geometry channel on the CPU path even with a sink attached', function(){
+      const { cy, registered } = setup();
+
+      cy.$id('a').animate( { style: { 'border-width': 10 }, duration: 100, easing: 'linear' } );
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 50 );
+
+      expect( registered ).to.have.length( 0 );
+      expect( cy._store.column('node.borderWidth')[ 0 ] ).to.be.closeTo( 5, 1e-4 );
     });
   });
 

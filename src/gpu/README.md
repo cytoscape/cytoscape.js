@@ -805,8 +805,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   glyph runs from the model, so mutations made while headless render
   on re-mount.  Re-mounting to the same container is a no-op;
   a different container unmounts first.
-- No device-loss recovery: the instance goes dead and emits an `error`
-  event.
+- **Device-loss recovery** (round 10): an external device loss emits
+  `devicelost` and auto-recovers once — the core re-mounts a fresh
+  renderer against the same container (the model is CPU-canonical, so
+  columns, glyph runs and pipelines all rebuild), then emits
+  `devicerestored`.  If a loss lands while a recovery is in flight, or
+  the device can't be re-acquired, the instance goes headless-dead and
+  emits `error` (the previous behavior).
 
 ## Follow-up hooks
 

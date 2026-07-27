@@ -78,6 +78,7 @@ export class GpuCore {
   _pointer: { destroy(): void } | null;
   /** wired by the factory: (re)attaches a renderer + pointer to a container */
   _attachFn: ( ( container: HTMLElement ) => void ) | null;
+  private _recoveringDevice: boolean;
   _viewport: Viewport;
 
   /** resolves once the render pipeline is usable (immediately when headless) */
@@ -118,6 +119,7 @@ export class GpuCore {
     this._renderer = null;
     this._pointer = null;
     this._attachFn = null;
+    this._recoveringDevice = false;
     this._pool = { nodes: [], edges: [] };
     this._container = options.container ?? null;
     this._options = options;
@@ -1227,6 +1229,50 @@ export class GpuCore {
     this._attachFn( container );
 
     return this;
+  }
+
+  /**
+   * Device-loss recovery (round 10 policy): auto-recover once per loss —
+   * emit 'devicelost', re-mount a fresh renderer against the same
+   * container (the model is CPU-canonical, so everything rebuilds), then
+   * emit 'devicerestored'.  If a loss arrives while a recovery is already
+   * in flight, or re-acquisition fails, the instance goes headless-dead
+   * and emits 'error' (the pre-round-10 behavior).
+   */
+  _handleDeviceLost( message: string ): void {
+    if( this._destroyed ){ return; }
+
+    this.emit( { type: 'devicelost' }, [ message ] );
+
+    const container = this._container;
+
+    if( this._recoveringDevice || container == null || this._attachFn == null ){
+      this.unmount();
+      this.emit( { type: 'error' }, [ `WebGPU device lost: ${message}` ] );
+
+      return;
+    }
+
+    this._recoveringDevice = true;
+    this.unmount();
+
+    try {
+      this.mount( container );
+    } catch ( err ){
+      this._recoveringDevice = false;
+      this.emit( { type: 'error' }, [ `WebGPU device lost and could not recover: ${( err as Error ).message}` ] );
+
+      return;
+    }
+
+    this.ready.then( () => {
+      this._recoveringDevice = false;
+      this.emit( 'devicerestored' );
+    }, ( err: Error ) => {
+      this._recoveringDevice = false;
+      this.unmount();
+      this.emit( { type: 'error' }, [ `WebGPU device lost and could not recover: ${err.message}` ] );
+    } );
   }
 
   container(): HTMLElement | null {

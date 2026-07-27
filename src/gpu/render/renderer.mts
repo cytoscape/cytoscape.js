@@ -168,6 +168,8 @@ export class Renderer {
   private inFlightFrames: number;
   private labelLayer: LabelLayer | null;
   private onFontsLoadingDone: ( () => void ) | null = null;
+  /** wired by the factory: an external device loss hands recovery to the core */
+  onDeviceLost: ( ( message: string ) => void ) | null = null;
   private labelPipeline: LabelPipeline | null;
   private edgeLabelPipeline: LabelPipeline | null;
   private cullKernels: CullKernels | null;
@@ -313,6 +315,11 @@ export class Renderer {
 
     this.needsRedraw = true;
     this.schedule();
+  }
+
+  /** Test hook: destroy the device out from under the renderer (a real loss). */
+  _debugLoseDevice(): void {
+    this.device?.destroy();
   }
 
   destroy(): void {
@@ -705,8 +712,17 @@ export class Renderer {
 
   private async init(): Promise<void> {
     const { device, context, format } = await initGpuContext( this.canvas, info => {
+      // our own teardown destroys the device after flagging `destroyed`;
+      // anything else is a real external loss
+      if( this.destroyed ){ return; }
+
       this.isReady = false;
-      this.cy.emit( { type: 'error' }, [ `WebGPU device lost: ${info.message}` ] );
+
+      if( this.onDeviceLost != null ){
+        this.onDeviceLost( info.message );
+      } else {
+        this.cy.emit( { type: 'error' }, [ `WebGPU device lost: ${info.message}` ] );
+      }
     } );
 
     if( this.destroyed ){

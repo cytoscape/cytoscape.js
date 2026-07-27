@@ -4,8 +4,10 @@ WebGPU adapter/device acquisition and canvas configuration.
 `cytoscapeGpu()` already hard-errors synchronously when a container is given
 and `navigator.gpu` is missing; this module covers the async half: a null
 adapter rejects the instance's `.ready` promise with a clear message.
-Device loss is surfaced via the `onLost` callback — the instance goes dead
-(no recovery in pass 1).
+Device loss is surfaced via the `onLost` callback for every loss —
+including reason 'destroyed', so the *caller* distinguishes its own
+teardown (renderer.destroy() flags itself first) from an external loss,
+which the core recovers from by re-mounting (round 10).
 */
 
 export interface GpuContext {
@@ -40,9 +42,7 @@ export const initGpuContext = async (
   const device = await adapter.requestDevice( { requiredFeatures } );
 
   device.lost.then( info => {
-    if( info.reason !== 'destroyed' ){
-      onLost( info );
-    }
+    onLost( info );
   } );
 
   const context = canvas.getContext( 'webgpu' );

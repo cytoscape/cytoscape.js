@@ -1046,6 +1046,15 @@ Process (user-set):
 - Perf-relevant items run the matching `benchmark/gpu/` sweep and
   record numbers here.
 
+**Round complete (2026-07-27): all 17 items landed**, each as isolated
+commits with docs in-commit and the full verification gate per item.
+Net across the round: 1461 → 1629 Node tests, 33 → 44 `webgpu` + 7 → 14
+`webgpu-visual` Playwright specs (51 total), 7 new golden scenes, and
+the full v3 algorithm surface, four more layouts, viewport animation
+targets, data query predicates, ten node shapes, line styles, label
+visuals, arrow shapes, edge labels, the gesture set, mount/unmount and
+device-loss recovery in v4.
+
 Items, in execution order — CPU-first (banks autonomous wins with zero
 renderer risk), then shader/golden work, then interaction/lifecycle.
 Each entry converts into a "Landed" record as it ships:
@@ -1302,12 +1311,19 @@ Each entry converts into a "Landed" record as it ships:
   relabel/add while headless → mount → the moved node, its rebuilt
   label, and the headless-added node all render.  1629 Node + 47
   module tests, 50 Playwright specs green (serial).
-- [ ] **C3 Device-loss recovery** — proposed policy, to be recorded as
-  the decision when it lands: auto-recover **once per loss** —
-  re-acquire adapter/device, rebuild mirrors/pipelines/atlas from
-  CPU-canonical state, emit `devicelost` + `devicerestored`; if
-  re-acquisition fails, today's behavior (dead instance + `error`).
-  Playwright via `device.destroy()`.
+- [x] **C3 Device-loss recovery** — landed 2026-07-27, with the
+  proposed policy recorded as the decision: an external loss emits
+  `devicelost` and auto-recovers **once per loss** by re-mounting a
+  fresh renderer against the same container via C2's machinery (the
+  model is CPU-canonical, so mirrors/pipelines/glyph runs all
+  rebuild), then emits `devicerestored`; a loss during recovery or a
+  failed re-acquisition goes headless-dead + `error` (the previous
+  behavior).  Plumbing: `gpu-context` now surfaces *every* loss and
+  the renderer distinguishes its own teardown by its `destroyed` flag
+  (so `renderer.destroy()` stays silent); a `_debugLoseDevice()` test
+  hook destroys the device externally.  Playwright spec: lose the
+  device → `devicelost` → `devicerestored` → post-loss writes render.
+  1629 Node + 47 module tests, 51 Playwright specs green (serial).
 
 Deferred out of this round (logged, not built): compaction (below);
 autorotated edge labels; multiline labels; bezier edges; compounds;

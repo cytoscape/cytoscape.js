@@ -535,6 +535,38 @@ test.describe( 'WebGPU renderer', () => {
     expect( dark ).toBeGreaterThan( 50 );
   } );
 
+  test( 'device loss auto-recovers: devicelost, rebuild, devicerestored (round 10)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // destroy the device out from under the renderer: a real external loss
+    await page.evaluate( () => {
+      window.__lost = false;
+      window.__restored = false;
+      window.cy.on( 'devicelost', () => { window.__lost = true; } );
+      window.cy.on( 'devicerestored', () => { window.__restored = true; } );
+      window.cy.renderer()._debugLoseDevice();
+    } );
+
+    await expect.poll( () => page.evaluate( () => window.__lost ), { timeout: 5000 } ).toBe( true );
+    await expect.poll( () => page.evaluate( () => window.__restored ), { timeout: 10000 } ).toBe( true );
+
+    // the recovered pipeline renders the model, including post-loss writes
+    await page.evaluate( () => window.cy.$id( 'a' ).position( { x: 90, y: 0 } ) );
+    await waitFrames( page );
+    await waitFrames( page );
+
+    const moved = await pixelAt( page, center.x + 90, center.y );
+
+    expect( moved[0] ).toBeGreaterThan( 150 );
+    expect( moved[1] ).toBeLessThan( 100 );
+  } );
+
   test( 'gesture parity: cxttap family, dbltap, taphold (round 10)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

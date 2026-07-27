@@ -58,6 +58,7 @@ export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCo
       ...options.renderer
     } );
 
+    renderer.onDeviceLost = message => cy._handleDeviceLost( message );
     cy._pointer = new PointerHandler( cy, renderer );
     cy._renderer = renderer;
     cy.ready = renderer.ready.then( () => {

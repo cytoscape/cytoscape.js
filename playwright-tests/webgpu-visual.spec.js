@@ -9,9 +9,14 @@ Visual regression specs for the WebGPU prototype, in two families:
   project, which pins the SwiftShader software adapter so rasterization is
   deterministic across machines.  Regenerate after an intended visual
   change with:  UPDATE_GOLDENS=1 npx playwright test --project=webgpu-visual
-  Goldens are label-free: SDF glyphs come from a canvas-2D raster of OS
-  fonts, which is not cross-platform stable (label pixels are covered by
-  the WYSIWYG self-diff and the label specs in webgpu.spec.js).
+  Geometry goldens carry a tight bound.  The label golden uses the fixed
+  Open Sans web font (an OFL devDependency, pre-loaded before instance
+  creation so the lazily-caching atlas never rasters a fallback font) at
+  a looser bound: the one un-pinnable layer is Chrome's atlas raster,
+  which goes through CoreText on macOS vs FreeType on Linux — sub-pixel
+  edge differences the SDF pipeline shrinks but cannot erase.  If CI
+  proves the tolerance insufficient, per-platform golden suffixes are
+  the escape hatch.
 
 - **v3-vs-v4 parity**: the same fixture rendered by the classic canvas
   renderer and the GPU prototype in the same run, diffed with a tolerance
@@ -236,6 +241,49 @@ test.describe( 'WebGPU visual goldens', () => {
     await waitFrames( page );
 
     checkGolden( 'far-zoom-lod', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
+  test( 'golden: labels in the fixed web font (Open Sans)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the atlas caches lazily and forever: the font MUST be loaded before
+    // the instance exists, or fallback-font glyphs get cached instead
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'Alpha 1' }, position: { x: -100, y: -70 } },
+        { data: { id: 'beta-2' }, position: { x: 100, y: -70 } },
+        { data: { id: 'GAMMA_3' }, position: { x: -100, y: 50 } },
+        { data: { id: 'the quick brown fox' }, position: { x: 100, y: 50 } },
+        { data: { id: 'e1', source: 'Alpha 1', target: 'beta-2' } }
+      ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 30, 'background-color': '#dfe6e9',
+          'border-width': 1, 'border-color': '#b2bec3',
+          'label': { data: 'id' }, 'font-size': 14, 'color': '#2d3436',
+          'font-family': `'Open Sans', sans-serif`
+        },
+        edges: { 'width': 2 }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 160 }
+    } );
+    await waitFrames( page );
+
+    // looser bound than geometry goldens: the OS text rasterizer under the
+    // atlas differs per platform (see the header comment)
+    checkGolden( 'labels-open-sans', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
   } );
 
 } );

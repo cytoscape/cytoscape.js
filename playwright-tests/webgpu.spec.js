@@ -1327,6 +1327,59 @@ test.describe( 'WebGPU renderer', () => {
     expect( ratio ).toBeLessThanOrEqual( 0.001 );
   } );
 
+  test( 'font-family change re-rasters the atlas and re-lays-out labels live', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'width': 40, 'height': 40, 'background-color': '#ddd',
+        'label': 'Wide Label', 'font-size': 20, 'color': '#000'
+      } },
+      zoom: 1
+    } );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const shot = async () => decodePng( await page.evaluate( () => window.cy.png( { bg: '#fff' } ) ) );
+    const darkCount = png => {
+      let n = 0;
+
+      for( let i = 0; i < png.data.length; i += 4 ){
+        if( png.data[ i ] < 100 && png.data[ i + 1 ] < 100 && png.data[ i + 2 ] < 100 ){ n++; }
+      }
+
+      return n;
+    };
+
+    const before = await shot();
+
+    await page.evaluate( async () => {
+      await new Promise( resolve => {
+        window.cy.one( 'render', () => resolve() );
+        window.cy.style( { nodes: {
+          'width': 40, 'height': 40, 'background-color': '#ddd',
+          'label': 'Wide Label', 'font-size': 20, 'color': '#000',
+          'font-family': 'monospace'
+        } } );
+      } );
+    } );
+    await waitFrames( page );
+
+    const after = await shot();
+
+    // the label survives the swap...
+    expect( darkCount( before ) ).toBeGreaterThan( 100 );
+    expect( darkCount( after ) ).toBeGreaterThan( 100 );
+
+    // ...and its pixels changed (sans-serif vs monospace glyphs), which
+    // proves the atlas reset + full re-layout happened live — the only
+    // styled difference between the two renders is the font
+    const { ratio } = diffPngs( after, before, { threshold: 0.1 } );
+
+    expect( ratio ).toBeGreaterThan( 0.0005 );
+  } );
+
   test( 'png() export mid-animation snapshots the GPU-owned position', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

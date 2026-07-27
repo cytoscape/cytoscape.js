@@ -26,7 +26,14 @@ shader over every allocated slot.
   shared by the model (`store/`) and the renderer (`render/`) — change it
   first when the layout changes.
 - Manual testing: `npm run watch` → http://localhost:3333/webgpu/.
-  Browser tests: the `webgpu` Playwright project.
+  Browser tests: the `webgpu` Playwright project, plus the
+  `webgpu-visual` project — golden-image diffs (pixelmatch against PNGs
+  in `playwright-tests/goldens/`, pinned to the SwiftShader adapter so
+  the goldens are machine-independent; regenerate intended changes with
+  `UPDATE_GOLDENS=1`) and live v3-vs-v4 parity diffs
+  (`playwright-page/parity.html` renders both renderers side by side —
+  no v3 baselines are checked in).  A WYSIWYG self-diff spec pins
+  `png()` to the on-screen pixels.
 
 ## API scope (pass 1)
 
@@ -35,7 +42,8 @@ plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 `renderedExtent`, `size`), events (with the usual aliases +
 `onRender`/`offRender`; delegation via predicate functions), graph
 manipulation, `style()` (the `{ nodes, edges }` sheet), `layout()`/
-`makeLayout` (grid and preset), `pick()`,
+`makeLayout` (grid and preset), `pick()`, `png()`/`jpg()` (async image
+export — see the design decisions below),
 `renderer()`/`forceRender()`/`resize()`, graph-level
 `data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/
 `batchData`/`batching` — see below), `json()` (export-only),
@@ -347,9 +355,27 @@ each is deliberate, not a pass-1 deferral:
   really overlap that makes a *worse* figure — unreadable labels on a
   huge network are a data-density limit answered editorially (export
   resolution, label a subset, `min-zoomed-font-size`), not by a
-  coordinate system.  Open sub-decision (visibility, not sizing): whether
-  `min-zoomed-font-size` culls at **export scale** (self-consistent
-  figure, lean) or **screen zoom** (matches what was on screen).
+  coordinate system.  The label-visibility sub-decision is taken (round
+  9.6): LOD thresholds (`labelFadePx`, `labelMinPx`) evaluate at
+  **export scale** — a full/high-scale export is a self-consistent
+  figure, not a copy of the screen's label culling.
+- **Image export is async, WYSIWYG, and pixel-pinned.**  `cy.png()`/
+  `cy.jpg()` render the scene into an offscreen texture at the requested
+  viewport (the current view, or the graph bounds with `full`) and read
+  the pixels back — the one category where async is the design: rendered
+  pixels are genuinely GPU-only, unlike resolved-style reads, which stay
+  synchronous.  v3's option surface is kept (`bg`, `full`, `scale` or
+  `maxWidth`/`maxHeight`, `quality`, `output`), every output form
+  resolves through the returned promise, and jpg defaults `bg` to white
+  (JPEG has no alpha).  Exports are encoded inside the frame loop after
+  that frame's scene work, so they see exactly the state the screen
+  shows — including GPU-owned columns mid-tween (a mid-animation export
+  shows the tweened position the lease makes stale on the CPU).  They
+  always render at native resolution (the adaptive render scale never
+  applies), and label LOD evaluates at the export scale (above).  The
+  WYSIWYG guarantee is enforced by a Playwright self-diff: a viewport
+  export at scale 1 pixel-matches a screenshot of the live canvas.
+  Headless instances reject (there is no renderer to export from).
 - **GPU layouts: logged for later.**  A force layout is *stateful*
   (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
   cheaply CPU-reproducible — the GPU would be authoritative during a run
@@ -627,6 +653,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   finger left over after a pinch stays inert until lifted.  Like other
   viewport gestures, no hover/tap semantics apply mid-pinch.  Trackpad
   pinches arrive as ctrl+wheel and take the wheel path.
+- **Image export is promise-only**: `png()`/`jpg()` return promises for
+  every output form (a synchronous readback is impossible on WebGPU;
+  `'blob-promise'` is accepted as an alias of `'blob'`).  Output
+  dimensions are capped by the device's max texture size (typically
+  8192 px — the export throws rather than tiling; `maxWidth`/`maxHeight`
+  are the tool to stay under it), and a viewport export of a zero-sized
+  container throws.  `renderTo` is not implemented.
 - No device-loss recovery: the instance goes dead and emits an `error`
   event.
 

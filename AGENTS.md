@@ -59,6 +59,7 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
 - `npm test` matches CI closely: GitHub Actions installs dependencies, installs Playwright browsers, and runs `npm test`.
 - `npm run test:build` exercises the built bundle rather than source files; use it when a bug could be introduced by bundling or build-time transforms.
 - Playwright setup depends on a built UMD bundle and a local HTTP server. Use the existing scripts rather than inventing a parallel harness.
+- Visual regression coverage for the GPU prototype lives in the `webgpu-visual` Playwright project (`playwright-tests/webgpu-visual.spec.js`): golden-image diffs against PNGs checked into `playwright-tests/goldens/` plus live v3-vs-v4 parity diffs. After an intended visual change, regenerate goldens with `UPDATE_GOLDENS=1 npx playwright test --project=webgpu-visual` and commit the updated PNGs; never edit goldens by hand.
 
 ## Documentation notes
 - Documentation HTML is generated. Do not edit generated docs directly when the corresponding markdown or template source (i.e. `docmaker.json` and `template.html`) should be changed instead.

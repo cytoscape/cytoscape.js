@@ -31,6 +31,10 @@ export class LabelLayer {
 
   /** Rebuild glyph runs for label-dirty nodes and upload; no-op when clean. */
   process(): void {
+    // a font change arrives with every labelled slot already label-dirty,
+    // so the reset and the rebuild land in this same pass
+    this.atlas.setFont( this.store.labelFont );
+
     const dirty = this.store.takeLabelDirty();
 
     for( const slot of dirty ){

@@ -135,6 +135,8 @@ export class GlyphAtlas {
   sampler: GPUSampler;
   /** baseline offset from the top of a text block, SDF px */
   ascent: number;
+  /** CSS font-family list glyphs raster with (one font per atlas) */
+  fontFamily: string;
 
   private device: GPUDevice;
   private ctx: CanvasRenderingContext2D;
@@ -175,11 +177,32 @@ export class GlyphAtlas {
     }
 
     this.ctx = ctx;
-    ctx.font = `${SDF_FONT_SIZE}px sans-serif`;
     ctx.textBaseline = 'alphabetic';
     ctx.fillStyle = '#000';
 
-    const m = ctx.measureText( 'Mg' );
+    this.fontFamily = '';
+    this.ascent = 0;
+    this.setFont( 'sans-serif' );
+  }
+
+  /**
+   * Switch the atlas font: clear the glyph cache and restart packing.
+   * Reuses the texture object (bind groups survive); stale cells are
+   * overwritten as glyphs re-raster, and every glyph run rebuilds in the
+   * same label-dirty pass, so no run references old UVs.  No-op when the
+   * family is unchanged.
+   */
+  setFont( family: string ): void {
+    if( family === this.fontFamily ){ return; }
+
+    this.fontFamily = family;
+    this.ctx.font = `${SDF_FONT_SIZE}px ${family}`;
+    this.cache.clear();
+    this.penX = 0;
+    this.penY = 0;
+    this.full = false;
+
+    const m = this.ctx.measureText( 'Mg' );
 
     this.ascent = Math.ceil( m.fontBoundingBoxAscent ?? m.actualBoundingBoxAscent );
   }

@@ -54,6 +54,8 @@ export class GraphStore implements ModelView {
   private order: { nodes: OrderList; edges: OrderList };
   private labels: ( LabelEntry | undefined )[];
   private labelDirty: Set<number>;
+  /** global label font-family (one font per glyph atlas); style-owned */
+  labelFont: string;
   /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
   private watchedKeys: Record<GroupName, ReadonlySet<string>>;
   /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
@@ -69,6 +71,7 @@ export class GraphStore implements ModelView {
     this.order = { nodes: emptyOrder(), edges: emptyOrder() };
     this.labels = [];
     this.labelDirty = new Set();
+    this.labelFont = 'sans-serif';
     this.watchedKeys = { nodes: new Set(), edges: new Set() };
     this.mapperSpans = new Map();
   }
@@ -583,6 +586,24 @@ export class GraphStore implements ModelView {
 
   labelAt( slot: number ): LabelEntry | undefined {
     return this.labels[ slot ];
+  }
+
+  /**
+   * Set the global label font (one font per glyph atlas).  Every
+   * labelled node re-lays-out against the new font's metrics via the
+   * label-dirty channel; the renderer's atlas resets when it observes
+   * the change.
+   */
+  setLabelFont( font: string ): void {
+    if( font === this.labelFont ){ return; }
+
+    this.labelFont = font;
+
+    for( let slot = 0; slot < this.labels.length; slot++ ){
+      if( this.labels[ slot ] != null ){ this.labelDirty.add( slot ); }
+    }
+
+    this.dirty.touch();
   }
 
   /** Set or clear (null) a node's label; no-ops when nothing changed. */

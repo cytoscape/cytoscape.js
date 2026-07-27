@@ -51,6 +51,8 @@ interface NodeComputed {
   labelKey: string | null;
   fontSize: number;
   textColor: RGBA;
+  /** effectively global: one font per glyph atlas (keyed by character) */
+  fontFamily: string;
 }
 
 interface EdgeComputed {
@@ -78,7 +80,8 @@ const NODE_DEFAULTS: NodeComputed = {
   label: '', // no label
   labelKey: null,
   fontSize: 16,
-  textColor: [ 0, 0, 0, 255 ]
+  textColor: [ 0, 0, 0, 255 ],
+  fontFamily: 'sans-serif'
 };
 
 /** gap between the node's bottom edge and the label's top, model px */
@@ -132,7 +135,7 @@ const SHAPE_NAMES: Record<number, string> = {
 /** Readable props per group ('width' and 'opacity' exist for both). */
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
-  'shape', 'opacity', 'label', 'font-size', 'color'
+  'shape', 'opacity', 'label', 'font-size', 'font-family', 'color'
 ] );
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
@@ -244,6 +247,16 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'font-size':
       computed.fontSize = parseNumber( prop, value );
       break;
+    case 'font-family': {
+      const family = String( value ).trim();
+
+      if( family === '' ){
+        throw new Error( `The value '${String( value )}' is not a valid font-family` );
+      }
+
+      computed.fontFamily = family;
+      break;
+    }
     case 'color':
       computed.textColor = parseColor( prop, value );
       break;
@@ -505,6 +518,11 @@ export class StyleEngine {
 
     this.sheet = sheet;
     this.defs = defs;
+
+    // global: routes to the atlas and marks every labelled node
+    // label-dirty (metrics change), applied even while batching — the
+    // deferred flush re-lays-out against current entries anyway
+    this.store.setLabelFont( defs.nodes.computed.fontFamily );
 
     // the store coalesces write spans for paint-mapped keys so the GPU
     // eval pass knows what to re-evaluate without a CPU restyle; owned
@@ -835,6 +853,7 @@ export class StyleEngine {
       case 'shape': return SHAPE_NAMES[ scalar( 'node.shape' ) ];
       case 'label': return store.labelAt( slot )?.text ?? '';
       case 'font-size': return this.labelChannels( ref ).fontSize;
+      case 'font-family': return store.labelFont;
       case 'color': return this.labelChannels( ref ).color;
 
       // shared names, resolved per group
@@ -953,6 +972,20 @@ export class StyleEngine {
     for( const prop of Object.keys( props ) ){
       const norm = normalizeProp( prop );
       const value = props[ prop ];
+
+      if( norm === 'font-family' ){
+        // one glyph atlas keyed by character ⇒ one font, globally
+        if( group === 'edges' ){
+          throw new Error( `'font-family' is a node style property (labels are node-only)` );
+        }
+
+        if( isMapperSpec( value ) ){
+          throw new Error(
+            `'font-family' takes a constant only — per-element fonts are unsupported ` +
+            `(the glyph atlas holds one font)`
+          );
+        }
+      }
 
       if( isMapperSpec( value ) ){
         if( norm === 'label' ){

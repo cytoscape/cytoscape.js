@@ -207,8 +207,10 @@ export type GpuStylePropValue = string | number | GpuMapperSpec;
  * conditionals ({@link GpuCaseMapper}); `label` also takes the
  * `data(key)` mapper string ('id' reads the first-class id).
  * Node props: background-color, width, height, shape, opacity,
- * border-color, border-width, label, font-size, color.  Edge props:
- * line-color, width, opacity, source/target-arrow-shape and -color.
+ * border-color, border-width, label, font-size, font-family (constant
+ * only, effectively global — one font per glyph atlas), color.  Edge
+ * props: line-color, width, opacity, source/target-arrow-shape and
+ * -color.
  */
 export type GpuStyleProps = Record<string, GpuStylePropValue>;
 

@@ -376,6 +376,38 @@ each is deliberate, not a pass-1 deferral:
   WYSIWYG guarantee is enforced by a Playwright self-diff: a viewport
   export at scale 1 pixel-matches a screenshot of the live canvas.
   Headless instances reject (there is no renderer to export from).
+- **Fonts: one global `font-family`, and a fixed web font for label
+  tests** (round 9.7).  The glyph atlas is keyed by character — one font
+  per atlas by design — so `font-family` is a **constant, effectively
+  global** node style prop (default `sans-serif`); changing it resets
+  the atlas and re-lays-out every label through the existing label-dirty
+  channel.  Per-element fonts would re-key the atlas by (font, char) and
+  are out of scope.  Label-test reliability comes from pinning all three
+  variance sources: the *font file* (a vendored OFL web font, Open Sans
+  via devDependency, loaded with FontFace before instance creation), the
+  *GPU* (the SwiftShader-pinned visual project), and *tolerance* for the
+  one layer a web font cannot pin — Chrome rasters the atlas via
+  CoreText on macOS and FreeType on Linux, so label goldens carry a
+  looser diff bound than geometry goldens (per-platform goldens are the
+  reserve escape hatch if CI proves that insufficient).  Footgun, and
+  why specs pre-load the font: the atlas rasters glyphs lazily and
+  caches them forever, so a glyph rasterized before the web font
+  finishes loading is cached from the fallback font with no
+  invalidation — a `document.fonts.ready` re-raster hook is logged as a
+  library follow-up.
+- **Edge labels: committed direction, not yet built** (labels are
+  nodes-only today).  The shape: a second glyph stream parallel to the
+  node one (own instance buffer + cull group + draw call); edge glyphs
+  anchor at the edge midpoint computed in the vertex shader from the two
+  endpoint positions — the same on-GPU trick that lets node labels
+  follow drags with zero rebuild extends to edge labels whose endpoints
+  move.  The cull predicate mirrors the edge cull (edge SHOWN + both
+  endpoint nodes SHOWN); the atlas is shared as-is; the model side
+  generalizes the label sidecar, label-dirty channel and StyleEngine
+  label channels by group — group-keying, not new architecture.  Pass-1
+  scope is v3's default look: horizontal text at the midpoint;
+  autorotate (and its flip-when-upside-down readability rules) is a
+  separate follow-up call.
 - **GPU layouts: logged for later.**  A force layout is *stateful*
   (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
   cheaply CPU-reproducible — the GPU would be authoritative during a run

@@ -942,3 +942,57 @@ stale against the v3 code actually in the repo.
 - **Verification**: 1452 Node tests + 47 module tests, typecheck and lint
   clean, 32/32 `webgpu` + 6/6 `webgpu-visual` Playwright specs; goldens
   byte-stable across repeat runs.
+
+## Round 9.7 (2026-07-27) — label testability + `font-family`
+
+Direction set in discussion (amendment to round 9.6: "it's important to
+test labels").  The 9.6 goldens excluded labels because the atlas
+hardcodes `32px sans-serif` — the browser's *generic* sans-serif, which
+resolves to a different font per OS, making label pixels unpinnable even
+in principle.  The plan, with the load-bearing piece being a missing API,
+not harness design:
+
+- **`font-family` as a constant, effectively global node style prop**
+  (default `sans-serif`) — the atlas is keyed by character, one font per
+  atlas by design, so per-element fonts (atlas re-keyed by (font, char))
+  are out of scope; mappers for the prop and the edges-group form throw.
+  A change routes `store.labelFont` → atlas reset (cache/pen/full +
+  re-measured ascent, same texture object so bind groups survive) → all
+  labelled slots marked label-dirty → one `LabelLayer.process()` pass
+  rebuilds every glyph run against the new metrics.
+- **A vendored OFL web font for the specs** (`@fontsource/open-sans` as
+  a devDependency; `@font-face` in the test pages; specs `await`
+  `document.fonts.load` *before* instance creation).  The pre-load
+  matters because the atlas rasters lazily and caches forever: a glyph
+  built before the font loads is cached from the fallback with no
+  invalidation.  A `document.fonts.ready` re-raster hook for the library
+  is logged as a follow-up, not built here.
+- **Label goldens as their own tolerance tier** in `webgpu-visual`: the
+  fixed font pins glyph shapes/metrics and SwiftShader pins the GPU, but
+  Chrome's atlas raster still goes through CoreText (macOS) vs FreeType
+  (Linux), so label goldens get a looser bound (threshold ~0.25, ratio
+  ~2%) than geometry goldens (0.5%).  Escape hatch if CI disagrees:
+  per-platform golden suffixes.  A font-swap Playwright spec proves the
+  atlas rebuild path (pixels change when the sheet's font changes).
+- Already covering labels and unchanged: the WYSIWYG self-diff
+  (same-machine export-vs-screen, includes glyphs) and the behavioural
+  label specs (placement, follow-on-drag, LOD fade).  v3 parity keeps
+  excluding labels — raster and placement differ by design.
+
+## Logged direction — edge labels (a future round; nodes-only today)
+
+Needed regardless (discussion, 2026-07-27).  A generalization, not new
+architecture: a **second glyph stream** parallel to the node one (own
+instance buffer + cull group + draw); edge glyphs anchor at the edge
+midpoint computed in the VS from the two endpoint positions, so edge
+labels follow drags/layouts/position tweens on-GPU with zero rebuild —
+the node-label trick extended to labels whose *endpoints* move.  Cull
+predicate mirrors the edge cull (edge SHOWN + both endpoints SHOWN);
+the atlas is shared (keyed by char, so the 9.7 font work is
+owner-agnostic); the model side group-keys the label sidecar,
+label-dirty channel and StyleEngine label channels.  Pass-1 scope:
+horizontal at the midpoint (v3's default); autorotate — cheap in the VS
+via the endpoint delta, but with flip-when-upside-down readability
+rules — is a separate follow-up call.  Sequencing: after 9.7, so the
+label goldens/WYSIWYG harness exists to verify it; the edge-label round
+then just adds a golden scene.

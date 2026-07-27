@@ -1109,8 +1109,15 @@ Each entry converts into a "Landed" record as it ships:
   affinity gets a compact deterministic fixture instead of v3's
   700-line one.  `test/gpu-algorithms-clustering.mjs` (1556 Node tests
   green).
-- [ ] **A5 Algorithm benchmark** — `benchmark/gpu/algorithms.mjs` vs v3
-  (at least bfs/dijkstra/pageRank/tarjan).
+- [x] **A5 Algorithm benchmark** — landed 2026-07-27.
+  `benchmark/gpu/algorithms.mjs` (standalone Mitata sweep; superlinear
+  ops gate on BENCH_N).  At N=2000 (4k edges) the slot-native walks win
+  every op vs v3: bfs 34×, dfs 39×, dijkstra+pathTo 33×, bellmanFord
+  22×, kruskal 14×, tarjan SCC 19×, hopcroft-tarjan 20×, betweenness
+  13×, degreeCentralityNormalized 22×, closenessCentrality 31×, aStar
+  2.1×, hierholzer 2–3×.  The dense-matrix ops are parity, as expected
+  (identical math dominates): pageRank/floydWarshall/markov/
+  hierarchical/kMeans all within ±1.2× at N=500.
 - [ ] **A6 Layouts** — `circle`, `concentric`, `breadthfirst`, `random`
   ported to the slot-native bulk `setPositions` path (the grid-port
   pattern), plus `eles.layout()`/`layoutPositions` for subset layouts.

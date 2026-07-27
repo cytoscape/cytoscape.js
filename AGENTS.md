@@ -33,6 +33,7 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
     - `src/extensions/renderer/base/`: Shared renderer state and geometry logic.
     - `src/extensions/renderer/canvas/`: Canvas renderer, drawing pipeline, caches, and WebGL helpers.
     - `src/extensions/layout/`: Built-in layouts like grid, cose, concentric, and breadthfirst.
+  - `src/gpu/`: WebGPU v4 prototype (issue #3486) — a separate columnar core + WebGPU renderer with its own entry point (`cytoscape/gpu`); the v3 core/renderers are untouched. `src/gpu/README.md` is the maintained scope and design-decisions doc; `PLAN.md` (repo root) records each development round. Manual harness in `debug/webgpu/`, benchmarks in `benchmark/gpu/`, browser specs in the `webgpu` and `webgpu-visual` Playwright projects.
   - `src/util/`: Shared low-level helpers.
 - `test/`: Mocha tests. Add regression coverage here for API and logic changes.
 - `debug/`: Manual visual and interaction test pages. Use this for renderer, interaction, and gesture changes that are hard to verify in unit tests alone.

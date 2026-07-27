@@ -1,10 +1,13 @@
-# WebGPU model + renderer prototype (first pass of #3486)
+# WebGPU model + renderer prototype (#3486)
 
-**Status: implemented** on `feature/webgpu` (11 commits, `e30542cf4..9b177c193`),
-including SDF node labels, which were pulled into scope after the base pass
-landed so labelled rendering could be assessed for performance.  All
-verification below is green.  `src/gpu/README.md` is the maintained scope /
-deviations doc; this file records the plan and its outcome.
+**Status: implemented and evolving** on `feature/webgpu`.  The base pass
+(11 commits, `e30542cf4..9b177c193`) landed first — including SDF node
+labels, pulled into scope so labelled rendering could be assessed for
+performance — and subsequent rounds (follow-ups, API gap closure, the
+selector removal, mappers, animation, image export, label testability)
+are recorded below as "Landed (round N)" sections, each verified green
+when it landed.  `src/gpu/README.md` is the maintained scope /
+deviations doc; this file records each round's plan and outcome.
 
 ## Context
 
@@ -927,9 +930,10 @@ stale against the v3 code actually in the repo.
   SwiftShader via `--use-webgpu-adapter=swiftshader` so rasterization is
   machine-independent): four checked-in scenes — shapes/borders/opacity/
   arrows, the selection accent ring, GPU-evaluated color mappers, and
-  far-zoom LOD (floors, decimation, plain discs).  Goldens stay
-  label-free (SDF glyphs raster via OS fonts, which is not
-  cross-platform stable; labels are covered by the WYSIWYG spec).
+  far-zoom LOD (floors, decimation, plain discs).  Goldens stayed
+  label-free in this round — SDF glyphs raster via OS fonts, which is
+  not cross-platform stable — superseded in round 9.7, where a fixed
+  web font made a label golden possible.
 - **v3 parity** (`playwright-page/parity.html` loads both UMD bundles):
   the same fixture rendered by both renderers in the same run, exports
   diffed in memory — nodes/borders/opacity/straight edges, and a

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <style>
+      body {
+        font-family: helvetica, arial, sans-serif;
+        margin: 0;
+      }
+
+      .cy {
+        width: 400px;
+        height: 300px;
+        position: absolute;
+        top: 0;
+        background: white;
+      }
+
+      #v3 {
+        left: 0;
+      }
+
+      #v4 {
+        left: 410px;
+      }
+    </style>
+
+    <script src="../build/cytoscape.umd.js"></script>
+    <script src="../build/cytoscape-gpu.umd.js"></script>
+
+    <title>cytoscape.js v3-vs-v4 parity page</title>
+  </head>
+
+  <body>
+      <div id="v3" class="cy"></div>
+      <div id="v4" class="cy"></div>
+
+      <script>
+        // The parity specs render the same fixture with the classic (v3)
+        // canvas renderer and the GPU prototype side by side, then diff
+        // the two exports.
+        window.makeV3 = function( options ){
+          window.cy3 = cytoscape( Object.assign( {
+            container: document.getElementById( 'v3' )
+          }, options ) );
+
+          return window.cy3;
+        };
+
+        window.makeV4 = function( options ){
+          window.cy4 = cytoscapeGpu( Object.assign( {
+            container: document.getElementById( 'v4' )
+          }, options ) );
+
+          return window.cy4;
+        };
+      </script>
+  </body>
+
+</html>

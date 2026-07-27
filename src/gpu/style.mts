@@ -1,6 +1,8 @@
 import { color2tuple } from '../util/colors.mjs';
 import {
-  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
+  SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
+  SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID,
+  SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
 import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
@@ -110,8 +112,19 @@ const SHAPES: Record<string, number> = {
   'ellipse': SHAPE_ELLIPSE,
   'circle': SHAPE_CIRCLE,
   'rectangle': SHAPE_RECTANGLE,
+  'square': SHAPE_RECTANGLE,
   'round-rectangle': SHAPE_ROUND_RECTANGLE,
-  'roundrectangle': SHAPE_ROUND_RECTANGLE
+  'roundrectangle': SHAPE_ROUND_RECTANGLE,
+  'triangle': SHAPE_TRIANGLE,
+  'pentagon': SHAPE_PENTAGON,
+  'hexagon': SHAPE_HEXAGON,
+  'heptagon': SHAPE_HEPTAGON,
+  'octagon': SHAPE_OCTAGON,
+  'diamond': SHAPE_DIAMOND,
+  'rhomboid': SHAPE_RHOMBOID,
+  'vee': SHAPE_VEE,
+  'star': SHAPE_STAR,
+  'tag': SHAPE_TAG
 };
 
 /** RGBA bytes packed little-endian, matching WGSL unpack4x8unorm. */
@@ -129,7 +142,17 @@ const SHAPE_NAMES: Record<number, string> = {
   [ SHAPE_CIRCLE ]: 'ellipse',
   [ SHAPE_ELLIPSE ]: 'ellipse',
   [ SHAPE_RECTANGLE ]: 'rectangle',
-  [ SHAPE_ROUND_RECTANGLE ]: 'round-rectangle'
+  [ SHAPE_ROUND_RECTANGLE ]: 'round-rectangle',
+  [ SHAPE_TRIANGLE ]: 'triangle',
+  [ SHAPE_PENTAGON ]: 'pentagon',
+  [ SHAPE_HEXAGON ]: 'hexagon',
+  [ SHAPE_HEPTAGON ]: 'heptagon',
+  [ SHAPE_OCTAGON ]: 'octagon',
+  [ SHAPE_DIAMOND ]: 'diamond',
+  [ SHAPE_RHOMBOID ]: 'rhomboid',
+  [ SHAPE_VEE ]: 'vee',
+  [ SHAPE_STAR ]: 'star',
+  [ SHAPE_TAG ]: 'tag'
 };
 
 /** Readable props per group ('width' and 'opacity' exist for both). */

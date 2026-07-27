@@ -108,6 +108,27 @@ describe('gpu/style', function(){
       expect( shapeOf('b') ).to.equal(SHAPE_ROUND_RECTANGLE);
     });
 
+    it('supports the polygon shape keywords (round 10) with readback', function(){
+      var keywords = [
+        'triangle', 'pentagon', 'hexagon', 'heptagon', 'octagon',
+        'diamond', 'rhomboid', 'vee', 'star', 'tag'
+      ];
+
+      for( var keyword of keywords ){
+        cy.style({ nodes: { shape: keyword } });
+
+        expect( cy.$id('a').style('shape'), keyword ).to.equal( keyword );
+      }
+
+      // square is a rectangle alias
+      cy.style({ nodes: { shape: 'square' } });
+      expect( shapeOf('a') ).to.equal( SHAPE_RECTANGLE );
+    });
+
+    it('still throws on unsupported shapes', function(){
+      expect( () => cy.style({ nodes: { shape: 'barrel' } }) ).to.throw(/unsupported/);
+    });
+
     it('supports border and opacity channels', function(){
       cy.style({
         nodes: { 'border-width': 3, 'border-color': 'white', 'opacity': 0.5 }

@@ -1184,11 +1184,27 @@ Each entry converts into a "Landed" record as it ships:
 
 **Phase B — renderer/shader work, golden-verified**
 
-- [ ] **B1 Node shape parity** — closed-form SDFs: regular polygons
-  (`triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`),
-  `diamond`, `star`, `vee`, `rhomboid`, `tag`; `round-*` variants via
-  SDF shrink+offset where closed-form allows.  `contract.mts` shape ids
-  first; new golden scene.
+- [x] **B1 Node shape parity** — landed 2026-07-27.  Ten polygon
+  shapes (`triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`,
+  `diamond`, `rhomboid`, `vee`, `star`, `tag`, + `square` alias) from
+  **one point-table source of truth** (`shape-points.mts`, built with
+  the same shared math generators v3's node-shapes registration uses —
+  identical geometry).  Shape ids 4–13 in `contract.mts`; WGSL
+  per-shape SDF functions are *generated* from the tables (iq's
+  sdPolygon, vertices scaled by half-size so the device-space distance
+  is exact — first cut evaluated in normalized space and showed
+  smeared borders on stretched nodes in the golden; exact-space fixed
+  it); CPU pick uses exact point-in-polygon in normalized space
+  (inside-ness is affine-invariant); the depth prepass treats polygon
+  interiors via their SDF (conservative rect/roundrect/ellipse
+  fast paths kept).  `round-*` polygon variants deliberately not
+  ported (no clean closed form under anisotropic scale) along with
+  cut-rectangle/barrel/etc — README records the list.  Verified: 5
+  polygon CPU-pick specs (incl. concave star/vee and an anisotropic
+  hexagon), keyword parse+readback specs, and a `polygon-shapes`
+  golden (11 nodes incl. a selected star's accent ring and a stretched
+  hexagon), stable across repeat runs; 1617 Node + 47 module tests,
+  42 Playwright specs green.
 - [ ] **B2 `line-style: solid | dashed | dotted`** — fract-along-length
   in the edge FS, v3 default pattern.  `border-style` is stretch-only
   (`double` is easy in SDF; dashed borders need perimeter

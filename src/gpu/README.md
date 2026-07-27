@@ -697,6 +697,21 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   zero point are culled in compute, not drawn at zero alpha); the optional
   `labelMinPx` renderer option hard-culls labels whose on-screen glyph
   height is below it — too small to read anyway (default 0 = off).
+- **Node shapes** (round 10): `ellipse`/`circle`, `rectangle`/`square`,
+  `round-rectangle`, plus the polygon family — `triangle`, `pentagon`,
+  `hexagon`, `heptagon`, `octagon`, `diamond`, `rhomboid`, `vee`,
+  `star`, `tag` — from the same unit point tables v3 builds
+  (`shape-points.mts`), rendered by generated WGSL polygon SDFs with
+  vertices scaled to device space (exact distance, so AA and borders
+  stay crisp under anisotropy) and picked by an exact CPU
+  point-in-polygon in normalized space.  Not ported: `round-*` polygon
+  variants (corner-rounding an anisotropically scaled polygon has no
+  clean closed form), `cut-rectangle`, `barrel`,
+  `bottom-round-rectangle`, `concave-hexagon`, `right-rhomboid`, and
+  the custom `polygon` (needs per-element point data).  Arrow tips on
+  polygon nodes sit on the inscribed *ellipse* boundary
+  (approximation); the depth prepass treats polygon interiors exactly
+  via their SDF.
 - **Labels**: nodes only, single line (newlines collapse to spaces), fixed
   placement (horizontally centered below the node), not pickable, one
   global `font-family` (the atlas holds one font), and the

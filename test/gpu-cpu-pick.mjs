@@ -2,7 +2,8 @@ import { expect } from 'chai';
 import { GraphStore } from '../src/gpu/store/graph-store.mjs';
 import { pickNodeAt } from '../src/gpu/render/cpu-pick.mjs';
 import {
-  FLAG_VISIBLE, SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
+  FLAG_VISIBLE, SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEXAGON,
+  SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TRIANGLE, SHAPE_VEE
 } from '../src/gpu/contract.mjs';
 
 describe('gpu/render: CPU node pick', function(){
@@ -97,6 +98,50 @@ describe('gpu/render: CPU node pick', function(){
 
     expect( pickNodeAt( store, zoomed, 25, 25 ) ).to.equal( n ); // center: 10*2 + 5
     expect( pickNodeAt( store, zoomed, 10, 10 ) ).to.equal( null );
+  });
+
+  describe('polygon shapes (round 10)', function(){
+    it('diamond picks its points and misses the square corners', function(){
+      var n = addNode( 'a', 0, 0, 40, 40, SHAPE_DIAMOND );
+
+      expect( pickNodeAt( store, frame, 0, 19 ) ).to.equal( n );
+      expect( pickNodeAt( store, frame, 19, 0 ) ).to.equal( n );
+      expect( pickNodeAt( store, frame, 10, 9 ) ).to.equal( n );   // |x|+|y| < 20
+      expect( pickNodeAt( store, frame, 15, 15 ) ).to.equal( null ); // square corner, off the diamond
+    });
+
+    it('triangle misses its clipped top corners', function(){
+      var n = addNode( 'a', 0, 0, 40, 40, SHAPE_TRIANGLE );
+
+      expect( pickNodeAt( store, frame, 0, 0 ) ).to.equal( n ); // center
+      // one horizontal edge of the box belongs to the triangle, the other
+      // holds only one vertex: both box corners on some side must miss
+      var missTop = pickNodeAt( store, frame, -19, -19 ) == null && pickNodeAt( store, frame, 19, -19 ) == null;
+      var missBottom = pickNodeAt( store, frame, -19, 19 ) == null && pickNodeAt( store, frame, 19, 19 ) == null;
+
+      expect( missTop || missBottom ).to.be.true;
+    });
+
+    it('vee has a notch a rectangle would hit', function(){
+      var n = addNode( 'a', 0, 0, 40, 40, SHAPE_VEE );
+
+      expect( pickNodeAt( store, frame, 0, 0 ) ).to.equal( n );      // inside the wedge
+      expect( pickNodeAt( store, frame, 0, -10 ) ).to.equal( null ); // in the notch
+    });
+
+    it('star is concave between its spikes', function(){
+      var n = addNode( 'a', 0, 0, 40, 40, SHAPE_STAR );
+
+      expect( pickNodeAt( store, frame, 0, 0 ) ).to.equal( n );        // center
+      expect( pickNodeAt( store, frame, 19, 19 ) ).to.equal( null );   // square corner
+    });
+
+    it('anisotropic hexagon picks in normalized space', function(){
+      var n = addNode( 'a', 0, 0, 80, 20, SHAPE_HEXAGON );
+
+      expect( pickNodeAt( store, frame, 0, 9 ) ).to.equal( n );    // mid-edge, tall axis
+      expect( pickNodeAt( store, frame, 39, 9 ) ).to.equal( null ); // stretched corner clipped
+    });
   });
 
 });

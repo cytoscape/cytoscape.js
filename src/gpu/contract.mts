@@ -30,6 +30,18 @@ export const SHAPE_CIRCLE = 0;
 export const SHAPE_ELLIPSE = 1;
 export const SHAPE_RECTANGLE = 2;
 export const SHAPE_ROUND_RECTANGLE = 3;
+// polygon shapes (round 10): unit points in shape-points.mts, evaluated in
+// normalized space in both the WGSL SDF and the CPU pick
+export const SHAPE_TRIANGLE = 4;
+export const SHAPE_PENTAGON = 5;
+export const SHAPE_HEXAGON = 6;
+export const SHAPE_HEPTAGON = 7;
+export const SHAPE_OCTAGON = 8;
+export const SHAPE_DIAMOND = 9;
+export const SHAPE_RHOMBOID = 10;
+export const SHAPE_VEE = 11;
+export const SHAPE_STAR = 12;
+export const SHAPE_TAG = 13;
 
 // -- columns --
 

@@ -11,6 +11,8 @@ Colour columns are RGBA bytes bound as array<u32> and expanded with
 unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
+import { POLYGON_POINTS } from '../shape-points.mjs';
+
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
  * footguns); computed CPU-side from the core viewport + device pixel ratio.
@@ -131,6 +133,51 @@ struct Glyph {
 const DEAD_GLYPH: u32 = 0xffffffffu;
 `;
 
+// Polygon shape SDFs, generated from the shared unit point tables so the
+// WGSL geometry is identical to the CPU pick's.  The unit vertices are
+// scaled by the node's half-size and the distance evaluated in device
+// space, so it is exact under anisotropy (crisp AA, uniform borders).
+const fmtF32 = ( x: number ): string => x.toFixed( 8 );
+
+const polygonSdFns = (): { fns: string; cases: string } => {
+  let fns = '';
+  let cases = '';
+
+  for( const [ id, pts ] of POLYGON_POINTS ){
+    const n = pts.length / 2;
+    const lits = Array.from( { length: n }, ( _, i ) =>
+      `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+
+    // https://iquilezles.org/articles/distfunctions2d/ sdPolygon
+    fns += `
+fn poly${ id }SD(p: vec2f, half: vec2f) -> f32 {
+  var v = array<vec2f, ${ n }>(${ lits });
+  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * half; }
+  var d = dot(p - v[0], p - v[0]);
+  var s = 1.0;
+  var j = ${ n - 1 };
+  for (var i = 0; i < ${ n }; i++) {
+    let e = v[j] - v[i];
+    let w = p - v[i];
+    let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(b, b));
+    let c1 = p.y >= v[i].y;
+    let c2 = p.y < v[j].y;
+    let c3 = e.x * w.y > e.y * w.x;
+    if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) { s = -s; }
+    j = i;
+  }
+  return s * sqrt(d);
+}
+`;
+    cases += `    case ${ id }u: { return poly${ id }SD(p, half); }\n`;
+  }
+
+  return { fns, cases };
+};
+
+const POLY = polygonSdFns();
+
 // SDFs ported from shader-sdf.mts (https://iquilezles.org/articles/distfunctions2d/)
 const SDF = `
 fn circleSD(p: vec2f, r: f32) -> f32 {
@@ -168,12 +215,15 @@ fn ellipseSD(p0: vec2f, ab: vec2f) -> f32 {
   return -d;
 }
 
-// shape ids match contract.mts: 0 circle, 1 ellipse, 2 rectangle, 3 round-rectangle
+${ POLY.fns }
+// shape ids match contract.mts: 0 circle, 1 ellipse, 2 rectangle,
+// 3 round-rectangle, 4+ generated polygon shapes
 fn nodeSD(shape: u32, p: vec2f, half: vec2f) -> f32 {
   switch shape {
     case 0u: { return circleSD(p, half.x); }
     case 1u: { return ellipseSD(p, half); }
     case 2u: { return rectangleSD(p, half); }
+${ POLY.cases }
     default: { return roundRectangleSD(p, half, min(half.x, half.y) * 0.25); }
   }
 }
@@ -322,10 +372,13 @@ fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32) -> bool {
     case 3u: { // round-rectangle: cheap exact SD
       return roundRectangleSD(p, half, minAxis * 0.25) <= -m;
     }
-    default: { // circle + ellipse: normalized-space bound (exact for circles)
+    case 0u, 1u: { // circle + ellipse: normalized-space bound (exact for circles)
       let q = p / half;
       let lim = 1.0 - m / minAxis;
       return dot(q, q) <= lim * lim;
+    }
+    default: { // polygons: the normalized SD × min axis under-estimates depth
+      return nodeSD(shape, p, half) <= -m;
     }
   }
 }

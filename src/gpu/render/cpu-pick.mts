@@ -1,8 +1,9 @@
 import {
   FLAG_ALIVE, FLAG_VISIBLE,
-  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE
+  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
+import { POLYGON_POINTS, insideUnitPolygon } from '../shape-points.mjs';
 
 /*
 Synchronous CPU node picking.
@@ -82,7 +83,7 @@ function insideShape( shape: number, dx: number, dy: number, hw: number, hh: num
       return ( dx * dx ) / ( hw * hw ) + ( dy * dy ) / ( hh * hh ) <= 1;
     case SHAPE_RECTANGLE:
       return Math.abs( dx ) <= hw && Math.abs( dy ) <= hh;
-    default: { // round-rectangle, radius min(half)/4 as in nodeSD
+    case SHAPE_ROUND_RECTANGLE: { // radius min(half)/4 as in nodeSD
       const r = Math.min( hw, hh ) * 0.25;
       const qx = Math.abs( dx ) - hw + r;
       const qy = Math.abs( dy ) - hh + r;
@@ -90,6 +91,13 @@ function insideShape( shape: number, dx: number, dy: number, hw: number, hh: num
       const my = Math.max( qy, 0 );
 
       return Math.min( Math.max( qx, qy ), 0 ) + Math.sqrt( mx * mx + my * my ) - r <= 0;
+    }
+    default: { // polygon shapes: inside-ness in normalized space (affine-invariant)
+      const points = POLYGON_POINTS.get( shape );
+
+      if( points == null ){ return Math.abs( dx ) <= hw && Math.abs( dy ) <= hh; }
+
+      return insideUnitPolygon( points, dx / hw, dy / hh );
     }
   }
 }

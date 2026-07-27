@@ -154,6 +154,55 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'selection-accent', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: polygon node shapes (round 10)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const shapes = [
+      'triangle', 'pentagon', 'hexagon', 'heptagon', 'octagon',
+      'diamond', 'rhomboid', 'vee', 'star', 'tag'
+    ];
+    const elements = shapes.map( ( shape, i ) => ( {
+      data: { id: shape, shape },
+      position: { x: ( i % 5 ) * 70 - 140, y: Math.floor( i / 5 ) * 70 - 55 },
+      selected: shape === 'star' // accent ring follows the polygon SDF
+    } ) );
+
+    // one anisotropic polygon: inside-ness must stay exact under stretch
+    elements.push( {
+      data: { id: 'wide-hex', shape: 'hexagon' },
+      position: { x: 0, y: 75 }
+    } );
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: {
+          'width': { case: [ { when: { data: 'id', eq: 'wide-hex' }, then: 130 } ], else: 50 },
+          'height': { case: [ { when: { data: 'id', eq: 'wide-hex' }, then: 34 } ], else: 50 },
+          'shape': { case: [
+            { when: { data: 'shape', eq: 'triangle' }, then: 'triangle' },
+            { when: { data: 'shape', eq: 'pentagon' }, then: 'pentagon' },
+            { when: { data: 'shape', eq: 'hexagon' }, then: 'hexagon' },
+            { when: { data: 'shape', eq: 'heptagon' }, then: 'heptagon' },
+            { when: { data: 'shape', eq: 'octagon' }, then: 'octagon' },
+            { when: { data: 'shape', eq: 'diamond' }, then: 'diamond' },
+            { when: { data: 'shape', eq: 'rhomboid' }, then: 'rhomboid' },
+            { when: { data: 'shape', eq: 'vee' }, then: 'vee' },
+            { when: { data: 'shape', eq: 'star' }, then: 'star' },
+            { when: { data: 'shape', eq: 'tag' }, then: 'tag' }
+          ], else: 'ellipse' },
+          'background-color': '#3498db',
+          'border-width': 3, 'border-color': '#2c3e50'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'polygon-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: GPU-evaluated color mappers (viridis scale)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

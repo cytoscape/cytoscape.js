@@ -1456,3 +1456,220 @@ round-10 design call above makes that permanent.  Compaction changes
 nothing for removed refs under any option: a removed ref matches no
 forwarding entry and its generation is already stale, and the cached
 `id()`/`group()` live on the JS handle, not in the columns.
+
+## v3 → v4 parity gap analysis (2026-07-28)
+
+A systematic sweep of the **entire v3 public surface**, diffed against
+v4.  Sources: the v3 style registry (`src/style/properties.mts` — 280
+registered properties + 11 aliases across 21 groups), the docmaker API
+index for core and collection (cross-checked against the prototypes),
+the v3 renderer's event/gesture emission (`load-listeners.mts`), the
+layout and extension registries, and the documented init options —
+diffed against `src/gpu/README.md` plus source spot-checks of
+`src/gpu/`.  Every gap below is classified into one of four tiers:
+**at parity**, **dropped by decided design** (recorded, no action),
+**gap with direction set** (build when scheduled), and **needs a
+call** (API semantics are never improvised autonomously).  A final
+tier lists **proposed drops** — v3 features we suggest *not* porting;
+none of those is decided until signed off.
+
+### At parity (verified, no action)
+
+Core viewport/events/data/batching, the whole collection
+iteration/comparison/building surface (incl. `eq`/`first`/`last`/
+`slice`/`toArray`/`anySame`/`symmetricDifference`/
+`closedNeighborhood`), traversal, degree, flags/switches
+(incl. `active`/`pannable`), the full v3 algorithm surface, layouts
+grid/preset/circle/concentric/breadthfirst/random (+ `eles.layout()`
+plumbing), `png`/`jpg` export options, `mount`/`unmount`/`destroy`,
+`stop(clearQueue, jumpToEnd)`/`delay`/`delayAnimation`, box selection
+with `selectionType`, pinch zoom, the cxttap/dbltap/taphold gesture
+set, and `data`/`scratch`/`json()` export.  (Where v3 takes a
+selector these take collections/queries/predicates — the decided v4
+form, not a gap.)
+
+### Dropped by decided design (recorded in src/gpu/README.md; ledger only)
+
+Selector strings and `cy.$()`; classes; per-element style
+bypass/setters (`style(name, value)`, `removeStyle`, `flashClass`);
+style functions; CSS-string stylesheets and the
+`cytoscape.stylesheet()` builder (follow from the `{ nodes, edges }`
+object-sheet decision — worth recording explicitly);
+selection-dependent restyling (`:selected` blocks → shader accent
+ring); `restore`/`clone`/`copy` and `cy.json()` import; custom easing
+functions and `spring(tension, friction)` (→ `spring(bounce)`); event
+namespaces; v3 bubble order (registration order instead — compound
+bubbling re-opens with compounds); per-element `font-family`;
+viewport-fixed labels; `renderTo`; `cy.notify`/`notifications`/
+`noNotifications` (dirty-driven renderer).
+
+### Gaps with direction already set (build when scheduled)
+
+- **Curved edges** — the single biggest *visual* gap.  v3
+  `curve-style`: `bezier` (bundled), `unbundled-bezier`, `segments`,
+  `round-segments`, `taxi`, `round-taxi` (v4 has `straight` only).
+  Brings with it: **self-loops** (`loop-direction`/`loop-sweep` — a
+  loop currently degenerates to a point in v4), `control-point-*`,
+  `segment-*`, `taxi-*`, `radius-type`, `edge-distances`,
+  `source/target-endpoint`, `source/target-distance-from-node`, and
+  the accessors `controlPoints`/`segmentPoints`/
+  `renderedControlPoints`/`isBundledBezier`.  Design tier decided
+  (2026-07-24): dual CPU/WGSL impls, conservative CPU bound for
+  cull/fit, exact lazy `.bb()`, membership as a structural index.
+- **Multiline labels** — `text-wrap`/`text-max-width`/
+  `text-justification`/`line-height`/`text-overflow-wrap` (+
+  `ellipsis`).  Same decided tier (shaping memoizes; model-space
+  keeps it zoom-invariant).
+- **Edge label autorotate** (`text-rotation: autorotate`) — logged
+  direction (VS endpoint delta); the flip-when-upside-down rule is
+  the one remaining small call.
+- **Force-directed layout** — v3's `cose` is the only built-in
+  force layout, so v4 has *no* force option at all today; the GPU
+  layout direction is logged (GPU-authoritative + readback, CPU
+  reference for headless).  The concrete algorithm (port cose vs a
+  modern fcose-class kernel) is the call to make when scheduled.
+- **Compaction** — slot-stable tier (id blob / CSR / dictionary
+  reclaim) is buildable now; slot-moving tier waits on the logged
+  policy calls.
+- **z-index** — mechanism named (more z-ranks or a `u32`
+  index-indirection pass); decide together with compaction's
+  draw-order call.  Restores `zDepth`/`sortByZIndex` and heals the
+  recycled-slot draw-order wart.
+
+### Needs a call (design open — grouped, with the v3 surface at stake)
+
+1. **Compound nodes** — the largest single absence.  Style: the
+   8-prop compound group + `:parent` visuals + `padding`/
+   `padding-relative-to` + `z-compound-depth`/`z-index-compare` +
+   `compound-sizing-wrt-labels`.  Collection: `parent`/`ancestors`/
+   `children`/`descendants`/`siblings`/`orphans`/`nonorphans`/
+   `commonAncestors`/`isParent`/`isChild`/`isChildless`/`isOrphan`,
+   `move({ parent })`, `forEachUp/Down`, compound-relative
+   `relativePosition`, `effectiveOpacity` semantics, event bubbling
+   through parents, cose nesting.  Needs its own design round:
+   hierarchy in the columnar store, parent auto-bounds vs cull/bb,
+   render order.
+2. **Background images** (16 props) — per-node images/icons are
+   ubiquitous in real apps (`background-image` + fit/clip/position/
+   repeat/opacity/smoothing/crossorigin...).  GPU shape: a texture
+   atlas or array keyed per element; interacts with the fixed-atlas
+   discipline.  High app value; sizeable renderer feature.
+3. **Pie / stripe backgrounds** (51 + 50 props) — SDF-friendly in
+   principle; the call is whether v4 wants them (or a leaner
+   generalization) at all.
+4. **Node visual parity batch** — gradients
+   (`background-fill`/`line-fill` linear/radial + stop props),
+   `corner-radius` control, `border-style`/`-cap`/`-join`/
+   `-dash-pattern`/`-dash-offset`/`-position`, the node `outline-*`
+   group (5), `background-blacken`, `bounds-expansion`, custom
+   `polygon` via `shape-polygon-points` (per-element point data),
+   and the unported shape keywords (`round-*` family,
+   `cut-rectangle`, `barrel`, `concave-hexagon`, `right-rhomboid`,
+   `bottom-round-rectangle`).  Each is small-to-medium; needs a
+   scope call on which subset earns its shader/channel cost.
+5. **Arrow parity** — `mid-source`/`mid-target` positions,
+   `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
+   shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/
+   `triangle-backcurve`).  Mid-arrows are cheap on straight edges
+   but really belong with curved-edge midpoint math.
+6. **Label parity** — placement (`text-valign`/`text-halign` grid
+   vs v4's fixed below-node), per-element numeric `text-rotation`,
+   **source/target edge labels** (10 props — second/third label
+   streams), `text-opacity`, `text-transform`,
+   `font-style`/`font-weight`, `text-border-*`,
+   `text-background-shape`, and per-element `min-zoomed-font-size`
+   vs v4's global `labelFadePx`/`labelMinPx`.  Also: **labels are
+   excluded from `boundingBox()`** in v4 — v3's `includeLabels`
+   (and the bb options object generally) affects `fit()` semantics;
+   the conservative-label-bound design (already sketched for
+   multiline) is the likely answer.
+7. **Event vocabulary** — v4 lacks the element state events
+   (`grab`/`grabon`/`drag`/`free`/`freeon`/`dragfree`/
+   `dragfreeon`), the normalized device events (`tapstart`/
+   `tapdrag`/`tapend` + `vmouse*` aliases, raw `mousedown`/
+   `mousemove`/`mouseup`/`click`), `tapdragover`/`tapdragout`
+   hover-during-drag, `cxtdragover`/`cxtdragout`,
+   `tapselect`/`tapunselect`, and the viewport-gesture variants
+   (`dragpan`/`scrollzoom`/`pinchzoom`).  Event objects also lack
+   `preventDefault`/`stopPropagation` and bubbling semantics.
+   Mostly cheap plumbing, but every name is permanent API — one
+   deliberate call on the v4 event vocabulary is better than
+   accretion.
+8. **Interaction options + touch parity** — `wheelSensitivity`,
+   `touchTapThreshold`/`desktopTapThreshold`, configurable taphold
+   duration, `pixelRatio`, per-element `events`/`text-events`
+   (pointer-transparency), `box-selection: overlap` mode (v4 is
+   'contain' only), two-finger cxttap on touch, and the
+   three-finger box gesture (currently listed as not implemented).
+9. **Animation surface** — `step` callback, `queue: false`,
+   `renderedPosition` targets, Animation object controls
+   (`pause`/`progress`/`reverse`/`apply`/`applying`/`completed` —
+   v4's handle has `play`/`stop`/`promise`), and **style
+   transitions** (`transition-property`/`-duration`/`-delay`/
+   `-timing-function`): call whether transitions return as sugar
+   over the animation system or stay out.
+10. **Extension system** — `cytoscape.use()` and
+    `cytoscape(type, name, registrant)` registration for
+    layout/renderer/core/collection extensions.  v4 has none; this
+    gates the entire external ecosystem (fcose, dagre, elk, cola,
+    edgehandles, ...).  At minimum a v4 **layout extension
+    contract** needs designing; core/collection extension points are
+    a separate call.
+11. **`display` vs `visibility`** — v3 distinguishes `display: none`
+    (no space) from `visibility: hidden` (occupies space) from
+    zero opacity; v4 has one `show`/`hide` flag.  Call: is one flag
+    enough, and what do `visible()`/`takesUpSpace()` mean exactly.
+12. **Odds and ends** — `cy.gc()`, `cy.window()`,
+    `cytoscape.warnings()`, graph-level `data` in the wire format,
+    `panBy` animation target, layout instances as event emitters
+    (v3 layouts have `on`/`promiseOn`; v4 layout events fire on the
+    core only).
+
+### Proposed v4 drops (NOT decided — each needs explicit sign-off)
+
+- **Canvas-era performance hacks**: `hideEdgesOnViewport`,
+  `textureOnViewport` (+ `outside-texture-bg-*`), `motionBlur`/
+  `motionBlurOpacity`.  Obsolete under WebGPU + compute culling +
+  adaptive render scale, which solve the same problem without
+  degrading interaction.
+- **`curve-style: haystack`** (+ `haystack-radius`): a perf
+  compromise for dense edge sets (v3's *default* curve style).  v4
+  draws 465k true straight edges above refresh, so the compromise
+  has no reason to exist; migration note: v3 defaults map to v4
+  `straight`.  Also **`straight-triangle`** (niche).
+- **Ghost props** (`ghost`/`ghost-offset-*`/`ghost-opacity`) — niche
+  visual effect; drop unless a real use case appears.
+- **`background-blacken`** — subsumed by color mappers (compute the
+  shade in the mapper range instead).
+- **`bounds-expansion`** — a manual bb-correction escape hatch;
+  should be unnecessary when bounds are computed correctly.
+- **`text-metrics`, `box-select-labels`** — fold into the multiline/
+  label-bb round rather than porting as-is.
+- **Legacy aliases**: `content`, `autolockNodes`/
+  `autoungrabifyNodes`, `padding-{left,right,top,bottom}`, the
+  no-dash shape spellings (`roundrectangle` etc.), `attr`-family
+  duplicates beyond the ones already kept.  Keep the v4 surface to
+  one name per concept.
+- **Overlay/underlay as style props** (10 props + `active-bg-*` +
+  `selection-box-*` core props): v4 currently bakes these
+  affordances in (shader hover/active brighten, fixed accent ring,
+  DOM selection box).  Proposal: keep them non-stylable in v4
+  pass 1; revisit only if theming demand is real.  (Listed here
+  rather than under "needs a call" because a concrete drop is the
+  proposal — but it is still a call.)
+
+### Suggested sequencing (unchanged by the sweep, now grounded in it)
+
+The sweep confirms the two headline pillars — **curved edges** and
+**compounds** — dwarf everything else in app impact, with
+**background images** the sleeper third (16 props, near-universal in
+production apps).  Near-term autonomous work stays as previously
+recommended (slot-stable compaction; edge-label autorotate after its
+one flip-rule call).  The design queue, in suggested order: curved
+edges (tier already decided) → compounds (needs the full design
+round) → background images + the node-visual scope call → the event
+vocabulary + extension contract calls (cheap to build once decided,
+and they unblock the ecosystem) → force layout.  The proposed-drops
+list above should be triaged in one sitting — most entries take a
+minute each to accept or veto, and every acceptance shrinks the
+remaining parity surface.

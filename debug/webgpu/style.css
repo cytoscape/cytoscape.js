@@ -1,6 +1,6 @@
 body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin: 0; padding: 0; height: 100%; }
-#cytoscape { position: absolute; left: 0; right: 19.5em; top: 0; bottom: 0; }
-#commands { padding: 0.25em; width: 25em; z-index: 3; position: absolute; right: 0; top: 0; bottom: 0; overflow: auto; font-size: 0.75em; line-height: 1.4; background: rgba(200, 200, 200, 0.5); border-left: 1px solid #999; box-sizing: border-box; }
+#cytoscape { position: absolute; left: 0; right: 18.75em; top: 0; bottom: 0; }
+#commands { padding: 0.25em; padding-bottom: 7em; width: 25em; z-index: 3; position: absolute; right: 0; top: 0; bottom: 0; overflow: auto; font-size: 0.75em; line-height: 1.4; background: rgba(200, 200, 200, 0.5); border-left: 1px solid #999; box-sizing: border-box; }
 #commands h1 { font-size: 1.5em; }
 #commands h2 { font-size: 1.1em; }
 #commands label { user-select: none; }
@@ -9,3 +9,5 @@ body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin
 .commands-hidden #commands { display: none; }
 .commands-hidden #cytoscape { right: 0; }
 #commands-show-area { position: absolute; right: 0.5em; top: 0.5em; z-index: 2; }
+#hide-commands { position: absolute; right: 0.75em; top: 0.75em; z-index: 2; margin-top: 2px; }
+#hide-commands, #show-commands { width: 3em; }

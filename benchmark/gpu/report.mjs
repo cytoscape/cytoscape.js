@@ -1,0 +1,162 @@
+// Benchmark report runner: runs the gpu suites, collects their JSON
+// (via bench-run.mjs's BENCH_JSON hook) and renders a self-contained
+// single-page HTML report.
+//
+//   npm run benchmark:gpu:report                # quick profile (~minutes)
+//   npm run benchmark:gpu:report -- --full      # 2k/20k/200k matrix (long)
+//   npm run benchmark:gpu:report -- --suite traversal
+//   npm run benchmark:gpu:report -- --render-only results/results-<ts>.json
+//
+// Results land in benchmark/gpu/results/ (gitignored): a timestamped
+// results-*.json plus report.html rendered from it.  --render-only
+// re-renders an existing results file without re-running anything.
+
+import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { dirname, join, resolve, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { renderReport } from './report-html.mjs';
+
+const DIR = dirname( fileURLToPath( import.meta.url ) );
+const RESULTS_DIR = join( DIR, 'results' );
+
+// -- job tables --------------------------------------------------------------
+// Quick: every suite at its documented default scale.
+const QUICK_JOBS = [
+  { file: 'index.mjs',          n: 2000 },
+  { file: 'materializers.mjs',  n: 2000 },
+  { file: 'mutators.mjs',       n: 2000 },
+  { file: 'scenarios.mjs',      n: 2000 },
+  { file: 'traversal.mjs',      n: 2000 },
+  { file: 'algorithms.mjs',     n: 2000 },
+  { file: 'algorithms.mjs',     n: 500 },  // adds the superlinear ops the 2k run gates off
+  { file: 'mappers.mjs',        n: 2000 }
+];
+
+// Full extras: the 20k/200k matrix.  At 200k, mutators/scenarios must run
+// one group per process (their headers document why: eight v3 instances of
+// a 200k graph exceed the heap), so the tables below enumerate BENCH_OP
+// substrings — these must track the group names in the suite files.
+const MUTATOR_OPS = [ 'select', 'hide', 'lock', 'positions(obj)', 'positions(fn)', 'shift', 'data', 'remove' ];
+const SCENARIO_OPS = [ 'explore', 'select-all', 'drag', 'edit', 'refresh' ];
+
+const FULL_JOBS = [
+  { file: 'materializers.mjs', n: 20000 },
+  { file: 'materializers.mjs', n: 200000 },
+  { file: 'mappers.mjs',       n: 20000 },
+  { file: 'mappers.mjs',       n: 200000 },
+  { file: 'traversal.mjs',     n: 20000 },
+  { file: 'mutators.mjs',      n: 20000 },
+  ...MUTATOR_OPS.map( op => ( { file: 'mutators.mjs', n: 200000, op } ) ),
+  { file: 'scenarios.mjs',     n: 20000 },
+  ...SCENARIO_OPS.map( op => ( { file: 'scenarios.mjs', n: 200000, op } ) )
+];
+
+// -- cli ---------------------------------------------------------------------
+const argv = process.argv.slice( 2 );
+
+function flagValue( name ){
+  const i = argv.indexOf( name );
+
+  return i >= 0 ? argv[ i + 1 ] : null;
+}
+
+const full = argv.includes( '--full' );
+const suiteFilter = flagValue( '--suite' );
+const renderOnly = flagValue( '--render-only' );
+
+function git( ...args ){
+  const r = spawnSync( 'git', args, { cwd: DIR, encoding: 'utf8' } );
+
+  return r.status === 0 ? r.stdout.trim() : null;
+}
+
+function render( results, resultsPath ){
+  const htmlPath = join( RESULTS_DIR, 'report.html' );
+
+  writeFileSync( htmlPath, renderReport( results ) );
+  console.log( `\nreport:  ${htmlPath}` );
+  console.log( `results: ${resultsPath}` );
+}
+
+mkdirSync( RESULTS_DIR, { recursive: true } );
+
+if( renderOnly ){
+  const path = resolve( renderOnly );
+
+  render( JSON.parse( readFileSync( path, 'utf8' ) ), path );
+  process.exit( 0 );
+}
+
+// -- run ---------------------------------------------------------------------
+let jobs = full ? [ ...QUICK_JOBS, ...FULL_JOBS ] : QUICK_JOBS;
+
+if( suiteFilter != null ){ jobs = jobs.filter( j => j.file.includes( suiteFilter ) ); }
+
+if( jobs.length === 0 ){
+  console.error( `no jobs match --suite ${suiteFilter}` );
+  process.exit( 1 );
+}
+
+const startedAt = Date.now();
+const results = { meta: null, jobs: [] };
+const failures = [];
+
+for( const [ i, job ] of jobs.entries() ){
+  const label = `${job.file} @ N=${job.n}${job.op ? ` op=${job.op}` : ''}`;
+  const jsonPath = join( RESULTS_DIR, `.job-${i}.json` );
+
+  console.log( `\n[${i + 1}/${jobs.length}] ${label}` );
+
+  const t0 = Date.now();
+  const r = spawnSync( process.execPath, [ '--import', 'tsx', join( DIR, job.file ) ], {
+    cwd: resolve( DIR, '../..' ),
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      BENCH_N: String( job.n ),
+      ...( job.op != null ? { BENCH_OP: job.op } : {} ),
+      BENCH_JSON: jsonPath
+    }
+  } );
+  const durationMs = Date.now() - t0;
+
+  if( r.status !== 0 || !existsSync( jsonPath ) ){
+    console.error( `  FAILED (exit ${r.status})` );
+    failures.push( { job: label, exitCode: r.status } );
+    continue;
+  }
+
+  const data = JSON.parse( readFileSync( jsonPath, 'utf8' ) );
+
+  rmSync( jsonPath );
+  results.jobs.push( { ...data, durationMs } );
+}
+
+const context = results.jobs[ 0 ]?.context ?? {};
+
+results.meta = {
+  date: new Date( startedAt ).toISOString(),
+  commit: git( 'rev-parse', '--short', 'HEAD' ),
+  branch: git( 'rev-parse', '--abbrev-ref', 'HEAD' ),
+  nodeVersion: process.version,
+  cpu: context.cpu ?? null,
+  arch: context.arch ?? null,
+  runtime: context.runtime ?? null,
+  profile: full ? 'full' : 'quick',
+  suiteFilter,
+  totalMs: Date.now() - startedAt,
+  failures
+};
+
+const stamp = results.meta.date.replace( /[:.]/g, '-' );
+const resultsPath = join( RESULTS_DIR, `results-${stamp}.json` );
+
+writeFileSync( resultsPath, JSON.stringify( results, null, 2 ) );
+render( results, resultsPath );
+
+if( failures.length > 0 ){
+  console.error( `\n${failures.length} job(s) failed: ${failures.map( f => f.job ).join( '; ' )}` );
+}
+
+console.log( `total: ${( results.meta.totalMs / 60000 ).toFixed( 1 ) } min (${basename( resultsPath )})` );

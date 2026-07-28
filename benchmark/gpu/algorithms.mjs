@@ -13,7 +13,8 @@
 // v4 API deltas vs v3 baked into the op pairs: roots/goals are collections
 // on the gpu side (v3 takes them too), and weight fns are plain functions.
 
-import { run, bench, group, summary, do_not_optimize } from 'mitata';
+import { bench, group, summary, do_not_optimize } from 'mitata';
+import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, MIDNUM, N } from './graph.mjs';
 
 const elements = buildElements();
@@ -80,6 +81,6 @@ if( N <= 500 ){
   } ) );
 }
 
-await run();
+await finishRun( 'algorithms' );
 
 process.exit( 0 );

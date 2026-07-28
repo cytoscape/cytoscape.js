@@ -504,7 +504,14 @@ readback — and GPU layouts remain logged for later.
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
 core/collection op against its v3 analogue in `src/`. See
 `benchmark/gpu/` (`materializers.mjs` is a focused standalone sweep that
-stays runnable at `BENCH_N=200000`).  Read-heavy structure ops are where
+stays runnable at `BENCH_N=200000`).
+`npm run benchmark:gpu:report` runs every suite and renders a
+self-contained single-page HTML report (v3-vs-gpu medians as dumbbells on
+log time axes, a ranked speedup overview, per-suite stat tables) into
+`benchmark/gpu/results/` (gitignored) next to the timestamped results
+JSON — quick profile by default, `-- --full` for the 2k/20k/200k matrix
+(one process per group at 200k, as the suite headers require),
+`-- --render-only <results.json>` to re-render without re-running.  Read-heavy structure ops are where
 v4 pulls ahead:
 `degree`/`totalDegree` are O(1) off the adjacency index (~100–200× v3),
 `components`/`add`+`remove` ~25–35×, set operations up to ~25×.  Collection

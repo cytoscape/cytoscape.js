@@ -5,8 +5,8 @@
 //
 // Importing the suites registers their groups; run() executes them all.
 
-import { run } from 'mitata';
+import { finishRun } from './bench-run.mjs';
 import './core.mjs';
 import './collection.mjs';
 
-await run();
+await finishRun( 'core+collection' );

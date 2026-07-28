@@ -1336,6 +1336,27 @@ z-index; GPU layouts; size tweens (the R8.5 geometry seam); `renderTo`;
 restore/clone/json-import (closed — not in v4); the three-finger touch
 box gesture.
 
+## Landed (benchmark HTML report, 2026-07-28)
+
+`npm run benchmark:gpu:report` runs the Mitata suites and renders one
+self-contained HTML page (plus a timestamped results JSON) into the
+gitignored `benchmark/gpu/results/`.  Pieces: `bench-run.mjs` — a shared
+`finishRun()` tail that, under `BENCH_JSON`, runs quietly and captures
+per-group/per-bench stats (mitata's `run()` returns them; sample arrays
+stripped) with terminal behaviour otherwise unchanged; `report.mjs` — the
+job-table orchestrator (quick profile at default scales; `--full` adds
+the 2k/20k/200k matrix with one process per group at 200k via `BENCH_OP`,
+per the suite headers; failures logged and reported, partial reports
+still render; `--suite` filter, `--render-only` re-render); and
+`report-html.mjs` — a pure results→HTML renderer (Node-tested in
+`test/modules/gpu-benchmark-report.mjs`): times as dumbbell dots on log₁₀
+axes (position, not bar length — length encodes nothing on a log axis),
+a ranked speedup overview against a 1× reference line, geo-mean/best-win
+stat tiles, per-suite table views, a cross-N scaling table on full runs,
+light+dark styling, hover/focus tooltips, no external assets.  Decisions:
+quick-by-default (full is opt-in), local gitignored artifact, Mitata
+suites only (the manual browser-side numbers stay in the README).
+
 ## Logged — compaction (analysis only; out of round 10)
 
 Discussed 2026-07-27 while planning round 10 and **deliberately left

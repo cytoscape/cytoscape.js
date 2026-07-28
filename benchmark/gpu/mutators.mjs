@@ -19,7 +19,8 @@
 // (or value-rotating, for idempotent setters) so the graph is in the same
 // state at the start of every iteration.
 
-import { run, bench, group, summary } from 'mitata';
+import { bench, group, summary } from 'mitata';
+import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, N } from './graph.mjs';
 
 const elements = buildElements();
@@ -102,7 +103,7 @@ cmpMut( `mut-bulk: remove + re-add (${BAND} nodes + cascade)`, setupRemove,
   undefined,
   ( defs, i, cy ) => { bandOf( cy ).remove(); cy.add( defs ); } );
 
-await run();
+await finishRun( 'mutators' );
 
 // the styleEnabled v3 instance keeps an animation-loop timer alive
 process.exit( 0 );

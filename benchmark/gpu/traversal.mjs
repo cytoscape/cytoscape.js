@@ -8,7 +8,8 @@
 //
 //   BENCH_N=20000 node --import tsx benchmark/gpu/traversal.mjs
 
-import { run, bench, group, summary, do_not_optimize } from 'mitata';
+import { bench, group, summary, do_not_optimize } from 'mitata';
+import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, MIDNUM, N } from './graph.mjs';
 
 const elements = buildElements();
@@ -62,6 +63,6 @@ cmp( 'trav: band roots()',          nodeBand, b => b.roots() );
 cmp( 'trav: band sources()',        edgeBand, b => b.sources() );
 cmp( 'trav: band connectedNodes()', edgeBand, b => b.connectedNodes() );
 
-await run();
+await finishRun( 'traversal' );
 
 process.exit( 0 );

@@ -30,7 +30,8 @@
 // math) is unaffected.  Listener counters are logged after the run as a
 // sanity check that the emit paths actually fired on both sides.
 
-import { run, bench, group, summary } from 'mitata';
+import { bench, group, summary } from 'mitata';
+import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, MIDNUM, N } from './graph.mjs';
 
 const elements = buildElements();
@@ -225,7 +226,7 @@ scenario( 'scn: refresh (bulk data write + mapped labels + filter + fit, data li
     return { cy, counts, nodes: cy.nodes() };
   } } );
 
-await run();
+await finishRun( 'scenarios' );
 
 // sanity: the listener-on paths must actually have fired on both sides
 for( const s of states ){

@@ -19,7 +19,8 @@
 // value so nothing can be skipped as unchanged, and drains the mapper
 // spans the way a frame would.
 
-import { run, bench, group, summary } from 'mitata';
+import { bench, group, summary } from 'mitata';
+import { finishRun } from './bench-run.mjs';
 import { buildElements, makeGpu, N } from './graph.mjs';
 
 const elements = buildElements();
@@ -96,4 +97,4 @@ group( 'mapper: bulk write, mapped labels (round-5 path)', () => {
   );
 }
 
-await run();
+await finishRun( 'mappers' );

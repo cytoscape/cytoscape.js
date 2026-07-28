@@ -126,7 +126,8 @@
     "benchmark:all": "run-s benchmark:download benchmark:all:exec",
     "benchmark:single:exec": "node benchmark/single",
     "benchmark:single": "run-s benchmark:download benchmark:single:exec",
-    "benchmark:gpu": "node --import tsx benchmark/gpu/index.mjs"
+    "benchmark:gpu": "node --import tsx benchmark/gpu/index.mjs",
+    "benchmark:gpu:report": "node --import tsx benchmark/gpu/report.mjs"
   },
   "devDependencies": {
     "@fontsource/open-sans": "^5.3.0",

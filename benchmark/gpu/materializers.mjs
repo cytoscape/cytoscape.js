@@ -6,7 +6,8 @@
 //
 //   BENCH_N=200000 node --import tsx benchmark/gpu/materializers.mjs
 
-import { run, bench, group, summary, do_not_optimize } from 'mitata';
+import { bench, group, summary, do_not_optimize } from 'mitata';
+import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, N } from './graph.mjs';
 
 const elements = buildElements();
@@ -47,4 +48,4 @@ cmp( 'sweep: nodes(":selected") vs nodes({selected})',
   c => c.nodes( ':selected' ), c => c.nodes( { selected: true } ) );
 cmp( 'sweep: filter(fn)',         c => c.filter( e => e.isNode() ) );
 
-await run();
+await finishRun( 'materializers' );

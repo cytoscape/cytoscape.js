@@ -22,6 +22,7 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
   - Bundle, packaging, or docs pipeline changes: `npm run build`, `npm run docs`, and any targeted release script checks that apply.
   - If the change is broad or you are unsure, run `npm test`.
 - Build all bundles but only if you're modifying the build system: `npm run build`.
+- Commit your changes in isolated commits.  Use detailed commit messages.
 
 ## Repository structure
 - `src/`: Main library source.

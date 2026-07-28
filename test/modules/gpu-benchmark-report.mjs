@@ -1,4 +1,5 @@
 import { renderReport, fmtTime, fmtSpeedup } from '../../benchmark/gpu/report-html.mjs';
+import { toStats, oneShotStats } from '../../benchmark/gpu/render-stats.mjs';
 import { expect } from 'chai';
 
 const stats = ( p50, extra = {} ) => ( {
@@ -125,6 +126,41 @@ describe( 'gpu benchmark report', function(){
       const html = renderReport( { meta: { totalMs: 0, failures: [] }, jobs: [] } );
 
       expect( html ).to.include( '</html>' );
+    } );
+
+    it( 'renders a section note once per (suite, n)', function(){
+      const results = fixture();
+
+      results.jobs[ 0 ].note = 'Wall frame times are vsync-bound.';
+      results.jobs[ 1 ].note = 'A different note that must not double-render.';
+
+      const html = renderReport( results );
+
+      expect( html ).to.include( 'Wall frame times are vsync-bound.' );
+      expect( html ).to.not.include( 'must not double-render' );
+    } );
+  } );
+
+  describe( 'render-bench stat shaping', function(){
+    it( 'converts sampled ms to the ns stats shape with mitata indexing', function(){
+      const s = toStats( [ 3, 1, 2, 4, 5 ] ); // ms
+
+      expect( s.min ).to.equal( 1e6 );
+      expect( s.max ).to.equal( 5e6 );
+      expect( s.p50 ).to.equal( 3e6 );
+      expect( s.p25 ).to.equal( 2e6 ); // (0.25 * 4) | 0 = index 1
+      expect( s.avg ).to.equal( 3e6 );
+      expect( s.samples ).to.equal( 5 );
+    } );
+
+    it( 'returns null for no samples and a flat one-shot otherwise', function(){
+      expect( toStats( [] ) ).to.equal( null );
+
+      const s = oneShotStats( 250 );
+
+      expect( s.p50 ).to.equal( 250e6 );
+      expect( s.p99 ).to.equal( 250e6 );
+      expect( s.samples ).to.equal( 1 );
     } );
   } );
 

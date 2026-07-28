@@ -1336,6 +1336,37 @@ z-index; GPU layouts; size tweens (the R8.5 geometry seam); `renderTo`;
 restore/clone/json-import (closed — not in v4); the three-finger touch
 box gesture.
 
+## Landed (renderer benchmarks, 2026-07-28)
+
+The renderer's recorded numbers (fps tables, pan ms/frame, pick latency,
+init/export costs) were manual debug-harness measurements; this makes
+them a repeatable command.  `npm run benchmark:gpu:renderer` (or
+`benchmark:gpu:report -- --renderer` to fold into the combined report)
+runs `benchmark/gpu/render-bench.mjs`: a Playwright-library driver (not a
+test project — no assertions, not in CI's sweep) that serves the repo on
+an ephemeral port (no stale-:3333 dependence; bundle-vs-src mtimes are
+checked and warned), launches Chromium `channel: 'chromium'` with
+`--enable-unsafe-webgpu`, **aborts without a real adapter** (software
+adapters warn — different machine class), and drives
+`render-bench.html`: one instance at a time on a shared stage, seeded
+25k×50k / 100k×300k generators + stripped ndex-x-large, v3 canvas vs v4
+WebGPU on identical defs and constant styles.  Scenarios: continuous-pan
+steady state (fit-all / zoomed-in 20× / far-zoom ÷8, labels off/on) —
+programmatic `panBy` per rAF, warm-up then sampling until window + a
+minimum frame count; wall ms per *rendered* frame (v4: `stats().frames`
+delta, since backpressure skips ticks; v3: the tick delta, since the
+canvas draw runs inside it) as the comparison metric, with
+`stats().gpuFrameMs` (timestamp-query) as `gpu (device)` rows — the
+vsync-unbounded cost; hover-while-panning `pick()` latency percentiles;
+one-shot init / columnar init / full-png export (≤2048 px — full-graph
+exports would exceed the device texture cap).  dpr 2, 1280×800, render
+scale pinned to 1.  Results emit the same mitata-shaped stats
+(`render-stats.mjs`, unit-tested) so `report-html.mjs` renders renderer
+sections unchanged; jobs carry a `note` (new, rendered once per section)
+stating the vsync bound and pinned config.  First full run (M2, Metal,
+dpr 2): fit-all pan p50 v3 338 ms vs gpu 11.8 ms wall / 7.8 ms device at
+25k×50k; far-zoom device 2.1 ms (decimation); init 1.2 s vs 94 ms.
+
 ## Landed (benchmark HTML report, 2026-07-28)
 
 `npm run benchmark:gpu:report` runs the Mitata suites and renders one

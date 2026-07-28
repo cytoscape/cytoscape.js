@@ -51,11 +51,12 @@ function toSections( jobs ){
     let s = byKey.get( key );
 
     if( s == null ){
-      s = { suite: job.suite, n: job.n, groups: [], groupNames: new Set(), durationMs: 0 };
+      s = { suite: job.suite, n: job.n, groups: [], groupNames: new Set(), durationMs: 0, note: null };
       byKey.set( key, s );
     }
 
     s.durationMs += job.durationMs ?? 0;
+    s.note = s.note ?? job.note ?? null;
 
     for( const g of job.groups ){
       if( s.groupNames.has( g.name ) ){ continue; }
@@ -171,6 +172,7 @@ function sectionHtml( section ){
 
   return `<section>
     <h2>${esc( section.suite )} <small>N=${Number( section.n ).toLocaleString( 'en-US' )} · ${fmtMin( section.durationMs )}</small>${legend}</h2>
+    ${section.note != null ? `<p class="note">${esc( section.note )}</p>` : ''}
     <div class="chart">${rows}${axisBand( axis.ticks, fmtTick )}</div>
     ${detailsTable( section )}
   </section>`;
@@ -301,6 +303,7 @@ h1 { font-size: 20px; margin: 0 0 4px; }
 h2 { font-size: 15px; margin: 0 0 12px; }
 h2 small, .meta { font-weight: 400; color: var(--ink-2); font-size: 13px; }
 h3 { font-size: 13px; margin: 16px 0 6px; color: var(--ink-2); }
+.note { font-size: 12px; color: var(--muted); margin: -4px 0 12px; max-width: 78ch; }
 section {
   background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
   padding: 16px 20px; margin: 16px 0; overflow-x: auto;

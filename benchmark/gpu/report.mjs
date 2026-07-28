@@ -4,6 +4,9 @@
 //
 //   npm run benchmark:gpu:report                # quick profile (~minutes)
 //   npm run benchmark:gpu:report -- --full      # 2k/20k/200k matrix (long)
+//   npm run benchmark:gpu:report -- --renderer  # + the browser renderer bench
+//                                               #   (render-bench.mjs: built
+//                                               #   bundles + real GPU)
 //   npm run benchmark:gpu:report -- --suite traversal
 //   npm run benchmark:gpu:report -- --render-only results/results-<ts>.json
 //
@@ -62,7 +65,9 @@ function flagValue( name ){
 }
 
 const full = argv.includes( '--full' );
+const withRenderer = argv.includes( '--renderer' );
 const suiteFilter = flagValue( '--suite' );
+const sceneFilter = flagValue( '--scene' ); // forwarded to the renderer bench
 const renderOnly = flagValue( '--render-only' );
 
 function git( ...args ){
@@ -93,6 +98,10 @@ let jobs = full ? [ ...QUICK_JOBS, ...FULL_JOBS ] : QUICK_JOBS;
 
 if( suiteFilter != null ){ jobs = jobs.filter( j => j.file.includes( suiteFilter ) ); }
 
+// the browser-side renderer benchmark (render-bench.mjs: real GPU + built
+// bundles required) appends its own scene jobs to the same results file
+if( withRenderer ){ jobs = [ ...jobs, { file: 'render-bench.mjs', browser: true } ]; }
+
 if( jobs.length === 0 ){
   console.error( `no jobs match --suite ${suiteFilter}` );
   process.exit( 1 );
@@ -103,16 +112,20 @@ const results = { meta: null, jobs: [] };
 const failures = [];
 
 for( const [ i, job ] of jobs.entries() ){
-  const label = `${job.file} @ N=${job.n}${job.op ? ` op=${job.op}` : ''}`;
+  const label = job.browser ? `${job.file} (browser)` : `${job.file} @ N=${job.n}${job.op ? ` op=${job.op}` : ''}`;
   const jsonPath = join( RESULTS_DIR, `.job-${i}.json` );
 
   console.log( `\n[${i + 1}/${jobs.length}] ${label}` );
 
   const t0 = Date.now();
-  const r = spawnSync( process.execPath, [ '--import', 'tsx', join( DIR, job.file ) ], {
+  const args = job.browser
+    ? [ '--import', 'tsx', join( DIR, job.file ), '--json', jsonPath,
+      ...( sceneFilter != null ? [ '--scene', sceneFilter ] : [] ) ]
+    : [ '--import', 'tsx', join( DIR, job.file ) ];
+  const r = spawnSync( process.execPath, args, {
     cwd: resolve( DIR, '../..' ),
     stdio: 'inherit',
-    env: {
+    env: job.browser ? process.env : {
       ...process.env,
       BENCH_N: String( job.n ),
       ...( job.op != null ? { BENCH_OP: job.op } : {} ),
@@ -130,7 +143,14 @@ for( const [ i, job ] of jobs.entries() ){
   const data = JSON.parse( readFileSync( jsonPath, 'utf8' ) );
 
   rmSync( jsonPath );
-  results.jobs.push( { ...data, durationMs } );
+
+  if( job.browser ){
+    // a jobs bundle: one job per scene, durations set scene-side
+    results.jobs.push( ...data.jobs );
+    failures.push( ...( data.failures ?? [] ) );
+  } else {
+    results.jobs.push( { ...data, durationMs } );
+  }
 }
 
 const context = results.jobs[ 0 ]?.context ?? {};

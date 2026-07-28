@@ -598,6 +598,13 @@ element on either side — unlike bulk writes, which touch columns and
 return nothing.  Going further would mean lazy slot-backed collections
 (an API-shape change, noted in PLAN.md under "needs a call").
 
+The graph algorithms have their own sweep (`benchmark/gpu/algorithms.mjs`;
+superlinear ops gate on `BENCH_N`): the slot-native walks win every op at
+N=2000 — bfs ~34×, dfs ~39×, dijkstra+pathTo ~33×, tarjan SCC ~19×,
+betweenness ~13× — while the dense-matrix ops (pageRank, floydWarshall,
+markov/hierarchical/kMeans clustering) are parity as expected, identical
+math dominating (within ±1.2× at N=500).
+
 ## Loading
 
 `options.elements` accepts the classic definition form (v3-style JSON) or

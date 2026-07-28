@@ -1364,8 +1364,11 @@ scale pinned to 1.  Results emit the same mitata-shaped stats
 (`render-stats.mjs`, unit-tested) so `report-html.mjs` renders renderer
 sections unchanged; jobs carry a `note` (new, rendered once per section)
 stating the vsync bound and pinned config.  First full run (M2, Metal,
-dpr 2): fit-all pan p50 v3 338 ms vs gpu 11.8 ms wall / 7.8 ms device at
-25k×50k; far-zoom device 2.1 ms (decimation); init 1.2 s vs 94 ms.
+dpr 2), fit-all pan p50 v3-vs-gpu wall: 336 ms vs 10.6 ms at 25k×50k
+(device 7.8 ms; far-zoom device 2.1 ms — decimation), 2.05 s vs 15.2 ms
+at 100k×300k, 1.86 s vs 32.8 ms on ndex-x-large (~30 fps native,
+matching the round-recorded "25 fps before adaptive scale"); init 7.7 s
+vs 457 ms at 100k; ndex pick p50 0.1 ms (the CPU fast path).
 
 ## Landed (benchmark HTML report, 2026-07-28)
 
@@ -1386,7 +1389,9 @@ a ranked speedup overview against a 1× reference line, geo-mean/best-win
 stat tiles, per-suite table views, a cross-N scaling table on full runs,
 light+dark styling, hover/focus tooltips, no external assets.  Decisions:
 quick-by-default (full is opt-in), local gitignored artifact, Mitata
-suites only (the manual browser-side numbers stay in the README).
+suites only — the browser-side numbers stayed manual at this point
+(since superseded: the renderer benchmarks above made them a command,
+folded in via `--renderer`).
 
 ## Logged — compaction (analysis only; out of round 10)
 

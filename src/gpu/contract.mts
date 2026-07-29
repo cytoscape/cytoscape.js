@@ -187,6 +187,13 @@ export interface LabelEntry {
   bgColor: number;
   /** text-background-padding, model px */
   bgPadding: number;
+  /**
+   * text-rotation: autorotate (edge labels only; always false for nodes).
+   * The renderer rotates the glyph run to the edge's angle in the VS,
+   * flipped so text never reads upside-down (v3's undirected-slope rule:
+   * the baseline angle stays within (-90°, 90°]).
+   */
+  rotate: boolean;
 }
 
 // -- the read surface the renderer consumes --

@@ -1295,7 +1295,8 @@ Each entry converts into a "Landed" record as it ships:
   midpoint).  Also fixed en route: a hardcoded 40-byte glyph stride in
   the renderer's cull-capacity math (stale since B3's 48-byte
   instances; benign over-allocation) now uses GLYPH_BYTES.  Horizontal
-  only — autorotate stays the separate follow-up.  7 model specs
+  only — autorotate stayed the separate follow-up (since landed
+  2026-07-29; see the autorotate entry below).  7 model specs
   (`test/gpu-edge-labels.mjs`), the follows-drag webgpu spec, and an
   `edge-labels` golden (midpoint + background box on a diagonal edge);
   1628 Node + 47 module tests, 47 Playwright specs green (twice).
@@ -1704,9 +1705,11 @@ spellings, redundant `attr`-family duplicates — one name per concept).
   `text-justification`/`line-height`/`text-overflow-wrap` (+
   `ellipsis`).  Same decided tier (shaping memoizes; model-space
   keeps it zoom-invariant).
-- **Edge label autorotate** (`text-rotation: autorotate`) — logged
-  direction (VS endpoint delta); the flip-when-upside-down rule is
-  the one remaining small call.
+- ~~**Edge label autorotate** (`text-rotation: autorotate`)~~ —
+  **landed 2026-07-29** (see the autorotate entry below); the flip
+  rule call was taken as v3's verbatim undirected-slope angle.
+  Per-element *numeric* `text-rotation` stays in the label-parity
+  batch.
 - **Force-directed layout** — v3's `cose` is the only built-in
   force layout, so v4 has *no* force option at all today; the GPU
   layout direction is logged (GPU-authoritative + readback, CPU
@@ -1853,8 +1856,8 @@ The sweep confirms the two headline pillars — **curved edges** and
 **compounds** — dwarf everything else in app impact, with
 **background images** the sleeper third (16 props, near-universal in
 production apps).  Of the near-term autonomous work, slot-stable
-compaction landed as round 11; edge-label autorotate (one flip-rule
-call, then autonomous) is the remaining item on that shelf.  The
+compaction landed as round 11 and edge-label autorotate landed
+2026-07-29 — the autonomous shelf is clear.  The
 design queue, in suggested order: curved
 edges (tier already decided; now also carrying haystack/
 straight-triangle as visual styles) → compounds (needs the full
@@ -1975,3 +1978,48 @@ this plan):
 2. **Whether `bezier` implies bundling for multi-edges only** exactly
    as v3 (single edges stay straight lines under `bezier` — v3's
    behaviour) — lean: yes, verbatim parity.
+
+## Landed (edge-label autorotate, 2026-07-29)
+
+The last item on the autonomous shelf, cleared while planning round 12:
+`text-rotation: autorotate` for edge labels, one isolated commit.
+
+- **API**: `text-rotation` is an edge style prop — keywords `none`
+  (default, horizontal) | `autorotate`, constants or mappers (enum
+  kind, so `case` conditionals work, matching the other label
+  channels).  Numeric rotations throw (per-element numeric
+  `text-rotation` stays in the label-parity needs-a-call batch), and
+  the prop throws on the nodes group (node labels don't rotate in v4).
+  Readback follows the stored-truth rule: the sidecar entry when
+  labelled, else the sheet.
+- **The flip-rule call** (the one that was open): **v3's verbatim** —
+  the label angle is the edge's *undirected* slope, v3's
+  `atan(dy/dx)` (`labels.mts:95`), so the baseline stays within
+  (−90°, 90°] and text never reads upside-down; vertical edges read
+  top-to-bottom at +90° either direction.  The WGSL implements the
+  same rule with no trig: it sign-normalizes the endpoint delta
+  (negated when it points left, or straight up at dx = 0) and uses
+  the unit vector as the rotation frame (`autorotateFrame`).
+- **Mechanism**: rotation happens in the vertex shader from the live
+  endpoint positions, so autorotate inherits the edge-label
+  zero-rebuild property — drags, layouts and position tweens re-angle
+  the label on-GPU (spec-pinned: making a vertical edge horizontal
+  re-uploads ≤ 64 B, one position row).  The model bakes only a flag:
+  bit 31 of the glyph instance's owner word (element slots stay far
+  below 2³¹; the dead sentinel is the full-ones word, so no
+  collision).  The background quad carries the flag too — a text box
+  rotates with its text — and the edge-glyph cull kernel tests the
+  exact rotated-rect AABB in the same rotation frame as the VS, so
+  cull and draw can't disagree.  Node glyph paths are untouched, and
+  the non-rotated edge path keeps its original arithmetic —
+  pre-existing goldens pass unchanged.
+- **Verification**: typecheck + lint clean; 1650 Node tests (5 new in
+  `test/gpu-edge-labels.mjs`: entry + readback, defaults +
+  sheet-resolution, throws for numbers/unknown keywords/nodes-group,
+  case mappers, node-entries-never-rotate); 40/40 `webgpu` Playwright
+  specs (new: a vertical-edge spec pinning the dark-pixel bounding box
+  flipping from wide to tall under autorotate, plus the ≤ 64 B
+  re-angle on an endpoint move); 13/13 `webgpu-visual` (new
+  `edge-label-autorotate` golden: a downhill run, a direction-flipped
+  uphill run with its background box rotated along, and a vertical
+  top-to-bottom run — all pre-existing goldens unchanged).

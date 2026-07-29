@@ -1705,6 +1705,82 @@ test.describe( 'WebGPU renderer', () => {
     expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 ); // one position row, no glyph re-upload
   } );
 
+  test( 'edge label autorotate rotates the run and follows the angle on-GPU', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // a vertical edge: horizontal labels read wide-and-short, autorotated
+    // ones tall-and-narrow (the flip rule reads verticals at +90°)
+    const sheet = rotation => ( {
+      nodes: { 'width': 10, 'height': 10, 'background-color': '#eee' },
+      edges: {
+        'width': 1, 'line-color': '#eee',
+        'label': 'ROTATED TEXT', 'font-size': 24, 'color': '#000',
+        'text-rotation': rotation
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: -120 } },
+        { data: { id: 'b' }, position: { x: 0, y: 120 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: sheet( 'none' ),
+      zoom: 1
+    } );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const darkBox = png => {
+      // bounding box of dark (label) pixels
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, n = 0;
+
+      for( let y = 0; y < png.height; y++ ){
+        for( let x = 0; x < png.width; x++ ){
+          const i = ( y * png.width + x ) * 4;
+
+          if( png.data[ i ] < 100 && png.data[ i + 1 ] < 100 && png.data[ i + 2 ] < 100 ){
+            minX = Math.min( minX, x );
+            minY = Math.min( minY, y );
+            maxX = Math.max( maxX, x );
+            maxY = Math.max( maxY, y );
+            n++;
+          }
+        }
+      }
+
+      return { w: maxX - minX, h: maxY - minY, n };
+    };
+
+    const shot = async () => decodePng( await page.evaluate( () => window.cy.png( { bg: '#fff' } ) ) );
+    const horizontal = darkBox( await shot() );
+
+    expect( horizontal.n ).toBeGreaterThan( 100 );
+    expect( horizontal.w ).toBeGreaterThan( horizontal.h * 2 );
+
+    await page.evaluate( sheet => window.cy.style( sheet ), sheet( 'autorotate' ) );
+    await waitFrames( page );
+
+    const vertical = darkBox( await shot() );
+
+    expect( vertical.n ).toBeGreaterThan( 100 );
+    expect( vertical.h ).toBeGreaterThan( vertical.w * 2 );
+
+    // the rotation angle reads live positions: making the edge horizontal
+    // re-rotates the label with a position-row upload only, no glyph rebuild
+    const uploadedBefore = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    await page.evaluate( () => window.cy.$id( 'b' ).position( { x: 240, y: -120 } ) );
+    await waitFrames( page );
+
+    const rotatedBack = darkBox( await shot() );
+    const uploadedAfter = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    expect( rotatedBack.n ).toBeGreaterThan( 100 );
+    expect( rotatedBack.w ).toBeGreaterThan( rotatedBack.h * 2 );
+    expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 );
+  } );
+
   test( 'png() export mid-animation snapshots the GPU-owned position', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

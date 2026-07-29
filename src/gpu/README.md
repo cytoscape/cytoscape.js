@@ -444,9 +444,22 @@ each is deliberate, not a pass-1 deferral:
   label-dirty channel and StyleEngine label channels (the `label`
   passthrough, `font-size`, `color` and all the round-10 text visuals
   work for edges; the text block centers on the midpoint by font
-  size).  Horizontal text only — autorotate (with its
-  flip-when-upside-down readability rules) stays a separate follow-up
-  call.  Edge labels are not pickable, like node labels.
+  size).  Edge labels are not pickable, like node labels.  Text draws
+  horizontally by default; **`text-rotation: autorotate`** (landed
+  2026-07-29) rotates the glyph run to the edge's angle **in the vertex
+  shader**, so the rotation also reads live positions and follows
+  drags/layouts/position tweens on-GPU with zero rebuild.  The flip
+  rule is v3's verbatim: the angle is the edge's *undirected* slope
+  (`atan(dy/dx)`), so the baseline stays within (−90°, 90°] and text
+  never reads upside-down — vertical edges read top-to-bottom at +90°.
+  The keyword (`none` | `autorotate`; numeric rotations throw, and the
+  prop throws on the nodes group — per-element numeric rotation is a
+  logged parity gap) is mapper-capable like the other label channels;
+  the model bakes only a flag — bit 31 of the glyph instance's owner
+  word (element slots stay far below 2³¹, and the dead sentinel is the
+  full-ones word) — which the background quad carries too, so a text
+  box rotates with its text, and the edge-glyph cull kernel tests the
+  exact rotated-rect AABB in the same rotation frame as the VS.
 - **Removed elements are terminally dead** (decided 2026-07-27).  An
   element's substance lives in the columns, not the handle, and
   `remove()` tombstones the slot, bumps its generation and free-lists
@@ -805,8 +818,10 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   polygon nodes sit on the inscribed *ellipse* boundary
   (approximation); the depth prepass treats polygon interiors exactly
   via their SDF.
-- **Labels**: nodes *and edges* (round 10 — edge labels draw
-  horizontally at the midpoint, following endpoint moves on-GPU),
+- **Labels**: nodes *and edges* (round 10 — edge labels draw at the
+  midpoint, following endpoint moves on-GPU; horizontal by default, or
+  rotated to the edge's angle with `text-rotation: autorotate`, never
+  upside-down — see the edge-labels design decision),
   single line (newlines collapse to spaces), fixed
   placement (nodes: horizontally centered below the node; edges:
   centered on the midpoint; both offset by
@@ -821,9 +836,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   run's glyphs, riding the same buffer/cull/draw; it carries the glyph
   block's height so it fades and culls exactly with its text), and
   `text-margin-x/y` — all mapper-capable (CPU-evaluated, like
-  font-size).  Outline and background opacities fold into their stored
-  alphas, so their getters read back folded (the arrow-color
-  precedent).
+  font-size), as is `text-rotation`.  Outline and background opacities
+  fold into their stored alphas, so their getters read back folded
+  (the arrow-color precedent).
 - **Arrowheads**: `source/target-arrow-shape` supports `triangle`
   (+`arrow` alias), `vee`, `chevron`, `circle`, `square`, `diamond`,
   `tee` and `none` (round 10 — SDFs generated from v3's arrow point

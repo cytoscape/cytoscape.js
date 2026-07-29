@@ -1,6 +1,6 @@
 import { GlyphAtlas, SDF_FONT_SIZE, SDF_RADIUS } from './glyph-atlas.mjs';
 import { layoutLabel } from './label-layout.mjs';
-import { GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
+import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { GroupName } from '../contract.mjs';
 
@@ -88,6 +88,10 @@ export class LabelLayer {
       const f32 = new Float32Array( scratch );
       let at = 0;
 
+      // autorotate rides bit 31 of the owner word (edge stream only); the
+      // background quad carries it too, so the box rotates with its text
+      const owner = ( entry.rotate ? slot | GLYPH_ROTATE : slot ) >>> 0;
+
       if( hasBg ){
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
@@ -100,7 +104,7 @@ export class LabelLayer {
 
         const pad = entry.bgPadding;
 
-        u32[ at ] = slot;
+        u32[ at ] = owner;
         u32[ at + 1 ] = entry.bgColor;
         f32[ at + 2 ] = minX * scale + entry.marginX - pad;
         f32[ at + 3 ] = entry.anchorY + minY * scale - pad;
@@ -118,7 +122,7 @@ export class LabelLayer {
       for( let i = 0; i < laid.length; i++ ){
         const g = laid[ i ];
 
-        u32[ at ] = slot;
+        u32[ at ] = owner;
         u32[ at + 1 ] = entry.color;
         f32[ at + 2 ] = g.x * scale + entry.marginX;
         f32[ at + 3 ] = entry.anchorY + g.y * scale;

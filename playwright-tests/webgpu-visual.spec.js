@@ -468,6 +468,59 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: edge label autorotate (angles + the flip rule)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        // downhill left-to-right diagonal: rotates to the positive slope
+        { data: { id: 'a' }, position: { x: -160, y: -100 } },
+        { data: { id: 'b' }, position: { x: -20, y: 20 } },
+        // the delta points left (source right of target): the flip rule
+        // negates it, so the label still reads left-to-right — its
+        // background box pins that the quad rotates with the text
+        { data: { id: 'c' }, position: { x: 160, y: -100 } },
+        { data: { id: 'd' }, position: { x: 20, y: 20 } },
+        // vertical: reads top-to-bottom at +90° (the dx == 0 case)
+        { data: { id: 'e' }, position: { x: 0, y: 40 } },
+        { data: { id: 'f' }, position: { x: 0, y: 130 } },
+        { data: { id: 'ab', source: 'a', target: 'b', lbl: 'downhill', boxed: 0 } },
+        { data: { id: 'cd', source: 'c', target: 'd', lbl: 'uphill', boxed: 1 } },
+        { data: { id: 'ef', source: 'e', target: 'f', lbl: 'down', boxed: 0 } }
+      ],
+      style: {
+        nodes: {
+          'width': 16, 'height': 16, 'background-color': '#b2bec3',
+          'font-family': `'Open Sans', sans-serif`
+        },
+        edges: {
+          'width': 2, 'line-color': '#b2bec3',
+          'label': { data: 'lbl' }, 'font-size': 14, 'color': '#2d3436',
+          'text-rotation': 'autorotate',
+          'text-background-color': '#ffeaa7',
+          'text-background-opacity': { case: [ { when: { data: 'boxed', eq: 1 }, then: 1 } ], else: 0 },
+          'text-background-padding': 2
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'edge-label-autorotate', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
   test( 'golden: label visuals (outline, background, margins)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

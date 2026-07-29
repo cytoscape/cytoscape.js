@@ -79,6 +79,50 @@ describe('gpu/edge labels: model + style', function(){
     expect( () => cy.style({ edges: { 'font-family': 'serif' } }) ).to.throw(/node style property/);
   });
 
+  it('text-rotation: autorotate lands in the entry and reads back', function(){
+    cy.style({ edges: { label: 'x', 'text-rotation': 'autorotate' } });
+
+    expect( entryOf('ab').rotate ).to.equal( true );
+    expect( cy.$id('ab').style('text-rotation') ).to.equal('autorotate');
+  });
+
+  it('text-rotation defaults to none (horizontal)', function(){
+    cy.style({ edges: { label: 'x' } });
+
+    expect( entryOf('ab').rotate ).to.equal( false );
+    expect( cy.$id('ab').style('text-rotation') ).to.equal('none');
+
+    // unlabelled edges resolve through the sheet
+    cy.style({ edges: { 'text-rotation': 'autorotate' } });
+
+    expect( entryOf('ab') ).to.equal( undefined );
+    expect( cy.$id('ab').style('text-rotation') ).to.equal('autorotate');
+  });
+
+  it('text-rotation rejects numbers, unknown keywords, and the nodes group', function(){
+    expect( () => cy.style({ edges: { 'text-rotation': 90 } }) ).to.throw(/numeric rotations/);
+    expect( () => cy.style({ edges: { 'text-rotation': 'sideways' } }) ).to.throw(/unsupported/);
+    expect( () => cy.style({ nodes: { 'text-rotation': 'autorotate' } }) ).to.throw(/edge style property/);
+  });
+
+  it('case mappers drive text-rotation', function(){
+    cy.style({ edges: {
+      label: { data: 'id' },
+      'text-rotation': { case: [ { when: { data: 'kind', eq: 'likes' }, then: 'autorotate' } ], else: 'none' }
+    } });
+
+    expect( entryOf('ab').rotate ).to.equal( true );
+    expect( entryOf('ba').rotate ).to.equal( false );
+    expect( cy.$id('ab').style('text-rotation') ).to.equal('autorotate');
+    expect( cy.$id('ba').style('text-rotation') ).to.equal('none');
+  });
+
+  it('node label entries never rotate', function(){
+    cy.style({ nodes: { label: 'n' } });
+
+    expect( cy._store.labelAt( cy._store.lookup('a').slot, 'nodes' ).rotate ).to.equal( false );
+  });
+
   it('removing an edge clears its label entry', function(){
     cy.style({ edges: { label: 'x' } });
 

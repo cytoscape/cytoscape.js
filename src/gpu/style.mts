@@ -91,6 +91,8 @@ interface EdgeComputed {
   textBgPadding: number;
   textMarginX: number;
   textMarginY: number;
+  /** 0 none (horizontal), 1 autorotate (contract TEXT_ROTATE_* ids; edges only) */
+  textRotation: number;
 }
 
 type Computed = NodeComputed & EdgeComputed;
@@ -145,7 +147,8 @@ const EDGE_DEFAULTS: EdgeComputed = {
   textBgOpacity: 0,
   textBgPadding: 0,
   textMarginX: 0,
-  textMarginY: 0
+  textMarginY: 0,
+  textRotation: 0 // none: horizontal, as v3's default
 };
 
 const NO_ARROW: RGBA = [ 0, 0, 0, 0 ]; // a=0 collapses the arrow in the shader
@@ -217,7 +220,7 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
-  'text-margin-x', 'text-margin-y'
+  'text-margin-x', 'text-margin-y', 'text-rotation'
 ] );
 
 const parseColor = ( prop: string, value: unknown ): RGBA => {
@@ -281,6 +284,31 @@ const parseLineStyle = ( value: unknown ): number => {
   return style;
 };
 
+/** text-rotation keywords (edge labels): 0 none, 1 autorotate. */
+const TEXT_ROTATIONS: Record<string, number> = {
+  'none': 0,
+  'autorotate': 1
+};
+
+const TEXT_ROTATION_NAMES: Record<number, string> = {
+  0: 'none',
+  1: 'autorotate'
+};
+
+const parseTextRotation = ( value: unknown ): number => {
+  const rotation = TEXT_ROTATIONS[ String( value ) ];
+
+  if( rotation == null ){
+    throw new Error(
+      `The text-rotation '${String( value )}' is unsupported in the GPU prototype; ` +
+      `use one of: ${Object.keys( TEXT_ROTATIONS ).join( ', ' )} ` +
+      `(numeric rotations are not supported)`
+    );
+  }
+
+  return rotation;
+};
+
 const parseArrowShape = ( prop: string, value: unknown ): ArrowShape => {
   const id = ARROW_ENUM[ String( value ) ];
 
@@ -341,6 +369,9 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'text-margin-y':
       computed.textMarginY = parseNumber( prop, value );
+      break;
+    case 'text-rotation':
+      computed.textRotation = parseTextRotation( value );
       break;
     case 'border-width':
       computed.borderWidth = parseNumber( prop, value );
@@ -533,6 +564,12 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textMarginY = v as number; },
     default: () => NODE_DEFAULTS.textMarginY
+  },
+  'text-rotation': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => TEXT_ROTATIONS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textRotation = v as number; },
+    default: () => EDGE_DEFAULTS.textRotation
   },
   'line-color': {
     kind: 'color', groups: [ 'edges' ],
@@ -1091,6 +1128,13 @@ export class StyleEngine {
         return store.labelAt( slot, ref.group )?.marginX ?? this.defs[ ref.group ].computed.textMarginX;
       case 'text-margin-y':
         return store.labelAt( slot, ref.group )?.marginY ?? this.defs[ ref.group ].computed.textMarginY;
+      case 'text-rotation': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null
+          ? ( entry.rotate ? 'autorotate' : 'none' )
+          : TEXT_ROTATION_NAMES[ this.defs[ ref.group ].computed.textRotation ];
+      }
 
       // shared names, resolved per group
       case 'width': return ref.group === 'nodes' ? pair( 'node.size', 0 ) : scalar( 'edge.width' );
@@ -1216,6 +1260,12 @@ export class StyleEngine {
       const norm = normalizeProp( prop );
       const value = props[ prop ];
 
+      if( norm === 'text-rotation' && group === 'nodes' ){
+        // autorotate is an edge concept (rotate to the edge's angle);
+        // per-element numeric rotation is a logged parity gap, not built
+        throw new Error( `'text-rotation' is an edge style property in the GPU prototype` );
+      }
+
       if( norm === 'font-family' ){
         // one glyph atlas keyed by character ⇒ one font, globally
         if( group === 'edges' ){
@@ -1321,7 +1371,8 @@ export class StyleEngine {
       outlineWidth: computed.textOutlineWidth,
       outlineColor: fold( computed.textOutlineColor, computed.textOutlineOpacity ),
       bgColor: fold( computed.textBgColor, computed.textBgOpacity ),
-      bgPadding: computed.textBgPadding
+      bgPadding: computed.textBgPadding,
+      rotate: group === 'edges' && ( computed as Computed ).textRotation === 1
     }, group );
   }
 }

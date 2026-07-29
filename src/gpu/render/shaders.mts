@@ -119,12 +119,14 @@ fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
 `;
 
 /** Glyph instance layout, shared by the label shader and the glyph cull
- * pass; matches GlyphBuffer's CPU layout (10 words / 40 bytes per glyph). */
+ * pass; matches GlyphBuffer's CPU layout (12 words / 48 bytes per glyph). */
 export const GLYPH_STRUCT = `
 struct Glyph {
-  nodeSlot: u32,     // 0xffffffff = dead (tombstoned run)
+  nodeSlot: u32,     // owner word: 0xffffffff = dead (tombstoned run); else
+                     // bits 0..30 the owner slot, bit 31 the autorotate
+                     // flag (edge glyph stream only)
   color: u32,        // packed RGBA bytes
-  offset: vec2f,     // quad top-left from the node center, model px
+  offset: vec2f,     // quad top-left from the anchor, model px
   size: vec2f,       // model px
   uv0: vec2f,        // uv0.x < 0: solid background quad; uv0.y = LOD height
   uv1: vec2f,
@@ -133,6 +135,34 @@ struct Glyph {
 }
 
 const DEAD_GLYPH: u32 = 0xffffffffu;
+const GLYPH_ROTATE: u32 = 0x80000000u;
+
+// owner slot from the glyph's owner word (check DEAD_GLYPH against the
+// full word first; element slots stay far below 2^31, so the flag can't
+// collide with a live slot)
+fn glyphOwner(word: u32) -> u32 {
+  return word & 0x7fffffffu;
+}
+
+// text-rotation: autorotate — (cos, sin) of the edge's undirected slope
+// angle.  The delta is negated when it points left (or straight up), so
+// rotated text never reads upside-down: the baseline angle stays within
+// (-90°, 90°], exactly v3's atan(dy/dx) rule (verticals read at +90°).
+fn autorotateFrame(a: vec2f, b: vec2f) -> vec2f {
+  var d = b - a;
+
+  if (d.x < 0.0 || (d.x == 0.0 && d.y < 0.0)) { d = -d; }
+
+  let len = length(d);
+
+  if (len < 1e-6) { return vec2f(1.0, 0.0); }
+
+  return d / len;
+}
+
+fn rotateBy(cs: vec2f, p: vec2f) -> vec2f {
+  return vec2f(cs.x * p.x - cs.y * p.y, cs.y * p.x + cs.x * p.y);
+}
 
 // backgrounds carry the run's glyph-block height for LOD so they fade and
 // cull exactly with their text
@@ -733,13 +763,30 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   // glyphs read live positions: labels follow drags/layouts on-GPU
   ${ edge
-    ? 'let ends = endpoints[g.nodeSlot];\n  let anchor = (nodePositions[ends.x] + nodePositions[ends.y]) * 0.5;'
+    ? `let owner = glyphOwner(g.nodeSlot);
+  let ends = endpoints[owner];
+  let pa = nodePositions[ends.x];
+  let pb = nodePositions[ends.y];
+  let anchor = (pa + pb) * 0.5;`
     : 'let anchor = nodePositions[g.nodeSlot];' }
   let originPx = modelToPx(frame, anchor) + g.offset * frame.zoomDpr;
   let sizePx = g.size * frame.zoomDpr;
   let t = (quadCorner(vi) + vec2f(1.0)) * 0.5;
+  var posPx = originPx + t * sizePx;
+${ edge
+    ? `
+  // text-rotation: autorotate — rotate the run's local rect about the
+  // midpoint anchor by the edge's flip-normalized angle (the angle reads
+  // live positions too, so rotation follows drags/tweens on-GPU)
+  if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
+    let cs = autorotateFrame(pa, pb);
+    let local = g.offset + t * g.size; // model px from the anchor
 
-  out.position = vec4f(pxToClip(frame, originPx + t * sizePx), 0.0, 1.0);
+    posPx = modelToPx(frame, anchor) + rotateBy(cs, local) * frame.zoomDpr;
+  }
+`
+    : '' }
+  out.position = vec4f(pxToClip(frame, posPx), 0.0, 1.0);
   out.uv = mix(max(g.uv0, vec2f(0.0)), max(g.uv1, vec2f(0.0)), t);
   out.color = unpack4x8unorm(g.color);
   out.fade = fade;

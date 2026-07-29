@@ -263,9 +263,12 @@ fn isVisible(slot: u32) -> bool {
   let g = glyphs[slot];
 
   if (g.nodeSlot == DEAD_GLYPH) { return false; }
-  if ((edgeFlags[g.nodeSlot] & SHOWN) != SHOWN) { return false; }
 
-  let ends = endpoints[g.nodeSlot];
+  let owner = glyphOwner(g.nodeSlot);
+
+  if ((edgeFlags[owner] & SHOWN) != SHOWN) { return false; }
+
+  let ends = endpoints[owner];
 
   if ((nodeFlags[ends.x] & SHOWN) != SHOWN) { return false; }
   if ((nodeFlags[ends.y] & SHOWN) != SHOWN) { return false; }
@@ -276,9 +279,24 @@ fn isVisible(slot: u32) -> bool {
 
   if (labelFade(heightPx, frame.labelFadePx) <= 0.001) { return false; }
 
-  let mid = (nodePositions[ends.x] + nodePositions[ends.y]) * 0.5;
-  let originPx = modelToPx(frame, mid) + g.offset * frame.zoomDpr;
+  let pa = nodePositions[ends.x];
+  let pb = nodePositions[ends.y];
+  let mid = (pa + pb) * 0.5;
   let sizePx = g.size * frame.zoomDpr;
+
+  if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
+    // autorotated glyphs: the exact AABB of the rotated rect (same
+    // rotation frame as the VS, so cull and draw can't disagree)
+    let cs = autorotateFrame(pa, pb);
+    let centerPx = modelToPx(frame, mid) + rotateBy(cs, g.offset + g.size * 0.5) * frame.zoomDpr;
+    let ext = vec2f(abs(cs.x) * sizePx.x + abs(cs.y) * sizePx.y,
+                    abs(cs.y) * sizePx.x + abs(cs.x) * sizePx.y) * 0.5;
+
+    return !(centerPx.x + ext.x < 0.0 || centerPx.x - ext.x > frame.viewportPx.x ||
+             centerPx.y + ext.y < 0.0 || centerPx.y - ext.y > frame.viewportPx.y);
+  }
+
+  let originPx = modelToPx(frame, mid) + g.offset * frame.zoomDpr;
 
   return !(originPx.x + sizePx.x < 0.0 || originPx.x > frame.viewportPx.x ||
            originPx.y + sizePx.y < 0.0 || originPx.y > frame.viewportPx.y);

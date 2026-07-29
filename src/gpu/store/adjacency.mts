@@ -29,7 +29,9 @@ export class Adjacency {
   private csrInnE: Uint32Array | null = null;
   private csrN = 0;
 
-  // incremental overlay
+  // incremental overlay; overlayCount counts list *entries* (an edge holds
+  // one in out[source] and one in inn[target]), matching the per-entry
+  // decrements in removeEdge/clearNode
   private out: ( number[] | undefined )[] = [];
   private inn: ( number[] | undefined )[] = [];
   private overlayCount = 0;
@@ -37,7 +39,7 @@ export class Adjacency {
   addEdge( edgeSlot: number, sourceSlot: number, targetSlot: number ): void {
     ( this.out[ sourceSlot ] ??= [] ).push( edgeSlot );
     ( this.inn[ targetSlot ] ??= [] ).push( edgeSlot );
-    this.overlayCount++;
+    this.overlayCount += 2;
   }
 
   /**

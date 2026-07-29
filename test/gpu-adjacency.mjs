@@ -111,4 +111,21 @@ describe('gpu/store: adjacency (CSR + overlay)', function(){
     expect( adj.inDegree( 2 ) ).to.equal( 0 );
     expect( adj.outDegree( 2 ) ).to.equal( 0 );
   });
+
+  it('unit: bulk add after incremental add/remove keeps overlay edges ordered first', function(){
+    const adj = new Adjacency();
+    // edges 0 and 1 both 0->1, added incrementally (overlay only)
+    const endpoints = new Uint32Array([ 0, 1, 0, 1, 0, 1 ]);
+
+    adj.addEdge( 0, 0, 1 );
+    adj.addEdge( 1, 0, 1 );
+    adj.removeEdge( 0, 0, 1 );
+
+    // edge 1 still lives in the overlay, so this bulk must overlay too —
+    // a fresh CSR build here would draw the bulk edge ahead of edge 1
+    adj.addBulk( new Uint32Array([ 2 ]), endpoints, 2 );
+
+    expect( Array.from( adj.outEdges( 0 ) ) ).to.deep.equal([ 1, 2 ]);
+    expect( Array.from( adj.inEdges( 1 ) ) ).to.deep.equal([ 1, 2 ]);
+  });
 });

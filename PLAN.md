@@ -1,13 +1,15 @@
 # WebGPU model + renderer prototype (#3486)
 
-**Status: implemented and evolving** on `feature/webgpu`.  The base pass
-(11 commits, `e30542cf4..9b177c193`) landed first — including SDF node
-labels, pulled into scope so labelled rendering could be assessed for
-performance — and subsequent rounds (follow-ups, API gap closure, the
-selector removal, mappers, animation, image export, label testability)
-are recorded below as "Landed (round N)" sections, each verified green
-when it landed.  `src/gpu/README.md` is the maintained scope /
-deviations doc; this file records each round's plan and outcome.
+**Status: implemented and evolving** on the `v4` branch (started as
+`feature/webgpu`).  The base pass (11 commits, `e30542cf4..9b177c193`)
+landed first — including SDF node labels, pulled into scope so labelled
+rendering could be assessed for performance — and subsequent rounds
+(follow-ups, API gap closure, the selector removal, mappers, animation,
+image export, label testability, the round-10 parity sprint, round-11
+slot-stable compaction) are recorded below as "Landed (round N)"
+sections, each verified green when it landed.  `src/gpu/README.md` is
+the maintained scope / deviations doc; this file records each round's
+plan and outcome.
 
 ## Context
 
@@ -202,8 +204,9 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    WebKit now (classic renderer specs green; WebGPU specs soft-skip
    until Playwright's WebKit build ships navigator.gpu).
 
-All follow-ups are done.  Open hooks beyond pass 1: slot/blob/CSR
-compaction, z-index ranks, compound nodes, bezier edges,
+All follow-ups are done.  Open hooks beyond pass 1: slot compaction
+(the slot-stable blob/CSR/dictionary reclaim landed in round 11 below),
+z-index ranks, compound nodes, bezier edges,
 more layouts, a binary export of live graphs (serializeElements already
 covers payloads).  (Mappers landed as the round-7 object DSL below.)
 
@@ -1523,7 +1526,9 @@ slots only cost pass-iteration width and memory).
 **The tier split** — the tiers differ by trigger meter, not just
 difficulty.  Blob/CSR/dictionary compaction is **slot-stable**: no
 identity moves, no renderer or ref implications, metered by plain waste
-counters — it could safely run automatically.  **Slot compaction**
+counters — it could safely run automatically.  (That is exactly how it
+landed in round 11: waste-over-half thresholds with small floors, no
+new API.)  **Slot compaction**
 moves live elements, is metered by dead-slot ratio, and carries all the
 policy weight: outstanding refs (plain `{group, slot, gen}` objects in
 user-held collections, plus packed-int membership-set caches — they
@@ -1531,12 +1536,14 @@ cannot be found and rewritten eagerly), z-order (slot order is draw
 order), GPU full re-upload (the existing `resized` path), and remap of
 in-flight animation slot lists.
 
-**Open policy questions** (options discussed, none chosen): (a) ref
+**Open policy questions** — these apply to the *slot-moving* tier only
+(round 11 took the slot-stable lean of (b)); options discussed, none
+chosen: (a) ref
 survival across a slot move — a forwarding table with lazy ref repair +
 an epoch stamp invalidating cached membership sets, vs
 handles-survive-collections-stale, vs everything-stale; (b) trigger —
-explicit `cy.compact()` vs auto thresholds (with slot-stable tiers
-plausibly auto regardless); (c) draw order after compacting — stable
+explicit `cy.compact()` vs auto thresholds; (c) draw order after
+compacting — stable
 (visually a no-op) vs restore-insertion-order (heals the recycled-slot
 z-order wart at the cost of a visible change and a per-slot sequence
 number).
@@ -1621,8 +1628,8 @@ viewport-fixed labels; `renderTo`; `cy.notify`/`notifications`/
   reference for headless).  The concrete algorithm (port cose vs a
   modern fcose-class kernel) is the call to make when scheduled.
 - **Compaction** — slot-stable tier (id blob / CSR / dictionary
-  reclaim) is buildable now; slot-moving tier waits on the logged
-  policy calls.
+  reclaim) **landed in round 11** with auto waste thresholds; the
+  slot-moving tier still waits on the logged policy calls.
 - **z-index** — mechanism named (more z-ranks or a `u32`
   index-indirection pass); decide together with compaction's
   draw-order call.  Restores `zDepth`/`sortByZIndex` and heals the
@@ -1755,9 +1762,10 @@ viewport-fixed labels; `renderTo`; `cy.notify`/`notifications`/
 The sweep confirms the two headline pillars — **curved edges** and
 **compounds** — dwarf everything else in app impact, with
 **background images** the sleeper third (16 props, near-universal in
-production apps).  Near-term autonomous work stays as previously
-recommended (slot-stable compaction; edge-label autorotate after its
-one flip-rule call).  The design queue, in suggested order: curved
+production apps).  Of the near-term autonomous work, slot-stable
+compaction landed as round 11; edge-label autorotate (one flip-rule
+call, then autonomous) is the remaining item on that shelf.  The
+design queue, in suggested order: curved
 edges (tier already decided) → compounds (needs the full design
 round) → background images + the node-visual scope call → the event
 vocabulary + extension contract calls (cheap to build once decided,

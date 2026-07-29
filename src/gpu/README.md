@@ -454,6 +454,33 @@ each is deliberate, not a pass-1 deferral:
   the import form of `cy.json()` are not coming to v4 — re-adding from
   kept definitions is the app's job (exported element json round-trips
   through `cy.add()`).
+- **Slot-stable structures self-compact on waste thresholds** (round
+  11).  Three append-only structures leak under remove/add churn even
+  though the tables' slot free-list keeps the columns from growing:
+  the id blob (removed ids' UTF-8 bytes), the CSR adjacency (stranded
+  per-node segment space plus the incremental overlay arrays), and
+  string data dictionaries (entries whose last reference was
+  overwritten or cleared).  Each meters its waste and reclaims
+  automatically when it exceeds half the live size (small floors keep
+  tiny structures from churning) — the threshold policy the
+  insertion-order list has always used, and no new API.  These
+  reclaims move no element slots, so refs, draw order and the GPU
+  mirrors are unaffected.  Specifics: the id blob compacts live byte
+  ranges into a right-sized blob (the probe table keys on (group,
+  slot), never offsets, so it survives; peak-then-small graphs shrink
+  back toward the floor); the adjacency rebuilds CSR from the live
+  edges in insertion order (preserving per-node incident order — the
+  one exception being an edge re-pointed by `move()`, which sits at
+  its re-add position until a rebuild returns it to insertion order —
+  and folding purely incremental graphs into the compact CSR shape
+  once past the floor); dictionaries refcount their entries and remap the
+  indices column in place with a per-column epoch, so the GPU ordinal
+  LUT and uploaded index shadow repack through the normal watched-key
+  span path while element values never change (ordinal domains are
+  explicit, so no styling output can move).  *Slot-moving* compaction
+  (dead element slots, `highWater`, pass widths) is deliberately not
+  built: its policy calls (ref survival across a move, trigger, draw
+  order) are logged open in `PLAN.md`.
 - **GPU layouts: logged for later.**  A force layout is *stateful*
   (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
   cheaply CPU-reproducible — the GPU would be authoritative during a run
@@ -845,27 +872,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 
 ## Follow-up hooks
 
-- **Slot-stable structures self-compact** (round 11): the id blob
-  meters the bytes stranded by removals and reclaims them
-  automatically when they exceed half the blob (with a small floor) —
-  no element slot moves, so refs, draw order and the GPU mirrors are
-  unaffected; peak-then-small graphs shrink back toward the floor.
-  This extends the threshold policy the insertion-order list has
-  always used.  The CSR adjacency does the same: stranded CSR entries
-  (removals) plus overlay entries (post-build adds) exceeding half the
-  live count trigger a rebuild from the live edges in insertion order,
-  folding the overlay back into the compact typed-array shape — which
-  also gives purely incremental graphs the CSR memory shape once past
-  the floor.  Per-node incident order is preserved (insertion order),
-  except that an edge re-pointed by `move()` sits at its re-add
-  position until a rebuild returns it to insertion order.  String
-  data dictionaries refcount their entries and compact when dead
-  entries exceed half the dict (8-entry floor): values never change —
-  only the private index space remaps (in place), with a per-column
-  epoch so the GPU ordinal LUT and uploaded index shadow repack via
-  the normal watched-key span path.
-- Slot compaction (tombstones + degenerate quads for now; the cull pass
-  already keeps tombstones out of the draw stream) remains open: moving
-  live element slots carries the policy weight — ref survival across a
-  move, trigger, draw order — logged in `PLAN.md` ("Logged —
-  compaction").
+- Slot compaction (tombstones + degenerate quads for now; the cull
+  pass already keeps tombstones out of the draw stream).  The
+  slot-stable tier — id blob, CSR adjacency, string dictionaries —
+  self-compacts since round 11 (see the design decision above); what
+  remains is moving live element slots so `highWater`, column capacity
+  and pass-iteration widths can shrink, which carries the open policy
+  calls (ref survival across a move, trigger, draw order) logged in
+  `PLAN.md` ("Logged — compaction").

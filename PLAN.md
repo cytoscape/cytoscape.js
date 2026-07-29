@@ -1660,7 +1660,15 @@ functions and `spring(tension, friction)` (→ `spring(bounce)`); event
 namespaces; v3 bubble order (registration order instead — compound
 bubbling re-opens with compounds); per-element `font-family`;
 viewport-fixed labels; `renderTo`; `cy.notify`/`notifications`/
-`noNotifications` (dirty-driven renderer).
+`noNotifications` (dirty-driven renderer).  Added by the 2026-07-29
+triage (below): the canvas-era perf degradation options
+(`hideEdgesOnViewport`, `textureOnViewport` + `outside-texture-bg-*`,
+`motionBlur`/`motionBlurOpacity` — obsolete under compute culling +
+adaptive render scale); `background-blacken` (subsumed by color
+mappers); `bounds-expansion` (bounds are computed correctly instead);
+and the legacy aliases (`content`, `autolockNodes`/
+`autoungrabifyNodes`, `padding-{left,right,top,bottom}`, no-dash shape
+spellings, redundant `attr`-family duplicates — one name per concept).
 
 ### Gaps with direction already set (build when scheduled)
 
@@ -1675,6 +1683,23 @@ viewport-fixed labels; `renderTo`; `cy.notify`/`notifications`/
   `renderedControlPoints`/`isBundledBezier`.  Design tier decided
   (2026-07-24): dual CPU/WGSL impls, conservative CPU bound for
   cull/fit, exact lazy `.bb()`, membership as a structural index.
+  The 2026-07-29 triage added `curve-style: haystack`
+  (+ `haystack-radius`) and `straight-triangle` to this surface: kept
+  as *real visual styles* (offset-endpoint and triangle-shaped edges),
+  not perf modes — v4's culling makes the perf rationale moot but the
+  looks stay.
+- **Ghost props** (`ghost`/`ghost-offset-*`/`ghost-opacity`) — kept in
+  the 2026-07-29 triage (SBGN needs them), in a simplified form: a
+  ghost duplicates only the basic node body — shape, border,
+  background — at the offset, an extra instance draw, never a
+  whole-cloth redraw of the full node (labels and other decorations
+  excluded).
+- **Overlay/underlay theming** — the 2026-07-29 triage decided to
+  *port the props* (the 10 overlay/underlay element style props plus
+  the `active-bg-*` and `selection-box-*` core options) rather than
+  keep the affordances baked in; the existing shader hover/active
+  brighten, accent ring and DOM selection box become the styled
+  defaults.
 - **Multiline labels** — `text-wrap`/`text-max-width`/
   `text-justification`/`line-height`/`text-overflow-wrap` (+
   `ellipsis`).  Same decided tier (shaping memoizes; model-space
@@ -1784,38 +1809,41 @@ viewport-fixed labels; `renderTo`; `cy.notify`/`notifications`/
     (v3 layouts have `on`/`promiseOn`; v4 layout events fire on the
     core only).
 
-### Proposed v4 drops (NOT decided — each needs explicit sign-off)
+### Proposed-drops triage (decided 2026-07-29)
 
-- **Canvas-era performance hacks**: `hideEdgesOnViewport`,
-  `textureOnViewport` (+ `outside-texture-bg-*`), `motionBlur`/
-  `motionBlurOpacity`.  Obsolete under WebGPU + compute culling +
-  adaptive render scale, which solve the same problem without
-  degrading interaction.
-- **`curve-style: haystack`** (+ `haystack-radius`): a perf
-  compromise for dense edge sets (v3's *default* curve style).  v4
-  draws 465k true straight edges above refresh, so the compromise
-  has no reason to exist; migration note: v3 defaults map to v4
-  `straight`.  Also **`straight-triangle`** (niche).
-- **Ghost props** (`ghost`/`ghost-offset-*`/`ghost-opacity`) — niche
-  visual effect; drop unless a real use case appears.
-- **`background-blacken`** — subsumed by color mappers (compute the
-  shade in the mapper range instead).
-- **`bounds-expansion`** — a manual bb-correction escape hatch;
-  should be unnecessary when bounds are computed correctly.
-- **`text-metrics`, `box-select-labels`** — fold into the multiline/
-  label-bb round rather than porting as-is.
-- **Legacy aliases**: `content`, `autolockNodes`/
-  `autoungrabifyNodes`, `padding-{left,right,top,bottom}`, the
-  no-dash shape spellings (`roundrectangle` etc.), `attr`-family
-  duplicates beyond the ones already kept.  Keep the v4 surface to
-  one name per concept.
-- **Overlay/underlay as style props** (10 props + `active-bg-*` +
-  `selection-box-*` core props): v4 currently bakes these
-  affordances in (shader hover/active brighten, fixed accent ring,
-  DOM selection box).  Proposal: keep them non-stylable in v4
-  pass 1; revisit only if theming demand is real.  (Listed here
-  rather than under "needs a call" because a concrete drop is the
-  proposal — but it is still a call.)
+The proposed-drops list was triaged with the user in one sitting;
+every entry now has a decision.
+
+- **Dropped** (added to the decided-design ledger above):
+  - **Canvas-era performance hacks** — `hideEdgesOnViewport`,
+    `textureOnViewport` (+ `outside-texture-bg-*`), `motionBlur`/
+    `motionBlurOpacity`.  Obsolete under WebGPU + compute culling +
+    adaptive render scale, which solve the same problem without
+    degrading interaction.
+  - **`background-blacken`** — subsumed by color mappers (compute the
+    shade in the mapper range instead).
+  - **`bounds-expansion`** — a manual bb-correction escape hatch;
+    unnecessary when bounds are computed correctly.
+  - **Legacy aliases** — `content`, `autolockNodes`/
+    `autoungrabifyNodes`, `padding-{left,right,top,bottom}`, the
+    no-dash shape spellings (`roundrectangle` etc.), `attr`-family
+    duplicates beyond the ones already kept.  One name per concept.
+- **Kept** (moved to "gaps with direction set" above):
+  - **`curve-style: haystack` (+ `haystack-radius`) and
+    `straight-triangle`** — ported as *real visual styles*, not perf
+    modes, alongside the curved-edge work.
+  - **Ghost props** (`ghost`/`ghost-offset-*`/`ghost-opacity`) —
+    needed for SBGN, kept with simplified scope: the ghost duplicates
+    only the basic node body (shape, border, background) at the
+    offset — an extra draw, but simple — never a whole-cloth redraw
+    of the full node (labels and other decorations excluded).
+  - **Overlay/underlay as style props** (10 props + `active-bg-*` +
+    `selection-box-*` core props) — port the props; the baked-in
+    affordances (shader hover/active brighten, accent ring, DOM
+    selection box) become the styled defaults.
+- **Deferred into the multiline/label-bb round** (the listed lean,
+  now decided): **`text-metrics`**, **`box-select-labels`** — their
+  v4 form is designed there; neither ported as-is nor dropped now.
 
 ### Suggested sequencing (unchanged by the sweep, now grounded in it)
 
@@ -1826,10 +1854,14 @@ production apps).  Of the near-term autonomous work, slot-stable
 compaction landed as round 11; edge-label autorotate (one flip-rule
 call, then autonomous) is the remaining item on that shelf.  The
 design queue, in suggested order: curved
-edges (tier already decided) → compounds (needs the full design
-round) → background images + the node-visual scope call → the event
+edges (tier already decided; now also carrying haystack/
+straight-triangle as visual styles) → compounds (needs the full
+design round) → background images + the node-visual scope call
+(ghost's simplified body-duplicate form slots in here) → the event
 vocabulary + extension contract calls (cheap to build once decided,
-and they unblock the ecosystem) → force layout.  The proposed-drops
-list above should be triaged in one sitting — most entries take a
-minute each to accept or veto, and every acceptance shrinks the
-remaining parity surface.
+and they unblock the ecosystem) → force layout.  Overlay/underlay
+theming props ride with the interaction/visual batches.  The
+proposed-drops list was triaged 2026-07-29 (see the section above):
+four entries dropped into the decided-design ledger, three kept with
+direction, and `text-metrics`/`box-select-labels` folded into the
+label-bb round.

@@ -493,6 +493,29 @@ each is deliberate, not a pass-1 deferral:
   reference implementation (which doubles as the spec the kernel must
   match).  It reuses this round's lease + readback machinery, but the
   per-algorithm kernels and convergence detection are a future round.
+- **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
+  the gap analysis.  *Dropped*: the canvas-era perf degradation
+  options (`hideEdgesOnViewport`, `textureOnViewport` +
+  `outside-texture-bg-*`, `motionBlur`/`motionBlurOpacity` — compute
+  culling + adaptive render scale solve the same problem without
+  degrading output), `background-blacken` (compute the shade in a
+  color mapper's range instead), `bounds-expansion` (bounds are
+  computed correctly instead), and the legacy aliases (`content`,
+  `autolockNodes`/`autoungrabifyNodes`,
+  `padding-{left,right,top,bottom}`, no-dash shape spellings,
+  redundant `attr`-family duplicates — one name per concept).
+  *Kept, with direction*: `curve-style: haystack` (+
+  `haystack-radius`) and `straight-triangle` return as real visual
+  styles — not perf modes — with the curved-edge work; ghost props
+  return for SBGN in a simplified form (the ghost duplicates only the
+  basic node body — shape, border, background — at the offset as an
+  extra draw, never a whole-cloth redraw of the full node with labels
+  and decorations); overlay/underlay, `active-bg-*` and
+  `selection-box-*` become stylable props, with today's baked-in
+  affordances (shader hover/active brighten, the accent ring, the DOM
+  selection box) as the styled defaults.  *Deferred*:
+  `text-metrics`/`box-select-labels` get their v4 form in the
+  multiline/label-bb round.
 
 `data()`: element data lives in a **columnar sidecar** — per-(group, key)
 columns, not per-element objects: numbers as Float64Array, strings

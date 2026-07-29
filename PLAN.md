@@ -1457,6 +1457,31 @@ as an isolated commit with Node tests.
   ingest path also compacts adopted wire dicts that arrive with
   unreferenced entries.
 
+**Verification**: typecheck, lint, `test:js` (1638 → 1645) and
+`test:modules` (58) green per commit.  Write-path cost checked against
+the pre-round baseline (`benchmark/gpu/mutators.mjs` at N=2k, same
+machine, same run): remove+re-add 5.45 vs 5.32 ms/iter (noise), data
+set at parity — after re-splitting the DataStore write path so the
+numeric case stays inlinable (the first cut regressed numeric bulk
+writes ~16% by growing `write()` past the inline budget; caught by the
+baseline comparison, pinned back to 50.5 vs 50.7 µs).  Churn
+measurement (sliding-window store scenario: 20k nodes / ~21k edges
+stable, 1k-node bands removed and re-added with fresh ids and
+per-element strings): after 40 rounds the id blob holds 699 KB vs
+1.84 MB pre-round, the string dictionary 21.2k entries vs 60k, and
+adjacency lives in typed-array CSR (38k live entries, 41k capacity,
+4k overlay) vs 42k permanent JS-array entries; at 80 rounds the
+pre-round numbers keep growing linearly (3.03 MB blob / 100k dict)
+while round 11 stays flat (492 KB / 23.1k) — churn profile 2's
+unbounded-in-time leak is closed.  The `webgpu` Playwright projects
+could not be validated on this Linux machine: the SwiftShader adapter
+acquires (vendor google/swiftshader) but renders blank — identical
+failures on the pre-round baseline commit, so a pre-existing
+environment limitation, not this round; the mapper-runtime
+epoch/repack behaviour is pinned by the Node mock-device suite
+instead, and the webgpu projects should be re-run on a machine with a
+working adapter before release.
+
 ## Logged — compaction (analysis; slot-stable tier landed round 11)
 
 Discussed 2026-07-27 while planning round 10 and **deliberately left

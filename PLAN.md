@@ -11,6 +11,17 @@ sections, each verified green when it landed.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
+## Process (applies to all work under this plan)
+
+- **Isolated commits as you go.**  Every item lands as its own
+  commit(s) with a detailed message — never batch unrelated changes,
+  and never leave a round's work sitting uncommitted.
+- **Docs travel with the code, every commit.**  Each commit updates
+  `src/gpu/README.md` (scope / deviations / design decisions) and this
+  file — including the logbook: the round records ("Landed (round N)"
+  sections and their verification notes) are written or amended in the
+  same commit as the work they describe, not batched at the end.
+
 ## Context
 
 Issue #3486 specs a v4 performance redesign: columnar/GPU-native model, persistent GPU buffers, WebGPU rendering. This first pass, on `feature/webgpu` (branched from the TS refactor, PR #3477), builds a **separate v4-style prototype** — not a mode of the canvas renderer like WebGL. It ships a new GPU-oriented data layer with the familiar synchronous core/element API on top, plus a WebGPU render pipeline. The existing v3 core, collection, and renderers are **not modified**.

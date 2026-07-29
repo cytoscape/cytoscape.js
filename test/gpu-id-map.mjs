@@ -122,6 +122,91 @@ describe('gpu/store: id map', function(){
     }
   });
 
+  describe('blob compaction', function(){
+
+    it('keeps the blob bounded under add/remove churn', function(){
+      const ids = new IdMap();
+
+      for( let i = 0; i < 20000; i++ ){
+        ids.set( 'churn-' + i, 'nodes', i % 16 );
+        ids.remove( 'churn-' + i );
+      }
+
+      expect( ids.size ).to.equal( 0 );
+      // unreclaimed, 20k removed ids strand ~200 KB; compaction holds the
+      // blob near its floor (below which waste may fill the blob)
+      expect( ids.blobCapacity ).to.be.at.most( 8192 );
+      expect( ids.blobBytes < 4096 || ids.wasteBytes * 2 <= ids.blobBytes ).to.be.true;
+    });
+
+    it('keeps live ids resolvable and decodable across a compaction', function(){
+      const ids = new IdMap();
+      const N = 1000;
+
+      for( let i = 0; i < N; i++ ){ ids.set( 'element-' + i, i % 2 === 0 ? 'nodes' : 'edges', i ); }
+
+      ids.idAt( 'nodes', 0 ); // warm one cached name
+
+      const before = ids.blobBytes;
+
+      for( let i = 0; i < N; i++ ){
+        if( i % 5 !== 0 ){ ids.remove( 'element-' + i ); }
+      }
+
+      expect( ids.blobBytes ).to.be.below( before ); // compacted
+      // residual waste stays under the trigger threshold (or the floor)
+      expect( ids.blobBytes < 4096 || ids.wasteBytes * 2 <= ids.blobBytes ).to.be.true;
+
+      for( let i = 0; i < N; i++ ){
+        if( i % 5 === 0 ){
+          expect( ids.get( 'element-' + i ), 'element-' + i )
+            .to.deep.equal( { group: i % 2 === 0 ? 'nodes' : 'edges', slot: i } );
+          expect( ids.idAt( i % 2 === 0 ? 'nodes' : 'edges', i ) ).to.equal( 'element-' + i );
+        } else {
+          expect( ids.get( 'element-' + i ), 'element-' + i ).to.be.undefined;
+        }
+      }
+
+      ids.set( 'element-1', 'nodes', 2000 ); // removed ids can return
+
+      expect( ids.get( 'element-1' ) ).to.deep.equal( { group: 'nodes', slot: 2000 } );
+    });
+
+    it('shrinks capacity after a peak-then-small removal', function(){
+      const ids = new IdMap();
+
+      for( let i = 0; i < 20000; i++ ){ ids.set( 'peak-id-' + i, 'nodes', i ); }
+
+      const peak = ids.blobCapacity;
+
+      for( let i = 10; i < 20000; i++ ){ ids.remove( 'peak-id-' + i ); }
+
+      expect( peak ).to.be.above( 100000 );
+      // capacity falls back to the compaction floor's neighborhood
+      expect( ids.blobCapacity ).to.be.at.most( 4096 );
+
+      for( let i = 0; i < 10; i++ ){
+        expect( ids.idAt( 'nodes', i ) ).to.equal( 'peak-id-' + i );
+      }
+    });
+
+    it('carries non-ASCII ids through a compaction', function(){
+      const ids = new IdMap();
+
+      for( let i = 0; i < 600; i++ ){ ids.set( 'nöde-🚀-' + i, 'nodes', i ); }
+      for( let i = 0; i < 600; i++ ){
+        if( i % 4 !== 0 ){ ids.remove( 'nöde-🚀-' + i ); }
+      }
+
+      expect( ids.blobBytes < 4096 || ids.wasteBytes * 2 <= ids.blobBytes ).to.be.true;
+
+      for( let i = 0; i < 600; i += 4 ){
+        expect( ids.get( 'nöde-🚀-' + i ) ).to.deep.equal( { group: 'nodes', slot: i } );
+        expect( ids.idAt( 'nodes', i ) ).to.equal( 'nöde-🚀-' + i );
+      }
+    });
+  });
+
   it('distinguishes ids that collide in prefix', function(){
     const ids = new IdMap();
 

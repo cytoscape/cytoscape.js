@@ -16,8 +16,14 @@ never materializes strings at all; `idAt` decodes lazily and caches per
 slot, so string cost is paid per element *touched*, not per element
 loaded.  Ids are unique across both groups (as in v3).
 
-Removal tombstones the probe entry; the id's blob bytes leak until a
-future compaction — the same policy as slot tombstones in the tables.
+Removal tombstones the probe entry and strands the id's blob bytes.
+Stranded bytes are metered (`wasteBytes`) and reclaimed automatically:
+when they exceed half the blob, the live byte ranges compact into a
+fresh right-sized blob (peak-then-small graphs shrink back down).  The
+probe table stores (group, slot) codes — never offsets — so it survives
+a blob compaction untouched, as do the hashes and the decoded-name
+cache; only the per-slot start/end offsets move.  Probe-table tombstones
+reclaim separately, on the rehash in `ensure`.
 */
 
 const EMPTY = 0;
@@ -51,14 +57,34 @@ const makeMeta = (): GroupMeta => ( {
   start: new Uint32Array( 0 ), end: new Uint32Array( 0 ), hash: new Uint32Array( 0 ), names: []
 } );
 
+const BLOB_MIN = 1024;
+/** blobs smaller than this never compact (nothing worth reclaiming) */
+const BLOB_COMPACT_FLOOR = 4096;
+
 export class IdMap {
-  private blob = new Uint8Array( 1024 );
+  private blob = new Uint8Array( BLOB_MIN );
   private blobLen = 0;
   private table = new Uint32Array( 64 );
   private tombs = 0;
   private scratch = new Uint8Array( 256 );
   private meta: Record<GroupName, GroupMeta> = { nodes: makeMeta(), edges: makeMeta() };
   private _size = 0;
+  private waste = 0;
+
+  /** stranded blob bytes from removed ids (the compaction meter) */
+  get wasteBytes(): number {
+    return this.waste;
+  }
+
+  /** blob bytes in use, stranded bytes included */
+  get blobBytes(): number {
+    return this.blobLen;
+  }
+
+  /** current blob capacity, in bytes */
+  get blobCapacity(): number {
+    return this.blob.length;
+  }
 
   has( id: string ): boolean {
     return this.findEntry( id ) !== EMPTY;
@@ -159,8 +185,13 @@ export class IdMap {
     this.table[ at ] = TOMB;
     this.tombs++;
     this._size--;
+    this.waste += m.end[ slot ] - m.start[ slot ];
     m.start[ slot ] = 0;
     m.names[ slot ] = undefined;
+
+    if( this.waste * 2 > this.blobLen && this.blobLen >= BLOB_COMPACT_FLOOR ){
+      this.compactBlob();
+    }
   }
 
   get size(): number {
@@ -302,6 +333,46 @@ export class IdMap {
     }
 
     return decoder.decode( this.blob.subarray( lo, hi ) );
+  }
+
+  /**
+   * Reclaim stranded blob bytes: copy every live id's bytes into a fresh
+   * right-sized blob and repoint the per-slot offsets.  The probe table,
+   * hashes and name cache reference slots, not offsets, so they are
+   * untouched.  O(live bytes); runs when stranded bytes exceed half the
+   * blob, so the cost amortizes over the removals that stranded them.
+   */
+  private compactBlob(): void {
+    // upper bound: bytes leaked on an error path aren't metered but are
+    // dropped here all the same, so the copy may come in under this
+    const liveLen = this.blobLen - this.waste;
+    let cap = BLOB_MIN;
+
+    while( cap < liveLen ){ cap *= 2; }
+
+    const next = new Uint8Array( cap );
+    let at = 0;
+
+    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
+      const m = this.meta[ group ];
+
+      for( let slot = 0; slot < m.start.length; slot++ ){
+        const lo = m.start[ slot ];
+
+        if( lo === 0 ){ continue; }
+
+        const len = m.end[ slot ] - lo;
+
+        next.set( this.blob.subarray( lo - 1, lo - 1 + len ), at );
+        m.start[ slot ] = at + 1;
+        m.end[ slot ] = at + 1 + len;
+        at += len;
+      }
+    }
+
+    this.blob = next;
+    this.blobLen = at;
+    this.waste = 0;
   }
 
   /** Append bytes to the blob (amortized-doubling growth); returns their offset. */

@@ -1393,11 +1393,44 @@ suites only — the browser-side numbers stayed manual at this point
 (since superseded: the renderer benchmarks above made them a command,
 folded in via `--renderer`).
 
-## Logged — compaction (analysis only; out of round 10)
+## Landed (round 11 — slot-stable compaction, 2026-07-29)
+
+The buildable tier from the compaction analysis (next section): the
+append-only structures that leak under churn now meter their waste and
+reclaim it automatically on a threshold, extending the policy the
+insertion-order list has always used (`compactOrder` at > half stale).
+No element slot moves — refs, draw order and the GPU mirrors are
+untouched — which is what the analysis identified as making
+auto-trigger safe for this tier; the *slot-moving* tier's policy calls
+(ref survival, trigger, draw order) stay open below.  Each piece lands
+as an isolated commit with Node tests.
+
+- **En route fix**: adjacency's `overlayCount` counted +1 per
+  `addEdge` but decremented per overlay-list entry (an edge holds two:
+  `out[source]` + `inn[target]`), so it could hit zero with entries
+  still live and let `addBulk` build a "fresh" CSR under a non-empty
+  overlay, drawing bulk edges ahead of earlier incremental ones in
+  per-node incident order.  It now counts entries; regression test
+  pins the ordering.
+- **Id blob** (`store/id-map.mts`): `remove()` meters the removed id's
+  stranded UTF-8 bytes; when they exceed half the blob (≥ 4 KiB
+  floor), the live ranges compact into a fresh right-sized blob, so
+  peak-then-small graphs also shrink back toward the floor.  The probe
+  table stores (group, slot) codes, never byte offsets, so it — and
+  the per-slot hashes and decoded-name cache — survive compaction
+  untouched; probe-table tombstones already self-reclaimed via the
+  rehash in `ensure()`.  Cost is O(live bytes), amortized over the
+  removals that stranded the waste.  A 20k add/remove churn loop that
+  used to strand ~200 KB now holds the blob ≤ 8 KiB.
+
+## Logged — compaction (analysis; slot-stable tier landed round 11)
 
 Discussed 2026-07-27 while planning round 10 and **deliberately left
-out of the sprint**: the analysis below is settled, but the policy
-calls are **open** — none of the options named here is decided.
+out of that sprint**: the analysis below is settled.  The
+**slot-stable tier landed in round 11** (above) with auto thresholds —
+the "plausibly auto regardless" lean below, taken.  The *slot-moving*
+policy calls are still **open** — none of the options named for them
+is decided.
 
 **When compaction is motivated** — three distinct profiles:
 

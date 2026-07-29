@@ -845,10 +845,16 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 
 ## Follow-up hooks
 
+- **Slot-stable structures self-compact** (round 11): the id blob
+  meters the bytes stranded by removals and reclaims them
+  automatically when they exceed half the blob (with a small floor) —
+  no element slot moves, so refs, draw order and the GPU mirrors are
+  unaffected; peak-then-small graphs shrink back toward the floor.
+  This extends the threshold policy the insertion-order list has
+  always used.  Freed CSR adjacency space still leaks pending its
+  round-11 piece.
 - Slot compaction (tombstones + degenerate quads for now; the cull pass
-  already keeps tombstones out of the draw stream).  Removal also leaks
-  id-blob bytes and freed CSR adjacency space until such a compaction —
-  the same tombstone policy throughout.  The motivation analysis and
-  tier split (slot-stable blob/CSR/dictionary reclaim vs slot-moving
-  compaction) are logged in `PLAN.md` ("Logged — compaction"); the
-  policy calls (ref survival, trigger, z-order) are explicitly open.
+  already keeps tombstones out of the draw stream) remains open: moving
+  live element slots carries the policy weight — ref survival across a
+  move, trigger, draw order — logged in `PLAN.md` ("Logged —
+  compaction").

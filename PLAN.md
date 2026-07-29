@@ -1745,12 +1745,14 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    (`background-fill`/`line-fill` linear/radial + stop props),
    `corner-radius` control, `border-style`/`-cap`/`-join`/
    `-dash-pattern`/`-dash-offset`/`-position`, the node `outline-*`
-   group (5), `background-blacken`, `bounds-expansion`, custom
+   group (5), custom
    `polygon` via `shape-polygon-points` (per-element point data),
    and the unported shape keywords (`round-*` family,
    `cut-rectangle`, `barrel`, `concave-hexagon`, `right-rhomboid`,
    `bottom-round-rectangle`).  Each is small-to-medium; needs a
    scope call on which subset earns its shader/channel cost.
+   (`background-blacken` and `bounds-expansion` were in this batch
+   until the 2026-07-29 triage dropped them.)
 5. **Arrow parity** — `mid-source`/`mid-target` positions,
    `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
    shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/

@@ -33,7 +33,12 @@ shader over every allocated slot.
   `UPDATE_GOLDENS=1`) and live v3-vs-v4 parity diffs
   (`playwright-page/parity.html` renders both renderers side by side —
   no v3 baselines are checked in).  A WYSIWYG self-diff spec pins
-  `png()` to the on-screen pixels.
+  `png()` to the on-screen pixels.  On Linux both Chromium projects add
+  ANGLE-on-Vulkan compositing flags (see `playwright.config.js`) —
+  without them Dawn renders fine but WebGPU canvases *present* blank in
+  headless Chromium (adapters acquire, composited pixels stay
+  transparent); the flags are Linux-gated because `--use-angle=vulkan`
+  does not exist on macOS (Metal).
 
 ## API scope (pass 1)
 

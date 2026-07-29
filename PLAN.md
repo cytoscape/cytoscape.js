@@ -6,8 +6,10 @@ landed first — including SDF node labels, pulled into scope so labelled
 rendering could be assessed for performance — and subsequent rounds
 (follow-ups, API gap closure, the selector removal, mappers, animation,
 image export, label testability, the round-10 parity sprint, round-11
-slot-stable compaction) are recorded below as "Landed (round N)"
-sections, each verified green when it landed.  `src/gpu/README.md` is
+slot-stable compaction, edge-label autorotate) are recorded below as
+"Landed (round N)" sections, each verified green when it landed; the
+round-12 curved-edges plan is written and awaiting its two flagged
+sign-offs.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -149,7 +151,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 - Float32 position precision (~7 significant digits).
 - Pan-vs-grab uses the ≤2-frame-stale resolved pick.
 - `cy.elements()` returns nodes then edges, not mixed insertion order.
-- Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.  (Since superseded: edge labels + label visuals landed in round 10.)
+- Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.  (Since superseded: edge labels + label visuals landed in round 10; edge-label autorotate 2026-07-29.)
 - `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged; circle/concentric/breadthfirst/random layouts landed round 10 — compounds and bezier remain).
 
 ## Follow-ups (informed by the benchmark)
@@ -1025,7 +1027,7 @@ owner-agnostic); the model side group-keys the label sidecar,
 label-dirty channel and StyleEngine label channels.  Pass-1 scope:
 horizontal at the midpoint (v3's default); autorotate — cheap in the VS
 via the endpoint delta, but with flip-when-upside-down readability
-rules — is a separate follow-up call.  Sequencing: after 9.7, so the
+rules — is a separate follow-up call (since landed 2026-07-29).  Sequencing: after 9.7, so the
 label goldens/WYSIWYG harness exists to verify it; the edge-label round
 then just adds a golden scene.
 
@@ -1345,8 +1347,10 @@ Each entry converts into a "Landed" record as it ships:
   device → `devicelost` → `devicerestored` → post-loss writes render.
   1629 Node + 47 module tests, 51 Playwright specs green (serial).
 
-Deferred out of this round (logged, not built): compaction (below);
-autorotated edge labels; multiline labels; bezier edges; compounds;
+Deferred out of this round (logged, not built): compaction (below;
+the slot-stable tier since landed as round 11); autorotated edge
+labels (since landed 2026-07-29); multiline labels; bezier edges
+(round-12 plan written); compounds;
 z-index; GPU layouts; size tweens (the R8.5 geometry seam); `renderTo`;
 restore/clone/json-import (closed — not in v4); the three-finger touch
 box gesture.

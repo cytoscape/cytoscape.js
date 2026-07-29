@@ -91,7 +91,7 @@ interface EdgeComputed {
   textBgPadding: number;
   textMarginX: number;
   textMarginY: number;
-  /** 0 none (horizontal), 1 autorotate (contract TEXT_ROTATE_* ids; edges only) */
+  /** 0 none (horizontal), 1 autorotate (TEXT_ROTATIONS ids; edges only) */
   textRotation: number;
 }
 

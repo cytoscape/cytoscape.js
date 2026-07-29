@@ -126,6 +126,51 @@ describe('gpu/store: GraphStore', function(){
     });
   });
 
+  describe('adjacency compaction', function(){
+    var wasteBounded = function( store ){
+      var waste = store.adj.csrStranded + store.adj.overlayEntries;
+
+      return waste <= Math.max( 64, store.count('edges') );
+    };
+
+    it('keeps waste bounded and queries correct under edge churn', function(){
+      var N = 64;
+
+      for( var i = 0; i < N; i++ ){ store.addNode('n' + i, i, 0); }
+      for( var i = 0; i < N; i++ ){ store.addEdge('e' + i, 'n' + i, 'n' + ( ( i + 1 ) % N )); }
+
+      for( var round = 0; round < 10; round++ ){
+        for( var i = 0; i < N; i++ ){ store.removeEdge( store.lookup('e' + i).slot ); }
+        for( var i = 0; i < N; i++ ){ store.addEdge('e' + i, 'n' + i, 'n' + ( ( i + 1 ) % N )); }
+      }
+
+      expect( wasteBounded( store ) ).to.be.true;
+
+      for( var i = 0; i < N; i++ ){
+        var n = store.lookup('n' + i).slot;
+
+        expect( store.adj.outDegree(n), 'n' + i ).to.equal(1);
+        expect( store.adj.inDegree(n), 'n' + i ).to.equal(1);
+        expect( store.adj.outEdges(n)[0] ).to.equal( store.lookup('e' + i).slot );
+      }
+    });
+
+    it('folds a purely incremental graph into CSR past the floor', function(){
+      var N = 200;
+
+      for( var i = 0; i <= N; i++ ){ store.addNode('n' + i, i, 0); }
+      for( var i = 0; i < N; i++ ){ store.addEdge('e' + i, 'n' + i, 'n' + ( i + 1 )); }
+
+      // without a rebuild every edge would sit in the overlay (2N entries)
+      expect( wasteBounded( store ) ).to.be.true;
+      expect( store.adj.overlayEntries ).to.be.below( 2 * N );
+
+      for( var i = 0; i < N; i++ ){
+        expect( store.adj.outEdges( store.lookup('n' + i).slot )[0] ).to.equal( store.lookup('e' + i).slot );
+      }
+    });
+  });
+
   describe('removal and slot reuse', function(){
     it('refuses to remove a node with incident edges', function(){
       store.addNode('a', 0, 0);

@@ -851,8 +851,14 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   no element slot moves, so refs, draw order and the GPU mirrors are
   unaffected; peak-then-small graphs shrink back toward the floor.
   This extends the threshold policy the insertion-order list has
-  always used.  Freed CSR adjacency space still leaks pending its
-  round-11 piece.
+  always used.  The CSR adjacency does the same: stranded CSR entries
+  (removals) plus overlay entries (post-build adds) exceeding half the
+  live count trigger a rebuild from the live edges in insertion order,
+  folding the overlay back into the compact typed-array shape — which
+  also gives purely incremental graphs the CSR memory shape once past
+  the floor.  Per-node incident order is preserved (insertion order),
+  except that an edge re-pointed by `move()` sits at its re-add
+  position until a rebuild returns it to insertion order.
 - Slot compaction (tombstones + degenerate quads for now; the cull pass
   already keeps tombstones out of the draw stream) remains open: moving
   live element slots carries the policy weight — ref survival across a

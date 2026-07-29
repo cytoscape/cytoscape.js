@@ -239,6 +239,7 @@ export class GraphStore implements ModelView {
     ( this.edges.column( 'edge.flags' ) as Uint32Array )[ slot ] = initialFlags( opts, true );
 
     this.adj.addEdge( slot, source.slot, target.slot );
+    this.maybeRebuildAdjacency();
 
     if( !resized ){
       this.dirty.mark( 'edge.endpoints', slot );
@@ -329,6 +330,7 @@ export class GraphStore implements ModelView {
 
     // fresh index: builds CSR in two counting passes; otherwise overlays
     this.adj.addBulk( slots, endpoints, this.nodes.cap );
+    this.maybeRebuildAdjacency();
 
     this.writeBulkFlags( 'edges', slots, contiguousFrom, cols );
     this.ingestDataColumns( 'edges', slots, cols.data );
@@ -346,6 +348,7 @@ export class GraphStore implements ModelView {
 
     this.adj.removeEdge( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] );
     this.freeSlot( 'edges', slot );
+    this.maybeRebuildAdjacency();
   }
 
   /** Re-point an existing edge at new endpoint node slots (updates adjacency in place). */
@@ -362,6 +365,7 @@ export class GraphStore implements ModelView {
     endpoints[ slot * 2 + 1 ] = target;
 
     this.adj.addEdge( slot, source, target );
+    this.maybeRebuildAdjacency();
     this.dirty.mark( 'edge.endpoints', slot );
   }
 
@@ -995,6 +999,28 @@ export class GraphStore implements ModelView {
     if( order.stale > order.slots.length / 2 ){
       this.compactOrder( group );
     }
+  }
+
+  /**
+   * Rebuild the CSR adjacency when the waste meters cross the threshold:
+   * stranded CSR entries (removals) plus overlay entries (post-build
+   * adds) exceeding half the live entry count.  A rebuild walks the live
+   * edges in insertion order — so it also folds a purely incremental
+   * graph's overlay into the compact CSR shape — and O(edges) at a
+   * proportional-growth threshold amortizes to O(1) per mutation.  The
+   * floor keeps tiny graphs from rebuilding on every mutation.
+   */
+  private maybeRebuildAdjacency(): void {
+    const waste = this.adj.csrStranded + this.adj.overlayEntries;
+
+    // live entries = 2 × edge count, so waste > count is waste > live/2
+    if( waste <= 64 || waste <= this.edges.count ){ return; }
+
+    this.adj.rebuild(
+      this.slotsOrdered( 'edges' ),
+      this.edges.column( 'edge.endpoints' ) as Uint32Array,
+      this.nodes.cap
+    );
   }
 
   private compactOrder( group: GroupName ): void {

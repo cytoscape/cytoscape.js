@@ -14,9 +14,17 @@ per-element path) go to per-node overlay arrays; a query concatenates
 only when a node actually has both CSR and overlay edges.
 
 Removal compacts the edge out of its node's CSR run in place (order
-preserved, O(degree) — the same cost the splice-based overlay pays), so
-freed CSR space leaks until a future rebuild: the same accepted policy
-as slot tombstones and id-blob bytes.
+preserved, O(degree) — the same cost the splice-based overlay pays), and
+the freed space is stranded: fixed per-node segments mean later adds
+can't reuse it.  Stranded CSR entries and overlay entries are metered
+(`csrStranded`/`overlayEntries`) and the owner (GraphStore) triggers
+`rebuild()` on a threshold — a fresh two-pass CSR build over the live
+edges in insertion order, which folds the overlay back into CSR and
+drops the stranded space.  Insertion order is what the incremental
+paths produce anyway (CSR runs predate every overlay append), so a
+rebuild preserves per-node incident order; the one exception is an
+edge re-pointed by moveEdge, which sits at its re-add position until a
+rebuild returns it to insertion order.
 */
 export class Adjacency {
   // CSR base: prefix offsets (built once per bulk), effective lengths
@@ -35,6 +43,18 @@ export class Adjacency {
   private out: ( number[] | undefined )[] = [];
   private inn: ( number[] | undefined )[] = [];
   private overlayCount = 0;
+  // CSR entries stranded by removals (fixed segments can't be refilled)
+  private csrDead = 0;
+
+  /** stranded CSR entries — one per direction per removed CSR edge */
+  get csrStranded(): number {
+    return this.csrDead;
+  }
+
+  /** overlay list entries — two per overlay edge */
+  get overlayEntries(): number {
+    return this.overlayCount;
+  }
 
   addEdge( edgeSlot: number, sourceSlot: number, targetSlot: number ): void {
     ( this.out[ sourceSlot ] ??= [] ).push( edgeSlot );
@@ -57,6 +77,33 @@ export class Adjacency {
       return;
     }
 
+    this.buildCsr( edgeSlots, endpoints, nodeCap );
+  }
+
+  /**
+   * Rebuild CSR from the live edges (insertion order): folds the overlay
+   * back into CSR and drops stranded entries.  O(edges); the owner
+   * triggers it when the waste meters cross a threshold, so the cost
+   * amortizes over the mutations that created the waste.
+   */
+  rebuild( edgeSlots: ArrayLike<number>, endpoints: Uint32Array, nodeCap: number ): void {
+    this.out = [];
+    this.inn = [];
+    this.overlayCount = 0;
+    this.csrDead = 0;
+
+    if( edgeSlots.length === 0 ){
+      this.csrOutOff = this.csrOutLen = this.csrOutE = null;
+      this.csrInnOff = this.csrInnLen = this.csrInnE = null;
+      this.csrN = 0;
+
+      return;
+    }
+
+    this.buildCsr( edgeSlots, endpoints, nodeCap );
+  }
+
+  private buildCsr( edgeSlots: ArrayLike<number>, endpoints: Uint32Array, nodeCap: number ): void {
     const e = edgeSlots.length;
     const outLen = new Uint32Array( nodeCap );
     const innLen = new Uint32Array( nodeCap );
@@ -138,6 +185,7 @@ export class Adjacency {
 
   clearNode( nodeSlot: number ): void {
     if( this.csrOutLen != null && nodeSlot < this.csrN ){
+      this.csrDead += this.csrOutLen[ nodeSlot ] + this.csrInnLen![ nodeSlot ];
       this.csrOutLen[ nodeSlot ] = 0;
       this.csrInnLen![ nodeSlot ] = 0;
     }
@@ -190,6 +238,7 @@ export class Adjacency {
       if( e![ i ] === edgeSlot ){
         e!.copyWithin( i, i + 1, lo + n );
         len![ nodeSlot ] = n - 1;
+        this.csrDead++;
 
         return true;
       }

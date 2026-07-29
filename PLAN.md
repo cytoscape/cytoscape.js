@@ -1422,6 +1422,22 @@ as an isolated commit with Node tests.
   rehash in `ensure()`.  Cost is O(live bytes), amortized over the
   removals that stranded the waste.  A 20k add/remove churn loop that
   used to strand ~200 KB now holds the blob ≤ 8 KiB.
+- **CSR adjacency** (`store/adjacency.mts`): removals strand CSR
+  entries (fixed per-node segments can't refill) and post-build adds
+  accumulate in the per-node overlay arrays — both metered now
+  (`csrStranded`/`overlayEntries`).  When their sum exceeds half the
+  live entry count (64-entry floor), `GraphStore` rebuilds CSR from
+  the live edges in insertion order — the same two counting passes as
+  the bulk build — folding the overlay back into the compact typed-
+  array shape and dropping the stranded space.  Insertion order is
+  what the incremental paths produce anyway, so per-node incident
+  order is preserved across a rebuild (the one exception: an edge
+  re-pointed by `moveEdge` sits at its re-add position until a rebuild
+  returns it to insertion order).  A side effect closes a gap from
+  round 5: a *purely incremental* graph (never bulk-loaded) used to
+  keep all its edges in JS overlay arrays forever; it now folds into
+  CSR once past the floor, at geometric intervals (amortized O(1) per
+  add).
 
 ## Logged — compaction (analysis; slot-stable tier landed round 11)
 

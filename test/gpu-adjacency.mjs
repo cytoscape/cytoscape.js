@@ -112,6 +112,52 @@ describe('gpu/store: adjacency (CSR + overlay)', function(){
     expect( adj.outDegree( 2 ) ).to.equal( 0 );
   });
 
+  it('unit: rebuild folds the overlay into CSR and drops stranded entries, preserving order', function(){
+    const adj = new Adjacency();
+    // edges over nodes 0..2 — 0: 0->1, 1: 0->2, 2: 1->2, then post-build 3: 0->1, 4: 0->2
+    const endpoints = new Uint32Array([ 0, 1, 0, 2, 1, 2, 0, 1, 0, 2 ]);
+
+    adj.addBulk( new Uint32Array([ 0, 1, 2 ]), endpoints, 3 );
+    adj.addEdge( 3, 0, 1 ); // overlay
+    adj.addEdge( 4, 0, 2 ); // overlay
+    adj.removeEdge( 1, 0, 2 ); // strands CSR space
+
+    expect( adj.csrStranded ).to.equal( 2 ); // one out + one in entry
+    expect( adj.overlayEntries ).to.equal( 4 );
+
+    const before = {
+      out0: Array.from( adj.outEdges( 0 ) ),
+      inn1: Array.from( adj.inEdges( 1 ) ),
+      inn2: Array.from( adj.inEdges( 2 ) )
+    };
+
+    adj.rebuild( [ 0, 2, 3, 4 ], endpoints, 3 ); // live edges, insertion order
+
+    expect( adj.csrStranded ).to.equal( 0 );
+    expect( adj.overlayEntries ).to.equal( 0 );
+    expect( Array.from( adj.outEdges( 0 ) ) ).to.deep.equal( before.out0 ); // [0, 3, 4]
+    expect( Array.from( adj.inEdges( 1 ) ) ).to.deep.equal( before.inn1 ); // [0, 3]
+    expect( Array.from( adj.inEdges( 2 ) ) ).to.deep.equal( before.inn2 ); // [2, 4]
+    expect( adj.outDegree( 0 ) ).to.equal( 3 );
+    expect( adj.inDegree( 2 ) ).to.equal( 2 );
+  });
+
+  it('unit: rebuild to empty resets the index for a fresh CSR build', function(){
+    const adj = new Adjacency();
+    const endpoints = new Uint32Array([ 0, 1, 1, 0 ]);
+
+    adj.addBulk( new Uint32Array([ 0, 1 ]), endpoints, 2 );
+    adj.rebuild( [], endpoints, 2 );
+
+    expect( adj.outDegree( 0 ) ).to.equal( 0 );
+    expect( adj.inDegree( 1 ) ).to.equal( 0 );
+
+    adj.addBulk( new Uint32Array([ 0 ]), endpoints, 2 ); // fresh CSR path again
+
+    expect( Array.from( adj.outEdges( 0 ) ) ).to.deep.equal([ 0 ]);
+    expect( adj.overlayEntries ).to.equal( 0 ); // CSR, not overlay
+  });
+
   it('unit: bulk add after incremental add/remove keeps overlay edges ordered first', function(){
     const adj = new Adjacency();
     // edges 0 and 1 both 0->1, added incrementally (overlay only)

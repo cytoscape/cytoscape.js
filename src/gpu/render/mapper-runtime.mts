@@ -122,6 +122,8 @@ export interface PackedPrograms {
   props: string[];
   /** dict length per ordinal key at pack time (growth ⇒ the LUT must repack) */
   dictSizes: Record<string, number>;
+  /** dict epoch per ordinal key at pack time (a compaction remap ⇒ repack too) */
+  dictEpochs: Record<string, number>;
   /** mappers that stay CPU-evaluated (unsupported prop/kind/column) */
   skipped: CompiledMapper[];
 }
@@ -263,6 +265,7 @@ export const packPrograms = (
   const ownedColumns: ColumnId[] = [];
   const props: string[] = [];
   const dictSizes: Record<string, number> = {};
+  const dictEpochs: Record<string, number> = {};
   const capAligned = alignSlots( cap );
   const isArrowProp = ( prop: string ): boolean => prop.endsWith( '-arrow-color' );
 
@@ -319,6 +322,7 @@ export const packPrograms = (
         return typeof out === 'number' ? [ out, 0, 0, 0 ] : colorVec4( out as RGBA, false );
       } ) );
       dictSizes[ m.key ] = dict.length;
+      dictEpochs[ m.key ] = col?.kind === 'string' ? col.epoch : 0;
     } else if( program.kind === 'continuous' ){
       kind = transformKind( program.transform );
       lo = program.lo;
@@ -422,6 +426,7 @@ export const packPrograms = (
     ownedColumns,
     props,
     dictSizes,
+    dictEpochs,
     skipped
   };
 };
@@ -716,16 +721,18 @@ export class MapperRuntime {
         continue;
       }
 
-      // ordinal LUTs index by dict entry: a grown dict (new category)
-      // needs a repacked LUT, so re-run configure against the new dict
-      // (rare — once per new category); it rebuilds the data regions and
-      // queues a full eval, which covers this span too
+      // ordinal LUTs index by dict entry: a grown dict (new category) or
+      // a compaction remap (bumped epoch) needs a repacked LUT, so re-run
+      // configure against the new dict (rare — once per new category or
+      // reclaim); it rebuilds the data regions and queues a full eval,
+      // which covers this span too
       const packedDict = state.packed.dictSizes[ span.key ];
 
       if( packedDict != null ){
         const col = this.store.data.column( span.group, span.key );
 
-        if( col?.kind === 'string' && col.dict.length !== packedDict ){
+        if( col?.kind === 'string' &&
+            ( col.dict.length !== packedDict || col.epoch !== state.packed.dictEpochs[ span.key ] ) ){
           this.configure();
           continue;
         }

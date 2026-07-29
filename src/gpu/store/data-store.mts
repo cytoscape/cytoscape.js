@@ -18,12 +18,33 @@ the first mismatched write.  Bulk ingest takes an index-aligned column
 column straight off the wire) and classifies it in one pass.  NaN means
 absent in numeric columns everywhere — JSON can't represent NaN, so
 nothing is lost.
+
+Dictionaries only grow on write, so entries whose last reference is
+overwritten or cleared would leak under churn.  String columns keep a
+per-entry refcount; when dead entries exceed half the dict (8-entry
+floor) the dict compacts — live entries keep their relative order, the
+indices column remaps in place, and `epoch` bumps so consumers holding
+index-keyed derivatives (the GPU ordinal LUT + uploaded index shadow)
+know to repack.  `onDictRemap` fires so the store can dirty the whole
+column for watched keys.  Slot-stable: no element data changes, only
+the private index space.
 */
 
 interface NumberCol { kind: 'number'; values: Float64Array; present: Uint8Array }
-interface StringCol { kind: 'string'; indices: Uint32Array; dict: string[]; index: Map<string, number> }
+interface StringCol {
+  kind: 'string'; indices: Uint32Array; dict: string[]; index: Map<string, number>;
+  /** live references per dict entry (indices[slot] hits), dict-aligned */
+  refs: number[];
+  /** entries with zero refs (the compaction meter) */
+  dead: number;
+  /** bumped by every compaction remap (consumers of raw indices must repack) */
+  epoch: number;
+}
 interface MixedCol { kind: 'mixed'; values: unknown[] }
 type Col = NumberCol | StringCol | MixedCol;
+
+/** dicts smaller than this never compact */
+const DICT_COMPACT_FLOOR = 8;
 
 export class DataStore {
   private cols: Record<GroupName, Map<string, Col>> = {
@@ -32,6 +53,9 @@ export class DataStore {
 
   /** Fires when a column promotes to mixed (a GPU-mirrored key must demote to CPU eval). */
   onPromote: ( ( group: GroupName, key: string ) => void ) | null = null;
+
+  /** Fires after a dict compaction remapped a column's indices (see the header note). */
+  onDictRemap: ( ( group: GroupName, key: string ) => void ) | null = null;
 
   get( group: GroupName, slot: number, key: string ): unknown {
     const col = this.cols[ group ].get( key );
@@ -152,7 +176,7 @@ export class DataStore {
       col = this.promote( group, key, col );
     }
 
-    this.write( col, slot, value );
+    this.write( group, key, col, slot, value );
   }
 
   /**
@@ -173,7 +197,10 @@ export class DataStore {
           kind: 'string',
           indices: new Uint32Array( 0 ),
           dict: [ ...column.dict ],
-          index: new Map( column.dict.map( ( v, i ) => [ v, i + 1 ] ) )
+          index: new Map( column.dict.map( ( v, i ) => [ v, i + 1 ] ) ),
+          refs: new Array( column.dict.length ).fill( 0 ),
+          dead: 0,
+          epoch: 0
         };
 
         cols.set( key, col );
@@ -188,7 +215,12 @@ export class DataStore {
           if( slot >= col.indices.length ){ col.indices = growU32( col.indices, slot ); }
 
           col.indices[ slot ] = at; // dictionaries align, so indices adopt directly
+          col.refs[ at - 1 ]++;
         }
+
+        // an adopted wire dict may carry entries nothing references
+        col.dead = col.refs.reduce( ( n, r ) => n + ( r === 0 ? 1 : 0 ), 0 );
+        this.maybeCompactDict( group, key, col );
       } else {
         for( let i = 0; i < slots.length; i++ ){
           const at = column.indices[ i ];
@@ -220,7 +252,7 @@ export class DataStore {
   /** The column in wire-facing shape, for serialization. */
   column( group: GroupName, key: string ):
     | { kind: 'number'; values: Float64Array; present: Uint8Array }
-    | { kind: 'string'; indices: Uint32Array; dict: string[] }
+    | { kind: 'string'; indices: Uint32Array; dict: string[]; epoch: number }
     | { kind: 'mixed'; values: unknown[] }
     | undefined {
     return this.cols[ group ].get( key );
@@ -234,7 +266,7 @@ export class DataStore {
     }
 
     if( typeof value === 'string' ){
-      return { kind: 'string', indices: new Uint32Array( 0 ), dict: [], index: new Map() };
+      return { kind: 'string', indices: new Uint32Array( 0 ), dict: [], index: new Map(), refs: [], dead: 0, epoch: 0 };
     }
 
     return { kind: 'mixed', values: [] };
@@ -266,7 +298,7 @@ export class DataStore {
     return mixed;
   }
 
-  private write( col: Col, slot: number, value: unknown ): void {
+  private write( group: GroupName, key: string, col: Col, slot: number, value: unknown ): void {
     switch( col.kind ){
       case 'number': {
         if( slot >= col.values.length ){
@@ -278,27 +310,42 @@ export class DataStore {
         col.present[ slot ] = 1;
         break;
       }
-      case 'string': {
-        if( slot >= col.indices.length ){
-          col.indices = growU32( col.indices, slot );
-        }
-
-        const str = value as string;
-        let at = col.index.get( str );
-
-        if( at == null ){
-          col.dict.push( str );
-          at = col.dict.length;
-          col.index.set( str, at );
-        }
-
-        col.indices[ slot ] = at;
+      case 'string':
+        this.writeString( group, key, col, slot, value as string );
         break;
-      }
       case 'mixed': {
         col.values[ slot ] = value;
         break;
       }
+    }
+  }
+
+  private writeString( group: GroupName, key: string, col: StringCol, slot: number, str: string ): void {
+    if( slot >= col.indices.length ){
+      col.indices = growU32( col.indices, slot );
+    }
+
+    let at = col.index.get( str );
+
+    if( at == null ){
+      col.dict.push( str );
+      at = col.dict.length;
+      col.index.set( str, at );
+      col.refs.push( 0 );
+    } else if( col.refs[ at - 1 ] === 0 ){
+      col.dead--; // a dead entry resurrects
+    }
+
+    const prev = col.indices[ slot ];
+
+    if( prev === at ){ return; }
+
+    col.refs[ at - 1 ]++;
+    col.indices[ slot ] = at;
+
+    if( prev !== 0 && --col.refs[ prev - 1 ] === 0 ){
+      col.dead++;
+      this.maybeCompactDict( group, key, col );
     }
   }
 
@@ -311,13 +358,58 @@ export class DataStore {
       case 'number':
         if( slot < col.present.length ){ col.present[ slot ] = 0; }
         break;
-      case 'string':
-        if( slot < col.indices.length ){ col.indices[ slot ] = 0; }
+      case 'string': {
+        if( slot >= col.indices.length ){ break; }
+
+        const prev = col.indices[ slot ];
+
+        if( prev === 0 ){ break; }
+
+        col.indices[ slot ] = 0;
+
+        if( --col.refs[ prev - 1 ] === 0 ){
+          col.dead++;
+          this.maybeCompactDict( group, key, col );
+        }
+
         break;
+      }
       case 'mixed':
         if( slot < col.values.length ){ col.values[ slot ] = undefined; }
         break;
     }
+  }
+
+  private maybeCompactDict( group: GroupName, key: string, col: StringCol ): void {
+    if( col.dead * 2 <= col.dict.length || col.dict.length < DICT_COMPACT_FLOOR ){ return; }
+
+    // order-preserving remap of the live entries; index 0 (absent) is fixed
+    const remap = new Uint32Array( col.dict.length + 1 );
+    const dict: string[] = [];
+    const refs: number[] = [];
+
+    for( let i = 0; i < col.dict.length; i++ ){
+      if( col.refs[ i ] > 0 ){
+        dict.push( col.dict[ i ] );
+        refs.push( col.refs[ i ] );
+        remap[ i + 1 ] = dict.length;
+      }
+    }
+
+    const indices = col.indices;
+
+    // in place: bound evaluators hold this array (and this col) by reference
+    for( let i = 0; i < indices.length; i++ ){
+      indices[ i ] = remap[ indices[ i ] ];
+    }
+
+    col.dict = dict;
+    col.refs = refs;
+    col.index = new Map( dict.map( ( v, i ) => [ v, i + 1 ] ) );
+    col.dead = 0;
+    col.epoch++;
+
+    this.onDictRemap?.( group, key );
   }
 }
 

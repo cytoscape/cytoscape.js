@@ -268,6 +268,46 @@ describe('gpu/mapper-runtime', function(){
     expect( pass.dispatches ).to.deep.equal( [ Math.ceil( store.capacity('nodes') / 256 ) ] );
   });
 
+  it('repacks the ordinal LUT when a dict compaction remaps indices', function(){
+    const { store, runtime, mock } = setup( {
+      nodes: { 'background-color': {
+        data: 'cat', scale: 'ordinal', domain: [ 'c5' ], range: [ '#ff0000' ]
+      } }
+    } );
+
+    for( let i = 2; i < 9; i++ ){ store.addNode( 'n' + i, i, 0 ); } // setup made slots 0, 1
+    for( let i = 0; i < 9; i++ ){ store.setData( 'nodes', i, 'cat', 'c' + i ); } // dict c0..c8
+
+    store.takeDelta();
+    store.takeMapperSpans();
+    runtime.update( emptyDelta ); // configure sees dict length 9, epoch 0
+    runtime.encode( makeMockPass() );
+    mock.writes.length = 0;
+
+    // same-frame shrink + regrow to the packed length: 5 categories die
+    // (the dict compacts, remapping the survivors' indices) and 5 new
+    // ones bring the length back to 9 — length comparison alone would
+    // skip the repack and leave the LUT keyed by the old index space
+    for( let i = 0; i < 5; i++ ){ store.setData( 'nodes', i, 'cat', 'c5' ); }
+    for( let i = 0; i < 5; i++ ){ store.setData( 'nodes', i, 'cat', 'x' + i ); }
+
+    const col = store.data.column( 'nodes', 'cat' );
+
+    expect( col.dict.length ).to.equal( 9 ); // regrown to the packed length
+    expect( col.epoch ).to.equal( 1 ); // but remapped
+
+    store.takeDelta();
+    runtime.update( emptyDelta );
+
+    expect( mock.writes.some( w => w.label === 'cy-gpu:nodes-mapper-programs' ) ).to.be.true;
+
+    const pass = makeMockPass();
+
+    runtime.encode( pass );
+
+    expect( pass.dispatches ).to.deep.equal( [ Math.ceil( store.capacity('nodes') / 256 ) ] );
+  });
+
   it('demotes to eager CPU when a mapped column promotes to mixed', function(){
     const { store, engine, runtime, mirror } = setup( {
       nodes: { 'background-color': { data: 'w', domain: [ 0, 10 ], range: 'viridis' } }

@@ -858,7 +858,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   also gives purely incremental graphs the CSR memory shape once past
   the floor.  Per-node incident order is preserved (insertion order),
   except that an edge re-pointed by `move()` sits at its re-add
-  position until a rebuild returns it to insertion order.
+  position until a rebuild returns it to insertion order.  String
+  data dictionaries refcount their entries and compact when dead
+  entries exceed half the dict (8-entry floor): values never change —
+  only the private index space remaps (in place), with a per-column
+  epoch so the GPU ordinal LUT and uploaded index shadow repack via
+  the normal watched-key span path.
 - Slot compaction (tombstones + degenerate quads for now; the cull pass
   already keeps tombstones out of the draw stream) remains open: moving
   live element slots carries the policy weight — ref survival across a

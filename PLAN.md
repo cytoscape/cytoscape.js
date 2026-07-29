@@ -1438,6 +1438,24 @@ as an isolated commit with Node tests.
   keep all its edges in JS overlay arrays forever; it now folds into
   CSR once past the floor, at geometric intervals (amortized O(1) per
   add).
+- **String dictionaries** (`store/data-store.mts`): dicts only grew,
+  so entries whose last reference was overwritten or cleared leaked
+  under churn.  String columns now keep a per-entry refcount (one
+  extra indices read per write); when dead entries exceed half the
+  dict (8-entry floor) the dict compacts — live entries keep their
+  relative order, the indices column remaps **in place** (bound CPU
+  evaluators hold the array and col by reference), and a per-column
+  `epoch` bumps.  Values never change, only the private index space,
+  so no mapper output moves (ordinal domains are explicit — there is
+  no dict-order-derived domain).  GPU interplay: `onDictRemap` →
+  `GraphStore.markDataWrite` over the whole column (watched keys
+  re-upload their remapped index shadow), and the mapper runtime packs
+  `dictEpochs` beside `dictSizes` — the span handler reconfigures on
+  either mismatch, since a same-frame shrink-then-regrow can return
+  the dict to its packed *length* with a different index mapping
+  (spec-pinned: the epoch test fails on the length check alone).  The
+  ingest path also compacts adopted wire dicts that arrive with
+  unreferenced entries.
 
 ## Logged — compaction (analysis; slot-stable tier landed round 11)
 

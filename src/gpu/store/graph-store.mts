@@ -74,6 +74,13 @@ export class GraphStore implements ModelView {
     this.labelFont = 'sans-serif';
     this.watchedKeys = { nodes: new Set(), edges: new Set() };
     this.mapperSpans = new Map();
+
+    // a dict compaction remaps every slot's stored index for that key:
+    // a watched key must re-upload its whole column (and, via the bumped
+    // dict epoch, repack the GPU ordinal LUT); unwatched keys no-op
+    this.data.onDictRemap = ( group, key ) => {
+      this.markDataWrite( group, key, 0, this.table( group ).highWater );
+    };
   }
 
   table( group: GroupName ): ColumnTable {

@@ -173,6 +173,113 @@ describe('gpu/data', function(){
     });
   });
 
+  describe('dictionary compaction', function(){
+    it('keeps the dict bounded when unique strings churn through a column', function(){
+      const data = new DataStore();
+
+      // 8 slots repeatedly overwritten with fresh unique values: every
+      // write kills the previous value's dict entry
+      for( let round = 0; round < 500; round++ ){
+        for( let slot = 0; slot < 8; slot++ ){
+          data.set('nodes', slot, 'tag', `v-${round}-${slot}`);
+        }
+      }
+
+      const col = data.column('nodes', 'tag');
+
+      // 4000 distinct values passed through; only 8 are live
+      expect( col.dict.length ).to.be.at.most( 16 );
+
+      for( let slot = 0; slot < 8; slot++ ){
+        expect( data.get('nodes', slot, 'tag') ).to.equal(`v-499-${slot}`);
+      }
+    });
+
+    it('keeps untouched slots correct across a compaction', function(){
+      const data = new DataStore();
+
+      for( let slot = 0; slot < 10; slot++ ){ data.set('nodes', slot, 'k', 'keep-' + slot); }
+      // kill 6 of the 10 entries (dead 6 > 10/2, past the 8-entry floor)
+      for( let slot = 0; slot < 6; slot++ ){ data.set('nodes', slot, 'k', 'keep-9'); }
+
+      const col = data.column('nodes', 'k');
+
+      expect( col.dict.length ).to.equal(4); // keep-6..keep-9
+
+      for( let slot = 6; slot < 10; slot++ ){
+        expect( data.get('nodes', slot, 'k') ).to.equal('keep-' + slot);
+      }
+      for( let slot = 0; slot < 6; slot++ ){
+        expect( data.get('nodes', slot, 'k') ).to.equal('keep-9');
+      }
+    });
+
+    it('clearing values (element removal) triggers compaction too', function(){
+      const data = new DataStore();
+
+      for( let slot = 0; slot < 12; slot++ ){ data.set('nodes', slot, 'k', 'val-' + slot); }
+      for( let slot = 0; slot < 8; slot++ ){ data.set('nodes', slot, 'k', undefined); }
+
+      const col = data.column('nodes', 'k');
+
+      // compaction ran mid-loop; residual dead entries stay under the
+      // trigger (or the 8-entry floor)
+      expect( col.dict.length ).to.be.at.most(5);
+
+      for( let slot = 8; slot < 12; slot++ ){
+        expect( data.get('nodes', slot, 'k') ).to.equal('val-' + slot);
+      }
+      for( let slot = 0; slot < 8; slot++ ){
+        expect( data.get('nodes', slot, 'k') ).to.be.undefined;
+      }
+    });
+
+    it('a dead value re-written later resurrects cleanly', function(){
+      const data = new DataStore();
+
+      for( let slot = 0; slot < 10; slot++ ){ data.set('nodes', slot, 'k', 'v-' + slot); }
+
+      data.set('nodes', 0, 'k', 'v-1'); // v-0 dead, not yet compacted
+      data.set('nodes', 0, 'k', 'v-0'); // resurrects v-0, kills nothing new
+
+      expect( data.get('nodes', 0, 'k') ).to.equal('v-0');
+      expect( data.column('nodes', 'k').dict.length ).to.equal(10);
+    });
+
+    it('compacts a wire dict that arrives with unreferenced entries', function(){
+      const cy = cytoscapeGpu({
+        elements: {
+          columnar: true,
+          nodes: {
+            count: 2, ids: ['x', 'y'],
+            data: { kind: {
+              dict: [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'live-1', 'live-2' ],
+              indices: new Uint32Array([ 8, 9 ]) // only the last two referenced
+            } }
+          }
+        }
+      });
+
+      const col = cy._store.data.column('nodes', 'kind');
+
+      expect( col.dict ).to.deep.equal([ 'live-1', 'live-2' ]);
+      expect( cy.$id('x').data('kind') ).to.equal('live-1');
+      expect( cy.$id('y').data('kind') ).to.equal('live-2');
+    });
+
+    it('exports the compacted dict', function(){
+      const data = new DataStore();
+
+      for( let slot = 0; slot < 10; slot++ ){ data.set('nodes', slot, 'k', 'w-' + slot); }
+      for( let slot = 0; slot < 6; slot++ ){ data.set('nodes', slot, 'k', 'w-9'); }
+
+      const out = data.exportColumns('nodes', [ 6, 7, 8, 9 ]);
+
+      expect( out.k.dict ).to.have.length(4);
+      expect( out.k.dict[ out.k.indices[ 0 ] - 1 ] ).to.equal('w-6');
+    });
+  });
+
   describe('label mappers', function(){
     it('data(key) labels resolve from the sidecar', function(){
       const cy = cytoscapeGpu({

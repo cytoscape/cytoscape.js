@@ -23,6 +23,14 @@ export const FLAG_GRABBABLE = 64;
 export const FLAG_LOCKED = 128;
 export const FLAG_ACTIVE = 256;
 export const FLAG_PANNABLE = 512;
+/**
+ * Edge-only, store-managed (derived, not a user-visible switch): set when
+ * edge.curveParams holds a non-straight kind.  The cull kernels split the
+ * edge draw into a straight and a curved stream on this bit — per-edge
+ * curve params can't bind in every kernel (the 8-storage-buffer budget),
+ * but flags already do.
+ */
+export const FLAG_CURVED = 1024;
 
 // -- node shape ids (u32 because WGSL can't index u8 arrays) --
 
@@ -42,6 +50,12 @@ export const SHAPE_RHOMBOID = 10;
 export const SHAPE_VEE = 11;
 export const SHAPE_STAR = 12;
 export const SHAPE_TAG = 13;
+
+// -- edge curve kinds (round 12a; stored in edge.curveParams[3]) --
+
+export const CURVE_STRAIGHT = 0;
+export const CURVE_BEZIER = 1;
+export const CURVE_LOOP = 2;
 
 // -- edge line-style ids (round 10) --
 
@@ -79,7 +93,20 @@ export type ColumnId =
   | 'edge.sourceArrow' // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
   | 'edge.targetArrow' // Uint8Array(4·cap)
   | 'edge.lineStyle' // Uint32Array(cap), LINE_* ids
-  | 'edge.arrowShapes'; // Uint32Array(cap), ARROW_* ids packed source | target<<8
+  | 'edge.arrowShapes' // Uint32Array(cap), ARROW_* ids packed source | target<<8
+  /**
+   * Float32Array(4·cap) — per-edge curve parameters (round 12a), all
+   * position-independent so drags/layouts/position tweens follow on-GPU
+   * with zero rebuild.  [3] is the curve kind (CURVE_*, exact small
+   * ints in f32 — packed here so the curve shaders stay within the
+   * vertex stage's 8-storage-buffer budget):
+   * - CURVE_STRAIGHT: unused
+   * - CURVE_BEZIER: [0] signed control offset d (model px, edge frame),
+   *   [1] control-point-weight
+   * - CURVE_LOOP: [0] out angle, [1] in angle (radians), [2] control
+   *   radius (model px)
+   */
+  | 'edge.curveParams';
 
 export type ColumnArray = Float32Array | Uint32Array | Uint8Array;
 
@@ -117,7 +144,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.sourceArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.targetArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
-  spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 )
+  spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 ),
+  spec( 'edge.curveParams', 'edges', Float32Array, 4 )
 ];
 
 const specsById = new Map<ColumnId, ColumnSpec>( COLUMN_SPECS.map( s => [ s.id, s ] ) );

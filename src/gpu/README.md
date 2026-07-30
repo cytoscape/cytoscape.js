@@ -515,6 +515,19 @@ each is deliberate, not a pass-1 deferral:
   `curve-style: bezier`, only parallel edges fan out, and the middle
   edge of an odd bundle is straight (v3's rule), so curved scenes are
   pixel-comparable in the live v3-parity harness.
+  - *Geometry (12a)*: `curve-geometry.mts` is the CPU twin of the
+    curve WGSL — v3's formulas verbatim (the intersection frame, the
+    bundle stagger, the loop construction, boundary endpoints toward
+    the control point), one fixed drawn subdivision (CURVE_SEGS = 24
+    quads per curved edge), and the conservative hull-deviation bound
+    for cull/fit.  Per-edge parameters live in the `edge.curveParams`
+    column (f32×4, kind packed at [3]) and are position-independent —
+    offsets/weights/angles in the endpoint-relative frame — so drags,
+    layouts and position tweens follow on-GPU with zero rebuild.
+    Node boundaries reuse the arrow shader's approximation tier
+    (ellipse/rect exact, round-rect as its box, polygon as its
+    inscribed ellipse) rather than v3's exact per-shape intersections
+    — a recorded deviation, exact for the default ellipse nodes.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +

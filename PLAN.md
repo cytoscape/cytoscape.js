@@ -1985,6 +1985,32 @@ decimation; record the numbers in the round record).
    is straight too, v3's rule).  Pixel-comparable in the live
    v3-parity harness.
 
+## Round 12a — bundled bezier + self-loops (in progress, 2026-07-30)
+
+Runs under the round-10 process rules (isolated commits, docs
+in-commit, full verify per item, escalation on real API calls).  Items
+land in CPU-first order; each entry below is written in the commit that
+lands it.
+
+- [x] **Curve geometry module + contract columns.**
+  `src/gpu/curve-geometry.mts` is the CPU half of the dual-impl
+  discipline for curves: v3's math ported verbatim (bundle stagger
+  `(0.5 − n/2 + i)·step`, loop rays `loopDir − π/2 ∓ sweep/2` at radius
+  `1.4·step·(j/3 + 1)`, the `edge-distances: intersection` frame with
+  the impossible-bezier clamp, endpoints on the node boundary toward
+  the near control point, the loop's two C1-continuous quadratics
+  through the control midpoint), with node boundaries at the arrow
+  shader's approximation tier (ellipse/rect exact, round-rect as box,
+  polygon as inscribed ellipse — recorded deviation).  Also:
+  `curvePointAt`/`flattenCurve` (the drawn subdivision, CURVE_SEGS =
+  24) and the conservative `curveDeviation` hull bound for cull/fit.
+  Contract: `edge.curveParams` column (f32×4; kind packed at [3] so
+  the curve shaders fit the vertex stage's 8-storage-buffer budget)
+  + `CURVE_*` kinds + the store-managed `FLAG_CURVED` bit the cull
+  kernels will split the edge streams on.  17 Node specs pin the port
+  against hand-derived v3 values (incl. the antiparallel-edge
+  world-invariance of the stagger sign and the C1 loop join).
+
 ## Landed (edge-label autorotate, 2026-07-29)
 
 The last item on the autonomous shelf, cleared while planning round 12:

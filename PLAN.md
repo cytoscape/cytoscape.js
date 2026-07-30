@@ -8,8 +8,9 @@ rendering could be assessed for performance — and subsequent rounds
 image export, label testability, the round-10 parity sprint, round-11
 slot-stable compaction, edge-label autorotate) are recorded below as
 "Landed (round N)" sections, each verified green when it landed; the
-round-12 curved-edges plan has both flagged calls signed off
-(2026-07-30) and pass 12a is in progress.  `src/gpu/README.md` is
+round-12 curved-edges plan has both flagged calls signed off and pass
+12a (bundled bezier + self-loops) landed 2026-07-30 — passes 12b/12c
+remain.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -1677,9 +1678,10 @@ spellings, redundant `attr`-family duplicates — one name per concept).
 
 ### Gaps with direction already set (build when scheduled)
 
-- **Curved edges** — the single biggest *visual* gap.  v3
-  `curve-style`: `bezier` (bundled), `unbundled-bezier`, `segments`,
-  `round-segments`, `taxi`, `round-taxi` (v4 has `straight` only).
+- **Curved edges** — the single biggest *visual* gap.  **Pass 12a
+  (bundled `bezier` + self-loops) landed 2026-07-30** — see the round
+  12a record.  Still open from v3's `curve-style`: `unbundled-bezier`,
+  `segments`, `round-segments`, `taxi`, `round-taxi` (the 12b pass).
   Brings with it: **self-loops** (`loop-direction`/`loop-sweep` — a
   loop currently degenerates to a point in v4), `control-point-*`,
   `segment-*`, `taxi-*`, `radius-type`, `edge-distances`,
@@ -1985,12 +1987,14 @@ decimation; record the numbers in the round record).
    is straight too, v3's rule).  Pixel-comparable in the live
    v3-parity harness.
 
-## Round 12a — bundled bezier + self-loops (in progress, 2026-07-30)
+## Landed (round 12a — bundled bezier + self-loops, 2026-07-30)
 
-Runs under the round-10 process rules (isolated commits, docs
+Ran under the round-10 process rules (isolated commits, docs
 in-commit, full verify per item, escalation on real API calls).  Items
-land in CPU-first order; each entry below is written in the commit that
-lands it.
+landed in CPU-first order; each entry below was written in the commit
+that landed it.  Passes 12b (unbundled/segments/taxi) and 12c
+(endpoints + haystack/straight-triangle) remain in the round-12 plan
+above.
 
 - [x] **Curve geometry module + contract columns.**
   `src/gpu/curve-geometry.mts` is the CPU half of the dual-impl
@@ -2106,6 +2110,27 @@ lands it.
   `curved-edge-labels` golden (bundle labels per-curve, an autorotated
   boxed label tilted with the chord, a loop label on the loop
   tangent); 62/62 Playwright, 1707 Node, 60 module tests green.
+- [x] **Renderer benchmark: the curved pan scene.**  A new
+  `gen-25k-curved` scene generates its 50k edges as parallel *pairs*
+  (a lone bezier renders straight, so a random-edge scene would
+  measure nothing) with `curve-style: bezier` opted into on both
+  sides; the runner also gained the platform-gated Linux
+  ANGLE-on-Vulkan flags from playwright.config.js — without them it
+  silently fell back to SwiftShader (and the software rasterizer then
+  lost the device under the curved load).  Same-machine A/B on this
+  box (AMD RX 580 / RADV, dpr 2, 1280×800, scale pinned 1), GPU
+  device-time p50, straight `gen-25k` vs `gen-25k-curved`:
+  continuous-pan fit-all 3.3 → 8.6 ms (~2.6× for 24 quads/edge over
+  every edge — well under a 60 fps frame; wall clock stays
+  vsync-bound at 16.7 ms on both scenes), zoomed-in 20× 4.4 → 3.8 ms
+  (culling keeps the curved stream cheap), far-zoom 1.2 → 6.4 ms —
+  the documented no-decimation trade-off on the curved stream showing
+  up exactly where expected (revisit with 12c's haystack).  v3 canvas
+  ~650 ms/frame fit-all either way (bezier barely moves its cost);
+  init 3.0 s v3 vs 169 ms gpu; hover-while-panning pick p50 ~18 ms on
+  this box.  Round 12a is complete: props, derivation, accessors,
+  exact bb, render, cull, pick, arrows, labels, goldens, parity and
+  benchmarks all landed.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

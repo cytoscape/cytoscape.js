@@ -80,6 +80,10 @@
             const side_ = Math.ceil( Math.sqrt( spec.n ) ) * 50;
             const nodes = [];
             const edges = [];
+            // parallel > 1: edges come in parallel bundles of that size —
+            // the curved scenes need real bundles, since a lone bezier
+            // edge renders straight (the v3 rule both sides implement)
+            const parallel = spec.parallel ?? 1;
 
             for( let i = 0; i < spec.n; i++ ){
               nodes.push( {
@@ -88,12 +92,13 @@
               } );
             }
 
-            for( let j = 0; j < spec.m; j++ ){
-              edges.push( { data: {
-                id: 'e' + j,
-                source: 'n' + Math.floor( rand() * spec.n ),
-                target: 'n' + Math.floor( rand() * spec.n )
-              } } );
+            for( let j = 0; j < spec.m; j += parallel ){
+              const source = 'n' + Math.floor( rand() * spec.n );
+              const target = 'n' + Math.floor( rand() * spec.n );
+
+              for( let k = 0; k < parallel && j + k < spec.m; k++ ){
+                edges.push( { data: { id: 'e' + ( j + k ), source, target } } );
+              }
             }
 
             return { nodes, edges };
@@ -145,11 +150,18 @@
           let convertMs = 0;
           const t0 = performance.now();
 
+          const curved = scene.spec.curved === true;
+
           if( which === 'v3' ){
+            const style = v3Style( labels );
+
+            // both sides opt into bundled bezier explicitly on curved scenes
+            style[ 1 ].style[ 'curve-style' ] = curved ? 'bezier' : 'straight';
+
             cy = cytoscape( {
               container: stage,
               elements: defs,
-              style: v3Style( labels ),
+              style,
               layout: { name: 'preset' }
             } );
 
@@ -165,11 +177,14 @@
             }
 
             const nodesStyle = labels ? Object.assign( {}, V4_BASE_STYLE.nodes, V4_LABELS ) : V4_BASE_STYLE.nodes;
+            const edgesStyle = curved
+              ? Object.assign( {}, V4_BASE_STYLE.edges, { 'curve-style': 'bezier' } )
+              : V4_BASE_STYLE.edges;
 
             cy = cytoscapeGpu( {
               container: stage,
               elements,
-              style: { nodes: nodesStyle, edges: V4_BASE_STYLE.edges },
+              style: { nodes: nodesStyle, edges: edgesStyle },
               // pin the adaptive render scale: this benchmark measures raw
               // scene cost at native resolution
               renderer: { renderScaleMin: 1, renderScaleMax: 1 }

@@ -35,7 +35,10 @@ const RESULTS_DIR = join( DIR, 'results' );
 const SCENES = [
   { key: 'gen-25k', label: 'generated 25k × 50k', page: { n: 25000, m: 50000 } },
   { key: 'gen-100k', label: 'generated 100k × 300k', page: { n: 100000, m: 300000 } },
-  { key: 'ndex', label: 'ndex-x-large (19.6k × 465k)', page: { url: '/debug/webgpu/network-ndex-x-large.json' } }
+  { key: 'ndex', label: 'ndex-x-large (19.6k × 465k)', page: { url: '/debug/webgpu/network-ndex-x-large.json' } },
+  // round 12a: bundled-bezier pan cost — edges come in parallel pairs so
+  // every edge actually curves (a lone bezier edge renders straight)
+  { key: 'gen-25k-curved', label: 'generated 25k × 50k curved (bezier pairs)', page: { n: 25000, m: 50000, parallel: 2, curved: true } }
 ];
 
 const PAN_VIEWS = [
@@ -123,7 +126,15 @@ const port = server.address().port;
 const browser = await chromium.launch( {
   channel: 'chromium', // new headless: real GPU adapters (Metal on macOS)
   headless: !headed,
-  args: [ '--enable-unsafe-webgpu' ]
+  args: [
+    '--enable-unsafe-webgpu',
+    // Linux headless needs the ANGLE-on-Vulkan compositor for WebGPU
+    // canvases to present (and for the hardware Vulkan adapter to be
+    // offered at all) — same platform-gated flags as playwright.config.js
+    ...( process.platform === 'linux'
+      ? [ '--use-gl=angle', '--use-angle=vulkan', '--enable-features=Vulkan' ]
+      : [] )
+  ]
 } );
 const context = await browser.newContext( { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 } );
 const page = await context.newPage();

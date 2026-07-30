@@ -649,12 +649,14 @@ the predicate, while live state reads report false.
 Out of scope (deferred): compound nodes,
 string-formatting label mappers beyond the passthrough, and the GPU
 tween fast path for *size* channels (position and paint offload today;
-size is a geometry-tier project, see the design decisions above).  Multiline
-labels and bundled bezier edges are a v4 direction (single-line labels
-and straight edges today); both are the *expensive GPU-computed
-geometry* tier — dual CPU/WGSL implementations with a conservative CPU
-bound for cull/fit and exact lazy CPU eval for public `.bb()`, no
-readback — and GPU layouts remain logged for later.
+size is a geometry-tier project, see the design decisions above).
+Multiline labels remain a v4 direction in the *expensive GPU-computed
+geometry* tier — the tier bundled bezier + self-loops shipped under in
+round 12a (dual CPU/WGSL implementations, conservative CPU bound for
+cull/fit, exact lazy CPU eval for public `.bb()`, no readback);
+unbundled bezier/segments/taxi are round 12b, edge endpoints +
+haystack/straight-triangle round 12c, and GPU layouts remain logged
+for later.
 
 ## Benchmarks
 
@@ -676,8 +678,10 @@ JSON — quick profile by default, `-- --full` for the 2k/20k/200k matrix
 via Playwright — needs built UMD bundles and a **real GPU adapter** (the
 run aborts on none; software adapters are warned about, their numbers are
 a different machine class).  It replays the interactions behind the
-recorded renderer numbers on three scenes (seeded 25k×50k and 100k×300k
-generators, ndex-x-large), v3 canvas vs v4 WebGPU: continuous-pan steady
+recorded renderer numbers on four scenes (seeded 25k×50k and 100k×300k
+generators, ndex-x-large, and a 25k×50k *curved* scene whose edges come
+in bezier parallel pairs so every edge actually curves), v3 canvas vs
+v4 WebGPU: continuous-pan steady
 state at fit-all / zoomed-in 20× / far-zoom (labels off and on),
 hover-while-panning `pick()` latency, and one-shot init / columnar-init /
 full-png-export timings.  Wall ms-per-rendered-frame is the comparison
@@ -855,6 +859,17 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   sub-half-alpha edges may neither draw nor pick at far zoom.  This removes
   the far-zoom worst case where every edge rasterized into a few hundred
   pixels and serialized at the blend stage (~33 ms → ~8 ms on 465k edges).
+- **Curved edges (round 12a)**: `curve-style: bezier` bundles and
+  self-loops render on-GPU as 24-quad strips evaluated from live
+  positions (see the design decision above).  Deviations, all
+  recorded there: node boundaries use the arrow tier's approximations
+  (round-rect as box, polygon as inscribed ellipse); curved edges
+  draw after straight edges (two streams, slot order within each);
+  the curved stream is never decimated at far zoom; curved-edge
+  arrow tips ignore the node border's outer half; and v3's
+  near-overlap control-point correction (`tryToCorrectInvalidPoints`)
+  is not ported — overlapping-node curves may differ slightly from
+  v3 in the region the nodes occlude anyway.
 - **Early-z**: a depth prepass writes depth for guaranteed-opaque node
   interiors (skipping translucent fills/borders, LOD alpha and the AA
   fringe — output is pixel-identical), and edges depth-test against it so

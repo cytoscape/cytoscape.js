@@ -5,8 +5,9 @@ First pass of the v4 performance redesign spec'd in
 prototype core with a **CPU-canonical columnar model** (typed-array columns,
 stable slots, per-column coalesced dirty spans) written through to
 **persistent GPU buffers**, rendered by a **WebGPU pipeline** (SDF node
-shapes, straight edges reading endpoints from the node position buffer
-on-GPU, GPU picking, compute culling + indirect draws + LOD).  The
+shapes, straight and — round 12a — bundled-bezier/self-loop curved
+edges reading endpoint positions and curve params on-GPU, GPU picking,
+compute culling + indirect draws + LOD).  The
 existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
@@ -65,7 +66,9 @@ box selection (`elementsInBox` + the pointer gesture) and
 `destroy()`, `width()`/`height()`.
 Collections: `cy()`/`renderer()`/`element()`, events, graph
 manipulation (incl. edge `move()`), position/dimensions (model +
-rendered, `shift`, silent variants, edge `midpoint`/endpoints),
+rendered, `shift`, silent variants, edge `midpoint`/endpoints —
+curve-aware since round 12a, along with `controlPoints`/
+`renderedControlPoints`/`isBundledBezier`),
 iteration (`sort`, `reduce`, `max`/`min`), comparison, building/
 filtering (`byGroup`, `diff`, `absoluteComplement`, set aliases),
 traversal (`outgoers`/`incomers`, `roots`/`leaves`,
@@ -928,7 +931,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   upside-down — see the edge-labels design decision),
   single line (newlines collapse to spaces), fixed
   placement (nodes: horizontally centered below the node; edges:
-  centered on the midpoint; both offset by
+  centered on the midpoint — the *curve* midpoint for curved edges,
+  round 12a; both offset by
   `text-margin-x/y`), not pickable, one
   global `font-family` (the atlas holds one font), and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
@@ -976,9 +980,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   element).  Geometry is v3's default 'contain' semantics answered by
   one columnar scan (`cy.elementsInBox(x1, y1, x2, y2)`, model
   coordinates): a node counts when its bounding box (incl. border) lies
-  fully inside; a straight edge when both endpoint node *centers* do
+  fully inside; an edge when both endpoint node *centers* do
   (v3 tests the on-boundary endpoints; centers are the straight-edge
-  approximation used elsewhere in the prototype).  `selectionType()`
+  approximation used elsewhere in the prototype — curved edges keep
+  the same endpoint-center containment, a 12a call revisited with
+  12b's full-family CPU evaluator).  `selectionType()`
   is 'single' (tap/box replaces the selection) or 'additive' (taps
   toggle, boxes add).  Mouse/pen only — v3's three-finger touch box
   gesture is not implemented.

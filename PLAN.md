@@ -117,7 +117,7 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 - **Frame timing**: `stats()` reports `cpuFrameMs` (encode/submit cost, ~0.1 ms by design) separately from `gpuFrameMs` (real frame GPU time via the optional `timestamp-query` feature — the span across the cull/render/upscale passes, which is robust to backends that emulate pass-boundary timestamps at command-buffer granularity) — CPU-side timers cannot see GPU execution, which is what bounds fps on large graphs.
 - **Adaptive render scale (added)**: `renderScaleMin`/`renderScaleMax` band (defaults 0.5/1), quarter steps driven by median `gpuFrameMs` over ~400 ms windows (drop > 14 ms; raise only when the projected cost at the higher step fits under 10 ms — no pumping; backpressure stalls as the no-timestamp fallback; pure `ScaleController`, unit-tested). Idle settles back to max after ~250 ms so stills are always native — chosen over a static scale because far zoom is maximally resolution-sensitive (floors are render-px-defined, sub-pixel statistics change, decimation engages earlier) yet nearly free at native after decimation+culling. Scaled frames render offscreen + Catmull-Rom bicubic upscale (9 bilinear taps). Verified: fit-all pan at dpr 2 steps 1 → 0.75 → 0.5 within ~0.8 s (25 → 76 fps, 8.3 ms GPU); idle returns to 1; far-zoom pan holds 1. Picking stays native; `labelMinPx` option hard-culls unreadably small labels in the glyph cull predicate.
 
-- **Whole-graph fit fast path (added)**: no-arg `fit()`/`center()` compute bounds via `GraphStore.boundingBox()` — a direct columnar scan (nodes: position ± size/2 + border/2; edges as a first-class extent term, today the endpoint centers) instead of materializing ~500k element handles through `cy.elements()`. ndex-x-large: 235 → 15 ms, identical zoom/pan. Future edge geometry (bezier, arrows) extends the edge term in the store scan and `GpuCollection.boundingBox` together.
+- **Whole-graph fit fast path (added)**: no-arg `fit()`/`center()` compute bounds via `GraphStore.boundingBox()` — a direct columnar scan (nodes: position ± size/2 + border/2; edges as a first-class extent term, today the endpoint centers) instead of materializing ~500k element handles through `cy.elements()`. ndex-x-large: 235 → 15 ms, identical zoom/pan. Future edge geometry (bezier, arrows) extends the edge term in the store scan and `GpuCollection.boundingBox` together.  (Since superseded: round 12a extended the store scan's edge term with the conservative curve-hull bound and gave `GpuCollection.boundingBox` the exact lazy curve tier.)
 
 ## Integration — done
 
@@ -153,7 +153,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 - Pan-vs-grab uses the ≤2-frame-stale resolved pick.
 - `cy.elements()` returns nodes then edges, not mixed insertion order.
 - Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.  (Since superseded: edge labels + label visuals landed in round 10; edge-label autorotate 2026-07-29.)
-- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged; circle/concentric/breadthfirst/random layouts landed round 10 — compounds and bezier remain).
+- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged; circle/concentric/breadthfirst/random layouts landed round 10; bundled bezier + self-loops landed round 12a — compounds and the 12b/12c curve families remain).
 
 ## Follow-ups (informed by the benchmark)
 
@@ -220,7 +220,8 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 
 All follow-ups are done.  Open hooks beyond pass 1: slot compaction
 (the slot-stable blob/CSR/dictionary reclaim landed in round 11 below),
-z-index ranks, compound nodes, bezier edges,
+z-index ranks, compound nodes, curved edges (bundled bezier +
+self-loops landed round 12a; the 12b/12c families remain),
 more layouts, a binary export of live graphs (serializeElements already
 covers payloads).  (Mappers landed as the round-7 object DSL below.)
 
@@ -730,7 +731,8 @@ record.
   sync default.
 
 - **Expensive GPU geometry → dual implementations, not readback** (multiline
-  labels, bundled bezier — v4-but-not-yet).  These are expensive *and* read
+  labels, bundled bezier — v4-but-not-yet; since superseded for bundled
+  bezier + self-loops, which landed round 12a under exactly this model).  These are expensive *and* read
   by `.bb()`, so the position lease's no-readback trick doesn't apply
   directly (they aren't cheaply CPU-reproducible).  The model: **two
   deterministic implementations that agree by construction** — WGSL for
@@ -778,7 +780,10 @@ record.
   `isBundledBezier` and curved edge rendering — a v4 direction, in the
   expensive-geometry tier (see the design discussion above): dual CPU/WGSL
   impls, conservative CPU bound for cull/fit, exact lazy CPU `.bb()`,
-  membership as a structural index.
+  membership as a structural index.  (Since superseded: bundled bezier +
+  self-loops landed round 12a exactly in this tier, incl.
+  `controlPoints`/`isBundledBezier`; `segmentPoints` and the
+  unbundled/segments/taxi families are pass 12b.)
 - **Full stylesheet + mappers** beyond the constant blocks and the label
   `data(key)` mapper; layouts beyond grid/preset.  (Since superseded:
   mappers landed round 7–8; circle/concentric/breadthfirst/random
@@ -1865,8 +1870,9 @@ production apps).  Of the near-term autonomous work, slot-stable
 compaction landed as round 11 and edge-label autorotate landed
 2026-07-29 — the autonomous shelf is clear.  The
 design queue, in suggested order: curved
-edges (tier already decided; now also carrying haystack/
-straight-triangle as visual styles) → compounds (needs the full
+edges (12a — bundled bezier + self-loops — landed 2026-07-30; 12b
+unbundled/segments/taxi and 12c endpoints + haystack/straight-triangle
+remain) → compounds (needs the full
 design round) → background images + the node-visual scope call
 (ghost's simplified body-duplicate form slots in here) → the event
 vocabulary + extension contract calls (cheap to build once decided,
@@ -1946,8 +1952,8 @@ geometry tests pinned against v3's math, a golden scene per family, a
 live v3-parity scene under the standard tolerance bound, and a
 follows-drag/tween Playwright spec pinning the zero-rebuild property):
 
-- **12a — bundled bezier + self-loops** (the default v3 look, and the
-  loop fix): `curve-style` prop (`straight` | `bezier`),
+- **12a — bundled bezier + self-loops** (landed 2026-07-30 — see the
+  round 12a record; the default v3 look, and the loop fix): `curve-style` prop (`straight` | `bezier`),
   `control-point-step-size`, `control-point-weight`, `loop-direction`,
   `loop-sweep`; the parallel-edge bundle membership index (keyed on
   the unordered endpoint pair, incremental on add/remove/`move()`);

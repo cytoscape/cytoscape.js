@@ -1015,10 +1015,11 @@ export class GraphStore implements ModelView {
    * handles (a no-arg fit() on a 500k-element graph is a fraction of a
    * millisecond instead of hundreds).  Nodes contribute position ±
    * (size/2 + border/2).  Edges contribute their own extent as a
-   * first-class term: today that is the two endpoint node centers (edges
-   * are straight center-to-center segments), and future edge geometry —
-   * bezier control points, arrow heads — extends the edge term here and
-   * in GpuCollection.boundingBox together.  Returns null when empty.
+   * first-class term: the two endpoint node centers, grown by the
+   * conservative curve-hull deviation for curved edges (round 12a; the
+   * exact lazy curve bb is GpuCollection.boundingBox's tier).  Future
+   * edge geometry (arrow heads, 12b families) extends the edge term
+   * here and there together.  Returns null when empty.
    */
   boundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
     this.curves.flush(); // the edge term reads derived curve params

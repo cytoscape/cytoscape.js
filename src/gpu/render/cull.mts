@@ -28,13 +28,13 @@ culling: pick draws stay O(region).
 
 const WG_SIZE = 256;
 
-export type CullKind = 'node' | 'edge' | 'glyph' | 'edgeGlyph';
+export type CullKind = 'node' | 'edge' | 'curvedEdge' | 'glyph' | 'edgeGlyph';
 
 /** ordered storage-buffer inputs per kind (bindings 2..N-4 of the cull layout) */
-const INPUT_COUNTS: Record<CullKind, number> = { node: 3, edge: 5, glyph: 3, edgeGlyph: 5 };
+const INPUT_COUNTS: Record<CullKind, number> = { node: 3, edge: 5, curvedEdge: 5, glyph: 3, edgeGlyph: 5 };
 
 const SCAFFOLD = `
-struct CullInfo { count: u32 }
+struct CullInfo { count: u32, indexCount: u32 }
 
 var<workgroup> wgLocal: atomic<u32>;
 var<workgroup> scanBuf: array<u32, ${WG_SIZE}>;
@@ -158,7 +158,10 @@ fn segmentHitsViewport(a: vec2f, b: vec2f, m: f32) -> bool {
 }
 
 fn isVisible(slot: u32) -> bool {
-  if ((edgeFlags[slot] & SHOWN) != SHOWN) { return false; }
+  let flags = edgeFlags[slot];
+
+  if ((flags & SHOWN) != SHOWN) { return false; }
+  if ((flags & FLAG_CURVED) != 0u) { return false; } // the curved stream draws it
 
   let ends = endpoints[slot];
 
@@ -175,6 +178,83 @@ fn isVisible(slot: u32) -> bool {
   if (length(b - a) < 1e-4) { return false; } // degenerate (loop at one point)
 
   let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0; // half width + AA
+  return segmentHitsViewport(a, b, m);
+}
+${SCAFFOLD}
+`;
+
+/*
+The curved-edge stream: same inputs as the straight cull, but the
+predicate selects FLAG_CURVED edges, never decimates (curved edges are
+opt-in and far fewer), and grows the chord test by the frame's
+conservative curveSlack (per-edge curve params cannot bind here within
+the compute stage's 8-storage-buffer budget — 5 inputs + 3 outputs are
+already at it).  Loops have a zero-length chord; Liang-Barsky's
+degenerate branch turns the test into point-vs-grown-rect, which the
+slack makes correct.
+*/
+const CURVED_EDGE_CULL = `
+${COMMON}
+@group(0) @binding(0) var<uniform> frame: Frame;
+@group(0) @binding(1) var<uniform> info: CullInfo;
+@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;
+@group(0) @binding(3) var<storage, read> widths: array<f32>;
+@group(0) @binding(4) var<storage, read> edgeFlags: array<u32>;
+@group(0) @binding(5) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(6) var<storage, read> nodeFlags: array<u32>;
+@group(0) @binding(7) var<storage, read_write> wgCounts: array<u32>;
+@group(0) @binding(8) var<storage, read_write> wgOffsets: array<u32>;
+@group(0) @binding(9) var<storage, read_write> visible: array<u32>;
+
+// exact segment-vs-rect (Liang-Barsky) against the viewport grown by m
+fn segmentHitsViewport(a: vec2f, b: vec2f, m: f32) -> bool {
+  let lo = vec2f(-m, -m);
+  let hi = frame.viewportPx + vec2f(m, m);
+  let d = b - a;
+  var t0 = 0.0;
+  var t1 = 1.0;
+
+  for (var axis = 0u; axis < 2u; axis = axis + 1u) {
+    let da = select(d.y, d.x, axis == 0u);
+    let aa = select(a.y, a.x, axis == 0u);
+    let loA = select(lo.y, lo.x, axis == 0u);
+    let hiA = select(hi.y, hi.x, axis == 0u);
+
+    if (abs(da) < 1e-6) {
+      if (aa < loA || aa > hiA) { return false; }
+    } else {
+      var tNear = (loA - aa) / da;
+      var tFar = (hiA - aa) / da;
+
+      if (tNear > tFar) { let t = tNear; tNear = tFar; tFar = t; }
+
+      t0 = max(t0, tNear);
+      t1 = min(t1, tFar);
+
+      if (t0 > t1) { return false; }
+    }
+  }
+
+  return true;
+}
+
+fn isVisible(slot: u32) -> bool {
+  let flags = edgeFlags[slot];
+
+  if ((flags & SHOWN) != SHOWN) { return false; }
+  if ((flags & FLAG_CURVED) == 0u) { return false; }
+
+  let ends = endpoints[slot];
+
+  if ((nodeFlags[ends.x] & SHOWN) != SHOWN || (nodeFlags[ends.y] & SHOWN) != SHOWN) { return false; }
+
+  let widthPx = widths[slot] * frame.zoomDpr;
+  let a = modelToPx(frame, nodePositions[ends.x]);
+  let b = modelToPx(frame, nodePositions[ends.y]);
+
+  // chord grown by half width + AA + the conservative curve deviation
+  let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0 + frame.curveSlack * frame.zoomDpr;
+
   return segmentHitsViewport(a, b, m);
 }
 ${SCAFFOLD}
@@ -215,7 +295,7 @@ ${SCAFFOLD}
 `;
 
 const SCAN = `
-struct CullInfo { count: u32 }
+struct CullInfo { count: u32, indexCount: u32 }
 
 @group(0) @binding(0) var<uniform> info: CullInfo;
 @group(0) @binding(1) var<storage, read> wgCounts: array<u32>;
@@ -234,7 +314,7 @@ fn csScan() {
     sum = sum + wgCounts[i];
   }
 
-  drawArgs[0] = 6u;  // indexCount: the shared instance quad
+  drawArgs[0] = info.indexCount; // 6 per quad; curved edges draw a strip of quads
   drawArgs[1] = sum; // instanceCount: visible survivors
   drawArgs[2] = 0u;
   drawArgs[3] = 0u;
@@ -307,6 +387,7 @@ ${SCAFFOLD}
 const CULL_SHADERS: Record<CullKind, string> = {
   node: NODE_CULL,
   edge: EDGE_CULL,
+  curvedEdge: CURVED_EDGE_CULL,
   glyph: GLYPH_CULL,
   edgeGlyph: EDGE_GLYPH_CULL
 };
@@ -345,7 +426,7 @@ export class CullKernels {
     this.countPipelines = {} as Record<CullKind, GPUComputePipeline>;
     this.scatterPipelines = {} as Record<CullKind, GPUComputePipeline>;
 
-    for( const kind of [ 'node', 'edge', 'glyph', 'edgeGlyph' ] as CullKind[] ){
+    for( const kind of [ 'node', 'edge', 'curvedEdge', 'glyph', 'edgeGlyph' ] as CullKind[] ){
       const inputs = INPUT_COUNTS[ kind ];
       const layout = device.createBindGroupLayout( {
         label: `cy-gpu:${kind}-cull-layout`,
@@ -407,6 +488,8 @@ export class CulledGroup {
   private kind: CullKind;
   private label: string;
   private meta: GPUBuffer;
+  /** indexCount per drawn instance: 6 for a quad, 6 x CURVE_SEGS for a curved strip */
+  private indexCount: number;
   private lastCount: number;
   private capacity: number;
   private visible: GPUBuffer | null;
@@ -418,10 +501,11 @@ export class CulledGroup {
   private bindKey: string;
   private destroyed: boolean;
 
-  constructor( kernels: CullKernels, kind: CullKind, label: string ){
+  constructor( kernels: CullKernels, kind: CullKind, label: string, indexCount: number = 6 ){
     this.kernels = kernels;
     this.kind = kind;
     this.label = label;
+    this.indexCount = indexCount;
     this.lastCount = -1;
     this.capacity = 0;
     this.visible = null;
@@ -437,7 +521,7 @@ export class CulledGroup {
 
     this.meta = device.createBuffer( {
       label: `cy-gpu:${label}-cull-meta`,
-      size: 4,
+      size: 8, // { count, indexCount }
       usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST
     } );
     this.indirect = device.createBuffer( {
@@ -534,7 +618,7 @@ export class CulledGroup {
 
     if( this.lastCount !== highWater ){
       this.lastCount = highWater;
-      this.kernels.device.queue.writeBuffer( this.meta, 0, Uint32Array.of( highWater ) );
+      this.kernels.device.queue.writeBuffer( this.meta, 0, Uint32Array.of( highWater, this.indexCount ) );
     }
 
     const numWg = Math.ceil( highWater / WG_SIZE );

@@ -557,6 +557,24 @@ each is deliberate, not a pass-1 deferral:
     subdivision, memoized per edge against a store-wide geometry epoch
     (any geometry write invalidates every cached box — over-broad but
     sound); fit/cull keep the conservative bounds.
+  - *Rendering (12a)*: curved edges draw in their own pipeline — one
+    instance per edge as a strip of 24 quads whose vertex shader
+    evaluates the curve analytically from live positions + the params
+    column (the WGSL twin of `curve-geometry.mts`), extruding along
+    the curve normal at each vertex's own t so the strip is watertight
+    without miter joints.  The VS binds exactly 7 columns + the
+    visible list (the base 8-storage-buffer budget); line
+    color/opacity/style fetch in the fragment stage, and dashes follow
+    the curve's polyline arc length.  The cull pass splits the edge
+    draw into straight and curved streams on the store-managed
+    FLAG_CURVED bit — the curved stream's chord test grows by the
+    frame's `curveSlack` and is **not decimated** (curved edges are
+    opt-in and far fewer; a far-zoom haystack revisits this in 12c) —
+    and the GPU pick tile draws the same strips, so what you see is
+    what you pick.  Curved edges draw *after* straight edges (two
+    streams; slot order within each — a z-order deviation alongside
+    the existing edges-under-nodes rule); both stream under arrows,
+    nodes and labels, and early-z applies to both.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +

@@ -18,3 +18,36 @@ export function createQuadIndexBuffer( device: GPUDevice ): GPUBuffer {
 
   return buffer;
 }
+
+/**
+ * Index list for a strip of `quads` independent quads per instance
+ * (vertex ids 4q..4q+3 for quad q): the curved-edge segment strip.  The
+ * vertex shader derives (segment, corner) as (vi >> 2, vi & 3), and
+ * adjacent quads compute identical geometry for their shared subdivision
+ * point, so the strip renders watertight without shared indices.
+ */
+export function createQuadStripIndexBuffer( device: GPUDevice, quads: number ): GPUBuffer {
+  const indices = new Uint16Array( quads * 6 );
+
+  for( let q = 0; q < quads; q++ ){
+    const v = q * 4;
+    const at = q * 6;
+
+    indices[ at ] = v;
+    indices[ at + 1 ] = v + 1;
+    indices[ at + 2 ] = v + 2;
+    indices[ at + 3 ] = v + 2;
+    indices[ at + 4 ] = v + 1;
+    indices[ at + 5 ] = v + 3;
+  }
+
+  const buffer = device.createBuffer( {
+    label: `cy-gpu:quad-strip-index-${quads}`,
+    size: indices.byteLength,
+    usage: BUFFER_USAGE.INDEX | BUFFER_USAGE.COPY_DST
+  } );
+
+  device.queue.writeBuffer( buffer, 0, indices.buffer, 0, indices.byteLength );
+
+  return buffer;
+}

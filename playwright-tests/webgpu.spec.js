@@ -1815,4 +1815,135 @@ test.describe( 'WebGPU renderer', () => {
     await page.evaluate( () => window.cy.$id( 'a' ).stop( true, true ) );
   } );
 
+  test( 'bezier bundle: curves render off the chord and follow a drag on-GPU', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } },
+        { data: { id: 'e1', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: {
+          'curve-style': 'bezier', 'control-point-step-size': 80,
+          'width': 6, 'line-color': '#e74c3c'
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the chord between the two fanned curves is background...
+    const chordPixel = await pixelAt( page, center.x, center.y );
+
+    expect( chordPixel[ 1 ] ).toBeGreaterThan( 180 );
+
+    // ...and the pixels at each curve's CPU-computed midpoint are line
+    // color — the dual-implementation guarantee (CPU twin == pixels)
+    const mids = await page.evaluate( () => [
+      window.cy.$id( 'e0' ).renderedMidpoint(),
+      window.cy.$id( 'e1' ).renderedMidpoint()
+    ] );
+
+    for( const mid of mids ){
+      const px = await pixelAt( page, mid.x, mid.y );
+
+      expect( px[ 0 ] ).toBeGreaterThan( 180 );
+      expect( px[ 1 ] ).toBeLessThan( 140 );
+    }
+
+    // a node drag re-shapes the curves with a position-row upload only —
+    // the zero-rebuild property (params are position-independent)
+    const uploadedBefore = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    await page.evaluate( () => window.cy.$id( 'b' ).position( { x: 150, y: 120 } ) );
+    await waitFrames( page );
+
+    const uploadedAfter = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 );
+
+    const movedMid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+    const movedPx = await pixelAt( page, movedMid.x, movedMid.y );
+
+    expect( movedPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( movedPx[ 1 ] ).toBeLessThan( 140 );
+  } );
+
+  test( 'pick() hits a curved edge on its bulge, background on the chord', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } },
+        { data: { id: 'e1', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30 },
+        edges: { 'curve-style': 'bezier', 'control-point-step-size': 80, 'width': 6 }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const picks = await page.evaluate( async center => {
+      const mid = window.cy.$id( 'e0' ).renderedMidpoint();
+      const onCurve = await window.cy.pick( mid.x, mid.y );
+      const onChord = await window.cy.pick( center.x, center.y );
+
+      return {
+        onCurve: onCurve == null ? null : onCurve.id(),
+        onChord: onChord == null ? null : onChord.id()
+      };
+    }, center );
+
+    // the GPU pick tile draws the same segment strips the render does
+    expect( picks.onCurve ).toBe( 'e0' );
+    expect( picks.onChord ).toBe( null );
+  } );
+
+  test( 'self-loops render as loops (not degenerate points)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'loop', source: 'a', target: 'a' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: { 'width': 6, 'line-color': '#e74c3c' }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the default -45deg loop extends to the upper left: the curve
+    // passes through its CPU-computed midpoint (-28, -28)
+    const mid = await page.evaluate( () => window.cy.$id( 'loop' ).renderedMidpoint() );
+    const loopPx = await pixelAt( page, mid.x, mid.y );
+
+    expect( loopPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( loopPx[ 1 ] ).toBeLessThan( 140 );
+
+    // and the mirror region (lower right) stays background
+    const mirrorPx = await pixelAt( page, 2 * center.x - mid.x, 2 * center.y - mid.y );
+
+    expect( mirrorPx[ 1 ] ).toBeGreaterThan( 180 );
+  } );
+
 } );

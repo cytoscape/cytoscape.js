@@ -12,13 +12,14 @@ unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
 import { ARROW_POINTS, POLYGON_POINTS } from '../shape-points.mjs';
+import { AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS } from '../curve-geometry.mjs';
 
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
  * footguns); computed CPU-side from the core viewport + device pixel ratio.
  * Layout must match Renderer's Float32Array(12): viewportPx, panPx, zoomDpr,
  * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, labelMinPx,
- * 1 pad — 48 bytes.
+ * curveSlack — 48 bytes.
  */
 export const FRAME_STRUCT = `
 struct Frame {
@@ -31,7 +32,7 @@ struct Frame {
   edgeDim: f32,          // LOD: zoom-based edge dimming [0,1)
   labelFadePx: f32,      // LOD: labels fade out as glyph height drops below this, device px
   labelMinPx: f32,       // LOD: labels below this glyph height are culled outright (0 = off)
-  pad1: f32,
+  curveSlack: f32,       // conservative curved-edge deviation bound, model px (0 = nothing curved)
 }
 `;
 
@@ -46,6 +47,7 @@ const FLAG_VISIBLE: u32 = 2u;
 const FLAG_SELECTED: u32 = 4u;
 const FLAG_GRABBED: u32 = 16u;
 const FLAG_HOVERED: u32 = 32u;
+const FLAG_CURVED: u32 = 1024u; // edge renders in the curved stream (store-managed)
 const SHOWN: u32 = 3u; // ALIVE | VISIBLE
 
 const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9
@@ -168,6 +170,144 @@ fn rotateBy(cs: vec2f, p: vec2f) -> vec2f {
 // cull exactly with their text
 fn glyphLodHeight(g: Glyph) -> f32 {
   return select(g.size.y, g.uv0.y, g.uv0.x < 0.0);
+}
+`;
+
+/** Distance from a node's center to its boundary along unit direction d —
+ * shared by the arrow, curved-edge and edge-label shaders; the CPU twin
+ * is curve-geometry.mts's boundaryOffset (they must agree exactly). */
+export const BOUNDARY_WGSL = `
+fn boundaryOffset(shape: u32, half: vec2f, d: vec2f) -> f32 {
+  switch shape {
+    case 2u, 3u: { // rectangle (round-rect approximated as its box)
+      let inv = 1.0 / max(abs(d), vec2f(1e-4));
+      return min(half.x * inv.x, half.y * inv.y);
+    }
+    default: { // circle + ellipse (polygons as their inscribed ellipse)
+      return 1.0 / max(length(d / max(half, vec2f(1e-4))), 1e-6);
+    }
+  }
+}
+`;
+
+/** AA'd on/off mask for a dash period (lengths in model px, as v3's canvas
+ * dashes: setLineDash in the model-space-transformed context). */
+export const DASH_WGSL = `
+fn dashMask(u: f32, onLen: f32, offLen: f32, aaModel: f32) -> f32 {
+  let period = onLen + offLen;
+  let x = fract(u / period) * period;
+  // signed distance to the nearest on/off boundary: + inside the on segment
+  var sd = 0.0;
+  if (x < onLen) { sd = min(x, onLen - x); }
+  else { sd = -min(x - onLen, period - x); }
+  return smoothstep(-aaModel, aaModel, sd);
+}
+`;
+
+/**
+ * Curved-edge geometry (round 12a) — the WGSL twin of
+ * curve-geometry.mts, evaluated per vertex from live endpoint positions,
+ * node geometry columns and the per-edge curve params, so curves follow
+ * drags/layouts/position tweens on-GPU with zero rebuild.  Change the
+ * math here and in curve-geometry.mts together.  Requires BOUNDARY_WGSL.
+ */
+export const CURVE_WGSL = `
+const CURVE_SEGS_F: f32 = ${ CURVE_SEGS }.0;
+const AVOID_BEZ: f32 = ${ AVOID_IMPOSSIBLE_BEZIER };
+const AVOID_BEZ_L: f32 = ${ AVOID_IMPOSSIBLE_BEZIER_L.toFixed( 9 ) };
+
+struct CurveGeom {
+  s: vec2f,   // start point (source boundary)
+  e: vec2f,   // end point (target boundary)
+  c1: vec2f,  // control point (bezier), or the loop's first control
+  c2: vec2f,  // the loop's second control (loops; == c1 for bezier)
+  m: vec2f,   // curve midpoint (bezier Q(0.5); loop control midpoint)
+  kind: f32,
+}
+
+fn curveBoundaryPoint(c: vec2f, half: vec2f, shape: u32, toward: vec2f) -> vec2f {
+  var d = toward - c;
+  let l = length(d);
+
+  if (l < 1e-6) { d = vec2f(1.0, 0.0); } else { d = d / l; }
+
+  return c + d * boundaryOffset(shape, half, d);
+}
+
+fn evalCurveGeom(
+  params: vec4f,
+  sC: vec2f, sHalf: vec2f, sShape: u32,
+  tC: vec2f, tHalf: vec2f, tShape: u32
+) -> CurveGeom {
+  var g: CurveGeom;
+
+  g.kind = params.w;
+
+  if (params.w == 2.0) { // loop: two control rays from the node center
+    let c1 = sC + vec2f(cos(params.x), sin(params.x)) * params.z;
+    let c2 = sC + vec2f(cos(params.y), sin(params.y)) * params.z;
+
+    g.c1 = c1;
+    g.c2 = c2;
+    g.m = (c1 + c2) * 0.5;
+    g.s = curveBoundaryPoint(sC, sHalf, sShape, c1);
+    g.e = curveBoundaryPoint(tC, tHalf, tShape, c2);
+
+    return g;
+  }
+
+  // bundled bezier: the intersection frame + weighted midpoint + stagger
+  var u = tC - sC;
+  let uL = max(length(u), 1e-6);
+
+  u = u / uL;
+
+  let si = sC + u * boundaryOffset(sShape, sHalf, u);
+  let ti = tC - u * boundaryOffset(tShape, tHalf, -u);
+  let d = ti - si;
+  var l = length(d);
+
+  if (!(l >= AVOID_BEZ_L)) { // v3's impossible-bezier clamp
+    l = sqrt(max(d.x * d.x, AVOID_BEZ) + max(d.y * d.y, AVOID_BEZ));
+  }
+
+  let c = mix(si, ti, params.y) + vec2f(-d.y / l, d.x / l) * params.x;
+
+  g.c1 = c;
+  g.c2 = c;
+  g.s = curveBoundaryPoint(sC, sHalf, sShape, c);
+  g.e = curveBoundaryPoint(tC, tHalf, tShape, c);
+  g.m = 0.25 * g.s + 0.5 * c + 0.25 * g.e;
+
+  return g;
+}
+
+fn qbez(p0: vec2f, c: vec2f, p1: vec2f, t: f32) -> vec2f {
+  let s = 1.0 - t;
+
+  return s * s * p0 + 2.0 * s * t * c + t * t * p1;
+}
+
+fn qbezTangent(p0: vec2f, c: vec2f, p1: vec2f, t: f32) -> vec2f {
+  return 2.0 * ((1.0 - t) * (c - p0) + t * (p1 - c));
+}
+
+// global t in [0,1]: bezier is one quadratic; a loop is two C1 quadratics
+// through the control midpoint, split at t = 0.5 (v3's allpts insertion)
+fn curvePoint(g: CurveGeom, t: f32) -> vec2f {
+  if (g.kind == 2.0) {
+    if (t <= 0.5) { return qbez(g.s, g.c1, g.m, t * 2.0); }
+    return qbez(g.m, g.c2, g.e, t * 2.0 - 1.0);
+  }
+  return qbez(g.s, g.c1, g.e, t);
+}
+
+fn curveTangentAt(g: CurveGeom, t: f32) -> vec2f {
+  if (g.kind == 2.0) {
+    if (t <= 0.5) { return qbezTangent(g.s, g.c1, g.m, t * 2.0); }
+    return qbezTangent(g.m, g.c2, g.e, t * 2.0 - 1.0);
+  }
+  return qbezTangent(g.s, g.c1, g.e, t);
 }
 `;
 
@@ -498,6 +638,7 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
 
 export const EDGE_SHADER = `
 ${COMMON}
+${DASH_WGSL}
 
 // flags columns are not bound here: the cull pass already dropped dead or
 // hidden edges (and edges with dead/hidden endpoints)
@@ -563,18 +704,6 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   return out;
 }
 
-// AA'd on/off mask for a dash period (lengths in model px, as v3's canvas
-// dashes: setLineDash in the model-space-transformed context)
-fn dashMask(u: f32, onLen: f32, offLen: f32, aaModel: f32) -> f32 {
-  let period = onLen + offLen;
-  let x = fract(u / period) * period;
-  // signed distance to the nearest on/off boundary: + inside the on segment
-  var sd = 0.0;
-  if (x < onLen) { sd = min(x, onLen - x); }
-  else { sd = -min(x - onLen, period - x); }
-  return smoothstep(-aaModel, aaModel, sd);
-}
-
 @fragment
 fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
   var alpha = in.color.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
@@ -600,8 +729,139 @@ fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
 }
 `;
 
+/**
+ * The curved-edge shader (round 12a): each instance is a strip of
+ * CURVE_SEGS quads whose vertices evaluate the curve analytically from
+ * live endpoint positions + node geometry + the per-edge curve params —
+ * drags, layouts and position tweens re-shape the curve on-GPU with
+ * zero rebuild.  Vertices extrude along the curve *normal at their own
+ * t* (identical for the shared edge of adjacent quads), so the strip is
+ * watertight without miter joints.  The vertex stage binds exactly 7
+ * columns + the visible list = WebGPU's base 8-storage-buffer budget;
+ * color/opacity/line-style move to the fragment stage (flat instance
+ * fetch), like the node pipeline's decoration split.
+ */
+export const CURVED_EDGE_SHADER = `
+${COMMON}
+${BOUNDARY_WGSL}
+${CURVE_WGSL}
+${DASH_WGSL}
+
+@group(0) @binding(0) var<uniform> frame: Frame;
+// vertex-stage columns (7 + the visible list = the 8-buffer budget)
+@group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
+@group(0) @binding(2) var<storage, read> widths: array<f32>;
+@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(4) var<storage, read> nodeSizes: array<vec2f>;
+@group(0) @binding(5) var<storage, read> nodeBorders: array<f32>;
+@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;
+@group(0) @binding(7) var<storage, read> curveParams: array<vec4f>;
+// fragment-stage columns (flat instance fetch)
+@group(0) @binding(8) var<storage, read> lineColors: array<u32>;
+@group(0) @binding(9) var<storage, read> opacities: array<f32>;
+@group(0) @binding(10) var<storage, read> lineStyles: array<u32>;
+
+struct CurvedVSOut {
+  @builtin(position) position: vec4f,
+  @location(0) v: f32,          // signed perpendicular distance, device px
+  @location(1) halfWidth: f32,  // device px
+  @location(2) @interpolate(flat) alphaComp: f32, // width-floor LOD compensation
+  @location(3) @interpolate(flat) instance: u32,
+  @location(4) u: f32,          // longitudinal distance along the polyline, model px
+}
+
+@group(1) @binding(0) var<storage, read> visible: array<u32>;
+
+@vertex
+fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedVSOut {
+  var out: CurvedVSOut;
+
+  // the cull pass compacted the shown curved edges (slot order preserved)
+  let slot = visible[ii];
+  let seg = vi >> 2u;               // strip quad index, 0..CURVE_SEGS-1
+  let corner = quadCorner(vi & 3u);
+
+  let ends = endpoints[slot];
+  let sHalf = nodeSizes[ends.x] * 0.5 + vec2f(nodeBorders[ends.x] * 0.5);
+  let tHalf = nodeSizes[ends.y] * 0.5 + vec2f(nodeBorders[ends.y] * 0.5);
+  let g = evalCurveGeom(
+    curveParams[slot],
+    nodePositions[ends.x], sHalf, nodeShapes[ends.x],
+    nodePositions[ends.y], tHalf, nodeShapes[ends.y]
+  );
+
+  // LOD: width floor with alpha compensation; the curved stream is not
+  // decimated (its cull predicate draws every shown curved edge)
+  let widthPx = max(widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let alphaComp = min(widths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+
+  // this vertex's subdivision point + the curve normal there: adjacent
+  // quads share exact vertex geometry, so the strip is watertight
+  let tIdx = seg + u32((corner.x + 1.0) * 0.5);
+  let t = f32(tIdx) / CURVE_SEGS_F;
+  let p = curvePoint(g, t);
+  var tangent = curveTangentAt(g, t);
+  let tl = length(tangent);
+
+  if (tl < 1e-6) { tangent = vec2f(1.0, 0.0); } else { tangent = tangent / tl; }
+
+  let n = vec2f(-tangent.y, tangent.x);
+  let halfW = widthPx * 0.5;
+  let s = corner.y * (halfW + 1.0); // screen-space extrusion incl. 1px AA margin
+
+  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s), EDGE_Z, 1.0);
+  out.v = s;
+  out.halfWidth = halfW;
+  out.alphaComp = alphaComp;
+  out.instance = slot;
+
+  // longitudinal model-px distance along the drawn polyline (for dashes)
+  var uLen = 0.0;
+  var prev = g.s;
+
+  for (var i = 1u; i <= tIdx; i = i + 1u) {
+    let q = curvePoint(g, f32(i) / CURVE_SEGS_F);
+
+    uLen = uLen + length(q - prev);
+    prev = q;
+  }
+
+  out.u = uLen;
+  return out;
+}
+
+@fragment
+fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
+  let c = unpack4x8unorm(lineColors[in.instance]);
+  var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
+
+  alpha = alpha * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+
+  // line-style dashes ride the polyline's longitudinal coordinate
+  let ls = lineStyles[in.instance];
+
+  if (ls == 1u) {
+    alpha = alpha * dashMask(in.u, 6.0, 3.0, 0.75 / frame.zoomDpr);
+  } else if (ls == 2u) {
+    alpha = alpha * dashMask(in.u, 1.0, 1.0, 0.75 / frame.zoomDpr);
+  }
+
+  return vec4f(c.rgb * alpha, alpha); // premultiplied
+}
+
+@fragment
+fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
+  if (abs(in.v) > in.halfWidth) {
+    discard;
+  }
+
+  return (in.instance + 1u) | 0x80000000u; // high bit marks edges
+}
+`;
+
 export const ARROW_SHADER = `
 ${COMMON}
+${BOUNDARY_WGSL}
 
 // One arrowhead quad per visible edge, per end: reuses the edge cull
 // pass's visible list and indirect args (indexCount 6, one quad per
@@ -639,19 +899,6 @@ struct ArrowVSOut {
 }
 
 ${ ARROW_POLY.fns }
-
-// distance from the node center to its boundary along unit direction d
-fn boundaryOffset(shape: u32, half: vec2f, d: vec2f) -> f32 {
-  switch shape {
-    case 2u, 3u: { // rectangle (round-rect approximated as its box)
-      let inv = 1.0 / max(abs(d), vec2f(1e-4));
-      return min(half.x * inv.x, half.y * inv.y);
-    }
-    default: { // circle + ellipse: exact radius along d
-      return 1.0 / max(length(d / max(half, vec2f(1e-4))), 1e-6);
-    }
-  }
-}
 
 @vertex
 fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {

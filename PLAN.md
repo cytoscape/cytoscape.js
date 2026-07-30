@@ -2043,6 +2043,36 @@ lands it.
   (animated-layout fit targets) expands curved edges by the
   conservative hull deviation.  16 Node specs
   (`test/gpu-curve-accessors.mjs`).
+- [x] **Renderer: the curved-edge pipeline, cull stream and pick.**
+  `CURVED_EDGE_SHADER` + `CurvedEdgePipeline`: one instance per curved
+  edge drawn as a strip of CURVE_SEGS quads whose VS evaluates the
+  curve (the WGSL twin of `curve-geometry.mts` — same intersection
+  frame, boundary approximations, clamps) from live positions + the
+  params column; vertices extrude along the curve normal *at their own
+  t*, so adjacent quads share exact edge geometry and the strip is
+  watertight without miters.  The vertex stage binds exactly 7 columns
+  + the visible list (the base 8-storage-buffer budget); paint columns
+  (line color/opacity/line-style) moved to the fragment stage via flat
+  instance fetch, and dashes ride a per-vertex polyline arc-length
+  varying.  Cull: a new `curvedEdge` kind splits the edge draw on
+  FLAG_CURVED (the straight predicate rejects the bit) — same five
+  inputs, chord test grown by `frame.curveSlack` (the Frame uniform's
+  spare pad slot), no decimation on the curved stream; `CullInfo`
+  gained `indexCount` so one scan kernel serves both 6-index quads and
+  6×CURVE_SEGS strips.  The pick pass draws the same strips
+  (edges-only tile, `pickCull.curved`), so pick coverage equals pixels
+  by construction; image export gained the curved group too.  One
+  init-order bug found by the specs: the mirror's construction-time
+  full upload ran *before* the lazy curve flush whose usual flush
+  point (takeDelta) is discarded at init — flush now runs first.
+  Verified: 3 new `webgpu` specs (fan-off-the-chord with pixels at
+  the CPU-computed `renderedMidpoint` — the dual-impl guarantee made a
+  test; ≤64 B re-shape on drag; pick on the bulge vs chord; loops
+  render as loops), 2 new goldens (`bezier-bundles`, `self-loops`),
+  and a live v3-parity curve scene measuring **0 differing pixels**
+  (8px strokes so pixelmatch's AA skip can't mask placement error,
+  plus an ink guard) — 59/59 Playwright, 1707 Node, 59 module tests,
+  typecheck + lint green; pre-existing goldens byte-identical.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

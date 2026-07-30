@@ -2,7 +2,9 @@ import { expect } from 'chai';
 
 import { TWEEN_SHADERS } from '../../src/gpu/render/gpu-tween.mjs';
 import { NODE_EVAL_SHADER, EDGE_EVAL_SHADER } from '../../src/gpu/render/mapper-shaders.mjs';
-import { NODE_SHADER, EDGE_SHADER, ARROW_SHADER, LABEL_SHADER } from '../../src/gpu/render/shaders.mjs';
+import {
+  NODE_SHADER, EDGE_SHADER, CURVED_EDGE_SHADER, ARROW_SHADER, LABEL_SHADER
+} from '../../src/gpu/render/shaders.mjs';
 
 /*
 WGSL keeps a large reserved-word list beyond the words it actually uses, and a
@@ -32,6 +34,7 @@ const SHADERS = {
   'eval:edges': EDGE_EVAL_SHADER,
   'render:node': NODE_SHADER,
   'render:edge': EDGE_SHADER,
+  'render:curved-edge': CURVED_EDGE_SHADER,
   'render:arrow': ARROW_SHADER,
   'render:label': LABEL_SHADER
 };

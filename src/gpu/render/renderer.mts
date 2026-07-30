@@ -4,6 +4,8 @@ import { pickNodeAt } from './cpu-pick.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
 import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
+import { CurvedEdgePipeline } from './curved-edge-pipeline.mjs';
+import { CURVE_SEGS } from '../curve-geometry.mjs';
 import { ArrowPipeline } from './arrow-pipeline.mjs';
 import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
 import { GpuTimer } from './gpu-timer.mjs';
@@ -63,6 +65,15 @@ interface ExportJob {
   view: ExportView;
   resolve: ( image: ExportedImage ) => void;
   reject: ( err: Error ) => void;
+}
+
+/** the culled instance streams a full scene draw needs */
+interface SceneCullGroups {
+  node: CulledGroup;
+  edge: CulledGroup;
+  curved: CulledGroup;
+  glyph: CulledGroup;
+  edgeGlyph: CulledGroup;
 }
 
 interface RendererStats {
@@ -152,6 +163,7 @@ export class Renderer {
   private context: GPUCanvasContext | null;
   private nodePipeline: NodePipeline | null;
   private edgePipeline: EdgePipeline | null;
+  private curvedEdgePipeline: CurvedEdgePipeline | null;
   private arrowPipeline: ArrowPipeline | null;
   private uniform: GPUBuffer | null;
   private frameData: Float32Array;
@@ -177,8 +189,8 @@ export class Renderer {
   private cullKernels: CullKernels | null;
   private mapperRuntime: MapperRuntime | null;
   private tweenRuntime: GpuTweenRuntime | null;
-  private sceneCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup; edgeGlyph: CulledGroup } | null;
-  private pickCull: { edge: CulledGroup } | null;
+  private sceneCull: SceneCullGroups | null;
+  private pickCull: { edge: CulledGroup; curved: CulledGroup } | null;
   private scaleCtl: ScaleController;
   private settleTimer: ReturnType<typeof setTimeout> | null;
   private format: GPUTextureFormat | null;
@@ -188,7 +200,7 @@ export class Renderer {
   private pendingExports: ExportJob[];
   private exportUniform: GPUBuffer | null;
   private exportFrameData: Float32Array;
-  private exportCull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup; edgeGlyph: CulledGroup } | null;
+  private exportCull: SceneCullGroups | null;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -199,6 +211,7 @@ export class Renderer {
     this.mirror = null;
     this.nodePipeline = null;
     this.edgePipeline = null;
+    this.curvedEdgePipeline = null;
     this.arrowPipeline = null;
     this.uniform = null;
     this.frameData = new Float32Array( 12 );
@@ -578,7 +591,7 @@ export class Renderer {
     f[8] = opts.edgeDimming ? Math.min( 0.85, Math.max( 0, 1 - view.zoom ) * 0.85 ) : 0;
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
-    // f[11]: padding
+    f[11] = this.cy._store.curveSlack();
 
     device.queue.writeBuffer( this.exportUniform, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -602,6 +615,7 @@ export class Renderer {
         this.exportCull = {
           node: new CulledGroup( kernels, 'node', 'export-node' ),
           edge: new CulledGroup( kernels, 'edge', 'export-edge' ),
+          curved: new CulledGroup( kernels, 'curvedEdge', 'export-curved-edge', 6 * CURVE_SEGS ),
           glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' ),
           edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-edge-glyph' )
         };
@@ -742,7 +756,10 @@ export class Renderer {
     } );
 
     // the mirror constructor uploads the full backing arrays, so any delta
-    // accumulated before readiness is already covered
+    // accumulated before readiness is already covered — pending curve
+    // derivations must land in the backing arrays first, though (their
+    // usual flush point is takeDelta, whose result is discarded here)
+    this.cy._store.curves.flush();
     this.mirror = new ColumnMirror( device, this.cy._store );
     this.cy._store.takeDelta();
 
@@ -770,16 +787,19 @@ export class Renderer {
     this.sceneCull = {
       node: new CulledGroup( kernels, 'node', 'scene-node' ),
       edge: new CulledGroup( kernels, 'edge', 'scene-edge' ),
+      curved: new CulledGroup( kernels, 'curvedEdge', 'scene-curved-edge', 6 * CURVE_SEGS ),
       glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' ),
       edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-edge-glyph' )
     };
     this.pickCull = {
       // nodes pick synchronously on the CPU; only edges need the GPU pass
-      edge: new CulledGroup( kernels, 'edge', 'pick-edge' )
+      edge: new CulledGroup( kernels, 'edge', 'pick-edge' ),
+      curved: new CulledGroup( kernels, 'curvedEdge', 'pick-curved-edge', 6 * CURVE_SEGS )
     };
 
     this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
     this.edgePipeline = new EdgePipeline( device, format, kernels.visibleLayout );
+    this.curvedEdgePipeline = new CurvedEdgePipeline( device, format, kernels.visibleLayout );
     this.arrowPipeline = new ArrowPipeline( device, format, kernels.visibleLayout );
     this.labelLayer = new LabelLayer( device, this.cy._store );
     this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
@@ -998,8 +1018,7 @@ export class Renderer {
    * style block enables that end.
    */
   private drawScene(
-    pass: GPURenderPassEncoder, uniform: GPUBuffer,
-    cull: { node: CulledGroup; edge: CulledGroup; glyph: CulledGroup; edgeGlyph: CulledGroup }
+    pass: GPURenderPassEncoder, uniform: GPUBuffer, cull: SceneCullGroups
   ): void {
     const device = this.device as GPUDevice;
     const mirror = this.mirror as ColumnMirror;
@@ -1007,6 +1026,9 @@ export class Renderer {
 
     this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
     this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge );
+    // curved edges draw after straight ones (two streams; within each,
+    // slot order — a recorded z-order deviation)
+    this.curvedEdgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved );
     this.arrowPipeline?.draw(
       pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge,
       this.cy._styleEngine.arrowEnds
@@ -1053,8 +1075,8 @@ export class Renderer {
    */
   private encodeCulls(
     encoder: GPUCommandEncoder, uniform: GPUBuffer,
-    groups: { node?: CulledGroup; edge: CulledGroup; glyph?: CulledGroup; edgeGlyph?: CulledGroup }, timed: boolean,
-    now: number = 0
+    groups: { node?: CulledGroup; edge: CulledGroup; curved: CulledGroup; glyph?: CulledGroup; edgeGlyph?: CulledGroup },
+    timed: boolean, now: number = 0
   ): void {
     const mirror = this.mirror as ColumnMirror;
     const store = this.cy._store;
@@ -1064,10 +1086,14 @@ export class Renderer {
     groups.node?.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
       mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ), mirror.buffer( 'node.flags' )
     ], mv );
-    groups.edge.ensure( uniform, Math.max( 1, store.capacity( 'edges' ) ), [
+    const edgeCullInputs = [
       mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'edge.width' ), mirror.buffer( 'edge.flags' ),
       mirror.buffer( 'node.position' ), mirror.buffer( 'node.flags' )
-    ], mv );
+    ];
+
+    groups.edge.ensure( uniform, Math.max( 1, store.capacity( 'edges' ) ), edgeCullInputs, mv );
+    // the curved stream culls over the same inputs; FLAG_CURVED splits them
+    groups.curved.ensure( uniform, Math.max( 1, store.capacity( 'edges' ) ), edgeCullInputs, mv );
 
     if( groups.glyph != null && labelLayer != null ){
       const glyphs = labelLayer.glyphs;
@@ -1104,6 +1130,7 @@ export class Renderer {
 
     groups.node?.encode( pass, store.highWater( 'nodes' ) );
     groups.edge.encode( pass, store.highWater( 'edges' ) );
+    groups.curved.encode( pass, store.highWater( 'edges' ) );
 
     if( groups.glyph != null && labelLayer != null ){
       groups.glyph.encode( pass, labelLayer.glyphs.highWater );
@@ -1138,6 +1165,7 @@ export class Renderer {
 
     // edges only: node picks are answered synchronously on the CPU
     this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), pickCull.edge, true );
+    this.curvedEdgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), pickCull.curved, true );
     pass.end();
   }
 
@@ -1237,7 +1265,7 @@ export class Renderer {
     // in render px on purpose — sub-render-pixel geometry can't rasterize.
     f[9] = ( opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX ) * this.scaleCtl.scale;
     f[10] = ( opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX ) * this.scaleCtl.scale;
-    // f[11]: padding
+    f[11] = this.cy._store.curveSlack(); // model px; shaders scale by zoomDpr
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -1272,6 +1300,7 @@ export class Renderer {
     f[8] = 0; // edge dimming never affects pick coverage
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX; // labels aren't picked
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
+    f[11] = this.cy._store.curveSlack();
 
     ( this.device as GPUDevice ).queue.writeBuffer(
       this.pickUniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength

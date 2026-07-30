@@ -521,6 +521,85 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: bezier bundles (round 12a)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        // 2-bundle: symmetric fan
+        { data: { id: 'a1' }, position: { x: -140, y: -90 } },
+        { data: { id: 'b1' }, position: { x: 40, y: -90 } },
+        { data: { id: 'p0', source: 'a1', target: 'b1' } },
+        { data: { id: 'p1', source: 'a1', target: 'b1' } },
+        // 3-bundle with an antiparallel member: middle edge straight
+        { data: { id: 'a2' }, position: { x: -140, y: 10 } },
+        { data: { id: 'b2' }, position: { x: 40, y: 10 } },
+        { data: { id: 'q0', source: 'a2', target: 'b2' } },
+        { data: { id: 'q1', source: 'a2', target: 'b2' } },
+        { data: { id: 'q2', source: 'b2', target: 'a2' } },
+        // a lone bezier edge renders straight (the signed-off v3 rule)
+        { data: { id: 'a3' }, position: { x: -140, y: 110 } },
+        { data: { id: 'b3' }, position: { x: 40, y: 110 } },
+        { data: { id: 'r0', source: 'a3', target: 'b3' } },
+        // a dashed curved pair: dashes ride the curve's arc length
+        { data: { id: 'c1' }, position: { x: 130, y: -80 } },
+        { data: { id: 'c2' }, position: { x: 130, y: 100 } },
+        { data: { id: 's0', source: 'c1', target: 'c2', dashed: 1 } },
+        { data: { id: 's1', source: 'c1', target: 'c2', dashed: 1 } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#3498db' },
+        edges: {
+          'curve-style': 'bezier',
+          'width': 3, 'line-color': '#7f8c8d',
+          'line-style': { case: [ { when: { data: 'dashed', eq: 1 }, then: 'dashed' } ], else: 'solid' }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'bezier-bundles', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
+  test( 'golden: self-loops (round 12a)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        // one default loop: -45deg, extending upper-left
+        { data: { id: 'n1' }, position: { x: -90, y: -30 } },
+        { data: { id: 'l1', source: 'n1', target: 'n1' } },
+        // three same-direction loops: the j-stagger
+        { data: { id: 'n2' }, position: { x: 80, y: -30 } },
+        { data: { id: 'l2a', source: 'n2', target: 'n2' } },
+        { data: { id: 'l2b', source: 'n2', target: 'n2' } },
+        { data: { id: 'l2c', source: 'n2', target: 'n2' } },
+        // custom direction/sweep: opens to the right, wide sweep
+        { data: { id: 'n3' }, position: { x: -90, y: 100 } },
+        { data: { id: 'l3', source: 'n3', target: 'n3', wide: 1 } },
+        // a straight-styled loop still draws as a loop (v4 rule)
+        { data: { id: 'n4' }, position: { x: 80, y: 100 } },
+        { data: { id: 'l4', source: 'n4', target: 'n4', plain: 1 } }
+      ],
+      style: {
+        nodes: { 'width': 26, 'height': 26, 'background-color': '#3498db' },
+        edges: {
+          'curve-style': { case: [ { when: { data: 'plain', eq: 1 }, then: 'straight' } ], else: 'bezier' },
+          'width': 3, 'line-color': '#7f8c8d',
+          'loop-direction': { case: [ { when: { data: 'wide', eq: 1 }, then: '90deg' } ], else: '-45deg' },
+          'loop-sweep': { case: [ { when: { data: 'wide', eq: 1 }, then: '-150deg' } ], else: '-90deg' }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'self-loops', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: label visuals (outline, background, margins)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 
@@ -683,6 +762,89 @@ test.describe( 'v3-vs-v4 render parity', () => {
     const { v3uri, v4uri } = await exportBoth( page, { zoom: 1.7, pan: { x: 57, y: 23 } } );
 
     expectParity( v3uri, v4uri, 'parity-transform', testInfo );
+  } );
+
+  test( 'parity: bezier bundles + self-loops (round 12a)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // v3's default look, opted into explicitly on both sides: a 3-bundle
+    // with an antiparallel member (odd middle renders straight), a
+    // 2-bundle, and a default self-loop.  Circle nodes keep the boundary
+    // math exact on both sides; no arrows ('none' has gap 0, so v3 draws
+    // boundary-to-boundary exactly like v4).
+    const elements = [
+      { data: { id: 'a' }, position: { x: -120, y: -60 } },
+      { data: { id: 'b' }, position: { x: 120, y: -60 } },
+      { data: { id: 'q0', source: 'a', target: 'b' } },
+      { data: { id: 'q1', source: 'a', target: 'b' } },
+      { data: { id: 'q2', source: 'b', target: 'a' } },
+      { data: { id: 'c' }, position: { x: -120, y: 80 } },
+      { data: { id: 'd' }, position: { x: 120, y: 80 } },
+      { data: { id: 'p0', source: 'c', target: 'd' } },
+      { data: { id: 'p1', source: 'c', target: 'd' } },
+      { data: { id: 'n' }, position: { x: 20, y: 30 } },
+      { data: { id: 'loop', source: 'n', target: 'n' } }
+    ];
+    // wide strokes on purpose: pixelmatch skips AA-classified pixels,
+    // and a 3px curve is nearly all AA — 8px strokes have solid
+    // interiors, so a misplaced curve produces real mismatches
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 30, 'height': 30, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: { 'width': 8, 'line-color': '#7f8c8d', 'curve-style': 'bezier' } }
+    ];
+    const v4Style = {
+      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
+      edges: { 'width': 8, 'line-color': '#7f8c8d', 'curve-style': 'bezier' }
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    // curves are nearly all AA fringe (the highest perimeter-to-area of
+    // any parity scene), so the bound is looser than the solid-shape
+    // scenes' 2% — placement agreement is what this pins
+    const actual = decodePng( v4uri );
+    const expected = decodePng( v3uri );
+
+    // a 0% diff must mean matching ink, not two blank images
+    const inked = png => {
+      let n = 0;
+
+      for( let i = 0; i < png.data.length; i += 4 ){
+        if( png.data[ i ] < 250 || png.data[ i + 1 ] < 250 || png.data[ i + 2 ] < 250 ){ n++; }
+      }
+
+      return n;
+    };
+
+    expect( inked( actual ), 'v4 rendered ink' ).toBeGreaterThan( 2000 );
+    expect( inked( expected ), 'v3 rendered ink' ).toBeGreaterThan( 2000 );
+    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
+
+    console.log( `[parity] parity-curves: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
+
+    if( ratio > 0.03 ){
+      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-curves', actual, expected, diff );
+    }
+
+    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-curves' ).toBeLessThanOrEqual( 0.03 );
   } );
 
 } );

@@ -10,6 +10,7 @@ import {
 import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
 } from './style-scales.mjs';
+import { CURVE_DEFAULTS, CURVE_STYLE_BEZIER, CURVE_STYLE_STRAIGHT } from './store/curve-index.mjs';
 import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './style-scales.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
@@ -93,6 +94,13 @@ interface EdgeComputed {
   textMarginY: number;
   /** 0 none (horizontal), 1 autorotate (TEXT_ROTATIONS ids; edges only) */
   textRotation: number;
+  // curved edges (round 12a): the styled record the CurveIndex derives
+  // edge.curveParams from (CURVE_STYLE_* ids; angles in radians)
+  curveStyle: number;
+  controlPointStepSize: number;
+  controlPointWeight: number;
+  loopDirection: number;
+  loopSweep: number;
 }
 
 type Computed = NodeComputed & EdgeComputed;
@@ -148,7 +156,12 @@ const EDGE_DEFAULTS: EdgeComputed = {
   textBgPadding: 0,
   textMarginX: 0,
   textMarginY: 0,
-  textRotation: 0 // none: horizontal, as v3's default
+  textRotation: 0, // none: horizontal, as v3's default
+  curveStyle: CURVE_DEFAULTS.style, // straight — the signed-off v4 default (v3 defaults to bezier)
+  controlPointStepSize: CURVE_DEFAULTS.stepSize,
+  controlPointWeight: CURVE_DEFAULTS.weight,
+  loopDirection: CURVE_DEFAULTS.loopDirection, // -45deg, as v3
+  loopSweep: CURVE_DEFAULTS.loopSweep // -90deg, as v3
 };
 
 const NO_ARROW: RGBA = [ 0, 0, 0, 0 ]; // a=0 collapses the arrow in the shader
@@ -220,7 +233,13 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
-  'text-margin-x', 'text-margin-y', 'text-rotation'
+  'text-margin-x', 'text-margin-y', 'text-rotation',
+  'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep'
+] );
+
+/** curve props are edge-only (constants and mappers alike). */
+const CURVE_PROPS: ReadonlySet<string> = new Set( [
+  'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep'
 ] );
 
 const parseColor = ( prop: string, value: unknown ): RGBA => {
@@ -307,6 +326,51 @@ const parseTextRotation = ( value: unknown ): number => {
   }
 
   return rotation;
+};
+
+/** curve-style keywords (round 12a: the bezier family only). */
+const CURVE_STYLES: Record<string, number> = {
+  'straight': CURVE_STYLE_STRAIGHT,
+  'bezier': CURVE_STYLE_BEZIER
+};
+
+const CURVE_STYLE_NAMES: Record<number, string> = {
+  [ CURVE_STYLE_STRAIGHT ]: 'straight',
+  [ CURVE_STYLE_BEZIER ]: 'bezier'
+};
+
+const parseCurveStyle = ( value: unknown ): number => {
+  const style = CURVE_STYLES[ String( value ) ];
+
+  if( style == null ){
+    throw new Error(
+      `The curve-style '${String( value )}' is unsupported in the GPU prototype; ` +
+      `use one of: ${Object.keys( CURVE_STYLES ).join( ', ' )} ` +
+      `(the unbundled/segment/taxi/haystack families land with later curve passes)`
+    );
+  }
+
+  return style;
+};
+
+const ANGLE_VALUE = /^(-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(deg|rad)?$/;
+
+/** v3's angle type: plain numbers are radians; strings take deg/rad units. */
+const parseAngle = ( prop: string, value: unknown ): number => {
+  if( typeof value === 'number' && isFinite( value ) ){ return value; }
+
+  const m = ANGLE_VALUE.exec( String( value ).trim() );
+
+  if( m == null ){
+    throw new Error(
+      `The value '${String( value )}' is not a valid angle for '${prop}' ` +
+      `(use a number in radians, or a 'deg'/'rad' suffixed string)`
+    );
+  }
+
+  const num = parseFloat( m[ 1 ] );
+
+  return m[ 2 ] === 'deg' ? num * Math.PI / 180 : num;
 };
 
 const parseArrowShape = ( prop: string, value: unknown ): ArrowShape => {
@@ -437,6 +501,21 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'target-arrow-color':
       computed.targetArrowColor = parseColor( prop, value );
+      break;
+    case 'curve-style':
+      computed.curveStyle = parseCurveStyle( value );
+      break;
+    case 'control-point-step-size':
+      computed.controlPointStepSize = parseNumber( prop, value );
+      break;
+    case 'control-point-weight':
+      computed.controlPointWeight = parseNumber( prop, value );
+      break;
+    case 'loop-direction':
+      computed.loopDirection = parseAngle( prop, value );
+      break;
+    case 'loop-sweep':
+      computed.loopSweep = parseAngle( prop, value );
       break;
 
     default:
@@ -591,6 +670,32 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'color', groups: [ 'edges' ],
     set: ( c, v ) => { c.targetArrowColor = v as RGBA; },
     default: () => EDGE_DEFAULTS.targetArrowColor
+  },
+  'curve-style': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => CURVE_STYLES[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.curveStyle = v as number; },
+    default: () => EDGE_DEFAULTS.curveStyle
+  },
+  'control-point-step-size': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.controlPointStepSize = v as number; },
+    default: () => EDGE_DEFAULTS.controlPointStepSize
+  },
+  'control-point-weight': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.controlPointWeight = v as number; },
+    default: () => EDGE_DEFAULTS.controlPointWeight
+  },
+  'loop-direction': {
+    kind: 'number', groups: [ 'edges' ], // mapped values are radians
+    set: ( c, v ) => { c.loopDirection = v as number; },
+    default: () => EDGE_DEFAULTS.loopDirection
+  },
+  'loop-sweep': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.loopSweep = v as number; },
+    default: () => EDGE_DEFAULTS.loopSweep
   },
   'source-arrow-shape': {
     kind: 'enum', groups: [ 'edges' ],
@@ -1153,6 +1258,15 @@ export class StyleEngine {
           : 'none';
       case 'source-arrow-color': return color( 'edge.sourceArrow' );
       case 'target-arrow-color': return color( 'edge.targetArrow' );
+
+      // curve props read the styled record (stored truth: a lone
+      // 'bezier' edge reads back 'bezier' even though it renders
+      // straight — v3 semantics); angles read back in radians
+      case 'curve-style': return CURVE_STYLE_NAMES[ store.curveStyleAt( slot ).style ];
+      case 'control-point-step-size': return store.curveStyleAt( slot ).stepSize;
+      case 'control-point-weight': return store.curveStyleAt( slot ).weight;
+      case 'loop-direction': return store.curveStyleAt( slot ).loopDirection;
+      case 'loop-sweep': return store.curveStyleAt( slot ).loopSweep;
     }
 
     return undefined;
@@ -1266,6 +1380,10 @@ export class StyleEngine {
         throw new Error( `'text-rotation' is an edge style property in the GPU prototype` );
       }
 
+      if( CURVE_PROPS.has( norm ) && group === 'nodes' ){
+        throw new Error( `'${norm}' is an edge style property` );
+      }
+
       if( norm === 'font-family' ){
         // one glyph atlas keyed by character ⇒ one font, globally
         if( group === 'edges' ){
@@ -1337,6 +1455,10 @@ export class StyleEngine {
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
       store.setScalar( 'edge.arrowShapes', slot,
         ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) );
+      store.setCurveStyle(
+        slot, computed.curveStyle, computed.controlPointStepSize, computed.controlPointWeight,
+        computed.loopDirection, computed.loopSweep
+      );
 
       this.writeLabel( slot, computed, 'edges' );
     }

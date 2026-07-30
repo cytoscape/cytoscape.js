@@ -528,6 +528,25 @@ each is deliberate, not a pass-1 deferral:
     (ellipse/rect exact, round-rect as its box, polygon as its
     inscribed ellipse) rather than v3's exact per-shape intersections
     — a recorded deviation, exact for the default ellipse nodes.
+  - *Props + derivation (12a)*: `curve-style` (`straight` | `bezier`),
+    `control-point-step-size`, `control-point-weight`,
+    `loop-direction`, `loop-sweep` — edge-only, v3 defaults, constants
+    or mappers; angles take numbers (radians, v3's pfValue convention)
+    or `deg`/`rad` strings and read back in radians.  Readback follows
+    the *styled* record (a lone `bezier` edge reads back `'bezier'`
+    though it renders straight — v3 semantics).  The
+    `store/curve-index.mts` bundle index derives `edge.curveParams`
+    from the records: the pair map is built lazily on the first bezier
+    record (a straight-only graph pays one loop check per edge add and
+    nothing else), per-node loop lists are always maintained (loops
+    render as loops under *every* curve style — a v4 deviation:
+    v3 routes straight-styled loops through its unbundled path, v4
+    always uses the bundled loop construction), and pending pairs
+    re-derive lazily at takeDelta/boundingBox/accessor reads.  Fit
+    reads a conservative hull bound per curved edge; the frame-level
+    `store.curveSlack()` bound (monotone maxima) is what the cull
+    kernels grow their straight-chord tests by, since per-edge params
+    can't bind in every kernel within the 8-storage-buffer budget.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +

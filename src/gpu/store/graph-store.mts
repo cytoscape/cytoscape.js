@@ -3,9 +3,13 @@ import { IdMap } from './id-map.mjs';
 import { Adjacency } from './adjacency.mjs';
 import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
+import { CurveIndex } from './curve-index.mjs';
+import { curveDeviation } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
-  FLAG_ALIVE, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  CURVE_STRAIGHT,
+  FLAG_ALIVE, FLAG_CURVED, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE, FLAG_SELECTABLE,
+  FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
 import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
@@ -50,6 +54,12 @@ export class GraphStore implements ModelView {
   readonly adj: Adjacency;
   readonly data: DataStore;
   readonly dirty: DirtyTracker;
+  readonly curves: CurveIndex;
+
+  // conservative monotone maxima behind curveSlack() (see that doc)
+  private curveDevMax = 0;
+  private nodeHalfMax = 0;
+  private borderMax = 0;
 
   private order: { nodes: OrderList; edges: OrderList };
   private labels: Record<GroupName, ( LabelEntry | undefined )[]>;
@@ -81,6 +91,13 @@ export class GraphStore implements ModelView {
     this.data.onDictRemap = ( group, key ) => {
       this.markDataWrite( group, key, 0, this.table( group ).highWater );
     };
+
+    this.curves = new CurveIndex( {
+      endpoints: () => this.edges.column( 'edge.endpoints' ) as Uint32Array,
+      aliveEdgeSlots: () => this.slotsOrdered( 'edges' ),
+      writeParams: ( slot, p0, p1, p2, kind ) => this.setCurveParams( slot, p0, p1, p2, kind ),
+      schedule: () => this.dirty.touch()
+    } );
   }
 
   table( group: GroupName ): ColumnTable {
@@ -106,6 +123,9 @@ export class GraphStore implements ModelView {
   }
 
   takeDelta(): StoreDelta {
+    // pending curve derivations land as column writes in this delta
+    this.curves.flush();
+
     return this.dirty.take( this.nodes.highWater, this.edges.highWater );
   }
 
@@ -247,6 +267,7 @@ export class GraphStore implements ModelView {
 
     this.adj.addEdge( slot, source.slot, target.slot );
     this.maybeRebuildAdjacency();
+    this.curves.onAddEdge( slot, source.slot, target.slot );
 
     if( !resized ){
       this.dirty.mark( 'edge.endpoints', slot );
@@ -330,9 +351,14 @@ export class GraphStore implements ModelView {
 
     for( let i = 0; i < count; i++ ){
       const slot = slots[ i ];
+      const sourceSlot = nodeSlots[ cols.sources[ i ] ];
+      const targetSlot = nodeSlots[ cols.targets[ i ] ];
 
-      endpoints[ slot * 2 ] = nodeSlots[ cols.sources[ i ] ];
-      endpoints[ slot * 2 + 1 ] = nodeSlots[ cols.targets[ i ] ];
+      endpoints[ slot * 2 ] = sourceSlot;
+      endpoints[ slot * 2 + 1 ] = targetSlot;
+
+      // loop registration (and pair membership when the index is live)
+      this.curves.onAddEdge( slot, sourceSlot, targetSlot );
     }
 
     // fresh index: builds CSR in two counting passes; otherwise overlays
@@ -354,6 +380,7 @@ export class GraphStore implements ModelView {
     const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
 
     this.adj.removeEdge( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] );
+    this.curves.onRemoveEdge( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] );
     this.freeSlot( 'edges', slot );
     this.maybeRebuildAdjacency();
   }
@@ -373,6 +400,7 @@ export class GraphStore implements ModelView {
 
     this.adj.addEdge( slot, source, target );
     this.maybeRebuildAdjacency();
+    this.curves.onMoveEdge( slot, oldSource, oldTarget, source, target );
     this.dirty.mark( 'edge.endpoints', slot );
   }
 
@@ -561,6 +589,8 @@ export class GraphStore implements ModelView {
     const spec = columnSpec( id );
     const arr = this.table( spec.group ).column( id ) as Float32Array | Uint32Array;
 
+    if( id === 'node.borderWidth' && value > this.borderMax ){ this.borderMax = value; }
+
     if( arr[ slot ] === value ){ return; }
 
     arr[ slot ] = value;
@@ -570,6 +600,12 @@ export class GraphStore implements ModelView {
   setPair( id: ColumnId, slot: number, a: number, b: number ): void {
     const spec = columnSpec( id );
     const arr = this.table( spec.group ).column( id ) as Float32Array | Uint32Array;
+
+    if( id === 'node.size' ){
+      const half = Math.max( a, b ) / 2;
+
+      if( half > this.nodeHalfMax ){ this.nodeHalfMax = half; }
+    }
 
     if( arr[ slot * 2 ] === a && arr[ slot * 2 + 1 ] === b ){ return; }
 
@@ -591,6 +627,71 @@ export class GraphStore implements ModelView {
     arr[ at + 2 ] = b;
     arr[ at + 3 ] = a;
     this.dirty.mark( id, slot );
+  }
+
+  // -- curves (round 12a; derivation in store/curve-index.mts) --
+
+  /**
+   * Store an edge's styled curve record (the StyleEngine's write path);
+   * the derived edge.curveParams re-derive lazily via the CurveIndex.
+   */
+  setCurveStyle(
+    slot: number, style: number, stepSize: number, weight: number,
+    loopDirection: number, loopSweep: number
+  ): void {
+    this.curves.setStyle( slot, style, stepSize, weight, loopDirection, loopSweep );
+  }
+
+  /** The styled curve record — the stored truth the style getters read. */
+  curveStyleAt( slot: number ): ReturnType<CurveIndex['styleAt']> {
+    return this.curves.styleAt( slot );
+  }
+
+  /**
+   * The derived curve params [p0, p1, p2, kind] for one edge, with any
+   * pending derivation flushed first (the accessors' read path).
+   */
+  curveParamsAt( slot: number ): [ number, number, number, number ] {
+    this.curves.flush();
+
+    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const at = slot * 4;
+
+    return [ params[ at ], params[ at + 1 ], params[ at + 2 ], params[ at + 3 ] ];
+  }
+
+  /**
+   * Conservative model-px bound on how far any curved edge strays from
+   * the segment between its endpoint node centers — the cull kernels
+   * grow their straight-chord tests by this (per-edge params can't bind
+   * everywhere within the 8-storage-buffer budgets).  Monotone maxima:
+   * never shrinks on removals/restyles, which only costs cull
+   * efficiency, never correctness; 0 while nothing is curved.
+   */
+  curveSlack(): number {
+    return this.curveDevMax === 0 ? 0 : this.curveDevMax + this.nodeHalfMax + this.borderMax / 2;
+  }
+
+  /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty. */
+  private setCurveParams( slot: number, p0: number, p1: number, p2: number, kind: number ): void {
+    const arr = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const at = slot * 4;
+
+    const dev = curveDeviation( kind, p0, p2 );
+
+    if( dev > this.curveDevMax ){ this.curveDevMax = dev; }
+
+    if( arr[ at ] === p0 && arr[ at + 1 ] === p1 && arr[ at + 2 ] === p2 && arr[ at + 3 ] === kind ){
+      return;
+    }
+
+    arr[ at ] = p0;
+    arr[ at + 1 ] = p1;
+    arr[ at + 2 ] = p2;
+    arr[ at + 3 ] = kind;
+
+    this.dirty.mark( 'edge.curveParams', slot );
+    this.setFlag( 'edges', slot, FLAG_CURVED, kind !== CURVE_STRAIGHT );
   }
 
   // -- labels (model-only sidecar; see LabelEntry in contract.mts) --
@@ -817,6 +918,8 @@ export class GraphStore implements ModelView {
    * in GpuCollection.boundingBox together.  Returns null when empty.
    */
   boundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
+    this.curves.flush(); // the edge term reads derived curve params
+
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
 
     const pos = this.column( 'node.position' ) as Float32Array;
@@ -836,17 +939,27 @@ export class GraphStore implements ModelView {
     } );
 
     const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
+    const curveParams = this.column( 'edge.curveParams' ) as Float32Array;
 
     this.forEachAlive( 'edges', slot => {
+      // curved edges: the conservative hull bound — the quadratic lies
+      // within the endpoint/control hull, whose controls sit at most
+      // curveDeviation() from the center segment (exact lazy bb is the
+      // collection's job; fit may slightly over-fit, never under)
+      const at = slot * 4;
+      const dev = curveParams[ at + 3 ] === CURVE_STRAIGHT
+        ? 0
+        : curveDeviation( curveParams[ at + 3 ], curveParams[ at ], curveParams[ at + 2 ] );
+
       for( let end = 0; end < 2; end++ ){
         const node = endpoints[ slot * 2 + end ];
         const x = pos[ node * 2 ];
         const y = pos[ node * 2 + 1 ];
 
-        if( x < x1 ){ x1 = x; }
-        if( y < y1 ){ y1 = y; }
-        if( x > x2 ){ x2 = x; }
-        if( y > y2 ){ y2 = y; }
+        if( x - dev < x1 ){ x1 = x - dev; }
+        if( y - dev < y1 ){ y1 = y - dev; }
+        if( x + dev > x2 ){ x2 = x + dev; }
+        if( y + dev > y2 ){ y2 = y + dev; }
       }
     } );
 

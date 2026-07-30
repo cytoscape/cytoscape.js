@@ -2010,6 +2010,24 @@ lands it.
   kernels will split the edge streams on.  17 Node specs pin the port
   against hand-derived v3 values (incl. the antiparallel-edge
   world-invariance of the stagger sign and the C1 loop join).
+- [x] **Curve style props + bundle index + param derivation.**  Five
+  edge props (`curve-style` straight|bezier, `control-point-step-size`,
+  `control-point-weight`, `loop-direction`, `loop-sweep` — v3 defaults;
+  angles take numbers-as-radians or deg/rad strings, constants and
+  mappers alike, stored-truth readback off the styled record, nodes
+  group throws).  `store/curve-index.mts` owns the styled records and
+  derives `edge.curveParams`: a lazily-built parallel-edge pair map
+  (straight-only graphs pay nothing but a loop check per edge add),
+  always-maintained per-node loop lists, and pending-pair lazy flush
+  (takeDelta / boundingBox / accessor reads) so a bulk load or style
+  apply derives each pair once.  v3 rules pinned: 2-bundle ±step/2
+  stagger, odd-middle straight, lone-bezier straight, per-edge step,
+  antiparallel sign flip, loop j-stagger per (direction, sweep), and
+  re-derivation on add/remove/`move()`/restyle/mapper-refresh.
+  `store.boundingBox()` grows its edge term by the conservative hull
+  deviation, and `store.curveSlack()` gives the frame-level bound the
+  cull kernels will use (monotone maxima — never shrinks, costs only
+  cull efficiency).  24 Node specs (`test/gpu-curve-index.mjs`).
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

@@ -547,6 +547,16 @@ each is deliberate, not a pass-1 deferral:
     `store.curveSlack()` bound (monotone maxima) is what the cull
     kernels grow their straight-chord tests by, since per-edge params
     can't bind in every kernel within the 8-storage-buffer budget.
+  - *Accessors + exact bb (12a)*: `isBundledBezier()` (the v3 style
+    check), `controlPoints()`/`renderedControlPoints()` (one point for
+    a bundled bezier, two for a loop, undefined for straight edges);
+    `midpoint()` is the curve midpoint and `source/targetEndpoint()`
+    the curve's boundary endpoints when the edge curves.  Public
+    `eles.boundingBox()` is the *exact lazy* tier of the
+    expensive-geometry design: the flattened polyline at the drawn
+    subdivision, memoized per edge against a store-wide geometry epoch
+    (any geometry write invalidates every cached box — over-broad but
+    sound); fit/cull keep the conservative bounds.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +

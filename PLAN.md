@@ -2028,6 +2028,21 @@ lands it.
   deviation, and `store.curveSlack()` gives the frame-level bound the
   cull kernels will use (monotone maxima — never shrinks, costs only
   cull efficiency).  24 Node specs (`test/gpu-curve-index.mjs`).
+- [x] **Curve-aware accessors + the exact lazy edge bb.**
+  `isBundledBezier()` (style check, v3 semantics — true for the lone
+  edge that renders straight), `controlPoints()` (one point for a
+  bundled bezier, two for a loop, undefined for straight — v3's
+  surface) + `renderedControlPoints()`; `midpoint()` returns the curve
+  midpoint (v3's rs.mid) and `source/targetEndpoint()` return the
+  curve's boundary endpoints for curved edges (straight edges keep the
+  node-center approximation).  `eles.boundingBox()` reads the **exact
+  lazy tier**: `store.curveBBAt()` flattens the curve at the drawn
+  subdivision and memoizes per slot against a geometry epoch (any
+  geometry write invalidates all cached boxes at once — sound, cheap,
+  and consistent with the position-tween lease).  `boundingBoxAt`
+  (animated-layout fit targets) expands curved edges by the
+  conservative hull deviation.  16 Node specs
+  (`test/gpu-curve-accessors.mjs`).
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

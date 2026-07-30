@@ -1,8 +1,11 @@
 import {
+  CURVE_STRAIGHT,
   FLAG_ACTIVE, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_PANNABLE, FLAG_SELECTABLE,
   FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
+import { curveDeviation } from './curve-geometry.mjs';
+import { CURVE_STYLE_BEZIER } from './store/curve-index.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
 import type { GpuQuery } from './matcher.mjs';
 import { testCondition } from './style-scales.mjs';
@@ -1327,6 +1330,8 @@ export class GpuCollection {
     const border = store.column( 'node.borderWidth' ) as Float32Array;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
 
+    store.curves.flush(); // curved edges read derived params below
+
     for( const ref of this._liveRefs() ){
       if( ref.group === 'nodes' ){
         const slot = ref.slot;
@@ -1337,8 +1342,17 @@ export class GpuCollection {
           size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2
         );
       } else {
-        expandPoint( store.getX( endpoints[ ref.slot * 2 ] ), store.getY( endpoints[ ref.slot * 2 ] ) );
-        expandPoint( store.getX( endpoints[ ref.slot * 2 + 1 ] ), store.getY( endpoints[ ref.slot * 2 + 1 ] ) );
+        // curved edges use the exact lazy bound (memoized flattened
+        // polyline); straight edges span their endpoint centers
+        const curveBB = store.curveBBAt( ref.slot );
+
+        if( curveBB != null ){
+          expandPoint( curveBB.x1, curveBB.y1 );
+          expandPoint( curveBB.x2, curveBB.y2 );
+        } else {
+          expandPoint( store.getX( endpoints[ ref.slot * 2 ] ), store.getY( endpoints[ ref.slot * 2 ] ) );
+          expandPoint( store.getX( endpoints[ ref.slot * 2 + 1 ] ), store.getY( endpoints[ ref.slot * 2 + 1 ] ) );
+        }
       }
     }
 
@@ -1384,11 +1398,18 @@ export class GpuCollection {
     return modelLength == null ? undefined : modelLength * ( this._cy.zoom() as number );
   }
 
-  /** Midpoint of the edge (endpoint node centers; edges are straight in the prototype). */
+  /** Midpoint of the edge: the curve midpoint for curved edges (v3's
+   * rs.mid), the endpoint-center average for straight ones. */
   midpoint(): Position | undefined {
     const ref = this._first();
 
     if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    const ev = this._store.curveEvalAt( ref.slot );
+
+    if( ev != null ){
+      return { x: ev.mx, y: ev.my };
+    }
 
     const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
     const s = endpoints[ ref.slot * 2 ];
@@ -1421,10 +1442,54 @@ export class GpuCollection {
     return this._toRenderedPoint( this.targetEndpoint() );
   }
 
+  /** Whether the edge participates in bezier bundling — v3 semantics:
+   * a style check (`curve-style: bezier`), true even for the lone or
+   * odd-middle member that renders straight. */
+  isBundledBezier(): boolean {
+    const ref = this._first();
+
+    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return false; }
+
+    return this._store.curveStyleAt( ref.slot ).style === CURVE_STYLE_BEZIER;
+  }
+
+  /** The edge's curve control points (model coords): one for a bundled
+   * bezier, two for a self-loop, undefined for straight edges — v3's
+   * getControlPoints surface. */
+  controlPoints(): Position[] | undefined {
+    const ref = this._first();
+
+    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    const ev = this._store.curveEvalAt( ref.slot );
+
+    if( ev == null ){ return undefined; }
+
+    return ev.c1x === ev.c2x && ev.c1y === ev.c2y
+      ? [ { x: ev.c1x, y: ev.c1y } ]
+      : [ { x: ev.c1x, y: ev.c1y }, { x: ev.c2x, y: ev.c2y } ];
+  }
+
+  renderedControlPoints(): Position[] | undefined {
+    const pts = this.controlPoints();
+
+    if( pts == null ){ return undefined; }
+
+    return pts.map( p => this._toRenderedPoint( p ) as Position );
+  }
+
   private _endpointPoint( which: 0 | 1 ): Position | undefined {
     const ref = this._first();
 
     if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    // curved edges: the curve's boundary endpoints (closer to v3's
+    // arrow endpoints than the straight-edge node-center approximation)
+    const ev = this._store.curveEvalAt( ref.slot );
+
+    if( ev != null ){
+      return which === 0 ? { x: ev.sx, y: ev.sy } : { x: ev.ex, y: ev.ey };
+    }
 
     const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
     const node = endpoints[ ref.slot * 2 + which ];
@@ -2229,15 +2294,27 @@ export class GpuCollection {
       expandPoint( pos.x + halfW, pos.y + halfH );
     }
 
+    const curveParams = this._store.column( 'edge.curveParams' ) as Float32Array;
+
+    this._store.curves.flush();
+
     for( const ref of this._liveRefs() ){
       if( ref.group !== 'edges' ){ continue; }
 
       const edge = this._cy._ele( 'edges', ref.slot );
 
+      // curved edges expand by the conservative hull deviation — exact
+      // eval at hypothetical positions isn't needed for a fit target
+      const at = ref.slot * 4;
+      const dev = curveParams[ at + 3 ] === CURVE_STRAIGHT
+        ? 0
+        : curveDeviation( curveParams[ at + 3 ], curveParams[ at ], curveParams[ at + 2 ] );
+
       for( const endpoint of [ edge.source(), edge.target() ] ){
         const pos = posMap.get( endpoint ) ?? ( endpoint.position() as Position );
 
-        expandPoint( pos.x, pos.y );
+        expandPoint( pos.x - dev, pos.y - dev );
+        expandPoint( pos.x + dev, pos.y + dev );
       }
     }
 

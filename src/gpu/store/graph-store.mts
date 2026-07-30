@@ -4,7 +4,8 @@ import { Adjacency } from './adjacency.mjs';
 import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import { CurveIndex } from './curve-index.mjs';
-import { curveDeviation } from '../curve-geometry.mjs';
+import { CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, evalCurve } from '../curve-geometry.mjs';
+import type { CurveEval } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
   CURVE_STRAIGHT,
@@ -60,6 +61,13 @@ export class GraphStore implements ModelView {
   private curveDevMax = 0;
   private nodeHalfMax = 0;
   private borderMax = 0;
+
+  // exact-curve-bb memo (see curveBBAt): any geometry write bumps the
+  // epoch, invalidating every cached edge box at once — sound and cheap
+  private geoEpoch = 1;
+  private edgeBBEpoch = new Uint32Array( 0 );
+  private edgeBB = new Float64Array( 0 );
+  private curveScratch = emptyCurveEval();
 
   private order: { nodes: OrderList; edges: OrderList };
   private labels: Record<GroupName, ( LabelEntry | undefined )[]>;
@@ -233,6 +241,7 @@ export class GraphStore implements ModelView {
 
     pos[ slot * 2 ] = x;
     pos[ slot * 2 + 1 ] = y;
+    this.geoEpoch++;
 
     ( this.nodes.column( 'node.flags' ) as Uint32Array )[ slot ] = initialFlags( opts, false );
 
@@ -309,6 +318,7 @@ export class GraphStore implements ModelView {
       }
     }
 
+    this.geoEpoch++;
     this.writeBulkFlags( 'nodes', slots, contiguousFrom, cols );
     this.ingestDataColumns( 'nodes', slots, cols.data );
 
@@ -401,6 +411,7 @@ export class GraphStore implements ModelView {
     this.adj.addEdge( slot, source, target );
     this.maybeRebuildAdjacency();
     this.curves.onMoveEdge( slot, oldSource, oldTarget, source, target );
+    this.geoEpoch++;
     this.dirty.mark( 'edge.endpoints', slot );
   }
 
@@ -429,6 +440,7 @@ export class GraphStore implements ModelView {
 
     pos[ slot * 2 ] = x;
     pos[ slot * 2 + 1 ] = y;
+    this.geoEpoch++;
 
     this.dirty.mark( 'node.position', slot );
   }
@@ -451,6 +463,7 @@ export class GraphStore implements ModelView {
       max = Math.max( max, slot );
     }
 
+    this.geoEpoch++;
     this.dirty.mark( 'node.position', min, max + 1 );
   }
 
@@ -475,6 +488,7 @@ export class GraphStore implements ModelView {
       if( slot > max ){ max = slot; }
     }
 
+    this.geoEpoch++;
     this.dirty.mark( 'node.position', min, max + 1 );
   }
 
@@ -496,6 +510,7 @@ export class GraphStore implements ModelView {
       if( slot > max ){ max = slot; }
     }
 
+    this.geoEpoch++;
     this.dirty.mark( 'node.position', min, max + 1 );
   }
 
@@ -594,6 +609,7 @@ export class GraphStore implements ModelView {
     if( arr[ slot ] === value ){ return; }
 
     arr[ slot ] = value;
+    this.geoEpoch++;
     this.dirty.mark( id, slot );
   }
 
@@ -611,6 +627,7 @@ export class GraphStore implements ModelView {
 
     arr[ slot * 2 ] = a;
     arr[ slot * 2 + 1 ] = b;
+    this.geoEpoch++;
     this.dirty.mark( id, slot );
   }
 
@@ -661,6 +678,91 @@ export class GraphStore implements ModelView {
   }
 
   /**
+   * Evaluate one curved edge's geometry from the live columns (null for
+   * straight edges).  The returned object is a shared scratch unless
+   * `out` is given — consume it before the next call.  This is the CPU
+   * twin of the curve vertex shader: same params, same boundary math,
+   * same frame (see curve-geometry.mts).
+   */
+  curveEvalAt( slot: number, out: CurveEval = this.curveScratch ): CurveEval | null {
+    this.curves.flush();
+
+    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const at = slot * 4;
+    const kind = params[ at + 3 ];
+
+    if( kind === CURVE_STRAIGHT ){ return null; }
+
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const size = this.nodes.column( 'node.size' ) as Float32Array;
+    const border = this.nodes.column( 'node.borderWidth' ) as Float32Array;
+    const shape = this.nodes.column( 'node.shape' ) as Uint32Array;
+    const s = endpoints[ at / 2 ];
+    const t = endpoints[ at / 2 + 1 ];
+
+    return evalCurve(
+      out, kind, params[ at ], params[ at + 1 ], params[ at + 2 ],
+      pos[ s * 2 ], pos[ s * 2 + 1 ],
+      size[ s * 2 ] / 2 + border[ s ] / 2, size[ s * 2 + 1 ] / 2 + border[ s ] / 2, shape[ s ],
+      pos[ t * 2 ], pos[ t * 2 + 1 ],
+      size[ t * 2 ] / 2 + border[ t ] / 2, size[ t * 2 + 1 ] / 2 + border[ t ] / 2, shape[ t ]
+    );
+  }
+
+  /**
+   * The exact bounding box of a curved edge (null for straight ones):
+   * the flattened polyline at the drawn subdivision, memoized per slot
+   * against the geometry epoch — the "exact lazy CPU eval" tier of the
+   * expensive-geometry design (public `.bb()` reads this; fit and cull
+   * use the conservative bounds instead).
+   */
+  curveBBAt( slot: number ): { x1: number; y1: number; x2: number; y2: number } | null {
+    const ev = this.curveEvalAt( slot );
+
+    if( ev == null ){ return null; }
+
+    if( this.edgeBBEpoch.length < this.edges.cap ){
+      const epochs = new Uint32Array( this.edges.cap );
+      const boxes = new Float64Array( this.edges.cap * 4 );
+
+      epochs.set( this.edgeBBEpoch );
+      boxes.set( this.edgeBB );
+      this.edgeBBEpoch = epochs;
+      this.edgeBB = boxes;
+    }
+
+    const at = slot * 4;
+
+    if( this.edgeBBEpoch[ slot ] === this.geoEpoch ){
+      return {
+        x1: this.edgeBB[ at ], y1: this.edgeBB[ at + 1 ],
+        x2: this.edgeBB[ at + 2 ], y2: this.edgeBB[ at + 3 ]
+      };
+    }
+
+    const p = { x: 0, y: 0 };
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+    for( let i = 0; i <= CURVE_SEGS; i++ ){
+      curvePointAt( ev, i / CURVE_SEGS, p );
+
+      if( p.x < x1 ){ x1 = p.x; }
+      if( p.y < y1 ){ y1 = p.y; }
+      if( p.x > x2 ){ x2 = p.x; }
+      if( p.y > y2 ){ y2 = p.y; }
+    }
+
+    this.edgeBBEpoch[ slot ] = this.geoEpoch;
+    this.edgeBB[ at ] = x1;
+    this.edgeBB[ at + 1 ] = y1;
+    this.edgeBB[ at + 2 ] = x2;
+    this.edgeBB[ at + 3 ] = y2;
+
+    return { x1, y1, x2, y2 };
+  }
+
+  /**
    * Conservative model-px bound on how far any curved edge strays from
    * the segment between its endpoint node centers — the cull kernels
    * grow their straight-chord tests by this (per-edge params can't bind
@@ -689,6 +791,7 @@ export class GraphStore implements ModelView {
     arr[ at + 1 ] = p1;
     arr[ at + 2 ] = p2;
     arr[ at + 3 ] = kind;
+    this.geoEpoch++;
 
     this.dirty.mark( 'edge.curveParams', slot );
     this.setFlag( 'edges', slot, FLAG_CURVED, kind !== CURVE_STRAIGHT );

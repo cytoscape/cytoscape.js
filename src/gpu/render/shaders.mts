@@ -970,6 +970,122 @@ ${ ARROW_POLY.cases }
 `;
 
 /**
+ * Arrowheads for curved edges (round 12a): the straight arrow math with
+ * the curve's *control point* substituted for the far endpoint — a
+ * quadratic's end tangent points from the control to the endpoint, so
+ * dir = normalize(tipCenter − ctrl) puts the tip on the node boundary
+ * along the curve's true end tangent (source end uses c1, target end
+ * c2; for a bundled bezier they coincide).  Rides the curved cull
+ * stream's single-quad args block.  Budget note: the vertex stage binds
+ * 7 columns + the visible list (the base 8-storage-buffer budget), so
+ * unlike the straight arrow shader there is no node border column — the
+ * frame uses border-exclusive halves and tips sit on the size/2
+ * boundary (a recorded deviation, exact for the default border 0).
+ */
+export const CURVED_ARROW_SHADER = `
+${COMMON}
+${BOUNDARY_WGSL}
+${CURVE_WGSL}
+
+@group(0) @binding(0) var<uniform> frame: Frame;
+@group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
+@group(0) @binding(2) var<storage, read> edgeWidths: array<f32>;
+@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(4) var<storage, read> nodeSizes: array<vec2f>;
+@group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
+@group(0) @binding(6) var<storage, read> arrows: array<u32>; // this end's colors
+@group(0) @binding(7) var<storage, read> curveParams: array<vec4f>;
+
+struct End { isSource: u32 }
+@group(0) @binding(8) var<uniform> end: End;
+// shape ids packed source | target<<8 — fragment-only, like the straight arrows
+@group(0) @binding(9) var<storage, read> arrowShapes: array<u32>;
+
+@group(1) @binding(0) var<storage, read> visible: array<u32>;
+
+struct ArrowVSOut {
+  @builtin(position) position: vec4f,
+  @location(0) p: vec2f,    // arrow-local device px: x lateral, y (≤0) behind the tip
+  @location(1) color: vec4f,
+  @location(2) @interpolate(flat) scale: f32, // device px per arrow unit
+  @location(3) @interpolate(flat) slot: u32,
+}
+
+${ ARROW_POLY.fns }
+
+@vertex
+fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
+  var out: ArrowVSOut;
+
+  let slot = visible[ii];
+  let isSource = end.isSource == 1u;
+  let c = unpack4x8unorm(arrows[slot]);
+
+  if (c.a == 0.0) { // no arrow at this end: degenerate, clipped
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  let ends = endpoints[slot];
+  let g = evalCurveGeom(
+    curveParams[slot],
+    nodePositions[ends.x], nodeSizes[ends.x] * 0.5, nodeShapes[ends.x],
+    nodePositions[ends.y], nodeSizes[ends.y] * 0.5, nodeShapes[ends.y]
+  );
+
+  let tipSlot = select(ends.y, ends.x, isSource);
+  let ctrl = select(g.c2, g.c1, isSource);
+  let tipC = modelToPx(frame, nodePositions[tipSlot]);
+  let toTip = tipC - modelToPx(frame, ctrl);
+  let len = max(length(toTip), 1e-4);
+  let dir = toTip / len;
+
+  // the tip sits on the tip node's boundary along the curve's end tangent
+  let half = nodeSizes[tipSlot] * 0.5 * frame.zoomDpr;
+  let tip = tipC - dir * boundaryOffset(nodeShapes[tipSlot], half, dir);
+
+  // sizing follows the drawn (floored) edge width; the curved stream is
+  // never decimated, so the alpha comp is the plain width-floor ratio
+  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let alphaComp = min(edgeWidths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+  let arrowLen = widthPx * 3.0 + 2.0;
+  let halfBase = widthPx * 1.5 + 1.0;
+
+  let n = vec2f(-dir.y, dir.x);
+  let corner = quadCorner(vi);
+  let t = (corner.y + 1.0) * 0.5; // 0 at base, 1 at tip
+  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  let lateral = corner.x * (halfBase + 1.0);
+
+  out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
+  out.p = vec2f(lateral, yLocal);
+  out.scale = arrowLen / 0.3;
+  out.slot = slot;
+  // edge opacity is pre-folded into c.a at style-write time
+  out.color = vec4f(c.rgb, c.a * alphaComp * (1.0 - frame.edgeDim));
+  return out;
+}
+
+@fragment
+fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
+  let pair = arrowShapes[in.slot];
+  let shape = select(pair >> 8u, pair & 0xffu, end.isSource == 1u);
+  let p = in.p;
+  let s = in.scale;
+  var sd = 1e6;
+
+  switch shape {
+${ ARROW_POLY.cases }
+    case 4u: { sd = length(p - vec2f(0.0, -0.15 * s)) - 0.15 * s; } // circle
+    default: { sd = 1e6; } // none (already degenerate in the VS)
+  }
+
+  let alpha = in.color.a * (1.0 - smoothstep(-0.75, 0.75, sd));
+  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
+}
+`;
+
+/**
  * The label shader, generated for both streams: node labels anchor at the
  * node position, edge labels at the midpoint of the edge's endpoints —
  * computed here in the VS, so edge labels follow drags/layouts/position

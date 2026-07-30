@@ -600,6 +600,42 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'self-loops', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: curved-edge arrowheads on end tangents (round 12a)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        // a 2-bundle: the target arrows must tilt with each curve's end
+        // tangent (toward the fan), not lie on the chord
+        { data: { id: 'a1' }, position: { x: -140, y: -60 } },
+        { data: { id: 'b1' }, position: { x: 60, y: -60 } },
+        { data: { id: 'p0', source: 'a1', target: 'b1' } },
+        { data: { id: 'p1', source: 'a1', target: 'b1' } },
+        // an antiparallel pair: one arrow at each node, tangents mirrored
+        { data: { id: 'a2' }, position: { x: -140, y: 70 } },
+        { data: { id: 'b2' }, position: { x: 60, y: 70 } },
+        { data: { id: 'q0', source: 'a2', target: 'b2' } },
+        { data: { id: 'q1', source: 'b2', target: 'a2' } },
+        // a loop: the arrow rides the loop's in-ray tangent
+        { data: { id: 'n' }, position: { x: 150, y: 10 } },
+        { data: { id: 'loop', source: 'n', target: 'n' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#3498db' },
+        edges: {
+          'curve-style': 'bezier', 'control-point-step-size': 60,
+          'width': 3, 'line-color': '#7f8c8d',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#8e44ad'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'curved-arrows', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: label visuals (outline, background, margins)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

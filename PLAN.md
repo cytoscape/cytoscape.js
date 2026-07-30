@@ -2073,6 +2073,22 @@ lands it.
   (8px strokes so pixelmatch's AA skip can't mask placement error,
   plus an ink guard) — 59/59 Playwright, 1707 Node, 59 module tests,
   typecheck + lint green; pre-existing goldens byte-identical.
+- [x] **Arrows on curve end tangents.**  The insight that made this a
+  small change: a quadratic's end tangent points from the control to
+  the endpoint, so the curved arrow is *the straight arrow math with
+  the control point substituted for the far endpoint* (source end uses
+  c1, target end c2 — coincident for a bundled bezier).
+  `CURVED_ARROW_SHADER`/`CurvedArrowPipeline` ride the curved cull
+  stream's new **single-quad args block** (the scan kernel now writes
+  a second `[6, n, 0, 0, 0]` at byte 20 of the indirect buffer, so
+  strip streams can also drive one-quad-per-instance draws).  Budget
+  cut, recorded: no node-border column fits in the 8-buffer vertex
+  stage, so curved-edge arrow tips sit on the size/2 boundary and the
+  frame uses border-exclusive halves — exact for the default border 0,
+  ≤ border/2 off otherwise (revisit with 12c endpoints).  New
+  `curved-arrows` golden (bundle fan converging on the target, an
+  antiparallel pair, a loop arrow riding the in-ray tangent); 60/60
+  Playwright, 1707 Node, 60 module tests green.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

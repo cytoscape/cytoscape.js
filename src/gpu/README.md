@@ -575,6 +575,15 @@ each is deliberate, not a pass-1 deferral:
     streams; slot order within each — a z-order deviation alongside
     the existing edges-under-nodes rule); both stream under arrows,
     nodes and labels, and early-z applies to both.
+  - *Arrows (12a)*: curved-edge arrowheads point along the curve's
+    true end tangent — the straight arrow math with the control point
+    substituted for the far endpoint (a quadratic's end tangent runs
+    control → endpoint), one quad per end off the curved stream's
+    single-quad indirect args block.  Recorded deviation: the curved
+    arrow vertex stage has no spare binding for the node border
+    column (8-buffer budget), so tips sit on the size/2 boundary and
+    the arrow's frame uses border-exclusive halves — exact at the
+    default border 0, at most border/2 off otherwise.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +

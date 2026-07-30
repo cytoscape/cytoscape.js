@@ -5,6 +5,7 @@ import { CulledGroup, CullKernels } from './cull.mjs';
 import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
 import { CurvedEdgePipeline } from './curved-edge-pipeline.mjs';
+import { CurvedArrowPipeline } from './curved-arrow-pipeline.mjs';
 import { CURVE_SEGS } from '../curve-geometry.mjs';
 import { ArrowPipeline } from './arrow-pipeline.mjs';
 import { EDGE_PICK_BIT, PICK_TILE, Picking } from './picking.mjs';
@@ -164,6 +165,7 @@ export class Renderer {
   private nodePipeline: NodePipeline | null;
   private edgePipeline: EdgePipeline | null;
   private curvedEdgePipeline: CurvedEdgePipeline | null;
+  private curvedArrowPipeline: CurvedArrowPipeline | null;
   private arrowPipeline: ArrowPipeline | null;
   private uniform: GPUBuffer | null;
   private frameData: Float32Array;
@@ -212,6 +214,7 @@ export class Renderer {
     this.nodePipeline = null;
     this.edgePipeline = null;
     this.curvedEdgePipeline = null;
+    this.curvedArrowPipeline = null;
     this.arrowPipeline = null;
     this.uniform = null;
     this.frameData = new Float32Array( 12 );
@@ -800,6 +803,7 @@ export class Renderer {
     this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
     this.edgePipeline = new EdgePipeline( device, format, kernels.visibleLayout );
     this.curvedEdgePipeline = new CurvedEdgePipeline( device, format, kernels.visibleLayout );
+    this.curvedArrowPipeline = new CurvedArrowPipeline( device, format, kernels.visibleLayout );
     this.arrowPipeline = new ArrowPipeline( device, format, kernels.visibleLayout );
     this.labelLayer = new LabelLayer( device, this.cy._store );
     this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
@@ -1031,6 +1035,10 @@ export class Renderer {
     this.curvedEdgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved );
     this.arrowPipeline?.draw(
       pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge,
+      this.cy._styleEngine.arrowEnds
+    );
+    this.curvedArrowPipeline?.draw(
+      pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved,
       this.cy._styleEngine.arrowEnds
     );
     this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );

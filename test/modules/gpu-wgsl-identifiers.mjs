@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { TWEEN_SHADERS } from '../../src/gpu/render/gpu-tween.mjs';
 import { NODE_EVAL_SHADER, EDGE_EVAL_SHADER } from '../../src/gpu/render/mapper-shaders.mjs';
 import {
-  NODE_SHADER, EDGE_SHADER, CURVED_EDGE_SHADER, ARROW_SHADER, LABEL_SHADER
+  NODE_SHADER, EDGE_SHADER, CURVED_EDGE_SHADER, ARROW_SHADER, CURVED_ARROW_SHADER, LABEL_SHADER
 } from '../../src/gpu/render/shaders.mjs';
 
 /*
@@ -36,6 +36,7 @@ const SHADERS = {
   'render:edge': EDGE_SHADER,
   'render:curved-edge': CURVED_EDGE_SHADER,
   'render:arrow': ARROW_SHADER,
+  'render:curved-arrow': CURVED_ARROW_SHADER,
   'render:label': LABEL_SHADER
 };
 

@@ -300,7 +300,7 @@ struct CullInfo { count: u32, indexCount: u32 }
 @group(0) @binding(0) var<uniform> info: CullInfo;
 @group(0) @binding(1) var<storage, read> wgCounts: array<u32>;
 @group(0) @binding(2) var<storage, read_write> wgOffsets: array<u32>;
-@group(0) @binding(3) var<storage, read_write> drawArgs: array<u32, 5>;
+@group(0) @binding(3) var<storage, read_write> drawArgs: array<u32, 10>;
 
 // serial exclusive scan over the per-workgroup counts; numWg is a few
 // thousand at most (capacity / ${WG_SIZE}), microseconds on any GPU
@@ -319,8 +319,19 @@ fn csScan() {
   drawArgs[2] = 0u;
   drawArgs[3] = 0u;
   drawArgs[4] = 0u;
+
+  // a second single-quad args block at QUAD_ARGS_OFFSET, for draws that
+  // ride a strip stream but want one quad per instance (curved arrows)
+  drawArgs[5] = 6u;
+  drawArgs[6] = sum;
+  drawArgs[7] = 0u;
+  drawArgs[8] = 0u;
+  drawArgs[9] = 0u;
 }
 `;
+
+/** byte offset of the single-quad args block in CulledGroup.indirect */
+export const QUAD_ARGS_OFFSET = 20;
 
 const EDGE_GLYPH_CULL = `
 ${COMMON}
@@ -526,7 +537,7 @@ export class CulledGroup {
     } );
     this.indirect = device.createBuffer( {
       label: `cy-gpu:${label}-indirect`,
-      size: 20,
+      size: 40, // strip args + the single-quad args block
       usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.INDIRECT
     } );
   }

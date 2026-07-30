@@ -1913,6 +1913,50 @@ test.describe( 'WebGPU renderer', () => {
     expect( picks.onChord ).toBe( null );
   } );
 
+  test( 'curved-edge labels anchor at the curve midpoint and follow drags', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b', lbl: 'curved' } },
+        { data: { id: 'e1', source: 'a', target: 'b', lbl: 'label' } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#dfe6e9' },
+        edges: {
+          'curve-style': 'bezier', 'control-point-step-size': 100,
+          'width': 2, 'line-color': '#dfe6e9', // light, so only glyphs read dark
+          'label': { data: 'lbl' }, 'font-size': 16, 'color': '#000000'
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // glyphs at each curve's CPU-computed midpoint, none at the chord's
+    const mid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+
+    expect( await darkPixelsInBand( page, mid.x - 40, 80, mid.y ) ).toBeGreaterThan( 5 );
+    expect( await darkPixelsInBand( page, center.x - 40, 80, center.y ) ).toBe( 0 );
+
+    // a node drag re-anchors the label with a position-row upload only
+    const uploadedBefore = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    await page.evaluate( () => window.cy.$id( 'b' ).position( { x: 150, y: 140 } ) );
+    await waitFrames( page );
+
+    const uploadedAfter = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+    const movedMid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+
+    expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 );
+    expect( await darkPixelsInBand( page, movedMid.x - 40, 80, movedMid.y ) ).toBeGreaterThan( 5 );
+  } );
+
   test( 'self-loops render as loops (not degenerate points)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

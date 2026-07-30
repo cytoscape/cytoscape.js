@@ -375,13 +375,30 @@ fn isVisible(slot: u32) -> bool {
   let mid = (pa + pb) * 0.5;
   let sizePx = g.size * frame.zoomDpr;
 
+  // curved owners anchor at the curve midpoint (the label VS computes
+  // it); per-edge curve params can't bind here (8-buffer budget), so the
+  // chord-midpoint test grows by the frame's conservative curve slack
+  var slk = 0.0;
+
+  if ((edgeFlags[owner] & FLAG_CURVED) != 0u) { slk = frame.curveSlack * frame.zoomDpr; }
+
   if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
-    // autorotated glyphs: the exact AABB of the rotated rect (same
-    // rotation frame as the VS, so cull and draw can't disagree)
+    // autorotated glyphs: the exact AABB of the rotated rect, in the
+    // same rotation frame as the VS for straight owners.  A curved
+    // owner's frame can differ (a loop rotates by its c1->c2 tangent),
+    // so those take the frame-independent worst case — the half
+    // diagonal — plus the slack-covered anchor shift.
     let cs = autorotateFrame(pa, pb);
-    let centerPx = modelToPx(frame, mid) + rotateBy(cs, g.offset + g.size * 0.5) * frame.zoomDpr;
-    let ext = vec2f(abs(cs.x) * sizePx.x + abs(cs.y) * sizePx.y,
+    var centerPx = modelToPx(frame, mid) + rotateBy(cs, g.offset + g.size * 0.5) * frame.zoomDpr;
+    var ext = vec2f(abs(cs.x) * sizePx.x + abs(cs.y) * sizePx.y,
                     abs(cs.y) * sizePx.x + abs(cs.x) * sizePx.y) * 0.5;
+
+    if (slk > 0.0) {
+      // frame-independent bound about the anchor: the rect lies within
+      // |offset + size/2| + halfDiagonal of it under any rotation
+      centerPx = modelToPx(frame, mid);
+      ext = vec2f(( length(g.offset + g.size * 0.5) + length(g.size) * 0.5 ) * frame.zoomDpr + slk);
+    }
 
     return !(centerPx.x + ext.x < 0.0 || centerPx.x - ext.x > frame.viewportPx.x ||
              centerPx.y + ext.y < 0.0 || centerPx.y - ext.y > frame.viewportPx.y);
@@ -389,8 +406,8 @@ fn isVisible(slot: u32) -> bool {
 
   let originPx = modelToPx(frame, mid) + g.offset * frame.zoomDpr;
 
-  return !(originPx.x + sizePx.x < 0.0 || originPx.x > frame.viewportPx.x ||
-           originPx.y + sizePx.y < 0.0 || originPx.y > frame.viewportPx.y);
+  return !(originPx.x + sizePx.x + slk < 0.0 || originPx.x - slk > frame.viewportPx.x ||
+           originPx.y + sizePx.y + slk < 0.0 || originPx.y - slk > frame.viewportPx.y);
 }
 ${SCAFFOLD}
 `;

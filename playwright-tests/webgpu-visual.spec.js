@@ -636,6 +636,57 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'curved-arrows', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: curved-edge labels at the curve midpoint (round 12a)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        // a bundle: each label rides its own curve's midpoint; the boxed
+        // one autorotates — on a bezier the midpoint tangent is the
+        // chord, so the tilt matches the diagonal
+        { data: { id: 'a' }, position: { x: -150, y: -110 } },
+        { data: { id: 'b' }, position: { x: 90, y: 30 } },
+        { data: { id: 'p0', source: 'a', target: 'b', lbl: 'over', rot: 1, boxed: 1 } },
+        { data: { id: 'p1', source: 'a', target: 'b', lbl: 'under', rot: 0, boxed: 0 } },
+        // a loop label at the loop midpoint; autorotated along the
+        // loop's c1->c2 tangent
+        { data: { id: 'n' }, position: { x: 120, y: 110 } },
+        { data: { id: 'loop', source: 'n', target: 'n', lbl: 'loop', rot: 1, boxed: 0 } }
+      ],
+      style: {
+        nodes: {
+          'width': 22, 'height': 22, 'background-color': '#b2bec3',
+          'font-family': `'Open Sans', sans-serif`
+        },
+        edges: {
+          'curve-style': 'bezier', 'control-point-step-size': 60,
+          'width': 2, 'line-color': '#b2bec3',
+          'label': { data: 'lbl' }, 'font-size': 14, 'color': '#2d3436',
+          'text-rotation': { case: [ { when: { data: 'rot', eq: 1 }, then: 'autorotate' } ], else: 'none' },
+          'text-background-color': '#ffeaa7',
+          'text-background-opacity': { case: [ { when: { data: 'boxed', eq: 1 }, then: 1 } ], else: 0 },
+          'text-background-padding': 2
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'curved-edge-labels', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
   test( 'golden: label visuals (outline, background, margins)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

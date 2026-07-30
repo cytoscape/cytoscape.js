@@ -584,6 +584,17 @@ each is deliberate, not a pass-1 deferral:
     column (8-buffer budget), so tips sit on the size/2 boundary and
     the arrow's frame uses border-exclusive halves — exact at the
     default border 0, at most border/2 off otherwise.
+  - *Edge labels (12a)*: labels of curved edges anchor at the **curve
+    midpoint**, computed in the label vertex shader from live
+    positions + the params column (zero rebuild, like everything
+    else).  `text-rotation: autorotate` needed no new math for
+    beziers — a quadratic's t = 0.5 tangent *is* its chord direction,
+    so the endpoint frame is exact — and loops rotate along their
+    c1→c2 midpoint tangent.  The edge-glyph cull grows its
+    chord-midpoint test by the frame's curve slack for curved owners
+    (its own 8-buffer budget precludes a params binding); rotated
+    curved labels cull against a frame-independent anchor-centred
+    bound.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +

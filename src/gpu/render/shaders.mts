@@ -1094,12 +1094,15 @@ ${ ARROW_POLY.cases }
 const labelShader = ( edge: boolean ): string => `
 ${COMMON}
 ${GLYPH_STRUCT}
-
+${ edge ? BOUNDARY_WGSL + CURVE_WGSL : '' }
 // flags columns are not bound here: the cull pass already dropped glyphs
-// of dead/hidden owners
+// of dead/hidden owners.  The edge variant binds the curve inputs too —
+// exactly 7 storage buffers + the visible list, the vertex-stage budget
+// — so curved-edge labels anchor at the curve midpoint computed in the
+// VS from live positions (zero rebuild on drags/layouts/tweens).
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var atlas: texture_2d<f32>;\n@group(0) @binding(5) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
+${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeSizes: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeBorders: array<f32>;\n@group(0) @binding(7) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
 
 struct LabelVSOut {
   @builtin(position) position: vec4f,
@@ -1130,7 +1133,28 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let ends = endpoints[owner];
   let pa = nodePositions[ends.x];
   let pb = nodePositions[ends.y];
-  let anchor = (pa + pb) * 0.5;`
+  let params = curveParams[owner];
+  var anchor = (pa + pb) * 0.5;
+  // the autorotate frame endpoints: a bezier's t=0.5 tangent IS the
+  // chord direction, so (pa, pb) stands; a loop's midpoint tangent runs
+  // c1 -> c2
+  var rotA = pa;
+  var rotB = pb;
+
+  if (params.w != 0.0) { // curved owner: anchor at the curve midpoint
+    let geom = evalCurveGeom(
+      params,
+      pa, nodeSizes[ends.x] * 0.5 + vec2f(nodeBorders[ends.x] * 0.5), nodeShapes[ends.x],
+      pb, nodeSizes[ends.y] * 0.5 + vec2f(nodeBorders[ends.y] * 0.5), nodeShapes[ends.y]
+    );
+
+    anchor = geom.m;
+
+    if (params.w == 2.0) {
+      rotA = geom.c1;
+      rotB = geom.c2;
+    }
+  }`
     : 'let anchor = nodePositions[g.nodeSlot];' }
   let originPx = modelToPx(frame, anchor) + g.offset * frame.zoomDpr;
   let sizePx = g.size * frame.zoomDpr;
@@ -1142,7 +1166,7 @@ ${ edge
   // midpoint anchor by the edge's flip-normalized angle (the angle reads
   // live positions too, so rotation follows drags/tweens on-GPU)
   if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
-    let cs = autorotateFrame(pa, pb);
+    let cs = autorotateFrame(rotA, rotB);
     let local = g.offset + t * g.size; // model px from the anchor
 
     posPx = modelToPx(frame, anchor) + rotateBy(cs, local) * frame.zoomDpr;

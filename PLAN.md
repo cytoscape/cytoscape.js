@@ -2089,6 +2089,23 @@ lands it.
   `curved-arrows` golden (bundle fan converging on the target, an
   antiparallel pair, a loop arrow riding the in-ray tangent); 60/60
   Playwright, 1707 Node, 60 module tests green.
+- [x] **Edge labels at the curve midpoint + autorotate tangent.**  The
+  edge label VS binds the curve inputs (7 storage buffers + the
+  visible list — exactly the vertex-stage budget) and anchors curved
+  owners at the curve midpoint computed from live positions, so
+  curved-edge labels keep the zero-rebuild property.  Autorotate
+  generalizes for free on beziers — a quadratic's t = 0.5 tangent *is*
+  the chord direction, so the existing endpoint frame is already exact
+  — and loops rotate along their c1→c2 midpoint tangent.  The
+  edge-glyph cull (at its own 8-buffer budget, no params binding)
+  grows its chord-midpoint test by the frame's curve slack for
+  FLAG_CURVED owners; rotated curved labels take a frame-independent
+  anchor-centred bound (a loop's rotation frame differs from the
+  chord's).  New webgpu spec (glyphs at the CPU-computed
+  `renderedMidpoint`, none on the chord, ≤ 64 B re-anchor on drag) +
+  `curved-edge-labels` golden (bundle labels per-curve, an autorotated
+  boxed label tilted with the chord, a loop label on the loop
+  tangent); 62/62 Playwright, 1707 Node, 60 module tests green.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

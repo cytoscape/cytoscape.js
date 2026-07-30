@@ -1,3 +1,5 @@
+import * as is from './is.mjs';
+
 export const arePositionsSame = ( p1, p2 ) =>
   p1.x === p2.x && p1.y === p2.y;
 
@@ -103,6 +105,31 @@ export const median = ( arr, begin = 0, end = arr.length, copy = true, sort = tr
   } else {
     return ( arr[mid - 1 + off] + arr[mid + off] )/2;
   }
+};
+
+// https://en.wikipedia.org/wiki/Greatest_common_divisor#Euclidean_algorithm
+export const gcd = ( a, b ) => {
+  if( b === 0 ) {
+    return a;
+  }
+  return gcd( b, a % b );
+};
+
+// finds the GCD of an array of numbers: https://stackoverflow.com/a/4885641
+//
+// if any of the numbers are not integers, this returns zero (since even if
+// you try to take the GCD of two floating-point numbers you will end up with
+// either zero or some extremely small number that is almost zero)
+export const gcdMultipleZeroIfNonInt = ( arr ) => {
+  var out = arr[0];
+  for ( var i = 0; i < arr.length; i++ ) {
+      if ( !is.integer( arr[i] ) ) {
+        return 0;
+      } else if (i > 0) {
+        out = gcd( out, arr[i] );
+      }
+  }
+  return out;
 };
 
 export const deg2rad = deg =>

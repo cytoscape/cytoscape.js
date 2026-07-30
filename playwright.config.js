@@ -1,6 +1,8 @@
 // @ts-check
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, chromium } from '@playwright/test';
 import os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const parallelism = typeof os.availableParallelism === 'function'
   ? os.availableParallelism()
@@ -11,6 +13,35 @@ const parallelism = typeof os.availableParallelism === 'function'
 const linuxVulkanCompositingArgs = process.platform === 'linux'
   ? ['--use-gl=angle', '--use-angle=vulkan', '--enable-features=Vulkan']
   : [];
+
+/* GPU_DEBUG=1: dump the GPU process log to stderr for CI diagnosis. */
+const gpuDebugArgs = process.env.GPU_DEBUG
+  ? ['--enable-logging=stderr', '--v=1']
+  : [];
+
+/*
+ * On GPU-less Linux CI, the ANGLE-on-Vulkan path above lands on whatever
+ * system Vulkan driver the runner image ships (Mesa lavapipe), which does
+ * not composite WebGPU canvases (blank presentation) and has crashed the
+ * GPU process outright on some image versions.  Pin the Vulkan loader to
+ * the SwiftShader ICD bundled with Chrome for Testing instead: rendering,
+ * presentation and readback all work on it, and it is the same software
+ * rasterizer the webgpu-visual goldens are pinned to — deterministic and
+ * independent of runner-image Mesa churn.  CI-gated so local runs keep
+ * using the real GPU.
+ */
+if( process.platform === 'linux' && process.env.CI ){
+  try {
+    const icd = path.join( path.dirname( chromium.executablePath() ), 'vk_swiftshader_icd.json' );
+
+    if( fs.existsSync( icd ) ){
+      process.env.VK_ICD_FILENAMES = icd; // legacy loader var
+      process.env.VK_DRIVER_FILES = icd;
+    }
+  } catch {
+    // no chromium install (e.g. listing tests); leave the env alone
+  }
+}
 
 /**
  * Read environment variables from file.
@@ -74,7 +105,7 @@ export default defineConfig({
         channel: 'chromium',
         launchOptions: {
           args: ['--enable-unsafe-webgpu', '--enable-unsafe-swiftshader',
-            ...linuxVulkanCompositingArgs],
+            ...linuxVulkanCompositingArgs, ...gpuDebugArgs],
         },
       },
     },
@@ -114,7 +145,7 @@ export default defineConfig({
           args: [
             '--enable-unsafe-webgpu',
             '--enable-unsafe-swiftshader',
-            ...linuxVulkanCompositingArgs,
+            ...linuxVulkanCompositingArgs, ...gpuDebugArgs,
             '--use-webgpu-adapter=swiftshader',
           ],
         },

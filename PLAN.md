@@ -8,8 +8,8 @@ rendering could be assessed for performance — and subsequent rounds
 image export, label testability, the round-10 parity sprint, round-11
 slot-stable compaction, edge-label autorotate) are recorded below as
 "Landed (round N)" sections, each verified green when it landed; the
-round-12 curved-edges plan is written and awaiting its two flagged
-sign-offs.  `src/gpu/README.md` is
+round-12 curved-edges plan has both flagged calls signed off
+(2026-07-30) and pass 12a is in progress.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -1973,15 +1973,17 @@ Perf: the renderer benchmark gains a curved variant of the pan
 scenes (expected cost is ~K× edge vertex work, bounded by cull and
 decimation; record the numbers in the round record).
 
-**Open calls flagged for sign-off before 12a starts** (neither blocks
-this plan):
+**Open calls — both signed off 2026-07-30** (as the leans):
 
-1. **v4's default `curve-style`** — lean: keep `straight` (the
-   perf-first default at v4's target scales; parity scenes opt into
-   `bezier` explicitly) vs adopting v3's bundled-bezier default.
-2. **Whether `bezier` implies bundling for multi-edges only** exactly
-   as v3 (single edges stay straight lines under `bezier` — v3's
-   behaviour) — lean: yes, verbatim parity.
+1. **v4's default `curve-style` is `straight`** — the perf-first
+   default at v4's target scales; parity scenes and apps opt into
+   `bezier` explicitly.  A deliberate divergence from v3's
+   bundled-bezier default, recorded in `src/gpu/README.md`.
+2. **`bezier` bundles multi-edges only, verbatim v3**: a lone edge
+   between two nodes stays a straight line under `curve-style:
+   bezier`; only parallel edges fan out (the odd-bundle middle edge
+   is straight too, v3's rule).  Pixel-comparable in the live
+   v3-parity harness.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

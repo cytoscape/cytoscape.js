@@ -506,6 +506,15 @@ each is deliberate, not a pass-1 deferral:
   reference implementation (which doubles as the spec the kernel must
   match).  It reuses this round's lease + readback machinery, but the
   per-algorithm kernels and convergence detection are a future round.
+- **Curved edges (round 12; the two flagged calls signed off
+  2026-07-30).**  v4's default `curve-style` stays **`straight`** — the
+  perf-first default at v4's target scales, a deliberate divergence
+  from v3's bundled-bezier default (apps and parity scenes opt into
+  `bezier` explicitly).  And `bezier` bundles **multi-edges only,
+  verbatim v3**: a lone edge between two nodes renders straight under
+  `curve-style: bezier`, only parallel edges fan out, and the middle
+  edge of an odd bundle is straight (v3's rule), so curved scenes are
+  pixel-comparable in the live v3-parity harness.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +

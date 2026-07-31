@@ -1,6 +1,6 @@
 import {
   FLAG_ALIVE, FLAG_VISIBLE,
-  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
+  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
 import { POLYGON_POINTS, insideUnitPolygon } from '../shape-points.mjs';
@@ -74,6 +74,19 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
     const radius = storedR === 0xffffffff
       ? Math.min( Math.min( hw, hh ) * 0.5, 8 * frame.zoomDpr )
       : storedR / 256 * frame.zoomDpr;
+
+    // C3: custom polygons test their blob points (the same record the
+    // FS reads — dual consumers of one ref, agreeing by construction)
+    if( shape === SHAPE_POLYGON_CUSTOM ){
+      const ref = borderGeom[ slot * 4 ];
+      const off = ref & 0xffffff;
+      const count = ref >>> 24;
+      const points = view.polyBlob().subarray( off, off + count * 2 );
+
+      if( insideUnitPolygon( points, dx / hw, dy / hh ) ){ return slot; }
+
+      continue;
+    }
 
     if( insideShape( shape, dx, dy, hw, hh, radius ) ){ return slot; }
   }

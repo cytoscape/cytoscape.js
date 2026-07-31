@@ -2880,6 +2880,38 @@ round refills the autonomous shelf; the design queue (compounds →
 background images → event vocabulary/extension contract → force
 layout) is not consumed by it.
 
+- [x] **C3 custom polygons** (2026-07-31).  `shape: 'polygon'` +
+  `shape-polygon-points` land on the round-11 blob pattern: a second
+  `CurveBlob` pool holds each node's flat unit pairs, slot-stable
+  compaction rewrites the packed offset|count<<24 ref that rides the
+  `borderGeom` radius word (meaningless for polygons), and the
+  column mirror ships the pool as one more growable buffer
+  (`delta.polyBlob`).  The node FS gained `customPolySD` — iq's
+  exact sdPolygon over the blob range scaled to device space, so AA,
+  borders and the depth prepass's interior test stay crisp under
+  anisotropy like the generated shapes — and CPU pick runs
+  point-in-polygon over the same record: dual consumers of one ref,
+  agreeing by construction.  Binding budget: the poly blob is the
+  node stage's 9th storage buffer, so the node pipelines split into
+  two layouts — main/prepass drop the ghost column (their entry
+  points never read it), the ghost pipeline drops `node.flags` (no
+  accent/hover on ghosts) — each landing at exactly 8 FS storage
+  buffers; the ghost FS also gained the C2 gradient branch it was
+  missing.  Points are constants-only, validated (even count, >= 3
+  pairs, [-1, 1] range — v3's evenMultiple/min/max rules), capped
+  at 32 points (recorded), default to v3's unit square, read back
+  as the space-joined list, and free their pool record on
+  non-polygon restyle and node removal.  WGSL lesson repeated:
+  `ref` is a reserved word (caught by the console-error guard).
+  Verification: 9 Node specs (`test/gpu-shape-polygon.mjs`: parse /
+  readback / validation / blob refs / free-on-restyle / pick
+  inside-ness incl. a pool-rewrite case), a `webgpu` spec (draw +
+  pick agree on the point list at pixel level), the `shape-polygon`
+  golden (concave arrow outline over bordered / anisotropic / small
+  nodes), and **`parity-polygon` vs v3 at 0.005%** (6 px of AA on a
+  shared concave-arrow scene — pure geometry, near pixel-exact).
+  1919 Node tests, 106 Playwright specs, typecheck + lint green.
+
 **Sequencing**: pass 12c (the round-12 plan above) runs first, then
 this round's phases in order — the 2026-07-29 triage keeps (ghost,
 overlay/underlay) lead, per the discussion that produced this plan.
@@ -2997,7 +3029,7 @@ shelf, since the expensive part now exists)
   constants-only and capped (cap recorded); node FS evaluates along
   the gradient frame, edge FS along the arc-length varying; sRGB
   interpolation per the lean above.
-- [ ] **C3 `shape-polygon-points`** (custom polygon): the
+- [x] **C3 `shape-polygon-points`** (custom polygon): the
   per-element unit point list lives in a blob (the curve-blob
   storage pattern, round-11 compaction rules), the node FS runs the
   generated sdPolygon loop over the blob range, and CPU pick runs

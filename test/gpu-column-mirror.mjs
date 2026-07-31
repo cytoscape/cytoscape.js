@@ -63,8 +63,8 @@ describe('gpu/render: ColumnMirror', function(){
   });
 
   it('creates one buffer per contract column, sized to capacity', function(){
-    // + 1: the curve param blob's buffer (12b)
-    expect( mock.buffers ).to.have.length( COLUMN_SPECS.length + 1 );
+    // + 2: the curve param blob (12b) and the custom-polygon blob (13 C3)
+    expect( mock.buffers ).to.have.length( COLUMN_SPECS.length + 2 );
 
     for( const spec of COLUMN_SPECS ){
       const buffer = mirror.buffer( spec.id );

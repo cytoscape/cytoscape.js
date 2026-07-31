@@ -42,6 +42,7 @@ export class ColumnMirror {
   /** the curve param blob's mirror (12b); same span/realloc rules */
   private blob: GPUBuffer;
   private blobCapacity: number;
+  private poly!: GPUBuffer;
 
   constructor( device: MirrorDevice, view: ModelView ){
     this.device = device;
@@ -55,6 +56,7 @@ export class ColumnMirror {
     this.tweenOwned = new Set();
     this.blobCapacity = 0;
     this.blob = this.reallocBlob();
+    this.poly = this.reallocPolyBlob();
 
     this.realloc( 'nodes' );
     this.realloc( 'edges' );
@@ -92,6 +94,11 @@ export class ColumnMirror {
   /** The curve param blob's storage buffer (12b route families). */
   blobBuffer(): GPUBuffer {
     return this.blob;
+  }
+
+  /** The custom-polygon point blob's storage buffer (round 13 C3). */
+  polyBlobBuffer(): GPUBuffer {
+    return this.poly;
   }
 
   /** Apply a StoreDelta: reallocate resized groups, upload dirty spans for the rest. */
@@ -136,6 +143,20 @@ export class ColumnMirror {
         this.uploadedBytes += byteLength;
       }
     }
+
+    if( delta.polyBlob != null ){
+      if( delta.polyBlob.resized ){
+        this.poly = this.reallocPolyBlob();
+      } else {
+        const data = this.view.polyBlob();
+        const byteStart = delta.polyBlob.start * 4;
+        const byteLength = ( delta.polyBlob.end - delta.polyBlob.start ) * 4;
+
+        this.device.queue.writeBuffer(
+          this.poly, byteStart, data.buffer, data.byteOffset + byteStart, byteLength );
+        this.uploadedBytes += byteLength;
+      }
+    }
   }
 
   destroy(): void {
@@ -147,6 +168,7 @@ export class ColumnMirror {
 
     this.buffers.clear();
     this.blob.destroy();
+    this.poly.destroy();
   }
 
   /** (Re)allocate the blob mirror at the pool's backing capacity and
@@ -166,6 +188,30 @@ export class ColumnMirror {
     }
 
     this.blobCapacity = data.length;
+    this.version++;
+
+    if( old != null ){
+      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    }
+
+    return buffer;
+  }
+
+  /** The C3 poly blob's realloc twin. */
+  private reallocPolyBlob(): GPUBuffer {
+    const data = this.view.polyBlob();
+    const old = this.poly;
+    const buffer = this.device.createBuffer( {
+      label: 'cy-gpu:poly-blob',
+      size: Math.max( data.byteLength, 4 ),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
+    } );
+
+    if( data.byteLength > 0 ){
+      this.device.queue.writeBuffer( buffer, 0, data.buffer, data.byteOffset, data.byteLength );
+      this.uploadedBytes += data.byteLength;
+    }
+
     this.version++;
 
     if( old != null ){

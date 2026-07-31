@@ -1049,15 +1049,52 @@ fn ellipseSD(p0: vec2f, ab: vec2f) -> f32 {
 }
 
 ${ POLY.fns }
+// custom polygon (C3): iq's sdPolygon over unit points from the poly
+// blob, scaled to device space (exact distance, like the generated
+// shapes); ref packs offset | count << 24
+fn customPolySD(p: vec2f, half: vec2f, polyRef: u32) -> f32 {
+  let off = polyRef & 0xffffffu;
+  let count = polyRef >> 24u;
+
+  if (count < 3u) { return 1e6; }
+
+  let v0 = vec2f(polyBlob[off], polyBlob[off + 1u]) * half;
+  var d = dot(p - v0, p - v0);
+  var sgn = 1.0;
+  var j = count - 1u;
+
+  for (var i = 0u; i < count; i = i + 1u) {
+    let vi = vec2f(polyBlob[off + i * 2u], polyBlob[off + i * 2u + 1u]) * half;
+    let vj = vec2f(polyBlob[off + j * 2u], polyBlob[off + j * 2u + 1u]) * half;
+    let e = vj - vi;
+    let w = p - vi;
+    let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+
+    d = min(d, dot(b, b));
+
+    let c1 = p.y >= vi.y;
+    let c2 = p.y < vj.y;
+    let c3 = e.x * w.y > e.y * w.x;
+
+    if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) { sgn = -sgn; }
+
+    j = i;
+  }
+
+  return sgn * sqrt(d);
+}
+
 // shape ids match contract.mts: 0 circle, 1 ellipse, 2 rectangle,
-// 3 round-rectangle, 4+ generated polygon shapes.  radius is the
+// 3 round-rectangle, 4+ generated polygon shapes, 14 custom polygon
+// (C3 — polyRef packs its blob record).  radius is the
 // round-rectangle corner radius in device px, pre-resolved (B2).
-fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32) -> f32 {
+fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32) -> f32 {
   switch shape {
     case 0u: { return circleSD(p, half.x); }
     case 1u: { return ellipseSD(p, half); }
     case 2u: { return rectangleSD(p, half); }
 ${ POLY.cases }
+    case 14u: { return customPolySD(p, half, polyRef); }
     default: { return roundRectangleSD(p, half, min(radius, min(half.x, half.y))); }
   }
 }
@@ -1105,8 +1142,10 @@ ${SDF}
 // ghost props [offsetX, offsetY, ghostOpacity, enabled] (round 13 A1);
 // bound to both stages for the ghost entry points
 @group(0) @binding(9) var<storage, read> ghosts: array<vec4f>;
-// [cornerRadius×256 | auto, borderPosition | shape<<16, outlineRgba, outlineWO] (B2/B5/C2)
+// [cornerRadius×256 | auto | C3 polyRef, borderPosition | shape<<16, outlineRgba, outlineWO]
 @group(0) @binding(10) var<storage, read> borderGeom: array<vec4u>;
+// custom-polygon unit points (round 13 C3)
+@group(0) @binding(11) var<storage, read> polyBlob: array<f32>;
 
 // C2: sRGB gradient evaluation over the packed record (v3's canvas
 // gradients interpolate in sRGB; OKLab stays the *mapper* default)
@@ -1244,7 +1283,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
-  let sd = nodeSD(shape, in.local, half, radius);
+  let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x);
   var color = unpack4x8unorm(fillColors[slot]);
 
   // background gradient (C2): overrides the flat fill inside the shape
@@ -1365,8 +1404,27 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
-  let sd = nodeSD(shape, in.local, half, radius);
+  let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x);
   var color = unpack4x8unorm(fillColors[slot]);
+
+  // the ghost body carries the gradient too (C2/C3; v3 redraws the
+  // full body)
+  let ggrec = gradients[slot];
+
+  if (!plain && (ggrec[0] & 3u) != 0u) {
+    var t: f32;
+
+    if ((ggrec[0] & 3u) == 2u) {
+      t = length(in.local) / max(half.x, half.y);
+    } else {
+      let d = gradientDir((ggrec[0] >> 2u) & 7u);
+
+      t = (dot(in.local, d) / max(dot(half, abs(d)), 1e-4) + 1.0) * 0.5;
+    }
+
+    color = gradientColorAt(ggrec, clamp(t, 0.0, 1.0));
+  }
+
   var edge = 0.0;
 
   if (!plain) {
@@ -1409,7 +1467,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
 // (the map x -> x/half expands distances by at most 1/min(half), so
 // |q| <= 1 - m/min(half) guarantees true distance >= m).  Under-covering
 // only costs occlusion, never correctness.
-fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32, radius: f32) -> bool {
+fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32, radius: f32, polyRef: u32) -> bool {
   let minAxis = min(half.x, half.y);
 
   if (minAxis <= m) { return false; }
@@ -1428,7 +1486,7 @@ fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32, radius: f32) -> bool 
       return dot(q, q) <= lim * lim;
     }
     default: { // polygons: the normalized SD × min axis under-estimates depth
-      return nodeSD(shape, p, half, radius) <= -m;
+      return nodeSD(shape, p, half, radius, polyRef) <= -m;
     }
   }
 }
@@ -1467,7 +1525,7 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
 
   let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
 
-  if (!nodeInterior(shape, in.local, half, 1.5, radius)) { // stay inside the AA fringe
+  if (!nodeInterior(shape, in.local, half, 1.5, radius, borderGeom[slot].x)) { // stay inside the AA fringe
     discard;
   }
 

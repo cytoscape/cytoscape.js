@@ -12,23 +12,28 @@ import type { ColumnId } from '../contract.mjs';
  * stays within the baseline 8-storage-buffer limit alongside the
  * @group(1) visible list.
  */
-const NODE_COLUMNS: { id: ColumnId; visibility: number }[] = [
-  { id: 'node.position', visibility: SHADER_STAGE.VERTEX },
-  { id: 'node.size', visibility: SHADER_STAGE.VERTEX },
-  { id: 'node.fillColor', visibility: SHADER_STAGE.FRAGMENT },
-  { id: 'node.borderColor', visibility: SHADER_STAGE.FRAGMENT },
-  // B2: the VS reads border width/position for the quad extent
-  { id: 'node.borderWidth', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT },
-  { id: 'node.opacity', visibility: SHADER_STAGE.FRAGMENT },
-  // C2: the gradient record took the shapes slot (the FS reads the
-  // shape id from borderGeom.y bits 16..19 instead)
-  { id: 'node.gradient', visibility: SHADER_STAGE.FRAGMENT },
-  { id: 'node.flags', visibility: SHADER_STAGE.FRAGMENT },
-  // ghost props (round 13 A1): the ghost VS offsets by .xy, the ghost FS
-  // scales alpha by .z; the main node entry points never read it
-  { id: 'node.ghost', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT },
-  // [cornerRadius | -1 auto, borderPosition] (round 13 B2)
-  { id: 'node.borderGeom', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT }
+const V = SHADER_STAGE.VERTEX;
+const F = SHADER_STAGE.FRAGMENT;
+
+/**
+ * Columns by binding number (0 is the Frame uniform; 11 is the C3
+ * custom-polygon blob).  The per-stage 8-storage-buffer budget forces
+ * two bind group layouts (round 13 C3): the main/prepass pipelines
+ * exclude the ghost column (their entry points never read it), the
+ * ghost pipeline excludes node.flags (no accent/hover on ghosts) —
+ * each lands at exactly 8 fragment-visible storage buffers.
+ */
+const NODE_COLUMNS: { id: ColumnId; visibility: number; ghostOnly?: boolean; mainOnly?: boolean }[] = [
+  { id: 'node.position', visibility: V },
+  { id: 'node.size', visibility: V },
+  { id: 'node.fillColor', visibility: F },
+  { id: 'node.borderColor', visibility: F },
+  { id: 'node.borderWidth', visibility: V | F },
+  { id: 'node.opacity', visibility: F },
+  { id: 'node.gradient', visibility: F },
+  { id: 'node.flags', visibility: F, mainOnly: true },
+  { id: 'node.ghost', visibility: V | F, ghostOnly: true },
+  { id: 'node.borderGeom', visibility: V | F }
 ];
 
 export const PREMULTIPLIED_BLEND: GPUBlendState = {
@@ -48,32 +53,51 @@ export class NodePipeline {
   private depthPipeline: GPURenderPipeline;
   private ghostPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
+  private ghostBindLayout!: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
-  private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
+  private bindGroups: Map<GPUBuffer, Map<string, { group: GPUBindGroup; version: number }>>;
 
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:node-shader', code: NODE_SHADER } );
 
     this.quadIndex = createQuadIndexBuffer( device );
 
-    this.bindLayout = device.createBindGroupLayout( {
-      label: 'cy-gpu:node-bind-layout',
-      entries: [
-        {
-          binding: 0,
-          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
-          buffer: { type: 'uniform' }
-        },
-        ...NODE_COLUMNS.map( ( column, i ) => ( {
-          binding: i + 1,
-          visibility: column.visibility,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
-        } ) )
-      ]
-    } );
+    // two layouts under the per-stage budget (C3): main/prepass skip
+    // the ghost column, the ghost pipeline skips node.flags; both bind
+    // the poly blob at NODE_COLUMNS.length + 1
+    const makeLayout = ( label: string, ghost: boolean ): GPUBindGroupLayout =>
+      device.createBindGroupLayout( {
+        label,
+        entries: [
+          {
+            binding: 0,
+            visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+            buffer: { type: 'uniform' }
+          },
+          ...NODE_COLUMNS
+            .map( ( column, i ) => ( { column, binding: i + 1 } ) )
+            .filter( e => ghost ? !e.column.mainOnly : !e.column.ghostOnly )
+            .map( e => ( {
+              binding: e.binding,
+              visibility: e.column.visibility,
+              buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+            } ) ),
+          { // the C3 custom-polygon point blob
+            binding: NODE_COLUMNS.length + 1,
+            visibility: SHADER_STAGE.FRAGMENT,
+            buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+          }
+        ]
+      } );
+
+    this.bindLayout = makeLayout( 'cy-gpu:node-bind-layout', false );
+    this.ghostBindLayout = makeLayout( 'cy-gpu:node-ghost-bind-layout', true );
 
     const layout = device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } );
+    const ghostLayout = device.createPipelineLayout( {
+      bindGroupLayouts: [ this.ghostBindLayout, visibleLayout ]
+    } );
 
     this.pipeline = device.createRenderPipeline( {
       label: 'cy-gpu:node-pipeline',
@@ -102,7 +126,7 @@ export class NodePipeline {
     // exactly v3's node-over-ghost layering.
     this.ghostPipeline = device.createRenderPipeline( {
       label: 'cy-gpu:node-ghost-pipeline',
-      layout,
+      layout: ghostLayout,
       vertex: { module, entryPoint: 'vsGhost' },
       fragment: { module, entryPoint: 'fsGhost', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
       primitive: { topology: 'triangle-list' },
@@ -113,8 +137,18 @@ export class NodePipeline {
   }
 
   /** Lazily (re)build the bind group when the mirror reallocated buffers. */
-  private ensureBindGroup( device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror ): GPUBindGroup {
-    const cached = this.bindGroups.get( uniform );
+  private ensureBindGroup(
+    device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror, ghost: boolean = false
+  ): GPUBindGroup {
+    const key = ghost ? 'ghost' : 'main';
+    let perUniform = this.bindGroups.get( uniform );
+
+    if( perUniform == null ){
+      perUniform = new Map();
+      this.bindGroups.set( uniform, perUniform );
+    }
+
+    const cached = perUniform.get( key );
 
     if( cached != null && cached.version === mirror.version ){
       return cached.group;
@@ -122,17 +156,21 @@ export class NodePipeline {
 
     const group = device.createBindGroup( {
       label: 'cy-gpu:node-bind-group',
-      layout: this.bindLayout,
+      layout: ghost ? this.ghostBindLayout : this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        ...NODE_COLUMNS.map( ( column, i ) => ( {
-          binding: i + 1,
-          resource: { buffer: mirror.buffer( column.id ) }
-        } ) )
+        ...NODE_COLUMNS
+          .map( ( column, i ) => ( { column, binding: i + 1 } ) )
+          .filter( e => ghost ? !e.column.mainOnly : !e.column.ghostOnly )
+          .map( e => ( {
+            binding: e.binding,
+            resource: { buffer: mirror.buffer( e.column.id ) }
+          } ) ),
+        { binding: NODE_COLUMNS.length + 1, resource: { buffer: mirror.polyBlobBuffer() } }
       ]
     } );
 
-    this.bindGroups.set( uniform, { group, version: mirror.version } );
+    perUniform.set( key, { group, version: mirror.version } );
 
     return group;
   }
@@ -158,7 +196,7 @@ export class NodePipeline {
     if( instances === 0 ){ return; }
 
     pass.setPipeline( this.ghostPipeline );
-    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
+    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror, true ) );
     pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );
     pass.drawIndexedIndirect( cull.indirect, 0 );

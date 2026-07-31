@@ -5,7 +5,7 @@ import {
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
   SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID,
-  SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
+  SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
 import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
@@ -106,6 +106,9 @@ interface NodeComputed {
   outlineOpacity: number;
   outlineWidth: number;
   outlineOffset: number;
+  /** shape-polygon-points (C3): flat unit [x, y, ...] pairs for the
+   * 'polygon' shape (v3's normalized [-1, 1] space) */
+  shapePolygonPoints: number[];
   /** background-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
   backgroundFill: number;
   /** background gradient stops (C2; constants-only, capped at 5) */
@@ -265,6 +268,7 @@ const NODE_DEFAULTS: NodeComputed = {
   outlineOpacity: 1,
   outlineWidth: 0,
   outlineOffset: 0,
+  shapePolygonPoints: [ -1, -1, 1, -1, 1, 1, -1, 1 ], // unit square, as v3
   backgroundFill: 0, // solid, as v3
   backgroundGradientStopColors: [],
   backgroundGradientStopPositions: null,
@@ -387,7 +391,8 @@ const SHAPES: Record<string, number> = {
   'rhomboid': SHAPE_RHOMBOID,
   'vee': SHAPE_VEE,
   'star': SHAPE_STAR,
-  'tag': SHAPE_TAG
+  'tag': SHAPE_TAG,
+  'polygon': SHAPE_POLYGON_CUSTOM
 };
 
 /** RGBA bytes packed little-endian, matching WGSL unpack4x8unorm. */
@@ -420,13 +425,14 @@ const SHAPE_NAMES: Record<number, string> = {
   [ SHAPE_RHOMBOID ]: 'rhomboid',
   [ SHAPE_VEE ]: 'vee',
   [ SHAPE_STAR ]: 'star',
-  [ SHAPE_TAG ]: 'tag'
+  [ SHAPE_TAG ]: 'tag',
+  [ SHAPE_POLYGON_CUSTOM ]: 'polygon'
 };
 
 /** Readable props per group ('width' and 'opacity' exist for both). */
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
-  'shape', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
+  'shape', 'shape-polygon-points', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
   'corner-radius', 'border-position',
   'background-fill', 'background-gradient-stop-colors',
   'background-gradient-stop-positions', 'background-gradient-direction',
@@ -944,6 +950,27 @@ const parseNumberList = ( prop: string, value: unknown ): number[] => {
   return parts.map( part => parseNumber( prop, part ) );
 };
 
+/**
+ * shape-polygon-points (C3): flat unit pairs in [-1, 1], v3's
+ * evenMultiple rule plus a >= 3 point floor (the SDF needs a real
+ * polygon); capped at 32 points, a recorded cap.
+ */
+const parsePolygonPoints = ( prop: string, value: unknown ): number[] => {
+  const list = parseNumberList( prop, value );
+
+  if( list.length % 2 !== 0 || list.length < 6 ){
+    throw new Error( `The ${prop} list must hold an even number of values (at least 3 x/y pairs)` );
+  }
+
+  for( const v of list ){
+    if( v < -1 || v > 1 ){
+      throw new Error( `The ${prop} value ${v} is outside [-1, 1]` );
+    }
+  }
+
+  return list.length > 64 ? list.slice( 0, 64 ) : list;
+};
+
 const RADIUS_TYPES: Record<string, number> = {
   'arc-radius': 1,
   'influence-radius': 0
@@ -1204,6 +1231,9 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'shape':
       computed.shape = parseShape( value );
+      break;
+    case 'shape-polygon-points':
+      computed.shapePolygonPoints = parsePolygonPoints( prop, value );
       break;
     case 'text-outline-width':
       computed.textOutlineWidth = parseNumber( prop, value );
@@ -2647,6 +2677,13 @@ export class StyleEngine {
       }
       case 'height': return pair( 'node.size', 1 );
       case 'shape': return SHAPE_NAMES[ scalar( 'node.shape' ) ];
+      case 'shape-polygon-points': {
+        const points = store.polygonPointsAt( slot );
+
+        return points != null
+          ? Array.from( points ).join( ' ' )
+          : this.defs.nodes.computed.shapePolygonPoints.join( ' ' );
+      }
       case 'label': return store.labelAt( slot, ref.group )?.text ?? '';
       case 'font-size': return this.labelChannels( ref ).fontSize;
       case 'font-family': return store.labelFont;
@@ -2976,7 +3013,8 @@ export class StyleEngine {
         throw new Error( `'${norm}' is an edge style property` );
       }
 
-      if( ( GHOST_PROPS.has( norm ) || LAYER_SHAPE_PROPS.has( norm ) ) && group === 'edges' ){
+      if( ( GHOST_PROPS.has( norm ) || LAYER_SHAPE_PROPS.has( norm )
+          || norm === 'shape-polygon-points' ) && group === 'edges' ){
         throw new Error( `'${norm}' is a node style property` );
       }
 
@@ -3044,13 +3082,18 @@ export class StyleEngine {
       store.setGhost(
         slot, computed.ghostOffsetX, computed.ghostOffsetY,
         computed.ghostOpacity, computed.ghost );
+      // C3: custom polygons park their unit points in the poly blob; a
+      // non-polygon write frees any stale record the slot held
+      const polyRef = store.setPolygonPoints(
+        slot, shape === SHAPE_POLYGON_CUSTOM ? computed.shapePolygonPoints : null );
+
       store.setBorderGeom(
         slot, computed.cornerRadius, computed.borderPosition,
         computed.outlineWidth > 0
           ? packRgba( foldA( computed.outlineColor, computed.outlineOpacity ) )
           : 0,
         computed.outlineWidth, computed.outlineOffset,
-        shape ); // C2: the FS reads the shape from borderGeom
+        shape, polyRef ); // C2: the FS reads the shape from borderGeom
 
       // background gradient (C2): stops fold the background-opacity like
       // the flat fill; unset positions spread evenly (v3/canvas rule)

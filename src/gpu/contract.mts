@@ -60,6 +60,10 @@ export const SHAPE_RHOMBOID = 10;
 export const SHAPE_VEE = 11;
 export const SHAPE_STAR = 12;
 export const SHAPE_TAG = 13;
+/** custom polygon (round 13 C3): unit points in the node poly blob;
+ * the record ref (offset | count << 24) rides borderGeom[0] — the
+ * corner-radius word is meaningless for polygons. */
+export const SHAPE_POLYGON_CUSTOM = 14;
 
 // -- edge curve kinds (rounds 12a/12b; stored in edge.curveParams[3]) --
 
@@ -374,6 +378,8 @@ export interface StoreDelta {
    * compaction) ride edge.curveParams spans as usual.
    */
   curveBlob?: { resized: boolean; start: number; end: number };
+  /** Node polygon-point blob dirt (round 13 C3) — same rules. */
+  polyBlob?: { resized: boolean; start: number; end: number };
 }
 
 // -- labels --
@@ -440,6 +446,10 @@ export interface ModelView {
    * renderer mirrors [0, curveBlobLength()) into a storage buffer. */
   curveBlob(): Float32Array;
   curveBlobLength(): number;
+  /** The C3 custom-polygon unit-point blob (x,y pairs; refs ride
+   * borderGeom[0] as offset | count << 24). */
+  polyBlob(): Float32Array;
+  polyBlobLength(): number;
   /** The node's label, or undefined when it has none. */
   labelAt( slot: number, group?: GroupName ): LabelEntry | undefined;
   /** Slots whose labels changed since the last call; returns-and-clears (default: nodes). */

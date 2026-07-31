@@ -211,6 +211,18 @@ fill/direction enums take mappers.  The depth prepass skips
 gradient fills conservatively, and plain-LOD far-zoom discs show
 the flat base color (both recorded).
 
+Custom polygons (round 13 C3): `shape: 'polygon'` with
+`shape-polygon-points` — flat unit pairs in v3's [-1, 1] space —
+stored per element in a second curve-blob pool whose packed
+offset|count ref rides the `borderGeom` radius word (meaningless
+for polygons).  The node FS runs an exact sdPolygon loop over the
+blob range (crisp AA and borders under anisotropy, like the
+generated shapes) and CPU pick runs point-in-polygon over the same
+record — dual consumers, agreeing by construction.  Points are
+constants-only (one list per sheet), validated (even count, >= 3
+pairs, values in [-1, 1]) and capped at 32 points (recorded); unit
+points keep the bb term at the node box.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;
@@ -1155,8 +1167,10 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   point-in-polygon in normalized space.  Not ported: `round-*` polygon
   variants (corner-rounding an anisotropically scaled polygon has no
   clean closed form), `cut-rectangle`, `barrel`,
-  `bottom-round-rectangle`, `concave-hexagon`, `right-rhomboid`, and
-  the custom `polygon` (needs per-element point data).  Arrow tips on
+  `bottom-round-rectangle`, `concave-hexagon`, and `right-rhomboid`.
+  The custom `polygon` landed in round 13 C3 with per-element points
+  in a blob pool (`shape-polygon-points`, constants-only).  Arrow
+  tips on
   polygon nodes sit on the inscribed *ellipse* boundary
   (approximation); the depth prepass treats polygon interiors exactly
   via their SDF.

@@ -2744,4 +2744,55 @@ test.describe( 'WebGPU renderer', () => {
     expect( cPx[ 1 ] ).toBeLessThan( 120 );
   } );
 
+  test( 'custom polygons draw and pick by their point list (C3)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: {
+          'width': 100, 'height': 100, 'background-color': '#e74c3c',
+          'shape': 'polygon',
+          'shape-polygon-points': [ -1, -1, 1, -1, 0, 1 ] // downward triangle
+        }
+      },
+      zoom: 1
+    } );
+
+    const c = await centerPan( page );
+    await waitFrames( page );
+
+    // inside the triangle: the center and the wide top edge are red...
+    const centerPx = await pixelAt( page, c.x, c.y );
+    const topRightPx = await pixelAt( page, c.x + 40, c.y - 40 );
+
+    for( const px of [ centerPx, topRightPx ] ){
+      expect( px[ 0 ] ).toBeGreaterThan( 180 );
+      expect( px[ 1 ] ).toBeLessThan( 140 );
+    }
+
+    // ...the box corner beside the bottom apex is background, not node
+    const bottomRightPx = await pixelAt( page, c.x + 40, c.y + 40 );
+
+    expect( bottomRightPx[ 0 ] ).toBeGreaterThan( 230 );
+    expect( bottomRightPx[ 1 ] ).toBeGreaterThan( 230 );
+
+    // picking agrees with the drawn coverage (the same blob record)
+    const picks = await page.evaluate( async c => {
+      const at = async ( x, y ) => {
+        const hit = await window.cy.pick( x, y );
+
+        return hit == null ? null : hit.id();
+      };
+
+      return {
+        inside: await at( c.x + 40, c.y - 40 ),
+        outside: await at( c.x + 40, c.y + 40 )
+      };
+    }, c );
+
+    expect( picks.inside ).toBe( 'n' );
+    expect( picks.outside ).toBe( null );
+  } );
+
 } );

@@ -1249,6 +1249,43 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'gradients', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: custom polygons — convex, concave, bordered, anisotropic (round 13 C3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // shape-polygon-points is constants-only (one list per sheet), so
+    // the golden exercises one concave outline (a right-pointing arrow,
+    // covering the SDF sign loop) across varied node geometry:
+    // bordered, anisotropic, and small
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -110, y: -50 } },
+        { data: { id: 'b', wide: 1 }, position: { x: 40, y: -50 } },
+        { data: { id: 'c', bordered: 1 }, position: { x: -60, y: 70 } },
+        { data: { id: 'd', small: 1 }, position: { x: 70, y: 70 } }
+      ],
+      style: {
+        nodes: {
+          'shape': 'polygon',
+          // a right-pointing arrow: concave at the tail (sign-loop coverage)
+          'shape-polygon-points': [ -1, -0.5, 0.2, -0.5, 0.2, -1, 1, 0, 0.2, 1, 0.2, 0.5, -1, 0.5, -0.6, 0 ],
+          'width': { case: [
+            { when: { data: 'wide', eq: 1 }, then: 110 },
+            { when: { data: 'small', eq: 1 }, then: 36 }
+          ], else: 70 },
+          'height': { case: [ { when: { data: 'small', eq: 1 }, then: 30 } ], else: 60 },
+          'background-color': '#27ae60',
+          'border-width': { case: [ { when: { data: 'bordered', eq: 1 }, then: 5 } ], else: 0 },
+          'border-color': '#2c3e50'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'shape-polygon', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -2034,6 +2071,38 @@ test.describe( 'v3-vs-v4 render parity', () => {
       || e.data.id === 'a' || e.data.id === 'b' || e.data.id === 'c' || e.data.id === 'd' );
 
     await runParity( page, testInfo, 'parity-gradients', trimmed, v3Trim, v4Style, { minInk: 2000 } );
+  } );
+
+  test( 'parity: custom polygon shapes (round 13 C3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // one shared point list (constants-only on the v4 side) over varied
+    // node geometry; pure geometry, so the two renderers should agree
+    // to the pixel
+    const points = '-1 -0.5 0.2 -0.5 0.2 -1 1 0 0.2 1 0.2 0.5 -1 0.5 -0.6 0';
+    const elements = [
+      { data: { id: 'a' }, position: { x: -100, y: -50 } },
+      { data: { id: 'b', wide: 1 }, position: { x: 60, y: -50 } },
+      { data: { id: 'c', bordered: 1 }, position: { x: -20, y: 80 } }
+    ];
+    const shared = {
+      'shape': 'polygon', 'shape-polygon-points': points,
+      'background-color': '#27ae60', 'border-color': '#2c3e50'
+    };
+    const v3Style = [
+      { selector: 'node', style: Object.assign( { 'width': 70, 'height': 60 }, shared ) },
+      { selector: 'node[wide = 1]', style: { 'width': 110 } },
+      { selector: 'node[bordered = 1]', style: { 'border-width': 5 } }
+    ];
+    const v4Style = {
+      nodes: Object.assign( {
+        'width': { case: [ { when: { data: 'wide', eq: 1 }, then: 110 } ], else: 70 },
+        'height': 60,
+        'border-width': { case: [ { when: { data: 'bordered', eq: 1 }, then: 5 } ], else: 0 }
+      }, shared )
+    };
+
+    await runParity( page, testInfo, 'parity-polygon', elements, v3Style, v4Style, { minInk: 1500 } );
   } );
 
 } );

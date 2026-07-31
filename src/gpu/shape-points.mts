@@ -74,7 +74,7 @@ export const ARROW_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
  * are simple (non-self-intersecting) polygons, so even-odd agrees with
  * nonzero winding — and with the WGSL SDF's sign.
  */
-export const insideUnitPolygon = ( points: readonly number[], x: number, y: number ): boolean => {
+export const insideUnitPolygon = ( points: ArrayLike<number>, x: number, y: number ): boolean => {
   const n = points.length / 2;
   let inside = false;
 

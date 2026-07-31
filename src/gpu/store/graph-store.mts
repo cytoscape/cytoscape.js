@@ -83,6 +83,8 @@ export class GraphStore implements ModelView {
 
   /** the 12b variable-length curve param pool (see store/curve-blob.mts) */
   private blob: CurveBlob;
+  /** the C3 custom-polygon unit-point pool */
+  private polyPool!: CurveBlob;
 
   // exact-curve-bb memo (see curveBBAt): any geometry write bumps the
   // epoch, invalidating every cached edge box at once — sound and cheap
@@ -142,6 +144,16 @@ export class GraphStore implements ModelView {
       params[ slot * 4 ] = offset;
       this.dirty.mark( 'edge.curveParams', slot );
     } );
+
+    // C3: the custom-polygon point pool (same slot-stable policy); a
+    // relocation rewrites the borderGeom[0] ref in place
+    this.polyPool = new CurveBlob( ( slot, offset ) => {
+      const geom = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
+      const count = geom[ slot * 4 ] >>> 24;
+
+      geom[ slot * 4 ] = ( offset | ( count << 24 ) ) >>> 0;
+      this.dirty.mark( 'node.borderGeom', slot );
+    } );
   }
 
   table( group: GroupName ): ColumnTable {
@@ -175,6 +187,10 @@ export class GraphStore implements ModelView {
 
     if( blobDirty != null ){ delta.curveBlob = blobDirty; }
 
+    const polyDirty = this.polyPool.takeDirty();
+
+    if( polyDirty != null ){ delta.polyBlob = polyDirty; }
+
     return delta;
   }
 
@@ -184,6 +200,52 @@ export class GraphStore implements ModelView {
 
   curveBlobLength(): number {
     return this.blob.length();
+  }
+
+  polyBlob(): Float32Array {
+    return this.polyPool.data();
+  }
+
+  polyBlobLength(): number {
+    return this.polyPool.length();
+  }
+
+  /**
+   * Store a node's custom polygon points (round 13 C3): flat unit
+   * [x, y, ...] pairs, or null to clear.  Returns the packed record
+   * ref (offset | pointCount << 24) for borderGeom[0].
+   */
+  setPolygonPoints( slot: number, points: number[] | null ): number {
+    if( points == null || points.length === 0 ){
+      this.polyPool.free( slot );
+
+      return 0;
+    }
+
+    const offset = this.polyPool.write( slot, points );
+
+    this.geoEpoch++;
+    this.dirty.touch();
+
+    return ( offset | ( ( points.length / 2 ) << 24 ) ) >>> 0;
+  }
+
+  /** A node's custom polygon points (unit pairs), or null. */
+  polygonPointsAt( slot: number ): Float64Array | null {
+    const geom = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
+    const shape = ( geom[ slot * 4 + 1 ] >>> 16 ) & 0xf;
+
+    if( shape !== 14 ){ return null; }
+
+    const ref = geom[ slot * 4 ];
+    const off = ref & 0xffffff;
+    const count = ref >>> 24;
+    const pool = this.polyPool.data();
+    const out = new Float64Array( count * 2 );
+
+    for( let i = 0; i < count * 2; i++ ){ out[ i ] = pool[ off + i ]; }
+
+    return out;
   }
 
   onInvalidate( cb: () => void ): () => void {
@@ -471,6 +533,7 @@ export class GraphStore implements ModelView {
     }
 
     this.adj.clearNode( slot );
+    this.polyPool.free( slot );
     this.freeSlot( 'nodes', slot );
   }
 
@@ -872,11 +935,16 @@ export class GraphStore implements ModelView {
   setBorderGeom(
     slot: number, cornerRadius: number, borderPos: number,
     outlineRgba: number, outlineWidth: number, outlineOffset: number,
-    shapeId: number = 0
+    shapeId: number = 0, polyRef: number = 0
   ): void {
     const arr = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
     const at = slot * 4;
-    const rad = cornerRadius < 0 ? 0xffffffff : Math.max( 0, Math.round( cornerRadius * 256 ) );
+    // C3: custom polygons carry their point-record ref (from
+    // setPolygonPoints) in the radius word — the corner radius is
+    // meaningless for polygons
+    const rad = shapeId === 14
+      ? polyRef >>> 0
+      : cornerRadius < 0 ? 0xffffffff : Math.max( 0, Math.round( cornerRadius * 256 ) );
     // C2: the node FS reads the shape from bits 16..19 (its shapes
     // binding went to the gradient column)
     const posShape = ( borderPos | ( shapeId << 16 ) ) >>> 0;

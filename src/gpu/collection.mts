@@ -1346,10 +1346,15 @@ export class GpuCollection {
         // curved edges use the exact lazy bound (memoized flattened
         // polyline); straight edges span their endpoint centers
         const curveBB = store.curveBBAt( ref.slot );
+        const hay = curveBB == null ? store.haystackPointsAt( ref.slot ) : null;
 
         if( curveBB != null ){
           expandPoint( curveBB.x1, curveBB.y1 );
           expandPoint( curveBB.x2, curveBB.y2 );
+        } else if( hay != null ){
+          // haystack edges (12c) span their offset points (v3's allpts)
+          expandPoint( hay.sx, hay.sy );
+          expandPoint( hay.tx, hay.ty );
         } else {
           expandPoint( store.getX( endpoints[ ref.slot * 2 ] ), store.getY( endpoints[ ref.slot * 2 ] ) );
           expandPoint( store.getX( endpoints[ ref.slot * 2 + 1 ] ), store.getY( endpoints[ ref.slot * 2 + 1 ] ) );
@@ -1423,6 +1428,13 @@ export class GpuCollection {
       return { x: m.x, y: m.y };
     }
 
+    // haystack edges (12c): the offset-point average, v3's rs.mid
+    const hay = this._store.haystackPointsAt( ref.slot );
+
+    if( hay != null ){
+      return { x: ( hay.sx + hay.tx ) / 2, y: ( hay.sy + hay.ty ) / 2 };
+    }
+
     const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
     const s = endpoints[ ref.slot * 2 ];
     const t = endpoints[ ref.slot * 2 + 1 ];
@@ -1484,7 +1496,9 @@ export class GpuCollection {
 
     const route = this._store.curveRouteAt( ref.slot );
 
-    if( route == null || route.kind !== CURVE_MULTI ){ return undefined; }
+    // a straight-styled edge with manual endpoints derives as the
+    // MULTI n = 0 chord (12c) — it has no control points
+    if( route == null || route.kind !== CURVE_MULTI || route.n === 0 ){ return undefined; }
 
     return this._routeInteriorPoints( route );
   }
@@ -1549,6 +1563,13 @@ export class GpuCollection {
       const i = which === 0 ? 0 : route.n + 1;
 
       return { x: route.qx[ i ], y: route.qy[ i ] };
+    }
+
+    // haystack edges (12c): the offset points — v3's haystackPts
+    const hay = this._store.haystackPointsAt( ref.slot );
+
+    if( hay != null ){
+      return which === 0 ? { x: hay.sx, y: hay.sy } : { x: hay.tx, y: hay.ty };
     }
 
     const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;

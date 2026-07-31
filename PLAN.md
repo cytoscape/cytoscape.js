@@ -2412,6 +2412,20 @@ lands it.
   (`test/gpu-curve-12c-derivation.mjs`); two 12b-era specs updated to
   the new surface (haystack/edge-distances no longer throw).  1831
   Node tests, typecheck + lint green.
+- [x] **Accessors + exact bb** (2026-07-30).  Haystack edges answer
+  `sourceEndpoint()`/`targetEndpoint()` with their offset points
+  (v3's haystackPts), `midpoint()` with the offset-point average
+  (v3's rs.mid), and `boundingBox()` with the exact offset-point
+  span; endpoint-flagged route kinds flow through `curveRouteAt`
+  automatically, so manual-endpoint edges answer every accessor —
+  resolved endpoints, chord midpoints, the promoted bundled bezier's
+  control point, distance shortens on taxi — off the shared route
+  evaluator, and the exact lazy bb covers manual endpoints outside
+  the chord with the usual epoch-memoized invalidation.
+  `controlPoints()` returns undefined for the straight-with-endpoints
+  chord (MULTI n = 0 — no controls, matching v3's straight surface).
+  11 Node specs (`test/gpu-curve-12c-accessors.mjs`); 1842 Node
+  tests, typecheck + lint green.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

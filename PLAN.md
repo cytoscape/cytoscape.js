@@ -2780,6 +2780,28 @@ grows per item.
   (`test/gpu-label-box.mjs`).  1895 Node tests, 97 Playwright
   specs, typecheck + lint green.
 
+- [x] **B7 arrow scalars** (2026-07-31).  `arrow-scale` (edge-wide,
+  positive; quantized ×16 into the shapes word's top byte — quantized
+  readback, recorded), `source/target-arrow-fill`
+  (filled | hollow — flags at bits 16/17) and
+  `source/target-arrow-width` (px | 'match-line' | %, resolved
+  against the edge width at style-write into a new
+  `edge.arrowWidths` column).  Both arrow shaders restructured:
+  exact sizing moved to the **fragment stage** — the quad covers the
+  frame's monotone `arrowScaleMax` (a Frame pad slot) and the FS
+  renders the exact per-edge scale within it, which is what lets the
+  curved arrow VS (whose 8 storage-buffer slots were all taken) stay
+  untouched; hollow fills render as an `|sd|` ring at the per-end
+  stroke width.  Scale/fill are mapper-capable; widths are constants
+  (keyword/% forms).  **No pixel parity vs v3 by design**: v4 keeps
+  its own linear arrow sizing (round-10 B4's recorded decision; v3
+  uses max((13.37 w)^0.9, 29) with a 29-unit floor), so arrow sizes
+  never coincide — the visual pins are the `arrow-scalars` golden
+  (scale 2, hollow ends, thick hollow strokes) and a `webgpu`
+  hollow-ring pixel spec.  6 Node specs
+  (`test/gpu-arrow-scalars.mjs`).  1901 Node tests, 99 Playwright
+  specs, typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2892,9 +2914,10 @@ autonomously):
   text-background quad), `text-background-shape` (rectangle |
   round-rectangle on the quad's SDF).  Landed 2026-07-31 — see the
   round-13 record.
-- [ ] **B7 Arrow scalars**: `arrow-scale`, `arrow-width`,
+- [x] **B7 Arrow scalars**: `arrow-scale`, `arrow-width`,
   `arrow-fill: hollow` (an FS ring test on the existing arrow SDFs).
-  Compound arrow shapes stay out (recorded in round 10 B4).
+  Compound arrow shapes stay out (recorded in round 10 B4).  Landed
+  2026-07-31 — see the round-13 record.
 
 **Phase C — re-triaged: 12a/12b built the machinery** (these sat in
 needs-a-call batches; this plan's sign-off pulls them onto the

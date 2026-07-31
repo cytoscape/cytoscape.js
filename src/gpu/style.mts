@@ -164,6 +164,15 @@ interface EdgeComputed {
   sourceArrowColor: RGBA;
   targetArrowShape: ArrowShape;
   targetArrowColor: RGBA;
+  /** arrow-scale (B7): scales every arrowhead on the edge */
+  arrowScale: number;
+  /** arrow-fill per end (B7): 0 filled, 1 hollow */
+  sourceArrowFill: number;
+  targetArrowFill: number;
+  /** hollow stroke widths per end, model px ('match-line' and % resolve
+   * at write against the edge width) */
+  sourceArrowWidth: number | 'match-line' | { percent: number };
+  targetArrowWidth: number | 'match-line' | { percent: number };
   // edge labels (round 10): anchored at the edge midpoint on-GPU
   label: string;
   labelKey: string | null;
@@ -283,6 +292,11 @@ const EDGE_DEFAULTS: EdgeComputed = {
   lineStyle: LINE_SOLID,
   sourceArrowShape: 'none',
   sourceArrowColor: [ 153, 153, 153, 255 ], // #999, as v3
+  arrowScale: 1,
+  sourceArrowFill: 0, // filled, as v3
+  targetArrowFill: 0,
+  sourceArrowWidth: 1, // v3's default arrow-width
+  targetArrowWidth: 1,
   targetArrowShape: 'none',
   targetArrowColor: [ 153, 153, 153, 255 ],
   label: '',
@@ -404,6 +418,8 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-color', 'line-style', 'width', 'opacity', 'line-opacity', 'text-opacity',
   'line-cap', 'line-dash-pattern', 'line-dash-offset',
   'line-outline-width', 'line-outline-color',
+  'arrow-scale', 'source-arrow-fill', 'target-arrow-fill',
+  'source-arrow-width', 'target-arrow-width',
   'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color',
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
@@ -591,6 +607,37 @@ const parseTextBgShape = ( value: unknown ): number => {
   }
 
   return id;
+};
+
+const ARROW_FILLS: Record<string, number> = { 'filled': 0, 'hollow': 1 };
+const ARROW_FILL_NAMES: Record<number, string> = { 0: 'filled', 1: 'hollow' };
+
+const parseArrowFill = ( value: unknown ): number => {
+  const id = ARROW_FILLS[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The arrow-fill '${String( value )}' is unsupported in the GPU prototype; use filled or hollow`
+    );
+  }
+
+  return id;
+};
+
+const ARROW_WIDTH_PERCENT = /^(-?(?:\d+\.?\d*|\.\d+))%$/;
+
+/** v3's arrowWidth: a px number, 'match-line', or a percent of the
+ * edge width — resolved against the width at style-write. */
+const parseArrowWidth = (
+  prop: string, value: unknown
+): number | 'match-line' | { percent: number } => {
+  if( String( value ).trim() === 'match-line' ){ return 'match-line'; }
+
+  const pct = ARROW_WIDTH_PERCENT.exec( String( value ).trim() );
+
+  if( pct != null ){ return { percent: parseFloat( pct[ 1 ] ) / 100 }; }
+
+  return parseNonNegative( prop, value );
 };
 
 const LINE_CAPS: Record<string, number> = { 'butt': 0, 'round': 1, 'square': 2 };
@@ -1237,6 +1284,26 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'source-arrow-color':
       computed.sourceArrowColor = parseColor( prop, value );
       break;
+    case 'arrow-scale': {
+      const scale = parseNumber( prop, value );
+
+      if( scale <= 0 ){ throw new Error( `The arrow-scale '${String( value )}' must be positive` ); }
+
+      computed.arrowScale = scale;
+      break;
+    }
+    case 'source-arrow-fill':
+      computed.sourceArrowFill = parseArrowFill( value );
+      break;
+    case 'target-arrow-fill':
+      computed.targetArrowFill = parseArrowFill( value );
+      break;
+    case 'source-arrow-width':
+      computed.sourceArrowWidth = parseArrowWidth( prop, value );
+      break;
+    case 'target-arrow-width':
+      computed.targetArrowWidth = parseArrowWidth( prop, value );
+      break;
     case 'target-arrow-color':
       computed.targetArrowColor = parseColor( prop, value );
       break;
@@ -1588,6 +1655,24 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textBorderOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => NODE_DEFAULTS.textBorderOpacity
+  },
+  // B7 arrow scalars (arrow widths are constants: keyword/% forms)
+  'arrow-scale': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.arrowScale = Math.max( 0.0625, v as number ); },
+    default: () => EDGE_DEFAULTS.arrowScale
+  },
+  'source-arrow-fill': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => ARROW_FILLS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.sourceArrowFill = v as number; },
+    default: () => EDGE_DEFAULTS.sourceArrowFill
+  },
+  'target-arrow-fill': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => ARROW_FILLS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.targetArrowFill = v as number; },
+    default: () => EDGE_DEFAULTS.targetArrowFill
   },
   // B4 line-outline casing
   'line-outline-width': {
@@ -2439,6 +2524,22 @@ export class StyleEngine {
           ? `${arr[ 0 ]} ${arr[ 1 ]}`
           : `${arr[ 0 ]} ${arr[ 1 ]} ${arr[ 2 ]} ${arr[ 3 ]}`;
       }
+      case 'arrow-scale': {
+        const q = ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> 24;
+
+        return q === 0 ? 1 : q / 16; // quantized ×16 (recorded)
+      }
+      case 'source-arrow-fill':
+      case 'target-arrow-fill': {
+        const bit = prop.startsWith( 'source' ) ? 16 : 17;
+
+        return ARROW_FILL_NAMES[
+          ( ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> bit ) & 1 ];
+      }
+      case 'source-arrow-width':
+        return ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 ];
+      case 'target-arrow-width':
+        return ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 + 1 ];
       case 'source-arrow-color': return color( 'edge.sourceArrow' );
       case 'target-arrow-color': return color( 'edge.targetArrow' );
 
@@ -2729,8 +2830,24 @@ export class StyleEngine {
 
       store.setColor( 'edge.sourceArrow', slot, ...arrow( computed.sourceArrowShape, computed.sourceArrowColor ) );
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
+      // B7: hollow flags at bits 16/17 and arrow-scale ×16 in the top
+      // byte (quantized readback — recorded); stroke widths resolve
+      // 'match-line'/% against the edge width here
+      const scaleQ = Math.max( 1, Math.min( 255, Math.round( computed.arrowScale * 16 ) ) );
+
+      store.noteArrowScale( computed.arrowScale );
       store.setScalar( 'edge.arrowShapes', slot,
-        ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) );
+        ( ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) |
+          ( computed.sourceArrowFill << 16 ) | ( computed.targetArrowFill << 17 ) |
+          ( scaleQ << 24 ) ) >>> 0 );
+
+      const resolveAw = ( aw: number | 'match-line' | { percent: number } ): number =>
+        aw === 'match-line' ? computed.width
+          : typeof aw === 'number' ? aw
+            : aw.percent * computed.width;
+
+      store.setPair( 'edge.arrowWidths', slot,
+        resolveAw( computed.sourceArrowWidth ), resolveAw( computed.targetArrowWidth ) );
       // overlay/underlay strokes (A2): stroke width = edge width + 2·padding,
       // derived here so the layer shaders need no width binding
       const layerRgbaE = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>

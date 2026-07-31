@@ -2664,4 +2664,41 @@ test.describe( 'WebGPU renderer', () => {
     expect( hidden ).toBe( 'none' );
   } );
 
+  test( 'arrow scalars: hollow rings and scaled heads (B7)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#ecf0f1' },
+        edges: {
+          'width': 8, 'line-color': '#bdc3c7',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#c0392b',
+          'target-arrow-fill': 'hollow', 'target-arrow-width': 2, 'arrow-scale': 2
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the hollow arrow near the target: its outline is red but the
+    // interior shows the line/background through (not solid red).
+    // Arrow length ≈ (8·3+2)·2 = 52 px back from the boundary at x=138.
+    const outlineProbe = await pixelAt( page, center.x + 137, center.y ); // near the tip
+    const interiorProbe = await pixelAt( page, center.x + 110, center.y ); // mid-arrow
+
+    expect( outlineProbe[ 0 ] ).toBeGreaterThan( 140 );
+    expect( outlineProbe [ 1 ] ).toBeLessThan( 120 ); // red outline
+
+    // the interior is the grey line, not solid red
+    expect( interiorProbe[ 1 ] ).toBeGreaterThan( 150 );
+  } );
+
 } );

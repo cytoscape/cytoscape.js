@@ -1183,7 +1183,14 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   fragment-only storage binding, keeping the vertex stage at its
   8-buffer budget).  Compound shapes (`triangle-tee`,
   `circle-triangle`, `triangle-cross`, `triangle-backcurve`) are not
-  ported.  `source/target-arrow-color` as before (v3-like `#999`
+  ported.  Round 13 B7 added `arrow-scale` (quantized ×1/16 in
+  storage — readback rounds accordingly), `source/target-arrow-fill`
+  (filled | hollow — a stroke ring at the per-end
+  `source/target-arrow-width`, which takes px, 'match-line' or % of
+  the edge width, resolved at style-write).  v4 keeps its own linear
+  arrow sizing (recorded in round 10 B4) — v3's
+  max((13.37 w)^0.9, 29) formula with its 29-unit floor is not
+  ported, so arrow sizes deviate from v3 at every width.  `source/target-arrow-color` as before (v3-like `#999`
   default).  One quad per visible edge per enabled end, reusing the
   edge cull stream; the tip sits on the endpoint node's boundary
   (round-rect approximated by its box, polygons by their inscribed

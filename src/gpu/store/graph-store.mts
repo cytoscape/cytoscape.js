@@ -817,6 +817,18 @@ export class GraphStore implements ModelView {
     this.dirty.mark( id, slot );
   }
 
+  /** monotone (round 13 B7): the largest arrow-scale any edge styles —
+   * the arrow quads size for it and the FS renders the exact scale */
+  private arrowScaleMaxV = 1;
+
+  arrowScaleMax(): number {
+    return this.arrowScaleMaxV;
+  }
+
+  noteArrowScale( scale: number ): void {
+    if( scale > this.arrowScaleMaxV ){ this.arrowScaleMaxV = scale; }
+  }
+
   /** monotone (round 13 B5): the largest outline outward extent any
    * node has styled — the ghost cull grows by it (no binding left for
    * the packed geometry there) */

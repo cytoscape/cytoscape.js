@@ -1119,6 +1119,48 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: arrow scalars — scale, hollow, stroke widths (round 13 B7)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a1' }, position: { x: -150, y: -90 } },
+        { data: { id: 'b1' }, position: { x: 120, y: -90 } },
+        { data: { id: 'plain', source: 'a1', target: 'b1', kind: 'plain' } },
+        { data: { id: 'a2' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b2' }, position: { x: 120, y: 0 } },
+        { data: { id: 'big', source: 'a2', target: 'b2', kind: 'big' } },
+        { data: { id: 'a3' }, position: { x: -150, y: 90 } },
+        { data: { id: 'b3' }, position: { x: 120, y: 90 } },
+        { data: { id: 'hollow', source: 'a3', target: 'b3', kind: 'hollow' } },
+        { data: { id: 'a4' }, position: { x: -150, y: 170 } },
+        { data: { id: 'b4' }, position: { x: 120, y: 170 } },
+        { data: { id: 'thick', source: 'a4', target: 'b4', kind: 'thick' } }
+      ],
+      style: {
+        nodes: { 'width': 22, 'height': 22, 'background-color': '#2c3e50' },
+        edges: {
+          'width': 5, 'line-color': '#95a5a6',
+          'source-arrow-shape': 'circle', 'source-arrow-color': '#16a085',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#c0392b',
+          'arrow-scale': { case: [ { when: { data: 'kind', eq: 'big' }, then: 2 } ], else: 1 },
+          'target-arrow-fill': {
+            case: [ { when: { data: 'kind', in: [ 'hollow', 'thick' ] }, then: 'hollow' } ],
+            else: 'filled'
+          },
+          'source-arrow-fill': {
+            case: [ { when: { data: 'kind', eq: 'thick' }, then: 'hollow' } ], else: 'filled'
+          }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'arrow-scalars', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

@@ -185,7 +185,16 @@ export type ColumnId =
   | 'edge.sourceArrow' // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
   | 'edge.targetArrow' // Uint8Array(4·cap)
   | 'edge.lineStyle' // Uint32Array(cap), LINE_* ids
-  | 'edge.arrowShapes' // Uint32Array(cap), ARROW_* ids packed source | target<<8
+  /**
+   * Uint32Array(cap) — ARROW_* ids packed source | target<<8, plus
+   * (round 13 B7) hollow-fill flags at bits 16 (source) / 17 (target)
+   * and the edge's arrow-scale quantized ×16 in bits 24..31 (0..15.94;
+   * readback is quantized — recorded).
+   */
+  | 'edge.arrowShapes'
+  /** Float32Array(2·cap) — hollow-arrow stroke widths per end, model px
+   * (round 13 B7; 'match-line' and % forms resolve at style-write). */
+  | 'edge.arrowWidths'
   /**
    * Uint32Array(2·cap) — edge overlay/underlay records (round 13 A2),
    * one column per layer: [rgba (layer opacity folded; a=0 = disabled),
@@ -285,6 +294,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.targetArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
   spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 ),
+  spec( 'edge.arrowWidths', 'edges', Float32Array, 2 ),
   spec( 'edge.overlay', 'edges', Uint32Array, 2 ),
   spec( 'edge.casing', 'edges', Uint32Array, 2 ),
   spec( 'edge.dashPattern', 'edges', Float32Array, 4 ),

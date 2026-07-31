@@ -55,7 +55,8 @@ export class ArrowPipeline {
     this.bindLayout = device.createBindGroupLayout( {
       label: 'cy-gpu:arrow-bind-layout',
       entries: [
-        { binding: 0, visibility: SHADER_STAGE.VERTEX, buffer: { type: 'uniform' } },
+        // the FS reads frame.zoomDpr for hollow strokes since B7
+        { binding: 0, visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT, buffer: { type: 'uniform' } },
         ...ARROW_COLUMNS.map( ( id, i ) => ( {
           binding: i + 1,
           visibility: SHADER_STAGE.VERTEX,
@@ -73,6 +74,11 @@ export class ArrowPipeline {
         },
         { // arrow shape ids, fragment-only: keeps the vertex stage at its 8-buffer budget
           binding: ARROW_COLUMNS.length + 3,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        },
+        { // hollow stroke widths per end (B7), fragment-only
+          binding: ARROW_COLUMNS.length + 4,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         }
@@ -113,7 +119,8 @@ export class ArrowPipeline {
         } ) ),
         { binding: ARROW_COLUMNS.length + 1, resource: { buffer: mirror.buffer( arrowColumn[ end ] ) } },
         { binding: ARROW_COLUMNS.length + 2, resource: { buffer: endUniform } },
-        { binding: ARROW_COLUMNS.length + 3, resource: { buffer: mirror.buffer( 'edge.arrowShapes' ) } }
+        { binding: ARROW_COLUMNS.length + 3, resource: { buffer: mirror.buffer( 'edge.arrowShapes' ) } },
+        { binding: ARROW_COLUMNS.length + 4, resource: { buffer: mirror.buffer( 'edge.arrowWidths' ) } }
       ]
     } ) ) as [ GPUBindGroup, GPUBindGroup ];
 

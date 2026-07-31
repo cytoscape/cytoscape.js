@@ -37,7 +37,7 @@ struct Frame {
   curveSlack: f32,       // conservative curved-edge deviation bound, model px (0 = nothing curved)
   haystackSlack: f32,    // 12c: haystack endpoint-offset bound, model px (0 = no haystack)
   outlineSlack: f32,     // B5: max outline outward extent, model px (ghost cull bound)
-  pad1: f32,
+  arrowScaleMax: f32,    // B7: max arrow-scale styled (arrow quads size for it)
   pad2: f32,
 }
 `;
@@ -1997,9 +1997,11 @@ ${BOUNDARY_WGSL}
 
 struct End { isSource: u32 }
 @group(0) @binding(7) var<uniform> end: End;
-// shape ids packed source | target<<8 — bound to the fragment stage only,
-// keeping the vertex stage at its 8-storage-buffer budget
+// shape ids packed source | target<<8, hollow bits 16/17, arrow-scale
+// ×16 in the top byte (B7) — fragment stage only
 @group(0) @binding(8) var<storage, read> arrowShapes: array<u32>;
+// hollow stroke widths per end, model px (B7)
+@group(0) @binding(9) var<storage, read> arrowWidths: array<vec2f>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
@@ -2007,11 +2009,28 @@ struct ArrowVSOut {
   @builtin(position) position: vec4f,
   @location(0) p: vec2f,    // arrow-local device px: x lateral, y (≤0) behind the tip
   @location(1) color: vec4f,
-  @location(2) @interpolate(flat) scale: f32, // device px per arrow unit
+  @location(2) @interpolate(flat) widthPx: f32, // drawn (floored) edge width
   @location(3) @interpolate(flat) slot: u32,
 }
 
 ${ ARROW_POLY.fns }
+
+// per-edge arrow scale from the packed shapes word (B7): top byte, ×16
+fn arrowScaleOf(pair: u32) -> f32 {
+  let q = pair >> 24u;
+
+  return select(f32(q) / 16.0, 1.0, q == 0u);
+}
+
+// arrow coverage (B7): filled tests sd, hollow strokes the outline at
+// the per-end arrow width
+fn arrowCoverage(sd: f32, hollow: bool, strokePx: f32) -> f32 {
+  if (hollow) {
+    return 1.0 - smoothstep(strokePx * 0.5 - 0.75, strokePx * 0.5 + 0.75, abs(sd));
+  }
+
+  return 1.0 - smoothstep(-0.75, 0.75, sd);
+}
 
 @vertex
 fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
@@ -2039,11 +2058,14 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
   let tip = tipC - dir * boundaryOffset(nodeShapes[tipSlot], half, dir);
 
-  // sizing follows the drawn (floored) edge width; alpha matches the edge LOD
+  // sizing follows the drawn (floored) edge width; alpha matches the
+  // edge LOD.  The quad covers the frame's max arrow-scale (B7) — the
+  // FS renders the exact per-edge scale within it.
   let lod = edgeLod(slot, edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
-  let arrowLen = widthPx * 3.0 + 2.0;
-  let halfBase = widthPx * 1.5 + 1.0;
+  let sMax = max(frame.arrowScaleMax, 1.0);
+  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
+  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2055,8 +2077,7 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  // the sizing makes this uniform: halfBase / 0.15 == arrowLen / 0.3
-  out.scale = arrowLen / 0.3;
+  out.widthPx = widthPx;
   out.slot = slot;
   // edge opacity is pre-folded into c.a at style-write time
   out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
@@ -2066,9 +2087,12 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 @fragment
 fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   let pair = arrowShapes[in.slot];
-  let shape = select(pair >> 8u, pair & 0xffu, end.isSource == 1u);
+  let isSource = end.isSource == 1u;
+  let shape = select((pair >> 8u) & 0xffu, pair & 0xffu, isSource);
+  let hollow = select((pair >> 17u) & 1u, (pair >> 16u) & 1u, isSource) == 1u;
   let p = in.p;
-  let s = in.scale;
+  // exact per-edge sizing (B7): the uniform scale unit × arrow-scale
+  let s = (in.widthPx * 3.0 + 2.0) / 0.3 * arrowScaleOf(pair);
   var sd = 1e6;
 
   switch shape {
@@ -2077,7 +2101,10 @@ ${ ARROW_POLY.cases }
     default: { sd = 1e6; } // none (already degenerate in the VS)
   }
 
-  let alpha = in.color.a * (1.0 - smoothstep(-0.75, 0.75, sd));
+  let aw = arrowWidths[in.slot];
+  let strokePx = select(aw.y, aw.x, isSource) * frame.zoomDpr;
+  let alpha = in.color.a * arrowCoverage(sd, hollow, strokePx);
+
   return vec4f(in.color.rgb * alpha, alpha); // premultiplied
 }
 `;
@@ -2118,9 +2145,11 @@ ${ROUTE_WGSL}
 
 struct End { isSource: u32 }
 @group(0) @binding(8) var<uniform> end: End;
-// fragment-stage: this end's arrow colors + the packed shape ids
+// fragment-stage: this end's arrow colors + the packed shape ids +
+// hollow stroke widths (B7)
 @group(0) @binding(9) var<storage, read> arrows: array<u32>;
 @group(0) @binding(10) var<storage, read> arrowShapes: array<u32>;
+@group(0) @binding(11) var<storage, read> arrowWidths: array<vec2f>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
@@ -2128,11 +2157,26 @@ struct ArrowVSOut {
   @builtin(position) position: vec4f,
   @location(0) p: vec2f,    // arrow-local device px: x lateral, y (≤0) behind the tip
   @location(1) @interpolate(flat) alphaComp: f32,
-  @location(2) @interpolate(flat) scale: f32, // device px per arrow unit
+  @location(2) @interpolate(flat) widthPx: f32, // drawn (floored) edge width
   @location(3) @interpolate(flat) slot: u32,
 }
 
 ${ ARROW_POLY.fns }
+
+// per-edge arrow scale from the packed shapes word (B7): top byte, ×16
+fn arrowScaleOf(pair: u32) -> f32 {
+  let q = pair >> 24u;
+
+  return select(f32(q) / 16.0, 1.0, q == 0u);
+}
+
+fn arrowCoverage(sd: f32, hollow: bool, strokePx: f32) -> f32 {
+  if (hollow) {
+    return 1.0 - smoothstep(strokePx * 0.5 - 0.75, strokePx * 0.5 + 0.75, abs(sd));
+  }
+
+  return 1.0 - smoothstep(-0.75, 0.75, sd);
+}
 
 @vertex
 fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
@@ -2192,11 +2236,14 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let dir = toTip2 / len;
 
   // sizing follows the drawn (floored) edge width; the curved stream is
-  // never decimated, so the alpha comp is the plain width-floor ratio
+  // never decimated, so the alpha comp is the plain width-floor ratio.
+  // The quad covers the frame's max arrow-scale (B7); the FS renders
+  // the exact per-edge scale within it.
   let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let alphaComp = min(edgeWidths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
-  let arrowLen = widthPx * 3.0 + 2.0;
-  let halfBase = widthPx * 1.5 + 1.0;
+  let sMax = max(frame.arrowScaleMax, 1.0);
+  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
+  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2206,7 +2253,7 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.scale = arrowLen / 0.3;
+  out.widthPx = widthPx;
   out.slot = slot;
   out.alphaComp = alphaComp;
   return out;
@@ -2218,9 +2265,11 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   // time; a=0 (no arrow at this end) renders fully transparent
   let c = unpack4x8unorm(arrows[in.slot]);
   let pair = arrowShapes[in.slot];
-  let shape = select(pair >> 8u, pair & 0xffu, end.isSource == 1u);
+  let isSource = end.isSource == 1u;
+  let shape = select((pair >> 8u) & 0xffu, pair & 0xffu, isSource);
+  let hollow = select((pair >> 17u) & 1u, (pair >> 16u) & 1u, isSource) == 1u;
   let p = in.p;
-  let s = in.scale;
+  let s = (in.widthPx * 3.0 + 2.0) / 0.3 * arrowScaleOf(pair);
   var sd = 1e6;
 
   switch shape {
@@ -2229,7 +2278,10 @@ ${ ARROW_POLY.cases }
     default: { sd = 1e6; } // none: fully discarded by alpha
   }
 
-  let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * (1.0 - smoothstep(-0.75, 0.75, sd));
+  let aw = arrowWidths[in.slot];
+  let strokePx = select(aw.y, aw.x, isSource) * frame.zoomDpr;
+  let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * arrowCoverage(sd, hollow, strokePx);
+
   return vec4f(c.rgb * alpha, alpha); // premultiplied
 }
 `;

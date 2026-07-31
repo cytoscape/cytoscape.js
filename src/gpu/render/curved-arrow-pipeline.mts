@@ -83,6 +83,11 @@ export class CurvedArrowPipeline {
           binding: VERTEX_COLUMNS.length + 4,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        },
+        { // hollow stroke widths per end (B7), fragment-only
+          binding: VERTEX_COLUMNS.length + 5,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         }
       ]
     } );
@@ -121,7 +126,8 @@ export class CurvedArrowPipeline {
         { binding: VERTEX_COLUMNS.length + 1, resource: { buffer: mirror.blobBuffer() } },
         { binding: VERTEX_COLUMNS.length + 2, resource: { buffer: endUniform } },
         { binding: VERTEX_COLUMNS.length + 3, resource: { buffer: mirror.buffer( arrowColumn[ end ] ) } },
-        { binding: VERTEX_COLUMNS.length + 4, resource: { buffer: mirror.buffer( 'edge.arrowShapes' ) } }
+        { binding: VERTEX_COLUMNS.length + 4, resource: { buffer: mirror.buffer( 'edge.arrowShapes' ) } },
+        { binding: VERTEX_COLUMNS.length + 5, resource: { buffer: mirror.buffer( 'edge.arrowWidths' ) } }
       ]
     } ) ) as [ GPUBindGroup, GPUBindGroup ];
 

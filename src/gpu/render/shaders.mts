@@ -1016,15 +1016,30 @@ fn ellipseSD(p0: vec2f, ab: vec2f) -> f32 {
 
 ${ POLY.fns }
 // shape ids match contract.mts: 0 circle, 1 ellipse, 2 rectangle,
-// 3 round-rectangle, 4+ generated polygon shapes
-fn nodeSD(shape: u32, p: vec2f, half: vec2f) -> f32 {
+// 3 round-rectangle, 4+ generated polygon shapes.  radius is the
+// round-rectangle corner radius in device px, pre-resolved (B2).
+fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32) -> f32 {
   switch shape {
     case 0u: { return circleSD(p, half.x); }
     case 1u: { return ellipseSD(p, half); }
     case 2u: { return rectangleSD(p, half); }
 ${ POLY.cases }
-    default: { return roundRectangleSD(p, half, min(half.x, half.y) * 0.25); }
+    default: { return roundRectangleSD(p, half, min(radius, min(half.x, half.y))); }
   }
+}
+
+// corner-radius 'auto' (B2): v3's min(w/4, h/4, 8) in model px
+fn cornerRadiusPx(stored: f32, half: vec2f, zoomDpr: f32) -> f32 {
+  if (stored < 0.0) { return min(min(half.x, half.y) * 0.5, 8.0 * zoomDpr); }
+  return stored * zoomDpr;
+}
+
+// border-position (B2): how far the border band extends past the shape
+// boundary — 0 for inside, bw/2 for center (v3's default), bw for outside
+fn borderOutward(pos: f32, bw: f32) -> f32 {
+  if (pos == 1.0) { return 0.0; }
+  if (pos == 2.0) { return bw; }
+  return bw * 0.5;
 }
 `;
 
@@ -1048,6 +1063,8 @@ ${SDF}
 // ghost props [offsetX, offsetY, ghostOpacity, enabled] (round 13 A1);
 // bound to both stages for the ghost entry points
 @group(0) @binding(9) var<storage, read> ghosts: array<vec4f>;
+// [cornerRadius | -1 = auto, borderPosition] (round 13 B2)
+@group(0) @binding(10) var<storage, read> borderGeom: array<vec2f>;
 
 struct NodeVSOut {
   @builtin(position) position: vec4f,
@@ -1073,7 +1090,9 @@ fn vsNode(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> N
 
   let centerPx = modelToPx(frame, positions[slot]);
   let margin = 2.0; // AA + accent-ring slack, device px
-  let ext = half + vec2f(margin);
+  // center/outside borders extend past the boundary (B2)
+  let borderOut = borderOutward(borderGeom[slot].y, borderWidths[slot] * frame.zoomDpr);
+  let ext = half + vec2f(margin + borderOut);
   let local = quadCorner(vi) * ext;
 
   out.position = vec4f(pxToClip(frame, centerPx + local), NODE_Z, 1.0);
@@ -1125,21 +1144,28 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
     half = vec2f(max(in.halfSize.x, in.halfSize.y));
   }
 
-  let sd = nodeSD(shape, in.local, half);
+  let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
+  let sd = nodeSD(shape, in.local, half, radius);
   var color = unpack4x8unorm(fillColors[slot]);
+  var edge = 0.0; // coverage boundary: sd <= edge is inked
 
   if (!plain) {
     let borderWidth = borderWidths[slot] * frame.zoomDpr;
     let flags = nodeFlags[slot];
+    // border-position (B2): the band straddles the boundary by v3's
+    // rule — center [−bw/2, bw/2] (the default), inside [−bw, 0],
+    // outside [0, bw]
+    let bOut = borderOutward(borderGeom[slot].y, borderWidth);
 
-    // border band, drawn inward from the shape boundary
-    if (borderWidth > 0.0 && sd > -borderWidth) {
+    if (borderWidth > 0.0 && sd > bOut - borderWidth) {
       color = unpack4x8unorm(borderColors[slot]);
+      edge = bOut;
     }
 
     // selection accent ring at the boundary
     if ((flags & FLAG_SELECTED) != 0u && sd > -max(2.0, borderWidth)) {
       color = vec4f(SELECT_ACCENT, 1.0);
+      edge = max(edge, 0.0);
     }
 
     // hover/grab brighten
@@ -1148,7 +1174,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
     }
   }
 
-  let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * opacities[slot] * in.alphaComp * color.a;
+  let alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * opacities[slot] * in.alphaComp * color.a;
   return vec4f(color.rgb * alpha, alpha); // premultiplied
 }
 
@@ -1166,7 +1192,8 @@ fn vsGhost(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let half = lod.xy;
 
   let centerPx = modelToPx(frame, positions[slot] + ghosts[slot].xy);
-  let ext = half + vec2f(2.0);
+  let borderOut = borderOutward(borderGeom[slot].y, borderWidths[slot] * frame.zoomDpr);
+  let ext = half + vec2f(2.0 + borderOut);
   let local = quadCorner(vi) * ext;
 
   out.position = vec4f(pxToClip(frame, centerPx + local), NODE_Z, 1.0);
@@ -1191,19 +1218,23 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
     half = vec2f(max(in.halfSize.x, in.halfSize.y));
   }
 
-  let sd = nodeSD(shape, in.local, half);
+  let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
+  let sd = nodeSD(shape, in.local, half, radius);
   var color = unpack4x8unorm(fillColors[slot]);
+  var edge = 0.0;
 
   if (!plain) {
     let borderWidth = borderWidths[slot] * frame.zoomDpr;
+    let bOut = borderOutward(borderGeom[slot].y, borderWidth);
 
-    if (borderWidth > 0.0 && sd > -borderWidth) {
+    if (borderWidth > 0.0 && sd > bOut - borderWidth) {
       color = unpack4x8unorm(borderColors[slot]);
+      edge = bOut;
     }
   }
 
   let ghostA = clamp(ghosts[slot].z, 0.0, 1.0);
-  let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * opacities[slot] * in.alphaComp * color.a * ghostA;
+  let alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * opacities[slot] * in.alphaComp * color.a * ghostA;
   return vec4f(color.rgb * alpha, alpha); // premultiplied
 }
 
@@ -1216,7 +1247,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
 // (the map x -> x/half expands distances by at most 1/min(half), so
 // |q| <= 1 - m/min(half) guarantees true distance >= m).  Under-covering
 // only costs occlusion, never correctness.
-fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32) -> bool {
+fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32, radius: f32) -> bool {
   let minAxis = min(half.x, half.y);
 
   if (minAxis <= m) { return false; }
@@ -1227,7 +1258,7 @@ fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32) -> bool {
       return max(d.x, d.y) <= 0.0;
     }
     case 3u: { // round-rectangle: cheap exact SD
-      return roundRectangleSD(p, half, minAxis * 0.25) <= -m;
+      return roundRectangleSD(p, half, min(radius, minAxis)) <= -m;
     }
     case 0u, 1u: { // circle + ellipse: normalized-space bound (exact for circles)
       let q = p / half;
@@ -1235,7 +1266,7 @@ fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32) -> bool {
       return dot(q, q) <= lim * lim;
     }
     default: { // polygons: the normalized SD × min axis under-estimates depth
-      return nodeSD(shape, p, half) <= -m;
+      return nodeSD(shape, p, half, radius) <= -m;
     }
   }
 }
@@ -1267,7 +1298,9 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
     half = vec2f(max(in.halfSize.x, in.halfSize.y));
   }
 
-  if (!nodeInterior(shape, in.local, half, 1.5)) { // stay inside the AA fringe
+  let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
+
+  if (!nodeInterior(shape, in.local, half, 1.5, radius)) { // stay inside the AA fringe
     discard;
   }
 

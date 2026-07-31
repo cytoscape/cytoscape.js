@@ -40,6 +40,7 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
   const pos = view.column( 'node.position' ) as Float32Array;
   const size = view.column( 'node.size' ) as Uint32Array | Float32Array;
   const shapes = view.column( 'node.shape' ) as Uint32Array;
+  const borderGeom = view.column( 'node.borderGeom' ) as Float32Array;
 
   for( let slot = view.highWater( 'nodes' ) - 1; slot >= 0; slot-- ){
     if( ( flags[ slot ] & SHOWN ) !== SHOWN ){ continue; }
@@ -68,14 +69,22 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
       hh = hmax;
     }
 
-    if( insideShape( shape, dx, dy, hw, hh ) ){ return slot; }
+    // B2: per-node corner radius (device px; -1 = v3's auto formula)
+    const storedR = borderGeom[ slot * 2 ];
+    const radius = storedR < 0
+      ? Math.min( Math.min( hw, hh ) * 0.5, 8 * frame.zoomDpr )
+      : storedR * frame.zoomDpr;
+
+    if( insideShape( shape, dx, dy, hw, hh, radius ) ){ return slot; }
   }
 
   return null;
 }
 
 // inside tests matching the sign of the shader SDFs (sd <= 0 picks)
-function insideShape( shape: number, dx: number, dy: number, hw: number, hh: number ): boolean {
+function insideShape(
+  shape: number, dx: number, dy: number, hw: number, hh: number, radius: number
+): boolean {
   switch( shape ){
     case SHAPE_CIRCLE: // circleSD uses half.x as the radius
       return dx * dx + dy * dy <= hw * hw;
@@ -83,8 +92,8 @@ function insideShape( shape: number, dx: number, dy: number, hw: number, hh: num
       return ( dx * dx ) / ( hw * hw ) + ( dy * dy ) / ( hh * hh ) <= 1;
     case SHAPE_RECTANGLE:
       return Math.abs( dx ) <= hw && Math.abs( dy ) <= hh;
-    case SHAPE_ROUND_RECTANGLE: { // radius min(half)/4 as in nodeSD
-      const r = Math.min( hw, hh ) * 0.25;
+    case SHAPE_ROUND_RECTANGLE: { // the resolved corner radius, as in nodeSD (B2)
+      const r = Math.min( radius, Math.min( hw, hh ) );
       const qx = Math.abs( dx ) - hw + r;
       const qy = Math.abs( dy ) - hh + r;
       const mx = Math.max( qx, 0 );

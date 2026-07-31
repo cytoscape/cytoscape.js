@@ -16,6 +16,9 @@ describe('gpu/render: CPU node pick', function(){
 
     store.setPair( 'node.size', slot, w, h );
     store.setScalar( 'node.shape', slot, shape );
+    // the style engine always writes borderGeom on apply; mirror its
+    // default here (corner-radius 'auto', border-position center — B2)
+    store.setPair( 'node.borderGeom', slot, -1, 0 );
 
     return slot;
   };
@@ -47,7 +50,7 @@ describe('gpu/render: CPU node pick', function(){
   });
 
   it('rounds round-rectangle corners off', function(){
-    var n = addNode( 'a', 0, 0, 40, 40, SHAPE_ROUND_RECTANGLE ); // r = 5
+    var n = addNode( 'a', 0, 0, 40, 40, SHAPE_ROUND_RECTANGLE ); // auto r = min(10, 10, 8) = 8 (B2, v3's rule)
 
     expect( pickNodeAt( store, frame, 0, 19 ) ).to.equal( n );       // edge midpoint
     expect( pickNodeAt( store, frame, 19.5, 19.5 ) ).to.equal( null ); // clipped corner

@@ -2666,6 +2666,33 @@ grows per item.
   scene at 0.934% mismatch (translucent AA seams).  1869 Node tests,
   92 Playwright specs, typecheck + lint green.
 
+- [x] **B2 border-position + corner-radius** (2026-07-31).  One new
+  `node.borderGeom` column ([cornerRadius | −1 = auto,
+  borderPosition]).  `border-position` (center | inside | outside —
+  and **v4's default flips to v3's `center`**: the border band now
+  straddles the boundary, [−bw/2, +bw/2]; v4 had silently drawn all
+  borders inside, an unrecorded deviation this closes — parity-basic
+  fell 0.766% → 0.072% and parity-transform 0.486% → 0.238% on the
+  spot).  `corner-radius` (number | 'auto') feeds the
+  round-rectangle SDF everywhere the radius appears — node FS, ghost
+  FS, the depth prepass' interior test, and the CPU pick replica —
+  with **'auto' now v3's min(w/4, h/4, 8)** (v4 had used
+  min(w, h)/8; also closed).  The node/ghost quads, node cull and
+  ghost cull grow by the border's outward extent (the ghost cull
+  uses the full border width — the compute stage had no slot left
+  for the position column; conservative only).  Both props are
+  mapper-capable (enum/number, CPU — geometry tier: the pick reads
+  them).  bb keeps the outerHalf center convention for all positions
+  (v3's outerWidth does the same — recorded).  Caught by the guard
+  en route: the first ghost-cull cut hit 9 compute storage buffers.
+  4 goldens regenerated as the intended visual change
+  (nodes-edges-arrows, polygon-shapes, selection-accent, ghost); a
+  new `parity-border-geom` scene (three positions × explicit radii)
+  measures **0 px differing**.  4 Node specs
+  (`test/gpu-border-geom.mjs`) + the CPU-pick suite pinned to the
+  new auto rule.  1873 Node tests, 93 Playwright specs, typecheck +
+  lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2753,10 +2780,10 @@ autonomously):
   conservative, never wrong); text opacity folds into glyph alpha
   and reads back folded (the outline/background-opacity precedent).
   Landed 2026-07-31 — see the round-13 record.
-- [ ] **B2 `border-position`** (inside | center | outside — a pure
+- [x] **B2 `border-position`** (inside | center | outside — a pure
   SDF band offset) + **`corner-radius`** (a scalar channel feeding
   the existing round-rectangle SDF; CPU pick inside-test reads it —
-  geometry tier).
+  geometry tier).  Landed 2026-07-31 — see the round-13 record.
 - [ ] **B3 `line-cap`** (butt | round | square — endpoint cap SDF in
   the edge FS) + **`line-dash-pattern`/`line-dash-offset`**
   (arbitrary patterns over the existing arc-length varying;

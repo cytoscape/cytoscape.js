@@ -1140,7 +1140,8 @@ export class Renderer {
     const mv = `${mirror.version}`;
 
     groups.node?.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
-      mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ), mirror.buffer( 'node.flags' )
+      mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ), mirror.buffer( 'node.flags' ),
+      mirror.buffer( 'node.borderWidth' ), mirror.buffer( 'node.borderGeom' )
     ], mv );
 
     // ghosts (round 13 A1): zero-cost until some node styles a ghost
@@ -1149,7 +1150,8 @@ export class Renderer {
     if( anyGhosts && groups.ghost != null ){
       groups.ghost.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
         mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ),
-        mirror.buffer( 'node.flags' ), mirror.buffer( 'node.ghost' )
+        mirror.buffer( 'node.flags' ), mirror.buffer( 'node.ghost' ),
+        mirror.buffer( 'node.borderWidth' )
       ], mv );
     }
 

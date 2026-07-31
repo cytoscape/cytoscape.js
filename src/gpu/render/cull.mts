@@ -31,7 +31,7 @@ const WG_SIZE = 256;
 export type CullKind = 'node' | 'edge' | 'curvedEdge' | 'glyph' | 'edgeGlyph' | 'ghost' | 'nodeLayer';
 
 /** ordered storage-buffer inputs per kind (bindings 2..N-4 of the cull layout) */
-const INPUT_COUNTS: Record<CullKind, number> = { node: 3, edge: 5, curvedEdge: 5, glyph: 3, edgeGlyph: 5, ghost: 4, nodeLayer: 4 };
+const INPUT_COUNTS: Record<CullKind, number> = { node: 5, edge: 5, curvedEdge: 5, glyph: 3, edgeGlyph: 5, ghost: 5, nodeLayer: 4 };
 
 const SCAFFOLD = `
 struct CullInfo { count: u32, indexCount: u32 }
@@ -95,16 +95,27 @@ ${COMMON}
 @group(0) @binding(2) var<storage, read> positions: array<vec2f>;
 @group(0) @binding(3) var<storage, read> sizes: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeFlags: array<u32>;
-@group(0) @binding(5) var<storage, read_write> wgCounts: array<u32>;
-@group(0) @binding(6) var<storage, read_write> wgOffsets: array<u32>;
-@group(0) @binding(7) var<storage, read_write> visible: array<u32>;
+@group(0) @binding(5) var<storage, read> borderWidths: array<f32>;
+@group(0) @binding(6) var<storage, read> borderGeom: array<vec2f>;
+@group(0) @binding(7) var<storage, read_write> wgCounts: array<u32>;
+@group(0) @binding(8) var<storage, read_write> wgOffsets: array<u32>;
+@group(0) @binding(9) var<storage, read_write> visible: array<u32>;
+
+// B2: center/outside borders extend the drawn quad past the boundary
+fn borderOut(slot: u32) -> f32 {
+  let bw = borderWidths[slot] * frame.zoomDpr;
+
+  if (borderGeom[slot].y == 1.0) { return 0.0; }
+  if (borderGeom[slot].y == 2.0) { return bw; }
+  return bw * 0.5;
+}
 
 fn isVisible(slot: u32) -> bool {
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
 
   let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
   let c = modelToPx(frame, positions[slot]);
-  let ext = lod.xy + vec2f(2.0); // AA + accent-ring slack, matches the VS
+  let ext = lod.xy + vec2f(2.0 + borderOut(slot)); // AA + ring + border, matches the VS
 
   return !(c.x + ext.x < 0.0 || c.x - ext.x > frame.viewportPx.x ||
            c.y + ext.y < 0.0 || c.y - ext.y > frame.viewportPx.y);
@@ -446,9 +457,10 @@ ${COMMON}
 @group(0) @binding(3) var<storage, read> sizes: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeFlags: array<u32>;
 @group(0) @binding(5) var<storage, read> ghosts: array<vec4f>;
-@group(0) @binding(6) var<storage, read_write> wgCounts: array<u32>;
-@group(0) @binding(7) var<storage, read_write> wgOffsets: array<u32>;
-@group(0) @binding(8) var<storage, read_write> visible: array<u32>;
+@group(0) @binding(6) var<storage, read> borderWidths: array<f32>;
+@group(0) @binding(7) var<storage, read_write> wgCounts: array<u32>;
+@group(0) @binding(8) var<storage, read_write> wgOffsets: array<u32>;
+@group(0) @binding(9) var<storage, read_write> visible: array<u32>;
 
 fn isVisible(slot: u32) -> bool {
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
@@ -457,9 +469,14 @@ fn isVisible(slot: u32) -> bool {
 
   if (g.w == 0.0 || g.z <= 0.0) { return false; } // disabled or invisible
 
+  // B2: grow by the full border width — the outside-position worst case
+  // (the compute stage has no slot left for the position column; a few
+  // conservative ghost quads only cost cull efficiency)
+  let bOut = borderWidths[slot] * frame.zoomDpr;
+
   let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
   let c = modelToPx(frame, positions[slot] + g.xy);
-  let ext = lod.xy + vec2f(2.0);
+  let ext = lod.xy + vec2f(2.0 + bOut);
 
   return !(c.x + ext.x < 0.0 || c.x - ext.x > frame.viewportPx.x ||
            c.y + ext.y < 0.0 || c.y - ext.y > frame.viewportPx.y);

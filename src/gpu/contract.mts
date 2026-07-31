@@ -154,6 +154,14 @@ export type ColumnId =
    */
   | 'node.ghost'
   /**
+   * Float32Array(2·cap) — border/corner geometry (round 13 B2):
+   * [cornerRadius (model px; -1 = 'auto', v3's min(w/4, h/4, 8)),
+   * borderPosition (0 center — v3's default, 1 inside, 2 outside)].
+   * Read by the node FS/prepass, the node cull (outward borders grow
+   * the quad), and the CPU pick (the round-rectangle inside test).
+   */
+  | 'node.borderGeom'
+  /**
    * Uint32Array(4·cap) — overlay/underlay records (round 13 A2), one
    * column per layer: [rgba (layer opacity folded into alpha; a=0 =
    * disabled), padding × 256 (fixed-point model px), shape (0
@@ -241,6 +249,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.shape', 'nodes', Uint32Array, 1 ),
   spec( 'node.outerHalf', 'nodes', Float32Array, 2 ),
   spec( 'node.ghost', 'nodes', Float32Array, 4 ),
+  spec( 'node.borderGeom', 'nodes', Float32Array, 2 ),
   spec( 'node.overlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.underlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),

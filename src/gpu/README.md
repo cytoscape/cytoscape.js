@@ -179,6 +179,15 @@ the node FS picks border *or* fill per fragment, so a translucent
 border shows the border color alone where v3 blends it over the
 fill in the inner band half.
 
+Border geometry (round 13 B2): `border-position` defaults to v3's
+`center` (the band straddles the boundary — v4 previously drew all
+borders inside, an unrecorded deviation now closed), and
+`corner-radius` (number | 'auto') feeds the round-rectangle SDF in
+the node/ghost shaders, the depth prepass and the CPU pick alike,
+with 'auto' = v3's min(w/4, h/4, 8) (previously min(w, h)/8; also
+closed).  bb keeps the outerHalf center convention for every border
+position, matching v3's outerWidth.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

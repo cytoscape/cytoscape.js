@@ -96,6 +96,11 @@ interface NodeComputed {
   textBgPadding: number;
   textMarginX: number;
   textMarginY: number;
+  /** corner-radius (round 13 B2): model px, -1 = 'auto' (v3's
+   * min(w/4, h/4, 8)) — round-rectangle only */
+  cornerRadius: number;
+  /** border-position (B2): 0 center (v3's default), 1 inside, 2 outside */
+  borderPosition: number;
   /** background-opacity (round 13 B1): folds into the stored fill alpha */
   backgroundOpacity: number;
   /** border-opacity (B1): folds into the stored border alpha */
@@ -207,6 +212,8 @@ const NODE_DEFAULTS: NodeComputed = {
   textBgPadding: 0,
   textMarginX: 0,
   textMarginY: 0,
+  cornerRadius: -1, // 'auto'
+  borderPosition: 0, // center, as v3
   backgroundOpacity: 1,
   borderOpacity: 1,
   textOpacity: 1,
@@ -343,6 +350,7 @@ const SHAPE_NAMES: Record<number, string> = {
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
+  'corner-radius', 'border-position',
   'label', 'font-size', 'font-family', 'color',
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
   'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
@@ -507,6 +515,21 @@ const parseLayerRadius = ( prop: string, value: unknown ): number => {
   if( String( value ).trim() === 'auto' ){ return -1; }
 
   return parseNonNegative( prop, value );
+};
+
+const BORDER_POSITIONS: Record<string, number> = { 'center': 0, 'inside': 1, 'outside': 2 };
+const BORDER_POSITION_NAMES: Record<number, string> = { 0: 'center', 1: 'inside', 2: 'outside' };
+
+const parseBorderPosition = ( value: unknown ): number => {
+  const id = BORDER_POSITIONS[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The border-position '${String( value )}' is invalid; use one of: center, inside, outside`
+    );
+  }
+
+  return id;
 };
 
 /** v3's bool type: 'yes'/'no' keywords (booleans accepted too). */
@@ -937,6 +960,12 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'border-width':
       computed.borderWidth = parseNumber( prop, value );
       break;
+    case 'corner-radius':
+      computed.cornerRadius = parseLayerRadius( prop, value );
+      break;
+    case 'border-position':
+      computed.borderPosition = parseBorderPosition( value );
+      break;
     case 'background-opacity':
       computed.backgroundOpacity = parseZeroOne( prop, value );
       break;
@@ -1347,6 +1376,18 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'edges' ],
     set: ( c, v ) => { c.taxiRadius = v as number; },
     default: () => EDGE_DEFAULTS.taxiRadius
+  },
+  // B2 border/corner geometry (CPU-evaluated; the pick replica reads it)
+  'corner-radius': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.cornerRadius = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.cornerRadius
+  },
+  'border-position': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => BORDER_POSITIONS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.borderPosition = v as number; },
+    default: () => NODE_DEFAULTS.borderPosition
   },
   // the B1 opacity split (CPU-evaluated; folds at write time)
   'background-opacity': {
@@ -1968,6 +2009,14 @@ export class StyleEngine {
       case 'background-color': return color( 'node.fillColor' );
       case 'border-color': return color( 'node.borderColor' );
       case 'border-width': return scalar( 'node.borderWidth' );
+      case 'corner-radius': {
+        const r = ( store.column( 'node.borderGeom' ) as Float32Array )[ slot * 2 ];
+
+        return r < 0 ? 'auto' : r;
+      }
+      case 'border-position':
+        return BORDER_POSITION_NAMES[
+          ( store.column( 'node.borderGeom' ) as Float32Array )[ slot * 2 + 1 ] ] ?? 'center';
       // the B1 channel opacities read back *folded* (stored alpha /
       // 255 — the declared color alpha times the opacity; the
       // outline/arrow precedent)
@@ -2339,6 +2388,7 @@ export class StyleEngine {
       store.setGhost(
         slot, computed.ghostOffsetX, computed.ghostOffsetY,
         computed.ghostOpacity, computed.ghost );
+      store.setPair( 'node.borderGeom', slot, computed.cornerRadius, computed.borderPosition );
 
       // overlay/underlay records: the layer opacity folds into the alpha
       // (v3's overlay never multiplies element opacity)

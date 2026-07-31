@@ -1642,4 +1642,47 @@ test.describe( 'v3-vs-v4 render parity', () => {
     await runParity( page, testInfo, 'parity-opacity-split', elements, v3Style, v4Style, { minInk: 1500 } );
   } );
 
+  test( 'parity: border positions and corner radii (round 13 B2)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const elements = [
+      { data: { id: 'a', bp: 'center' }, position: { x: -110, y: -60 } },
+      { data: { id: 'b', bp: 'inside' }, position: { x: 30, y: -60 } },
+      { data: { id: 'c', bp: 'outside' }, position: { x: 160, y: -60 } },
+      { data: { id: 'd', bp: 'center', rr: 1 }, position: { x: -110, y: 70 } },
+      { data: { id: 'e', bp: 'center', rr: 1, r: 14 }, position: { x: 30, y: 70 } },
+      { data: { id: 'f', bp: 'center', rr: 1, r: 3 }, position: { x: 160, y: 70 } }
+    ];
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 60, 'height': 44, 'shape': 'ellipse', 'background-color': '#f1c40f',
+        'border-width': 8, 'border-color': '#2c3e50'
+      } },
+      { selector: "node[bp = 'inside']", style: { 'border-position': 'inside' } },
+      { selector: "node[bp = 'outside']", style: { 'border-position': 'outside' } },
+      { selector: 'node[rr = 1]', style: { shape: 'round-rectangle' } },
+      { selector: 'node[r = 14]', style: { 'corner-radius': 14 } },
+      { selector: 'node[r = 3]', style: { 'corner-radius': 3 } }
+    ];
+    const v4Style = {
+      nodes: {
+        'width': 60, 'height': 44, 'background-color': '#f1c40f',
+        'border-width': 8, 'border-color': '#2c3e50',
+        'border-position': { case: [
+          { when: { data: 'bp', eq: 'inside' }, then: 'inside' },
+          { when: { data: 'bp', eq: 'outside' }, then: 'outside' }
+        ], else: 'center' },
+        'shape': { case: [ { when: { data: 'rr', eq: 1 }, then: 'round-rectangle' } ], else: 'ellipse' },
+        // else 8 == the auto value for 60×44 (min(15, 11, 8)); the auto
+        // keyword itself is a constant, exercised by parity-basic
+        'corner-radius': { case: [
+          { when: { data: 'r', eq: 14 }, then: 14 },
+          { when: { data: 'r', eq: 3 }, then: 3 }
+        ], else: 8 }
+      }
+    };
+
+    await runParity( page, testInfo, 'parity-border-geom', elements, v3Style, v4Style, { minInk: 1500 } );
+  } );
+
 } );

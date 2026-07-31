@@ -17,13 +17,16 @@ const NODE_COLUMNS: { id: ColumnId; visibility: number }[] = [
   { id: 'node.size', visibility: SHADER_STAGE.VERTEX },
   { id: 'node.fillColor', visibility: SHADER_STAGE.FRAGMENT },
   { id: 'node.borderColor', visibility: SHADER_STAGE.FRAGMENT },
-  { id: 'node.borderWidth', visibility: SHADER_STAGE.FRAGMENT },
+  // B2: the VS reads border width/position for the quad extent
+  { id: 'node.borderWidth', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT },
   { id: 'node.opacity', visibility: SHADER_STAGE.FRAGMENT },
   { id: 'node.shape', visibility: SHADER_STAGE.FRAGMENT },
   { id: 'node.flags', visibility: SHADER_STAGE.FRAGMENT },
   // ghost props (round 13 A1): the ghost VS offsets by .xy, the ghost FS
   // scales alpha by .z; the main node entry points never read it
-  { id: 'node.ghost', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT }
+  { id: 'node.ghost', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT },
+  // [cornerRadius | -1 auto, borderPosition] (round 13 B2)
+  { id: 'node.borderGeom', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT }
 ];
 
 export const PREMULTIPLIED_BLEND: GPUBlendState = {

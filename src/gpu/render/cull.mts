@@ -430,6 +430,12 @@ fn isVisible(slot: u32) -> bool {
     slk = slk + length(modelToPx(frame, pb) - modelToPx(frame, pa));
   }
 
+  // end-label glyphs (D4) anchor anywhere along the drawn path, which
+  // strays up to half the chord (+ the slacks above) from the midpoint
+  if (g.endParam != 0.0) {
+    slk = slk + length(modelToPx(frame, pb) - modelToPx(frame, pa)) * 0.5;
+  }
+
   if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
     // autorotated glyphs: the exact AABB of the rotated rect, in the
     // same rotation frame as the VS for straight owners.  A curved

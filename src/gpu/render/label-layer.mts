@@ -2,7 +2,7 @@ import { GlyphAtlas, SDF_FONT_SIZE, SDF_RADIUS } from './glyph-atlas.mjs';
 import { layoutLabel } from './label-layout.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
-import type { GroupName } from '../contract.mjs';
+import type { LabelStream } from '../contract.mjs';
 
 /**
  * Consumes the model's label-dirty channel each frame: lays out changed
@@ -15,6 +15,9 @@ export class LabelLayer {
   glyphs: GlyphBuffer;
   /** the edge label stream: same instance layout, keyed by edge slot */
   edgeGlyphs: GlyphBuffer;
+  /** the end-label streams (round 13 D4), keyed by edge slot */
+  sourceGlyphs: GlyphBuffer;
+  targetGlyphs: GlyphBuffer;
 
   private store: GraphStore;
 
@@ -23,10 +26,13 @@ export class LabelLayer {
     this.atlas = new GlyphAtlas( device );
     this.glyphs = new GlyphBuffer( device );
     this.edgeGlyphs = new GlyphBuffer( device );
+    this.sourceGlyphs = new GlyphBuffer( device );
+    this.targetGlyphs = new GlyphBuffer( device );
   }
 
   count(): number {
-    return this.glyphs.count() + this.edgeGlyphs.count();
+    return this.glyphs.count() + this.edgeGlyphs.count()
+      + this.sourceGlyphs.count() + this.targetGlyphs.count();
   }
 
   /**
@@ -39,7 +45,8 @@ export class LabelLayer {
   }
 
   uploadedBytes(): number {
-    return this.glyphs.uploadedBytes + this.edgeGlyphs.uploadedBytes;
+    return this.glyphs.uploadedBytes + this.edgeGlyphs.uploadedBytes
+      + this.sourceGlyphs.uploadedBytes + this.targetGlyphs.uploadedBytes;
   }
 
   /** Rebuild glyph runs for label-dirty elements and upload; no-op when clean. */
@@ -51,9 +58,11 @@ export class LabelLayer {
 
     this.processGroup( 'nodes', this.glyphs );
     this.processGroup( 'edges', this.edgeGlyphs );
+    this.processGroup( 'edgeSource', this.sourceGlyphs );
+    this.processGroup( 'edgeTarget', this.targetGlyphs );
   }
 
-  private processGroup( group: GroupName, glyphs: GlyphBuffer ): void {
+  private processGroup( group: LabelStream, glyphs: GlyphBuffer ): void {
     const dirty = this.store.takeLabelDirty( group );
 
     for( const slot of dirty ){
@@ -82,6 +91,12 @@ export class LabelLayer {
       const zoomDprMin = entry.minZoomedFontSize > 0
         ? entry.minZoomedFontSize / entry.fontSize
         : 0;
+
+      // D4 end-label encoding: sign picks the end, |v| - 1 is the arc
+      // offset (the +1 bias keeps offset 0 distinct from the midpoint
+      // streams' 0)
+      const endParam = group === 'edgeSource' ? entry.endOffset + 1
+        : group === 'edgeTarget' ? -( entry.endOffset + 1 ) : 0;
 
       const outlineW = entry.outlineWidth > 0
         ? Math.min( entry.outlineWidth / scale / SDF_RADIUS, 0.45 )
@@ -136,6 +151,7 @@ export class LabelLayer {
         u32[ at + 10 ] = entry.bgBorderColor;
         f32[ at + 11 ] = entry.bgBorderWidth;
         f32[ at + 12 ] = zoomDprMin; // the box hides with its text
+        f32[ at + 13 ] = endParam; // and anchors with it (D4)
         at += GLYPH_WORDS;
       }
 
@@ -155,6 +171,7 @@ export class LabelLayer {
         u32[ at + 10 ] = entry.outlineColor;
         f32[ at + 11 ] = outlineW;
         f32[ at + 12 ] = zoomDprMin;
+        f32[ at + 13 ] = endParam;
         at += GLYPH_WORDS;
       }
 
@@ -167,6 +184,8 @@ export class LabelLayer {
   destroy(): void {
     this.glyphs.destroy();
     this.edgeGlyphs.destroy();
+    this.sourceGlyphs.destroy();
+    this.targetGlyphs.destroy();
     this.atlas.destroy();
   }
 }

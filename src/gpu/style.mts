@@ -219,6 +219,22 @@ interface EdgeComputed {
   textMarginY: number;
   /** 0 none (horizontal), 1 autorotate (TEXT_ROTATIONS ids; edges only) */
   textRotation: number;
+  // end labels (round 13 D4): two more glyph streams anchored at arc
+  // distance source/target-text-offset from each end; the remaining
+  // text channels (font, color, backgrounds, opacity, transform) are
+  // shared with the main label, exactly v3's unprefixed reads
+  sourceLabel: string;
+  sourceLabelKey: string | null;
+  sourceTextOffset: number;
+  sourceTextMarginX: number;
+  sourceTextMarginY: number;
+  sourceTextRotation: number;
+  targetLabel: string;
+  targetLabelKey: string | null;
+  targetTextOffset: number;
+  targetTextMarginX: number;
+  targetTextMarginY: number;
+  targetTextRotation: number;
   // curved edges (round 12a): the styled record the CurveIndex derives
   // edge.curveParams from (CURVE_STYLE_* ids; angles in radians)
   curveStyle: number;
@@ -349,6 +365,18 @@ const EDGE_DEFAULTS: EdgeComputed = {
   targetArrowColor: [ 153, 153, 153, 255 ],
   label: '',
   labelKey: null,
+  sourceLabel: '', // as v3
+  sourceLabelKey: null,
+  sourceTextOffset: 0, // as v3
+  sourceTextMarginX: 0,
+  sourceTextMarginY: 0,
+  sourceTextRotation: 0, // none, as v3
+  targetLabel: '',
+  targetLabelKey: null,
+  targetTextOffset: 0,
+  targetTextMarginX: 0,
+  targetTextMarginY: 0,
+  targetTextRotation: 0,
   fontSize: 16,
   textColor: [ 0, 0, 0, 255 ],
   textOutlineWidth: 0,
@@ -481,6 +509,10 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
   'text-margin-x', 'text-margin-y', 'min-zoomed-font-size', 'text-rotation',
+  'source-label', 'source-text-offset', 'source-text-margin-x',
+  'source-text-margin-y', 'source-text-rotation',
+  'target-label', 'target-text-offset', 'target-text-margin-x',
+  'target-text-margin-y', 'target-text-rotation',
   'text-transform', 'text-background-shape',
   'text-border-width', 'text-border-color', 'text-border-opacity',
   'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
@@ -573,6 +605,14 @@ const resolveCoreProps = ( props: GpuStyleProps | undefined ): CoreStyle => {
 /** global-constant font props (round 13 D1): one face per glyph atlas */
 const GLOBAL_FONT_PROPS: ReadonlySet<string> = new Set( [
   'font-family', 'font-style', 'font-weight'
+] );
+
+/** the end-label family (round 13 D4): edge-only */
+const END_LABEL_PROPS: ReadonlySet<string> = new Set( [
+  'source-label', 'source-text-offset', 'source-text-margin-x',
+  'source-text-margin-y', 'source-text-rotation',
+  'target-label', 'target-text-offset', 'target-text-margin-x',
+  'target-text-margin-y', 'target-text-rotation'
 ] );
 
 /** further node-only props (C3/D3): rejected on the edges group */
@@ -1477,6 +1517,54 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       computed.labelKey = null;
       break;
     }
+    case 'source-label':
+    case 'target-label': {
+      // same rules as 'label': constants or the data(key) passthrough
+      const text = String( value );
+      const mapped = DATA_MAPPER.exec( text );
+      const src = prop === 'source-label';
+
+      if( mapped != null ){
+        if( src ){ computed.sourceLabel = ''; computed.sourceLabelKey = mapped[ 1 ]; }
+        else { computed.targetLabel = ''; computed.targetLabelKey = mapped[ 1 ]; }
+        break;
+      }
+
+      if( /^\s*(data|mapData)\s*\(/.test( text ) ){
+        throw new Error(
+          `The ${prop} value '${text}' is unsupported in the GPU prototype; ` +
+          `only constant strings and 'data(key)' are allowed`
+        );
+      }
+
+      if( src ){ computed.sourceLabel = text; computed.sourceLabelKey = null; }
+      else { computed.targetLabel = text; computed.targetLabelKey = null; }
+      break;
+    }
+    case 'source-text-offset':
+      computed.sourceTextOffset = parseNonNegative( prop, value );
+      break;
+    case 'target-text-offset':
+      computed.targetTextOffset = parseNonNegative( prop, value );
+      break;
+    case 'source-text-margin-x':
+      computed.sourceTextMarginX = parseNumber( prop, value );
+      break;
+    case 'source-text-margin-y':
+      computed.sourceTextMarginY = parseNumber( prop, value );
+      break;
+    case 'target-text-margin-x':
+      computed.targetTextMarginX = parseNumber( prop, value );
+      break;
+    case 'target-text-margin-y':
+      computed.targetTextMarginY = parseNumber( prop, value );
+      break;
+    case 'source-text-rotation':
+      computed.sourceTextRotation = parseTextRotation( value );
+      break;
+    case 'target-text-rotation':
+      computed.targetTextRotation = parseTextRotation( value );
+      break;
     case 'font-size':
       computed.fontSize = parseNumber( prop, value );
       break;
@@ -1794,6 +1882,48 @@ const MAPPABLE: Record<string, MappableChannel> = {
     parseEnum: v => TEXT_ROTATIONS[ String( v ) ] ?? null,
     set: ( c, v ) => { c.textRotation = v as number; },
     default: () => EDGE_DEFAULTS.textRotation
+  },
+  'source-text-offset': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.sourceTextOffset = v as number; },
+    default: () => EDGE_DEFAULTS.sourceTextOffset
+  },
+  'target-text-offset': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.targetTextOffset = v as number; },
+    default: () => EDGE_DEFAULTS.targetTextOffset
+  },
+  'source-text-margin-x': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.sourceTextMarginX = v as number; },
+    default: () => EDGE_DEFAULTS.sourceTextMarginX
+  },
+  'source-text-margin-y': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.sourceTextMarginY = v as number; },
+    default: () => EDGE_DEFAULTS.sourceTextMarginY
+  },
+  'target-text-margin-x': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.targetTextMarginX = v as number; },
+    default: () => EDGE_DEFAULTS.targetTextMarginX
+  },
+  'target-text-margin-y': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.targetTextMarginY = v as number; },
+    default: () => EDGE_DEFAULTS.targetTextMarginY
+  },
+  'source-text-rotation': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => TEXT_ROTATIONS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.sourceTextRotation = v as number; },
+    default: () => EDGE_DEFAULTS.sourceTextRotation
+  },
+  'target-text-rotation': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => TEXT_ROTATIONS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.targetTextRotation = v as number; },
+    default: () => EDGE_DEFAULTS.targetTextRotation
   },
   'line-color': {
     kind: 'color', groups: [ 'edges' ],
@@ -2255,6 +2385,8 @@ export class StyleEngine {
       };
 
       if( computed.labelKey != null ){ dep( computed.labelKey, 'label' ); }
+      if( computed.sourceLabelKey != null ){ dep( computed.sourceLabelKey, 'label' ); }
+      if( computed.targetLabelKey != null ){ dep( computed.targetLabelKey, 'label' ); }
 
       for( const bm of mappers ){
         for( const key of bm.m.keys ){ dep( key, 'mappers' ); }
@@ -2889,6 +3021,33 @@ export class StyleEngine {
           ? ( entry.rotate ? 'autorotate' : 'none' )
           : TEXT_ROTATION_NAMES[ this.defs[ ref.group ].computed.textRotation ];
       }
+      case 'source-label': case 'source-text-offset': case 'source-text-margin-x':
+      case 'source-text-margin-y': case 'source-text-rotation':
+      case 'target-label': case 'target-text-offset': case 'target-text-margin-x':
+      case 'target-text-margin-y': case 'target-text-rotation': {
+        // end labels (D4): the stored stream entry, else the sheet value
+        const src = prop.startsWith( 'source' );
+        const entry = store.labelAt( slot, src ? 'edgeSource' : 'edgeTarget' );
+        const d = this.defs.edges.computed;
+
+        if( prop.endsWith( '-label' ) ){ return entry?.text ?? ''; }
+
+        if( prop.endsWith( '-offset' ) ){
+          return entry != null ? entry.endOffset : ( src ? d.sourceTextOffset : d.targetTextOffset );
+        }
+
+        if( prop.endsWith( '-margin-x' ) ){
+          return entry != null ? entry.marginX : ( src ? d.sourceTextMarginX : d.targetTextMarginX );
+        }
+
+        if( prop.endsWith( '-margin-y' ) ){
+          return entry != null ? entry.marginY : ( src ? d.sourceTextMarginY : d.targetTextMarginY );
+        }
+
+        return entry != null
+          ? ( entry.rotate ? 'autorotate' : 'none' )
+          : TEXT_ROTATION_NAMES[ src ? d.sourceTextRotation : d.targetTextRotation ];
+      }
 
       // shared names, resolved per group
       case 'width': return ref.group === 'nodes' ? pair( 'node.size', 0 ) : scalar( 'edge.width' );
@@ -3126,6 +3285,10 @@ export class StyleEngine {
       const norm = normalizeProp( prop );
       const value = props[ prop ];
 
+      if( END_LABEL_PROPS.has( norm ) && group === 'nodes' ){
+        throw new Error( `'${norm}' is an edge style property` );
+      }
+
       if( norm === 'text-rotation' && group === 'nodes' ){
         // autorotate is an edge concept (rotate to the edge's angle);
         // per-element numeric rotation is a logged parity gap, not built
@@ -3156,18 +3319,19 @@ export class StyleEngine {
       }
 
       if( isMapperSpec( value ) ){
-        if( norm === 'label' ){
-          // the label passthrough rides the existing labelKey channel
+        if( norm === 'label' || norm === 'source-label' || norm === 'target-label' ){
+          // the label passthrough rides the per-stream key channel
           const asScale = value as GpuMapper;
           const passthrough = !( 'case' in value ) && typeof asScale.data === 'string'
             && asScale.scale == null && asScale.domain == null && asScale.range == null;
 
           if( !passthrough ){
-            throw new Error( `Only the passthrough mapper ({ data: key }) is supported for 'label'` );
+            throw new Error( `Only the passthrough mapper ({ data: key }) is supported for '${norm}'` );
           }
 
-          computed.label = '';
-          computed.labelKey = asScale.data;
+          if( norm === 'label' ){ computed.label = ''; computed.labelKey = asScale.data; }
+          else if( norm === 'source-label' ){ computed.sourceLabel = ''; computed.sourceLabelKey = asScale.data; }
+          else { computed.targetLabel = ''; computed.targetLabelKey = asScale.data; }
           continue;
         }
 
@@ -3400,16 +3564,11 @@ export class StyleEngine {
       valignShift = ( nc.textValign - 2 ) * 0.5;
     }
 
-    store.setLabel( slot, text === '' ? null : {
-      text,
+    // the shared text channels (font, color, box, opacity — v3 reads
+    // these unprefixed for all three edge labels)
+    const shared = {
       fontSize: computed.fontSize,
       color: fold( computed.textColor, 1 ),
-      anchorX,
-      halignShift,
-      valignShift,
-      anchorY,
-      marginX: computed.textMarginX,
-      marginY: computed.textMarginY,
       minZoomedFontSize: computed.minZoomedFontSize,
       outlineWidth: computed.textOutlineWidth,
       outlineColor: fold( computed.textOutlineColor, computed.textOutlineOpacity ),
@@ -3417,8 +3576,55 @@ export class StyleEngine {
       bgPadding: computed.textBgPadding,
       bgShape: computed.textBgShape,
       bgBorderColor: fold( computed.textBorderColor, computed.textBorderOpacity ),
-      bgBorderWidth: computed.textBorderWidth,
+      bgBorderWidth: computed.textBorderWidth
+    };
+
+    store.setLabel( slot, text === '' ? null : {
+      text,
+      ...shared,
+      anchorX,
+      halignShift,
+      valignShift,
+      anchorY,
+      marginX: computed.textMarginX,
+      marginY: computed.textMarginY,
+      endOffset: 0,
       rotate: group === 'edges' && ( computed as Computed ).textRotation === 1
     }, group );
+
+    // end labels (D4): two more streams per edge, anchored at arc
+    // distance *-text-offset from each end (the label VS walks the
+    // drawn path); placement channels are prefixed, text style shared
+    if( group === 'edges' ){
+      const ec = computed as Computed;
+
+      for( const end of [ 'source', 'target' ] as const ){
+        const src = end === 'source';
+        const key2 = src ? ec.sourceLabelKey : ec.targetLabelKey;
+        let endText = key2 == null
+          ? ( src ? ec.sourceLabel : ec.targetLabel )
+          : key2 === 'id'
+            ? ( store.idAt( group, slot ) ?? '' )
+            : stringify( store.data.get( group, slot, key2 ) );
+
+        if( computed.textTransform === 1 ){ endText = endText.toUpperCase(); }
+        else if( computed.textTransform === 2 ){ endText = endText.toLowerCase(); }
+
+        const marginY = src ? ec.sourceTextMarginY : ec.targetTextMarginY;
+
+        store.setLabel( slot, endText === '' ? null : {
+          text: endText,
+          ...shared,
+          anchorX: 0,
+          halignShift: 0,
+          valignShift: 0,
+          anchorY: -computed.fontSize / 2 + marginY,
+          marginX: src ? ec.sourceTextMarginX : ec.targetTextMarginX,
+          marginY,
+          endOffset: src ? ec.sourceTextOffset : ec.targetTextOffset,
+          rotate: ( src ? ec.sourceTextRotation : ec.targetTextRotation ) === 1
+        }, src ? 'edgeSource' : 'edgeTarget' );
+      }
+    }
   }
 }

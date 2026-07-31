@@ -1385,6 +1385,68 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: source/target labels along straight, bezier, taxi and loop edges (round 13 D4)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+
+    // end labels ride every curve family's arc walk; the diagonal pair
+    // exercises autorotate at the end tangents
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -140, y: -100 } },
+        { data: { id: 'b' }, position: { x: 140, y: -100 } },
+        { data: { id: 'st', source: 'a', target: 'b', fam: 'straight' } },
+        { data: { id: 'c' }, position: { x: -140, y: -30 } },
+        { data: { id: 'd' }, position: { x: 140, y: 30 } },
+        { data: { id: 'bz1', source: 'c', target: 'd', fam: 'bezier', rot: 1 } },
+        { data: { id: 'bz2', source: 'c', target: 'd', fam: 'bezier', rot: 1 } },
+        { data: { id: 'e' }, position: { x: -140, y: 110 } },
+        { data: { id: 'f' }, position: { x: 60, y: 160 } },
+        { data: { id: 'tx', source: 'e', target: 'f', fam: 'taxi' } },
+        { data: { id: 'g' }, position: { x: 150, y: 130 } },
+        { data: { id: 'lp', source: 'g', target: 'g', fam: 'loop' } }
+      ],
+      style: {
+        nodes: {
+          'width': 26, 'height': 26, 'background-color': '#dfe6e9',
+          'border-width': 1, 'border-color': '#b2bec3',
+          'font-family': `'Open Sans', sans-serif`
+        },
+        edges: {
+          'width': 2, 'line-color': '#b2bec3',
+          'curve-style': { case: [
+            { when: { data: 'fam', eq: 'bezier' }, then: 'bezier' },
+            { when: { data: 'fam', eq: 'taxi' }, then: 'taxi' },
+            { when: { data: 'fam', eq: 'loop' }, then: 'bezier' }
+          ], else: 'straight' },
+          'font-size': 11, 'color': '#2d3436',
+          'source-label': 'src', 'source-text-offset': 30,
+          'target-label': 'tgt', 'target-text-offset': 45,
+          'source-text-rotation': { case: [ { when: { data: 'rot', eq: 1 }, then: 'autorotate' } ], else: 'none' },
+          'target-text-rotation': { case: [ { when: { data: 'rot', eq: 1 }, then: 'autorotate' } ], else: 'none' },
+          'source-text-margin-y': -2,
+          'text-background-color': '#ffeaa7',
+          'text-background-opacity': 1
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'end-labels', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

@@ -18,8 +18,9 @@ export class LabelPipeline {
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   private edge: boolean;
-  /** one cached bind group per uniform buffer (scene frame vs export frame) */
-  private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; key: string }>;
+  /** cached per (uniform buffer, glyph stream) — the edge pipeline
+   * draws three streams (mid/source/target labels — round 13 D4) */
+  private bindGroups: Map<GPUBuffer, Map<GlyphBuffer, { group: GPUBindGroup; key: string }>>;
 
   constructor(
     device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout,
@@ -73,7 +74,14 @@ export class LabelPipeline {
     glyphs: GlyphBuffer, mirror: ColumnMirror, atlas: GlyphAtlas
   ): GPUBindGroup {
     const key = `${mirror.version}:${glyphs.version}`;
-    const cached = this.bindGroups.get( uniform );
+    let perUniform = this.bindGroups.get( uniform );
+
+    if( perUniform == null ){
+      perUniform = new Map();
+      this.bindGroups.set( uniform, perUniform );
+    }
+
+    const cached = perUniform.get( glyphs );
 
     if( cached != null && cached.key === key ){
       return cached.group;
@@ -98,7 +106,7 @@ export class LabelPipeline {
       ]
     } );
 
-    this.bindGroups.set( uniform, { group, key } );
+    perUniform.set( glyphs, { group, key } );
 
     return group;
   }

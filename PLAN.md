@@ -2973,6 +2973,38 @@ layout) is not consumed by it.
   (`test/gpu-text-align.mjs`).  1936 Node tests, 111 Playwright
   specs, typecheck + lint green.
 
+- [x] **D4 `source-label`/`target-label` families** (2026-08-01).
+  All ten props land: `source/target-label` (constants or the
+  `data(key)` passthrough, refreshing on data writes),
+  `-text-offset` (non-negative, mapper-capable), `-text-margin-x/y`
+  and `-text-rotation` (`none | autorotate`) — with the remaining
+  text channels (font, color, boxes, opacity, transform,
+  min-zoomed-font-size) shared with the main label, exactly v3's
+  unprefixed reads.  Two more sidecar streams
+  (`edgeSource`/`edgeTarget` in the widened `LabelStream` type) feed
+  two more `GlyphBuffer`s from the same builder; the glyph word 13
+  pad became the **endParam encoding** (sign picks the end,
+  |v|−1 the arc offset — the +1 bias keeps offset 0 distinct from
+  the midpoint streams).  The edge label VS re-anchors end glyphs by
+  walking the drawn path — v3's `calculateEndProjection` on-GPU:
+  straight/haystack segments exactly, bezier/loop as a 32-sample
+  polyline of the quad chain (v3 itself walks a ~16-segment
+  approximation), route families along the route polyline (v3's
+  allpts walk — both ignore corner rounding) and multibezier at 8
+  samples per quad chain link; autorotate takes the local tangent.
+  The shared edge-glyph cull kind grows the viewport slack by half
+  the chord for end glyphs (the anchor can sit anywhere on the
+  path); two more `CulledGroup`s of the same kind and two more
+  draws through the same `LabelPipeline` (its bind cache re-keyed
+  per (uniform, stream)).  Edge removal and restyles clear the
+  streams.  No label pixel parity vs v3 by recorded design — the
+  pins are the `end-labels` golden (straight + bezier pair with
+  autorotate + taxi + loop, boxed labels) and a `webgpu` spec
+  asserting the straight-edge anchors land at v3's exact arc
+  positions (boundary + offset) and slide on restyle.  8 Node specs
+  (`test/gpu-end-labels.mjs`).  1944 Node tests, 113 Playwright
+  specs, typecheck + lint green.  **Round 13 complete.**
+
 **Sequencing**: pass 12c (the round-12 plan above) runs first, then
 this round's phases in order — the 2026-07-29 triage keeps (ghost,
 overlay/underlay) lead, per the discussion that produced this plan.
@@ -3110,7 +3142,7 @@ shelf, since the expensive part now exists)
   anchor grid, anchor math off the node half-extents
   (`node.outerHalf` is already a bindable column); placement only
   per the lean above.
-- [ ] **D4 `source-label`/`target-label` families** (10 props): two
+- [x] **D4 `source-label`/`target-label` families** (10 props): two
   more glyph streams from the round-10 B5 template, anchored at
   v3's offsets along the edge (`source/target-text-offset` as arc
   distance via the route evaluator), each with its own margins and

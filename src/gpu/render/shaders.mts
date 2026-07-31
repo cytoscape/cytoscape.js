@@ -144,7 +144,9 @@ struct Glyph {
   outlineColor: u32, // packed RGBA (a=0: no outline)
   outlineWidth: f32, // half-width in SDF sample units (0 = none)
   zoomDprMin: f32,   // min-zoomed-font-size / fontSize (D2); 0 = no floor
-  glyphPad: f32,     // struct stride padding (unused)
+  endParam: f32,     // end-label encoding (D4): 0 = midpoint stream; else
+                     // sign picks the end (+source / -target) and
+                     // |endParam| - 1 is the arc offset in model px
 }
 
 const DEAD_GLYPH: u32 = 0xffffffffu;
@@ -2692,10 +2694,118 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
  * computed here in the VS, so edge labels follow drags/layouts/position
  * tweens on-GPU with zero rebuild.
  */
+// end-label anchor walkers (round 13 D4): v3 anchors source/target
+// labels at arc distance *-text-offset from each end along the drawn
+// path.  Straight/haystack owners walk their segment exactly;
+// bezier/loop owners walk a 32-sample polyline of the quad chain (v3
+// itself walks a ~16-segment approximation); route families walk the
+// route polyline — exactly v3's allpts walk for segments/taxi (both
+// ignore corner rounding) — and multibezier walks its quad chain at 8
+// samples per quad.  Returns (point.xy, tangent.zw).
+const END_WALK_WGSL = `
+fn segmentWalk(a: vec2f, b: vec2f, fromSource: bool, dist: f32) -> vec4f {
+  let d = b - a;
+  let l = max(length(d), 1e-6);
+  let t = clamp(dist / l, 0.0, 1.0);
+
+  if (fromSource) { return vec4f(a + d * t, d); }
+  return vec4f(b - d * t, d);
+}
+
+fn curveEndWalk(g: CurveGeom, fromSource: bool, dist: f32) -> vec4f {
+  let N = 32u;
+  var remaining = dist;
+  var p0 = curvePoint(g, select(1.0, 0.0, fromSource));
+  var lastSeg = vec2f(1.0, 0.0);
+
+  for (var i = 1u; i <= N; i = i + 1u) {
+    let f = f32(i) / f32(N);
+    let p1 = curvePoint(g, select(1.0 - f, f, fromSource));
+    let seg = p1 - p0;
+    let l = length(seg);
+
+    if (remaining <= l) {
+      return vec4f(p0 + seg * (remaining / max(l, 1e-6)), seg);
+    }
+
+    remaining = remaining - l;
+    p0 = p1;
+    lastSeg = seg;
+  }
+
+  return vec4f(p0, lastSeg); // past the far end: clamp there (v3's bound)
+}
+
+fn routeEndWalkW(r: ptr<function, Route>, fromSource: bool, dist: f32) -> vec4f {
+  let n = (*r).n;
+  var remaining = dist;
+
+  if ((*r).kind == 3.0 && n > 0u) { // multibezier: the quad chain
+    let S = 8u;
+    var lastP = (*r).q[select(n + 1u, 0u, fromSource)];
+    var lastSeg = vec2f(1.0, 0.0);
+
+    for (var qi = 0u; qi < MAX_ROUTE_PTS; qi = qi + 1u) {
+      if (qi >= n) { break; }
+
+      let i = select(n - 1u - qi, qi, fromSource);
+      let c = (*r).q[i + 1u];
+      var a = (*r).q[0u];
+      var b = (*r).q[n + 1u];
+
+      if (i != 0u) { a = ((*r).q[i] + c) * 0.5; }
+      if (i != n - 1u) { b = (c + (*r).q[i + 2u]) * 0.5; }
+
+      for (var si = 0u; si < S; si = si + 1u) {
+        let f0 = f32(si) / f32(S);
+        let f1 = f32(si + 1u) / f32(S);
+        let p0 = qbez(a, c, b, select(1.0 - f0, f0, fromSource));
+        let p1 = qbez(a, c, b, select(1.0 - f1, f1, fromSource));
+        let seg = p1 - p0;
+        let l = length(seg);
+
+        if (remaining <= l) {
+          return vec4f(p0 + seg * (remaining / max(l, 1e-6)), seg);
+        }
+
+        remaining = remaining - l;
+        lastP = p1;
+        lastSeg = seg;
+      }
+    }
+
+    return vec4f(lastP, lastSeg);
+  }
+
+  // polyline families: walk q[] from the chosen end
+  var lastP = (*r).q[select(n + 1u, 0u, fromSource)];
+  var lastSeg = vec2f(1.0, 0.0);
+
+  for (var si = 0u; si < MAX_ROUTE_PTS + 1u; si = si + 1u) {
+    if (si > n) { break; }
+
+    let p0 = (*r).q[select(n + 1u - si, si, fromSource)];
+    let p1 = (*r).q[select(n - si, si + 1u, fromSource)];
+    let seg = p1 - p0;
+    let l = length(seg);
+
+    if (remaining <= l) {
+      return vec4f(p0 + seg * (remaining / max(l, 1e-6)), seg);
+    }
+
+    remaining = remaining - l;
+    lastP = p1;
+    lastSeg = seg;
+  }
+
+  return vec4f(lastP, lastSeg);
+}
+`;
+
 const labelShader = ( edge: boolean ): string => `
 ${COMMON}
 ${GLYPH_STRUCT}
-${ edge ? BOUNDARY_WGSL + CURVE_WGSL + ROUTE_WGSL : '' }
+${ edge ? BOUNDARY_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : '' }
 // flags columns are not bound here: the cull pass already dropped glyphs
 // of dead/hidden owners.  The edge variant binds the curve inputs too —
 // 7 storage buffers + the visible list (node size and border ride the
@@ -2779,6 +2889,53 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     anchor = midTan.xy;
     rotA = anchor;
     rotB = anchor + midTan.zw;
+  }
+
+  // end labels (round 13 D4): glyphs on the edgeSource/edgeTarget
+  // streams re-anchor at |endParam| - 1 model px of arc distance from
+  // their end (sign picks the end), walking the same drawn path the
+  // edge shaders evaluate — v3's calculateEndProjection on-GPU
+  if (g.endParam != 0.0) {
+    let fromSource = g.endParam > 0.0;
+    let dist = abs(g.endParam) - 1.0;
+    var at: vec4f;
+
+    if (params.w != 0.0 && params.w <= 2.0) { // bezier / loop
+      let geom = evalCurveGeom(
+        params,
+        pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
+        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      );
+
+      at = curveEndWalk(geom, fromSource, dist);
+    } else if (params.w == 6.0) { // haystack: the offset segment
+      let ha = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
+      let hb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+
+      at = segmentWalk(ha, hb, fromSource, dist);
+    } else if (params.w > 2.0 && params.w != 7.0) { // route families
+      var endRoute = evalRouteW(
+        params,
+        pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
+        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      );
+
+      at = routeEndWalkW(&endRoute, fromSource, dist);
+    } else { // straight / straight-triangle: the boundary chord
+      var d = pb - pa;
+      let l = length(d);
+
+      if (l < 1e-6) { d = vec2f(1.0, 0.0); } else { d = d / l; }
+
+      let sPt = pa + d * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], d);
+      let ePt = pb - d * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -d);
+
+      at = segmentWalk(sPt, ePt, fromSource, dist);
+    }
+
+    anchor = at.xy;
+    rotA = anchor;
+    rotB = anchor + at.zw;
   }`
     : 'let anchor = nodePositions[g.nodeSlot];' }
   let originPx = modelToPx(frame, anchor) + g.offset * frame.zoomDpr;

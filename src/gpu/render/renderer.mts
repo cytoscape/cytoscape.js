@@ -14,6 +14,7 @@ import { GpuTimer } from './gpu-timer.mjs';
 import { LabelLayer } from './label-layer.mjs';
 import { LabelPipeline } from './label-pipeline.mjs';
 import { GLYPH_BYTES } from './glyph-buffer.mjs';
+import type { GlyphBuffer } from './glyph-buffer.mjs';
 import { MapperRuntime } from './mapper-runtime.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { ScaleController } from './scale-controller.mjs';
@@ -76,6 +77,8 @@ interface SceneCullGroups {
   curved: CulledGroup;
   glyph: CulledGroup;
   edgeGlyph: CulledGroup;
+  sourceGlyph: CulledGroup;
+  targetGlyph: CulledGroup;
   ghost: CulledGroup;
   overlay: CulledGroup;
   underlay: CulledGroup;
@@ -630,6 +633,8 @@ export class Renderer {
           curved: new CulledGroup( kernels, 'curvedEdge', 'export-curved-edge', 6 * CURVE_SEGS ),
           glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' ),
           edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-edge-glyph' ),
+          sourceGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-source-glyph' ),
+          targetGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-target-glyph' ),
           ghost: new CulledGroup( kernels, 'ghost', 'export-ghost' ),
           overlay: new CulledGroup( kernels, 'nodeLayer', 'export-overlay' ),
           underlay: new CulledGroup( kernels, 'nodeLayer', 'export-underlay' )
@@ -805,6 +810,8 @@ export class Renderer {
       curved: new CulledGroup( kernels, 'curvedEdge', 'scene-curved-edge', 6 * CURVE_SEGS ),
       glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' ),
       edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-edge-glyph' ),
+      sourceGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-source-glyph' ),
+      targetGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-target-glyph' ),
       ghost: new CulledGroup( kernels, 'ghost', 'scene-ghost' ),
       overlay: new CulledGroup( kernels, 'nodeLayer', 'scene-overlay' ),
       underlay: new CulledGroup( kernels, 'nodeLayer', 'scene-underlay' )
@@ -1117,6 +1124,14 @@ export class Renderer {
       this.edgeLabelPipeline.draw(
         pass, device, uniform, this.labelLayer.edgeGlyphs, mirror, this.labelLayer.atlas, cull.edgeGlyph
       );
+      // the end-label streams (D4) share the pipeline; their glyphs
+      // carry the endParam re-anchor
+      this.edgeLabelPipeline.draw(
+        pass, device, uniform, this.labelLayer.sourceGlyphs, mirror, this.labelLayer.atlas, cull.sourceGlyph
+      );
+      this.edgeLabelPipeline.draw(
+        pass, device, uniform, this.labelLayer.targetGlyphs, mirror, this.labelLayer.atlas, cull.targetGlyph
+      );
     }
   }
 
@@ -1149,7 +1164,8 @@ export class Renderer {
     encoder: GPUCommandEncoder, uniform: GPUBuffer,
     groups: {
       node?: CulledGroup; edge: CulledGroup; curved: CulledGroup;
-      glyph?: CulledGroup; edgeGlyph?: CulledGroup; ghost?: CulledGroup;
+      glyph?: CulledGroup; edgeGlyph?: CulledGroup;
+      sourceGlyph?: CulledGroup; targetGlyph?: CulledGroup; ghost?: CulledGroup;
       overlay?: CulledGroup; underlay?: CulledGroup;
     },
     timed: boolean, now: number = 0
@@ -1207,10 +1223,16 @@ export class Renderer {
       ], `${mv}:${glyphs.version}` );
     }
 
-    if( groups.edgeGlyph != null && labelLayer != null ){
-      const glyphs = labelLayer.edgeGlyphs;
+    const edgeGlyphStreams: [ CulledGroup | undefined, GlyphBuffer ][] = labelLayer == null ? [] : [
+      [ groups.edgeGlyph, labelLayer.edgeGlyphs ],
+      [ groups.sourceGlyph, labelLayer.sourceGlyphs ], // end labels (D4)
+      [ groups.targetGlyph, labelLayer.targetGlyphs ]
+    ];
 
-      groups.edgeGlyph.ensure( uniform, Math.max( 1, glyphs.buffer().size / GLYPH_BYTES ), [
+    for( const [ cullGroup, glyphs ] of edgeGlyphStreams ){
+      if( cullGroup == null ){ continue; }
+
+      cullGroup.ensure( uniform, Math.max( 1, glyphs.buffer().size / GLYPH_BYTES ), [
         glyphs.buffer(), mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'node.position' ),
         mirror.buffer( 'edge.flags' ), mirror.buffer( 'node.flags' )
       ], `${mv}:${glyphs.version}` );
@@ -1254,6 +1276,11 @@ export class Renderer {
 
     if( groups.edgeGlyph != null && labelLayer != null ){
       groups.edgeGlyph.encode( pass, labelLayer.edgeGlyphs.highWater );
+    }
+
+    if( labelLayer != null ){
+      groups.sourceGlyph?.encode( pass, labelLayer.sourceGlyphs.highWater );
+      groups.targetGlyph?.encode( pass, labelLayer.targetGlyphs.highWater );
     }
 
     pass.end();

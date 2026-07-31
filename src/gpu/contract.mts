@@ -391,6 +391,10 @@ export interface StoreDelta {
  * buffer on-GPU and labels follow drags/layouts without rebuilds.  Only
  * text/style changes dirty a label.
  */
+/** Label sidecar streams: main node/edge labels plus the edge
+ * source/target end-label streams (round 13 D4). */
+export type LabelStream = GroupName | 'edgeSource' | 'edgeTarget';
+
 export interface LabelEntry {
   text: string;
   /** model px */
@@ -426,6 +430,10 @@ export interface LabelEntry {
   /** valign shift as a fraction of the laid block height (anchorY is
    * the block-top base): -1 top, -0.5 middle, 0 bottom */
   valignShift: number;
+  /** end-label arc offset (round 13 D4): source/target-text-offset in
+   * model px along the drawn edge; only read on the edgeSource /
+   * edgeTarget streams */
+  endOffset: number;
   /** min-zoomed-font-size (round 13 D2), device px; 0 = no floor.  The
    * glyph cull hides the whole label when fontSize x zoomDpr drops
    * below it (v3's eleTextBiggerThanMin). */
@@ -463,10 +471,10 @@ export interface ModelView {
    * borderGeom[0] as offset | count << 24). */
   polyBlob(): Float32Array;
   polyBlobLength(): number;
-  /** The node's label, or undefined when it has none. */
-  labelAt( slot: number, group?: GroupName ): LabelEntry | undefined;
+  /** The element's label on the given stream, or undefined. */
+  labelAt( slot: number, group?: LabelStream ): LabelEntry | undefined;
   /** Slots whose labels changed since the last call; returns-and-clears (default: nodes). */
-  takeLabelDirty( group?: GroupName ): number[];
+  takeLabelDirty( group?: LabelStream ): number[];
 }
 
 /** A validated reference to an element slot; stale when `gen` no longer matches. */

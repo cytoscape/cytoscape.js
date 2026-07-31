@@ -2999,4 +2999,60 @@ test.describe( 'WebGPU renderer', () => {
     expect( aboveNow ).toBe( 0 );
   } );
 
+  test( 'source/target labels sit at their arc offsets and follow restyles (D4)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#ecf0f1' },
+        edges: {
+          'width': 2, 'line-color': '#ecf0f1',
+          'source-label': 'SRC', 'source-text-offset': 40,
+          'target-label': 'TGT', 'target-text-offset': 40,
+          'font-size': 14, 'color': '#000'
+        }
+      },
+      zoom: 1
+    } );
+
+    const c = await centerPan( page );
+    await waitFrames( page );
+
+    const inkAround = async x => {
+      let ink = 0;
+
+      for( const dy of [ -4, 0, 4 ] ){
+        ink += await darkPixelsInBand( page, x - 20, 40, c.y + dy );
+      }
+
+      return ink;
+    };
+
+    // source boundary at x = -135; offset 40 -> anchor at -95 (target
+    // mirrored at +95); the midpoint stays clear
+    expect( await inkAround( c.x - 95 ) ).toBeGreaterThan( 10 );
+    expect( await inkAround( c.x + 95 ) ).toBeGreaterThan( 10 );
+    expect( await inkAround( c.x ) ).toBe( 0 );
+
+    // a bigger source offset slides the label along the edge
+    await page.evaluate( () => {
+      window.cy.style( { nodes: { 'width': 30, 'height': 30, 'background-color': '#ecf0f1' },
+        edges: {
+          'width': 2, 'line-color': '#ecf0f1',
+          'source-label': 'SRC', 'source-text-offset': 100,
+          'font-size': 14, 'color': '#000'
+        } } );
+    } );
+    await waitFrames( page );
+
+    expect( await inkAround( c.x - 35 ) ).toBeGreaterThan( 10 );
+    expect( await inkAround( c.x - 95 ) ).toBe( 0 );
+    expect( await inkAround( c.x + 95 ) ).toBe( 0 ); // target label removed
+  } );
+
 } );

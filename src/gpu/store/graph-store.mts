@@ -18,7 +18,7 @@ import {
   FLAG_ALIVE, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE,
   FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
-import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
+import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
 
 export interface AddElementOpts {
@@ -95,8 +95,8 @@ export class GraphStore implements ModelView {
   private routeScratch = emptyCurveRoute();
 
   private order: { nodes: OrderList; edges: OrderList };
-  private labels: Record<GroupName, ( LabelEntry | undefined )[]>;
-  private labelDirty: Record<GroupName, Set<number>>;
+  private labels: Record<LabelStream, ( LabelEntry | undefined )[]>;
+  private labelDirty: Record<LabelStream, Set<number>>;
   /** global label font-family (one font per glyph atlas); style-owned */
   labelFont: string;
   labelFontStyle: string;
@@ -114,8 +114,10 @@ export class GraphStore implements ModelView {
     this.data = new DataStore();
     this.dirty = new DirtyTracker();
     this.order = { nodes: emptyOrder(), edges: emptyOrder() };
-    this.labels = { nodes: [], edges: [] };
-    this.labelDirty = { nodes: new Set(), edges: new Set() };
+    this.labels = { nodes: [], edges: [], edgeSource: [], edgeTarget: [] };
+    this.labelDirty = {
+      nodes: new Set(), edges: new Set(), edgeSource: new Set(), edgeTarget: new Set()
+    };
     this.labelFont = 'sans-serif';
     this.labelFontStyle = 'normal';
     this.labelFontWeight = 'normal';
@@ -1360,7 +1362,7 @@ export class GraphStore implements ModelView {
   // edge midpoint, which the renderer computes on-GPU).  The group param
   // defaults to 'nodes' so node-side call sites read unchanged.
 
-  labelAt( slot: number, group: GroupName = 'nodes' ): LabelEntry | undefined {
+  labelAt( slot: number, group: LabelStream = 'nodes' ): LabelEntry | undefined {
     return this.labels[ group ][ slot ];
   }
 
@@ -1383,7 +1385,7 @@ export class GraphStore implements ModelView {
 
   /** Queue every labelled slot (both groups) for a glyph-run rebuild. */
   markAllLabelsDirty(): void {
-    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
+    for( const group of [ 'nodes', 'edges', 'edgeSource', 'edgeTarget' ] as LabelStream[] ){
       const labels = this.labels[ group ];
       const dirty = this.labelDirty[ group ];
 
@@ -1396,7 +1398,7 @@ export class GraphStore implements ModelView {
   }
 
   /** Set or clear (null) an element's label; no-ops when nothing changed. */
-  setLabel( slot: number, entry: LabelEntry | null, group: GroupName = 'nodes' ): void {
+  setLabel( slot: number, entry: LabelEntry | null, group: LabelStream = 'nodes' ): void {
     const labels = this.labels[ group ];
     const prev = labels[ slot ];
 
@@ -1415,7 +1417,7 @@ export class GraphStore implements ModelView {
         prev.bgBorderWidth === entry.bgBorderWidth &&
         prev.minZoomedFontSize === entry.minZoomedFontSize &&
         prev.anchorX === entry.anchorX && prev.halignShift === entry.halignShift &&
-        prev.valignShift === entry.valignShift &&
+        prev.valignShift === entry.valignShift && prev.endOffset === entry.endOffset &&
         prev.rotate === entry.rotate
       ){ return; }
 
@@ -1426,7 +1428,7 @@ export class GraphStore implements ModelView {
     this.dirty.touch();
   }
 
-  takeLabelDirty( group: GroupName = 'nodes' ): number[] {
+  takeLabelDirty( group: LabelStream = 'nodes' ): number[] {
     const dirty = this.labelDirty[ group ];
 
     if( dirty.size === 0 ){ return []; }
@@ -1867,6 +1869,14 @@ export class GraphStore implements ModelView {
 
     if( this.labels[ group ][ slot ] != null ){
       this.setLabel( slot, null, group );
+    }
+
+    if( group === 'edges' ){
+      for( const stream of [ 'edgeSource', 'edgeTarget' ] as LabelStream[] ){
+        if( this.labels[ stream ][ slot ] != null ){
+          this.setLabel( slot, null, stream );
+        }
+      }
     }
 
     // tombstone: cleared flags (no ALIVE bit) collapse the instance to a degenerate quad

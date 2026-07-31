@@ -1197,6 +1197,15 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
   rendering with a console warning.  Label color/text bake into glyph
   instances, so `:selected`/hover styling does not restyle label text.
+  Round 13 D4 added the `source-label`/`target-label` families (all
+  ten props): two more glyph streams anchored at arc distance
+  `source/target-text-offset` from each end, walked along the drawn
+  path in the label VS (v3's `calculateEndProjection` on-GPU —
+  segments exactly; bezier/loop/multibezier via fixed-sample
+  polylines; route families along the route polyline, corner
+  rounding ignored as v3 does), with per-end margins and
+  `autorotate` at the local tangent; the remaining text channels are
+  shared with the main label, exactly v3's unprefixed reads.
   Round 13 D2 added per-element `min-zoomed-font-size` (v3's rule —
   the label hides when `font-size × zoom × dpr` drops below it),
   baked into each glyph as a zoom threshold and tested in the glyph

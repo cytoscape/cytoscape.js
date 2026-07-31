@@ -41,6 +41,20 @@ export const FLAG_CURVED = 1024;
  * length instead of the slack-grown chord.
  */
 export const FLAG_CURVED_BOX = 2048;
+/**
+ * Node-only, store-managed (derived, round 14): set while the node has at
+ * least one child.  Maintained by the HierarchyIndex, never a user switch.
+ * Lives in the flags column so the cull kernels (which already bind flags)
+ * can split the node draw into a parent stream and a leaf stream, and so
+ * `:parent`-style queries stay pure flag scans.
+ */
+export const FLAG_PARENT = 4096;
+/**
+ * Node-only, store-managed (derived, round 14): set while the node has a
+ * parent.  The `child`/`orphan` query predicates and the structural `case`
+ * conditions read it.
+ */
+export const FLAG_CHILD = 8192;
 
 // -- node shape ids (u32 because WGSL can't index u8 arrays) --
 

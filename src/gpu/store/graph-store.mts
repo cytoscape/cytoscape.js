@@ -5,6 +5,7 @@ import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import { CurveIndex } from './curve-index.mjs';
 import type { CurveStyleExtras, EndpointSpec } from './curve-index.mjs';
+import { HierarchyIndex } from './hierarchy.mjs';
 import { CurveBlob } from './curve-blob.mjs';
 import {
   CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
@@ -62,6 +63,8 @@ export class GraphStore implements ModelView {
   readonly data: DataStore;
   readonly dirty: DirtyTracker;
   readonly curves: CurveIndex;
+  /** the compound hierarchy (round 14); reads go through the delegates below */
+  private hierarchy: HierarchyIndex;
 
   // conservative monotone maxima behind curveSlack() (see that doc)
   private curveDevMax = 0;
@@ -138,6 +141,13 @@ export class GraphStore implements ModelView {
       writeBlobParams: ( slot, kind, values, n, dev, box, endptPct ) =>
         this.setCurveParamsBlob( slot, kind, values, n, dev, box, endptPct ),
       idHash: ( slot ) => this.ids.hashAt( 'edges', slot ),
+      schedule: () => this.dirty.touch()
+    } );
+
+    this.hierarchy = new HierarchyIndex( {
+      flags: () => this.nodes.column( 'node.flags' ) as Uint32Array,
+      gen: () => this.nodes.gen,
+      markFlag: ( slot ) => this.dirty.mark( 'node.flags', slot ),
       schedule: () => this.dirty.touch()
     } );
 
@@ -532,15 +542,67 @@ export class GraphStore implements ModelView {
     this.dirty.mark( 'edge.endpoints', slot );
   }
 
-  /** The node must have no incident edges left; the caller cascades removal of them first. */
+  /** The node must have no incident edges or children left; the caller cascades removal of them first. */
   removeNode( slot: number ): void {
     if( this.adj.outDegree( slot ) > 0 || this.adj.inDegree( slot ) > 0 ){
       throw new Error( 'Can not remove a node before its incident edges' );
     }
 
+    if( this.hierarchy.hasChildren( slot ) ){
+      throw new Error( 'Can not remove a node before its children' );
+    }
+
+    this.hierarchy.onRemoveNode( slot );
     this.adj.clearNode( slot );
     this.polyPool.free( slot );
     this.freeSlot( 'nodes', slot );
+  }
+
+  // -- compound hierarchy (round 14) --
+
+  /**
+   * Link a node under a parent node slot (-1 to orphan).  Cycle-safe:
+   * a link that would make the node its own ancestor warns and no-ops
+   * (v3's dropped-ref rule).  Maintains FLAG_PARENT/FLAG_CHILD, depths
+   * and the parent draw permutation.
+   */
+  setParent( slot: number, parentSlot: number ): void {
+    this.hierarchy.setParent( slot, parentSlot );
+  }
+
+  /** The node's parent slot, or -1 for orphans. */
+  parentOf( slot: number ): number {
+    return this.hierarchy.parentOf( slot );
+  }
+
+  /** The node's child slots in link order (read-only; empty for leaves). */
+  childrenOf( slot: number ): readonly number[] {
+    return this.hierarchy.childrenOf( slot );
+  }
+
+  /** Nesting depth (0 = top-level). */
+  depthOf( slot: number ): number {
+    return this.hierarchy.depthOf( slot );
+  }
+
+  /** True when `ancestor` is on `slot`'s parent chain (not reflexive). */
+  isAncestorOf( ancestor: number, slot: number ): boolean {
+    return this.hierarchy.isAncestorOf( ancestor, slot );
+  }
+
+  /** Count of live parent nodes. */
+  parentCount(): number {
+    return this.hierarchy.parentCount();
+  }
+
+  /** Whether any compound parent exists (backs cy.hasCompoundNodes()). */
+  hasCompounds(): boolean {
+    return this.hierarchy.hasCompounds();
+  }
+
+  /** The parent draw permutation: live parents sorted (depth asc, slot asc). */
+  parentOrder(): Uint32Array {
+    return this.hierarchy.parentOrder();
   }
 
   // -- positions --
@@ -1736,12 +1798,16 @@ export class GraphStore implements ModelView {
 
   // -- internals --
 
-  /** Sidecar data() values from a def's data object (id/source/target stay first-class). */
+  /** Sidecar data() values from a def's data object (id/source/target/parent stay first-class). */
   setDefData( group: GroupName, slot: number, data: Record<string, unknown> | undefined ): void {
     if( data == null ){ return; }
 
     for( const key of Object.keys( data ) ){
       if( key === 'id' || key === 'source' || key === 'target' ){ continue; }
+
+      // round 14: a node def's parent resolves as hierarchy (in a second
+      // pass, once the batch's nodes all exist), never as sidecar data
+      if( key === 'parent' && group === 'nodes' ){ continue; }
 
       this.data.set( group, slot, key, data[ key ] );
       this.markDataWrite( group, key, slot, slot + 1 );

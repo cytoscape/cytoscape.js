@@ -863,6 +863,23 @@ opacity, ported event bubbling, a `parents` sheet group plus
 structural `case`/query conditions, and compound loop edges — each
 landing as its own tests-first commit, with the design decisions
 recorded here as they land.
+
+Landed so far (round 14.1 — the hierarchy model): `parent` is a
+**first-class node field**, not sidecar data — like edge
+`source`/`target` it is reserved at ingest, immutable through
+`data()` (reparenting is `move({ parent })`, round 14.2), and
+synthesized on read from the hierarchy (`data('parent')` returns
+the parent's id, absent for orphans).  The hierarchy itself lives
+in a store-side index (`store/hierarchy.mts`): parent links with
+generation guards, per-parent child lists, nesting depth, and the
+store-managed `FLAG_PARENT`/`FLAG_CHILD` bits in the flags column
+(so parent/child predicates stay pure flag scans and the cull
+kernels can split the node draw without new bindings).  Cycle rule
+is v3's: an assignment that would make a node its own ancestor
+warns and drops the ref, no throw.  A node with children can not be
+removed (the collection layer cascades descendants first, v3's
+removal semantics — built in 14.2), and `cy.hasCompoundNodes()`
+reflects live parents.
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

@@ -1028,6 +1028,12 @@ export class GpuCollection {
       if( ref.group === 'edges' ){
         out.source = this.source().id();
         out.target = this.target().id();
+      } else {
+        // parent is first-class hierarchy state, synthesized on read
+        // like edge source/target (round 14); absent for orphans
+        const parentSlot = this._store.parentOf( ref.slot );
+
+        if( parentSlot >= 0 ){ out.parent = this._store.idAt( 'nodes', parentSlot ); }
       }
 
       return Object.assign( out, this._store.data.object( ref.group, ref.slot ) );
@@ -1042,6 +1048,12 @@ export class GpuCollection {
 
       if( ref.group === 'edges' && ( key === 'source' || key === 'target' ) ){
         return ( key === 'source' ? this.source() : this.target() ).id();
+      }
+
+      if( ref.group === 'nodes' && key === 'parent' ){
+        const parentSlot = this._store.parentOf( ref.slot );
+
+        return parentSlot < 0 ? undefined : this._store.idAt( 'nodes', parentSlot );
       }
 
       return this._store.data.get( ref.group, ref.slot, key );
@@ -1082,6 +1094,10 @@ export class GpuCollection {
       for( const k of keys ){
         if( ref.group === 'edges' && ( k === 'source' || k === 'target' ) ){
           throw new Error( `Can not change the immutable data field '${k}' of an edge` );
+        }
+
+        if( ref.group === 'nodes' && k === 'parent' ){
+          throw new Error( `Can not change the immutable data field 'parent' of a node; reparent with move()` );
         }
 
         store.setData( ref.group, ref.slot, k, patch[ k ] );

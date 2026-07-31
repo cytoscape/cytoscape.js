@@ -1051,7 +1051,7 @@ export class GpuCore {
   }
 
   hasCompoundNodes(): boolean {
-    return false;
+    return this._store.hasCompounds();
   }
 
   hasElementWithId( id: string ): boolean {

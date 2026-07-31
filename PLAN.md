@@ -3392,10 +3392,28 @@ commit(s) with docs in-commit):
 - [x] **14.0 Docs-first** — this plan section + the README pointer
   (landed as its own commit before any implementation, per the
   user-set process amendment).
-- [ ] **14.1 Hierarchy model** — flags, `store/hierarchy.mts`
-  (links/gen/children/depth/cycle guard/`parentOrder`), GraphStore
-  wiring, reserved `parent` key + synthesize-on-read,
-  `hasCompoundNodes`.  Node specs (`test/gpu-hierarchy.mjs`).
+- [x] **14.1 Hierarchy model** — landed 2026-07-31.
+  `FLAG_PARENT`/`FLAG_CHILD` (contract bits 4096/8192, node-only,
+  store-managed like `FLAG_CURVED`); `store/hierarchy.mts` — the
+  `HierarchyIndex` (host-callback object like the CurveIndex):
+  `parent: Int32Array` (−1 = orphan) + link-time `parentGen`
+  (recycle guard, warn-once), sparse `children` lists, `depth`,
+  live-parent count, and the lazily-rebuilt `parentOrder()`
+  (depth-asc, slot-asc) draw permutation.  `setParent` cycle-guards
+  by ancestor walk (warn + no-op, v3's dropped-ref rule), maintains
+  flags/depths (subtree walk on reparent) and no-ops on same-parent
+  writes; `removeNode` now throws while children remain (the 14.2
+  collection cascade removes them first) and severs the node's own
+  link.  Store delegates (`setParent`/`parentOf`/`childrenOf`/
+  `depthOf`/`isAncestorOf`/`parentCount`/`hasCompounds`/
+  `parentOrder`); `cy.hasCompoundNodes()` is live.  The `parent`
+  data key is **reserved first-class**: def ingest skips it (14.2
+  resolves it as hierarchy), `data('parent', v)` throws (reparent
+  is `move()`), and reads synthesize from the hierarchy like edge
+  `source`/`target` (whole-object `data()` includes `parent` only
+  when parented).  Tests-first: 12 specs in
+  `test/gpu-hierarchy.mjs` written red, then green — 1956 Node
+  tests, typecheck + lint clean.
 - [ ] **14.2 Collection API + lifecycle** — traversal methods,
   `remove()` cascade, `move({ parent })`, two-pass def ingest,
   json.  Node specs pinned to v3 semantics.

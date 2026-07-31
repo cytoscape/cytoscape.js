@@ -2,6 +2,7 @@ import { initGpuContext } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
 import { pickNodeAt } from './cpu-pick.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
+import { NodeLayerPipeline } from './node-layer-pipeline.mjs';
 import { DEPTH_FORMAT, NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
 import { CurvedEdgePipeline } from './curved-edge-pipeline.mjs';
@@ -76,6 +77,8 @@ interface SceneCullGroups {
   glyph: CulledGroup;
   edgeGlyph: CulledGroup;
   ghost: CulledGroup;
+  overlay: CulledGroup;
+  underlay: CulledGroup;
 }
 
 interface RendererStats {
@@ -164,6 +167,8 @@ export class Renderer {
   private opts: GpuRendererOptions;
   private context: GPUCanvasContext | null;
   private nodePipeline: NodePipeline | null;
+  private overlayPipeline: NodeLayerPipeline | null = null;
+  private underlayPipeline: NodeLayerPipeline | null = null;
   private edgePipeline: EdgePipeline | null;
   private curvedEdgePipeline: CurvedEdgePipeline | null;
   private curvedArrowPipeline: CurvedArrowPipeline | null;
@@ -623,7 +628,9 @@ export class Renderer {
           curved: new CulledGroup( kernels, 'curvedEdge', 'export-curved-edge', 6 * CURVE_SEGS ),
           glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' ),
           edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-edge-glyph' ),
-          ghost: new CulledGroup( kernels, 'ghost', 'export-ghost' )
+          ghost: new CulledGroup( kernels, 'ghost', 'export-ghost' ),
+          overlay: new CulledGroup( kernels, 'nodeLayer', 'export-overlay' ),
+          underlay: new CulledGroup( kernels, 'nodeLayer', 'export-underlay' )
         };
       }
 
@@ -796,7 +803,9 @@ export class Renderer {
       curved: new CulledGroup( kernels, 'curvedEdge', 'scene-curved-edge', 6 * CURVE_SEGS ),
       glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' ),
       edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-edge-glyph' ),
-      ghost: new CulledGroup( kernels, 'ghost', 'scene-ghost' )
+      ghost: new CulledGroup( kernels, 'ghost', 'scene-ghost' ),
+      overlay: new CulledGroup( kernels, 'nodeLayer', 'scene-overlay' ),
+      underlay: new CulledGroup( kernels, 'nodeLayer', 'scene-underlay' )
     };
     this.pickCull = {
       // nodes pick synchronously on the CPU; only edges need the GPU pass
@@ -805,6 +814,8 @@ export class Renderer {
     };
 
     this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
+    this.overlayPipeline = new NodeLayerPipeline( device, format, kernels.visibleLayout, 'node.overlay' );
+    this.underlayPipeline = new NodeLayerPipeline( device, format, kernels.visibleLayout, 'node.underlay' );
     this.edgePipeline = new EdgePipeline( device, format, kernels.visibleLayout );
     this.curvedEdgePipeline = new CurvedEdgePipeline( device, format, kernels.visibleLayout );
     this.curvedArrowPipeline = new CurvedArrowPipeline( device, format, kernels.visibleLayout );
@@ -1050,7 +1061,17 @@ export class Renderer {
         pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.ghost );
     }
 
+    if( store.underlayCount() > 0 && cull.underlay != null ){
+      this.underlayPipeline?.draw(
+        pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.underlay, true );
+    }
+
     this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
+
+    if( store.overlayCount() > 0 && cull.overlay != null ){
+      this.overlayPipeline?.draw(
+        pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.overlay, false );
+    }
 
     if( this.labelLayer != null && this.labelPipeline != null ){
       this.labelPipeline.draw(
@@ -1095,6 +1116,7 @@ export class Renderer {
     groups: {
       node?: CulledGroup; edge: CulledGroup; curved: CulledGroup;
       glyph?: CulledGroup; edgeGlyph?: CulledGroup; ghost?: CulledGroup;
+      overlay?: CulledGroup; underlay?: CulledGroup;
     },
     timed: boolean, now: number = 0
   ): void {
@@ -1115,6 +1137,22 @@ export class Renderer {
         mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ),
         mirror.buffer( 'node.flags' ), mirror.buffer( 'node.ghost' )
       ], mv );
+    }
+
+    // overlay/underlay (round 13 A2): same gating, one kind, two groups
+    const layerInputs = ( id: 'node.overlay' | 'node.underlay' ): GPUBuffer[] => [
+      mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ),
+      mirror.buffer( 'node.flags' ), mirror.buffer( id )
+    ];
+
+    if( store.overlayCount() > 0 && groups.overlay != null ){
+      groups.overlay.ensure(
+        uniform, Math.max( 1, store.capacity( 'nodes' ) ), layerInputs( 'node.overlay' ), mv );
+    }
+
+    if( store.underlayCount() > 0 && groups.underlay != null ){
+      groups.underlay.ensure(
+        uniform, Math.max( 1, store.capacity( 'nodes' ) ), layerInputs( 'node.underlay' ), mv );
     }
     const edgeCullInputs = [
       mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'edge.width' ), mirror.buffer( 'edge.flags' ),
@@ -1164,6 +1202,14 @@ export class Renderer {
 
     if( anyGhosts && groups.ghost != null ){
       groups.ghost.encode( pass, store.highWater( 'nodes' ) );
+    }
+
+    if( store.overlayCount() > 0 && groups.overlay != null ){
+      groups.overlay.encode( pass, store.highWater( 'nodes' ) );
+    }
+
+    if( store.underlayCount() > 0 && groups.underlay != null ){
+      groups.underlay.encode( pass, store.highWater( 'nodes' ) );
     }
 
     if( groups.glyph != null && labelLayer != null ){

@@ -1275,6 +1275,82 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
 }
 `;
 
+/**
+ * Overlay/underlay quads (round 13 A2): a filled round-rectangle or
+ * ellipse around the node's inner size + padding (v3's
+ * drawNodeOverlay), one column per layer — the same shader draws both
+ * (the pipeline binds the layer's column).  Not pickable; alpha is the
+ * layer's own opacity (folded into the stored color, v3 semantics —
+ * element opacity does not multiply).
+ */
+export const NODE_LAYER_SHADER = `
+${COMMON}
+
+@group(0) @binding(0) var<uniform> frame: Frame;
+@group(0) @binding(1) var<storage, read> positions: array<vec2f>;
+@group(0) @binding(2) var<storage, read> sizes: array<vec2f>;
+// [rgba, padding*256, shape, radius*256 | 0xffffffff = auto]
+@group(0) @binding(3) var<storage, read> layers: array<vec4u>;
+
+struct LayerVSOut {
+  @builtin(position) position: vec4f,
+  @location(0) local: vec2f,     // device px from the node center
+  @location(1) halfSize: vec2f,  // device px, incl. padding
+  @location(2) @interpolate(flat) instance: u32,
+}
+
+@group(1) @binding(0) var<storage, read> visible: array<u32>;
+
+@vertex
+fn vsLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LayerVSOut {
+  var out: LayerVSOut;
+  let slot = visible[ii];
+  let padding = f32(layers[slot].y) / 256.0 * frame.zoomDpr;
+  let half = sizes[slot] * 0.5 * frame.zoomDpr + vec2f(padding);
+
+  let centerPx = modelToPx(frame, positions[slot]);
+  let ext = half + vec2f(1.0); // AA margin
+  let local = quadCorner(vi) * ext;
+
+  out.position = vec4f(pxToClip(frame, centerPx + local), NODE_Z, 1.0);
+  out.local = local;
+  out.halfSize = half;
+  out.instance = slot;
+  return out;
+}
+
+fn layerRoundRectSD(p: vec2f, b: vec2f, r: f32) -> f32 {
+  let q = abs(p) - b + vec2f(r);
+  return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0))) - r;
+}
+
+@fragment
+fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
+  let rec = layers[in.instance];
+  let color = unpack4x8unorm(rec.x);
+  var sd = 0.0;
+
+  if (rec.z == 1u) { // ellipse: normalized-space approximation (cheap, AA-exact enough)
+    let q = length(in.local / max(in.halfSize, vec2f(1e-4)));
+    sd = (q - 1.0) * min(in.halfSize.x, in.halfSize.y);
+  } else { // round-rectangle; radius 'auto' = v3's min(w/4, h/4, 8)
+    var radius: f32;
+
+    if (rec.w == 0xffffffffu) {
+      radius = min(min(in.halfSize.x, in.halfSize.y) * 0.5, 8.0 * frame.zoomDpr);
+    } else {
+      radius = f32(rec.w) / 256.0 * frame.zoomDpr;
+    }
+
+    radius = min(radius, min(in.halfSize.x, in.halfSize.y));
+    sd = layerRoundRectSD(in.local, in.halfSize, radius);
+  }
+
+  let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * color.a;
+  return vec4f(color.rgb * alpha, alpha); // premultiplied
+}
+`;
+
 export const EDGE_SHADER = `
 ${COMMON}
 ${BOUNDARY_WGSL}

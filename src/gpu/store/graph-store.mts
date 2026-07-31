@@ -735,6 +735,49 @@ export class GraphStore implements ModelView {
     this.dirty.mark( 'node.ghost', slot );
   }
 
+  // -- overlay / underlay (round 13 A2) --
+
+  private overlays = 0;
+  private underlays = 0;
+
+  overlayCount(): number { return this.overlays; }
+  underlayCount(): number { return this.underlays; }
+
+  /**
+   * Write a node's overlay or underlay record (the StyleEngine's write
+   * path): [rgba (opacity folded), padding×256, shape, radius×256 |
+   * 0xffffffff = auto].  Padding is geometry (it grows the bb scans),
+   * so writes bump the geometry epoch.
+   */
+  setNodeLayer(
+    id: 'node.overlay' | 'node.underlay', slot: number,
+    rgba: number, padding: number, shape: number, radius: number
+  ): void {
+    const arr = this.nodes.column( id ) as Uint32Array;
+    const at = slot * 4;
+    const pad = Math.max( 0, Math.round( padding * 256 ) );
+    const rad = radius < 0 ? 0xffffffff : Math.max( 0, Math.round( radius * 256 ) );
+
+    if( arr[ at ] === rgba && arr[ at + 1 ] === pad &&
+        arr[ at + 2 ] === shape && arr[ at + 3 ] === rad ){ return; }
+
+    const wasOn = arr[ at ] >>> 24 !== 0;
+    const isOn = rgba >>> 24 !== 0;
+
+    if( wasOn !== isOn ){
+      const d = isOn ? 1 : -1;
+
+      if( id === 'node.overlay' ){ this.overlays += d; } else { this.underlays += d; }
+    }
+
+    arr[ at ] = rgba;
+    arr[ at + 1 ] = pad;
+    arr[ at + 2 ] = shape;
+    arr[ at + 3 ] = rad;
+    this.geoEpoch++;
+    this.dirty.mark( id, slot );
+  }
+
   /** RGBA bytes on [0, 255]. */
   setColor( id: ColumnId, slot: number, r: number, g: number, b: number, a: number ): void {
     const spec = columnSpec( id );
@@ -1318,12 +1361,28 @@ export class GraphStore implements ModelView {
 
     const ghost = this.column( 'node.ghost' ) as Float32Array;
     const anyGhosts = this.ghosts > 0;
+    const over = this.column( 'node.overlay' ) as Uint32Array;
+    const under = this.column( 'node.underlay' ) as Uint32Array;
+    const anyLayers = this.overlays > 0 || this.underlays > 0;
 
     this.forEachAlive( 'nodes', slot => {
       const x = pos[ slot * 2 ];
       const y = pos[ slot * 2 + 1 ];
-      const hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
-      const hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+      let hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
+      let hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+
+      // overlay/underlay pads grow the body box (round 13 A2; v3's
+      // overlay sits on the inner size, so border-inclusive halves +
+      // padding are conservative)
+      if( anyLayers ){
+        let pad = 0;
+
+        if( over[ slot * 4 ] >>> 24 !== 0 ){ pad = over[ slot * 4 + 1 ] / 256; }
+        if( under[ slot * 4 ] >>> 24 !== 0 ){ pad = Math.max( pad, under[ slot * 4 + 1 ] / 256 ); }
+
+        hw += pad;
+        hh += pad;
+      }
 
       if( x - hw < x1 ){ x1 = x - hw; }
       if( y - hh < y1 ){ y1 = y - hh; }

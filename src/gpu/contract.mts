@@ -153,6 +153,17 @@ export type ColumnId =
    * (labels and decorations excluded).
    */
   | 'node.ghost'
+  /**
+   * Uint32Array(4·cap) — overlay/underlay records (round 13 A2), one
+   * column per layer: [rgba (layer opacity folded into alpha; a=0 =
+   * disabled), padding × 256 (fixed-point model px), shape (0
+   * round-rectangle, 1 ellipse), cornerRadius × 256 (0xffffffff =
+   * 'auto' — v3's min(w/4, h/4, 8), resolved in the shader from live
+   * extents)].  The underlay draws under the node body (after ghosts),
+   * the overlay above the nodes (before labels).
+   */
+  | 'node.overlay'
+  | 'node.underlay'
   | 'node.flags' // Uint32Array(cap)
   | 'edge.endpoints' // Uint32Array(2·cap), source,target node *slots*
   | 'edge.lineColor' // Uint8Array(4·cap)
@@ -219,6 +230,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.shape', 'nodes', Uint32Array, 1 ),
   spec( 'node.outerHalf', 'nodes', Float32Array, 2 ),
   spec( 'node.ghost', 'nodes', Float32Array, 4 ),
+  spec( 'node.overlay', 'nodes', Uint32Array, 4 ),
+  spec( 'node.underlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),
   spec( 'edge.endpoints', 'edges', Uint32Array, 2 ),
   spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),

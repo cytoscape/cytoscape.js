@@ -1001,6 +1001,37 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'ghost', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: overlay and underlay layers (round 13 A2)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', kind: 'over' }, position: { x: -100, y: -50 } },
+        { data: { id: 'b', kind: 'under' }, position: { x: 60, y: -50 } },
+        { data: { id: 'c', kind: 'both' }, position: { x: -20, y: 70 } }
+      ],
+      style: {
+        nodes: {
+          'width': 44, 'height': 36, 'background-color': '#2980b9',
+          'overlay-color': '#e74c3c', 'overlay-padding': 8,
+          'overlay-opacity': {
+            case: [ { when: { data: 'kind', in: [ 'over', 'both' ] }, then: 0.4 } ], else: 0
+          },
+          'overlay-shape': 'ellipse',
+          'underlay-color': '#27ae60', 'underlay-padding': 14,
+          'underlay-opacity': {
+            case: [ { when: { data: 'kind', in: [ 'under', 'both' ] }, then: 0.8 } ], else: 0
+          }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'node-layers', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1479,6 +1510,32 @@ test.describe( 'v3-vs-v4 render parity', () => {
     const v4Style = { nodes: Object.assign( {}, shared ) };
 
     await runParity( page, testInfo, 'parity-ghost', elements, v3Style, v4Style, { minInk: 1000 } );
+  } );
+
+  test( 'parity: overlay and underlay layers (round 13 A2)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // label-free nodes: both sides draw body + underlay + overlay only,
+    // so the scenes compare directly (v4 draws overlays under the label
+    // layer, but there are no labels here)
+    const elements = [
+      { data: { id: 'a' }, position: { x: -100, y: -50 } },
+      { data: { id: 'b' }, position: { x: 60, y: -50 } },
+      { data: { id: 'c' }, position: { x: -20, y: 70 } }
+    ];
+    const shared = {
+      'width': 44, 'height': 44, 'background-color': '#2980b9',
+      'overlay-color': '#e74c3c', 'overlay-padding': 8, 'overlay-opacity': 0.4,
+      'overlay-shape': 'ellipse',
+      'underlay-color': '#27ae60', 'underlay-padding': 14, 'underlay-opacity': 0.8,
+      'underlay-shape': 'round-rectangle', 'underlay-corner-radius': 8
+    };
+    const v3Style = [
+      { selector: 'node', style: Object.assign( { shape: 'ellipse' }, shared ) }
+    ];
+    const v4Style = { nodes: Object.assign( {}, shared ) };
+
+    await runParity( page, testInfo, 'parity-node-layers', elements, v3Style, v4Style, { minInk: 1000 } );
   } );
 
 } );

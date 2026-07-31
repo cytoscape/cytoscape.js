@@ -2569,6 +2569,31 @@ grows per item.
   Node tests, 55 `webgpu` + 30 `webgpu-visual` specs, typecheck + lint
   green.
 
+- [x] **A2 (nodes): overlay/underlay layers** (2026-07-31).  The 10
+  `overlay-*`/`underlay-*` element props for **nodes** (edge layers
+  are the next A2 slice): color/opacity/padding mapper-capable,
+  shape (`round-rectangle` | `ellipse`) and corner-radius (number |
+  `'auto'` — v3's min(w/4, h/4, 8), resolved in the shader from live
+  extents) as constants; v3 defaults (opacity 0, padding 10).  Two
+  packed `Uint32Array×4` columns ([rgba folded, padding×256, shape,
+  radius×256|auto]) drive one `NODE_LAYER_SHADER` instantiated per
+  layer, drawn off a shared 'nodeLayer' cull kind (two CulledGroups,
+  each binding its layer's column): the underlay after ghosts and
+  under the bodies (depth-tested — early-z hides it under opaque
+  interiors, v3's layering for free), the overlay after the bodies.
+  Layer opacity folds into the stored alpha (readback follows the
+  arrow-color precedent); element opacity does not multiply (v3).
+  Padding is geometry: both bb scans grow by the enabled layer's
+  pad.  Zero-cost when unused (per-layer live counts gate cull +
+  draw).  Deviations, recorded: v4 overlays draw *under* the label
+  layer (v3 draws overlay over its node's label); overlays are not
+  pickable and box selection ignores their pads.  8 Node specs
+  (`test/gpu-node-layers.mjs`), a `webgpu` spec (overlay wash +
+  underlay ring), a `node-layers` golden, and a
+  `parity-node-layers` live v3 scene at **0 px differing**.  1858
+  Node tests, 56 `webgpu` + 32 `webgpu-visual` specs, typecheck +
+  lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry

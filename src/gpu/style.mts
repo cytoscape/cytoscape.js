@@ -101,6 +101,19 @@ interface NodeComputed {
   ghostOffsetX: number;
   ghostOffsetY: number;
   ghostOpacity: number;
+  // overlay/underlay (round 13 A2): [color, opacity, padding, shape, radius]
+  overlayColor: RGBA;
+  overlayOpacity: number;
+  overlayPadding: number;
+  /** 0 round-rectangle, 1 ellipse */
+  overlayShape: number;
+  /** model px; -1 = 'auto' (v3's min(w/4, h/4, 8)) */
+  overlayRadius: number;
+  underlayColor: RGBA;
+  underlayOpacity: number;
+  underlayPadding: number;
+  underlayShape: number;
+  underlayRadius: number;
 }
 
 interface EdgeComputed {
@@ -187,7 +200,17 @@ const NODE_DEFAULTS: NodeComputed = {
   ghost: false,
   ghostOffsetX: 0,
   ghostOffsetY: 0,
-  ghostOpacity: 0 // v3's default: a ghost is invisible until given opacity
+  ghostOpacity: 0, // v3's default: a ghost is invisible until given opacity
+  overlayColor: [ 0, 0, 0, 255 ], // '#000', as v3
+  overlayOpacity: 0,
+  overlayPadding: 10,
+  overlayShape: 0, // round-rectangle
+  overlayRadius: -1, // 'auto'
+  underlayColor: [ 0, 0, 0, 255 ],
+  underlayOpacity: 0,
+  underlayPadding: 10,
+  underlayShape: 0,
+  underlayRadius: -1
 };
 
 /** gap between the node's bottom edge and the label's top, model px */
@@ -307,6 +330,8 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'opacity', 'label', 'font-size', 'font-family', 'color',
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
+  'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
+  'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
   'text-margin-x', 'text-margin-y'
@@ -342,6 +367,13 @@ const GHOST_PROPS: ReadonlySet<string> = new Set( [
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity'
 ] );
 
+/** overlay/underlay props (round 13 A2) — node-only for now (edge
+ * overlays are the next slice of A2). */
+const LAYER_PROPS: ReadonlySet<string> = new Set( [
+  'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
+  'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius'
+] );
+
 const parseColor = ( prop: string, value: unknown ): RGBA => {
   const tuple = color2tuple( value as string );
 
@@ -362,6 +394,36 @@ const parseNumber = ( prop: string, value: unknown ): number => {
   }
 
   return num;
+};
+
+/** v3's zeroOneNumber type. */
+const parseZeroOne = ( prop: string, value: unknown ): number => {
+  const num = parseNumber( prop, value );
+
+  if( num < 0 || num > 1 ){
+    throw new Error( `The ${prop} '${String( value )}' must be within [0, 1]` );
+  }
+
+  return num;
+};
+
+/** overlay/underlay shape: v3's overlayShape enum. */
+const parseLayerShape = ( prop: string, value: unknown ): number => {
+  const token = String( value ).trim();
+
+  if( token === 'round-rectangle' || token === 'roundrectangle' ){ return 0; }
+  if( token === 'ellipse' ){ return 1; }
+
+  throw new Error(
+    `The ${prop} '${String( value )}' is invalid; use round-rectangle or ellipse`
+  );
+};
+
+/** overlay/underlay corner radius: a non-negative number or 'auto'. */
+const parseLayerRadius = ( prop: string, value: unknown ): number => {
+  if( String( value ).trim() === 'auto' ){ return -1; }
+
+  return parseNonNegative( prop, value );
 };
 
 /** v3's bool type: 'yes'/'no' keywords (booleans accepted too). */
@@ -801,6 +863,36 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'ghost-offset-y':
       computed.ghostOffsetY = parseNumber( prop, value );
       break;
+    case 'overlay-color':
+      computed.overlayColor = parseColor( prop, value );
+      break;
+    case 'overlay-opacity':
+      computed.overlayOpacity = parseZeroOne( prop, value );
+      break;
+    case 'overlay-padding':
+      computed.overlayPadding = parseNonNegative( prop, value );
+      break;
+    case 'overlay-shape':
+      computed.overlayShape = parseLayerShape( prop, value );
+      break;
+    case 'overlay-corner-radius':
+      computed.overlayRadius = parseLayerRadius( prop, value );
+      break;
+    case 'underlay-color':
+      computed.underlayColor = parseColor( prop, value );
+      break;
+    case 'underlay-opacity':
+      computed.underlayOpacity = parseZeroOne( prop, value );
+      break;
+    case 'underlay-padding':
+      computed.underlayPadding = parseNonNegative( prop, value );
+      break;
+    case 'underlay-shape':
+      computed.underlayShape = parseLayerShape( prop, value );
+      break;
+    case 'underlay-corner-radius':
+      computed.underlayRadius = parseLayerRadius( prop, value );
+      break;
     case 'ghost-opacity': {
       const op = parseNumber( prop, value );
 
@@ -1182,6 +1274,37 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'nodes' ],
     set: ( c, v ) => { c.ghostOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => NODE_DEFAULTS.ghostOpacity
+  },
+  // overlay/underlay props (round 13 A2; node-only)
+  'overlay-color': {
+    kind: 'color', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.overlayColor = v as RGBA; },
+    default: () => NODE_DEFAULTS.overlayColor
+  },
+  'overlay-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.overlayOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.overlayOpacity
+  },
+  'overlay-padding': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.overlayPadding = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.overlayPadding
+  },
+  'underlay-color': {
+    kind: 'color', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.underlayColor = v as RGBA; },
+    default: () => NODE_DEFAULTS.underlayColor
+  },
+  'underlay-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.underlayOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.underlayOpacity
+  },
+  'underlay-padding': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.underlayPadding = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.underlayPadding
   },
   // 12c scalar curve props (source/target-endpoint stays constants-only:
   // its point form is a list, per the 12b list-prop scope rule)
@@ -1699,6 +1822,28 @@ export class StyleEngine {
       case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
       case 'ghost-offset-y': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 1 ];
       case 'ghost-opacity': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 2 ];
+      case 'overlay-color': case 'overlay-opacity': case 'overlay-padding':
+      case 'overlay-shape': case 'overlay-corner-radius':
+      case 'underlay-color': case 'underlay-opacity': case 'underlay-padding':
+      case 'underlay-shape': case 'underlay-corner-radius': {
+        const id = prop.startsWith( 'overlay' ) ? 'node.overlay' : 'node.underlay';
+        const rec = ( store.column( id ) as Uint32Array ).subarray( slot * 4, slot * 4 + 4 );
+        const field = prop.replace( /^(overlay|underlay)-/, '' );
+
+        // color reads back folded (alpha carries the layer opacity — the
+        // arrow-color precedent); opacity reads the folded alpha
+        switch( field ){
+          case 'color': {
+            const rgba = rec[ 0 ];
+
+            return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+          }
+          case 'opacity': return ( rec[ 0 ] >>> 24 ) / 255;
+          case 'padding': return rec[ 1 ] / 256;
+          case 'shape': return rec[ 2 ] === 1 ? 'ellipse' : 'round-rectangle';
+          default: return rec[ 3 ] === 0xffffffff ? 'auto' : rec[ 3 ] / 256;
+        }
+      }
       case 'height': return pair( 'node.size', 1 );
       case 'shape': return SHAPE_NAMES[ scalar( 'node.shape' ) ];
       case 'label': return store.labelAt( slot, ref.group )?.text ?? '';
@@ -1931,7 +2076,7 @@ export class StyleEngine {
         throw new Error( `'${norm}' is an edge style property` );
       }
 
-      if( GHOST_PROPS.has( norm ) && group === 'edges' ){
+      if( ( GHOST_PROPS.has( norm ) || LAYER_PROPS.has( norm ) ) && group === 'edges' ){
         throw new Error( `'${norm}' is a node style property` );
       }
 
@@ -1993,6 +2138,18 @@ export class StyleEngine {
       store.setGhost(
         slot, computed.ghostOffsetX, computed.ghostOffsetY,
         computed.ghostOpacity, computed.ghost );
+
+      // overlay/underlay records: the layer opacity folds into the alpha
+      // (v3's overlay never multiplies element opacity)
+      const layerRgba = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>
+        packRgba( [ r, g, b, Math.round( a * opacity ) ] );
+
+      store.setNodeLayer(
+        'node.overlay', slot, layerRgba( computed.overlayColor, computed.overlayOpacity ),
+        computed.overlayPadding, computed.overlayShape, computed.overlayRadius );
+      store.setNodeLayer(
+        'node.underlay', slot, layerRgba( computed.underlayColor, computed.underlayOpacity ),
+        computed.underlayPadding, computed.underlayShape, computed.underlayRadius );
 
       this.writeLabel( slot, computed );
     } else {

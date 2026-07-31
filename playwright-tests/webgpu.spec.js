@@ -2559,4 +2559,40 @@ test.describe( 'WebGPU renderer', () => {
     expect( oldGhostPx[ 1 ] ).toBeGreaterThan( 240 ); // old spot back to white
   } );
 
+  test( 'overlay washes over the body; underlay peeks out under it (A2)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: {
+          'width': 60, 'height': 60, 'background-color': '#ffffff',
+          'shape': 'rectangle',
+          'overlay-color': '#0000ff', 'overlay-opacity': 0.5, 'overlay-padding': 0,
+          'underlay-color': '#00aa00', 'underlay-opacity': 1, 'underlay-padding': 20,
+          'underlay-shape': 'round-rectangle'
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the body center: white washed 50% blue
+    const bodyPx = await pixelAt( page, center.x, center.y );
+
+    expect( bodyPx[ 2 ] ).toBeGreaterThan( 200 );
+    expect( bodyPx[ 0 ] ).toBeLessThan( 180 );
+    expect( bodyPx[ 0 ] ).toBeGreaterThan( 80 );
+
+    // the underlay ring outside the body (padding band): opaque green
+    const ringPx = await pixelAt( page, center.x + 40, center.y );
+
+    expect( ringPx[ 1 ] ).toBeGreaterThan( 120 );
+    expect( ringPx[ 0 ] ).toBeLessThan( 100 );
+    expect( ringPx[ 2 ] ).toBeLessThan( 100 );
+  } );
+
 } );

@@ -144,6 +144,15 @@ deviations: ghosts are not pickable and box selection ignores ghost
 extents.  The renderer pays nothing while no node styles a ghost (the
 ghost cull + draw are skipped outright at a live count of 0).
 
+Overlay/underlay (round 13 A2, nodes): the 10 `overlay-*`/
+`underlay-*` props draw a filled round-rectangle or ellipse around
+the node's size + padding — the underlay under the body, the overlay
+above it (and, a recorded deviation, *under* the label layer — v3
+draws overlay over its node's label).  Color/opacity/padding are
+mapper-capable; layer opacity folds into the stored color (folded
+readback); padding grows the bb scans; zero-cost when unused.
+Edge overlays are the next A2 slice.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

@@ -71,7 +71,10 @@ rendered, `shift`, silent variants, edge `midpoint`/endpoints —
 curve-aware since round 12a, along with `controlPoints`/
 `renderedControlPoints`/`isBundledBezier`, and — 12b —
 `segmentPoints`/`renderedSegmentPoints` for segments/taxi edges, with
-`controlPoints` covering unbundled-bezier control lists),
+`controlPoints` covering unbundled-bezier control lists; since 12c
+haystack edges answer endpoints/midpoint/bb with their offset
+points, and manual-endpoint edges resolve everything through the
+route evaluator),
 iteration (`sort`, `reduce`, `max`/`min`), comparison, building/
 filtering (`byGroup`, `diff`, `absoluteComplement`, set aliases),
 traversal (`outgoers`/`incomers`, `roots`/`leaves`,
@@ -619,7 +622,7 @@ each is deliberate, not a pass-1 deferral:
     loop distance (v3), falling back to the step size when unset (v3
     yields NaN geometry there); and segments/taxi-styled loops keep
     rendering as loops (the 12a all-loops deviation extended).
-  - *Props + derivation (12c, style/model half)*: `curve-style` gains
+  - *Props + derivation (12c)*: `curve-style` gains
     `haystack` (+ `haystack-radius`, validated [0, 1], default 0 — v3)
     and `straight-triangle` — both derive to *straight-stream* kinds
     (FLAG_CURVED clear: they draw in the straight pipeline, so
@@ -755,15 +758,9 @@ Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound
 for cull/fit, exact lazy CPU eval for public `.bb()`, no readback);
-manual edge endpoints + haystack/straight-triangle are round 12c (in
-progress — the CPU geometry/contract half is in: the 10-float
-endpoint block on blob records via the `CURVE_HAS_ENDPT` kind flag,
-straight-with-endpoints as the `CURVE_MULTI n = 0` chord, bundled
-bezier + endpoints promoted to `CURVE_MULTI n = 1`, hash-stable
-haystack endpoint offsets, and the `CURVE_HAYSTACK`/`CURVE_TRIANGLE`
-*straight-stream* kinds — FLAG_CURVED stays clear, so haystack rides
-the straight pipeline and its far-zoom decimation), and GPU layouts
-remain logged for later.
+manual edge endpoints + haystack/straight-triangle landed as round
+12c (2026-07-30/31 — the round-12 curved-edges plan is complete), and
+GPU layouts remain logged for later.
 
 ## Benchmarks
 
@@ -990,6 +987,33 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   slack; box-bounded ones (taxi, extrapolated weights —
   FLAG_CURVED_BOX) test the endpoint AABB grown by slack + chord
   length.
+- **Round 12c (manual endpoints, haystack, straight-triangle)**:
+  `source/target-endpoint` and `source/target-distance-from-node`
+  derive through a 10-float endpoint block on the edge's blob record;
+  straight + endpoints renders as the `CURVE_MULTI n = 0` chord in
+  the curved stream, and a bundled bezier with endpoints promotes to
+  `CURVE_MULTI n = 1` (identical control math).  Deviations, all
+  recorded: the `-or-label` endpoint keywords throw (no label bb in
+  v4); loops ignore endpoint props entirely (v3 overrides the
+  keywords; v4 also drops loop distances); taxi forces keyword modes
+  to outside-to-node (v3's rule) while distances apply; endpoint
+  props are constants-only (the point form is a list); angle
+  endpoints intersect the arrow tier's approximate boundaries.
+  `curve-style: haystack` (+ `haystack-radius`) and
+  `straight-triangle` are *straight-stream* kinds: FLAG_CURVED stays
+  clear, so both ride the straight pipeline — haystack keeps
+  far-zoom decimation (the 12a "curved stream is never decimated"
+  trade-off does not apply to it).  Haystack angles are id-hash
+  seeded (deterministic across machines — v3 uses Math.random(), so
+  haystack has no exact v3 parity above radius 0; the radius-0
+  parity scene pins the pipeline and a deterministic golden covers
+  radius > 0); offsets scale by outer halves (v3 uses inner size —
+  identical at border 0); haystack edges draw no arrows (v3 skips
+  them) and their stored-truth arrow getters read 'none'.  Haystack
+  box selection tests the offset points (v3's haystackPts);
+  triangle/straight edges keep the endpoint-center approximation.
+  The straight-edge and edge-glyph cull tests grow by the monotone
+  `haystackSlack()` bound (radiusMax × node half).
 - **`node.outerHalf` is a store-derived column** (12b): size/2 +
   border/2 per axis, written through on every node size/border write.
   The curve, arrow and edge-label shaders bind it in place of the

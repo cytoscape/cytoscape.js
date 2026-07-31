@@ -10,10 +10,10 @@ slot-stable compaction, edge-label autorotate) are recorded below as
 "Landed (round N)" sections, each verified green when it landed; the
 round-12 curved-edges plan has both flagged calls signed off, pass
 12a (bundled bezier + self-loops) landed 2026-07-30, and pass 12b
-(unbundled bezier + segments + taxi) landed 2026-07-30/31 — pass 12c
-(endpoints + haystack/straight-triangle) remains, and the round-13
-style-prop parity plan (2026-07-30, at the end of this file) queues
-behind it.  `src/gpu/README.md` is
+(unbundled bezier + segments + taxi) landed 2026-07-30/31, and pass
+12c (endpoints + haystack/straight-triangle) landed 2026-07-30/31 —
+**round 12 is complete**; the round-13 style-prop parity plan
+(2026-07-30, at the end of this file) is next.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -2341,11 +2341,14 @@ final tallies in the goldens/parity entry at the end.
   60 module tests, 72/72 Playwright specs (6 new `webgpu`, 3 new
   goldens + 1 new parity in `webgpu-visual`), typecheck + lint clean.
 
-## Landed (round 12c — endpoints + haystack + straight-triangle, in progress)
+## Landed (round 12c — endpoints + haystack + straight-triangle, 2026-07-30/31)
 
 Pass 12c of the round-12 plan above, under the round-10 process rules.
-Items land CPU-first; each entry below is written in the commit that
-lands it.
+Items landed CPU-first; each entry below was written in the commit that
+landed it.  **Round 12c is complete**: props, derivation, accessors,
+exact bb, render, cull, pick, arrows, labels, box selection, goldens,
+live v3 parity and benchmarks all landed — the round-12 curved-edges
+plan (12a/12b/12c) is done.
 
 - [x] **Contract + CPU geometry: endpoint blocks, haystack, triangle**
   (2026-07-30).  Three additions to the curve contract:
@@ -2458,6 +2461,33 @@ lands it.
   the gap behind them) — 54/54 `webgpu`, 22/22 `webgpu-visual`
   (goldens byte-stable through the shader restructure, parity scenes
   0 px), 1842 Node tests, typecheck + lint green.
+- [x] **Goldens, live v3 parity and the benchmark check**
+  (2026-07-31).  Three new golden scenes — `haystack` (8 edges at
+  radius 0.9; the id-hash angles make the scene deterministic across
+  machines, which is what lets a haystack golden exist at all),
+  `straight-triangle` (three orientations + an arrowed apex) and
+  `manual-endpoints` (a px point source end, an angle target end, a
+  source distance and an unbundled bezier under
+  `edge-distances: endpoints`) — stable across repeat runs.  Three
+  new **live v3-parity scenes**, all measuring **0 differing
+  pixels** at 8 px strokes: `parity-endpoints` (the same endpoint
+  config across orientations — v3's shorten matches v4's dist rule
+  exactly at arrow gap 0), `parity-triangle`, and
+  `parity-haystack0` — haystack at radius 0 pins the haystack
+  *pipeline* against v3 exactly (both sides collapse to
+  center-to-center lines); radius > 0 has no exact v3 parity by
+  construction (v3 seeds with Math.random()), which the
+  deterministic golden covers instead — the recorded deviation.
+  Renderer benchmark re-run (same box, RX 580, dpr 2, scale 1):
+  device p50s unchanged from the 12b record — straight gen-25k
+  fit-all/zoomed/far 3.34/4.40/1.26 ms (was 3.3/4.4/1.2), curved
+  8.61/3.81/6.30 ms (was 8.6/3.8/6.4) — the paint-to-FS restructure
+  cost nothing measurable, and far-zoom haystack rides the straight
+  stream's decimation by construction (the 12a revisit closed).
+  Final tallies: 1842 Node + 60 module tests, 54/54 `webgpu` +
+  28/28 `webgpu-visual` Playwright specs (3 new goldens, 3 new
+  parity scenes), typecheck + lint clean.  **Round 12c is complete**
+  — and with it the whole round-12 curved-edges plan.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

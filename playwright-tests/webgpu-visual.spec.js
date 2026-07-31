@@ -855,6 +855,125 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: haystack edges (round 12c)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // hash-stable angles make this scene deterministic across machines
+    // (v3 uses Math.random() here, so haystack has no exact v3 parity —
+    // this golden is the standing visual pin for radius > 0)
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -140, y: -80 } },
+        { data: { id: 'b' }, position: { x: 120, y: -100 } },
+        { data: { id: 'c' }, position: { x: -100, y: 90 } },
+        { data: { id: 'd' }, position: { x: 130, y: 70 } },
+        { data: { id: 'ab1', source: 'a', target: 'b' } },
+        { data: { id: 'ab2', source: 'a', target: 'b' } },
+        { data: { id: 'ac', source: 'a', target: 'c' } },
+        { data: { id: 'bd1', source: 'b', target: 'd' } },
+        { data: { id: 'bd2', source: 'b', target: 'd' } },
+        { data: { id: 'cd', source: 'c', target: 'd' } },
+        { data: { id: 'ad', source: 'a', target: 'd' } },
+        { data: { id: 'cb', source: 'c', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 50, 'height': 50, 'background-color': '#2980b9' },
+        edges: {
+          'curve-style': 'haystack', 'haystack-radius': 0.9,
+          'width': 3, 'line-color': '#e74c3c'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'haystack', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
+  test( 'golden: straight-triangle edges (round 12c)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a1' }, position: { x: -150, y: -100 } },
+        { data: { id: 'b1' }, position: { x: 130, y: -100 } },
+        { data: { id: 'h', source: 'a1', target: 'b1' } },
+        { data: { id: 'a2' }, position: { x: -140, y: -30 } },
+        { data: { id: 'b2' }, position: { x: -140, y: 120 } },
+        { data: { id: 'v', source: 'a2', target: 'b2' } },
+        { data: { id: 'a3' }, position: { x: -20, y: 0 } },
+        { data: { id: 'b3' }, position: { x: 140, y: 110 } },
+        { data: { id: 'diag', source: 'a3', target: 'b3' } },
+        // an arrowed triangle: the arrow rides the apex
+        { data: { id: 'a4' }, position: { x: 40, y: -40 } },
+        { data: { id: 'b4' }, position: { x: 150, y: 20 } },
+        { data: { id: 'arr', source: 'a4', target: 'b4', arrow: 1 } }
+      ],
+      style: {
+        nodes: { 'width': 26, 'height': 26, 'background-color': '#8e44ad' },
+        edges: {
+          'curve-style': 'straight-triangle',
+          'width': 14, 'line-color': '#95a5a6',
+          'target-arrow-shape': {
+            case: [ { when: { data: 'arrow', eq: 1 }, then: 'triangle' } ], else: 'none'
+          },
+          'target-arrow-color': '#2c3e50'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'straight-triangle', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
+  test( 'golden: manual endpoints + distances (round 12c)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // endpoint props are constants-only (the point form is a list), so
+    // one config shows across orientations: a px point source end, an
+    // angle target end, a source distance — on straight chords and on an
+    // unbundled bezier whose frame re-bases on the manual anchors
+    // (edge-distances: endpoints)
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a1' }, position: { x: -150, y: -90 } },
+        { data: { id: 'b1' }, position: { x: 110, y: -90 } },
+        { data: { id: 'h', source: 'a1', target: 'b1' } },
+        { data: { id: 'a2' }, position: { x: -140, y: -10 } },
+        { data: { id: 'b2' }, position: { x: -140, y: 130 } },
+        { data: { id: 'v', source: 'a2', target: 'b2' } },
+        { data: { id: 'a3' }, position: { x: -30, y: 20 } },
+        { data: { id: 'b3' }, position: { x: 140, y: 120 } },
+        { data: { id: 'unb', source: 'a3', target: 'b3', fam: 'unbundled-bezier' } }
+      ],
+      style: {
+        nodes: { 'width': 28, 'height': 28, 'background-color': '#27ae60' },
+        edges: {
+          'curve-style': {
+            case: [ { when: { data: 'fam', eq: 'unbundled-bezier' }, then: 'unbundled-bezier' } ],
+            else: 'straight'
+          },
+          'source-endpoint': '18 30',
+          'target-endpoint': '225deg',
+          'source-distance-from-node': 8,
+          'edge-distances': 'endpoints',
+          'control-point-distances': [ 45 ],
+          'control-point-weights': [ 0.5 ],
+          'width': 5, 'line-color': '#d35400',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#2c3e50'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'manual-endpoints', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1152,6 +1271,164 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }
 
     expect( ratio, 'v3-vs-v4 mismatch ratio for parity-routes' ).toBeLessThanOrEqual( 0.03 );
+  } );
+
+  /** Shared 12c parity runner: render the same defs both sides, diff. */
+  const runParity = async ( page, testInfo, name, elements, v3Style, v4Style, opts = {} ) => {
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    const actual = decodePng( v4uri );
+    const expected = decodePng( v3uri );
+
+    const inked = png => {
+      let n = 0;
+
+      for( let i = 0; i < png.data.length; i += 4 ){
+        if( png.data[ i ] < 250 || png.data[ i + 1 ] < 250 || png.data[ i + 2 ] < 250 ){ n++; }
+      }
+
+      return n;
+    };
+
+    expect( inked( actual ), 'v4 rendered ink' ).toBeGreaterThan( opts.minInk ?? 2000 );
+    expect( inked( expected ), 'v3 rendered ink' ).toBeGreaterThan( opts.minInk ?? 2000 );
+
+    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
+    const bound = opts.bound ?? 0.03;
+
+    console.log( `[parity] ${name}: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
+
+    if( ratio > bound ){
+      writeDiffArtifacts( testInfo.outputPath( '' ), name, actual, expected, diff );
+    }
+
+    expect( ratio, `v3-vs-v4 mismatch ratio for ${name}` ).toBeLessThanOrEqual( bound );
+  };
+
+  test( 'parity: manual endpoints + distances (round 12c)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // one endpoint config (constants-only props) across orientations: a
+    // px point source end, an angle target end, a source distance — on
+    // straight chords and an unbundled bezier re-based on the manual
+    // anchors (edge-distances: endpoints).  No arrows: 'none' has gap 0,
+    // so v3's shorten matches v4's dist-only rule exactly.
+    const elements = [
+      { data: { id: 'a1' }, position: { x: -150, y: -90 } },
+      { data: { id: 'b1' }, position: { x: 110, y: -90 } },
+      { data: { id: 'h', source: 'a1', target: 'b1' } },
+      { data: { id: 'a2' }, position: { x: -140, y: -10 } },
+      { data: { id: 'b2' }, position: { x: -140, y: 130 } },
+      { data: { id: 'v', source: 'a2', target: 'b2' } },
+      { data: { id: 'a3' }, position: { x: -30, y: 20 } },
+      { data: { id: 'b3' }, position: { x: 140, y: 120 } },
+      { data: { id: 'unb', source: 'a3', target: 'b3', fam: 1 } }
+    ];
+    const shared = {
+      'width': 8, 'line-color': '#7f8c8d',
+      'source-endpoint': '18 30',
+      'target-endpoint': '225deg',
+      'source-distance-from-node': 8,
+      'edge-distances': 'endpoints',
+      'control-point-distances': [ 45 ],
+      'control-point-weights': [ 0.5 ]
+    };
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 28, 'height': 28, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: Object.assign( { 'curve-style': 'straight' }, shared ) },
+      { selector: "edge[fam = 1]", style: { 'curve-style': 'unbundled-bezier' } }
+    ];
+    const v4Style = {
+      nodes: { 'width': 28, 'height': 28, 'background-color': '#c0392b' },
+      edges: Object.assign( {
+        'curve-style': {
+          case: [ { when: { data: 'fam', eq: 1 }, then: 'unbundled-bezier' } ], else: 'straight'
+        }
+      }, shared )
+    };
+
+    await runParity( page, testInfo, 'parity-endpoints', elements, v3Style, v4Style );
+  } );
+
+  test( 'parity: straight-triangle edges (round 12c)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const elements = [
+      { data: { id: 'a1' }, position: { x: -150, y: -90 } },
+      { data: { id: 'b1' }, position: { x: 120, y: -90 } },
+      { data: { id: 'h', source: 'a1', target: 'b1' } },
+      { data: { id: 'a2' }, position: { x: -140, y: -10 } },
+      { data: { id: 'b2' }, position: { x: -140, y: 130 } },
+      { data: { id: 'v', source: 'a2', target: 'b2' } },
+      { data: { id: 'a3' }, position: { x: -20, y: 10 } },
+      { data: { id: 'b3' }, position: { x: 140, y: 120 } },
+      { data: { id: 'diag', source: 'a3', target: 'b3' } }
+    ];
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 28, 'height': 28, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: {
+        'curve-style': 'straight-triangle', 'width': 14, 'line-color': '#7f8c8d'
+      } }
+    ];
+    const v4Style = {
+      nodes: { 'width': 28, 'height': 28, 'background-color': '#c0392b' },
+      edges: { 'curve-style': 'straight-triangle', 'width': 14, 'line-color': '#7f8c8d' }
+    };
+
+    await runParity( page, testInfo, 'parity-triangle', elements, v3Style, v4Style );
+  } );
+
+  test( 'parity: haystack at radius 0 (round 12c)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // radius 0 pins the haystack *pipeline* against v3 exactly: both
+    // sides draw center-to-center lines (v3's random unit offsets are
+    // scaled to zero).  Radius > 0 has no exact v3 parity — v3 seeds
+    // with Math.random() — so the deterministic v4 golden covers it.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -120, y: -60 } },
+      { data: { id: 'b' }, position: { x: 120, y: -60 } },
+      { data: { id: 'c' }, position: { x: -120, y: 80 } },
+      { data: { id: 'd' }, position: { x: 120, y: 80 } },
+      { data: { id: 'ab', source: 'a', target: 'b' } },
+      { data: { id: 'cd', source: 'c', target: 'd' } },
+      { data: { id: 'ad', source: 'a', target: 'd' } },
+      { data: { id: 'cb', source: 'c', target: 'b' } }
+    ];
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 30, 'height': 30, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: {
+        'curve-style': 'haystack', 'haystack-radius': 0, 'width': 8, 'line-color': '#7f8c8d'
+      } }
+    ];
+    const v4Style = {
+      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
+      edges: { 'curve-style': 'haystack', 'haystack-radius': 0, 'width': 8, 'line-color': '#7f8c8d' }
+    };
+
+    await runParity( page, testInfo, 'parity-haystack0', elements, v3Style, v4Style );
   } );
 
 } );

@@ -4,16 +4,17 @@ import { Adjacency } from './adjacency.mjs';
 import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import { CurveIndex } from './curve-index.mjs';
-import type { CurveStyleExtras } from './curve-index.mjs';
+import type { CurveStyleExtras, EndpointSpec } from './curve-index.mjs';
 import { CurveBlob } from './curve-blob.mjs';
 import {
   CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
-  evalRoute, headerDeviation, routeVertex
+  evalRoute, haystackPoint, headerDeviation, routeVertex
 } from '../curve-geometry.mjs';
 import type { CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
-  CURVE_BEZIER, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS, CURVE_STRAIGHT, CURVE_TAXI,
+  CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
+  CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
   FLAG_ALIVE, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE,
   FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
@@ -70,6 +71,15 @@ export class GraphStore implements ModelView {
    * extrapolated weights), so curveSlack() must stay engaged even when
    * curveDevMax is 0 */
   private hasBoxCurves = false;
+  /** monotone (12c): the largest pct-endpoint magnitude in node-half
+   * units — offsets past 1 exceed the slack's node-half term, so the
+   * excess joins curveSlack() (see that doc) */
+  private endptPctMax = 0;
+  /** monotone (12c): the largest haystack-radius any edge has styled —
+   * haystack offsets stray from the endpoint centers by at most
+   * radius × outerHalf, and the straight-stream cull tests grow by
+   * haystackSlack() to stay sound */
+  private haystackRadiusMax = 0;
 
   /** the 12b variable-length curve param pool (see store/curve-blob.mts) */
   private blob: CurveBlob;
@@ -117,8 +127,9 @@ export class GraphStore implements ModelView {
       endpoints: () => this.edges.column( 'edge.endpoints' ) as Uint32Array,
       aliveEdgeSlots: () => this.slotsOrdered( 'edges' ),
       writeParams: ( slot, p0, p1, p2, kind ) => this.setCurveParams( slot, p0, p1, p2, kind ),
-      writeBlobParams: ( slot, kind, values, n, dev, box ) =>
-        this.setCurveParamsBlob( slot, kind, values, n, dev, box ),
+      writeBlobParams: ( slot, kind, values, n, dev, box, endptPct ) =>
+        this.setCurveParamsBlob( slot, kind, values, n, dev, box, endptPct ),
+      idHash: ( slot ) => this.ids.hashAt( 'edges', slot ),
       schedule: () => this.dirty.touch()
     } );
 
@@ -716,9 +727,11 @@ export class GraphStore implements ModelView {
    */
   setCurveStyle(
     slot: number, style: number, stepSize: number, weight: number,
-    loopDirection: number, loopSweep: number, extras: CurveStyleExtras | null = null
+    loopDirection: number, loopSweep: number, extras: CurveStyleExtras | null = null,
+    haystackRadius: number = 0, endpoints: EndpointSpec | null = null
   ): void {
-    this.curves.setStyle( slot, style, stepSize, weight, loopDirection, loopSweep, extras );
+    this.curves.setStyle(
+      slot, style, stepSize, weight, loopDirection, loopSweep, extras, haystackRadius, endpoints );
   }
 
   /** The styled curve record — the stored truth the style getters read. */
@@ -787,8 +800,9 @@ export class GraphStore implements ModelView {
     const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
     const at = slot * 4;
     const kind = params[ at + 3 ];
+    const base = kind >= CURVE_HAS_ENDPT ? kind - CURVE_HAS_ENDPT : kind; // 12c endpoint blocks
 
-    if( kind !== CURVE_MULTI && kind !== CURVE_SEGMENTS && kind !== CURVE_TAXI ){ return null; }
+    if( base !== CURVE_MULTI && base !== CURVE_SEGMENTS && base !== CURVE_TAXI ){ return null; }
 
     const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
@@ -802,6 +816,44 @@ export class GraphStore implements ModelView {
       pos[ s * 2 ], pos[ s * 2 + 1 ], outer[ s * 2 ], outer[ s * 2 + 1 ], shape[ s ],
       pos[ t * 2 ], pos[ t * 2 + 1 ], outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ]
     );
+  }
+
+  /**
+   * The haystack endpoint pair of an edge (12c; null unless the edge's
+   * derived kind is CURVE_HAYSTACK): the hash-stable offset points
+   * inside each node body, computed from the params column + live
+   * positions/outer halves — the CPU twin of the straight edge
+   * shader's haystack branch.
+   */
+  haystackPointsAt(
+    slot: number
+  ): { sx: number; sy: number; tx: number; ty: number } | null {
+    this.curves.flush();
+
+    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const at = slot * 4;
+
+    if( params[ at + 3 ] !== CURVE_HAYSTACK ){ return null; }
+
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
+    const sN = endpoints[ slot * 2 ];
+    const tN = endpoints[ slot * 2 + 1 ];
+    const radius = params[ at + 2 ];
+    const p = { x: 0, y: 0 };
+
+    haystackPoint(
+      pos[ sN * 2 ], pos[ sN * 2 + 1 ], outer[ sN * 2 ], outer[ sN * 2 + 1 ],
+      params[ at ], radius, p );
+
+    const sx = p.x, sy = p.y;
+
+    haystackPoint(
+      pos[ tN * 2 ], pos[ tN * 2 + 1 ], outer[ tN * 2 ], outer[ tN * 2 + 1 ],
+      params[ at + 1 ], radius, p );
+
+    return { sx, sy, tx: p.x, ty: p.y };
   }
 
   /**
@@ -872,7 +924,25 @@ export class GraphStore implements ModelView {
   curveSlack(): number {
     if( this.curveDevMax === 0 && !this.hasBoxCurves ){ return 0; }
 
-    return this.curveDevMax + this.nodeHalfMax + this.borderMax / 2;
+    // 12c: pct endpoints stray up to pctMag × node-half from the node
+    // center; the base node-half term covers pctMag ≤ 1, the monotone
+    // excess covers the rest
+    const pctExcess = Math.max( 0, this.endptPctMax - 1 ) * ( this.nodeHalfMax + this.borderMax / 2 );
+
+    return this.curveDevMax + this.nodeHalfMax + this.borderMax / 2 + pctExcess;
+  }
+
+  /**
+   * The conservative model-px bound on how far a haystack endpoint can
+   * sit from its node center (12c): radius × the largest outer half.
+   * The *straight*-stream cull/pick-tile tests grow by this (haystack
+   * rides the straight pipeline), and it stays 0 until some edge
+   * styles haystack.  Monotone, like the curve slack.
+   */
+  haystackSlack(): number {
+    if( this.haystackRadiusMax === 0 ){ return 0; }
+
+    return this.haystackRadiusMax * ( this.nodeHalfMax + this.borderMax / 2 );
   }
 
   /** The conservative margin box-bounded routes (FLAG_CURVED_BOX) add
@@ -892,6 +962,7 @@ export class GraphStore implements ModelView {
     const dev = curveDeviation( kind, p0, p2 );
 
     if( dev > this.curveDevMax ){ this.curveDevMax = dev; }
+    if( kind === CURVE_HAYSTACK && p2 > this.haystackRadiusMax ){ this.haystackRadiusMax = p2; }
 
     this.blob.free( slot );
 
@@ -906,7 +977,11 @@ export class GraphStore implements ModelView {
     this.geoEpoch++;
 
     this.dirty.mark( 'edge.curveParams', slot );
-    this.setFlag( 'edges', slot, FLAG_CURVED, kind !== CURVE_STRAIGHT );
+    // haystack/triangle are straight-stream kinds (12c): they draw in
+    // the straight pipeline, so FLAG_CURVED stays clear
+    const curvedStream = kind !== CURVE_STRAIGHT && kind !== CURVE_HAYSTACK && kind !== CURVE_TRIANGLE;
+
+    this.setFlag( 'edges', slot, FLAG_CURVED, curvedStream );
     this.setFlag( 'edges', slot, FLAG_CURVED_BOX, false );
   }
 
@@ -918,7 +993,8 @@ export class GraphStore implements ModelView {
    * extrapolated weights) for the AABB cull branch.
    */
   private setCurveParamsBlob(
-    slot: number, kind: number, values: ArrayLike<number>, n: number, dev: number, box: boolean
+    slot: number, kind: number, values: ArrayLike<number>, n: number, dev: number, box: boolean,
+    endptPct: number = 0
   ): void {
     const arr = this.edges.column( 'edge.curveParams' ) as Float32Array;
     const at = slot * 4;
@@ -926,6 +1002,7 @@ export class GraphStore implements ModelView {
 
     if( dev > this.curveDevMax ){ this.curveDevMax = dev; }
     if( box ){ this.hasBoxCurves = true; }
+    if( endptPct > this.endptPctMax ){ this.endptPctMax = endptPct; }
 
     arr[ at ] = offset;
     arr[ at + 1 ] = dev;
@@ -1157,7 +1234,14 @@ export class GraphStore implements ModelView {
             pointIn( route.qx[ route.n + 1 ], route.qy[ route.n + 1 ] );
         }
       } else {
-        contained = centerIn( endpoints[ slot * 2 ] ) && centerIn( endpoints[ slot * 2 + 1 ] );
+        const hay = this.haystackPointsAt( slot );
+
+        // haystack edges (12c) test their offset endpoints — v3's
+        // haystackPts; straight/triangle edges keep the
+        // endpoint-center approximation (recorded deviation)
+        contained = hay != null
+          ? pointIn( hay.sx, hay.sy ) && pointIn( hay.tx, hay.ty )
+          : centerIn( endpoints[ slot * 2 ] ) && centerIn( endpoints[ slot * 2 + 1 ] );
       }
 
       if( contained ){

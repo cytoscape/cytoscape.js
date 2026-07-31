@@ -2377,6 +2377,41 @@ lands it.
   (`test/gpu-curve-endpoints.mjs`) pin the block resolution, the
   n = 0 chord, the bezier-promotion equivalence, the endpoints-frame
   rebase, taxi distances, and the haystack point/angle math.
+- [x] **Style props + derivation** (2026-07-30).  `curve-style` gains
+  `haystack` | `straight-triangle`; new edge props `haystack-radius`
+  (validated [0, 1], v3 default 0), `source/target-endpoint`
+  (keyword | 'x y' point with per-component %/px units | angle as
+  deg/rad string or plain radians; the `-or-label` keywords throw —
+  no label bb in v4), and `source/target-distance-from-node`
+  (non-negative).  `edge-distances: 'endpoints'` parses; derivation
+  enforces v3's both-ends-manual rule and falls back to intersection
+  with v3's warning otherwise.  Scalars (`haystack-radius`, the two
+  distances) are mapper-capable; the endpoint props are
+  constants-only (the point form is a list — the 12b scope rule).
+  Derivation (CurveIndex): haystack derives per edge into the
+  straight-stream params (id-hash angles via the store's blob-native
+  id hashes, so two loads of the same graph derive identical
+  haystacks); triangle likewise; any edge with a non-default endpoint
+  spec derives its blob record with the 10-float block prefix and the
+  kind flag — straight → MULTI n = 0, bundled bezier → promoted
+  MULTI n = 1 (derivePair consults the spec; the odd-middle/lone
+  rules produce endpoint chords), taxi → modes forced default (v3's
+  keyword override) with distances kept, dropping the flag when
+  nothing remains.  Cull soundness: px point offsets fold into the
+  record's header deviation; pct offsets are measured in node-half
+  units — ≤ 1 is covered by the slack's node-half term, > 1 marks the
+  edge FLAG_CURVED_BOX and feeds a new monotone `endptPctMax` term in
+  `curveSlack()`; `haystackSlack()` (radiusMax × node half) is the
+  bound the *straight*-stream cull tests will grow by in the renderer
+  item.  Haystack styling also suppresses arrows at the style layer
+  (v3 draws none; stored-truth arrow getters read 'none' — recorded),
+  and `refsInBox` tests haystack offset points (v3's haystackPts).
+  Readback: `curve-style`/`haystack-radius` off the styled record;
+  endpoints as canonical strings (keywords, 'x y' with % suffixes,
+  '<rad>rad' angles); distances as numbers.  21 Node specs
+  (`test/gpu-curve-12c-derivation.mjs`); two 12b-era specs updated to
+  the new surface (haystack/edge-distances no longer throw).  1831
+  Node tests, typecheck + lint green.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

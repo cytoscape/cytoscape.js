@@ -11,16 +11,35 @@ import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
 } from './style-scales.mjs';
 import {
-  CURVE_DEFAULTS, CURVE_EXTRA_DEFAULTS, CURVE_STYLE_BEZIER, CURVE_STYLE_ROUND_SEGMENTS,
-  CURVE_STYLE_ROUND_TAXI, CURVE_STYLE_SEGMENTS, CURVE_STYLE_STRAIGHT, CURVE_STYLE_TAXI,
-  CURVE_STYLE_UNBUNDLED, isBlobStyle
+  CURVE_DEFAULTS, CURVE_EXTRA_DEFAULTS, CURVE_STYLE_BEZIER, CURVE_STYLE_HAYSTACK,
+  CURVE_STYLE_ROUND_SEGMENTS, CURVE_STYLE_ROUND_TAXI, CURVE_STYLE_SEGMENTS,
+  CURVE_STYLE_STRAIGHT, CURVE_STYLE_TAXI, CURVE_STYLE_TRIANGLE, CURVE_STYLE_UNBUNDLED,
+  isBlobStyle
 } from './store/curve-index.mjs';
-import type { CurveStyleExtras } from './store/curve-index.mjs';
+import type { CurveStyleExtras, EndpointSpec } from './store/curve-index.mjs';
 import {
   EDGE_DIST_INTERSECTION, EDGE_DIST_NODE_POSITION,
   TAXI_AUTO, TAXI_DOWNWARD, TAXI_HORIZONTAL, TAXI_LEFTWARD, TAXI_RIGHTWARD, TAXI_UPWARD,
   TAXI_VERTICAL
 } from './curve-geometry.mjs';
+import {
+  EDGE_DIST_ENDPOINTS, ENDPT_ANGLE, ENDPT_DEFAULT, ENDPT_INSIDE, ENDPT_LINE, ENDPT_PCT_X,
+  ENDPT_PCT_Y, ENDPT_POINT
+} from './curve-geometry.mjs';
+
+/** One styled end of source/target-endpoint (12c): the parsed form of
+ * v3's edgeEndpoint type.  Angles store the *effective* radians (the
+ * 12-o'clock start already applied); point pct components store the
+ * fraction (v3's pfValue). */
+interface EndpointEnd {
+  mode: number;
+  a: number;
+  b: number;
+  pct: number;
+}
+
+const ENDPT_END_DEFAULT: EndpointEnd = { mode: ENDPT_DEFAULT, a: 0, b: 0, pct: 0 };
+
 import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './style-scales.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
@@ -122,6 +141,12 @@ interface EdgeComputed {
   /** EDGE_DIST_* id */
   edgeDistances: number;
   taxiDirection: number;
+  // 12c curve props
+  haystackRadius: number;
+  sourceEndpoint: EndpointEnd;
+  targetEndpoint: EndpointEnd;
+  sourceDistanceFromNode: number;
+  targetDistanceFromNode: number;
   /** percent turns store the fraction (v3 pfValue); px turns the px */
   taxiTurn: number;
   taxiTurnPercent: boolean;
@@ -198,6 +223,11 @@ const EDGE_DEFAULTS: EdgeComputed = {
   radiusTypes: CURVE_EXTRA_DEFAULTS.radiusTypes,
   edgeDistances: CURVE_EXTRA_DEFAULTS.edgeDistances,
   taxiDirection: CURVE_EXTRA_DEFAULTS.taxiDir,
+  haystackRadius: 0, // v3's default: haystack endpoints at the centers
+  sourceEndpoint: ENDPT_END_DEFAULT,
+  targetEndpoint: ENDPT_END_DEFAULT,
+  sourceDistanceFromNode: 0,
+  targetDistanceFromNode: 0,
   taxiTurn: CURVE_EXTRA_DEFAULTS.taxiTurn,
   taxiTurnPercent: CURVE_EXTRA_DEFAULTS.taxiTurnPercent,
   taxiTurnMinDistance: CURVE_EXTRA_DEFAULTS.taxiTurnMinDist,
@@ -282,7 +312,9 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
   'control-point-distances', 'control-point-weights',
   'segment-distances', 'segment-weights', 'segment-radii', 'radius-type',
-  'edge-distances', 'taxi-direction', 'taxi-turn', 'taxi-turn-min-distance', 'taxi-radius'
+  'edge-distances', 'taxi-direction', 'taxi-turn', 'taxi-turn-min-distance', 'taxi-radius',
+  'haystack-radius', 'source-endpoint', 'target-endpoint',
+  'source-distance-from-node', 'target-distance-from-node'
 ] );
 
 /** curve props are edge-only (constants and mappers alike). */
@@ -290,7 +322,9 @@ const CURVE_PROPS: ReadonlySet<string> = new Set( [
   'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
   'control-point-distances', 'control-point-weights',
   'segment-distances', 'segment-weights', 'segment-radii', 'radius-type',
-  'edge-distances', 'taxi-direction', 'taxi-turn', 'taxi-turn-min-distance', 'taxi-radius'
+  'edge-distances', 'taxi-direction', 'taxi-turn', 'taxi-turn-min-distance', 'taxi-radius',
+  'haystack-radius', 'source-endpoint', 'target-endpoint',
+  'source-distance-from-node', 'target-distance-from-node'
 ] );
 
 const parseColor = ( prop: string, value: unknown ): RGBA => {
@@ -310,6 +344,17 @@ const parseNumber = ( prop: string, value: unknown ): number => {
 
   if( !isFinite( num ) ){
     throw new Error( `The value '${String( value )}' is not a valid number for '${prop}'` );
+  }
+
+  return num;
+};
+
+/** v3's size type: a non-negative number. */
+const parseNonNegative = ( prop: string, value: unknown ): number => {
+  const num = parseNumber( prop, value );
+
+  if( num < 0 ){
+    throw new Error( `The value '${String( value )}' for '${prop}' may not be negative` );
   }
 
   return num;
@@ -387,7 +432,9 @@ const CURVE_STYLES: Record<string, number> = {
   'segments': CURVE_STYLE_SEGMENTS,
   'round-segments': CURVE_STYLE_ROUND_SEGMENTS,
   'taxi': CURVE_STYLE_TAXI,
-  'round-taxi': CURVE_STYLE_ROUND_TAXI
+  'round-taxi': CURVE_STYLE_ROUND_TAXI,
+  'haystack': CURVE_STYLE_HAYSTACK,
+  'straight-triangle': CURVE_STYLE_TRIANGLE
 };
 
 const CURVE_STYLE_NAMES: Record<number, string> = {
@@ -397,7 +444,9 @@ const CURVE_STYLE_NAMES: Record<number, string> = {
   [ CURVE_STYLE_SEGMENTS ]: 'segments',
   [ CURVE_STYLE_ROUND_SEGMENTS ]: 'round-segments',
   [ CURVE_STYLE_TAXI ]: 'taxi',
-  [ CURVE_STYLE_ROUND_TAXI ]: 'round-taxi'
+  [ CURVE_STYLE_ROUND_TAXI ]: 'round-taxi',
+  [ CURVE_STYLE_HAYSTACK ]: 'haystack',
+  [ CURVE_STYLE_TRIANGLE ]: 'straight-triangle'
 };
 
 const parseCurveStyle = ( value: unknown ): number => {
@@ -406,8 +455,7 @@ const parseCurveStyle = ( value: unknown ): number => {
   if( style == null ){
     throw new Error(
       `The curve-style '${String( value )}' is unsupported in the GPU prototype; ` +
-      `use one of: ${Object.keys( CURVE_STYLES ).join( ', ' )} ` +
-      `(haystack and straight-triangle land with curve pass 12c)`
+      `use one of: ${Object.keys( CURVE_STYLES ).join( ', ' )}`
     );
   }
 
@@ -456,12 +504,14 @@ const parseRadiusTypes = ( prop: string, value: unknown ): number[] => {
 
 const EDGE_DISTANCES: Record<string, number> = {
   'intersection': EDGE_DIST_INTERSECTION,
-  'node-position': EDGE_DIST_NODE_POSITION
+  'node-position': EDGE_DIST_NODE_POSITION,
+  'endpoints': EDGE_DIST_ENDPOINTS
 };
 
 const EDGE_DISTANCE_NAMES: Record<number, string> = {
   [ EDGE_DIST_INTERSECTION ]: 'intersection',
-  [ EDGE_DIST_NODE_POSITION ]: 'node-position'
+  [ EDGE_DIST_NODE_POSITION ]: 'node-position',
+  [ EDGE_DIST_ENDPOINTS ]: 'endpoints'
 };
 
 const parseEdgeDistances = ( value: unknown ): number => {
@@ -470,12 +520,113 @@ const parseEdgeDistances = ( value: unknown ): number => {
   if( id == null ){
     throw new Error(
       `The edge-distances '${String( value )}' is unsupported in the GPU prototype; ` +
-      `use one of: ${Object.keys( EDGE_DISTANCES ).join( ', ' )} ` +
-      `('endpoints' needs the manual source/target-endpoint props, which land with curve pass 12c)`
+      `use one of: ${Object.keys( EDGE_DISTANCES ).join( ', ' )}`
     );
   }
 
   return id;
+};
+
+const ENDPT_KEYWORDS: Record<string, number> = {
+  'outside-to-node': ENDPT_DEFAULT,
+  'inside-to-node': ENDPT_INSIDE,
+  'outside-to-line': ENDPT_LINE
+};
+
+const ENDPT_COMPONENT = /^(-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(%|px)?$/;
+
+/**
+ * v3's edgeEndpoint forms: a keyword, a 2-component point ('%' or px
+ * per component), or a single angle ('deg'/'rad' strings, or a plain
+ * number in radians — v4's angle convention).  The '-or-label'
+ * keywords need the label bounding box v4 doesn't have and throw (a
+ * recorded deviation, deferred to the label-bb round).
+ */
+const parseEndpoint = ( prop: string, value: unknown ): EndpointEnd => {
+  if( typeof value === 'number' && isFinite( value ) ){
+    return { mode: ENDPT_ANGLE, a: value - Math.PI / 2, b: 0, pct: 0 };
+  }
+
+  const parts = Array.isArray( value )
+    ? value
+    : String( value ).trim().split( /\s+/ );
+
+  if( parts.length === 1 && typeof parts[ 0 ] === 'string' ){
+    const token = parts[ 0 ].trim();
+    const keyword = ENDPT_KEYWORDS[ token ];
+
+    if( keyword != null ){ return { mode: keyword, a: 0, b: 0, pct: 0 }; }
+
+    if( token === 'outside-to-node-or-label' || token === 'outside-to-line-or-label' ){
+      throw new Error(
+        `The ${prop} '${token}' is unsupported in the GPU prototype ` +
+        `(label bounding boxes are not computed; use the non-label form)`
+      );
+    }
+
+    const angle = ANGLE_VALUE.exec( token );
+
+    if( angle != null && angle[ 2 ] != null ){
+      const num = parseFloat( angle[ 1 ] );
+      const rad = angle[ 2 ] === 'deg' ? num * Math.PI / 180 : num;
+
+      return { mode: ENDPT_ANGLE, a: rad - Math.PI / 2, b: 0, pct: 0 };
+    }
+  }
+
+  if( parts.length === 1 && typeof parts[ 0 ] === 'number' && isFinite( parts[ 0 ] ) ){
+    return { mode: ENDPT_ANGLE, a: parts[ 0 ] - Math.PI / 2, b: 0, pct: 0 };
+  }
+
+  if( parts.length === 2 ){
+    let pct = 0;
+    const comp = ( raw: unknown, bit: number ): number => {
+      if( typeof raw === 'number' && isFinite( raw ) ){ return raw; }
+
+      const m = ENDPT_COMPONENT.exec( String( raw ).trim() );
+
+      if( m == null ){
+        throw new Error( `The value '${String( raw )}' is not a valid ${prop} component` );
+      }
+
+      const num = parseFloat( m[ 1 ] );
+
+      if( m[ 2 ] === '%' ){
+        pct |= bit;
+
+        return num / 100;
+      }
+
+      return num;
+    };
+
+    const a = comp( parts[ 0 ], ENDPT_PCT_X );
+    const b = comp( parts[ 1 ], ENDPT_PCT_Y );
+
+    return { mode: ENDPT_POINT, a, b, pct };
+  }
+
+  throw new Error(
+    `The value '${String( value )}' is not a valid ${prop} ` +
+    `(use a keyword, an 'x y' point with optional %/px units, or an angle)`
+  );
+};
+
+/** endpoint readback: the canonical string form (keywords, 'x y' with
+ * % suffixes on pct components, or '<rad>rad' for angles). */
+const endpointString = ( e: EndpointEnd ): string => {
+  switch( e.mode ){
+    case ENDPT_INSIDE: return 'inside-to-node';
+    case ENDPT_LINE: return 'outside-to-line';
+    case ENDPT_POINT: {
+      const x = e.pct % 2 === 1 ? `${e.a * 100}%` : `${e.a}`;
+      const y = e.pct >= ENDPT_PCT_Y ? `${e.b * 100}%` : `${e.b}`;
+
+      return `${x} ${y}`;
+    }
+    case ENDPT_ANGLE: return `${e.a + Math.PI / 2}rad`;
+    default: return 'outside-to-node';
+  }
 };
 
 const TAXI_DIRECTIONS: Record<string, number> = {
@@ -728,6 +879,28 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'taxi-radius':
       computed.taxiRadius = parseNumber( prop, value );
       break;
+    case 'haystack-radius': {
+      const radius = parseNumber( prop, value );
+
+      if( radius < 0 || radius > 1 ){
+        throw new Error( `The haystack-radius '${String( value )}' must be within [0, 1]` );
+      }
+
+      computed.haystackRadius = radius;
+      break;
+    }
+    case 'source-endpoint':
+      computed.sourceEndpoint = parseEndpoint( prop, value );
+      break;
+    case 'target-endpoint':
+      computed.targetEndpoint = parseEndpoint( prop, value );
+      break;
+    case 'source-distance-from-node':
+      computed.sourceDistanceFromNode = parseNonNegative( prop, value );
+      break;
+    case 'target-distance-from-node':
+      computed.targetDistanceFromNode = parseNonNegative( prop, value );
+      break;
 
     default:
       throw new Error( `The style property '${prop}' is unsupported in the GPU prototype` );
@@ -941,6 +1114,23 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'edges' ],
     set: ( c, v ) => { c.taxiRadius = v as number; },
     default: () => EDGE_DEFAULTS.taxiRadius
+  },
+  // 12c scalar curve props (source/target-endpoint stays constants-only:
+  // its point form is a list, per the 12b list-prop scope rule)
+  'haystack-radius': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.haystackRadius = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => EDGE_DEFAULTS.haystackRadius
+  },
+  'source-distance-from-node': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.sourceDistanceFromNode = Math.max( 0, v as number ); },
+    default: () => EDGE_DEFAULTS.sourceDistanceFromNode
+  },
+  'target-distance-from-node': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.targetDistanceFromNode = Math.max( 0, v as number ); },
+    default: () => EDGE_DEFAULTS.targetDistanceFromNode
   },
   'source-arrow-shape': {
     kind: 'enum', groups: [ 'edges' ],
@@ -1535,6 +1725,22 @@ export class StyleEngine {
       }
       case 'taxi-turn-min-distance': return curveExtrasFor( store, slot ).taxiTurnMinDist;
       case 'taxi-radius': return curveExtrasFor( store, slot ).taxiRadius;
+      case 'haystack-radius': return store.curveStyleAt( slot ).haystackRadius;
+      case 'source-endpoint':
+      case 'target-endpoint': {
+        const e = store.curveStyleAt( slot ).endpoints;
+        const src = prop === 'source-endpoint';
+
+        if( e == null ){ return 'outside-to-node'; }
+
+        return endpointString( src
+          ? { mode: e.srcMode, a: e.srcA, b: e.srcB, pct: e.srcPct }
+          : { mode: e.tgtMode, a: e.tgtA, b: e.tgtB, pct: e.tgtPct } );
+      }
+      case 'source-distance-from-node':
+        return store.curveStyleAt( slot ).endpoints?.srcDist ?? 0;
+      case 'target-distance-from-node':
+        return store.curveStyleAt( slot ).endpoints?.tgtDist ?? 0;
     }
 
     return undefined;
@@ -1715,8 +1921,13 @@ export class StyleEngine {
       store.setScalar( 'edge.opacity', slot, computed.opacity );
       store.setScalar( 'edge.lineStyle', slot, computed.lineStyle );
       // edge opacity folds into the stored alpha (the arrow shader has no
-      // spare storage-buffer binding for the opacity column)
-      const arrow = ( shape: ArrowShape, color: RGBA ): RGBA => shape === 'none' ? NO_ARROW
+      // spare storage-buffer binding for the opacity column).  Haystack
+      // edges draw no arrows (v3 skips them), so their stored arrow
+      // alpha is 0 — arrow getters read 'none' (a recorded deviation:
+      // v3's pstyle still reports the declared shape)
+      const noArrows = computed.curveStyle === CURVE_STYLE_HAYSTACK;
+      const arrow = ( shape: ArrowShape, color: RGBA ): RGBA => shape === 'none' || noArrows
+        ? NO_ARROW
         : [ color[ 0 ], color[ 1 ], color[ 2 ], Math.round( color[ 3 ] * computed.opacity ) ];
 
       store.setColor( 'edge.sourceArrow', slot, ...arrow( computed.sourceArrowShape, computed.sourceArrowColor ) );
@@ -1741,9 +1952,24 @@ export class StyleEngine {
         }
         : null;
 
+      // the styled endpoint spec (null when all-default — the common case)
+      const se = computed.sourceEndpoint;
+      const te = computed.targetEndpoint;
+      const endpoints: EndpointSpec | null =
+        se.mode === ENDPT_DEFAULT && te.mode === ENDPT_DEFAULT &&
+        computed.sourceDistanceFromNode === 0 && computed.targetDistanceFromNode === 0
+          ? null
+          : {
+            srcMode: se.mode, srcA: se.a, srcB: se.b, srcPct: se.pct,
+            srcDist: computed.sourceDistanceFromNode,
+            tgtMode: te.mode, tgtA: te.a, tgtB: te.b, tgtPct: te.pct,
+            tgtDist: computed.targetDistanceFromNode
+          };
+
       store.setCurveStyle(
         slot, computed.curveStyle, computed.controlPointStepSize, computed.controlPointWeight,
-        computed.loopDirection, computed.loopSweep, extras
+        computed.loopDirection, computed.loopSweep, extras,
+        computed.haystackRadius, endpoints
       );
 
       this.writeLabel( slot, computed, 'edges' );

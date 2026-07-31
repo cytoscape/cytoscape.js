@@ -112,6 +112,15 @@ export class IdMap {
     return name;
   }
 
+  /** The stored id hash for a slot (0 when none) — stable across
+   * sessions and machines for a given id string; the curve derivation
+   * seeds hash-stable haystack angles from it (12c). */
+  hashAt( group: GroupName, slot: number ): number {
+    const m = this.meta[ group ];
+
+    return slot < m.hash.length ? m.hash[ slot ] : 0;
+  }
+
   set( id: string, group: GroupName, slot: number ): void {
     this.ensure( this._size + 1 );
 

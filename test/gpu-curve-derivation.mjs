@@ -280,9 +280,12 @@ describe('gpu/curve-derivation (12b families)', function(){
       }) ).to.throw(/edge style property/);
     });
 
-    it('rejects edge-distances: endpoints until 12c', function(){
-      expect( () => pairWith({ 'curve-style': 'segments', 'edge-distances': 'endpoints' }) )
-        .to.throw(/12c/);
+    it('accepts edge-distances: endpoints (12c; falls back sans manual endpoints)', function(){
+      cy = pairWith({ 'curve-style': 'segments', 'edge-distances': 'endpoints' });
+
+      // stored truth keeps the styled keyword even when derivation
+      // falls back to the intersection frame (no manual endpoints)
+      expect( cy.$id('e').style('edge-distances') ).to.equal( 'endpoints' );
     });
 
     it('rejects unknown taxi directions and radius types', function(){

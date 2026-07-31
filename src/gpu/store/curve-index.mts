@@ -1,9 +1,11 @@
 import {
-  CURVE_BEZIER, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS, CURVE_STRAIGHT, CURVE_TAXI
+  CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
+  CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE
 } from '../contract.mjs';
 import {
-  bundleOffset, loopAngles, loopRadius,
-  EDGE_DIST_INTERSECTION, MAX_CURVE_PTS, MAX_MULTI_CTRL, TAXI_AUTO
+  bundleOffset, haystackAngle, loopAngles, loopRadius,
+  EDGE_DIST_ENDPOINTS, EDGE_DIST_INTERSECTION, ENDPT_ANGLE, ENDPT_PCT_Y,
+  ENDPT_POINT, MAX_CURVE_PTS, MAX_MULTI_CTRL, TAXI_AUTO
 } from '../curve-geometry.mjs';
 
 /*
@@ -54,9 +56,92 @@ export const CURVE_STYLE_SEGMENTS = 3;
 export const CURVE_STYLE_ROUND_SEGMENTS = 4;
 export const CURVE_STYLE_TAXI = 5;
 export const CURVE_STYLE_ROUND_TAXI = 6;
+// 12c: per-edge straight-stream styles (never bundle, never blob)
+export const CURVE_STYLE_HAYSTACK = 7;
+export const CURVE_STYLE_TRIANGLE = 8;
 
 /** styles whose derived params live in the curve param blob */
-export const isBlobStyle = ( style: number ): boolean => style >= CURVE_STYLE_UNBUNDLED;
+export const isBlobStyle = ( style: number ): boolean =>
+  style >= CURVE_STYLE_UNBUNDLED && style <= CURVE_STYLE_ROUND_TAXI;
+
+/** 12c straight-stream styles: derived per edge, FLAG_CURVED stays clear */
+export const isStraightStreamStyle = ( style: number ): boolean =>
+  style === CURVE_STYLE_HAYSTACK || style === CURVE_STYLE_TRIANGLE;
+
+/**
+ * The styled manual-endpoint record (12c): `source/target-endpoint` +
+ * `source/target-distance-from-node`, parsed to the endpoint-block
+ * float layout (see curve-geometry.mts).  Null means all-default (the
+ * common case — no block is emitted and derivation is unchanged).
+ */
+export interface EndpointSpec {
+  srcMode: number; srcA: number; srcB: number; srcPct: number; srcDist: number;
+  tgtMode: number; tgtA: number; tgtB: number; tgtPct: number; tgtDist: number;
+}
+
+export const ENDPT_SPEC_DEFAULTS: EndpointSpec = {
+  srcMode: 0, srcA: 0, srcB: 0, srcPct: 0, srcDist: 0,
+  tgtMode: 0, tgtA: 0, tgtB: 0, tgtPct: 0, tgtDist: 0
+};
+
+export const isDefaultEndpt = ( e: EndpointSpec | null ): boolean => {
+  if( e == null ){ return true; }
+
+  return e.srcMode === 0 && e.srcDist === 0 && e.tgtMode === 0 && e.tgtDist === 0;
+};
+
+const endptEq = ( a: EndpointSpec | null, b: EndpointSpec | null ): boolean => {
+  if( a === b ){ return true; }
+  if( a == null || b == null ){ return false; }
+
+  return a.srcMode === b.srcMode && a.srcA === b.srcA && a.srcB === b.srcB &&
+    a.srcPct === b.srcPct && a.srcDist === b.srcDist &&
+    a.tgtMode === b.tgtMode && a.tgtA === b.tgtA && a.tgtB === b.tgtB &&
+    a.tgtPct === b.tgtPct && a.tgtDist === b.tgtDist;
+};
+
+/** the 10-float endpoint block (the WGSL twin reads the same layout) */
+const endptBlock = ( e: EndpointSpec ): number[] => [
+  e.srcMode, e.srcA, e.srcB, e.srcPct, e.srcDist,
+  e.tgtMode, e.tgtA, e.tgtB, e.tgtPct, e.tgtDist
+];
+
+/** conservative px excursion of manual point endpoints past the node
+ * centers (pct components are covered by the pct magnitude instead) */
+const endptPxDev = ( e: EndpointSpec ): number => {
+  const end = ( mode: number, a: number, b: number, pct: number ): number => {
+    if( mode !== ENDPT_POINT ){ return 0; }
+
+    const px = pct % 2 === 1 ? 0 : Math.abs( a );
+    const py = pct >= ENDPT_PCT_Y ? 0 : Math.abs( b );
+
+    return Math.hypot( px, py );
+  };
+
+  return Math.max(
+    end( e.srcMode, e.srcA, e.srcB, e.srcPct ),
+    end( e.tgtMode, e.tgtA, e.tgtB, e.tgtPct )
+  );
+};
+
+/** pct endpoint magnitude in node-half units (2·|fraction|): ≤ 1 is
+ * covered by the slack's node-half term; > 1 marks the edge box-bounded
+ * and feeds the store's monotone pct slack */
+const endptPctMag = ( e: EndpointSpec ): number => {
+  const end = ( mode: number, a: number, b: number, pct: number ): number => {
+    if( mode !== ENDPT_POINT ){ return 0; }
+
+    const fx = pct % 2 === 1 ? Math.abs( a ) : 0;
+    const fy = pct >= ENDPT_PCT_Y ? Math.abs( b ) : 0;
+
+    return 2 * Math.max( fx, fy );
+  };
+
+  return Math.max(
+    end( e.srcMode, e.srcA, e.srcB, e.srcPct ),
+    end( e.tgtMode, e.tgtA, e.tgtB, e.tgtPct )
+  );
+};
 
 /** the styled defaults (v3's): step 40, weight 0.5, loop -45deg/-90deg */
 export const CURVE_DEFAULTS = {
@@ -138,10 +223,14 @@ export interface CurveHost {
   aliveEdgeSlots(): number[];
   /** write the derived params (column write + FLAG_CURVED + dirty span) */
   writeParams( slot: number, p0: number, p1: number, p2: number, kind: number ): void;
-  /** write a blob-backed record + its header (12b families) */
+  /** write a blob-backed record + its header (12b families; endptPct
+   * is the 12c pct-endpoint magnitude in node-half units, 0 when none) */
   writeBlobParams(
-    slot: number, kind: number, values: ArrayLike<number>, n: number, dev: number, box: boolean
+    slot: number, kind: number, values: ArrayLike<number>, n: number, dev: number, box: boolean,
+    endptPct: number
   ): void;
+  /** the edge's stable id hash (haystack angle seeding, 12c) */
+  idHash( slot: number ): number;
   /** schedule a frame / mark non-column dirt (DirtyTracker.touch) */
   schedule(): void;
 }
@@ -163,6 +252,10 @@ export class CurveIndex {
   /** the 12b family record per slot (null for straight/bezier styles) */
   private extra: ( CurveStyleExtras | null )[];
 
+  /** 12c styled records: haystack-radius and the manual-endpoint spec */
+  private hayRadius: Float32Array;
+  private endpt: ( EndpointSpec | null )[];
+
   /** unordered endpoint pair → member edge slots (non-loop edges only);
    * null until some edge styles bezier */
   private pairs: Map<number, number[]> | null;
@@ -172,6 +265,7 @@ export class CurveIndex {
   /** non-loop blob-family edges awaiting per-edge derivation */
   private pendingSlots: Set<number>;
   private warnedCap: boolean;
+  private warnedEndptDist: boolean;
 
   constructor( host: CurveHost ){
     this.host = host;
@@ -181,11 +275,14 @@ export class CurveIndex {
     this.loopDir = new Float32Array( 0 );
     this.loopSweep = new Float32Array( 0 );
     this.extra = [];
+    this.hayRadius = new Float32Array( 0 );
+    this.endpt = [];
     this.pairs = null;
     this.loops = new Map();
     this.pending = new Set();
     this.pendingSlots = new Set();
     this.warnedCap = false;
+    this.warnedEndptDist = false;
   }
 
   // -- styled records --
@@ -197,19 +294,24 @@ export class CurveIndex {
    */
   setStyle(
     slot: number, style: number, stepSize: number, weight: number,
-    loopDirection: number, loopSweep: number, extras: CurveStyleExtras | null = null
+    loopDirection: number, loopSweep: number, extras: CurveStyleExtras | null = null,
+    haystackRadius: number = 0, endpoints_: EndpointSpec | null = null
   ): void {
     this.ensure( slot );
 
     // blob-family records keep their extras; others store none
     const nextExtra = isBlobStyle( style ) ? extras ?? CURVE_EXTRA_DEFAULTS : null;
+    // an all-default endpoint spec stores as null (no block emitted)
+    const nextEndpt = isDefaultEndpt( endpoints_ ) ? null : endpoints_;
     const changed = this.style[ slot ] !== style || this.step[ slot ] !== stepSize ||
       this.weight[ slot ] !== weight || this.loopDir[ slot ] !== loopDirection ||
-      this.loopSweep[ slot ] !== loopSweep || !extrasEq( this.extra[ slot ], nextExtra );
+      this.loopSweep[ slot ] !== loopSweep || !extrasEq( this.extra[ slot ], nextExtra ) ||
+      this.hayRadius[ slot ] !== haystackRadius || !endptEq( this.endpt[ slot ], nextEndpt );
 
     if( !changed ){ return; }
 
     const oldStyle = this.style[ slot ];
+    const hadEndpt = this.endpt[ slot ] != null;
 
     this.style[ slot ] = style;
     this.step[ slot ] = stepSize;
@@ -217,6 +319,8 @@ export class CurveIndex {
     this.loopDir[ slot ] = loopDirection;
     this.loopSweep[ slot ] = loopSweep;
     this.extra[ slot ] = nextExtra;
+    this.hayRadius[ slot ] = haystackRadius;
+    this.endpt[ slot ] = nextEndpt;
 
     if( style === CURVE_STYLE_BEZIER && this.pairs == null ){
       this.buildPairIndex();
@@ -229,10 +333,16 @@ export class CurveIndex {
     // the pair re-derives (bundle membership may change); a non-loop
     // blob-family edge also derives per-edge — as does a blob edge
     // restyled *away* (the pair map may not exist without any bezier,
-    // so derivePair alone could never reset its params)
+    // so derivePair alone could never reset its params), a 12c
+    // straight-stream style (haystack/triangle, per-edge by nature),
+    // and any edge whose endpoint spec is (or was) non-default
     this.markPair( source, target );
 
-    if( source !== target && ( isBlobStyle( style ) || isBlobStyle( oldStyle ) ) ){
+    if( source !== target && (
+      isBlobStyle( style ) || isBlobStyle( oldStyle ) ||
+      isStraightStreamStyle( style ) || isStraightStreamStyle( oldStyle ) ||
+      nextEndpt != null || hadEndpt
+    ) ){
       this.pendingSlots.add( slot );
       this.host.schedule();
     }
@@ -242,9 +352,11 @@ export class CurveIndex {
    * is null unless the style is a 12b family. */
   styleAt( slot: number ): {
     style: number; stepSize: number; weight: number; loopDirection: number; loopSweep: number;
-    extras: CurveStyleExtras | null;
+    extras: CurveStyleExtras | null; haystackRadius: number; endpoints: EndpointSpec | null;
   } {
-    if( slot >= this.style.length ){ return { ...CURVE_DEFAULTS, extras: null }; }
+    if( slot >= this.style.length ){
+      return { ...CURVE_DEFAULTS, extras: null, haystackRadius: 0, endpoints: null };
+    }
 
     return {
       style: this.style[ slot ],
@@ -252,7 +364,9 @@ export class CurveIndex {
       weight: this.weight[ slot ],
       loopDirection: this.loopDir[ slot ],
       loopSweep: this.loopSweep[ slot ],
-      extras: this.extra[ slot ] ?? null
+      extras: this.extra[ slot ] ?? null,
+      haystackRadius: this.hayRadius[ slot ],
+      endpoints: this.endpt[ slot ] ?? null
     };
   }
 
@@ -328,6 +442,8 @@ export class CurveIndex {
       this.loopDir[ slot ] = CURVE_DEFAULTS.loopDirection;
       this.loopSweep[ slot ] = CURVE_DEFAULTS.loopSweep;
       this.extra[ slot ] = null;
+      this.hayRadius[ slot ] = 0;
+      this.endpt[ slot ] = null;
     }
 
     this.pendingSlots.delete( slot );
@@ -379,7 +495,7 @@ export class CurveIndex {
 
       if( style === CURVE_STYLE_BEZIER ){ this.markPair( source, target ); }
 
-      if( isBlobStyle( style ) ){
+      if( isBlobStyle( style ) || isStraightStreamStyle( style ) || this.endpt[ slot ] != null ){
         this.pendingSlots.add( slot );
         this.host.schedule();
       }
@@ -475,15 +591,18 @@ export class CurveIndex {
     const endpoints = this.host.endpoints();
 
     for( const slot of members ){
-      // blob-family members own their params (per-edge derivation) —
-      // a pair re-derivation must not clobber them
-      if( slot < this.style.length && isBlobStyle( this.style[ slot ] ) ){ continue; }
+      // blob-family and 12c straight-stream members own their params
+      // (per-edge derivation) — a pair re-derivation must not clobber
+      const st = slot < this.style.length ? this.style[ slot ] : CURVE_STYLE_STRAIGHT;
+
+      if( isBlobStyle( st ) || isStraightStreamStyle( st ) ){ continue; }
 
       const i = bundle.indexOf( slot );
 
       if( i < 0 || i === mid ){
-        // straight-styled member, or the odd bundle's middle edge
-        this.host.writeParams( slot, 0, 0, 0, CURVE_STRAIGHT );
+        // straight-styled member, or the odd bundle's middle edge —
+        // endpoint-aware (a manual-endpoint chord when a spec is set)
+        this.writeStraightDerived( slot );
         continue;
       }
 
@@ -491,7 +610,7 @@ export class CurveIndex {
       const sigma = endpoints[ slot * 2 ] === canonicalSource ? 1 : -1;
       const d = bundleOffset( n, i, this.step[ slot ] ) * sigma;
 
-      this.host.writeParams( slot, d, this.weight[ slot ], 0, CURVE_BEZIER );
+      this.writeBezierDerived( slot, d, this.weight[ slot ] );
     }
   }
 
@@ -544,12 +663,29 @@ export class CurveIndex {
 
     const style = slot < this.style.length ? this.style[ slot ] : CURVE_STYLE_STRAIGHT;
 
+    // 12c straight-stream styles: per-edge params, FLAG_CURVED clear
+    if( style === CURVE_STYLE_HAYSTACK ){
+      const h = this.host.idHash( slot );
+
+      this.host.writeParams(
+        slot, haystackAngle( h, false ), haystackAngle( h, true ),
+        this.hayRadius[ slot ], CURVE_HAYSTACK );
+
+      return;
+    }
+
+    if( style === CURVE_STYLE_TRIANGLE ){
+      this.host.writeParams( slot, 0, 0, 0, CURVE_TRIANGLE );
+
+      return;
+    }
+
     if( !isBlobStyle( style ) ){
       // restyled away while pending: a bezier is the pair derivation's
       // job, but a straight edge must reset here — its pair may not
       // even have a map entry (the pair index is bezier-lazy)
       if( style === CURVE_STYLE_STRAIGHT ){
-        this.host.writeParams( slot, 0, 0, 0, CURVE_STRAIGHT );
+        this.writeStraightDerived( slot );
       }
 
       return;
@@ -570,7 +706,7 @@ export class CurveIndex {
 
       n = this.capCount( n, MAX_MULTI_CTRL, 'control points' );
 
-      const rec: number[] = [ ex.edgeDistances ];
+      const rec: number[] = [ this.resolveEdgeDistances( slot, ex ) ];
       let dev = 0;
       let box = false;
 
@@ -584,7 +720,7 @@ export class CurveIndex {
         if( w < 0 || w > 1 ){ box = true; }
       }
 
-      this.host.writeBlobParams( slot, CURVE_MULTI, rec, n, dev, box );
+      this.writeBlob( slot, CURVE_MULTI, rec, n, dev, box );
 
       return;
     }
@@ -601,7 +737,7 @@ export class CurveIndex {
       n = this.capCount( n, MAX_CURVE_PTS, 'segment points' );
 
       const round = style === CURVE_STYLE_ROUND_SEGMENTS;
-      const rec: number[] = [ ex.edgeDistances, round ? 1 : 0 ];
+      const rec: number[] = [ this.resolveEdgeDistances( slot, ex ), round ? 1 : 0 ];
       const lastRadius = ex.segRadii[ ex.segRadii.length - 1 ] ?? 15;
       const lastType = ex.radiusTypes[ ex.radiusTypes.length - 1 ] ?? 1;
       let dev = 0;
@@ -617,18 +753,110 @@ export class CurveIndex {
         if( w < 0 || w > 1 ){ box = true; }
       }
 
-      this.host.writeBlobParams( slot, CURVE_SEGMENTS, rec, n, dev, box );
+      this.writeBlob( slot, CURVE_SEGMENTS, rec, n, dev, box );
 
       return;
     }
 
-    // taxi / round-taxi: fixed 8-float record, always box-bounded
+    // taxi / round-taxi: fixed 8-float record, always box-bounded.
+    // v3 forces taxi endpoint *keywords* to outside-to-node (distances
+    // still apply) — writeBlob's taxi=true drops the modes accordingly.
     const round = style === CURVE_STYLE_ROUND_TAXI;
 
-    this.host.writeBlobParams( slot, CURVE_TAXI, [
+    this.writeBlob( slot, CURVE_TAXI, [
       ex.taxiDir, ex.taxiTurn, ex.taxiTurnPercent ? 1 : 0, ex.taxiTurnMinDist,
       ex.edgeDistances, round ? 1 : 0, ex.taxiRadius, ex.radiusTypes[ 0 ] ?? 1
-    ], 0, 0, true );
+    ], 0, 0, true, true );
+  }
+
+  /**
+   * v3's edge-distances: 'endpoints' rule (12c): the mode only holds
+   * when *both* ends are manual (point or angle forms); otherwise warn
+   * once — v3's message — and fall back to 'intersection'.
+   */
+  private resolveEdgeDistances( slot: number, ex: CurveStyleExtras ): number {
+    if( ex.edgeDistances !== EDGE_DIST_ENDPOINTS ){ return ex.edgeDistances; }
+
+    const e = this.endpt[ slot ];
+    const manual = ( mode: number ): boolean => mode === ENDPT_POINT || mode === ENDPT_ANGLE;
+
+    if( e != null && manual( e.srcMode ) && manual( e.tgtMode ) ){ return EDGE_DIST_ENDPOINTS; }
+
+    if( !this.warnedEndptDist ){
+      this.warnedEndptDist = true;
+      console.warn(
+        'cytoscape-gpu: an edge has edge-distances: endpoints without manual endpoints ' +
+        'specified via source-endpoint and target-endpoint; falling back on ' +
+        'edge-distances: intersection (default)'
+      );
+    }
+
+    return EDGE_DIST_INTERSECTION;
+  }
+
+  /** Straight-styled derivation: plain straight params, or — with a
+   * manual-endpoint spec — the CURVE_MULTI n = 0 chord record. */
+  private writeStraightDerived( slot: number ): void {
+    const e = this.endpt[ slot ];
+
+    if( e == null ){
+      this.host.writeParams( slot, 0, 0, 0, CURVE_STRAIGHT );
+
+      return;
+    }
+
+    this.writeBlob( slot, CURVE_MULTI, [ EDGE_DIST_INTERSECTION ], 0, 0, false );
+  }
+
+  /** Bundled-bezier derivation: fixed-column params, or — with a
+   * manual-endpoint spec — the promoted CURVE_MULTI n = 1 record (the
+   * control formula is identical, so the curve is unchanged). */
+  private writeBezierDerived( slot: number, d: number, w: number ): void {
+    const e = this.endpt[ slot ];
+
+    if( e == null ){
+      this.host.writeParams( slot, d, w, 0, CURVE_BEZIER );
+
+      return;
+    }
+
+    this.writeBlob(
+      slot, CURVE_MULTI, [ EDGE_DIST_INTERSECTION, d, w ], 1,
+      Math.abs( d ), w < 0 || w > 1 );
+  }
+
+  /**
+   * Blob write with the 12c endpoint prefix: when the slot has a
+   * manual-endpoint spec, the record is prefixed by the 10-float block
+   * and the kind carries CURVE_HAS_ENDPT; px point offsets fold into
+   * the header deviation, and pct offsets past the node half mark the
+   * edge box-bounded and feed the store's monotone pct slack.  `taxi`
+   * drops the endpoint *modes* (v3 forces outside-to-node for taxi)
+   * while keeping the distances.
+   */
+  private writeBlob(
+    slot: number, kind: number, recBody: number[], n: number, dev: number, box: boolean,
+    taxi: boolean = false
+  ): void {
+    let e = this.endpt[ slot ];
+
+    if( e != null && taxi && ( e.srcMode !== 0 || e.tgtMode !== 0 ) ){
+      e = { ...e, srcMode: 0, srcA: 0, srcB: 0, srcPct: 0, tgtMode: 0, tgtA: 0, tgtB: 0, tgtPct: 0 };
+
+      if( isDefaultEndpt( e ) ){ e = null; }
+    }
+
+    if( e == null ){
+      this.host.writeBlobParams( slot, kind, recBody, n, dev, box, 0 );
+
+      return;
+    }
+
+    const pct = endptPctMag( e );
+
+    this.host.writeBlobParams(
+      slot, kind + CURVE_HAS_ENDPT, [ ...endptBlock( e ), ...recBody ], n,
+      dev + endptPxDev( e ), box || pct > 1, pct );
   }
 
   private capCount( n: number, max: number, what: string ): number {
@@ -661,6 +889,7 @@ export class CurveIndex {
     const weight = new Float32Array( cap );
     const loopDir = new Float32Array( cap );
     const loopSweep = new Float32Array( cap );
+    const hayRadius = new Float32Array( cap );
 
     style.set( this.style );
     step.fill( CURVE_DEFAULTS.stepSize );
@@ -671,11 +900,13 @@ export class CurveIndex {
     loopDir.set( this.loopDir );
     loopSweep.fill( CURVE_DEFAULTS.loopSweep );
     loopSweep.set( this.loopSweep );
+    hayRadius.set( this.hayRadius );
 
     this.style = style;
     this.step = step;
     this.weight = weight;
     this.loopDir = loopDir;
     this.loopSweep = loopSweep;
+    this.hayRadius = hayRadius;
   }
 }

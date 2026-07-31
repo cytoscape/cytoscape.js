@@ -619,6 +619,32 @@ each is deliberate, not a pass-1 deferral:
     loop distance (v3), falling back to the step size when unset (v3
     yields NaN geometry there); and segments/taxi-styled loops keep
     rendering as loops (the 12a all-loops deviation extended).
+  - *Props + derivation (12c, style/model half)*: `curve-style` gains
+    `haystack` (+ `haystack-radius`, validated [0, 1], default 0 — v3)
+    and `straight-triangle` — both derive to *straight-stream* kinds
+    (FLAG_CURVED clear: they draw in the straight pipeline, so
+    haystack keeps far-zoom decimation).  Haystack angles are
+    id-hash-seeded (deterministic across loads/machines; v3 uses
+    Math.random()), offsets scale by the outer halves (inner size in
+    v3 — identical at border 0, recorded), and haystack edges draw no
+    arrows (v3 skips them; stored-truth arrow getters read 'none' —
+    recorded).  `source/target-endpoint` (keyword | 'x y' point with
+    per-component %/px units | angle; `-or-label` keywords throw — no
+    label bb) and `source/target-distance-from-node` resolve through a
+    10-float endpoint block prefixed to the edge's blob record
+    (`CURVE_HAS_ENDPT`): straight + endpoints ⇒ the MULTI n = 0
+    chord, bundled bezier + endpoints ⇒ promoted MULTI n = 1
+    (identical control formula), taxi keeps distances but forces the
+    keyword modes (v3's override), and loops ignore endpoints
+    entirely (v3 overrides keywords; v4 also drops loop distances —
+    recorded).  `edge-distances: 'endpoints'` re-bases the frame on
+    the raw manual anchors when both ends are manual, else warns and
+    falls back (v3's rule).  Scalar 12c props are mapper-capable;
+    endpoint props are constants-only (the point form is a list).
+    Cull bounds: px offsets ride the header deviation; pct offsets
+    ≤ node-half ride the slack's node-half term, larger ones mark
+    FLAG_CURVED_BOX and feed the monotone pct term in curveSlack();
+    haystackSlack() bounds the straight-stream tests.
   - *Geometry + rendering (12b)*: the route families share 12a's one
     curved stream of CURVE_SEGS strips (one indirect draw needs one
     indexCount).  Variable-length records live in the **curve param

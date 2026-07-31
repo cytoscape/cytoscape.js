@@ -2830,6 +2830,33 @@ grows per item.
   specs (`test/gpu-mid-arrows.mjs`).  1904 Node tests, 100 Playwright
   specs, typecheck + lint green.
 
+- [x] **C2 gradients** (2026-07-31).  `background-fill`
+  (solid | linear-gradient | radial-gradient) with
+  `background-gradient-stop-colors`/`-stop-positions`/`-direction`
+  (v3's eight `to-*` keywords), and `line-fill` with
+  `line-gradient-stop-colors`/`-stop-positions`.  Storage: one packed
+  `Uint32Array×8` record per element ([meta kind|dir|count, 5 stop
+  colors, packed positions]) — **stops cap at 5** and stop lists are
+  constants-only (recorded); fills/directions are mapper-capable
+  enums.  Stops interpolate in **sRGB** (the plan's lean: v3's canvas
+  gradients; OKLab stays the mapper default), positions spread evenly
+  when unset and clamp monotone (canvas semantics), and the channel
+  opacity folds into each stop.  Binding budget: the node FS was full,
+  so the **shape id folded into borderGeom** (bits 16..19, written
+  with the style's other geometry) freeing the shapes binding for the
+  gradient record; edge gradients bind fragment-side on both edge
+  pipelines, with the drawn span (boundary-to-boundary for straight,
+  the polyline arc length for curved) as a new flat varying so linear
+  fills run v3's extent and radial fills mirror about the midpoint.
+  The depth prepass conservatively discards gradient fills
+  (translucent-anywhere); plain-LOD discs keep the flat base color
+  (recorded).  `parity-gradients` (three-stop linear on rectangles +
+  a gradient line vs v3) measures **0 px differing** — the sRGB lerp
+  matches canvas exactly; the `gradients` golden covers directions,
+  radial, ellipse and curved-line fills.  6 Node specs
+  (`test/gpu-gradients.mjs`).  1910 Node tests, 102 Playwright specs,
+  typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2957,7 +2984,8 @@ shelf, since the expensive part now exists)
   exactly the anchor + frame edge labels and autorotate already
   compute in the VS (straight edges use the chord midpoint).  One
   more quad per enabled end off the edge cull streams.
-- [ ] **C2 Gradients**: `background-fill` (linear-gradient |
+- [x] **C2 Gradients** (landed 2026-07-31 — see the round-13
+  record): `background-fill` (linear-gradient |
   radial-gradient) + `background-gradient-stop-colors`/
   `-stop-positions`/`-direction`; `line-fill` +
   `line-gradient-stop-colors`/`-stop-positions`.  Stop lists

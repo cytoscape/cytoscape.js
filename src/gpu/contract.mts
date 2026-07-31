@@ -156,8 +156,11 @@ export type ColumnId =
   /**
    * Uint32Array(4·cap) — border/corner/outline geometry (rounds 13
    * B2/B5): [cornerRadius × 256 (fixed-point model px; 0xffffffff =
-   * 'auto', v3's min(w/4, h/4, 8)), borderPosition (0 center — v3's
-   * default, 1 inside, 2 outside), outline rgba (outline-opacity
+   * 'auto', v3's min(w/4, h/4, 8)), borderPosition (bits 0..7: 0
+   * center — v3's default, 1 inside, 2 outside) | shape id << 16
+   * (round 13 C2: a copy of node.shape so the node FS can drop the
+   * shapes binding — the slot went to the gradient column; the style
+   * engine writes both together), outline rgba (outline-opacity
    * folded into alpha; a=0 = no outline), outlineWidth × 256 |
    * outlineOffset × 256 << 16 (u16 fixed-point each)].  Read by the
    * node/ghost FS, the depth prepass, the node cull (outward borders
@@ -165,6 +168,16 @@ export type ColumnId =
    * round-rectangle inside test).
    */
   | 'node.borderGeom'
+  /**
+   * Uint32Array(8·cap) — background gradient (round 13 C2), sRGB
+   * stops (v3's canvas gradients), constants-only, capped at 5 (a
+   * recorded cap): [meta (kind 0 solid | 1 linear | 2 radial, bits
+   * 0..1; direction id bits 2..4; stop count bits 5..7), c0..c4
+   * (packed rgba), pos0..3 (×255 in one word), pos4].  Same layout
+   * for edges as 'edge.gradient' (line-fill; no direction — linear
+   * runs along the edge, radial from the midpoint).
+   */
+  | 'node.gradient'
   /**
    * Uint32Array(4·cap) — overlay/underlay records (round 13 A2), one
    * column per layer: [rgba (layer opacity folded into alpha; a=0 =
@@ -230,6 +243,7 @@ export type ColumnId =
    * v3's context.lineWidth)].  Strokes under the edge line, over the
    * edge underlay, via the shared layer entry points.
    */
+  | 'edge.gradient'
   | 'edge.casing'
   | 'edge.dashPattern'
   /** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
@@ -292,6 +306,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.outerHalf', 'nodes', Float32Array, 2 ),
   spec( 'node.ghost', 'nodes', Float32Array, 4 ),
   spec( 'node.borderGeom', 'nodes', Uint32Array, 4 ),
+  spec( 'node.gradient', 'nodes', Uint32Array, 8 ),
   spec( 'node.overlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.underlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),
@@ -308,6 +323,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.midSourceArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.midTargetArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.overlay', 'edges', Uint32Array, 2 ),
+  spec( 'edge.gradient', 'edges', Uint32Array, 8 ),
   spec( 'edge.casing', 'edges', Uint32Array, 2 ),
   spec( 'edge.dashPattern', 'edges', Float32Array, 4 ),
   spec( 'edge.dashMeta', 'edges', Float32Array, 2 ),

@@ -1098,13 +1098,64 @@ ${SDF}
 @group(0) @binding(4) var<storage, read> borderColors: array<u32>;
 @group(0) @binding(5) var<storage, read> borderWidths: array<f32>;
 @group(0) @binding(6) var<storage, read> opacities: array<f32>;
-@group(0) @binding(7) var<storage, read> shapes: array<u32>;
+// background gradient record (round 13 C2 — took the shapes binding's
+// slot; the FS reads the shape id from borderGeom.y bits 16..19)
+@group(0) @binding(7) var<storage, read> gradients: array<array<u32, 8>>;
 @group(0) @binding(8) var<storage, read> nodeFlags: array<u32>;
 // ghost props [offsetX, offsetY, ghostOpacity, enabled] (round 13 A1);
 // bound to both stages for the ghost entry points
 @group(0) @binding(9) var<storage, read> ghosts: array<vec4f>;
-// [cornerRadius×256 | auto, borderPosition, outlineRgba, outlineWO] (B2/B5)
+// [cornerRadius×256 | auto, borderPosition | shape<<16, outlineRgba, outlineWO] (B2/B5/C2)
 @group(0) @binding(10) var<storage, read> borderGeom: array<vec4u>;
+
+// C2: sRGB gradient evaluation over the packed record (v3's canvas
+// gradients interpolate in sRGB; OKLab stays the *mapper* default)
+fn gradientStopPos(rec: array<u32, 8>, i: u32) -> f32 {
+  if (i == 4u) { return f32(rec[7] & 0xffu) / 255.0; }
+  return f32((rec[6] >> (i * 8u)) & 0xffu) / 255.0;
+}
+
+fn gradientColorAt(rec: array<u32, 8>, t: f32) -> vec4f {
+  let count = (rec[0] >> 5u) & 7u;
+
+  if (count == 0u) { return vec4f(0.0); }
+  if (count == 1u) { return unpack4x8unorm(rec[1]); }
+
+  var prevPos = gradientStopPos(rec, 0u);
+  var prevColor = unpack4x8unorm(rec[1]);
+
+  if (t <= prevPos) { return prevColor; }
+
+  for (var i = 1u; i < count; i = i + 1u) {
+    let pos = gradientStopPos(rec, i);
+    let color = unpack4x8unorm(rec[1u + i]);
+
+    if (t <= pos) {
+      let span = max(pos - prevPos, 1e-5);
+
+      return mix(prevColor, color, (t - prevPos) / span);
+    }
+
+    prevPos = pos;
+    prevColor = color;
+  }
+
+  return prevColor;
+}
+
+// linear-gradient direction unit vectors (v3's to-* keywords)
+fn gradientDir(id: u32) -> vec2f {
+  switch id {
+    case 1u: { return vec2f(0.0, -1.0); }              // to-top
+    case 2u: { return vec2f(-1.0, 0.0); }              // to-left
+    case 3u: { return vec2f(1.0, 0.0); }               // to-right
+    case 4u: { return normalize(vec2f(1.0, 1.0)); }    // to-bottom-right
+    case 5u: { return normalize(vec2f(-1.0, 1.0)); }   // to-bottom-left
+    case 6u: { return normalize(vec2f(1.0, -1.0)); }   // to-top-right
+    case 7u: { return normalize(vec2f(-1.0, -1.0)); }  // to-top-left
+    default: { return vec2f(0.0, 1.0); }               // to-bottom
+  }
+}
 
 struct NodeVSOut {
   @builtin(position) position: vec4f,
@@ -1132,7 +1183,7 @@ fn vsNode(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> N
   let margin = 2.0; // AA + accent-ring slack, device px
   // center/outside borders and outlines extend past the boundary (B2/B5)
   let bg = borderGeom[slot];
-  var borderOut = borderOutward(bg.y, borderWidths[slot] * frame.zoomDpr);
+  var borderOut = borderOutward(bg.y & 0xffu, borderWidths[slot] * frame.zoomDpr);
 
   if ((bg.z >> 24u) != 0u) {
     let wo = outlineWO(bg.w, frame.zoomDpr);
@@ -1184,7 +1235,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
   let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc, no decorations
 
-  var shape = shapes[slot];
+  var shape = (borderGeom[slot].y >> 16u) & 0xfu;
   var half = in.halfSize;
 
   if (plain) {
@@ -1195,6 +1246,27 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
   let sd = nodeSD(shape, in.local, half, radius);
   var color = unpack4x8unorm(fillColors[slot]);
+
+  // background gradient (C2): overrides the flat fill inside the shape
+  // (plain-LOD discs keep the flat base color — recorded)
+  let grec = gradients[slot];
+
+  if (!plain && (grec[0] & 3u) != 0u) {
+    var t: f32;
+
+    if ((grec[0] & 3u) == 2u) { // radial: center → the larger half
+      t = length(in.local) / max(half.x, half.y);
+    } else {
+      let d = gradientDir((grec[0] >> 2u) & 7u);
+
+      // the bb's support along d maps to [0, 1] (corner-to-corner on
+      // diagonals, edge-to-edge on axes — v3's canvas geometry)
+      t = (dot(in.local, d) / max(dot(half, abs(d)), 1e-4) + 1.0) * 0.5;
+    }
+
+    color = gradientColorAt(grec, clamp(t, 0.0, 1.0));
+  }
+
   var edge = 0.0; // coverage boundary: sd <= edge is inked
 
   if (!plain) {
@@ -1203,7 +1275,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
     // border-position (B2): the band straddles the boundary by v3's
     // rule — center [−bw/2, bw/2] (the default), inside [−bw, 0],
     // outside [0, bw]
-    let bOut = borderOutward(borderGeom[slot].y, borderWidth);
+    let bOut = borderOutward(borderGeom[slot].y & 0xffu, borderWidth);
 
     if (borderWidth > 0.0 && sd > bOut - borderWidth) {
       color = unpack4x8unorm(borderColors[slot]);
@@ -1231,7 +1303,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   // outline-offset/2, disjoint from the body coverage
   if (!plain && (og.z >> 24u) != 0u) {
     let wo = outlineWO(og.w, frame.zoomDpr);
-    let inner = borderOutward(og.y, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
+    let inner = borderOutward(og.y & 0xffu, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
     let oc = unpack4x8unorm(og.z);
     let ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
       (1.0 - smoothstep(inner + wo.x - 0.75, inner + wo.x + 0.75, sd));
@@ -1259,7 +1331,7 @@ fn vsGhost(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   let centerPx = modelToPx(frame, positions[slot] + ghosts[slot].xy);
   let bg = borderGeom[slot];
-  var borderOut = borderOutward(bg.y, borderWidths[slot] * frame.zoomDpr);
+  var borderOut = borderOutward(bg.y & 0xffu, borderWidths[slot] * frame.zoomDpr);
 
   if ((bg.z >> 24u) != 0u) {
     let wo = outlineWO(bg.w, frame.zoomDpr);
@@ -1284,7 +1356,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
   let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc
 
-  var shape = shapes[slot];
+  var shape = (borderGeom[slot].y >> 16u) & 0xfu;
   var half = in.halfSize;
 
   if (plain) {
@@ -1299,7 +1371,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
 
   if (!plain) {
     let borderWidth = borderWidths[slot] * frame.zoomDpr;
-    let bOut = borderOutward(borderGeom[slot].y, borderWidth);
+    let bOut = borderOutward(borderGeom[slot].y & 0xffu, borderWidth);
 
     if (borderWidth > 0.0 && sd > bOut - borderWidth) {
       color = unpack4x8unorm(borderColors[slot]);
@@ -1315,7 +1387,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
 
   if (!plain && (og.z >> 24u) != 0u) { // the ghost outline rides along (v3)
     let wo = outlineWO(og.w, frame.zoomDpr);
-    let inner = borderOutward(og.y, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
+    let inner = borderOutward(og.y & 0xffu, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
     let oc = unpack4x8unorm(og.z);
     let ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
       (1.0 - smoothstep(inner + wo.x - 0.75, inner + wo.x + 0.75, sd));
@@ -1379,8 +1451,13 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
     discard;
   }
 
+  // gradient fills may be translucent anywhere: conservative discard (C2)
+  if ((gradients[slot][0] & 3u) != 0u) {
+    discard;
+  }
+
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
-  var shape = shapes[slot];
+  var shape = (borderGeom[slot].y >> 16u) & 0xfu;
   var half = in.halfSize;
 
   if (sizePx < frame.nodeLodPx) {
@@ -1505,6 +1582,44 @@ ${DASH_WGSL}
 // overlay/underlay record [rgba folded, strokeWidth*256] — only the
 // layer entry points bind it (round 13 A2)
 @group(0) @binding(12) var<storage, read> edgeLayer: array<vec2u>;
+// line-fill gradient record (round 13 C2), fragment-only
+@group(0) @binding(13) var<storage, read> edgeGradients: array<array<u32, 8>>;
+
+// C2: sRGB line gradient over the packed record (same layout as the
+// node background gradient; linear runs along the edge, radial from
+// the midpoint)
+fn gradientStopPos(rec: array<u32, 8>, i: u32) -> f32 {
+  if (i == 4u) { return f32(rec[7] & 0xffu) / 255.0; }
+  return f32((rec[6] >> (i * 8u)) & 0xffu) / 255.0;
+}
+
+fn gradientColorAt(rec: array<u32, 8>, t: f32) -> vec4f {
+  let count = (rec[0] >> 5u) & 7u;
+
+  if (count == 0u) { return vec4f(0.0); }
+  if (count == 1u) { return unpack4x8unorm(rec[1]); }
+
+  var prevPos = gradientStopPos(rec, 0u);
+  var prevColor = unpack4x8unorm(rec[1]);
+
+  if (t <= prevPos) { return prevColor; }
+
+  for (var i = 1u; i < count; i = i + 1u) {
+    let pos = gradientStopPos(rec, i);
+    let color = unpack4x8unorm(rec[1u + i]);
+
+    if (t <= pos) {
+      let span = max(pos - prevPos, 1e-5);
+
+      return mix(prevColor, color, (t - prevPos) / span);
+    }
+
+    prevPos = pos;
+    prevColor = color;
+  }
+
+  return prevColor;
+}
 
 struct EdgeVSOut {
   @builtin(position) position: vec4f,
@@ -1513,6 +1628,7 @@ struct EdgeVSOut {
   @location(2) @interpolate(flat) alphaComp: f32, // LOD alpha compensation
   @location(3) @interpolate(flat) instance: u32,
   @location(4) u: f32,          // longitudinal distance from the source, model px
+  @location(5) @interpolate(flat) totalLen: f32, // model px (C2 gradients)
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -1577,20 +1693,37 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   // subtract the source boundary offset so dash phases match (B3) —
   // haystack lines start at their offset points, like v3's.
   var u0 = 0.0;
+  var u1 = 0.0;
 
   if (params.w != 6.0) {
     let dirM = (pb - pa) / max(length(pb - pa), 1e-6);
 
     u0 = boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], dirM);
+    u1 = boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -dirM);
   }
 
   out.u = t * (len / frame.zoomDpr) - u0;
+  // the visible span (boundary to boundary — v3's gradient extent)
+  out.totalLen = max(len / frame.zoomDpr - u0 - u1, 1e-4);
   return out;
 }
 
 @fragment
 fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
-  let c = unpack4x8unorm(lineColors[in.instance]);
+  var c = unpack4x8unorm(lineColors[in.instance]);
+
+  // line-fill gradient (C2): linear along the edge, radial from the mid
+  let grec = edgeGradients[in.instance];
+
+  if ((grec[0] & 3u) != 0u) {
+    let tRaw = (in.u + 0.0) / max(in.totalLen, 1e-4);
+    var t = tRaw;
+
+    if ((grec[0] & 3u) == 2u) { t = abs(tRaw - 0.5) * 2.0; }
+
+    c = gradientColorAt(grec, clamp(t, 0.0, 1.0));
+  }
+
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
   // line-style: dashed uses the per-edge line-dash-pattern/-offset,
@@ -1731,6 +1864,42 @@ ${DASH_WGSL}
 // drop the widths binding (the stroke width is pre-derived), which
 // keeps the layer vertex stage at the 8-storage-buffer budget
 @group(0) @binding(13) var<storage, read> edgeLayer: array<vec2u>;
+// line-fill gradient record (round 13 C2), fragment-only
+@group(0) @binding(14) var<storage, read> edgeGradients: array<array<u32, 8>>;
+
+// C2: sRGB line gradient (same record layout as the node gradient)
+fn gradientStopPos(rec: array<u32, 8>, i: u32) -> f32 {
+  if (i == 4u) { return f32(rec[7] & 0xffu) / 255.0; }
+  return f32((rec[6] >> (i * 8u)) & 0xffu) / 255.0;
+}
+
+fn gradientColorAt(rec: array<u32, 8>, t: f32) -> vec4f {
+  let count = (rec[0] >> 5u) & 7u;
+
+  if (count == 0u) { return vec4f(0.0); }
+  if (count == 1u) { return unpack4x8unorm(rec[1]); }
+
+  var prevPos = gradientStopPos(rec, 0u);
+  var prevColor = unpack4x8unorm(rec[1]);
+
+  if (t <= prevPos) { return prevColor; }
+
+  for (var i = 1u; i < count; i = i + 1u) {
+    let pos = gradientStopPos(rec, i);
+    let color = unpack4x8unorm(rec[1u + i]);
+
+    if (t <= pos) {
+      let span = max(pos - prevPos, 1e-5);
+
+      return mix(prevColor, color, (t - prevPos) / span);
+    }
+
+    prevPos = pos;
+    prevColor = color;
+  }
+
+  return prevColor;
+}
 
 struct CurvedVSOut {
   @builtin(position) position: vec4f,
@@ -1739,6 +1908,7 @@ struct CurvedVSOut {
   @location(2) @interpolate(flat) alphaComp: f32, // width-floor LOD compensation
   @location(3) @interpolate(flat) instance: u32,
   @location(4) u: f32,          // longitudinal distance along the polyline, model px
+  @location(5) @interpolate(flat) totalLen: f32, // full polyline length (C2)
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -1769,6 +1939,7 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   var n: vec2f;
   var miterScale = 1.0;
   var uLen = 0.0;
+  var totLen = 0.0;
 
   if (params.w <= 2.0) { // bezier / loop: the 12a analytic path, unchanged
     let g = evalCurveGeom(
@@ -1787,13 +1958,16 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
 
     n = vec2f(-tangent.y, tangent.x);
 
-    // longitudinal model-px distance along the drawn polyline (for dashes)
+    // longitudinal model-px distance along the drawn polyline (for
+    // dashes) + the full length (C2 gradients)
     var prev = g.s;
 
-    for (var i = 1u; i <= tIdx; i = i + 1u) {
+    for (var i = 1u; i <= CURVE_SEGS_U; i = i + 1u) {
       let q = curvePoint(g, f32(i) / CURVE_SEGS_F);
 
-      uLen = uLen + length(q - prev);
+      if (i <= tIdx) { uLen = uLen + length(q - prev); }
+
+      totLen = totLen + length(q - prev);
       prev = q;
     }
   } else { // 12b route families: evaluate the route from the param blob
@@ -1829,13 +2003,15 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
     // perpendicular half-width exact (clamped like a miter limit)
     miterScale = 1.0 / clamp(dot(n, nIn), 0.1666, 1.0);
 
-    // dash distance: the same chord sum over the drawn polyline
+    // dash distance + the full polyline length (C2 gradients)
     var prev = route.q[0u];
 
-    for (var i = 1u; i <= tIdx; i = i + 1u) {
+    for (var i = 1u; i <= CURVE_SEGS_U; i = i + 1u) {
       let q = routeVertexW(&route, i);
 
-      uLen = uLen + length(q - prev);
+      if (i <= tIdx) { uLen = uLen + length(q - prev); }
+
+      totLen = totLen + length(q - prev);
       prev = q;
     }
   }
@@ -1849,12 +2025,26 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   out.alphaComp = alphaComp;
   out.instance = slot;
   out.u = uLen;
+  out.totalLen = max(totLen, 1e-4);
   return out;
 }
 
 @fragment
 fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
-  let c = unpack4x8unorm(lineColors[in.instance]);
+  var c = unpack4x8unorm(lineColors[in.instance]);
+
+  // line-fill gradient (C2): linear along the arc length, radial from
+  // the arc midpoint
+  let grec = edgeGradients[in.instance];
+
+  if ((grec[0] & 3u) != 0u) {
+    var t = in.u / in.totalLen;
+
+    if ((grec[0] & 3u) == 2u) { t = abs(t - 0.5) * 2.0; }
+
+    c = gradientColorAt(grec, clamp(t, 0.0, 1.0));
+  }
+
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
   // line-style dashes ride the polyline's longitudinal coordinate;

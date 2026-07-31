@@ -20,7 +20,9 @@ const NODE_COLUMNS: { id: ColumnId; visibility: number }[] = [
   // B2: the VS reads border width/position for the quad extent
   { id: 'node.borderWidth', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT },
   { id: 'node.opacity', visibility: SHADER_STAGE.FRAGMENT },
-  { id: 'node.shape', visibility: SHADER_STAGE.FRAGMENT },
+  // C2: the gradient record took the shapes slot (the FS reads the
+  // shape id from borderGeom.y bits 16..19 instead)
+  { id: 'node.gradient', visibility: SHADER_STAGE.FRAGMENT },
   { id: 'node.flags', visibility: SHADER_STAGE.FRAGMENT },
   // ghost props (round 13 A1): the ghost VS offsets by .xy, the ghost FS
   // scales alpha by .z; the main node entry points never read it

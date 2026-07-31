@@ -200,6 +200,17 @@ with 'auto' = v3's min(w/4, h/4, 8) (previously min(w, h)/8; also
 closed).  bb keeps the outerHalf center convention for every border
 position, matching v3's outerWidth.
 
+Gradients (round 13 C2): `background-fill`
+(solid | linear-gradient | radial-gradient) with stop
+colors/positions and v3's `to-*` directions, and `line-fill` with
+stops along the drawn span (the polyline arc length on curved
+edges; radial mirrors about the midpoint).  Stops interpolate in
+sRGB (v3's canvas gradients — OKLab stays the mapper default), cap
+at 5 per element, and stop lists are constants-only; the
+fill/direction enums take mappers.  The depth prepass skips
+gradient fills conservatively, and plain-LOD far-zoom discs show
+the flat base color (both recorded).
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

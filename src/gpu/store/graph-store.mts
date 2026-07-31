@@ -871,11 +871,17 @@ export class GraphStore implements ModelView {
    */
   setBorderGeom(
     slot: number, cornerRadius: number, borderPos: number,
-    outlineRgba: number, outlineWidth: number, outlineOffset: number
+    outlineRgba: number, outlineWidth: number, outlineOffset: number,
+    shapeId: number = 0
   ): void {
     const arr = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
     const at = slot * 4;
     const rad = cornerRadius < 0 ? 0xffffffff : Math.max( 0, Math.round( cornerRadius * 256 ) );
+    // C2: the node FS reads the shape from bits 16..19 (its shapes
+    // binding went to the gradient column)
+    const posShape = ( borderPos | ( shapeId << 16 ) ) >>> 0;
+
+    borderPos = posShape;
     const packedWO =
       ( Math.min( 0xffff, Math.max( 0, Math.round( outlineOffset * 256 ) ) ) << 16 ) |
       Math.min( 0xffff, Math.max( 0, Math.round( outlineWidth * 256 ) ) );
@@ -895,6 +901,57 @@ export class GraphStore implements ModelView {
     arr[ at + 3 ] = packedWO;
     this.geoEpoch++;
     this.dirty.mark( 'node.borderGeom', slot );
+  }
+
+  private gradients = 0;
+
+  gradientCount(): number {
+    return this.gradients;
+  }
+
+  /**
+   * Write a gradient record (round 13 C2): kind 0 clears; stops are
+   * [rgba, pos-fraction] pairs, capped at 5 by the style layer.
+   */
+  setGradient(
+    id: 'node.gradient' | 'edge.gradient', slot: number,
+    kind: number, dir: number, stops: { rgba: number; pos: number }[]
+  ): void {
+    const arr = this.table( columnSpec( id ).group ).column( id ) as Uint32Array;
+    const at = slot * 8;
+    const count = Math.min( stops.length, 5 );
+    const meta = kind === 0 ? 0 : ( kind | ( dir << 2 ) | ( count << 5 ) ) >>> 0;
+    const words = [ meta, 0, 0, 0, 0, 0, 0, 0 ];
+
+    for( let i = 0; i < count; i++ ){
+      words[ 1 + i ] = stops[ i ].rgba;
+    }
+
+    let pos03 = 0;
+
+    for( let i = 0; i < Math.min( count, 4 ); i++ ){
+      pos03 |= Math.max( 0, Math.min( 255, Math.round( stops[ i ].pos * 255 ) ) ) << ( i * 8 );
+    }
+
+    words[ 6 ] = pos03 >>> 0;
+    words[ 7 ] = count > 4 ? Math.max( 0, Math.min( 255, Math.round( stops[ 4 ].pos * 255 ) ) ) : 0;
+
+    let changed = false;
+
+    for( let i = 0; i < 8; i++ ){
+      if( arr[ at + i ] !== words[ i ] ){ changed = true; break; }
+    }
+
+    if( !changed ){ return; }
+
+    const wasOn = arr[ at ] !== 0;
+    const isOn = meta !== 0;
+
+    if( wasOn !== isOn ){ this.gradients += isOn ? 1 : -1; }
+
+    for( let i = 0; i < 8; i++ ){ arr[ at + i ] = words[ i ]; }
+
+    this.dirty.mark( id, slot );
   }
 
   /** Four-component f32 write (dash patterns etc.). */

@@ -105,10 +105,11 @@ ${COMMON}
 fn borderOut(slot: u32) -> f32 {
   let bw = borderWidths[slot] * frame.zoomDpr;
   let bg = borderGeom[slot];
+  let pos = bg.y & 0xffu; // C2 packs the shape id above the position
   var o = bw * 0.5;
 
-  if (bg.y == 1u) { o = 0.0; }
-  if (bg.y == 2u) { o = bw; }
+  if (pos == 1u) { o = 0.0; }
+  if (pos == 2u) { o = bw; }
 
   if ((bg.z >> 24u) != 0u) {
     o = o + (f32(bg.w >> 16u) * 0.5 + f32(bg.w & 0xffffu)) / 256.0 * frame.zoomDpr;

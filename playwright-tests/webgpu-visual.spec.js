@@ -1201,6 +1201,54 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'mid-arrows', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: gradient fills — directions, radial, curved lines (round 13 C2)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', dir: 'to-right' }, position: { x: -120, y: -70 } },
+        { data: { id: 'b', dir: 'to-top' }, position: { x: -10, y: -70 } },
+        { data: { id: 'c', dir: 'to-bottom-right' }, position: { x: 100, y: -70 } },
+        { data: { id: 'd', radial: 1 }, position: { x: -120, y: 40 } },
+        { data: { id: 'e', radial: 1, round: 1 }, position: { x: -10, y: 40 } },
+        { data: { id: 'p' }, position: { x: -140, y: 140 } },
+        { data: { id: 'q' }, position: { x: 150, y: 140 } },
+        { data: { id: 'g1', source: 'p', target: 'q', fam: 'bezier' } },
+        { data: { id: 'g2', source: 'p', target: 'q', fam: 'bezier' } }
+      ],
+      style: {
+        nodes: {
+          'width': 64, 'height': 52,
+          'shape': { case: [ { when: { data: 'round', eq: 1 }, then: 'ellipse' } ], else: 'rectangle' },
+          'background-fill': {
+            case: [ { when: { data: 'radial', eq: 1 }, then: 'radial-gradient' } ],
+            else: 'linear-gradient'
+          },
+          'background-gradient-stop-colors': '#e74c3c #f1c40f #2ecc71',
+          'background-gradient-direction': {
+            case: [
+              { when: { data: 'dir', eq: 'to-right' }, then: 'to-right' },
+              { when: { data: 'dir', eq: 'to-top' }, then: 'to-top' },
+              { when: { data: 'dir', eq: 'to-bottom-right' }, then: 'to-bottom-right' }
+            ],
+            else: 'to-bottom'
+          }
+        },
+        edges: {
+          'width': 8,
+          'curve-style': { case: [ { when: { data: 'fam', eq: 'bezier' }, then: 'bezier' } ], else: 'straight' },
+          'line-fill': 'linear-gradient',
+          'line-gradient-stop-colors': '#8e44ad #3498db #16a085'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'gradients', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1932,6 +1980,60 @@ test.describe( 'v3-vs-v4 render parity', () => {
     };
 
     await runParity( page, testInfo, 'parity-outline', elements, v3Style, v4Style, { minInk: 1200 } );
+  } );
+
+  test( 'parity: background and line gradients (round 13 C2)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // rectangles keep the gradient geometry exact on both sides; sRGB
+    // interpolation matches v3's canvas gradients
+    const elements = [
+      { data: { id: 'a', dir: 'to-right' }, position: { x: -110, y: -60 } },
+      { data: { id: 'b', dir: 'to-bottom' }, position: { x: 40, y: -60 } },
+      { data: { id: 'c', dir: 'to-bottom-right' }, position: { x: 170, y: -60 } },
+      { data: { id: 'd', radial: 1 }, position: { x: -40, y: 70 } },
+      { data: { id: 'p' }, position: { x: -140, y: 160 } },
+      { data: { id: 'q' }, position: { x: 160, y: 160 } },
+      { data: { id: 'pq', source: 'p', target: 'q' } }
+    ];
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 70, 'height': 56, 'shape': 'rectangle',
+        'background-fill': 'linear-gradient',
+        'background-gradient-stop-colors': '#e74c3c #f1c40f #2ecc71',
+        'background-gradient-direction': 'to-bottom'
+      } },
+      { selector: "node[dir = 'to-right']", style: { 'background-gradient-direction': 'to-right' } },
+      { selector: "node[dir = 'to-bottom-right']", style: { 'background-gradient-direction': 'to-bottom-right' } },
+      { selector: 'node[radial = 1]', style: { 'background-fill': 'radial-gradient' } },
+      { selector: 'edge', style: {
+        'curve-style': 'straight', 'width': 10,
+        'line-fill': 'linear-gradient',
+        'line-gradient-stop-colors': '#8e44ad #3498db'
+      } }
+    ];
+    const v4Style = {
+      nodes: {
+        'width': 70, 'height': 56, 'shape': 'rectangle',
+        'background-fill': 'linear-gradient',
+        'background-gradient-stop-colors': '#e74c3c #f1c40f #2ecc71',
+        'background-gradient-direction': 'to-bottom'
+      },
+      edges: {
+        'width': 10,
+        'line-fill': 'linear-gradient',
+        'line-gradient-stop-colors': '#8e44ad #3498db'
+      }
+    };
+
+    // per-element direction/radial exercised on the v3 side only would
+    // desync — restrict the shared scene to the sheet-wide config and
+    // let the golden cover directions.  Trim the v3 style accordingly:
+    const v3Trim = v3Style.filter( ( _, i ) => i === 0 || i === 4 );
+    const trimmed = elements.filter( e => e.data.dir == null && e.data.radial == null
+      || e.data.id === 'a' || e.data.id === 'b' || e.data.id === 'c' || e.data.id === 'd' );
+
+    await runParity( page, testInfo, 'parity-gradients', trimmed, v3Trim, v4Style, { minInk: 2000 } );
   } );
 
 } );

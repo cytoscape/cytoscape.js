@@ -67,6 +67,11 @@ export class EdgePipeline {
           binding: EDGE_COLUMNS.length + 1,
           visibility: V | F,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        },
+        { // the line-fill gradient record (C2), fragment-only
+          binding: EDGE_COLUMNS.length + 2,
+          visibility: F,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         }
       ]
     } );
@@ -133,7 +138,8 @@ export class EdgePipeline {
           binding: i + 1,
           resource: { buffer: mirror.buffer( col.id ) }
         } ) ),
-        { binding: EDGE_COLUMNS.length + 1, resource: { buffer: mirror.buffer( layer ) } }
+        { binding: EDGE_COLUMNS.length + 1, resource: { buffer: mirror.buffer( layer ) } },
+        { binding: EDGE_COLUMNS.length + 2, resource: { buffer: mirror.buffer( 'edge.gradient' ) } }
       ]
     } );
 

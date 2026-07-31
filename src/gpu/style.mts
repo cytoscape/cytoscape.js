@@ -106,6 +106,12 @@ interface NodeComputed {
   outlineOpacity: number;
   outlineWidth: number;
   outlineOffset: number;
+  /** background-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
+  backgroundFill: number;
+  /** background gradient stops (C2; constants-only, capped at 5) */
+  backgroundGradientStopColors: RGBA[];
+  backgroundGradientStopPositions: number[] | null;
+  backgroundGradientDirection: number;
   /** background-opacity (round 13 B1): folds into the stored fill alpha */
   backgroundOpacity: number;
   /** border-opacity (B1): folds into the stored border alpha */
@@ -143,6 +149,10 @@ interface NodeComputed {
 
 interface EdgeComputed {
   lineColor: RGBA;
+  /** line-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
+  lineFill: number;
+  lineGradientStopColors: RGBA[];
+  lineGradientStopPositions: number[] | null;
   /** line-opacity (round 13 B1): folds into the stored line alpha and
    * the arrow fold (v3's effective opacities) */
   lineOpacity: number;
@@ -255,6 +265,10 @@ const NODE_DEFAULTS: NodeComputed = {
   outlineOpacity: 1,
   outlineWidth: 0,
   outlineOffset: 0,
+  backgroundFill: 0, // solid, as v3
+  backgroundGradientStopColors: [],
+  backgroundGradientStopPositions: null,
+  backgroundGradientDirection: 0, // to-bottom, as v3
   backgroundOpacity: 1,
   borderOpacity: 1,
   textOpacity: 1,
@@ -286,6 +300,9 @@ const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
+  lineFill: 0,
+  lineGradientStopColors: [],
+  lineGradientStopPositions: null,
   lineOpacity: 1,
   lineOutlineWidth: 0,
   lineOutlineColor: [ 0, 0, 0, 255 ], // '#000', as v3
@@ -411,6 +428,8 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
   'corner-radius', 'border-position',
+  'background-fill', 'background-gradient-stop-colors',
+  'background-gradient-stop-positions', 'background-gradient-direction',
   'outline-color', 'outline-opacity', 'outline-width', 'outline-offset',
   'label', 'font-size', 'font-family', 'color',
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
@@ -427,6 +446,7 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-color', 'line-style', 'width', 'opacity', 'line-opacity', 'text-opacity',
   'line-cap', 'line-dash-pattern', 'line-dash-offset',
   'line-outline-width', 'line-outline-color',
+  'line-fill', 'line-gradient-stop-colors', 'line-gradient-stop-positions',
   'arrow-scale', 'source-arrow-fill', 'target-arrow-fill',
   'source-arrow-width', 'target-arrow-width',
   'mid-source-arrow-shape', 'mid-source-arrow-color',
@@ -684,6 +704,69 @@ const normalizeDashPattern = ( list: number[] ): number[] => {
   return pairs;
 };
 
+const FILL_KINDS: Record<string, number> = {
+  'solid': 0, 'linear-gradient': 1, 'radial-gradient': 2
+};
+const FILL_KIND_NAMES: Record<number, string> = {
+  0: 'solid', 1: 'linear-gradient', 2: 'radial-gradient'
+};
+
+const parseFill = ( prop: string, value: unknown ): number => {
+  const id = FILL_KINDS[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The ${prop} '${String( value )}' is invalid; use solid, linear-gradient or radial-gradient`
+    );
+  }
+
+  return id;
+};
+
+const GRADIENT_DIRECTIONS: Record<string, number> = {
+  'to-bottom': 0, 'to-top': 1, 'to-left': 2, 'to-right': 3,
+  'to-bottom-right': 4, 'to-bottom-left': 5, 'to-top-right': 6, 'to-top-left': 7
+};
+const GRADIENT_DIRECTION_NAMES: Record<number, string> = {
+  0: 'to-bottom', 1: 'to-top', 2: 'to-left', 3: 'to-right',
+  4: 'to-bottom-right', 5: 'to-bottom-left', 6: 'to-top-right', 7: 'to-top-left'
+};
+
+const parseGradientDirection = ( value: unknown ): number => {
+  const id = GRADIENT_DIRECTIONS[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The background-gradient-direction '${String( value )}' is invalid; ` +
+      `use one of: ${Object.keys( GRADIENT_DIRECTIONS ).join( ', ' )}`
+    );
+  }
+
+  return id;
+};
+
+/** gradient stop colors: an array or whitespace-separated string (C2). */
+const parseColorList = ( prop: string, value: unknown ): RGBA[] => {
+  const parts = Array.isArray( value ) ? value : String( value ).trim().split( /\s+/ );
+
+  return parts.map( part => parseColor( prop, part ) );
+};
+
+/** gradient stop positions: percents (numbers or 'N%' strings) → fractions. */
+const parsePercentList = ( prop: string, value: unknown ): number[] => {
+  const parts = Array.isArray( value ) ? value : String( value ).trim().split( /\s+/ );
+
+  return parts.map( part => {
+    const num = typeof part === 'number' ? part : parseFloat( String( part ) );
+
+    if( !isFinite( num ) ){
+      throw new Error( `The value '${String( part )}' is not a valid percent for '${prop}'` );
+    }
+
+    return Math.max( 0, Math.min( 1, num / 100 ) );
+  } );
+};
+
 const BORDER_POSITIONS: Record<string, number> = { 'center': 0, 'inside': 1, 'outside': 2 };
 const BORDER_POSITION_NAMES: Record<number, string> = { 0: 'center', 1: 'inside', 2: 'outside' };
 
@@ -697,6 +780,31 @@ const parseBorderPosition = ( value: unknown ): number => {
   }
 
   return id;
+};
+
+/** Resolve gradient stops (C2): even spread when positions are unset,
+ * clamped monotone otherwise; the channel opacity folds into each
+ * stop's alpha; capped at 5 stops (a recorded cap). */
+const gradientStops = (
+  colors: RGBA[], positions: number[] | null, opacity: number
+): { rgba: number; pos: number }[] => {
+  const n = Math.min( colors.length, 5 );
+  const out: { rgba: number; pos: number }[] = [];
+  let last = 0;
+
+  for( let i = 0; i < n; i++ ){
+    const [ r, g, b, a ] = colors[ i ];
+    let pos = positions != null && positions[ i ] != null
+      ? positions[ i ]
+      : n === 1 ? 0 : i / ( n - 1 );
+
+    if( pos < last ){ pos = last; } // canvas: stops never decrease
+
+    last = pos;
+    out.push( { rgba: ( ( Math.round( a * opacity ) << 24 ) | ( b << 16 ) | ( g << 8 ) | r ) >>> 0, pos } );
+  }
+
+  return out;
 };
 
 /** v3's bool type: 'yes'/'no' keywords (booleans accepted too). */
@@ -1162,6 +1270,27 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'background-opacity':
       computed.backgroundOpacity = parseZeroOne( prop, value );
+      break;
+    case 'background-fill':
+      computed.backgroundFill = parseFill( prop, value );
+      break;
+    case 'background-gradient-stop-colors':
+      computed.backgroundGradientStopColors = parseColorList( prop, value );
+      break;
+    case 'background-gradient-stop-positions':
+      computed.backgroundGradientStopPositions = parsePercentList( prop, value );
+      break;
+    case 'background-gradient-direction':
+      computed.backgroundGradientDirection = parseGradientDirection( value );
+      break;
+    case 'line-fill':
+      computed.lineFill = parseFill( prop, value );
+      break;
+    case 'line-gradient-stop-colors':
+      computed.lineGradientStopColors = parseColorList( prop, value );
+      break;
+    case 'line-gradient-stop-positions':
+      computed.lineGradientStopPositions = parsePercentList( prop, value );
       break;
     case 'border-opacity':
       computed.borderOpacity = parseZeroOne( prop, value );
@@ -1678,6 +1807,25 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textBorderOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => NODE_DEFAULTS.textBorderOpacity
+  },
+  // C2 gradient enums (stop lists stay constants-only)
+  'background-fill': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => FILL_KINDS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.backgroundFill = v as number; },
+    default: () => NODE_DEFAULTS.backgroundFill
+  },
+  'background-gradient-direction': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => GRADIENT_DIRECTIONS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.backgroundGradientDirection = v as number; },
+    default: () => NODE_DEFAULTS.backgroundGradientDirection
+  },
+  'line-fill': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => FILL_KINDS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.lineFill = v as number; },
+    default: () => EDGE_DEFAULTS.lineFill
   },
   // C1 mid arrows
   'mid-source-arrow-shape': {
@@ -2389,7 +2537,49 @@ export class StyleEngine {
       }
       case 'border-position':
         return BORDER_POSITION_NAMES[
-          ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 1 ] ] ?? 'center';
+          ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 1 ] & 0xff ] ?? 'center';
+      case 'background-fill':
+      case 'line-fill': {
+        const gid = prop === 'background-fill' ? 'node.gradient' : 'edge.gradient';
+        const meta = ( store.column( gid ) as Uint32Array )[ slot * 8 ];
+
+        return FILL_KIND_NAMES[ meta & 3 ] ?? 'solid';
+      }
+      case 'background-gradient-direction': {
+        const meta = ( store.column( 'node.gradient' ) as Uint32Array )[ slot * 8 ];
+
+        return GRADIENT_DIRECTION_NAMES[ ( meta >>> 2 ) & 7 ] ?? 'to-bottom';
+      }
+      case 'background-gradient-stop-colors':
+      case 'line-gradient-stop-colors': {
+        const gid = prop.startsWith( 'background' ) ? 'node.gradient' : 'edge.gradient';
+        const rec = ( store.column( gid ) as Uint32Array ).subarray( slot * 8, slot * 8 + 8 );
+        const count = ( rec[ 0 ] >>> 5 ) & 7;
+        const parts: string[] = [];
+
+        for( let i = 0; i < count; i++ ){
+          const c = rec[ 1 + i ];
+
+          parts.push( formatRgba( c & 0xff, ( c >>> 8 ) & 0xff, ( c >>> 16 ) & 0xff, ( c >>> 24 ) & 0xff ) );
+        }
+
+        return parts.join( ' ' );
+      }
+      case 'background-gradient-stop-positions':
+      case 'line-gradient-stop-positions': {
+        const gid = prop.startsWith( 'background' ) ? 'node.gradient' : 'edge.gradient';
+        const rec = ( store.column( gid ) as Uint32Array ).subarray( slot * 8, slot * 8 + 8 );
+        const count = ( rec[ 0 ] >>> 5 ) & 7;
+        const parts: string[] = [];
+
+        for( let i = 0; i < count; i++ ){
+          const raw = i === 4 ? rec[ 7 ] & 0xff : ( rec[ 6 ] >>> ( i * 8 ) ) & 0xff;
+
+          parts.push( `${Math.round( raw / 255 * 100 )}%` );
+        }
+
+        return parts.join( ' ' );
+      }
       case 'outline-color': {
         const rgba = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 2 ];
 
@@ -2859,7 +3049,17 @@ export class StyleEngine {
         computed.outlineWidth > 0
           ? packRgba( foldA( computed.outlineColor, computed.outlineOpacity ) )
           : 0,
-        computed.outlineWidth, computed.outlineOffset );
+        computed.outlineWidth, computed.outlineOffset,
+        shape ); // C2: the FS reads the shape from borderGeom
+
+      // background gradient (C2): stops fold the background-opacity like
+      // the flat fill; unset positions spread evenly (v3/canvas rule)
+      store.setGradient( 'node.gradient', slot,
+        computed.backgroundGradientStopColors.length > 0 ? computed.backgroundFill : 0,
+        computed.backgroundGradientDirection,
+        gradientStops(
+          computed.backgroundGradientStopColors, computed.backgroundGradientStopPositions,
+          computed.backgroundOpacity ) );
 
       // overlay/underlay records: the layer opacity folds into the alpha
       // (v3's overlay never multiplies element opacity)
@@ -2879,6 +3079,13 @@ export class StyleEngine {
         [ r, g, b, Math.round( a * opacity ) ];
 
       store.setColor( 'edge.lineColor', slot, ...foldE( computed.lineColor, computed.lineOpacity ) );
+      // line-fill gradient (C2), stops folded by line-opacity
+      store.setGradient( 'edge.gradient', slot,
+        computed.lineGradientStopColors.length > 0 ? computed.lineFill : 0, 0,
+        gradientStops(
+          computed.lineGradientStopColors, computed.lineGradientStopPositions,
+          computed.lineOpacity ) );
+
       const dp = computed.lineDashPattern;
 
       store.setVec4( 'edge.dashPattern', slot, dp[ 0 ], dp[ 1 ], dp[ 2 ], dp[ 3 ] );

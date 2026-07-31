@@ -76,7 +76,12 @@ export class CurvedEdgePipeline {
           binding: VERTEX_COLUMNS.length + 2 + i,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
-        } ) )
+        } ) ),
+        { // the line-fill gradient record (C2), fragment-only
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        }
       ]
     } );
 
@@ -188,7 +193,10 @@ export class CurvedEdgePipeline {
             binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2,
             resource: { buffer: mirror.buffer( layer ) }
           } ]
-          : [] )
+          : [ {
+            binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
+            resource: { buffer: mirror.buffer( 'edge.gradient' ) }
+          } ] )
       ]
     } );
 

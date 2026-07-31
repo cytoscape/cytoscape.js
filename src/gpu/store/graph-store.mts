@@ -1242,6 +1242,8 @@ export class GraphStore implements ModelView {
         prev.marginX === entry.marginX && prev.marginY === entry.marginY &&
         prev.outlineWidth === entry.outlineWidth && prev.outlineColor === entry.outlineColor &&
         prev.bgColor === entry.bgColor && prev.bgPadding === entry.bgPadding &&
+        prev.bgShape === entry.bgShape && prev.bgBorderColor === entry.bgBorderColor &&
+        prev.bgBorderWidth === entry.bgBorderWidth &&
         prev.rotate === entry.rotate
       ){ return; }
 

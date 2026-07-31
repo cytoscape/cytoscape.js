@@ -367,6 +367,12 @@ export interface LabelEntry {
   bgColor: number;
   /** text-background-padding, model px */
   bgPadding: number;
+  /** text-background-shape (round 13 B6): 0 rectangle, 1 round-rectangle */
+  bgShape: number;
+  /** packed text-border RGBA (text-border-opacity folded; a=0 = none) — B6 */
+  bgBorderColor: number;
+  /** text-border-width, model px (draws inward from the padded box) — B6 */
+  bgBorderWidth: number;
   /**
    * text-rotation: autorotate (edge labels only; always false for nodes).
    * The renderer rotates the glyph run to the edge's angle in the VS,

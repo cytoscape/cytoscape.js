@@ -2759,6 +2759,27 @@ grows per item.
   to the packed format.  1889 Node tests, 96 Playwright specs,
   typecheck + lint green.
 
+- [x] **B6 label box parity** (2026-07-31).  `text-transform`
+  (none | uppercase | lowercase — applied at glyph-run build, as v3
+  transforms before measuring), `text-border-width`/`-color`/
+  `-opacity` (a band drawn inward from the padded background box —
+  the bg quad's unused outline instance fields carry the border, so
+  the glyph layout is unchanged) and `text-background-shape`
+  (rectangle | round-rectangle, v3's auto radius — the shape flag
+  rides the solid quad's free uv1.x).  The label FS's solid branch
+  became a proper quad SDF (corner-space + quad-size varyings), so
+  round boxes and borders AA exactly; all five props are
+  mapper-capable and stored-truth readback follows the folded rule.
+  `text-border-style` stays out with the other dash-a-boundary
+  styles.  **No live v3 parity by design**: label raster *and*
+  placement differ from v3 (the round-9.6/9.7 decisions), so the
+  visual pin is the label-tier `label-boxes` golden (uppercase
+  transform, bordered box, round bordered box in the fixed web
+  font) — v3 comparison for label props is structurally excluded,
+  as recorded since round 9.6.  6 Node specs
+  (`test/gpu-label-box.mjs`).  1895 Node tests, 97 Playwright
+  specs, typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2865,11 +2886,12 @@ autonomously):
   itself (v3-consistent).  Landed 2026-07-31 — see the round-13
   record (the band derives as offset/2 past the border's outer
   edge, matching v3's scaled-path stroke exactly for circles).
-- [ ] **B6 Label box parity**: `text-transform` (none | uppercase |
+- [x] **B6 Label box parity**: `text-transform` (none | uppercase |
   lowercase, applied when the glyph run is built),
   `text-border-width`/`-color`/`-opacity` (a border on the existing
   text-background quad), `text-background-shape` (rectangle |
-  round-rectangle on the quad's SDF).
+  round-rectangle on the quad's SDF).  Landed 2026-07-31 — see the
+  round-13 record.
 - [ ] **B7 Arrow scalars**: `arrow-scale`, `arrow-width`,
   `arrow-fill: hollow` (an FS ring test on the existing arrow SDFs).
   Compound arrow shapes stay out (recorded in round 10 B4).

@@ -2262,7 +2262,10 @@ struct LabelVSOut {
   @location(2) fade: f32,
   @location(3) outlineColor: vec4f,
   @location(4) @interpolate(flat) outlineWidth: f32,
-  @location(5) @interpolate(flat) solid: u32, // 1: background quad, no atlas sample
+  // 0: glyph; 1: rectangle background quad; 2: round-rectangle quad (B6)
+  @location(5) @interpolate(flat) solid: u32,
+  @location(6) local: vec2f,                  // corner space [0,1]² (B6)
+  @location(7) @interpolate(flat) quadPx: vec2f, // quad size, device px (B6)
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -2349,7 +2352,10 @@ ${ edge
   out.fade = fade;
   out.outlineColor = unpack4x8unorm(g.outlineColor);
   out.outlineWidth = g.outlineWidth;
-  out.solid = select(0u, 1u, g.uv0.x < 0.0);
+  // solid quads: 2 = round-rectangle background (shape rides uv1.x — B6)
+  out.solid = select(0u, select(1u, 2u, g.uv1.x == 1.0), g.uv0.x < 0.0);
+  out.local = t;
+  out.quadPx = g.size * frame.zoomDpr;
   return out;
 }
 
@@ -2361,9 +2367,37 @@ fn fsLabel(in: LabelVSOut) -> @location(0) vec4f {
   let s = textureSample(atlas, atlasSampler, in.uv).r;
   let w = max(fwidth(s), 1e-4); // derivatives before any non-uniform branch
 
-  if (in.solid == 1u) { // text background quad
-    let a = in.color.a * in.fade;
-    return vec4f(in.color.rgb * a, a);
+  if (in.solid != 0u) { // text background quad (B6: shape + border)
+    let half = in.quadPx * 0.5;
+    let p = (in.local - vec2f(0.5)) * in.quadPx;
+    var sdq: f32;
+
+    if (in.solid == 2u) { // round-rectangle, v3's auto radius
+      let r = min(min(half.x, half.y) * 0.5, 8.0 * frame.zoomDpr);
+      let q = abs(p) - half + vec2f(r);
+
+      sdq = min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0))) - r;
+    } else {
+      let d = abs(p) - half;
+
+      sdq = min(max(d.x, d.y), 0.0) + length(max(d, vec2f(0.0)));
+    }
+
+    var rgb = in.color.rgb;
+    var colA = in.color.a;
+    // text-border (B6): a band drawn inward from the padded box
+    // (in.outlineColor/Width double as the border for solid quads;
+    // the width is model px here, unlike the glyphs' SDF units)
+    let bw = in.outlineWidth * frame.zoomDpr;
+
+    if (bw > 0.0 && in.outlineColor.a > 0.0 && sdq > -bw) {
+      rgb = in.outlineColor.rgb;
+      colA = in.outlineColor.a;
+    }
+
+    let a = (1.0 - smoothstep(-0.75, 0.75, sdq)) * colA * in.fade;
+
+    return vec4f(rgb * a, a);
   }
 
   let fillA = clamp((s - 0.5) / w + 0.5, 0.0, 1.0);

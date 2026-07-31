@@ -113,6 +113,14 @@ interface NodeComputed {
   /** text-opacity (B1): v3's parentOpacity for the label block — folds
    * into the stored text/outline/background alphas */
   textOpacity: number;
+  /** text-transform (B6): 0 none, 1 uppercase, 2 lowercase */
+  textTransform: number;
+  /** text-background-shape (B6): 0 rectangle, 1 round-rectangle */
+  textBgShape: number;
+  /** text-border (B6): a band inward from the padded background box */
+  textBorderWidth: number;
+  textBorderColor: RGBA;
+  textBorderOpacity: number;
   // ghost props (round 13 A1): the body duplicated at the offset
   ghost: boolean;
   ghostOffsetX: number;
@@ -236,6 +244,11 @@ const NODE_DEFAULTS: NodeComputed = {
   backgroundOpacity: 1,
   borderOpacity: 1,
   textOpacity: 1,
+  textTransform: 0, // none, as v3
+  textBgShape: 0, // rectangle, as v3
+  textBorderWidth: 0,
+  textBorderColor: [ 0, 0, 0, 255 ], // '#000', as v3
+  textBorderOpacity: 0, // as v3: borders need opacity styled on
   ghost: false,
   ghostOffsetX: 0,
   ghostOffsetY: 0,
@@ -382,7 +395,9 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
-  'text-margin-x', 'text-margin-y'
+  'text-margin-x', 'text-margin-y',
+  'text-transform', 'text-background-shape',
+  'text-border-width', 'text-border-color', 'text-border-opacity'
 ] );
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
@@ -394,6 +409,8 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
   'text-margin-x', 'text-margin-y', 'text-rotation',
+  'text-transform', 'text-background-shape',
+  'text-border-width', 'text-border-color', 'text-border-opacity',
   'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
   'control-point-distances', 'control-point-weights',
   'segment-distances', 'segment-weights', 'segment-radii', 'radius-type',
@@ -542,6 +559,38 @@ const parseLayerRadius = ( prop: string, value: unknown ): number => {
   if( String( value ).trim() === 'auto' ){ return -1; }
 
   return parseNonNegative( prop, value );
+};
+
+const TEXT_TRANSFORMS: Record<string, number> = { 'none': 0, 'uppercase': 1, 'lowercase': 2 };
+const TEXT_TRANSFORM_NAMES: Record<number, string> = { 0: 'none', 1: 'uppercase', 2: 'lowercase' };
+
+const parseTextTransform = ( value: unknown ): number => {
+  const id = TEXT_TRANSFORMS[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The text-transform '${String( value )}' is invalid; use one of: none, uppercase, lowercase`
+    );
+  }
+
+  return id;
+};
+
+const TEXT_BG_SHAPES: Record<string, number> = {
+  'rectangle': 0, 'round-rectangle': 1, 'roundrectangle': 1
+};
+const TEXT_BG_SHAPE_NAMES: Record<number, string> = { 0: 'rectangle', 1: 'round-rectangle' };
+
+const parseTextBgShape = ( value: unknown ): number => {
+  const id = TEXT_BG_SHAPES[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The text-background-shape '${String( value )}' is invalid; use rectangle or round-rectangle`
+    );
+  }
+
+  return id;
 };
 
 const LINE_CAPS: Record<string, number> = { 'butt': 0, 'round': 1, 'square': 2 };
@@ -1016,6 +1065,21 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'text-rotation':
       computed.textRotation = parseTextRotation( value );
+      break;
+    case 'text-transform':
+      computed.textTransform = parseTextTransform( value );
+      break;
+    case 'text-background-shape':
+      computed.textBgShape = parseTextBgShape( value );
+      break;
+    case 'text-border-width':
+      computed.textBorderWidth = parseNonNegative( prop, value );
+      break;
+    case 'text-border-color':
+      computed.textBorderColor = parseColor( prop, value );
+      break;
+    case 'text-border-opacity':
+      computed.textBorderOpacity = parseZeroOne( prop, value );
       break;
     case 'border-width':
       computed.borderWidth = parseNumber( prop, value );
@@ -1496,6 +1560,34 @@ const MAPPABLE: Record<string, MappableChannel> = {
     parseEnum: v => BORDER_POSITIONS[ String( v ) ] ?? null,
     set: ( c, v ) => { c.borderPosition = v as number; },
     default: () => NODE_DEFAULTS.borderPosition
+  },
+  // B6 label box props
+  'text-transform': {
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => TEXT_TRANSFORMS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textTransform = v as number; },
+    default: () => NODE_DEFAULTS.textTransform
+  },
+  'text-background-shape': {
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => TEXT_BG_SHAPES[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textBgShape = v as number; },
+    default: () => NODE_DEFAULTS.textBgShape
+  },
+  'text-border-width': {
+    kind: 'number', groups: [ 'nodes', 'edges' ],
+    set: ( c, v ) => { c.textBorderWidth = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.textBorderWidth
+  },
+  'text-border-color': {
+    kind: 'color', groups: [ 'nodes', 'edges' ],
+    set: ( c, v ) => { c.textBorderColor = v as RGBA; },
+    default: () => NODE_DEFAULTS.textBorderColor
+  },
+  'text-border-opacity': {
+    kind: 'number', groups: [ 'nodes', 'edges' ],
+    set: ( c, v ) => { c.textBorderOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.textBorderOpacity
   },
   // B4 line-outline casing
   'line-outline-width': {
@@ -2238,6 +2330,34 @@ export class StyleEngine {
 
         return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defs[ ref.group ].computed.textOutlineColor );
       }
+      case 'text-transform':
+        return TEXT_TRANSFORM_NAMES[ this.defs[ ref.group ].computed.textTransform ] ?? 'none';
+      case 'text-background-shape': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return TEXT_BG_SHAPE_NAMES[ entry != null
+          ? entry.bgShape
+          : this.defs[ ref.group ].computed.textBgShape ] ?? 'rectangle';
+      }
+      case 'text-border-width': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null ? entry.bgBorderWidth : this.defs[ ref.group ].computed.textBorderWidth;
+      }
+      case 'text-border-color': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null
+          ? packedColor( entry.bgBorderColor )
+          : formatRgba( ...this.defs[ ref.group ].computed.textBorderColor );
+      }
+      case 'text-border-opacity': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null
+          ? Math.round( ( ( entry.bgBorderColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+          : this.defs[ ref.group ].computed.textBorderOpacity;
+      }
       case 'text-opacity': {
         const entry = store.labelAt( slot, ref.group );
 
@@ -2677,11 +2797,16 @@ export class StyleEngine {
   private writeLabel( slot: number, computed: NodeComputed | Computed, group: GroupName = 'nodes' ): void {
     const store = this.store;
     const key = computed.labelKey;
-    const text = key == null
+    let text = key == null
       ? computed.label
       : key === 'id'
         ? ( store.idAt( group, slot ) ?? '' )
         : stringify( store.data.get( group, slot, key ) );
+
+    // text-transform (B6) applies at glyph-run build, as v3 transforms
+    // before measuring
+    if( computed.textTransform === 1 ){ text = text.toUpperCase(); }
+    else if( computed.textTransform === 2 ){ text = text.toLowerCase(); }
 
     // text-opacity (B1) is v3's parentOpacity for the whole label block:
     // it folds into the text fill, outline and background alphas alike
@@ -2706,6 +2831,9 @@ export class StyleEngine {
       outlineColor: fold( computed.textOutlineColor, computed.textOutlineOpacity ),
       bgColor: fold( computed.textBgColor, computed.textBgOpacity ),
       bgPadding: computed.textBgPadding,
+      bgShape: computed.textBgShape,
+      bgBorderColor: fold( computed.textBorderColor, computed.textBorderOpacity ),
+      bgBorderWidth: computed.textBorderWidth,
       rotate: group === 'edges' && ( computed as Computed ).textRotation === 1
     }, group );
   }

@@ -1162,6 +1162,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
   rendering with a console warning.  Label color/text bake into glyph
   instances, so `:selected`/hover styling does not restyle label text.
+  Round 13 B6 added `text-transform` (applied at glyph-run build),
+  `text-border-width`/`-color`/`-opacity` (a band inward from the
+  padded background box) and `text-background-shape`
+  (rectangle | round-rectangle, v3's auto radius); `text-border-style`
+  stays out with the dash-a-boundary styles.
   Label visuals (round 10): `text-outline-width`/`-color`/`-opacity`
   (a second SDF distance threshold — near-free), `text-background-
   color`/`-opacity`/`-padding` (one solid quad instance preceding the

@@ -1070,6 +1070,55 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'edge-layers', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: label boxes — transform, borders, round shape (round 13 B6)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // pre-load the fixed web font (the atlas caches lazily and forever)
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', kind: 'upper' }, position: { x: -100, y: -60 } },
+        { data: { id: 'b', kind: 'boxed' }, position: { x: 80, y: -60 } },
+        { data: { id: 'c', kind: 'round' }, position: { x: -10, y: 60 } }
+      ],
+      style: {
+        nodes: {
+          'width': 24, 'height': 24, 'background-color': '#2980b9',
+          'label': 'Mixed Case', 'font-size': 18, 'font-family': `'Open Sans', sans-serif`,
+          'text-transform': {
+            case: [ { when: { data: 'kind', eq: 'upper' }, then: 'uppercase' } ], else: 'none'
+          },
+          'text-background-color': '#f1c40f',
+          'text-background-opacity': {
+            case: [ { when: { data: 'kind', in: [ 'boxed', 'round' ] }, then: 1 } ], else: 0
+          },
+          'text-background-padding': 4,
+          'text-background-shape': {
+            case: [ { when: { data: 'kind', eq: 'round' }, then: 'round-rectangle' } ], else: 'rectangle'
+          },
+          'text-border-width': {
+            case: [ { when: { data: 'kind', in: [ 'boxed', 'round' ] }, then: 2 } ], else: 0
+          },
+          'text-border-color': '#c0392b', 'text-border-opacity': 1
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'label-boxes', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

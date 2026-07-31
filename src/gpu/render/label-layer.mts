@@ -112,10 +112,14 @@ export class LabelLayer {
         f32[ at + 5 ] = ( maxY - minY ) * scale + 2 * pad;
         f32[ at + 6 ] = -1; // u0 < 0: solid quad, no atlas sample
         f32[ at + 7 ] = ( maxY - minY ) * scale; // LOD height: the glyph block's
-        f32[ at + 8 ] = -1;
+        // uv1.x carries the background shape (B6: 1 = round-rectangle);
+        // the solid branch never samples the atlas, so the slot is free
+        f32[ at + 8 ] = entry.bgShape;
         f32[ at + 9 ] = -1;
-        u32[ at + 10 ] = 0;
-        f32[ at + 11 ] = 0;
+        // the outline fields double as the text-border for solid quads
+        // (B6): packed border color + width in *model px* (the FS scales)
+        u32[ at + 10 ] = entry.bgBorderColor;
+        f32[ at + 11 ] = entry.bgBorderWidth;
         at += GLYPH_WORDS;
       }
 

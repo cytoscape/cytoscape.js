@@ -514,7 +514,11 @@ each is deliberate, not a pass-1 deferral:
   per atlas by design — so `font-family` is a **constant, effectively
   global** node style prop (default `sans-serif`); changing it resets
   the atlas and re-lays-out every label through the existing label-dirty
-  channel.  Per-element fonts would re-key the atlas by (font, char) and
+  channel.  `font-style` and `font-weight` (round 13 D1) ride the same
+  rule: global constants feeding the atlas's CSS font shorthand, with
+  v3's value sets (normal | italic | oblique; the weight keywords plus
+  the numeric hundreds), any face change resetting the atlas the same
+  way.  Per-element fonts would re-key the atlas by (font, char) and
   are out of scope.  Label-test reliability comes from pinning all three
   variance sources: the *font file* (a vendored OFL web font, Open Sans
   via devDependency, loaded with FontFace before instance creation), the
@@ -823,8 +827,9 @@ passthrough mapper (`{ data: key }`, or the legacy `'data(key)'` string;
 `id` reads the first-class id); mapped labels refresh on data writes (fn
 styles do not — see the refresh policy above).  `font-size` and `color`
 take constants or mappers (CPU-evaluated — the label sidecar is not a
-GPU column); `font-family` is a constant and effectively global (one
-font per atlas, default `sans-serif` — a change resets the atlas and
+GPU column); `font-family`, `font-style` and `font-weight` (round 13 D1) are
+constants and effectively global (one face per atlas, defaults
+`sans-serif`/`normal`/`normal` — a change resets the atlas and
 re-lays-out every label; see the fonts design decision above).  Glyphs
 come from a runtime SDF atlas (canvas-2D raster → Euclidean distance
 transform → one r8 texture) and live in a persistent instance buffer keyed
@@ -1183,7 +1188,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   centered on the midpoint — the curve or route midpoint for curved
   edges (rounds 12a/12b, v3's per-family rules); both offset by
   `text-margin-x/y`), not pickable, one
-  global `font-family` (the atlas holds one font), and the
+  global font face (`font-family`/`-style`/`-weight` — the atlas
+  holds one font), and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
   rendering with a console warning.  Label color/text bake into glyph
   instances, so `:selected`/hover styling does not restyle label text.

@@ -99,6 +99,8 @@ export class GraphStore implements ModelView {
   private labelDirty: Record<GroupName, Set<number>>;
   /** global label font-family (one font per glyph atlas); style-owned */
   labelFont: string;
+  labelFontStyle: string;
+  labelFontWeight: string;
   /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
   private watchedKeys: Record<GroupName, ReadonlySet<string>>;
   /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
@@ -115,6 +117,8 @@ export class GraphStore implements ModelView {
     this.labels = { nodes: [], edges: [] };
     this.labelDirty = { nodes: new Set(), edges: new Set() };
     this.labelFont = 'sans-serif';
+    this.labelFontStyle = 'normal';
+    this.labelFontWeight = 'normal';
     this.watchedKeys = { nodes: new Set(), edges: new Set() };
     this.mapperSpans = new Map();
 
@@ -1361,15 +1365,19 @@ export class GraphStore implements ModelView {
   }
 
   /**
-   * Set the global label font (one font per glyph atlas).  Every
+   * Set the global label font — family, style and weight (round 13
+   * D1); one font per glyph atlas.  Every
    * labelled node re-lays-out against the new font's metrics via the
    * label-dirty channel; the renderer's atlas resets when it observes
    * the change.
    */
-  setLabelFont( font: string ): void {
-    if( font === this.labelFont ){ return; }
+  setLabelFont( font: string, style: string = 'normal', weight: string = 'normal' ): void {
+    if( font === this.labelFont && style === this.labelFontStyle
+        && weight === this.labelFontWeight ){ return; }
 
     this.labelFont = font;
+    this.labelFontStyle = style;
+    this.labelFontWeight = weight;
     this.markAllLabelsDirty();
   }
 

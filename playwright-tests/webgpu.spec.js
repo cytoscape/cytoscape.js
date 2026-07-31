@@ -2795,4 +2795,95 @@ test.describe( 'WebGPU renderer', () => {
     expect( picks.outside ).toBe( null );
   } );
 
+  test( 'font-weight thickens label ink and font-style reshapes it (D1)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 40, 'background-color': '#ecf0f1',
+          'label': 'Illustrious', 'font-size': 20, 'color': '#000'
+        }
+      },
+      zoom: 1
+    } );
+
+    const c = await centerPan( page );
+    await waitFrames( page );
+
+    // the label row sits under the node: half-height 20 + margin + ascent
+    const labelInk = async () => {
+      let ink = 0;
+
+      for( const dy of [ 30, 34, 38 ] ){
+        ink += await darkPixelsInBand( page, c.x - 120, 240, c.y + dy );
+      }
+
+      return ink;
+    };
+
+    const normalInk = await labelInk();
+
+    expect( normalInk ).toBeGreaterThan( 20 );
+
+    // bold: the same glyphs raster with thicker strokes → more dark ink
+    await page.evaluate( () => {
+      window.cy.style( { nodes: {
+        'width': 40, 'height': 40, 'background-color': '#ecf0f1',
+        'label': 'Illustrious', 'font-size': 20, 'color': '#000',
+        'font-weight': 'bold'
+      } } );
+    } );
+    await waitFrames( page );
+
+    const boldInk = await labelInk();
+
+    expect( boldInk ).toBeGreaterThan( normalInk * 1.1 );
+
+    // italic: the face changes, so the rendered label pixels move —
+    // diff two exports of the same viewport
+    const boldUri = await page.evaluate( async () => await window.cy.png( { bg: '#fff' } ) );
+
+    await page.evaluate( () => {
+      window.cy.style( { nodes: {
+        'width': 40, 'height': 40, 'background-color': '#ecf0f1',
+        'label': 'Illustrious', 'font-size': 20, 'color': '#000',
+        'font-weight': 'bold', 'font-style': 'italic'
+      } } );
+    } );
+    await waitFrames( page );
+
+    const italicUri = await page.evaluate( async () => await window.cy.png( { bg: '#fff' } ) );
+    const diff = await page.evaluate( async ( { a, b } ) => {
+      const load = async uri => {
+        const img = new Image();
+
+        img.src = uri;
+        await img.decode();
+
+        const canvas = document.createElement( 'canvas' );
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        const ctx = canvas.getContext( '2d' );
+
+        ctx.drawImage( img, 0, 0 );
+
+        return ctx.getImageData( 0, 0, img.width, img.height ).data;
+      };
+      const [ da, db ] = [ await load( a ), await load( b ) ];
+      let n = 0;
+
+      for( let i = 0; i < Math.min( da.length, db.length ); i += 4 ){
+        if( Math.abs( da[ i ] - db[ i ] ) > 32 ){ n++; }
+      }
+
+      return n;
+    }, { a: boldUri, b: italicUri } );
+
+    expect( diff ).toBeGreaterThan( 50 );
+  } );
+
 } );

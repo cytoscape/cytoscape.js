@@ -137,6 +137,8 @@ export class GlyphAtlas {
   ascent: number;
   /** CSS font-family list glyphs raster with (one font per atlas) */
   fontFamily: string;
+  fontStyle: string;
+  fontWeight: string;
 
   private device: GPUDevice;
   private ctx: CanvasRenderingContext2D;
@@ -181,6 +183,8 @@ export class GlyphAtlas {
     ctx.fillStyle = '#000';
 
     this.fontFamily = '';
+    this.fontStyle = 'normal';
+    this.fontWeight = 'normal';
     this.ascent = 0;
     this.setFont( 'sans-serif' );
   }
@@ -192,10 +196,13 @@ export class GlyphAtlas {
    * same label-dirty pass, so no run references old UVs.  No-op when the
    * family is unchanged.
    */
-  setFont( family: string ): void {
-    if( family === this.fontFamily ){ return; }
+  setFont( family: string, style: string = 'normal', weight: string = 'normal' ): void {
+    if( family === this.fontFamily && style === this.fontStyle
+        && weight === this.fontWeight ){ return; }
 
     this.fontFamily = family;
+    this.fontStyle = style;
+    this.fontWeight = weight;
     this.reset();
   }
 
@@ -209,7 +216,7 @@ export class GlyphAtlas {
   }
 
   private reset(): void {
-    this.ctx.font = `${SDF_FONT_SIZE}px ${this.fontFamily}`;
+    this.ctx.font = `${this.fontStyle} ${this.fontWeight} ${SDF_FONT_SIZE}px ${this.fontFamily}`;
     this.cache.clear();
     this.penX = 0;
     this.penY = 0;

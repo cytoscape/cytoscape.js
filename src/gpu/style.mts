@@ -88,6 +88,10 @@ interface NodeComputed {
   textColor: RGBA;
   /** effectively global: one font per glyph atlas (keyed by character) */
   fontFamily: string;
+  /** font-style + font-weight (round 13 D1): global constants like
+   * font-family — the atlas rasters one face */
+  fontStyle: string;
+  fontWeight: string;
   textOutlineWidth: number;
   textOutlineColor: RGBA;
   textOutlineOpacity: number;
@@ -254,6 +258,8 @@ const NODE_DEFAULTS: NodeComputed = {
   fontSize: 16,
   textColor: [ 0, 0, 0, 255 ],
   fontFamily: 'sans-serif',
+  fontStyle: 'normal', // as v3
+  fontWeight: 'normal', // as v3
   textOutlineWidth: 0,
   textOutlineColor: [ 0, 0, 0, 255 ],
   textOutlineOpacity: 1,
@@ -437,7 +443,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'background-fill', 'background-gradient-stop-colors',
   'background-gradient-stop-positions', 'background-gradient-direction',
   'outline-color', 'outline-opacity', 'outline-width', 'outline-offset',
-  'label', 'font-size', 'font-family', 'color',
+  'label', 'font-size', 'font-family', 'font-style', 'font-weight', 'color',
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
   'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
   'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius',
@@ -551,6 +557,11 @@ const resolveCoreProps = ( props: GpuStyleProps | undefined ): CoreStyle => {
 };
 
 /** ghost props are node-only (round 13 A1). */
+/** global-constant font props (round 13 D1): one face per glyph atlas */
+const GLOBAL_FONT_PROPS: ReadonlySet<string> = new Set( [
+  'font-family', 'font-style', 'font-weight'
+] );
+
 const GHOST_PROPS: ReadonlySet<string> = new Set( [
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity'
 ] );
@@ -1434,6 +1445,32 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       computed.fontFamily = family;
       break;
     }
+    case 'font-style': {
+      const style = String( value );
+
+      if( style !== 'normal' && style !== 'italic' && style !== 'oblique' ){
+        throw new Error( `The font-style '${style}' is invalid; use normal, italic or oblique` );
+      }
+
+      computed.fontStyle = style;
+      break;
+    }
+    case 'font-weight': {
+      // v3's set: the CSS keywords plus the numeric hundreds
+      const weight = String( value );
+      const num = Number( weight );
+      const keyword = weight === 'normal' || weight === 'bold'
+        || weight === 'bolder' || weight === 'lighter';
+
+      if( !keyword && !( Number.isFinite( num ) && num >= 100 && num <= 900 && num % 100 === 0 ) ){
+        throw new Error(
+          `The font-weight '${weight}' is invalid; use normal, bold, bolder, lighter or 100..900`
+        );
+      }
+
+      computed.fontWeight = weight;
+      break;
+    }
     case 'color':
       computed.textColor = parseColor( prop, value );
       break;
@@ -2193,7 +2230,10 @@ export class StyleEngine {
     // global: routes to the atlas and marks every labelled node
     // label-dirty (metrics change), applied even while batching — the
     // deferred flush re-lays-out against current entries anyway
-    this.store.setLabelFont( defs.nodes.computed.fontFamily );
+    this.store.setLabelFont(
+      defs.nodes.computed.fontFamily,
+      defs.nodes.computed.fontStyle,
+      defs.nodes.computed.fontWeight );
 
     // the store coalesces write spans for paint-mapped keys so the GPU
     // eval pass knows what to re-evaluate without a CPU restyle; owned
@@ -2687,6 +2727,8 @@ export class StyleEngine {
       case 'label': return store.labelAt( slot, ref.group )?.text ?? '';
       case 'font-size': return this.labelChannels( ref ).fontSize;
       case 'font-family': return store.labelFont;
+      case 'font-style': return store.labelFontStyle;
+      case 'font-weight': return store.labelFontWeight;
       case 'color': return this.labelChannels( ref ).color;
 
       // label visual props (constants; sidecar when labelled, else the sheet
@@ -3018,15 +3060,15 @@ export class StyleEngine {
         throw new Error( `'${norm}' is a node style property` );
       }
 
-      if( norm === 'font-family' ){
-        // one glyph atlas keyed by character ⇒ one font, globally
+      if( GLOBAL_FONT_PROPS.has( norm ) ){
+        // one glyph atlas keyed by character ⇒ one font face, globally
         if( group === 'edges' ){
-          throw new Error( `'font-family' is a node style property (labels are node-only)` );
+          throw new Error( `'${norm}' is a node style property (labels are node-only)` );
         }
 
         if( isMapperSpec( value ) ){
           throw new Error(
-            `'font-family' takes a constant only — per-element fonts are unsupported ` +
+            `'${norm}' takes a constant only — per-element fonts are unsupported ` +
             `(the glyph atlas holds one font)`
           );
         }

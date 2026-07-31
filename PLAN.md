@@ -2912,6 +2912,26 @@ layout) is not consumed by it.
   shared concave-arrow scene — pure geometry, near pixel-exact).
   1919 Node tests, 106 Playwright specs, typecheck + lint green.
 
+- [x] **D1 `font-style` + `font-weight`** (2026-07-31).  Both land
+  as global constants riding the `font-family` rule: the store's
+  face triple (`labelFont`/`labelFontStyle`/`labelFontWeight`) feeds
+  the atlas's CSS font shorthand
+  (`style weight ${SDF_FONT_SIZE}px family`), and any change marks
+  every labelled slot dirty so the atlas reset and the glyph-run
+  rebuild land in one pass — no new columns, no shader changes.
+  Values: v3's sets (`normal | italic | oblique`; the weight
+  keywords plus the numeric hundreds 100..900, read back as
+  strings); edges-group use and mappers throw via the generalized
+  `GLOBAL_FONT_PROPS` guard (same messages as `font-family`).  The
+  playwright page gained the real Open Sans 700-italic `@font-face`
+  so the D1 golden pins an actual face, not browser synthesis.  No
+  v3 pixel parity for labels by recorded design (raster + placement
+  differ) — the pins are the `labels-bold-italic` golden (label
+  tolerance) and a `webgpu` spec asserting bold ink > normal ink in
+  the label band plus a nonzero italic-vs-upright pixel diff.  7
+  Node specs (`test/gpu-font-props.mjs`).  1926 Node tests, 108
+  Playwright specs, typecheck + lint green.
+
 **Sequencing**: pass 12c (the round-12 plan above) runs first, then
 this round's phases in order — the 2026-07-29 triage keeps (ghost,
 overlay/underlay) lead, per the discussion that produced this plan.
@@ -3039,7 +3059,7 @@ shelf, since the expensive part now exists)
 
 **Phase D — label props with recorded constraints**
 
-- [ ] **D1 `font-style` + `font-weight`** as global constants (the
+- [x] **D1 `font-style` + `font-weight`** as global constants (the
   `font-family` rule: one font per atlas; a change resets the atlas
   and re-lays-out every label).
 - [ ] **D2 Per-element `min-zoomed-font-size`**: a sidecar channel

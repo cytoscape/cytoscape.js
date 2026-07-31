@@ -46,7 +46,8 @@ export class LabelLayer {
   process(): void {
     // a font change arrives with every labelled slot already label-dirty,
     // so the reset and the rebuild land in this same pass
-    this.atlas.setFont( this.store.labelFont );
+    this.atlas.setFont(
+      this.store.labelFont, this.store.labelFontStyle, this.store.labelFontWeight );
 
     this.processGroup( 'nodes', this.glyphs );
     this.processGroup( 'edges', this.edgeGlyphs );

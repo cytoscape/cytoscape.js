@@ -1286,6 +1286,48 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'shape-polygon', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: bold italic labels in the fixed web font (round 13 D1)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // font-style/-weight are global constants (one face per atlas), so
+    // the whole scene rasters bold italic; v3 pixel parity for labels
+    // is impossible by recorded design (raster + placement differ), so
+    // the golden pins the face like the other label goldens
+    await page.evaluate( async () => {
+      await document.fonts.load( `italic bold 32px 'Open Sans'` );
+
+      if( !document.fonts.check( `italic bold 32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans (bold italic) did not load' );
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'Alpha 1' }, position: { x: -100, y: -70 } },
+        { data: { id: 'beta-2' }, position: { x: 100, y: -70 } },
+        { data: { id: 'weighty words' }, position: { x: -100, y: 50 } },
+        { data: { id: 'the quick brown fox' }, position: { x: 100, y: 50 } }
+      ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 30, 'background-color': '#dfe6e9',
+          'border-width': 1, 'border-color': '#b2bec3',
+          'label': { data: 'id' }, 'font-size': 14, 'color': '#2d3436',
+          'font-family': `'Open Sans', sans-serif`,
+          'font-style': 'italic', 'font-weight': 'bold'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 160 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'labels-bold-italic', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

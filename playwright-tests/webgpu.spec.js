@@ -2225,4 +2225,86 @@ test.describe( 'WebGPU renderer', () => {
     expect( scan.above ).toBe( 0 );
   } );
 
+  test( 'taxi arrows ride the final leg into the node (12b)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: -100 } },
+        { data: { id: 'b' }, position: { x: 150, y: 100 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: {
+          'curve-style': 'taxi', 'width': 4, 'line-color': '#e74c3c',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#8e44ad'
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // auto direction is horizontal here (dx > dy): the final leg runs in
+    // +x into the target, so the arrow sits just outside the target's
+    // boundary on that leg — purple, not line red
+    const arrowPx = await pixelAt( page, center.x + 150 - 15 - 8, center.y + 100 );
+
+    expect( arrowPx[ 2 ] ).toBeGreaterThan( 120 ); // blue channel: #8e44ad
+    expect( arrowPx[ 0 ] ).toBeLessThan( 200 );
+
+    // the chord's diagonal near the target stays background — the arrow
+    // did not point along the chord
+    const chordPx = await pixelAt( page, center.x + 150 - 40, center.y + 100 - 27 );
+
+    expect( chordPx[ 1 ] ).toBeGreaterThan( 180 );
+  } );
+
+  test( 'route labels anchor at the route midpoint and follow drags (12b)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b', lbl: 'seg' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#ecf0f1' },
+        edges: {
+          'curve-style': 'segments', 'segment-distances': 60,
+          'width': 4, 'line-color': '#e74c3c',
+          'label': { data: 'lbl' }, 'font-size': 16, 'color': '#000'
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // text ink sits at the CPU route midpoint (the segment point), not
+    // the chord midpoint
+    const mid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+
+    expect( await darkPixelsInBand( page, mid.x - 40, 80, mid.y ) ).toBeGreaterThan( 3 );
+    expect( await darkPixelsInBand( page, center.x - 40, 80, center.y - 20 ) ).toBe( 0 );
+
+    // a node drag re-anchors the label on-GPU (position rows only)
+    const uploadedBefore = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    await page.evaluate( () => window.cy.$id( 'b' ).position( { x: 150, y: 120 } ) );
+    await waitFrames( page );
+
+    const uploadedAfter = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+    const movedMid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+
+    expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 );
+    expect( await darkPixelsInBand( page, movedMid.x - 40, 80, movedMid.y ) ).toBeGreaterThan( 3 );
+  } );
+
 } );

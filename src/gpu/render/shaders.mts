@@ -1493,17 +1493,24 @@ ${ ARROW_POLY.cases }
  * quadratic's end tangent points from the control to the endpoint, so
  * dir = normalize(tipCenter − ctrl) puts the tip on the node boundary
  * along the curve's true end tangent (source end uses c1, target end
- * c2; for a bundled bezier they coincide).  Rides the curved cull
- * stream's single-quad args block.  The vertex stage binds 6 columns +
- * the visible list (node size and border ride the derived outerHalf
- * column), so — since 12b — the frame uses the border-inclusive outer
- * halves like the straight arrows: the 12a border-exclusive deviation
- * is gone.
+ * c2; for a bundled bezier they coincide).  The 12b route families
+ * generalize the same insight: a route's end tangent runs from the
+ * first/last interior route point to the boundary endpoint, so the
+ * arrow is the straight arrow math with that point substituted.  Rides
+ * the curved cull stream's single-quad args block.  The vertex stage
+ * binds 7 columns + the visible list (the base 8-storage-buffer
+ * budget — node size/border ride outerHalf, and this end's arrow
+ * *colors* moved to the fragment stage to make room for the curve
+ * param blob; no-arrow ends rasterize a small transparent quad instead
+ * of collapsing in the VS).  Since 12b the frame uses border-inclusive
+ * outer halves like the straight arrows (the 12a border-exclusive
+ * deviation is gone).
  */
 export const CURVED_ARROW_SHADER = `
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${CURVE_WGSL}
+${ROUTE_WGSL}
 
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
@@ -1511,20 +1518,21 @@ ${CURVE_WGSL}
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
 @group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
-@group(0) @binding(6) var<storage, read> arrows: array<u32>; // this end's colors
-@group(0) @binding(7) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(6) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;
 
 struct End { isSource: u32 }
 @group(0) @binding(8) var<uniform> end: End;
-// shape ids packed source | target<<8 — fragment-only, like the straight arrows
-@group(0) @binding(9) var<storage, read> arrowShapes: array<u32>;
+// fragment-stage: this end's arrow colors + the packed shape ids
+@group(0) @binding(9) var<storage, read> arrows: array<u32>;
+@group(0) @binding(10) var<storage, read> arrowShapes: array<u32>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
 struct ArrowVSOut {
   @builtin(position) position: vec4f,
   @location(0) p: vec2f,    // arrow-local device px: x lateral, y (≤0) behind the tip
-  @location(1) color: vec4f,
+  @location(1) @interpolate(flat) alphaComp: f32,
   @location(2) @interpolate(flat) scale: f32, // device px per arrow unit
   @location(3) @interpolate(flat) slot: u32,
 }
@@ -1537,24 +1545,34 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   let slot = visible[ii];
   let isSource = end.isSource == 1u;
-  let c = unpack4x8unorm(arrows[slot]);
+  let ends = endpoints[slot];
+  let params = curveParams[slot];
+  let tipSlot = select(ends.y, ends.x, isSource);
 
-  if (c.a == 0.0) { // no arrow at this end: degenerate, clipped
-    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
-    return out;
+  // the point the end tangent runs from: the near control (bezier /
+  // loop), or the first/last interior route point (12b families)
+  var toward: vec2f;
+
+  if (params.w <= 2.0) {
+    let g = evalCurveGeom(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+
+    toward = select(g.c2, g.c1, isSource);
+  } else {
+    var route = evalRouteW(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+
+    toward = select(route.q[route.n], route.q[1u], isSource);
   }
 
-  let ends = endpoints[slot];
-  let g = evalCurveGeom(
-    curveParams[slot],
-    nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-    nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
-  );
-
-  let tipSlot = select(ends.y, ends.x, isSource);
-  let ctrl = select(g.c2, g.c1, isSource);
   let tipC = modelToPx(frame, nodePositions[tipSlot]);
-  let toTip = tipC - modelToPx(frame, ctrl);
+  let toTip = tipC - modelToPx(frame, toward);
   let len = max(length(toTip), 1e-4);
   let dir = toTip / len;
 
@@ -1580,13 +1598,15 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   out.p = vec2f(lateral, yLocal);
   out.scale = arrowLen / 0.3;
   out.slot = slot;
-  // edge opacity is pre-folded into c.a at style-write time
-  out.color = vec4f(c.rgb, c.a * alphaComp * (1.0 - frame.edgeDim));
+  out.alphaComp = alphaComp;
   return out;
 }
 
 @fragment
 fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
+  // edge opacity is pre-folded into the stored alpha at style-write
+  // time; a=0 (no arrow at this end) renders fully transparent
+  let c = unpack4x8unorm(arrows[in.slot]);
   let pair = arrowShapes[in.slot];
   let shape = select(pair >> 8u, pair & 0xffu, end.isSource == 1u);
   let p = in.p;
@@ -1596,11 +1616,11 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   switch shape {
 ${ ARROW_POLY.cases }
     case 4u: { sd = length(p - vec2f(0.0, -0.15 * s)) - 0.15 * s; } // circle
-    default: { sd = 1e6; } // none (already degenerate in the VS)
+    default: { sd = 1e6; } // none: fully discarded by alpha
   }
 
-  let alpha = in.color.a * (1.0 - smoothstep(-0.75, 0.75, sd));
-  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
+  let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * (1.0 - smoothstep(-0.75, 0.75, sd));
+  return vec4f(c.rgb * alpha, alpha); // premultiplied
 }
 `;
 
@@ -1613,16 +1633,17 @@ ${ ARROW_POLY.cases }
 const labelShader = ( edge: boolean ): string => `
 ${COMMON}
 ${GLYPH_STRUCT}
-${ edge ? BOUNDARY_WGSL + CURVE_WGSL : '' }
+${ edge ? BOUNDARY_WGSL + CURVE_WGSL + ROUTE_WGSL : '' }
 // flags columns are not bound here: the cull pass already dropped glyphs
 // of dead/hidden owners.  The edge variant binds the curve inputs too —
-// 6 storage buffers + the visible list (node size and border ride the
-// derived outerHalf column), within the vertex-stage budget — so
-// curved-edge labels anchor at the curve midpoint computed in the VS
-// from live positions (zero rebuild on drags/layouts/tweens).
+// 7 storage buffers + the visible list (node size and border ride the
+// derived outerHalf column; the curve param blob rides the freed slot),
+// exactly the vertex-stage budget — so curved-edge labels anchor at the
+// curve/route midpoint computed in the VS from live positions (zero
+// rebuild on drags/layouts/tweens).
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(7) var atlas: texture_2d<f32>;\n@group(0) @binding(8) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
+${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
 
 struct LabelVSOut {
   @builtin(position) position: vec4f,
@@ -1657,11 +1678,11 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   var anchor = (pa + pb) * 0.5;
   // the autorotate frame endpoints: a bezier's t=0.5 tangent IS the
   // chord direction, so (pa, pb) stands; a loop's midpoint tangent runs
-  // c1 -> c2
+  // c1 -> c2; a 12b route's tangent comes from its midpoint rule
   var rotA = pa;
   var rotB = pb;
 
-  if (params.w != 0.0) { // curved owner: anchor at the curve midpoint
+  if (params.w != 0.0 && params.w <= 2.0) { // bezier / loop midpoint
     let geom = evalCurveGeom(
       params,
       pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
@@ -1674,6 +1695,17 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
       rotA = geom.c1;
       rotB = geom.c2;
     }
+  } else if (params.w > 2.0) { // route families: v3's midpoint rules
+    var route = evalRouteW(
+      params,
+      pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+    let midTan = routeMidpointW(&route);
+
+    anchor = midTan.xy;
+    rotA = anchor;
+    rotB = anchor + midTan.zw;
   }`
     : 'let anchor = nodePositions[g.nodeSlot];' }
   let originPx = modelToPx(frame, anchor) + g.offset * frame.zoomDpr;

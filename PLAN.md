@@ -2283,6 +2283,22 @@ lands it.
   midpoint), and the unbundled-bezier S through its inserted midpoint
   with a clear mirrored band.  All 66 Playwright specs green; 12a
   goldens byte-stable through the shader restructure.
+- [x] **Arrows + edge labels on routes.**  The curved-arrow insight
+  generalizes: a route's end tangent runs from the first/last interior
+  route point to the boundary endpoint, so the arrow is the straight
+  arrow math with that point substituted (taxi arrows ride the final
+  axis-aligned leg).  Budget: the curved-arrow vertex stage needed the
+  blob, so this end's arrow *colors* moved to the fragment stage — the
+  VS no longer collapses no-arrow ends to degenerate quads (they
+  rasterize a small fully-transparent quad instead; the frame uniform
+  now binds V|F for edgeDim).  Edge labels of route edges anchor at
+  `routeMidpointW` in the VS, and autorotate takes the midpoint
+  tangent as its frame (v3's per-family disp rules) — both zero
+  rebuild, both spec-pinned: taxi arrows purple on the final leg (and
+  no ink on the chord diagonal), segments labels at the route midpoint
+  with a ≤64 B re-anchor on drag.  68/68 Playwright specs; the 12a
+  curved-arrows golden is byte-stable through the fragment-stage
+  color move.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

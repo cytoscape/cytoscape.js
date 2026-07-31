@@ -8,9 +8,10 @@ rendering could be assessed for performance — and subsequent rounds
 image export, label testability, the round-10 parity sprint, round-11
 slot-stable compaction, edge-label autorotate) are recorded below as
 "Landed (round N)" sections, each verified green when it landed; the
-round-12 curved-edges plan has both flagged calls signed off and pass
-12a (bundled bezier + self-loops) landed 2026-07-30 — passes 12b/12c
-remain.  `src/gpu/README.md` is
+round-12 curved-edges plan has both flagged calls signed off, pass
+12a (bundled bezier + self-loops) landed 2026-07-30, and pass 12b
+(unbundled bezier + segments + taxi) landed 2026-07-30/31 — pass 12c
+(endpoints + haystack/straight-triangle) remains.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -153,7 +154,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 - Pan-vs-grab uses the ≤2-frame-stale resolved pick.
 - `cy.elements()` returns nodes then edges, not mixed insertion order.
 - Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.  (Since superseded: edge labels + label visuals landed in round 10; edge-label autorotate 2026-07-29.)
-- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged; circle/concentric/breadthfirst/random layouts landed round 10; bundled bezier + self-loops landed round 12a — compounds and the 12b/12c curve families remain).
+- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged; circle/concentric/breadthfirst/random layouts landed round 10; bundled bezier + self-loops landed round 12a and the unbundled/segments/taxi families round 12b — compounds and the 12c pass remain).
 
 ## Follow-ups (informed by the benchmark)
 
@@ -221,7 +222,8 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 All follow-ups are done.  Open hooks beyond pass 1: slot compaction
 (the slot-stable blob/CSR/dictionary reclaim landed in round 11 below),
 z-index ranks, compound nodes, curved edges (bundled bezier +
-self-loops landed round 12a; the 12b/12c families remain),
+self-loops landed round 12a, the unbundled/segments/taxi families
+round 12b; 12c remains),
 more layouts, a binary export of live graphs (serializeElements already
 covers payloads).  (Mappers landed as the round-7 object DSL below.)
 
@@ -1684,9 +1686,11 @@ spellings, redundant `attr`-family duplicates — one name per concept).
 ### Gaps with direction already set (build when scheduled)
 
 - **Curved edges** — the single biggest *visual* gap.  **Pass 12a
-  (bundled `bezier` + self-loops) landed 2026-07-30** — see the round
-  12a record.  Still open from v3's `curve-style`: `unbundled-bezier`,
-  `segments`, `round-segments`, `taxi`, `round-taxi` (the 12b pass).
+  (bundled `bezier` + self-loops) landed 2026-07-30**, and **pass 12b
+  (`unbundled-bezier`, `segments`, `round-segments`, `taxi`,
+  `round-taxi`) landed 2026-07-30/31** — see the round records.
+  Still open from v3's `curve-style`: `haystack` and
+  `straight-triangle` plus manual endpoints (the 12c pass).
   Brings with it: **self-loops** (`loop-direction`/`loop-sweep` — a
   loop currently degenerates to a point in v4), `control-point-*`,
   `segment-*`, `taxi-*`, `radius-type`, `edge-distances`,
@@ -1870,9 +1874,9 @@ production apps).  Of the near-term autonomous work, slot-stable
 compaction landed as round 11 and edge-label autorotate landed
 2026-07-29 — the autonomous shelf is clear.  The
 design queue, in suggested order: curved
-edges (12a — bundled bezier + self-loops — landed 2026-07-30; 12b
-unbundled/segments/taxi and 12c endpoints + haystack/straight-triangle
-remain) → compounds (needs the full
+edges (12a — bundled bezier + self-loops — landed 2026-07-30 and 12b —
+unbundled/segments/taxi — 2026-07-30/31; 12c endpoints +
+haystack/straight-triangle remains) → compounds (needs the full
 design round) → background images + the node-visual scope call
 (ghost's simplified body-duplicate form slots in here) → the event
 vocabulary + extension contract calls (cheap to build once decided,
@@ -1962,7 +1966,8 @@ follows-drag/tween Playwright spec pinning the zero-rebuild property):
   midpoint; conservative bound into cull/fit/`boundingBox`; exact
   lazy `.bb()`; `isBundledBezier`/`controlPoints`/
   `renderedControlPoints` accessors.
-- **12b — unbundled-bezier + segments + taxi (+ round variants)**:
+- **12b — unbundled-bezier + segments + taxi (+ round variants)**
+  (landed 2026-07-30/31 — see the round 12b record):
   `control-point-distances`/`-weights`, `edge-distances`,
   `segment-distances`/`-weights`/`-radii`, `radius-type`,
   `round-segments` corner arcs, `taxi-direction`/`taxi-turn`/
@@ -2138,11 +2143,14 @@ above.
   exact bb, render, cull, pick, arrows, labels, goldens, parity and
   benchmarks all landed.
 
-## Landed (round 12b — unbundled bezier + segments + taxi, in progress 2026-07-30)
+## Landed (round 12b — unbundled bezier + segments + taxi, 2026-07-30/31)
 
 Pass 12b of the round-12 plan above, under the round-10 process rules.
-Items land CPU-first; each entry below is written in the commit that
-lands it.
+Items landed CPU-first; each entry below was written in the commit that
+landed it.  **Round 12b is complete**: props, blob storage, per-edge
+derivation, accessors, exact bb, render, cull, pick, arrows, labels,
+box selection, goldens, live v3 parity and benchmarks all landed —
+final tallies in the goldens/parity entry at the end.
 
 - [x] **`node.outerHalf` derived column — the 12b binding budget.**
   The curved-edge/curved-arrow/edge-label vertex stages all sat at
@@ -2306,6 +2314,26 @@ lands it.
   edges keep the endpoint-center approximation (recorded deviation).
   2 new Node specs (segments and taxi containment, incl. the
   cut-the-launch-point miss cases).
+- [x] **Goldens, live v3 parity and the benchmark check.**  Three new
+  golden scenes — `unbundled-bezier` (S-splines across orientations, a
+  dashed run, the unbundled loop), `segments-families` (sharp miter
+  vs radius-18 round corners on the same zig-zag lists, a vertical
+  round run, dashes riding legs) and `taxi-families` (auto/explicit
+  directions, px and percent turns, round-taxi corners, arrows on the
+  final legs, the forced-direction growth case) — byte-stable across
+  repeat runs.  One combined **live v3-parity scene** covering all
+  five families measured **0 differing pixels** at 8 px strokes (the
+  same ink-guarded pixelmatch bound as 12a's parity-curves): the
+  route geometry lands identically on both renderers; the known
+  miter-vs-round join difference is absorbed by AA classification.
+  Renderer benchmark re-run on the same box (RX 580, dpr 2, scale 1):
+  the 12a curved scene's device times are unchanged (fit-all pan
+  8.61 vs 8.6 ms, zoomed-in 3.81 vs 3.8, far-zoom 6.18 vs 6.4) — the
+  route branch and blob binding cost the bezier path nothing
+  measurable; wall clock stays vsync-bound at 16.7 ms while v3 canvas
+  runs ~670 ms/frame on the same scene.  Final tallies: 1793 Node +
+  60 module tests, 72/72 Playwright specs (6 new `webgpu`, 3 new
+  goldens + 1 new parity in `webgpu-visual`), typecheck + lint clean.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

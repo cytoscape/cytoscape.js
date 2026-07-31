@@ -5,8 +5,9 @@ First pass of the v4 performance redesign spec'd in
 prototype core with a **CPU-canonical columnar model** (typed-array columns,
 stable slots, per-column coalesced dirty spans) written through to
 **persistent GPU buffers**, rendered by a **WebGPU pipeline** (SDF node
-shapes, straight and — round 12a — bundled-bezier/self-loop curved
-edges reading endpoint positions and curve params on-GPU, GPU picking,
+shapes, straight and curved edges — round 12a's bundled bezier +
+self-loops and round 12b's unbundled-bezier/segments/taxi families —
+reading endpoint positions and curve params on-GPU, GPU picking,
 compute culling + indirect draws + LOD).  The
 existing v3 core, collection and renderers are untouched.
 
@@ -683,12 +684,11 @@ string-formatting label mappers beyond the passthrough, and the GPU
 tween fast path for *size* channels (position and paint offload today;
 size is a geometry-tier project, see the design decisions above).
 Multiline labels remain a v4 direction in the *expensive GPU-computed
-geometry* tier — the tier bundled bezier + self-loops shipped under in
-round 12a (dual CPU/WGSL implementations, conservative CPU bound for
-cull/fit, exact lazy CPU eval for public `.bb()`, no readback);
-unbundled bezier/segments/taxi are round 12b, edge endpoints +
-haystack/straight-triangle round 12c, and GPU layouts remain logged
-for later.
+geometry* tier — the tier every curved-edge family now ships under
+(rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound
+for cull/fit, exact lazy CPU eval for public `.bb()`, no readback);
+manual edge endpoints + haystack/straight-triangle are round 12c, and
+GPU layouts remain logged for later.
 
 ## Benchmarks
 
@@ -891,17 +891,30 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   sub-half-alpha edges may neither draw nor pick at far zoom.  This removes
   the far-zoom worst case where every edge rasterized into a few hundred
   pixels and serialized at the blend stage (~33 ms → ~8 ms on 465k edges).
-- **Curved edges (round 12a)**: `curve-style: bezier` bundles and
-  self-loops render on-GPU as 24-quad strips evaluated from live
-  positions (see the design decision above).  Deviations, all
-  recorded there: node boundaries use the arrow tier's approximations
+- **Curved edges (rounds 12a/12b)**: `curve-style: bezier` bundles and
+  self-loops (12a) plus `unbundled-bezier`, `segments`,
+  `round-segments`, `taxi` and `round-taxi` (12b) all render on-GPU
+  in **one curved stream** of 24-quad strips evaluated from live
+  positions (see the design decision above): bezier/loops keep the
+  12a analytic evaluation, the 12b route families evaluate their
+  route (from the curve param blob) with piece boundaries landing
+  exactly on subdivision indices — legs pixel-straight, corners
+  exact — and discrete miter normals at sharp corners.  Deviations,
+  all recorded: node boundaries use the arrow tier's approximations
   (round-rect as box, polygon as inscribed ellipse); curved edges
   draw after straight edges (two streams, slot order within each);
-  the curved stream is never decimated at far zoom; and v3's
+  the curved stream is never decimated at far zoom; sharp segment
+  corners join with a **clamped miter** where v3's canvas uses round
+  joins (the difference is confined to the outer join wedge); interior
+  point counts cap at 8 controls / 11 segment points; and v3's
   near-overlap control-point correction (`tryToCorrectInvalidPoints`)
   is not ported — overlapping-node curves may differ slightly from
   v3 in the region the nodes occlude anyway.  (12a's border-exclusive
-  curved-arrow tips were fixed in 12b via `node.outerHalf`.)
+  curved-arrow tips were fixed in 12b via `node.outerHalf`.)  Cull:
+  chord-bounded curves grow the Liang-Barsky chord test by the frame
+  slack; box-bounded ones (taxi, extrapolated weights —
+  FLAG_CURVED_BOX) test the endpoint AABB grown by slack + chord
+  length.
 - **`node.outerHalf` is a store-derived column** (12b): size/2 +
   border/2 per axis, written through on every node size/border write.
   The curve, arrow and edge-label shaders bind it in place of the

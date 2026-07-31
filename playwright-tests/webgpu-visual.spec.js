@@ -687,6 +687,132 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: unbundled bezier splines (round 12b)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // one sheet-wide control list (list props are constants), varied by
+    // arrangement: S-curves across three orientations, a dashed run
+    // (dashes ride the route's arc length) and an unbundled loop (its
+    // loop distance is control-point-distances[0])
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a1' }, position: { x: -150, y: -100 } },
+        { data: { id: 'b1' }, position: { x: 30, y: -100 } },
+        { data: { id: 'h', source: 'a1', target: 'b1' } },
+        { data: { id: 'a2' }, position: { x: -140, y: -20 } },
+        { data: { id: 'b2' }, position: { x: -140, y: 120 } },
+        { data: { id: 'v', source: 'a2', target: 'b2' } },
+        { data: { id: 'a3' }, position: { x: -40, y: 0 } },
+        { data: { id: 'b3' }, position: { x: 120, y: 110 } },
+        { data: { id: 'diag', source: 'a3', target: 'b3', dashed: 1 } },
+        { data: { id: 'n' }, position: { x: 120, y: -60 } },
+        { data: { id: 'loop', source: 'n', target: 'n' } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#3498db' },
+        edges: {
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [ 50, -50 ],
+          'control-point-weights': [ 0.25, 0.75 ],
+          'width': 3, 'line-color': '#7f8c8d',
+          'line-style': { case: [ { when: { data: 'dashed', eq: 1 }, then: 'dashed' } ], else: 'solid' }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'unbundled-bezier', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
+  test( 'golden: segments and round-segments (round 12b)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        // sharp vs round on the same zig-zag lists (miter corners above,
+        // radius-18 arcs below)
+        { data: { id: 'a1' }, position: { x: -150, y: -100 } },
+        { data: { id: 'b1' }, position: { x: 130, y: -100 } },
+        { data: { id: 'sharp', source: 'a1', target: 'b1', round: 0 } },
+        { data: { id: 'a2' }, position: { x: -150, y: 10 } },
+        { data: { id: 'b2' }, position: { x: 130, y: 10 } },
+        { data: { id: 'round', source: 'a2', target: 'b2', round: 1 } },
+        // a vertical round run + a dashed sharp one (dashes follow legs)
+        { data: { id: 'a3' }, position: { x: -150, y: 60 } },
+        { data: { id: 'b3' }, position: { x: -150, y: 130 } },
+        { data: { id: 'vert', source: 'a3', target: 'b3', round: 1 } },
+        { data: { id: 'a4' }, position: { x: 0, y: 70 } },
+        { data: { id: 'b4' }, position: { x: 130, y: 120 } },
+        { data: { id: 'dash', source: 'a4', target: 'b4', round: 0, dashed: 1 } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#e67e22' },
+        edges: {
+          'curve-style': {
+            case: [ { when: { data: 'round', eq: 1 }, then: 'round-segments' } ],
+            else: 'segments'
+          },
+          'segment-distances': [ 40, -40 ],
+          'segment-weights': [ 0.3, 0.7 ],
+          'segment-radii': 18,
+          'width': 3, 'line-color': '#7f8c8d',
+          'line-style': { case: [ { when: { data: 'dashed', eq: 1 }, then: 'dashed' } ], else: 'solid' }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'segments-families', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
+  test( 'golden: taxi and round-taxi (round 12b)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        // auto (horizontal here), with a target arrow riding the final leg
+        { data: { id: 'a1' }, position: { x: -160, y: -110 } },
+        { data: { id: 'b1' }, position: { x: -20, y: -40 } },
+        { data: { id: 'auto', source: 'a1', target: 'b1', dir: 'auto', round: 0 } },
+        // explicit vertical with a px turn
+        { data: { id: 'a2' }, position: { x: 60, y: -120 } },
+        { data: { id: 'b2' }, position: { x: 160, y: 10 } },
+        { data: { id: 'vert', source: 'a2', target: 'b2', dir: 'vertical', round: 0, turnPx: 30 } },
+        // round-taxi corners
+        { data: { id: 'a3' }, position: { x: -160, y: 30 } },
+        { data: { id: 'b3' }, position: { x: -20, y: 130 } },
+        { data: { id: 'rt', source: 'a3', target: 'b3', dir: 'auto', round: 1 } },
+        // rightward against the delta (the forced-direction growth case)
+        { data: { id: 'a4' }, position: { x: 150, y: 130 } },
+        { data: { id: 'b4' }, position: { x: 50, y: 60 } },
+        { data: { id: 'forced', source: 'a4', target: 'b4', dir: 'rightward', round: 0, turnPx: 25 } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#16a085' },
+        edges: {
+          'curve-style': {
+            case: [ { when: { data: 'round', eq: 1 }, then: 'round-taxi' } ],
+            else: 'taxi'
+          },
+          'taxi-direction': { data: 'dir' },
+          'taxi-turn': { data: 'turnPx', fallback: 40 },
+          'taxi-radius': 12,
+          'width': 3, 'line-color': '#7f8c8d',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#8e44ad'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'taxi-families', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: label visuals (outline, background, margins)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 
@@ -932,6 +1058,100 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }
 
     expect( ratio, 'v3-vs-v4 mismatch ratio for parity-curves' ).toBeLessThanOrEqual( 0.03 );
+  } );
+
+  test( 'parity: unbundled bezier, segments and taxi (round 12b)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // one pair per 12b family, identical params on both sides.  Circle
+    // nodes keep boundary math exact; 8px strokes give solid interiors
+    // (see the 12a parity note).  Known systematic difference: sharp
+    // segment corners join with a clamped miter in v4 vs v3's round
+    // canvas joins — confined to the outer join wedge.
+    const elements = [
+      { data: { id: 'ua' }, position: { x: -150, y: -120 } },
+      { data: { id: 'ub' }, position: { x: 130, y: -120 } },
+      { data: { id: 'unb', source: 'ua', target: 'ub', fam: 'unbundled-bezier' } },
+      { data: { id: 'sa' }, position: { x: -150, y: -30 } },
+      { data: { id: 'sb' }, position: { x: 130, y: -30 } },
+      { data: { id: 'seg', source: 'sa', target: 'sb', fam: 'segments' } },
+      { data: { id: 'ra' }, position: { x: -150, y: 60 } },
+      { data: { id: 'rb' }, position: { x: 130, y: 60 } },
+      { data: { id: 'rseg', source: 'ra', target: 'rb', fam: 'round-segments' } },
+      { data: { id: 'ta' }, position: { x: -140, y: 110 } },
+      { data: { id: 'tb' }, position: { x: -40, y: 240 } },
+      { data: { id: 'taxi', source: 'ta', target: 'tb', fam: 'taxi' } },
+      { data: { id: 'rta' }, position: { x: 40, y: 110 } },
+      { data: { id: 'rtb' }, position: { x: 140, y: 240 } },
+      { data: { id: 'rtaxi', source: 'rta', target: 'rtb', fam: 'round-taxi' } }
+    ];
+    const shared = {
+      'width': 8, 'line-color': '#7f8c8d',
+      'control-point-distances': [ 50, -50 ],
+      'control-point-weights': [ 0.25, 0.75 ],
+      'segment-distances': [ 40, -40 ],
+      'segment-weights': [ 0.3, 0.7 ],
+      'segment-radii': 18,
+      'taxi-turn': 30,
+      'taxi-radius': 12
+    };
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 30, 'height': 30, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: Object.assign( { 'curve-style': 'straight' }, shared ) },
+      ...[ 'unbundled-bezier', 'segments', 'round-segments', 'taxi', 'round-taxi' ].map( fam => ( {
+        selector: `edge[fam = '${fam}']`, style: { 'curve-style': fam }
+      } ) )
+    ];
+    const v4Style = {
+      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
+      edges: Object.assign( { 'curve-style': { data: 'fam' } }, shared )
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    const actual = decodePng( v4uri );
+    const expected = decodePng( v3uri );
+
+    const inked = png => {
+      let n = 0;
+
+      for( let i = 0; i < png.data.length; i += 4 ){
+        if( png.data[ i ] < 250 || png.data[ i + 1 ] < 250 || png.data[ i + 2 ] < 250 ){ n++; }
+      }
+
+      return n;
+    };
+
+    expect( inked( actual ), 'v4 rendered ink' ).toBeGreaterThan( 2000 );
+    expect( inked( expected ), 'v3 rendered ink' ).toBeGreaterThan( 2000 );
+
+    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
+
+    console.log( `[parity] parity-routes: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
+
+    if( ratio > 0.03 ){
+      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-routes', actual, expected, diff );
+    }
+
+    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-routes' ).toBeLessThanOrEqual( 0.03 );
   } );
 
 } );

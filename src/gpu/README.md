@@ -241,7 +241,10 @@ each is deliberate, not a pass-1 deferral:
   - *Queries* (evaluate now → collection): structured **query objects**
     compiled to the matcher IR — `cy.nodes({ selected: true })`,
     `cy.filter({ group: 'edges' })`, `eles.filter({ selected: false })`,
-    and data conditions over the sidecar columns (round 10):
+    structural booleans (round 14.7: `parent`/`child` — nodes only,
+    answering v3's `:parent`/`:childless`/`:child`/`:orphan` as pure
+    flag scans; an explicitly-edges query with a structural key
+    throws), and data conditions over the sidecar columns (round 10):
     `cy.nodes({ data: { weight: { gt: 0.5 } } })` — one of
     `eq/ne/lt/lte/gt/gte/in` per key (a bare value means `eq`; keys AND
     together), sharing the `case` mapper's vocabulary and semantics
@@ -312,7 +315,11 @@ each is deliberate, not a pass-1 deferral:
 - **Conditionals: the `case` mapper.**  `{ case: [{ when: { data,
   gt/lt/eq/ne/in/... }, then }], else }` — clauses in order, conditions
   AND-ed within a clause, first match wins; `when` reads any data key or
-  the first-class `id`.  The declarative replacement for
+  the first-class `id`, plus the structural forms `{ parent: bool }` /
+  `{ child: bool }` (round 14.7 — nodes only; a structural condition
+  stands alone, AND it with data conditions via the `when` array
+  form).  Structural conditions re-evaluate automatically on
+  hierarchy changes.  The declarative replacement for
   `(ele) => cond ? a : b`, and the natural form for typed edges
   (`type == 'activation' → ...`).  CPU-evaluated (multi-key,
   conditional), so it stays off the GPU eval kernel and refreshes via the

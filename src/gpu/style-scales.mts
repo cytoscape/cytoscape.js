@@ -56,7 +56,8 @@ export type OutputStops =
 export type CompiledCondition = {
   key: string;
   op: 'eq' | 'ne' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
-  value: string | number | ( string | number )[];
+  /** booleans back the structural '::parent'/'::child' keys (round 14.7) */
+  value: string | number | boolean | ( string | number )[];
 };
 
 export type Program =
@@ -465,6 +466,31 @@ const compileOrdinal = ( opts: CompileOpts, spec: GpuMapper ): Program => {
 };
 
 const compileCondition = ( opts: CompileOpts, cond: GpuCondition ): CompiledCondition => {
+  // structural conditions (round 14.7): { parent: bool } / { child: bool }
+  // stand alone and compile to the reserved '::parent'/'::child' keys the
+  // engine's value reader answers from the hierarchy flags — so deps,
+  // evaluation and the hierarchy-change refresh all reuse the data path
+  if( cond != null && ( cond.parent != null || cond.child != null ) ){
+    if( cond.parent != null && cond.child != null ){
+      throw err( opts.prop, `a structural condition tests 'parent' or 'child', not both ` +
+        `(AND them via the 'when' array form)` );
+    }
+
+    if( cond.data != null || Object.keys( cond ).some( k => CONDITION_OPS.has( k ) ) ){
+      throw err( opts.prop, `a structural condition stands alone ` +
+        `(AND it with data conditions via the 'when' array form)` );
+    }
+
+    const structural = cond.parent != null ? 'parent' : 'child';
+    const value = cond[ structural ];
+
+    if( typeof value !== 'boolean' ){
+      throw err( opts.prop, `'${structural}' takes a boolean` );
+    }
+
+    return { key: structural === 'parent' ? '::parent' : '::child', op: 'eq', value };
+  }
+
   if( cond == null || typeof cond.data !== 'string' || cond.data === '' ){
     throw err( opts.prop, `each case condition needs a non-empty 'data' key` );
   }

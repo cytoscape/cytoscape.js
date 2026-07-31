@@ -76,6 +76,9 @@ export class GraphStore implements ModelView {
   /** fires when a node flips leaf <-> parent (the core restyles the slot
    * against the right sheet group, round 14.6) */
   onParentFlip: ( ( slot: number ) => void ) | null = null;
+  /** fires when a node's parent changes (structural case conditions on
+   * the moved node re-evaluate, round 14.7) */
+  onReparented: ( ( slot: number ) => void ) | null = null;
 
   // conservative monotone maxima behind curveSlack() (see that doc)
   private curveDevMax = 0;
@@ -749,6 +752,9 @@ export class GraphStore implements ModelView {
     // new chain (round 14.4): effective visibility and the opacity fold
     this.refreshEffectiveVisibility( slot );
     this.refoldOpacitySubtree( slot );
+
+    // structural case conditions on the moved node re-evaluate (14.7)
+    this.onReparented?.( slot );
   }
 
   /**

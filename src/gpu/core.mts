@@ -128,6 +128,12 @@ export class GpuCore {
     this._store.onParentFlip = ( slot ) => {
       this._styleEngine.applyBulk( 'nodes', [ slot ] );
     };
+
+    // a reparented node's structural case conditions ({ child: ... } /
+    // { parent: ... }) re-evaluate via the pseudo-key refresh (14.7)
+    this._store.onReparented = ( slot ) => {
+      this._styleEngine.refreshMapped( 'nodes', [ slot ], [ '::parent', '::child' ] );
+    };
     this._animations = new AnimationManager( () => this._afterAnimationTick() );
     this._renderer = null;
     this._pointer = null;

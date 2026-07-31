@@ -2,7 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
-  FLAG_PARENT,
+  FLAG_CHILD, FLAG_PARENT,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
@@ -2432,9 +2432,17 @@ export class StyleEngine {
   /** a mapped key's column promoted to mixed while kernel-owned: re-derive on CPU */
   private demoted: Record<GroupName, boolean> = { nodes: false, edges: false };
 
-  /** value reader for mapper/condition keys ('id' is first-class, not in the sidecar) */
-  private readValue: ValueReader = ( group, slot, key ) =>
-    key === 'id' ? this.store.idAt( group, slot ) : this.store.data.get( group, slot, key );
+  /** value reader for mapper/condition keys ('id' is first-class, not in
+   * the sidecar; '::parent'/'::child' answer the structural case
+   * conditions from the hierarchy flags, round 14.7) */
+  private readValue: ValueReader = ( group, slot, key ) => {
+    if( key === '::parent' || key === '::child' ){
+      return group === 'nodes'
+        && this.store.hasFlag( 'nodes', slot, key === '::parent' ? FLAG_PARENT : FLAG_CHILD );
+    }
+
+    return key === 'id' ? this.store.idAt( group, slot ) : this.store.data.get( group, slot, key );
+  };
 
   constructor( store: GraphStore ){
     this.store = store;

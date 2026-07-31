@@ -168,7 +168,9 @@ export interface GpuMapper {
  * fails every comparison (so an unset key never matches).
  */
 export interface GpuCondition {
-  data: string;
+  /** the data key to compare ('id' reads the first-class id); omitted
+   * for the structural forms below */
+  data?: string;
   eq?: string | number;
   ne?: string | number;
   lt?: number;
@@ -176,6 +178,12 @@ export interface GpuCondition {
   gt?: number;
   gte?: number;
   in?: ( string | number )[];
+  /** structural (round 14.7, nodes only): the element has >= 1 child.
+   * A structural condition stands alone — AND it with data conditions
+   * via the `when` array form. */
+  parent?: boolean;
+  /** structural (round 14.7, nodes only): the element has a parent */
+  child?: boolean;
 }
 
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */

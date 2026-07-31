@@ -3552,9 +3552,24 @@ commit(s) with docs in-commit):
   `test/gpu-parents-style.mjs` red then green; the 14.3 bounds
   suite pins raw math by zeroing the new defaults in its sheet —
   2016 Node tests, typecheck + lint clean.
-- [ ] **14.7 Structural query + case keys** — matcher
-  `parent`/`child`, case `when` structural conditions +
-  `::parent`/`::child` deps.  Node specs.
+- [x] **14.7 Structural query + case keys** — landed 2026-07-31.
+  Query objects gain **`parent`/`child` booleans** (`parent: false`
+  = v3's `:childless`, `child: false` = `:orphan`), OR-composed
+  into the one flag test like `selected` — pure columnar scans, no
+  `scanRefsInto` changes.  Structural keys are node concepts: an
+  explicitly-edges query throws, an unrestricted one just never
+  matches edges (v3's pseudo semantics).  The `case` mapper's
+  `when` gains the structural forms `{ parent: bool }` /
+  `{ child: bool }` — a structural condition stands alone (AND it
+  with data conditions via the `when` array form) and compiles to
+  the reserved `'::parent'`/`'::child'` keys the engine's value
+  reader answers from the hierarchy flags, so deps registration,
+  evaluation and refresh all reuse the data-condition machinery
+  verbatim.  A reparent fires a pseudo-key `refreshMapped` on the
+  moved node (`store.onReparented`); parent flips already restyle
+  fully via 14.6's hook.  Tests-first: 8 specs in
+  `test/gpu-structural-query.mjs` red then green — 2024 Node
+  tests, typecheck + lint clean.
 - [ ] **14.8 Wire + columnar parent sections** — format bump,
   ingest.  Node + module specs.
 - [ ] **14.9 Parent draw stream, cull, pick** — `parentNode` cull

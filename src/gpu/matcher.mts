@@ -1,4 +1,4 @@
-import { FLAG_SELECTED } from './contract.mjs';
+import { FLAG_CHILD, FLAG_PARENT, FLAG_SELECTED } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import { testCondition } from './style-scales.mjs';
@@ -39,6 +39,12 @@ export interface GpuQuery {
   group?: GroupName;
   /** require the element (not) to be selected */
   selected?: boolean;
+  /** structural (round 14.7, nodes only): has at least one child —
+   * `parent: false` is v3's `:childless` */
+  parent?: boolean;
+  /** structural (round 14.7, nodes only): has a parent —
+   * `child: false` is v3's `:orphan` */
+  child?: boolean;
   /** data-sidecar conditions per key; a bare value means equality */
   data?: Record<string, GpuDataCondition | string | number | boolean | null>;
 }
@@ -60,7 +66,7 @@ export interface FlagPlan {
 /** The flags test every live slot passes (whole-group scans). */
 export const MATCH_ALL: FlagTest = { mask: 0, want: 0 };
 
-const QUERY_KEYS: ReadonlySet<string> = new Set( [ 'group', 'selected', 'data' ] );
+const QUERY_KEYS: ReadonlySet<string> = new Set( [ 'group', 'selected', 'parent', 'child', 'data' ] );
 const CONDITION_OPS: ReadonlySet<string> = new Set( [ 'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in' ] );
 
 const isBareValue = ( v: unknown ): boolean =>
@@ -115,7 +121,7 @@ const compileDataCondition = ( key: string, spec: GpuDataCondition | string | nu
 export const compileQuery = ( query: GpuQuery, restrict: GroupName | null = null ): FlagPlan => {
   for( const key of Object.keys( query ) ){
     if( !QUERY_KEYS.has( key ) ){
-      throw new Error( `Unknown query key '${key}'; supported keys: group, selected, data` );
+      throw new Error( `Unknown query key '${key}'; supported keys: group, selected, parent, child, data` );
     }
   }
 
@@ -125,12 +131,39 @@ export const compileQuery = ( query: GpuQuery, restrict: GroupName | null = null
     throw new Error( `Unknown query group '${String( group )}'; use 'nodes' or 'edges'` );
   }
 
-  const test: FlagTest = query.selected == null
-    ? MATCH_ALL
-    : { mask: FLAG_SELECTED, want: query.selected ? FLAG_SELECTED : 0 };
+  // boolean flag terms compose by OR-ing (mask, want) pairs
+  let mask = 0;
+  let want = 0;
+
+  if( query.selected != null ){
+    mask |= FLAG_SELECTED;
+    want |= query.selected ? FLAG_SELECTED : 0;
+  }
+
+  if( query.parent != null ){
+    mask |= FLAG_PARENT;
+    want |= query.parent ? FLAG_PARENT : 0;
+  }
+
+  if( query.child != null ){
+    mask |= FLAG_CHILD;
+    want |= query.child ? FLAG_CHILD : 0;
+  }
+
+  const test: FlagTest = mask === 0 ? MATCH_ALL : { mask, want };
+
+  // structural terms are node concepts (v3's :parent/:child/:childless/
+  // :orphan never match edges): an explicitly-edges query throws, an
+  // unrestricted one just never matches edges
+  const structural = query.parent != null || query.child != null;
+
+  if( structural && ( group === 'edges' || restrict === 'edges' ) ){
+    throw new Error( `The 'parent'/'child' query keys apply to nodes only` );
+  }
 
   const allows = ( g: GroupName ): boolean =>
-    ( group == null || group === g ) && ( restrict == null || restrict === g );
+    ( group == null || group === g ) && ( restrict == null || restrict === g )
+    && !( structural && g === 'edges' );
 
   let data: CompiledCondition[] | null = null;
 

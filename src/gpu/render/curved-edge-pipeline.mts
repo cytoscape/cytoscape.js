@@ -11,23 +11,23 @@ import type { ColumnId } from '../contract.mjs';
  * Curved-edge render + picking pipelines (round 12a): one instance per
  * curved edge, drawn as a strip of CURVE_SEGS quads whose vertex shader
  * evaluates the curve from live positions + per-edge params (see
- * CURVED_EDGE_SHADER).  The vertex stage binds 7 columns + the visible
- * list — exactly WebGPU's base 8-storage-buffer budget — so the paint
- * columns bind fragment-only (flat instance fetch).
+ * CURVED_EDGE_SHADER).  The vertex stage binds 6 columns + the visible
+ * list (node size and border ride the derived node.outerHalf column),
+ * within WebGPU's base 8-storage-buffer budget; the paint columns bind
+ * fragment-only (flat instance fetch).
  */
 
-/** vertex-stage columns, bindings 1..7 (0 is the Frame uniform) */
+/** vertex-stage columns, bindings 1..6 (0 is the Frame uniform) */
 const VERTEX_COLUMNS: ColumnId[] = [
   'edge.endpoints',
   'edge.width',
   'node.position',
-  'node.size',
-  'node.borderWidth',
+  'node.outerHalf',
   'node.shape',
   'edge.curveParams'
 ];
 
-/** fragment-stage columns, bindings 8..10 */
+/** fragment-stage columns, bindings 7..9 */
 const FRAGMENT_COLUMNS: ColumnId[] = [
   'edge.lineColor',
   'edge.opacity',

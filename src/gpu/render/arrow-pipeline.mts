@@ -16,14 +16,14 @@ import type { ColumnId } from '../contract.mjs';
  */
 // this end's arrow color column binds separately per end, and edge
 // opacity is folded into the stored arrow alpha at style-write time:
-// with the visible list in group 1, the vertex stage stays at WebGPU's
-// base limit of 8 storage buffers
+// with the visible list in group 1, the vertex stage stays within
+// WebGPU's base limit of 8 storage buffers (node size and border ride
+// the derived node.outerHalf column)
 const ARROW_COLUMNS: ColumnId[] = [
   'edge.endpoints',
   'edge.width',
   'node.position',
-  'node.size',
-  'node.borderWidth',
+  'node.outerHalf',
   'node.shape'
 ];
 

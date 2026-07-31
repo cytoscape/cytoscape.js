@@ -2138,6 +2138,33 @@ above.
   exact bb, render, cull, pick, arrows, labels, goldens, parity and
   benchmarks all landed.
 
+## Landed (round 12b — unbundled bezier + segments + taxi, in progress 2026-07-30)
+
+Pass 12b of the round-12 plan above, under the round-10 process rules.
+Items land CPU-first; each entry below is written in the commit that
+lands it.
+
+- [x] **`node.outerHalf` derived column — the 12b binding budget.**
+  The curved-edge/curved-arrow/edge-label vertex stages all sat at
+  WebGPU's base 8-storage-buffer budget after 12a, leaving no slot for
+  the variable-length curve **param blob** 12b needs (segment/control
+  lists can't fit the fixed f32×4 params column).  The fix is a derived
+  column: `node.outerHalf` = size/2 + borderWidth/2 per axis (v3's
+  outerWidth/outerHeight frame), written through by the store on every
+  node size/border write, never by the style engine.  The four
+  boundary-consuming shaders (curved edge, straight + curved arrows,
+  edge labels) bind it in place of the size + border pair — one binding
+  freed in each — and `GraphStore.curveEvalAt` reads the same column,
+  so the CPU twin and the WGSL consume identical f32 half-extents by
+  construction.  Two side effects, both improvements: the 12a
+  **border-exclusive curved-arrow deviation is gone** (tips sit on the
+  border-inclusive outer boundary, like straight arrows — the
+  curved-arrows golden uses border 0, so goldens are unchanged), and
+  border writes now invalidate the pick-tile cache through the derived
+  column's span (`node.borderWidth` itself is pick-neutral, but
+  borders move curved pick geometry — a latent 12a gap).  Node specs
+  cover the write-through and its dirty span.
+
 ## Landed (edge-label autorotate, 2026-07-29)
 
 The last item on the autonomous shelf, cleared while planning round 12:

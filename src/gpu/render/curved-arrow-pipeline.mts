@@ -19,7 +19,7 @@ const VERTEX_COLUMNS: ColumnId[] = [
   'edge.endpoints',
   'edge.width',
   'node.position',
-  'node.size',
+  'node.outerHalf', // border-inclusive halves (the 12a size-only deviation is gone)
   'node.shape',
   // + this end's arrow color column at the next binding, then curveParams
 ];

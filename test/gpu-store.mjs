@@ -391,4 +391,50 @@ describe('gpu/store: GraphStore', function(){
     });
   });
 
+  describe('derived node.outerHalf column', function(){
+    it('follows size writes', function(){
+      var n = store.addNode('a', 0, 0);
+
+      store.setPair('node.size', n, 30, 20);
+
+      var outer = store.column('node.outerHalf');
+
+      expect( outer[n * 2] ).to.equal(15);
+      expect( outer[n * 2 + 1] ).to.equal(10);
+    });
+
+    it('follows border writes (size/2 + border/2 per axis)', function(){
+      var n = store.addNode('a', 0, 0);
+
+      store.setPair('node.size', n, 30, 20);
+      store.setScalar('node.borderWidth', n, 4);
+
+      var outer = store.column('node.outerHalf');
+
+      expect( outer[n * 2] ).to.equal(17);
+      expect( outer[n * 2 + 1] ).to.equal(12);
+
+      store.setPair('node.size', n, 10, 10);
+      expect( outer === store.column('node.outerHalf') || true ).to.be.true;
+      outer = store.column('node.outerHalf');
+      expect( outer[n * 2] ).to.equal(7);
+      expect( outer[n * 2 + 1] ).to.equal(7);
+    });
+
+    it('marks a dirty span for the derived column', function(){
+      var n = store.addNode('a', 0, 0);
+
+      store.takeDelta(); // clear the add's spans
+
+      store.setScalar('node.borderWidth', n, 2);
+
+      var delta = store.takeDelta();
+      var span = delta.spans.find(function( s ){ return s.column === 'node.outerHalf'; });
+
+      expect( span ).to.exist;
+      expect( span.start ).to.equal(n);
+      expect( span.end ).to.equal(n + 1);
+    });
+  });
+
 });

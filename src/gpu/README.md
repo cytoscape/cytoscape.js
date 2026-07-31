@@ -582,11 +582,10 @@ each is deliberate, not a pass-1 deferral:
     true end tangent — the straight arrow math with the control point
     substituted for the far endpoint (a quadratic's end tangent runs
     control → endpoint), one quad per end off the curved stream's
-    single-quad indirect args block.  Recorded deviation: the curved
-    arrow vertex stage has no spare binding for the node border
-    column (8-buffer budget), so tips sit on the size/2 boundary and
-    the arrow's frame uses border-exclusive halves — exact at the
-    default border 0, at most border/2 off otherwise.
+    single-quad indirect args block.  (12a recorded a border-exclusive
+    deviation — no spare binding for the node border column — which
+    the 12b `node.outerHalf` derived column closed: tips sit on the
+    border-inclusive outer boundary now, like the straight arrows.)
   - *Edge labels (12a)*: labels of curved edges anchor at the **curve
     midpoint**, computed in the label vertex shader from live
     positions + the params column (zero rebuild, like everything
@@ -868,11 +867,21 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   recorded there: node boundaries use the arrow tier's approximations
   (round-rect as box, polygon as inscribed ellipse); curved edges
   draw after straight edges (two streams, slot order within each);
-  the curved stream is never decimated at far zoom; curved-edge
-  arrow tips ignore the node border's outer half; and v3's
+  the curved stream is never decimated at far zoom; and v3's
   near-overlap control-point correction (`tryToCorrectInvalidPoints`)
   is not ported — overlapping-node curves may differ slightly from
-  v3 in the region the nodes occlude anyway.
+  v3 in the region the nodes occlude anyway.  (12a's border-exclusive
+  curved-arrow tips were fixed in 12b via `node.outerHalf`.)
+- **`node.outerHalf` is a store-derived column** (12b): size/2 +
+  border/2 per axis, written through on every node size/border write.
+  The curve, arrow and edge-label shaders bind it in place of the
+  size + border pair, which keeps each of those vertex stages within
+  WebGPU's base 8-storage-buffer budget with a slot to spare for the
+  curve param blob; the CPU curve evaluator reads the same column, so
+  both implementations consume identical f32 half-extents.  It also
+  closes a latent gap: border writes now invalidate the pick-tile
+  cache through the derived column's dirty span (borders move curved
+  pick geometry, but `node.borderWidth` itself is pick-neutral).
 - **Early-z**: a depth prepass writes depth for guaranteed-opaque node
   interiors (skipping translucent fills/borders, LOD alpha and the AA
   fringe — output is pixel-identical), and edges depth-test against it so

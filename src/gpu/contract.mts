@@ -84,6 +84,16 @@ export type ColumnId =
   | 'node.borderWidth' // Float32Array(cap)
   | 'node.opacity' // Float32Array(cap)
   | 'node.shape' // Uint32Array(cap)
+  /**
+   * Float32Array(2·cap) — *derived*: size/2 + borderWidth/2 per axis, the
+   * outer half-extent (v3's outerWidth/outerHeight frame).  Maintained by
+   * the store on every node.size / node.borderWidth write, never written
+   * directly.  The curve/arrow/edge-label shaders bind this single column
+   * instead of size + border, which keeps their vertex stages within
+   * WebGPU's base 8-storage-buffer budget (and leaves room for the 12b
+   * curve param blob).
+   */
+  | 'node.outerHalf'
   | 'node.flags' // Uint32Array(cap)
   | 'edge.endpoints' // Uint32Array(2·cap), source,target node *slots*
   | 'edge.lineColor' // Uint8Array(4·cap)
@@ -135,6 +145,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.borderWidth', 'nodes', Float32Array, 1 ),
   spec( 'node.opacity', 'nodes', Float32Array, 1 ),
   spec( 'node.shape', 'nodes', Uint32Array, 1 ),
+  spec( 'node.outerHalf', 'nodes', Float32Array, 2 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),
   spec( 'edge.endpoints', 'edges', Uint32Array, 2 ),
   spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),

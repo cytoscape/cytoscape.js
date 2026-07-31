@@ -736,10 +736,12 @@ fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
  * drags, layouts and position tweens re-shape the curve on-GPU with
  * zero rebuild.  Vertices extrude along the curve *normal at their own
  * t* (identical for the shared edge of adjacent quads), so the strip is
- * watertight without miter joints.  The vertex stage binds exactly 7
- * columns + the visible list = WebGPU's base 8-storage-buffer budget;
- * color/opacity/line-style move to the fragment stage (flat instance
- * fetch), like the node pipeline's decoration split.
+ * watertight without miter joints.  The vertex stage binds 6 columns +
+ * the visible list (within WebGPU's base 8-storage-buffer budget — node
+ * size and border ride the derived outerHalf column, leaving one slot
+ * for the curve param blob); color/opacity/line-style move to the
+ * fragment stage (flat instance fetch), like the node pipeline's
+ * decoration split.
  */
 export const CURVED_EDGE_SHADER = `
 ${COMMON}
@@ -748,18 +750,17 @@ ${CURVE_WGSL}
 ${DASH_WGSL}
 
 @group(0) @binding(0) var<uniform> frame: Frame;
-// vertex-stage columns (7 + the visible list = the 8-buffer budget)
+// vertex-stage columns (6 + the visible list, within the 8-buffer budget)
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
 @group(0) @binding(2) var<storage, read> widths: array<f32>;
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(4) var<storage, read> nodeSizes: array<vec2f>;
-@group(0) @binding(5) var<storage, read> nodeBorders: array<f32>;
-@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;
-@group(0) @binding(7) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
+@group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
+@group(0) @binding(6) var<storage, read> curveParams: array<vec4f>;
 // fragment-stage columns (flat instance fetch)
-@group(0) @binding(8) var<storage, read> lineColors: array<u32>;
-@group(0) @binding(9) var<storage, read> opacities: array<f32>;
-@group(0) @binding(10) var<storage, read> lineStyles: array<u32>;
+@group(0) @binding(7) var<storage, read> lineColors: array<u32>;
+@group(0) @binding(8) var<storage, read> opacities: array<f32>;
+@group(0) @binding(9) var<storage, read> lineStyles: array<u32>;
 
 struct CurvedVSOut {
   @builtin(position) position: vec4f,
@@ -782,12 +783,10 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   let corner = quadCorner(vi & 3u);
 
   let ends = endpoints[slot];
-  let sHalf = nodeSizes[ends.x] * 0.5 + vec2f(nodeBorders[ends.x] * 0.5);
-  let tHalf = nodeSizes[ends.y] * 0.5 + vec2f(nodeBorders[ends.y] * 0.5);
   let g = evalCurveGeom(
     curveParams[slot],
-    nodePositions[ends.x], sHalf, nodeShapes[ends.x],
-    nodePositions[ends.y], tHalf, nodeShapes[ends.y]
+    nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+    nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
   );
 
   // LOD: width floor with alpha compensation; the curved stream is not
@@ -868,25 +867,24 @@ ${BOUNDARY_WGSL}
 // instance).  Which end this draw covers comes from the tiny End
 // uniform (two cached bind groups, one draw call each).  Edges whose
 // arrow color has a=0 (shape 'none') collapse to a degenerate quad.
-// this end's arrow colors bind at 7 (source or target column per bind
-// group).  The vertex stage stays at WebGPU's base limit of 8 storage
-// buffers (7 columns + the visible list in group 1); edge opacity is
-// folded into the stored arrow alpha at style-write time for the same
-// reason.
+// this end's arrow colors bind at 6 (source or target column per bind
+// group).  The vertex stage binds 6 columns + the visible list (node
+// size and border ride the derived outerHalf column), within WebGPU's
+// base limit of 8 storage buffers; edge opacity is folded into the
+// stored arrow alpha at style-write time for the same reason.
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
 @group(0) @binding(2) var<storage, read> edgeWidths: array<f32>;
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(4) var<storage, read> nodeSizes: array<vec2f>;
-@group(0) @binding(5) var<storage, read> nodeBorders: array<f32>;
-@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;
-@group(0) @binding(7) var<storage, read> arrows: array<u32>;
+@group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
+@group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
+@group(0) @binding(6) var<storage, read> arrows: array<u32>;
 
 struct End { isSource: u32 }
-@group(0) @binding(8) var<uniform> end: End;
+@group(0) @binding(7) var<uniform> end: End;
 // shape ids packed source | target<<8 — bound to the fragment stage only,
 // keeping the vertex stage at its 8-storage-buffer budget
-@group(0) @binding(9) var<storage, read> arrowShapes: array<u32>;
+@group(0) @binding(8) var<storage, read> arrowShapes: array<u32>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
@@ -923,7 +921,7 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let dir = toTip / len;
 
   // the tip sits on the tip node's boundary (border straddles half in, half out)
-  let half = (nodeSizes[tipSlot] * 0.5 + vec2f(nodeBorders[tipSlot] * 0.5)) * frame.zoomDpr;
+  let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
   let tip = tipC - dir * boundaryOffset(nodeShapes[tipSlot], half, dir);
 
   // sizing follows the drawn (floored) edge width; alpha matches the edge LOD
@@ -976,11 +974,11 @@ ${ ARROW_POLY.cases }
  * dir = normalize(tipCenter − ctrl) puts the tip on the node boundary
  * along the curve's true end tangent (source end uses c1, target end
  * c2; for a bundled bezier they coincide).  Rides the curved cull
- * stream's single-quad args block.  Budget note: the vertex stage binds
- * 7 columns + the visible list (the base 8-storage-buffer budget), so
- * unlike the straight arrow shader there is no node border column — the
- * frame uses border-exclusive halves and tips sit on the size/2
- * boundary (a recorded deviation, exact for the default border 0).
+ * stream's single-quad args block.  The vertex stage binds 6 columns +
+ * the visible list (node size and border ride the derived outerHalf
+ * column), so — since 12b — the frame uses the border-inclusive outer
+ * halves like the straight arrows: the 12a border-exclusive deviation
+ * is gone.
  */
 export const CURVED_ARROW_SHADER = `
 ${COMMON}
@@ -991,7 +989,7 @@ ${CURVE_WGSL}
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
 @group(0) @binding(2) var<storage, read> edgeWidths: array<f32>;
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(4) var<storage, read> nodeSizes: array<vec2f>;
+@group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
 @group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
 @group(0) @binding(6) var<storage, read> arrows: array<u32>; // this end's colors
 @group(0) @binding(7) var<storage, read> curveParams: array<vec4f>;
@@ -1029,8 +1027,8 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let ends = endpoints[slot];
   let g = evalCurveGeom(
     curveParams[slot],
-    nodePositions[ends.x], nodeSizes[ends.x] * 0.5, nodeShapes[ends.x],
-    nodePositions[ends.y], nodeSizes[ends.y] * 0.5, nodeShapes[ends.y]
+    nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+    nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
   );
 
   let tipSlot = select(ends.y, ends.x, isSource);
@@ -1041,7 +1039,8 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let dir = toTip / len;
 
   // the tip sits on the tip node's boundary along the curve's end tangent
-  let half = nodeSizes[tipSlot] * 0.5 * frame.zoomDpr;
+  // (border-inclusive outer halves, like the straight arrows)
+  let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
   let tip = tipC - dir * boundaryOffset(nodeShapes[tipSlot], half, dir);
 
   // sizing follows the drawn (floored) edge width; the curved stream is
@@ -1097,12 +1096,13 @@ ${GLYPH_STRUCT}
 ${ edge ? BOUNDARY_WGSL + CURVE_WGSL : '' }
 // flags columns are not bound here: the cull pass already dropped glyphs
 // of dead/hidden owners.  The edge variant binds the curve inputs too —
-// exactly 7 storage buffers + the visible list, the vertex-stage budget
-// — so curved-edge labels anchor at the curve midpoint computed in the
-// VS from live positions (zero rebuild on drags/layouts/tweens).
+// 6 storage buffers + the visible list (node size and border ride the
+// derived outerHalf column), within the vertex-stage budget — so
+// curved-edge labels anchor at the curve midpoint computed in the VS
+// from live positions (zero rebuild on drags/layouts/tweens).
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeSizes: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeBorders: array<f32>;\n@group(0) @binding(7) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
+${ edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;\n@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;\n@group(0) @binding(7) var atlas: texture_2d<f32>;\n@group(0) @binding(8) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var atlas: texture_2d<f32>;\n@group(0) @binding(4) var atlasSampler: sampler;' }
 
 struct LabelVSOut {
   @builtin(position) position: vec4f,
@@ -1144,8 +1144,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   if (params.w != 0.0) { // curved owner: anchor at the curve midpoint
     let geom = evalCurveGeom(
       params,
-      pa, nodeSizes[ends.x] * 0.5 + vec2f(nodeBorders[ends.x] * 0.5), nodeShapes[ends.x],
-      pb, nodeSizes[ends.y] * 0.5 + vec2f(nodeBorders[ends.y] * 0.5), nodeShapes[ends.y]
+      pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
     );
 
     anchor = geom.m;

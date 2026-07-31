@@ -611,6 +611,8 @@ export class GraphStore implements ModelView {
     arr[ slot ] = value;
     this.geoEpoch++;
     this.dirty.mark( id, slot );
+
+    if( id === 'node.borderWidth' ){ this.updateOuterHalf( slot ); }
   }
 
   setPair( id: ColumnId, slot: number, a: number, b: number ): void {
@@ -629,6 +631,26 @@ export class GraphStore implements ModelView {
     arr[ slot * 2 + 1 ] = b;
     this.geoEpoch++;
     this.dirty.mark( id, slot );
+
+    if( id === 'node.size' ){ this.updateOuterHalf( slot ); }
+  }
+
+  /**
+   * Write-through for the derived node.outerHalf column (size/2 +
+   * borderWidth/2 per axis — see the contract): follows every size/border
+   * write, so the column is never stale.  The curve shaders and the CPU
+   * curve evaluator both read this column, so the two sides agree on the
+   * exact f32 half-extents by construction.
+   */
+  private updateOuterHalf( slot: number ): void {
+    const size = this.nodes.column( 'node.size' ) as Float32Array;
+    const border = this.nodes.column( 'node.borderWidth' ) as Float32Array;
+    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
+    const halfBorder = border[ slot ] / 2;
+
+    outer[ slot * 2 ] = size[ slot * 2 ] / 2 + halfBorder;
+    outer[ slot * 2 + 1 ] = size[ slot * 2 + 1 ] / 2 + halfBorder;
+    this.dirty.mark( 'node.outerHalf', slot );
   }
 
   /** RGBA bytes on [0, 255]. */
@@ -695,18 +717,19 @@ export class GraphStore implements ModelView {
 
     const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
-    const size = this.nodes.column( 'node.size' ) as Float32Array;
-    const border = this.nodes.column( 'node.borderWidth' ) as Float32Array;
+    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
     const shape = this.nodes.column( 'node.shape' ) as Uint32Array;
     const s = endpoints[ at / 2 ];
     const t = endpoints[ at / 2 + 1 ];
 
+    // the derived outerHalf column (size/2 + border/2) is what the WGSL
+    // twin binds, so both sides read the exact same f32 half-extents
     return evalCurve(
       out, kind, params[ at ], params[ at + 1 ], params[ at + 2 ],
       pos[ s * 2 ], pos[ s * 2 + 1 ],
-      size[ s * 2 ] / 2 + border[ s ] / 2, size[ s * 2 + 1 ] / 2 + border[ s ] / 2, shape[ s ],
+      outer[ s * 2 ], outer[ s * 2 + 1 ], shape[ s ],
       pos[ t * 2 ], pos[ t * 2 + 1 ],
-      size[ t * 2 ] / 2 + border[ t ] / 2, size[ t * 2 + 1 ] / 2 + border[ t ] / 2, shape[ t ]
+      outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ]
     );
   }
 

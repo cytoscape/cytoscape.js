@@ -36,8 +36,9 @@ export class LabelPipeline {
 
     // edge labels bind the edge endpoints + curve inputs ahead of the
     // atlas, so the VS can compute the (curve) midpoint anchor on-GPU —
-    // 7 storage buffers + the visible list, the vertex-stage budget
-    const storageCount = this.edge ? 7 : 2;
+    // 6 storage buffers + the visible list (node size and border ride
+    // the derived outerHalf column), within the vertex-stage budget
+    const storageCount = this.edge ? 6 : 2;
 
     this.bindLayout = device.createBindGroupLayout( {
       label: `cy-gpu:${variant}-label-bind-layout`,
@@ -80,8 +81,8 @@ export class LabelPipeline {
     const storages: GPUBuffer[] = this.edge
       ? [
         glyphs.buffer(), mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'node.position' ),
-        mirror.buffer( 'edge.curveParams' ), mirror.buffer( 'node.size' ),
-        mirror.buffer( 'node.borderWidth' ), mirror.buffer( 'node.shape' )
+        mirror.buffer( 'edge.curveParams' ), mirror.buffer( 'node.outerHalf' ),
+        mirror.buffer( 'node.shape' )
       ]
       : [ glyphs.buffer(), mirror.buffer( 'node.position' ) ];
 

@@ -96,6 +96,13 @@ interface NodeComputed {
   textBgPadding: number;
   textMarginX: number;
   textMarginY: number;
+  /** background-opacity (round 13 B1): folds into the stored fill alpha */
+  backgroundOpacity: number;
+  /** border-opacity (B1): folds into the stored border alpha */
+  borderOpacity: number;
+  /** text-opacity (B1): v3's parentOpacity for the label block — folds
+   * into the stored text/outline/background alphas */
+  textOpacity: number;
   // ghost props (round 13 A1): the body duplicated at the offset
   ghost: boolean;
   ghostOffsetX: number;
@@ -118,6 +125,9 @@ interface NodeComputed {
 
 interface EdgeComputed {
   lineColor: RGBA;
+  /** line-opacity (round 13 B1): folds into the stored line alpha and
+   * the arrow fold (v3's effective opacities) */
+  lineOpacity: number;
   width: number;
   opacity: number;
   /** 0 solid, 1 dashed, 2 dotted (contract LINE_* ids) */
@@ -197,6 +207,9 @@ const NODE_DEFAULTS: NodeComputed = {
   textBgPadding: 0,
   textMarginX: 0,
   textMarginY: 0,
+  backgroundOpacity: 1,
+  borderOpacity: 1,
+  textOpacity: 1,
   ghost: false,
   ghostOffsetX: 0,
   ghostOffsetY: 0,
@@ -220,6 +233,7 @@ const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
+  lineOpacity: 1,
   width: 2,
   opacity: 1,
   lineStyle: LINE_SOLID,
@@ -328,7 +342,8 @@ const SHAPE_NAMES: Record<number, string> = {
 /** Readable props per group ('width' and 'opacity' exist for both). */
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
-  'shape', 'opacity', 'label', 'font-size', 'font-family', 'color',
+  'shape', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
+  'label', 'font-size', 'font-family', 'color',
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
   'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
   'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius',
@@ -338,7 +353,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
 ] );
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
-  'line-color', 'line-style', 'width', 'opacity',
+  'line-color', 'line-style', 'width', 'opacity', 'line-opacity', 'text-opacity',
   'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color',
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
@@ -922,6 +937,18 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'border-width':
       computed.borderWidth = parseNumber( prop, value );
       break;
+    case 'background-opacity':
+      computed.backgroundOpacity = parseZeroOne( prop, value );
+      break;
+    case 'border-opacity':
+      computed.borderOpacity = parseZeroOne( prop, value );
+      break;
+    case 'line-opacity':
+      computed.lineOpacity = parseZeroOne( prop, value );
+      break;
+    case 'text-opacity':
+      computed.textOpacity = parseZeroOne( prop, value );
+      break;
     case 'ghost':
       computed.ghost = parseYesNo( prop, value );
       break;
@@ -1321,6 +1348,27 @@ const MAPPABLE: Record<string, MappableChannel> = {
     set: ( c, v ) => { c.taxiRadius = v as number; },
     default: () => EDGE_DEFAULTS.taxiRadius
   },
+  // the B1 opacity split (CPU-evaluated; folds at write time)
+  'background-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.backgroundOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.backgroundOpacity
+  },
+  'border-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.borderOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.borderOpacity
+  },
+  'line-opacity': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.lineOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => EDGE_DEFAULTS.lineOpacity
+  },
+  'text-opacity': {
+    kind: 'number', groups: [ 'nodes', 'edges' ],
+    set: ( c, v ) => { c.textOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.textOpacity
+  },
   // ghost props (round 13 A1; node-only)
   'ghost': {
     kind: 'enum', groups: [ 'nodes' ],
@@ -1597,8 +1645,30 @@ export class StyleEngine {
       return [];
     }
 
+    // B1: the channel-opacity split folds into stored alphas at write
+    // time; a color program in the kernel would overwrite the folded
+    // bytes, so a non-1 (or mapped) channel opacity demotes that color
+    // channel's GPU eval to the CPU path — a recorded scope note
+    const computed = def.computed;
+    const mapped = ( prop: string ): boolean => def.mappers.some( bm => bm.m.prop === prop );
+    const demoted = new Set<string>();
+
+    if( group === 'nodes' ){
+      if( computed.backgroundOpacity !== 1 || mapped( 'background-opacity' ) ){
+        demoted.add( 'background-color' );
+      }
+
+      if( computed.borderOpacity !== 1 || mapped( 'border-opacity' ) ){
+        demoted.add( 'border-color' );
+      }
+    } else if( computed.lineOpacity !== 1 || mapped( 'line-opacity' ) ){
+      demoted.add( 'line-color' );
+      demoted.add( 'source-arrow-color' );
+      demoted.add( 'target-arrow-color' );
+    }
+
     return def.mappers
-      .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) )
+      .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) && !demoted.has( bm.m.prop ) )
       .map( bm => ( { m: bm.m, fallback: bm.m.fallback ?? bm.channel.default( group ) } ) );
   }
 
@@ -1615,10 +1685,14 @@ export class StyleEngine {
 
     const computed = def.computed;
     const mapped = ( prop: string ): boolean => def.mappers.some( bm => bm.m.prop === prop );
+    // B1: the kernel's arrow fold multiplies by the *element* opacity;
+    // line-opacity folds at write time, and a non-default constant
+    // rides constOpacity (a mapped line-opacity demotes arrows in
+    // paintInputs, so it never reaches the kernel)
 
     return {
       opacityMapped: mapped( 'opacity' ),
-      constOpacity: computed.opacity,
+      constOpacity: computed.opacity * computed.lineOpacity,
       source: {
         enabled: computed.sourceArrowShape === 'triangle',
         colorMapped: mapped( 'source-arrow-color' ),
@@ -1894,6 +1968,13 @@ export class StyleEngine {
       case 'background-color': return color( 'node.fillColor' );
       case 'border-color': return color( 'node.borderColor' );
       case 'border-width': return scalar( 'node.borderWidth' );
+      // the B1 channel opacities read back *folded* (stored alpha /
+      // 255 — the declared color alpha times the opacity; the
+      // outline/arrow precedent)
+      case 'background-opacity':
+        return Math.round( ( store.column( 'node.fillColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
+      case 'border-opacity':
+        return Math.round( ( store.column( 'node.borderColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
       case 'ghost':
         return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
       case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
@@ -1957,6 +2038,13 @@ export class StyleEngine {
 
         return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defs[ ref.group ].computed.textOutlineColor );
       }
+      case 'text-opacity': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null
+          ? Math.round( ( ( entry.color >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+          : this.defs[ ref.group ].computed.textOpacity;
+      }
       case 'text-outline-opacity': {
         const entry = store.labelAt( slot, ref.group );
 
@@ -2005,6 +2093,8 @@ export class StyleEngine {
         return alphaOf( 'edge.targetArrow' ) > 0
           ? ARROW_NAMES[ ( scalar( 'edge.arrowShapes' ) >>> 8 ) & 0xff ]
           : 'none';
+      case 'line-opacity':
+        return Math.round( ( store.column( 'edge.lineColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
       case 'source-arrow-color': return color( 'edge.sourceArrow' );
       case 'target-arrow-color': return color( 'edge.targetArrow' );
 
@@ -2079,6 +2169,13 @@ export class StyleEngine {
    * alpha alone can't recover the base when the opacity it was folded with
    * was 0.
    */
+  /** The constant line-opacity (B1) — the arrow-fold factor animation
+   * needs (a mapped line-opacity never coexists with kernel-owned
+   * arrows, so the constant is the truth). */
+  lineOpacityConst(): number {
+    return ( this.defs.edges.computed as Computed ).lineOpacity;
+  }
+
   arrowBase( ref: Ref, colorProp: string ): RGBA {
     const def = this.defs.edges;
     const computed = def.computed as Computed;
@@ -2102,7 +2199,9 @@ export class StyleEngine {
     const computed = this.defs.edges.computed as Computed;
     const opacity = this.evalEdgeProp( ref, 'opacity', computed.opacity ) as number;
 
-    return [ r, g, b, Math.round( a * opacity ) ];
+    // B1: line-opacity folds into the arrow alpha too (constant here —
+    // a mapped line-opacity demotes edge paint off the kernel)
+    return [ r, g, b, Math.round( a * opacity * computed.lineOpacity ) ];
   }
 
   /** One edge prop for a slot: the mapper's value when mapped, else the constant. */
@@ -2225,9 +2324,15 @@ export class StyleEngine {
         ? SHAPE_CIRCLE
         : computed.shape;
 
+      // the B1 opacity split folds into the stored channel alphas (v3's
+      // effective = channel opacity × element opacity; element opacity
+      // stays its own column, multiplied in the FS)
+      const foldA = ( [ r, g, b, a ]: RGBA, opacity: number ): RGBA =>
+        [ r, g, b, Math.round( a * opacity ) ];
+
       store.setPair( 'node.size', slot, computed.width, computed.height );
-      store.setColor( 'node.fillColor', slot, ...computed.fillColor );
-      store.setColor( 'node.borderColor', slot, ...computed.borderColor );
+      store.setColor( 'node.fillColor', slot, ...foldA( computed.fillColor, computed.backgroundOpacity ) );
+      store.setColor( 'node.borderColor', slot, ...foldA( computed.borderColor, computed.borderOpacity ) );
       store.setScalar( 'node.borderWidth', slot, computed.borderWidth );
       store.setScalar( 'node.opacity', slot, computed.opacity );
       store.setScalar( 'node.shape', slot, shape );
@@ -2249,7 +2354,10 @@ export class StyleEngine {
 
       this.writeLabel( slot, computed );
     } else {
-      store.setColor( 'edge.lineColor', slot, ...computed.lineColor );
+      const foldE = ( [ r, g, b, a ]: RGBA, opacity: number ): RGBA =>
+        [ r, g, b, Math.round( a * opacity ) ];
+
+      store.setColor( 'edge.lineColor', slot, ...foldE( computed.lineColor, computed.lineOpacity ) );
       store.setScalar( 'edge.width', slot, computed.width );
       store.setScalar( 'edge.opacity', slot, computed.opacity );
       store.setScalar( 'edge.lineStyle', slot, computed.lineStyle );
@@ -2259,9 +2367,11 @@ export class StyleEngine {
       // alpha is 0 — arrow getters read 'none' (a recorded deviation:
       // v3's pstyle still reports the declared shape)
       const noArrows = computed.curveStyle === CURVE_STYLE_HAYSTACK;
+      // v3's effective arrow opacity is opacity × line-opacity (B1)
       const arrow = ( shape: ArrowShape, color: RGBA ): RGBA => shape === 'none' || noArrows
         ? NO_ARROW
-        : [ color[ 0 ], color[ 1 ], color[ 2 ], Math.round( color[ 3 ] * computed.opacity ) ];
+        : [ color[ 0 ], color[ 1 ], color[ 2 ],
+          Math.round( color[ 3 ] * computed.opacity * computed.lineOpacity ) ];
 
       store.setColor( 'edge.sourceArrow', slot, ...arrow( computed.sourceArrowShape, computed.sourceArrowColor ) );
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
@@ -2330,8 +2440,11 @@ export class StyleEngine {
         ? ( store.idAt( group, slot ) ?? '' )
         : stringify( store.data.get( group, slot, key ) );
 
+    // text-opacity (B1) is v3's parentOpacity for the whole label block:
+    // it folds into the text fill, outline and background alphas alike
+    const textOp = computed.textOpacity;
     const fold = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>
-      packRgba( [ r, g, b, Math.round( a * Math.max( 0, Math.min( 1, opacity ) ) ) ] );
+      packRgba( [ r, g, b, Math.round( a * Math.max( 0, Math.min( 1, opacity * textOp ) ) ) ] );
 
     // nodes: text-block top sits below the node; edges: the text centers
     // (approximately, by font size) on the midpoint the shader computes
@@ -2342,7 +2455,7 @@ export class StyleEngine {
     store.setLabel( slot, text === '' ? null : {
       text,
       fontSize: computed.fontSize,
-      color: packRgba( computed.textColor ),
+      color: fold( computed.textColor, 1 ),
       anchorY,
       marginX: computed.textMarginX,
       marginY: computed.textMarginY,

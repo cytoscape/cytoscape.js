@@ -1610,4 +1610,36 @@ test.describe( 'v3-vs-v4 render parity', () => {
     await runParity( page, testInfo, 'parity-edge-layers', elements, v3Style, v4Style, { minInk: 1500 } );
   } );
 
+  test( 'parity: the channel opacity split (round 13 B1)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const elements = [
+      { data: { id: 'a' }, position: { x: -120, y: -60 } },
+      { data: { id: 'b' }, position: { x: 120, y: -60 } },
+      { data: { id: 'c' }, position: { x: -120, y: 80 } },
+      { data: { id: 'd' }, position: { x: 120, y: 80 } },
+      { data: { id: 'ab', source: 'a', target: 'b' } },
+      { data: { id: 'cd', source: 'c', target: 'd' } },
+      { data: { id: 'ad', source: 'a', target: 'd' } }
+    ];
+    const nodeShared = {
+      'width': 44, 'height': 44, 'background-color': '#c0392b', 'background-opacity': 0.5,
+      'border-width': 6, 'border-color': '#2c3e50', 'border-opacity': 0.4
+    };
+    const edgeShared = {
+      'width': 8, 'line-color': '#7f8c8d', 'line-opacity': 0.45,
+      'target-arrow-shape': 'triangle', 'target-arrow-color': '#8e44ad'
+    };
+    const v3Style = [
+      { selector: 'node', style: Object.assign( { shape: 'ellipse' }, nodeShared ) },
+      { selector: 'edge', style: Object.assign( { 'curve-style': 'straight' }, edgeShared ) }
+    ];
+    const v4Style = {
+      nodes: Object.assign( {}, nodeShared ),
+      edges: Object.assign( {}, edgeShared )
+    };
+
+    await runParity( page, testInfo, 'parity-opacity-split', elements, v3Style, v4Style, { minInk: 1500 } );
+  } );
+
 } );

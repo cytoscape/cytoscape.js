@@ -166,6 +166,19 @@ drive the background-grab indicator circle at the press point (a DOM
 element above the canvas, like the selection box — v3 draws it into
 the canvas, so v4 exports never include it; recorded).
 
+The channel-opacity split (round 13 B1): `background-opacity`,
+`border-opacity`, `line-opacity` and `text-opacity` fold into the
+stored channel alphas at write time (element `opacity` stays the
+master multiplier, its own column).  The arrow fold is
+base × opacity × line-opacity (v3's effective arrow opacity), all
+four props take CPU mappers, and readback is folded.  A non-1 (or
+mapped) channel opacity demotes the sibling color channel's GPU
+mapper eval to the CPU path (the kernel would overwrite the folded
+bytes) — a recorded scope note.  Note the pre-existing band rule:
+the node FS picks border *or* fill per fragment, so a translucent
+border shows the border color alone where v3 blends it over the
+fill in the inner band half.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

@@ -2641,6 +2641,31 @@ grows per item.
   press at 2×size px and hides on release).  1862 Node tests, 91
   Playwright specs, typecheck + lint green.
 
+- [x] **B1 Opacity split** (2026-07-31).  `background-opacity`,
+  `border-opacity` (nodes), `line-opacity` (edges) and `text-opacity`
+  (both groups) land as **write-time folds** into the stored channel
+  alphas — no new columns, no shader changes: fill alpha ×= bg
+  opacity, border ×= border opacity, line ×= line opacity, and the
+  label sidecar folds text-opacity into the text/outline/background
+  alphas alike (v3's parentOpacity).  Element `opacity` stays its own
+  column multiplied in the FS, so v3's effective = channel × element
+  holds; the arrow fold gains the line-opacity factor (v3's
+  `effectiveArrowOpacity = opacity × lineOpacity`), threaded through
+  `foldedArrow`, the kernel's constOpacity, and the edge-opacity
+  tween's arrow targets.  All four are mapper-capable
+  (CPU-evaluated).  GPU-eval interplay, the recorded scope note: a
+  non-1 (or mapped) channel opacity **demotes that color channel's
+  kernel eval to the CPU path** — the kernel would overwrite the
+  folded bytes — via a `paintInputs` exclusion (a mapped line-opacity
+  also demotes the arrow colors).  Early-z stays sound for free: the
+  prepass already discards nodes whose stored fill alpha < 1.
+  Readback is folded (stored alpha / 255 — the outline/arrow
+  precedent), and a line-transparent edge reads its arrows as 'none'.
+  7 Node specs (`test/gpu-opacity-split.mjs` — folds, mappers, the
+  kernel demotion, ranges) and a `parity-opacity-split` live v3
+  scene at 0.934% mismatch (translucent AA seams).  1869 Node tests,
+  92 Playwright specs, typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2721,12 +2746,13 @@ autonomously):
 
 **Phase B — paint & stroke channels** (pure FS + channel plumbing)
 
-- [ ] **B1 Opacity split**: `background-opacity`, `border-opacity`,
+- [x] **B1 Opacity split**: `background-opacity`, `border-opacity`,
   `line-opacity`, `text-opacity` — v3 semantics (element `opacity`
   is the master multiplier; effective = opacity × channel opacity).
   Early-z's guaranteed-opaque predicate consumes the product (more
   conservative, never wrong); text opacity folds into glyph alpha
   and reads back folded (the outline/background-opacity precedent).
+  Landed 2026-07-31 — see the round-13 record.
 - [ ] **B2 `border-position`** (inside | center | outside — a pure
   SDF band offset) + **`corner-radius`** (a scalar channel feeding
   the existing round-rectangle SDF; CPU pick inside-test reads it —

@@ -509,8 +509,10 @@ export class Animation {
 
       this.writes.push( this.colorWrite( column, refs, true, ref => {
         const [ r, g, b, baseAlpha ] = engine.arrowBase( ref, colorProp );
+        // B1: the stored fold is base.a × opacity × line-opacity
+        const lineOp = engine.lineOpacityConst();
 
-        return [ r, g, b, Math.round( baseAlpha * toOpacity ) ];
+        return [ r, g, b, Math.round( baseAlpha * toOpacity * lineOp ) ];
       } ) );
     }
   }

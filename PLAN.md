@@ -2822,7 +2822,12 @@ grows per item.
   a live midArrowCount.  **Fixed en route: a latent round-10 gate bug**
   — the arrow-draw enable checked `shape === 'triangle'`, so constant
   vee/chevron/circle/... sheets never drew arrows at all; now any
-  non-'none' shape draws.  Sizing shares B7's v4-linear formula (no
+  non-'none' shape draws.  (Follow-up, same day: the B7
+  `arrow-scalars` golden predated this fix — its scene's constant
+  `source-arrow-shape: circle` arrows never drew when the golden was
+  generated — so it went stale the moment the gate was fixed;
+  regenerated in its own commit once the C3 full-suite run caught
+  the 0.931% drift.)  Sizing shares B7's v4-linear formula (no
   pixel parity vs v3 by the recorded B4 decision) — the pins are the
   `mid-arrows` golden (straight + bezier pair + taxi + haystack) and
   a `webgpu` spec asserting purple mid-arrow ink at the CPU-computed

@@ -2689,10 +2689,11 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 `;
 
 /**
- * The label shader, generated for both streams: node labels anchor at the
- * node position, edge labels at the midpoint of the edge's endpoints —
- * computed here in the VS, so edge labels follow drags/layouts/position
- * tweens on-GPU with zero rebuild.
+ * The label shader, generated for both variants: node labels anchor at
+ * the node position; edge labels at the curve/route midpoint — or, for
+ * the end-label streams (round 13 D4), at their arc offset from either
+ * end — computed here in the VS, so every label follows
+ * drags/layouts/position tweens on-GPU with zero rebuild.
  */
 // end-label anchor walkers (round 13 D4): v3 anchors source/target
 // labels at arc distance *-text-offset from each end along the drawn

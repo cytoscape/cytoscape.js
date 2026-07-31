@@ -8,7 +8,14 @@ stable slots, per-column coalesced dirty spans) written through to
 shapes, straight and curved edges — round 12a's bundled bezier +
 self-loops and round 12b's unbundled-bezier/segments/taxi families —
 reading endpoint positions and curve params on-GPU, GPU picking,
-compute culling + indirect draws + LOD).  The
+compute culling + indirect draws + LOD).  Round 13 (2026-07-31) swept
+the straightforward v3 style props into the prototype — ghosts,
+overlay/underlay + core theming, the opacity split, border/outline
+geometry, dashes and casing, arrow scalars and mid-arrows, gradients,
+custom polygons, and the label prop families (fonts,
+min-zoomed-font-size, the alignment grid, source/target labels) —
+each with stored-truth readback and a golden and/or live v3
+pixel-parity pin (details per prop below and in PLAN.md).  The
 existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the

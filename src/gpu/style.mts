@@ -51,8 +51,9 @@ style functions.  Each key is a props object whose values are constants
 or mapper objects; all per-element variation is declarative (style-
 scales.mts: `data(key)` scales and `case` conditionals), so every value
 is analyzable, serializable, and GPU-evaluable.  Prop names are kebab-
-case or camelCase; `label` additionally takes the legacy `data(key)`
-string, which normalizes to the `{ data: key }` passthrough.
+case or camelCase; `label` (and the D4 `source-label`/`target-label`)
+additionally take the legacy `data(key)` string, which normalizes to
+the `{ data: key }` passthrough.
 
 Every mapper is cheaply CPU-evaluable — that invariant keeps `ele.style()`
 synchronous, keeps headless mode and Node tests working (the same IR runs
@@ -331,7 +332,8 @@ const NODE_DEFAULTS: NodeComputed = {
   underlayRadius: -1
 };
 
-/** gap between the node's bottom edge and the label's top, model px */
+/** gap between the node edge and the label block on the top/bottom
+ * valign rows (D3 — v4's stand-in for v3's `padding`-based gap), model px */
 const LABEL_MARGIN = 4;
 
 const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;

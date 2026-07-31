@@ -388,7 +388,8 @@ ${GLYPH_STRUCT}
 
 // edge-label glyphs: the owner is an edge; it draws when the edge and both
 // endpoint nodes are shown (mirroring the edge cull), positioned at the
-// edge midpoint
+// edge midpoint — or, for the end-label streams (D4, nonzero endParam),
+// anywhere along the drawn path (covered by extra slack below)
 fn isVisible(slot: u32) -> bool {
   let g = glyphs[slot];
 

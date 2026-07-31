@@ -401,7 +401,8 @@ export interface LabelEntry {
   fontSize: number;
   /** RGBA bytes packed little-endian (r | g<<8 | b<<16 | a<<24) */
   color: number;
-  /** y offset of the text block's top from the node center, model px (includes marginY) */
+  /** valign base Y offset from the anchor, model px (includes marginY);
+   * the block top lands at anchorY + valignShift x blockHeight (D3) */
   anchorY: number;
   /** text-margin-x, model px (shifts the run horizontally) */
   marginX: number;

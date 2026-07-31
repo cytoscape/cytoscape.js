@@ -13,7 +13,10 @@ round-12 curved-edges plan has both flagged calls signed off, pass
 (unbundled bezier + segments + taxi) landed 2026-07-30/31, and pass
 12c (endpoints + haystack/straight-triangle) landed 2026-07-30/31 —
 **round 12 is complete**; the round-13 style-prop parity plan
-(2026-07-30, at the end of this file) is next.  `src/gpu/README.md` is
+(2026-07-30, at the end of this file) landed in full on 2026-07-31 —
+**round 13 is complete** (12c → A1–A2 → B1–B7 → C1–C3 → D1–D4, every
+item with Node specs plus a golden and/or a live v3 pixel-parity
+scene).  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -2534,11 +2537,11 @@ The last item on the autonomous shelf, cleared while planning round 12:
   uphill run with its background box rotated along, and a vertical
   top-to-bottom run — all pre-existing goldens unchanged).
 
-## Landed (round 13 — style-prop parity, in progress)
+## Landed (round 13 — style-prop parity, complete 2026-07-31)
 
-Executing the round-13 plan below under the round-10 process rules.
-Each item lands as isolated commits with docs in-commit; this record
-grows per item.
+Executed the round-13 plan below under the round-10 process rules.
+Each item landed as isolated commits with docs in-commit; the records
+below were written per item, in the same commits as the work.
 
 - [x] **A1 Ghost props** (2026-07-31).  `ghost` ('yes' | 'no'),
   `ghost-offset-x/y`, `ghost-opacity` (validated [0, 1]; v3 defaults —
@@ -2862,7 +2865,7 @@ grows per item.
   (`test/gpu-gradients.mjs`).  1910 Node tests, 102 Playwright specs,
   typecheck + lint green.
 
-## Round 13 plan — style-prop parity (planned 2026-07-30)
+## Round 13 plan — style-prop parity (planned 2026-07-30; completed 2026-07-31 — see the round-13 Landed section above)
 
 A prop-level sweep of the v3 style registry
 (`src/style/properties.mts`: 280 registered props + 11 aliases)
@@ -2973,7 +2976,7 @@ layout) is not consumed by it.
   (`test/gpu-text-align.mjs`).  1936 Node tests, 111 Playwright
   specs, typecheck + lint green.
 
-- [x] **D4 `source-label`/`target-label` families** (2026-08-01).
+- [x] **D4 `source-label`/`target-label` families** (2026-07-31).
   All ten props land: `source/target-label` (constants or the
   `data(key)` passthrough, refreshing on data writes),
   `-text-offset` (non-negative, mapper-capable), `-text-margin-x/y`
@@ -3122,7 +3125,8 @@ shelf, since the expensive part now exists)
   constants-only and capped (cap recorded); node FS evaluates along
   the gradient frame, edge FS along the arc-length varying; sRGB
   interpolation per the lean above.
-- [x] **C3 `shape-polygon-points`** (custom polygon): the
+- [x] **C3 `shape-polygon-points`** (landed 2026-07-31 — see the
+  round-13 record) (custom polygon): the
   per-element unit point list lives in a blob (the curve-blob
   storage pattern, round-11 compaction rules), the node FS runs the
   generated sdPolygon loop over the blob range, and CPU pick runs
@@ -3132,17 +3136,21 @@ shelf, since the expensive part now exists)
 
 **Phase D — label props with recorded constraints**
 
-- [x] **D1 `font-style` + `font-weight`** as global constants (the
+- [x] **D1 `font-style` + `font-weight`** (landed 2026-07-31 — see
+  the round-13 record) as global constants (the
   `font-family` rule: one font per atlas; a change resets the atlas
   and re-lays-out every label).
-- [x] **D2 Per-element `min-zoomed-font-size`**: a sidecar channel
+- [x] **D2 Per-element `min-zoomed-font-size`** (landed 2026-07-31 —
+  see the round-13 record): a sidecar channel
   baked per glyph run, tested in the glyph cull predicate beside the
   global `labelFadePx`/`labelMinPx` (which stay the defaults).
-- [x] **D3 `text-valign`/`text-halign`** for node labels: v3's 3×3
+- [x] **D3 `text-valign`/`text-halign`** (landed 2026-07-31 — see
+  the round-13 record) for node labels: v3's 3×3
   anchor grid, anchor math off the node half-extents
   (`node.outerHalf` is already a bindable column); placement only
   per the lean above.
-- [x] **D4 `source-label`/`target-label` families** (10 props): two
+- [x] **D4 `source-label`/`target-label` families** (10 props;
+  landed 2026-07-31 — see the round-13 record): two
   more glyph streams from the round-10 B5 template, anchored at
   v3's offsets along the edge (`source/target-text-offset` as arc
   distance via the route evaluator), each with its own margins and

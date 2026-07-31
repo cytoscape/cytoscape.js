@@ -2341,6 +2341,43 @@ final tallies in the goldens/parity entry at the end.
   60 module tests, 72/72 Playwright specs (6 new `webgpu`, 3 new
   goldens + 1 new parity in `webgpu-visual`), typecheck + lint clean.
 
+## Landed (round 12c — endpoints + haystack + straight-triangle, in progress)
+
+Pass 12c of the round-12 plan above, under the round-10 process rules.
+Items land CPU-first; each entry below is written in the commit that
+lands it.
+
+- [x] **Contract + CPU geometry: endpoint blocks, haystack, triangle**
+  (2026-07-30).  Three additions to the curve contract:
+  `CURVE_HAYSTACK` and `CURVE_TRIANGLE` are *straight-stream* kinds
+  (FLAG_CURVED stays clear — haystack rides the straight pipeline and
+  its far-zoom decimation, resolving 12a's "curved stream is never
+  decimated" revisit by construction), and `CURVE_HAS_ENDPT` flags a
+  blob-backed kind (MULTI/SEGMENTS/TAXI) whose record is prefixed by a
+  fixed 10-float **endpoint block** —
+  [mode, a, b, pctBits, dist] × 2 — resolving `source/target-endpoint`
+  and `source/target-distance-from-node`.  Modes are v3's edgeEndpoint
+  forms (outside-to-node default, inside-to-node, outside-to-line,
+  point with per-component %/px units, angle with the 12-o'clock start
+  folded in at parse time); distances shorten via v3's
+  `shortenIntersection` clamp rule.  Structural calls, recorded in the
+  geometry module doc: a *straight* edge with manual endpoints derives
+  as `CURVE_MULTI n = 0` (the route degenerates to the chord between
+  the resolved endpoints — `routeVertex`/`routeMidpoint` already
+  handle it), and a *bundled bezier* with manual endpoints promotes to
+  `CURVE_MULTI n = 1` (its control formula is identical — pinned by a
+  spec against the 12a analytic path).  `edge-distances: 'endpoints'`
+  re-bases the frame on the raw manual anchors with v3's
+  recalcVectorNormInverse normal.  Haystack endpoints are
+  `center + (cos/sin(angle) · outerHalf · radius)` with **hash-stable
+  angles from the edge's id hash** (deterministic across sessions and
+  machines — v3 uses Math.random(), so haystack scenes are only
+  statistically v3-comparable; v4 also scales by outer halves where v3
+  uses inner size — identical at border 0, recorded).  17 Node specs
+  (`test/gpu-curve-endpoints.mjs`) pin the block resolution, the
+  n = 0 chord, the bezier-promotion equivalence, the endpoints-frame
+  rebase, taxi distances, and the haystack point/angle math.
+
 ## Landed (edge-label autorotate, 2026-07-29)
 
 The last item on the autonomous shelf, cleared while planning round 12:

@@ -77,6 +77,35 @@ export const CURVE_SEGMENTS = 4;
  * the vertex stage / CPU twin (the blob holds only the fixed params).
  * Taxi routes are not chord-bounded — they carry FLAG_CURVED_BOX. */
 export const CURVE_TAXI = 5;
+/**
+ * haystack (12c): a straight line between hash-stable endpoint offsets
+ * *inside* each node body — params [srcAngle, tgtAngle, radius, kind],
+ * offsets = (cos/sin(angle) · outerHalf · radius).  A *straight-stream*
+ * kind: FLAG_CURVED stays clear, so haystack edges ride the straight
+ * pipeline — decimated at far zoom like any straight edge (the 12a
+ * "curved stream is never decimated" trade-off does not apply).
+ */
+export const CURVE_HAYSTACK = 6;
+/**
+ * straight-triangle (12c): a filled triangle from the source (base
+ * width = edge width, centered on the source boundary point) tapering
+ * to the target boundary point.  Also a straight-stream kind (no
+ * FLAG_CURVED); params carry only the kind.
+ */
+export const CURVE_TRIANGLE = 7;
+/**
+ * Kind flag (12c), OR-ed onto a blob-backed kind (CURVE_MULTI /
+ * CURVE_SEGMENTS / CURVE_TAXI): the blob record is prefixed by a
+ * 10-float manual-endpoint block (see store/curve-blob.mts) resolving
+ * `source/target-endpoint` and `source/target-distance-from-node`.
+ * Strip with `kind & 7` (or kind - 8) for the base kind.  A *straight*
+ * edge with manual endpoints derives as CURVE_MULTI | CURVE_HAS_ENDPT
+ * with n = 0 (the route degenerates to the chord between the resolved
+ * endpoints); a *bundled bezier* with manual endpoints promotes to
+ * CURVE_MULTI n = 1 (its control point is the same weighted-frame +
+ * perpendicular-offset formula).
+ */
+export const CURVE_HAS_ENDPT = 8;
 
 // -- edge line-style ids (round 10) --
 
@@ -142,7 +171,13 @@ export type ColumnId =
    *   (model px; 0 for taxi — box-bounded, see FLAG_CURVED_BOX),
    *   [2] interior point count n (0 for taxi — the routing derives its
    *   own points).  Record layouts are documented in
-   *   store/curve-blob.mts.
+   *   store/curve-blob.mts.  The CURVE_HAS_ENDPT flag (12c) marks a
+   *   10-float manual-endpoint block prefixed to the record; [1] then
+   *   also covers the endpoint px offsets.
+   * - CURVE_HAYSTACK (12c): [0] source angle, [1] target angle
+   *   (radians), [2] haystack-radius — straight-stream kind (no
+   *   FLAG_CURVED)
+   * - CURVE_TRIANGLE (12c): straight-stream kind, no params
    */
   | 'edge.curveParams';
 

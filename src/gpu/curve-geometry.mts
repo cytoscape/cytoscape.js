@@ -1,5 +1,5 @@
 import {
-  CURVE_BEZIER, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS, CURVE_TAXI,
+  CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS, CURVE_TAXI,
   SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from './contract.mjs';
 
@@ -300,6 +300,8 @@ export const curveDeviation = ( kind: number, p0: number, p2: number ): number =
  * chord length) per FLAG_CURVED_BOX instead.
  */
 export const headerDeviation = ( kind: number, p0: number, p1: number, p2: number ): number => {
+  if( kind >= CURVE_HAS_ENDPT ){ kind -= CURVE_HAS_ENDPT; } // 12c endpoint-block kinds
+
   if( kind === CURVE_BEZIER ){ return Math.abs( p0 ); }
   if( kind === CURVE_LOOP ){ return Math.abs( p2 ); }
   if( kind === CURVE_MULTI || kind === CURVE_SEGMENTS ){ return p1; }
@@ -358,6 +360,59 @@ export const MAX_CURVE_PTS = 11;
 /** edge-distances modes as stored in the blob records. */
 export const EDGE_DIST_INTERSECTION = 0;
 export const EDGE_DIST_NODE_POSITION = 1;
+/** 12c: frame between the resolved manual endpoints (v3 requires both
+ * ends manual — the derivation enforces it and falls back with v3's
+ * warning otherwise). */
+export const EDGE_DIST_ENDPOINTS = 2;
+
+/*
+Round 12c — manual endpoints, haystack, straight-triangle.
+
+`source/target-endpoint` and `source/target-distance-from-node` resolve
+through a fixed 10-float *endpoint block* prefixed to a blob record
+whose kind carries the CURVE_HAS_ENDPT flag:
+
+  [0] srcMode  [1] srcA  [2] srcB  [3] srcPctBits  [4] srcDist
+  [5] tgtMode  [6] tgtA  [7] tgtB  [8] tgtPctBits  [9] tgtDist
+
+Modes are v3's `edgeEndpoint` forms: DEFAULT = outside-to-node (the
+existing boundary-toward-interior), INSIDE = the node center, LINE =
+outside-to-line (the intersection-frame boundary point along the
+center line), POINT = a coordinate pair (A, B in model px, or — per
+the pct bits — fractions of the node's outer width/height, v3's `%`
+units), ANGLE = a ray from the center (A = the effective angle in
+radians, v3's 12-o'clock start already folded in at parse time).
+The `-or-label` keywords need the label bounding box v4 doesn't have —
+they throw at parse time (a recorded deviation, deferred to the
+label-bb round).  Distances shorten the resolved point toward the
+near interior anchor by v3's `shortenIntersection` rule (clamped so
+the point never passes the anchor).
+
+v3 scope quirks kept: taxi forces the endpoint *keywords* to
+outside-to-node (distances still apply), and self-loops override
+endpoints entirely (v4 additionally ignores loop distances — a
+recorded deviation).  A bundled bezier with manual endpoints promotes
+to CURVE_MULTI n = 1 (the control formula is identical), and a
+straight edge with manual endpoints derives as CURVE_MULTI n = 0 —
+the route degenerates to the chord between the resolved endpoints.
+
+Haystack endpoints offset by (cos/sin(angle) · outerHalf · radius)
+inside each node body; the angles are a hash of the edge's id (stable
+across runs and machines — v3 uses Math.random(), so haystack scenes
+are only *statistically* comparable to v3).  v4 scales by the outer
+halves where v3 uses the inner size — identical at the default border
+width 0, a recorded deviation otherwise.
+*/
+
+export const ENDPT_DEFAULT = 0;
+export const ENDPT_INSIDE = 1;
+export const ENDPT_LINE = 2;
+export const ENDPT_POINT = 3;
+export const ENDPT_ANGLE = 4;
+export const ENDPT_BLOCK_FLOATS = 10;
+/** pct bits for ENDPT_POINT: A/B are fractions of outer width/height */
+export const ENDPT_PCT_X = 1;
+export const ENDPT_PCT_Y = 2;
 
 /** taxi-direction ids as stored in the blob record. */
 export const TAXI_AUTO = 0;
@@ -453,63 +508,252 @@ export const evalRoute = (
   sxC: number, syC: number, sHalfW: number, sHalfH: number, sShape: number,
   txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number
 ): CurveRoute => {
-  out.kind = kind;
-  out.round = false;
+  const hasEndpt = kind >= CURVE_HAS_ENDPT;
+  const base = hasEndpt ? kind - CURVE_HAS_ENDPT : kind;
+  const body = hasEndpt ? off + ENDPT_BLOCK_FLOATS : off;
 
-  if( kind === CURVE_MULTI || kind === CURVE_SEGMENTS ){
-    const mode = blob[ off ];
+  out.kind = base;
+  out.round = false;
+  out.n = 0;
+
+  // the intersection-frame boundary points (kept for ENDPT_LINE)
+  let fSix = 0, fSiy = 0, fTix = 0, fTiy = 0;
+
+  if( base === CURVE_MULTI || base === CURVE_SEGMENTS ){
+    const mode = blob[ body ];
     const f = computeFrame(
       sxC, syC, sHalfW, sHalfH, sShape, txC, tyC, tHalfW, tHalfH, tShape );
+
+    fSix = f.six;
+    fSiy = f.siy;
+    fTix = f.tix;
+    fTiy = f.tiy;
+
     // 'node-position' measures between the centers but keeps the
-    // intersection-frame normal (v3's reused vectorNormInverse)
-    const bx1 = mode === EDGE_DIST_NODE_POSITION ? sxC : f.six;
-    const by1 = mode === EDGE_DIST_NODE_POSITION ? syC : f.siy;
-    const bx2 = mode === EDGE_DIST_NODE_POSITION ? txC : f.tix;
-    const by2 = mode === EDGE_DIST_NODE_POSITION ? tyC : f.tiy;
+    // intersection-frame normal (v3's reused vectorNormInverse);
+    // 'endpoints' (12c) measures between the raw manual anchors and
+    // recomputes the normal from them (v3's recalcVectorNormInverse)
+    let bx1 = mode === EDGE_DIST_NODE_POSITION ? sxC : f.six;
+    let by1 = mode === EDGE_DIST_NODE_POSITION ? syC : f.siy;
+    let bx2 = mode === EDGE_DIST_NODE_POSITION ? txC : f.tix;
+    let by2 = mode === EDGE_DIST_NODE_POSITION ? tyC : f.tiy;
+    let nx = f.nx;
+    let ny = f.ny;
 
-    if( kind === CURVE_MULTI ){
+    if( mode === EDGE_DIST_ENDPOINTS && hasEndpt ){
+      rawEndpointAnchor( blob, off, false, sxC, syC, sHalfW, sHalfH, sShape, anchorScratch );
+      bx1 = anchorScratch.x;
+      by1 = anchorScratch.y;
+      rawEndpointAnchor( blob, off, true, txC, tyC, tHalfW, tHalfH, tShape, anchorScratch );
+      bx2 = anchorScratch.x;
+      by2 = anchorScratch.y;
+
+      const dx = bx2 - bx1;
+      const dy = by2 - by1;
+      const l = Math.max( Math.sqrt( dx * dx + dy * dy ), 1e-6 ); // v3 divides raw (NaN at 0)
+
+      nx = -dy / l;
+      ny = dx / l;
+    }
+
+    if( base === CURVE_MULTI ){
       for( let b = 0; b < n; b++ ){
-        const d = blob[ off + 1 + b * 2 ];
-        const w = blob[ off + 2 + b * 2 ];
+        const d = blob[ body + 1 + b * 2 ];
+        const w = blob[ body + 2 + b * 2 ];
 
-        out.qx[ b + 1 ] = ( bx1 * ( 1 - w ) + bx2 * w ) + f.nx * d;
-        out.qy[ b + 1 ] = ( by1 * ( 1 - w ) + by2 * w ) + f.ny * d;
+        out.qx[ b + 1 ] = ( bx1 * ( 1 - w ) + bx2 * w ) + nx * d;
+        out.qy[ b + 1 ] = ( by1 * ( 1 - w ) + by2 * w ) + ny * d;
       }
     } else {
-      out.round = blob[ off + 1 ] !== 0;
+      out.round = blob[ body + 1 ] !== 0;
 
       for( let s = 0; s < n; s++ ){
-        const d = blob[ off + 2 + s * 4 ];
-        const w = blob[ off + 3 + s * 4 ];
+        const d = blob[ body + 2 + s * 4 ];
+        const w = blob[ body + 3 + s * 4 ];
 
-        out.qx[ s + 1 ] = ( bx1 * ( 1 - w ) + bx2 * w ) + f.nx * d;
-        out.qy[ s + 1 ] = ( by1 * ( 1 - w ) + by2 * w ) + f.ny * d;
-        out.radius[ s ] = blob[ off + 4 + s * 4 ];
-        out.arcMode[ s ] = blob[ off + 5 + s * 4 ] !== 0 ? 1 : 0;
+        out.qx[ s + 1 ] = ( bx1 * ( 1 - w ) + bx2 * w ) + nx * d;
+        out.qy[ s + 1 ] = ( by1 * ( 1 - w ) + by2 * w ) + ny * d;
+        out.radius[ s ] = blob[ body + 4 + s * 4 ];
+        out.arcMode[ s ] = blob[ body + 5 + s * 4 ] !== 0 ? 1 : 0;
       }
     }
 
     out.n = n;
-  } else if( kind === CURVE_TAXI ){
-    evalTaxi( out, blob, off,
+  } else if( base === CURVE_TAXI ){
+    evalTaxi( out, blob, body,
       sxC, syC, sHalfW, sHalfH, txC, tyC, tHalfW, tHalfH );
   }
 
-  // endpoints on the node boundaries toward the first/last interior point
   const qn = out.n + 2;
-  const s = setRouteBoundary(
-    sxC, syC, sHalfW, sHalfH, sShape, out.qx[ 1 ], out.qy[ 1 ] );
 
-  out.qx[ 0 ] = s.x;
-  out.qy[ 0 ] = s.y;
+  if( !hasEndpt ){
+    // endpoints on the node boundaries toward the first/last interior point
+    const s = setRouteBoundary(
+      sxC, syC, sHalfW, sHalfH, sShape, out.qx[ 1 ], out.qy[ 1 ] );
 
-  const e = setRouteBoundary(
-    txC, tyC, tHalfW, tHalfH, tShape, out.qx[ qn - 2 ], out.qy[ qn - 2 ] );
+    out.qx[ 0 ] = s.x;
+    out.qy[ 0 ] = s.y;
 
-  out.qx[ qn - 1 ] = e.x;
-  out.qy[ qn - 1 ] = e.y;
+    const e = setRouteBoundary(
+      txC, tyC, tHalfW, tHalfH, tShape, out.qx[ qn - 2 ], out.qy[ qn - 2 ] );
+
+    out.qx[ qn - 1 ] = e.x;
+    out.qy[ qn - 1 ] = e.y;
+
+    return out;
+  }
+
+  // 12c: resolve each end through its endpoint-block entry.  The "aim"
+  // is the near interior point; with no interior points (n = 0, the
+  // straight-with-endpoints chord) each end aims at the *other end's
+  // raw anchor* (v3's lines path: tgtPos + tgtManEndptPt et al.)
+  let sAimX: number, sAimY: number, tAimX: number, tAimY: number;
+
+  if( out.n > 0 ){
+    sAimX = out.qx[ 1 ];
+    sAimY = out.qy[ 1 ];
+    tAimX = out.qx[ qn - 2 ];
+    tAimY = out.qy[ qn - 2 ];
+  } else {
+    rawEndpointAnchor( blob, off, true, txC, tyC, tHalfW, tHalfH, tShape, anchorScratch );
+    sAimX = anchorScratch.x;
+    sAimY = anchorScratch.y;
+    rawEndpointAnchor( blob, off, false, sxC, syC, sHalfW, sHalfH, sShape, anchorScratch );
+    tAimX = anchorScratch.x;
+    tAimY = anchorScratch.y;
+  }
+
+  resolveEndpoint(
+    blob, off, false, sxC, syC, sHalfW, sHalfH, sShape,
+    sAimX, sAimY, fSix, fSiy, anchorScratch );
+  out.qx[ 0 ] = anchorScratch.x;
+  out.qy[ 0 ] = anchorScratch.y;
+
+  resolveEndpoint(
+    blob, off, true, txC, tyC, tHalfW, tHalfH, tShape,
+    tAimX, tAimY, fTix, fTiy, anchorScratch );
+  out.qx[ qn - 1 ] = anchorScratch.x;
+  out.qy[ qn - 1 ] = anchorScratch.y;
 
   return out;
+};
+
+const anchorScratch = { x: 0, y: 0 };
+
+/**
+ * The *raw* anchor of an endpoint-block entry — what the other pieces
+ * of the geometry aim at before boundary/shorten resolution: the manual
+ * point for ENDPT_POINT, the ray's boundary point for ENDPT_ANGLE
+ * (v3's manualEndptToPx), and the node center otherwise.
+ */
+export const rawEndpointAnchor = (
+  blob: ArrayLike<number>, off: number, isTarget: boolean,
+  cx: number, cy: number, halfW: number, halfH: number, shape: number,
+  out: { x: number; y: number }
+): void => {
+  const at = isTarget ? off + 5 : off;
+  const mode = blob[ at ];
+
+  if( mode === ENDPT_POINT ){
+    const bits = blob[ at + 3 ];
+
+    out.x = cx + blob[ at + 1 ] * ( bits % 2 === 1 ? 2 * halfW : 1 );
+    out.y = cy + blob[ at + 2 ] * ( bits >= ENDPT_PCT_Y ? 2 * halfH : 1 );
+
+    return;
+  }
+
+  if( mode === ENDPT_ANGLE ){
+    const a = blob[ at + 1 ];
+    const dx = Math.cos( a );
+    const dy = Math.sin( a );
+    const bOff = boundaryOffset( shape, halfW, halfH, dx, dy );
+
+    out.x = cx + dx * bOff;
+    out.y = cy + dy * bOff;
+
+    return;
+  }
+
+  out.x = cx;
+  out.y = cy;
+};
+
+/**
+ * Resolve one end through its endpoint-block entry: the mode picks the
+ * raw point (boundary-toward-aim for DEFAULT, center for INSIDE, the
+ * intersection-frame point for LINE, the manual point/ray otherwise),
+ * then `distance-from-node` shortens it toward the aim by v3's
+ * shortenIntersection rule (clamped so it never passes the aim).
+ */
+export const resolveEndpoint = (
+  blob: ArrayLike<number>, off: number, isTarget: boolean,
+  cx: number, cy: number, halfW: number, halfH: number, shape: number,
+  aimX: number, aimY: number, frameX: number, frameY: number,
+  out: { x: number; y: number }
+): void => {
+  const at = isTarget ? off + 5 : off;
+  const mode = blob[ at ];
+  const dist = blob[ at + 4 ];
+
+  if( mode === ENDPT_INSIDE ){
+    out.x = cx;
+    out.y = cy;
+  } else if( mode === ENDPT_LINE ){
+    out.x = frameX;
+    out.y = frameY;
+  } else if( mode === ENDPT_POINT || mode === ENDPT_ANGLE ){
+    rawEndpointAnchor( blob, off, isTarget, cx, cy, halfW, halfH, shape, out );
+  } else {
+    const b = setRouteBoundary( cx, cy, halfW, halfH, shape, aimX, aimY );
+
+    out.x = b.x;
+    out.y = b.y;
+  }
+
+  if( dist !== 0 ){
+    // v3's shortenIntersection: p = aim + max((len - d)/len, 1e-5)·(p - aim)
+    const dx = out.x - aimX;
+    const dy = out.y - aimY;
+    const l = Math.sqrt( dx * dx + dy * dy );
+
+    if( l > 0 ){
+      let ratio = ( l - dist ) / l;
+
+      if( ratio < 0 ){ ratio = 0.00001; }
+
+      out.x = aimX + ratio * dx;
+      out.y = aimY + ratio * dy;
+    }
+  }
+};
+
+/**
+ * A haystack endpoint (12c): the hash-stable offset point inside the
+ * node body — center + (cos/sin(angle) · outerHalf · radius).  The WGSL
+ * twin in the straight edge shader computes the same point.
+ */
+export const haystackPoint = (
+  cx: number, cy: number, halfW: number, halfH: number,
+  angle: number, radius: number, out: { x: number; y: number }
+): void => {
+  out.x = cx + Math.cos( angle ) * halfW * radius;
+  out.y = cy + Math.sin( angle ) * halfH * radius;
+};
+
+/**
+ * The hash-stable haystack angle for one end of an edge, from the
+ * edge's id hash (stable across sessions and machines, unlike v3's
+ * Math.random()): a Wang-style integer mix folded to [0, 2π).
+ */
+export const haystackAngle = ( idHash: number, isTarget: boolean ): number => {
+  let h = ( idHash ^ ( isTarget ? 0x9e3779b9 : 0x85ebca6b ) ) >>> 0;
+
+  h = Math.imul( h ^ ( h >>> 16 ), 0x45d9f3b ) >>> 0;
+  h = Math.imul( h ^ ( h >>> 16 ), 0x45d9f3b ) >>> 0;
+  h = ( h ^ ( h >>> 16 ) ) >>> 0;
+
+  return ( h / 4294967296 ) * 2 * Math.PI;
 };
 
 const boundaryScratch = { x: 0, y: 0 };

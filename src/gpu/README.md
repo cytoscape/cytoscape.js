@@ -729,8 +729,15 @@ Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound
 for cull/fit, exact lazy CPU eval for public `.bb()`, no readback);
-manual edge endpoints + haystack/straight-triangle are round 12c, and
-GPU layouts remain logged for later.
+manual edge endpoints + haystack/straight-triangle are round 12c (in
+progress — the CPU geometry/contract half is in: the 10-float
+endpoint block on blob records via the `CURVE_HAS_ENDPT` kind flag,
+straight-with-endpoints as the `CURVE_MULTI n = 0` chord, bundled
+bezier + endpoints promoted to `CURVE_MULTI n = 1`, hash-stable
+haystack endpoint offsets, and the `CURVE_HAYSTACK`/`CURVE_TRIANGLE`
+*straight-stream* kinds — FLAG_CURVED stays clear, so haystack rides
+the straight pipeline and its far-zoom decimation), and GPU layouts
+remain logged for later.
 
 ## Benchmarks
 

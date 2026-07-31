@@ -177,7 +177,10 @@ fn isVisible(slot: u32) -> bool {
 
   if (length(b - a) < 1e-4) { return false; } // degenerate (loop at one point)
 
-  let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0; // half width + AA
+  // half width + AA; haystack edges (12c) launch from offset points up
+  // to haystackSlack from the centers, so the corridor grows by it
+  // (0 unless some edge styles haystack)
+  let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0 + frame.haystackSlack * frame.zoomDpr;
   return segmentHitsViewport(a, b, m);
 }
 ${SCAFFOLD}
@@ -393,9 +396,11 @@ fn isVisible(slot: u32) -> bool {
   // chord-midpoint test grows by the frame's conservative curve slack —
   // box-bounded owners (taxi, extrapolated weights) add the chord length
   // (their route midpoint isn't chord-slack-bounded)
-  var slk = 0.0;
+  // haystack owners (12c) anchor at the offset midpoint, which strays
+  // up to haystackSlack from the chord midpoint
+  var slk = frame.haystackSlack * frame.zoomDpr;
 
-  if ((edgeFlags[owner] & FLAG_CURVED) != 0u) { slk = frame.curveSlack * frame.zoomDpr; }
+  if ((edgeFlags[owner] & FLAG_CURVED) != 0u) { slk = slk + frame.curveSlack * frame.zoomDpr; }
   if ((edgeFlags[owner] & FLAG_CURVED_BOX) != 0u) {
     slk = slk + length(modelToPx(frame, pb) - modelToPx(frame, pa));
   }

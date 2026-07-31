@@ -19,9 +19,9 @@ import {
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
  * footguns); computed CPU-side from the core viewport + device pixel ratio.
- * Layout must match Renderer's Float32Array(12): viewportPx, panPx, zoomDpr,
+ * Layout must match Renderer's Float32Array(16): viewportPx, panPx, zoomDpr,
  * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, labelMinPx,
- * curveSlack — 48 bytes.
+ * curveSlack, haystackSlack (+3 pads) — 64 bytes.
  */
 export const FRAME_STRUCT = `
 struct Frame {
@@ -35,6 +35,10 @@ struct Frame {
   labelFadePx: f32,      // LOD: labels fade out as glyph height drops below this, device px
   labelMinPx: f32,       // LOD: labels below this glyph height are culled outright (0 = off)
   curveSlack: f32,       // conservative curved-edge deviation bound, model px (0 = nothing curved)
+  haystackSlack: f32,    // 12c: haystack endpoint-offset bound, model px (0 = no haystack)
+  pad0: f32,
+  pad1: f32,
+  pad2: f32,
 }
 `;
 
@@ -330,6 +334,72 @@ export const ROUTE_WGSL = `
 const CURVE_SEGS_U: u32 = ${ CURVE_SEGS }u;
 const MAX_ROUTE_PTS: u32 = ${ MAX_CURVE_PTS }u;
 const ROUTE_PI: f32 = 3.14159265358979;
+// 12c manual endpoints: kinds >= 8 prefix their blob record with the
+// 10-float endpoint block [mode, a, b, pctBits, dist] x 2 (see
+// curve-geometry.mts — the CPU twin reads the same layout)
+const ENDPT_BLOCK_F: u32 = 10u;
+const ENDPT_INSIDE_W: f32 = 1.0;
+const ENDPT_LINE_W: f32 = 2.0;
+const ENDPT_POINT_W: f32 = 3.0;
+const ENDPT_ANGLE_W: f32 = 4.0;
+
+// the raw anchor of an endpoint-block entry: the manual point for the
+// point form, the ray's boundary point for the angle form, else the
+// node center (rawEndpointAnchor's twin)
+fn rawEndptAnchorW(off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32) -> vec2f {
+  let at = select(off, off + 5u, isTgt);
+  let mode = curveBlob[at];
+
+  if (mode == ENDPT_POINT_W) {
+    let bits = curveBlob[at + 3u];
+    let sx = select(1.0, 2.0 * half.x, (u32(bits) & 1u) != 0u);
+    let sy = select(1.0, 2.0 * half.y, (u32(bits) & 2u) != 0u);
+
+    return c + vec2f(curveBlob[at + 1u] * sx, curveBlob[at + 2u] * sy);
+  }
+
+  if (mode == ENDPT_ANGLE_W) {
+    let d = vec2f(cos(curveBlob[at + 1u]), sin(curveBlob[at + 1u]));
+
+    return c + d * boundaryOffset(shape, half, d);
+  }
+
+  return c;
+}
+
+// resolveEndpoint's twin: mode-pick + the distance shorten toward the aim
+fn resolveEndptW(
+  off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32, aim: vec2f, framePt: vec2f
+) -> vec2f {
+  let at = select(off, off + 5u, isTgt);
+  let mode = curveBlob[at];
+  let dist = curveBlob[at + 4u];
+  var p: vec2f;
+
+  if (mode == ENDPT_INSIDE_W) {
+    p = c;
+  } else if (mode == ENDPT_LINE_W) {
+    p = framePt;
+  } else if (mode == ENDPT_POINT_W || mode == ENDPT_ANGLE_W) {
+    p = rawEndptAnchorW(off, isTgt, c, half, shape);
+  } else {
+    p = curveBoundaryPoint(c, half, shape, aim);
+  }
+
+  if (dist != 0.0) {
+    // v3's shortenIntersection: never past the aim (1e-5 floor)
+    let d = p - aim;
+    let l = length(d);
+
+    if (l > 0.0) {
+      let ratio = max((l - dist) / l, 0.00001);
+
+      p = aim + ratio * d;
+    }
+  }
+
+  return p;
+}
 
 struct Route {
   kind: f32,
@@ -340,7 +410,7 @@ struct Route {
   arcMode: array<u32, ${ MAX_CURVE_PTS }>,
 }
 
-struct RouteFrame { b1: vec2f, b2: vec2f, nrm: vec2f }
+struct RouteFrame { b1: vec2f, b2: vec2f, nrm: vec2f, fsi: vec2f, fti: vec2f }
 
 // the weighted-base frame: 'node-position' (mode 1) measures between the
 // centers but keeps the intersection-frame normal (v3's quirk)
@@ -364,6 +434,8 @@ fn routeFrame(
   var f: RouteFrame;
 
   f.nrm = vec2f(-d.y / l, d.x / l);
+  f.fsi = si;
+  f.fti = ti;
 
   if (mode == 1.0) { f.b1 = sC; f.b2 = tC; } else { f.b1 = si; f.b2 = ti; }
 
@@ -383,16 +455,42 @@ fn evalRouteW(
 ) -> Route {
   var r: Route;
 
-  r.kind = header.w;
+  // 12c: kinds >= 8 carry the endpoint-block prefix (base kind + 8)
+  let hasEndpt = header.w >= 8.0;
+  let kind = select(header.w, header.w - 8.0, hasEndpt);
+
+  r.kind = kind;
   r.round = 0u;
+  r.n = 0u;
 
-  let off = u32(header.x);
+  let blockOff = u32(header.x);
+  let off = select(blockOff, blockOff + ENDPT_BLOCK_F, hasEndpt);
 
-  if (header.w == 3.0 || header.w == 4.0) { // MULTI / SEGMENTS
+  // the intersection-frame boundary points (kept for outside-to-line)
+  var fS = sC;
+  var fT = tC;
+
+  if (kind == 3.0 || kind == 4.0) { // MULTI / SEGMENTS
     let n = min(u32(header.z), MAX_ROUTE_PTS);
-    let f = routeFrame(curveBlob[off], sC, sHalf, sShape, tC, tHalf, tShape);
+    let mode = curveBlob[off];
+    var f = routeFrame(mode, sC, sHalf, sShape, tC, tHalf, tShape);
 
-    if (header.w == 3.0) {
+    fS = f.fsi;
+    fT = f.fti;
+
+    if (mode == 2.0 && hasEndpt) {
+      // edge-distances: 'endpoints' — base points are the raw manual
+      // anchors, normal recomputed from them (v3's recalcVectorNormInverse)
+      f.b1 = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape);
+      f.b2 = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape);
+
+      let d = f.b2 - f.b1;
+      let l = max(length(d), 1e-6);
+
+      f.nrm = vec2f(-d.y / l, d.x / l);
+    }
+
+    if (kind == 3.0) {
       for (var b = 0u; b < n; b = b + 1u) {
         let d = curveBlob[off + 1u + b * 2u];
         let w = curveBlob[off + 2u + b * 2u];
@@ -536,11 +634,29 @@ fn evalRouteW(
     }
   }
 
-  // endpoints on the node boundaries toward the first/last interior point
   let qn = r.n + 2u;
 
-  r.q[0u] = curveBoundaryPoint(sC, sHalf, sShape, r.q[1u]);
-  r.q[qn - 1u] = curveBoundaryPoint(tC, tHalf, tShape, r.q[qn - 2u]);
+  if (!hasEndpt) {
+    // endpoints on the node boundaries toward the first/last interior point
+    r.q[0u] = curveBoundaryPoint(sC, sHalf, sShape, r.q[1u]);
+    r.q[qn - 1u] = curveBoundaryPoint(tC, tHalf, tShape, r.q[qn - 2u]);
+
+    return r;
+  }
+
+  // 12c: resolve each end through its endpoint-block entry.  With no
+  // interior points (n = 0, the straight-with-endpoints chord) each end
+  // aims at the other end's raw anchor (v3's lines path).
+  var sAim = r.q[1u];
+  var tAim = r.q[qn - 2u];
+
+  if (r.n == 0u) {
+    sAim = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape);
+    tAim = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape);
+  }
+
+  r.q[0u] = resolveEndptW(blockOff, false, sC, sHalf, sShape, sAim, fS);
+  r.q[qn - 1u] = resolveEndptW(blockOff, true, tC, tHalf, tShape, tAim, fT);
 
   return r;
 }
@@ -1103,26 +1219,37 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
 
 export const EDGE_SHADER = `
 ${COMMON}
+${BOUNDARY_WGSL}
 ${DASH_WGSL}
 
 // flags columns are not bound here: the cull pass already dropped dead or
-// hidden edges (and edges with dead/hidden endpoints)
+// hidden edges (and edges with dead/hidden endpoints).  Paint columns
+// (line color / opacity / line-style) bind to the *fragment* stage via
+// flat instance fetch (the curved pipeline's split), freeing vertex-stage
+// slots for the 12c straight-stream kinds: curveParams (haystack
+// angles/radius, the triangle kind) plus outerHalf/shape (haystack
+// offsets, triangle boundary tips) — 6 VS storage buffers + the visible
+// list, within the base 8-buffer budget.
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>; // source,target node slots
-@group(0) @binding(2) var<storage, read> lineColors: array<u32>;
-@group(0) @binding(3) var<storage, read> widths: array<f32>;
-@group(0) @binding(4) var<storage, read> opacities: array<f32>;
-@group(0) @binding(5) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(6) var<storage, read> lineStyles: array<u32>; // LINE_* ids
+@group(0) @binding(2) var<storage, read> widths: array<f32>;
+@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;
+@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;
+// fragment-stage columns (flat instance fetch; curveParams binds to both
+// stages — the FS skips dashes on straight-triangle fills)
+@group(0) @binding(7) var<storage, read> lineColors: array<u32>;
+@group(0) @binding(8) var<storage, read> opacities: array<f32>;
+@group(0) @binding(9) var<storage, read> lineStyles: array<u32>; // LINE_* ids
 
 struct EdgeVSOut {
   @builtin(position) position: vec4f,
   @location(0) v: f32,          // signed perpendicular distance, device px
-  @location(1) halfWidth: f32,  // device px
-  @location(2) color: vec4f,    // straight-alpha rgba with opacity/LOD applied to a
+  @location(1) halfWidth: f32,  // device px; tapers to 0 along a straight-triangle
+  @location(2) @interpolate(flat) alphaComp: f32, // LOD alpha compensation
   @location(3) @interpolate(flat) instance: u32,
   @location(4) u: f32,          // longitudinal distance from the source, model px
-  @location(5) @interpolate(flat) lineStyle: u32,
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -1141,47 +1268,73 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   let widthPx = max(widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
 
   let ends = endpoints[slot];
+  let params = curveParams[slot];
 
   // endpoints are read from the node position buffer: dragging a node
   // uploads one row and its edges follow on-GPU
-  let a = modelToPx(frame, nodePositions[ends.x]);
-  let b = modelToPx(frame, nodePositions[ends.y]);
+  var pa = nodePositions[ends.x];
+  var pb = nodePositions[ends.y];
+
+  if (params.w == 6.0) { // haystack (12c): hash-stable offsets inside the bodies
+    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
+    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+  }
+
+  let corner = quadCorner(vi);
+  let t = (corner.x + 1.0) * 0.5; // 0 at source, 1 at target
+  var taper = 1.0;
+
+  if (params.w == 7.0) { // straight-triangle (12c): boundary base -> boundary apex
+    var bd = pb - pa;
+    let bl = max(length(bd), 1e-6);
+
+    bd = bd / bl;
+    pa = pa + bd * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], bd);
+    pb = pb - bd * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -bd);
+    taper = 1.0 - t; // full width at the base, a point at the apex
+  }
+
+  let a = modelToPx(frame, pa);
+  let b = modelToPx(frame, pb);
   let ab = b - a;
   let len = max(length(ab), 1e-4); // zero-length edges were culled
 
-  let halfW = widthPx * 0.5;
+  let halfW = widthPx * 0.5 * taper;
   let dir = ab / len;
   let n = vec2f(-dir.y, dir.x);
-  let corner = quadCorner(vi);
-  let t = (corner.x + 1.0) * 0.5; // 0 at source, 1 at target
   let s = corner.y * (halfW + 1.0); // screen-space extrusion incl. 1px AA margin
 
   out.position = vec4f(pxToClip(frame, mix(a, b, t) + n * s), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
-
-  let c = unpack4x8unorm(lineColors[slot]);
-
-  out.color = vec4f(c.rgb, c.a * opacities[slot] * lod.y * (1.0 - frame.edgeDim));
+  out.alphaComp = lod.y;
   out.instance = slot;
   out.u = t * (len / frame.zoomDpr); // model px along the edge
-  out.lineStyle = lineStyles[slot];
   return out;
 }
 
 @fragment
 fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
-  var alpha = in.color.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+  let c = unpack4x8unorm(lineColors[in.instance]);
+  var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
+
+  alpha = alpha * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
 
   // line-style: dashed [6, 3] / dotted [1, 1] in model px (v3's patterns);
-  // picking ignores the gaps, as v3 does
-  if (in.lineStyle == 1u) {
-    alpha = alpha * dashMask(in.u, 6.0, 3.0, 0.75 / frame.zoomDpr);
-  } else if (in.lineStyle == 2u) {
-    alpha = alpha * dashMask(in.u, 1.0, 1.0, 0.75 / frame.zoomDpr);
+  // picking ignores the gaps, as v3 does.  Straight-triangle fills ignore
+  // line-style (v3 fills the triangle path).
+  let ls = lineStyles[in.instance];
+  let isTriangle = curveParams[in.instance].w == 7.0;
+
+  if (!isTriangle) {
+    if (ls == 1u) {
+      alpha = alpha * dashMask(in.u, 6.0, 3.0, 0.75 / frame.zoomDpr);
+    } else if (ls == 2u) {
+      alpha = alpha * dashMask(in.u, 1.0, 1.0, 0.75 / frame.zoomDpr);
+    }
   }
 
-  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
+  return vec4f(c.rgb * alpha, alpha); // premultiplied
 }
 
 @fragment
@@ -1550,8 +1703,10 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let tipSlot = select(ends.y, ends.x, isSource);
 
   // the point the end tangent runs from: the near control (bezier /
-  // loop), or the first/last interior route point (12b families)
+  // loop), or the first/last interior route point (12b families; with
+  // no interior points — the 12c endpoint chord — the far endpoint)
   var toward: vec2f;
+  var tip: vec2f;
 
   if (params.w <= 2.0) {
     let g = evalCurveGeom(
@@ -1561,25 +1716,38 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     );
 
     toward = select(g.c2, g.c1, isSource);
+
+    // the tip sits on the tip node's boundary along the curve's end
+    // tangent (border-inclusive outer halves, like the straight arrows)
+    let tipC = modelToPx(frame, nodePositions[tipSlot]);
+    let toTip = tipC - modelToPx(frame, toward);
+    let dirB = toTip / max(length(toTip), 1e-4);
+    let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
+
+    tip = tipC - dirB * boundaryOffset(nodeShapes[tipSlot], half, dirB);
   } else {
     var route = evalRouteW(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
       nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
     );
+    let qn = route.n + 2u;
 
-    toward = select(route.q[route.n], route.q[1u], isSource);
+    if (route.n == 0u) { // the 12c endpoint chord: aim at the far endpoint
+      toward = select(route.q[0u], route.q[1u], isSource);
+    } else {
+      toward = select(route.q[route.n], route.q[1u], isSource);
+    }
+
+    // the route's resolved endpoint IS the tip — for default modes it
+    // equals the boundary point; for 12c manual endpoints it is the
+    // manual/inside/shortened point (v3's arrowStart/End)
+    tip = modelToPx(frame, select(route.q[qn - 1u], route.q[0u], isSource));
   }
 
-  let tipC = modelToPx(frame, nodePositions[tipSlot]);
-  let toTip = tipC - modelToPx(frame, toward);
-  let len = max(length(toTip), 1e-4);
-  let dir = toTip / len;
-
-  // the tip sits on the tip node's boundary along the curve's end tangent
-  // (border-inclusive outer halves, like the straight arrows)
-  let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
-  let tip = tipC - dir * boundaryOffset(nodeShapes[tipSlot], half, dir);
+  let toTip2 = tip - modelToPx(frame, toward);
+  let len = max(length(toTip2), 1e-4);
+  let dir = toTip2 / len;
 
   // sizing follows the drawn (floored) edge width; the curved stream is
   // never decimated, so the alpha comp is the plain width-floor ratio
@@ -1695,7 +1863,15 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
       rotA = geom.c1;
       rotB = geom.c2;
     }
-  } else if (params.w > 2.0) { // route families: v3's midpoint rules
+  } else if (params.w == 6.0) { // haystack (12c): the offset midpoint
+    let ha = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
+    let hb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+
+    anchor = (ha + hb) * 0.5;
+    rotA = ha;
+    rotB = hb;
+  } else if (params.w > 2.0 && params.w != 7.0) { // route families: v3's midpoint rules
+    // (7.0 = straight-triangle keeps the chord default)
     var route = evalRouteW(
       params,
       pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],

@@ -217,7 +217,7 @@ export class Renderer {
     this.curvedArrowPipeline = null;
     this.arrowPipeline = null;
     this.uniform = null;
-    this.frameData = new Float32Array( 12 );
+    this.frameData = new Float32Array( 16 );
     this.isReady = false;
     this.frameRequested = false;
     this.destroyed = false;
@@ -226,7 +226,7 @@ export class Renderer {
     this.gpuTimer = null;
     this.picking = null;
     this.pickUniform = null;
-    this.pickFrameData = new Float32Array( 12 );
+    this.pickFrameData = new Float32Array( 16 );
     this.needsRedraw = true;
     this.inFlightFrames = 0;
     this.labelLayer = null;
@@ -248,7 +248,7 @@ export class Renderer {
     this.upscaler = null;
     this.pendingExports = [];
     this.exportUniform = null;
-    this.exportFrameData = new Float32Array( 12 );
+    this.exportFrameData = new Float32Array( 16 );
     this.exportCull = null;
 
     // re-raster glyph runs when web fonts finish loading: glyphs cached
@@ -595,6 +595,7 @@ export class Renderer {
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX;
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
     f[11] = this.cy._store.curveSlack();
+    f[12] = this.cy._store.haystackSlack();
 
     device.queue.writeBuffer( this.exportUniform, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -1274,6 +1275,7 @@ export class Renderer {
     f[9] = ( opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX ) * this.scaleCtl.scale;
     f[10] = ( opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX ) * this.scaleCtl.scale;
     f[11] = this.cy._store.curveSlack(); // model px; shaders scale by zoomDpr
+    f[12] = this.cy._store.haystackSlack();
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -1309,6 +1311,7 @@ export class Renderer {
     f[9] = opts.labelFadePx ?? DEFAULT_LABEL_FADE_PX; // labels aren't picked
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
     f[11] = this.cy._store.curveSlack();
+    f[12] = this.cy._store.haystackSlack();
 
     ( this.device as GPUDevice ).queue.writeBuffer(
       this.pickUniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength

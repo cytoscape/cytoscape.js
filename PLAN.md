@@ -2426,6 +2426,38 @@ lands it.
   chord (MULTI n = 0 — no controls, matching v3's straight surface).
   11 Node specs (`test/gpu-curve-12c-accessors.mjs`); 1842 Node
   tests, typecheck + lint green.
+- [x] **Renderer: straight-stream kinds, endpoint WGSL twins, cull
+  slack** (2026-07-31).  The straight edge shader restructured: paint
+  columns (line color / opacity / line-style) moved to the *fragment*
+  stage via flat instance fetch (the curved pipeline's split), freeing
+  vertex slots for `edge.curveParams` + `node.outerHalf` +
+  `node.shape` — 6 VS storage buffers + the visible list.  The VS
+  branches on the straight-stream kinds: haystack offsets both
+  endpoints by (cos/sin(angle) · outerHalf · radius) from live
+  positions (drags follow on-GPU), and straight-triangle computes
+  boundary endpoints and tapers the half-width to zero at the apex
+  (the FS's varying half-width keeps the AA exact; dashes skip
+  triangle fills, v3's fill path; the pick FS inherits the taper, so
+  picking matches the drawn triangle).  ROUTE_WGSL gained the
+  endpoint-block twins (`rawEndptAnchorW`/`resolveEndptW`, the
+  kind-flag strip, the n = 0 chord aims, and the
+  `edge-distances: endpoints` frame rebase) — the label VS's route
+  branch and the curved pick tile inherit them; route arrows now
+  anchor at the route's *resolved* endpoint (q[0]/q[n+1] — for
+  default modes exactly the old boundary point, for manual endpoints
+  v3's arrowStart/End), aiming along the end tangent (the far
+  endpoint for the n = 0 chord).  The edge-label VS anchors haystack
+  owners at the offset midpoint with autorotate along the offset
+  line.  The Frame uniform grew 48 → 64 bytes with `haystackSlack`
+  (radiusMax × node half, monotone): the straight-edge cull and the
+  edge-glyph cull grow their corridor/anchor tests by it, so haystack
+  never culls wrong while staying decimated like any straight edge.
+  4 new `webgpu` Playwright specs (haystack offset line + pick,
+  triangle taper + taper-matched picking, manual endpoints off the
+  chord + ≤ 64 B drag re-anchor, arrows at a shortened endpoint with
+  the gap behind them) — 54/54 `webgpu`, 22/22 `webgpu-visual`
+  (goldens byte-stable through the shader restructure, parity scenes
+  0 px), 1842 Node tests, typecheck + lint green.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

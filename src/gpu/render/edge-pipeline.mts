@@ -7,18 +7,29 @@ import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 
 /**
- * Storage-buffer bindings 1..6 (0 is the Frame uniform).  The edge vertex
+ * Storage-buffer bindings 1..9 (0 is the Frame uniform).  The edge vertex
  * shader reads endpoint positions straight from the node position buffer,
  * so a node drag uploads one row and its edges follow on-GPU.  Flags
- * columns are not bound: the cull pass already filtered on them.
+ * columns are not bound: the cull pass already filtered on them.  Since
+ * 12c the paint columns (line color / opacity / line-style) bind to the
+ * fragment stage (flat instance fetch) so the vertex stage fits
+ * curveParams + outerHalf + shape for the haystack/triangle straight-
+ * stream kinds; curveParams binds both stages (the FS skips dashes on
+ * triangle fills).
  */
-const EDGE_COLUMNS: ColumnId[] = [
-  'edge.endpoints',
-  'edge.lineColor',
-  'edge.width',
-  'edge.opacity',
-  'node.position',
-  'edge.lineStyle'
+const V = SHADER_STAGE.VERTEX;
+const F = SHADER_STAGE.FRAGMENT;
+
+const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
+  { id: 'edge.endpoints', stages: V },
+  { id: 'edge.width', stages: V },
+  { id: 'node.position', stages: V },
+  { id: 'edge.curveParams', stages: V | F },
+  { id: 'node.outerHalf', stages: V },
+  { id: 'node.shape', stages: V },
+  { id: 'edge.lineColor', stages: F },
+  { id: 'edge.opacity', stages: F },
+  { id: 'edge.lineStyle', stages: F }
 ];
 
 /** Edge render + picking pipelines (screen-space extruded quads). */
@@ -43,9 +54,9 @@ export class EdgePipeline {
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
           buffer: { type: 'uniform' }
         },
-        ...EDGE_COLUMNS.map( ( id, i ) => ( {
+        ...EDGE_COLUMNS.map( ( col, i ) => ( {
           binding: i + 1,
-          visibility: SHADER_STAGE.VERTEX,
+          visibility: col.stages,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         } ) )
       ]
@@ -87,9 +98,9 @@ export class EdgePipeline {
       layout: this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        ...EDGE_COLUMNS.map( ( id, i ) => ( {
+        ...EDGE_COLUMNS.map( ( col, i ) => ( {
           binding: i + 1,
-          resource: { buffer: mirror.buffer( id ) }
+          resource: { buffer: mirror.buffer( col.id ) }
         } ) )
       ]
     } );

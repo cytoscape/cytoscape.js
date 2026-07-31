@@ -2307,4 +2307,208 @@ test.describe( 'WebGPU renderer', () => {
     expect( await darkPixelsInBand( page, movedMid.x - 40, 80, movedMid.y ) ).toBeGreaterThan( 3 );
   } );
 
+  test( 'haystack edges draw between their offset points and stay pickable (12c)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 60, 'height': 60, 'background-color': '#ecf0f1' },
+        edges: { 'curve-style': 'haystack', 'haystack-radius': 1, 'width': 6, 'line-color': '#e74c3c' }
+      },
+      zoom: 1
+    } );
+
+    await centerPan( page );
+    await waitFrames( page );
+
+    // the CPU-computed haystack midpoint carries line color (the offset
+    // line, not necessarily the center chord)...
+    const mid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+    const midPx = await pixelAt( page, mid.x, mid.y );
+
+    expect( midPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( midPx[ 1 ] ).toBeLessThan( 140 );
+
+    // ...picking agrees with the drawn line...
+    const picked = await page.evaluate( async mid => {
+      const hit = await window.cy.pick( mid.x, mid.y );
+
+      return hit == null ? null : hit.id();
+    }, mid );
+
+    expect( picked ).toBe( 'e0' );
+
+    // ...and the endpoints sit inside the node bodies (radius 1 = at
+    // most the outer half from each center)
+    const ends = await page.evaluate( () => {
+      const e = window.cy.$id( 'e0' );
+      const s = e.sourceEndpoint();
+      const t = e.targetEndpoint();
+
+      return {
+        sOff: Math.hypot( s.x - ( -150 ), s.y ),
+        tOff: Math.hypot( t.x - 150, t.y )
+      };
+    } );
+
+    expect( ends.sOff ).toBeLessThanOrEqual( 30.5 );
+    expect( ends.tOff ).toBeLessThanOrEqual( 30.5 );
+  } );
+
+  test( 'straight-triangle edges taper from a wide base to the target apex (12c)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: { 'curve-style': 'straight-triangle', 'width': 24, 'line-color': '#e74c3c' }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // thickness near the source base far exceeds thickness near the apex
+    const thickness = async x => {
+      let count = 0;
+
+      for( let dy = -20; dy <= 20; dy += 2 ){
+        const px = await pixelAt( page, x, center.y + dy );
+
+        if( px[ 0 ] > 180 && px[ 1 ] < 140 ){ count++; }
+      }
+
+      return count;
+    };
+
+    const nearBase = await thickness( center.x - 100 );
+    const nearApex = await thickness( center.x + 110 );
+
+    expect( nearBase ).toBeGreaterThan( 4 );
+    expect( nearApex ).toBeLessThan( nearBase );
+    expect( nearApex ).toBeGreaterThan( 0 ); // still inked, just thin
+
+    // picking matches the taper: near the base edge of the triangle a
+    // lateral offset hits; the same offset near the apex misses
+    const picks = await page.evaluate( async center => {
+      const wide = await window.cy.pick( center.x - 100, center.y + 8 );
+      const narrow = await window.cy.pick( center.x + 110, center.y + 8 );
+
+      return {
+        wide: wide == null ? null : wide.id(),
+        narrow: narrow == null ? null : narrow.id()
+      };
+    }, center );
+
+    expect( picks.wide ).toBe( 'e0' );
+    expect( picks.narrow ).toBe( null );
+  } );
+
+  test( 'manual endpoints move the drawn edge and follow drags on-GPU (12c)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        // launch the edge 60 px below the source center: the line runs
+        // visibly off the center chord
+        edges: { 'source-endpoint': '0 60', 'width': 6, 'line-color': '#e74c3c' }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // ink at the CPU-resolved source endpoint (the manual point)...
+    const src = await page.evaluate( () => window.cy.$id( 'e0' ).renderedSourceEndpoint() );
+
+    expect( Math.abs( src.x - ( center.x - 150 ) ) ).toBeLessThan( 1 );
+    expect( Math.abs( src.y - ( center.y + 60 ) ) ).toBeLessThan( 1 );
+
+    const srcPx = await pixelAt( page, src.x, src.y + 1 );
+
+    expect( srcPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( srcPx[ 1 ] ).toBeLessThan( 140 );
+
+    // ...no ink on the center chord near the source (the edge left it)
+    const chordPx = await pixelAt( page, center.x - 120, center.y );
+
+    expect( chordPx[ 1 ] ).toBeGreaterThan( 180 );
+
+    // dragging the source re-anchors the manual endpoint on-GPU with a
+    // position-row upload only
+    const uploadedBefore = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    await page.evaluate( () => window.cy.$id( 'a' ).position( { x: -150, y: -80 } ) );
+    await waitFrames( page );
+
+    const uploadedAfter = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+    const movedSrc = await page.evaluate( () => window.cy.$id( 'e0' ).renderedSourceEndpoint() );
+
+    expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 );
+    expect( Math.abs( movedSrc.y - ( center.y - 80 + 60 ) ) ).toBeLessThan( 1 );
+
+    const movedPx = await pixelAt( page, movedSrc.x, movedSrc.y + 1 );
+
+    expect( movedPx[ 0 ] ).toBeGreaterThan( 180 );
+  } );
+
+  test( 'arrows sit at manual endpoints along the chord tangent (12c)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#ecf0f1' },
+        // pull the target endpoint 50 px short of the node: the arrow
+        // must sit at the shortened point, in free space
+        edges: {
+          'target-distance-from-node': 50, 'width': 4, 'line-color': '#95a5a6',
+          'target-arrow-shape': 'triangle', 'target-arrow-color': '#8e44ad'
+        }
+      },
+      zoom: 1
+    } );
+
+    await centerPan( page );
+    await waitFrames( page );
+
+    // the arrow's purple lands just behind the CPU-resolved target
+    // endpoint (which sits 50 px shy of the boundary, in free space)
+    const tgt = await page.evaluate( () => window.cy.$id( 'e0' ).renderedTargetEndpoint() );
+    const arrowPx = await pixelAt( page, tgt.x - 5, tgt.y );
+
+    expect( arrowPx[ 2 ] ).toBeGreaterThan( 120 ); // blue-ish purple
+    expect( arrowPx[ 1 ] ).toBeLessThan( 120 );
+
+    // and past the endpoint (between it and the node) there is no line ink
+    const gapPx = await pixelAt( page, tgt.x + 20, tgt.y );
+
+    expect( gapPx[ 0 ] ).toBeGreaterThan( 200 );
+    expect( gapPx[ 1 ] ).toBeGreaterThan( 200 );
+  } );
+
 } );

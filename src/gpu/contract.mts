@@ -31,6 +31,16 @@ export const FLAG_PANNABLE = 512;
  * but flags already do.
  */
 export const FLAG_CURVED = 1024;
+/**
+ * Edge-only, store-managed (round 12b): set when the edge's curve is not
+ * chord-bounded — a taxi route (its excursion from the chord is
+ * position-dependent, so no frame-level slack can bound it), or a
+ * multibezier/segments edge whose weights extrapolate outside [0, 1].
+ * Kernels that can't bind the per-edge params (cull, edge-glyph cull)
+ * test these edges against the endpoint AABB grown by slack + chord
+ * length instead of the slack-grown chord.
+ */
+export const FLAG_CURVED_BOX = 2048;
 
 // -- node shape ids (u32 because WGSL can't index u8 arrays) --
 
@@ -51,11 +61,22 @@ export const SHAPE_VEE = 11;
 export const SHAPE_STAR = 12;
 export const SHAPE_TAG = 13;
 
-// -- edge curve kinds (round 12a; stored in edge.curveParams[3]) --
+// -- edge curve kinds (rounds 12a/12b; stored in edge.curveParams[3]) --
 
 export const CURVE_STRAIGHT = 0;
 export const CURVE_BEZIER = 1;
 export const CURVE_LOOP = 2;
+/** unbundled bezier: one quadratic piece per control point, C1-joined
+ * through the inserted midpoints (v3's multibezier).  Param lists live in
+ * the curve param blob; the params column holds the header (see below). */
+export const CURVE_MULTI = 3;
+/** segments / round-segments: straight legs through the segment points,
+ * with optional round-corner arcs.  Blob-backed like CURVE_MULTI. */
+export const CURVE_SEGMENTS = 4;
+/** taxi / round-taxi: axis-aligned routing derived from live positions in
+ * the vertex stage / CPU twin (the blob holds only the fixed params).
+ * Taxi routes are not chord-bounded — they carry FLAG_CURVED_BOX. */
+export const CURVE_TAXI = 5;
 
 // -- edge line-style ids (round 10) --
 

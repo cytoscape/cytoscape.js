@@ -2164,6 +2164,36 @@ lands it.
   column's span (`node.borderWidth` itself is pick-neutral, but
   borders move curved pick geometry — a latent 12a gap).  Node specs
   cover the write-through and its dirty span.
+- [x] **CPU route geometry** (`curve-geometry.mts`): the CPU half of
+  the dual-impl discipline for the three 12b families.  `evalRoute`
+  computes the interior route points — unbundled-bezier controls and
+  segment points from v3's weighted-frame + perpendicular-offset
+  formulas ('intersection' and 'node-position' frames, keeping v3's
+  quirk that the normal always comes from the intersection frame), and
+  the full verbatim taxi routing (auto/explicit directions, percent/px
+  turns incl. negative = from-target, min-distance clamps with the Z-
+  and L-shape fallbacks, node-body offsets, the forced-direction
+  growth case) — plus boundary endpoints toward the first/last route
+  point.  `computeCorner` is v3's `getRoundCorner` as a pure function
+  (spec-pinned *directly against* `src/round.mts` output across
+  windings, arc- vs influence-radius, limit clamps and collinear
+  corners).  The drawn strip stays one indirect draw of CURVE_SEGS
+  quads for every family: `quadPiece` maps subdivision indices onto
+  route pieces (multibezier: one C1 quadratic per control through
+  inserted midpoints; polylines: legs, with corner arcs interleaved
+  when round) such that **piece boundaries land exactly on subdivision
+  indices** — legs stay pixel-straight and corners exact regardless of
+  quad distribution.  That requires pieces ≤ CURVE_SEGS, so interior
+  counts are capped (`MAX_MULTI_CTRL` = 8 controls, `MAX_CURVE_PTS` =
+  11 segment points — a recorded deviation from v3's unbounded lists;
+  derivation clamps with a warning).  `routeMidpoint` ports v3's
+  label-anchor/autorotate rules per family (even/odd counts, the round
+  arc-apex case with its arc tangent).  Contract: `CURVE_MULTI`/
+  `CURVE_SEGMENTS`/`CURVE_TAXI` kinds + `FLAG_CURVED_BOX` (taxi
+  routes — and weight-extrapolated routes — are not chord-bounded, so
+  kernels without a params binding will cull them against the endpoint
+  AABB grown by slack + chord length).  33 Node specs
+  (`test/gpu-curve-routes.mjs`).
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

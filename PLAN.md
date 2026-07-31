@@ -3669,10 +3669,31 @@ commit(s) with docs in-commit):
   outside-to-line vs outside-to-node endpoint difference is
   invisible at this scale).  2043 Node tests, 118/118 Playwright,
   typecheck + lint clean.
-- [ ] **14.11 Interaction + tween demotion + layouts** —
-  parent-drag Playwright specs, drag-set dedupe, the
-  `gpuEligible` hierarchy rule + reparent-settle, layout parent
-  exclusion, `boundingBoxAt`.
+- [x] **14.11 Interaction + tween demotion + layouts** — landed
+  2026-07-31.  **Layouts position leaves only** (v3):
+  `layoutPositions` filters parents (auto-bounds derive them from
+  their placed leaves), the grid slot path filters `FLAG_PARENT`
+  slots, the grid handle path / circle / concentric / breadthfirst
+  filter their node lists, and preset skips parent entries in both
+  forms (a preset parent write would shift its whole subtree).
+  `boundingBoxAt` skips parent bodies — the leaves' hypothetical
+  boxes stand in; the padding margin is not modeled (a recorded
+  fit-target approximation).  **GPU tween demotion**: a position
+  animation whose node targets carry `FLAG_PARENT|FLAG_CHILD` is
+  not GPU-eligible (a lease would leave the CPU columns the
+  auto-bounds derivation reads stale, and a tweened parent must
+  shift its subtree per tick — CPU-only semantics); unrelated
+  leaves in compound graphs stay eligible.  **Reparent settle**:
+  `AnimationManager.settleGpuAll()` (factored from detachDriver)
+  runs from the store's reparent hook, so live leases settle to
+  the CPU before the moved slots fall under CPU-side derivations.
+  **Interaction needed no pointer changes**: a parent drag is just
+  `position()` (the 14.3 subtree shift), and drag-all-selected
+  with a parent + its child rides the collection `shift()` dedupe.
+  Tests: 6 Node specs (`test/gpu-compound-layouts.mjs`) + a
+  Playwright drag spec (parent-band drag moves the subtree by the
+  pointer delta; a selected parent+child pair moves exactly once).
+  2049 Node tests, 119/119 Playwright, typecheck + lint clean.
 - [ ] **14.12 Debug scene + benchmarks + true-up** —
   `debug/webgpu` compound scene; a renderer-benchmark compound
   scene; the auto-bounds flush cost at scale (e.g. 200k nodes

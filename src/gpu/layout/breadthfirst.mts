@@ -65,7 +65,7 @@ export class BreadthFirstLayout {
     const cy = this.cy;
     const options = this.options;
     const eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
-    const nodes = eles.nodes();
+    const nodes = eles.nodes().filter( ( n: GpuCollection ) => !n.isParent() );
     const directed = options.directed === true;
     const maximal = options.acyclic === true || options.maximal === true;
 

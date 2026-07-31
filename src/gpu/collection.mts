@@ -2864,6 +2864,12 @@ export class GpuCollection {
 
     for( let i = 0; i < nodes.length; i++ ){
       const node = nodes[ i ];
+
+      // parents derive from their children (14.11): the leaves'
+      // hypothetical boxes stand in for the parent body (the padding
+      // margin is not modeled — a recorded fit-target approximation)
+      if( node.isParent() ){ continue; }
+
       const pos = posFn( node, i );
 
       posMap.set( node, pos );
@@ -2955,7 +2961,11 @@ export class GpuCollection {
     fn: ( node: GpuCollection, i: number ) => Position
   ): this {
     const cy = this._cy;
-    const nodes = this.nodes();
+    // v3: parents are excluded from layout positioning (auto-bounds
+    // derive them from their placed leaves, round 14.11)
+    const nodes = cy._store.hasCompounds()
+      ? this.nodes().filter( ( n: GpuCollection ) => !n.isParent() )
+      : this.nodes();
     const eles = ( options.eles as GpuCollection | undefined ) ?? this;
 
     cy.emit( { type: 'layoutstart', layout } );

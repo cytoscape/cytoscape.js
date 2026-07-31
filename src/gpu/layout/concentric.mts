@@ -52,7 +52,7 @@ export class ConcentricLayout {
     const options = this.options;
     const eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
     const clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
-    const nodes = eles.nodes();
+    const nodes = eles.nodes().filter( ( n: GpuCollection ) => !n.isParent() );
 
     const bb = math.makeBoundingBox( options.boundingBox ?? {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()

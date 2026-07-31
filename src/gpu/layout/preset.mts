@@ -1,3 +1,4 @@
+import { FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import type { Position } from '../../types.mjs';
 import type { GpuPresetLayoutOptions } from '../gpu-types.mjs';
@@ -44,6 +45,8 @@ export class PresetLayout {
     if( typeof positions === 'function' ){
       // function form takes handles by contract
       scope.nodes().positions( ( ele: GpuCollection ) => {
+        if( ele.isParent() ){ return false; } // parents derive (14.11)
+
         return ( positions as ( node: GpuCollection ) => Position | null | undefined )( ele ) ?? false;
       } );
     } else if( positions != null ){
@@ -57,6 +60,7 @@ export class PresetLayout {
         const pos = positions[ id ];
 
         if( entry == null || entry.group !== 'nodes' || pos == null ){ continue; }
+        if( store.hasFlag( 'nodes', entry.slot, FLAG_PARENT ) ){ continue; } // parents derive (14.11)
 
         slots.push( entry.slot );
         xy.push( pos.x, pos.y );

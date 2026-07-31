@@ -131,8 +131,11 @@ export class GpuCore {
     };
 
     // a reparented node's structural case conditions ({ child: ... } /
-    // { parent: ... }) re-evaluate via the pseudo-key refresh (14.7)
+    // { parent: ... }) re-evaluate via the pseudo-key refresh (14.7),
+    // and any live GPU tween settles to the CPU first — the moved slots
+    // now sit under CPU-side derivations (auto-bounds, folds; 14.11)
     this._store.onReparented = ( slot ) => {
+      this._animations.settleGpuAll();
       this._styleEngine.refreshMapped( 'nodes', [ slot ], [ '::parent', '::child' ] );
     };
     this._animations = new AnimationManager( () => this._afterAnimationTick() );

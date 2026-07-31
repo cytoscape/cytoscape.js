@@ -1042,6 +1042,25 @@ angular difference at the boundary, measured at 0.022% in the live
 parity scene.  `controlPoints()`/`midpoint()`/`boundingBox()`
 answer through the shared evaluator like loops.
 
+Round 14.11 (layouts, tweens, interaction): every built-in layout
+positions **leaves only** — parents derive from their placed
+children (v3's `layoutPositions` rule; preset skips parent entries
+in both its forms, since a parent position write shifts the whole
+subtree).  `boundingBoxAt` skips parent bodies (the leaves'
+hypothetical boxes stand in; the parent padding margin is not
+modeled — a recorded fit-target approximation).  A position
+animation targeting any compound-related node (parent or child) is
+**not GPU-offload-eligible**: the lease would leave the CPU
+position columns stale under the auto-bounds derivation, and a
+tweened parent must shift its subtree per tick — both CPU-only
+semantics; unrelated leaves in compound graphs still offload.
+Reparenting settles any live GPU tween to the CPU first
+(`AnimationManager.settleGpuAll`).  Dragging a parent needs no
+special pointer handling — the grab resolves through the compound
+pick order and the position write shifts the subtree; dragging a
+selected parent together with its selected child moves the child
+exactly once (the collection shift dedupe).
+
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

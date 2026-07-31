@@ -47,7 +47,7 @@ export class CircleLayout {
     const eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
     const clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
 
-    let nodes = eles.nodes();
+    let nodes = eles.nodes().filter( ( n: GpuCollection ) => !n.isParent() );
 
     if( options.sort != null ){
       nodes = nodes.sort( options.sort as ( a: GpuCollection, b: GpuCollection ) => number );

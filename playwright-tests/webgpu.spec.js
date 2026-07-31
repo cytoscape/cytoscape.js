@@ -3121,4 +3121,74 @@ test.describe( 'WebGPU renderer', () => {
     expect( bandAfter[ 2 ] ).toBeGreaterThan( 200 );
   } );
 
+  test( 'dragging a parent moves its subtree; a selected parent+child pair moves once (round 14.11)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // p (padding 20) > a at the origin; q leaf far right
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'p' } },
+        { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } },
+        { data: { id: 'q' }, position: { x: 220, y: 0 } }
+      ],
+      style: {
+        nodes: { 'width': 60, 'height': 60, 'shape': 'rectangle', 'background-color': 'red' },
+        parents: { 'background-color': 'rgb(0,128,0)', 'border-width': 0, padding: 20 }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // hover-resolve then grab the parent by its padding band (above the child)
+    await page.evaluate( () => {
+      window.__hovered = false;
+      window.cy.on( 'mouseover', () => { window.__hovered = true; } );
+    } );
+    await page.mouse.move( center.x - 10, center.y - 50 );
+    await page.mouse.move( center.x, center.y - 40, { steps: 5 } );
+    await expect.poll( () => page.evaluate( () => window.__hovered ), { timeout: 5000 } ).toBe( true );
+
+    await page.mouse.down();
+    await page.mouse.move( center.x + 80, center.y + 10, { steps: 10 } );
+    await page.mouse.up();
+
+    const dragged = await page.evaluate( () => ( {
+      p: window.cy.$id( 'p' ).position(),
+      a: window.cy.$id( 'a' ).position()
+    } ) );
+
+    // the subtree followed the parent drag (v3's beforePositionSet):
+    // the pointer moved (+80, +50) from the grab point
+    expect( dragged.a.x ).toBeCloseTo( 80, 0 );
+    expect( dragged.a.y ).toBeCloseTo( 50, 0 );
+    expect( dragged.p.x ).toBeCloseTo( 80, 0 );
+    expect( dragged.p.y ).toBeCloseTo( 50, 0 );
+
+    // drag-all-selected with the parent AND its child selected: the
+    // shift dedupe moves the child exactly once
+    await page.evaluate( () => {
+      window.cy.$id( 'p' ).select();
+      window.cy.$id( 'a' ).select();
+    } );
+    await waitFrames( page );
+
+    // grab p's padding band at its new spot (p spans y [0, 100] there;
+    // the child body starts at y = 20)
+    await page.mouse.move( center.x + 80, center.y + 10 );
+    await page.mouse.down();
+    await page.mouse.move( center.x + 80, center.y + 110, { steps: 10 } );
+    await page.mouse.up();
+
+    const after = await page.evaluate( () => ( {
+      p: window.cy.$id( 'p' ).position(),
+      a: window.cy.$id( 'a' ).position()
+    } ) );
+
+    expect( after.a.y ).toBeCloseTo( dragged.a.y + 100, 0 ); // once, not twice
+    expect( after.p.y ).toBeCloseTo( dragged.p.y + 100, 0 );
+  } );
+
 } );

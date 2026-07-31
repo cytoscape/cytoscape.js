@@ -1,4 +1,5 @@
 import * as math from '../../math.mjs';
+import { FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import type { BoundingBox, Position } from '../../types.mjs';
 import type { GpuGridLayoutOptions } from '../gpu-types.mjs';
@@ -75,7 +76,12 @@ export class GridLayout {
   private runBySlot( bb: BoundingBox ): void {
     const cy = this.cy;
     const store = cy._store;
-    const slots = store.slotsOrdered( 'nodes' );
+    let slots = store.slotsOrdered( 'nodes' );
+
+    if( store.hasCompounds() ){ // parents derive from their placed leaves
+      slots = slots.filter( slot => !store.hasFlag( 'nodes', slot, FLAG_PARENT ) );
+    }
+
     const size = store.column( 'node.size' ) as Float32Array;
     const border = store.column( 'node.borderWidth' ) as Float32Array;
 
@@ -108,7 +114,7 @@ export class GridLayout {
     const options = this.options;
     const scope = ( options.eles as GpuCollection | undefined ) ?? cy;
 
-    let nodeList = scope.nodes().toArray();
+    let nodeList = scope.nodes().toArray().filter( node => !node.isParent() );
 
     if( options.sort != null ){
       nodeList = nodeList.sort( options.sort as ( a: GpuCollection, b: GpuCollection ) => number );

@@ -2,6 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import { compileEasing } from './easing.mjs';
 import { oklabToSrgb, srgbToOklab } from './style-schemes.mjs';
 import type { Easing, EasingProgram } from './easing.mjs';
+import { FLAG_CHILD, FLAG_PARENT } from './contract.mjs';
 import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { StyleEngine } from './style.mjs';
@@ -359,6 +360,19 @@ export class Animation {
 
     if( this.position == null && this.style.length === 0 ){ return false; } // a bare delay
 
+    // compounds (round 14.11): a GPU position lease leaves the CPU
+    // columns stale, which the auto-bounds derivation reads — and a
+    // tweened parent must shift its subtree per tick, which only the
+    // CPU path does.  Compound-related targets stay CPU-driven.
+    if( this.position != null && this.store.hasCompounds() ){
+      for( const ref of this.refs ){
+        if( ref.group === 'nodes'
+          && ( this.store.flags( 'nodes', ref.slot ) & ( FLAG_PARENT | FLAG_CHILD ) ) !== 0 ){
+          return false;
+        }
+      }
+    }
+
     return this.style.every( s => s.channel.tier === 'paint' );
   }
 
@@ -615,13 +629,19 @@ export class AnimationManager {
   }
 
   detachDriver(): void {
-    // settle anything GPU-driven back to the CPU before the sink goes away
+    this.settleGpuAll();
+    this.sink = null;
+    this.driven = false;
+  }
+
+  /** Settle every GPU-driven animation onto the CPU columns.  Round
+   * 14.11: a reparent mid-flight moves the tweened slots under the
+   * auto-bounds/fold derivations, which read the CPU columns — the
+   * store's reparent hook settles active leases before they go stale. */
+  settleGpuAll(): void {
     for( const q of this.queues.values() ){
       if( q[ 0 ]?.gpuId != null ){ q[ 0 ].settleGpu( now() ); }
     }
-
-    this.sink = null;
-    this.driven = false;
   }
 
   /** Enqueue an animation; nudges the driver (or starts the auto-loop). */

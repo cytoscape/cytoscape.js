@@ -394,6 +394,29 @@ export class GpuCore {
       refs.push( this._store.ref( 'nodes', slot ) );
     }
 
+    // second pass (round 14.2): resolve def parents once the batch's nodes
+    // all exist, so forward references work in any def order; an unknown or
+    // non-node parent warns and leaves the node an orphan (v3's rule, with
+    // the silent-drop case upgraded to a warning)
+    for( let i = 0; i < nodeDefs.length; i++ ){
+      const parent = nodeDefs[ i ].data?.parent;
+
+      if( parent == null ){ continue; }
+
+      const parentRef = this._store.lookup( String( parent ) );
+
+      if( parentRef == null || parentRef.group !== 'nodes' ){
+        console.warn(
+          `Node '${this._store.idAt( 'nodes', nodeSlots[ i ] )}' has nonexistant parent ` +
+          `'${String( parent )}'; added as an orphan`
+        );
+
+        continue;
+      }
+
+      this._store.setParent( nodeSlots[ i ], parentRef.slot );
+    }
+
     for( const def of edgeDefs ){
       const data = def.data ?? {};
       const id = data.id != null ? String( data.id ) : this._newId();

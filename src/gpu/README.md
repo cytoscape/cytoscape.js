@@ -878,8 +878,28 @@ kernels can split the node draw without new bindings).  Cycle rule
 is v3's: an assignment that would make a node its own ancestor
 warns and drops the ref, no throw.  A node with children can not be
 removed (the collection layer cascades descendants first, v3's
-removal semantics — built in 14.2), and `cy.hasCompoundNodes()`
-reflects live parents.
+removal semantics), and `cy.hasCompoundNodes()` reflects live
+parents.
+
+Round 14.2 (the compound collection API + lifecycle): the traversal
+surface — `parent`/`parents` (=`ancestors`)/`children`/
+`descendants`/`siblings`/`orphans`/`nonorphans`/`commonAncestors`
+and the `isParent`/`isChildless`/`isChild`/`isOrphan` predicates —
+is slot-native over the hierarchy index with v3 orderings
+(ancestors nearest-first, children in link order, descendants
+pre-order).  One recorded deviation: `parent()` always returns a
+proper collection (v3's single-element fast path returned a raw
+element ref and ignored the selector argument).  `remove()`
+cascades over descendants and their incident edges (v3);
+`move({ parent })` re-parents **in place** — the node keeps its
+slot, id, data and edges (v3 does a remove/restore refs cycle) —
+emitting `moveout` then `move` per changed node; an unknown parent
+id is a silent no-op (v3) and a cyclic assignment warns + drops.
+Def ingest resolves `data.parent` in a second pass once the batch's
+nodes all exist, so forward references work in any def order;
+numeric parents coerce to string ids (v3), and unknown/non-node
+parents warn and leave the node an orphan.  Element `json()`
+carries `parent` and round-trips through `cy.add()`.
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

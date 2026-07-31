@@ -1793,7 +1793,8 @@ export class GpuCollection {
     const cy = this._cy;
     const store = this._store;
 
-    // build the closure: requested live elements + incident edges of removed nodes
+    // build the closure: requested live elements + their descendants
+    // (compound removal cascades, v3) + incident edges of removed nodes
     const edgeHandles: GpuCollection[] = [];
     const nodeHandles: GpuCollection[] = [];
     const seen = new Set<number>();
@@ -1807,6 +1808,25 @@ export class GpuCollection {
       }
     };
 
+    const addNode = ( ele: GpuCollection ): void => {
+      const key = packRef( ele._refs[0] );
+
+      if( seen.has( key ) ){ return; }
+
+      seen.add( key );
+      nodeHandles.push( ele );
+
+      const slot = ele._refs[0].slot;
+
+      for( const edgeSlot of store.adj.connectedEdges( slot ) ){
+        addEdge( cy._ele( 'edges', edgeSlot ) );
+      }
+
+      for( const childSlot of store.childrenOf( slot ) ){
+        addNode( cy._ele( 'nodes', childSlot ) );
+      }
+    };
+
     for( let i = 0; i < this.length; i++ ){
       const ref = this._refs[ i ];
 
@@ -1815,13 +1835,13 @@ export class GpuCollection {
       if( ref.group === 'edges' ){
         addEdge( this[ i ] );
       } else {
-        nodeHandles.push( this[ i ] );
-
-        for( const edgeSlot of store.adj.connectedEdges( ref.slot ) ){
-          addEdge( cy._ele( 'edges', edgeSlot ) );
-        }
+        addNode( this[ i ] );
       }
     }
+
+    // children before parents: the store refuses to remove a node whose
+    // children are still alive (depths are strictly increasing down a chain)
+    nodeHandles.sort( ( a, b ) => store.depthOf( b._refs[0].slot ) - store.depthOf( a._refs[0].slot ) );
 
     // edges first, then nodes; emit remove per element after the store mutation
     for( const edge of edgeHandles ){
@@ -1840,12 +1860,51 @@ export class GpuCollection {
   }
 
   /**
-   * Re-point edges at a new source and/or target node (by id), in place —
-   * the edge keeps its slot, id and data.  Node `parent` moves (compounds)
-   * are out of scope and ignored.  Returns this collection.
+   * Move elements in place, keeping slot, id and data: `{ parent }`
+   * re-parents nodes (null orphans them; the compound move, round 14.2 —
+   * emits `moveout` before and `move` after per changed node), while
+   * `{ source, target }` re-points edges.  As in v3 the modes are
+   * exclusive — a `parent` key takes precedence.  An unknown parent id is
+   * a silent no-op (v3); a cyclic assignment warns and drops (the
+   * hierarchy rule).  Returns this collection.
    */
-  move( opts: { source?: string; target?: string } ): this {
+  move( opts: { source?: string; target?: string; parent?: string | null } ): this {
     const store = this._store;
+
+    if( opts.parent !== undefined ){
+      let parentSlot = -1;
+
+      if( opts.parent != null ){
+        const parentRef = store.lookup( String( opts.parent ) );
+
+        if( parentRef == null || parentRef.group !== 'nodes' ){ return this; } // v3: silent no-op
+
+        parentSlot = parentRef.slot;
+      }
+
+      const wantEmit = hasListeners( this._cy._emitter, 'moveout' )
+        || hasListeners( this._cy._emitter, 'move' );
+
+      for( let i = 0; i < this.length; i++ ){
+        const ref = this._refs[ i ];
+
+        if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+        if( store.parentOf( ref.slot ) === parentSlot ){ continue; }
+
+        // a cyclic assignment is dropped by setParent (with its warning);
+        // it gets no events since nothing changes
+        const cyclic = parentSlot >= 0
+          && ( parentSlot === ref.slot || store.isAncestorOf( ref.slot, parentSlot ) );
+
+        if( !cyclic && wantEmit ){ this._cy._emitOnEle( 'moveout', this[ i ] ); }
+
+        store.setParent( ref.slot, parentSlot );
+
+        if( !cyclic && wantEmit ){ this._cy._emitOnEle( 'move', this[ i ] ); }
+      }
+
+      return this;
+    }
 
     if( opts.source == null && opts.target == null ){ return this; }
 
@@ -2101,6 +2160,235 @@ export class GpuCollection {
     const eles = this.neighborhood().union( this.nodes() );
 
     return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  // -- compound hierarchy (round 14.2) --
+
+  /** Immediate parents of every node in the collection (unique).  v4
+   * always returns a proper collection — v3's single-element raw-ref
+   * shortcut (which also ignored the selector argument) is not ported. */
+  parent( criterion?: FilterLike ): GpuCollection {
+    const store = this._store;
+    const refs: Ref[] = [];
+    const seen = new Set<number>();
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      const p = store.parentOf( ref.slot );
+
+      if( p >= 0 && !seen.has( p ) ){
+        seen.add( p );
+        refs.push( store.ref( 'nodes', p ) );
+      }
+    }
+
+    const eles = this._spawnLive( refs );
+
+    return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  /** All ancestors, level by level: every nearest parent first, then the
+   * grandparents, and so on (v3's iterated-parent() order). */
+  parents( criterion?: FilterLike ): GpuCollection {
+    const store = this._store;
+    const refs: Ref[] = [];
+    const seen = new Set<number>();
+    let level: number[] = [];
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group === 'nodes' && store.isCurrent( ref ) ){ level.push( ref.slot ); }
+    }
+
+    while( level.length > 0 ){
+      const next: number[] = [];
+
+      for( const slot of level ){
+        const p = store.parentOf( slot );
+
+        if( p >= 0 && !seen.has( p ) ){
+          seen.add( p );
+          refs.push( store.ref( 'nodes', p ) );
+          next.push( p );
+        }
+      }
+
+      level = next;
+    }
+
+    const eles = this._spawnLive( refs );
+
+    return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  declare ancestors: this['parents'];
+
+  /** Direct children of every node, in link order per parent. */
+  children( criterion?: FilterLike ): GpuCollection {
+    const store = this._store;
+    const refs: Ref[] = [];
+    const seen = new Set<number>();
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      for( const child of store.childrenOf( ref.slot ) ){
+        if( !seen.has( child ) ){
+          seen.add( child );
+          refs.push( store.ref( 'nodes', child ) );
+        }
+      }
+    }
+
+    const eles = this._spawnLive( refs );
+
+    return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  /** The subtree below every node in pre-order, excluding the nodes themselves. */
+  descendants( criterion?: FilterLike ): GpuCollection {
+    const store = this._store;
+    const refs: Ref[] = [];
+    const seen = new Set<number>();
+    const stack: number[] = [];
+
+    const pushChildren = ( slot: number ): void => {
+      const kids = store.childrenOf( slot );
+
+      for( let j = kids.length - 1; j >= 0; j-- ){ stack.push( kids[ j ] ); }
+    };
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      pushChildren( ref.slot );
+
+      while( stack.length > 0 ){
+        const slot = stack.pop() as number;
+
+        if( seen.has( slot ) ){ continue; }
+
+        seen.add( slot );
+        refs.push( store.ref( 'nodes', slot ) );
+        pushChildren( slot );
+      }
+    }
+
+    const eles = this._spawnLive( refs );
+
+    return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  /** Nodes sharing a parent with the collection's nodes, excluding them;
+   * orphans are nobody's siblings (v3). */
+  siblings( criterion?: FilterLike ): GpuCollection {
+    const eles = this.parent().children().difference( this );
+
+    return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  /** The collection's nodes without a parent. */
+  orphans( criterion?: FilterLike ): GpuCollection {
+    return this._byParentedness( false, criterion );
+  }
+
+  /** The collection's nodes that have a parent. */
+  nonorphans( criterion?: FilterLike ): GpuCollection {
+    return this._byParentedness( true, criterion );
+  }
+
+  private _byParentedness( wantChild: boolean, criterion?: FilterLike ): GpuCollection {
+    const store = this._store;
+    const refs: Ref[] = [];
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      if( ( store.parentOf( ref.slot ) >= 0 ) === wantChild ){
+        refs.push( store.ref( 'nodes', ref.slot ) );
+      }
+    }
+
+    const eles = this._spawnLive( refs );
+
+    return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  /** Ancestors common to every element, closest first (an edge in the
+   * collection has no ancestors, so it empties the result — v3). */
+  commonAncestors( criterion?: FilterLike ): GpuCollection {
+    const store = this._store;
+    let chain: number[] | null = null;
+
+    for( let i = 0; i < this._refs.length; i++ ){
+      const ref = this._refs[ i ];
+
+      if( !store.isCurrent( ref ) ){ continue; }
+
+      const own: number[] = [];
+
+      if( ref.group === 'nodes' ){
+        for( let p = store.parentOf( ref.slot ); p >= 0; p = store.parentOf( p ) ){ own.push( p ); }
+      }
+
+      if( chain == null ){
+        chain = own;
+      } else {
+        const keep = new Set( own );
+
+        chain = chain.filter( slot => keep.has( slot ) );
+      }
+
+      if( chain.length === 0 ){ break; }
+    }
+
+    const eles = this._spawnLive( ( chain ?? [] ).map( slot => store.ref( 'nodes', slot ) ) );
+
+    return criterion == null ? eles : eles.filter( criterion );
+  }
+
+  /** Whether the first element is a node with at least one child. */
+  isParent(): boolean {
+    const ref = this._liveNodeRef();
+
+    return ref != null && this._store.childrenOf( ref.slot ).length > 0;
+  }
+
+  /** Whether the first element is a node with no children. */
+  isChildless(): boolean {
+    const ref = this._liveNodeRef();
+
+    return ref != null && this._store.childrenOf( ref.slot ).length === 0;
+  }
+
+  /** Whether the first element is a node with a parent. */
+  isChild(): boolean {
+    const ref = this._liveNodeRef();
+
+    return ref != null && this._store.parentOf( ref.slot ) >= 0;
+  }
+
+  /** Whether the first element is a node without a parent. */
+  isOrphan(): boolean {
+    const ref = this._liveNodeRef();
+
+    return ref != null && this._store.parentOf( ref.slot ) < 0;
+  }
+
+  private _liveNodeRef(): Ref | null {
+    const ref = this._first();
+
+    return ref != null && ref.group === 'nodes' && this._store.isCurrent( ref ) ? ref : null;
   }
 
   // -- DAG traversal --
@@ -2942,6 +3230,7 @@ GpuCollection.prototype.symdiff = GpuCollection.prototype.symmetricDifference;
 GpuCollection.prototype.xor = GpuCollection.prototype.symmetricDifference;
 GpuCollection.prototype.deselect = GpuCollection.prototype.unselect;
 GpuCollection.prototype.openNeighborhood = GpuCollection.prototype.neighborhood;
+GpuCollection.prototype.ancestors = GpuCollection.prototype.parents;
 GpuCollection.prototype.componentsOf = GpuCollection.prototype.components;
 GpuCollection.prototype.makeLayout = GpuCollection.prototype.layout;
 GpuCollection.prototype.createLayout = GpuCollection.prototype.layout;

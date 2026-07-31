@@ -3414,9 +3414,31 @@ commit(s) with docs in-commit):
   when parented).  Tests-first: 12 specs in
   `test/gpu-hierarchy.mjs` written red, then green — 1956 Node
   tests, typecheck + lint clean.
-- [ ] **14.2 Collection API + lifecycle** — traversal methods,
-  `remove()` cascade, `move({ parent })`, two-pass def ingest,
-  json.  Node specs pinned to v3 semantics.
+- [x] **14.2 Collection API + lifecycle** — landed 2026-07-31.
+  Slot-native traversal on the hierarchy: `parent` (always a proper
+  collection — v3's raw-ref single-element shortcut and its
+  ignored-selector wart are not ported), `parents`/`ancestors`
+  (level-by-level, nearest first), `children` (link order),
+  `descendants` (pre-order), `siblings` (via
+  parent().children() − self; orphans are nobody's siblings),
+  `orphans`/`nonorphans` (filters of the calling collection),
+  `commonAncestors` (closest first; an edge member empties the
+  result, v3), and the `isParent`/`isChildless`/`isChild`/
+  `isOrphan` predicates (booleans, first-element semantics).
+  Lifecycle: `remove()` cascades over descendants + their incident
+  edges (packed-seen closure; nodes removed depth-descending so the
+  store's children-first rule always holds); `move({ parent })`
+  re-parents in place — identity preserved, `moveout` before /
+  `move` after per changed node (listener-gated), unknown parent a
+  silent no-op (v3), cyclic assignment warns + drops with no
+  events; def ingest resolves `data.parent` in a second pass after
+  the batch's nodes exist (forward refs in any order; numeric
+  parents coerce to string ids; unknown/non-node parents warn +
+  orphan — v3's silent-drop case upgraded to a warning); element
+  `json()` carries `parent` via the synthesized data object and
+  round-trips through `add()`.  Tests-first: 17 specs in
+  `test/gpu-compounds-api.mjs` red then green — 1973 Node tests,
+  typecheck + lint clean.
 - [ ] **14.3 Auto-bounds flush** — pending/flush/`flushDerived` +
   triggers, `materializeGeom`, padding/min-clamp/degenerate
   fallback, parent `setPosition` child-shift + shift dedupe, label

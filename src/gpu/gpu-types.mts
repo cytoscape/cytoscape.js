@@ -12,6 +12,9 @@ export interface GpuElementData {
   source?: string;
   /** edges only; required for edges */
   target?: string;
+  /** nodes only: the parent node's id (compound hierarchy; numbers are
+   * coerced to string ids, as in v3) */
+  parent?: string | number;
   /** anything else lands in the data() sidecar */
   [key: string]: unknown;
 }

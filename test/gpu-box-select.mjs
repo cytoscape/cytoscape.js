@@ -111,4 +111,53 @@ describe('gpu/box-select', function(){
         .to.deep.equal([ 'in1', 'in2', 'inIn' ]);
     });
   });
+
+  describe('curved edges (12b: the curve-endpoint upgrade)', function(){
+    it('a curved edge tests its curve boundary endpoints, not just centers', function(){
+      // a segments edge whose route bulges: the *curve endpoints* sit on
+      // the node boundaries, so a box containing both boundary points —
+      // but not the full node boxes — still contains the edge
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          { data: { id: 'e', source: 'a', target: 'b' } }
+        ],
+        style: { edges: { 'curve-style': 'segments', 'segment-distances': 20 } }
+      });
+
+      var s = cy.$id('e').sourceEndpoint();
+      var t = cy.$id('e').targetEndpoint();
+
+      // a box just around the two curve endpoints contains the edge...
+      var box = cy.elementsInBox( s.x - 1, Math.min(s.y, t.y) - 1, t.x + 1, Math.max(s.y, t.y) + 25 );
+
+      expect( box.filter( e => e.isEdge() ).map( e => e.id() ) ).to.deep.equal([ 'e' ]);
+
+      // ...and a box that excludes the source-side boundary point does not
+      var miss = cy.elementsInBox( s.x + 2, -100, t.x + 1, 100 );
+
+      expect( miss.filter( e => e.isEdge() ) ).to.have.length( 0 );
+    });
+
+    it('a taxi edge is contained by the box around its launch endpoints', function(){
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 10, y: 200 } },
+          { data: { id: 'e', source: 'a', target: 'b' } }
+        ],
+        style: { edges: { 'curve-style': 'taxi' } }
+      });
+
+      // launch endpoints: (0, 15) and (10, 185)
+      var hit = cy.elementsInBox( -5, 10, 15, 190 );
+
+      expect( hit.filter( e => e.isEdge() ).map( e => e.id() ) ).to.deep.equal([ 'e' ]);
+
+      var miss = cy.elementsInBox( -5, 20, 15, 190 ); // cuts the source launch
+
+      expect( miss.filter( e => e.isEdge() ) ).to.have.length( 0 );
+    });
+  });
 });

@@ -1083,10 +1083,14 @@ export class GraphStore implements ModelView {
    * box-selection query, answered by one columnar scan.  v3's default
    * 'contain' semantics: a node counts when its bounding box (position ±
    * size/2 ± border/2) lies fully inside the box; an edge counts when
-   * both endpoint node centers do (edges are straight center-to-center
-   * segments in the prototype).  Corners may be given in any order.
+   * both of its endpoints do.  Since 12b, curved edges test their
+   * *curve* boundary endpoints (exactly v3's on-boundary rule — the
+   * revisit deferred from 12a); straight edges keep the endpoint-center
+   * approximation (a recorded deviation).  Corners may be given in any
+   * order.
    */
   refsInBox( x1: number, y1: number, x2: number, y2: number ): Ref[] {
+    this.curves.flush(); // curved edges read derived params below
     const lx = Math.min( x1, x2 );
     const hx = Math.max( x1, x2 );
     const ly = Math.min( y1, y2 );
@@ -1128,13 +1132,35 @@ export class GraphStore implements ModelView {
       return x >= lx && x <= hx && y >= ly && y <= hy;
     };
 
+    const pointIn = ( x: number, y: number ): boolean => {
+      return x >= lx && x <= hx && y >= ly && y <= hy;
+    };
+
     for( let i = 0; i < edgeOrder.slots.length; i++ ){
       const slot = edgeOrder.slots[ i ];
       const g = edgeOrder.gens[ i ];
 
       if( edgeGen[ slot ] !== g || ( edgeFlags[ slot ] & shown ) !== shown ){ continue; }
 
-      if( centerIn( endpoints[ slot * 2 ] ) && centerIn( endpoints[ slot * 2 + 1 ] ) ){
+      let contained: boolean;
+
+      if( ( edgeFlags[ slot ] & FLAG_CURVED ) !== 0 ){
+        // the curve's boundary endpoints — v3's exact 'contain' rule
+        const ev = this.curveEvalAt( slot );
+
+        if( ev != null ){
+          contained = pointIn( ev.sx, ev.sy ) && pointIn( ev.ex, ev.ey );
+        } else {
+          const route = this.curveRouteAt( slot ) as CurveRoute;
+
+          contained = pointIn( route.qx[ 0 ], route.qy[ 0 ] ) &&
+            pointIn( route.qx[ route.n + 1 ], route.qy[ route.n + 1 ] );
+        }
+      } else {
+        contained = centerIn( endpoints[ slot * 2 ] ) && centerIn( endpoints[ slot * 2 + 1 ] );
+      }
+
+      if( contained ){
         out.push( { group: 'edges', slot, gen: g } );
       }
     }

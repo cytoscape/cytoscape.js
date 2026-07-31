@@ -1019,11 +1019,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   element).  Geometry is v3's default 'contain' semantics answered by
   one columnar scan (`cy.elementsInBox(x1, y1, x2, y2)`, model
   coordinates): a node counts when its bounding box (incl. border) lies
-  fully inside; an edge when both endpoint node *centers* do
-  (v3 tests the on-boundary endpoints; centers are the straight-edge
-  approximation used elsewhere in the prototype — curved edges keep
-  the same endpoint-center containment, a 12a call revisited with
-  12b's full-family CPU evaluator).  `selectionType()`
+  fully inside; an edge when both of its endpoints do.  Since 12b,
+  **curved edges test their curve boundary endpoints** — exactly v3's
+  on-boundary rule, via the full-family CPU evaluator (the revisit
+  deferred from 12a); straight edges keep the endpoint-*center*
+  approximation (a recorded deviation).  `selectionType()`
   is 'single' (tap/box replaces the selection) or 'additive' (taps
   toggle, boxes add).  Mouse/pen only — v3's three-finger touch box
   gesture is not implemented.

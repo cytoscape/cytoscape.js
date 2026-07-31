@@ -2299,6 +2299,13 @@ lands it.
   with a ≤64 B re-anchor on drag.  68/68 Playwright specs; the 12a
   curved-arrows golden is byte-stable through the fragment-stage
   color move.
+- [x] **Box selection: the curve-endpoint upgrade** (the revisit
+  deferred from 12a).  `refsInBox` now tests a curved edge's *curve
+  boundary endpoints* — exactly v3's on-boundary 'contain' rule, via
+  the full-family CPU evaluator (curveEvalAt / curveRouteAt); straight
+  edges keep the endpoint-center approximation (recorded deviation).
+  2 new Node specs (segments and taxi containment, incl. the
+  cut-the-launch-point miss cases).
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

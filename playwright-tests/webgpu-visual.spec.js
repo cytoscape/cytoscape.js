@@ -974,6 +974,33 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'manual-endpoints', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: ghost bodies (round 13 A1)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the simplified decided form: shape + border + background duplicated
+    // at the offset, under the node — no labels or decorations
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', shp: 'ellipse' }, position: { x: -100, y: -60 } },
+        { data: { id: 'b', shp: 'rectangle' }, position: { x: 60, y: -60 } },
+        { data: { id: 'c', shp: 'diamond' }, position: { x: -20, y: 70 } }
+      ],
+      style: {
+        nodes: {
+          'width': 44, 'height': 36, 'background-color': '#c0392b',
+          'border-width': 4, 'border-color': '#2c3e50',
+          'shape': { data: 'shp' },
+          'ghost': 'yes', 'ghost-offset-x': 24, 'ghost-offset-y': 18, 'ghost-opacity': 0.45
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'ghost', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1429,6 +1456,29 @@ test.describe( 'v3-vs-v4 render parity', () => {
     };
 
     await runParity( page, testInfo, 'parity-haystack0', elements, v3Style, v4Style );
+  } );
+
+  test( 'parity: ghost bodies (round 13 A1)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // for label-free nodes v3's whole-node ghost redraw IS the body
+    // duplicate v4 draws, so the scenes are pixel-comparable
+    const elements = [
+      { data: { id: 'a' }, position: { x: -100, y: -60 } },
+      { data: { id: 'b' }, position: { x: 60, y: -60 } },
+      { data: { id: 'c' }, position: { x: -20, y: 70 } }
+    ];
+    const shared = {
+      'width': 44, 'height': 44, 'background-color': '#c0392b',
+      'border-width': 4, 'border-color': '#2c3e50',
+      'ghost': 'yes', 'ghost-offset-x': 24, 'ghost-offset-y': 18, 'ghost-opacity': 0.45
+    };
+    const v3Style = [
+      { selector: 'node', style: Object.assign( { shape: 'ellipse' }, shared ) }
+    ];
+    const v4Style = { nodes: Object.assign( {}, shared ) };
+
+    await runParity( page, testInfo, 'parity-ghost', elements, v3Style, v4Style, { minInk: 1000 } );
   } );
 
 } );

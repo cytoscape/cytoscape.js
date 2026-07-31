@@ -2511,4 +2511,52 @@ test.describe( 'WebGPU renderer', () => {
     expect( gapPx[ 1 ] ).toBeGreaterThan( 200 );
   } );
 
+  test( 'ghosts duplicate the node body at the offset and follow drags (A1)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 40, 'background-color': '#c0392b',
+          'ghost': 'yes', 'ghost-offset-x': 70, 'ghost-offset-y': 0, 'ghost-opacity': 0.5
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the ghost body at the offset: red at half opacity over white reads
+    // as a light red — clearly red-tinted, clearly not the full body red
+    const ghostPx = await pixelAt( page, center.x + 70, center.y );
+    const bodyPx = await pixelAt( page, center.x, center.y );
+
+    expect( ghostPx[ 0 ] ).toBeGreaterThan( bodyPx[ 0 ] ); // lighter than the body
+    expect( ghostPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( ghostPx[ 1 ] ).toBeLessThan( 200 ); // but visibly red-tinted
+    expect( ghostPx[ 1 ] ).toBeGreaterThan( bodyPx[ 1 ] );
+
+    // ghosts are not pickable: picking at the ghost hits nothing
+    const picked = await page.evaluate( async p => {
+      const hit = await window.cy.pick( p.x, p.y );
+
+      return hit == null ? null : hit.id();
+    }, { x: center.x + 70, y: center.y } );
+
+    expect( picked ).toBe( null );
+
+    // a drag moves the ghost with its node on-GPU (one position row)
+    await page.evaluate( () => window.cy.$id( 'n' ).position( { x: 0, y: -60 } ) );
+    await waitFrames( page );
+
+    const movedGhostPx = await pixelAt( page, center.x + 70, center.y - 60 );
+    const oldGhostPx = await pixelAt( page, center.x + 70, center.y );
+
+    expect( movedGhostPx[ 1 ] ).toBeLessThan( 200 ); // ghost at the new offset
+    expect( oldGhostPx[ 1 ] ).toBeGreaterThan( 240 ); // old spot back to white
+  } );
+
 } );

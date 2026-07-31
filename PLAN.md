@@ -2534,6 +2534,41 @@ The last item on the autonomous shelf, cleared while planning round 12:
   uphill run with its background box rotated along, and a vertical
   top-to-bottom run — all pre-existing goldens unchanged).
 
+## Landed (round 13 — style-prop parity, in progress)
+
+Executing the round-13 plan below under the round-10 process rules.
+Each item lands as isolated commits with docs in-commit; this record
+grows per item.
+
+- [x] **A1 Ghost props** (2026-07-31).  `ghost` ('yes' | 'no'),
+  `ghost-offset-x/y`, `ghost-opacity` (validated [0, 1]; v3 defaults —
+  a ghost is invisible until given opacity) — node-only, all four
+  mapper-capable ('case' works for `ghost` as an enum).  The decided
+  simplified form, verbatim: a new `node.ghost` column
+  ([offX, offY, opacity, enabled], f32×4) drives a **ghost pass** —
+  the node shader gained `vsGhost`/`fsGhost` entry points drawing the
+  body (shape, border, background — no accent ring, no hover/grab
+  brighten, no labels) at the offset with alpha × ghost-opacity, off
+  its own cull stream (a new 'ghost' cull kind: node SHOWN + enabled +
+  visible opacity + the *offset* quad on screen), drawn after
+  edges/arrows and depth-tested 'less' at NODE_Z so ghost fragments
+  under opaque node interiors are killed — exactly v3's
+  node-over-ghost layering, for free off the early-z prepass.
+  Zero-cost when unused: the store tracks a live ghost-enabled count
+  and the renderer skips the ghost cull + draw entirely at 0.  Ghost
+  offsets are geometry: both bb scans (store fit + collection) grow by
+  the offset body when enabled.  Deviations, recorded: ghosts are not
+  pickable (v3 same — decoration only), and box selection ignores
+  ghost extents (v4's `refsInBox` tests the body box only).  8 Node
+  specs (`test/gpu-ghost.mjs`), a `webgpu` spec (ghost at the offset,
+  not pickable, follows drags on-GPU, old spot clears), a `ghost`
+  golden (three shapes with borders at one offset), and a
+  `parity-ghost` live v3 scene — 0.945% mismatch (AA-classification
+  seams only; for label-free nodes v3's whole-node ghost redraw *is*
+  the body duplicate, so the scenes are directly comparable).  1850
+  Node tests, 55 `webgpu` + 30 `webgpu-visual` specs, typecheck + lint
+  green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2598,11 +2633,11 @@ autonomously):
 
 **Phase A — the 2026-07-29 triage keeps** (direction already set)
 
-- [ ] **A1 Ghost props** (`ghost`, `ghost-offset-x/y`,
+- [x] **A1 Ghost props** (`ghost`, `ghost-offset-x/y`,
   `ghost-opacity`) — the decided simplified form: one extra instance
   draw of the basic node body (shape, border, background) at the
   offset, never labels or decorations.  Offsets grow the bb scan
-  (geometry tier).
+  (geometry tier).  Landed 2026-07-31 — see the round-13 record.
 - [ ] **A2 Overlay/underlay theming** — the 10 `overlay-*`/
   `underlay-*` element props plus the `active-bg-*` and
   `selection-box-*` core props; the baked-in affordances (shader

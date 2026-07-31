@@ -702,6 +702,39 @@ export class GraphStore implements ModelView {
     this.dirty.mark( 'node.outerHalf', slot );
   }
 
+  // -- ghosts (round 13 A1) --
+
+  /** live count of ghost-enabled nodes (the renderer skips the ghost
+   * cull + draw entirely while this is 0) */
+  private ghosts = 0;
+
+  ghostCount(): number {
+    return this.ghosts;
+  }
+
+  /**
+   * Write a node's ghost record [offsetX, offsetY, ghostOpacity,
+   * enabled] (the StyleEngine's write path).  Offsets are geometry —
+   * they grow the bb scans — so writes bump the geometry epoch.
+   */
+  setGhost( slot: number, offX: number, offY: number, opacity: number, enabled: boolean ): void {
+    const arr = this.nodes.column( 'node.ghost' ) as Float32Array;
+    const at = slot * 4;
+    const en = enabled ? 1 : 0;
+
+    if( arr[ at ] === offX && arr[ at + 1 ] === offY &&
+        arr[ at + 2 ] === opacity && arr[ at + 3 ] === en ){ return; }
+
+    if( en !== arr[ at + 3 ] ){ this.ghosts += en === 1 ? 1 : -1; }
+
+    arr[ at ] = offX;
+    arr[ at + 1 ] = offY;
+    arr[ at + 2 ] = opacity;
+    arr[ at + 3 ] = en;
+    this.geoEpoch++;
+    this.dirty.mark( 'node.ghost', slot );
+  }
+
   /** RGBA bytes on [0, 255]. */
   setColor( id: ColumnId, slot: number, r: number, g: number, b: number, a: number ): void {
     const spec = columnSpec( id );
@@ -1283,6 +1316,9 @@ export class GraphStore implements ModelView {
     const size = this.column( 'node.size' ) as Float32Array;
     const border = this.column( 'node.borderWidth' ) as Float32Array;
 
+    const ghost = this.column( 'node.ghost' ) as Float32Array;
+    const anyGhosts = this.ghosts > 0;
+
     this.forEachAlive( 'nodes', slot => {
       const x = pos[ slot * 2 ];
       const y = pos[ slot * 2 + 1 ];
@@ -1293,6 +1329,17 @@ export class GraphStore implements ModelView {
       if( y - hh < y1 ){ y1 = y - hh; }
       if( x + hw > x2 ){ x2 = x + hw; }
       if( y + hh > y2 ){ y2 = y + hh; }
+
+      // a ghost duplicates the body at the offset (round 13 A1)
+      if( anyGhosts && ghost[ slot * 4 + 3 ] !== 0 ){
+        const gx = x + ghost[ slot * 4 ];
+        const gy = y + ghost[ slot * 4 + 1 ];
+
+        if( gx - hw < x1 ){ x1 = gx - hw; }
+        if( gy - hh < y1 ){ y1 = gy - hh; }
+        if( gx + hw > x2 ){ x2 = gx + hw; }
+        if( gy + hh > y2 ){ y2 = gy + hh; }
+      }
     } );
 
     const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;

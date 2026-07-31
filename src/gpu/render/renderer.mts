@@ -75,6 +75,7 @@ interface SceneCullGroups {
   curved: CulledGroup;
   glyph: CulledGroup;
   edgeGlyph: CulledGroup;
+  ghost: CulledGroup;
 }
 
 interface RendererStats {
@@ -621,7 +622,8 @@ export class Renderer {
           edge: new CulledGroup( kernels, 'edge', 'export-edge' ),
           curved: new CulledGroup( kernels, 'curvedEdge', 'export-curved-edge', 6 * CURVE_SEGS ),
           glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' ),
-          edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-edge-glyph' )
+          edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'export-edge-glyph' ),
+          ghost: new CulledGroup( kernels, 'ghost', 'export-ghost' )
         };
       }
 
@@ -793,7 +795,8 @@ export class Renderer {
       edge: new CulledGroup( kernels, 'edge', 'scene-edge' ),
       curved: new CulledGroup( kernels, 'curvedEdge', 'scene-curved-edge', 6 * CURVE_SEGS ),
       glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' ),
-      edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-edge-glyph' )
+      edgeGlyph: new CulledGroup( kernels, 'edgeGlyph', 'scene-edge-glyph' ),
+      ghost: new CulledGroup( kernels, 'ghost', 'scene-ghost' )
     };
     this.pickCull = {
       // nodes pick synchronously on the CPU; only edges need the GPU pass
@@ -1042,6 +1045,11 @@ export class Renderer {
       pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved,
       this.cy._styleEngine.arrowEnds
     );
+    if( store.ghostCount() > 0 && cull.ghost != null ){
+      this.nodePipeline?.drawGhost(
+        pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.ghost );
+    }
+
     this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
 
     if( this.labelLayer != null && this.labelPipeline != null ){
@@ -1084,7 +1092,10 @@ export class Renderer {
    */
   private encodeCulls(
     encoder: GPUCommandEncoder, uniform: GPUBuffer,
-    groups: { node?: CulledGroup; edge: CulledGroup; curved: CulledGroup; glyph?: CulledGroup; edgeGlyph?: CulledGroup },
+    groups: {
+      node?: CulledGroup; edge: CulledGroup; curved: CulledGroup;
+      glyph?: CulledGroup; edgeGlyph?: CulledGroup; ghost?: CulledGroup;
+    },
     timed: boolean, now: number = 0
   ): void {
     const mirror = this.mirror as ColumnMirror;
@@ -1095,6 +1106,16 @@ export class Renderer {
     groups.node?.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
       mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ), mirror.buffer( 'node.flags' )
     ], mv );
+
+    // ghosts (round 13 A1): zero-cost until some node styles a ghost
+    const anyGhosts = store.ghostCount() > 0;
+
+    if( anyGhosts && groups.ghost != null ){
+      groups.ghost.ensure( uniform, Math.max( 1, store.capacity( 'nodes' ) ), [
+        mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ),
+        mirror.buffer( 'node.flags' ), mirror.buffer( 'node.ghost' )
+      ], mv );
+    }
     const edgeCullInputs = [
       mirror.buffer( 'edge.endpoints' ), mirror.buffer( 'edge.width' ), mirror.buffer( 'edge.flags' ),
       mirror.buffer( 'node.position' ), mirror.buffer( 'node.flags' )
@@ -1140,6 +1161,10 @@ export class Renderer {
     groups.node?.encode( pass, store.highWater( 'nodes' ) );
     groups.edge.encode( pass, store.highWater( 'edges' ) );
     groups.curved.encode( pass, store.highWater( 'edges' ) );
+
+    if( anyGhosts && groups.ghost != null ){
+      groups.ghost.encode( pass, store.highWater( 'nodes' ) );
+    }
 
     if( groups.glyph != null && labelLayer != null ){
       groups.glyph.encode( pass, labelLayer.glyphs.highWater );

@@ -134,6 +134,16 @@ instead — same math as the kernel, agreeing with rendered pixels within
 per-element styling is a mapper (`case` conditionals, `data(key)`
 scales).
 
+Ghost props (round 13 A1): `ghost` ('yes' | 'no'), `ghost-offset-x/y`
+and `ghost-opacity` duplicate the *basic node body* — shape, border,
+background — at the offset as one extra instance draw under the node
+(the 2026-07-29 triage's simplified scope: never a whole-node redraw;
+labels and decorations excluded).  All four are node-only and
+mapper-capable; offsets grow the bounding-box scans.  Recorded
+deviations: ghosts are not pickable and box selection ignores ghost
+extents.  The renderer pays nothing while no node styles a ghost (the
+ghost cull + draw are skipped outright at a live count of 0).
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

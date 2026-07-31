@@ -144,6 +144,15 @@ export type ColumnId =
    * curve param blob).
    */
   | 'node.outerHalf'
+  /**
+   * Float32Array(4·cap) — ghost props (round 13 A1): [offsetX, offsetY,
+   * ghostOpacity, enabled].  The decided simplified form: a ghost
+   * duplicates only the basic node body (shape, border, background) at
+   * the offset — one extra instance draw off its own cull stream, drawn
+   * after edges/arrows and under the nodes, never a full node redraw
+   * (labels and decorations excluded).
+   */
+  | 'node.ghost'
   | 'node.flags' // Uint32Array(cap)
   | 'edge.endpoints' // Uint32Array(2·cap), source,target node *slots*
   | 'edge.lineColor' // Uint8Array(4·cap)
@@ -209,6 +218,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.opacity', 'nodes', Float32Array, 1 ),
   spec( 'node.shape', 'nodes', Uint32Array, 1 ),
   spec( 'node.outerHalf', 'nodes', Float32Array, 2 ),
+  spec( 'node.ghost', 'nodes', Float32Array, 4 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),
   spec( 'edge.endpoints', 'edges', Uint32Array, 2 ),
   spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),

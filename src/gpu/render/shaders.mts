@@ -1045,6 +1045,9 @@ ${SDF}
 @group(0) @binding(6) var<storage, read> opacities: array<f32>;
 @group(0) @binding(7) var<storage, read> shapes: array<u32>;
 @group(0) @binding(8) var<storage, read> nodeFlags: array<u32>;
+// ghost props [offsetX, offsetY, ghostOpacity, enabled] (round 13 A1);
+// bound to both stages for the ghost entry points
+@group(0) @binding(9) var<storage, read> ghosts: array<vec4f>;
 
 struct NodeVSOut {
   @builtin(position) position: vec4f,
@@ -1146,6 +1149,61 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * opacities[slot] * in.alphaComp * color.a;
+  return vec4f(color.rgb * alpha, alpha); // premultiplied
+}
+
+// Ghost pass (round 13 A1): the node body duplicated at the ghost
+// offset — shape, border and background only (no accent ring, no
+// hover/grab brighten, not pickable), alpha additionally scaled by
+// ghost-opacity.  Draws off its own cull stream after edges/arrows and
+// under the nodes, so the node body composites over its own ghost
+// (v3's layering).
+@vertex
+fn vsGhost(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> NodeVSOut {
+  var out: NodeVSOut;
+  let slot = visible[ii];
+  let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
+  let half = lod.xy;
+
+  let centerPx = modelToPx(frame, positions[slot] + ghosts[slot].xy);
+  let ext = half + vec2f(2.0);
+  let local = quadCorner(vi) * ext;
+
+  out.position = vec4f(pxToClip(frame, centerPx + local), NODE_Z, 1.0);
+  out.local = local;
+  out.halfSize = half;
+  out.alphaComp = lod.z;
+  out.instance = slot;
+  return out;
+}
+
+@fragment
+fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
+  let slot = in.instance;
+  let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
+  let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc
+
+  var shape = shapes[slot];
+  var half = in.halfSize;
+
+  if (plain) {
+    shape = 0u;
+    half = vec2f(max(in.halfSize.x, in.halfSize.y));
+  }
+
+  let sd = nodeSD(shape, in.local, half);
+  var color = unpack4x8unorm(fillColors[slot]);
+
+  if (!plain) {
+    let borderWidth = borderWidths[slot] * frame.zoomDpr;
+
+    if (borderWidth > 0.0 && sd > -borderWidth) {
+      color = unpack4x8unorm(borderColors[slot]);
+    }
+  }
+
+  let ghostA = clamp(ghosts[slot].z, 0.0, 1.0);
+  let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * opacities[slot] * in.alphaComp * color.a * ghostA;
   return vec4f(color.rgb * alpha, alpha); // premultiplied
 }
 

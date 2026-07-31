@@ -1329,6 +1329,7 @@ export class GpuCollection {
 
     const size = store.column( 'node.size' ) as Float32Array;
     const border = store.column( 'node.borderWidth' ) as Float32Array;
+    const ghost = store.column( 'node.ghost' ) as Float32Array;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
 
     store.curves.flush(); // curved edges read derived params below
@@ -1336,12 +1337,19 @@ export class GpuCollection {
     for( const ref of this._liveRefs() ){
       if( ref.group === 'nodes' ){
         const slot = ref.slot;
+        const hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
+        const hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
 
-        expandPoint(
-          store.getX( slot ), store.getY( slot ),
-          size[ slot * 2 ] / 2 + border[ slot ] / 2,
-          size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2
-        );
+        expandPoint( store.getX( slot ), store.getY( slot ), hw, hh );
+
+        // a ghost duplicates the body at the offset (round 13 A1)
+        if( ghost[ slot * 4 + 3 ] !== 0 ){
+          expandPoint(
+            store.getX( slot ) + ghost[ slot * 4 ],
+            store.getY( slot ) + ghost[ slot * 4 + 1 ],
+            hw, hh
+          );
+        }
       } else {
         // curved edges use the exact lazy bound (memoized flattened
         // polyline); straight edges span their endpoint centers

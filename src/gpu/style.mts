@@ -96,6 +96,11 @@ interface NodeComputed {
   textBgPadding: number;
   textMarginX: number;
   textMarginY: number;
+  // ghost props (round 13 A1): the body duplicated at the offset
+  ghost: boolean;
+  ghostOffsetX: number;
+  ghostOffsetY: number;
+  ghostOpacity: number;
 }
 
 interface EdgeComputed {
@@ -178,7 +183,11 @@ const NODE_DEFAULTS: NodeComputed = {
   textBgOpacity: 0, // background off by default, as v3
   textBgPadding: 0,
   textMarginX: 0,
-  textMarginY: 0
+  textMarginY: 0,
+  ghost: false,
+  ghostOffsetX: 0,
+  ghostOffsetY: 0,
+  ghostOpacity: 0 // v3's default: a ghost is invisible until given opacity
 };
 
 /** gap between the node's bottom edge and the label's top, model px */
@@ -297,6 +306,7 @@ const SHAPE_NAMES: Record<number, string> = {
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'opacity', 'label', 'font-size', 'font-family', 'color',
+  'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
   'text-margin-x', 'text-margin-y'
@@ -327,6 +337,11 @@ const CURVE_PROPS: ReadonlySet<string> = new Set( [
   'source-distance-from-node', 'target-distance-from-node'
 ] );
 
+/** ghost props are node-only (round 13 A1). */
+const GHOST_PROPS: ReadonlySet<string> = new Set( [
+  'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity'
+] );
+
 const parseColor = ( prop: string, value: unknown ): RGBA => {
   const tuple = color2tuple( value as string );
 
@@ -347,6 +362,18 @@ const parseNumber = ( prop: string, value: unknown ): number => {
   }
 
   return num;
+};
+
+/** v3's bool type: 'yes'/'no' keywords (booleans accepted too). */
+const parseYesNo = ( prop: string, value: unknown ): boolean => {
+  if( typeof value === 'boolean' ){ return value; }
+
+  const token = String( value ).trim();
+
+  if( token === 'yes' ){ return true; }
+  if( token === 'no' ){ return false; }
+
+  throw new Error( `The value '${String( value )}' is not a valid ${prop} (use 'yes' or 'no')` );
 };
 
 /** v3's size type: a non-negative number. */
@@ -765,6 +792,25 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'border-width':
       computed.borderWidth = parseNumber( prop, value );
       break;
+    case 'ghost':
+      computed.ghost = parseYesNo( prop, value );
+      break;
+    case 'ghost-offset-x':
+      computed.ghostOffsetX = parseNumber( prop, value );
+      break;
+    case 'ghost-offset-y':
+      computed.ghostOffsetY = parseNumber( prop, value );
+      break;
+    case 'ghost-opacity': {
+      const op = parseNumber( prop, value );
+
+      if( op < 0 || op > 1 ){
+        throw new Error( `The ghost-opacity '${String( value )}' must be within [0, 1]` );
+      }
+
+      computed.ghostOpacity = op;
+      break;
+    }
     case 'opacity':
       computed.opacity = parseNumber( prop, value );
       break;
@@ -1114,6 +1160,28 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'edges' ],
     set: ( c, v ) => { c.taxiRadius = v as number; },
     default: () => EDGE_DEFAULTS.taxiRadius
+  },
+  // ghost props (round 13 A1; node-only)
+  'ghost': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
+    set: ( c, v ) => { c.ghost = ( v as number ) === 1; },
+    default: () => NODE_DEFAULTS.ghost ? 1 : 0
+  },
+  'ghost-offset-x': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.ghostOffsetX = v as number; },
+    default: () => NODE_DEFAULTS.ghostOffsetX
+  },
+  'ghost-offset-y': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.ghostOffsetY = v as number; },
+    default: () => NODE_DEFAULTS.ghostOffsetY
+  },
+  'ghost-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.ghostOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.ghostOpacity
   },
   // 12c scalar curve props (source/target-endpoint stays constants-only:
   // its point form is a list, per the 12b list-prop scope rule)
@@ -1626,6 +1694,11 @@ export class StyleEngine {
       case 'background-color': return color( 'node.fillColor' );
       case 'border-color': return color( 'node.borderColor' );
       case 'border-width': return scalar( 'node.borderWidth' );
+      case 'ghost':
+        return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
+      case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
+      case 'ghost-offset-y': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 1 ];
+      case 'ghost-opacity': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 2 ];
       case 'height': return pair( 'node.size', 1 );
       case 'shape': return SHAPE_NAMES[ scalar( 'node.shape' ) ];
       case 'label': return store.labelAt( slot, ref.group )?.text ?? '';
@@ -1858,6 +1931,10 @@ export class StyleEngine {
         throw new Error( `'${norm}' is an edge style property` );
       }
 
+      if( GHOST_PROPS.has( norm ) && group === 'edges' ){
+        throw new Error( `'${norm}' is a node style property` );
+      }
+
       if( norm === 'font-family' ){
         // one glyph atlas keyed by character ⇒ one font, globally
         if( group === 'edges' ){
@@ -1913,6 +1990,9 @@ export class StyleEngine {
       store.setScalar( 'node.borderWidth', slot, computed.borderWidth );
       store.setScalar( 'node.opacity', slot, computed.opacity );
       store.setScalar( 'node.shape', slot, shape );
+      store.setGhost(
+        slot, computed.ghostOffsetX, computed.ghostOffsetY,
+        computed.ghostOpacity, computed.ghost );
 
       this.writeLabel( slot, computed );
     } else {

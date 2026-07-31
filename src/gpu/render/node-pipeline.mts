@@ -20,7 +20,10 @@ const NODE_COLUMNS: { id: ColumnId; visibility: number }[] = [
   { id: 'node.borderWidth', visibility: SHADER_STAGE.FRAGMENT },
   { id: 'node.opacity', visibility: SHADER_STAGE.FRAGMENT },
   { id: 'node.shape', visibility: SHADER_STAGE.FRAGMENT },
-  { id: 'node.flags', visibility: SHADER_STAGE.FRAGMENT }
+  { id: 'node.flags', visibility: SHADER_STAGE.FRAGMENT },
+  // ghost props (round 13 A1): the ghost VS offsets by .xy, the ghost FS
+  // scales alpha by .z; the main node entry points never read it
+  { id: 'node.ghost', visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT }
 ];
 
 export const PREMULTIPLIED_BLEND: GPUBlendState = {
@@ -38,6 +41,7 @@ export const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
 export class NodePipeline {
   private pipeline: GPURenderPipeline;
   private depthPipeline: GPURenderPipeline;
+  private ghostPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
@@ -86,6 +90,20 @@ export class NodePipeline {
       depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: true, depthCompare: 'always' }
     } );
 
+    // ghost pass (round 13 A1): the node body duplicated at the ghost
+    // offset, drawn after edges/arrows and under the nodes.  Depth-tested
+    // 'less' at NODE_Z, so ghost fragments under opaque node interiors
+    // (typically the ghost's own node) are killed before blending —
+    // exactly v3's node-over-ghost layering.
+    this.ghostPipeline = device.createRenderPipeline( {
+      label: 'cy-gpu:node-ghost-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsGhost' },
+      fragment: { module, entryPoint: 'fsGhost', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
+      primitive: { topology: 'triangle-list' },
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'less' }
+    } );
+
     this.bindGroups = new Map();
   }
 
@@ -121,6 +139,20 @@ export class NodePipeline {
     if( instances === 0 ){ return; }
 
     pass.setPipeline( this.pipeline );
+    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
+    pass.setBindGroup( 1, cull.visibleBindGroup() );
+    pass.setIndexBuffer( this.quadIndex, 'uint16' );
+    pass.drawIndexedIndirect( cull.indirect, 0 );
+  }
+
+  /** The ghost draw (round 13 A1): after edges/arrows, before the nodes. */
+  drawGhost(
+    pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
+    mirror: ColumnMirror, instances: number, cull: CulledGroup
+  ): void {
+    if( instances === 0 ){ return; }
+
+    pass.setPipeline( this.ghostPipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
     pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );

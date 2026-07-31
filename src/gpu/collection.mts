@@ -1400,8 +1400,18 @@ export class GpuCollection {
     return value;
   }
 
-  /** Without compound nodes, effective opacity is the element's own opacity. */
+  /** The rendered opacity: a node's own opacity times its ancestors'
+   * (v3's product rule — the store keeps the folded value in the
+   * column, round 14.4); an edge's own opacity (edges have no parent). */
   effectiveOpacity(): number | undefined {
+    const ref = this._first();
+
+    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    if( ref.group === 'nodes' && this._store.hasCompounds() ){
+      return ( this._store.column( 'node.opacity' ) as Float32Array )[ ref.slot ];
+    }
+
     return this.numericStyle( 'opacity' );
   }
 
@@ -1857,23 +1867,12 @@ export class GpuCollection {
     return this._setVisibility( false );
   }
 
-  /** show/hide with the compound hook: hidden children leave their
-   * ancestors' auto-bounds (v3's display:none bb rule), so a visibility
-   * change marks the toggled nodes' chains stale (round 14.3). */
+  /** show/hide (round 14.4): the store records the own state in
+   * FLAG_SELF_HIDDEN and recomputes the effective FLAG_VISIBLE over
+   * affected subtrees — descendants gate on hidden ancestors, and
+   * hidden children leave their ancestors' auto-bounds. */
   private _setVisibility( on: boolean ): this {
-    const store = this._store;
-
-    if( !store.hasCompounds() ){ return this._setBit( FLAG_VISIBLE, on ); }
-
-    const changed: number[] = [];
-
-    store.flagRefs( this._refs, FLAG_VISIBLE, on, 0, changed );
-
-    for( const i of changed ){
-      const ref = this._refs[ i ];
-
-      if( ref.group === 'nodes' ){ store.markNodeGeo( ref.slot ); }
-    }
+    this._store.setVisibility( this._refs, on );
 
     return this;
   }

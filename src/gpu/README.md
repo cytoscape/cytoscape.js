@@ -927,6 +927,28 @@ compound-relative (model minus the immediate parent's position).
 A parent's label re-anchors when auto-bounds resize it (the store
 inverts the engine's anchor bake from the sidecar entry).  A node
 that stops being a parent returns to its stashed style size.
+
+Round 14.4 (ancestor gating): `hide()` on a parent hides its whole
+subtree.  The element's own state lives in a new `FLAG_SELF_HIDDEN`
+bit and **`FLAG_VISIBLE` is the effective shown bit** (own state AND
+no hidden ancestor), recomputed over affected subtrees on visibility
+and hierarchy changes — so the cull kernels, columnar scans, bounding
+boxes, box selection and the CPU pick all honor ancestor gating by
+reading the one bit they already read.  A child's own hidden state
+survives parent toggles (v3's `visible()` semantics);
+`takesUpSpace()`/`interactive()` ride `visible()`.  Box selection
+now also requires both edge endpoints shown (the drawn-edge rule —
+previously a hidden endpoint's edges stayed box-selectable, a gap
+this closes).  **Effective opacity renders**: the stored node
+opacity is `base × ∏ ancestor bases` (v3's product rule — a
+deliberate extension of the round-13 fold pattern to a cross-element
+fold), so descendants dim with their ancestors on screen;
+`style('opacity')`/`numericStyle` read the declared base,
+`effectiveOpacity()`/`transparent()` the fold, and edges keep their
+own opacity (v3: edges have no parent).  While compounds exist a
+GPU-mapped node `opacity` demotes to the CPU path (the kernel would
+overwrite the fold) — the demotion engages/disengages on the
+compounds 0↔>0 transitions.
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

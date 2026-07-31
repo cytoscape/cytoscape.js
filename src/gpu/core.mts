@@ -116,6 +116,10 @@ export class GpuCore {
     this._store = new GraphStore();
     this._emitter = makeCoreEmitter<GpuCore>( this );
     this._styleEngine = new StyleEngine( this._store );
+
+    // the compounds 0 <-> >0 transitions change paint eval config (the
+    // opacity fold demotes the GPU opacity mapper, round 14.4)
+    this._store.onCompoundsToggled = () => { this._styleEngine.paintVersion++; };
     this._animations = new AnimationManager( () => this._afterAnimationTick() );
     this._renderer = null;
     this._pointer = null;

@@ -2477,6 +2477,13 @@ export class StyleEngine {
       if( computed.borderOpacity !== 1 || mapped( 'border-opacity' ) ){
         demoted.add( 'border-color' );
       }
+
+      // round 14.4: under compounds the stored node opacity is the
+      // ancestor-folded product — a kernel-owned opacity would
+      // overwrite the fold, so it stays CPU-evaluated
+      if( this.store.hasCompounds() ){
+        demoted.add( 'opacity' );
+      }
     } else {
       if( computed.lineOpacity !== 1 || mapped( 'line-opacity' ) ){
         demoted.add( 'line-color' );
@@ -3053,7 +3060,14 @@ export class StyleEngine {
 
       // shared names, resolved per group
       case 'width': return ref.group === 'nodes' ? pair( 'node.size', 0 ) : scalar( 'edge.width' );
-      case 'opacity': return scalar( ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
+      case 'opacity':
+        // under compounds the node column stores the ancestor-folded
+        // value; the declared style reads the base (round 14.4)
+        if( ref.group === 'nodes' && this.store.hasCompounds() ){
+          return this.store.baseOpacityOf( ref.slot );
+        }
+
+        return scalar( ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
 
       // edge channels
       case 'line-color': return color( 'edge.lineColor' );

@@ -18,8 +18,8 @@ import {
   CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
   FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
-  FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE,
-  LABEL_MARGIN
+  FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
+  FLAG_VISIBLE, LABEL_MARGIN
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
@@ -70,6 +70,9 @@ export class GraphStore implements ModelView {
   /** per-parent stashed *style* size: the degenerate-children fallback,
    * restored to the column when the node becomes a leaf again (14.3) */
   private parentFallback = new Map<number, [ number, number ]>();
+  /** fires on the compounds 0 <-> >0 transitions (the core re-configures
+   * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
+  onCompoundsToggled: ( () => void ) | null = null;
 
   // conservative monotone maxima behind curveSlack() (see that doc)
   private curveDevMax = 0;
@@ -179,6 +182,12 @@ export class GraphStore implements ModelView {
           this.parentFallback.delete( slot );
 
           if( stashed != null ){ this.setPair( 'node.size', slot, stashed[ 0 ], stashed[ 1 ] ); }
+        }
+
+        // paint config depends on hasCompounds (the opacity-fold GPU
+        // demotion, round 14.4): notify on the 0 <-> >0 transitions
+        if( becameParent ? this.hierarchy.parentCount() === 1 : this.hierarchy.parentCount() === 0 ){
+          this.onCompoundsToggled?.();
         }
       },
       materialize: ( slot, x, y, w, h ) => this.materializeParentGeom( slot, x, y, w, h )
@@ -719,7 +728,142 @@ export class GraphStore implements ModelView {
    * and the parent draw permutation.
    */
   setParent( slot: number, parentSlot: number ): void {
+    const before = this.hierarchy.parentOf( slot );
+
     this.hierarchy.setParent( slot, parentSlot );
+
+    if( this.hierarchy.parentOf( slot ) === before ){ return; } // no-op or cycle drop
+
+    // the moved subtree's ancestor-derived state re-resolves against the
+    // new chain (round 14.4): effective visibility and the opacity fold
+    this.refreshEffectiveVisibility( slot );
+    this.refoldOpacitySubtree( slot );
+  }
+
+  /**
+   * show()/hide() (round 14.4): FLAG_SELF_HIDDEN records the element's
+   * own state; the effective FLAG_VISIBLE recomputes over affected node
+   * subtrees (pruned — an unchanged effective bit means an unchanged
+   * subtree).  Hidden children leave their ancestors' auto-bounds.
+   * Returns the refs-array indices whose own state changed.
+   */
+  setVisibility( refs: readonly Ref[], visible: boolean, changedIdx: number[] | null = null ): number {
+    const changed: number[] = changedIdx ?? [];
+    const n = this.flagRefs( refs, FLAG_SELF_HIDDEN, !visible, 0, changed );
+
+    for( const i of changed ){
+      const ref = refs[ i ];
+
+      if( ref.group === 'edges' ){
+        // edges have no ancestors: effective = own state
+        this.setFlag( 'edges', ref.slot, FLAG_VISIBLE, visible );
+      } else {
+        this.refreshEffectiveVisibility( ref.slot );
+      }
+    }
+
+    return n;
+  }
+
+  /**
+   * Recompute effective FLAG_VISIBLE for a node subtree, top-down with
+   * pruning: a node whose effective bit is unchanged has consistent
+   * descendants (their inputs did not move).  A changed node marks its
+   * ancestor chain's auto-bounds stale (it entered or left the bb).
+   */
+  private refreshEffectiveVisibility( root: number ): void {
+    const flags = this.nodes.column( 'node.flags' ) as Uint32Array;
+    const stack: number[] = [ root ];
+
+    while( stack.length > 0 ){
+      const slot = stack.pop() as number;
+      const p = this.hierarchy.parentOf( slot );
+      const parentEff = p < 0 || ( flags[ p ] & FLAG_VISIBLE ) !== 0;
+      const eff = parentEff
+        && ( flags[ slot ] & FLAG_SELF_HIDDEN ) === 0
+        && ( flags[ slot ] & FLAG_ALIVE ) !== 0;
+      const cur = ( flags[ slot ] & FLAG_VISIBLE ) !== 0;
+
+      if( eff === cur ){ continue; }
+
+      flags[ slot ] = eff ? ( flags[ slot ] | FLAG_VISIBLE ) : ( flags[ slot ] & ~FLAG_VISIBLE );
+      this.dirty.mark( 'node.flags', slot );
+      this.geoEpoch++;
+      this.hierarchy.markGeo( slot );
+
+      for( const kid of this.hierarchy.childrenOf( slot ) ){ stack.push( kid ); }
+    }
+  }
+
+  // -- effective opacity (round 14.4) --
+
+  /** Bases of nodes whose stored opacity carries an ancestor fold
+   * (absent = the column holds the base). */
+  private opacityBase = new Map<number, number>();
+
+  /** The node's declared (pre-fold) opacity — what style('opacity') reads. */
+  baseOpacityOf( slot: number ): number {
+    return this.opacityBase.get( slot )
+      ?? ( this.nodes.column( 'node.opacity' ) as Float32Array )[ slot ];
+  }
+
+  /** The product of the strict ancestors' bases. */
+  private ancestorOpacityProduct( slot: number ): number {
+    let product = 1;
+
+    for( let p = this.hierarchy.parentOf( slot ); p >= 0; p = this.hierarchy.parentOf( p ) ){
+      product *= this.baseOpacityOf( p );
+    }
+
+    return product;
+  }
+
+  /**
+   * A node opacity write under compounds: `base` is the declared value;
+   * the stored column takes base x the ancestor product (v3's rendered
+   * effectiveOpacity), and a parent's write refolds its subtree.
+   */
+  private writeBaseOpacity( slot: number, base: number ): void {
+    const col = this.nodes.column( 'node.opacity' ) as Float32Array;
+    const product = this.ancestorOpacityProduct( slot );
+    const folded = base * product;
+
+    if( product !== 1 ){ this.opacityBase.set( slot, base ); }
+    else { this.opacityBase.delete( slot ); }
+
+    if( col[ slot ] !== folded ){
+      col[ slot ] = folded;
+      this.dirty.mark( 'node.opacity', slot );
+    }
+
+    if( this.hierarchy.childrenOf( slot ).length > 0 ){
+      this.refoldChildren( slot, base * product );
+    }
+  }
+
+  /** Refold a whole subtree against its (possibly new) ancestor chain. */
+  private refoldOpacitySubtree( slot: number ): void {
+    this.writeBaseOpacity( slot, this.baseOpacityOf( slot ) );
+  }
+
+  /** Recursive half of the fold: children of a node whose folded value is `parentFolded`. */
+  private refoldChildren( slot: number, parentFolded: number ): void {
+    const col = this.nodes.column( 'node.opacity' ) as Float32Array;
+
+    for( const kid of this.hierarchy.childrenOf( slot ) ){
+      const base = this.baseOpacityOf( kid );
+      const folded = base * parentFolded;
+
+      if( parentFolded !== 1 ){ this.opacityBase.set( kid, base ); }
+      else { this.opacityBase.delete( kid ); }
+
+      if( col[ kid ] !== folded ){
+        col[ kid ] = folded;
+        this.dirty.mark( 'node.opacity', kid );
+      }
+
+      this.refoldChildren( kid, folded );
+    }
   }
 
   /** The node's parent slot, or -1 for orphans. */
@@ -1008,6 +1152,14 @@ export class GraphStore implements ModelView {
   // -- style channel writers --
 
   setScalar( id: ColumnId, slot: number, value: number ): void {
+    // round 14.4: under compounds a node opacity write is a *base* —
+    // the column stores the ancestor-folded product
+    if( id === 'node.opacity' && this.hierarchy.hasCompounds() ){
+      this.writeBaseOpacity( slot, value );
+
+      return;
+    }
+
     const spec = columnSpec( id );
     const arr = this.table( spec.group ).column( id ) as Float32Array | Uint32Array;
 
@@ -1874,6 +2026,11 @@ export class GraphStore implements ModelView {
 
       if( edgeGen[ slot ] !== g || ( edgeFlags[ slot ] & shown ) !== shown ){ continue; }
 
+      // both endpoints must be shown — the drawn-edge rule the cull
+      // kernels apply, which ancestor gating (round 14.4) also feeds
+      if( ( nodeFlags[ endpoints[ slot * 2 ] ] & shown ) !== shown
+        || ( nodeFlags[ endpoints[ slot * 2 + 1 ] ] & shown ) !== shown ){ continue; }
+
       let contained: boolean;
 
       if( ( edgeFlags[ slot ] & FLAG_CURVED ) !== 0 ){
@@ -2173,6 +2330,11 @@ export class GraphStore implements ModelView {
 
     if( id != null ){ this.ids.remove( id ); }
 
+    if( group === 'nodes' ){ // recycled slots must not inherit compound state
+      this.parentFallback.delete( slot );
+      this.opacityBase.delete( slot );
+    }
+
     this.data.clearSlot( group, slot );
 
     if( this.labels[ group ][ slot ] != null ){
@@ -2249,6 +2411,7 @@ const initialFlags = ( opts: AddElementOpts, pannableDefault: boolean ): number 
   let flags = FLAG_ALIVE;
 
   if( opts.visible !== false ){ flags |= FLAG_VISIBLE; }
+  else { flags |= FLAG_SELF_HIDDEN; }
   if( opts.selectable !== false ){ flags |= FLAG_SELECTABLE; }
   if( opts.selected === true ){ flags |= FLAG_SELECTED; }
   if( opts.grabbable !== false ){ flags |= FLAG_GRABBABLE; }

@@ -14,6 +14,15 @@ export type GroupName = 'nodes' | 'edges';
 // -- element flag bits (shared by node.flags and edge.flags) --
 
 export const FLAG_ALIVE = 1;
+/**
+ * The *effective* shown bit (round 14.4): the element's own display
+ * state AND no hidden ancestor.  Every consumer — the WGSL SHOWN test,
+ * the cull predicates, scanRefsInto, boundingBox, the CPU pick, the
+ * edge kernels' both-endpoints tests — reads this one bit, so
+ * ancestor-gated visibility costs them nothing.  The own state lives in
+ * FLAG_SELF_HIDDEN; the store recomputes the effective bit over
+ * affected subtrees on visibility and hierarchy changes.
+ */
 export const FLAG_VISIBLE = 2;
 export const FLAG_SELECTED = 4;
 export const FLAG_SELECTABLE = 8;
@@ -55,6 +64,12 @@ export const FLAG_PARENT = 4096;
  * conditions read it.
  */
 export const FLAG_CHILD = 8192;
+/**
+ * Node/edge own display state (round 14.4): set = hidden by the
+ * element's own show()/hide().  FLAG_VISIBLE derives from it (and the
+ * ancestor chain for nodes); consumers never read this bit directly.
+ */
+export const FLAG_SELF_HIDDEN = 16384;
 
 /** The fixed model-px gap between a node's box and a top/bottom-row
  * label (see the D3 label-alignment record); shared by the StyleEngine's

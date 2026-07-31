@@ -3478,9 +3478,30 @@ commit(s) with docs in-commit):
   real bugs caught red-green: the parent-move delta and the bulk
   shift both read pre-flush positions — both now flush first) —
   1987 Node tests, typecheck + lint clean.
-- [ ] **14.4 Ancestor visibility + effective opacity** —
-  `FLAG_SELF_HIDDEN`, `setVisibility` subtree fold, bb exclusion,
-  opacity fold + demotions, readbacks.  Node specs.
+- [x] **14.4 Ancestor visibility + effective opacity** — landed
+  2026-07-31.  `FLAG_SELF_HIDDEN` (16384) records the element's
+  own show/hide state; **`FLAG_VISIBLE` is now the effective shown
+  bit** (own state AND no hidden ancestor) recomputed by
+  `GraphStore.setVisibility` over affected subtrees with pruning
+  (an unchanged effective bit means a consistent subtree) — every
+  consumer (WGSL SHOWN, cull, scans, bb, CPU pick) reads the one
+  bit unchanged, changed nodes mark their chains' auto-bounds
+  stale, reparenting re-resolves the moved subtree, and a child's
+  own hidden state survives parent toggles (v3).  `refsInBox`
+  gained the drawn-edge rule (both endpoints shown — closing a
+  pre-existing gap where a hidden endpoint's edges stayed
+  box-selectable).  Effective opacity renders: the node opacity
+  column stores `base × ∏ ancestor bases` (bases tracked sparsely;
+  writes fold at setScalar, a parent's write refolds its subtree,
+  reparenting refolds against the new chain, recycled slots
+  drop their state), `style('opacity')` reads the base while
+  `effectiveOpacity()`/`transparent()` read the fold, edges keep
+  their own opacity (v3 — verified against v3 source), and a
+  GPU-mapped node `opacity` demotes to CPU while compounds exist
+  (`paintInputs` + a store→engine `onCompoundsToggled` paintVersion
+  bump on the 0↔>0 transitions).  Tests-first: 11 specs in
+  `test/gpu-compound-visibility.mjs` red then green — 1998 Node
+  tests, typecheck + lint clean.
 - [ ] **14.5 Event bubbling** — phased `_emitOnEle`, phase
   matching, currentTarget, stopPropagation, flat-mode zero-cost.
   Node specs.

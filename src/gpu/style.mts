@@ -166,6 +166,11 @@ interface EdgeComputed {
   targetArrowColor: RGBA;
   /** arrow-scale (B7): scales every arrowhead on the edge */
   arrowScale: number;
+  /** mid arrows (C1): anchored at the curve/route midpoint */
+  midSourceArrowShape: ArrowShape;
+  midSourceArrowColor: RGBA;
+  midTargetArrowShape: ArrowShape;
+  midTargetArrowColor: RGBA;
   /** arrow-fill per end (B7): 0 filled, 1 hollow */
   sourceArrowFill: number;
   targetArrowFill: number;
@@ -293,6 +298,10 @@ const EDGE_DEFAULTS: EdgeComputed = {
   sourceArrowShape: 'none',
   sourceArrowColor: [ 153, 153, 153, 255 ], // #999, as v3
   arrowScale: 1,
+  midSourceArrowShape: 'none',
+  midSourceArrowColor: [ 153, 153, 153, 255 ],
+  midTargetArrowShape: 'none',
+  midTargetArrowColor: [ 153, 153, 153, 255 ],
   sourceArrowFill: 0, // filled, as v3
   targetArrowFill: 0,
   sourceArrowWidth: 1, // v3's default arrow-width
@@ -420,6 +429,8 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-outline-width', 'line-outline-color',
   'arrow-scale', 'source-arrow-fill', 'target-arrow-fill',
   'source-arrow-width', 'target-arrow-width',
+  'mid-source-arrow-shape', 'mid-source-arrow-color',
+  'mid-target-arrow-shape', 'mid-target-arrow-color',
   'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color',
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
@@ -1307,6 +1318,18 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'target-arrow-color':
       computed.targetArrowColor = parseColor( prop, value );
       break;
+    case 'mid-source-arrow-shape':
+      computed.midSourceArrowShape = parseArrowShape( prop, value );
+      break;
+    case 'mid-target-arrow-shape':
+      computed.midTargetArrowShape = parseArrowShape( prop, value );
+      break;
+    case 'mid-source-arrow-color':
+      computed.midSourceArrowColor = parseColor( prop, value );
+      break;
+    case 'mid-target-arrow-color':
+      computed.midTargetArrowColor = parseColor( prop, value );
+      break;
     case 'curve-style':
       computed.curveStyle = parseCurveStyle( value );
       break;
@@ -1656,6 +1679,29 @@ const MAPPABLE: Record<string, MappableChannel> = {
     set: ( c, v ) => { c.textBorderOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => NODE_DEFAULTS.textBorderOpacity
   },
+  // C1 mid arrows
+  'mid-source-arrow-shape': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => ARROW_ENUM[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.midSourceArrowShape = ARROW_NAMES[ v as number ] ?? 'none'; },
+    default: () => 0
+  },
+  'mid-target-arrow-shape': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => ARROW_ENUM[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.midTargetArrowShape = ARROW_NAMES[ v as number ] ?? 'none'; },
+    default: () => 0
+  },
+  'mid-source-arrow-color': {
+    kind: 'color', groups: [ 'edges' ],
+    set: ( c, v ) => { c.midSourceArrowColor = v as RGBA; },
+    default: () => EDGE_DEFAULTS.midSourceArrowColor
+  },
+  'mid-target-arrow-color': {
+    kind: 'color', groups: [ 'edges' ],
+    set: ( c, v ) => { c.midTargetArrowColor = v as RGBA; },
+    default: () => EDGE_DEFAULTS.midTargetArrowColor
+  },
   // B7 arrow scalars (arrow widths are constants: keyword/% forms)
   'arrow-scale': {
     kind: 'number', groups: [ 'edges' ],
@@ -1852,6 +1898,7 @@ export class StyleEngine {
   private defs: { nodes: GroupDef; edges: GroupDef };
 
   private arrows = { source: false, target: false };
+  private midArrows = { source: false, target: false };
 
   /**
    * Bumps when the paint-mapper state changes (sheet set, or a GPU-owned
@@ -1951,9 +1998,15 @@ export class StyleEngine {
     const mapsProp = ( def: GroupDef, prop: string ): boolean =>
       def.mappers.some( bm => bm.m.prop === prop );
 
+    // any non-'none' shape draws (the pre-round-10 gate checked
+    // 'triangle' only — a latent bug for constant vee/chevron/... sheets)
     this.arrows = {
-      source: defs.edges.computed.sourceArrowShape === 'triangle' || mapsProp( defs.edges, 'source-arrow-shape' ),
-      target: defs.edges.computed.targetArrowShape === 'triangle' || mapsProp( defs.edges, 'target-arrow-shape' )
+      source: defs.edges.computed.sourceArrowShape !== 'none' || mapsProp( defs.edges, 'source-arrow-shape' ),
+      target: defs.edges.computed.targetArrowShape !== 'none' || mapsProp( defs.edges, 'target-arrow-shape' )
+    };
+    this.midArrows = {
+      source: defs.edges.computed.midSourceArrowShape !== 'none' || mapsProp( defs.edges, 'mid-source-arrow-shape' ),
+      target: defs.edges.computed.midTargetArrowShape !== 'none' || mapsProp( defs.edges, 'mid-target-arrow-shape' )
     };
 
     this.sheet = sheet;
@@ -2085,6 +2138,10 @@ export class StyleEngine {
   /** Which arrow ends the current stylesheet can enable. */
   get arrowEnds(): { source: boolean; target: boolean } {
     return this.arrows;
+  }
+
+  get midArrowEnds(): { source: boolean; target: boolean } {
+    return this.midArrows;
   }
 
   json(): GpuStylesheet {
@@ -2540,6 +2597,19 @@ export class StyleEngine {
         return ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 ];
       case 'target-arrow-width':
         return ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 + 1 ];
+      case 'mid-source-arrow-shape':
+      case 'mid-target-arrow-shape': {
+        const shift = prop.startsWith( 'mid-source' ) ? 18 : 21;
+        const colId = prop.startsWith( 'mid-source' ) ? 'edge.midSourceArrow' : 'edge.midTargetArrow';
+        const a = ( store.column( colId ) as Uint8Array )[ slot * 4 + 3 ];
+
+        // stored truth: a transparent mid arrow reads 'none' (the
+        // end-arrow precedent)
+        return a === 0 ? 'none' : ARROW_NAMES[
+          ( ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> shift ) & 7 ];
+      }
+      case 'mid-source-arrow-color': return color( 'edge.midSourceArrow' );
+      case 'mid-target-arrow-color': return color( 'edge.midTargetArrow' );
       case 'source-arrow-color': return color( 'edge.sourceArrow' );
       case 'target-arrow-color': return color( 'edge.targetArrow' );
 
@@ -2839,7 +2909,15 @@ export class StyleEngine {
       store.setScalar( 'edge.arrowShapes', slot,
         ( ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) |
           ( computed.sourceArrowFill << 16 ) | ( computed.targetArrowFill << 17 ) |
+          ( ARROW_ENUM[ computed.midSourceArrowShape ] << 18 ) |
+          ( ARROW_ENUM[ computed.midTargetArrowShape ] << 21 ) |
           ( scaleQ << 24 ) ) >>> 0 );
+
+      // mid-arrow colors fold like the end arrows (C1)
+      store.setMidArrow( 'edge.midSourceArrow', slot,
+        ...arrow( computed.midSourceArrowShape, computed.midSourceArrowColor ), 'edge.midTargetArrow' );
+      store.setMidArrow( 'edge.midTargetArrow', slot,
+        ...arrow( computed.midTargetArrowShape, computed.midTargetArrowColor ), 'edge.midSourceArrow' );
 
       const resolveAw = ( aw: number | 'match-line' | { percent: number } ): number =>
         aw === 'match-line' ? computed.width

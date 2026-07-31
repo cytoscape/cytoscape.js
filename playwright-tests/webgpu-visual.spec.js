@@ -1161,6 +1161,46 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'arrow-scalars', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: mid arrows on straight, bezier, taxi and haystack (round 13 C1)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a1' }, position: { x: -150, y: -100 } },
+        { data: { id: 'b1' }, position: { x: 120, y: -100 } },
+        { data: { id: 's', source: 'a1', target: 'b1' } },
+        { data: { id: 'a2' }, position: { x: -150, y: -20 } },
+        { data: { id: 'b2' }, position: { x: 120, y: -20 } },
+        { data: { id: 'q1', source: 'a2', target: 'b2', fam: 'bezier' } },
+        { data: { id: 'q2', source: 'a2', target: 'b2', fam: 'bezier' } },
+        { data: { id: 'a3' }, position: { x: -150, y: 60 } },
+        { data: { id: 'b3' }, position: { x: -30, y: 160 } },
+        { data: { id: 't', source: 'a3', target: 'b3', fam: 'taxi' } },
+        { data: { id: 'a4' }, position: { x: 40, y: 60 } },
+        { data: { id: 'b4' }, position: { x: 150, y: 160 } },
+        { data: { id: 'h', source: 'a4', target: 'b4', fam: 'haystack' } }
+      ],
+      style: {
+        nodes: { 'width': 26, 'height': 26, 'background-color': '#7f8c8d' },
+        edges: {
+          'width': 4, 'line-color': '#bdc3c7', 'taxi-turn': 40, 'haystack-radius': 0.8,
+          'curve-style': { case: [
+            { when: { data: 'fam', eq: 'bezier' }, then: 'bezier' },
+            { when: { data: 'fam', eq: 'taxi' }, then: 'taxi' },
+            { when: { data: 'fam', eq: 'haystack' }, then: 'haystack' }
+          ], else: 'straight' },
+          'mid-target-arrow-shape': 'triangle', 'mid-target-arrow-color': '#8e44ad',
+          'mid-source-arrow-shape': 'circle', 'mid-source-arrow-color': '#16a085'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'mid-arrows', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

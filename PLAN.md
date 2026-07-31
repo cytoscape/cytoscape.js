@@ -2802,6 +2802,34 @@ grows per item.
   (`test/gpu-arrow-scalars.mjs`).  1901 Node tests, 99 Playwright
   specs, typecheck + lint green.
 
+- [x] **C1 mid-arrows** (2026-07-31).  `mid-source/mid-target-arrow-
+  shape`/`-color` land exactly as re-triaged: two folded color columns
+  plus the mid shape ids packed into the arrowShapes word's free bits
+  (18..20 / 21..23 — every ARROW_* id fits in 3 bits), drawn by new
+  `vsMidArrow` entry points on both arrow pipelines whose `End`
+  uniform generalized to an endId (target / source / mid-target /
+  mid-source, four cached bind groups each).  Straight edges anchor
+  the tip at the chord midpoint (the haystack *offset* midpoint for
+  kind 6 — the straight arrow layout gained the curveParams binding,
+  landing at its 8-buffer budget exactly); curved edges reuse the
+  label VS's midpoint machinery — the curve midpoint/loop c1→c2
+  tangent analytically, `routeMidpointW` for the route families — so
+  mid arrows follow drags/layouts/tweens on-GPU like everything else;
+  mid-source points backward (v3's midsrcArrowAngle).  Mid arrows are
+  always filled at standard width (the mid fill/width props are
+  unsupported — recorded), shapes/colors are mapper-capable, stored
+  truth reads transparent mids as 'none', and per-edge draws gate on
+  a live midArrowCount.  **Fixed en route: a latent round-10 gate bug**
+  — the arrow-draw enable checked `shape === 'triangle'`, so constant
+  vee/chevron/circle/... sheets never drew arrows at all; now any
+  non-'none' shape draws.  Sizing shares B7's v4-linear formula (no
+  pixel parity vs v3 by the recorded B4 decision) — the pins are the
+  `mid-arrows` golden (straight + bezier pair + taxi + haystack) and
+  a `webgpu` spec asserting purple mid-arrow ink at the CPU-computed
+  `renderedMidpoint()` of both a straight and a curved edge.  3 Node
+  specs (`test/gpu-mid-arrows.mjs`).  1904 Node tests, 100 Playwright
+  specs, typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2923,7 +2951,8 @@ autonomously):
 needs-a-call batches; this plan's sign-off pulls them onto the
 shelf, since the expensive part now exists)
 
-- [ ] **C1 Mid-arrows**: `mid-source-*`/`mid-target-*` arrow props —
+- [x] **C1 Mid-arrows** (landed 2026-07-31 — see the round-13
+  record): `mid-source-*`/`mid-target-*` arrow props —
   anchored at the curve/route midpoint with the midpoint tangent,
   exactly the anchor + frame edge labels and autorotate already
   compute in the VS (straight edges use the chord midpoint).  One

@@ -2701,4 +2701,47 @@ test.describe( 'WebGPU renderer', () => {
     expect( interiorProbe[ 1 ] ).toBeGreaterThan( 150 );
   } );
 
+  test( 'mid arrows sit at straight and curved midpoints (C1)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: -60 } },
+        { data: { id: 'b' }, position: { x: 150, y: -60 } },
+        { data: { id: 'straight', source: 'a', target: 'b' } },
+        { data: { id: 'c' }, position: { x: -150, y: 60 } },
+        { data: { id: 'd' }, position: { x: 150, y: 60 } },
+        { data: { id: 'q1', source: 'c', target: 'd', curved: 1 } },
+        { data: { id: 'q2', source: 'c', target: 'd', curved: 1 } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#ecf0f1' },
+        edges: {
+          'width': 4, 'line-color': '#bdc3c7',
+          'curve-style': { case: [ { when: { data: 'curved', eq: 1 }, then: 'bezier' } ], else: 'straight' },
+          'mid-target-arrow-shape': 'triangle', 'mid-target-arrow-color': '#8e44ad',
+          'arrow-scale': 1.5
+        }
+      },
+      zoom: 1
+    } );
+
+    await centerPan( page );
+    await waitFrames( page );
+
+    // the straight edge's mid arrow: purple at the chord midpoint
+    const straightMid = await page.evaluate( () => window.cy.$id( 'straight' ).renderedMidpoint() );
+    const sPx = await pixelAt( page, straightMid.x - 3, straightMid.y );
+
+    expect( sPx[ 2 ] ).toBeGreaterThan( 100 );
+    expect( sPx[ 1 ] ).toBeLessThan( 120 );
+
+    // the curved edge's mid arrow rides the curve midpoint (off-chord)
+    const curveMid = await page.evaluate( () => window.cy.$id( 'q1' ).renderedMidpoint() );
+    const cPx = await pixelAt( page, curveMid.x - 3, curveMid.y );
+
+    expect( cPx[ 2 ] ).toBeGreaterThan( 100 );
+    expect( cPx[ 1 ] ).toBeLessThan( 120 );
+  } );
+
 } );

@@ -817,6 +817,30 @@ export class GraphStore implements ModelView {
     this.dirty.mark( id, slot );
   }
 
+  /** live count of edges with any visible mid arrow (round 13 C1) —
+   * the renderer skips the mid draws entirely while 0 */
+  private midArrows = 0;
+
+  midArrowCount(): number {
+    return this.midArrows;
+  }
+
+  /** setColor wrapper for the mid-arrow columns that keeps the count. */
+  setMidArrow(
+    id: 'edge.midSourceArrow' | 'edge.midTargetArrow', slot: number,
+    r: number, g: number, b: number, a: number, otherId: 'edge.midSourceArrow' | 'edge.midTargetArrow'
+  ): void {
+    const arr = this.edges.column( id ) as Uint8Array;
+    const other = this.edges.column( otherId ) as Uint8Array;
+    const wasOn = arr[ slot * 4 + 3 ] > 0 || other[ slot * 4 + 3 ] > 0;
+
+    this.setColor( id, slot, r, g, b, a );
+
+    const isOn = a > 0 || other[ slot * 4 + 3 ] > 0;
+
+    if( wasOn !== isOn ){ this.midArrows += isOn ? 1 : -1; }
+  }
+
   /** monotone (round 13 B7): the largest arrow-scale any edge styles —
    * the arrow quads size for it and the FS renders the exact scale */
   private arrowScaleMaxV = 1;

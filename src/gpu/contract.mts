@@ -189,9 +189,19 @@ export type ColumnId =
    * Uint32Array(cap) — ARROW_* ids packed source | target<<8, plus
    * (round 13 B7) hollow-fill flags at bits 16 (source) / 17 (target)
    * and the edge's arrow-scale quantized ×16 in bits 24..31 (0..15.94;
-   * readback is quantized — recorded).
+   * readback is quantized — recorded).  Round 13 C1 packs the
+   * mid-arrow shapes into the free bits: mid-source at 18..20,
+   * mid-target at 21..23 (3 bits each — every ARROW_* id fits).
    */
   | 'edge.arrowShapes'
+  /** Uint8Array(4·cap) ×2 — mid-arrow colors per end (round 13 C1),
+   * folded like the end arrows (opacity × line-opacity; a=0 = none).
+   * Mid arrows anchor at the curve/route midpoint with the midpoint
+   * tangent (mid-source pointing backward), and are always filled at
+   * the standard width (mid fill/width props are unsupported — a
+   * recorded scope note). */
+  | 'edge.midSourceArrow'
+  | 'edge.midTargetArrow'
   /** Float32Array(2·cap) — hollow-arrow stroke widths per end, model px
    * (round 13 B7; 'match-line' and % forms resolve at style-write). */
   | 'edge.arrowWidths'
@@ -295,6 +305,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
   spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 ),
   spec( 'edge.arrowWidths', 'edges', Float32Array, 2 ),
+  spec( 'edge.midSourceArrow', 'edges', Uint8Array, 4 ),
+  spec( 'edge.midTargetArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.overlay', 'edges', Uint32Array, 2 ),
   spec( 'edge.casing', 'edges', Uint32Array, 2 ),
   spec( 'edge.dashPattern', 'edges', Float32Array, 4 ),

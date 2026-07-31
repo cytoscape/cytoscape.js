@@ -1072,6 +1072,17 @@ export class Renderer {
       pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved,
       this.cy._styleEngine.arrowEnds
     );
+
+    if( store.midArrowCount() > 0 ){ // C1: mid arrows on both streams
+      this.arrowPipeline?.drawMid(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge,
+        this.cy._styleEngine.midArrowEnds
+      );
+      this.curvedArrowPipeline?.drawMid(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved,
+        this.cy._styleEngine.midArrowEnds
+      );
+    }
     if( store.edgeOverlayCount() > 0 ){
       this.edgePipeline?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.overlay' );

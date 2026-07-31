@@ -1190,7 +1190,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   the edge width, resolved at style-write).  v4 keeps its own linear
   arrow sizing (recorded in round 10 B4) — v3's
   max((13.37 w)^0.9, 29) formula with its 29-unit floor is not
-  ported, so arrow sizes deviate from v3 at every width.  `source/target-arrow-color` as before (v3-like `#999`
+  ported, so arrow sizes deviate from v3 at every width.  Round 13
+  C1 added `mid-source/mid-target-arrow-shape`/`-color`: mid arrows
+  anchor at the curve/route midpoint on the midpoint tangent
+  (mid-source pointing backward), follow drags/layouts/tweens
+  on-GPU, and are always filled at the standard width (the mid
+  fill/width props are unsupported — a recorded scope note).
+  `source/target-arrow-color` as before (v3-like `#999`
   default).  One quad per visible edge per enabled end, reusing the
   edge cull stream; the tip sits on the endpoint node's boundary
   (round-rect approximated by its box, polygons by their inscribed

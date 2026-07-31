@@ -1995,13 +1995,18 @@ ${BOUNDARY_WGSL}
 @group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
 @group(0) @binding(6) var<storage, read> arrows: array<u32>;
 
-struct End { isSource: u32 }
+// which end this draw covers: 0 target, 1 source, 2 mid-target,
+// 3 mid-source (C1) — the bind group also swaps in that end's colors
+struct End { endId: u32 }
 @group(0) @binding(7) var<uniform> end: End;
 // shape ids packed source | target<<8, hollow bits 16/17, arrow-scale
-// ×16 in the top byte (B7) — fragment stage only
+// ×16 in the top byte (B7), mid shapes at bits 18..20 / 21..23 (C1) —
+// fragment stage only
 @group(0) @binding(8) var<storage, read> arrowShapes: array<u32>;
 // hollow stroke widths per end, model px (B7)
 @group(0) @binding(9) var<storage, read> arrowWidths: array<vec2f>;
+// curve params: the mid entry point reads the haystack kind (C1)
+@group(0) @binding(10) var<storage, read> curveParams: array<vec4f>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
@@ -2032,12 +2037,13 @@ fn arrowCoverage(sd: f32, hollow: bool, strokePx: f32) -> f32 {
   return 1.0 - smoothstep(-0.75, 0.75, sd);
 }
 
+
 @vertex
 fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
   var out: ArrowVSOut;
 
   let slot = visible[ii];
-  let isSource = end.isSource == 1u;
+  let isSource = end.endId == 1u;
   let c = unpack4x8unorm(arrows[slot]);
 
   if (c.a == 0.0) { // no arrow at this end: degenerate, clipped
@@ -2084,12 +2090,28 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   return out;
 }
 
+// this end's shape id from the packed word (C1: ends + mids)
+fn endShapeOf(pair: u32, endId: u32) -> u32 {
+  switch endId {
+    case 1u: { return pair & 0xffu; }            // source
+    case 2u: { return (pair >> 21u) & 7u; }      // mid-target
+    case 3u: { return (pair >> 18u) & 7u; }      // mid-source
+    default: { return (pair >> 8u) & 0xffu; }    // target
+  }
+}
+
+// hollow applies to the end arrows only (mids are always filled — C1)
+fn endHollowOf(pair: u32, endId: u32) -> bool {
+  if (endId == 1u) { return ((pair >> 16u) & 1u) == 1u; }
+  if (endId == 0u) { return ((pair >> 17u) & 1u) == 1u; }
+  return false;
+}
+
 @fragment
 fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   let pair = arrowShapes[in.slot];
-  let isSource = end.isSource == 1u;
-  let shape = select((pair >> 8u) & 0xffu, pair & 0xffu, isSource);
-  let hollow = select((pair >> 17u) & 1u, (pair >> 16u) & 1u, isSource) == 1u;
+  let shape = endShapeOf(pair, end.endId);
+  let hollow = endHollowOf(pair, end.endId);
   let p = in.p;
   // exact per-edge sizing (B7): the uniform scale unit × arrow-scale
   let s = (in.widthPx * 3.0 + 2.0) / 0.3 * arrowScaleOf(pair);
@@ -2102,10 +2124,62 @@ ${ ARROW_POLY.cases }
   }
 
   let aw = arrowWidths[in.slot];
-  let strokePx = select(aw.y, aw.x, isSource) * frame.zoomDpr;
+  let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
   let alpha = in.color.a * arrowCoverage(sd, hollow, strokePx);
 
   return vec4f(in.color.rgb * alpha, alpha); // premultiplied
+}
+
+// Mid arrows (C1): tip at the edge midpoint (the haystack offset
+// midpoint for kind 6), pointing along the chord — mid-source flipped
+// backward, exactly v3's midsrcArrowAngle.
+@vertex
+fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
+  var out: ArrowVSOut;
+
+  let slot = visible[ii];
+  let c = unpack4x8unorm(arrows[slot]);
+
+  if (c.a == 0.0) {
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  let ends = endpoints[slot];
+  let params = curveParams[slot];
+  var pa = nodePositions[ends.x];
+  var pb = nodePositions[ends.y];
+
+  if (params.w == 6.0) { // haystack: mid of the offset points (v3's rs.mid)
+    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
+    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+  }
+
+  let mid = modelToPx(frame, (pa + pb) * 0.5);
+  let ab = modelToPx(frame, pb) - modelToPx(frame, pa);
+  let len = max(length(ab), 1e-4);
+  var dir = ab / len;
+
+  if (end.endId == 3u) { dir = -dir; } // mid-source points backward
+
+  let lod = edgeLod(slot, edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let sMax = max(frame.arrowScaleMax, 1.0);
+  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
+  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
+
+  let n = vec2f(-dir.y, dir.x);
+  let corner = quadCorner(vi);
+  let t = (corner.y + 1.0) * 0.5;
+  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  let lateral = corner.x * (halfBase + 1.0);
+
+  out.position = vec4f(pxToClip(frame, mid + dir * yLocal + n * lateral), EDGE_Z, 1.0);
+  out.p = vec2f(lateral, yLocal);
+  out.widthPx = widthPx;
+  out.slot = slot;
+  out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
+  return out;
 }
 `;
 
@@ -2143,7 +2217,8 @@ ${ROUTE_WGSL}
 @group(0) @binding(6) var<storage, read> curveParams: array<vec4f>;
 @group(0) @binding(7) var<storage, read> curveBlob: array<f32>;
 
-struct End { isSource: u32 }
+// 0 target, 1 source, 2 mid-target, 3 mid-source (C1)
+struct End { endId: u32 }
 @group(0) @binding(8) var<uniform> end: End;
 // fragment-stage: this end's arrow colors + the packed shape ids +
 // hollow stroke widths (B7)
@@ -2177,13 +2252,28 @@ fn arrowCoverage(sd: f32, hollow: bool, strokePx: f32) -> f32 {
 
   return 1.0 - smoothstep(-0.75, 0.75, sd);
 }
+fn endShapeOf(pair: u32, endId: u32) -> u32 {
+  switch endId {
+    case 1u: { return pair & 0xffu; }
+    case 2u: { return (pair >> 21u) & 7u; }
+    case 3u: { return (pair >> 18u) & 7u; }
+    default: { return (pair >> 8u) & 0xffu; }
+  }
+}
+
+fn endHollowOf(pair: u32, endId: u32) -> bool {
+  if (endId == 1u) { return ((pair >> 16u) & 1u) == 1u; }
+  if (endId == 0u) { return ((pair >> 17u) & 1u) == 1u; }
+  return false;
+}
+
 
 @vertex
 fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
   var out: ArrowVSOut;
 
   let slot = visible[ii];
-  let isSource = end.isSource == 1u;
+  let isSource = end.endId == 1u;
   let ends = endpoints[slot];
   let params = curveParams[slot];
   let tipSlot = select(ends.y, ends.x, isSource);
@@ -2265,9 +2355,8 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   // time; a=0 (no arrow at this end) renders fully transparent
   let c = unpack4x8unorm(arrows[in.slot]);
   let pair = arrowShapes[in.slot];
-  let isSource = end.isSource == 1u;
-  let shape = select((pair >> 8u) & 0xffu, pair & 0xffu, isSource);
-  let hollow = select((pair >> 17u) & 1u, (pair >> 16u) & 1u, isSource) == 1u;
+  let shape = endShapeOf(pair, end.endId);
+  let hollow = endHollowOf(pair, end.endId);
   let p = in.p;
   let s = (in.widthPx * 3.0 + 2.0) / 0.3 * arrowScaleOf(pair);
   var sd = 1e6;
@@ -2279,10 +2368,71 @@ ${ ARROW_POLY.cases }
   }
 
   let aw = arrowWidths[in.slot];
-  let strokePx = select(aw.y, aw.x, isSource) * frame.zoomDpr;
+  let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
   let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * arrowCoverage(sd, hollow, strokePx);
 
   return vec4f(c.rgb * alpha, alpha); // premultiplied
+}
+
+// Mid arrows on curved edges (C1): tip at the curve/route midpoint,
+// along the midpoint tangent (v3's per-family disp rules — the same
+// frame the edge labels rotate by); mid-source flips backward.
+@vertex
+fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> ArrowVSOut {
+  var out: ArrowVSOut;
+
+  let slot = visible[ii];
+  let ends = endpoints[slot];
+  let params = curveParams[slot];
+  var mid: vec2f;
+  var tangent: vec2f;
+
+  if (params.w <= 2.0) {
+    let g = evalCurveGeom(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+
+    mid = g.m;
+    // a quadratic's t = 0.5 tangent is its chord; loops run c1 -> c2
+    tangent = select(g.e - g.s, g.c2 - g.c1, params.w == 2.0);
+  } else {
+    var route = evalRouteW(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+    let midTan = routeMidpointW(&route);
+
+    mid = midTan.xy;
+    tangent = midTan.zw;
+  }
+
+  let tl = max(length(tangent), 1e-6);
+  var dir = tangent / tl;
+
+  if (end.endId == 3u) { dir = -dir; } // mid-source points backward
+
+  let midPx = modelToPx(frame, mid);
+  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let alphaComp = min(edgeWidths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+  let sMax = max(frame.arrowScaleMax, 1.0);
+  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
+  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
+
+  let n = vec2f(-dir.y, dir.x);
+  let corner = quadCorner(vi);
+  let t = (corner.y + 1.0) * 0.5;
+  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  let lateral = corner.x * (halfBase + 1.0);
+
+  out.position = vec4f(pxToClip(frame, midPx + dir * yLocal + n * lateral), EDGE_Z, 1.0);
+  out.p = vec2f(lateral, yLocal);
+  out.widthPx = widthPx;
+  out.slot = slot;
+  out.alphaComp = alphaComp;
+  return out;
 }
 `;
 

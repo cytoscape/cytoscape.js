@@ -39,10 +39,12 @@ const FRAGMENT_COLUMNS: ColumnId[] = [
 export class CurvedEdgePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
+  private layerPipeline: GPURenderPipeline;
+  private layerBindLayout: GPUBindGroupLayout;
   private bindLayout: GPUBindGroupLayout;
   private stripIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
-  private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
+  private bindGroups: Map<GPUBuffer, Map<string, { group: GPUBindGroup; version: number }>>;
 
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:curved-edge-shader', code: CURVED_EDGE_SHADER } );
@@ -77,6 +79,43 @@ export class CurvedEdgePipeline {
 
     const layout = device.createPipelineLayout( { bindGroupLayouts: [ this.bindLayout, visibleLayout ] } );
 
+    // the layer draw's own layout: the same binding numbers minus the
+    // widths column (binding 2) — the pre-derived stroke width replaces
+    // it, keeping the layer vertex stage within the 8-buffer budget
+    // (layouts count against the per-stage limit even for bindings a
+    // shader never references)
+    this.layerBindLayout = device.createBindGroupLayout( {
+      label: 'cy-gpu:curved-edge-layer-bind-layout',
+      entries: [
+        {
+          binding: 0,
+          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'uniform' }
+        },
+        ...VERTEX_COLUMNS.map( ( id, i ) => ( { id, binding: i + 1 } ) )
+          .filter( entry => entry.id !== 'edge.width' )
+          .map( entry => ( {
+            binding: entry.binding,
+            visibility: SHADER_STAGE.VERTEX,
+            buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+          } ) ),
+        {
+          binding: VERTEX_COLUMNS.length + 1, // the curve param blob
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        },
+        {
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2, // the layer record
+          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        }
+      ]
+    } );
+
+    const layerLayout = device.createPipelineLayout( {
+      bindGroupLayouts: [ this.layerBindLayout, visibleLayout ]
+    } );
+
     this.pipeline = device.createRenderPipeline( {
       label: 'cy-gpu:curved-edge-pipeline',
       layout,
@@ -95,34 +134,62 @@ export class CurvedEdgePipeline {
       primitive: { topology: 'triangle-list' }
     } );
 
+    this.layerPipeline = device.createRenderPipeline( {
+      label: 'cy-gpu:curved-edge-layer-pipeline',
+      layout: layerLayout,
+      vertex: { module, entryPoint: 'vsCurvedLayer' },
+      fragment: { module, entryPoint: 'fsCurvedLayer', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
+      primitive: { topology: 'triangle-list' },
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'less' }
+    } );
+
     this.bindGroups = new Map();
   }
 
-  private ensureBindGroup( device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror ): GPUBindGroup {
-    const cached = this.bindGroups.get( uniform );
+  private ensureBindGroup(
+    device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror,
+    layer: 'edge.overlay' | 'edge.underlay' | 'main' = 'main'
+  ): GPUBindGroup {
+    let perUniform = this.bindGroups.get( uniform );
+
+    if( perUniform == null ){
+      perUniform = new Map();
+      this.bindGroups.set( uniform, perUniform );
+    }
+
+    const cached = perUniform.get( layer );
 
     if( cached != null && cached.version === mirror.version ){
       return cached.group;
     }
 
+    const forLayer = layer !== 'main';
     const group = device.createBindGroup( {
       label: 'cy-gpu:curved-edge-bind-group',
-      layout: this.bindLayout,
+      layout: forLayer ? this.layerBindLayout : this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        ...VERTEX_COLUMNS.map( ( id, i ) => ( {
-          binding: i + 1,
-          resource: { buffer: mirror.buffer( id ) }
-        } ) ),
+        ...VERTEX_COLUMNS.map( ( id, i ) => ( { id, binding: i + 1 } ) )
+          .filter( entry => !forLayer || entry.id !== 'edge.width' )
+          .map( entry => ( {
+            binding: entry.binding,
+            resource: { buffer: mirror.buffer( entry.id ) }
+          } ) ),
         { binding: VERTEX_COLUMNS.length + 1, resource: { buffer: mirror.blobBuffer() } },
-        ...FRAGMENT_COLUMNS.map( ( id, i ) => ( {
+        ...( forLayer ? [] : FRAGMENT_COLUMNS.map( ( id, i ) => ( {
           binding: VERTEX_COLUMNS.length + 2 + i,
           resource: { buffer: mirror.buffer( id ) }
-        } ) )
+        } ) ) ),
+        ...( forLayer
+          ? [ {
+            binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2,
+            resource: { buffer: mirror.buffer( layer ) }
+          } ]
+          : [] )
       ]
     } );
 
-    this.bindGroups.set( uniform, { group, version: mirror.version } );
+    perUniform.set( layer, { group, version: mirror.version } );
 
     return group;
   }
@@ -135,6 +202,22 @@ export class CurvedEdgePipeline {
 
     pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
+    pass.setBindGroup( 1, cull.visibleBindGroup() );
+    pass.setIndexBuffer( this.stripIndex, 'uint16' );
+    pass.drawIndexedIndirect( cull.indirect, 0 );
+  }
+
+  /** The overlay/underlay stroke draw (round 13 A2), off the curved
+   * visible list — disabled instances collapse in the VS. */
+  drawLayer(
+    pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
+    mirror: ColumnMirror, instances: number, cull: CulledGroup,
+    layer: 'edge.overlay' | 'edge.underlay'
+  ): void {
+    if( instances === 0 ){ return; }
+
+    pass.setPipeline( this.layerPipeline );
+    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror, layer ) );
     pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.stripIndex, 'uint16' );
     pass.drawIndexedIndirect( cull.indirect, 0 );

@@ -67,8 +67,32 @@ describe('gpu/node-layers: overlay + underlay (round 13 A2)', function(){
     expect( cy._store.boundingBox().x2 ).to.be.closeTo( 15, 1e-4 );
   });
 
-  it('throws for layer props on the edges group (this slice is node-only)', function(){
-    expect( () => cytoscapeGpu({ style: { edges: { 'overlay-opacity': 0.5 } } }) )
+  it('edge layers: color/opacity/padding apply; shape props throw', function(){
+    cy = cytoscapeGpu({
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b' }, position: { x: 100, y: 0 } },
+        { data: { id: 'e', source: 'a', target: 'b' } }
+      ],
+      style: { edges: {
+        'width': 4, 'overlay-color': '#0f0', 'overlay-opacity': 0.5, 'overlay-padding': 6
+      } }
+    });
+
+    var e = cy.$id('e');
+
+    expect( e.style('overlay-opacity') ).to.be.closeTo( 0.5, 0.01 );
+    expect( e.style('overlay-padding') ).to.be.closeTo( 6, 0.01 );
+    expect( cy._store.edgeOverlayCount() ).to.equal( 1 );
+    expect( cy._store.edgeUnderlayCount() ).to.equal( 0 );
+
+    // the stored stroke = width + 2·padding
+    var rec = cy._store.column('edge.overlay');
+    var slot = cy._store.lookup('e').slot;
+
+    expect( rec[ slot * 2 + 1 ] / 256 ).to.be.closeTo( 16, 0.01 );
+
+    expect( () => cytoscapeGpu({ style: { edges: { 'overlay-shape': 'ellipse' } } }) )
       .to.throw( /node style property/ );
   });
 

@@ -175,6 +175,17 @@ export type ColumnId =
   | 'edge.lineStyle' // Uint32Array(cap), LINE_* ids
   | 'edge.arrowShapes' // Uint32Array(cap), ARROW_* ids packed source | target<<8
   /**
+   * Uint32Array(2·cap) — edge overlay/underlay records (round 13 A2),
+   * one column per layer: [rgba (layer opacity folded; a=0 = disabled),
+   * strokeWidth × 256 (fixed-point model px — the edge width + 2 ×
+   * layer padding, derived at style-write so the layer shaders need no
+   * width binding)].  The underlay strokes under the edges, the overlay
+   * over edges + arrows; both ride the existing edge cull streams with
+   * a VS collapse for disabled instances.
+   */
+  | 'edge.overlay'
+  | 'edge.underlay'
+  /**
    * Float32Array(4·cap) — per-edge curve parameters (rounds 12a/12b),
    * all position-independent so drags/layouts/position tweens follow
    * on-GPU with zero rebuild.  [3] is the curve kind (CURVE_*, exact
@@ -242,6 +253,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.targetArrow', 'edges', Uint8Array, 4 ),
   spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
   spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 ),
+  spec( 'edge.overlay', 'edges', Uint32Array, 2 ),
+  spec( 'edge.underlay', 'edges', Uint32Array, 2 ),
   spec( 'edge.curveParams', 'edges', Float32Array, 4 )
 ];
 

@@ -1044,6 +1044,13 @@ export class Renderer {
     const store = this.cy._store;
 
     this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
+    if( store.edgeUnderlayCount() > 0 ){
+      this.edgePipeline?.drawLayer(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.underlay' );
+      this.curvedEdgePipeline?.drawLayer(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved, 'edge.underlay' );
+    }
+
     this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge );
     // curved edges draw after straight ones (two streams; within each,
     // slot order — a recorded z-order deviation)
@@ -1056,6 +1063,13 @@ export class Renderer {
       pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved,
       this.cy._styleEngine.arrowEnds
     );
+    if( store.edgeOverlayCount() > 0 ){
+      this.edgePipeline?.drawLayer(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.overlay' );
+      this.curvedEdgePipeline?.drawLayer(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved, 'edge.overlay' );
+    }
+
     if( store.ghostCount() > 0 && cull.ghost != null ){
       this.nodePipeline?.drawGhost(
         pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.ghost );

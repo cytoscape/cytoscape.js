@@ -36,10 +36,11 @@ const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
 export class EdgePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
+  private layerPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
-  private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
+  private bindGroups: Map<GPUBuffer, Map<string, { group: GPUBindGroup; version: number }>>;
 
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:edge-shader', code: EDGE_SHADER } );
@@ -58,7 +59,12 @@ export class EdgePipeline {
           binding: i + 1,
           visibility: col.stages,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
-        } ) )
+        } ) ),
+        { // the overlay/underlay record the layer entry points read (A2)
+          binding: EDGE_COLUMNS.length + 1,
+          visibility: V | F,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        }
       ]
     } );
 
@@ -83,11 +89,33 @@ export class EdgePipeline {
       primitive: { topology: 'triangle-list' }
     } );
 
+    // overlay/underlay strokes (round 13 A2): one pipeline, two bind
+    // groups (each layer's record column at the last binding)
+    this.layerPipeline = device.createRenderPipeline( {
+      label: 'cy-gpu:edge-layer-pipeline',
+      layout,
+      vertex: { module, entryPoint: 'vsEdgeLayer' },
+      fragment: { module, entryPoint: 'fsEdgeLayer', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
+      primitive: { topology: 'triangle-list' },
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'less' }
+    } );
+
     this.bindGroups = new Map();
   }
 
-  private ensureBindGroup( device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror ): GPUBindGroup {
-    const cached = this.bindGroups.get( uniform );
+  private ensureBindGroup(
+    device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror,
+    layer: 'edge.overlay' | 'edge.underlay' = 'edge.overlay'
+  ): GPUBindGroup {
+    const key = `${layer}`;
+    let perUniform = this.bindGroups.get( uniform );
+
+    if( perUniform == null ){
+      perUniform = new Map();
+      this.bindGroups.set( uniform, perUniform );
+    }
+
+    const cached = perUniform.get( key );
 
     if( cached != null && cached.version === mirror.version ){
       return cached.group;
@@ -101,11 +129,12 @@ export class EdgePipeline {
         ...EDGE_COLUMNS.map( ( col, i ) => ( {
           binding: i + 1,
           resource: { buffer: mirror.buffer( col.id ) }
-        } ) )
+        } ) ),
+        { binding: EDGE_COLUMNS.length + 1, resource: { buffer: mirror.buffer( layer ) } }
       ]
     } );
 
-    this.bindGroups.set( uniform, { group, version: mirror.version } );
+    perUniform.set( key, { group, version: mirror.version } );
 
     return group;
   }
@@ -118,6 +147,22 @@ export class EdgePipeline {
 
     pass.setPipeline( pick ? this.pickPipeline : this.pipeline );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror ) );
+    pass.setBindGroup( 1, cull.visibleBindGroup() );
+    pass.setIndexBuffer( this.quadIndex, 'uint16' );
+    pass.drawIndexedIndirect( cull.indirect, 0 );
+  }
+
+  /** The overlay/underlay stroke draw (round 13 A2), off the same
+   * visible list — disabled instances collapse in the VS. */
+  drawLayer(
+    pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
+    mirror: ColumnMirror, instances: number, cull: CulledGroup,
+    layer: 'edge.overlay' | 'edge.underlay'
+  ): void {
+    if( instances === 0 ){ return; }
+
+    pass.setPipeline( this.layerPipeline );
+    pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror, layer ) );
     pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );
     pass.drawIndexedIndirect( cull.indirect, 0 );

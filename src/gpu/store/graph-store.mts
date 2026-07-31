@@ -778,6 +778,40 @@ export class GraphStore implements ModelView {
     this.dirty.mark( id, slot );
   }
 
+  private edgeOverlays = 0;
+  private edgeUnderlays = 0;
+
+  edgeOverlayCount(): number { return this.edgeOverlays; }
+  edgeUnderlayCount(): number { return this.edgeUnderlays; }
+
+  /**
+   * Write an edge's overlay or underlay record (round 13 A2):
+   * [rgba (opacity folded), strokeWidth×256] — the stroke width is the
+   * edge width + 2 × padding, derived at style-write time.
+   */
+  setEdgeLayer(
+    id: 'edge.overlay' | 'edge.underlay', slot: number, rgba: number, strokeWidth: number
+  ): void {
+    const arr = this.edges.column( id ) as Uint32Array;
+    const at = slot * 2;
+    const sw = Math.max( 0, Math.round( strokeWidth * 256 ) );
+
+    if( arr[ at ] === rgba && arr[ at + 1 ] === sw ){ return; }
+
+    const wasOn = arr[ at ] >>> 24 !== 0;
+    const isOn = rgba >>> 24 !== 0;
+
+    if( wasOn !== isOn ){
+      const d = isOn ? 1 : -1;
+
+      if( id === 'edge.overlay' ){ this.edgeOverlays += d; } else { this.edgeUnderlays += d; }
+    }
+
+    arr[ at ] = rgba;
+    arr[ at + 1 ] = sw;
+    this.dirty.mark( id, slot );
+  }
+
   /** RGBA bytes on [0, 255]. */
   setColor( id: ColumnId, slot: number, r: number, g: number, b: number, a: number ): void {
     const spec = columnSpec( id );

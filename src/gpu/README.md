@@ -151,7 +151,12 @@ above it (and, a recorded deviation, *under* the label layer — v3
 draws overlay over its node's label).  Color/opacity/padding are
 mapper-capable; layer opacity folds into the stored color (folded
 readback); padding grows the bb scans; zero-cost when unused.
-Edge overlays are the next A2 slice.
+Edge layers stroke the edge geometry at width + 2 × padding (every
+family — haystack offsets and the triangle taper included), the
+underlay under the edges and the overlay over edges + arrows, both
+under the nodes; strokes are solid with butt caps (v3 rounds stroke
+ends — a recorded deviation), and `overlay-shape`/`-corner-radius`
+stay node-only.
 
 ## Design decisions (v4 API direction)
 

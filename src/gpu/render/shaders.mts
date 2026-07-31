@@ -1376,6 +1376,9 @@ ${DASH_WGSL}
 @group(0) @binding(7) var<storage, read> lineColors: array<u32>;
 @group(0) @binding(8) var<storage, read> opacities: array<f32>;
 @group(0) @binding(9) var<storage, read> lineStyles: array<u32>; // LINE_* ids
+// overlay/underlay record [rgba folded, strokeWidth*256] — only the
+// layer entry points bind it (round 13 A2)
+@group(0) @binding(10) var<storage, read> edgeLayer: array<vec2u>;
 
 struct EdgeVSOut {
   @builtin(position) position: vec4f,
@@ -1479,6 +1482,74 @@ fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
 
   return (in.instance + 1u) | 0x80000000u; // high bit marks edges
 }
+
+// Overlay/underlay strokes (round 13 A2): the edge geometry re-extruded
+// at the layer's stroke width (edge width + 2 x padding, pre-derived),
+// riding the same visible list — disabled instances collapse in the VS.
+// Solid (no dashes; v3 strokes overlays solid with round caps — v4 keeps
+// butt caps, a recorded deviation), alpha = the folded layer opacity.
+@vertex
+fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
+  var out: EdgeVSOut;
+  let slot = visible[ii];
+  let rec = edgeLayer[slot];
+
+  if ((rec.x >> 24u) == 0u) { // disabled: degenerate, clipped
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  let widthPx = f32(rec.y) / 256.0 * frame.zoomDpr;
+  let ends = endpoints[slot];
+  let params = curveParams[slot];
+
+  var pa = nodePositions[ends.x];
+  var pb = nodePositions[ends.y];
+
+  if (params.w == 6.0) { // haystack offsets apply to the layer stroke too
+    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
+    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+  }
+
+  let corner = quadCorner(vi);
+  let t = (corner.x + 1.0) * 0.5;
+  var taper = 1.0;
+
+  if (params.w == 7.0) { // straight-triangle layers taper like the fill
+    var bd = pb - pa;
+    let bl = max(length(bd), 1e-6);
+
+    bd = bd / bl;
+    pa = pa + bd * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], bd);
+    pb = pb - bd * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -bd);
+    taper = 1.0 - t;
+  }
+
+  let a = modelToPx(frame, pa);
+  let b = modelToPx(frame, pb);
+  let ab = b - a;
+  let len = max(length(ab), 1e-4);
+  let halfW = widthPx * 0.5 * taper;
+  let dir = ab / len;
+  let n = vec2f(-dir.y, dir.x);
+  let s = corner.y * (halfW + 1.0);
+
+  out.position = vec4f(pxToClip(frame, mix(a, b, t) + n * s), EDGE_Z, 1.0);
+  out.v = s;
+  out.halfWidth = halfW;
+  out.alphaComp = 1.0;
+  out.instance = slot;
+  out.u = 0.0;
+  return out;
+}
+
+@fragment
+fn fsEdgeLayer(in: EdgeVSOut) -> @location(0) vec4f {
+  let c = unpack4x8unorm(edgeLayer[in.instance].x);
+  let alpha = c.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+
+  return vec4f(c.rgb * alpha, alpha); // premultiplied
+}
 `;
 
 /**
@@ -1515,6 +1586,10 @@ ${DASH_WGSL}
 @group(0) @binding(8) var<storage, read> lineColors: array<u32>;
 @group(0) @binding(9) var<storage, read> opacities: array<f32>;
 @group(0) @binding(10) var<storage, read> lineStyles: array<u32>;
+// overlay/underlay record — only the layer entry points bind it; they
+// drop the widths binding (the stroke width is pre-derived), which
+// keeps the layer vertex stage at the 8-storage-buffer budget
+@group(0) @binding(11) var<storage, read> edgeLayer: array<vec2u>;
 
 struct CurvedVSOut {
   @builtin(position) position: vec4f,
@@ -1662,6 +1737,96 @@ fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
   }
 
   return (in.instance + 1u) | 0x80000000u; // high bit marks edges
+}
+
+// Curved overlay/underlay strokes (round 13 A2): the curved strip
+// re-extruded at the layer's pre-derived stroke width, riding the
+// curved visible list; disabled instances collapse in the VS.
+@vertex
+fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> CurvedVSOut {
+  var out: CurvedVSOut;
+  let slot = visible[ii];
+  let rec = edgeLayer[slot];
+
+  if ((rec.x >> 24u) == 0u) {
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    return out;
+  }
+
+  let seg = vi >> 2u;
+  let corner = quadCorner(vi & 3u);
+  let ends = endpoints[slot];
+  let params = curveParams[slot];
+  let widthPx = f32(rec.y) / 256.0 * frame.zoomDpr;
+
+  let tIdx = seg + u32((corner.x + 1.0) * 0.5);
+  var p: vec2f;
+  var n: vec2f;
+  var miterScale = 1.0;
+
+  if (params.w <= 2.0) {
+    let g = evalCurveGeom(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+    let t = f32(tIdx) / CURVE_SEGS_F;
+
+    p = curvePoint(g, t);
+
+    var tangent = curveTangentAt(g, t);
+    let tl = length(tangent);
+
+    if (tl < 1e-6) { tangent = vec2f(1.0, 0.0); } else { tangent = tangent / tl; }
+
+    n = vec2f(-tangent.y, tangent.x);
+  } else {
+    var route = evalRouteW(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+
+    p = routeVertexW(&route, tIdx);
+
+    var dirIn = vec2f(0.0);
+    var dirOut = vec2f(0.0);
+
+    if (tIdx > 0u) { dirIn = p - routeVertexW(&route, tIdx - 1u); }
+    if (tIdx < CURVE_SEGS_U) { dirOut = routeVertexW(&route, tIdx + 1u) - p; }
+    if (length(dirIn) < 1e-6) { dirIn = dirOut; }
+    if (length(dirOut) < 1e-6) { dirOut = dirIn; }
+
+    let lIn = max(length(dirIn), 1e-6);
+    let lOut = max(length(dirOut), 1e-6);
+    let nIn = vec2f(-dirIn.y, dirIn.x) / lIn;
+    let nOut = vec2f(-dirOut.y, dirOut.x) / lOut;
+    var m = nIn + nOut;
+
+    if (length(m) < 1e-4) { m = nIn; }
+
+    n = m / max(length(m), 1e-6);
+    miterScale = 1.0 / clamp(dot(n, nIn), 0.1666, 1.0);
+  }
+
+  let halfW = widthPx * 0.5;
+  let s = corner.y * (halfW + 1.0);
+
+  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale), EDGE_Z, 1.0);
+  out.v = s;
+  out.halfWidth = halfW;
+  out.alphaComp = 1.0;
+  out.instance = slot;
+  out.u = 0.0;
+  return out;
+}
+
+@fragment
+fn fsCurvedLayer(in: CurvedVSOut) -> @location(0) vec4f {
+  let c = unpack4x8unorm(edgeLayer[in.instance].x);
+  let alpha = c.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+
+  return vec4f(c.rgb * alpha, alpha); // premultiplied
 }
 `;
 

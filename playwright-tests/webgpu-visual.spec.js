@@ -1032,6 +1032,44 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'node-layers', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: edge overlay/underlay strokes (round 13 A2)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -140, y: -70 } },
+        { data: { id: 'b' }, position: { x: 120, y: -70 } },
+        { data: { id: 'straight', source: 'a', target: 'b' } },
+        { data: { id: 'c' }, position: { x: -140, y: 60 } },
+        { data: { id: 'd' }, position: { x: 120, y: 60 } },
+        { data: { id: 'taxi', source: 'c', target: 'd', fam: 'taxi' } },
+        { data: { id: 'e' }, position: { x: -20, y: 130 } },
+        { data: { id: 'loop', source: 'e', target: 'e', fam: 'bezier' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#8e44ad' },
+        edges: {
+          'curve-style': {
+            case: [
+              { when: { data: 'fam', eq: 'taxi' }, then: 'taxi' },
+              { when: { data: 'fam', eq: 'bezier' }, then: 'bezier' }
+            ],
+            else: 'straight'
+          },
+          'width': 5, 'line-color': '#2c3e50',
+          'overlay-color': '#e67e22', 'overlay-opacity': 0.45, 'overlay-padding': 5,
+          'underlay-color': '#16a085', 'underlay-opacity': 0.9, 'underlay-padding': 10,
+          'taxi-turn': 30
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'edge-layers', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1536,6 +1574,40 @@ test.describe( 'v3-vs-v4 render parity', () => {
     const v4Style = { nodes: Object.assign( {}, shared ) };
 
     await runParity( page, testInfo, 'parity-node-layers', elements, v3Style, v4Style, { minInk: 1000 } );
+  } );
+
+  test( 'parity: edge overlay/underlay strokes (round 13 A2)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // v3 strokes edge overlays with round caps; v4 keeps butt caps (a
+    // recorded deviation confined to the stroke ends) — the bound
+    // absorbs the caps while the stroke body must agree
+    const elements = [
+      { data: { id: 'a' }, position: { x: -120, y: -60 } },
+      { data: { id: 'b' }, position: { x: 120, y: -60 } },
+      { data: { id: 'c' }, position: { x: -120, y: 80 } },
+      { data: { id: 'd' }, position: { x: 120, y: 80 } },
+      { data: { id: 'ab', source: 'a', target: 'b' } },
+      { data: { id: 'cd', source: 'c', target: 'd' } },
+      { data: { id: 'ad', source: 'a', target: 'd' } }
+    ];
+    const shared = {
+      'width': 6, 'line-color': '#7f8c8d',
+      'overlay-color': '#e67e22', 'overlay-opacity': 0.4, 'overlay-padding': 6,
+      'underlay-color': '#16a085', 'underlay-opacity': 0.9, 'underlay-padding': 12
+    };
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 34, 'height': 34, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: Object.assign( { 'curve-style': 'straight' }, shared ) }
+    ];
+    const v4Style = {
+      nodes: { 'width': 34, 'height': 34, 'background-color': '#c0392b' },
+      edges: Object.assign( {}, shared )
+    };
+
+    await runParity( page, testInfo, 'parity-edge-layers', elements, v3Style, v4Style, { minInk: 1500 } );
   } );
 
 } );

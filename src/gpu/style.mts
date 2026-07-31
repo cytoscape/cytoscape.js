@@ -349,7 +349,9 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'segment-distances', 'segment-weights', 'segment-radii', 'radius-type',
   'edge-distances', 'taxi-direction', 'taxi-turn', 'taxi-turn-min-distance', 'taxi-radius',
   'haystack-radius', 'source-endpoint', 'target-endpoint',
-  'source-distance-from-node', 'target-distance-from-node'
+  'source-distance-from-node', 'target-distance-from-node',
+  'overlay-color', 'overlay-opacity', 'overlay-padding',
+  'underlay-color', 'underlay-opacity', 'underlay-padding'
 ] );
 
 /** curve props are edge-only (constants and mappers alike). */
@@ -367,11 +369,11 @@ const GHOST_PROPS: ReadonlySet<string> = new Set( [
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity'
 ] );
 
-/** overlay/underlay props (round 13 A2) — node-only for now (edge
- * overlays are the next slice of A2). */
-const LAYER_PROPS: ReadonlySet<string> = new Set( [
-  'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
-  'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius'
+/** overlay/underlay *shape* props are node-only (edge layers stroke
+ * the edge geometry, so shape/radius don't apply — v3 ignores them on
+ * edges; v4 rejects them). */
+const LAYER_SHAPE_PROPS: ReadonlySet<string> = new Set( [
+  'overlay-shape', 'overlay-corner-radius', 'underlay-shape', 'underlay-corner-radius'
 ] );
 
 const parseColor = ( prop: string, value: unknown ): RGBA => {
@@ -1277,32 +1279,32 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   // overlay/underlay props (round 13 A2; node-only)
   'overlay-color': {
-    kind: 'color', groups: [ 'nodes' ],
+    kind: 'color', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.overlayColor = v as RGBA; },
     default: () => NODE_DEFAULTS.overlayColor
   },
   'overlay-opacity': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.overlayOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => NODE_DEFAULTS.overlayOpacity
   },
   'overlay-padding': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.overlayPadding = Math.max( 0, v as number ); },
     default: () => NODE_DEFAULTS.overlayPadding
   },
   'underlay-color': {
-    kind: 'color', groups: [ 'nodes' ],
+    kind: 'color', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.underlayColor = v as RGBA; },
     default: () => NODE_DEFAULTS.underlayColor
   },
   'underlay-opacity': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.underlayOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => NODE_DEFAULTS.underlayOpacity
   },
   'underlay-padding': {
-    kind: 'number', groups: [ 'nodes' ],
+    kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.underlayPadding = Math.max( 0, v as number ); },
     default: () => NODE_DEFAULTS.underlayPadding
   },
@@ -1826,6 +1828,25 @@ export class StyleEngine {
       case 'overlay-shape': case 'overlay-corner-radius':
       case 'underlay-color': case 'underlay-opacity': case 'underlay-padding':
       case 'underlay-shape': case 'underlay-corner-radius': {
+        if( ref.group === 'edges' ){
+          // edge layers: [rgba folded, strokeWidth×256]; padding reads
+          // back as (stroke − width) / 2
+          const eid = prop.startsWith( 'overlay' ) ? 'edge.overlay' : 'edge.underlay';
+          const erec = ( store.column( eid ) as Uint32Array ).subarray( slot * 2, slot * 2 + 2 );
+
+          if( prop.endsWith( '-color' ) ){
+            const rgba = erec[ 0 ];
+
+            return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+          }
+
+          if( prop.endsWith( '-opacity' ) ){ return ( erec[ 0 ] >>> 24 ) / 255; }
+
+          const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
+
+          return Math.max( 0, erec[ 1 ] / 256 - width ) / 2;
+        }
+
         const id = prop.startsWith( 'overlay' ) ? 'node.overlay' : 'node.underlay';
         const rec = ( store.column( id ) as Uint32Array ).subarray( slot * 4, slot * 4 + 4 );
         const field = prop.replace( /^(overlay|underlay)-/, '' );
@@ -2076,7 +2097,7 @@ export class StyleEngine {
         throw new Error( `'${norm}' is an edge style property` );
       }
 
-      if( ( GHOST_PROPS.has( norm ) || LAYER_PROPS.has( norm ) ) && group === 'edges' ){
+      if( ( GHOST_PROPS.has( norm ) || LAYER_SHAPE_PROPS.has( norm ) ) && group === 'edges' ){
         throw new Error( `'${norm}' is a node style property` );
       }
 
@@ -2171,6 +2192,17 @@ export class StyleEngine {
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
       store.setScalar( 'edge.arrowShapes', slot,
         ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) );
+      // overlay/underlay strokes (A2): stroke width = edge width + 2·padding,
+      // derived here so the layer shaders need no width binding
+      const layerRgbaE = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>
+        packRgba( [ r, g, b, Math.round( a * opacity ) ] );
+
+      store.setEdgeLayer(
+        'edge.overlay', slot, layerRgbaE( computed.overlayColor, computed.overlayOpacity ),
+        computed.width + 2 * computed.overlayPadding );
+      store.setEdgeLayer(
+        'edge.underlay', slot, layerRgbaE( computed.underlayColor, computed.underlayOpacity ),
+        computed.width + 2 * computed.underlayPadding );
       // blob-family styles carry the 12b record; straight/bezier store none
       const extras: CurveStyleExtras | null = isBlobStyle( computed.curveStyle )
         ? {

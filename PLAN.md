@@ -2594,6 +2594,33 @@ grows per item.
   Node tests, 56 `webgpu` + 32 `webgpu-visual` specs, typecheck +
   lint green.
 
+- [x] **A2 (edges): overlay/underlay strokes** (2026-07-31).  The
+  layer paint props (`overlay-color`/`-opacity`/`-padding` +
+  underlay) now apply to **edges** too: the edge geometry re-stroked
+  at width + 2 × padding (pre-derived at style-write into packed
+  `Uint32Array×2` columns — [rgba folded, strokeWidth×256] — so the
+  layer shaders need no width binding), the underlay under the
+  edges, the overlay over edges + arrows, both under the nodes
+  (v3's layering).  New `vsEdgeLayer`/`vsCurvedLayer` entry points
+  ride the *existing* edge/curved visible lists with a VS collapse
+  for disabled instances (no new cull kind; per-layer live counts
+  gate the draws — zero cost when unused); the curved layer draw
+  has its **own bind group layout** that omits the widths column —
+  pipeline *layouts* count against the per-stage 8-storage-buffer
+  limit even for bindings a shader never references, which the
+  Playwright console-error guard caught as an invalid-pipeline
+  cascade on the first cut.  Haystack offsets and the
+  straight-triangle taper apply to layer strokes too; layer strokes
+  are solid (no dashes) with butt caps where v3 rounds stroke ends —
+  a recorded deviation confined to the ends.  `overlay-shape`/
+  `-corner-radius` stay node-only (v3 ignores them on edges; v4
+  rejects them).  Edge-layer readback: color folded, padding =
+  (stroke − width) / 2.  Node-layer suite extended (edge cases);
+  an `edge-layers` golden (straight + taxi + loop under both
+  layers) and a `parity-edge-layers` live v3 scene at 2.047%
+  mismatch (the caps + AA).  1858 Node tests, 90 Playwright specs,
+  typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry

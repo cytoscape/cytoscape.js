@@ -900,6 +900,33 @@ nodes all exist, so forward references work in any def order;
 numeric parents coerce to string ids (v3), and unknown/non-node
 parents warn and leave the node an orphan.  Element `json()`
 carries `parent` and round-trips through `cy.add()`.
+
+Round 14.3 (auto-bounds): a parent's geometry is **derived from its
+children and materialized into the real `node.position`/`node.size`
+columns** by a lazy flush (the CurveIndex pattern: geometry writes
+mark ancestor chains pending; `GraphStore.flushDerived()` — always
+hierarchy before curves — drains at takeDelta/bb/refsInBox and the
+geometry accessors), so bounding boxes, culling, picking and the GPU
+mirror consume parent boxes with no special cases.  The derived box
+is v3's `updateCompoundBounds` math: direct children's
+border-inclusive extents (hidden children excluded — v3's
+display:none rule), padding in px or % of the pre-clamp children bb
+per `padding-relative-to`, the **centered** `min-width`/`min-height`
+clamp (the four bias props are dropped by decided design — a future
+round may add per-side padding props instead), and a degenerate
+fallback to the stashed style size at the stored position when no
+shown children remain.  The stored size is the padded/drawn box:
+`width()`/`height()` subtract 2·padding (v3's autoWidth/autoHeight),
+`paddedWidth`/`paddedHeight` return the drawn box, `outerWidth` adds
+the border, and `padding()` answers the resolved padding.  Setting a
+parent's position shifts its whole subtree by the delta (locked
+children move too — v3), `shift()` skips elements whose ancestor is
+also shifted (v3's dedupe), descendants moved by a parent's write
+emit `position` (listener-gated), and `relativePosition` is
+compound-relative (model minus the immediate parent's position).
+A parent's label re-anchors when auto-bounds resize it (the store
+inverts the engine's anchor bake from the sidecar entry).  A node
+that stops being a parent returns to its stashed style size.
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

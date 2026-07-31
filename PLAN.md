@@ -3439,12 +3439,45 @@ commit(s) with docs in-commit):
   round-trips through `add()`.  Tests-first: 17 specs in
   `test/gpu-compounds-api.mjs` red then green — 1973 Node tests,
   typecheck + lint clean.
-- [ ] **14.3 Auto-bounds flush** — pending/flush/`flushDerived` +
-  triggers, `materializeGeom`, padding/min-clamp/degenerate
-  fallback, parent `setPosition` child-shift + shift dedupe, label
-  re-anchor, `relativePosition`/`padding()`/readback rules.  Node
-  specs asserting v3 `updateCompoundBounds` numbers + the
-  no-retrigger invariant.
+- [x] **14.3 Auto-bounds flush** — landed 2026-07-31.  Parent
+  geometry is derived lazily and **materialized into the real
+  `node.position`/`node.size` columns**, so bb/cull/pick/mirror
+  need zero geometry changes.  `HierarchyIndex` gained the pending
+  set (`markGeo` marks whole ancestor chains with early-exit;
+  `markAncestors` for pure translations), per-parent compound
+  style (`setCompoundStyle`: padding px/% + relative-to, min-w/h),
+  and `flush()`: deepest-first over pending parents, direct
+  children's border-inclusive extents off `node.outerHalf`
+  (hidden children excluded — v3's display:none bb rule),
+  % padding against the pre-clamp children bb (v3), the centered
+  min clamp, and the degenerate fallback to the **stashed style
+  size** at the stored position.  The stored size is the
+  padded/drawn box: `width()`/`height()` readback subtracts
+  2·padding (v3's autoWidth), `paddedWidth`/`paddedHeight` return
+  the column, `outerWidth` = padded + border, `padding()` answers
+  the resolved pad.  Writes go through `materializeParentGeom` —
+  dirty spans, `updateOuterHalf`, the `nodeHalfMax` cull meter,
+  `geoEpoch`, and a store-side **label re-anchor** (the sidecar
+  entry's halign/valign reconstruct from its block-fraction
+  shifts, so no engine round-trip) — and never re-mark: the flush
+  can not re-trigger itself (spec-pinned).
+  `GraphStore.flushDerived()` = hierarchy then curves, replacing
+  every `curves.flush()` site; drains at takeDelta/bb/refsInBox/
+  accessors.  Triggers: the four position writers (a parent
+  `setPosition` flushes, then shifts its subtree by the delta —
+  v3's beforePositionSet — with locked children moving too; bulk
+  writers take per-slot sequential semantics under compounds),
+  size/border writes (`markGeo`; a style size write on a parent
+  also refreshes the stashed fallback), add/remove/reparent, and
+  show/hide (hidden children leave the bb).  Collection:
+  `shift()` gains v3's ancestor-in-set dedupe; parent moves emit
+  `position` for shifted descendants (listener-gated, v3);
+  compound-relative `relativePosition` (get + both setter forms);
+  parent-flip restores the stashed style size.  Tests-first: 14
+  specs in `test/gpu-compound-bounds.mjs` red then green (two
+  real bugs caught red-green: the parent-move delta and the bulk
+  shift both read pre-flush positions — both now flush first) —
+  1987 Node tests, typecheck + lint clean.
 - [ ] **14.4 Ancestor visibility + effective opacity** —
   `FLAG_SELF_HIDDEN`, `setVisibility` subtree fold, bb exclusion,
   opacity fold + demotions, readbacks.  Node specs.

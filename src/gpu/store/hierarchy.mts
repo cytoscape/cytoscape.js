@@ -1,4 +1,26 @@
-import { FLAG_CHILD, FLAG_PARENT } from '../contract.mjs';
+import { FLAG_ALIVE, FLAG_CHILD, FLAG_PARENT, FLAG_VISIBLE } from '../contract.mjs';
+
+const SHOWN = FLAG_ALIVE | FLAG_VISIBLE;
+
+/**
+ * Per-parent compound style inputs (CPU-only; written by the StyleEngine
+ * via GraphStore.setCompoundStyle).  `padding` is px, or a fraction when
+ * `paddingUnit` is '%' (v3's pfValue convention) resolved against the
+ * children bb per `relativeTo`.  The four v3 min-size bias props are
+ * dropped by decided design (round 14): the min clamp splits overflow
+ * evenly about the children center — exactly v3's default-bias behavior.
+ */
+export interface CompoundStyle {
+  padding: number;
+  paddingUnit: 'px' | '%';
+  relativeTo: 'width' | 'height' | 'average' | 'min' | 'max';
+  minWidth: number;
+  minHeight: number;
+}
+
+const COMPOUND_STYLE_DEFAULTS: CompoundStyle = {
+  padding: 0, paddingUnit: 'px', relativeTo: 'width', minWidth: 0, minHeight: 0
+};
 
 /*
 The compound hierarchy index (round 14): parent links, per-parent child
@@ -37,6 +59,16 @@ export interface HierarchyHost {
   markFlag( slot: number ): void;
   /** schedule a frame / mark non-column dirt (DirtyTracker.touch) */
   schedule(): void;
+  /** the node.position column (auto-bounds inputs) */
+  positions(): Float32Array;
+  /** the node.outerHalf column (border-inclusive child half-extents) */
+  outerHalf(): Float32Array;
+  /** the node's current style size (stashed as the degenerate fallback) */
+  readSize( slot: number ): [ number, number ];
+  /** a node flipped leaf<->parent (the store stashes/restores its style size) */
+  onFlip( slot: number, becameParent: boolean ): void;
+  /** write derived parent geometry into the real columns (never re-marks) */
+  materialize( slot: number, x: number, y: number, w: number, h: number ): void;
 }
 
 export class HierarchyIndex {
@@ -57,6 +89,13 @@ export class HierarchyIndex {
   private order: Uint32Array | null;
   private warnedGen: boolean;
 
+  /** parents whose derived geometry is stale (drained by flush()) */
+  private pending: Set<number>;
+  /** per-parent compound style inputs (absent = defaults) */
+  private compoundStyle: Map<number, CompoundStyle>;
+  /** the resolved px padding written at the last flush, per parent */
+  private resolvedPad: Map<number, number>;
+
   constructor( host: HierarchyHost ){
     this.host = host;
     this.parent = new Int32Array( 0 );
@@ -66,6 +105,9 @@ export class HierarchyIndex {
     this.nParents = 0;
     this.order = null;
     this.warnedGen = false;
+    this.pending = new Set();
+    this.compoundStyle = new Map();
+    this.resolvedPad = new Map();
   }
 
   // -- reads --
@@ -133,12 +175,129 @@ export class HierarchyIndex {
     return this.order;
   }
 
+  // -- geometry pending / flush (round 14.3) --
+
+  /**
+   * A node's geometry changed: mark every ancestor's derived bounds
+   * stale, and the node's own when it is itself a parent (a style write
+   * clobbered its derived size).  Chains early-exit on an
+   * already-pending ancestor — markGeo always marks whole chains, so a
+   * pending ancestor implies a pending chain above it.
+   */
+  markGeo( slot: number ): void {
+    if( this.children.has( slot ) && !this.pending.has( slot ) ){
+      this.pending.add( slot );
+      this.host.schedule();
+    }
+
+    this.markAncestors( slot );
+  }
+
+  /** Mark only the ancestor chain (a moved parent's own value stays exact). */
+  markAncestors( slot: number ): void {
+    for( let p = this.parentOf( slot ); p >= 0; p = this.parentOf( p ) ){
+      if( this.pending.has( p ) ){ break; }
+
+      this.pending.add( p );
+      this.host.schedule();
+    }
+  }
+
+  hasPending(): boolean {
+    return this.pending.size > 0;
+  }
+
+  /** Store a parent's compound style inputs (partial; merged over defaults). */
+  setCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
+    this.compoundStyle.set( slot, { ...COMPOUND_STYLE_DEFAULTS, ...style } );
+    this.markGeo( slot );
+  }
+
+  /** The px padding resolved at the last flush (0 for non-parents). */
+  paddingOf( slot: number ): number {
+    return this.resolvedPad.get( slot ) ?? 0;
+  }
+
+  /**
+   * Materialize stale parent geometry into the columns: deepest parents
+   * first (their derived boxes are their ancestors' inputs), each from
+   * its direct children's border-inclusive extents — hidden children are
+   * excluded (v3's display:none rule), and a parent with no shown
+   * children keeps its position at the stashed style size (v3's
+   * degenerate fallback).  Padding resolves against the children bb
+   * (v3 computes % padding pre-clamp), the min clamp splits overflow
+   * evenly about the children center, and the stored size is the
+   * padded/drawn box (readbacks subtract the padding).  Writes go
+   * through host.materialize, which never re-marks — the flush can not
+   * re-trigger itself.
+   */
+  flush(): void {
+    if( this.pending.size === 0 ){ return; }
+
+    const order = Array.from( this.pending )
+      .sort( ( a, b ) => this.depthOf( b ) - this.depthOf( a ) );
+
+    this.pending.clear();
+
+    const pos = this.host.positions();
+    const outer = this.host.outerHalf();
+    const flags = this.host.flags();
+
+    for( const slot of order ){
+      const kids = this.children.get( slot );
+
+      if( kids == null || kids.length === 0 ){ continue; } // stale entry
+
+      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+      for( const kid of kids ){
+        if( ( flags[ kid ] & SHOWN ) !== SHOWN ){ continue; }
+
+        const kx = pos[ kid * 2 ];
+        const ky = pos[ kid * 2 + 1 ];
+        const hw = outer[ kid * 2 ];
+        const hh = outer[ kid * 2 + 1 ];
+
+        if( kx - hw < x1 ){ x1 = kx - hw; }
+        if( kx + hw > x2 ){ x2 = kx + hw; }
+        if( ky - hh < y1 ){ y1 = ky - hh; }
+        if( ky + hh > y2 ){ y2 = ky + hh; }
+      }
+
+      let bbW = x2 - x1;
+      let bbH = y2 - y1;
+      let cx: number;
+      let cy: number;
+
+      if( !( bbW > 0 ) || !( bbH > 0 ) ){ // no shown children / zero area
+        const [ fw, fh ] = this.host.readSize( slot );
+
+        bbW = fw;
+        bbH = fh;
+        cx = pos[ slot * 2 ];
+        cy = pos[ slot * 2 + 1 ];
+      } else {
+        cx = ( x1 + x2 ) / 2;
+        cy = ( y1 + y2 ) / 2;
+      }
+
+      const style = this.compoundStyle.get( slot ) ?? COMPOUND_STYLE_DEFAULTS;
+      const pad = resolvePadding( style, bbW, bbH );
+      const coreW = Math.max( bbW, style.minWidth );
+      const coreH = Math.max( bbH, style.minHeight );
+
+      this.resolvedPad.set( slot, pad );
+      this.host.materialize( slot, cx, cy, coreW + 2 * pad, coreH + 2 * pad );
+    }
+  }
+
   // -- maintenance --
 
   /**
    * Link `slot` under `parentSlot` (-1 to orphan).  Cycle-safe (warn +
    * no-op, v3's dropped-ref rule); maintains children lists, subtree
-   * depths, FLAG_PARENT/FLAG_CHILD and the draw permutation.
+   * depths, FLAG_PARENT/FLAG_CHILD, the draw permutation, and the
+   * pending sets of both affected chains.
    */
   setParent( slot: number, parentSlot: number ): void {
     const current = this.parentOf( slot );
@@ -154,7 +313,10 @@ export class HierarchyIndex {
 
     this.ensure( Math.max( slot, next ) );
 
-    if( current >= 0 ){ this.unlink( slot, current ); }
+    if( current >= 0 ){
+      this.markGeo( current ); // the old chain re-derives (it lost a child)
+      this.unlink( slot, current );
+    }
 
     if( next >= 0 ){
       let list = this.children.get( next );
@@ -164,12 +326,14 @@ export class HierarchyIndex {
         this.children.set( next, list );
         this.setFlag( next, FLAG_PARENT, true );
         this.nParents++;
+        this.host.onFlip( next, true );
       }
 
       list.push( slot );
       this.parent[ slot ] = next;
       this.parentGen[ slot ] = this.host.gen()[ next ];
       this.setFlag( slot, FLAG_CHILD, true );
+      this.markGeo( next ); // the new chain re-derives (it gained a child)
     } else {
       this.parent[ slot ] = -1;
       this.setFlag( slot, FLAG_CHILD, false );
@@ -185,6 +349,7 @@ export class HierarchyIndex {
     const p = this.parentOf( slot );
 
     if( p >= 0 ){
+      this.markGeo( p ); // the chain re-derives (it lost a child)
       this.unlink( slot, p );
       this.parent[ slot ] = -1;
       this.setFlag( slot, FLAG_CHILD, false );
@@ -213,6 +378,9 @@ export class HierarchyIndex {
         this.setFlag( parentSlot, FLAG_PARENT, false );
         this.nParents--;
         this.order = null;
+        this.pending.delete( parentSlot );
+        this.resolvedPad.delete( parentSlot );
+        this.host.onFlip( parentSlot, false ); // restore the style size
       }
     }
   }
@@ -269,3 +437,18 @@ export class HierarchyIndex {
 }
 
 const EMPTY: readonly number[] = [];
+
+/** v3's computePaddingValues: px verbatim; '%' is a fraction (pfValue)
+ * of the children bb per padding-relative-to (zero-guarded like v3). */
+const resolvePadding = ( style: CompoundStyle, bbW: number, bbH: number ): number => {
+  if( style.padding === 0 ){ return 0; }
+  if( style.paddingUnit === 'px' ){ return style.padding; }
+
+  switch( style.relativeTo ){
+    case 'width': return bbW > 0 ? style.padding * bbW : 0;
+    case 'height': return bbH > 0 ? style.padding * bbH : 0;
+    case 'average': return bbW > 0 && bbH > 0 ? style.padding * ( bbW + bbH ) / 2 : 0;
+    case 'min': return bbW > 0 && bbH > 0 ? style.padding * Math.min( bbW, bbH ) : 0;
+    case 'max': return bbW > 0 && bbH > 0 ? style.padding * Math.max( bbW, bbH ) : 0;
+  }
+};

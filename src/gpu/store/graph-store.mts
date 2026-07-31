@@ -6,6 +6,7 @@ import { DirtyTracker } from './dirty.mjs';
 import { CurveIndex } from './curve-index.mjs';
 import type { CurveStyleExtras, EndpointSpec } from './curve-index.mjs';
 import { HierarchyIndex } from './hierarchy.mjs';
+import type { CompoundStyle } from './hierarchy.mjs';
 import { CurveBlob } from './curve-blob.mjs';
 import {
   CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
@@ -16,8 +17,9 @@ import {
   columnSpec, columnSpecsForGroup,
   CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
-  FLAG_ALIVE, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE,
-  FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
+  FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE,
+  LABEL_MARGIN
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
@@ -65,6 +67,9 @@ export class GraphStore implements ModelView {
   readonly curves: CurveIndex;
   /** the compound hierarchy (round 14); reads go through the delegates below */
   private hierarchy: HierarchyIndex;
+  /** per-parent stashed *style* size: the degenerate-children fallback,
+   * restored to the column when the node becomes a leaf again (14.3) */
+  private parentFallback = new Map<number, [ number, number ]>();
 
   // conservative monotone maxima behind curveSlack() (see that doc)
   private curveDevMax = 0;
@@ -148,7 +153,35 @@ export class GraphStore implements ModelView {
       flags: () => this.nodes.column( 'node.flags' ) as Uint32Array,
       gen: () => this.nodes.gen,
       markFlag: ( slot ) => this.dirty.mark( 'node.flags', slot ),
-      schedule: () => this.dirty.touch()
+      schedule: () => this.dirty.touch(),
+      positions: () => this.nodes.column( 'node.position' ) as Float32Array,
+      outerHalf: () => this.nodes.column( 'node.outerHalf' ) as Float32Array,
+      readSize: ( slot ) => {
+        const stashed = this.parentFallback.get( slot );
+
+        if( stashed != null ){ return stashed; }
+
+        const size = this.nodes.column( 'node.size' ) as Float32Array;
+
+        return [ size[ slot * 2 ], size[ slot * 2 + 1 ] ];
+      },
+      onFlip: ( slot, becameParent ) => {
+        if( becameParent ){
+          // stash the style size: auto-bounds owns the column from here,
+          // and the stash is both the degenerate fallback and what a
+          // leaf-again node returns to
+          const size = this.nodes.column( 'node.size' ) as Float32Array;
+
+          this.parentFallback.set( slot, [ size[ slot * 2 ], size[ slot * 2 + 1 ] ] );
+        } else {
+          const stashed = this.parentFallback.get( slot );
+
+          this.parentFallback.delete( slot );
+
+          if( stashed != null ){ this.setPair( 'node.size', slot, stashed[ 0 ], stashed[ 1 ] ); }
+        }
+      },
+      materialize: ( slot, x, y, w, h ) => this.materializeParentGeom( slot, x, y, w, h )
     } );
 
     // a blob compaction moves records: rewrite the header offset (a
@@ -196,7 +229,7 @@ export class GraphStore implements ModelView {
 
   takeDelta(): StoreDelta {
     // pending curve derivations land as column writes in this delta
-    this.curves.flush();
+    this.flushDerived();
 
     const delta = this.dirty.take( this.nodes.highWater, this.edges.highWater );
     const blobDirty = this.blob.takeDirty();
@@ -561,6 +594,125 @@ export class GraphStore implements ModelView {
   // -- compound hierarchy (round 14) --
 
   /**
+   * Bring every lazily-derived structure up to date: stale parent
+   * auto-bounds first (materialized into node.size/node.position), then
+   * pending curve derivations — curve geometry reads the sizes and
+   * positions the hierarchy flush writes.  Cheap when nothing is
+   * pending; called from takeDelta, the bb/refsInBox scans, and the
+   * geometry accessors.
+   */
+  flushDerived(): void {
+    this.hierarchy.flush();
+    this.curves.flush();
+  }
+
+  /**
+   * The hierarchy flush's write sink: derived parent geometry lands in
+   * the real columns (position, size, outerHalf) with normal dirty
+   * spans — but never re-marks the hierarchy, so a flush can not
+   * re-trigger itself.  A size change re-anchors the parent's label
+   * (the sidecar entry bakes anchors from the node extents) and feeds
+   * the monotone cull-slack meter.
+   */
+  private materializeParentGeom( slot: number, x: number, y: number, w: number, h: number ): void {
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const size = this.nodes.column( 'node.size' ) as Float32Array;
+    const posChanged = pos[ slot * 2 ] !== x || pos[ slot * 2 + 1 ] !== y;
+    const sizeChanged = size[ slot * 2 ] !== w || size[ slot * 2 + 1 ] !== h;
+
+    if( !posChanged && !sizeChanged ){ return; }
+
+    if( posChanged ){
+      pos[ slot * 2 ] = x;
+      pos[ slot * 2 + 1 ] = y;
+      this.dirty.mark( 'node.position', slot );
+    }
+
+    if( sizeChanged ){
+      size[ slot * 2 ] = w;
+      size[ slot * 2 + 1 ] = h;
+      this.dirty.mark( 'node.size', slot );
+
+      const half = Math.max( w, h ) / 2;
+
+      if( half > this.nodeHalfMax ){ this.nodeHalfMax = half; }
+
+      this.updateOuterHalf( slot );
+      this.reanchorLabel( slot, w, h );
+    }
+
+    this.geoEpoch++;
+  }
+
+  /**
+   * Re-derive a node label's anchor from new drawn extents.  The sidecar
+   * entry carries enough to invert the StyleEngine's bake: halign/valign
+   * reconstruct from the block-fraction shifts, and the anchor formulas
+   * are the engine's own (see writeLabel) — no engine round trip needed.
+   */
+  private reanchorLabel( slot: number, w: number, h: number ): void {
+    const entry = this.labels.nodes[ slot ];
+
+    if( entry == null ){ return; }
+
+    const halign = entry.halignShift * 2 + 1;
+    const valign = entry.valignShift * 2 + 2;
+    const anchorX = ( halign - 1 ) * w / 2;
+    const anchorY = ( valign === 0 ? -h / 2 - LABEL_MARGIN
+      : valign === 2 ? h / 2 + LABEL_MARGIN : 0 ) + entry.marginY;
+
+    if( anchorX !== entry.anchorX || anchorY !== entry.anchorY ){
+      this.setLabel( slot, { ...entry, anchorX, anchorY }, 'nodes' );
+    }
+  }
+
+  /** Shift a parent's whole subtree by a delta (raw writes, one span). */
+  private shiftSubtree( slot: number, dx: number, dy: number ): void {
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const stack: number[] = [];
+    let min = Infinity;
+    let max = -1;
+
+    for( const kid of this.hierarchy.childrenOf( slot ) ){ stack.push( kid ); }
+
+    while( stack.length > 0 ){
+      const s = stack.pop() as number;
+
+      pos[ s * 2 ] += dx;
+      pos[ s * 2 + 1 ] += dy;
+
+      if( s < min ){ min = s; }
+      if( s > max ){ max = s; }
+
+      for( const kid of this.hierarchy.childrenOf( s ) ){ stack.push( kid ); }
+    }
+
+    if( max >= 0 ){
+      this.geoEpoch++;
+      this.dirty.mark( 'node.position', min, max + 1 );
+    }
+  }
+
+  /** Mark a node's ancestor chain (and its own derived bounds when it is
+   * a parent) stale; flushed lazily by flushDerived(). */
+  markNodeGeo( slot: number ): void {
+    this.hierarchy.markGeo( slot );
+  }
+
+  /** Store a parent's compound style inputs (padding / min size); the
+   * StyleEngine's write path in 14.6, and testable directly. */
+  setCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
+    this.hierarchy.setCompoundStyle( slot, style );
+  }
+
+  /** The parent's resolved px padding (0 for leaves); flush first. */
+  paddingOf( slot: number ): number {
+    this.flushDerived();
+
+    return this.hierarchy.paddingOf( slot );
+  }
+
+  /**
    * Link a node under a parent node slot (-1 to orphan).  Cycle-safe:
    * a link that would make the node its own ancestor warns and no-ops
    * (v3's dropped-ref rule).  Maintains FLAG_PARENT/FLAG_CHILD, depths
@@ -618,6 +770,28 @@ export class GraphStore implements ModelView {
   setPosition( slot: number, x: number, y: number ): void {
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
 
+    if( this.hierarchy.hasCompounds() ){
+      const flags = ( this.nodes.column( 'node.flags' ) as Uint32Array )[ slot ];
+
+      if( ( flags & FLAG_PARENT ) !== 0 ){
+        // the delta is against the parent's *derived* position, so any
+        // pending auto-bounds settle first (materialize never re-enters
+        // setPosition, so this can not recurse)
+        this.hierarchy.flush();
+
+        // v3's beforePositionSet: moving a parent shifts its subtree by
+        // the delta; the parent's own derived value then equals the
+        // written position exactly (uniform translation), so only its
+        // ancestors re-derive
+        const dx = x - pos[ slot * 2 ];
+        const dy = y - pos[ slot * 2 + 1 ];
+
+        if( dx !== 0 || dy !== 0 ){ this.shiftSubtree( slot, dx, dy ); }
+      }
+
+      if( ( flags & FLAG_CHILD ) !== 0 ){ this.hierarchy.markAncestors( slot ); }
+    }
+
     pos[ slot * 2 ] = x;
     pos[ slot * 2 + 1 ] = y;
     this.geoEpoch++;
@@ -625,9 +799,19 @@ export class GraphStore implements ModelView {
     this.dirty.mark( 'node.position', slot );
   }
 
-  /** Bulk position write (e.g. from a layout): one coalesced dirty span. */
+  /** Bulk position write (e.g. from a layout): one coalesced dirty span.
+   * With compounds, each slot takes the sequential setPosition semantics
+   * (a parent's write shifts its subtree first — v3's per-element order). */
   setPositions( slots: number[], xy: number[] | Float32Array ): void {
     if( slots.length === 0 ){ return; }
+
+    if( this.hierarchy.hasCompounds() ){
+      for( let i = 0; i < slots.length; i++ ){
+        this.setPosition( slots[ i ], xy[ i * 2 ], xy[ i * 2 + 1 ] );
+      }
+
+      return;
+    }
 
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
     let min = Infinity;
@@ -655,6 +839,22 @@ export class GraphStore implements ModelView {
     if( slots.length === 0 || ( x == null && y == null ) ){ return; }
 
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
+
+    if( this.hierarchy.hasCompounds() ){
+      this.hierarchy.flush(); // the kept axis reads derived parent positions
+
+      for( let i = 0; i < slots.length; i++ ){
+        const slot = slots[ i ];
+
+        this.setPosition(
+          slot,
+          x ?? pos[ slot * 2 ],
+          y ?? pos[ slot * 2 + 1 ]
+        );
+      }
+
+      return;
+    }
     let min = Infinity;
     let max = -1;
 
@@ -672,9 +872,36 @@ export class GraphStore implements ModelView {
     this.dirty.mark( 'node.position', min, max + 1 );
   }
 
-  /** Bulk position offset over node slots: one coalesced dirty span. */
+  /** Bulk position offset over node slots: one coalesced dirty span.
+   * With compounds, v3's shift dedupe applies: a slot whose ancestor is
+   * also in the set is skipped (the ancestor's subtree shift moves it). */
   shiftPositions( slots: ArrayLike<number>, dx: number, dy: number ): void {
     if( slots.length === 0 ){ return; }
+
+    if( this.hierarchy.hasCompounds() ){
+      this.hierarchy.flush(); // offsets apply to derived parent positions
+
+      const inSet = new Set<number>();
+
+      for( let i = 0; i < slots.length; i++ ){ inSet.add( slots[ i ] ); }
+
+      const pos = this.nodes.column( 'node.position' ) as Float32Array;
+
+      for( let i = 0; i < slots.length; i++ ){
+        const slot = slots[ i ];
+        let ancestorInSet = false;
+
+        for( let p = this.hierarchy.parentOf( slot ); p >= 0; p = this.hierarchy.parentOf( p ) ){
+          if( inSet.has( p ) ){ ancestorInSet = true; break; }
+        }
+
+        if( ancestorInSet ){ continue; }
+
+        this.setPosition( slot, pos[ slot * 2 ] + dx, pos[ slot * 2 + 1 ] + dy );
+      }
+
+      return;
+    }
 
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
     let min = Infinity;
@@ -792,7 +1019,12 @@ export class GraphStore implements ModelView {
     this.geoEpoch++;
     this.dirty.mark( id, slot );
 
-    if( id === 'node.borderWidth' ){ this.updateOuterHalf( slot ); }
+    if( id === 'node.borderWidth' ){
+      this.updateOuterHalf( slot );
+
+      // a border write changes the node's outer extent: stale ancestors
+      if( this.hierarchy.hasCompounds() ){ this.hierarchy.markGeo( slot ); }
+    }
   }
 
   setPair( id: ColumnId, slot: number, a: number, b: number ): void {
@@ -803,6 +1035,11 @@ export class GraphStore implements ModelView {
       const half = Math.max( a, b ) / 2;
 
       if( half > this.nodeHalfMax ){ this.nodeHalfMax = half; }
+
+      // a style size write on a parent updates the stashed fallback
+      // (auto-bounds owns the column and re-derives over the clobber);
+      // tracked before the no-op check so the stash never goes stale
+      if( this.parentFallback.has( slot ) ){ this.parentFallback.set( slot, [ a, b ] ); }
     }
 
     if( arr[ slot * 2 ] === a && arr[ slot * 2 + 1 ] === b ){ return; }
@@ -812,7 +1049,12 @@ export class GraphStore implements ModelView {
     this.geoEpoch++;
     this.dirty.mark( id, slot );
 
-    if( id === 'node.size' ){ this.updateOuterHalf( slot ); }
+    if( id === 'node.size' ){
+      this.updateOuterHalf( slot );
+
+      // stale ancestors (and the parent's own derived size, if any)
+      if( this.hierarchy.hasCompounds() ){ this.hierarchy.markGeo( slot ); }
+    }
   }
 
   /**
@@ -1148,7 +1390,7 @@ export class GraphStore implements ModelView {
    * pending derivation flushed first (the accessors' read path).
    */
   curveParamsAt( slot: number ): [ number, number, number, number ] {
-    this.curves.flush();
+    this.flushDerived();
 
     const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
     const at = slot * 4;
@@ -1164,7 +1406,7 @@ export class GraphStore implements ModelView {
    * same frame (see curve-geometry.mts).
    */
   curveEvalAt( slot: number, out: CurveEval = this.curveScratch ): CurveEval | null {
-    this.curves.flush();
+    this.flushDerived();
 
     const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
     const at = slot * 4;
@@ -1199,7 +1441,7 @@ export class GraphStore implements ModelView {
    * same outerHalf frame, same routing (see curve-geometry.mts).
    */
   curveRouteAt( slot: number, out: CurveRoute = this.routeScratch ): CurveRoute | null {
-    this.curves.flush();
+    this.flushDerived();
 
     const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
     const at = slot * 4;
@@ -1232,7 +1474,7 @@ export class GraphStore implements ModelView {
   haystackPointsAt(
     slot: number
   ): { sx: number; sy: number; tx: number; ty: number } | null {
-    this.curves.flush();
+    this.flushDerived();
 
     const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
     const at = slot * 4;
@@ -1580,7 +1822,7 @@ export class GraphStore implements ModelView {
    * order.
    */
   refsInBox( x1: number, y1: number, x2: number, y2: number ): Ref[] {
-    this.curves.flush(); // curved edges read derived params below
+    this.flushDerived(); // curved edges read derived params below
     const lx = Math.min( x1, x2 );
     const hx = Math.max( x1, x2 );
     const ly = Math.min( y1, y2 );
@@ -1688,7 +1930,7 @@ export class GraphStore implements ModelView {
    * here and there together.  Returns null when empty.
    */
   boundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
-    this.curves.flush(); // the edge term reads derived curve params
+    this.flushDerived(); // the edge term reads derived curve params
 
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
 

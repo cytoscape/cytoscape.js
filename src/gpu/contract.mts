@@ -56,6 +56,12 @@ export const FLAG_PARENT = 4096;
  */
 export const FLAG_CHILD = 8192;
 
+/** The fixed model-px gap between a node's box and a top/bottom-row
+ * label (see the D3 label-alignment record); shared by the StyleEngine's
+ * anchor bake and the store's parent-label re-anchor on auto-bounds
+ * resize (round 14.3). */
+export const LABEL_MARGIN = 4;
+
 // -- node shape ids (u32 because WGSL can't index u8 arrays) --
 
 export const SHAPE_CIRCLE = 0;

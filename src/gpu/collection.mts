@@ -1,7 +1,7 @@
 import {
   CURVE_MULTI, CURVE_STRAIGHT, CURVE_TAXI,
   FLAG_ACTIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_PANNABLE,
-  FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
@@ -751,6 +751,9 @@ export class GpuCollection {
 
       if( ref == null || ref.group !== 'nodes' || !store.isCurrent( ref ) ){ return undefined; }
 
+      // parent positions are derived: settle pending auto-bounds first
+      if( store.hasCompounds() ){ store.flushDerived(); }
+
       // one column fetch instead of getX()+getY() (two Map.gets)
       const xy = store.nodes.column( 'node.position' ) as Float32Array;
       const slot = ref.slot;
@@ -864,6 +867,8 @@ export class GpuCollection {
         for( const i of emitIdx ){
           this._cy._emitOnEle( 'position', this[ i ] );
         }
+
+        this._emitSubtreePositions( emitIdx );
       }
 
       return this;
@@ -901,9 +906,49 @@ export class GpuCollection {
       for( const i of emitIdx ){
         this._cy._emitOnEle( 'position', this[ i ] );
       }
+
+      this._emitSubtreePositions( emitIdx );
     }
 
     return this;
+  }
+
+  /**
+   * v3 parity: descendants moved along by a parent's position write emit
+   * 'position' too — once each (members that already emitted are skipped).
+   * Only called when position listeners exist.
+   */
+  private _emitSubtreePositions( emitIdx: number[] ): void {
+    const store = this._store;
+
+    if( !store.hasCompounds() ){ return; }
+
+    const emitted = new Set<number>();
+
+    for( const i of emitIdx ){
+      const ref = this._refs[ i ];
+
+      if( ref.group === 'nodes' ){ emitted.add( ref.slot ); }
+    }
+
+    for( const i of emitIdx ){
+      const ref = this._refs[ i ];
+
+      if( ref.group !== 'nodes' || !store.hasFlag( 'nodes', ref.slot, FLAG_PARENT ) ){ continue; }
+
+      const stack: number[] = [ ...store.childrenOf( ref.slot ) ];
+
+      while( stack.length > 0 ){
+        const s = stack.pop() as number;
+
+        for( const kid of store.childrenOf( s ) ){ stack.push( kid ); }
+
+        if( !emitted.has( s ) ){
+          emitted.add( s );
+          this._cy._emitOnEle( 'position', this._cy._ele( 'nodes', s ) );
+        }
+      }
+    }
   }
 
   /** Offset positions by a vector or a single dimension. */
@@ -927,10 +972,30 @@ export class GpuCollection {
     const slots: number[] = [];
     const emitIdx: number[] | null = wantEmit ? [] : null;
 
+    // v3's shift dedupe: an element whose ancestor is also shifted is
+    // skipped — the ancestor's subtree shift moves it exactly once
+    const inSet: Set<number> | null = store.hasCompounds() ? new Set() : null;
+
+    if( inSet != null ){
+      for( const ref of this._refs ){
+        if( ref.group === 'nodes' && store.isCurrent( ref ) ){ inSet.add( ref.slot ); }
+      }
+    }
+
     for( let i = 0; i < this.length; i++ ){
       const ref = this._refs[ i ];
 
       if( ref.group !== 'nodes' || !store.isCurrent( ref ) ){ continue; }
+
+      if( inSet != null ){
+        let ancestorInSet = false;
+
+        for( let p = store.parentOf( ref.slot ); p >= 0; p = store.parentOf( p ) ){
+          if( inSet.has( p ) ){ ancestorInSet = true; break; }
+        }
+
+        if( ancestorInSet ){ continue; }
+      }
 
       slots.push( ref.slot );
 
@@ -943,14 +1008,65 @@ export class GpuCollection {
       for( const i of emitIdx ){
         this._cy._emitOnEle( 'position', this[ i ] );
       }
+
+      this._emitSubtreePositions( emitIdx );
     }
 
     return this;
   }
 
-  /** Without compound nodes, relative position is the model position. */
+  /** Compound-relative position: the model position minus the immediate
+   * parent's (derived) position — the model position for orphans and
+   * compound-free graphs (round 14.3, v3 semantics). */
   relativePosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
-    return this._positionImpl( dim, value, false );
+    const store = this._store;
+
+    if( !store.hasCompounds() ){ return this._positionImpl( dim, value, false ); }
+
+    // getter forms
+    if( dim === undefined || ( typeof dim === 'string' && value === undefined ) ){
+      const pos = this._positionImpl( undefined, undefined, false ) as Position | undefined;
+
+      if( pos == null ){ return undefined; }
+
+      const origin = this._relOrigin( this._refs[ 0 ] );
+      const rel = { x: pos.x - origin.x, y: pos.y - origin.y };
+
+      return typeof dim === 'string' ? rel[ dim as 'x' | 'y' ] : rel;
+    }
+
+    // setter forms: model = parent origin + rel, resolved per element
+    if( typeof dim === 'string' ){
+      return this._positions( ( ele ) => {
+        const prev = ele.relativePosition() as Position;
+        const origin = ele._relOrigin( ele._refs[ 0 ] );
+        const rx = dim === 'x' ? ( value as number ) : prev.x;
+        const ry = dim === 'y' ? ( value as number ) : prev.y;
+
+        return { x: origin.x + rx, y: origin.y + ry };
+      }, false );
+    }
+
+    return this._positions( ( ele ) => {
+      const origin = ele._relOrigin( ele._refs[ 0 ] );
+
+      return { x: origin.x + ( dim as Position ).x, y: origin.y + ( dim as Position ).y };
+    }, false );
+  }
+
+  /** The immediate parent's position ({0, 0} for orphans); flushes first. */
+  private _relOrigin( ref: Ref ): Position {
+    const store = this._store;
+
+    store.flushDerived();
+
+    const p = store.parentOf( ref.slot );
+
+    if( p < 0 ){ return { x: 0, y: 0 }; }
+
+    const xy = store.column( 'node.position' ) as Float32Array;
+
+    return { x: xy[ p * 2 ], y: xy[ p * 2 + 1 ] };
   }
 
   declare relativePoint: this['relativePosition'];
@@ -994,7 +1110,7 @@ export class GpuCollection {
     if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
 
     return ref.group === 'nodes'
-      ? ( this._store.column( 'node.size' ) as Float32Array )[ ref.slot * 2 ]
+      ? this._nodeDim( ref, 0 )
       : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot ];
   }
 
@@ -1004,8 +1120,25 @@ export class GpuCollection {
     if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
 
     return ref.group === 'nodes'
-      ? ( this._store.column( 'node.size' ) as Float32Array )[ ref.slot * 2 + 1 ]
+      ? this._nodeDim( ref, 1 )
       : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot ];
+  }
+
+  /** A node's core width/height: for parents the column stores the
+   * padded/drawn box (auto-bounds, round 14.3), so the readback
+   * subtracts the padding — v3's autoWidth/autoHeight. */
+  private _nodeDim( ref: Ref, axis: 0 | 1 ): number {
+    const store = this._store;
+
+    if( store.hasCompounds() && store.hasFlag( 'nodes', ref.slot, FLAG_PARENT ) ){
+      store.flushDerived();
+
+      const size = store.column( 'node.size' ) as Float32Array;
+
+      return size[ ref.slot * 2 + axis ] - 2 * store.paddingOf( ref.slot );
+    }
+
+    return ( store.column( 'node.size' ) as Float32Array )[ ref.slot * 2 + axis ];
   }
 
   /**
@@ -1296,30 +1429,55 @@ export class GpuCollection {
   }
 
   /**
-   * v3-parity accessor: node padding.  v4 has no `padding` style prop
-   * (a compounds-era feature), so the padding is always 0 and the
-   * padded dimensions equal the plain ones — kept so v3 call sites work.
+   * v3-parity accessor: node padding.  Leaves have no padding in v4
+   * (no compound-free `padding` prop); parents answer the resolved
+   * auto-bounds padding (round 14.3).
    */
   padding(): number | undefined {
-    return this._first() == null ? undefined : 0;
+    const ref = this._first();
+
+    if( ref == null ){ return undefined; }
+
+    if( ref.group !== 'nodes' || !this._store.isCurrent( ref ) || !this._store.hasCompounds() ){
+      return 0;
+    }
+
+    return this._store.paddingOf( ref.slot );
   }
 
+  /** The drawn box: core dims + 2 x padding (v3's paddedWidth). */
   paddedWidth(): number | undefined {
-    return this.width();
+    return this._paddedDim( 0 );
   }
 
   paddedHeight(): number | undefined {
-    return this.height();
+    return this._paddedDim( 1 );
+  }
+
+  private _paddedDim( axis: 0 | 1 ): number | undefined {
+    const ref = this._first();
+
+    if( ref == null || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    if( ref.group === 'nodes' && this._store.hasCompounds()
+      && this._store.hasFlag( 'nodes', ref.slot, FLAG_PARENT ) ){
+      this._store.flushDerived();
+
+      // the size column stores the padded/drawn box for parents
+      return ( this._store.column( 'node.size' ) as Float32Array )[ ref.slot * 2 + axis ];
+    }
+
+    return axis === 0 ? this.width() : this.height();
   }
 
   outerWidth(): number | undefined {
-    const w = this.width();
+    const w = this.paddedWidth();
 
     return w == null ? undefined : w + this._borderWidth();
   }
 
   outerHeight(): number | undefined {
-    const h = this.height();
+    const h = this.paddedHeight();
 
     return h == null ? undefined : h + this._borderWidth();
   }
@@ -1349,7 +1507,7 @@ export class GpuCollection {
     const bGeom = store.column( 'node.borderGeom' ) as Uint32Array;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
 
-    store.curves.flush(); // curved edges read derived params below
+    store.flushDerived(); // parent auto-bounds + curved-edge params derive below
 
     for( const ref of this._liveRefs() ){
       if( ref.group === 'nodes' ){
@@ -1692,11 +1850,32 @@ export class GpuCollection {
   }
 
   show(): this {
-    return this._setBit( FLAG_VISIBLE, true );
+    return this._setVisibility( true );
   }
 
   hide(): this {
-    return this._setBit( FLAG_VISIBLE, false );
+    return this._setVisibility( false );
+  }
+
+  /** show/hide with the compound hook: hidden children leave their
+   * ancestors' auto-bounds (v3's display:none bb rule), so a visibility
+   * change marks the toggled nodes' chains stale (round 14.3). */
+  private _setVisibility( on: boolean ): this {
+    const store = this._store;
+
+    if( !store.hasCompounds() ){ return this._setBit( FLAG_VISIBLE, on ); }
+
+    const changed: number[] = [];
+
+    store.flagRefs( this._refs, FLAG_VISIBLE, on, 0, changed );
+
+    for( const i of changed ){
+      const ref = this._refs[ i ];
+
+      if( ref.group === 'nodes' ){ store.markNodeGeo( ref.slot ); }
+    }
+
+    return this;
   }
 
   locked(): boolean {
@@ -2700,7 +2879,7 @@ export class GpuCollection {
     const curveParams = this._store.column( 'edge.curveParams' ) as Float32Array;
     const edgeFlags = this._store.column( 'edge.flags' ) as Uint32Array;
 
-    this._store.curves.flush();
+    this._store.flushDerived();
 
     for( const ref of this._liveRefs() ){
       if( ref.group !== 'edges' ){ continue; }

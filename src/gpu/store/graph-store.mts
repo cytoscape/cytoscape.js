@@ -1183,9 +1183,11 @@ export class GraphStore implements ModelView {
    * millisecond instead of hundreds).  Nodes contribute position ±
    * (size/2 + border/2).  Edges contribute their own extent as a
    * first-class term: the two endpoint node centers, grown by the
-   * conservative curve-hull deviation for curved edges (round 12a; the
+   * conservative curve deviation for curved edges — the hull bound for
+   * chord-bounded kinds, plus the node-half margin (+ chord length for
+   * extrapolated weights) for box-bounded ones (rounds 12a/12b; the
    * exact lazy curve bb is GpuCollection.boundingBox's tier).  Future
-   * edge geometry (arrow heads, 12b families) extends the edge term
+   * edge geometry (arrow heads, 12c endpoints) extends the edge term
    * here and there together.  Returns null when empty.
    */
   boundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {

@@ -785,7 +785,7 @@ record.
   membership as a structural index.  (Since superseded: bundled bezier +
   self-loops landed round 12a exactly in this tier, incl.
   `controlPoints`/`isBundledBezier`; `segmentPoints` and the
-  unbundled/segments/taxi families are pass 12b.)
+  unbundled/segments/taxi families landed in pass 12b, same tier.)
 - **Full stylesheet + mappers** beyond the constant blocks and the label
   `data(key)` mapper; layouts beyond grid/preset.  (Since superseded:
   mappers landed round 7–8; circle/concentric/breadthfirst/random
@@ -1358,7 +1358,8 @@ Each entry converts into a "Landed" record as it ships:
 Deferred out of this round (logged, not built): compaction (below;
 the slot-stable tier since landed as round 11); autorotated edge
 labels (since landed 2026-07-29); multiline labels; bezier edges
-(round-12 plan written); compounds;
+(round-12 plan written; passes 12a/12b since landed, 12c remains);
+compounds;
 z-index; GPU layouts; size tweens (the R8.5 geometry seam); `renderTo`;
 restore/clone/json-import (closed — not in v4); the three-finger touch
 box gesture.
@@ -1948,8 +1949,11 @@ mid-implementation).
   generalizes from the endpoint delta to the midpoint tangent.
 - **Box selection keeps endpoint-center containment in 12a** (the
   existing straight-edge approximation, already a recorded
-  deviation); upgrading `refsInBox` to the flattened polyline is
-  revisited with 12b when the CPU evaluator covers every family.
+  deviation); upgrading `refsInBox` is revisited with 12b when the
+  CPU evaluator covers every family.  (Since done: 12b's revisit took
+  v3's exact rule — curved edges test their *curve boundary
+  endpoints*, which is what v3's 'contain' actually checks, rather
+  than the flattened polyline; straight edges keep centers.)
 
 **Pass split** (each pass lands as isolated commits with Node
 geometry tests pinned against v3's math, a golden scene per family, a
@@ -2003,9 +2007,9 @@ decimation; record the numbers in the round record).
 Ran under the round-10 process rules (isolated commits, docs
 in-commit, full verify per item, escalation on real API calls).  Items
 landed in CPU-first order; each entry below was written in the commit
-that landed it.  Passes 12b (unbundled/segments/taxi) and 12c
-(endpoints + haystack/straight-triangle) remain in the round-12 plan
-above.
+that landed it.  (Since superseded: pass 12b — unbundled/segments/taxi
+— landed 2026-07-30/31, see its round record; pass 12c — endpoints +
+haystack/straight-triangle — remains in the round-12 plan above.)
 
 - [x] **Curve geometry module + contract columns.**
   `src/gpu/curve-geometry.mts` is the CPU half of the dual-impl

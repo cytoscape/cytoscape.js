@@ -20,8 +20,9 @@ src/extensions/renderer/base/coord-ele-math/edge-control-points.mts:
 - The *frame* is v3's `edge-distances: 'intersection'` default: the
   intersection points of each node's boundary with the line between the
   two node centers; the control point offsets from a weighted point
-  between them along the perpendicular.  (v3's alternative frames —
-  'node-position', 'endpoints' — come with the 12b/12c props.)
+  between them along the perpendicular.  (The 'node-position' frame
+  landed with the 12b route families below; 'endpoints' needs 12c's
+  manual endpoints.)
 - A bundled bezier's control offset is the stagger
   `(0.5 - n/2 + i) * stepSize`, n the bundle size and i the edge's
   index within it; the middle edge of an odd bundle is straight (that

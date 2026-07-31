@@ -555,7 +555,9 @@ each is deliberate, not a pass-1 deferral:
     can't bind in every kernel within the 8-storage-buffer budget.
   - *Accessors + exact bb (12a)*: `isBundledBezier()` (the v3 style
     check), `controlPoints()`/`renderedControlPoints()` (one point for
-    a bundled bezier, two for a loop, undefined for straight edges);
+    a bundled bezier, two for a loop, undefined for straight edges —
+    since 12b also the unbundled control list, with
+    `segmentPoints()` covering segments/taxi);
     `midpoint()` is the curve midpoint and `source/targetEndpoint()`
     the curve's boundary endpoints when the edge curves.  Public
     `eles.boundingBox()` is the *exact lazy* tier of the
@@ -617,17 +619,57 @@ each is deliberate, not a pass-1 deferral:
     loop distance (v3), falling back to the step size when unset (v3
     yields NaN geometry there); and segments/taxi-styled loops keep
     rendering as loops (the 12a all-loops deviation extended).
-  - *Edge labels (12a)*: labels of curved edges anchor at the **curve
-    midpoint**, computed in the label vertex shader from live
-    positions + the params column (zero rebuild, like everything
-    else).  `text-rotation: autorotate` needed no new math for
-    beziers — a quadratic's t = 0.5 tangent *is* its chord direction,
-    so the endpoint frame is exact — and loops rotate along their
-    c1→c2 midpoint tangent.  The edge-glyph cull grows its
-    chord-midpoint test by the frame's curve slack for curved owners
-    (its own 8-buffer budget precludes a params binding); rotated
-    curved labels cull against a frame-independent anchor-centred
-    bound.
+  - *Geometry + rendering (12b)*: the route families share 12a's one
+    curved stream of CURVE_SEGS strips (one indirect draw needs one
+    indexCount).  Variable-length records live in the **curve param
+    blob** (`store/curve-blob.mts` — round-11 waste-threshold
+    compaction; the params column holds the `[offset, dev, n, kind]`
+    header, so records stay position-independent and drags/layouts/
+    tweens cost zero blob traffic); the blob mirrors as one storage
+    buffer, bindable because `node.outerHalf` freed a slot in every
+    curve shader.  The route evaluator (`evalRoute` / `evalRouteW` —
+    dual impls, same blob) maps subdivision indices onto route pieces
+    so **piece boundaries land exactly on indices**: legs stay
+    pixel-straight and corners exact regardless of quad distribution
+    (hence the 8-control/11-point caps).  Sharp corners join with a
+    **clamped discrete miter** (v3's canvas sets `lineJoin: 'round'`
+    on edge paths — a recorded deviation confined to the outer join
+    wedge; the live parity diff still measures 0 px at 8 px strokes);
+    round corners are v3's `getRoundCorner` arcs, ported as the pure
+    `computeCorner`/`computeCornerW` pair.  Cull: chord-bounded routes
+    grow the 12a chord test by their header deviation via the frame
+    slack; **box-bounded ones (taxi, extrapolated weights —
+    FLAG_CURVED_BOX) test the endpoint AABB grown by slack + chord
+    length** instead, since no frame constant bounds their excursion.
+    The pick tile draws the same strips, and `refsInBox` tests curve
+    boundary endpoints (the box-selection revisit, closed).
+  - *Arrows + accessors (12b)*: a route's end tangent runs from the
+    first/last interior point to the boundary endpoint, so route
+    arrowheads are the straight arrow math with that point substituted
+    (taxi arrows ride the final axis-aligned leg).  The curved-arrow
+    vertex stage needed the blob, so this end's arrow *colors* moved
+    to the fragment stage — no-arrow ends rasterize a small
+    fully-transparent quad instead of collapsing in the VS (bounded
+    overdraw on the opt-in curved stream).  Accessors:
+    `segmentPoints()`/`renderedSegmentPoints()` answer for segments
+    *and* taxi (v3 types taxi as 'segments'); `controlPoints()` covers
+    the unbundled control list; `midpoint()`/endpoints and the exact
+    lazy `boundingBox()` follow the route via the shared evaluator.
+  - *Edge labels (12a; routes since 12b)*: labels of curved edges
+    anchor at the **curve midpoint**, computed in the label vertex
+    shader from live positions + the params column (zero rebuild,
+    like everything else) — since 12b, route owners anchor at
+    `routeMidpointW` (v3's per-family midpoint rules).
+    `text-rotation: autorotate` needed no new math for beziers — a
+    quadratic's t = 0.5 tangent *is* its chord direction, so the
+    endpoint frame is exact — loops rotate along their c1→c2 midpoint
+    tangent, and route owners take the route midpoint tangent (the
+    arc-apex tangent on round middles, the leg direction on
+    polylines).  The edge-glyph cull grows its chord-midpoint test by
+    the frame's curve slack for curved owners (its own 8-buffer
+    budget precludes a params binding), plus the chord length for
+    box-bounded owners; rotated curved labels cull against a
+    frame-independent anchor-centred bound.
 - **Parity triage (2026-07-29)** — decisions on the v3 leftovers from
   the gap analysis.  *Dropped*: the canvas-era perf degradation
   options (`hideEdgesOnViewport`, `textureOnViewport` +
@@ -983,8 +1025,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   upside-down — see the edge-labels design decision),
   single line (newlines collapse to spaces), fixed
   placement (nodes: horizontally centered below the node; edges:
-  centered on the midpoint — the *curve* midpoint for curved edges,
-  round 12a; both offset by
+  centered on the midpoint — the curve or route midpoint for curved
+  edges (rounds 12a/12b, v3's per-family rules); both offset by
   `text-margin-x/y`), not pickable, one
   global `font-family` (the atlas holds one font), and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop

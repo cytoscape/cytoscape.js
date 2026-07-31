@@ -7,10 +7,11 @@ import {
 } from '../curve-geometry.mjs';
 
 /*
-CurveIndex (round 12a): bundle membership + curve-param derivation.
+CurveIndex (rounds 12a/12b): bundle membership + curve-param derivation.
 
 Owns the per-edge *styled* curve record (curve-style, step size, weight,
-loop direction/sweep — the stored truth the style getters read) and the
+loop direction/sweep — and, for the 12b families, the CurveStyleExtras
+lists/params — the stored truth the style getters read) and the
 structural indexes that turn records into the derived edge.curveParams
 column: the parallel-edge pair map (keyed on the unordered endpoint
 pair; only built once some edge styles `bezier` — a straight-only graph
@@ -28,14 +29,21 @@ Derivation is v3's, verbatim (edge-control-points.mts):
   `bezier` edge renders straight — the signed-off v3 rule);
 - loops stagger a per-(direction, sweep) counter j over the node's
   loops in slot order: rays at loopDir − π/2 ∓ sweep/2, radius
-  1.4 × step × (j/3 + 1).  (v4 deviation: *all* loops take this
+  1.4 × step × (j/3 + 1); unbundled-family loops take
+  control-point-distances[0] as the loop distance (12b, v3's rule),
+  step-size fallback when unset.  (v4 deviation: *all* loops take this
   bundled-loop construction — v3 routes `straight`-styled loops
   through its unbundled path.)
+- the 12b families (unbundled-bezier / segments / round-segments /
+  taxi / round-taxi) never bundle: `deriveEdge` writes each edge's
+  blob-backed record on its own (see that method's doc for the count
+  rules, caps and box-bound marking), and bezier pair re-derivations
+  skip blob-family members so the two paths can't clobber each other.
 
-Recomputes are lazy: mutations and record writes mark pairs pending,
-and `flush()` (called from takeDelta / boundingBox / the accessors)
-recomputes only the pending pairs — a bulk load or style apply pays
-each pair once.
+Recomputes are lazy: mutations and record writes mark pairs (and 12b
+slots) pending, and `flush()` (called from takeDelta / boundingBox /
+the accessors) recomputes only the pending work — a bulk load or style
+apply pays each pair/edge once.
 */
 
 export const CURVE_STYLE_STRAIGHT = 0;

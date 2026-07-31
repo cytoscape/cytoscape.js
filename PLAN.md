@@ -3570,8 +3570,25 @@ commit(s) with docs in-commit):
   fully via 14.6's hook.  Tests-first: 8 specs in
   `test/gpu-structural-query.mjs` red then green — 2024 Node
   tests, typecheck + lint clean.
-- [ ] **14.8 Wire + columnar parent sections** — format bump,
-  ingest.  Node + module specs.
+- [x] **14.8 Wire + columnar parent sections** — landed 2026-07-31.
+  `GpuColumnarNodes.parent?: Uint32Array` — payload node indices,
+  `NO_PARENT` (0xffffffff) sentinel — with `toColumnarElements`
+  lifting def parents into it (unknown in-payload parents warn +
+  orphan; the parent key never lands in the data columns), bulk
+  store ingest linking after the flags fill (out-of-range indices
+  throw the self-contained rule; cycles ride the setParent guard —
+  the first payload link holds, the closing link warns + drops),
+  and the wire format gaining the node-parent section (flag 512,
+  written right after positions).  Wire **version bumps to 3**;
+  the reader accepts 2–3 (a v2 buffer can never carry the parent
+  flag, so old payloads load unchanged — spec-pinned by
+  re-stamping a compound-free v3 buffer as v2).  `cy.serialize()`
+  flushes derived geometry and exports the live hierarchy as
+  payload indices (second pass — a parent may sit later in slot
+  order than its children), round-tripping selection + positions +
+  parents.  Tests-first: 7 specs in `test/gpu-compound-wire.mjs`
+  red then green — 2031 Node + 60 module tests, typecheck + lint
+  clean.
 - [ ] **14.9 Parent draw stream, cull, pick** — `parentNode` cull
   kind + permutation, node-kind/prepass exclusion, `drawScene`
   insertion, CPU-pick two-pass, export groups.  Playwright:

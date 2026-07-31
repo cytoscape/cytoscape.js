@@ -1113,7 +1113,8 @@ math dominating (within ±1.2× at N=500).
 
 `options.elements` accepts the classic definition form (v3-style JSON) or
 a **columnar bulk-load form**: `{ columnar: true, nodes: { count, ids?,
-positions?, data? }, edges: { count, ids?, sources, targets, data? } }`
+positions?, parent?, data? }, edges: { count, ids?, sources, targets,
+data? } }`
 with typed-array columns and edge endpoints as node *indices* — it
 ingests straight into the store (contiguous slot runs are memcpys) with
 no per-element objects and no id lookups per edge.  `data` holds sidecar
@@ -1133,7 +1134,13 @@ the way into the store — the id index is itself blob-native (UTF-8 bytes
 decoded lazily, only for elements actually touched via handles.  The
 wire carries the data() sidecar too: numeric columns as f64, string
 columns as dictionaries (only the small dictionary decodes), the rest as
-JSON per present value.  Either way, the
+JSON per present value.  Compound hierarchy rides both forms (round
+14.8): `nodes.parent` is a `Uint32Array` of payload node indices with
+`0xffffffff` (`NO_PARENT`) for orphans — the def converter lifts
+`data.parent` into it, ingest links it cycle-guarded after the batch's
+nodes exist, and the wire stores it as its own section (format version
+3; version-2 buffers still load, and `cy.serialize()` exports the live
+hierarchy).  Either way, the
 factory's load path materializes no per-element handles and emits no
 `add` events (nobody can be listening yet); `cy.add()` keeps full
 per-element semantics and takes all three forms.  The reverse

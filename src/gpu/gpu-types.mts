@@ -76,9 +76,16 @@ export interface GpuColumnarNodes {
   selected?: Uint8Array;
   /** 0 = unselectable; omitted = all selectable */
   selectable?: Uint8Array;
+  /** compound parent per node as an index into the payload's nodes
+   * (round 14.8); 0xffffffff ({@link NO_PARENT}) = orphan.  Omitted =
+   * all orphans. */
+  parent?: Uint32Array;
   /** data() sidecar columns by key */
   data?: Record<string, GpuDataColumn>;
 }
+
+/** The columnar/wire parent-column sentinel for orphan nodes. */
+export const NO_PARENT = 0xffffffff;
 
 /** Columnar edge payload; endpoints are indices into the payload's nodes. */
 export interface GpuColumnarEdges {

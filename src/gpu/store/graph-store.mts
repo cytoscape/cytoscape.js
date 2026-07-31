@@ -22,6 +22,7 @@ import {
   FLAG_VISIBLE, LABEL_MARGIN
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
+import { NO_PARENT } from '../gpu-types.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
 
 export interface AddElementOpts {
@@ -498,6 +499,29 @@ export class GraphStore implements ModelView {
 
     this.geoEpoch++;
     this.writeBulkFlags( 'nodes', slots, contiguousFrom, cols );
+
+    // parent column (round 14.8): payload indices, sentinel = orphan;
+    // linked after the flags fill so the derived bits survive it
+    if( cols.parent != null ){
+      if( cols.parent.length < count ){
+        throw new Error( `Columnar node parent column must hold ${count} entries; got ${cols.parent.length}` );
+      }
+
+      for( let i = 0; i < count; i++ ){
+        const at = cols.parent[ i ];
+
+        if( at === NO_PARENT ){ continue; }
+
+        if( at >= count ){
+          throw new Error(
+            `Columnar node ${i} references parent index ${at} but the payload has ${count} nodes ` +
+            `(columnar payloads are self-contained; use the definition form for cross-references)` );
+        }
+
+        this.setParent( slots[ i ], slots[ at ] ); // cycle-guarded (warn + drop)
+      }
+    }
+
     this.ingestDataColumns( 'nodes', slots, cols.data );
 
     if( !resized ){

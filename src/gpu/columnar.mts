@@ -1,4 +1,5 @@
 import { partitionDefs } from './element-defs.mjs';
+import { NO_PARENT } from './gpu-types.mjs';
 import type {
   GpuColumnarEdges, GpuColumnarElements, GpuColumnarNodes,
   GpuElementDefinition, GpuElementsDefinition, GpuPackedIds
@@ -56,7 +57,32 @@ export const toColumnarElements = (
 
   applySelectionColumns( nodesOut, nodes );
 
-  const nodeData = collectDataColumns( nodes );
+  // def parents lift into the parent column (round 14.8): payload
+  // indices, sentinel = orphan; an unknown in-payload parent warns and
+  // orphans (the def-ingest rule — payloads are self-contained)
+  let parents: Uint32Array | undefined;
+
+  for( let i = 0; i < nodes.length; i++ ){
+    const rawParent = nodes[ i ].data?.parent;
+
+    if( rawParent == null ){ continue; }
+
+    const at = index.get( String( rawParent ) );
+
+    if( at == null ){
+      console.warn(
+        `Node '${nodeIds[ i ] ?? '?'}' has nonexistant parent '${String( rawParent )}'; added as an orphan` );
+
+      continue;
+    }
+
+    parents ??= new Uint32Array( nodes.length ).fill( NO_PARENT );
+    parents[ i ] = at;
+  }
+
+  if( parents != null ){ nodesOut.parent = parents; }
+
+  const nodeData = collectDataColumns( nodes, true );
 
   if( nodeData != null ){ nodesOut.data = nodeData; }
 
@@ -104,8 +130,11 @@ export const toColumnarElements = (
   return { columnar: true, nodes: nodesOut, edges: edgesOut };
 };
 
-/** Sidecar data() keys → sparse index-aligned columns (id/source/target stay first-class). */
-const collectDataColumns = ( defs: GpuElementDefinition[] ): Record<string, unknown[]> | undefined => {
+/** Sidecar data() keys → sparse index-aligned columns (id/source/target
+ * stay first-class; a node's parent is hierarchy, never sidecar). */
+const collectDataColumns = (
+  defs: GpuElementDefinition[], skipParent: boolean = false
+): Record<string, unknown[]> | undefined => {
   let cols: Record<string, unknown[]> | undefined;
 
   for( let i = 0; i < defs.length; i++ ){
@@ -115,6 +144,7 @@ const collectDataColumns = ( defs: GpuElementDefinition[] ): Record<string, unkn
 
     for( const key of Object.keys( data ) ){
       if( key === 'id' || key === 'source' || key === 'target' || data[ key ] === undefined ){ continue; }
+      if( skipParent && key === 'parent' ){ continue; }
 
       ( ( cols ??= {} )[ key ] ??= new Array( defs.length ) )[ i ] = data[ key ];
     }

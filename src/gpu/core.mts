@@ -30,6 +30,7 @@ import type { EventHandler } from '../emitter.mjs';
 import type Event from '../event.mjs';
 import type { EventProps } from '../event.mjs';
 import { FLAG_SELECTABLE, FLAG_SELECTED } from './contract.mjs';
+import { NO_PARENT } from './gpu-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
@@ -1130,6 +1131,9 @@ export class GpuCore {
    */
   serialize(): ArrayBuffer {
     const store = this._store;
+
+    store.flushDerived(); // parent positions are derived (round 14.8)
+
     const nodeSlots = store.slotsOrdered( 'nodes' );
     const edgeSlots = store.slotsOrdered( 'edges' );
     const pos = store.column( 'node.position' ) as Float32Array;
@@ -1152,6 +1156,20 @@ export class GpuCore {
       positions[ i * 2 + 1 ] = pos[ slot * 2 + 1 ];
       nodeSelected[ i ] = ( nodeFlags[ slot ] & FLAG_SELECTED ) !== 0 ? 1 : 0;
       nodeSelectable[ i ] = ( nodeFlags[ slot ] & FLAG_SELECTABLE ) !== 0 ? 1 : 0;
+    }
+
+    // hierarchy (round 14.8): parent slots -> payload indices (a second
+    // pass — a parent may sit later in slot order than its children)
+    let nodeParents: Uint32Array | undefined;
+
+    if( store.hasCompounds() ){
+      nodeParents = new Uint32Array( nodeSlots.length ).fill( NO_PARENT );
+
+      for( let i = 0; i < nodeSlots.length; i++ ){
+        const parentSlot = store.parentOf( nodeSlots[ i ] );
+
+        if( parentSlot >= 0 ){ nodeParents[ i ] = indexOfSlot.get( parentSlot ) as number; }
+      }
     }
 
     const edgeIds: string[] = new Array( edgeSlots.length );
@@ -1178,6 +1196,7 @@ export class GpuCore {
         positions,
         selected: nodeSelected,
         selectable: nodeSelectable,
+        ...( nodeParents != null ? { parent: nodeParents } : {} ),
         data: store.data.exportColumns( 'nodes', nodeSlots )
       },
       edges: {

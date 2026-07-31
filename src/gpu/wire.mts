@@ -17,8 +17,9 @@ decodes an id string when the element is actually touched.
 Header (6 × u32 LE): magic 'CYGE', version, nodeCount, edgeCount,
 presence flags, total byte length (truncation check; trailing padding
 beyond it is ignored).  Sections follow in a fixed order — node
-positions, edge sources, edge targets, node ids (offsets + blob), edge
-ids, the u8 selection columns, then the data() blocks — each multi-byte
+positions, node parents (v3, round 14.8: u32 payload indices,
+0xffffffff = orphan), edge sources, edge targets, node ids (offsets +
+blob), edge ids, the u8 selection columns, then the data() blocks — each multi-byte
 section aligned to its element width (f64 columns to 8).  Absent
 optional columns (see the flag bits) take zero bytes.
 
@@ -36,7 +37,11 @@ round-trip — it becomes a generated id.
 */
 
 const MAGIC = 0x45475943; // bytes 'C','Y','G','E' read as LE u32
-const VERSION = 2; // v2 added the data() blocks; v1 was never released
+// v3 added the node parent section (round 14.8); v2 added the data()
+// blocks; v1 was never released.  The reader accepts v2 buffers (a v2
+// buffer can never carry the parent flag).
+const VERSION = 3;
+const MIN_VERSION = 2;
 const HEADER_BYTES = 24;
 
 const F_NODE_POSITIONS = 1;
@@ -48,6 +53,7 @@ const F_EDGE_SELECTED = 32;
 const F_EDGE_SELECTABLE = 64;
 const F_NODE_DATA = 128;
 const F_EDGE_DATA = 256;
+const F_NODE_PARENT = 512; // round 14.8 (v3 buffers only)
 
 const KIND_NUMBER = 0;
 const KIND_DICT = 1;
@@ -97,6 +103,14 @@ export const serializeElements = (
     }
 
     push( F_NODE_POSITIONS, nodes.positions.subarray( 0, nodeCount * 2 ) );
+  }
+
+  if( nodes?.parent != null && nodeCount > 0 ){
+    if( nodes.parent.length < nodeCount ){
+      throw new Error( `Columnar node parent column must hold ${nodeCount} entries` );
+    }
+
+    push( F_NODE_PARENT, nodes.parent.subarray( 0, nodeCount ) );
   }
 
   if( edgeCount > 0 ){
@@ -203,8 +217,10 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
 
   const version = dv.getUint32( 4, true );
 
-  if( version !== VERSION ){
-    throw new Error( `Unsupported serialized elements version ${version} (this build reads version ${VERSION})` );
+  if( version < MIN_VERSION || version > VERSION ){
+    throw new Error(
+      `Unsupported serialized elements version ${version} ` +
+      `(this build reads versions ${MIN_VERSION}-${VERSION})` );
   }
 
   const nodeCount = dv.getUint32( 8, true );
@@ -244,6 +260,7 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
   let targets: Uint32Array | null = null;
 
   if( flags & F_NODE_POSITIONS ){ nodes.positions = read4( Float32Array, nodeCount * 2 ); }
+  if( flags & F_NODE_PARENT ){ nodes.parent = read4( Uint32Array, nodeCount ); }
 
   if( edgeCount > 0 ){
     sources = read4( Uint32Array, edgeCount );

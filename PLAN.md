@@ -16,7 +16,8 @@ round-12 curved-edges plan has both flagged calls signed off, pass
 (2026-07-30, at the end of this file) landed in full on 2026-07-31 —
 **round 13 is complete** (12c → A1–A2 → B1–B7 → C1–C3 → D1–D4, every
 item with Node specs plus a golden and/or a live v3 pixel-parity
-scene).  `src/gpu/README.md` is
+scene); the round-14 compound-nodes plan (2026-07-31, at the end of
+this file) is signed off and **in progress**.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -3178,3 +3179,270 @@ visual is v3-comparable (gradients, casing, caps, mid-arrows, the
 valign grid); the WGSL identifier/validation guards as usual.  The
 renderer benchmark re-runs only for items touching hot paths (B1's
 early-z predicate, C2's node-FS cost).
+
+## Round 14 plan — compound nodes (planned 2026-07-31)
+
+The head of the design queue: parent/child hierarchy, auto-sized
+parent nodes, compound draw order, ancestor-gated visibility/opacity,
+event bubbling, compound loop edges, and the compound
+style/query/API surface.  Design discussed and signed off in one
+sitting (2026-07-31); this section records the calls and the pass
+split so the round can run under the round-10 process rules
+(isolated commits, docs in-commit, full verify per item, escalation
+on any new API-semantics question).  Two process amendments,
+user-set for this round: **docs land first** (this plan section and
+the README pointer are their own commit before any implementation),
+and each item is **tests-first** — its specs are written and seen
+red before the implementation brings them green, landing together as
+the item's isolated commit so every commit on `v4` stays green.
+
+**Signed-off design calls:**
+
+1. **Parent styling takes both decided forms.**  (a) The sheet gains
+   a **`parents` group** overlaying the nodes group for parent slots
+   — constants or mappers, defaults = v3's `:parent` block
+   (`shape: rectangle`, `padding: 10`, `background-color: #eee`,
+   `border-width: 1`, `border-color: #ccc`).  (b) The `case`
+   mapper's `when` gains **structural boolean conditions**
+   (`{ parent: true }`, `{ child: true }`).  Query objects gain the
+   matching `parent`/`child` boolean keys.  The v3 `:parent:selected`
+   tint is dropped — v4 never restyles on selection (the shader
+   accent ring is the selection affordance); recorded deviation.
+2. **Event bubbling is ported** (reversing v4's flat-emit rule for
+   compounds only): element events bubble child → ancestors → core
+   with v3 semantics — `event.target` stays the originator,
+   `stopPropagation()`/return-`false` halts the walk.  The flat
+   no-compounds path stays byte-identical (zero cost).
+3. **Pass-1 scope**: hierarchy + traversal API + `move({ parent })`
+   + remove-cascade + auto-bounds with padding + parents-under-
+   descendants draw order + parent drag moves subtree + parent
+   labels, **plus** ancestor-gated visibility, rendered
+   effectiveOpacity (ancestor product), compound loop edges, and
+   `min-width`/`min-height` as a **simplified centered clamp** —
+   the four bias props (`min-width-bias-left/right`,
+   `min-height-bias-top/bottom`) are dropped by decided design
+   (their px-reinterpreted-as-percent rule and ratio normalization
+   don't earn their surface; the centered clamp is exactly v3's
+   default-bias behavior).  **Future-round note (user-set): revisit
+   asymmetric parent spacing with a cleaner mechanism — e.g. four
+   per-side padding props — rather than resurrecting the biases.**
+4. **Dropped/recorded**: `z-compound-depth`/`z-index-compare` (the
+   z-index round); `compound-sizing-wrt-labels: 'include'` throws
+   (labels are excluded from bb in v4 — the prop parses,
+   `'exclude'` is the only accepted value); the bias props and
+   `:parent:selected` (above).
+
+**Global decisions:**
+
+- **Flag bits** (`contract.mts`; 4096+ free): `FLAG_PARENT = 4096`
+  (has ≥1 child), `FLAG_CHILD = 8192` (has a parent),
+  `FLAG_SELF_HIDDEN = 16384` (own display state).  **`FLAG_VISIBLE`
+  is redefined as the *effective* shown bit** (own state AND no
+  hidden ancestor) — every consumer (WGSL `SHOWN`, the cull
+  predicates, `scanRefsInto`, `boundingBox`, CPU pick, and the edge
+  kernels' both-endpoints-SHOWN tests) already reads it, so
+  ancestor gating and edge gating land with zero shader or scan
+  changes.  Store-managed derived bits follow the `FLAG_CURVED`
+  precedent.
+- **Parent geometry is materialized into the real
+  `node.size`/`node.position` columns** by a lazy pull-based flush
+  (the CurveIndex pattern), so bb, cull, pick, `refsInBox`, the
+  mirror and all shaders need zero geometry changes.
+  `GraphStore.flushDerived()` = `hierarchy.flush()` then
+  `curves.flush()`, replacing every `curves.flush()` call site —
+  hierarchy first, because curve derivation (loops, compound loops,
+  endpoint math) reads the sizes/positions the hierarchy flush
+  writes.
+- Verified at planning: no `StyleEngine.dependsOnSelection` exists
+  at HEAD (it left with the selector removal) — the parent-flip
+  restyle hook is built fresh; and v3 edge `effectiveOpacity` is the
+  edge's own opacity (edges have no parent), which v4 ports.
+
+**Design (per subsystem):**
+
+- **HierarchyIndex** (`store/hierarchy.mts`, new; modeled on
+  `store/curve-index.mts` — host-callback object, pending sets,
+  `flush()`).  State: `parent: Int32Array` (−1 = orphan) +
+  `parentGen` (recycle safety; mismatch ⇒ orphan + warn-once),
+  `children: Map<slot, slot[]>`, `depth: Uint16Array`,
+  per-parent CPU style inputs (`padding`, unit, `relativeTo`,
+  `minW/H`, fallback size), `baseOpacity` (pre-fold), resolved
+  padding cache, `pendingParents`, `parentCount`, `orderDirty`.
+  `setParent` cycle-guards by ancestor walk (cycle ⇒ warn + no-op,
+  v3), maintains children/depth/flags, marks old+new chains
+  pending, invalidates the subtree's incident edges in the
+  CurveIndex, and fires the style flip + structural-case refresh
+  hooks.  `flush()` expands pending to ancestors, sorts
+  **depth-descending** (children-before-parents replaces
+  recursion), computes direct-children bb from raw columns
+  (skipping effectively hidden children), applies padding (px or %
+  of children-bb w/h/average/min/max), the min-size centered
+  clamp, and the degenerate-children fallback (stylesheet size at
+  the stored position), then writes through `materializeGeom` —
+  raw column writes + dirty marks + `updateOuterHalf` +
+  `geoEpoch++` + label re-anchor when size changed + incident-edge
+  curve invalidation.  `materializeGeom` **bypasses
+  `setPosition`**, so no child shift and no re-marking: flush
+  cannot re-enter itself.
+- **Parent `setPosition`** (public path): shift all descendants by
+  the delta via raw writes (locked children move too — v3), write
+  the parent, mark only its *ancestors* pending (uniform subtree
+  translation keeps its own derived center exact).  The bulk
+  position writers and `shift`/`positions` gain v3's dedupe rule:
+  skip elements whose ancestor is also in the written set.
+- **Flush triggers**: the four position writers (slots with
+  `FLAG_CHILD`), size/border writes (beside the `updateOuterHalf`
+  hooks), add/remove/reparent, compound style writes, visibility
+  toggles.  Drained from `flushDerived()` at `takeDelta` (before
+  mirror sync), `boundingBox`, `refsInBox`, the collection bb
+  sites, and the pick entry.
+- **GPU tween demotion**: a position animation whose slots include
+  any `FLAG_CHILD`/`FLAG_PARENT` node is not GPU-eligible (a GPU
+  lease leaves CPU positions stale ⇒ stale auto-bounds; a tweened
+  parent must shift children per tick).  Reparenting while a GPU
+  position tween is live settles all active GPU position tweens to
+  the CPU (rare structural op; recorded).
+- **Draw order / cull / pick**: a new `parentNode` cull kind whose
+  input iteration is a CPU-maintained permutation (`parentOrder`,
+  parents sorted by (depth asc, slot asc), rebuilt on hierarchy
+  change — compaction preserves input order, so parents paint
+  shallow-under-deep); bindings positions + outerHalf + flags +
+  parentOrder (+3 outputs) = 7/8.  The existing `node` cull
+  predicate excludes `FLAG_PARENT` (flags already bound), which
+  also removes parents from the **depth prepass** — mandatory,
+  since a prepass-written parent interior would early-z-kill the
+  edges/children that must draw over it (parents lose the early-z
+  benefit; recorded — they are few and flat).  `drawScene` draws
+  parent bodies right after the prepass, before edge underlays,
+  reusing the main node pipeline.  Parent
+  ghost/underlay/overlay/label bands keep their existing post-edge
+  positions — recorded z deviations deferred to the z-index round.
+  CPU pick becomes two passes mirroring draw order: leaves
+  descending (skip `FLAG_PARENT`), then parents in reverse
+  `parentOrder`, with a shared order helper so pick and draw can't
+  diverge.  Dragging a parent needs no drag-set union (parent
+  `setPosition` shifts the subtree); `FLAG_GRABBED` is not set on
+  descendants (minor recorded deviation).
+- **Visibility + opacity folds**: `setVisibility` sets/clears
+  `FLAG_SELF_HIDDEN` and recomputes effective `FLAG_VISIBLE` over
+  affected subtrees (pruned walk), marking parents pending (hidden
+  children leave the bb).  `visible()` reads the effective bit;
+  the display readback reads `!FLAG_SELF_HIDDEN`.  `node.opacity`
+  stores the **effective** value (`base × ∏ ancestor bases` — the
+  round-13 B1 fold pattern, with the base tracked CPU-side); a
+  parent's opacity write refolds its subtree, gated on
+  `parentCount > 0` so the non-compound path is unchanged.
+  `style('opacity')` reads the base; `effectiveOpacity()` the fold.
+  GPU-mapped node `opacity` (and `width`/`height`) demote to CPU
+  while compounds exist (the kernel would overwrite the fold;
+  auto-size owns parent sizes).
+- **Bubbling**: phase-based fan-out in `core._emitOnEle` — flat
+  mode (no compounds, or orphan/edge target) is exactly today's
+  single emit; phased mode emits per chain element child →
+  ancestors → core, checking `isPropagationStopped()` between
+  phases (the shared emitter's existing machinery).  Ref-qualified
+  listeners match the phase ref; predicates run against the phase
+  element; unqualified listeners match only the core phase (still
+  fire exactly once).  `callbackContext` returns the phase element
+  (v3's currentTarget); `event.target` stays the originator.
+- **Style/query**: `SHEET_KEYS` gains `'parents'`; the block takes
+  node props plus `padding`, `padding-relative-to`, `min-width`,
+  `min-height`, `compound-sizing-wrt-labels`.  The engine holds a
+  second computed-const record (nodes overlaid with the parents
+  block); apply picks by `FLAG_PARENT`; parent `width`/`height`
+  divert to the fallback size (auto-bounds owns `node.size`).  The
+  parent-flip hook re-applies the flipped slot's constants,
+  re-bakes its label entry, transfers width/height ownership both
+  ways, and refreshes structural case deps (pseudo-keys
+  `'::parent'`/`'::child'` in the deps map).  Matcher: `parent`/
+  `child` boolean keys OR-composed into the flag test like
+  `selected`; `group: 'edges'` + a structural key throws.  Any
+  channel where the parent overlay differs while GPU-mapped
+  demotes to CPU.
+- **Compound loop edges**: the CurveIndex host gains
+  `relation(a, b)` from the hierarchy; ancestor/descendant edges
+  (and parent self-loops) derive a `CURVE_MULTI`-family blob
+  record with v3's `findCompoundLoopPoints` math verbatim (two
+  control points off the min top-left corner, `loopW = 50`,
+  per-end stretch `max(0.5, log(w·C))`), box-bounded
+  (`FLAG_CURVED_BOX`).  Applies regardless of declared curve style
+  (v4 has no `edge:compound` selector — mirrors the forced
+  self-loop rule; recorded).  Re-derives on reparent and on
+  endpoint resize during hierarchy flush.
+- **Model/API/format**: `parent` becomes a reserved first-class
+  key — skipped by def/columnar data ingest, immutable via
+  `data()` (reparent via `move()`), synthesized on read like edge
+  `source`/`target`.  Def ingest resolves `parent` in a second
+  pass after the batch's nodes exist (forward refs OK; unknown
+  parent ⇒ warn + orphan, v3).  Wire format: version bump +
+  optional nodes parent section (u32 index, sentinel);
+  `GpuColumnarNodes.parent?`.  Collection: the full traversal
+  surface (slot-native), `remove()` cascade over descendants,
+  identity-preserving `move({ parent })` with `moveout`/`move`,
+  compound-relative `relativePosition`, real `padding()`, and
+  **parent `width()` readback subtracts 2·padding** (the column
+  stores the padded/drawn size; `paddedWidth()` returns the
+  column) — v3 parity.  `cy.hasCompoundNodes()` goes live.
+  Layouts position non-parents only; `boundingBoxAt`
+  force-derives.
+
+**Pass split** (tests-first per item; each lands green as its own
+commit(s) with docs in-commit):
+
+- [x] **14.0 Docs-first** — this plan section + the README pointer
+  (landed as its own commit before any implementation, per the
+  user-set process amendment).
+- [ ] **14.1 Hierarchy model** — flags, `store/hierarchy.mts`
+  (links/gen/children/depth/cycle guard/`parentOrder`), GraphStore
+  wiring, reserved `parent` key + synthesize-on-read,
+  `hasCompoundNodes`.  Node specs (`test/gpu-hierarchy.mjs`).
+- [ ] **14.2 Collection API + lifecycle** — traversal methods,
+  `remove()` cascade, `move({ parent })`, two-pass def ingest,
+  json.  Node specs pinned to v3 semantics.
+- [ ] **14.3 Auto-bounds flush** — pending/flush/`flushDerived` +
+  triggers, `materializeGeom`, padding/min-clamp/degenerate
+  fallback, parent `setPosition` child-shift + shift dedupe, label
+  re-anchor, `relativePosition`/`padding()`/readback rules.  Node
+  specs asserting v3 `updateCompoundBounds` numbers + the
+  no-retrigger invariant.
+- [ ] **14.4 Ancestor visibility + effective opacity** —
+  `FLAG_SELF_HIDDEN`, `setVisibility` subtree fold, bb exclusion,
+  opacity fold + demotions, readbacks.  Node specs.
+- [ ] **14.5 Event bubbling** — phased `_emitOnEle`, phase
+  matching, currentTarget, stopPropagation, flat-mode zero-cost.
+  Node specs.
+- [ ] **14.6 Parents sheet group + compound props** — the overlay
+  record, prop parsing/throws, width/height ownership, the flip
+  hook, defaults.  Node specs.
+- [ ] **14.7 Structural query + case keys** — matcher
+  `parent`/`child`, case `when` structural conditions +
+  `::parent`/`::child` deps.  Node specs.
+- [ ] **14.8 Wire + columnar parent sections** — format bump,
+  ingest.  Node + module specs.
+- [ ] **14.9 Parent draw stream, cull, pick** — `parentNode` cull
+  kind + permutation, node-kind/prepass exclusion, `drawScene`
+  insertion, CPU-pick two-pass, export groups.  Playwright:
+  compound golden (nesting/padding/borders), a live v3-parity
+  compound scene (body geometry is deterministic and
+  v3-comparable), pick/hover specs.
+- [ ] **14.10 Compound loop edges** — CurveIndex relation routing,
+  invalidation.  Golden + parity scene (parent↔descendant edges,
+  parent self-loop).
+- [ ] **14.11 Interaction + tween demotion + layouts** —
+  parent-drag Playwright specs, drag-set dedupe, the
+  `gpuEligible` hierarchy rule + reparent-settle, layout parent
+  exclusion, `boundingBoxAt`.
+- [ ] **14.12 Debug scene + benchmarks + true-up** —
+  `debug/webgpu` compound scene; a renderer-benchmark compound
+  scene; the auto-bounds flush cost at scale (e.g. 200k nodes
+  under 1k parents, per-frame drag flush) recorded here; final
+  docs true-up.
+
+**Risks tracked per item**: flush re-entrancy (raw-column reads
+only); parent `width()` readback consistency across style/bb APIs;
+recycled parent slots (gen guard); leaf↔parent flips (size
+stash/restore, label re-anchor); deep-nesting drag cost
+(`markChildGeo` early-exit; the benchmark item guards it);
+mid-tween reparent settle; parent decoration bands above edges
+(recorded, z-index round); the shared pick/draw order helper; wire
+backward compat (optional section).

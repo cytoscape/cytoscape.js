@@ -851,10 +851,18 @@ predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.
 
-Out of scope (deferred): compound nodes,
-string-formatting label mappers beyond the passthrough, and the GPU
-tween fast path for *size* channels (position and paint offload today;
-size is a geometry-tier project, see the design decisions above).
+Out of scope (deferred): string-formatting label mappers beyond the
+passthrough, and the GPU tween fast path for *size* channels
+(position and paint offload today; size is a geometry-tier project,
+see the design decisions above).  **Compound nodes are in progress**
+under the round-14 plan (PLAN.md, "Round 14 plan — compound nodes",
+signed off 2026-07-31): parent/child hierarchy with auto-sized
+parents materialized into the columnar model, parents-under-
+descendants draw order, ancestor-gated visibility + effective
+opacity, ported event bubbling, a `parents` sheet group plus
+structural `case`/query conditions, and compound loop edges — each
+landing as its own tests-first commit, with the design decisions
+recorded here as they land.
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

@@ -126,16 +126,23 @@ export type ColumnId =
   | 'edge.lineStyle' // Uint32Array(cap), LINE_* ids
   | 'edge.arrowShapes' // Uint32Array(cap), ARROW_* ids packed source | target<<8
   /**
-   * Float32Array(4·cap) — per-edge curve parameters (round 12a), all
-   * position-independent so drags/layouts/position tweens follow on-GPU
-   * with zero rebuild.  [3] is the curve kind (CURVE_*, exact small
-   * ints in f32 — packed here so the curve shaders stay within the
-   * vertex stage's 8-storage-buffer budget):
+   * Float32Array(4·cap) — per-edge curve parameters (rounds 12a/12b),
+   * all position-independent so drags/layouts/position tweens follow
+   * on-GPU with zero rebuild.  [3] is the curve kind (CURVE_*, exact
+   * small ints in f32 — packed here so the curve shaders stay within
+   * the vertex stage's 8-storage-buffer budget):
    * - CURVE_STRAIGHT: unused
    * - CURVE_BEZIER: [0] signed control offset d (model px, edge frame),
    *   [1] control-point-weight
    * - CURVE_LOOP: [0] out angle, [1] in angle (radians), [2] control
    *   radius (model px)
+   * - CURVE_MULTI / CURVE_SEGMENTS / CURVE_TAXI (12b, blob-backed
+   *   headers): [0] record offset into the curve param blob (exact
+   *   integer in f32), [1] the conservative chord deviation max|d|
+   *   (model px; 0 for taxi — box-bounded, see FLAG_CURVED_BOX),
+   *   [2] interior point count n (0 for taxi — the routing derives its
+   *   own points).  Record layouts are documented in
+   *   store/curve-blob.mts.
    */
   | 'edge.curveParams';
 
@@ -216,6 +223,13 @@ export interface StoreDelta {
   spans: DirtySpan[];
   nodeHighWater: number;
   edgeHighWater: number;
+  /**
+   * Curve param blob dirt (round 12b), when any: a coalesced [start,
+   * end) float span, or resized = realloc + full re-upload — the same
+   * rules as columns.  Header rewrites (offsets after a blob
+   * compaction) ride edge.curveParams spans as usual.
+   */
+  curveBlob?: { resized: boolean; start: number; end: number };
 }
 
 // -- labels --
@@ -272,6 +286,10 @@ export interface ModelView {
   takeDelta(): StoreDelta;
   /** `cb` fires at most once per microtask when the model becomes dirty; returns an unsubscribe fn. */
   onInvalidate( cb: () => void ): () => void;
+  /** The 12b curve param blob backing the params-column headers; the
+   * renderer mirrors [0, curveBlobLength()) into a storage buffer. */
+  curveBlob(): Float32Array;
+  curveBlobLength(): number;
   /** The node's label, or undefined when it has none. */
   labelAt( slot: number, group?: GroupName ): LabelEntry | undefined;
   /** Slots whose labels changed since the last call; returns-and-clears (default: nodes). */

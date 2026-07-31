@@ -2194,6 +2194,26 @@ lands it.
   kernels without a params binding will cull them against the endpoint
   AABB grown by slack + chord length).  33 Node specs
   (`test/gpu-curve-routes.mjs`).
+- [x] **The curve param blob** (`store/curve-blob.mts`).  Blob-backed
+  kinds store their variable-length records in one f32 pool the
+  renderer mirrors as a storage buffer; the params column holds the
+  header `[blobOffset, dev, n, kind]` — no column-layout change, and
+  records are position-independent, so drags/layouts/tweens still cost
+  zero blob traffic.  Record layouts (multi: mode + d/w pairs;
+  segments: mode + round + d/w/r/arc quads; taxi: 8 fixed floats) are
+  documented in the module.  Storage behaviour follows the round-11
+  slot-stable policy: append allocation with per-slot ranges,
+  same-length rewrites in place, freed ranges metered, and automatic
+  compaction past waste > half live (256-float floor) — a compaction
+  rewrites records in slot order and reports moves so the store
+  rewrites the header offsets as normal column spans (geometry
+  unchanged, so the bb memo epoch is untouched).  `StoreDelta` gains
+  an optional `curveBlob` span/resized entry and `ModelView` exposes
+  `curveBlob()`/`curveBlobLength()`; `GraphStore.setCurveParamsBlob`
+  writes record + header + FLAG_CURVED/FLAG_CURVED_BOX, feeds the
+  monotone dev/box maxima behind `curveSlack()`, and fixed-kind writes
+  release any blob record the slot held.  10 Node specs
+  (`test/gpu-curve-blob.mjs`).
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

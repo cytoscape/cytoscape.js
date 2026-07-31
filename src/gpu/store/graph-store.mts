@@ -4,13 +4,14 @@ import { Adjacency } from './adjacency.mjs';
 import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import { CurveIndex } from './curve-index.mjs';
+import { CurveBlob } from './curve-blob.mjs';
 import { CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, evalCurve } from '../curve-geometry.mjs';
 import type { CurveEval } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
   CURVE_STRAIGHT,
-  FLAG_ALIVE, FLAG_CURVED, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE, FLAG_SELECTABLE,
-  FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ALIVE, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE,
+  FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
 import type { ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
@@ -61,6 +62,13 @@ export class GraphStore implements ModelView {
   private curveDevMax = 0;
   private nodeHalfMax = 0;
   private borderMax = 0;
+  /** monotone: some edge has carried a box-bounded curve kind (taxi /
+   * extrapolated weights), so curveSlack() must stay engaged even when
+   * curveDevMax is 0 */
+  private hasBoxCurves = false;
+
+  /** the 12b variable-length curve param pool (see store/curve-blob.mts) */
+  private blob: CurveBlob;
 
   // exact-curve-bb memo (see curveBBAt): any geometry write bumps the
   // epoch, invalidating every cached edge box at once — sound and cheap
@@ -106,6 +114,16 @@ export class GraphStore implements ModelView {
       writeParams: ( slot, p0, p1, p2, kind ) => this.setCurveParams( slot, p0, p1, p2, kind ),
       schedule: () => this.dirty.touch()
     } );
+
+    // a blob compaction moves records: rewrite the header offset (a
+    // normal column write, so the renderer re-uploads it as a span).
+    // Geometry is unchanged, so the bb memo epoch is left alone.
+    this.blob = new CurveBlob( ( slot, offset ) => {
+      const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+
+      params[ slot * 4 ] = offset;
+      this.dirty.mark( 'edge.curveParams', slot );
+    } );
   }
 
   table( group: GroupName ): ColumnTable {
@@ -134,7 +152,20 @@ export class GraphStore implements ModelView {
     // pending curve derivations land as column writes in this delta
     this.curves.flush();
 
-    return this.dirty.take( this.nodes.highWater, this.edges.highWater );
+    const delta = this.dirty.take( this.nodes.highWater, this.edges.highWater );
+    const blobDirty = this.blob.takeDirty();
+
+    if( blobDirty != null ){ delta.curveBlob = blobDirty; }
+
+    return delta;
+  }
+
+  curveBlob(): Float32Array {
+    return this.blob.data();
+  }
+
+  curveBlobLength(): number {
+    return this.blob.length();
   }
 
   onInvalidate( cb: () => void ): () => void {
@@ -794,10 +825,14 @@ export class GraphStore implements ModelView {
    * efficiency, never correctness; 0 while nothing is curved.
    */
   curveSlack(): number {
-    return this.curveDevMax === 0 ? 0 : this.curveDevMax + this.nodeHalfMax + this.borderMax / 2;
+    if( this.curveDevMax === 0 && !this.hasBoxCurves ){ return 0; }
+
+    return this.curveDevMax + this.nodeHalfMax + this.borderMax / 2;
   }
 
-  /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty. */
+  /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty.
+   * Fixed-kind writes (straight/bezier/loop) release any blob record
+   * the slot held from a previous blob-backed style. */
   private setCurveParams( slot: number, p0: number, p1: number, p2: number, kind: number ): void {
     const arr = this.edges.column( 'edge.curveParams' ) as Float32Array;
     const at = slot * 4;
@@ -805,6 +840,8 @@ export class GraphStore implements ModelView {
     const dev = curveDeviation( kind, p0, p2 );
 
     if( dev > this.curveDevMax ){ this.curveDevMax = dev; }
+
+    this.blob.free( slot );
 
     if( arr[ at ] === p0 && arr[ at + 1 ] === p1 && arr[ at + 2 ] === p2 && arr[ at + 3 ] === kind ){
       return;
@@ -818,6 +855,35 @@ export class GraphStore implements ModelView {
 
     this.dirty.mark( 'edge.curveParams', slot );
     this.setFlag( 'edges', slot, FLAG_CURVED, kind !== CURVE_STRAIGHT );
+    this.setFlag( 'edges', slot, FLAG_CURVED_BOX, false );
+  }
+
+  /**
+   * The CurveIndex's write sink for blob-backed kinds (12b): store the
+   * record in the blob, the header [offset, dev, n, kind] in the params
+   * column, and the curved/box flags.  `dev` is the conservative chord
+   * deviation (max|d|); `box` marks kinds no chord bound covers (taxi,
+   * extrapolated weights) for the AABB cull branch.
+   */
+  private setCurveParamsBlob(
+    slot: number, kind: number, values: ArrayLike<number>, n: number, dev: number, box: boolean
+  ): void {
+    const arr = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const at = slot * 4;
+    const offset = this.blob.write( slot, values );
+
+    if( dev > this.curveDevMax ){ this.curveDevMax = dev; }
+    if( box ){ this.hasBoxCurves = true; }
+
+    arr[ at ] = offset;
+    arr[ at + 1 ] = dev;
+    arr[ at + 2 ] = n;
+    arr[ at + 3 ] = kind;
+    this.geoEpoch++;
+
+    this.dirty.mark( 'edge.curveParams', slot );
+    this.setFlag( 'edges', slot, FLAG_CURVED, true );
+    this.setFlag( 'edges', slot, FLAG_CURVED_BOX, box );
   }
 
   // -- labels (model-only sidecar; see LabelEntry in contract.mts) --

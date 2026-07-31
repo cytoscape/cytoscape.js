@@ -68,7 +68,9 @@ Collections: `cy()`/`renderer()`/`element()`, events, graph
 manipulation (incl. edge `move()`), position/dimensions (model +
 rendered, `shift`, silent variants, edge `midpoint`/endpoints —
 curve-aware since round 12a, along with `controlPoints`/
-`renderedControlPoints`/`isBundledBezier`),
+`renderedControlPoints`/`isBundledBezier`, and — 12b —
+`segmentPoints`/`renderedSegmentPoints` for segments/taxi edges, with
+`controlPoints` covering unbundled-bezier control lists),
 iteration (`sort`, `reduce`, `max`/`min`), comparison, building/
 filtering (`byGroup`, `diff`, `absoluteComplement`, set aliases),
 traversal (`outgoers`/`incomers`, `roots`/`leaves`,

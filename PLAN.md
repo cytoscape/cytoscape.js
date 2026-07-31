@@ -2240,6 +2240,21 @@ lands it.
   extrapolated weights).  26 Node specs
   (`test/gpu-curve-derivation.mjs`); one 12a spec updated (the
   keyword-throw now pins `haystack`).
+- [x] **Route accessors + the exact lazy bb.**
+  `GraphStore.curveRouteAt` is the route twin of `curveEvalAt` (which
+  now correctly returns null for blob kinds instead of misreading
+  their headers as bezier params): blob record + live
+  positions/outerHalf/shapes → the evaluated `CurveRoute`.  On top of
+  it: **`segmentPoints()`/`renderedSegmentPoints()`** (v3's
+  getSegmentPoints — defined for segments *and* taxi, whose derived
+  routing points read back; undefined otherwise), `controlPoints()`
+  extended to the unbundled-bezier control list (segments/taxi stay
+  undefined, v3's split), `midpoint()` via the per-family
+  `routeMidpoint` rules, `source/targetEndpoint()` as the route's
+  boundary endpoints, and `curveBBAt` flattening routes at the drawn
+  subdivision into the same epoch-memoized exact-bb cache.  12 Node
+  specs (`test/gpu-curve-route-accessors.mjs`) pin hand-derived
+  geometry incl. the taxi bb and memo invalidation on moves.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

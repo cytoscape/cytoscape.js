@@ -7,12 +7,13 @@ import { CurveIndex } from './curve-index.mjs';
 import type { CurveStyleExtras } from './curve-index.mjs';
 import { CurveBlob } from './curve-blob.mjs';
 import {
-  CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, evalCurve, headerDeviation
+  CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
+  evalRoute, headerDeviation, routeVertex
 } from '../curve-geometry.mjs';
-import type { CurveEval } from '../curve-geometry.mjs';
+import type { CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
-  CURVE_STRAIGHT, CURVE_TAXI,
+  CURVE_BEZIER, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS, CURVE_STRAIGHT, CURVE_TAXI,
   FLAG_ALIVE, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE,
   FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
@@ -79,6 +80,7 @@ export class GraphStore implements ModelView {
   private edgeBBEpoch = new Uint32Array( 0 );
   private edgeBB = new Float64Array( 0 );
   private curveScratch = emptyCurveEval();
+  private routeScratch = emptyCurveRoute();
 
   private order: { nodes: OrderList; edges: OrderList };
   private labels: Record<GroupName, ( LabelEntry | undefined )[]>;
@@ -751,7 +753,8 @@ export class GraphStore implements ModelView {
     const at = slot * 4;
     const kind = params[ at + 3 ];
 
-    if( kind === CURVE_STRAIGHT ){ return null; }
+    // blob-backed kinds evaluate as routes (curveRouteAt), not CurveEvals
+    if( kind !== CURVE_BEZIER && kind !== CURVE_LOOP ){ return null; }
 
     const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
@@ -772,6 +775,36 @@ export class GraphStore implements ModelView {
   }
 
   /**
+   * Evaluate a blob-backed curved edge's route from the live columns
+   * (null for straight/bezier/loop edges — those use curveEvalAt).
+   * The returned object is a shared scratch unless `out` is given.
+   * The CPU twin of the 12b route vertex shader: same blob record,
+   * same outerHalf frame, same routing (see curve-geometry.mts).
+   */
+  curveRouteAt( slot: number, out: CurveRoute = this.routeScratch ): CurveRoute | null {
+    this.curves.flush();
+
+    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+    const at = slot * 4;
+    const kind = params[ at + 3 ];
+
+    if( kind !== CURVE_MULTI && kind !== CURVE_SEGMENTS && kind !== CURVE_TAXI ){ return null; }
+
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
+    const shape = this.nodes.column( 'node.shape' ) as Uint32Array;
+    const s = endpoints[ at / 2 ];
+    const t = endpoints[ at / 2 + 1 ];
+
+    return evalRoute(
+      out, kind, this.blob.data(), params[ at ], params[ at + 2 ],
+      pos[ s * 2 ], pos[ s * 2 + 1 ], outer[ s * 2 ], outer[ s * 2 + 1 ], shape[ s ],
+      pos[ t * 2 ], pos[ t * 2 + 1 ], outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ]
+    );
+  }
+
+  /**
    * The exact bounding box of a curved edge (null for straight ones):
    * the flattened polyline at the drawn subdivision, memoized per slot
    * against the geometry epoch — the "exact lazy CPU eval" tier of the
@@ -780,8 +813,9 @@ export class GraphStore implements ModelView {
    */
   curveBBAt( slot: number ): { x1: number; y1: number; x2: number; y2: number } | null {
     const ev = this.curveEvalAt( slot );
+    const route = ev == null ? this.curveRouteAt( slot ) : null;
 
-    if( ev == null ){ return null; }
+    if( ev == null && route == null ){ return null; }
 
     if( this.edgeBBEpoch.length < this.edges.cap ){
       const epochs = new Uint32Array( this.edges.cap );
@@ -806,7 +840,11 @@ export class GraphStore implements ModelView {
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
 
     for( let i = 0; i <= CURVE_SEGS; i++ ){
-      curvePointAt( ev, i / CURVE_SEGS, p );
+      if( ev != null ){
+        curvePointAt( ev, i / CURVE_SEGS, p );
+      } else {
+        routeVertex( route as CurveRoute, i, p );
+      }
 
       if( p.x < x1 ){ x1 = p.x; }
       if( p.y < y1 ){ y1 = p.y; }

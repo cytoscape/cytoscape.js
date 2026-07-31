@@ -1,10 +1,11 @@
 import {
-  CURVE_STRAIGHT, CURVE_TAXI,
+  CURVE_MULTI, CURVE_STRAIGHT, CURVE_TAXI,
   FLAG_ACTIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_PANNABLE,
   FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
-import { headerDeviation } from './curve-geometry.mjs';
+import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
+import type { CurveRoute } from './curve-geometry.mjs';
 import { CURVE_STYLE_BEZIER } from './store/curve-index.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
 import type { GpuQuery } from './matcher.mjs';
@@ -1398,8 +1399,9 @@ export class GpuCollection {
     return modelLength == null ? undefined : modelLength * ( this._cy.zoom() as number );
   }
 
-  /** Midpoint of the edge: the curve midpoint for curved edges (v3's
-   * rs.mid), the endpoint-center average for straight ones. */
+  /** Midpoint of the edge: the curve/route midpoint for curved edges
+   * (v3's rs.mid rules per family), the endpoint-center average for
+   * straight ones. */
   midpoint(): Position | undefined {
     const ref = this._first();
 
@@ -1409,6 +1411,16 @@ export class GpuCollection {
 
     if( ev != null ){
       return { x: ev.mx, y: ev.my };
+    }
+
+    const route = this._store.curveRouteAt( ref.slot );
+
+    if( route != null ){
+      const m = { x: 0, y: 0, tx: 0, ty: 0 };
+
+      routeMidpoint( route, m );
+
+      return { x: m.x, y: m.y };
     }
 
     const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
@@ -1454,8 +1466,9 @@ export class GpuCollection {
   }
 
   /** The edge's curve control points (model coords): one for a bundled
-   * bezier, two for a self-loop, undefined for straight edges — v3's
-   * getControlPoints surface. */
+   * bezier, two for a self-loop, the control list for an unbundled
+   * bezier, undefined otherwise — v3's getControlPoints surface
+   * (segments/taxi answer segmentPoints() instead). */
   controlPoints(): Position[] | undefined {
     const ref = this._first();
 
@@ -1463,11 +1476,17 @@ export class GpuCollection {
 
     const ev = this._store.curveEvalAt( ref.slot );
 
-    if( ev == null ){ return undefined; }
+    if( ev != null ){
+      return ev.c1x === ev.c2x && ev.c1y === ev.c2y
+        ? [ { x: ev.c1x, y: ev.c1y } ]
+        : [ { x: ev.c1x, y: ev.c1y }, { x: ev.c2x, y: ev.c2y } ];
+    }
 
-    return ev.c1x === ev.c2x && ev.c1y === ev.c2y
-      ? [ { x: ev.c1x, y: ev.c1y } ]
-      : [ { x: ev.c1x, y: ev.c1y }, { x: ev.c2x, y: ev.c2y } ];
+    const route = this._store.curveRouteAt( ref.slot );
+
+    if( route == null || route.kind !== CURVE_MULTI ){ return undefined; }
+
+    return this._routeInteriorPoints( route );
   }
 
   renderedControlPoints(): Position[] | undefined {
@@ -1476,6 +1495,39 @@ export class GpuCollection {
     if( pts == null ){ return undefined; }
 
     return pts.map( p => this._toRenderedPoint( p ) as Position );
+  }
+
+  /** The edge's segment points (model coords) — v3's getSegmentPoints:
+   * defined for segments *and* taxi edges (taxi derives its points),
+   * undefined otherwise. */
+  segmentPoints(): Position[] | undefined {
+    const ref = this._first();
+
+    if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
+
+    const route = this._store.curveRouteAt( ref.slot );
+
+    if( route == null || route.kind === CURVE_MULTI ){ return undefined; }
+
+    return this._routeInteriorPoints( route );
+  }
+
+  renderedSegmentPoints(): Position[] | undefined {
+    const pts = this.segmentPoints();
+
+    if( pts == null ){ return undefined; }
+
+    return pts.map( p => this._toRenderedPoint( p ) as Position );
+  }
+
+  private _routeInteriorPoints( route: CurveRoute ): Position[] {
+    const pts: Position[] = [];
+
+    for( let i = 0; i < route.n; i++ ){
+      pts.push( { x: route.qx[ i + 1 ], y: route.qy[ i + 1 ] } );
+    }
+
+    return pts;
   }
 
   private _endpointPoint( which: 0 | 1 ): Position | undefined {
@@ -1489,6 +1541,14 @@ export class GpuCollection {
 
     if( ev != null ){
       return which === 0 ? { x: ev.sx, y: ev.sy } : { x: ev.ex, y: ev.ey };
+    }
+
+    const route = this._store.curveRouteAt( ref.slot );
+
+    if( route != null ){
+      const i = which === 0 ? 0 : route.n + 1;
+
+      return { x: route.qx[ i ], y: route.qy[ i ] };
     }
 
     const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;

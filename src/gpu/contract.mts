@@ -194,6 +194,17 @@ export type ColumnId =
   | 'edge.overlay'
   | 'edge.underlay'
   /**
+   * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
+   * to two on/off pairs in model px (a 2-entry pattern repeats; odd
+   * patterns double, canvas semantics; longer patterns truncate — a
+   * recorded cap).  Applies when line-style is dashed; dotted keeps
+   * [1, 1].
+   */
+  | 'edge.dashPattern'
+  /** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
+   * (0 butt, 1 round, 2 square)] (round 13 B3). */
+  | 'edge.dashMeta'
+  /**
    * Float32Array(4·cap) — per-edge curve parameters (rounds 12a/12b),
    * all position-independent so drags/layouts/position tweens follow
    * on-GPU with zero rebuild.  [3] is the curve kind (CURVE_*, exact
@@ -263,6 +274,8 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
   spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 ),
   spec( 'edge.overlay', 'edges', Uint32Array, 2 ),
+  spec( 'edge.dashPattern', 'edges', Float32Array, 4 ),
+  spec( 'edge.dashMeta', 'edges', Float32Array, 2 ),
   spec( 'edge.underlay', 'edges', Uint32Array, 2 ),
   spec( 'edge.curveParams', 'edges', Float32Array, 4 )
 ];

@@ -211,6 +211,40 @@ fn dashMask(u: f32, onLen: f32, offLen: f32, aaModel: f32) -> f32 {
   else { sd = -min(x - onLen, period - x); }
   return smoothstep(-aaModel, aaModel, sd);
 }
+
+// B3: signed model-px distance INSIDE the nearest on-segment of a
+// two-pair dash pattern (negative in gaps); the wrap-around copy of
+// the first segment keeps the period seam exact
+fn dashInsideSd(u: f32, pat: vec4f, offset: f32) -> f32 {
+  let period = max(pat.x + pat.y + pat.z + pat.w, 1e-4);
+  let x = fract((u + offset) / period) * period;
+
+  var sd = min(x, pat.x - x); // segment 1: [0, pat.x)
+  let x2 = x - (pat.x + pat.y); // segment 2
+
+  sd = max(sd, min(x2, pat.z - x2));
+
+  let xw = x - period; // wrapped segment 1
+
+  return max(sd, min(xw, pat.x - xw));
+}
+
+// B3: combined dash + lateral coverage with the line-cap applied per
+// dash segment — butt (0) is the plain product, round (1) a capsule
+// end, square (2) extends each dash by the half width
+fn dashCoverage(u: f32, v: f32, halfW: f32, pat: vec4f, offset: f32, cap: f32, zoomDpr: f32) -> f32 {
+  let sdIn = dashInsideSd(u, pat, offset) * zoomDpr; // device px
+
+  if (cap == 1.0) { // round: capsule distance about the segment
+    let d = length(vec2f(max(-sdIn, 0.0), abs(v)));
+
+    return 1.0 - smoothstep(halfW - 0.75, halfW + 0.75, d);
+  }
+
+  let s = select(sdIn, sdIn + halfW, cap == 2.0);
+
+  return smoothstep(-0.75, 0.75, s) * (1.0 - smoothstep(halfW - 0.75, halfW + 0.75, abs(v)));
+}
 `;
 
 /**
@@ -1409,9 +1443,12 @@ ${DASH_WGSL}
 @group(0) @binding(7) var<storage, read> lineColors: array<u32>;
 @group(0) @binding(8) var<storage, read> opacities: array<f32>;
 @group(0) @binding(9) var<storage, read> lineStyles: array<u32>; // LINE_* ids
+// dash pattern (two on/off pairs, model px) + [offset, cap] (round 13 B3)
+@group(0) @binding(10) var<storage, read> dashPatterns: array<vec4f>;
+@group(0) @binding(11) var<storage, read> dashMetas: array<vec2f>;
 // overlay/underlay record [rgba folded, strokeWidth*256] — only the
 // layer entry points bind it (round 13 A2)
-@group(0) @binding(10) var<storage, read> edgeLayer: array<vec2u>;
+@group(0) @binding(12) var<storage, read> edgeLayer: array<vec2u>;
 
 struct EdgeVSOut {
   @builtin(position) position: vec4f,
@@ -1479,7 +1516,19 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   out.halfWidth = halfW;
   out.alphaComp = lod.y;
   out.instance = slot;
-  out.u = t * (len / frame.zoomDpr); // model px along the edge
+  // model px along the edge.  v3 launches the dash pattern at the
+  // *source boundary* (its line starts there); center-to-center quads
+  // subtract the source boundary offset so dash phases match (B3) —
+  // haystack lines start at their offset points, like v3's.
+  var u0 = 0.0;
+
+  if (params.w != 6.0) {
+    let dirM = (pb - pa) / max(length(pb - pa), 1e-6);
+
+    u0 = boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], dirM);
+  }
+
+  out.u = t * (len / frame.zoomDpr) - u0;
   return out;
 }
 
@@ -1488,20 +1537,20 @@ fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
   let c = unpack4x8unorm(lineColors[in.instance]);
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
-  alpha = alpha * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
-
-  // line-style: dashed [6, 3] / dotted [1, 1] in model px (v3's patterns);
-  // picking ignores the gaps, as v3 does.  Straight-triangle fills ignore
-  // line-style (v3 fills the triangle path).
+  // line-style: dashed uses the per-edge line-dash-pattern/-offset,
+  // dotted is [1, 1] (v3); line-cap shapes each dash segment (B3).
+  // Picking ignores the gaps, as v3 does.  Straight-triangle fills
+  // ignore line-style (v3 fills the triangle path).
   let ls = lineStyles[in.instance];
   let isTriangle = curveParams[in.instance].w == 7.0;
 
-  if (!isTriangle) {
-    if (ls == 1u) {
-      alpha = alpha * dashMask(in.u, 6.0, 3.0, 0.75 / frame.zoomDpr);
-    } else if (ls == 2u) {
-      alpha = alpha * dashMask(in.u, 1.0, 1.0, 0.75 / frame.zoomDpr);
-    }
+  if (!isTriangle && ls != 0u) {
+    let pat = select(dashPatterns[in.instance], vec4f(1.0, 1.0, 1.0, 1.0), ls == 2u);
+    let dm = dashMetas[in.instance];
+
+    alpha = alpha * dashCoverage(in.u, in.v, in.halfWidth, pat, dm.x, dm.y, frame.zoomDpr);
+  } else {
+    alpha = alpha * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
   }
 
   return vec4f(c.rgb * alpha, alpha); // premultiplied
@@ -1619,10 +1668,13 @@ ${DASH_WGSL}
 @group(0) @binding(8) var<storage, read> lineColors: array<u32>;
 @group(0) @binding(9) var<storage, read> opacities: array<f32>;
 @group(0) @binding(10) var<storage, read> lineStyles: array<u32>;
+// dash pattern + [offset, cap] (round 13 B3)
+@group(0) @binding(11) var<storage, read> dashPatterns: array<vec4f>;
+@group(0) @binding(12) var<storage, read> dashMetas: array<vec2f>;
 // overlay/underlay record — only the layer entry points bind it; they
 // drop the widths binding (the stroke width is pre-derived), which
 // keeps the layer vertex stage at the 8-storage-buffer budget
-@group(0) @binding(11) var<storage, read> edgeLayer: array<vec2u>;
+@group(0) @binding(13) var<storage, read> edgeLayer: array<vec2u>;
 
 struct CurvedVSOut {
   @builtin(position) position: vec4f,
@@ -1749,15 +1801,17 @@ fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
   let c = unpack4x8unorm(lineColors[in.instance]);
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
-  alpha = alpha * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
-
-  // line-style dashes ride the polyline's longitudinal coordinate
+  // line-style dashes ride the polyline's longitudinal coordinate;
+  // dashed uses the per-edge pattern/offset with the line-cap (B3)
   let ls = lineStyles[in.instance];
 
-  if (ls == 1u) {
-    alpha = alpha * dashMask(in.u, 6.0, 3.0, 0.75 / frame.zoomDpr);
-  } else if (ls == 2u) {
-    alpha = alpha * dashMask(in.u, 1.0, 1.0, 0.75 / frame.zoomDpr);
+  if (ls != 0u) {
+    let pat = select(dashPatterns[in.instance], vec4f(1.0, 1.0, 1.0, 1.0), ls == 2u);
+    let dm = dashMetas[in.instance];
+
+    alpha = alpha * dashCoverage(in.u, in.v, in.halfWidth, pat, dm.x, dm.y, frame.zoomDpr);
+  } else {
+    alpha = alpha * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
   }
 
   return vec4f(c.rgb * alpha, alpha); // premultiplied

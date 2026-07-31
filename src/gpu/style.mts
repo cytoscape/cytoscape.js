@@ -133,6 +133,12 @@ interface EdgeComputed {
   /** line-opacity (round 13 B1): folds into the stored line alpha and
    * the arrow fold (v3's effective opacities) */
   lineOpacity: number;
+  /** line-cap (round 13 B3): 0 butt, 1 round, 2 square */
+  lineCap: number;
+  /** line-dash-pattern (B3), normalized to two on/off pairs */
+  lineDashPattern: number[];
+  /** line-dash-offset (B3), model px */
+  lineDashOffset: number;
   width: number;
   opacity: number;
   /** 0 solid, 1 dashed, 2 dotted (contract LINE_* ids) */
@@ -241,6 +247,9 @@ const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
   lineOpacity: 1,
+  lineCap: 0, // butt, as v3
+  lineDashPattern: [ 6, 3, 6, 3 ], // v3's [6, 3], pair-normalized
+  lineDashOffset: 0,
   width: 2,
   opacity: 1,
   lineStyle: LINE_SOLID,
@@ -362,6 +371,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-color', 'line-style', 'width', 'opacity', 'line-opacity', 'text-opacity',
+  'line-cap', 'line-dash-pattern', 'line-dash-offset',
   'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color',
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
@@ -515,6 +525,39 @@ const parseLayerRadius = ( prop: string, value: unknown ): number => {
   if( String( value ).trim() === 'auto' ){ return -1; }
 
   return parseNonNegative( prop, value );
+};
+
+const LINE_CAPS: Record<string, number> = { 'butt': 0, 'round': 1, 'square': 2 };
+const LINE_CAP_NAMES: Record<number, string> = { 0: 'butt', 1: 'round', 2: 'square' };
+
+const parseLineCap = ( value: unknown ): number => {
+  const id = LINE_CAPS[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The line-cap '${String( value )}' is invalid; use one of: butt, round, square`
+    );
+  }
+
+  return id;
+};
+
+/**
+ * Normalize a dash pattern to two on/off pairs (B3): odd patterns
+ * double (canvas semantics), a single pair repeats, and longer
+ * patterns truncate to the first two pairs — a recorded cap.
+ */
+const normalizeDashPattern = ( list: number[] ): number[] => {
+  if( list.length === 0 ){ return [ 6, 3, 6, 3 ]; }
+
+  for( const v of list ){
+    if( v < 0 ){ throw new Error( 'line-dash-pattern entries may not be negative' ); }
+  }
+
+  const doubled = list.length % 2 === 1 ? [ ...list, ...list ] : list;
+  const pairs = doubled.length >= 4 ? doubled.slice( 0, 4 ) : [ ...doubled, ...doubled ].slice( 0, 4 );
+
+  return pairs;
 };
 
 const BORDER_POSITIONS: Record<string, number> = { 'center': 0, 'inside': 1, 'outside': 2 };
@@ -975,6 +1018,15 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'line-opacity':
       computed.lineOpacity = parseZeroOne( prop, value );
       break;
+    case 'line-cap':
+      computed.lineCap = parseLineCap( value );
+      break;
+    case 'line-dash-pattern':
+      computed.lineDashPattern = normalizeDashPattern( parseNumberList( prop, value ) );
+      break;
+    case 'line-dash-offset':
+      computed.lineDashOffset = parseNumber( prop, value );
+      break;
     case 'text-opacity':
       computed.textOpacity = parseZeroOne( prop, value );
       break;
@@ -1388,6 +1440,18 @@ const MAPPABLE: Record<string, MappableChannel> = {
     parseEnum: v => BORDER_POSITIONS[ String( v ) ] ?? null,
     set: ( c, v ) => { c.borderPosition = v as number; },
     default: () => NODE_DEFAULTS.borderPosition
+  },
+  // B3 dash props (pattern is a constants-only list)
+  'line-cap': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => LINE_CAPS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.lineCap = v as number; },
+    default: () => EDGE_DEFAULTS.lineCap
+  },
+  'line-dash-offset': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.lineDashOffset = v as number; },
+    default: () => EDGE_DEFAULTS.lineDashOffset
   },
   // the B1 opacity split (CPU-evaluated; folds at write time)
   'background-opacity': {
@@ -2144,6 +2208,18 @@ export class StyleEngine {
           : 'none';
       case 'line-opacity':
         return Math.round( ( store.column( 'edge.lineColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
+      case 'line-cap':
+        return LINE_CAP_NAMES[ ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 + 1 ] ] ?? 'butt';
+      case 'line-dash-offset':
+        return ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 ];
+      case 'line-dash-pattern': {
+        const arr = ( store.column( 'edge.dashPattern' ) as Float32Array ).subarray( slot * 4, slot * 4 + 4 );
+
+        // collapse the normalized two-pair form back to one pair when repeated
+        return arr[ 0 ] === arr[ 2 ] && arr[ 1 ] === arr[ 3 ]
+          ? `${arr[ 0 ]} ${arr[ 1 ]}`
+          : `${arr[ 0 ]} ${arr[ 1 ]} ${arr[ 2 ]} ${arr[ 3 ]}`;
+      }
       case 'source-arrow-color': return color( 'edge.sourceArrow' );
       case 'target-arrow-color': return color( 'edge.targetArrow' );
 
@@ -2408,6 +2484,10 @@ export class StyleEngine {
         [ r, g, b, Math.round( a * opacity ) ];
 
       store.setColor( 'edge.lineColor', slot, ...foldE( computed.lineColor, computed.lineOpacity ) );
+      const dp = computed.lineDashPattern;
+
+      store.setVec4( 'edge.dashPattern', slot, dp[ 0 ], dp[ 1 ], dp[ 2 ], dp[ 3 ] );
+      store.setPair( 'edge.dashMeta', slot, computed.lineDashOffset, computed.lineCap );
       store.setScalar( 'edge.width', slot, computed.width );
       store.setScalar( 'edge.opacity', slot, computed.opacity );
       store.setScalar( 'edge.lineStyle', slot, computed.lineStyle );

@@ -33,7 +33,10 @@ const VERTEX_COLUMNS: ColumnId[] = [
 const FRAGMENT_COLUMNS: ColumnId[] = [
   'edge.lineColor',
   'edge.opacity',
-  'edge.lineStyle'
+  'edge.lineStyle',
+  // per-edge dash pattern/offset/cap (round 13 B3)
+  'edge.dashPattern',
+  'edge.dashMeta'
 ];
 
 export class CurvedEdgePipeline {

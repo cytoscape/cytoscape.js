@@ -812,6 +812,22 @@ export class GraphStore implements ModelView {
     this.dirty.mark( id, slot );
   }
 
+  /** Four-component f32 write (dash patterns etc.). */
+  setVec4( id: ColumnId, slot: number, a: number, b: number, c: number, d: number ): void {
+    const arr = this.table( columnSpec( id ).group ).column( id ) as Float32Array;
+    const at = slot * 4;
+
+    if( arr[ at ] === a && arr[ at + 1 ] === b && arr[ at + 2 ] === c && arr[ at + 3 ] === d ){
+      return;
+    }
+
+    arr[ at ] = a;
+    arr[ at + 1 ] = b;
+    arr[ at + 2 ] = c;
+    arr[ at + 3 ] = d;
+    this.dirty.mark( id, slot );
+  }
+
   /** RGBA bytes on [0, 255]. */
   setColor( id: ColumnId, slot: number, r: number, g: number, b: number, a: number ): void {
     const spec = columnSpec( id );

@@ -1685,4 +1685,48 @@ test.describe( 'v3-vs-v4 render parity', () => {
     await runParity( page, testInfo, 'parity-border-geom', elements, v3Style, v4Style, { minInk: 1500 } );
   } );
 
+  test( 'parity: dash patterns, offsets and caps (round 13 B3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const elements = [
+      { data: { id: 'a' }, position: { x: -140, y: -80 } },
+      { data: { id: 'b' }, position: { x: 140, y: -80 } },
+      { data: { id: 'p1', source: 'a', target: 'b' } },
+      { data: { id: 'c' }, position: { x: -140, y: 0 } },
+      { data: { id: 'd' }, position: { x: 140, y: 0 } },
+      { data: { id: 'p2', source: 'c', target: 'd', off: 1 } },
+      { data: { id: 'e' }, position: { x: -140, y: 80 } },
+      { data: { id: 'f' }, position: { x: 140, y: 80 } },
+      { data: { id: 'p3', source: 'e', target: 'f', cap: 'round' } },
+      { data: { id: 'g' }, position: { x: -140, y: 160 } },
+      { data: { id: 'h' }, position: { x: 140, y: 160 } },
+      { data: { id: 'p4', source: 'g', target: 'h', cap: 'square' } }
+    ];
+    const shared = {
+      'width': 8, 'line-color': '#7f8c8d', 'line-style': 'dashed',
+      'line-dash-pattern': [ 14, 10 ]
+    };
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 26, 'height': 26, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: Object.assign( { 'curve-style': 'straight' }, shared ) },
+      { selector: 'edge[off = 1]', style: { 'line-dash-offset': 9 } },
+      { selector: "edge[cap = 'round']", style: { 'line-cap': 'round' } },
+      { selector: "edge[cap = 'square']", style: { 'line-cap': 'square' } }
+    ];
+    const v4Style = {
+      nodes: { 'width': 26, 'height': 26, 'background-color': '#c0392b' },
+      edges: Object.assign( {
+        'line-dash-offset': { case: [ { when: { data: 'off', eq: 1 }, then: 9 } ], else: 0 },
+        'line-cap': { case: [
+          { when: { data: 'cap', eq: 'round' }, then: 'round' },
+          { when: { data: 'cap', eq: 'square' }, then: 'square' }
+        ], else: 'butt' }
+      }, shared )
+    };
+
+    await runParity( page, testInfo, 'parity-dash-props', elements, v3Style, v4Style, { minInk: 1200 } );
+  } );
+
 } );

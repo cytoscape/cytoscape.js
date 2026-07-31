@@ -29,7 +29,10 @@ const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
   { id: 'node.shape', stages: V },
   { id: 'edge.lineColor', stages: F },
   { id: 'edge.opacity', stages: F },
-  { id: 'edge.lineStyle', stages: F }
+  { id: 'edge.lineStyle', stages: F },
+  // per-edge dash pattern/offset/cap (round 13 B3)
+  { id: 'edge.dashPattern', stages: F },
+  { id: 'edge.dashMeta', stages: F }
 ];
 
 /** Edge render + picking pipelines (screen-space extruded quads). */

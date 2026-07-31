@@ -1110,11 +1110,18 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `labelMinPx` renderer option hard-culls labels whose on-screen glyph
   height is below it — too small to read anyway (default 0 = off).
 - **Edge `line-style`** (round 10): `solid` (default) | `dashed` |
-  `dotted`, with v3's patterns ([6, 3] and [1, 1] in model px, so
-  dashes zoom with content as v3's model-space canvas dashes do),
-  drawn as an AA'd mask in the edge fragment stage.  Picking ignores
-  the gaps, as v3 does.  `border-style` is not ported (dashing an
-  arbitrary SDF boundary needs perimeter parameterization).
+  `dotted`, in model px so dashes zoom with content, drawn as an
+  AA'd mask in the edge fragment stage.  Since round 13 B3 dashed
+  edges use the per-edge `line-dash-pattern` (constants-only,
+  normalized to two on/off pairs — longer patterns truncate, a
+  recorded cap) and `line-dash-offset`, with `line-cap`
+  (butt | round | square) shaping each dash segment; dotted stays
+  [1, 1].  Dash phase launches at the source boundary (v3's rule);
+  caps apply to dash segments only, not the line ends (the quads
+  end at the endpoints — identical to v3's default butt).  Picking
+  ignores the gaps, as v3 does.  `border-style` is not ported
+  (dashing an arbitrary SDF boundary needs perimeter
+  parameterization).
 - **Node shapes** (round 10): `ellipse`/`circle`, `rectangle`/`square`,
   `round-rectangle`, plus the polygon family — `triangle`, `pentagon`,
   `hexagon`, `heptagon`, `octagon`, `diamond`, `rhomboid`, `vee`,

@@ -2693,6 +2693,33 @@ grows per item.
   new auto rule.  1873 Node tests, 93 Playwright specs, typecheck +
   lint green.
 
+- [x] **B3 line-cap + dash patterns** (2026-07-31).
+  `line-dash-pattern` (constants-only list, normalized to two on/off
+  pairs — odd patterns double per canvas semantics, longer ones
+  truncate, a recorded cap), `line-dash-offset` and `line-cap`
+  (butt | round | square; cap + offset mapper-capable) land in two
+  columns (`edge.dashPattern` f32×4, `edge.dashMeta` [offset, cap])
+  bound fragment-side on both edge pipelines.  The dash mask became
+  a proper 2D coverage: `dashInsideSd` (signed model-px distance
+  inside the nearest on-segment, wrap-exact) + `dashCoverage` —
+  butt is the plain product (pixel-identical to the old mask, so
+  the pre-B3 goldens held), round is a capsule about the segment,
+  square extends each dash by the half width.  Dashed edges use the
+  per-edge pattern (v3); dotted stays [1, 1]; triangle fills ignore
+  line-style (v3).  **A dash-phase deviation found and fixed**: v3
+  launches the pattern at the *source boundary* while v4's straight
+  edges measured u from the node center — the straight VS now
+  subtracts the source boundary offset (haystack lines keep their
+  offset-point origin, matching v3's haystackPts), taking the new
+  `parity-dash-props` scene (pattern + offset + all three caps)
+  from 2.501% to **0 px differing**.  Caught en route by the Node
+  WGSL-identifier guard's runtime sibling: `meta` is a WGSL reserved
+  word.  Line-end caps are dash-segment-only (quads don't extend
+  past the endpoints; v3's default butt behaves identically) — a
+  recorded deviation.  6 Node specs (`test/gpu-dash-props.mjs`);
+  the line-styles golden regenerated for the intended phase shift.
+  1879 Node tests, 94 Playwright specs, typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2784,10 +2811,11 @@ autonomously):
   SDF band offset) + **`corner-radius`** (a scalar channel feeding
   the existing round-rectangle SDF; CPU pick inside-test reads it —
   geometry tier).  Landed 2026-07-31 — see the round-13 record.
-- [ ] **B3 `line-cap`** (butt | round | square — endpoint cap SDF in
+- [x] **B3 `line-cap`** (butt | round | square — endpoint cap SDF in
   the edge FS) + **`line-dash-pattern`/`line-dash-offset`**
   (arbitrary patterns over the existing arc-length varying;
-  constants-only lists, pattern length capped).
+  constants-only lists, pattern length capped).  Landed 2026-07-31 —
+  see the round-13 record.
 - [ ] **B4 Edge casing**: `line-outline-width`/`-color` — a border
   band on the edge strip (straight and curved), colors fetched
   fragment-side.

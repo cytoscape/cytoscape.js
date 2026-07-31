@@ -306,6 +306,26 @@ fn evalCurveGeom(
     return g;
   }
 
+  if (params.w == 16.0) { // compound loop (14.10): v3's findCompoundLoopPoints
+    // two controls off the endpoints' min top-left corner, stretched by
+    // ln(outerWidth x 0.01) (min 0.5); params.x = loop distance,
+    // params.y = bundle index j — the CPU twin is evalCurve's CMPD branch
+    let minC = min(sC - sHalf, tC - tHalf);
+    let factor = (1.0 + pow(50.0, 1.12) / 100.0) * params.x * (params.y / 3.0 + 1.0);
+    let stretchA = max(0.5, log(2.0 * sHalf.x * 0.01));
+    let stretchB = max(0.5, log(2.0 * tHalf.x * 0.01));
+    let c1 = vec2f(minC.x, minC.y - factor * stretchA);
+    let c2 = vec2f(minC.x - factor * stretchB, minC.y);
+
+    g.c1 = c1;
+    g.c2 = c2;
+    g.m = (c1 + c2) * 0.5;
+    g.s = curveBoundaryPoint(sC, sHalf, sShape, c1);
+    g.e = curveBoundaryPoint(tC, tHalf, tShape, c2);
+
+    return g;
+  }
+
   // bundled bezier: the intersection frame + weighted midpoint + stagger
   var u = tC - sC;
   let uL = max(length(u), 1e-6);
@@ -345,7 +365,7 @@ fn qbezTangent(p0: vec2f, c: vec2f, p1: vec2f, t: f32) -> vec2f {
 // global t in [0,1]: bezier is one quadratic; a loop is two C1 quadratics
 // through the control midpoint, split at t = 0.5 (v3's allpts insertion)
 fn curvePoint(g: CurveGeom, t: f32) -> vec2f {
-  if (g.kind == 2.0) {
+  if (g.kind == 2.0 || g.kind == 16.0) {
     if (t <= 0.5) { return qbez(g.s, g.c1, g.m, t * 2.0); }
     return qbez(g.m, g.c2, g.e, t * 2.0 - 1.0);
   }
@@ -353,7 +373,7 @@ fn curvePoint(g: CurveGeom, t: f32) -> vec2f {
 }
 
 fn curveTangentAt(g: CurveGeom, t: f32) -> vec2f {
-  if (g.kind == 2.0) {
+  if (g.kind == 2.0 || g.kind == 16.0) {
     if (t <= 0.5) { return qbezTangent(g.s, g.c1, g.m, t * 2.0); }
     return qbezTangent(g.m, g.c2, g.e, t * 2.0 - 1.0);
   }
@@ -2006,7 +2026,7 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   var uLen = 0.0;
   var totLen = 0.0;
 
-  if (params.w <= 2.0) { // bezier / loop: the 12a analytic path, unchanged
+  if (params.w <= 2.0 || params.w == 16.0) { // bezier / loop / compound loop: the analytic path
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
@@ -2162,7 +2182,7 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
   var n: vec2f;
   var miterScale = 1.0;
 
-  if (params.w <= 2.0) {
+  if (params.w <= 2.0 || params.w == 16.0) {
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
@@ -2539,7 +2559,7 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   var toward: vec2f;
   var tip: vec2f;
 
-  if (params.w <= 2.0) {
+  if (params.w <= 2.0 || params.w == 16.0) {
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
@@ -2642,7 +2662,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   var mid: vec2f;
   var tangent: vec2f;
 
-  if (params.w <= 2.0) {
+  if (params.w <= 2.0 || params.w == 16.0) {
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
@@ -2861,7 +2881,7 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   var rotA = pa;
   var rotB = pb;
 
-  if (params.w != 0.0 && params.w <= 2.0) { // bezier / loop midpoint
+  if ((params.w != 0.0 && params.w <= 2.0) || params.w == 16.0) { // bezier / loop / compound midpoint
     let geom = evalCurveGeom(
       params,
       pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
@@ -2904,7 +2924,7 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     let dist = abs(g.endParam) - 1.0;
     var at: vec4f;
 
-    if (params.w != 0.0 && params.w <= 2.0) { // bezier / loop
+    if ((params.w != 0.0 && params.w <= 2.0) || params.w == 16.0) { // bezier / loop / compound
       let geom = evalCurveGeom(
         params,
         pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],

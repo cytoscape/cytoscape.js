@@ -3633,9 +3633,42 @@ commit(s) with docs in-commit):
   border-inclusive `outerHalf`.  Full suites: 2034 Node tests,
   116/116 Playwright (54+3 `webgpu`... all pre-existing goldens
   byte-stable), typecheck + lint clean.
-- [ ] **14.10 Compound loop edges** — CurveIndex relation routing,
-  invalidation.  Golden + parity scene (parent↔descendant edges,
-  parent self-loop).
+- [x] **14.10 Compound loop edges** — landed 2026-07-31.  An edge
+  between a node and its own ancestor/descendant (or a self-loop
+  on a parent) routes around the outside — v3's
+  `findCompoundLoopPoints` verbatim (two controls off the
+  endpoints' min top-left corner, `(1 + 50^1.12/100)·dist·(j/3+1)`
+  offsets, stretch `max(0.5, ln(outerWidth·0.01))` per end) — as a
+  new **`CURVE_CMPD` kind** rendered exactly like a loop (two C1
+  quadratics through the control midpoint) with control points
+  evaluated from **live** positions/outer halves in both
+  implementations, so drags and auto-bounds resizes follow with
+  zero re-derivation.  Routing applies whatever the declared curve
+  style (v3's `edge:compound` default block makes related edges
+  bezier-compound by default, so behavior matches; unbundled
+  styles take `control-point-distances[0]` and j = 0 — v3).
+  Derivation rides the CurveIndex: a relation is a pair-map build
+  trigger (bundle indices), reparenting invalidates the moved
+  subtree's incident edges, leaf↔parent flips re-route self-loops,
+  and `flush()` loops until settled (a per-edge derivation that
+  discovers a relation hands its pair back).  Cull: box-bounded
+  (`FLAG_CURVED_BOX`) plus a derivation-time excursion bound in
+  `curveSlack` (2× stretch margin — stretch grows only
+  logarithmically with node size; parent resizes refresh the
+  bound; recorded).  **Two kind-space traps found**: the WGSL
+  analytic-vs-route dispatch (`params.w <= 2.0`) sent the new kind
+  into the blob-route path — six dispatch sites now special-case
+  it (the first golden run caught taxi-like garbage) — and
+  `CURVE_HAS_ENDPT = 8` collided with the naïve next kind id, so
+  `CURVE_CMPD = 16` sits above the endpoint-flag range with a
+  contract note (raw-kind tests only, before any strip).
+  Verifies: 9 Node specs (`test/gpu-compound-loop-edges.mjs`,
+  v3-formula control points, relation lifecycle, slack/flags,
+  live resize), the `compound-loops` golden, and
+  `parity-compound-loops` live vs v3 at **0.022%** (the
+  outside-to-line vs outside-to-node endpoint difference is
+  invisible at this scale).  2043 Node tests, 118/118 Playwright,
+  typecheck + lint clean.
 - [ ] **14.11 Interaction + tween demotion + layouts** —
   parent-drag Playwright specs, drag-set dedupe, the
   `gpuEligible` hierarchy rule + reparent-settle, layout parent

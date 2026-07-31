@@ -1,5 +1,6 @@
 import {
-  CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS, CURVE_TAXI,
+  CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
+  CURVE_TAXI,
   SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from './contract.mjs';
 
@@ -129,6 +130,33 @@ export const evalCurve = (
 ): CurveEval => {
   out.kind = kind;
 
+  if( kind === CURVE_CMPD ){
+    // v3's findCompoundLoopPoints: two controls off the endpoints' min
+    // top-left corner, stretched by ln(outerWidth x 0.01) (min 0.5) to
+    // avoid impossible beziers; p0 = loop distance, p1 = bundle index j
+    const minX = Math.min( sxC - sHalfW, txC - tHalfW );
+    const minY = Math.min( syC - sHalfH, tyC - tHalfH );
+    const factor = ( 1 + Math.pow( 50, 1.12 ) / 100 ) * p0 * ( p1 / 3 + 1 );
+    const stretchA = Math.max( 0.5, Math.log( 2 * sHalfW * 0.01 ) );
+    const stretchB = Math.max( 0.5, Math.log( 2 * tHalfW * 0.01 ) );
+    const c1x = minX;
+    const c1y = minY - factor * stretchA;
+    const c2x = minX - factor * stretchB;
+    const c2y = minY;
+
+    out.c1x = c1x;
+    out.c1y = c1y;
+    out.c2x = c2x;
+    out.c2y = c2y;
+    out.mx = ( c1x + c2x ) / 2;
+    out.my = ( c1y + c2y ) / 2;
+
+    setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, c1x, c1y );
+    setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, c2x, c2y );
+
+    return out;
+  }
+
   if( kind === CURVE_LOOP ){
     // two control points at the stagger radius; the curve is two
     // quadratics through their midpoint (v3's storeAllpts insertion)
@@ -242,7 +270,7 @@ const qbezier = ( p0: number, c: number, p1: number, t: number ): number => {
  * reproduces the drawn polyline exactly.
  */
 export const curvePointAt = ( ev: CurveEval, t: number, out: { x: number; y: number } ): void => {
-  if( ev.kind === CURVE_LOOP ){
+  if( ev.kind === CURVE_LOOP || ev.kind === CURVE_CMPD ){
     if( t <= 0.5 ){
       const tt = t * 2;
 
@@ -288,6 +316,7 @@ export const flattenCurve = ( ev: CurveEval, segs: number = CURVE_SEGS ): Float6
 export const curveDeviation = ( kind: number, p0: number, p2: number ): number => {
   if( kind === CURVE_BEZIER ){ return Math.abs( p0 ); }
   if( kind === CURVE_LOOP ){ return Math.abs( p2 ); }
+  if( kind === CURVE_CMPD ){ return Math.abs( p2 ); } // the derivation-time excursion bound
 
   return 0;
 };
@@ -300,6 +329,8 @@ export const curveDeviation = ( kind: number, p0: number, p2: number ): number =
  * chord length) per FLAG_CURVED_BOX instead.
  */
 export const headerDeviation = ( kind: number, p0: number, p1: number, p2: number ): number => {
+  if( kind === CURVE_CMPD ){ return Math.abs( p2 ); } // raw kind: above the flag range
+
   if( kind >= CURVE_HAS_ENDPT ){ kind -= CURVE_HAS_ENDPT; } // 12c endpoint-block kinds
 
   if( kind === CURVE_BEZIER ){ return Math.abs( p0 ); }

@@ -133,6 +133,24 @@ export const CURVE_HAYSTACK = 6;
  */
 export const CURVE_TRIANGLE = 7;
 /**
+ * Compound loop (round 14.10): an edge between a node and its own
+ * ancestor/descendant (or a self-loop on a parent) routes around the
+ * outside via v3's findCompoundLoopPoints — two control points off the
+ * endpoints' min top-left corner, rendered like a CURVE_LOOP (two C1
+ * quadratics through the control midpoint).  Params: [0] loop distance,
+ * [1] bundle index j, [2] the derivation-time excursion bound (feeds
+ * curveSlack; the kind is box-bounded — FLAG_CURVED_BOX).  Control
+ * points evaluate from live positions/outer halves in both
+ * implementations, so drags and auto-bounds resizes follow with zero
+ * re-derivation; the relation itself re-derives on reparent.
+ *
+ * The value sits above the CURVE_HAS_ENDPT flag range (8 | blob kind =
+ * 11..13) so the endpoint-strip arithmetic (kind - 8) can never confuse
+ * a compound loop with a flagged blob kind; always test CURVE_CMPD on
+ * the *raw* kind, before any endpoint strip.
+ */
+export const CURVE_CMPD = 16;
+/**
  * Kind flag (12c), OR-ed onto a blob-backed kind (CURVE_MULTI /
  * CURVE_SEGMENTS / CURVE_TAXI): the blob record is prefixed by a
  * 10-float manual-endpoint block (see store/curve-blob.mts) resolving

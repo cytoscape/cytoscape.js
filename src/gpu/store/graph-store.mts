@@ -15,7 +15,8 @@ import {
 import type { CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
-  CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
+  CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI,
+  CURVE_SEGMENTS,
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
   FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
   FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
@@ -156,7 +157,13 @@ export class GraphStore implements ModelView {
       writeBlobParams: ( slot, kind, values, n, dev, box, endptPct ) =>
         this.setCurveParamsBlob( slot, kind, values, n, dev, box, endptPct ),
       idHash: ( slot ) => this.ids.hashAt( 'edges', slot ),
-      schedule: () => this.dirty.touch()
+      schedule: () => this.dirty.touch(),
+      // compound relation (14.10): ancestor/descendant endpoints, or a
+      // self-loop on a parent — such edges route around the outside
+      relation: ( a, b ) => a === b
+        ? this.hierarchy.childrenOf( a ).length > 0
+        : ( this.hierarchy.isAncestorOf( a, b ) || this.hierarchy.isAncestorOf( b, a ) ),
+      outerHalfW: ( slot ) => ( this.nodes.column( 'node.outerHalf' ) as Float32Array )[ slot * 2 ]
     } );
 
     this.hierarchy = new HierarchyIndex( {
@@ -199,6 +206,15 @@ export class GraphStore implements ModelView {
 
         // a flipped node restyles against the right sheet group (14.6)
         this.onParentFlip?.( slot );
+
+        // its self-loops flip between plain and compound routing (14.10)
+        const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+
+        for( const edgeSlot of this.adj.connectedEdges( slot ) ){
+          if( endpoints[ edgeSlot * 2 ] === endpoints[ edgeSlot * 2 + 1 ] ){
+            this.curves.invalidateRelation( slot, slot );
+          }
+        }
       },
       materialize: ( slot, x, y, w, h ) => this.materializeParentGeom( slot, x, y, w, h )
     } );
@@ -681,6 +697,20 @@ export class GraphStore implements ModelView {
 
       this.updateOuterHalf( slot );
       this.reanchorLabel( slot, w, h );
+
+      // compound-loop excursion bounds are derivation-time (14.10):
+      // refresh them for the resized parent's incident edges (the
+      // geometry itself always evaluates from live sizes)
+      const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+
+      for( const edgeSlot of this.adj.connectedEdges( slot ) ){
+        const a = endpoints[ edgeSlot * 2 ];
+        const b = endpoints[ edgeSlot * 2 + 1 ];
+
+        if( ( this.edges.column( 'edge.curveParams' ) as Float32Array )[ edgeSlot * 4 + 3 ] === CURVE_CMPD ){
+          this.curves.invalidateRelation( a, b );
+        }
+      }
     }
 
     this.geoEpoch++;
@@ -779,6 +809,26 @@ export class GraphStore implements ModelView {
 
     // structural case conditions on the moved node re-evaluate (14.7)
     this.onReparented?.( slot );
+
+    // compound-loop routing (14.10): the moved subtree's incident edges
+    // may have entered or left an ancestor/descendant relation
+    this.invalidateSubtreeEdgeRelations( slot );
+  }
+
+  /** Re-derive curve routing for every edge incident to a subtree (14.10). */
+  private invalidateSubtreeEdgeRelations( root: number ): void {
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const stack: number[] = [ root ];
+
+    while( stack.length > 0 ){
+      const slot = stack.pop() as number;
+
+      for( const edgeSlot of this.adj.connectedEdges( slot ) ){
+        this.curves.invalidateRelation( endpoints[ edgeSlot * 2 ], endpoints[ edgeSlot * 2 + 1 ] );
+      }
+
+      for( const kid of this.hierarchy.childrenOf( slot ) ){ stack.push( kid ); }
+    }
   }
 
   /**
@@ -1606,7 +1656,7 @@ export class GraphStore implements ModelView {
     const kind = params[ at + 3 ];
 
     // blob-backed kinds evaluate as routes (curveRouteAt), not CurveEvals
-    if( kind !== CURVE_BEZIER && kind !== CURVE_LOOP ){ return null; }
+    if( kind !== CURVE_BEZIER && kind !== CURVE_LOOP && kind !== CURVE_CMPD ){ return null; }
 
     const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
@@ -1821,7 +1871,9 @@ export class GraphStore implements ModelView {
     const curvedStream = kind !== CURVE_STRAIGHT && kind !== CURVE_HAYSTACK && kind !== CURVE_TRIANGLE;
 
     this.setFlag( 'edges', slot, FLAG_CURVED, curvedStream );
-    this.setFlag( 'edges', slot, FLAG_CURVED_BOX, false );
+    // compound loops (14.10) are box-bounded: their excursion tracks the
+    // (live) node sizes, so no frame constant alone can bound the chord
+    this.setFlag( 'edges', slot, FLAG_CURVED_BOX, kind === CURVE_CMPD );
   }
 
   /**

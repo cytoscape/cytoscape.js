@@ -1,6 +1,6 @@
 import {
-  CURVE_BEZIER, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI, CURVE_SEGMENTS,
-  CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE
+  CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI,
+  CURVE_SEGMENTS, CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE
 } from '../contract.mjs';
 import {
   bundleOffset, haystackAngle, loopAngles, loopRadius,
@@ -233,6 +233,12 @@ export interface CurveHost {
   idHash( slot: number ): number;
   /** schedule a frame / mark non-column dirt (DirtyTracker.touch) */
   schedule(): void;
+  /** compound relation (round 14.10): the two nodes are in an
+   * ancestor/descendant relation, or a === b names a parent — such
+   * edges route around the outside regardless of curve style */
+  relation( a: number, b: number ): boolean;
+  /** the node's outer half-width (the compound-loop stretch input) */
+  outerHalfW( slot: number ): number;
 }
 
 const pairKey = ( a: number, b: number ): number => {
@@ -403,6 +409,24 @@ export class CurveIndex {
       // a bezier record needs the pair re-derived (its own style apply
       // marks it then)
     }
+
+    // compound relation (14.10): the edge routes around the outside
+    // regardless of style — the pair derivation needs the bundle index,
+    // so a relation is also a pair-map build trigger
+    if( this.host.relation( source, target ) ){
+      if( this.pairs == null ){ this.buildPairIndex(); }
+
+      this.markPair( source, target );
+    }
+  }
+
+  /** A hierarchy change moved the relation of this pair (round 14.10). */
+  invalidateRelation( a: number, b: number ): void {
+    if( a !== b && this.pairs == null && this.host.relation( a, b ) ){
+      this.buildPairIndex(); // the compound derivation needs bundle indices
+    }
+
+    this.markPair( a, b );
   }
 
   onRemoveEdge( slot: number, source: number, target: number ): void {
@@ -511,32 +535,68 @@ export class CurveIndex {
   /** Re-derive the params of every pending pair and per-edge record
    * (lazy; see module doc). */
   flush(): void {
-    if( this.pending.size > 0 ){
-      const pending = this.pending;
+    // loops until settled: a per-edge derivation that discovers a
+    // compound relation re-marks its pair (14.10), which must derive in
+    // the same flush; derivations never re-mark themselves, so this
+    // terminates
+    while( this.pending.size > 0 || this.pendingSlots.size > 0 ){
+      if( this.pending.size > 0 ){
+        const pending = this.pending;
 
-      this.pending = new Set();
+        this.pending = new Set();
 
-      for( const key of pending ){
-        const a = Math.floor( key / 0x8000000 );
-        const b = key % 0x8000000;
+        for( const key of pending ){
+          const a = Math.floor( key / 0x8000000 );
+          const b = key % 0x8000000;
 
-        if( a === b ){
-          this.deriveLoops( a );
-        } else {
-          this.derivePair( key, a );
+          if( a === b ){
+            this.deriveLoops( a );
+          } else {
+            this.derivePair( key, a );
+          }
+        }
+      }
+
+      if( this.pendingSlots.size > 0 ){
+        const slots = this.pendingSlots;
+
+        this.pendingSlots = new Set();
+
+        for( const slot of slots ){
+          this.deriveEdge( slot );
         }
       }
     }
+  }
 
-    if( this.pendingSlots.size > 0 ){
-      const slots = this.pendingSlots;
+  /**
+   * The compound-loop derivation (14.10): v3's findCompoundLoopPoints
+   * params — the loop distance (unbundled styles take
+   * control-point-distances[0], j = 0, v3's rule) and the bundle index.
+   * p2 carries a conservative derivation-time excursion bound for the
+   * cull slack (the geometry itself evaluates from live inputs): the
+   * control offset x the current max stretch x 2 — stretch grows only
+   * logarithmically with node size, so the margin outlasts any
+   * realistic auto-bounds growth, and relation changes re-derive.
+   */
+  private writeCompoundDerived( slot: number, source: number, target: number, i: number ): void {
+    this.ensure( slot );
 
-      this.pendingSlots = new Set();
+    const extra = this.extra[ slot ];
+    const unbundled = this.style[ slot ] === CURVE_STYLE_UNBUNDLED;
+    const dist = unbundled && extra?.ctrlDists != null && extra.ctrlDists.length > 0
+      ? extra.ctrlDists[ 0 ]
+      : this.step[ slot ];
+    const j = unbundled ? 0 : i;
 
-      for( const slot of slots ){
-        this.deriveEdge( slot );
-      }
-    }
+    const factor = ( 1 + Math.pow( 50, 1.12 ) / 100 ) * dist * ( j / 3 + 1 );
+    const stretch = Math.max(
+      0.5,
+      Math.log( 2 * this.host.outerHalfW( source ) * 0.01 ),
+      Math.log( 2 * this.host.outerHalfW( target ) * 0.01 )
+    );
+
+    this.host.writeParams( slot, dist, j, factor * stretch * 2, CURVE_CMPD );
   }
 
   private markPair( a: number, b: number ): void {
@@ -573,6 +633,23 @@ export class CurveIndex {
     const members = this.pairs?.get( key );
 
     if( members == null || members.length === 0 ){ return; }
+
+    // compound relation (14.10): every member routes around the outside,
+    // whatever its curve style (the sibling of the all-loops rule)
+    const hi = Math.floor( key / 0x8000000 );
+    const lo = key % 0x8000000;
+
+    if( this.host.relation( hi, lo ) ){
+      const endpoints = this.host.endpoints();
+
+      for( let i = 0; i < members.length; i++ ){
+        const slot = members[ i ];
+
+        this.writeCompoundDerived( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ], i );
+      }
+
+      return;
+    }
 
     // the bundle: bezier-styled members in slot order (v3 sorts by pool
     // index; slot order is the v4 analogue)
@@ -620,6 +697,16 @@ export class CurveIndex {
     if( list == null || list.length === 0 ){ return; }
 
     const sorted = [ ...list ].sort( ( x, y ) => x - y );
+
+    // a self-loop on a compound parent routes around the outside (14.10)
+    if( this.host.relation( node, node ) ){
+      for( let i = 0; i < sorted.length; i++ ){
+        this.writeCompoundDerived( sorted[ i ], node, node, i );
+      }
+
+      return;
+    }
+
     const counts = new Map<string, number>();
 
     for( const slot of sorted ){
@@ -660,6 +747,14 @@ export class CurveIndex {
     const endpoints = this.host.endpoints();
 
     if( endpoints[ slot * 2 ] === endpoints[ slot * 2 + 1 ] ){ return; } // loops derive per-node
+
+    // compound relation (14.10): the pair derivation owns the routing
+    // (it holds the bundle indices) — hand over instead of clobbering
+    if( this.host.relation( endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] ) ){
+      this.invalidateRelation( endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ] );
+
+      return;
+    }
 
     const style = slot < this.style.length ? this.style[ slot ] : CURVE_STYLE_STRAIGHT;
 

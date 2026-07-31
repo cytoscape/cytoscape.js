@@ -1018,6 +1018,30 @@ shapes) while v4's child extents are the plain border-inclusive
 `outerHalf` (the `parity-compounds` scene carries a looser bound
 for exactly this).
 
+Round 14.10 (compound loop edges): an edge between a node and its
+own ancestor/descendant — or a self-loop on a parent — **routes
+around the outside**, whatever its declared `curve-style` (v3's
+default `edge:compound` block produces the same behavior; a
+recorded rule like the forced self-loop construction).  The
+construction is v3's `findCompoundLoopPoints` verbatim: two control
+points off the endpoints' min top-left corner, stretched by
+`max(0.5, ln(outerWidth × 0.01))` per end, drawn as two
+C1-continuous quadratics through the control midpoint (the loop
+pipeline).  Control points evaluate from live positions and outer
+halves in both the WGSL and the CPU twin, so drags, layouts and
+auto-bounds resizes follow on-GPU with zero re-derivation;
+reparenting re-derives the moved subtree's incident edges, and a
+leaf↔parent flip re-routes its self-loops.  Compound loops are
+box-bounded for culling (`FLAG_CURVED_BOX`) with a derivation-time
+excursion bound feeding `curveSlack()` (a 2× stretch margin —
+stretch grows only logarithmically with node size, and parent
+resizes refresh the bound; recorded).  Deviation: v4 anchors the
+curve endpoints outside-to-node (toward the near control) where
+v3's `edge:compound` block defaults them outside-to-line — a small
+angular difference at the boundary, measured at 0.022% in the live
+parity scene.  `controlPoints()`/`midpoint()`/`boundingBox()`
+answer through the shared evaluator like loops.
+
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

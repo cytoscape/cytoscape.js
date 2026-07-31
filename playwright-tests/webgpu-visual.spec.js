@@ -1483,6 +1483,38 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'compounds', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: compound loop edges (round 14.10)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // gp > p > (a, b): a child-to-parent edge, an ancestor edge two
+    // levels up, and a parent self-loop all route around the outside
+    // (v3's findCompoundLoopPoints) regardless of curve style
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'gp' } },
+        { data: { id: 'p', parent: 'gp' } },
+        { data: { id: 'a', parent: 'p' }, position: { x: -40, y: -20 } },
+        { data: { id: 'b', parent: 'p' }, position: { x: 60, y: 30 } },
+        { data: { id: 'ap', source: 'a', target: 'p' } },
+        { data: { id: 'agp', source: 'a', target: 'gp' } },
+        { data: { id: 'pp', source: 'p', target: 'p' } }
+      ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 30, 'background-color': '#e17055',
+          'border-width': 2, 'border-color': '#2d3436'
+        },
+        parents: { 'background-color': '#dfe6e9', 'border-width': 2, 'border-color': '#0984e3' },
+        edges: { 'width': 4, 'line-color': '#6c5ce7' }
+      },
+      zoom: 1,
+      pan: { x: 230, y: 200 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'compound-loops', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1674,6 +1706,68 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }
 
     expect( ratio, 'v3-vs-v4 mismatch ratio for parity-compounds' ).toBeLessThanOrEqual( 0.03 );
+  } );
+
+  test( 'parity: compound loop edges (round 14.10)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // neither side declares a curve style: v3's default stylesheet routes
+    // related edges as 'compound' (its edge:compound block), and v4
+    // routes on the relation — the same construction on both renderers.
+    // v3's edge:compound block also defaults the *endpoints* to
+    // outside-to-line where v4 uses outside-to-node (toward the control),
+    // a small angular difference at the boundary — bounded like the
+    // other curve parity scenes.
+    const elements = [
+      { data: { id: 'p' } },
+      { data: { id: 'a', parent: 'p' }, position: { x: -60, y: -20 } },
+      { data: { id: 'b', parent: 'p' }, position: { x: 40, y: 30 } },
+      { data: { id: 'ap', source: 'a', target: 'p' } },
+      { data: { id: 'pp', source: 'p', target: 'p' } }
+    ];
+    const nodeStyle = {
+      'width': 40, 'height': 30, 'shape': 'rectangle',
+      'background-color': '#e17055', 'border-width': 0
+    };
+    const v3Style = [
+      { selector: 'node', style: nodeStyle },
+      { selector: 'edge', style: { 'width': 4, 'line-color': '#6c5ce7' } }
+    ];
+    const v4Style = {
+      nodes: nodeStyle,
+      parents: { 'border-width': 0 },
+      edges: { 'width': 4, 'line-color': '#6c5ce7' }
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 230, y: 200 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    const actual = decodePng( v4uri );
+    const expected = decodePng( v3uri );
+    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
+
+    console.log( `[parity] parity-compound-loops: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
+
+    if( ratio > 0.03 ){
+      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-compound-loops', actual, expected, diff );
+    }
+
+    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-compound-loops' ).toBeLessThanOrEqual( 0.03 );
   } );
 
   test( 'parity: bezier bundles + self-loops (round 12a)', async ( { page }, testInfo ) => {

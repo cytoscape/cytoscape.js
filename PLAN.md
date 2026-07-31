@@ -3502,9 +3502,25 @@ commit(s) with docs in-commit):
   bump on the 0↔>0 transitions).  Tests-first: 11 specs in
   `test/gpu-compound-visibility.mjs` red then green — 1998 Node
   tests, typecheck + lint clean.
-- [ ] **14.5 Event bubbling** — phased `_emitOnEle`, phase
-  matching, currentTarget, stopPropagation, flat-mode zero-cost.
-  Node specs.
+- [x] **14.5 Event bubbling** — landed 2026-07-31.  Element events
+  on parented nodes now run in **phases** — origin → ancestors
+  (child→parent) → core — implemented as `_emitOnEle` re-emitting
+  **one shared Event** with a moving `_gpuPhaseRef`, so
+  `stopPropagation()` (or return-`false`) carries between phases
+  and halts the walk (v3).  Per phase: ref-qualified element
+  listeners fire in their own element's phase with the callback
+  context set to that element (v3's currentTarget) while
+  `event.target` stays the originator; unqualified core listeners
+  fire once, in the core phase; predicate listeners keep v3
+  delegation semantics — once, against the originator, at the core
+  (verified against v3's core-selector delegation, which also
+  matches the target once).  Flat emits (no compounds,
+  orphan/edge targets) never stamp the phase fields and take
+  exactly the old single-emit path — byte-identical behavior and
+  zero cost.  Within-phase order stays registration order (the
+  recorded deviation narrows to within-phase only).  Tests-first:
+  9 specs in `test/gpu-compound-events.mjs` red then green — 2007
+  Node tests, typecheck + lint clean.
 - [ ] **14.6 Parents sheet group + compound props** — the overlay
   record, prop parsing/throws, width/height ownership, the flip
   hook, defaults.  Node specs.

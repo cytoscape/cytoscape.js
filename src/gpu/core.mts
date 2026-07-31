@@ -4,7 +4,8 @@ import { isColumnarElements } from './columnar.mjs';
 import { deserializeElements, isSerializedElements, serializeElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, predicateQualifier } from './events.mjs';
-import type { ElePredicate, GpuQualifier } from './events.mjs';
+import type { ElePredicate, GpuQualifier, PhasedEvent } from './events.mjs';
+import CyEvent from '../event.mjs';
 import { compileQuery } from './matcher.mjs';
 import type { FlagTest, GpuQuery } from './matcher.mjs';
 import { testCondition } from './style-scales.mjs';
@@ -1409,6 +1410,42 @@ export class GpuCore {
   }
 
   _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps> ): void {
+    const store = this._store;
+
+    if( store.hasCompounds() ){
+      const ref = ele._eventRef();
+
+      if( ref != null && ref.group === 'nodes' && store.parentOf( ref.slot ) >= 0 ){
+        // compound bubbling (round 14.5): origin -> ancestors -> core in
+        // phases on one shared Event, so stopPropagation carries between
+        // them.  event.target stays the originator; each phase's element
+        // rides _gpuPhaseRef/_gpuPhaseEle (see events.mts).
+        const eventObj = new CyEvent( { type, target: ele, ...props } ) as PhasedEvent;
+
+        eventObj._gpuPhaseRef = ref;
+        eventObj._gpuPhaseEle = ele;
+        this._emitter.emit( eventObj, extraParams );
+
+        for( let p = store.parentOf( ref.slot ); p >= 0; p = store.parentOf( p ) ){
+          if( eventObj.isPropagationStopped() ){ return; }
+
+          const phaseEle = this._ele( 'nodes', p );
+
+          eventObj._gpuPhaseRef = phaseEle._eventRef();
+          eventObj._gpuPhaseEle = phaseEle;
+          this._emitter.emit( eventObj, extraParams );
+        }
+
+        if( eventObj.isPropagationStopped() ){ return; }
+
+        eventObj._gpuPhaseRef = null;
+        eventObj._gpuPhaseEle = null;
+        this._emitter.emit( eventObj, extraParams );
+
+        return;
+      }
+    }
+
     this._emitter.emit( { type, target: ele, ...props }, extraParams );
   }
 

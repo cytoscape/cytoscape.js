@@ -849,7 +849,16 @@ per-emit parse cost). Listen/emit with plain type names; the shared
 `src/emitter.mts` keeps namespace parsing only for v3.  Delegation is
 predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
-the predicate, while live state reads report false.
+the predicate, while live state reads report false.  **Compound
+bubbling (round 14.5)**: every element event on a parented node
+bubbles origin → ancestors → core with v3 semantics — `event.target`
+stays the originator, the callback context (`this`) is the phase
+element (v3's currentTarget), and `stopPropagation()` or a callback
+returning `false` halts the walk.  Core predicates keep firing once
+against the originator (v3's core-selector delegation), and
+orphan/edge targets emit flat exactly as before.  The remaining
+order deviation is within-phase only: listeners registered on the
+same element (or the core) fire in registration order.
 
 Out of scope (deferred): string-formatting label mappers beyond the
 passthrough, and the GPU tween fast path for *size* channels

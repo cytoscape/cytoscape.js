@@ -20,8 +20,26 @@ predicate only runs for element targets; on `remove` events the target
 handle's cached `id()`/`group()` stay readable, while live state reads
 (`selected()` etc.) report the removed element as not having the state.
 
-Known deviation from v3: element-vs-core listener firing order is plain
-registration order on the single emitter, not v3 bubble order.
+Compound bubbling (round 14.5): an element event on a node with
+ancestors runs in *phases* — the origin element, each ancestor in
+child->parent order, then the core — driven by `_emitOnEle` re-emitting
+one Event object with a moving `_gpuPhaseRef`.  Per phase:
+
+- element (ref-qualified) listeners fire in their own element's phase,
+  with the callback context set to that element (v3's currentTarget)
+  while `event.target` stays the originator;
+- unqualified core listeners fire once, in the core phase;
+- predicate listeners keep v3 delegation semantics: once, against the
+  originator, when the event reaches the core.
+
+`stopPropagation()` (or a callback returning false) between phases
+halts the walk — the shared Event object carries the flag.  Flat emits
+(no compounds, orphan/edge targets) never set `_gpuPhaseRef` and take
+exactly the old single-emit path.
+
+Known deviation from v3: listener firing order *within a phase* is
+plain registration order on the single emitter; cross-phase order is
+v3's bubble order.
 */
 
 /** A delegation predicate over an element event target. */
@@ -56,6 +74,14 @@ const sameRef = ( a: Ref, b: Ref ): boolean => {
   return a.group === b.group && a.slot === b.slot && a.gen === b.gen;
 };
 
+/** The bubbling-phase fields _emitOnEle stamps onto the shared Event
+ * (round 14.5): a ref during element phases, null during the core
+ * phase, absent entirely on flat emits. */
+export interface PhasedEvent extends Event {
+  _gpuPhaseRef?: Ref | null;
+  _gpuPhaseEle?: unknown;
+}
+
 /** The face the core shows the event system (the emitter context and default target). */
 export interface GpuCoreLike {
   _store: GraphStore;
@@ -79,8 +105,12 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy
 
     eventMatches: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: Event ): boolean => {
       const qualifier = listener.qualifier;
+      const phaseRef = ( eventObj as PhasedEvent )._gpuPhaseRef;
 
-      if( qualifier == null ){ return true; }
+      if( qualifier == null ){
+        // unqualified listeners fire once: in the core phase (or flat mode)
+        return phaseRef === undefined || phaseRef === null;
+      }
 
       const target = eventObj.target;
 
@@ -91,10 +121,19 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy
       if( ref == null ){ return false; }
 
       if( qualifier.ref != null ){
+        // phased mode: an element listener fires in its element's phase
+        if( phaseRef !== undefined ){
+          return phaseRef != null && sameRef( qualifier.ref, phaseRef );
+        }
+
         return sameRef( qualifier.ref, ref );
       }
 
       if( qualifier.fn != null ){
+        // predicates keep v3 delegation: once, against the originator,
+        // when the event reaches the core
+        if( phaseRef !== undefined && phaseRef !== null ){ return false; }
+
         return qualifier.fn( target as unknown as GpuCollection );
       }
 
@@ -110,7 +149,13 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy
     },
 
     callbackContext: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: Event ) => {
-      return listener.qualifier != null ? eventObj.target : ctx;
+      if( listener.qualifier != null ){
+        // during an ancestor phase the context is the phase element
+        // (v3's currentTarget); event.target stays the originator
+        return ( eventObj as PhasedEvent )._gpuPhaseEle ?? eventObj.target;
+      }
+
+      return ctx;
     }
   } );
 };

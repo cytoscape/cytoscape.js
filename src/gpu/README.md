@@ -1183,11 +1183,15 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   midpoint, following endpoint moves on-GPU; horizontal by default, or
   rotated to the edge's angle with `text-rotation: autorotate`, never
   upside-down — see the edge-labels design decision),
-  single line (newlines collapse to spaces), fixed
-  placement (nodes: horizontally centered below the node; edges:
+  single line (newlines collapse to spaces), placement on v3's 3×3
+  `text-halign`/`text-valign` grid for nodes (round 13 D3 —
+  mapper-capable; **v4 defaults to `'bottom'` valign**, keeping the
+  round-10 below-node placement, where v3 defaults to `'top'`; the
+  gap on the top/bottom rows is the fixed 4 px label margin, as v4
+  has no `padding` prop); edges stay
   centered on the midpoint — the curve or route midpoint for curved
   edges (rounds 12a/12b, v3's per-family rules); both offset by
-  `text-margin-x/y`), not pickable, one
+  `text-margin-x/y`; not pickable, one
   global font face (`font-family`/`-style`/`-weight` — the atlas
   holds one font), and the
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop

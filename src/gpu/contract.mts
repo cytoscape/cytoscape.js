@@ -417,6 +417,15 @@ export interface LabelEntry {
   bgBorderColor: number;
   /** text-border-width, model px (draws inward from the padded box) — B6 */
   bgBorderWidth: number;
+  /** text-halign base X offset from the node center, model px (round
+   * 13 D3: -w/2 left, 0 center, +w/2 right; always 0 for edges) */
+  anchorX: number;
+  /** halign shift as a fraction of the laid block width (the layout
+   * centers the run at 0): -0.5 left, 0 center, +0.5 right */
+  halignShift: number;
+  /** valign shift as a fraction of the laid block height (anchorY is
+   * the block-top base): -1 top, -0.5 middle, 0 bottom */
+  valignShift: number;
   /** min-zoomed-font-size (round 13 D2), device px; 0 = no floor.  The
    * glyph cull hides the whole label when fontSize x zoomDpr drops
    * below it (v3's eleTextBiggerThanMin). */

@@ -87,6 +87,23 @@ export class LabelLayer {
         ? Math.min( entry.outlineWidth / scale / SDF_RADIUS, 0.45 )
         : 0;
 
+      // laid block extents (model px after scale) for the alignment
+      // shifts (D3) and the background quad
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+      for( const g of laid ){
+        minX = Math.min( minX, g.x );
+        minY = Math.min( minY, g.y );
+        maxX = Math.max( maxX, g.x + g.w );
+        maxY = Math.max( maxY, g.y + g.h );
+      }
+
+      // text-halign/-valign (D3): the entry carries the node-extent base
+      // (anchorX/anchorY) plus block-fraction shifts resolved here,
+      // where the laid dimensions are known
+      const dx = entry.anchorX + entry.halignShift * ( maxX - minX ) * scale + entry.marginX;
+      const dy = entry.anchorY + entry.valignShift * ( maxY - minY ) * scale;
+
       // an optional solid background quad precedes the glyphs in the run
       const hasBg = ( ( entry.bgColor >>> 24 ) & 0xff ) > 0;
       const count = laid.length + ( hasBg ? 1 : 0 );
@@ -100,21 +117,12 @@ export class LabelLayer {
       const owner = ( entry.rotate ? slot | GLYPH_ROTATE : slot ) >>> 0;
 
       if( hasBg ){
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-        for( const g of laid ){
-          minX = Math.min( minX, g.x );
-          minY = Math.min( minY, g.y );
-          maxX = Math.max( maxX, g.x + g.w );
-          maxY = Math.max( maxY, g.y + g.h );
-        }
-
         const pad = entry.bgPadding;
 
         u32[ at ] = owner;
         u32[ at + 1 ] = entry.bgColor;
-        f32[ at + 2 ] = minX * scale + entry.marginX - pad;
-        f32[ at + 3 ] = entry.anchorY + minY * scale - pad;
+        f32[ at + 2 ] = minX * scale + dx - pad;
+        f32[ at + 3 ] = dy + minY * scale - pad;
         f32[ at + 4 ] = ( maxX - minX ) * scale + 2 * pad;
         f32[ at + 5 ] = ( maxY - minY ) * scale + 2 * pad;
         f32[ at + 6 ] = -1; // u0 < 0: solid quad, no atlas sample
@@ -136,8 +144,8 @@ export class LabelLayer {
 
         u32[ at ] = owner;
         u32[ at + 1 ] = entry.color;
-        f32[ at + 2 ] = g.x * scale + entry.marginX;
-        f32[ at + 3 ] = entry.anchorY + g.y * scale;
+        f32[ at + 2 ] = g.x * scale + dx;
+        f32[ at + 3 ] = dy + g.y * scale;
         f32[ at + 4 ] = g.w * scale;
         f32[ at + 5 ] = g.h * scale;
         f32[ at + 6 ] = g.u0;

@@ -103,6 +103,12 @@ interface NodeComputed {
   /** min-zoomed-font-size (round 13 D2): hide the label when
    * font-size x zoom x dpr drops below this (device px; 0 = off) */
   minZoomedFontSize: number;
+  /** text-halign (round 13 D3): 0 left, 1 center, 2 right */
+  textHalign: number;
+  /** text-valign (D3): 0 top, 1 center, 2 bottom.  v4's default is
+   * 'bottom' (the round-10 below-node placement) — v3 defaults to
+   * 'top'; a recorded deviation */
+  textValign: number;
   /** corner-radius (round 13 B2): model px, -1 = 'auto' (v3's
    * min(w/4, h/4, 8)) — round-rectangle only */
   cornerRadius: number;
@@ -272,6 +278,8 @@ const NODE_DEFAULTS: NodeComputed = {
   textMarginX: 0,
   textMarginY: 0,
   minZoomedFontSize: 0, // as v3: no floor
+  textHalign: 1, // center, as v3
+  textValign: 2, // bottom — v4's round-10 default (v3: top; recorded)
   cornerRadius: -1, // 'auto'
   borderPosition: 0, // center, as v3
   outlineColor: [ 153, 153, 153, 255 ], // '#999', as v3
@@ -454,6 +462,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
   'text-margin-x', 'text-margin-y', 'min-zoomed-font-size',
+  'text-halign', 'text-valign',
   'text-transform', 'text-background-shape',
   'text-border-width', 'text-border-color', 'text-border-opacity'
 ] );
@@ -564,6 +573,11 @@ const resolveCoreProps = ( props: GpuStyleProps | undefined ): CoreStyle => {
 /** global-constant font props (round 13 D1): one face per glyph atlas */
 const GLOBAL_FONT_PROPS: ReadonlySet<string> = new Set( [
   'font-family', 'font-style', 'font-weight'
+] );
+
+/** further node-only props (C3/D3): rejected on the edges group */
+const NODE_ONLY_EXTRA: ReadonlySet<string> = new Set( [
+  'shape-polygon-points', 'text-halign', 'text-valign'
 ] );
 
 const GHOST_PROPS: ReadonlySet<string> = new Set( [
@@ -786,6 +800,24 @@ const parsePercentList = ( prop: string, value: unknown ): number[] => {
 
     return Math.max( 0, Math.min( 1, num / 100 ) );
   } );
+};
+
+/** text-halign/-valign (round 13 D3): v3's 3x3 node-label grid. */
+const HALIGNS: Record<string, number> = { 'left': 0, 'center': 1, 'right': 2 };
+const VALIGNS: Record<string, number> = { 'top': 0, 'center': 1, 'bottom': 2 };
+const HALIGN_NAMES = [ 'left', 'center', 'right' ];
+const VALIGN_NAMES = [ 'top', 'center', 'bottom' ];
+
+const parseAlign = ( prop: string, value: unknown, table: Record<string, number> ): number => {
+  const id = table[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The ${prop} '${String( value )}' is invalid; use one of: ${Object.keys( table ).join( ', ' )}`
+    );
+  }
+
+  return id;
 };
 
 const BORDER_POSITIONS: Record<string, number> = { 'center': 0, 'inside': 1, 'outside': 2 };
@@ -1277,6 +1309,12 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'min-zoomed-font-size':
       computed.minZoomedFontSize = parseNonNegative( prop, value );
       break;
+    case 'text-halign':
+      computed.textHalign = parseAlign( prop, value, HALIGNS );
+      break;
+    case 'text-valign':
+      computed.textValign = parseAlign( prop, value, VALIGNS );
+      break;
     case 'text-rotation':
       computed.textRotation = parseTextRotation( value );
       break;
@@ -1693,6 +1731,18 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.minZoomedFontSize = v as number; },
     default: () => NODE_DEFAULTS.minZoomedFontSize
+  },
+  'text-halign': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => HALIGNS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textHalign = v as number; },
+    default: () => NODE_DEFAULTS.textHalign
+  },
+  'text-valign': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => VALIGNS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textValign = v as number; },
+    default: () => NODE_DEFAULTS.textValign
   },
   'color': {
     kind: 'color', groups: [ 'nodes', 'edges' ],
@@ -2772,6 +2822,20 @@ export class StyleEngine {
 
         return entry != null ? entry.minZoomedFontSize : this.defs[ ref.group ].computed.minZoomedFontSize;
       }
+      case 'text-halign': {
+        const entry = store.labelAt( slot, 'nodes' );
+
+        return HALIGN_NAMES[ entry != null
+          ? entry.halignShift * 2 + 1
+          : this.defs.nodes.computed.textHalign ];
+      }
+      case 'text-valign': {
+        const entry = store.labelAt( slot, 'nodes' );
+
+        return VALIGN_NAMES[ entry != null
+          ? entry.valignShift * 2 + 2
+          : this.defs.nodes.computed.textValign ];
+      }
       case 'text-border-color': {
         const entry = store.labelAt( slot, ref.group );
 
@@ -3073,7 +3137,7 @@ export class StyleEngine {
       }
 
       if( ( GHOST_PROPS.has( norm ) || LAYER_SHAPE_PROPS.has( norm )
-          || norm === 'shape-polygon-points' ) && group === 'edges' ){
+          || NODE_ONLY_EXTRA.has( norm ) ) && group === 'edges' ){
         throw new Error( `'${norm}' is a node style property` );
       }
 
@@ -3318,16 +3382,31 @@ export class StyleEngine {
     const fold = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>
       packRgba( [ r, g, b, Math.round( a * Math.max( 0, Math.min( 1, opacity * textOp ) ) ) ] );
 
-    // nodes: text-block top sits below the node; edges: the text centers
-    // (approximately, by font size) on the midpoint the shader computes
-    const anchorY = group === 'nodes'
-      ? ( computed as NodeComputed ).height / 2 + LABEL_MARGIN + computed.textMarginY
-      : -computed.fontSize / 2 + computed.textMarginY;
+    // node labels anchor on v3's 3x3 grid (D3): the entry carries the
+    // node-extent base plus block-fraction shifts the glyph builder
+    // resolves against the laid dimensions.  Edges center on the
+    // midpoint the shader computes (halign/valign are node-only).
+    const nc = computed as NodeComputed;
+    let anchorX = 0, halignShift = 0, valignShift = 0;
+    let anchorY = -computed.fontSize / 2 + computed.textMarginY;
+
+    if( group === 'nodes' ){
+      const halfW = nc.width / 2, halfH = nc.height / 2;
+
+      anchorX = ( nc.textHalign - 1 ) * halfW;
+      halignShift = ( nc.textHalign - 1 ) * 0.5;
+      anchorY = ( nc.textValign === 0 ? -halfH - LABEL_MARGIN
+        : nc.textValign === 2 ? halfH + LABEL_MARGIN : 0 ) + computed.textMarginY;
+      valignShift = ( nc.textValign - 2 ) * 0.5;
+    }
 
     store.setLabel( slot, text === '' ? null : {
       text,
       fontSize: computed.fontSize,
       color: fold( computed.textColor, 1 ),
+      anchorX,
+      halignShift,
+      valignShift,
       anchorY,
       marginX: computed.textMarginX,
       marginY: computed.textMarginY,

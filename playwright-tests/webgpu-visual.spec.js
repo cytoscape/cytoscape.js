@@ -1328,6 +1328,63 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: the 3x3 label alignment grid (round 13 D3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await page.evaluate( async () => {
+      await document.fonts.load( `32px 'Open Sans'` );
+
+      if( !document.fonts.check( `32px 'Open Sans'` ) ){
+        throw new Error( 'Open Sans did not load' );
+      }
+    } );
+
+    // nine nodes, one per (halign, valign) pair, with background boxes
+    // so the anchored block (not just the glyphs) is pinned
+    const aligns = [ 'left', 'center', 'right' ];
+    const valigns = [ 'top', 'center', 'bottom' ];
+    const elements = [];
+
+    for( let i = 0; i < 3; i++ ){
+      for( let j = 0; j < 3; j++ ){
+        elements.push( {
+          data: { id: `${aligns[ i ]}-${valigns[ j ]}`, h: aligns[ i ], v: valigns[ j ] },
+          position: { x: -120 + i * 120, y: -90 + j * 95 }
+        } );
+      }
+    }
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: {
+          'width': 46, 'height': 30, 'background-color': '#dfe6e9',
+          'border-width': 1, 'border-color': '#b2bec3',
+          'label': 'lbl', 'font-size': 12, 'color': '#2d3436',
+          'font-family': `'Open Sans', sans-serif`,
+          'text-background-color': '#ffeaa7', 'text-background-opacity': 1,
+          'text-background-padding': 1,
+          'text-halign': { case: [
+            { when: { data: 'h', eq: 'left' }, then: 'left' },
+            { when: { data: 'h', eq: 'right' }, then: 'right' }
+          ], else: 'center' },
+          'text-valign': { case: [
+            { when: { data: 'v', eq: 'top' }, then: 'top' },
+            { when: { data: 'v', eq: 'bottom' }, then: 'bottom' }
+          ], else: 'center' }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'label-align', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

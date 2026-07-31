@@ -2951,6 +2951,28 @@ layout) is not consumed by it.
   (`test/gpu-min-zoomed-font-size.mjs`).  1930 Node tests, 109
   Playwright specs, typecheck + lint green.
 
+- [x] **D3 `text-valign`/`text-halign`** (2026-07-31).  v3's 3×3
+  node-label anchor grid, mapper-capable and node-only (the edges
+  group throws, like v3 forcing edge labels to center/center).  The
+  sidecar entry carries the node-extent base (`anchorX` =
+  (halign−1)·w/2; `anchorY` per valign with the round-10 4 px
+  label margin on the top/bottom rows) plus block-fraction shifts
+  (halign −0.5/0/+0.5 of the laid width; valign −1/−0.5/0 of the
+  laid height) that the glyph builder resolves once the run's real
+  dimensions are known — placement only, no shader or cull changes,
+  and the background box anchors with its text.  **Recorded
+  deviation: v4's default `text-valign` stays `'bottom'`** (the
+  round-10 below-node placement every existing golden pins); v3
+  defaults to `'top'`.  The v3 `padding`-based gap is approximated
+  by the fixed 4 px label margin (v4 has no `padding` prop).  No
+  label pixel parity vs v3 by recorded design — pins are the
+  `label-align` golden (all nine (halign, valign) pairs with
+  background boxes) and a `webgpu` spec asserting ink moves
+  above-left for top-left and below-right after a bottom-right
+  restyle, with the opposite bands empty.  6 Node specs
+  (`test/gpu-text-align.mjs`).  1936 Node tests, 111 Playwright
+  specs, typecheck + lint green.
+
 **Sequencing**: pass 12c (the round-12 plan above) runs first, then
 this round's phases in order — the 2026-07-29 triage keeps (ghost,
 overlay/underlay) lead, per the discussion that produced this plan.
@@ -3084,7 +3106,7 @@ shelf, since the expensive part now exists)
 - [x] **D2 Per-element `min-zoomed-font-size`**: a sidecar channel
   baked per glyph run, tested in the glyph cull predicate beside the
   global `labelFadePx`/`labelMinPx` (which stay the defaults).
-- [ ] **D3 `text-valign`/`text-halign`** for node labels: v3's 3×3
+- [x] **D3 `text-valign`/`text-halign`** for node labels: v3's 3×3
   anchor grid, anchor math off the node half-extents
   (`node.outerHalf` is already a bindable column); placement only
   per the lean above.

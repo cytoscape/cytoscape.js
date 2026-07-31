@@ -2938,4 +2938,65 @@ test.describe( 'WebGPU renderer', () => {
     expect( await labelInk( 'floored' ) ).toBeGreaterThan( 20 );
   } );
 
+  test( 'text-valign/-halign move the label around the node (D3)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 40, 'background-color': '#ecf0f1',
+          'label': 'WIDE LABEL', 'font-size': 16, 'color': '#000',
+          'text-halign': 'left', 'text-valign': 'top'
+        }
+      },
+      zoom: 1
+    } );
+
+    const c = await centerPan( page );
+    await waitFrames( page );
+
+    const band = async ( x0, w, y ) => await darkPixelsInBand( page, x0, w, y );
+
+    // top-left: ink fully above and left of the node...
+    let above = 0, below = 0;
+
+    for( const dy of [ 28, 32, 36 ] ){
+      above += await band( c.x - 150, 130, c.y - dy );
+      below += await band( c.x - 150, 300, c.y + dy );
+    }
+
+    expect( above ).toBeGreaterThan( 20 );
+    expect( below ).toBe( 0 );
+
+    // ...and none to the right of the node's left edge (run ends there)
+    let rightOfEdge = 0;
+
+    for( const dy of [ 28, 32, 36 ] ){
+      rightOfEdge += await band( c.x - 18, 170, c.y - dy );
+    }
+
+    expect( rightOfEdge ).toBe( 0 );
+
+    // restyle to bottom-right: ink moves below and right
+    await page.evaluate( () => {
+      window.cy.style( { nodes: {
+        'width': 40, 'height': 40, 'background-color': '#ecf0f1',
+        'label': 'WIDE LABEL', 'font-size': 16, 'color': '#000',
+        'text-halign': 'right', 'text-valign': 'bottom'
+      } } );
+    } );
+    await waitFrames( page );
+
+    let belowRight = 0, aboveNow = 0;
+
+    for( const dy of [ 28, 32, 36 ] ){
+      belowRight += await band( c.x + 22, 150, c.y + dy );
+      aboveNow += await band( c.x - 150, 300, c.y - dy );
+    }
+
+    expect( belowRight ).toBeGreaterThan( 20 );
+    expect( aboveNow ).toBe( 0 );
+  } );
+
 } );

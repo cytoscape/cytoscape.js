@@ -1051,6 +1051,13 @@ export class Renderer {
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved, 'edge.underlay' );
     }
 
+    if( store.casingCount() > 0 ){
+      this.edgePipeline?.drawLayer(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.casing' );
+      this.curvedEdgePipeline?.drawLayer(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved, 'edge.casing' );
+    }
+
     this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge );
     // curved edges draw after straight ones (two streams; within each,
     // slot order — a recorded z-order deviation)

@@ -151,7 +151,7 @@ export class CurvedEdgePipeline {
 
   private ensureBindGroup(
     device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror,
-    layer: 'edge.overlay' | 'edge.underlay' | 'main' = 'main'
+    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing' | 'main' = 'main'
   ): GPUBindGroup {
     let perUniform = this.bindGroups.get( uniform );
 
@@ -215,7 +215,7 @@ export class CurvedEdgePipeline {
   drawLayer(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup,
-    layer: 'edge.overlay' | 'edge.underlay'
+    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing'
   ): void {
     if( instances === 0 ){ return; }
 

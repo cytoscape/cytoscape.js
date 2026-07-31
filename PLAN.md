@@ -2720,6 +2720,23 @@ grows per item.
   the line-styles golden regenerated for the intended phase shift.
   1879 Node tests, 94 Playwright specs, typecheck + lint green.
 
+- [x] **B4 edge casing** (2026-07-31).  `line-outline-width`/
+  `line-outline-color` ride the A2 layer machinery verbatim: an
+  `edge.casing` column in the layer record layout ([rgba folded by
+  v3's effectiveLineOpacity = opacity × line-opacity,
+  strokeWidth×256 = width + outline width — v3's lineWidth]), drawn
+  by the existing `vsEdgeLayer`/`vsCurvedLayer` entry points between
+  the edge underlay and the edge line, on every family (haystack
+  offsets and the triangle taper included).  Both props
+  mapper-capable; zero-cost when unused (casingCount gating).  A
+  kernel-owned element opacity would leave stale casing bytes, so an
+  enabled (or mapped) casing demotes the `opacity` mapper to the CPU
+  path — the B1 exclusion list extended.  `parity-casing` (straight
+  + bezier pair + taxi under an 8 px casing) measures **0.061%** —
+  the recorded butt-vs-round stroke-end deviation only.  5 Node
+  specs (`test/gpu-edge-casing.mjs`).  1884 Node tests, 95
+  Playwright specs, typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2816,9 +2833,9 @@ autonomously):
   (arbitrary patterns over the existing arc-length varying;
   constants-only lists, pattern length capped).  Landed 2026-07-31 —
   see the round-13 record.
-- [ ] **B4 Edge casing**: `line-outline-width`/`-color` — a border
+- [x] **B4 Edge casing**: `line-outline-width`/`-color` — a border
   band on the edge strip (straight and curved), colors fetched
-  fragment-side.
+  fragment-side.  Landed 2026-07-31 — see the round-13 record.
 - [ ] **B5 Node `outline-*`**: `outline-color`/`-opacity`/`-width`/
   `-offset` as an SDF band outside the shape (distance ∈
   [offset, offset + width]); solid only.  Bb scan and conservative

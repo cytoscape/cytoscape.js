@@ -133,6 +133,10 @@ interface EdgeComputed {
   /** line-opacity (round 13 B1): folds into the stored line alpha and
    * the arrow fold (v3's effective opacities) */
   lineOpacity: number;
+  /** line-outline casing (round 13 B4): width sticks out width/2 per
+   * side (v3's lineWidth = edgeWidth + line-outline-width) */
+  lineOutlineWidth: number;
+  lineOutlineColor: RGBA;
   /** line-cap (round 13 B3): 0 butt, 1 round, 2 square */
   lineCap: number;
   /** line-dash-pattern (B3), normalized to two on/off pairs */
@@ -247,6 +251,8 @@ const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
   lineOpacity: 1,
+  lineOutlineWidth: 0,
+  lineOutlineColor: [ 0, 0, 0, 255 ], // '#000', as v3
   lineCap: 0, // butt, as v3
   lineDashPattern: [ 6, 3, 6, 3 ], // v3's [6, 3], pair-normalized
   lineDashOffset: 0,
@@ -372,6 +378,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
 const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-color', 'line-style', 'width', 'opacity', 'line-opacity', 'text-opacity',
   'line-cap', 'line-dash-pattern', 'line-dash-offset',
+  'line-outline-width', 'line-outline-color',
   'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color',
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
@@ -1021,6 +1028,12 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'line-cap':
       computed.lineCap = parseLineCap( value );
       break;
+    case 'line-outline-width':
+      computed.lineOutlineWidth = parseNonNegative( prop, value );
+      break;
+    case 'line-outline-color':
+      computed.lineOutlineColor = parseColor( prop, value );
+      break;
     case 'line-dash-pattern':
       computed.lineDashPattern = normalizeDashPattern( parseNumberList( prop, value ) );
       break;
@@ -1441,6 +1454,17 @@ const MAPPABLE: Record<string, MappableChannel> = {
     set: ( c, v ) => { c.borderPosition = v as number; },
     default: () => NODE_DEFAULTS.borderPosition
   },
+  // B4 line-outline casing
+  'line-outline-width': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.lineOutlineWidth = Math.max( 0, v as number ); },
+    default: () => EDGE_DEFAULTS.lineOutlineWidth
+  },
+  'line-outline-color': {
+    kind: 'color', groups: [ 'edges' ],
+    set: ( c, v ) => { c.lineOutlineColor = v as RGBA; },
+    default: () => EDGE_DEFAULTS.lineOutlineColor
+  },
   // B3 dash props (pattern is a constants-only list)
   'line-cap': {
     kind: 'enum', groups: [ 'edges' ],
@@ -1766,10 +1790,18 @@ export class StyleEngine {
       if( computed.borderOpacity !== 1 || mapped( 'border-opacity' ) ){
         demoted.add( 'border-color' );
       }
-    } else if( computed.lineOpacity !== 1 || mapped( 'line-opacity' ) ){
-      demoted.add( 'line-color' );
-      demoted.add( 'source-arrow-color' );
-      demoted.add( 'target-arrow-color' );
+    } else {
+      if( computed.lineOpacity !== 1 || mapped( 'line-opacity' ) ){
+        demoted.add( 'line-color' );
+        demoted.add( 'source-arrow-color' );
+        demoted.add( 'target-arrow-color' );
+      }
+
+      // B4: the casing alpha folds the element opacity at write time,
+      // so a kernel-owned opacity would leave stale casing bytes
+      if( computed.lineOutlineWidth > 0 || mapped( 'line-outline-width' ) ){
+        demoted.add( 'opacity' );
+      }
     }
 
     return def.mappers
@@ -2210,6 +2242,18 @@ export class StyleEngine {
         return Math.round( ( store.column( 'edge.lineColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
       case 'line-cap':
         return LINE_CAP_NAMES[ ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 + 1 ] ] ?? 'butt';
+      case 'line-outline-width': {
+        // stored stroke = width + outline width (B4)
+        const rec = ( store.column( 'edge.casing' ) as Uint32Array )[ slot * 2 + 1 ];
+        const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
+
+        return rec === 0 ? 0 : Math.max( 0, rec / 256 - width );
+      }
+      case 'line-outline-color': {
+        const rgba = ( store.column( 'edge.casing' ) as Uint32Array )[ slot * 2 ];
+
+        return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+      }
       case 'line-dash-offset':
         return ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 ];
       case 'line-dash-pattern': {
@@ -2511,6 +2555,15 @@ export class StyleEngine {
       // derived here so the layer shaders need no width binding
       const layerRgbaE = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>
         packRgba( [ r, g, b, Math.round( a * opacity ) ] );
+
+      // line-outline casing (B4): stroke = width + outline width (v3's
+      // lineWidth), alpha folded by v3's effectiveLineOpacity
+      store.setEdgeLayer(
+        'edge.casing', slot,
+        computed.lineOutlineWidth > 0
+          ? layerRgbaE( computed.lineOutlineColor, computed.opacity * computed.lineOpacity )
+          : 0,
+        computed.width + computed.lineOutlineWidth );
 
       store.setEdgeLayer(
         'edge.overlay', slot, layerRgbaE( computed.overlayColor, computed.overlayOpacity ),

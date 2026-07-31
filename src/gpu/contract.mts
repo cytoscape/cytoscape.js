@@ -200,6 +200,14 @@ export type ColumnId =
    * recorded cap).  Applies when line-style is dashed; dotted keeps
    * [1, 1].
    */
+  /**
+   * Uint32Array(2·cap) — line-outline casing (round 13 B4), the layer
+   * record layout: [rgba (folded by opacity × line-opacity; a=0 =
+   * disabled), strokeWidth × 256 (edge width + line-outline-width —
+   * v3's context.lineWidth)].  Strokes under the edge line, over the
+   * edge underlay, via the shared layer entry points.
+   */
+  | 'edge.casing'
   | 'edge.dashPattern'
   /** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
    * (0 butt, 1 round, 2 square)] (round 13 B3). */
@@ -274,6 +282,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'edge.lineStyle', 'edges', Uint32Array, 1 ),
   spec( 'edge.arrowShapes', 'edges', Uint32Array, 1 ),
   spec( 'edge.overlay', 'edges', Uint32Array, 2 ),
+  spec( 'edge.casing', 'edges', Uint32Array, 2 ),
   spec( 'edge.dashPattern', 'edges', Float32Array, 4 ),
   spec( 'edge.dashMeta', 'edges', Float32Array, 2 ),
   spec( 'edge.underlay', 'edges', Uint32Array, 2 ),

@@ -108,7 +108,7 @@ export class EdgePipeline {
 
   private ensureBindGroup(
     device: GPUDevice, uniform: GPUBuffer, mirror: ColumnMirror,
-    layer: 'edge.overlay' | 'edge.underlay' = 'edge.overlay'
+    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing' = 'edge.overlay'
   ): GPUBindGroup {
     const key = `${layer}`;
     let perUniform = this.bindGroups.get( uniform );
@@ -160,7 +160,7 @@ export class EdgePipeline {
   drawLayer(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup,
-    layer: 'edge.overlay' | 'edge.underlay'
+    layer: 'edge.overlay' | 'edge.underlay' | 'edge.casing'
   ): void {
     if( instances === 0 ){ return; }
 

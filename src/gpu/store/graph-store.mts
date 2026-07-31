@@ -780,9 +780,11 @@ export class GraphStore implements ModelView {
 
   private edgeOverlays = 0;
   private edgeUnderlays = 0;
+  private casings = 0;
 
   edgeOverlayCount(): number { return this.edgeOverlays; }
   edgeUnderlayCount(): number { return this.edgeUnderlays; }
+  casingCount(): number { return this.casings; }
 
   /**
    * Write an edge's overlay or underlay record (round 13 A2):
@@ -790,7 +792,8 @@ export class GraphStore implements ModelView {
    * edge width + 2 × padding, derived at style-write time.
    */
   setEdgeLayer(
-    id: 'edge.overlay' | 'edge.underlay', slot: number, rgba: number, strokeWidth: number
+    id: 'edge.overlay' | 'edge.underlay' | 'edge.casing', slot: number,
+    rgba: number, strokeWidth: number
   ): void {
     const arr = this.edges.column( id ) as Uint32Array;
     const at = slot * 2;
@@ -804,7 +807,9 @@ export class GraphStore implements ModelView {
     if( wasOn !== isOn ){
       const d = isOn ? 1 : -1;
 
-      if( id === 'edge.overlay' ){ this.edgeOverlays += d; } else { this.edgeUnderlays += d; }
+      if( id === 'edge.overlay' ){ this.edgeOverlays += d; }
+      else if( id === 'edge.underlay' ){ this.edgeUnderlays += d; }
+      else { this.casings += d; }
     }
 
     arr[ at ] = rgba;

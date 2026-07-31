@@ -1729,4 +1729,48 @@ test.describe( 'v3-vs-v4 render parity', () => {
     await runParity( page, testInfo, 'parity-dash-props', elements, v3Style, v4Style, { minInk: 1200 } );
   } );
 
+  test( 'parity: line-outline casing (round 13 B4)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // straight, bezier-pair and taxi edges under an 8px casing; the
+    // casing strokes with butt caps in v4 (v3 rounds stroke ends —
+    // the recorded edge-layer deviation, confined to the ends)
+    const elements = [
+      { data: { id: 'a' }, position: { x: -130, y: -80 } },
+      { data: { id: 'b' }, position: { x: 130, y: -80 } },
+      { data: { id: 's', source: 'a', target: 'b' } },
+      { data: { id: 'c' }, position: { x: -130, y: 10 } },
+      { data: { id: 'd' }, position: { x: 130, y: 10 } },
+      { data: { id: 'q1', source: 'c', target: 'd', fam: 'bezier' } },
+      { data: { id: 'q2', source: 'c', target: 'd', fam: 'bezier' } },
+      { data: { id: 'e' }, position: { x: -130, y: 90 } },
+      { data: { id: 'f' }, position: { x: -20, y: 200 } },
+      { data: { id: 't', source: 'e', target: 'f', fam: 'taxi' } }
+    ];
+    const shared = {
+      'width': 6, 'line-color': '#e67e22',
+      'line-outline-width': 8, 'line-outline-color': '#2c3e50',
+      'taxi-turn': 40
+    };
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 28, 'height': 28, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: Object.assign( { 'curve-style': 'straight' }, shared ) },
+      { selector: "edge[fam = 'bezier']", style: { 'curve-style': 'bezier' } },
+      { selector: "edge[fam = 'taxi']", style: { 'curve-style': 'taxi' } }
+    ];
+    const v4Style = {
+      nodes: { 'width': 28, 'height': 28, 'background-color': '#c0392b' },
+      edges: Object.assign( {
+        'curve-style': { case: [
+          { when: { data: 'fam', eq: 'bezier' }, then: 'bezier' },
+          { when: { data: 'fam', eq: 'taxi' }, then: 'taxi' }
+        ], else: 'straight' }
+      }, shared )
+    };
+
+    await runParity( page, testInfo, 'parity-casing', elements, v3Style, v4Style, { minInk: 1500 } );
+  } );
+
 } );

@@ -151,7 +151,11 @@ above it (and, a recorded deviation, *under* the label layer — v3
 draws overlay over its node's label).  Color/opacity/padding are
 mapper-capable; layer opacity folds into the stored color (folded
 readback); padding grows the bb scans; zero-cost when unused.
-Edge layers stroke the edge geometry at width + 2 × padding (every
+`line-outline-width`/`-color` (round 13 B4) stroke a casing under
+the edge line at width + outline width via the same layer machinery,
+alpha folded by v3's effective line opacity; an enabled casing
+demotes the element-opacity mapper to the CPU path (the fold must
+track writes).  Edge layers stroke the edge geometry at width + 2 × padding (every
 family — haystack offsets and the triangle taper included), the
 underlay under the edges and the overlay over edges + arrows, both
 under the nodes; strokes are solid with butt caps (v3 rounds stroke

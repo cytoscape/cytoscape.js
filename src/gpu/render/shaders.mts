@@ -130,7 +130,7 @@ fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
 `;
 
 /** Glyph instance layout, shared by the label shader and the glyph cull
- * pass; matches GlyphBuffer's CPU layout (12 words / 48 bytes per glyph). */
+ * pass; matches GlyphBuffer's CPU layout (14 words / 56 bytes per glyph). */
 export const GLYPH_STRUCT = `
 struct Glyph {
   nodeSlot: u32,     // owner word: 0xffffffff = dead (tombstoned run); else
@@ -143,6 +143,8 @@ struct Glyph {
   uv1: vec2f,
   outlineColor: u32, // packed RGBA (a=0: no outline)
   outlineWidth: f32, // half-width in SDF sample units (0 = none)
+  zoomDprMin: f32,   // min-zoomed-font-size / fontSize (D2); 0 = no floor
+  glyphPad: f32,     // struct stride padding (unused)
 }
 
 const DEAD_GLYPH: u32 = 0xffffffffu;

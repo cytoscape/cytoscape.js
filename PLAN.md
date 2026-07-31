@@ -2932,6 +2932,25 @@ layout) is not consumed by it.
   Node specs (`test/gpu-font-props.mjs`).  1926 Node tests, 108
   Playwright specs, typecheck + lint green.
 
+- [x] **D2 `min-zoomed-font-size`** (2026-07-31).  Per-element, as
+  planned: the prop rides the label sidecar (mapper-capable, both
+  groups, v3's default 0 = no floor) and bakes into each glyph as a
+  precomputed `zoomDprMin = minZoomed / fontSize` — the Glyph struct
+  grew 12→14 words (56-byte stride, one f32 + explicit pad) — so
+  both glyph cull kinds test `frame.zoomDpr < zoomDprMin` before the
+  global `labelFadePx`/`labelMinPx` predicates: v3's
+  `eleTextBiggerThanMin` (`fontSize × zoom × pxRatio < minSize` ⇒
+  hide), evaluated on-GPU per glyph with zero per-frame CPU work,
+  and the background quad hides with its text.  Fixed en route:
+  `setLabel`'s no-op equality check learns the new field (a restyle
+  changing only the floor previously kept the stale sidecar).  No
+  label pixel parity vs v3 by recorded design — the pin is a
+  `webgpu` LOD spec (floored + unfloored labels: both draw at zoom
+  1, only the floored one vanishes at zoom 0.7, and it returns at
+  zoom 1 — a pure cull, no rebuild) plus 4 Node specs
+  (`test/gpu-min-zoomed-font-size.mjs`).  1930 Node tests, 109
+  Playwright specs, typecheck + lint green.
+
 **Sequencing**: pass 12c (the round-12 plan above) runs first, then
 this round's phases in order — the 2026-07-29 triage keeps (ghost,
 overlay/underlay) lead, per the discussion that produced this plan.
@@ -3062,7 +3081,7 @@ shelf, since the expensive part now exists)
 - [x] **D1 `font-style` + `font-weight`** as global constants (the
   `font-family` rule: one font per atlas; a change resets the atlas
   and re-lays-out every label).
-- [ ] **D2 Per-element `min-zoomed-font-size`**: a sidecar channel
+- [x] **D2 Per-element `min-zoomed-font-size`**: a sidecar channel
   baked per glyph run, tested in the glyph cull predicate beside the
   global `labelFadePx`/`labelMinPx` (which stay the defaults).
 - [ ] **D3 `text-valign`/`text-halign`** for node labels: v3's 3×3

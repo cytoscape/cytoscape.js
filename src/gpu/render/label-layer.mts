@@ -77,6 +77,12 @@ export class LabelLayer {
 
       // outline width in SDF sample units: model px → raster px (/ scale)
       // → samples (/ SDF_RADIUS); clamped so it can't cross the whole range
+      // D2: min-zoomed-font-size as a zoom threshold (frame.zoomDpr
+      // compare in the glyph cull); 0 disables the floor
+      const zoomDprMin = entry.minZoomedFontSize > 0
+        ? entry.minZoomedFontSize / entry.fontSize
+        : 0;
+
       const outlineW = entry.outlineWidth > 0
         ? Math.min( entry.outlineWidth / scale / SDF_RADIUS, 0.45 )
         : 0;
@@ -121,6 +127,7 @@ export class LabelLayer {
         // (B6): packed border color + width in *model px* (the FS scales)
         u32[ at + 10 ] = entry.bgBorderColor;
         f32[ at + 11 ] = entry.bgBorderWidth;
+        f32[ at + 12 ] = zoomDprMin; // the box hides with its text
         at += GLYPH_WORDS;
       }
 
@@ -139,6 +146,7 @@ export class LabelLayer {
         f32[ at + 9 ] = g.v1;
         u32[ at + 10 ] = entry.outlineColor;
         f32[ at + 11 ] = outlineW;
+        f32[ at + 12 ] = zoomDprMin;
         at += GLYPH_WORDS;
       }
 

@@ -100,6 +100,9 @@ interface NodeComputed {
   textBgPadding: number;
   textMarginX: number;
   textMarginY: number;
+  /** min-zoomed-font-size (round 13 D2): hide the label when
+   * font-size x zoom x dpr drops below this (device px; 0 = off) */
+  minZoomedFontSize: number;
   /** corner-radius (round 13 B2): model px, -1 = 'auto' (v3's
    * min(w/4, h/4, 8)) — round-rectangle only */
   cornerRadius: number;
@@ -268,6 +271,7 @@ const NODE_DEFAULTS: NodeComputed = {
   textBgPadding: 0,
   textMarginX: 0,
   textMarginY: 0,
+  minZoomedFontSize: 0, // as v3: no floor
   cornerRadius: -1, // 'auto'
   borderPosition: 0, // center, as v3
   outlineColor: [ 153, 153, 153, 255 ], // '#999', as v3
@@ -449,7 +453,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
-  'text-margin-x', 'text-margin-y',
+  'text-margin-x', 'text-margin-y', 'min-zoomed-font-size',
   'text-transform', 'text-background-shape',
   'text-border-width', 'text-border-color', 'text-border-opacity'
 ] );
@@ -467,7 +471,7 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'label', 'font-size', 'color',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
-  'text-margin-x', 'text-margin-y', 'text-rotation',
+  'text-margin-x', 'text-margin-y', 'min-zoomed-font-size', 'text-rotation',
   'text-transform', 'text-background-shape',
   'text-border-width', 'text-border-color', 'text-border-opacity',
   'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
@@ -1270,6 +1274,9 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'text-margin-y':
       computed.textMarginY = parseNumber( prop, value );
       break;
+    case 'min-zoomed-font-size':
+      computed.minZoomedFontSize = parseNonNegative( prop, value );
+      break;
     case 'text-rotation':
       computed.textRotation = parseTextRotation( value );
       break;
@@ -1681,6 +1688,11 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.fontSize = v as number; },
     default: () => NODE_DEFAULTS.fontSize
+  },
+  'min-zoomed-font-size': {
+    kind: 'number', groups: [ 'nodes', 'edges' ],
+    set: ( c, v ) => { c.minZoomedFontSize = v as number; },
+    default: () => NODE_DEFAULTS.minZoomedFontSize
   },
   'color': {
     kind: 'color', groups: [ 'nodes', 'edges' ],
@@ -2755,6 +2767,11 @@ export class StyleEngine {
 
         return entry != null ? entry.bgBorderWidth : this.defs[ ref.group ].computed.textBorderWidth;
       }
+      case 'min-zoomed-font-size': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null ? entry.minZoomedFontSize : this.defs[ ref.group ].computed.minZoomedFontSize;
+      }
       case 'text-border-color': {
         const entry = store.labelAt( slot, ref.group );
 
@@ -3314,6 +3331,7 @@ export class StyleEngine {
       anchorY,
       marginX: computed.textMarginX,
       marginY: computed.textMarginY,
+      minZoomedFontSize: computed.minZoomedFontSize,
       outlineWidth: computed.textOutlineWidth,
       outlineColor: fold( computed.textOutlineColor, computed.textOutlineOpacity ),
       bgColor: fold( computed.textBgColor, computed.textBgOpacity ),

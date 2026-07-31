@@ -1413,6 +1413,7 @@ export class GraphStore implements ModelView {
         prev.bgColor === entry.bgColor && prev.bgPadding === entry.bgPadding &&
         prev.bgShape === entry.bgShape && prev.bgBorderColor === entry.bgBorderColor &&
         prev.bgBorderWidth === entry.bgBorderWidth &&
+        prev.minZoomedFontSize === entry.minZoomedFontSize &&
         prev.rotate === entry.rotate
       ){ return; }
 

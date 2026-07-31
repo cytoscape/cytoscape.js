@@ -417,6 +417,10 @@ export interface LabelEntry {
   bgBorderColor: number;
   /** text-border-width, model px (draws inward from the padded box) — B6 */
   bgBorderWidth: number;
+  /** min-zoomed-font-size (round 13 D2), device px; 0 = no floor.  The
+   * glyph cull hides the whole label when fontSize x zoomDpr drops
+   * below it (v3's eleTextBiggerThanMin). */
+  minZoomedFontSize: number;
   /**
    * text-rotation: autorotate (edge labels only; always false for nodes).
    * The renderer rotates the glyph run to the edge's angle in the VS,

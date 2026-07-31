@@ -2886,4 +2886,56 @@ test.describe( 'WebGPU renderer', () => {
     expect( diff ).toBeGreaterThan( 50 );
   } );
 
+  test( 'min-zoomed-font-size hides only the floored label on zoom-out (D2)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'floored', floor: 16 }, position: { x: -80, y: 0 } },
+        { data: { id: 'free', floor: 0 }, position: { x: 80, y: 0 } }
+      ],
+      style: {
+        nodes: {
+          'width': 30, 'height': 30, 'background-color': '#ecf0f1',
+          'label': 'LABELLED', 'font-size': 20, 'color': '#000',
+          'min-zoomed-font-size': { data: 'floor', scale: 'linear', domain: [ 0, 16 ], range: [ 0, 16 ] }
+        }
+      },
+      zoom: 1
+    } );
+
+    await centerPan( page );
+    await waitFrames( page );
+
+    // ink under a node across the label rows at the current zoom
+    const labelInk = async id => {
+      const p = await page.evaluate( id => window.cy.$id( id ).renderedPosition(), id );
+      const zoom = await page.evaluate( () => window.cy.zoom() );
+      let ink = 0;
+
+      for( const dy of [ 26, 31, 36 ] ){
+        ink += await darkPixelsInBand( page, p.x - 70, 140, p.y + dy * zoom );
+      }
+
+      return ink;
+    };
+
+    // zoom 1: fontSize x zoomDpr = 20 >= 16, both labels draw
+    expect( await labelInk( 'floored' ) ).toBeGreaterThan( 20 );
+    expect( await labelInk( 'free' ) ).toBeGreaterThan( 20 );
+
+    // zoom 0.7: 14 < 16 hides the floored label; the free one stays
+    await page.evaluate( () => { window.cy.zoom( 0.7 ); } );
+    await waitFrames( page );
+
+    expect( await labelInk( 'floored' ) ).toBe( 0 );
+    expect( await labelInk( 'free' ) ).toBeGreaterThan( 10 );
+
+    // zooming back in restores it (a pure cull, not a rebuild)
+    await page.evaluate( () => { window.cy.zoom( 1 ); } );
+    await waitFrames( page );
+
+    expect( await labelInk( 'floored' ) ).toBeGreaterThan( 20 );
+  } );
+
 } );

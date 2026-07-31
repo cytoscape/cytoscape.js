@@ -313,6 +313,10 @@ fn isVisible(slot: u32) -> bool {
   if (g.nodeSlot == DEAD_GLYPH) { return false; }
   if ((nodeFlags[g.nodeSlot] & SHOWN) != SHOWN) { return false; }
 
+  // per-element floor (D2): min-zoomed-font-size baked as a zoomDpr
+  // threshold, v3's eleTextBiggerThanMin
+  if (frame.zoomDpr < g.zoomDprMin) { return false; }
+
   let heightPx = glyphLodHeight(g) * frame.zoomDpr;
 
   // hard minimum: below this the text is too small to read, don't draw it
@@ -398,6 +402,8 @@ fn isVisible(slot: u32) -> bool {
 
   if ((nodeFlags[ends.x] & SHOWN) != SHOWN) { return false; }
   if ((nodeFlags[ends.y] & SHOWN) != SHOWN) { return false; }
+
+  if (frame.zoomDpr < g.zoomDprMin) { return false; } // D2 floor
 
   let heightPx = glyphLodHeight(g) * frame.zoomDpr;
 

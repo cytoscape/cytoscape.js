@@ -1193,6 +1193,10 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   glyph atlas is a fixed 1024² texture — once full, new glyphs stop
   rendering with a console warning.  Label color/text bake into glyph
   instances, so `:selected`/hover styling does not restyle label text.
+  Round 13 D2 added per-element `min-zoomed-font-size` (v3's rule —
+  the label hides when `font-size × zoom × dpr` drops below it),
+  baked into each glyph as a zoom threshold and tested in the glyph
+  cull, so the floor costs nothing per frame.
   Round 13 B6 added `text-transform` (applied at glyph-run build),
   `text-border-width`/`-color`/`-opacity` (a band inward from the
   padded background box) and `text-background-shape`

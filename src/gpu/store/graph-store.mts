@@ -817,6 +817,50 @@ export class GraphStore implements ModelView {
     this.dirty.mark( id, slot );
   }
 
+  /** monotone (round 13 B5): the largest outline outward extent any
+   * node has styled — the ghost cull grows by it (no binding left for
+   * the packed geometry there) */
+  private outlineSlackMax = 0;
+
+  outlineSlack(): number {
+    return this.outlineSlackMax;
+  }
+
+  /**
+   * Write a node's border/corner/outline record (rounds 13 B2/B5):
+   * cornerRadius model px (-1 = auto), borderPosition id, the outline
+   * rgba (opacity pre-folded) and outline width/offset (model px,
+   * u16 fixed-point).  Corner radius and outline extents are geometry
+   * (pick + bb read them), so writes bump the geometry epoch.
+   */
+  setBorderGeom(
+    slot: number, cornerRadius: number, borderPos: number,
+    outlineRgba: number, outlineWidth: number, outlineOffset: number
+  ): void {
+    const arr = this.nodes.column( 'node.borderGeom' ) as Uint32Array;
+    const at = slot * 4;
+    const rad = cornerRadius < 0 ? 0xffffffff : Math.max( 0, Math.round( cornerRadius * 256 ) );
+    const packedWO =
+      ( Math.min( 0xffff, Math.max( 0, Math.round( outlineOffset * 256 ) ) ) << 16 ) |
+      Math.min( 0xffff, Math.max( 0, Math.round( outlineWidth * 256 ) ) );
+
+    if( outlineRgba >>> 24 !== 0 ){
+      const slack = outlineOffset / 2 + outlineWidth;
+
+      if( slack > this.outlineSlackMax ){ this.outlineSlackMax = slack; }
+    }
+
+    if( arr[ at ] === rad && arr[ at + 1 ] === borderPos &&
+        arr[ at + 2 ] === outlineRgba && arr[ at + 3 ] === packedWO ){ return; }
+
+    arr[ at ] = rad;
+    arr[ at + 1 ] = borderPos;
+    arr[ at + 2 ] = outlineRgba;
+    arr[ at + 3 ] = packedWO;
+    this.geoEpoch++;
+    this.dirty.mark( 'node.borderGeom', slot );
+  }
+
   /** Four-component f32 write (dash patterns etc.). */
   setVec4( id: ColumnId, slot: number, a: number, b: number, c: number, d: number ): void {
     const arr = this.table( columnSpec( id ).group ).column( id ) as Float32Array;
@@ -1419,12 +1463,24 @@ export class GraphStore implements ModelView {
     const over = this.column( 'node.overlay' ) as Uint32Array;
     const under = this.column( 'node.underlay' ) as Uint32Array;
     const anyLayers = this.overlays > 0 || this.underlays > 0;
+    const bGeom = this.column( 'node.borderGeom' ) as Uint32Array;
+    const anyOutlines = this.outlineSlackMax > 0;
 
     this.forEachAlive( 'nodes', slot => {
       const x = pos[ slot * 2 ];
       const y = pos[ slot * 2 + 1 ];
       let hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
       let hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+
+      // an outline ring grows the body box (round 13 B5; conservative
+      // for inside borders — the center convention, like the border term)
+      if( anyOutlines && bGeom[ slot * 4 + 2 ] >>> 24 !== 0 ){
+        const wo = bGeom[ slot * 4 + 3 ];
+        const extra = ( wo >>> 16 ) / 256 / 2 + ( wo & 0xffff ) / 256;
+
+        hw += extra;
+        hh += extra;
+      }
 
       // overlay/underlay pads grow the body box (round 13 A2; v3's
       // overlay sits on the inner size, so border-inclusive halves +

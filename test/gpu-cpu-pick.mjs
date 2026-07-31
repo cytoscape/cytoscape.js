@@ -18,7 +18,7 @@ describe('gpu/render: CPU node pick', function(){
     store.setScalar( 'node.shape', slot, shape );
     // the style engine always writes borderGeom on apply; mirror its
     // default here (corner-radius 'auto', border-position center — B2)
-    store.setPair( 'node.borderGeom', slot, -1, 0 );
+    store.setBorderGeom( slot, -1, 0, 0, 0, 0 );
 
     return slot;
   };

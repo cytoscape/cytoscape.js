@@ -602,6 +602,7 @@ export class Renderer {
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
     f[11] = this.cy._store.curveSlack();
     f[12] = this.cy._store.haystackSlack();
+    f[13] = this.cy._store.outlineSlack();
 
     device.queue.writeBuffer( this.exportUniform, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -1370,6 +1371,7 @@ export class Renderer {
     f[10] = ( opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX ) * this.scaleCtl.scale;
     f[11] = this.cy._store.curveSlack(); // model px; shaders scale by zoomDpr
     f[12] = this.cy._store.haystackSlack();
+    f[13] = this.cy._store.outlineSlack();
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -1406,6 +1408,7 @@ export class Renderer {
     f[10] = opts.labelMinPx ?? DEFAULT_LABEL_MIN_PX;
     f[11] = this.cy._store.curveSlack();
     f[12] = this.cy._store.haystackSlack();
+    f[13] = this.cy._store.outlineSlack();
 
     ( this.device as GPUDevice ).queue.writeBuffer(
       this.pickUniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength

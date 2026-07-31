@@ -183,6 +183,14 @@ the node FS picks border *or* fill per fragment, so a translucent
 border shows the border color alone where v3 blends it over the
 fill in the inner band half.
 
+Node outlines (round 13 B5): `outline-color`/`-opacity`/`-width`/
+`-offset` draw a solid ring outside the border at offset/2 past its
+outer edge — exactly v3's scaled-path stroke for circles and squares
+(anisotropic shapes deviate from v3's per-axis scaling, recorded);
+ghosts carry their outline; outlines are not pickable and grow the
+bb by offset/2 + width.  `outline-style` stays out with
+`border-style` (SDF perimeter parameterization).
+
 Border geometry (round 13 B2): `border-position` defaults to v3's
 `center` (the band straddles the boundary — v4 previously drew all
 borders inside, an unrecorded deviation now closed), and

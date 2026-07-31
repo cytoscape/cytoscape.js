@@ -1773,4 +1773,34 @@ test.describe( 'v3-vs-v4 render parity', () => {
     await runParity( page, testInfo, 'parity-casing', elements, v3Style, v4Style, { minInk: 1500 } );
   } );
 
+  test( 'parity: node outlines (round 13 B5)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // circles keep v3's scaled-path outline identical to v4's constant
+    // SDF band (anisotropic shapes deviate by construction — recorded)
+    const elements = [
+      { data: { id: 'a' }, position: { x: -100, y: -50 } },
+      { data: { id: 'b', off: 1 }, position: { x: 60, y: -50 } },
+      { data: { id: 'c', bordered: 1 }, position: { x: -20, y: 80 } }
+    ];
+    const shared = {
+      'width': 50, 'height': 50, 'background-color': '#f39c12',
+      'outline-width': 6, 'outline-color': '#8e44ad', 'outline-opacity': 0.9
+    };
+    const v3Style = [
+      { selector: 'node', style: Object.assign( { shape: 'ellipse' }, shared ) },
+      { selector: 'node[off = 1]', style: { 'outline-offset': 10 } },
+      { selector: 'node[bordered = 1]', style: { 'border-width': 6, 'border-color': '#2c3e50' } }
+    ];
+    const v4Style = {
+      nodes: Object.assign( {
+        'outline-offset': { case: [ { when: { data: 'off', eq: 1 }, then: 10 } ], else: 0 },
+        'border-width': { case: [ { when: { data: 'bordered', eq: 1 }, then: 6 } ], else: 0 },
+        'border-color': '#2c3e50'
+      }, shared )
+    };
+
+    await runParity( page, testInfo, 'parity-outline', elements, v3Style, v4Style, { minInk: 1200 } );
+  } );
+
 } );

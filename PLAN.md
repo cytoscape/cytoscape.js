@@ -2737,6 +2737,28 @@ grows per item.
   specs (`test/gpu-edge-casing.mjs`).  1884 Node tests, 95
   Playwright specs, typecheck + lint green.
 
+- [x] **B5 node outlines** (2026-07-31).  `outline-color`/
+  `-opacity`/`-width`/`-offset` (solid only — `outline-style` stays
+  out with `border-style`, the perimeter-parameterization limit).
+  The `node.borderGeom` column widened to `Uint32Array×4`
+  ([radius×256 | auto, position, outlineRgba (opacity folded),
+  width×256 | offset×256 ≪ 16]) — the node FS sat at exactly 8
+  storage buffers, so the outline packs into the existing binding.
+  The ring renders as a second disjoint SDF band at
+  `borderOutward + offset/2` (v3 strokes a path scaled by
+  (size + bEff + width + offset)/size, which reduces to exactly
+  this band for circles/squares — pinned by `parity-outline` at
+  **0 px** including an offset-10 case and a bordered case;
+  anisotropic shapes deviate from v3's scaled-path stroke by
+  construction, recorded).  Ghost bodies draw their outline too
+  (v3).  Node quads/cull grow exactly; the ghost cull grows by the
+  new monotone `outlineSlack()` via the Frame's last pad (no
+  binding left there); both bb scans grow by offset/2 + width.  All
+  four props mapper-capable; readback folded/packed.  5 Node specs
+  (`test/gpu-node-outline.mjs`); the B2/CPU-pick suites re-pinned
+  to the packed format.  1889 Node tests, 96 Playwright specs,
+  typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2836,11 +2858,13 @@ autonomously):
 - [x] **B4 Edge casing**: `line-outline-width`/`-color` — a border
   band on the edge strip (straight and curved), colors fetched
   fragment-side.  Landed 2026-07-31 — see the round-13 record.
-- [ ] **B5 Node `outline-*`**: `outline-color`/`-opacity`/`-width`/
+- [x] **B5 Node `outline-*`**: `outline-color`/`-opacity`/`-width`/
   `-offset` as an SDF band outside the shape (distance ∈
   [offset, offset + width]); solid only.  Bb scan and conservative
   bounds grow by offset + width; the pick body stays the shape
-  itself (v3-consistent).
+  itself (v3-consistent).  Landed 2026-07-31 — see the round-13
+  record (the band derives as offset/2 past the border's outer
+  edge, matching v3's scaled-path stroke exactly for circles).
 - [ ] **B6 Label box parity**: `text-transform` (none | uppercase |
   lowercase, applied when the glyph run is built),
   `text-border-width`/`-color`/`-opacity` (a border on the existing

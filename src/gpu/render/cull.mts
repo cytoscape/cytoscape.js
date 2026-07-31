@@ -96,18 +96,25 @@ ${COMMON}
 @group(0) @binding(3) var<storage, read> sizes: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeFlags: array<u32>;
 @group(0) @binding(5) var<storage, read> borderWidths: array<f32>;
-@group(0) @binding(6) var<storage, read> borderGeom: array<vec2f>;
+@group(0) @binding(6) var<storage, read> borderGeom: array<vec4u>;
 @group(0) @binding(7) var<storage, read_write> wgCounts: array<u32>;
 @group(0) @binding(8) var<storage, read_write> wgOffsets: array<u32>;
 @group(0) @binding(9) var<storage, read_write> visible: array<u32>;
 
-// B2: center/outside borders extend the drawn quad past the boundary
+// B2/B5: center/outside borders and outlines extend the drawn quad
 fn borderOut(slot: u32) -> f32 {
   let bw = borderWidths[slot] * frame.zoomDpr;
+  let bg = borderGeom[slot];
+  var o = bw * 0.5;
 
-  if (borderGeom[slot].y == 1.0) { return 0.0; }
-  if (borderGeom[slot].y == 2.0) { return bw; }
-  return bw * 0.5;
+  if (bg.y == 1u) { o = 0.0; }
+  if (bg.y == 2u) { o = bw; }
+
+  if ((bg.z >> 24u) != 0u) {
+    o = o + (f32(bg.w >> 16u) * 0.5 + f32(bg.w & 0xffffu)) / 256.0 * frame.zoomDpr;
+  }
+
+  return o;
 }
 
 fn isVisible(slot: u32) -> bool {
@@ -469,10 +476,11 @@ fn isVisible(slot: u32) -> bool {
 
   if (g.w == 0.0 || g.z <= 0.0) { return false; } // disabled or invisible
 
-  // B2: grow by the full border width — the outside-position worst case
-  // (the compute stage has no slot left for the position column; a few
-  // conservative ghost quads only cost cull efficiency)
-  let bOut = borderWidths[slot] * frame.zoomDpr;
+  // B2/B5: grow by the full border width (the outside-position worst
+  // case) + the frame's monotone outline bound — the compute stage has
+  // no slot left for the geometry column; conservative quads only cost
+  // cull efficiency
+  let bOut = borderWidths[slot] * frame.zoomDpr + frame.outlineSlack * frame.zoomDpr;
 
   let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
   let c = modelToPx(frame, positions[slot] + g.xy);

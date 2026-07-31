@@ -36,7 +36,7 @@ struct Frame {
   labelMinPx: f32,       // LOD: labels below this glyph height are culled outright (0 = off)
   curveSlack: f32,       // conservative curved-edge deviation bound, model px (0 = nothing curved)
   haystackSlack: f32,    // 12c: haystack endpoint-offset bound, model px (0 = no haystack)
-  pad0: f32,
+  outlineSlack: f32,     // B5: max outline outward extent, model px (ghost cull bound)
   pad1: f32,
   pad2: f32,
 }
@@ -1062,18 +1062,24 @@ ${ POLY.cases }
   }
 }
 
-// corner-radius 'auto' (B2): v3's min(w/4, h/4, 8) in model px
-fn cornerRadiusPx(stored: f32, half: vec2f, zoomDpr: f32) -> f32 {
-  if (stored < 0.0) { return min(min(half.x, half.y) * 0.5, 8.0 * zoomDpr); }
-  return stored * zoomDpr;
+// corner-radius 'auto' (B2): v3's min(w/4, h/4, 8) in model px.
+// The stored value is u16.8 fixed-point; 0xffffffff means auto.
+fn cornerRadiusPx(stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
+  if (stored == 0xffffffffu) { return min(min(half.x, half.y) * 0.5, 8.0 * zoomDpr); }
+  return f32(stored) / 256.0 * zoomDpr;
 }
 
 // border-position (B2): how far the border band extends past the shape
 // boundary — 0 for inside, bw/2 for center (v3's default), bw for outside
-fn borderOutward(pos: f32, bw: f32) -> f32 {
-  if (pos == 1.0) { return 0.0; }
-  if (pos == 2.0) { return bw; }
+fn borderOutward(pos: u32, bw: f32) -> f32 {
+  if (pos == 1u) { return 0.0; }
+  if (pos == 2u) { return bw; }
   return bw * 0.5;
+}
+
+// outline extents from the packed word (B5): (width, offset) device px
+fn outlineWO(packed: u32, zoomDpr: f32) -> vec2f {
+  return vec2f(f32(packed & 0xffffu), f32(packed >> 16u)) / 256.0 * zoomDpr;
 }
 `;
 
@@ -1097,8 +1103,8 @@ ${SDF}
 // ghost props [offsetX, offsetY, ghostOpacity, enabled] (round 13 A1);
 // bound to both stages for the ghost entry points
 @group(0) @binding(9) var<storage, read> ghosts: array<vec4f>;
-// [cornerRadius | -1 = auto, borderPosition] (round 13 B2)
-@group(0) @binding(10) var<storage, read> borderGeom: array<vec2f>;
+// [cornerRadius×256 | auto, borderPosition, outlineRgba, outlineWO] (B2/B5)
+@group(0) @binding(10) var<storage, read> borderGeom: array<vec4u>;
 
 struct NodeVSOut {
   @builtin(position) position: vec4f,
@@ -1124,8 +1130,16 @@ fn vsNode(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> N
 
   let centerPx = modelToPx(frame, positions[slot]);
   let margin = 2.0; // AA + accent-ring slack, device px
-  // center/outside borders extend past the boundary (B2)
-  let borderOut = borderOutward(borderGeom[slot].y, borderWidths[slot] * frame.zoomDpr);
+  // center/outside borders and outlines extend past the boundary (B2/B5)
+  let bg = borderGeom[slot];
+  var borderOut = borderOutward(bg.y, borderWidths[slot] * frame.zoomDpr);
+
+  if ((bg.z >> 24u) != 0u) {
+    let wo = outlineWO(bg.w, frame.zoomDpr);
+
+    borderOut = borderOut + wo.y * 0.5 + wo.x;
+  }
+
   let ext = half + vec2f(margin + borderOut);
   let local = quadCorner(vi) * ext;
 
@@ -1208,8 +1222,26 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
     }
   }
 
-  let alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * opacities[slot] * in.alphaComp * color.a;
-  return vec4f(color.rgb * alpha, alpha); // premultiplied
+  let mul = opacities[slot] * in.alphaComp;
+  var alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * mul * color.a;
+  var rgbPre = color.rgb * alpha;
+  let og = borderGeom[slot];
+
+  // outline ring (B5): a solid band outside the border at
+  // outline-offset/2, disjoint from the body coverage
+  if (!plain && (og.z >> 24u) != 0u) {
+    let wo = outlineWO(og.w, frame.zoomDpr);
+    let inner = borderOutward(og.y, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
+    let oc = unpack4x8unorm(og.z);
+    let ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
+      (1.0 - smoothstep(inner + wo.x - 0.75, inner + wo.x + 0.75, sd));
+    let ringA = ring * mul * oc.a;
+
+    rgbPre = rgbPre + oc.rgb * ringA;
+    alpha = alpha + ringA;
+  }
+
+  return vec4f(rgbPre, alpha); // premultiplied
 }
 
 // Ghost pass (round 13 A1): the node body duplicated at the ghost
@@ -1226,7 +1258,15 @@ fn vsGhost(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let half = lod.xy;
 
   let centerPx = modelToPx(frame, positions[slot] + ghosts[slot].xy);
-  let borderOut = borderOutward(borderGeom[slot].y, borderWidths[slot] * frame.zoomDpr);
+  let bg = borderGeom[slot];
+  var borderOut = borderOutward(bg.y, borderWidths[slot] * frame.zoomDpr);
+
+  if ((bg.z >> 24u) != 0u) {
+    let wo = outlineWO(bg.w, frame.zoomDpr);
+
+    borderOut = borderOut + wo.y * 0.5 + wo.x;
+  }
+
   let ext = half + vec2f(2.0 + borderOut);
   let local = quadCorner(vi) * ext;
 
@@ -1268,8 +1308,24 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let ghostA = clamp(ghosts[slot].z, 0.0, 1.0);
-  let alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * opacities[slot] * in.alphaComp * color.a * ghostA;
-  return vec4f(color.rgb * alpha, alpha); // premultiplied
+  let mul = opacities[slot] * in.alphaComp * ghostA;
+  var alpha = (1.0 - smoothstep(edge - 0.75, edge + 0.75, sd)) * mul * color.a;
+  var rgbPre = color.rgb * alpha;
+  let og = borderGeom[slot];
+
+  if (!plain && (og.z >> 24u) != 0u) { // the ghost outline rides along (v3)
+    let wo = outlineWO(og.w, frame.zoomDpr);
+    let inner = borderOutward(og.y, borderWidths[slot] * frame.zoomDpr) + wo.y * 0.5;
+    let oc = unpack4x8unorm(og.z);
+    let ring = smoothstep(inner - 0.75, inner + 0.75, sd) *
+      (1.0 - smoothstep(inner + wo.x - 0.75, inner + wo.x + 0.75, sd));
+    let ringA = ring * mul * oc.a;
+
+    rgbPre = rgbPre + oc.rgb * ringA;
+    alpha = alpha + ringA;
+  }
+
+  return vec4f(rgbPre, alpha); // premultiplied
 }
 
 // (node picking is a synchronous CPU test — see cpu-pick.mts — so there is

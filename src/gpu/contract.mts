@@ -154,11 +154,15 @@ export type ColumnId =
    */
   | 'node.ghost'
   /**
-   * Float32Array(2·cap) — border/corner geometry (round 13 B2):
-   * [cornerRadius (model px; -1 = 'auto', v3's min(w/4, h/4, 8)),
-   * borderPosition (0 center — v3's default, 1 inside, 2 outside)].
-   * Read by the node FS/prepass, the node cull (outward borders grow
-   * the quad), and the CPU pick (the round-rectangle inside test).
+   * Uint32Array(4·cap) — border/corner/outline geometry (rounds 13
+   * B2/B5): [cornerRadius × 256 (fixed-point model px; 0xffffffff =
+   * 'auto', v3's min(w/4, h/4, 8)), borderPosition (0 center — v3's
+   * default, 1 inside, 2 outside), outline rgba (outline-opacity
+   * folded into alpha; a=0 = no outline), outlineWidth × 256 |
+   * outlineOffset × 256 << 16 (u16 fixed-point each)].  Read by the
+   * node/ghost FS, the depth prepass, the node cull (outward borders
+   * and outlines grow the quad), and the CPU pick (the
+   * round-rectangle inside test).
    */
   | 'node.borderGeom'
   /**
@@ -268,7 +272,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.shape', 'nodes', Uint32Array, 1 ),
   spec( 'node.outerHalf', 'nodes', Float32Array, 2 ),
   spec( 'node.ghost', 'nodes', Float32Array, 4 ),
-  spec( 'node.borderGeom', 'nodes', Float32Array, 2 ),
+  spec( 'node.borderGeom', 'nodes', Uint32Array, 4 ),
   spec( 'node.overlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.underlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),

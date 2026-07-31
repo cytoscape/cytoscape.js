@@ -44,7 +44,7 @@ describe('gpu/border-geom (round 13 B2)', function(){
     var geom = cy._store.column('node.borderGeom');
     var slot = cy._store.lookup('n').slot;
 
-    expect( geom[ slot * 2 ] ).to.equal( 28 );
+    expect( geom[ slot * 4 ] / 256 ).to.equal( 28 );
     expect( r == null ).to.equal( true );
   });
 
@@ -63,8 +63,8 @@ describe('gpu/border-geom (round 13 B2)', function(){
 
     var geom = cy._store.column('node.borderGeom');
 
-    expect( geom[ cy._store.lookup('a').slot * 2 ] ).to.equal( 12 );
-    expect( geom[ cy._store.lookup('b').slot * 2 ] ).to.equal( 2 );
+    expect( geom[ cy._store.lookup('a').slot * 4 ] / 256 ).to.equal( 12 );
+    expect( geom[ cy._store.lookup('b').slot * 4 ] / 256 ).to.equal( 2 );
     expect( cy.$id('a').style('border-position') ).to.equal( 'inside' );
     expect( cy.$id('b').style('border-position') ).to.equal( 'outside' );
   });

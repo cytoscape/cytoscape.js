@@ -1330,6 +1330,7 @@ export class GpuCollection {
     const size = store.column( 'node.size' ) as Float32Array;
     const border = store.column( 'node.borderWidth' ) as Float32Array;
     const ghost = store.column( 'node.ghost' ) as Float32Array;
+    const bGeom = store.column( 'node.borderGeom' ) as Uint32Array;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
 
     store.curves.flush(); // curved edges read derived params below
@@ -1337,8 +1338,17 @@ export class GpuCollection {
     for( const ref of this._liveRefs() ){
       if( ref.group === 'nodes' ){
         const slot = ref.slot;
-        const hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
-        const hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+        let hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
+        let hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
+
+        // an outline ring grows the box (round 13 B5)
+        if( bGeom[ slot * 4 + 2 ] >>> 24 !== 0 ){
+          const wo = bGeom[ slot * 4 + 3 ];
+          const extra = ( wo >>> 16 ) / 256 / 2 + ( wo & 0xffff ) / 256;
+
+          hw += extra;
+          hh += extra;
+        }
 
         expandPoint( store.getX( slot ), store.getY( slot ), hw, hh );
 

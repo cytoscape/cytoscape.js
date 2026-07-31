@@ -101,6 +101,11 @@ interface NodeComputed {
   cornerRadius: number;
   /** border-position (B2): 0 center (v3's default), 1 inside, 2 outside */
   borderPosition: number;
+  /** node outline (round 13 B5): a solid ring outside the border */
+  outlineColor: RGBA;
+  outlineOpacity: number;
+  outlineWidth: number;
+  outlineOffset: number;
   /** background-opacity (round 13 B1): folds into the stored fill alpha */
   backgroundOpacity: number;
   /** border-opacity (B1): folds into the stored border alpha */
@@ -224,6 +229,10 @@ const NODE_DEFAULTS: NodeComputed = {
   textMarginY: 0,
   cornerRadius: -1, // 'auto'
   borderPosition: 0, // center, as v3
+  outlineColor: [ 153, 153, 153, 255 ], // '#999', as v3
+  outlineOpacity: 1,
+  outlineWidth: 0,
+  outlineOffset: 0,
   backgroundOpacity: 1,
   borderOpacity: 1,
   textOpacity: 1,
@@ -366,6 +375,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
   'corner-radius', 'border-position',
+  'outline-color', 'outline-opacity', 'outline-width', 'outline-offset',
   'label', 'font-size', 'font-family', 'color',
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
   'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
@@ -1016,6 +1026,18 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'border-position':
       computed.borderPosition = parseBorderPosition( value );
       break;
+    case 'outline-color':
+      computed.outlineColor = parseColor( prop, value );
+      break;
+    case 'outline-opacity':
+      computed.outlineOpacity = parseZeroOne( prop, value );
+      break;
+    case 'outline-width':
+      computed.outlineWidth = parseNonNegative( prop, value );
+      break;
+    case 'outline-offset':
+      computed.outlineOffset = parseNonNegative( prop, value );
+      break;
     case 'background-opacity':
       computed.backgroundOpacity = parseZeroOne( prop, value );
       break;
@@ -1441,6 +1463,27 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'edges' ],
     set: ( c, v ) => { c.taxiRadius = v as number; },
     default: () => EDGE_DEFAULTS.taxiRadius
+  },
+  // B5 node outline (solid ring outside the border)
+  'outline-color': {
+    kind: 'color', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.outlineColor = v as RGBA; },
+    default: () => NODE_DEFAULTS.outlineColor
+  },
+  'outline-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.outlineOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => NODE_DEFAULTS.outlineOpacity
+  },
+  'outline-width': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.outlineWidth = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.outlineWidth
+  },
+  'outline-offset': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.outlineOffset = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.outlineOffset
   },
   // B2 border/corner geometry (CPU-evaluated; the pick replica reads it)
   'corner-radius': {
@@ -2106,13 +2149,25 @@ export class StyleEngine {
       case 'border-color': return color( 'node.borderColor' );
       case 'border-width': return scalar( 'node.borderWidth' );
       case 'corner-radius': {
-        const r = ( store.column( 'node.borderGeom' ) as Float32Array )[ slot * 2 ];
+        const r = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 ];
 
-        return r < 0 ? 'auto' : r;
+        return r === 0xffffffff ? 'auto' : r / 256;
       }
       case 'border-position':
         return BORDER_POSITION_NAMES[
-          ( store.column( 'node.borderGeom' ) as Float32Array )[ slot * 2 + 1 ] ] ?? 'center';
+          ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 1 ] ] ?? 'center';
+      case 'outline-color': {
+        const rgba = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 2 ];
+
+        return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+      }
+      case 'outline-opacity':
+        return Math.round(
+          ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 2 ] >>> 24 ) / 255 * 1000 ) / 1000;
+      case 'outline-width':
+        return ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 3 ] & 0xffff ) / 256;
+      case 'outline-offset':
+        return ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 3 ] >>> 16 ) / 256;
       // the B1 channel opacities read back *folded* (stored alpha /
       // 255 — the declared color alpha times the opacity; the
       // outline/arrow precedent)
@@ -2508,7 +2563,12 @@ export class StyleEngine {
       store.setGhost(
         slot, computed.ghostOffsetX, computed.ghostOffsetY,
         computed.ghostOpacity, computed.ghost );
-      store.setPair( 'node.borderGeom', slot, computed.cornerRadius, computed.borderPosition );
+      store.setBorderGeom(
+        slot, computed.cornerRadius, computed.borderPosition,
+        computed.outlineWidth > 0
+          ? packRgba( foldA( computed.outlineColor, computed.outlineOpacity ) )
+          : 0,
+        computed.outlineWidth, computed.outlineOffset );
 
       // overlay/underlay records: the layer opacity folds into the alpha
       // (v3's overlay never multiplies element opacity)

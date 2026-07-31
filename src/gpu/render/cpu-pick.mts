@@ -40,7 +40,7 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
   const pos = view.column( 'node.position' ) as Float32Array;
   const size = view.column( 'node.size' ) as Uint32Array | Float32Array;
   const shapes = view.column( 'node.shape' ) as Uint32Array;
-  const borderGeom = view.column( 'node.borderGeom' ) as Float32Array;
+  const borderGeom = view.column( 'node.borderGeom' ) as Uint32Array;
 
   for( let slot = view.highWater( 'nodes' ) - 1; slot >= 0; slot-- ){
     if( ( flags[ slot ] & SHOWN ) !== SHOWN ){ continue; }
@@ -69,11 +69,11 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
       hh = hmax;
     }
 
-    // B2: per-node corner radius (device px; -1 = v3's auto formula)
-    const storedR = borderGeom[ slot * 2 ];
-    const radius = storedR < 0
+    // B2: per-node corner radius (device px; 0xffffffff = v3's auto)
+    const storedR = borderGeom[ slot * 4 ];
+    const radius = storedR === 0xffffffff
       ? Math.min( Math.min( hw, hh ) * 0.5, 8 * frame.zoomDpr )
-      : storedR * frame.zoomDpr;
+      : storedR / 256 * frame.zoomDpr;
 
     if( insideShape( shape, dx, dy, hw, hh, radius ) ){ return slot; }
   }

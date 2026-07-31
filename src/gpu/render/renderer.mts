@@ -73,6 +73,8 @@ interface ExportJob {
 /** the culled instance streams a full scene draw needs */
 interface SceneCullGroups {
   node: CulledGroup;
+  /** compound parent bodies (round 14.9): permuted, drawn before edges */
+  parent: CulledGroup;
   edge: CulledGroup;
   curved: CulledGroup;
   glyph: CulledGroup;
@@ -212,6 +214,11 @@ export class Renderer {
   private exportUniform: GPUBuffer | null;
   private exportFrameData: Float32Array;
   private exportCull: SceneCullGroups | null;
+  /** the parent draw permutation on-GPU (round 14.9): re-uploaded when
+   * the hierarchy's (depth, slot) order object changes identity */
+  private parentOrderBuf: GPUBuffer | null = null;
+  private parentOrderRef: Uint32Array | null = null;
+  private parentOrderVersion = 0;
 
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
@@ -370,6 +377,9 @@ export class Renderer {
     this.picking?.destroy();
     this.gpuTimer?.destroy();
     this.labelLayer?.destroy();
+    this.parentOrderBuf?.destroy();
+    this.parentOrderBuf = null;
+    this.parentOrderRef = null;
 
     for( const group of [
       ...Object.values( this.sceneCull ?? {} ), ...Object.values( this.pickCull ?? {} ),
@@ -452,6 +462,8 @@ export class Renderer {
     const viewport = this.cy._viewport;
     const pan = viewport.pan();
     const opts = this.opts;
+
+    this.cy._store.flushDerived(); // parent geometry is derived (round 14.9)
 
     // same view state as writePickUniform: native device px, no renderScale
     return pickNodeAt( this.cy._store, {
@@ -629,6 +641,7 @@ export class Renderer {
 
         this.exportCull = {
           node: new CulledGroup( kernels, 'node', 'export-node' ),
+          parent: new CulledGroup( kernels, 'parentNode', 'export-parent' ),
           edge: new CulledGroup( kernels, 'edge', 'export-edge' ),
           curved: new CulledGroup( kernels, 'curvedEdge', 'export-curved-edge', 6 * CURVE_SEGS ),
           glyph: new CulledGroup( kernels, 'glyph', 'export-glyph' ),
@@ -776,10 +789,12 @@ export class Renderer {
     } );
 
     // the mirror constructor uploads the full backing arrays, so any delta
-    // accumulated before readiness is already covered — pending curve
-    // derivations must land in the backing arrays first, though (their
-    // usual flush point is takeDelta, whose result is discarded here)
-    this.cy._store.curves.flush();
+    // accumulated before readiness is already covered — pending derived
+    // geometry (parent auto-bounds, curve params) must land in the
+    // backing arrays first, though: their usual flush point is takeDelta,
+    // whose result is discarded here (the 12a init-order lesson, which
+    // round 14.9 re-hit for the hierarchy flush)
+    this.cy._store.flushDerived();
     this.mirror = new ColumnMirror( device, this.cy._store );
     this.cy._store.takeDelta();
 
@@ -806,6 +821,7 @@ export class Renderer {
     this.cullKernels = kernels;
     this.sceneCull = {
       node: new CulledGroup( kernels, 'node', 'scene-node' ),
+      parent: new CulledGroup( kernels, 'parentNode', 'scene-parent' ),
       edge: new CulledGroup( kernels, 'edge', 'scene-edge' ),
       curved: new CulledGroup( kernels, 'curvedEdge', 'scene-curved-edge', 6 * CURVE_SEGS ),
       glyph: new CulledGroup( kernels, 'glyph', 'scene-glyph' ),
@@ -1053,6 +1069,14 @@ export class Renderer {
     const store = this.cy._store;
 
     this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
+
+    // compound parent bodies draw under everything (round 14.9): the
+    // permuted stream is already shallow-under-deep, and parents are
+    // excluded from the prepass so edges/children still draw over them
+    if( store.parentCount() > 0 ){
+      this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.parent );
+    }
+
     if( store.edgeUnderlayCount() > 0 ){
       this.edgePipeline?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.underlay' );
@@ -1163,7 +1187,7 @@ export class Renderer {
   private encodeCulls(
     encoder: GPUCommandEncoder, uniform: GPUBuffer,
     groups: {
-      node?: CulledGroup; edge: CulledGroup; curved: CulledGroup;
+      node?: CulledGroup; parent?: CulledGroup; edge: CulledGroup; curved: CulledGroup;
       glyph?: CulledGroup; edgeGlyph?: CulledGroup;
       sourceGlyph?: CulledGroup; targetGlyph?: CulledGroup; ghost?: CulledGroup;
       overlay?: CulledGroup; underlay?: CulledGroup;
@@ -1179,6 +1203,40 @@ export class Renderer {
       mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ), mirror.buffer( 'node.flags' ),
       mirror.buffer( 'node.borderWidth' ), mirror.buffer( 'node.borderGeom' )
     ], mv );
+
+    // compound parents (round 14.9): their stream iterates the CPU-built
+    // (depth, slot) permutation, uploaded only when the hierarchy changes
+    const anyParents = store.parentCount() > 0;
+    let parentOrderLen = 0;
+
+    if( anyParents && groups.parent != null ){
+      const device = this.device as GPUDevice;
+      const order = store.parentOrder();
+
+      parentOrderLen = order.length;
+
+      if( order !== this.parentOrderRef ){
+        this.parentOrderRef = order;
+        this.parentOrderVersion++;
+
+        if( this.parentOrderBuf == null || this.parentOrderBuf.size < order.byteLength ){
+          this.parentOrderBuf?.destroy();
+          this.parentOrderBuf = device.createBuffer( {
+            label: 'cy-gpu:parent-order',
+            size: Math.max( 4, order.byteLength ),
+            usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
+          } );
+        }
+
+        device.queue.writeBuffer( this.parentOrderBuf, 0, order.buffer, order.byteOffset, order.byteLength );
+      }
+
+      groups.parent.ensure( uniform, Math.max( 1, parentOrderLen ), [
+        mirror.buffer( 'node.position' ), mirror.buffer( 'node.size' ),
+        mirror.buffer( 'node.flags' ), mirror.buffer( 'node.borderWidth' ),
+        this.parentOrderBuf as GPUBuffer
+      ], `${mv}:po${this.parentOrderVersion}` );
+    }
 
     // ghosts (round 13 A1): zero-cost until some node styles a ghost
     const anyGhosts = store.ghostCount() > 0;
@@ -1255,6 +1313,11 @@ export class Renderer {
     }
 
     groups.node?.encode( pass, store.highWater( 'nodes' ) );
+
+    if( anyParents && groups.parent != null ){
+      groups.parent.encode( pass, parentOrderLen );
+    }
+
     groups.edge.encode( pass, store.highWater( 'edges' ) );
     groups.curved.encode( pass, store.highWater( 'edges' ) );
 

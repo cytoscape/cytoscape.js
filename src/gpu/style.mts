@@ -2522,17 +2522,26 @@ export class StyleEngine {
     const defs = {
       nodes: compile( 'nodes', sheet.nodes ),
       edges: compile( 'edges', sheet.edges ),
-      // v3 specificity: user nodes block < default :parent block < user
-      // parents block (a ':parent' selector outranks 'node' in v3)
+      // v3 precedence is order-based, not specificity-based: the default
+      // :parent block sits before the user stylesheet, so a user nodes
+      // block overrides it (parity-pinned), and the user parents block
+      // overrides everything
       parents: compile( 'nodes', {
-        ...( sheet.nodes ?? {} ), ...PARENT_CHANNEL_OVERLAY, ...parentsSplit.channels
+        ...PARENT_CHANNEL_OVERLAY, ...( sheet.nodes ?? {} ), ...parentsSplit.channels
       } )
     };
 
     this.parentCompound = { padding: 10, ...parentsSplit.compound };
-    this.parentsOverride = new Set(
-      [ ...Object.keys( PARENT_CHANNEL_OVERLAY ), ...Object.keys( parentsSplit.channels ) ]
-        .map( normalizeProp ) );
+
+    // channels the parents def resolves differently from the nodes def:
+    // default-overlay keys the user nodes block does NOT override, plus
+    // everything in the user parents block (the GPU demotion set)
+    const nodeKeys = new Set( Object.keys( sheet.nodes ?? {} ).map( normalizeProp ) );
+
+    this.parentsOverride = new Set( [
+      ...Object.keys( PARENT_CHANNEL_OVERLAY ).map( normalizeProp ).filter( k => !nodeKeys.has( k ) ),
+      ...Object.keys( parentsSplit.channels ).map( normalizeProp )
+    ] );
 
     // which arrow ends can any edge have at all — the renderer skips whole
     // arrow draw calls per end when nothing enables it; a mapped arrow

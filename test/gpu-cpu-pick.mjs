@@ -147,4 +147,48 @@ describe('gpu/render: CPU node pick', function(){
     });
   });
 
+  describe('compound draw order (round 14.9)', function(){
+
+    it('a leaf wins over the parent that covers it, whatever the slots say', function(){
+      // parent allocated LAST (highest slot) — under the old
+      // descending-slot rule it would swallow the child's picks
+      var child = addNode( 'child', 0, 0, 20, 20, SHAPE_RECTANGLE );
+      var parent = addNode( 'parent', 0, 0, 30, 30, SHAPE_RECTANGLE );
+
+      store.setParent( child, parent );
+      store.flushDerived(); // parent derives over the child (+ its own box)
+
+      expect( pickNodeAt( store, frame, 0, 0 ) ).to.equal( child );
+    });
+
+    it('the parent-only band picks the parent; outside picks nothing', function(){
+      var child = addNode( 'child', 0, 0, 20, 20, SHAPE_RECTANGLE );
+      var parent = addNode( 'parent', 0, 0, 30, 30, SHAPE_RECTANGLE );
+
+      store.setParent( child, parent );
+      store.setCompoundStyle( parent, { padding: 20 } ); // box spans ±30
+      store.flushDerived();
+
+      expect( pickNodeAt( store, frame, 25, 0 ) ).to.equal( parent );
+      expect( pickNodeAt( store, frame, 45, 0 ) ).to.equal( null );
+    });
+
+    it('nested parents pick the deepest (last-drawn) one', function(){
+      var leaf = addNode( 'leaf', 0, 0, 10, 10, SHAPE_RECTANGLE );
+      var inner = addNode( 'inner', 0, 0, 30, 30, SHAPE_RECTANGLE );
+      var outer = addNode( 'outer', 0, 0, 30, 30, SHAPE_RECTANGLE );
+
+      store.setParent( leaf, inner );
+      store.setParent( inner, outer );
+      store.setCompoundStyle( inner, { padding: 10 } ); // inner ±15
+      store.setCompoundStyle( outer, { padding: 30 } ); // outer ±35
+      store.flushDerived();
+
+      expect( pickNodeAt( store, frame, 0, 0 ) ).to.equal( leaf );
+      expect( pickNodeAt( store, frame, 12, 0 ) ).to.equal( inner ); // inner band
+      expect( pickNodeAt( store, frame, 30, 0 ) ).to.equal( outer ); // outer band
+    });
+
+  });
+
 });

@@ -1447,6 +1447,42 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: compound parents — nesting, padding, borders (round 14.9)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // gp > p > (a, b) exercises the depth-ordered parent stream (outer
+    // under inner under leaves); q > c is a second top-level parent with
+    // explicit compound style; the a-c edge crosses both parent bands
+    // (edges draw over parent bodies, v3's compound order)
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'gp' } },
+        { data: { id: 'p', parent: 'gp' } },
+        { data: { id: 'a', parent: 'p' }, position: { x: -140, y: -20 } },
+        { data: { id: 'b', parent: 'p' }, position: { x: -60, y: 30 } },
+        { data: { id: 'q' } },
+        { data: { id: 'c', parent: 'q' }, position: { x: 130, y: 0 } },
+        { data: { id: 'ac', source: 'a', target: 'c' } }
+      ],
+      style: {
+        nodes: {
+          'width': 40, 'height': 30, 'background-color': '#e17055',
+          'border-width': 2, 'border-color': '#2d3436'
+        },
+        parents: {
+          'background-color': '#dfe6e9', 'border-width': 2, 'border-color': '#0984e3',
+          padding: 12
+        },
+        edges: { 'width': 4, 'line-color': '#6c5ce7' }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'compounds', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1567,6 +1603,77 @@ test.describe( 'v3-vs-v4 render parity', () => {
     const { v3uri, v4uri } = await exportBoth( page, { zoom: 1.7, pan: { x: 57, y: 23 } } );
 
     expectParity( v3uri, v4uri, 'parity-transform', testInfo );
+  } );
+
+  test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // both sides run their DEFAULT parent styling (v3's :parent block is
+    // v4's parents-group overlay: rectangle, #eee, 1px #ccc, padding 10)
+    // over the same auto-bounds math, so parent boxes must land
+    // identically; the leaf-to-leaf edge draws over the parent bodies on
+    // both renderers (v3's compound z-order)
+    const elements = [
+      { data: { id: 'gp' } },
+      { data: { id: 'p', parent: 'gp' } },
+      { data: { id: 'a', parent: 'p' }, position: { x: -120, y: -30 } },
+      { data: { id: 'b', parent: 'p' }, position: { x: -40, y: 30 } },
+      { data: { id: 'q' } },
+      { data: { id: 'c', parent: 'q' }, position: { x: 130, y: 0 } },
+      { data: { id: 'ac', source: 'a', target: 'c' } }
+    ];
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 40, 'height': 30, 'shape': 'rectangle',
+        'background-color': '#e17055', 'border-width': 2, 'border-color': '#2d3436'
+      } },
+      { selector: 'edge', style: { 'width': 4, 'line-color': '#6c5ce7', 'curve-style': 'straight' } }
+    ];
+    const v4Style = {
+      nodes: {
+        'width': 40, 'height': 30, 'shape': 'rectangle',
+        'background-color': '#e17055', 'border-width': 2, 'border-color': '#2d3436'
+      },
+      edges: { 'width': 4, 'line-color': '#6c5ce7' }
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    // Known systematic difference (recorded in src/gpu/README.md): v3's
+    // node bb includes the border's miter-corner overshoot
+    // (~(sqrt(2)-1) x border/2 per side on cornered shapes), which
+    // compounds pick up as slightly larger parent boxes when children
+    // are bordered — v4's child extents are the plain border-inclusive
+    // outerHalf.  Sub-pixel per level (~0.4-0.6 px here), but the AA
+    // classifier flags whole perimeter rings, so the bound is looser
+    // than the solid-shape scenes (the parity-curves precedent).
+    const actual = decodePng( v4uri );
+    const expected = decodePng( v3uri );
+    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
+
+    console.log( `[parity] parity-compounds: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
+
+    if( ratio > 0.03 ){
+      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-compounds', actual, expected, diff );
+    }
+
+    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-compounds' ).toBeLessThanOrEqual( 0.03 );
   } );
 
   test( 'parity: bezier bundles + self-loops (round 12a)', async ( { page }, testInfo ) => {

@@ -1,5 +1,5 @@
 import {
-  FLAG_ALIVE, FLAG_VISIBLE,
+  FLAG_ALIVE, FLAG_PARENT, FLAG_VISIBLE,
   SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
@@ -34,7 +34,13 @@ export interface CpuPickFrame {
   nodeLodPx: number;
 }
 
-/** Topmost shown node at device-px (xPx, yPx), or null. */
+/**
+ * Topmost shown node at device-px (xPx, yPx), or null.  Two passes
+ * mirroring draw order (round 14.9): leaves scan descending slot (the
+ * leaf stream's overwrite order), and only when no leaf hits do parents
+ * test in *reverse* draw-permutation order (the last-drawn — deepest —
+ * parent wins), so a parent can never swallow its children's picks.
+ */
 export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, yPx: number ): number | null {
   const flags = view.column( 'node.flags' ) as Uint32Array;
   const pos = view.column( 'node.position' ) as Float32Array;
@@ -42,8 +48,8 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
   const shapes = view.column( 'node.shape' ) as Uint32Array;
   const borderGeom = view.column( 'node.borderGeom' ) as Uint32Array;
 
-  for( let slot = view.highWater( 'nodes' ) - 1; slot >= 0; slot-- ){
-    if( ( flags[ slot ] & SHOWN ) !== SHOWN ){ continue; }
+  const hits = ( slot: number ): boolean => {
+    if( ( flags[ slot ] & SHOWN ) !== SHOWN ){ return false; }
 
     // device-px half sizes with the sub-pixel floor, as in nodeLod()
     let hw = size[ slot * 2 ] * 0.5 * frame.zoomDpr;
@@ -58,7 +64,7 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
     const dy = yPx - ( pos[ slot * 2 + 1 ] * frame.zoomDpr + frame.panYPx );
     const hmax = Math.max( hw, hh );
 
-    if( Math.abs( dx ) > hmax || Math.abs( dy ) > hmax ){ continue; } // quick reject
+    if( Math.abs( dx ) > hmax || Math.abs( dy ) > hmax ){ return false; } // quick reject
 
     let shape = shapes[ slot ];
 
@@ -83,12 +89,22 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
       const count = ref >>> 24;
       const points = view.polyBlob().subarray( off, off + count * 2 );
 
-      if( insideUnitPolygon( points, dx / hw, dy / hh ) ){ return slot; }
-
-      continue;
+      return insideUnitPolygon( points, dx / hw, dy / hh );
     }
 
-    if( insideShape( shape, dx, dy, hw, hh, radius ) ){ return slot; }
+    return insideShape( shape, dx, dy, hw, hh, radius );
+  };
+
+  for( let slot = view.highWater( 'nodes' ) - 1; slot >= 0; slot-- ){
+    if( ( flags[ slot ] & FLAG_PARENT ) !== 0 ){ continue; } // the parent pass below
+
+    if( hits( slot ) ){ return slot; }
+  }
+
+  const order = view.parentOrder();
+
+  for( let i = order.length - 1; i >= 0; i-- ){
+    if( hits( order[ i ] ) ){ return order[ i ]; }
   }
 
   return null;

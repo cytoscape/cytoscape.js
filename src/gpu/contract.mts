@@ -511,6 +511,11 @@ export interface ModelView {
   labelAt( slot: number, group?: LabelStream ): LabelEntry | undefined;
   /** Slots whose labels changed since the last call; returns-and-clears (default: nodes). */
   takeLabelDirty( group?: LabelStream ): number[];
+  /** The compound parent draw permutation (round 14.9): live parent
+   * slots sorted (depth asc, slot asc) — the paint order of the parent
+   * stream, and the reverse of the CPU pick's parent pass.  Owned by
+   * the store: identity changes exactly when the hierarchy changes. */
+  parentOrder(): Uint32Array;
 }
 
 /** A validated reference to an element slot; stale when `gen` no longer matches. */

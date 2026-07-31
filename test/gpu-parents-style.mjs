@@ -38,15 +38,17 @@ describe('gpu/style: parents sheet group (round 14.6)', function(){
     expect( q.style( 'padding' ) ).to.equal( 0 );
   });
 
-  it('overlays: nodes block < :parent defaults < parents block (v3 specificity)', function(){
+  it('overlays: :parent defaults < user nodes block < user parents block (v3 order)', function(){
     const cy = make( {
       nodes: { backgroundColor: '#ff0000' },
       parents: { borderWidth: 3 }
     } );
 
-    // the default :parent background beats the user nodes block (v3)
-    expect( cy.$id( 'p' ).style( 'background-color' ) ).to.equal( 'rgb(238,238,238)' );
+    // v3 precedence is order-based: the user nodes block sits after the
+    // default :parent block and overrides it (parity-pinned)
+    expect( cy.$id( 'p' ).style( 'background-color' ) ).to.equal( 'rgb(255,0,0)' );
     expect( cy.$id( 'p' ).style( 'border-width' ) ).to.equal( 3 ); // user parents block wins
+    expect( cy.$id( 'p' ).style( 'shape' ) ).to.equal( 'rectangle' ); // un-overridden default holds
     expect( cy.$id( 'q' ).style( 'background-color' ) ).to.equal( 'rgb(255,0,0)' );
 
     const cy2 = make( { parents: { backgroundColor: '#0000ff' } } );
@@ -137,22 +139,33 @@ describe('gpu/style: parents sheet group (round 14.6)', function(){
     expect( cy.$id( 'q' ).width() ).to.equal( 30 ); // style size restored
   });
 
-  it('demotes nodes paint mappers that parents override from GPU eval', function(){
+  it('demotes nodes paint mappers only where the parents group resolves differently', function(){
+    const mapper = { data: 'c', domain: [ 0, 1 ], range: [ '#000000', '#ffffff' ] };
+
+    // the parents block overrides the mapped channel: the kernel would
+    // repaint parents with the nodes value — demoted to CPU
     const cy = make( {
-      nodes: { backgroundColor: { data: 'c', domain: [ 0, 1 ], range: [ '#000000', '#ffffff' ] } }
+      nodes: { backgroundColor: mapper },
+      parents: { backgroundColor: '#0000ff' }
     } );
 
-    // background-color is overridden by the default :parent block, so the
-    // kernel would repaint parents with the nodes value — demoted
     expect( cy._styleEngine.paintInputs( 'nodes' ).map( i => i.m.prop ) )
       .to.not.include( 'background-color' );
 
-    const flat = cytoscapeGpu( { elements: { nodes: [ { data: { id: 'x' } } ], edges: [] } } );
+    // no parents override: the user nodes block replaces the default
+    // :parent background (v3 order), so parents share the mapper and the
+    // channel stays GPU-evaluated even under compounds
+    const cy2 = make( { nodes: { backgroundColor: mapper } } );
 
-    flat.style( { nodes: { backgroundColor: { data: 'c', domain: [ 0, 1 ], range: [ '#000000', '#ffffff' ] } } } );
-
-    expect( flat._styleEngine.paintInputs( 'nodes' ).map( i => i.m.prop ) )
+    expect( cy2._styleEngine.paintInputs( 'nodes' ).map( i => i.m.prop ) )
       .to.include( 'background-color' );
+
+    // a nodes mapper on a default-overlay channel replaces the overlay
+    // for parents too (order-based precedence), so it also stays on GPU
+    const cy3 = make( { nodes: { borderColor: mapper } } );
+
+    expect( cy3._styleEngine.paintInputs( 'nodes' ).map( i => i.m.prop ) )
+      .to.include( 'border-color' );
   });
 
 });

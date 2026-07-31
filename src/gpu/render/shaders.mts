@@ -57,6 +57,9 @@ const FLAG_CURVED: u32 = 1024u; // edge renders in the curved stream (store-mana
 // the curve is not chord-bounded (taxi, extrapolated weights): cull by
 // the endpoint AABB grown by slack + chord length instead (12b)
 const FLAG_CURVED_BOX: u32 = 2048u;
+// compound parent (round 14.9, node-only, store-managed): parents draw
+// in their own pre-edge stream, so the main node cull excludes them
+const FLAG_PARENT: u32 = 4096u;
 const SHOWN: u32 = 3u; // ALIVE | VISIBLE
 
 const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9

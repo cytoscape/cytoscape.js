@@ -3055,4 +3055,70 @@ test.describe( 'WebGPU renderer', () => {
     expect( await inkAround( c.x + 95 ) ).toBe( 0 ); // target label removed
   } );
 
+  test( 'compound parents draw under children and edges, and pick around them (round 14.9)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // p (green, padding 20) > a red child at the origin; q leaf far right;
+    // edge a-q crosses p's padding band on its way out
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'p' } },
+        { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } },
+        { data: { id: 'q' }, position: { x: 200, y: 0 } },
+        { data: { id: 'aq', source: 'a', target: 'q' } }
+      ],
+      style: {
+        nodes: { 'width': 60, 'height': 60, 'shape': 'rectangle', 'background-color': 'red' },
+        parents: { 'background-color': 'rgb(0,128,0)', 'border-width': 0, padding: 20 },
+        edges: { 'width': 8, 'line-color': 'rgb(0,0,255)' }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await page.evaluate( () => new Promise( resolve => requestAnimationFrame( () => requestAnimationFrame( resolve ) ) ) );
+
+    // the child draws over its parent...
+    const [ childR, childG ] = await pixelAt( page, center.x, center.y );
+
+    expect( childR ).toBeGreaterThan( 200 );
+    expect( childG ).toBeLessThan( 80 );
+
+    // ...the padding band shows the parent...
+    const [ bandR, bandG ] = await pixelAt( page, center.x, center.y - 40 );
+
+    expect( bandG ).toBeGreaterThan( 100 );
+    expect( bandR ).toBeLessThan( 80 );
+
+    // ...and the edge draws over the parent band on its way out (x=44 is
+    // inside p's box [-50, 50], outside the child)
+    const atEdge = await pixelAt( page, center.x + 44, center.y );
+
+    expect( atEdge[ 2 ] ).toBeGreaterThan( 200 );
+
+    // picking mirrors draw order: child at the center, parent in the band
+    const picked = await page.evaluate( async ( { x, y } ) => ( {
+      child: ( await window.cy.pick( x, y ) )?.id(),
+      band: ( await window.cy.pick( x, y - 40 ) )?.id()
+    } ), { x: center.x, y: center.y } );
+
+    expect( picked.child ).toBe( 'a' );
+    expect( picked.band ).toBe( 'p' );
+
+    // dragging the child re-derives the parent on-GPU state via the
+    // normal column path: the old band pixel clears once the child moves
+    await page.evaluate( () => {
+      window.cy.$id( 'a' ).position( { x: -150, y: 0 } );
+    } );
+    await page.evaluate( () => new Promise( resolve => requestAnimationFrame( () => requestAnimationFrame( resolve ) ) ) );
+
+    const bandAfter = await pixelAt( page, center.x, center.y - 40 );
+
+    // parent followed its child away: the old band pixel is background now
+    expect( bandAfter[ 0 ] ).toBeGreaterThan( 200 );
+    expect( bandAfter[ 1 ] ).toBeGreaterThan( 200 );
+    expect( bandAfter[ 2 ] ).toBeGreaterThan( 200 );
+  } );
+
 } );

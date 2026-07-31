@@ -3523,9 +3523,11 @@ commit(s) with docs in-commit):
   Node tests, typecheck + lint clean.
 - [x] **14.6 Parents sheet group + compound props** — landed
   2026-07-31.  The sheet gains **`parents`**: channel props that
-  overlay the nodes group for parent slots with v3's specificity —
-  user nodes block < the default `:parent` overlay (rectangle,
-  #eee fill, 1px #ccc border) < user parents block — plus the
+  overlay the nodes group for parent slots with v3's order-based
+  precedence — the default `:parent` overlay (rectangle, #eee
+  fill, 1px #ccc border) < user nodes block < user parents block
+  (v3 applies blocks in order; the 14.9 parity scene caught the
+  first cut assuming specificity ordering) — plus the
   compound props (`padding` px or 'N%', `padding-relative-to`,
   `min-width`/`min-height`, `compound-sizing-wrt-labels` where
   `'exclude'` is the only accepted value, `'include'` throws —
@@ -3589,12 +3591,48 @@ commit(s) with docs in-commit):
   parents.  Tests-first: 7 specs in `test/gpu-compound-wire.mjs`
   red then green — 2031 Node + 60 module tests, typecheck + lint
   clean.
-- [ ] **14.9 Parent draw stream, cull, pick** — `parentNode` cull
-  kind + permutation, node-kind/prepass exclusion, `drawScene`
-  insertion, CPU-pick two-pass, export groups.  Playwright:
-  compound golden (nesting/padding/borders), a live v3-parity
-  compound scene (body geometry is deterministic and
-  v3-comparable), pick/hover specs.
+- [x] **14.9 Parent draw stream, cull, pick** — landed 2026-07-31.
+  Parent bodies draw in their own stream right after the depth
+  prepass (under every edge layer — v3's compound order), off a
+  new `parentNode` cull kind whose input iteration is the
+  CPU-built (depth asc, slot asc) permutation: the compaction
+  scaffold's write expression is now parameterizable, and the
+  parent kernel writes the *permuted* slot, so its visible list is
+  already in paint order (outer parents under inner ones) with
+  zero sorting on-GPU.  Bindings: positions/sizes/flags/
+  borderWidths + the parentOrder buffer (uploaded only when the
+  hierarchy's order object changes identity) at exactly the
+  8-storage budget, with the ghost cull's conservative extent tier
+  (full border + the frame outline slack).  The main `node` cull
+  (and with it the depth prepass) excludes `FLAG_PARENT` — flags
+  were already bound, zero new bindings — which is also what keeps
+  early-z from killing the edges/children that draw over parent
+  interiors (parents lose the early-z benefit; recorded — few and
+  flat).  CPU pick became two passes mirroring draw order: leaves
+  descending, then parents in reverse permutation (deepest wins),
+  so a parent can never swallow its children's picks; the pick
+  entry and export/serialize paths flush derived geometry first.
+  **Two real bugs caught by the new harness**: the renderer's
+  init-time mirror full-upload ran before the hierarchy flush
+  (the exact 12a init-order lesson re-hit — parents rendered at
+  their pre-derive columns; init now calls `flushDerived()`), and
+  14.6's specificity assumption was wrong — **v3 precedence is
+  order-based**, so a user nodes block overrides the default
+  `:parent` overlay (the parity scene showed v3 parents in the
+  user node color; the merge order and GPU-demotion set were
+  corrected, with the parents-style suite re-pinned).  Verifies:
+  3 new compound CPU-pick specs, a `webgpu` behavioral spec
+  (child-over-parent pixels, padding band, edge-over-parent, pick
+  in band vs child, parent follows child), the `compounds` golden
+  (nesting/padding/borders), and the `parity-compounds` live v3
+  scene at **2.09%** under a 3% bound — the residual is a
+  recorded deviation: v3's node bb includes the border's
+  miter-corner overshoot (~(√2−1)·border/2 per side on cornered
+  shapes), which compounds inherit as slightly larger parent
+  boxes with bordered children; v4's child extents are the plain
+  border-inclusive `outerHalf`.  Full suites: 2034 Node tests,
+  116/116 Playwright (54+3 `webgpu`... all pre-existing goldens
+  byte-stable), typecheck + lint clean.
 - [ ] **14.10 Compound loop edges** — CurveIndex relation routing,
   invalidation.  Golden + parity scene (parent↔descendant edges,
   parent self-loop).

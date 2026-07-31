@@ -969,9 +969,11 @@ compounds 0↔>0 transitions.
 Round 14.6 (the `parents` sheet group): parent nodes style through a
 **fourth sheet key** — `{ nodes, edges, parents, core }` — whose
 channel props overlay the nodes group for parent slots, with v3's
-specificity (user nodes block < the default `:parent` overlay —
-`rectangle`, `#eee` fill, 1px `#ccc` border, padding 10 — < user
-parents block; in v3 a `:parent` selector outranks `node`).
+order-based precedence (the default `:parent` overlay — `rectangle`,
+`#eee` fill, 1px `#ccc` border, padding 10 — < user nodes block <
+user parents block; v3 applies style blocks in order, and the default
+stylesheet sits before the user's, so a user `node` block restyles
+parents too — pinned by the live parity scene).
 Parents-block values are constants or mappers, evaluated for parent
 slots only; a leaf↔parent flip restyles the node against the right
 group automatically.  The **compound props** live in the parents
@@ -987,11 +989,34 @@ string; leaves read 0, as v3 leaves do).  The v3 `:parent:selected`
 tint is not ported — v4 never restyles on selection (the shader
 accent ring is the selection affordance); recorded deviation.
 GPU mapper eval: nodes-group paint mappers on channels the parents
-overlay resolves differently (always the default overlay's
-background/border colors, plus any user parents-block prop) demote
-to the CPU path while compounds exist — the eval kernel runs over
-every slot and would repaint parents with the nodes-group value; a
+group resolves differently (default-overlay channels the nodes block
+does not override, plus any user parents-block prop) demote to the
+CPU path while compounds exist — the eval kernel runs over every
+slot and would repaint parents with the nodes-group value; a
 recorded scope note.
+
+Round 14.9 (the parent draw stream): parent bodies render in their
+own culled stream drawn right after the depth prepass — under every
+edge layer, arrow, leaf and label, v3's compound order — while the
+main node stream (and the depth prepass with it) excludes parents on
+`FLAG_PARENT`.  Draw order **among parents** is depth-asc, slot-asc
+(outer under inner): the parent cull kernel iterates a CPU-built
+permutation uploaded only on hierarchy changes and writes the
+permuted slots, so its visible list is already in paint order with
+no GPU sorting.  The CPU node pick mirrors this in two passes —
+leaves by descending slot, then parents in reverse permutation
+order — so a parent never swallows its children's picks and the
+padding band picks the parent.  Recorded deviations: parents are
+excluded from the early-z prepass (their interiors must not kill
+the edges/children drawn over them — they lose the occlusion
+benefit); parent ghost/underlay/overlay/label decorations keep
+their existing post-edge draw positions (deferred to the z-index
+round); and v4's parent boxes can sit sub-pixel smaller than v3's
+when children have borders — v3's node bb includes the border's
+miter-corner overshoot (~(√2−1)·border/2 per side on cornered
+shapes) while v4's child extents are the plain border-inclusive
+`outerHalf` (the `parity-compounds` scene carries a looser bound
+for exactly this).
 
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under

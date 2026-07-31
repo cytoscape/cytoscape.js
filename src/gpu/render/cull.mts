@@ -28,12 +28,21 @@ culling: pick draws stay O(region).
 
 const WG_SIZE = 256;
 
-export type CullKind = 'node' | 'edge' | 'curvedEdge' | 'glyph' | 'edgeGlyph' | 'ghost' | 'nodeLayer';
+export type CullKind = 'node' | 'edge' | 'curvedEdge' | 'glyph' | 'edgeGlyph' | 'ghost' | 'nodeLayer' | 'parentNode';
 
 /** ordered storage-buffer inputs per kind (bindings 2..N-4 of the cull layout) */
-const INPUT_COUNTS: Record<CullKind, number> = { node: 5, edge: 5, curvedEdge: 5, glyph: 3, edgeGlyph: 5, ghost: 5, nodeLayer: 4 };
+const INPUT_COUNTS: Record<CullKind, number> = {
+  node: 5, edge: 5, curvedEdge: 5, glyph: 3, edgeGlyph: 5, ghost: 5, nodeLayer: 4, parentNode: 5
+};
 
-const SCAFFOLD = `
+/**
+ * The compaction scaffold.  `out` is the value written into the visible
+ * list for a surviving invocation — `gid.x` (the slot) for every direct
+ * kind; the parent stream iterates a permutation and writes the permuted
+ * slot instead (round 14.9), so its visible list is already in paint
+ * order (shallow parents under deep ones).
+ */
+const scaffoldWriting = ( out: string ): string => `
 struct CullInfo { count: u32, indexCount: u32 }
 
 var<workgroup> wgLocal: atomic<u32>;
@@ -83,10 +92,12 @@ fn csScatter(
   }
 
   if (p == 1u) {
-    visible[wgOffsets[wg.x] + scanBuf[lid] - 1u] = gid.x;
+    visible[wgOffsets[wg.x] + scanBuf[lid] - 1u] = ${out};
   }
 }
 `;
+
+const SCAFFOLD = scaffoldWriting( 'gid.x' );
 
 const NODE_CULL = `
 ${COMMON}
@@ -120,6 +131,8 @@ fn borderOut(slot: u32) -> f32 {
 
 fn isVisible(slot: u32) -> bool {
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
+  // compound parents draw in their own pre-edge stream (round 14.9)
+  if ((nodeFlags[slot] & FLAG_PARENT) != 0u) { return false; }
 
   let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
   let c = modelToPx(frame, positions[slot]);
@@ -129,6 +142,42 @@ fn isVisible(slot: u32) -> bool {
            c.y + ext.y < 0.0 || c.y - ext.y > frame.viewportPx.y);
 }
 ${SCAFFOLD}
+`;
+
+// compound parent bodies (round 14.9): the stream iterates the CPU-built
+// (depth asc, slot asc) permutation and writes the *permuted* slot, so
+// the visible list is already in paint order — outer parents under inner
+// ones — and the main node pipeline draws it before the edge layers.
+// Extents take the ghost cull's conservative tier (full border width +
+// the frame's monotone outline bound; no borderGeom slot left).
+const PARENT_CULL = `
+${COMMON}
+@group(0) @binding(0) var<uniform> frame: Frame;
+@group(0) @binding(1) var<uniform> info: CullInfo;
+@group(0) @binding(2) var<storage, read> positions: array<vec2f>;
+@group(0) @binding(3) var<storage, read> sizes: array<vec2f>;
+@group(0) @binding(4) var<storage, read> nodeFlags: array<u32>;
+@group(0) @binding(5) var<storage, read> borderWidths: array<f32>;
+@group(0) @binding(6) var<storage, read> parentOrder: array<u32>;
+@group(0) @binding(7) var<storage, read_write> wgCounts: array<u32>;
+@group(0) @binding(8) var<storage, read_write> wgOffsets: array<u32>;
+@group(0) @binding(9) var<storage, read_write> visible: array<u32>;
+
+fn isVisible(i: u32) -> bool {
+  let slot = parentOrder[i];
+
+  if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
+  if ((nodeFlags[slot] & FLAG_PARENT) == 0u) { return false; } // stale permutation guard
+
+  let bOut = borderWidths[slot] * frame.zoomDpr + frame.outlineSlack * frame.zoomDpr;
+  let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
+  let c = modelToPx(frame, positions[slot]);
+  let ext = lod.xy + vec2f(2.0 + bOut);
+
+  return !(c.x + ext.x < 0.0 || c.x - ext.x > frame.viewportPx.x ||
+           c.y + ext.y < 0.0 || c.y - ext.y > frame.viewportPx.y);
+}
+${scaffoldWriting( 'parentOrder[gid.x]' )}
 `;
 
 const EDGE_CULL = `
@@ -539,6 +588,7 @@ ${SCAFFOLD}
 
 const CULL_SHADERS: Record<CullKind, string> = {
   node: NODE_CULL,
+  parentNode: PARENT_CULL,
   edge: EDGE_CULL,
   curvedEdge: CURVED_EDGE_CULL,
   glyph: GLYPH_CULL,
@@ -581,7 +631,7 @@ export class CullKernels {
     this.countPipelines = {} as Record<CullKind, GPUComputePipeline>;
     this.scatterPipelines = {} as Record<CullKind, GPUComputePipeline>;
 
-    for( const kind of [ 'node', 'edge', 'curvedEdge', 'glyph', 'edgeGlyph', 'ghost', 'nodeLayer' ] as CullKind[] ){
+    for( const kind of [ 'node', 'parentNode', 'edge', 'curvedEdge', 'glyph', 'edgeGlyph', 'ghost', 'nodeLayer' ] as CullKind[] ){
       const inputs = INPUT_COUNTS[ kind ];
       const layout = device.createBindGroupLayout( {
         label: `cy-gpu:${kind}-cull-layout`,

@@ -55,7 +55,8 @@ Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`,
 plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 `renderedExtent`, `size`), events (with the usual aliases +
 `onRender`/`offRender`; delegation via predicate functions), graph
-manipulation, `style()` (the `{ nodes, edges }` sheet), `layout()`/
+manipulation, `style()` (the `{ nodes, edges, parents, core }`
+sheet), `layout()`/
 `makeLayout` (grid, preset, circle, concentric, breadthfirst, random —
 plus `eles.layout()` for subset scopes and the v3 `layoutPositions`
 plumbing with spacingFactor/transform/animate — an animated layout
@@ -86,7 +87,12 @@ iteration (`sort`, `reduce`, `max`/`min`), comparison, building/
 filtering (`byGroup`, `diff`, `absoluteComplement`, set aliases),
 traversal (`outgoers`/`incomers`, `roots`/`leaves`,
 `successors`/`predecessors`, `edgesWith`/`edgesTo`,
-`parallelEdges`/`codirectedEdges`, `components`), degree
+`parallelEdges`/`codirectedEdges`, `components`), the compound
+surface (round 14: `parent`/`parents`/`ancestors`/`children`/
+`descendants`/`siblings`/`orphans`/`nonorphans`/`commonAncestors`,
+`isParent`/`isChildless`/`isChild`/`isOrphan`, `move({ parent })`,
+compound-relative `relativePosition`, real `padding()`/
+`paddedWidth`/`paddedHeight`), degree
 (`degree`/`indegree`/`outdegree` are singular first-element accessors as
 in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
 `select`/`unselect`/`selectify`, `grabbable`/`lock`,
@@ -870,15 +876,22 @@ same element (or the core) fire in registration order.
 Out of scope (deferred): string-formatting label mappers beyond the
 passthrough, and the GPU tween fast path for *size* channels
 (position and paint offload today; size is a geometry-tier project,
-see the design decisions above).  **Compound nodes are in progress**
-under the round-14 plan (PLAN.md, "Round 14 plan — compound nodes",
-signed off 2026-07-31): parent/child hierarchy with auto-sized
-parents materialized into the columnar model, parents-under-
-descendants draw order, ancestor-gated visibility + effective
-opacity, ported event bubbling, a `parents` sheet group plus
-structural `case`/query conditions, and compound loop edges — each
-landing as its own tests-first commit, with the design decisions
-recorded here as they land.
+see the design decisions above).  **Compound nodes landed as round
+14** (PLAN.md, "Round 14 plan — compound nodes", planned and landed
+2026-07-31): parent/child hierarchy in the columnar store with
+auto-sized parents materialized into the position/size columns,
+parents-under-descendants draw order, ancestor-gated visibility +
+rendered effective opacity, ported event bubbling, a `parents` sheet
+group plus structural `case`/query conditions, compound loop edges,
+and the layout/tween/interaction rules — each item its own
+tests-first commit, with the design decisions and deviations
+recorded in the round-14 paragraphs above and the summary bullet in
+the deviations list below.  v3 compound surface *not* ported (the
+usual one-name-per-concept and geometry-tier calls): the four
+min-size bias props (the centered clamp instead; a future round may
+add per-side padding props), `compound-sizing-wrt-labels: 'include'`
+(labels are excluded from bb), `:parent:selected` restyling, and
+`z-compound-depth`/`z-index-compare` (the z-index round).
 
 Landed so far (round 14.1 — the hierarchy model): `parent` is a
 **first-class node field**, not sidecar data — like edge
@@ -1525,6 +1538,21 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   glyph runs from the model, so mutations made while headless render
   on re-mount.  Re-mounting to the same container is a no-op;
   a different container unmounts first.
+- **Compound nodes** (round 14) — the deviations in one place (the
+  round-14 paragraphs above carry the detail): parent decorations
+  (ghost/underlay/overlay/labels) keep their post-edge draw
+  positions while parent *bodies* draw first (z-index round);
+  parents are excluded from the early-z prepass; parent boxes can
+  sit sub-pixel smaller than v3's with bordered children (no
+  miter-corner overshoot in the child extents); `parent()` always
+  returns a proper collection; `move({ parent })` re-parents in
+  place (no remove/restore refs cycle); compound-loop endpoints
+  anchor outside-to-node rather than v3's outside-to-line;
+  `boundingBoxAt` skips parent bodies (fit-target approximation);
+  drag sets don't flag descendants `grabbed`; and the min-size
+  bias props / `compound-sizing-wrt-labels: 'include'` /
+  `:parent:selected` / `z-compound-depth`/`z-index-compare` are
+  not ported (decided design).
 - **Device-loss recovery** (round 10): an external device loss emits
   `devicelost` and auto-recovers once — the core re-mounts a fresh
   renderer against the same container (the model is CPU-canonical, so

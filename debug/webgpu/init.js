@@ -185,6 +185,74 @@ const paramDefs = {
     return { nodes, edges, hasPositions: true, style };
   }
 
+  // round 14: clustered compound generator — N leaves under ~N/20
+  // parents (every 4th parent nested under the previous one), leaves
+  // blobbed per cluster, mostly intra-cluster edges plus a sprinkle of
+  // child->parent edges to exercise the compound loops
+  function generateCompoundNetwork(spec) {
+    const match = /^(\d+)x(\d+)$/.exec(spec) || [null, '10000', '20000'];
+    const n = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const clusterSize = 20;
+    const clusters = Math.max(1, Math.floor(n / clusterSize));
+    const side = Math.ceil(Math.sqrt(clusters)) * 400;
+    const nodes = [];
+    const edges = [];
+
+    for(let c = 0; c < clusters; c++) {
+      const nested = c % 4 === 3; // every 4th parent nests under its predecessor
+      const parentDef = { data: { id: 'p' + c } };
+
+      if(nested) { parentDef.data.parent = 'p' + (c - 1); }
+
+      nodes.push(parentDef);
+    }
+
+    const cx = i => (i % Math.ceil(Math.sqrt(clusters))) * 400;
+    const cyy = i => Math.floor(i / Math.ceil(Math.sqrt(clusters))) * 400;
+
+    for(let i = 0; i < n; i++) {
+      const c = i % clusters;
+
+      nodes.push({
+        data: { id: 'n' + i, parent: 'p' + c },
+        position: {
+          x: cx(c) + Math.random() * 220,
+          y: cyy(c) + Math.random() * 220
+        }
+      });
+    }
+
+    for(let j = 0; j < m; j++) {
+      if(j % 50 === 49) { // a sprinkle of child->parent edges (compound loops)
+        const i = Math.floor(Math.random() * n);
+
+        edges.push({ data: { id: 'e' + j, source: 'n' + i, target: 'p' + (i % clusters) } });
+        continue;
+      }
+
+      const c = Math.floor(Math.random() * clusters);
+      const perCluster = Math.floor(n / clusters);
+      // leaves of cluster c are the ids i with i % clusters === c
+      const pick = () => c + Math.min(perCluster - 1, Math.floor(Math.random() * perCluster)) * clusters;
+      const intra = j % 5 !== 0; // 4 in 5 edges stay inside a cluster
+
+      edges.push({ data: {
+        id: 'e' + j,
+        source: 'n' + (intra ? pick() : Math.floor(Math.random() * n)),
+        target: 'n' + (intra ? pick() : Math.floor(Math.random() * n))
+      } });
+    }
+
+    const style = {
+      nodes: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' },
+      parents: { 'padding': 14 },
+      edges: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 }
+    };
+
+    return { nodes, edges, hasPositions: true, style };
+  }
+
   // -- loading --
 
   function loadNetwork(gpuElements, style) {
@@ -295,7 +363,9 @@ const paramDefs = {
   const network = networks[params.network] || networks[paramDefs.network.default];
 
   if(network.generated) {
-    const generated = generateNetwork(params.gen);
+    const generated = network.generated === 'compound'
+      ? generateCompoundNetwork(params.gen)
+      : generateNetwork(params.gen);
 
     loadNetwork(generated, generated.style);
   } else if(network.styleUrl) {

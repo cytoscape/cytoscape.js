@@ -38,7 +38,8 @@ const SCENES = [
   { key: 'ndex', label: 'ndex-x-large (19.6k × 465k)', page: { url: '/debug/webgpu/network-ndex-x-large.json' } },
   // round 12a: bundled-bezier pan cost — edges come in parallel pairs so
   // every edge actually curves (a lone bezier edge renders straight)
-  { key: 'gen-25k-curved', label: 'generated 25k × 50k curved (bezier pairs)', page: { n: 25000, m: 50000, parallel: 2, curved: true } }
+  { key: 'gen-25k-curved', label: 'generated 25k × 50k curved (bezier pairs)', page: { n: 25000, m: 50000, parallel: 2, curved: true } },
+  { key: 'gen-25k-compound', label: 'generated 25k × 50k compound (1k parents)', page: { n: 25000, m: 50000, compound: 1000 } }
 ];
 
 const PAN_VIEWS = [

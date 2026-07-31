@@ -47,5 +47,14 @@ var networks = {
     nodes: '?',
     edges: '?',
     generated: true
+  },
+  'compound': {
+    // round 14: clustered compound scene — leaves grouped under parents
+    // (1 per ~20 leaves, every 4th parent nested), intra-cluster edges
+    // plus a sprinkle of child->parent edges (compound loops)
+    desc: 'Generated compound clusters (?gen=NxM)',
+    nodes: '?',
+    edges: '?',
+    generated: 'compound'
   }
 };

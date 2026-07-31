@@ -84,11 +84,30 @@
             // the curved scenes need real bundles, since a lone bezier
             // edge renders straight (the v3 rule both sides implement)
             const parallel = spec.parallel ?? 1;
+            // compound > 0: that many parents, leaves assigned round-robin
+            // (round 14.12 — both sides run their default parent styling
+            // and auto-bounds over identical hierarchies)
+            const parents = spec.compound ?? 0;
+
+            for( let p = 0; p < parents; p++ ){
+              nodes.push( { data: { id: 'p' + p } } );
+            }
+
+            // compound scenes cluster leaves per parent so parent boxes
+            // stay local (scattered members would make every parent span
+            // the whole graph — overdraw, not a representative scene)
+            const cols = parents > 0 ? Math.ceil( Math.sqrt( parents ) ) : 0;
 
             for( let i = 0; i < spec.n; i++ ){
+              const c = parents > 0 ? i % parents : 0;
+
               nodes.push( {
-                data: { id: 'n' + i },
-                position: { x: rand() * side_, y: rand() * side_ }
+                data: parents > 0
+                  ? { id: 'n' + i, parent: 'p' + c }
+                  : { id: 'n' + i },
+                position: parents > 0
+                  ? { x: ( c % cols ) * 420 + rand() * 320, y: Math.floor( c / cols ) * 420 + rand() * 320 }
+                  : { x: rand() * side_, y: rand() * side_ }
               } );
             }
 

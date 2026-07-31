@@ -17,7 +17,11 @@ round-12 curved-edges plan has both flagged calls signed off, pass
 **round 13 is complete** (12c → A1–A2 → B1–B7 → C1–C3 → D1–D4, every
 item with Node specs plus a golden and/or a live v3 pixel-parity
 scene); the round-14 compound-nodes plan (2026-07-31, at the end of
-this file) is signed off and **in progress**.  `src/gpu/README.md` is
+this file) landed in full the same day — **round 14 is complete**
+(14.0 docs-first → 14.1–14.8 model/CPU → 14.9–14.11 renderer/
+interaction → 14.12 benchmarks, every item tests-first with Node
+specs, and the renderer items with goldens + live v3 pixel-parity
+scenes).  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -160,7 +164,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 - Pan-vs-grab uses the ≤2-frame-stale resolved pick.
 - `cy.elements()` returns nodes then edges, not mixed insertion order.
 - Labels: nodes only, single-line, fixed below-node placement, not pickable, fixed-size atlas, color/text baked per glyph run.  (Since superseded: edge labels + label visuals landed in round 10; edge-label autorotate 2026-07-29.)
-- `data()`, arrows, compounds, bezier, non-grid layouts: still deferred (animations landed round 9; GPU layouts logged; circle/concentric/breadthfirst/random layouts landed round 10; bundled bezier + self-loops landed round 12a and the unbundled/segments/taxi families round 12b — compounds and the 12c pass remain).
+- `data()`, arrows, compounds, bezier, non-grid layouts: all since landed (animations round 9; circle/concentric/breadthfirst/random layouts round 10; the full curved-edge families rounds 12a–12c; **compound nodes round 14**; GPU layouts stay logged).
 
 ## Follow-ups (informed by the benchmark)
 
@@ -774,10 +778,10 @@ record.
 
 ### Deferred by design (out of scope for the prototype)
 
-- **Compounds**: `parent`/`parents`/`children`/`descendants`/
+- ~~**Compounds**~~: `parent`/`parents`/`children`/`descendants`/
   `commonAncestors`/`siblings`/`orphans`/`nonorphans`/`isParent`/
   `isChild`/`isChildless`/`isOrphan`, and compound-relative
-  `relativePosition`/`padding`/bounds.
+  `relativePosition`/`padding`/bounds — **landed in round 14**.
 - ~~**Animations**~~ — landed in round 9 (CPU-canonical path; below).
 - **Graph algorithms** (`src/collection/algorithms/*`): bfs/dfs,
   dijkstra, aStar, kruskal, bellmanFord, floydWarshall, pageRank, all
@@ -1747,7 +1751,15 @@ spellings, redundant `attr`-family duplicates — one name per concept).
 
 ### Needs a call (design open — grouped, with the v3 surface at stake)
 
-1. **Compound nodes** — the largest single absence.  Style: the
+1. ~~**Compound nodes**~~ — **landed as round 14** (2026-07-31; the
+   plan and per-item records are at the end of this file): hierarchy
+   in the columnar store, auto-sized parents materialized into the
+   position/size columns, the parents sheet group + structural
+   query/case terms, ancestor-gated visibility + rendered
+   effectiveOpacity, ported event bubbling, compound loop edges,
+   the parent draw stream, and layout/tween/interaction rules.
+   The original scoping notes, for the record: the largest single
+   absence.  Style: the
    8-prop compound group + `:parent` visuals + `padding`/
    `padding-relative-to` + `z-compound-depth`/`z-index-compare` +
    `compound-sizing-wrt-labels`.  Collection: `parent`/`ancestors`/
@@ -1883,8 +1895,9 @@ compaction landed as round 11 and edge-label autorotate landed
 design queue, in suggested order: curved
 edges (12a — bundled bezier + self-loops — landed 2026-07-30 and 12b —
 unbundled/segments/taxi — 2026-07-30/31; 12c endpoints +
-haystack/straight-triangle remains) → compounds (needs the full
-design round) → background images + the node-visual scope call
+haystack/straight-triangle remains; since complete) → compounds
+(landed as round 14, 2026-07-31) → background images + the
+node-visual scope call
 (ghost's simplified body-duplicate form slots in here) → the event
 vocabulary + extension contract calls (cheap to build once decided,
 and they unblock the ecosystem) → force layout.  Overlay/underlay
@@ -3694,11 +3707,29 @@ commit(s) with docs in-commit):
   Playwright drag spec (parent-band drag moves the subtree by the
   pointer delta; a selected parent+child pair moves exactly once).
   2049 Node tests, 119/119 Playwright, typecheck + lint clean.
-- [ ] **14.12 Debug scene + benchmarks + true-up** —
-  `debug/webgpu` compound scene; a renderer-benchmark compound
-  scene; the auto-bounds flush cost at scale (e.g. 200k nodes
-  under 1k parents, per-frame drag flush) recorded here; final
-  docs true-up.
+- [x] **14.12 Debug scene + benchmarks + true-up** — landed
+  2026-07-31.  `debug/webgpu` gained a `?network=compound`
+  generated scene (clustered leaves under ~N/20 parents, every 4th
+  parent nested, intra-cluster edges plus a sprinkle of
+  child→parent compound loops).  **`benchmark/gpu/compound.mjs`**
+  (Mitata, v3 vs v4 at BENCH_N; instances torn down after the run —
+  v3 compound instances leave live timers behind): at N = 2k,
+  parent drag (subtree shift + bb settle) **263×** v3 (1.14 µs),
+  child drag + parent re-derive **59×** (1.50 µs), reparent
+  round-trip **142×** (0.64 µs).  **Flush cost at scale** (200k
+  leaves under 1 000 parents, 200 children each, 200k edges;
+  direct measurement): init 1.81 s, a full re-derive of all 1 000
+  parents **2.7 ms**, a parent-drag frame (200-child subtree shift
+  + flush + delta) **17.6 µs**, a child-drag frame **11.8 µs** —
+  auto-bounds are noise at frame rate.  **Renderer benchmark**
+  gained `gen-25k-compound` (25k × 50k under 1k parents, leaves
+  clustered per parent — scattered members would make every parent
+  span the whole graph, overdraw rather than a representative
+  scene): on this box (RX 580, dpr 2, scale 1) the gpu side holds
+  **vsync (16.7 ms wall p50) in every scenario** — fit-all,
+  zoomed-in, far-zoom, labels on — while v3 canvas runs ~2 s/frame
+  fit-all and ~240 ms zoomed-in; init 296 ms vs 5.1 s.  Final docs
+  true-up in this commit.  **Round 14 is complete.**
 
 **Risks tracked per item**: flush re-entrancy (raw-column reads
 only); parent `width()` readback consistency across style/bb APIs;

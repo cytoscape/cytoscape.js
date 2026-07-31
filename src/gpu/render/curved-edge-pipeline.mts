@@ -11,13 +11,15 @@ import type { ColumnId } from '../contract.mjs';
  * Curved-edge render + picking pipelines (round 12a): one instance per
  * curved edge, drawn as a strip of CURVE_SEGS quads whose vertex shader
  * evaluates the curve from live positions + per-edge params (see
- * CURVED_EDGE_SHADER).  The vertex stage binds 6 columns + the visible
- * list (node size and border ride the derived node.outerHalf column),
- * within WebGPU's base 8-storage-buffer budget; the paint columns bind
- * fragment-only (flat instance fetch).
+ * CURVED_EDGE_SHADER).  The vertex stage binds 6 columns + the curve
+ * param blob + the visible list — exactly WebGPU's base
+ * 8-storage-buffer budget (node size and border ride the derived
+ * node.outerHalf column); the paint columns bind fragment-only (flat
+ * instance fetch).
  */
 
-/** vertex-stage columns, bindings 1..6 (0 is the Frame uniform) */
+/** vertex-stage columns, bindings 1..6 (0 is the Frame uniform; the
+ * curve param blob binds at 7) */
 const VERTEX_COLUMNS: ColumnId[] = [
   'edge.endpoints',
   'edge.width',
@@ -27,7 +29,7 @@ const VERTEX_COLUMNS: ColumnId[] = [
   'edge.curveParams'
 ];
 
-/** fragment-stage columns, bindings 7..9 */
+/** fragment-stage columns, bindings 8..10 */
 const FRAGMENT_COLUMNS: ColumnId[] = [
   'edge.lineColor',
   'edge.opacity',
@@ -60,8 +62,13 @@ export class CurvedEdgePipeline {
           visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         } ) ),
+        { // the curve param blob (12b route families)
+          binding: VERTEX_COLUMNS.length + 1,
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType }
+        },
         ...FRAGMENT_COLUMNS.map( ( id, i ) => ( {
-          binding: VERTEX_COLUMNS.length + 1 + i,
+          binding: VERTEX_COLUMNS.length + 2 + i,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType }
         } ) )
@@ -103,8 +110,13 @@ export class CurvedEdgePipeline {
       layout: this.bindLayout,
       entries: [
         { binding: 0, resource: { buffer: uniform } },
-        ...[ ...VERTEX_COLUMNS, ...FRAGMENT_COLUMNS ].map( ( id, i ) => ( {
+        ...VERTEX_COLUMNS.map( ( id, i ) => ( {
           binding: i + 1,
+          resource: { buffer: mirror.buffer( id ) }
+        } ) ),
+        { binding: VERTEX_COLUMNS.length + 1, resource: { buffer: mirror.blobBuffer() } },
+        ...FRAGMENT_COLUMNS.map( ( id, i ) => ( {
+          binding: VERTEX_COLUMNS.length + 2 + i,
           resource: { buffer: mirror.buffer( id ) }
         } ) )
       ]

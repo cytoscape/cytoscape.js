@@ -2255,6 +2255,34 @@ lands it.
   subdivision into the same epoch-memoized exact-bb cache.  12 Node
   specs (`test/gpu-curve-route-accessors.mjs`) pin hand-derived
   geometry incl. the taxi bb and memo invalidation on moves.
+- [x] **Renderer: the route WGSL twin, blob mirror and box cull.**
+  `ROUTE_WGSL` mirrors the CPU route evaluator step for step — the
+  frame, the full taxi routing, `computeCornerW` (getRoundCorner), the
+  piece allocator and `routeVertexW`/`routeMidpointW` — reading the
+  same blob the CPU reads, mirrored by ColumnMirror as one storage
+  buffer under the usual span/realloc rules (`delta.curveBlob`; a
+  realloc bumps `mirror.version`, so bind groups rebuild).  The curved
+  edge VS binds the blob as its 7th vertex buffer (back at exactly the
+  8-buffer budget) and branches per kind: bezier/loop keep the 12a
+  analytic path byte-for-byte (goldens stable), route kinds evaluate
+  `routeVertexW` at their subdivision index with **discrete miter
+  normals** from the neighbouring indices — exact miters at sharp
+  polyline corners (v3's canvas join, extrusion scaled 1/cos(θ/2),
+  clamped at 6), chord-normals elsewhere, canonical per index so the
+  strip stays watertight; extruding along the miter keeps the
+  perpendicular half-width exact, so the FS's AA is unchanged.  Dashes
+  keep the chord-sum arc length over the drawn polyline.  The curved
+  cull kernel branches on FLAG_CURVED_BOX to the endpoint-AABB test
+  grown by slack + chord length (taxi and extrapolated weights are not
+  chord-bounded); the edge-glyph cull grows its anchor test the same
+  way for box owners.  The pick tile draws the same strips, so pick
+  coverage equals pixels for every family — spec-pinned.  4 new
+  `webgpu` Playwright specs: segments polyline + ≤64 B re-route on
+  drag, taxi axis-aligned legs + leg-vs-diagonal picking,
+  round-segments corner-cutting vs the sharp corner (and the arc-apex
+  midpoint), and the unbundled-bezier S through its inserted midpoint
+  with a clear mirrored band.  All 66 Playwright specs green; 12a
+  goldens byte-stable through the shader restructure.
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

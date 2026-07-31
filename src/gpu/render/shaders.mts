@@ -12,7 +12,9 @@ unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
 import { ARROW_POINTS, POLYGON_POINTS } from '../shape-points.mjs';
-import { AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS } from '../curve-geometry.mjs';
+import {
+  AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS, MAX_CURVE_PTS
+} from '../curve-geometry.mjs';
 
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
@@ -48,6 +50,9 @@ const FLAG_SELECTED: u32 = 4u;
 const FLAG_GRABBED: u32 = 16u;
 const FLAG_HOVERED: u32 = 32u;
 const FLAG_CURVED: u32 = 1024u; // edge renders in the curved stream (store-managed)
+// the curve is not chord-bounded (taxi, extrapolated weights): cull by
+// the endpoint AABB grown by slack + chord length instead (12b)
+const FLAG_CURVED_BOX: u32 = 2048u;
 const SHOWN: u32 = 3u; // ALIVE | VISIBLE
 
 const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9
@@ -308,6 +313,466 @@ fn curveTangentAt(g: CurveGeom, t: f32) -> vec2f {
     return qbezTangent(g.m, g.c2, g.e, t * 2.0 - 1.0);
   }
   return qbezTangent(g.s, g.c1, g.e, t);
+}
+`;
+
+/**
+ * Route-family geometry (round 12b) — the WGSL twin of the CurveRoute
+ * evaluator in curve-geometry.mts: unbundled bezier (kind 3), segments /
+ * round-segments (kind 4) and taxi / round-taxi (kind 5), evaluated per
+ * vertex from live positions + the params-column header + the curve
+ * param blob (a `curveBlob: array<f32>` binding the including shader
+ * declares).  Same formulas, same piece allocator, same corner math —
+ * change here and in curve-geometry.mts together.  Requires
+ * BOUNDARY_WGSL + CURVE_WGSL (boundary points, AVOID_BEZ, qbez).
+ */
+export const ROUTE_WGSL = `
+const CURVE_SEGS_U: u32 = ${ CURVE_SEGS }u;
+const MAX_ROUTE_PTS: u32 = ${ MAX_CURVE_PTS }u;
+const ROUTE_PI: f32 = 3.14159265358979;
+
+struct Route {
+  kind: f32,
+  n: u32,
+  round: u32,
+  q: array<vec2f, ${ MAX_CURVE_PTS + 2 }>, // start, interior points, end
+  radius: array<f32, ${ MAX_CURVE_PTS }>,
+  arcMode: array<u32, ${ MAX_CURVE_PTS }>,
+}
+
+struct RouteFrame { b1: vec2f, b2: vec2f, nrm: vec2f }
+
+// the weighted-base frame: 'node-position' (mode 1) measures between the
+// centers but keeps the intersection-frame normal (v3's quirk)
+fn routeFrame(
+  mode: f32, sC: vec2f, sHalf: vec2f, sShape: u32, tC: vec2f, tHalf: vec2f, tShape: u32
+) -> RouteFrame {
+  var u = tC - sC;
+  let uL = max(length(u), 1e-6);
+
+  u = u / uL;
+
+  let si = sC + u * boundaryOffset(sShape, sHalf, u);
+  let ti = tC - u * boundaryOffset(tShape, tHalf, -u);
+  let d = ti - si;
+  var l = length(d);
+
+  if (!(l >= AVOID_BEZ_L)) {
+    l = sqrt(max(d.x * d.x, AVOID_BEZ) + max(d.y * d.y, AVOID_BEZ));
+  }
+
+  var f: RouteFrame;
+
+  f.nrm = vec2f(-d.y / l, d.x / l);
+
+  if (mode == 1.0) { f.b1 = sC; f.b2 = tC; } else { f.b1 = si; f.b2 = ti; }
+
+  return f;
+}
+
+// v3's subDWH: take the effective node body away from the delta
+fn subDWH(dxy: f32, dwh: f32) -> f32 {
+  if (dxy > 0.0) { return max(dxy - dwh, 0.0); }
+  return min(dxy + dwh, 0.0);
+}
+
+fn evalRouteW(
+  header: vec4f,
+  sC: vec2f, sHalf: vec2f, sShape: u32,
+  tC: vec2f, tHalf: vec2f, tShape: u32
+) -> Route {
+  var r: Route;
+
+  r.kind = header.w;
+  r.round = 0u;
+
+  let off = u32(header.x);
+
+  if (header.w == 3.0 || header.w == 4.0) { // MULTI / SEGMENTS
+    let n = min(u32(header.z), MAX_ROUTE_PTS);
+    let f = routeFrame(curveBlob[off], sC, sHalf, sShape, tC, tHalf, tShape);
+
+    if (header.w == 3.0) {
+      for (var b = 0u; b < n; b = b + 1u) {
+        let d = curveBlob[off + 1u + b * 2u];
+        let w = curveBlob[off + 2u + b * 2u];
+
+        r.q[b + 1u] = mix(f.b1, f.b2, w) + f.nrm * d;
+      }
+    } else {
+      r.round = u32(curveBlob[off + 1u] != 0.0);
+
+      for (var s = 0u; s < n; s = s + 1u) {
+        let d = curveBlob[off + 2u + s * 4u];
+        let w = curveBlob[off + 3u + s * 4u];
+
+        r.q[s + 1u] = mix(f.b1, f.b2, w) + f.nrm * d;
+        r.radius[s] = curveBlob[off + 4u + s * 4u];
+        r.arcMode[s] = u32(curveBlob[off + 5u + s * 4u] != 0.0);
+      }
+    }
+
+    r.n = n;
+  } else { // TAXI — v3's findTaxiPoints, verbatim (see curve-geometry.mts)
+    let rawDir = curveBlob[off];
+    let turnVal = curveBlob[off + 1u];
+    let turnIsPercent = curveBlob[off + 2u] != 0.0;
+    let minD = curveBlob[off + 3u];
+    let dIncludesNodeBody = curveBlob[off + 4u] != 1.0;
+    let taxiRound = curveBlob[off + 5u] != 0.0;
+    let radiusVal = curveBlob[off + 6u];
+    let arcFlag = u32(curveBlob[off + 7u] != 0.0);
+
+    let srcWH = sHalf * 2.0;
+    let tgtWH = tHalf * 2.0;
+    let turnIsNegative = turnVal < 0.0;
+    let dw = select(0.0, (srcWH.x + tgtWH.x) * 0.5, dIncludesNodeBody);
+    let dh = select(0.0, (srcWH.y + tgtWH.y) * 0.5, dIncludesNodeBody);
+    let pd = tC - sC;
+    let dx = subDWH(pd.x, dw);
+    let dy = subDWH(pd.y, dh);
+
+    var isVert = false;
+    var isExplicitDir = false;
+
+    if (rawDir == 0.0) { // auto
+      isVert = !(abs(dx) > abs(dy));
+    } else if (rawDir == 3.0 || rawDir == 4.0) { // upward / downward
+      isVert = true;
+      isExplicitDir = true;
+    } else if (rawDir == 5.0 || rawDir == 6.0) { // leftward / rightward
+      isVert = false;
+      isExplicitDir = true;
+    } else {
+      isVert = rawDir == 1.0; // vertical
+    }
+
+    var l = select(dx, dy, isVert);
+    let pl = select(pd.x, pd.y, isVert);
+    var sgnL = sign(pl);
+    var forcedDir = false;
+
+    if (
+      !(isExplicitDir && (turnIsPercent || turnIsNegative)) &&
+      ((rawDir == 4.0 && pl < 0.0) || (rawDir == 3.0 && pl > 0.0) ||
+       (rawDir == 5.0 && pl > 0.0) || (rawDir == 6.0 && pl < 0.0))
+    ) {
+      sgnL = sgnL * -1.0;
+      l = sgnL * abs(l);
+      forcedDir = true;
+    }
+
+    var d = 0.0;
+
+    if (turnIsPercent) {
+      d = select(turnVal, 1.0 + turnVal, turnVal < 0.0) * l;
+    } else {
+      d = select(0.0, l, turnVal < 0.0) + turnVal * sgnL;
+    }
+
+    let tooCloseSrc = abs(d) < minD || abs(d) >= abs(l);
+    let rest = abs(l) - abs(d);
+    let tooCloseTgt = abs(rest) < minD || abs(rest) >= abs(l);
+
+    if ((tooCloseSrc || tooCloseTgt) && !forcedDir) { // Z-/L-shape fallbacks
+      if (isVert) {
+        if (abs(pl) <= srcWH.y * 0.5) { // horizontal Z-shape
+          let x = (sC.x + tC.x) * 0.5;
+
+          r.n = 2u;
+          r.q[1u] = vec2f(x, sC.y);
+          r.q[2u] = vec2f(x, tC.y);
+        } else if (abs(pd.x) <= tgtWH.x * 0.5) { // vertical Z-shape
+          let y = (sC.y + tC.y) * 0.5;
+
+          r.n = 2u;
+          r.q[1u] = vec2f(sC.x, y);
+          r.q[2u] = vec2f(tC.x, y);
+        } else { // L-shape
+          r.n = 1u;
+          r.q[1u] = vec2f(sC.x, tC.y);
+        }
+      } else {
+        if (abs(pl) <= srcWH.x * 0.5) { // vertical Z-shape
+          let y = (sC.y + tC.y) * 0.5;
+
+          r.n = 2u;
+          r.q[1u] = vec2f(sC.x, y);
+          r.q[2u] = vec2f(tC.x, y);
+        } else if (abs(pd.y) <= tgtWH.y * 0.5) { // horizontal Z-shape
+          let x = (sC.x + tC.x) * 0.5;
+
+          r.n = 2u;
+          r.q[1u] = vec2f(x, sC.y);
+          r.q[2u] = vec2f(x, tC.y);
+        } else { // L-shape
+          r.n = 1u;
+          r.q[1u] = vec2f(tC.x, sC.y);
+        }
+      }
+    } else { // ideal routing
+      if (isVert) {
+        let y = sC.y + d + select(0.0, srcWH.y * 0.5 * sgnL, dIncludesNodeBody);
+
+        r.n = 2u;
+        r.q[1u] = vec2f(sC.x, y);
+        r.q[2u] = vec2f(tC.x, y);
+      } else {
+        let x = sC.x + d + select(0.0, srcWH.x * 0.5 * sgnL, dIncludesNodeBody);
+
+        r.n = 2u;
+        r.q[1u] = vec2f(x, sC.y);
+        r.q[2u] = vec2f(x, tC.y);
+      }
+    }
+
+    r.round = u32(taxiRound);
+
+    if (taxiRound) {
+      for (var i = 0u; i < 2u; i = i + 1u) {
+        r.radius[i] = radiusVal;
+        r.arcMode[i] = arcFlag;
+      }
+    }
+  }
+
+  // endpoints on the node boundaries toward the first/last interior point
+  let qn = r.n + 2u;
+
+  r.q[0u] = curveBoundaryPoint(sC, sHalf, sShape, r.q[1u]);
+  r.q[qn - 1u] = curveBoundaryPoint(tC, tHalf, tShape, r.q[qn - 2u]);
+
+  return r;
+}
+
+struct RouteCornerW {
+  c: vec2f,
+  r: f32,
+  cornerStart: vec2f,
+  cornerStop: vec2f,
+  a0: f32,
+  a1: f32,
+  ccw: u32,
+}
+
+// v3's getRoundCorner as a pure function — the computeCorner twin
+fn computeCornerW(prev: vec2f, cur: vec2f, next: vec2f, radiusMax: f32, isArc: bool) -> RouteCornerW {
+  var crn: RouteCornerW;
+
+  crn.c = cur;
+  crn.r = 0.0;
+  crn.cornerStart = cur;
+  crn.cornerStop = cur;
+  crn.a0 = 0.0;
+  crn.a1 = 0.0;
+  crn.ccw = 0u;
+
+  if (radiusMax == 0.0) { return crn; }
+
+  let v1 = prev - cur;
+  let v1l = length(v1);
+  let v1n = v1 / v1l;
+  let v2 = next - cur;
+  let v2l = length(v2);
+  let v2n = v2 / v2l;
+
+  let sinA = v1n.x * v2n.y - v1n.y * v2n.x;
+  let sinA90 = v1n.x * v2n.x - v1n.y * -v2n.y;
+  var angle = asin(clamp(sinA, -1.0, 1.0));
+
+  if (abs(angle) < 1e-6) { return crn; } // collinear
+
+  var radDirection = 1.0;
+  var drawDirection = false;
+
+  if (sinA90 < 0.0) {
+    if (angle < 0.0) {
+      angle = ROUTE_PI + angle;
+    } else {
+      angle = ROUTE_PI - angle;
+      radDirection = -1.0;
+      drawDirection = true;
+    }
+  } else if (angle > 0.0) {
+    radDirection = -1.0;
+    drawDirection = true;
+  }
+
+  let halfAngle = angle * 0.5;
+  let limit = min(v1l, v2l) * 0.5;
+  var lenOut = 0.0;
+  var cRadius = 0.0;
+
+  if (isArc) {
+    lenOut = abs(cos(halfAngle) * radiusMax / sin(halfAngle));
+
+    if (lenOut > limit) {
+      lenOut = limit;
+      cRadius = abs(lenOut * sin(halfAngle) / cos(halfAngle));
+    } else {
+      cRadius = radiusMax;
+    }
+  } else {
+    lenOut = min(limit, radiusMax);
+    cRadius = abs(lenOut * sin(halfAngle) / cos(halfAngle));
+  }
+
+  crn.cornerStop = cur + v2n * lenOut;
+  crn.c = crn.cornerStop + vec2f(-v2n.y, v2n.x) * cRadius * radDirection;
+  crn.cornerStart = cur + v1n * lenOut;
+  crn.r = cRadius;
+  crn.a0 = atan2(v1n.y, v1n.x) + (ROUTE_PI * 0.5) * radDirection;
+  crn.a1 = atan2(v2n.y, v2n.x) - (ROUTE_PI * 0.5) * radDirection;
+  crn.ccw = select(0u, 1u, drawDirection);
+
+  return crn;
+}
+
+fn routeCornerW(r: ptr<function, Route>, j: u32) -> RouteCornerW {
+  return computeCornerW(
+    (*r).q[j], (*r).q[j + 1u], (*r).q[j + 2u], (*r).radius[j], (*r).arcMode[j] == 1u);
+}
+
+// sweep from a0 to a1 in the canvas-arc direction (ccw = decreasing)
+fn arcSweepW(a0: f32, a1: f32, ccw: u32) -> f32 {
+  var d = a1 - a0;
+
+  if (ccw == 1u) {
+    loop { if (d <= 0.0) { break; } d = d - 2.0 * ROUTE_PI; }
+  } else {
+    loop { if (d >= 0.0) { break; } d = d + 2.0 * ROUTE_PI; }
+  }
+
+  return d;
+}
+
+fn routePieceCountW(r: ptr<function, Route>) -> u32 {
+  if ((*r).kind == 3.0) { return max((*r).n, 1u); }
+  if ((*r).round == 1u) { return 2u * (*r).n + 1u; }
+  return (*r).n + 1u;
+}
+
+// subdivision index -> (piece, local t); piece boundaries land exactly
+// on indices (requires pieces <= CURVE_SEGS — derivation caps counts)
+fn quadPieceW(pieces: u32, idx: u32) -> vec2f {
+  if (idx >= CURVE_SEGS_U) { return vec2f(f32(pieces - 1u), 1.0); }
+
+  let base = CURVE_SEGS_U / pieces;
+  let extra = CURVE_SEGS_U % pieces;
+  let threshold = (base + 1u) * extra;
+
+  if (idx < threshold) {
+    let piece = idx / (base + 1u);
+
+    return vec2f(f32(piece), f32(idx - piece * (base + 1u)) / f32(base + 1u));
+  }
+
+  let j = idx - threshold;
+  let piece = extra + j / base;
+
+  return vec2f(f32(piece), f32(j - (piece - extra) * base) / f32(base));
+}
+
+// the route point at subdivision index idx — the routeVertex twin
+fn routeVertexW(r: ptr<function, Route>, idx: u32) -> vec2f {
+  let pt = quadPieceW(routePieceCountW(r), idx);
+  let p = u32(pt.x);
+  let t = pt.y;
+
+  if ((*r).kind == 3.0) { // MULTI: C1 spline through inserted midpoints
+    if ((*r).n == 0u) { return mix((*r).q[0u], (*r).q[1u], t); }
+
+    let c = (*r).q[p + 1u];
+    var a = (*r).q[0u];
+    var b = (*r).q[(*r).n + 1u];
+
+    if (p != 0u) { a = ((*r).q[p] + c) * 0.5; }
+    if (p != (*r).n - 1u) { b = (c + (*r).q[p + 2u]) * 0.5; }
+
+    return qbez(a, c, b, t);
+  }
+
+  if ((*r).round == 0u) { // sharp polyline: leg p runs q[p] -> q[p+1]
+    return mix((*r).q[p], (*r).q[p + 1u], t);
+  }
+
+  if ((p & 1u) == 1u) { // arc piece for corner j
+    let j = (p - 1u) / 2u;
+    let crn = routeCornerW(r, j);
+
+    if (crn.r == 0.0) { return crn.c; }
+
+    let a = crn.a0 + arcSweepW(crn.a0, crn.a1, crn.ccw) * t;
+
+    return crn.c + vec2f(cos(a), sin(a)) * crn.r;
+  }
+
+  // leg piece j = p/2: corner(j-1).stop -> corner(j).start
+  let j = p / 2u;
+  var a = (*r).q[0u];
+  var b = (*r).q[(*r).n + 1u];
+
+  if (j != 0u) { a = routeCornerW(r, j - 1u).cornerStop; }
+  if (j != (*r).n) { b = routeCornerW(r, j).cornerStart; }
+
+  return mix(a, b, t);
+}
+
+// the route midpoint + tangent (v3's label anchor/autorotate rules —
+// the routeMidpoint twin); xy = point, zw = tangent
+fn routeMidpointW(r: ptr<function, Route>) -> vec4f {
+  let n = (*r).n;
+
+  if ((*r).kind == 3.0) { // MULTI
+    if (n == 0u) {
+      return vec4f(((*r).q[0u] + (*r).q[1u]) * 0.5, (*r).q[1u] - (*r).q[0u]);
+    }
+
+    if (n % 2u == 0u) {
+      let i = n / 2u;
+
+      return vec4f(((*r).q[i] + (*r).q[i + 1u]) * 0.5, (*r).q[i + 1u] - (*r).q[i]);
+    }
+
+    let p = (n - 1u) / 2u;
+    let c = (*r).q[p + 1u];
+    var a = (*r).q[0u];
+    var b = (*r).q[n + 1u];
+
+    if (p != 0u) { a = ((*r).q[p] + c) * 0.5; }
+    if (p != n - 1u) { b = (c + (*r).q[p + 2u]) * 0.5; }
+
+    return vec4f(qbez(a, c, b, 0.5), b - a);
+  }
+
+  if (n % 2u == 0u && n > 0u) {
+    let i = n / 2u;
+
+    return vec4f(((*r).q[i] + (*r).q[i + 1u]) * 0.5, (*r).q[i + 1u] - (*r).q[i]);
+  }
+
+  if (n == 0u) {
+    return vec4f(((*r).q[0u] + (*r).q[1u]) * 0.5, (*r).q[1u] - (*r).q[0u]);
+  }
+
+  let mid = (n - 1u) / 2u;
+  let p = (*r).q[mid + 1u];
+
+  if ((*r).round == 0u) {
+    return vec4f(p, p - (*r).q[mid]);
+  }
+
+  let crn = routeCornerW(r, mid);
+
+  if (crn.r == 0.0) {
+    return vec4f(p, (*r).q[mid + 2u] - p);
+  }
+
+  var v = p - crn.c;
+
+  v = v / length(v) * crn.r;
+
+  return vec4f(crn.c + v, vec2f(v.y, -v.x));
 }
 `;
 
@@ -747,20 +1212,22 @@ export const CURVED_EDGE_SHADER = `
 ${COMMON}
 ${BOUNDARY_WGSL}
 ${CURVE_WGSL}
+${ROUTE_WGSL}
 ${DASH_WGSL}
 
 @group(0) @binding(0) var<uniform> frame: Frame;
-// vertex-stage columns (6 + the visible list, within the 8-buffer budget)
+// vertex-stage columns (7 + the visible list = the 8-buffer budget)
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
 @group(0) @binding(2) var<storage, read> widths: array<f32>;
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
 @group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
 @group(0) @binding(6) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;
 // fragment-stage columns (flat instance fetch)
-@group(0) @binding(7) var<storage, read> lineColors: array<u32>;
-@group(0) @binding(8) var<storage, read> opacities: array<f32>;
-@group(0) @binding(9) var<storage, read> lineStyles: array<u32>;
+@group(0) @binding(8) var<storage, read> lineColors: array<u32>;
+@group(0) @binding(9) var<storage, read> opacities: array<f32>;
+@group(0) @binding(10) var<storage, read> lineStyles: array<u32>;
 
 struct CurvedVSOut {
   @builtin(position) position: vec4f,
@@ -783,48 +1250,101 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   let corner = quadCorner(vi & 3u);
 
   let ends = endpoints[slot];
-  let g = evalCurveGeom(
-    curveParams[slot],
-    nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-    nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
-  );
+  let params = curveParams[slot];
 
   // LOD: width floor with alpha compensation; the curved stream is not
   // decimated (its cull predicate draws every shown curved edge)
   let widthPx = max(widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let alphaComp = min(widths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
 
-  // this vertex's subdivision point + the curve normal there: adjacent
-  // quads share exact vertex geometry, so the strip is watertight
+  // this vertex's subdivision point + the extrusion normal there:
+  // adjacent quads share exact vertex geometry, so the strip is
+  // watertight; a vertex's normal depends only on its index, so both
+  // quads sharing an index extrude identically
   let tIdx = seg + u32((corner.x + 1.0) * 0.5);
-  let t = f32(tIdx) / CURVE_SEGS_F;
-  let p = curvePoint(g, t);
-  var tangent = curveTangentAt(g, t);
-  let tl = length(tangent);
+  var p: vec2f;
+  var n: vec2f;
+  var miterScale = 1.0;
+  var uLen = 0.0;
 
-  if (tl < 1e-6) { tangent = vec2f(1.0, 0.0); } else { tangent = tangent / tl; }
+  if (params.w <= 2.0) { // bezier / loop: the 12a analytic path, unchanged
+    let g = evalCurveGeom(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+    let t = f32(tIdx) / CURVE_SEGS_F;
 
-  let n = vec2f(-tangent.y, tangent.x);
+    p = curvePoint(g, t);
+
+    var tangent = curveTangentAt(g, t);
+    let tl = length(tangent);
+
+    if (tl < 1e-6) { tangent = vec2f(1.0, 0.0); } else { tangent = tangent / tl; }
+
+    n = vec2f(-tangent.y, tangent.x);
+
+    // longitudinal model-px distance along the drawn polyline (for dashes)
+    var prev = g.s;
+
+    for (var i = 1u; i <= tIdx; i = i + 1u) {
+      let q = curvePoint(g, f32(i) / CURVE_SEGS_F);
+
+      uLen = uLen + length(q - prev);
+      prev = q;
+    }
+  } else { // 12b route families: evaluate the route from the param blob
+    var route = evalRouteW(
+      params,
+      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+    );
+
+    p = routeVertexW(&route, tIdx);
+
+    // discrete miter normal from the neighbouring subdivision points:
+    // exact miters at sharp polyline corners (v3's canvas join),
+    // chord-normals elsewhere — canonical per index, so watertight
+    var dirIn = vec2f(0.0);
+    var dirOut = vec2f(0.0);
+
+    if (tIdx > 0u) { dirIn = p - routeVertexW(&route, tIdx - 1u); }
+    if (tIdx < CURVE_SEGS_U) { dirOut = routeVertexW(&route, tIdx + 1u) - p; }
+    if (length(dirIn) < 1e-6) { dirIn = dirOut; }
+    if (length(dirOut) < 1e-6) { dirOut = dirIn; }
+
+    let lIn = max(length(dirIn), 1e-6);
+    let lOut = max(length(dirOut), 1e-6);
+    let nIn = vec2f(-dirIn.y, dirIn.x) / lIn;
+    let nOut = vec2f(-dirOut.y, dirOut.x) / lOut;
+    var m = nIn + nOut;
+
+    if (length(m) < 1e-4) { m = nIn; } // 180-degree reversal: fall back
+
+    n = m / max(length(m), 1e-6);
+    // extruding along the miter by s/cos(halfAngle) keeps the strip's
+    // perpendicular half-width exact (clamped like a miter limit)
+    miterScale = 1.0 / clamp(dot(n, nIn), 0.1666, 1.0);
+
+    // dash distance: the same chord sum over the drawn polyline
+    var prev = route.q[0u];
+
+    for (var i = 1u; i <= tIdx; i = i + 1u) {
+      let q = routeVertexW(&route, i);
+
+      uLen = uLen + length(q - prev);
+      prev = q;
+    }
+  }
+
   let halfW = widthPx * 0.5;
   let s = corner.y * (halfW + 1.0); // screen-space extrusion incl. 1px AA margin
 
-  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s), EDGE_Z, 1.0);
+  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
   out.alphaComp = alphaComp;
   out.instance = slot;
-
-  // longitudinal model-px distance along the drawn polyline (for dashes)
-  var uLen = 0.0;
-  var prev = g.s;
-
-  for (var i = 1u; i <= tIdx; i = i + 1u) {
-    let q = curvePoint(g, f32(i) / CURVE_SEGS_F);
-
-    uLen = uLen + length(q - prev);
-    prev = q;
-  }
-
   out.u = uLen;
   return out;
 }

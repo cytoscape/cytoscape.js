@@ -1990,4 +1990,239 @@ test.describe( 'WebGPU renderer', () => {
     expect( mirrorPx[ 1 ] ).toBeGreaterThan( 180 );
   } );
 
+  test( 'segments edges render the polyline and follow drags on-GPU (12b)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: {
+          'curve-style': 'segments', 'segment-distances': 60,
+          'width': 6, 'line-color': '#e74c3c'
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the chord midpoint is background (the polyline detours through the
+    // segment point)...
+    const chordPx = await pixelAt( page, center.x, center.y );
+
+    expect( chordPx[ 1 ] ).toBeGreaterThan( 180 );
+
+    // ...and the CPU-computed segment point is line color — the
+    // dual-implementation guarantee for the route evaluator
+    const mid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+    const midPx = await pixelAt( page, mid.x, mid.y );
+
+    expect( midPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( midPx[ 1 ] ).toBeLessThan( 140 );
+
+    // a node drag re-routes with a position-row upload only (the blob
+    // record is position-independent)
+    const uploadedBefore = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    await page.evaluate( () => window.cy.$id( 'b' ).position( { x: 150, y: 140 } ) );
+    await waitFrames( page );
+
+    const uploadedAfter = await page.evaluate( () => window.cy.renderer().stats().uploadedBytes );
+
+    expect( uploadedAfter - uploadedBefore ).toBeLessThanOrEqual( 64 );
+
+    const movedMid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+    const movedPx = await pixelAt( page, movedMid.x, movedMid.y );
+
+    expect( movedPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( movedPx[ 1 ] ).toBeLessThan( 140 );
+  } );
+
+  test( 'taxi edges route axis-aligned and pick on their legs (12b)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: -100 } },
+        { data: { id: 'b' }, position: { x: 150, y: 100 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: { 'curve-style': 'taxi', 'width': 6, 'line-color': '#e74c3c' }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the CPU-computed turn points carry line color...
+    const segpts = await page.evaluate( () => window.cy.$id( 'e0' ).renderedSegmentPoints() );
+
+    expect( segpts.length ).toBe( 2 );
+
+    for( const pt of segpts ){
+      const px = await pixelAt( page, pt.x, pt.y );
+
+      expect( px[ 0 ] ).toBeGreaterThan( 180 );
+      expect( px[ 1 ] ).toBeLessThan( 140 );
+    }
+
+    // ...the diagonal chord's quarter point is background (axis-aligned
+    // routing never goes there)...
+    const offRoutePx = await pixelAt( page, center.x - 75, center.y - 20 );
+
+    expect( offRoutePx[ 1 ] ).toBeGreaterThan( 180 );
+
+    // ...and picking agrees with pixels: a leg hits, the diagonal misses
+    const picks = await page.evaluate( async center => {
+      const mid = window.cy.$id( 'e0' ).renderedMidpoint();
+      const onLeg = await window.cy.pick( mid.x, mid.y );
+      const offRoute = await window.cy.pick( center.x - 75, center.y - 20 );
+
+      return {
+        onLeg: onLeg == null ? null : onLeg.id(),
+        offRoute: offRoute == null ? null : offRoute.id()
+      };
+    }, center );
+
+    expect( picks.onLeg ).toBe( 'e0' );
+    expect( picks.offRoute ).toBe( null );
+  } );
+
+  test( 'round-segments corners are rounded to the arc (12b)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const scene = round => ( {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: {
+          // a sharp corner + big radius so the arc cuts ~9px inside the
+          // corner point — beyond the stroke half-width
+          'curve-style': round ? 'round-segments' : 'segments',
+          'segment-distances': 120, 'segment-radii': 30,
+          'width': 4, 'line-color': '#e74c3c'
+        }
+      },
+      zoom: 1
+    } );
+
+    // sharp: the corner point itself carries line color
+    await makeReadyCy( page, scene( false ) );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const cornerPt = await page.evaluate( () => window.cy.$id( 'e0' ).renderedSegmentPoints()[ 0 ] );
+    const sharpPx = await pixelAt( page, cornerPt.x, cornerPt.y );
+
+    expect( sharpPx[ 0 ] ).toBeGreaterThan( 180 );
+
+    // round: the arc cuts ~9px inside the corner, so the sharp corner
+    // point reads background — while the CPU midpoint (the arc apex)
+    // carries line color.  (Tear the first instance down: makeCy stacks
+    // a fresh canvas over the container otherwise.)
+    await page.evaluate( () => window.cy.destroy() );
+    await makeReadyCy( page, scene( true ) );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const roundCornerPx = await pixelAt( page, cornerPt.x, cornerPt.y );
+
+    expect( roundCornerPx[ 1 ] ).toBeGreaterThan( 180 );
+
+    const apex = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+    const apexPx = await pixelAt( page, apex.x, apex.y );
+
+    expect( apexPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( apexPx[ 1 ] ).toBeLessThan( 140 );
+  } );
+
+  test( 'unbundled bezier splines through its control points (12b)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e0', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30, 'background-color': '#2c3e50' },
+        edges: {
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [ 70, -70 ],
+          'control-point-weights': [ 0.25, 0.75 ],
+          'width': 6, 'line-color': '#e74c3c'
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the S-curve passes through the inserted midpoint between the two
+    // controls — which is the chord midpoint here (even-count rule)
+    const mid = await page.evaluate( () => window.cy.$id( 'e0' ).renderedMidpoint() );
+    const midPx = await pixelAt( page, mid.x, mid.y );
+
+    expect( midPx[ 0 ] ).toBeGreaterThan( 180 );
+    expect( midPx[ 1 ] ).toBeLessThan( 140 );
+
+    // scan the vertical line through the source-side half: the S bulges
+    // toward the first control (+y in model space, below the chord on
+    // screen) and stays clear of the mirrored band above it
+    const scan = await page.evaluate( async xy => {
+      const uri = await window.cy.png();
+      const img = new Image();
+
+      img.src = uri;
+      await img.decode();
+
+      const canvas = document.createElement( 'canvas' );
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext( '2d' );
+
+      ctx.drawImage( img, 0, 0 );
+
+      const ink = ( x, y0, y1 ) => {
+        let count = 0;
+
+        for( let y = y0; y <= y1; y++ ){
+          const d = ctx.getImageData( Math.round( x ), Math.round( y ), 1, 1 ).data;
+
+          if( d[ 3 ] > 0 ){ count++; }
+        }
+
+        return count;
+      };
+
+      return {
+        below: ink( xy.x, xy.y + 8, xy.y + 60 ),
+        above: ink( xy.x, xy.y - 60, xy.y - 8 )
+      };
+    }, { x: center.x - 75, y: center.y } );
+
+    expect( scan.below ).toBeGreaterThan( 2 );
+    expect( scan.above ).toBe( 0 );
+  } );
+
 } );

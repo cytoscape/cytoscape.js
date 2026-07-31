@@ -255,6 +255,19 @@ fn isVisible(slot: u32) -> bool {
   // chord grown by half width + AA + the conservative curve deviation
   let m = max(widthPx, frame.edgeWidthFloor) * 0.5 + 1.0 + frame.curveSlack * frame.zoomDpr;
 
+  if ((flags & FLAG_CURVED_BOX) != 0u) {
+    // not chord-bounded (taxi routes, extrapolated weights): test the
+    // endpoint AABB grown by m + the chord length — sound for taxi
+    // (routes stay within the endpoint AABB + the slack's node-half
+    // margin) and for weights clamped to [-1, 2]
+    let g = m + length(b - a);
+    let lo = min(a, b) - vec2f(g);
+    let hi = max(a, b) + vec2f(g);
+
+    return !(hi.x < 0.0 || lo.x > frame.viewportPx.x ||
+             hi.y < 0.0 || lo.y > frame.viewportPx.y);
+  }
+
   return segmentHitsViewport(a, b, m);
 }
 ${SCAFFOLD}
@@ -377,10 +390,15 @@ fn isVisible(slot: u32) -> bool {
 
   // curved owners anchor at the curve midpoint (the label VS computes
   // it); per-edge curve params can't bind here (8-buffer budget), so the
-  // chord-midpoint test grows by the frame's conservative curve slack
+  // chord-midpoint test grows by the frame's conservative curve slack —
+  // box-bounded owners (taxi, extrapolated weights) add the chord length
+  // (their route midpoint isn't chord-slack-bounded)
   var slk = 0.0;
 
   if ((edgeFlags[owner] & FLAG_CURVED) != 0u) { slk = frame.curveSlack * frame.zoomDpr; }
+  if ((edgeFlags[owner] & FLAG_CURVED_BOX) != 0u) {
+    slk = slk + length(modelToPx(frame, pb) - modelToPx(frame, pa));
+  }
 
   if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
     // autorotated glyphs: the exact AABB of the rotated rect, in the

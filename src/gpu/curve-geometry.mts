@@ -291,6 +291,21 @@ export const curveDeviation = ( kind: number, p0: number, p2: number ): number =
   return 0;
 };
 
+/**
+ * Header-aware conservative deviation (12b): what the params column
+ * itself bounds.  Blob-backed hull kinds store their max|d| in the
+ * header's [1]; taxi returns 0 — its routes are box-bounded, and
+ * callers add the node-half margin (and, for extrapolated weights, the
+ * chord length) per FLAG_CURVED_BOX instead.
+ */
+export const headerDeviation = ( kind: number, p0: number, p1: number, p2: number ): number => {
+  if( kind === CURVE_BEZIER ){ return Math.abs( p0 ); }
+  if( kind === CURVE_LOOP ){ return Math.abs( p2 ); }
+  if( kind === CURVE_MULTI || kind === CURVE_SEGMENTS ){ return p1; }
+
+  return 0;
+};
+
 /*
 Round 12b — the route families: unbundled bezier (CURVE_MULTI),
 segments / round-segments (CURVE_SEGMENTS) and taxi / round-taxi

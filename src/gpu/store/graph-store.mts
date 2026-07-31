@@ -4,12 +4,15 @@ import { Adjacency } from './adjacency.mjs';
 import { DataStore } from './data-store.mjs';
 import { DirtyTracker } from './dirty.mjs';
 import { CurveIndex } from './curve-index.mjs';
+import type { CurveStyleExtras } from './curve-index.mjs';
 import { CurveBlob } from './curve-blob.mjs';
-import { CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, evalCurve } from '../curve-geometry.mjs';
+import {
+  CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, evalCurve, headerDeviation
+} from '../curve-geometry.mjs';
 import type { CurveEval } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
-  CURVE_STRAIGHT,
+  CURVE_STRAIGHT, CURVE_TAXI,
   FLAG_ALIVE, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED, FLAG_PANNABLE,
   FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from '../contract.mjs';
@@ -112,6 +115,8 @@ export class GraphStore implements ModelView {
       endpoints: () => this.edges.column( 'edge.endpoints' ) as Uint32Array,
       aliveEdgeSlots: () => this.slotsOrdered( 'edges' ),
       writeParams: ( slot, p0, p1, p2, kind ) => this.setCurveParams( slot, p0, p1, p2, kind ),
+      writeBlobParams: ( slot, kind, values, n, dev, box ) =>
+        this.setCurveParamsBlob( slot, kind, values, n, dev, box ),
       schedule: () => this.dirty.touch()
     } );
 
@@ -704,12 +709,14 @@ export class GraphStore implements ModelView {
   /**
    * Store an edge's styled curve record (the StyleEngine's write path);
    * the derived edge.curveParams re-derive lazily via the CurveIndex.
+   * `extras` carries the 12b family lists/params (null for
+   * straight/bezier styles).
    */
   setCurveStyle(
     slot: number, style: number, stepSize: number, weight: number,
-    loopDirection: number, loopSweep: number
+    loopDirection: number, loopSweep: number, extras: CurveStyleExtras | null = null
   ): void {
-    this.curves.setStyle( slot, style, stepSize, weight, loopDirection, loopSweep );
+    this.curves.setStyle( slot, style, stepSize, weight, loopDirection, loopSweep, extras );
   }
 
   /** The styled curve record — the stored truth the style getters read. */
@@ -828,6 +835,13 @@ export class GraphStore implements ModelView {
     if( this.curveDevMax === 0 && !this.hasBoxCurves ){ return 0; }
 
     return this.curveDevMax + this.nodeHalfMax + this.borderMax / 2;
+  }
+
+  /** The conservative margin box-bounded routes (FLAG_CURVED_BOX) add
+   * around their endpoint AABB: taxi legs launch a node-body offset
+   * past the centers.  Global maxima — always current, never stale. */
+  curveBoxMargin(): number {
+    return this.nodeHalfMax + this.borderMax / 2;
   }
 
   /** The CurveIndex's write sink: params column + FLAG_CURVED + dirty.
@@ -1133,16 +1147,32 @@ export class GraphStore implements ModelView {
 
     const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
     const curveParams = this.column( 'edge.curveParams' ) as Float32Array;
+    const edgeFlags = this.column( 'edge.flags' ) as Uint32Array;
 
     this.forEachAlive( 'edges', slot => {
       // curved edges: the conservative hull bound — the quadratic lies
       // within the endpoint/control hull, whose controls sit at most
-      // curveDeviation() from the center segment (exact lazy bb is the
-      // collection's job; fit may slightly over-fit, never under)
+      // the header deviation from the center segment (exact lazy bb is
+      // the collection's job; fit may slightly over-fit, never under).
+      // Box-bounded routes (taxi, extrapolated weights) get the
+      // node-half margin — taxi legs launch a body offset past the
+      // centers — plus the chord length for weight extrapolation.
       const at = slot * 4;
-      const dev = curveParams[ at + 3 ] === CURVE_STRAIGHT
+      const kind = curveParams[ at + 3 ];
+      let dev = kind === CURVE_STRAIGHT
         ? 0
-        : curveDeviation( curveParams[ at + 3 ], curveParams[ at ], curveParams[ at + 2 ] );
+        : headerDeviation( kind, curveParams[ at ], curveParams[ at + 1 ], curveParams[ at + 2 ] );
+
+      if( ( edgeFlags[ slot ] & FLAG_CURVED_BOX ) !== 0 ){
+        dev += this.curveBoxMargin();
+
+        if( kind !== CURVE_TAXI ){
+          const s = endpoints[ slot * 2 ];
+          const t = endpoints[ slot * 2 + 1 ];
+
+          dev += Math.hypot( pos[ t * 2 ] - pos[ s * 2 ], pos[ t * 2 + 1 ] - pos[ s * 2 + 1 ] );
+        }
+      }
 
       for( let end = 0; end < 2; end++ ){
         const node = endpoints[ slot * 2 + end ];

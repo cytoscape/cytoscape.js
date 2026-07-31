@@ -264,8 +264,9 @@ describe('gpu/curve-index', function(){
 
   describe('style prop surface', function(){
     it('throws on unsupported curve-style keywords', function(){
-      expect( () => makeCy( pairGraph(1), { 'curve-style': 'unbundled-bezier' } ) )
-        .to.throw(/curve-style 'unbundled-bezier' is unsupported/);
+      // the 12b families parse since round 12b; haystack stays 12c
+      expect( () => makeCy( pairGraph(1), { 'curve-style': 'haystack' } ) )
+        .to.throw(/curve-style 'haystack' is unsupported/);
     });
 
     it('throws on invalid angles', function(){

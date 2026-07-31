@@ -2214,6 +2214,32 @@ lands it.
   monotone dev/box maxima behind `curveSlack()`, and fixed-kind writes
   release any blob record the slot held.  10 Node specs
   (`test/gpu-curve-blob.mjs`).
+- [x] **Style props + per-edge derivation.**  `curve-style` gains the
+  five 12b keywords; the full prop surface (`control-point-distances`/
+  `-weights`, `segment-distances`/`-weights`/`-radii`, `radius-type`,
+  `edge-distances`, `taxi-direction`/`taxi-turn`/
+  `taxi-turn-min-distance`/`taxi-radius`) parses with v3 defaults,
+  list props accepting arrays or space-separated strings, and
+  stored-truth readback (lists as space-separated strings, percent
+  turns as percent strings).  Scalars/enums are mapper-capable;
+  **list props are constants-only** (recorded scope note).
+  `edge-distances: 'endpoints'` throws until 12c.  The CurveIndex
+  derives blob records **per edge** (the 12b families never bundle):
+  v3's min(dists, weights) count rule, last-radius/type repetition,
+  the weight clamp to [-1, 2] with out-of-[0, 1] weights marking
+  FLAG_CURVED_BOX, taxi always box-bounded, and the interior-count
+  caps.  Pair interplay pinned: blob-family members never join nor
+  get clobbered by bezier bundle re-derivations, and a blob edge
+  restyled to straight resets through the per-slot pending path (the
+  pair map is bezier-lazy and may not exist).  Loops: unbundled
+  families take `control-point-distances[0]` as the loop distance
+  (v3), step-size fallback when unset; segments/taxi loops keep the
+  12a all-loops-render-as-loops deviation.  Conservative-bb call
+  sites (store scan + `boundingBoxAt`) use the header deviation, with
+  box-bounded edges adding the node-half margin (+ chord length for
+  extrapolated weights).  26 Node specs
+  (`test/gpu-curve-derivation.mjs`); one 12a spec updated (the
+  keyword-throw now pins `haystack`).
 
 ## Landed (edge-label autorotate, 2026-07-29)
 

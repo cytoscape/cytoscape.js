@@ -10,7 +10,17 @@ import {
 import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
 } from './style-scales.mjs';
-import { CURVE_DEFAULTS, CURVE_STYLE_BEZIER, CURVE_STYLE_STRAIGHT } from './store/curve-index.mjs';
+import {
+  CURVE_DEFAULTS, CURVE_EXTRA_DEFAULTS, CURVE_STYLE_BEZIER, CURVE_STYLE_ROUND_SEGMENTS,
+  CURVE_STYLE_ROUND_TAXI, CURVE_STYLE_SEGMENTS, CURVE_STYLE_STRAIGHT, CURVE_STYLE_TAXI,
+  CURVE_STYLE_UNBUNDLED, isBlobStyle
+} from './store/curve-index.mjs';
+import type { CurveStyleExtras } from './store/curve-index.mjs';
+import {
+  EDGE_DIST_INTERSECTION, EDGE_DIST_NODE_POSITION,
+  TAXI_AUTO, TAXI_DOWNWARD, TAXI_HORIZONTAL, TAXI_LEFTWARD, TAXI_RIGHTWARD, TAXI_UPWARD,
+  TAXI_VERTICAL
+} from './curve-geometry.mjs';
 import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './style-scales.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
@@ -101,6 +111,22 @@ interface EdgeComputed {
   controlPointWeight: number;
   loopDirection: number;
   loopSweep: number;
+  // the 12b families (lists are parse-owned copies, treated read-only)
+  controlPointDistances: number[] | null;
+  controlPointWeights: number[];
+  segmentDistances: number[];
+  segmentWeights: number[];
+  segmentRadii: number[];
+  /** radius-type per point: 1 = arc-radius, 0 = influence-radius */
+  radiusTypes: number[];
+  /** EDGE_DIST_* id */
+  edgeDistances: number;
+  taxiDirection: number;
+  /** percent turns store the fraction (v3 pfValue); px turns the px */
+  taxiTurn: number;
+  taxiTurnPercent: boolean;
+  taxiTurnMinDistance: number;
+  taxiRadius: number;
 }
 
 type Computed = NodeComputed & EdgeComputed;
@@ -161,7 +187,21 @@ const EDGE_DEFAULTS: EdgeComputed = {
   controlPointStepSize: CURVE_DEFAULTS.stepSize,
   controlPointWeight: CURVE_DEFAULTS.weight,
   loopDirection: CURVE_DEFAULTS.loopDirection, // -45deg, as v3
-  loopSweep: CURVE_DEFAULTS.loopSweep // -90deg, as v3
+  loopSweep: CURVE_DEFAULTS.loopSweep, // -90deg, as v3
+  // 12b family defaults (v3's); parse always replaces the arrays, so
+  // sharing the default references across computed records is safe
+  controlPointDistances: CURVE_EXTRA_DEFAULTS.ctrlDists,
+  controlPointWeights: CURVE_EXTRA_DEFAULTS.ctrlWeights,
+  segmentDistances: CURVE_EXTRA_DEFAULTS.segDists,
+  segmentWeights: CURVE_EXTRA_DEFAULTS.segWeights,
+  segmentRadii: CURVE_EXTRA_DEFAULTS.segRadii,
+  radiusTypes: CURVE_EXTRA_DEFAULTS.radiusTypes,
+  edgeDistances: CURVE_EXTRA_DEFAULTS.edgeDistances,
+  taxiDirection: CURVE_EXTRA_DEFAULTS.taxiDir,
+  taxiTurn: CURVE_EXTRA_DEFAULTS.taxiTurn,
+  taxiTurnPercent: CURVE_EXTRA_DEFAULTS.taxiTurnPercent,
+  taxiTurnMinDistance: CURVE_EXTRA_DEFAULTS.taxiTurnMinDist,
+  taxiRadius: CURVE_EXTRA_DEFAULTS.taxiRadius
 };
 
 const NO_ARROW: RGBA = [ 0, 0, 0, 0 ]; // a=0 collapses the arrow in the shader
@@ -193,6 +233,11 @@ const SHAPES: Record<string, number> = {
 /** RGBA bytes packed little-endian, matching WGSL unpack4x8unorm. */
 const packRgba = ( [ r, g, b, a ]: RGBA ): number => {
   return ( r | ( g << 8 ) | ( b << 16 ) | ( a << 24 ) ) >>> 0;
+};
+
+/** The slot's 12b curve extras, defaulted for non-blob styles. */
+const curveExtrasFor = ( store: GraphStore, slot: number ): CurveStyleExtras => {
+  return store.curveStyleAt( slot ).extras ?? CURVE_EXTRA_DEFAULTS;
 };
 
 /** RGBA bytes → the v3-style resolved color string. */
@@ -234,12 +279,18 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
   'text-margin-x', 'text-margin-y', 'text-rotation',
-  'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep'
+  'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
+  'control-point-distances', 'control-point-weights',
+  'segment-distances', 'segment-weights', 'segment-radii', 'radius-type',
+  'edge-distances', 'taxi-direction', 'taxi-turn', 'taxi-turn-min-distance', 'taxi-radius'
 ] );
 
 /** curve props are edge-only (constants and mappers alike). */
 const CURVE_PROPS: ReadonlySet<string> = new Set( [
-  'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep'
+  'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
+  'control-point-distances', 'control-point-weights',
+  'segment-distances', 'segment-weights', 'segment-radii', 'radius-type',
+  'edge-distances', 'taxi-direction', 'taxi-turn', 'taxi-turn-min-distance', 'taxi-radius'
 ] );
 
 const parseColor = ( prop: string, value: unknown ): RGBA => {
@@ -328,15 +379,25 @@ const parseTextRotation = ( value: unknown ): number => {
   return rotation;
 };
 
-/** curve-style keywords (round 12a: the bezier family only). */
+/** curve-style keywords (12a: bezier; 12b: the unbundled families). */
 const CURVE_STYLES: Record<string, number> = {
   'straight': CURVE_STYLE_STRAIGHT,
-  'bezier': CURVE_STYLE_BEZIER
+  'bezier': CURVE_STYLE_BEZIER,
+  'unbundled-bezier': CURVE_STYLE_UNBUNDLED,
+  'segments': CURVE_STYLE_SEGMENTS,
+  'round-segments': CURVE_STYLE_ROUND_SEGMENTS,
+  'taxi': CURVE_STYLE_TAXI,
+  'round-taxi': CURVE_STYLE_ROUND_TAXI
 };
 
 const CURVE_STYLE_NAMES: Record<number, string> = {
   [ CURVE_STYLE_STRAIGHT ]: 'straight',
-  [ CURVE_STYLE_BEZIER ]: 'bezier'
+  [ CURVE_STYLE_BEZIER ]: 'bezier',
+  [ CURVE_STYLE_UNBUNDLED ]: 'unbundled-bezier',
+  [ CURVE_STYLE_SEGMENTS ]: 'segments',
+  [ CURVE_STYLE_ROUND_SEGMENTS ]: 'round-segments',
+  [ CURVE_STYLE_TAXI ]: 'taxi',
+  [ CURVE_STYLE_ROUND_TAXI ]: 'round-taxi'
 };
 
 const parseCurveStyle = ( value: unknown ): number => {
@@ -346,11 +407,124 @@ const parseCurveStyle = ( value: unknown ): number => {
     throw new Error(
       `The curve-style '${String( value )}' is unsupported in the GPU prototype; ` +
       `use one of: ${Object.keys( CURVE_STYLES ).join( ', ' )} ` +
-      `(the unbundled/segment/taxi/haystack families land with later curve passes)`
+      `(haystack and straight-triangle land with curve pass 12c)`
     );
   }
 
   return style;
+};
+
+/** v3's `numbers` type: a number, an array of numbers, or a
+ * whitespace-separated string (as in string sheets). */
+const parseNumberList = ( prop: string, value: unknown ): number[] => {
+  if( typeof value === 'number' ){ return [ parseNumber( prop, value ) ]; }
+
+  const parts = Array.isArray( value )
+    ? value
+    : String( value ).trim() === '' ? [] : String( value ).trim().split( /\s+/ );
+
+  return parts.map( part => parseNumber( prop, part ) );
+};
+
+const RADIUS_TYPES: Record<string, number> = {
+  'arc-radius': 1,
+  'influence-radius': 0
+};
+
+const RADIUS_TYPE_NAMES: Record<number, string> = {
+  1: 'arc-radius',
+  0: 'influence-radius'
+};
+
+/** radius-type: one keyword or a per-point list (v3's multiple enum). */
+const parseRadiusTypes = ( prop: string, value: unknown ): number[] => {
+  const parts = Array.isArray( value ) ? value : String( value ).trim().split( /\s+/ );
+
+  return parts.map( part => {
+    const id = RADIUS_TYPES[ String( part ) ];
+
+    if( id == null ){
+      throw new Error(
+        `The ${prop} '${String( part )}' is invalid; use one of: ` +
+        Object.keys( RADIUS_TYPES ).join( ', ' )
+      );
+    }
+
+    return id;
+  } );
+};
+
+const EDGE_DISTANCES: Record<string, number> = {
+  'intersection': EDGE_DIST_INTERSECTION,
+  'node-position': EDGE_DIST_NODE_POSITION
+};
+
+const EDGE_DISTANCE_NAMES: Record<number, string> = {
+  [ EDGE_DIST_INTERSECTION ]: 'intersection',
+  [ EDGE_DIST_NODE_POSITION ]: 'node-position'
+};
+
+const parseEdgeDistances = ( value: unknown ): number => {
+  const id = EDGE_DISTANCES[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The edge-distances '${String( value )}' is unsupported in the GPU prototype; ` +
+      `use one of: ${Object.keys( EDGE_DISTANCES ).join( ', ' )} ` +
+      `('endpoints' needs the manual source/target-endpoint props, which land with curve pass 12c)`
+    );
+  }
+
+  return id;
+};
+
+const TAXI_DIRECTIONS: Record<string, number> = {
+  'auto': TAXI_AUTO,
+  'vertical': TAXI_VERTICAL,
+  'horizontal': TAXI_HORIZONTAL,
+  'upward': TAXI_UPWARD,
+  'downward': TAXI_DOWNWARD,
+  'leftward': TAXI_LEFTWARD,
+  'rightward': TAXI_RIGHTWARD
+};
+
+const TAXI_DIRECTION_NAMES: Record<number, string> = {
+  [ TAXI_AUTO ]: 'auto',
+  [ TAXI_VERTICAL ]: 'vertical',
+  [ TAXI_HORIZONTAL ]: 'horizontal',
+  [ TAXI_UPWARD ]: 'upward',
+  [ TAXI_DOWNWARD ]: 'downward',
+  [ TAXI_LEFTWARD ]: 'leftward',
+  [ TAXI_RIGHTWARD ]: 'rightward'
+};
+
+const parseTaxiDirection = ( value: unknown ): number => {
+  const id = TAXI_DIRECTIONS[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The taxi-direction '${String( value )}' is invalid; use one of: ` +
+      Object.keys( TAXI_DIRECTIONS ).join( ', ' )
+    );
+  }
+
+  return id;
+};
+
+const TAXI_TURN_PERCENT = /^(-?(?:\d+\.?\d*|\.\d+))%$/;
+
+/** taxi-turn: a px number (may be negative = from the target side) or a
+ * percent string ('50%' stores the fraction, v3's pfValue). */
+const parseTaxiTurn = ( value: unknown ): { value: number; percent: boolean } => {
+  if( typeof value === 'number' ){ return { value: parseNumber( 'taxi-turn', value ), percent: false }; }
+
+  const match = TAXI_TURN_PERCENT.exec( String( value ).trim() );
+
+  if( match != null ){
+    return { value: parseFloat( match[ 1 ] ) / 100, percent: true };
+  }
+
+  return { value: parseNumber( 'taxi-turn', value ), percent: false };
 };
 
 const ANGLE_VALUE = /^(-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)(deg|rad)?$/;
@@ -516,6 +690,43 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'loop-sweep':
       computed.loopSweep = parseAngle( prop, value );
+      break;
+    case 'control-point-distances':
+      computed.controlPointDistances = parseNumberList( prop, value );
+      break;
+    case 'control-point-weights':
+      computed.controlPointWeights = parseNumberList( prop, value );
+      break;
+    case 'segment-distances':
+      computed.segmentDistances = parseNumberList( prop, value );
+      break;
+    case 'segment-weights':
+      computed.segmentWeights = parseNumberList( prop, value );
+      break;
+    case 'segment-radii':
+      computed.segmentRadii = parseNumberList( prop, value );
+      break;
+    case 'radius-type':
+      computed.radiusTypes = parseRadiusTypes( prop, value );
+      break;
+    case 'edge-distances':
+      computed.edgeDistances = parseEdgeDistances( value );
+      break;
+    case 'taxi-direction':
+      computed.taxiDirection = parseTaxiDirection( value );
+      break;
+    case 'taxi-turn': {
+      const turn = parseTaxiTurn( value );
+
+      computed.taxiTurn = turn.value;
+      computed.taxiTurnPercent = turn.percent;
+      break;
+    }
+    case 'taxi-turn-min-distance':
+      computed.taxiTurnMinDistance = parseNumber( prop, value );
+      break;
+    case 'taxi-radius':
+      computed.taxiRadius = parseNumber( prop, value );
       break;
 
     default:
@@ -696,6 +907,40 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'edges' ],
     set: ( c, v ) => { c.loopSweep = v as number; },
     default: () => EDGE_DEFAULTS.loopSweep
+  },
+  // 12b scalar/enum curve props are mapper-capable like 12a's; the list
+  // props (control-point-distances/-weights, segment-*, radius-type)
+  // take constants only — a mapper value is one number/keyword, not a
+  // list (a recorded 12b scope note)
+  'edge-distances': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => EDGE_DISTANCES[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.edgeDistances = v as number; },
+    default: () => EDGE_DEFAULTS.edgeDistances
+  },
+  'taxi-direction': {
+    kind: 'enum', groups: [ 'edges' ],
+    parseEnum: v => TAXI_DIRECTIONS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.taxiDirection = v as number; },
+    default: () => EDGE_DEFAULTS.taxiDirection
+  },
+  'taxi-turn': {
+    // mapped turns are px (a percent turn is constant-only); a missing
+    // value falls back to the default fraction as px — set an explicit
+    // mapper fallback to control this
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.taxiTurn = v as number; c.taxiTurnPercent = false; },
+    default: () => EDGE_DEFAULTS.taxiTurn
+  },
+  'taxi-turn-min-distance': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.taxiTurnMinDistance = v as number; },
+    default: () => EDGE_DEFAULTS.taxiTurnMinDistance
+  },
+  'taxi-radius': {
+    kind: 'number', groups: [ 'edges' ],
+    set: ( c, v ) => { c.taxiRadius = v as number; },
+    default: () => EDGE_DEFAULTS.taxiRadius
   },
   'source-arrow-shape': {
     kind: 'enum', groups: [ 'edges' ],
@@ -1261,12 +1506,35 @@ export class StyleEngine {
 
       // curve props read the styled record (stored truth: a lone
       // 'bezier' edge reads back 'bezier' even though it renders
-      // straight — v3 semantics); angles read back in radians
+      // straight — v3 semantics); angles read back in radians.  Lists
+      // read back as space-separated strings (v3's strValue form);
+      // percent taxi turns read back as the percent string.
       case 'curve-style': return CURVE_STYLE_NAMES[ store.curveStyleAt( slot ).style ];
       case 'control-point-step-size': return store.curveStyleAt( slot ).stepSize;
       case 'control-point-weight': return store.curveStyleAt( slot ).weight;
       case 'loop-direction': return store.curveStyleAt( slot ).loopDirection;
       case 'loop-sweep': return store.curveStyleAt( slot ).loopSweep;
+      case 'control-point-distances': {
+        const dists = curveExtrasFor( store, slot ).ctrlDists;
+
+        return dists == null ? undefined : dists.join( ' ' );
+      }
+      case 'control-point-weights': return curveExtrasFor( store, slot ).ctrlWeights.join( ' ' );
+      case 'segment-distances': return curveExtrasFor( store, slot ).segDists.join( ' ' );
+      case 'segment-weights': return curveExtrasFor( store, slot ).segWeights.join( ' ' );
+      case 'segment-radii': return curveExtrasFor( store, slot ).segRadii.join( ' ' );
+      case 'radius-type':
+        return curveExtrasFor( store, slot ).radiusTypes
+          .map( id => RADIUS_TYPE_NAMES[ id ] ).join( ' ' );
+      case 'edge-distances': return EDGE_DISTANCE_NAMES[ curveExtrasFor( store, slot ).edgeDistances ];
+      case 'taxi-direction': return TAXI_DIRECTION_NAMES[ curveExtrasFor( store, slot ).taxiDir ];
+      case 'taxi-turn': {
+        const ex = curveExtrasFor( store, slot );
+
+        return ex.taxiTurnPercent ? `${ex.taxiTurn * 100}%` : ex.taxiTurn;
+      }
+      case 'taxi-turn-min-distance': return curveExtrasFor( store, slot ).taxiTurnMinDist;
+      case 'taxi-radius': return curveExtrasFor( store, slot ).taxiRadius;
     }
 
     return undefined;
@@ -1455,9 +1723,27 @@ export class StyleEngine {
       store.setColor( 'edge.targetArrow', slot, ...arrow( computed.targetArrowShape, computed.targetArrowColor ) );
       store.setScalar( 'edge.arrowShapes', slot,
         ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) );
+      // blob-family styles carry the 12b record; straight/bezier store none
+      const extras: CurveStyleExtras | null = isBlobStyle( computed.curveStyle )
+        ? {
+          ctrlDists: computed.controlPointDistances,
+          ctrlWeights: computed.controlPointWeights,
+          segDists: computed.segmentDistances,
+          segWeights: computed.segmentWeights,
+          segRadii: computed.segmentRadii,
+          radiusTypes: computed.radiusTypes,
+          edgeDistances: computed.edgeDistances,
+          taxiDir: computed.taxiDirection,
+          taxiTurn: computed.taxiTurn,
+          taxiTurnPercent: computed.taxiTurnPercent,
+          taxiTurnMinDist: computed.taxiTurnMinDistance,
+          taxiRadius: computed.taxiRadius
+        }
+        : null;
+
       store.setCurveStyle(
         slot, computed.curveStyle, computed.controlPointStepSize, computed.controlPointWeight,
-        computed.loopDirection, computed.loopSweep
+        computed.loopDirection, computed.loopSweep, extras
       );
 
       this.writeLabel( slot, computed, 'edges' );

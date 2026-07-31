@@ -1,10 +1,10 @@
 import {
-  CURVE_STRAIGHT,
-  FLAG_ACTIVE, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_PANNABLE, FLAG_SELECTABLE,
-  FLAG_SELECTED, FLAG_VISIBLE
+  CURVE_STRAIGHT, CURVE_TAXI,
+  FLAG_ACTIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_PANNABLE,
+  FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
-import { curveDeviation } from './curve-geometry.mjs';
+import { headerDeviation } from './curve-geometry.mjs';
 import { CURVE_STYLE_BEZIER } from './store/curve-index.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
 import type { GpuQuery } from './matcher.mjs';
@@ -2295,6 +2295,7 @@ export class GpuCollection {
     }
 
     const curveParams = this._store.column( 'edge.curveParams' ) as Float32Array;
+    const edgeFlags = this._store.column( 'edge.flags' ) as Uint32Array;
 
     this._store.curves.flush();
 
@@ -2304,15 +2305,28 @@ export class GpuCollection {
       const edge = this._cy._ele( 'edges', ref.slot );
 
       // curved edges expand by the conservative hull deviation — exact
-      // eval at hypothetical positions isn't needed for a fit target
+      // eval at hypothetical positions isn't needed for a fit target.
+      // Box-bounded routes (taxi, extrapolated weights) add the
+      // node-half margin (+ chord length for extrapolation).
       const at = ref.slot * 4;
-      const dev = curveParams[ at + 3 ] === CURVE_STRAIGHT
+      const kind = curveParams[ at + 3 ];
+      let dev = kind === CURVE_STRAIGHT
         ? 0
-        : curveDeviation( curveParams[ at + 3 ], curveParams[ at ], curveParams[ at + 2 ] );
+        : headerDeviation( kind, curveParams[ at ], curveParams[ at + 1 ], curveParams[ at + 2 ] );
+      const source = edge.source();
+      const target = edge.target();
+      const sPos = posMap.get( source ) ?? ( source.position() as Position );
+      const tPos = posMap.get( target ) ?? ( target.position() as Position );
 
-      for( const endpoint of [ edge.source(), edge.target() ] ){
-        const pos = posMap.get( endpoint ) ?? ( endpoint.position() as Position );
+      if( ( edgeFlags[ ref.slot ] & FLAG_CURVED_BOX ) !== 0 ){
+        dev += this._store.curveBoxMargin();
 
+        if( kind !== CURVE_TAXI ){
+          dev += Math.hypot( tPos.x - sPos.x, tPos.y - sPos.y );
+        }
+      }
+
+      for( const pos of [ sPos, tPos ] ){
         expandPoint( pos.x - dev, pos.y - dev );
         expandPoint( pos.x + dev, pos.y + dev );
       }

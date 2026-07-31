@@ -586,6 +586,34 @@ each is deliberate, not a pass-1 deferral:
     deviation — no spare binding for the node border column — which
     the 12b `node.outerHalf` derived column closed: tips sit on the
     border-inclusive outer boundary now, like the straight arrows.)
+  - *Props + derivation (12b)*: `curve-style` gains
+    `unbundled-bezier` | `segments` | `round-segments` | `taxi` |
+    `round-taxi` (haystack/straight-triangle stay 12c), with
+    `control-point-distances`/`-weights`, `segment-distances`/
+    `-weights`/`-radii`, `radius-type` (per-point
+    `arc-radius`/`influence-radius` lists, last entry repeating —
+    v3's rule), `edge-distances` (`intersection` | `node-position`;
+    `'endpoints'` throws until 12c's manual endpoints exist),
+    `taxi-direction`, `taxi-turn` (px, negative = from the target, or
+    a percent string storing v3's fraction), `taxi-turn-min-distance`
+    and `taxi-radius`.  All edge-only; scalars/enums are
+    mapper-capable like the 12a props, **list props take constants
+    only** (a mapper value is one number/keyword, not a list — a
+    recorded scope note).  List constants accept arrays or v3's
+    space-separated strings; lists read back as space-separated
+    strings, percent turns as the percent string.  Derivation is
+    **per-edge** (none of these families bundle) into blob-backed
+    records via the CurveIndex; deviations, recorded: interior counts
+    cap at 8 controls / 11 segment points (the strip subdivision);
+    weights clamp to [-1, 2] and any weight outside [0, 1] marks the
+    edge box-bounded (FLAG_CURVED_BOX) for the cull tier;
+    `unbundled-bezier` without `control-point-distances` takes a
+    single control at the step size (v3's undocumented fallback
+    staggers by the *unbundled pair group* there — not ported);
+    unbundled-family **loops** use `control-point-distances[0]` as the
+    loop distance (v3), falling back to the step size when unset (v3
+    yields NaN geometry there); and segments/taxi-styled loops keep
+    rendering as loops (the 12a all-loops deviation extended).
   - *Edge labels (12a)*: labels of curved edges anchor at the **curve
     midpoint**, computed in the label vertex shader from live
     positions + the params column (zero rebuild, like everything

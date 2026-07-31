@@ -2,6 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
+  FLAG_PARENT,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
@@ -18,6 +19,7 @@ import {
   isBlobStyle
 } from './store/curve-index.mjs';
 import type { CurveStyleExtras, EndpointSpec } from './store/curve-index.mjs';
+import type { CompoundStyle } from './store/hierarchy.mjs';
 import {
   EDGE_DIST_INTERSECTION, EDGE_DIST_NODE_POSITION,
   TAXI_AUTO, TAXI_DOWNWARD, TAXI_HORIZONTAL, TAXI_LEFTWARD, TAXI_RIGHTWARD, TAXI_UPWARD,
@@ -494,7 +496,8 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'text-margin-x', 'text-margin-y', 'min-zoomed-font-size',
   'text-halign', 'text-valign',
   'text-transform', 'text-background-shape',
-  'text-border-width', 'text-border-color', 'text-border-opacity'
+  'text-border-width', 'text-border-color', 'text-border-opacity',
+  'padding', 'padding-relative-to', 'min-width', 'min-height', 'compound-sizing-wrt-labels'
 ] );
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
@@ -2299,12 +2302,117 @@ interface GroupDef {
   deps: Map<string, { label: boolean; mappers: boolean }> | null;
 }
 
-const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges', 'core' ] );
+const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges', 'parents', 'core' ] );
+
+/** v3's default `:parent` block (round 14.6): the channel overlay parent
+ * nodes get on top of the nodes group.  Padding 10 rides the compound
+ * defaults instead (it is not a channel). */
+const PARENT_CHANNEL_OVERLAY: GpuStyleProps = {
+  'shape': 'rectangle',
+  'background-color': '#eee',
+  'border-width': 1,
+  'border-color': '#ccc'
+};
+
+/** The parents-group compound props (constants only; not channels). */
+const COMPOUND_PROPS: ReadonlySet<string> = new Set( [
+  'padding', 'padding-relative-to', 'min-width', 'min-height', 'compound-sizing-wrt-labels'
+] );
+
+const PADDING_RELATIVE_TO = new Set( [ 'width', 'height', 'average', 'min', 'max' ] );
+
+/** Split a parents-block props object into channel props and the parsed
+ * compound style (round 14.6).  Compound props take constants only. */
+const splitCompoundProps = ( props: GpuStyleProps ): {
+  channels: GpuStyleProps; compound: Partial<CompoundStyle>;
+} => {
+  const channels: GpuStyleProps = {};
+  const compound: Partial<CompoundStyle> = {};
+
+  for( const prop of Object.keys( props ) ){
+    const norm = normalizeProp( prop );
+    const value = props[ prop ];
+
+    if( !COMPOUND_PROPS.has( norm ) ){
+      channels[ prop ] = value;
+      continue;
+    }
+
+    if( value != null && typeof value === 'object' ){
+      throw new Error( `The compound style property '${norm}' takes constants only` );
+    }
+
+    switch( norm ){
+      case 'padding': {
+        if( typeof value === 'string' ){
+          const m = /^\s*([\d.]+)\s*%\s*$/.exec( value );
+
+          if( m == null ){
+            throw new Error( `Invalid padding '${value}' (a number of px, or 'N%')` );
+          }
+
+          compound.padding = Number( m[ 1 ] ) / 100; // v3's pfValue fraction
+          compound.paddingUnit = '%';
+        } else if( typeof value === 'number' && value >= 0 && Number.isFinite( value ) ){
+          compound.padding = value;
+          compound.paddingUnit = 'px';
+        } else {
+          throw new Error( `Invalid padding '${String( value )}' (a number of px, or 'N%')` );
+        }
+
+        break;
+      }
+
+      case 'padding-relative-to':
+        if( typeof value !== 'string' || !PADDING_RELATIVE_TO.has( value ) ){
+          throw new Error(
+            `Invalid padding-relative-to '${String( value )}' (width | height | average | min | max)` );
+        }
+
+        compound.relativeTo = value as CompoundStyle['relativeTo'];
+        break;
+
+      case 'min-width':
+      case 'min-height':
+        if( typeof value !== 'number' || !( value >= 0 ) ){
+          throw new Error( `Invalid ${norm} '${String( value )}' (a non-negative number of px)` );
+        }
+
+        if( norm === 'min-width' ){ compound.minWidth = value; }
+        else { compound.minHeight = value; }
+
+        break;
+
+      case 'compound-sizing-wrt-labels':
+        if( value === 'include' ){
+          throw new Error(
+            `compound-sizing-wrt-labels: 'include' is unsupported ` +
+            `(labels are excluded from bounding boxes in the GPU prototype); use 'exclude'` );
+        }
+
+        if( value !== 'exclude' ){
+          throw new Error(
+            `Invalid compound-sizing-wrt-labels '${String( value )}' ('exclude' is the only supported value)` );
+        }
+
+        break;
+    }
+  }
+
+  return { channels, compound };
+};
 
 export class StyleEngine {
   private store: GraphStore;
   private sheet: GpuStylesheet;
-  private defs: { nodes: GroupDef; edges: GroupDef };
+  private defs: { nodes: GroupDef; edges: GroupDef; parents: GroupDef };
+  /** the parents-group compound style, applied per parent slot */
+  private parentCompound: Partial<CompoundStyle> = { padding: 10 };
+  /** normalized channel props the parents overlay resolves differently
+   * from the nodes group (defaults + the user parents block) — a
+   * GPU-mapped nodes channel in this set demotes to the CPU path */
+  private parentsOverride: ReadonlySet<string> = new Set(
+    Object.keys( PARENT_CHANNEL_OVERLAY ) );
 
   private arrows = { source: false, target: false };
   private midArrows = { source: false, target: false };
@@ -2333,7 +2441,8 @@ export class StyleEngine {
     this.sheet = {};
     this.defs = {
       nodes: { computed: this.resolveConst( 'nodes', {}, [] ), mappers: [], deps: null },
-      edges: { computed: this.resolveConst( 'edges', {}, [] ), mappers: [], deps: null }
+      edges: { computed: this.resolveConst( 'edges', {}, [] ), mappers: [], deps: null },
+      parents: { computed: this.resolveConst( 'nodes', PARENT_CHANNEL_OVERLAY, [] ), mappers: [], deps: null }
     };
 
     // a mixed column can't evaluate in the kernel: demote its group's
@@ -2362,11 +2471,16 @@ export class StyleEngine {
   setSheet( sheet: GpuStylesheet, apply: boolean = true ): void {
     for( const key of Object.keys( sheet ) ){
       if( !SHEET_KEYS.has( key ) ){
-        throw new Error( `Unknown stylesheet key '${key}'; supported keys: nodes, edges, core` );
+        throw new Error( `Unknown stylesheet key '${key}'; supported keys: nodes, edges, parents, core` );
       }
     }
 
     this.coreStyle = resolveCoreProps( sheet.core );
+
+    // the parents group (round 14.6): channel props overlay the nodes
+    // block under v3's :parent defaults; the compound props split out
+    // (they are per-parent auto-bounds inputs, not channels)
+    const parentsSplit = splitCompoundProps( sheet.parents ?? {} );
 
     const compile = ( group: GroupName, def: GpuStylesheet['nodes'] ): GroupDef => {
       const mappers: BoundMapper[] = [];
@@ -2399,8 +2513,18 @@ export class StyleEngine {
 
     const defs = {
       nodes: compile( 'nodes', sheet.nodes ),
-      edges: compile( 'edges', sheet.edges )
+      edges: compile( 'edges', sheet.edges ),
+      // v3 specificity: user nodes block < default :parent block < user
+      // parents block (a ':parent' selector outranks 'node' in v3)
+      parents: compile( 'nodes', {
+        ...( sheet.nodes ?? {} ), ...PARENT_CHANNEL_OVERLAY, ...parentsSplit.channels
+      } )
     };
+
+    this.parentCompound = { padding: 10, ...parentsSplit.compound };
+    this.parentsOverride = new Set(
+      [ ...Object.keys( PARENT_CHANNEL_OVERLAY ), ...Object.keys( parentsSplit.channels ) ]
+        .map( normalizeProp ) );
 
     // which arrow ends can any edge have at all — the renderer skips whole
     // arrow draw calls per end when nothing enables it; a mapped arrow
@@ -2480,9 +2604,14 @@ export class StyleEngine {
 
       // round 14.4: under compounds the stored node opacity is the
       // ancestor-folded product — a kernel-owned opacity would
-      // overwrite the fold, so it stays CPU-evaluated
+      // overwrite the fold, so it stays CPU-evaluated.  Round 14.6:
+      // channels the parents overlay resolves differently would be
+      // repainted with the nodes value by the kernel (it evaluates
+      // every slot), so they demote too.
       if( this.store.hasCompounds() ){
         demoted.add( 'opacity' );
+
+        for( const p of this.parentsOverride ){ demoted.add( p ); }
       }
     } else {
       if( computed.lineOpacity !== 1 || mapped( 'line-opacity' ) ){
@@ -2549,11 +2678,11 @@ export class StyleEngine {
 
   /** True when writing any of these data() keys can change the group's computed style. */
   stylesDependOnData( group: GroupName, keys: string[] ): boolean {
-    const deps = this.defs[ group ].deps;
+    const depends = ( deps: GroupDef['deps'] ): boolean =>
+      deps != null && keys.some( key => deps.has( key ) );
 
-    if( deps == null ){ return false; }
-
-    return keys.some( key => deps.has( key ) );
+    return depends( this.defs[ group ].deps )
+      || ( group === 'nodes' && this.store.hasCompounds() && depends( this.defs.parents.deps ) );
   }
 
   /** Which arrow ends the current stylesheet can enable. */
@@ -2587,8 +2716,33 @@ export class StyleEngine {
   applyBulk( group: GroupName, slots: ArrayLike<number> ): void {
     if( slots.length === 0 ){ return; }
 
-    const def = this.defs[ group ];
+    if( group === 'nodes' && this.store.hasCompounds() ){
+      // parents resolve through the overlay def (round 14.6)
+      const flags = this.store.column( 'node.flags' ) as Uint32Array;
+      const leaves: number[] = [];
+      const parents: number[] = [];
 
+      for( let i = 0; i < slots.length; i++ ){
+        ( ( flags[ slots[ i ] ] & FLAG_PARENT ) !== 0 ? parents : leaves ).push( slots[ i ] );
+      }
+
+      if( leaves.length > 0 ){ this.applyGroupDef( 'nodes', this.defs.nodes, leaves ); }
+
+      if( parents.length > 0 ){
+        this.applyGroupDef( 'nodes', this.defs.parents, parents );
+
+        for( const slot of parents ){
+          this.store.setCompoundStyle( slot, this.parentCompound );
+        }
+      }
+
+      return;
+    }
+
+    this.applyGroupDef( group, this.defs[ group ], slots );
+  }
+
+  private applyGroupDef( group: GroupName, def: GroupDef, slots: ArrayLike<number> ): void {
     if( def.mappers.length > 0 ){
       this.applyMapped( group, def, slots );
 
@@ -2600,6 +2754,29 @@ export class StyleEngine {
     for( let i = 0; i < slots.length; i++ ){
       this.write( group, slots[ i ], computed );
     }
+  }
+
+  /** The group def resolving one element: the parents overlay for parent
+   * nodes (round 14.6), else the element's own group. */
+  private defFor( ref: Ref ): GroupDef {
+    if( ref.group === 'nodes' && this.store.hasCompounds()
+      && this.store.hasFlag( 'nodes', ref.slot, FLAG_PARENT ) ){
+      return this.defs.parents;
+    }
+
+    return this.defs[ ref.group ];
+  }
+
+  /** All live slots the given def styles (partitioned under compounds). */
+  private allSlotsFor( group: GroupName, def: GroupDef ): number[] {
+    const all = this.store.slotsOrdered( group );
+
+    if( group !== 'nodes' || !this.store.hasCompounds() ){ return all; }
+
+    const wantParents = def === this.defs.parents;
+    const flags = this.store.column( 'node.flags' ) as Uint32Array;
+
+    return all.filter( slot => ( ( flags[ slot ] & FLAG_PARENT ) !== 0 ) === wantParents );
   }
 
   /**
@@ -2621,11 +2798,11 @@ export class StyleEngine {
       // re-configures against the mixed column
       this.demoted[ group ] = false;
       this.gpuOwnedProps[ group ] = new Set();
-      slots = store.slotsOrdered( group );
+      slots = this.allSlotsFor( group, def );
       skipOwned = false;
     }
 
-    const target = this.checkAutoExtents( group, def ) ? store.slotsOrdered( group ) : slots;
+    const target = this.checkAutoExtents( group, def ) ? this.allSlotsFor( group, def ) : slots;
 
     // one scratch record: every evaluated channel is reassigned per slot
     // and the rest keep the constant base.  GPU-owned channels skip CPU
@@ -2692,8 +2869,25 @@ export class StyleEngine {
    * auto-domain extent moved.
    */
   refreshMapped( group: GroupName, slots: ArrayLike<number>, keys: string[] ): void {
-    const def = this.defs[ group ];
+    if( group === 'nodes' && this.store.hasCompounds() ){
+      const flags = this.store.column( 'node.flags' ) as Uint32Array;
+      const leaves: number[] = [];
+      const parents: number[] = [];
 
+      for( let i = 0; i < slots.length; i++ ){
+        ( ( flags[ slots[ i ] ] & FLAG_PARENT ) !== 0 ? parents : leaves ).push( slots[ i ] );
+      }
+
+      if( leaves.length > 0 ){ this.refreshGroupDef( 'nodes', this.defs.nodes, leaves, keys ); }
+      if( parents.length > 0 ){ this.refreshGroupDef( 'nodes', this.defs.parents, parents, keys ); }
+
+      return;
+    }
+
+    this.refreshGroupDef( group, this.defs[ group ], slots, keys );
+  }
+
+  private refreshGroupDef( group: GroupName, def: GroupDef, slots: ArrayLike<number>, keys: string[] ): void {
     if( slots.length === 0 || def.deps == null ){ return; }
 
     let label = false;
@@ -2773,7 +2967,7 @@ export class StyleEngine {
           : formatRgba( r, g, b, a );
       }
     } else if( owned.has( prop ) ){
-      const bm = this.defs[ ref.group ].mappers.find( bm => bm.m.prop === prop );
+      const bm = this.defFor( ref ).mappers.find( bm => bm.m.prop === prop );
 
       if( bm != null ){
         const value = bindEvaluator( bm.m, this.store.data, ref.group, bm.channel.default( ref.group ), this.readValue )( ref.slot );
@@ -2938,30 +3132,30 @@ export class StyleEngine {
       // constants — opacities read back folded into the stored alpha, like
       // arrow colors)
       case 'text-outline-width':
-        return store.labelAt( slot, ref.group )?.outlineWidth ?? this.defs[ ref.group ].computed.textOutlineWidth;
+        return store.labelAt( slot, ref.group )?.outlineWidth ?? this.defFor( ref ).computed.textOutlineWidth;
       case 'text-outline-color': {
         const entry = store.labelAt( slot, ref.group );
 
-        return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defs[ ref.group ].computed.textOutlineColor );
+        return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defFor( ref ).computed.textOutlineColor );
       }
       case 'text-transform':
-        return TEXT_TRANSFORM_NAMES[ this.defs[ ref.group ].computed.textTransform ] ?? 'none';
+        return TEXT_TRANSFORM_NAMES[ this.defFor( ref ).computed.textTransform ] ?? 'none';
       case 'text-background-shape': {
         const entry = store.labelAt( slot, ref.group );
 
         return TEXT_BG_SHAPE_NAMES[ entry != null
           ? entry.bgShape
-          : this.defs[ ref.group ].computed.textBgShape ] ?? 'rectangle';
+          : this.defFor( ref ).computed.textBgShape ] ?? 'rectangle';
       }
       case 'text-border-width': {
         const entry = store.labelAt( slot, ref.group );
 
-        return entry != null ? entry.bgBorderWidth : this.defs[ ref.group ].computed.textBorderWidth;
+        return entry != null ? entry.bgBorderWidth : this.defFor( ref ).computed.textBorderWidth;
       }
       case 'min-zoomed-font-size': {
         const entry = store.labelAt( slot, ref.group );
 
-        return entry != null ? entry.minZoomedFontSize : this.defs[ ref.group ].computed.minZoomedFontSize;
+        return entry != null ? entry.minZoomedFontSize : this.defFor( ref ).computed.minZoomedFontSize;
       }
       case 'text-halign': {
         const entry = store.labelAt( slot, 'nodes' );
@@ -2982,53 +3176,53 @@ export class StyleEngine {
 
         return entry != null
           ? packedColor( entry.bgBorderColor )
-          : formatRgba( ...this.defs[ ref.group ].computed.textBorderColor );
+          : formatRgba( ...this.defFor( ref ).computed.textBorderColor );
       }
       case 'text-border-opacity': {
         const entry = store.labelAt( slot, ref.group );
 
         return entry != null
           ? Math.round( ( ( entry.bgBorderColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defs[ ref.group ].computed.textBorderOpacity;
+          : this.defFor( ref ).computed.textBorderOpacity;
       }
       case 'text-opacity': {
         const entry = store.labelAt( slot, ref.group );
 
         return entry != null
           ? Math.round( ( ( entry.color >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defs[ ref.group ].computed.textOpacity;
+          : this.defFor( ref ).computed.textOpacity;
       }
       case 'text-outline-opacity': {
         const entry = store.labelAt( slot, ref.group );
 
         return entry != null
           ? Math.round( ( ( entry.outlineColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defs[ ref.group ].computed.textOutlineOpacity;
+          : this.defFor( ref ).computed.textOutlineOpacity;
       }
       case 'text-background-color': {
         const entry = store.labelAt( slot, ref.group );
 
-        return entry != null ? packedColor( entry.bgColor ) : formatRgba( ...this.defs[ ref.group ].computed.textBgColor );
+        return entry != null ? packedColor( entry.bgColor ) : formatRgba( ...this.defFor( ref ).computed.textBgColor );
       }
       case 'text-background-opacity': {
         const entry = store.labelAt( slot, ref.group );
 
         return entry != null
           ? Math.round( ( ( entry.bgColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defs[ ref.group ].computed.textBgOpacity;
+          : this.defFor( ref ).computed.textBgOpacity;
       }
       case 'text-background-padding':
-        return store.labelAt( slot, ref.group )?.bgPadding ?? this.defs[ ref.group ].computed.textBgPadding;
+        return store.labelAt( slot, ref.group )?.bgPadding ?? this.defFor( ref ).computed.textBgPadding;
       case 'text-margin-x':
-        return store.labelAt( slot, ref.group )?.marginX ?? this.defs[ ref.group ].computed.textMarginX;
+        return store.labelAt( slot, ref.group )?.marginX ?? this.defFor( ref ).computed.textMarginX;
       case 'text-margin-y':
-        return store.labelAt( slot, ref.group )?.marginY ?? this.defs[ ref.group ].computed.textMarginY;
+        return store.labelAt( slot, ref.group )?.marginY ?? this.defFor( ref ).computed.textMarginY;
       case 'text-rotation': {
         const entry = store.labelAt( slot, ref.group );
 
         return entry != null
           ? ( entry.rotate ? 'autorotate' : 'none' )
-          : TEXT_ROTATION_NAMES[ this.defs[ ref.group ].computed.textRotation ];
+          : TEXT_ROTATION_NAMES[ this.defFor( ref ).computed.textRotation ];
       }
       case 'source-label': case 'source-text-offset': case 'source-text-margin-x':
       case 'source-text-margin-y': case 'source-text-rotation':
@@ -3068,6 +3262,18 @@ export class StyleEngine {
         }
 
         return scalar( ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
+
+      // compound props (round 14.6): stored truth is the per-parent
+      // record; leaves read the zero defaults (v3 leaves' padding is 0)
+      case 'padding': {
+        const cs = this.store.compoundStyleOf( ref.slot );
+
+        return cs.paddingUnit === '%' ? `${cs.padding * 100}%` : cs.padding;
+      }
+      case 'padding-relative-to': return this.store.compoundStyleOf( ref.slot ).relativeTo;
+      case 'min-width': return this.store.compoundStyleOf( ref.slot ).minWidth;
+      case 'min-height': return this.store.compoundStyleOf( ref.slot ).minHeight;
+      case 'compound-sizing-wrt-labels': return 'exclude';
 
       // edge channels
       case 'line-color': return color( 'edge.lineColor' );
@@ -3266,7 +3472,7 @@ export class StyleEngine {
       };
     }
 
-    const def = this.defs[ ref.group ];
+    const def = this.defFor( ref );
     let computed: Computed;
 
     if( def.mappers.length > 0 ){
@@ -3300,6 +3506,12 @@ export class StyleEngine {
     for( const prop of Object.keys( props ) ){
       const norm = normalizeProp( prop );
       const value = props[ prop ];
+
+      if( COMPOUND_PROPS.has( norm ) ){
+        // round 14.6: the compound props live in the parents sheet group
+        // (they are auto-bounds inputs, split out before this resolve)
+        throw new Error( `The style property '${norm}' belongs to the parents group` );
+      }
 
       if( END_LABEL_PROPS.has( norm ) && group === 'nodes' ){
         throw new Error( `'${norm}' is an edge style property` );

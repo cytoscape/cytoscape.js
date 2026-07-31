@@ -121,6 +121,13 @@ export class GpuCore {
     // the compounds 0 <-> >0 transitions change paint eval config (the
     // opacity fold demotes the GPU opacity mapper, round 14.4)
     this._store.onCompoundsToggled = () => { this._styleEngine.paintVersion++; };
+
+    // a leaf <-> parent flip restyles the slot against the right sheet
+    // group (nodes vs the parents overlay, round 14.6); the label entry
+    // re-bakes through the same apply
+    this._store.onParentFlip = ( slot ) => {
+      this._styleEngine.applyBulk( 'nodes', [ slot ] );
+    };
     this._animations = new AnimationManager( () => this._afterAnimationTick() );
     this._renderer = null;
     this._pointer = null;

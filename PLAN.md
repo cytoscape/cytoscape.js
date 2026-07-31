@@ -3521,9 +3521,37 @@ commit(s) with docs in-commit):
   recorded deviation narrows to within-phase only).  Tests-first:
   9 specs in `test/gpu-compound-events.mjs` red then green — 2007
   Node tests, typecheck + lint clean.
-- [ ] **14.6 Parents sheet group + compound props** — the overlay
-  record, prop parsing/throws, width/height ownership, the flip
-  hook, defaults.  Node specs.
+- [x] **14.6 Parents sheet group + compound props** — landed
+  2026-07-31.  The sheet gains **`parents`**: channel props that
+  overlay the nodes group for parent slots with v3's specificity —
+  user nodes block < the default `:parent` overlay (rectangle,
+  #eee fill, 1px #ccc border) < user parents block — plus the
+  compound props (`padding` px or 'N%', `padding-relative-to`,
+  `min-width`/`min-height`, `compound-sizing-wrt-labels` where
+  `'exclude'` is the only accepted value, `'include'` throws —
+  labels are excluded from bb; compound props are constants-only
+  and throw outside the parents group).  Padding defaults to v3's
+  10.  Engine mechanics: a third GroupDef compiled from the merged
+  props (parents-block mappers evaluate for parent slots only);
+  `applyBulk`/`refreshMapped` partition node slots by
+  `FLAG_PARENT`; mapper escalations re-partition via
+  `allSlotsFor`; the readback paths route through `defFor(ref)`;
+  `stylesDependOnData` consults the parents deps;
+  `store.setCompoundStyle` lands per parent at apply.
+  **Flip restyle**: a leaf↔parent flip re-applies the slot against
+  the right group via a store `onParentFlip` hook (defaults differ,
+  so flips always visibly restyle — v3); parent style width/height
+  keep flowing into the stashed fallback (the 14.3 ownership
+  rule).  **GPU demotion**: channels the parents overlay resolves
+  differently (the default overlay's background/border colors, any
+  user parents-block prop) demote a nodes-group GPU mapper to the
+  CPU path while compounds exist — the kernel evaluates every
+  slot and would repaint parents with the nodes value.  Readback:
+  compound props answer from the per-parent record (leaves read
+  the zero defaults).  Tests-first: 9 specs in
+  `test/gpu-parents-style.mjs` red then green; the 14.3 bounds
+  suite pins raw math by zeroing the new defaults in its sheet —
+  2016 Node tests, typecheck + lint clean.
 - [ ] **14.7 Structural query + case keys** — matcher
   `parent`/`child`, case `when` structural conditions +
   `::parent`/`::child` deps.  Node specs.

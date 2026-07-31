@@ -230,6 +230,16 @@ export interface GpuStylesheet {
   nodes?: GpuStyleProps;
   edges?: GpuStyleProps;
   /**
+   * Compound-parent overlay (round 14.6): node props that apply to
+   * parent nodes on top of the nodes group and v3's `:parent` defaults
+   * (rectangle, #eee fill, 1px #ccc border, padding 10) — constants or
+   * mappers — plus the compound props `padding`, `padding-relative-to`,
+   * `min-width`, `min-height` and `compound-sizing-wrt-labels`
+   * (constants only; `'exclude'` is the only accepted sizing value —
+   * labels are excluded from bounding boxes in v4).
+   */
+  parents?: GpuStyleProps;
+  /**
    * Core (viewport-level) theming props (round 13 A2), constants only:
    * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
    * (the DOM selection box) and `active-bg-color`/`-opacity`/`-size`

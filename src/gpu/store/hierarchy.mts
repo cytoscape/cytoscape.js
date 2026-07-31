@@ -218,6 +218,11 @@ export class HierarchyIndex {
     return this.resolvedPad.get( slot ) ?? 0;
   }
 
+  /** The declared compound style record (defaults for leaves). */
+  compoundStyleOf( slot: number ): CompoundStyle {
+    return this.compoundStyle.get( slot ) ?? COMPOUND_STYLE_DEFAULTS;
+  }
+
   /**
    * Materialize stale parent geometry into the columns: deepest parents
    * first (their derived boxes are their ancestors' inputs), each from

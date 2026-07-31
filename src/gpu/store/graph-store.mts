@@ -73,6 +73,9 @@ export class GraphStore implements ModelView {
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
   onCompoundsToggled: ( () => void ) | null = null;
+  /** fires when a node flips leaf <-> parent (the core restyles the slot
+   * against the right sheet group, round 14.6) */
+  onParentFlip: ( ( slot: number ) => void ) | null = null;
 
   // conservative monotone maxima behind curveSlack() (see that doc)
   private curveDevMax = 0;
@@ -189,6 +192,9 @@ export class GraphStore implements ModelView {
         if( becameParent ? this.hierarchy.parentCount() === 1 : this.hierarchy.parentCount() === 0 ){
           this.onCompoundsToggled?.();
         }
+
+        // a flipped node restyles against the right sheet group (14.6)
+        this.onParentFlip?.( slot );
       },
       materialize: ( slot, x, y, w, h ) => this.materializeParentGeom( slot, x, y, w, h )
     } );
@@ -719,6 +725,11 @@ export class GraphStore implements ModelView {
     this.flushDerived();
 
     return this.hierarchy.paddingOf( slot );
+  }
+
+  /** The declared compound style record (the style readbacks' truth). */
+  compoundStyleOf( slot: number ): CompoundStyle {
+    return this.hierarchy.compoundStyleOf( slot );
   }
 
   /**

@@ -958,6 +958,34 @@ own opacity (v3: edges have no parent).  While compounds exist a
 GPU-mapped node `opacity` demotes to the CPU path (the kernel would
 overwrite the fold) — the demotion engages/disengages on the
 compounds 0↔>0 transitions.
+
+Round 14.6 (the `parents` sheet group): parent nodes style through a
+**fourth sheet key** — `{ nodes, edges, parents, core }` — whose
+channel props overlay the nodes group for parent slots, with v3's
+specificity (user nodes block < the default `:parent` overlay —
+`rectangle`, `#eee` fill, 1px `#ccc` border, padding 10 — < user
+parents block; in v3 a `:parent` selector outranks `node`).
+Parents-block values are constants or mappers, evaluated for parent
+slots only; a leaf↔parent flip restyles the node against the right
+group automatically.  The **compound props** live in the parents
+group and are constants-only: `padding` (px, or `'N%'` of the
+children bb per `padding-relative-to`: width | height | average |
+min | max), `min-width`/`min-height` (the centered clamp), and
+`compound-sizing-wrt-labels`, where `'exclude'` is the only
+accepted value (`'include'` throws — labels are excluded from
+bounding boxes in v4; recorded).  Compound props throw outside the
+parents group.  Readback answers from the per-parent record
+(`style('padding')` returns the declared px number or the percent
+string; leaves read 0, as v3 leaves do).  The v3 `:parent:selected`
+tint is not ported — v4 never restyles on selection (the shader
+accent ring is the selection affordance); recorded deviation.
+GPU mapper eval: nodes-group paint mappers on channels the parents
+overlay resolves differently (always the default overlay's
+background/border colors, plus any user parents-block prop) demote
+to the CPU path while compounds exist — the eval kernel runs over
+every slot and would repaint parents with the nodes-group value; a
+recorded scope note.
+
 Multiline labels remain a v4 direction in the *expensive GPU-computed
 geometry* tier — the tier every curved-edge family now ships under
 (rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound

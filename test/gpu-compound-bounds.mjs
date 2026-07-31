@@ -10,16 +10,21 @@ import cytoscapeGpu from '../src/gpu/index.mjs';
 
 const slotOf = ( cy, id ) => cy.$id( id )._first().slot;
 
-// p > (a at (0,0), b at (100,0)) => children bb x [-15, 115], y [-15, 15]
-const make = ( extra = {} ) => cytoscapeGpu( { elements: {
-  nodes: [
-    { data: { id: 'p' } },
-    { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } },
-    { data: { id: 'b', parent: 'p' }, position: { x: 100, y: 0 } },
-    ...( extra.nodes ?? [] )
-  ],
-  edges: extra.edges ?? []
-} } );
+// p > (a at (0,0), b at (100,0)) => children bb x [-15, 115], y [-15, 15].
+// The suite pins raw auto-bounds math, so the sheet zeroes the v3-default
+// parent padding (10) and border (1) from the 14.6 parents group.
+const make = ( extra = {} ) => cytoscapeGpu( {
+  style: { parents: { padding: 0, borderWidth: 0 } },
+  elements: {
+    nodes: [
+      { data: { id: 'p' } },
+      { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } },
+      { data: { id: 'b', parent: 'p' }, position: { x: 100, y: 0 } },
+      ...( extra.nodes ?? [] )
+    ],
+    edges: extra.edges ?? []
+  }
+} );
 
 describe('gpu/store: compound auto-bounds (round 14.3)', function(){
 
@@ -43,7 +48,7 @@ describe('gpu/store: compound auto-bounds (round 14.3)', function(){
   it('includes child borders in the derived bb', function(){
     const cy = make();
 
-    cy.style( { nodes: { borderWidth: 4, borderColor: '#000' } } );
+    cy.style( { nodes: { borderWidth: 4, borderColor: '#000' }, parents: { padding: 0, borderWidth: 0 } } );
 
     // child extent grows by border/2 = 2 per side
     expect( cy.$id( 'p' ).width() ).to.equal( 134 );
@@ -234,7 +239,7 @@ describe('gpu/store: compound auto-bounds (round 14.3)', function(){
   it('re-anchors a parent’s label when auto-bounds resize it', function(){
     const cy = make();
 
-    cy.style( { nodes: { label: { data: 'id' } } } ); // default valign: bottom
+    cy.style( { nodes: { label: { data: 'id' } }, parents: { padding: 0 } } ); // default valign: bottom
 
     const store = cy._store;
     const slot = slotOf( cy, 'p' );

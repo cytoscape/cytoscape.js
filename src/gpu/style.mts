@@ -364,6 +364,72 @@ const CURVE_PROPS: ReadonlySet<string> = new Set( [
   'source-distance-from-node', 'target-distance-from-node'
 ] );
 
+/** Core (viewport-level) theming (round 13 A2): v3's core-selector
+ * props, resolved once per sheet — constants only (there is no element
+ * to map over). */
+export interface CoreStyle {
+  selectionBoxColor: RGBA;
+  selectionBoxOpacity: number;
+  selectionBoxBorderColor: RGBA;
+  selectionBoxBorderWidth: number;
+  activeBgColor: RGBA;
+  activeBgOpacity: number;
+  activeBgSize: number;
+}
+
+const CORE_DEFAULTS: CoreStyle = {
+  selectionBoxColor: [ 221, 221, 221, 255 ], // #ddd
+  selectionBoxOpacity: 0.65,
+  selectionBoxBorderColor: [ 170, 170, 170, 255 ], // #aaa
+  selectionBoxBorderWidth: 1,
+  activeBgColor: [ 0, 0, 0, 255 ], // black
+  activeBgOpacity: 0.15,
+  activeBgSize: 30
+};
+
+const resolveCoreProps = ( props: GpuStyleProps | undefined ): CoreStyle => {
+  const out: CoreStyle = { ...CORE_DEFAULTS };
+
+  if( props == null ){ return out; }
+
+  for( const raw of Object.keys( props ) ){
+    const prop = normalizeProp( raw );
+    const value = props[ raw ];
+
+    if( isMapperSpec( value ) ){
+      throw new Error( `Core style props take constants only ('${prop}' got a mapper)` );
+    }
+
+    switch( prop ){
+      case 'selection-box-color':
+        out.selectionBoxColor = parseColor( prop, value );
+        break;
+      case 'selection-box-opacity':
+        out.selectionBoxOpacity = parseZeroOne( prop, value );
+        break;
+      case 'selection-box-border-color':
+        out.selectionBoxBorderColor = parseColor( prop, value );
+        break;
+      case 'selection-box-border-width':
+        out.selectionBoxBorderWidth = parseNonNegative( prop, value );
+        break;
+      case 'active-bg-color':
+        out.activeBgColor = parseColor( prop, value );
+        break;
+      case 'active-bg-opacity':
+        out.activeBgOpacity = parseZeroOne( prop, value );
+        break;
+      case 'active-bg-size':
+        out.activeBgSize = parseNonNegative( prop, value );
+        break;
+      default:
+        throw new Error( `The core style property '${prop}' is unsupported in the GPU prototype` );
+    }
+  }
+
+  return out;
+};
+
 /** ghost props are node-only (round 13 A1). */
 const GHOST_PROPS: ReadonlySet<string> = new Set( [
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity'
@@ -1381,7 +1447,7 @@ interface GroupDef {
   deps: Map<string, { label: boolean; mappers: boolean }> | null;
 }
 
-const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges' ] );
+const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges', 'core' ] );
 
 export class StyleEngine {
   private store: GraphStore;
@@ -1433,12 +1499,21 @@ export class StyleEngine {
    * mapped channels too.  `apply: false` compiles and validates without
    * applying (the core defers the apply while batching).
    */
+  private coreStyle: CoreStyle = { ...CORE_DEFAULTS };
+
+  /** The resolved core theming props (round 13 A2). */
+  core(): CoreStyle {
+    return this.coreStyle;
+  }
+
   setSheet( sheet: GpuStylesheet, apply: boolean = true ): void {
     for( const key of Object.keys( sheet ) ){
       if( !SHEET_KEYS.has( key ) ){
-        throw new Error( `Unknown stylesheet key '${key}'; supported keys: nodes, edges` );
+        throw new Error( `Unknown stylesheet key '${key}'; supported keys: nodes, edges, core` );
       }
     }
+
+    this.coreStyle = resolveCoreProps( sheet.core );
 
     const compile = ( group: GroupName, def: GpuStylesheet['nodes'] ): GroupDef => {
       const mappers: BoundMapper[] = [];

@@ -158,6 +158,14 @@ under the nodes; strokes are solid with butt caps (v3 rounds stroke
 ends — a recorded deviation), and `overlay-shape`/`-corner-radius`
 stay node-only.
 
+Core theming (round 13 A2): the sheet takes an optional `core` group
+with v3's core-selector props, constants only —
+`selection-box-color`/`-opacity`/`-border-color`/`-border-width`
+theme the DOM selection box, and `active-bg-color`/`-opacity`/`-size`
+drive the background-grab indicator circle at the press point (a DOM
+element above the canvas, like the selection box — v3 draws it into
+the canvas, so v4 exports never include it; recorded).
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

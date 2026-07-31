@@ -2595,4 +2595,73 @@ test.describe( 'WebGPU renderer', () => {
     expect( ringPx[ 2 ] ).toBeLessThan( 100 );
   } );
 
+  test( 'core theming styles the selection box and active-bg circle (A2)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: { 'width': 20, 'height': 20, 'background-color': '#2c3e50' },
+        core: {
+          'selection-box-color': '#ff0000', 'selection-box-opacity': 0.5,
+          'selection-box-border-color': '#00ff00', 'selection-box-border-width': 2,
+          'active-bg-color': '#0000ff', 'active-bg-opacity': 0.4, 'active-bg-size': 25
+        }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    // shift-drag a selection box over empty background: the DOM box takes
+    // the themed colors
+    await page.keyboard.down( 'Shift' );
+    await page.mouse.move( center.x + 60, center.y + 60 );
+    await page.mouse.down();
+    await page.mouse.move( center.x + 140, center.y + 130 );
+
+    const boxStyle = await page.evaluate( () => {
+      const el = [ ...document.querySelectorAll( 'div' ) ]
+        .find( d => d.style.display === 'block' && d.style.border.includes( 'solid' ) );
+
+      return el == null ? null : { background: el.style.background, border: el.style.border };
+    } );
+
+    expect( boxStyle ).not.toBe( null );
+    expect( boxStyle.background ).toContain( '255, 0, 0' );
+    expect( boxStyle.background ).toContain( '0.5' );
+    expect( boxStyle.border ).toContain( '2px' );
+
+    await page.mouse.up();
+    await page.keyboard.up( 'Shift' );
+
+    // a plain background press shows the active-bg circle at the point
+    await page.mouse.move( center.x - 80, center.y - 40 );
+    await page.mouse.down();
+
+    const circle = await page.evaluate( () => {
+      const el = [ ...document.querySelectorAll( 'div' ) ]
+        .find( d => d.style.borderRadius === '50%' && d.style.display === 'block' );
+
+      return el == null ? null : {
+        background: el.style.background, width: el.style.width
+      };
+    } );
+
+    expect( circle ).not.toBe( null );
+    expect( circle.background ).toContain( '0, 0, 255' );
+    expect( circle.width ).toBe( '50px' );
+
+    await page.mouse.up();
+
+    const hidden = await page.evaluate( () => {
+      const el = [ ...document.querySelectorAll( 'div' ) ]
+        .find( d => d.style.borderRadius === '50%' );
+
+      return el == null ? 'gone' : el.style.display;
+    } );
+
+    expect( hidden ).toBe( 'none' );
+  } );
+
 } );

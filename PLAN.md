@@ -2621,6 +2621,26 @@ grows per item.
   mismatch (the caps + AA).  1858 Node tests, 90 Playwright specs,
   typecheck + lint green.
 
+- [x] **A2 (core): selection-box + active-bg theming** (2026-07-31).
+  The sheet gains an optional **`core` group** — the v4 home for v3's
+  core-selector props, constants only (there is no element to map
+  over): `selection-box-color`/`-opacity`/`-border-color`/
+  `-border-width` theme the DOM selection box (previously hardcoded ≈
+  v3 colors; now v3's exact defaults — #ddd at 0.65 with a 1px #aaa
+  border — applied per show, so a sheet swap restyles the next box),
+  and `active-bg-color`/`-opacity`/`-size` drive the **background-grab
+  indicator**: v3's active-bg circle, shown at the press point while
+  the background is grabbed (v4 implements it as a DOM circle above
+  the canvas, like the selection box — a recorded implementation
+  note: v3 draws it into the canvas, so it never appears in v4
+  exports), radius = active-bg-size screen px (v3's size/zoom-in-model
+  ⇒ screen-fixed rule).  A2 is now **complete** (nodes + edges +
+  core).  4 Node specs (`test/gpu-core-style.mjs` — defaults,
+  camel/kebab parsing, sheet-reset, throws) and a `webgpu` spec
+  (themed box colors mid-drag; the circle appears on a background
+  press at 2×size px and hides on release).  1862 Node tests, 91
+  Playwright specs, typecheck + lint green.
+
 ## Round 13 plan — style-prop parity (planned 2026-07-30)
 
 A prop-level sweep of the v3 style registry
@@ -2690,13 +2710,14 @@ autonomously):
   draw of the basic node body (shape, border, background) at the
   offset, never labels or decorations.  Offsets grow the bb scan
   (geometry tier).  Landed 2026-07-31 — see the round-13 record.
-- [ ] **A2 Overlay/underlay theming** — the 10 `overlay-*`/
+- [x] **A2 Overlay/underlay theming** — the 10 `overlay-*`/
   `underlay-*` element props plus the `active-bg-*` and
   `selection-box-*` core props; the baked-in affordances (shader
   hover/active brighten, accent ring, DOM selection box) become the
   styled defaults.  Overlay/underlay padding grows bounds (geometry
   tier); underlay draws under the node within the existing pass
-  order.
+  order.  Landed 2026-07-31 in three slices — see the round-13
+  record.
 
 **Phase B — paint & stroke channels** (pure FS + channel plumbing)
 

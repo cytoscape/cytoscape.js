@@ -69,6 +69,8 @@ export class PointerHandler {
   private lastHoverAt: number;
   private down: DownState | null;
   private boxEl: HTMLDivElement | null;
+  /** the active-bg indicator circle (round 13 A2; background grabs) */
+  private activeEl: HTMLDivElement | null;
   private touches: Map<number, Position>;
   private pinch: { dist: number; mid: Position } | null;
   private deadTouch: number | null;
@@ -90,6 +92,7 @@ export class PointerHandler {
     this.lastHoverAt = 0;
     this.down = null;
     this.boxEl = null;
+    this.activeEl = null;
     this.touches = new Map();
     this.pinch = null;
     this.deadTouch = null;
@@ -127,6 +130,11 @@ export class PointerHandler {
     if( this.boxEl != null ){
       this.boxEl.remove();
       this.boxEl = null;
+    }
+
+    if( this.activeEl != null ){
+      this.activeEl.remove();
+      this.activeEl = null;
     }
   }
 
@@ -245,6 +253,12 @@ export class PointerHandler {
       }
     }
 
+    // the background-grab indicator (round 13 A2): v3's active-bg circle
+    // at the press point while the background is grabbed
+    if( this.down.mode === 'pan' && this.down.grabbed == null ){
+      this.showActiveBg( pos.x, pos.y );
+    }
+
     // press-and-hold: 'taphold' unless the press moves or ends first
     this.clearTaphold();
     this.tapholdTimer = setTimeout( () => {
@@ -346,7 +360,42 @@ export class PointerHandler {
     }
   }
 
+  /** Show/update the active-bg circle (styled from the core sheet). */
+  private showActiveBg( x: number, y: number ): void {
+    const core = this.cy._styleEngine.core();
+
+    if( core.activeBgOpacity <= 0 || core.activeBgSize <= 0 ){ return; }
+
+    if( this.activeEl == null ){
+      const el = this.canvas.ownerDocument.createElement( 'div' );
+      const st = el.style;
+
+      st.position = 'absolute';
+      st.pointerEvents = 'none';
+      st.zIndex = '1';
+      st.borderRadius = '50%';
+      ( this.canvas.parentElement ?? this.canvas ).appendChild( el );
+      this.activeEl = el;
+    }
+
+    const el = this.activeEl;
+    const [ r, g, b ] = core.activeBgColor;
+    const size = core.activeBgSize;
+
+    el.style.background = `rgba(${r}, ${g}, ${b}, ${core.activeBgOpacity})`;
+    el.style.width = `${size * 2}px`;
+    el.style.height = `${size * 2}px`;
+    el.style.left = `${x - size}px`;
+    el.style.top = `${y - size}px`;
+    el.style.display = 'block';
+  }
+
+  private hideActiveBg(): void {
+    if( this.activeEl != null ){ this.activeEl.style.display = 'none'; }
+  }
+
   private onPointerUp( e: PointerEvent ): void {
+    this.hideActiveBg();
     if( this.endTouch( e ) ){ return; }
 
     const cxt = this.cxtDown;
@@ -384,6 +433,7 @@ export class PointerHandler {
   }
 
   private onPointerCancel( e: PointerEvent ): void {
+    this.hideActiveBg();
     if( this.endTouch( e ) ){ return; }
 
     if( this.cxtDown != null && this.cxtDown.pointerId === e.pointerId ){
@@ -491,8 +541,6 @@ export class PointerHandler {
       s.display = 'none';
       s.pointerEvents = 'none';
       s.zIndex = '1'; // above the (unpositioned) canvas
-      s.background = 'rgba(221, 221, 221, 0.35)'; // ≈ v3's #ddd selection box
-      s.border = '1px solid #aaa';
       s.boxSizing = 'border-box';
 
       // the canvas fills the container from (0, 0), so container-absolute
@@ -516,6 +564,13 @@ export class PointerHandler {
     }
 
     const el = this.boxElement();
+    // themed from the core sheet (round 13 A2: selection-box-* props)
+    const core = this.cy._styleEngine.core();
+    const [ br, bg, bb ] = core.selectionBoxColor;
+    const [ rr, rg, rb ] = core.selectionBoxBorderColor;
+
+    el.style.background = `rgba(${br}, ${bg}, ${bb}, ${core.selectionBoxOpacity})`;
+    el.style.border = `${core.selectionBoxBorderWidth}px solid rgba(${rr}, ${rg}, ${rb}, 1)`;
 
     el.style.display = 'block';
     el.style.left = Math.min( down.startX, pos.x ) + 'px';

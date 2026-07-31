@@ -226,6 +226,13 @@ export type GpuStyleProps = Record<string, GpuStylePropValue>;
 export interface GpuStylesheet {
   nodes?: GpuStyleProps;
   edges?: GpuStyleProps;
+  /**
+   * Core (viewport-level) theming props (round 13 A2), constants only:
+   * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
+   * (the DOM selection box) and `active-bg-color`/`-opacity`/`-size`
+   * (the background-grab indicator circle).  v3's core-selector props.
+   */
+  core?: GpuStyleProps;
 }
 
 /**

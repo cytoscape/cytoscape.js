@@ -11,7 +11,9 @@ slot-stable compaction, edge-label autorotate) are recorded below as
 round-12 curved-edges plan has both flagged calls signed off, pass
 12a (bundled bezier + self-loops) landed 2026-07-30, and pass 12b
 (unbundled bezier + segments + taxi) landed 2026-07-30/31 — pass 12c
-(endpoints + haystack/straight-triangle) remains.  `src/gpu/README.md` is
+(endpoints + haystack/straight-triangle) remains, and the round-13
+style-prop parity plan (2026-07-30, at the end of this file) queues
+behind it.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -2383,3 +2385,178 @@ The last item on the autonomous shelf, cleared while planning round 12:
   `edge-label-autorotate` golden: a downhill run, a direction-flipped
   uphill run with its background box rotated along, and a vertical
   top-to-bottom run — all pre-existing goldens unchanged).
+
+## Round 13 plan — style-prop parity (planned 2026-07-30)
+
+A prop-level sweep of the v3 style registry
+(`src/style/properties.mts`: 280 registered props + 11 aliases)
+against the v4 engine, asking one question per prop: is it
+implementable **entirely under existing design decisions** — a new
+channel column plus parse/mapper/stored-truth-readback plumbing plus
+fragment-stage shader work, the pattern rounds 10 B2/B3/B4 (line
+styles, label visuals, arrow shapes) established — with no new
+subsystem and no open API-semantics call?  Roughly 55 props qualify;
+they are this round.  The paint props are cheap for a structural
+reason: colors/opacities fetch in the fragment stage (the
+flat-instance-fetch precedent), so they never touch the
+8-storage-buffer vertex budgets that constrain geometry work.  This
+round refills the autonomous shelf; the design queue (compounds →
+background images → event vocabulary/extension contract → force
+layout) is not consumed by it.
+
+**Sequencing**: pass 12c (the round-12 plan above) runs first, then
+this round's phases in order — the 2026-07-29 triage keeps (ghost,
+overlay/underlay) lead, per the discussion that produced this plan.
+Process: the round-10 rules verbatim (isolated commits, docs
+in-commit, full verify per item, escalation to "Needs a call" on any
+real API-semantics question discovered mid-implementation; goldens
+regenerated autonomously when a visual change is intended).
+
+**Tier discipline** (the existing invariants, applied to the new
+channels):
+
+- Colors and opacities are *paint*: fragment-stage fetch, eligible
+  for the GPU mapper eval kernel and paint tweens where the packing
+  fits, always CPU-evaluable.
+- Anything read by bb/fit, the CPU pick replica, or a columnar scan
+  is *geometry*: eagerly CPU-evaluated, with its bounds/pick
+  consumers extended in the same commit — `corner-radius` is read by
+  the CPU pick inside-test; node `outline-width`/`-offset`,
+  overlay/underlay padding and ghost offsets grow the store bb scan
+  the way `border-width` already does.
+- List props are constants-only (the 12b scope rule: a mapper value
+  is one number/keyword, not a list), capped where they feed
+  fixed-iteration shader loops, caps recorded as deviations.
+
+**Implementation leans recorded at planning** (so the passes can run
+autonomously):
+
+- Gradients interpolate in **sRGB**, matching v3's canvas gradients —
+  the live parity harness is the point of porting them.  (OKLab stays
+  the default for *mapper* ranges; a gradient is a v3-parity visual,
+  not a data encoding.)
+- `font-style`/`font-weight` follow the `font-family` rule: global
+  constants (one font per atlas); per-element forms stay out.
+- Dashed `border-style`/`outline-style`/`text-border-style` stay out
+  (dashing an SDF boundary needs perimeter parameterization — the
+  recorded B2 reason); these props ship with `solid` semantics only
+  where the rest of their group lands.
+- `text-valign`/`text-halign` are placement only: labels stay
+  excluded from `boundingBox()` (the recorded deviation), so the
+  anchor grid carries no bb implications.
+- Arrow scalars are draw-only in v4 (arrows are not pickable and not
+  in bb — both existing recorded deviations), so `arrow-scale`/
+  `arrow-width`/`arrow-fill` are pure FS/quad-sizing work.
+
+**Phase A — the 2026-07-29 triage keeps** (direction already set)
+
+- [ ] **A1 Ghost props** (`ghost`, `ghost-offset-x/y`,
+  `ghost-opacity`) — the decided simplified form: one extra instance
+  draw of the basic node body (shape, border, background) at the
+  offset, never labels or decorations.  Offsets grow the bb scan
+  (geometry tier).
+- [ ] **A2 Overlay/underlay theming** — the 10 `overlay-*`/
+  `underlay-*` element props plus the `active-bg-*` and
+  `selection-box-*` core props; the baked-in affordances (shader
+  hover/active brighten, accent ring, DOM selection box) become the
+  styled defaults.  Overlay/underlay padding grows bounds (geometry
+  tier); underlay draws under the node within the existing pass
+  order.
+
+**Phase B — paint & stroke channels** (pure FS + channel plumbing)
+
+- [ ] **B1 Opacity split**: `background-opacity`, `border-opacity`,
+  `line-opacity`, `text-opacity` — v3 semantics (element `opacity`
+  is the master multiplier; effective = opacity × channel opacity).
+  Early-z's guaranteed-opaque predicate consumes the product (more
+  conservative, never wrong); text opacity folds into glyph alpha
+  and reads back folded (the outline/background-opacity precedent).
+- [ ] **B2 `border-position`** (inside | center | outside — a pure
+  SDF band offset) + **`corner-radius`** (a scalar channel feeding
+  the existing round-rectangle SDF; CPU pick inside-test reads it —
+  geometry tier).
+- [ ] **B3 `line-cap`** (butt | round | square — endpoint cap SDF in
+  the edge FS) + **`line-dash-pattern`/`line-dash-offset`**
+  (arbitrary patterns over the existing arc-length varying;
+  constants-only lists, pattern length capped).
+- [ ] **B4 Edge casing**: `line-outline-width`/`-color` — a border
+  band on the edge strip (straight and curved), colors fetched
+  fragment-side.
+- [ ] **B5 Node `outline-*`**: `outline-color`/`-opacity`/`-width`/
+  `-offset` as an SDF band outside the shape (distance ∈
+  [offset, offset + width]); solid only.  Bb scan and conservative
+  bounds grow by offset + width; the pick body stays the shape
+  itself (v3-consistent).
+- [ ] **B6 Label box parity**: `text-transform` (none | uppercase |
+  lowercase, applied when the glyph run is built),
+  `text-border-width`/`-color`/`-opacity` (a border on the existing
+  text-background quad), `text-background-shape` (rectangle |
+  round-rectangle on the quad's SDF).
+- [ ] **B7 Arrow scalars**: `arrow-scale`, `arrow-width`,
+  `arrow-fill: hollow` (an FS ring test on the existing arrow SDFs).
+  Compound arrow shapes stay out (recorded in round 10 B4).
+
+**Phase C — re-triaged: 12a/12b built the machinery** (these sat in
+needs-a-call batches; this plan's sign-off pulls them onto the
+shelf, since the expensive part now exists)
+
+- [ ] **C1 Mid-arrows**: `mid-source-*`/`mid-target-*` arrow props —
+  anchored at the curve/route midpoint with the midpoint tangent,
+  exactly the anchor + frame edge labels and autorotate already
+  compute in the VS (straight edges use the chord midpoint).  One
+  more quad per enabled end off the edge cull streams.
+- [ ] **C2 Gradients**: `background-fill` (linear-gradient |
+  radial-gradient) + `background-gradient-stop-colors`/
+  `-stop-positions`/`-direction`; `line-fill` +
+  `line-gradient-stop-colors`/`-stop-positions`.  Stop lists
+  constants-only and capped (cap recorded); node FS evaluates along
+  the gradient frame, edge FS along the arc-length varying; sRGB
+  interpolation per the lean above.
+- [ ] **C3 `shape-polygon-points`** (custom polygon): the
+  per-element unit point list lives in a blob (the curve-blob
+  storage pattern, round-11 compaction rules), the node FS runs the
+  generated sdPolygon loop over the blob range, and CPU pick runs
+  point-in-polygon over the same points — dual consumers of one
+  record, agreeing by construction.  Unit points are normalized, so
+  the bb term stays the node box.
+
+**Phase D — label props with recorded constraints**
+
+- [ ] **D1 `font-style` + `font-weight`** as global constants (the
+  `font-family` rule: one font per atlas; a change resets the atlas
+  and re-lays-out every label).
+- [ ] **D2 Per-element `min-zoomed-font-size`**: a sidecar channel
+  baked per glyph run, tested in the glyph cull predicate beside the
+  global `labelFadePx`/`labelMinPx` (which stay the defaults).
+- [ ] **D3 `text-valign`/`text-halign`** for node labels: v3's 3×3
+  anchor grid, anchor math off the node half-extents
+  (`node.outerHalf` is already a bindable column); placement only
+  per the lean above.
+- [ ] **D4 `source-label`/`target-label` families** (10 props): two
+  more glyph streams from the round-10 B5 template, anchored at
+  v3's offsets along the edge (`source/target-text-offset` as arc
+  distance via the route evaluator), each with its own margins and
+  rotation per v3.  The chunkiest item — last for a reason.
+
+**Excluded from this round, with reasons** (each stays in its parked
+tier; none of these is newly decided): dashed
+border/outline/text-border styles (perimeter parameterization);
+`round-*` polygon variants, `cut-rectangle`, `barrel`,
+`concave-hexagon`, `right-rhomboid`, `bottom-round-rectangle` (no
+closed form under anisotropic scale — recorded in round 10 B1);
+multiline props (`text-wrap`, `text-max-width`,
+`text-justification`, `line-height`, `text-overflow-wrap`,
+`text-metrics`, `box-select-labels` — their round designs label bb);
+the `background-image` family (texture-atlas architecture call);
+pie/stripe (wanted-at-all call); the compound group; `z-index` props
+(coupled to the compaction draw-order call); `transition-*`
+(animation-surface call); `display`/`visibility` split,
+`events`/`text-events`, `box-selection: overlap` (interaction
+calls); and everything in the dropped-by-decided-design ledger.
+
+**Verification per item**: parse/readback/mapper Node specs; a
+golden scene per visual group; live v3-parity scenes where the
+visual is v3-comparable (gradients, casing, caps, mid-arrows, the
+valign grid); the WGSL identifier/validation guards as usual.  The
+renderer benchmark re-runs only for items touching hot paths (B1's
+early-z predicate, C2's node-FS cost).

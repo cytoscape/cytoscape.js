@@ -33,7 +33,12 @@ Round 19 (2026-08-01) closed the last open architecture item:
 prefix (a monotone remap, so compaction is a visual no-op) with
 forwarded lazy ref repair, an automatic dead-slot trigger plus
 `cy.compact()`, and highWater/capacity shrinking to the current graph
-instead of its peak.
+instead of its peak.  Round 20 (2026-08-01) closed the interaction
+options + touch parity gap: the tuning quartet (`wheelSensitivity`,
+`desktopTapThreshold`/`touchTapThreshold`, `tapholdDuration` — ctor
+options + getter/setters), the `events`/`text-events`
+pointer-transparency props (a flag bit read by every pick path), and
+v3's two-finger cxt and three-finger box touch gestures.
 The existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
@@ -90,7 +95,8 @@ export — see the design decisions below),
 `renderer()`/`forceRender()`/`resize()`, graph-level
 `data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/
 `batchData`/`batching` — see below), `json()` (export-only),
-box selection (`elementsInBox` + the pointer gesture),
+box selection (`elementsInBox` + the pointer gesture — mouse/pen,
+and the round-20.5 three-finger touch box),
 `selectionType` and `boxSelectionIncludesLabels` (round 16.5),
 the round-20.1 interaction tuning quartet (`wheelSensitivity`,
 `desktopTapThreshold`/`touchTapThreshold`, `tapholdDuration` —
@@ -1945,7 +1951,10 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   and still count as a tap, chosen per event by pointer type (v4
   previously used 4 for all pointer types) — and `tapholdDuration`
   (default 500 ms; v3 hardcodes it, v4 makes it configurable — a
-  deliberate small surface addition).
+  deliberate small surface addition).  `pixelRatio` (`'auto'` |
+  number — the ctor option overriding the renderer's device pixel
+  ratio) predates the round and is spec-pinned since it: the backing
+  store scales by it while picking stays css-px addressed.
 - **Box selection**: with `boxSelectionEnabled` (default on), a drag
   while a multiple-select key (shift/ctrl/cmd) is held — or any drag
   when panning is disabled — draws a selection box (a DOM overlay above

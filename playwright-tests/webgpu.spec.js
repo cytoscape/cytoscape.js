@@ -1804,6 +1804,44 @@ test.describe( 'WebGPU renderer', () => {
     expect( disabled.selected ).toBe( 0 );
   } );
 
+  test( 'pixelRatio pins the backing-store resolution; picking stays in css px (round 20.6)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, Object.assign( {}, RED_NODE_GRAPH, { pixelRatio: 1 } ) );
+
+    const at1 = await page.evaluate( () => {
+      const canvas = document.querySelector( 'canvas' );
+
+      return { w: canvas.width, h: canvas.height, cssW: canvas.clientWidth, cssH: canvas.clientHeight };
+    } );
+
+    expect( at1.w ).toBe( at1.cssW );
+    expect( at1.h ).toBe( at1.cssH );
+
+    await page.evaluate( () => window.cy.destroy() );
+    await makeReadyCy( page, Object.assign( {}, RED_NODE_GRAPH, { pixelRatio: 2 } ) );
+
+    const at2 = await page.evaluate( () => {
+      const canvas = document.querySelector( 'canvas' );
+
+      return { w: canvas.width, h: canvas.height, cssW: canvas.clientWidth, cssH: canvas.clientHeight };
+    } );
+
+    expect( at2.w ).toBe( at2.cssW * 2 );
+    expect( at2.h ).toBe( at2.cssH * 2 );
+
+    // picking is css-px addressed whatever the backing resolution
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const picked = await page.evaluate(
+      center => window.cy.pick( center.x, center.y ).then( ele => ele == null ? null : ele.id() ),
+      center );
+
+    expect( picked ).toBe( 'a' );
+  } );
+
   test( 'tap selects and background tap clears', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

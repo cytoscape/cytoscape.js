@@ -27,7 +27,14 @@ multiline labels + label bb, the event vocabulary + extension
 contract, and the GPU force layout — and all four rounds **landed in
 full the same day** (plans + per-item records at the end of this
 file; every item tests-first, 2142 Node + 60 module tests and
-138 Playwright specs green at the close).  `src/gpu/README.md` is
+138 Playwright specs green at the close).  **Round 19** (2026-08-01)
+landed slot-moving compaction — the last open architecture item —
+and **round 20** (2026-08-01, the plan at the end of this file)
+closed gap item 8: the interaction tuning options
+(`wheelSensitivity`, the tap-threshold pair, `tapholdDuration`), the
+`events`/`text-events` pointer-transparency props, and the
+two-finger-cxt + three-finger-box touch gestures (2190 Node tests
+and 147 Playwright specs green at the close).  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -1414,13 +1421,18 @@ Each entry converts into a "Landed" record as it ships:
   1629 Node + 47 module tests, 51 Playwright specs green (serial).
 
 Deferred out of this round (logged, not built): compaction (below;
-the slot-stable tier since landed as round 11); autorotated edge
-labels (since landed 2026-07-29); multiline labels; bezier edges
-(round-12 plan written; passes 12a/12b since landed, 12c remains);
-compounds;
-z-index; GPU layouts; size tweens (the R8.5 geometry seam); `renderTo`;
+the slot-stable tier since landed as round 11, the slot-moving tier
+as round 19); autorotated edge
+labels (since landed 2026-07-29); multiline labels (since landed,
+round 16); bezier edges
+(round-12 plan written; passes 12a/12b/12c since landed — round 12
+is complete);
+compounds (since landed, round 14);
+z-index (since dropped by decided design, 2026-08-01); GPU layouts
+(since landed, round 18); size tweens (the R8.5 geometry seam);
+`renderTo`;
 restore/clone/json-import (closed — not in v4); the three-finger touch
-box gesture.
+box gesture (since landed, round 20.5).
 
 ## Landed (renderer benchmarks, 2026-07-28)
 
@@ -5032,8 +5044,8 @@ front (the round-17 discipline).
 
 **Pass split** (tests-first per item; docs in-commit):
 
-- [ ] **20.0 Docs-first** — this plan section; gap item 8 marked
-  scoped.
+- [x] **20.0 Docs-first** (2026-08-01) — this plan section; gap
+  item 8 marked scoped.
 - [x] **20.1 The option quartet** (2026-08-01) — `wheelSensitivity`,
   `desktopTapThreshold`, `touchTapThreshold`, `tapholdDuration`:
   ctor options + validated getter/setters on the core (throws on
@@ -5140,10 +5152,19 @@ front (the round-17 discipline).
   selected), verified red against the pre-20.5 pointer layer.
   81/81 webgpu Playwright specs, 2190 Node tests, typecheck + lint
   clean.
-- [ ] **20.6 pixelRatio spec + closing docs sweep** — a `webgpu`
-  spec pinning `pixelRatio: 2` vs `1` (backing-store size scales;
-  picking unaffected in css px), README round-20 section +
-  deviations entries, both docs swept per the standing rule.
+- [x] **20.6 pixelRatio spec + closing docs sweep** (2026-08-01) —
+  the `webgpu` spec confirmed the pre-existing option end to end
+  (`pixelRatio: 1` → backing store = css size, `2` → doubled, and
+  `cy.pick` at css coordinates still resolves the node), so no
+  code was needed.  Closing sweep per the standing rule: both docs
+  grepped for the round's vocabulary and staleness markers — fixed
+  the round-10 deferred list (12c/compounds/z-index/GPU
+  layouts/multiline/three-finger entries all stale since their
+  rounds landed), trued up both file headers with rounds 19–20,
+  and recorded pixelRatio + the touch-box close in their sections.
+  **Round 20 is complete**: 2190 Node + 63 module tests, 147
+  Playwright specs (webgpu + webgpu-visual — goldens untouched),
+  typecheck + lint clean.
 
 **Risks tracked**: Frame-uniform layout change touches every pass
 (one struct, asserted by the existing goldens — any misalignment is

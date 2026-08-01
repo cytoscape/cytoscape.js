@@ -2,7 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
-  FLAG_CHILD, FLAG_PARENT,
+  FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
@@ -85,6 +85,8 @@ interface NodeComputed {
   shape: number;
   opacity: number;
   borderWidth: number;
+  /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
+  eventsEnabled: boolean;
   /** literal label text ('' for none) when labelKey is null */
   label: string;
   /** `data(key)` mapper key ('id' reads the first-class id) */
@@ -201,6 +203,8 @@ interface NodeComputed {
 
 interface EdgeComputed {
   lineColor: RGBA;
+  /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
+  eventsEnabled: boolean;
   /** line-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
   lineFill: number;
   lineGradientStopColors: RGBA[];
@@ -313,6 +317,7 @@ const NODE_DEFAULTS: NodeComputed = {
   height: 30,
   shape: SHAPE_ELLIPSE,
   opacity: 1,
+  eventsEnabled: true, // v3's default: elements receive events
   borderWidth: 0,
   label: '', // no label
   labelKey: null,
@@ -395,6 +400,7 @@ const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
+  eventsEnabled: true, // v3's default: elements receive events
   lineFill: 0,
   lineGradientStopColors: [],
   lineGradientStopPositions: null,
@@ -536,6 +542,7 @@ const SHAPE_NAMES: Record<number, string> = {
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'shape-polygon-points', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
+  'events',
   'corner-radius', 'border-position',
   'background-fill', 'background-gradient-stop-colors',
   'background-gradient-stop-positions', 'background-gradient-direction',
@@ -562,6 +569,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-color', 'line-style', 'width', 'opacity', 'line-opacity', 'text-opacity',
+  'events',
   'line-cap', 'line-dash-pattern', 'line-dash-offset',
   'line-outline-width', 'line-outline-color',
   'line-fill', 'line-gradient-stop-colors', 'line-gradient-stop-positions',
@@ -1632,6 +1640,9 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'text-opacity':
       computed.textOpacity = parseZeroOne( prop, value );
       break;
+    case 'events':
+      computed.eventsEnabled = parseYesNo( prop, value );
+      break;
     case 'ghost':
       computed.ghost = parseYesNo( prop, value );
       break;
@@ -2486,6 +2497,13 @@ const MAPPABLE: Record<string, MappableChannel> = {
     kind: 'number', groups: [ 'nodes', 'edges' ],
     set: ( c, v ) => { c.textOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => NODE_DEFAULTS.textOpacity
+  },
+  // events (round 20.2): pointer transparency, both groups
+  'events': {
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
+    set: ( c, v ) => { c.eventsEnabled = ( v as number ) === 1; },
+    default: () => 1
   },
   // ghost props (round 13 A1; node-only)
   'ghost': {
@@ -3468,6 +3486,8 @@ export class StyleEngine {
       case 'background-image-type':
       case 'background-image-color':
         return this.readImageProp( slot, prop );
+      case 'events': // 20.2: stored truth is the flag bit
+        return store.hasFlag( ref.group, slot, FLAG_NO_EVENTS ) ? 'no' : 'yes';
       case 'ghost':
         return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
       case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
@@ -4079,6 +4099,7 @@ export class StyleEngine {
         [ r, g, b, Math.round( a * opacity ) ];
 
       store.setPair( 'node.size', slot, computed.width, computed.height );
+      store.setFlag( 'nodes', slot, FLAG_NO_EVENTS, !computed.eventsEnabled ); // 20.2
       store.setColor( 'node.fillColor', slot, ...foldA( computed.fillColor, computed.backgroundOpacity ) );
       store.setColor( 'node.borderColor', slot, ...foldA( computed.borderColor, computed.borderOpacity ) );
       store.setScalar( 'node.borderWidth', slot, computed.borderWidth );
@@ -4127,6 +4148,7 @@ export class StyleEngine {
       const foldE = ( [ r, g, b, a ]: RGBA, opacity: number ): RGBA =>
         [ r, g, b, Math.round( a * opacity ) ];
 
+      store.setFlag( 'edges', slot, FLAG_NO_EVENTS, !computed.eventsEnabled ); // 20.2
       store.setColor( 'edge.lineColor', slot, ...foldE( computed.lineColor, computed.lineOpacity ) );
       // line-fill gradient (C2), stops folded by line-opacity
       store.setGradient( 'edge.gradient', slot,

@@ -74,6 +74,17 @@ export const FLAG_CHILD = 8192;
  * ancestor chain for nodes); consumers never read this bit directly.
  */
 export const FLAG_SELF_HIDDEN = 16384;
+/**
+ * Style-managed (round 20.2): set while the element styles
+ * `events: 'no'` — pointer-transparent, but still rendered.  Every
+ * pointer path excludes flagged elements by reading this one bit: the
+ * CPU node pick (grab/tap targeting, hover, tapdragover), the GPU edge
+ * pick tile (the edge cull kernels test it in pick mode only — scene
+ * draws are untouched), and the box-selection gesture (`interactive()`
+ * folds it; `cy.elementsInBox()` stays a pure geometric query).
+ * Maintained by the StyleEngine's write() — never a user switch.
+ */
+export const FLAG_NO_EVENTS = 32768;
 
 /** The fixed model-px gap between a node's box and a top/bottom-row
  * label (see the D3 label-alignment record); shared by the StyleEngine's

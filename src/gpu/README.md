@@ -129,7 +129,8 @@ in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
 `show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only),
 read-only style getters (`style`/`css`, `renderedStyle`,
 `numericStyle`, `effectiveOpacity`/`transparent`/`takesUpSpace`/
-`interactive` — see below), `boundingBox({ includeLabels })` +
+`interactive` — since round 20.2 `interactive()` folds the `events`
+prop — see below), `boundingBox({ includeLabels })` +
 `labelBoundingBox()` (round 16.4), the `background-image` family
 (round 15) and the wrap family (round 16) in the sheet, the round-17
 event vocabulary (pointer*/tap*/grab-drag-free families, viewport
@@ -1907,6 +1908,22 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   immediately, as v3.  **Dragging a selected node drags every
   draggable selected node** (the whole set moves via one bulk shift
   per pointer move, all flagged grabbed).
+- **Pointer transparency: the `events` prop** (round 20.2): v3's
+  `events: 'yes' | 'no'` on both groups (default `'yes'`), constants
+  or `case` mappers (CPU-evaluated — the channel is a store-managed
+  flag bit, `FLAG_NO_EVENTS`).  `'no'` makes an element invisible to
+  every pointer path while it still renders: the CPU node pick scans
+  past it (grab/tap targeting, hover and tapdragover fall through to
+  the element beneath), the GPU edge pick tile drops it (the edge
+  cull kernels test the bit in **pick mode only** — a `pickMode`
+  Frame field the scene pass leaves 0, so scene culling is
+  untouched), and the box-selection *gesture* skips it (no
+  selection, no box/boxselect events — v3 boxes over its interactive
+  set).  `interactive()` reads `visible() && events !== 'no'`.
+  Recorded scope notes: `cy.elementsInBox()` stays a pure geometric
+  query (the gesture filters, the query does not), and an `events`
+  flag change invalidates the pick-tile cache through the flags
+  column's dirty span (it changes pick answers, not pixels).
 - **Interaction tuning options** (round 20.1, all v3 defaults, all
   ctor options with `multiClickDebounceTime`-style validated
   getter/setters read live by the pointer layer):

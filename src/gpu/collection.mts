@@ -1,7 +1,7 @@
 import {
   CURVE_MULTI, CURVE_STRAIGHT, CURVE_TAXI,
-  FLAG_ACTIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_PANNABLE,
-  FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ACTIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_NO_EVENTS,
+  FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
@@ -1458,9 +1458,10 @@ export class GpuCollection {
     return this.visible();
   }
 
-  /** Whether the element can be interacted with (visible; v4 has no 'events' prop). */
+  /** Whether the element can be interacted with: visible and not
+   * pointer-transparent (`events: 'no'` — round 20.2). */
   interactive(): boolean {
-    return this.visible();
+    return this.visible() && !this._hasBit( FLAG_NO_EVENTS );
   }
 
   /** The node's resolved label text ('' when none); read-only in the prototype. */

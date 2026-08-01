@@ -5052,14 +5052,27 @@ front (the round-17 discipline).
   `tap` fired) at threshold 10; a 350 ms hold fires no `taphold`
   at duration 5000 and fires it at 150.  2179 Node tests,
   typecheck + lint clean.
-- [ ] **20.2 `events`** — prop parsing/readback/mapper (Node specs:
-  sheet + case mapper + readback + `interactive()`), the flag bit,
-  CPU pick + box-gesture exclusion, the `pickMode` Frame field + the
-  edge pick-cull test, pick-cache invalidation.  Playwright pins: a
-  press on an `events: no` node pans (and picks nothing), hover
-  passes through to the element beneath, an `events: no` edge is
-  not hover-pickable while a plain edge in the same scene is, and
-  the box gesture skips both.
+- [x] **20.2 `events`** (2026-08-01) — the prop lands exactly as
+  called: an enum channel on both groups (constants or `case`
+  mappers) whose write() maintains `FLAG_NO_EVENTS`; the CPU node
+  pick scans past flagged slots (grab/hover/tap fall through to
+  what's beneath), the Frame uniform grew a `pickMode` field (18
+  floats, one struct for every pass; scene/export leave it 0) and
+  both edge cull kernels drop flagged edges in pick mode only; the
+  box gesture filters to `interactive()` (which now folds the
+  flag); the flags-column dirty span already invalidates the
+  pick-tile cache (setFlag no-ops on unchanged bits, so restyles
+  don't churn it).  Tests-first: 6 Node specs
+  (`test/gpu-events-prop.mjs`, red then green — defaults, readback,
+  validation, case-mapper refresh on data writes, the
+  elementsInBox-stays-geometric scope note, CPU-pick
+  pass-through) and a `webgpu` Playwright spec (a blue `events: no`
+  node still wins the pixel but hover *and* a drag pass through to
+  the node beneath; a `cy.pick` on an `events: no` edge answers
+  null and flips live after a restyle — the same-cursor pick-cache
+  pin; the box gesture selects and box-events only the interactive
+  elements).  2185 Node tests, 143/143 Playwright, typecheck +
+  lint clean.
 - [ ] **20.3 `text-events`** — prop + flag (Node specs incl. the
   edges-group throw... **call: the prop parses on edges for v3
   sheet compatibility but is inert — recorded** — and readback),

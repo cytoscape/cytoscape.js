@@ -679,7 +679,11 @@ export class PointerHandler {
     const p1 = cy._viewport.renderedToModel( { x: down.startX, y: down.startY } );
     const p2 = cy._viewport.renderedToModel( { x: down.lastX, y: down.lastY } );
     const position = p2;
-    const box = cy.elementsInBox( p1.x, p1.y, p2.x, p2.y );
+    // 20.2: events:'no' elements are not box-selectable and get no box
+    // events (v3 boxes over its interactive set); the geometric query
+    // itself stays unfiltered
+    const box = cy.elementsInBox( p1.x, p1.y, p2.x, p2.y )
+      .filter( ( ele: GpuCollection ) => ele.interactive() );
 
     cy.emit( { type: 'boxend', position } );
 

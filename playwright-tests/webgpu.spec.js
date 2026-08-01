@@ -1661,6 +1661,118 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.cy.elements( { selected: true } ).length ) ).toBe( 0 );
   } );
 
+  test( "events: 'no' elements are pointer-transparent but still render (round 20.2)", async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'under', kind: 'plain' }, position: { x: 0, y: 0 } },
+        { data: { id: 'top', kind: 'ui' }, position: { x: 0, y: 0 } }, // higher slot: drawn over 'under'
+        { data: { id: 'x1', kind: 'plain' }, position: { x: -60, y: 150 } },
+        { data: { id: 'x2', kind: 'plain' }, position: { x: 60, y: 150 } },
+        { data: { id: 'ex', source: 'x1', target: 'x2' } }
+      ],
+      style: {
+        nodes: {
+          width: 60, height: 60, shape: 'rectangle',
+          'background-color': { case: [ { when: { data: 'kind', eq: 'ui' }, then: 'blue' } ], else: 'red' },
+          events: { case: [ { when: { data: 'kind', eq: 'ui' }, then: 'no' } ], else: 'yes' }
+        },
+        edges: { width: 8, events: 'no' }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // still rendered: the events:'no' node draws on top (blue wins the pixel)
+    const px = await pixelAt( page, center.x, center.y );
+
+    expect( px[ 2 ] ).toBeGreaterThan( 150 ); // blue
+    expect( px[ 0 ] ).toBeLessThan( 100 );
+
+    // hover passes through to the node beneath
+    await page.evaluate( () => {
+      window.__hovers = [];
+      window.cy.on( 'mouseover', e => window.__hovers.push( e.target.id() ) );
+    } );
+    await page.mouse.move( center.x - 40, center.y - 40 );
+    await page.mouse.move( center.x, center.y, { steps: 4 } );
+
+    await expect.poll( () => page.evaluate( () => window.__hovers ) ).toContain( 'under' );
+    expect( await page.evaluate( () => window.__hovers ) ).not.toContain( 'top' );
+
+    // a drag grabs the node beneath, never the transparent one
+    await page.mouse.down();
+    await page.mouse.move( center.x + 40, center.y, { steps: 4 } );
+    await page.mouse.up();
+
+    const dragged = await page.evaluate( () => ( {
+      under: window.cy.$id( 'under' ).position(),
+      top: window.cy.$id( 'top' ).position()
+    } ) );
+
+    expect( dragged.under.x ).toBeCloseTo( 40, 0 );
+    expect( dragged.top.x ).toBeCloseTo( 0, 0 );
+
+    // the GPU edge pick skips events:'no' edges; a restyle flips it live
+    // (this also pins pick-cache invalidation: same cursor, flag change)
+    const edgePick1 = await page.evaluate( () => {
+      const w = window.innerWidth, h = window.innerHeight;
+
+      return window.cy.pick( w / 2, h / 2 + 150 ).then( ele => ele == null ? null : ele.id() );
+    } );
+
+    expect( edgePick1 ).toBe( null );
+
+    await page.evaluate( () => {
+      window.cy.style( {
+        nodes: { width: 60, height: 60, shape: 'rectangle', 'background-color': 'red' },
+        edges: { width: 8, events: 'yes' }
+      } );
+    } );
+    await waitFrames( page );
+
+    const edgePick2 = await page.evaluate( () => {
+      const w = window.innerWidth, h = window.innerHeight;
+
+      return window.cy.pick( w / 2, h / 2 + 150 ).then( ele => ele == null ? null : ele.id() );
+    } );
+
+    expect( edgePick2 ).toBe( 'ex' );
+
+    // the box gesture skips events:'no' elements (v3's interactive rule)
+    await page.evaluate( () => {
+      window.cy.style( {
+        nodes: {
+          width: 60, height: 60, shape: 'rectangle',
+          events: { case: [ { when: { data: 'kind', eq: 'ui' }, then: 'no' } ], else: 'yes' }
+        },
+        edges: { width: 8, events: 'no' }
+      } );
+      window.__boxed = [];
+      window.cy.on( 'box', e => window.__boxed.push( e.target.id() ) );
+    } );
+    await waitFrames( page );
+
+    await page.keyboard.down( 'Shift' );
+    await page.mouse.move( center.x - 150, center.y - 100 );
+    await page.mouse.down();
+    await page.mouse.move( center.x + 150, center.y + 220, { steps: 8 } );
+    await page.mouse.up();
+    await page.keyboard.up( 'Shift' );
+
+    const boxSelected = await page.evaluate(
+      () => window.cy.elements( { selected: true } ).map( ele => ele.id() ).sort()
+    );
+
+    expect( boxSelected ).toEqual( [ 'under', 'x1', 'x2' ] ); // no 'top', no 'ex'
+    expect( await page.evaluate( () => window.__boxed.sort() ) ).toEqual( [ 'under', 'x1', 'x2' ] );
+  } );
+
   test( 'mapped opacity evaluates on the GPU: a data write repaints without a CPU restyle', async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );

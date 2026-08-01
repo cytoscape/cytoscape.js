@@ -1,5 +1,5 @@
 import {
-  FLAG_ALIVE, FLAG_PARENT, FLAG_VISIBLE,
+  FLAG_ALIVE, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_VISIBLE,
   SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
@@ -50,6 +50,10 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
 
   const hits = ( slot: number ): boolean => {
     if( ( flags[ slot ] & SHOWN ) !== SHOWN ){ return false; }
+
+    // 20.2: events:'no' nodes are pointer-transparent — the scan falls
+    // through to whatever draws beneath them
+    if( ( flags[ slot ] & FLAG_NO_EVENTS ) !== 0 ){ return false; }
 
     // device-px half sizes with the sub-pixel floor, as in nodeLod()
     let hw = size[ slot * 2 ] * 0.5 * frame.zoomDpr;

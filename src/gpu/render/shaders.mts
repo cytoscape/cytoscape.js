@@ -40,6 +40,7 @@ struct Frame {
   outlineSlack: f32,     // B5: max outline outward extent, model px (ghost cull bound)
   arrowScaleMax: f32,    // B7: max arrow-scale styled (arrow quads size for it)
   imageMinPx: f32,       // 15.7: skip image sampling below this on-screen node size (displayed px)
+  pickMode: f32,         // 20.2: 1 in the pick pass — events:'no' elements drop from pick culling only
 }
 `;
 
@@ -61,6 +62,7 @@ const FLAG_CURVED_BOX: u32 = 2048u;
 // compound parent (round 14.9, node-only, store-managed): parents draw
 // in their own pre-edge stream, so the main node cull excludes them
 const FLAG_PARENT: u32 = 4096u;
+const FLAG_NO_EVENTS: u32 = 32768u; // 20.2: pointer-transparent (pick-mode culls only)
 const SHOWN: u32 = 3u; // ALIVE | VISIBLE
 
 const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9

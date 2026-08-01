@@ -224,7 +224,7 @@ export class Renderer {
     this.curvedArrowPipeline = null;
     this.arrowPipeline = null;
     this.uniform = null;
-    this.frameData = new Float32Array( 16 );
+    this.frameData = new Float32Array( 18 ); // 17 Frame fields, padded to 8-byte struct alignment
     this.isReady = false;
     this.frameRequested = false;
     this.destroyed = false;
@@ -233,7 +233,7 @@ export class Renderer {
     this.gpuTimer = null;
     this.picking = null;
     this.pickUniform = null;
-    this.pickFrameData = new Float32Array( 16 );
+    this.pickFrameData = new Float32Array( 18 );
     this.needsRedraw = true;
     this.inFlightFrames = 0;
     this.labelLayer = null;
@@ -255,7 +255,7 @@ export class Renderer {
     this.upscaler = null;
     this.pendingExports = [];
     this.exportUniform = null;
-    this.exportFrameData = new Float32Array( 16 );
+    this.exportFrameData = new Float32Array( 18 );
     this.exportCull = null;
 
     // re-raster glyph runs when web fonts finish loading: glyphs cached
@@ -1716,6 +1716,7 @@ export class Renderer {
     f[13] = this.cy._store.outlineSlack();
     f[14] = this.cy._store.arrowScaleMax();
     f[15] = ( opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX ) * this.scaleCtl.scale; // displayed px, like labelMinPx
+    f[16] = 1; // pickMode (20.2): the edge cull kernels drop events:'no' edges here only
 
     ( this.device as GPUDevice ).queue.writeBuffer(
       this.pickUniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength

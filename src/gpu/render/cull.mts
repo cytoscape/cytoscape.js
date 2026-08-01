@@ -230,6 +230,9 @@ fn isVisible(slot: u32) -> bool {
 
   if ((flags & SHOWN) != SHOWN) { return false; }
   if ((flags & FLAG_CURVED) != 0u) { return false; } // the curved stream draws it
+  // 20.2: events:'no' edges are pointer-transparent — dropped from the
+  // pick tile only (scene culling ignores the flag; they still draw)
+  if (frame.pickMode != 0.0 && (flags & FLAG_NO_EVENTS) != 0u) { return false; }
 
   let ends = endpoints[slot];
 
@@ -314,6 +317,8 @@ fn isVisible(slot: u32) -> bool {
 
   if ((flags & SHOWN) != SHOWN) { return false; }
   if ((flags & FLAG_CURVED) == 0u) { return false; }
+  // 20.2: pointer-transparent edges drop from the pick tile only
+  if (frame.pickMode != 0.0 && (flags & FLAG_NO_EVENTS) != 0u) { return false; }
 
   let ends = endpoints[slot];
 

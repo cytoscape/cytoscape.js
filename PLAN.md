@@ -4878,10 +4878,30 @@ and one plan deviation is recorded below.
   outermost endBatch), deferring silently while batching or under a
   force run; public `cy.compact()` (throws mid-batch, warns + defers
   under force).  `benchmark/gpu/compaction.mjs` (200k peak → 10%,
-  i9-9900K): compact() ~95 ms one-shot; CPU pick 2.15 → 0.39 ms miss
-  / 2.20 → 0.43 ms hit (~5.2–5.5×); cull dispatch width 200k → 20k
-  lanes per group per frame (edges 400k → 0); node capacity
-  262144 → 32768 slots.
+  i9-9900K), extended into a four-section sweep (wins / costs /
+  forwarding hot path / honesty controls): compact() ~114 ms
+  one-shot, and the auto trigger adds it to a removal whose own
+  cascade + emits cost ~1.8 s (~6% overhead; store-level removal
+  without the trigger is ~0.7 s); held-collection first-touch repair
+  of 20k moved refs ~0.5 ms; CPU pick 2.15 → 0.39 ms miss (~5.5×);
+  cull dispatch width 200k → 20k lanes per group per frame (edges
+  400k → 0); column memory 37 → 4.6 MiB (nodes), 76 → 0 MiB (edges).
+  Forwarding is free on the hot path (isCurrent on a current ref
+  1.01× with ~180k forward entries present; a stale chase + rewrite
+  ~40 ns once per ref), and the controls confirm order-list scans /
+  whole-graph bounds are ≈parity (1.1–1.2×) — compaction changes
+  exactly what the design said it would.
+- **19.5b — the device side, measured.**  The renderer bench gained a
+  gpu-only **compaction scenario** (cut to ~10% live through the
+  store — eles.remove() would auto-compact the peak state it exists
+  to measure — pan at peak slot widths, `cy.compact()`, pan again)
+  plus a `--gpu-only` runner flag for gpu-vs-gpu scenarios.  On the
+  RX 580: wall time holds the vsync floor on both sides (a 10%-live
+  scene is already fast), while the unbounded GPU pass isolates the
+  dead-lane overhead — 10k live nodes panned over 100k + 300k peak
+  lanes cost 2.2 ms/frame of device time, 0.5 ms once compacted
+  (4.4×; ndex 1.4 → 0.9 ms); in-browser compact() is a ~57–62 ms
+  one-shot at those scales.
 
 Verification: 28 store-level + 9 ref-level + 5 trigger Node specs
 (all seen red first), the full Node suite (2175), and the `webgpu` +

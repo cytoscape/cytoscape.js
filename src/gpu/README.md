@@ -408,11 +408,28 @@ the element slots themselves):
   recomputed at compaction (sound — slack can only be loose); the
   auto trigger never fires mid-batch or during a live force run
   (deferred to the next boundary).
-- Costs (Node sweep, `benchmark/gpu/compaction.mjs`, 200k-node peak
-  cut to 10%): `compact()` is a ~95 ms one-shot; the synchronous CPU
-  node pick drops ~5.2–5.5× (2.15 → 0.39 ms background miss); cull
-  dispatch width falls 200k → 20k lanes per group per frame; node
-  column capacity falls 262144 → 32768 slots.
+- Costs and wins (Node sweep, `benchmark/gpu/compaction.mjs`,
+  200k-node peak cut to 10%; the renderer bench's compaction scenario
+  measures the device side — see below): `compact()` is a ~114 ms
+  one-shot, and the auto trigger adds it to a removal whose own
+  cascade + emits cost ~1.8 s at this scale (~6% overhead); the
+  held-collection first-touch repair of 20k moved refs is ~0.5 ms;
+  the synchronous CPU node pick drops ~5.5× (2.15 → 0.39 ms
+  background miss); cull dispatch width falls 200k → 20k lanes per
+  group per frame; column memory falls 37 → 4.6 MiB (nodes) and
+  76 → 0 MiB (edges).  The forwarding machinery is free on the hot
+  path: `isCurrent` on a current ref is parity (1.01×) with forwards
+  present, and a stale-ref chase + rewrite is ~40 ns once per ref.
+  Honesty controls pin what compaction does *not* change: order-list
+  scans and whole-graph bounds are ≈parity (1.1–1.2×, dense-prefix
+  cache locality), since those ride the insertion-order list that has
+  self-compacted since round 11.  On the device (RX 580, the renderer
+  bench's compaction scenario): wall time stays at the vsync floor —
+  a 10%-live scene was already fast — but the *unbounded* GPU pass
+  isolates the dead-lane overhead compaction removes: panning 10k
+  live nodes over 100k + 300k peak lanes costs 2.2 ms/frame of
+  device time, 0.5 ms once compacted (4.4×); in-browser `compact()`
+  is a ~60 ms one-shot at that scale.
 
 ## Event vocabulary + the extension contract (round 17)
 
@@ -1449,7 +1466,11 @@ records).  Landed so far:
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
 core/collection op against its v3 analogue in `src/`. See
 `benchmark/gpu/` (`materializers.mjs` is a focused standalone sweep that
-stays runnable at `BENCH_N=200000`).
+stays runnable at `BENCH_N=200000`; `compaction.mjs` is the round-19
+slot-compaction sweep — the shrink profile measured before/after
+`compact()`, the trigger and repair one-shots, the forwarding hot-path
+parity checks, and honesty controls for the order-list scans compaction
+does not change).
 `npm run benchmark:gpu:report` runs every suite and renders a
 self-contained single-page HTML report (v3-vs-gpu medians as dumbbells on
 log time axes, a ranked speedup overview, per-suite stat tables) into
@@ -1477,8 +1498,15 @@ metric (vsync-bound — both sides floor at the display refresh when
 fast); `gpu (device)` table rows carry the GPU-pass time from
 `timestamp-query`, the unbounded cost.  dpr 2, 1280×800, adaptive render
 scale pinned to 1; `--scene <substr>` filters scenes, `--headed` debugs,
+`--gpu-only` skips the v3 side (for the gpu-vs-gpu scenarios),
 `--layout` swaps the pan scenarios for the live force-layout mode (see
-the round-18 section above; `--layout-uncapped` lifts its bounds).  Read-heavy structure ops are where
+the round-18 section above; `--layout-uncapped` lifts its bounds).  The
+gpu side also runs the round-19 **compaction scenario** on a fresh
+instance last: the scene is cut to ~10% of its nodes through the store
+(so the auto trigger doesn't compact the peak state it exists to
+measure), panned at peak slot widths, compacted, and panned again —
+wall and device ms per frame before/after, plus the in-page
+`compact()` one-shot.  Read-heavy structure ops are where
 v4 pulls ahead:
 `degree`/`totalDegree` are O(1) off the adjacency index (~100–200× v3),
 `components`/`add`+`remove` ~25–35×, set operations up to ~25×.  Collection

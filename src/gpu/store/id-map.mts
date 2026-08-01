@@ -1,4 +1,5 @@
 import type { GroupName } from '../contract.mjs';
+import { NO_SLOT } from '../contract.mjs';
 import type { GpuPackedIds } from '../gpu-types.mjs';
 import { isPackedIds } from '../columnar.mjs';
 
@@ -207,7 +208,61 @@ export class IdMap {
     return this._size;
   }
 
+  /**
+   * Slot-moving compaction (19.1): repoint one group's per-slot meta
+   * through a monotone remap (`remap[old]` = new slot, or NO_SLOT) and
+   * rebuild the probe table — its entries encode (group, slot) codes, so
+   * every moved code changes.  Monotone means destinations sit at or
+   * below their sources, so the ascending in-place walk never clobbers
+   * an unconsumed entry (a lower slot's meta has already moved down, or
+   * was a hole whose start offset is 0).  Blob offsets are untouched
+   * (they key on bytes, not slots).
+   */
+  remapSlots( group: GroupName, remap: Uint32Array ): void {
+    const m = this.meta[ group ];
+    const n = Math.min( remap.length, m.start.length );
+
+    for( let s = 0; s < n; s++ ){
+      const d = remap[ s ];
+
+      if( d === NO_SLOT || d === s ){ continue; }
+
+      m.start[ d ] = m.start[ s ];
+      m.end[ d ] = m.end[ s ];
+      m.hash[ d ] = m.hash[ s ];
+      m.names[ d ] = m.names[ s ];
+      m.start[ s ] = 0;
+      m.names[ s ] = undefined;
+    }
+
+    this.rehashFromMeta();
+  }
+
   // -- internals --
+
+  /** Rebuild the probe table from the per-slot meta of both groups
+   * (entry codes embed slots, so a slot remap invalidates them all). */
+  private rehashFromMeta(): void {
+    this.table = new Uint32Array( this.table.length );
+    this.tombs = 0;
+
+    const mask = this.table.length - 1;
+
+    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
+      const m = this.meta[ group ];
+      const bit = group === 'edges' ? 1 : 0;
+
+      for( let slot = 0; slot < m.start.length; slot++ ){
+        if( m.start[ slot ] === 0 ){ continue; }
+
+        let at = m.hash[ slot ] & mask;
+
+        while( this.table[ at ] !== EMPTY ){ at = ( at + 1 ) & mask; }
+
+        this.table[ at ] = ( ( slot << 1 ) | bit ) + BASE;
+      }
+    }
+  }
 
   /** Linear probe: EMPTY table code when absent (`at` = insertion point), else the entry code. */
   private probe( h: number, bytes: Uint8Array, lo: number, hi: number ): { found: number; at: number } {

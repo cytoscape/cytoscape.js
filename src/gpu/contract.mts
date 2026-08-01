@@ -11,6 +11,10 @@ when the layout changes.
 
 export type GroupName = 'nodes' | 'edges';
 
+/** "No slot here" sentinel in slot-valued arrays (compaction remaps,
+ * the columnar `parent` column's NO_PARENT twin). */
+export const NO_SLOT = 0xffffffff;
+
 // -- element flag bits (shared by node.flags and edge.flags) --
 
 export const FLAG_ALIVE = 1;

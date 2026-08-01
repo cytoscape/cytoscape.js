@@ -20,7 +20,7 @@ import {
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
   FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
   FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
-  FLAG_VISIBLE, LABEL_MARGIN
+  FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import { NO_PARENT } from '../gpu-types.mjs';
@@ -93,6 +93,15 @@ export interface MapperSpan {
   key: string;
   start: number;
   end: number;
+}
+
+/** One group's slot-moving compaction result (round 19.1). */
+export interface GroupCompaction {
+  /** old slot → new slot; NO_SLOT where the old slot was a hole */
+  remap: Uint32Array;
+  /** live elements whose slot actually changed */
+  moved: number;
+  oldHighWater: number;
 }
 
 export class GraphStore implements ModelView {
@@ -2807,6 +2816,107 @@ export class GraphStore implements ModelView {
       this.edges.column( 'edge.endpoints' ) as Uint32Array,
       this.nodes.cap
     );
+  }
+
+  /**
+   * Slot-moving compaction (round 19.1, store core): move live elements
+   * down to a dense slot prefix per group with a **monotone** remap —
+   * relative slot order is preserved, so draw order, curve bundle ranks
+   * and CSR incident order are all unchanged by construction (the
+   * round-19 stable-draw-order call).  Shrinks `highWater` to the live
+   * count (and column capacity with it), rewrites `edge.endpoints` when
+   * nodes move, fuses the id index and the insertion-order list, rebuilds
+   * CSR, and marks the compacted groups `resized` so the renderer's
+   * existing realloc + full re-upload path takes over.  Returns each
+   * group's remap (null where nothing needed doing) for the callers that
+   * hold slots — 19.2 wires the dependent store indexes, 19.3 the ref
+   * forwarding, 19.4 the renderer, 19.5 the triggers; until then nothing
+   * calls this in production.
+   */
+  compact(): { nodes: GroupCompaction | null; edges: GroupCompaction | null } {
+    this.flushDerived(); // settle derived geometry before anything moves
+
+    const edgesRes = this.compactGroup( 'edges' );
+    const nodesRes = this.compactGroup( 'nodes' );
+
+    if( nodesRes != null ){
+      // endpoints hold node slots — the one column with cross-group slots
+      const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+      const remap = nodesRes.remap;
+      const hw = this.edges.highWater;
+
+      for( let i = 0; i < hw * 2; i++ ){
+        endpoints[ i ] = remap[ endpoints[ i ] ];
+      }
+
+      if( hw > 0 ){ this.dirty.mark( 'edge.endpoints', 0, hw ); }
+    }
+
+    if( nodesRes != null || edgesRes != null ){
+      this.adj.rebuild(
+        this.slotsOrdered( 'edges' ),
+        this.edges.column( 'edge.endpoints' ) as Uint32Array,
+        this.nodes.cap
+      );
+      this.geoEpoch++; // the slot-indexed edge-bb memo is stale wholesale
+      this.dirty.touch();
+    }
+
+    return { nodes: nodesRes, edges: edgesRes };
+  }
+
+  private compactGroup( group: GroupName ): GroupCompaction | null {
+    const table = this.table( group );
+    const hw = table.highWater;
+    const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const flags = table.column( flagsId ) as Uint32Array;
+    const remap = new Uint32Array( hw );
+    let next = 0;
+    let moved = 0;
+
+    for( let s = 0; s < hw; s++ ){
+      if( ( flags[ s ] & FLAG_ALIVE ) !== 0 ){
+        remap[ s ] = next;
+
+        if( next !== s ){ moved++; }
+
+        next++;
+      } else {
+        remap[ s ] = NO_SLOT;
+      }
+    }
+
+    if( moved === 0 && next === hw ){ return null; } // already dense
+
+    // table.compact swaps in a fresh gen array, so holding the old one
+    // is the pre-move snapshot the order-list fusion validates against
+    const oldGen = table.gen;
+
+    table.compact( remap, next );
+
+    const order = this.order[ group ];
+    const slots: number[] = [];
+    const gens: number[] = [];
+
+    for( let i = 0; i < order.slots.length; i++ ){
+      const s = order.slots[ i ];
+
+      if( order.gens[ i ] !== oldGen[ s ] ){ continue; } // tombstoned entry
+
+      const d = remap[ s ];
+
+      if( d === NO_SLOT ){ continue; }
+
+      slots.push( d );
+      gens.push( table.gen[ d ] );
+    }
+
+    this.order[ group ] = { slots, gens, stale: 0 };
+
+    this.ids.remapSlots( group, remap );
+    this.dirty.markResized( group );
+
+    return { remap, moved, oldHighWater: hw };
   }
 
   private compactOrder( group: GroupName ): void {

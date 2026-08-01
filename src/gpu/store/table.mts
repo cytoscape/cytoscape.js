@@ -1,4 +1,5 @@
 import type { ColumnArray, ColumnId, ColumnSpec, GroupName } from '../contract.mjs';
+import { NO_SLOT } from '../contract.mjs';
 
 const INITIAL_CAP = 32;
 
@@ -146,6 +147,63 @@ export class ColumnTable {
     this.grow( newCap );
 
     return true;
+  }
+
+  /**
+   * Slot-moving compaction (round 19.1): rebuild every column (and the
+   * gen array) against a *monotone* remap — `remap[oldSlot]` is the new
+   * slot for live elements (ascending: relative order is preserved by
+   * construction, the stable-draw-order rule) or NO_SLOT for holes.
+   * Capacity shrinks to the ×2 step covering the live count, `highWater`
+   * drops to it, and the free-list clears (a dense prefix has no holes).
+   *
+   * Generations: an element whose slot is unchanged keeps its gen, so
+   * refs to the stable prefix stay valid with zero repair.  Every other
+   * position — moved-into, vacated, or tail — takes `oldGenAt(pos) + 1`,
+   * which is strictly greater than any gen ever handed out at that
+   * position: *all* stale refs fail plain validation and route to the
+   * forwarding repair (19.3) instead of silently matching a mover.
+   */
+  compact( remap: Uint32Array, newCount: number ): void {
+    let newCap = INITIAL_CAP;
+
+    while( newCap < newCount ){ newCap *= 2; }
+
+    for( const spec of this.specs ){
+      const old = this.arrays.get( spec.id ) as ColumnArray;
+      const next = new spec.ctor( spec.components * newCap );
+      const c = spec.components;
+
+      for( let s = 0; s < this.highWater; s++ ){
+        const d = remap[ s ];
+
+        if( d === NO_SLOT ){ continue; }
+
+        for( let k = 0; k < c; k++ ){
+          next[ d * c + k ] = old[ s * c + k ];
+        }
+      }
+
+      this.arrays.set( spec.id, next );
+    }
+
+    const oldGen = this.gen;
+    const nextGen = new Uint32Array( newCap );
+    const carry = Math.min( newCap, this.cap );
+
+    for( let p = 0; p < carry; p++ ){
+      nextGen[ p ] = oldGen[ p ] + 1;
+    }
+
+    for( let s = 0; s < this.highWater; s++ ){
+      if( remap[ s ] === s ){ nextGen[ s ] = oldGen[ s ]; }
+    }
+
+    this.gen = nextGen;
+    this.cap = newCap;
+    this.highWater = newCount;
+    this.count = newCount;
+    this.free = [];
   }
 
   private grow( newCap: number = this.cap * 2 ): void {

@@ -284,6 +284,46 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
   builds ~5 µs/label at 100k (write-driven, never per frame); the
   whole-graph bb scan pays ~0.1 µs/label for its label terms.
 
+## The force layout (round 18)
+
+Landed 2026-08-01, per the PLAN.md round-18 plan — the round-9 "GPU
+layouts" design, built:
+
+- **`cy.layout({ name: 'force' })`** — spring–electric with
+  uniform-grid cutoff repulsion, springs toward per-edge ideal
+  lengths (`edgeLength` as a number or a plain fn resolved once),
+  centering gravity, and pure damped gradient integration under
+  d3-shaped alpha annealing.  Seeded and deterministic on the CPU
+  executor (`seed`, `randomize`); leaves only (parents derive);
+  locked nodes pin as obstacles; subset scopes simulate the subset
+  only.  Runs through the round-17 extension contract — the
+  built-in is the contract's first production consumer.
+- **Two executors, one spec.**  The CPU reference
+  (`layout/force-sim.mts`) always exists — headless instances,
+  compound graphs (the 14.11 lease rule), `animate: false` — and is
+  what the Node specs pin.  Under `animate: true` on a flat
+  rendered graph, the **GPU integrator** (`render/gpu-force.mts`)
+  takes over: six dispatches per iteration (grid build by counting
+  sort → force gather → apply-and-publish) encoded ahead of the
+  cull pass, so 100k-node layouts animate live with edges and
+  labels following on-GPU.  `node.position` is GPU-owned for the
+  run (the tween lease — CPU reads stale mid-run, the
+  motion-staleness rule), and convergence triggers **one readback**
+  (the round-9 exception) that settles the CPU columns through the
+  normal dirty-span path.
+- Recorded deviations/limits: a cutoff model does not promise
+  global untangling (a curled chain is a legitimate local minimum —
+  multilevel refinement is future work); the repulsion cutoff is
+  the mean ideal edge length (a connected pair's equilibrium is L
+  itself); GPU trajectories are not bit-stable run-to-run (atomic
+  in-cell scatter order) — seeded bit-reproducibility is the CPU
+  executor's guarantee, and the executors agree on invariants, not
+  trajectories; live streaming writes through the bulk slot path,
+  which emits no per-node position events.
+- Harness: `debug/webgpu/?layout=force` (+ `&seed=N`); benchmark:
+  `benchmark:gpu:renderer -- --layout` runs a live force to
+  convergence per scene (v3's cose as the classic baseline).
+
 ## Event vocabulary + the extension contract (round 17)
 
 Landed 2026-08-01, per the PLAN.md round-17 plan — two permanent-API
@@ -734,6 +774,8 @@ each is deliberate, not a pass-1 deferral:
   reference implementation (which doubles as the spec the kernel must
   match).  It reuses this round's lease + readback machinery, but the
   per-algorithm kernels and convergence detection are a future round.
+  (Since built: the round-18 `force` layout below is exactly this
+  design.)
 - **Curved edges (round 12; the two flagged calls signed off
   2026-07-30).**  v4's default `curve-style` stays **`straight`** — the
   perf-first default at v4's target scales, a deliberate divergence

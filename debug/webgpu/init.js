@@ -327,6 +327,18 @@ const paramDefs = {
       cy.ready.then(() => cy.layout({ impl: SpiralLayout }).run());
     }
 
+    // the round-18 force layout, live: ?layout=force (add &seed=N to vary)
+    if(urlParams.get('layout') === 'force') {
+      cy.ready.then(() => {
+        console.time('force layout');
+        cy.layout({
+          name: 'force',
+          animate: true,
+          seed: parseInt(urlParams.get('seed') || '1', 10)
+        }).run().promise().then(() => console.timeEnd('force layout'));
+      });
+    }
+
 
     cy.ready.then(() => {
       console.log('webgpu ready');

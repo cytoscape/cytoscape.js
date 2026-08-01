@@ -4535,12 +4535,24 @@ design, built.  Signed off 2026-08-01.
   within [0.6×, 1.7×] of each other, bb width within [0.4×, 2.5×] —
   while trajectories stay deliberately not bit-agreed (recorded).
   The settled bb also pins flushDerived + layoutstop ordering (the
-  box reflects the readback coordinates).  2142 Node tests, 139/139
+  box reflects the readback coordinates).  2142 Node tests, 138/138
   Playwright, typecheck + lint clean.
-- [ ] **18.5 Benchmarks + harness + true-up** — `?layout=force` in
-  debug/webgpu; renderer-benchmark scenario (25k/100k live-layout
-  fps + time-to-converge; v3 cose as the 25k baseline); README/PLAN
-  true-up.
+- [x] **18.5 Benchmarks + harness + true-up** (2026-08-01) —
+  `debug/webgpu/?layout=force` (+ `&seed=N`) runs the live layout
+  in the harness (smoke-verified twice in scripted Chromium: zero
+  page errors, identical settled extents run-to-run; an earlier
+  error burst traced to racing a mid-write bundle on the static
+  server, not the code).  The renderer benchmark gained
+  **`-- --layout`**: instead of the pan scenarios, each scene runs
+  a live force to convergence on the gpu side (wall time + fps
+  from renderer stats) with v3's cose as the classic baseline —
+  layout quality differs by design; the numbers compare the
+  interactive experience.  Numbers not recorded on this box
+  (software adapter, per the benchmark's own warning).  README
+  gained the round-18 section and the round-9 "GPU layouts:
+  logged" design bullet is trued up (since built).  **Round 18 is
+  complete.**  2142 Node tests, 138/138 Playwright, typecheck +
+  lint clean.
 
 **Risks tracked**: pathological densities collapsing the grid (all
 nodes in one cell → O(n²) gather; cell-capacity clamp + jittered

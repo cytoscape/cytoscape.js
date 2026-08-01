@@ -424,9 +424,40 @@
           return { exportMs: performance.now() - t0 };
         }
 
+        // round 18.5 (--layout): a live force layout run to convergence —
+        // fps + wall time on the gpu side, v3's cose as the classic
+        // baseline.  Layout quality differs by design; the numbers
+        // compare the interactive experience of a live layout at scale.
+        async function forceLayoutScenario(){
+          if( side === 'gpu' ){
+            const framesBefore = cy.renderer().stats().frames;
+            const t0 = performance.now();
+
+            await cy.layout( {
+              name: 'force', animate: true, seed: 1, iterations: 300, fit: false
+            } ).run().promise();
+
+            const wallMs = performance.now() - t0;
+            const frames = cy.renderer().stats().frames - framesBefore;
+
+            return { wallMs, frames, fps: frames / ( wallMs / 1000 ) };
+          }
+
+          const t0 = performance.now();
+
+          await new Promise( res => {
+            const l = cy.layout( { name: 'cose', animate: true, numIter: 300, fit: false } );
+
+            l.on( 'layoutstop', res );
+            l.run();
+          } );
+
+          return { wallMs: performance.now() - t0, frames: null, fps: null };
+        }
+
         window.bench = {
           loadScene, createInstance, destroyInstance,
-          panScenario, pickScenario, exportPng,
+          panScenario, pickScenario, exportPng, forceLayoutScenario,
           hasGpu: () => typeof navigator !== 'undefined' && navigator.gpu != null
         };
       } )();

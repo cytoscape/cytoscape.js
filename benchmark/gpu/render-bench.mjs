@@ -44,6 +44,12 @@ const SCENES = [
   { key: 'gen-25k-images', label: 'generated 25k × 50k images (icon-per-type)', page: { n: 25000, m: 50000, images: true } }
 ];
 
+// --layout: instead of the pan scenarios, run the round-18 force layout
+// live on the gpu side (fps + wall time to convergence) and v3's cose as
+// the classic baseline — layout quality differs by design; the numbers
+// compare the *interactive experience* of a live layout at scale.
+const LAYOUT_MODE = process.argv.includes( '--layout' );
+
 const PAN_VIEWS = [
   [ 'fit-all', 'frame: pan fit-all' ],
   [ 'zoomed-in', 'frame: pan zoomed-in 20×' ],
@@ -210,6 +216,19 @@ for( const scene of scenes ){
 
       console.log( `  ${side} init ${init.initMs.toFixed( 0 )} ms` );
       pushBench( groups, 'init: create + ready', benchSide, oneShotStats( init.initMs ) );
+
+      // --layout (round 18.5): live force to convergence instead of the
+      // pan scenarios (v3 runs cose — the classic baseline experience)
+      if( LAYOUT_MODE ){
+        const r = await step( 'forceLayoutScenario' );
+
+        console.log( `  ${side} live layout: ${r.wallMs.toFixed( 0 )} ms to converge` +
+          ( r.fps != null ? `, ${r.fps.toFixed( 0 )} fps` : '' ) );
+        pushBench( groups, 'layout: live run to convergence', benchSide, oneShotStats( r.wallMs ) );
+
+        await step( 'destroyInstance' );
+        continue;
+      }
 
       for( const [ view, groupName ] of PAN_VIEWS ){
         const r = await step( 'panScenario', view );

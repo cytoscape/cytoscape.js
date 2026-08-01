@@ -567,6 +567,73 @@ test.describe( 'WebGPU renderer', () => {
     expect( moved[1] ).toBeLessThan( 100 );
   } );
 
+  test( 'pointer re-emits + the tap family (round 17.1)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__events = [];
+
+      for( const type of [
+        'pointerdown', 'pointermove', 'pointerup', 'pointerover', 'pointerout',
+        'tapstart', 'tapdrag', 'tapend'
+      ] ){
+        window.cy.on( type, e =>
+          window.__events.push( type + ':' + ( e.target === window.cy ? 'cy' : e.target.id() ) ) );
+      }
+    } );
+
+    // hover onto the node: pointerover rides mouseover; moves re-emit
+    await page.mouse.move( center.x - 150, center.y - 120 );
+    await page.mouse.move( center.x, center.y, { steps: 4 } );
+
+    await expect.poll( () => page.evaluate( () => window.__events.join( ',' ) ) )
+      .toContain( 'pointerover:a' );
+
+    const moved = await page.evaluate( () => window.__events );
+
+    expect( moved.join( ',' ) ).toContain( 'pointermove' );
+    // no press yet: the normalized drag events wait for one
+    expect( moved.join( ',' ) ).not.toContain( 'tapdrag' );
+
+    // a press-drag-release over the node: tapstart on the node,
+    // tapdrag during, tapend at release; the raw pointer family beside
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.down();
+    await page.mouse.move( center.x + 40, center.y + 20, { steps: 4 } );
+    await page.mouse.up();
+
+    const seq = await page.evaluate( () => window.__events.join( ',' ) );
+
+    expect( seq ).toContain( 'pointerdown:a' );
+    expect( seq ).toContain( 'tapstart:a' );
+    expect( seq ).toContain( 'tapdrag' );
+    expect( seq ).toContain( 'tapend:a' );
+    expect( seq ).toContain( 'pointerup:a' );
+
+    // off the node: pointerout, and background events target the core
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.move( center.x - 150, center.y - 120, { steps: 4 } );
+
+    await expect.poll( () => page.evaluate( () => window.__events.join( ',' ) ) )
+      .toContain( 'pointerout:a' );
+
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const bg = await page.evaluate( () => window.__events.join( ',' ) );
+
+    expect( bg ).toContain( 'pointerdown:cy' );
+    expect( bg ).toContain( 'tapstart:cy' );
+    expect( bg ).toContain( 'tapend:cy' );
+  } );
+
   test( 'gesture parity: cxttap family, dbltap, taphold (round 10)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

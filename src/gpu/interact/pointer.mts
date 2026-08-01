@@ -196,6 +196,7 @@ export class PointerHandler {
       const target = this.renderer.pickNodeSync( pos.x, pos.y );
 
       this.cxtDown = { pointerId: e.pointerId, target, startX: pos.x, startY: pos.y, moved: false };
+      this.emitGesture( 'pointerdown', target, pos ); // the official vocabulary (17.1)
       this.emitGesture( 'cxttapstart', target, pos );
 
       return;
@@ -253,6 +254,12 @@ export class PointerHandler {
       }
     }
 
+    // the pointer re-emits + the normalized press (round 17.1): the
+    // official DOM vocabulary the layer itself consumes, plus v3's
+    // device-normalized tapstart — both on the pressed element or core
+    this.emitGesture( 'pointerdown', picked, pos );
+    this.emitGesture( 'tapstart', picked, pos );
+
     // the background-grab indicator (round 13 A2): v3's active-bg circle
     // at the press point while the background is grabbed
     if( this.down.mode === 'pan' && this.down.grabbed == null ){
@@ -295,6 +302,17 @@ export class PointerHandler {
 
   private onPointerMove( e: PointerEvent ): void {
     const pos = this.eventPos( e );
+
+    // pointermove re-emits on every move (17.1); tapdrag — the
+    // normalized drag — only while a press is active
+    const pressTarget = this.down?.grabbed ?? this.cxtDown?.target
+      ?? ( this.hovered?.inside() ? this.hovered : null );
+    const pressed = ( this.down != null && this.down.pointerId === e.pointerId )
+      || ( this.cxtDown != null && this.cxtDown.pointerId === e.pointerId );
+
+    this.emitGesture( 'pointermove', pressTarget, pos );
+
+    if( pressed ){ this.emitGesture( 'tapdrag', pressTarget, pos ); }
 
     if( e.pointerType === 'touch' && this.touches.has( e.pointerId ) ){
       this.touches.set( e.pointerId, pos );
@@ -398,6 +416,20 @@ export class PointerHandler {
     this.hideActiveBg();
     if( this.endTouch( e ) ){ return; }
 
+    // the official re-emit + the normalized release (17.1), ahead of
+    // the tap/selection flow (v3's ordering: up -> tapend -> tap)
+    {
+      const pos = this.eventPos( e );
+      const hadPress = ( this.down != null && this.down.pointerId === e.pointerId )
+        || ( this.cxtDown != null && this.cxtDown.pointerId === e.pointerId );
+      const target = this.down?.grabbed ?? this.cxtDown?.target
+        ?? ( this.lastPick?.inside() ? this.lastPick : null );
+
+      this.emitGesture( 'pointerup', target, pos );
+
+      if( hadPress ){ this.emitGesture( 'tapend', target, pos ); }
+    }
+
     const cxt = this.cxtDown;
 
     if( cxt != null && cxt.pointerId === e.pointerId ){
@@ -435,6 +467,8 @@ export class PointerHandler {
   private onPointerCancel( e: PointerEvent ): void {
     this.hideActiveBg();
     if( this.endTouch( e ) ){ return; }
+
+    this.emitGesture( 'pointercancel', null, this.eventPos( e ) ); // 17.1
 
     if( this.cxtDown != null && this.cxtDown.pointerId === e.pointerId ){
       this.cxtDown = null;
@@ -735,6 +769,7 @@ export class PointerHandler {
     if( prev != null && prev.inside() ){
       this.setFlagOn( prev, FLAG_HOVERED, false );
       this.cy._emitOnEle( 'mouseout', prev, undefined, { position } );
+      this.cy._emitOnEle( 'pointerout', prev, undefined, { position } ); // 17.1
     }
 
     this.hovered = ele;
@@ -742,6 +777,7 @@ export class PointerHandler {
     if( ele != null && ele.inside() ){
       this.setFlagOn( ele, FLAG_HOVERED, true );
       this.cy._emitOnEle( 'mouseover', ele, undefined, { position } );
+      this.cy._emitOnEle( 'pointerover', ele, undefined, { position } ); // 17.1
     }
   }
 

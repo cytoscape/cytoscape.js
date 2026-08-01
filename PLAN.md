@@ -4301,10 +4301,23 @@ gate ecosystem work.
 
 **Pass split** (tests-first per item; docs in-commit):
 
-- [ ] **17.0 Docs-first** — this plan section + the README pointer.
-- [ ] **17.1 Pointer re-emits + tap family** — pointer.mts emits;
-  Playwright specs per event (mouse + touch drivers), Node specs
-  where the pointer state machine drives headless.
+- [x] **17.0 Docs-first** — landed with the design-sitting commit
+  (`0f0ee859`), before any round-17 implementation.
+- [x] **17.1 Pointer re-emits + tap family** (2026-08-01) — the
+  official vocabulary lands: `pointerdown` (all buttons, the cxt
+  branch included), `pointermove` (every move),
+  `pointerup`/`pointercancel`, and `pointerover`/`pointerout`
+  riding the hover transitions beside mouseover/mouseout; plus the
+  device-normalized `tapstart` (primary press), `tapdrag` (moves
+  while a press is active — the raw pointermove covers unpressed
+  motion) and `tapend` (release of a press, ahead of the
+  tap/selection flow — v3's up → tapend → tap ordering).  Targets
+  follow the press (the grabbed/cxt element) else the hovered
+  element, background to the core; touch arrives through the same
+  pointer handlers by construction.  Pinned by a `webgpu`
+  mouse-driver spec (hover-over/out, press-drag-release on the node
+  and on the background).  2117 Node tests, 134/134 Playwright,
+  typecheck + lint clean.
 - [ ] **17.2 Drag-state family** — grab/drag/free + `-on` variants
   incl. drag companions; the exact v3 firing rules pinned red
   first.

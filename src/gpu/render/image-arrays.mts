@@ -27,12 +27,17 @@ point of the tier design: minification samples a coherent low mip
 instead of scattering across full-res texels.
 */
 
-import { IMAGE_TIER_SIZES, IMAGE_KIND_SDF, IMAGE_READY } from '../image-registry.mjs';
+import { IMAGE_TIER_SIZES, IMAGE_KIND_SDF, IMAGE_READY, SDF_IMAGE_SIZE } from '../image-registry.mjs';
 import type { ImageRegistry, ImageEntry } from '../image-registry.mjs';
+import { computeSdf } from './glyph-atlas.mjs';
+import type { SdfAlphaGrid } from './image-decoder.mjs';
 import { BUFFER_USAGE, TEXTURE_USAGE } from './webgpu-constants.mjs';
 
 /** WebGPU base maxTextureArrayLayers */
 export const IMAGE_MAX_LAYERS = 256;
+
+/** the r8 sdf-icon array's tier index (rides the 2-bit tier field) */
+export const ICON_TIER = IMAGE_TIER_SIZES.length;
 
 /** u32 words per image-table row */
 export const IMAGE_TABLE_STRIDE = 4;
@@ -161,13 +166,18 @@ export class ImageArrays {
   version = 0;
 
   private device: GPUDevice;
-  private alloc = new TierAllocator( IMAGE_TIER_SIZES.length );
+  private alloc = new TierAllocator( IMAGE_TIER_SIZES.length + 1 ); // + the icon tier
   private textures: ( GPUTexture | null )[] =
     new Array( IMAGE_TIER_SIZES.length ).fill( null );
   private views: ( GPUTextureView | null )[] =
     new Array( IMAGE_TIER_SIZES.length ).fill( null );
+  /** the r8 sdf-icon array (round 15.5) */
+  private icon: GPUTexture | null = null;
+  private iconViewCache: GPUTextureView | null = null;
   private placeholder: GPUTexture;
   private placeholderView: GPUTextureView;
+  private placeholderIcon: GPUTexture;
+  private placeholderIconView: GPUTextureView;
   private table: GPUBuffer;
   private tableData: Uint32Array;
   readonly sampler: GPUSampler;
@@ -193,6 +203,14 @@ export class ImageArrays {
     } );
     this.placeholderView = this.placeholder.createView( { dimension: '2d-array' } );
 
+    this.placeholderIcon = device.createTexture( {
+      label: 'cy-gpu:icon-placeholder',
+      size: { width: 1, height: 1, depthOrArrayLayers: 1 },
+      format: 'r8unorm',
+      usage: TEXTURE_USAGE.TEXTURE_BINDING
+    } );
+    this.placeholderIconView = this.placeholderIcon.createView( { dimension: '2d-array' } );
+
     this.tableData = new Uint32Array( 16 * IMAGE_TABLE_STRIDE );
     this.table = this.createTableBuffer();
 
@@ -215,6 +233,10 @@ export class ImageArrays {
     return this.views[ tier ] ?? this.placeholderView;
   }
 
+  iconView(): GPUTextureView {
+    return this.iconViewCache ?? this.placeholderIconView;
+  }
+
   /**
    * Drain the registry's freed and ready queues: reclaim layers, upload
    * new rasters into their tier layers (+ mip chain), refresh table rows.
@@ -232,10 +254,11 @@ export class ImageArrays {
 
       if( entry == null || entry.status !== IMAGE_READY || entry.data == null ){ continue; }
 
-      // sdf-icon entries land in the r8 icon array (round 15.5)
-      if( entry.kind === IMAGE_KIND_SDF ){ continue; }
-
-      this.uploadRgba( id, entry );
+      if( entry.kind === IMAGE_KIND_SDF ){
+        this.uploadSdf( id, entry );
+      } else {
+        this.uploadRgba( id, entry );
+      }
     }
   }
 
@@ -244,8 +267,70 @@ export class ImageArrays {
 
     for( const texture of this.textures ){ texture?.destroy(); }
 
+    this.icon?.destroy();
     this.placeholder.destroy();
+    this.placeholderIcon.destroy();
     this.table.destroy();
+  }
+
+  /**
+   * sdf-icon upload (round 15.5): run the glyph EDT over the decoder's
+   * alpha grid and write the r8 distance field into an icon-array
+   * layer.  One raster, crisp at every zoom — the glyph trick
+   * generalized (threshold 0.5 + analytic AA in the FS, tinted by
+   * background-image-color).
+   */
+  private uploadSdf( id: number, entry: ImageEntry ): void {
+    const grid = entry.data as SdfAlphaGrid;
+
+    if( grid == null || grid.alpha == null ){ return; }
+
+    const placement = this.alloc.alloc( id, ICON_TIER );
+
+    if( placement == null ){ return; }
+
+    if( placement.grew || this.icon == null ){
+      this.reallocIcon();
+    }
+
+    const sdf = computeSdf( grid.alpha, grid.width, grid.height );
+
+    this.device.queue.writeTexture(
+      { texture: this.icon as GPUTexture, origin: { x: 0, y: 0, z: placement.layer } },
+      sdf.buffer as ArrayBuffer,
+      { bytesPerRow: grid.width, rowsPerImage: grid.height },
+      { width: grid.width, height: grid.height, depthOrArrayLayers: 1 }
+    );
+
+    this.writeTableRow( id,
+      packImageTableRow( entry, ICON_TIER, placement.layer, grid.width, grid.height ) );
+  }
+
+  private reallocIcon(): void {
+    const layers = Math.max( 1, this.alloc.capacity( ICON_TIER ) );
+    const old = this.icon;
+    const texture = this.device.createTexture( {
+      label: 'cy-gpu:image-icons',
+      size: { width: SDF_IMAGE_SIZE, height: SDF_IMAGE_SIZE, depthOrArrayLayers: layers },
+      format: 'r8unorm',
+      usage: TEXTURE_USAGE.TEXTURE_BINDING | TEXTURE_USAGE.COPY_DST | TEXTURE_USAGE.COPY_SRC
+    } );
+
+    if( old != null ){
+      const encoder = this.device.createCommandEncoder();
+
+      encoder.copyTextureToTexture(
+        { texture: old }, { texture },
+        { width: SDF_IMAGE_SIZE, height: SDF_IMAGE_SIZE,
+          depthOrArrayLayers: Math.min( layers, old.depthOrArrayLayers ) }
+      );
+      this.device.queue.submit( [ encoder.finish() ] );
+      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    }
+
+    this.icon = texture;
+    this.iconViewCache = texture.createView( { dimension: '2d-array' } );
+    this.version++;
   }
 
   private uploadRgba( id: number, entry: ImageEntry ): void {

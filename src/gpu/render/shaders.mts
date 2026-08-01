@@ -12,7 +12,7 @@ unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
 import { ARROW_POINTS, POLYGON_POINTS } from '../shape-points.mjs';
-import { IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL } from '../image-registry.mjs';
+import { IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL, SDF_IMAGE_SIZE as SDF_IMAGE_SIZE_WGSL } from '../image-registry.mjs';
 import {
   AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS, MAX_CURVE_PTS
 } from '../curve-geometry.mjs';
@@ -3087,6 +3087,7 @@ ${SDF}
 @group(2) @binding(1) var tier1: texture_2d_array<f32>;
 @group(2) @binding(2) var tier2: texture_2d_array<f32>;
 @group(2) @binding(3) var imageSamp: sampler;
+@group(2) @binding(4) var icons: texture_2d_array<f32>;
 
 const IMG_STRIDE: u32 = 12u;
 
@@ -3099,6 +3100,7 @@ struct ImgRec {
   smoothing: u32,
   sdf: u32,
   opacity: f32,
+  tint: vec4f,
   // pos.xy = position-x/-y, pos.zw = offset-x/-y (values; units below)
   pos: vec4f,
   size: vec2f,
@@ -3121,6 +3123,14 @@ fn readRec(off: u32, i: u32) -> ImgRec {
   rec.pos = vec4f(imageBlob[base + 3u], imageBlob[base + 4u], imageBlob[base + 5u], imageBlob[base + 6u]);
   rec.size = vec2f(imageBlob[base + 7u], imageBlob[base + 8u]);
   rec.units = u32(imageBlob[base + 9u]);
+
+  // the sdf tint rides two bytes per float (r + g*256, b + a*256)
+  let rg = imageBlob[base + 10u];
+  let ba = imageBlob[base + 11u];
+  let tg = floor(rg / 256.0);
+  let ta = floor(ba / 256.0);
+
+  rec.tint = vec4f(rg - tg * 256.0, tg, ba - ta * 256.0, ta) / 255.0;
 
   return rec;
 }
@@ -3159,6 +3169,7 @@ fn imageRect(rec: ImgRec, half: vec2f, nat: vec2f) -> vec4f {
 }
 
 fn tierSizeOf(tier: u32) -> f32 {
+  if (tier == 3u) { return f32(${ SDF_IMAGE_SIZE_WGSL }); } // the r8 icon array
   if (tier == 0u) { return ${IMAGE_TIER_SIZES_WGSL[ 0 ]}.0; }
   if (tier == 1u) { return ${IMAGE_TIER_SIZES_WGSL[ 1 ]}.0; }
   return ${IMAGE_TIER_SIZES_WGSL[ 2 ]}.0;
@@ -3194,7 +3205,7 @@ fn vsImage(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   for (var i = 0u; i < count; i = i + 1u) {
     let rec = readRec(off, i);
 
-    if (rec.clip != 0u || rec.sdf == 1u) { continue; }
+    if (rec.clip != 0u) { continue; }
 
     let t = imageTable[rec.entry];
 
@@ -3254,9 +3265,6 @@ fn fsImage(in: ImageVSOut) -> @location(0) vec4f {
 
   for (var i = 0u; i < count; i = i + 1u) {
     let rec = readRec(off, i);
-
-    if (rec.sdf == 1u) { continue; } // r8 icon path (15.5)
-
     let t = imageTable[rec.entry];
 
     if ((t.x & 3u) != 1u) { continue; } // pending/failed: draw nothing
@@ -3298,10 +3306,23 @@ fn fsImage(in: ImageVSOut) -> @location(0) vec4f {
 
     var c: vec4f;
 
-    switch tier {
-      case 0u: { c = textureSampleGrad(tier0, imageSamp, uv, layer, gx, gy); }
-      case 1u: { c = textureSampleGrad(tier1, imageSamp, uv, layer, gx, gy); }
-      default: { c = textureSampleGrad(tier2, imageSamp, uv, layer, gx, gy); }
+    if (rec.sdf == 1u) {
+      // sdf icon (15.5): threshold the distance field at 0.5 with an
+      // analytic AA width (fwidth is illegal in this non-uniform loop):
+      // the field spans its full range over SDF_RADIUS(8) raster texels,
+      // so coverage-per-screen-px = texels-per-px / 8
+      let s = textureSampleGrad(icons, imageSamp, uv, layer, gx, gy).r;
+      let texPerPx = max(length(vec2f(gx.x, gy.x)), length(vec2f(gx.y, gy.y))) * tierPx;
+      let w = max(texPerPx / 8.0, 1e-4);
+      let cov = clamp((s - 0.5) / w + 0.5, 0.0, 1.0);
+
+      c = vec4f(rec.tint.rgb, cov * rec.tint.a);
+    } else {
+      switch tier {
+        case 0u: { c = textureSampleGrad(tier0, imageSamp, uv, layer, gx, gy); }
+        case 1u: { c = textureSampleGrad(tier1, imageSamp, uv, layer, gx, gy); }
+        default: { c = textureSampleGrad(tier2, imageSamp, uv, layer, gx, gy); }
+      }
     }
 
     let a = c.a * rec.opacity * mask;

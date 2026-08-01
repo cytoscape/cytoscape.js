@@ -26,6 +26,35 @@ import type { ImageDecoder, DecodedImage, ImageDecodeOpts } from '../image-regis
 const SVG_TYPE = /image\/svg/i;
 const SVG_URL = /\.svg([?#]|$)/i;
 
+/** The alpha-grid payload sdf-icon entries carry as DecodedImage.data
+ * (the renderer runs the glyph EDT over it at upload, round 15.5). */
+export interface SdfAlphaGrid {
+  alpha: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+/** Raster any drawable source into a canvas and extract its alpha grid. */
+const toAlphaGrid = (
+  source: CanvasImageSource, w: number, h: number
+): SdfAlphaGrid => {
+  const canvas = document.createElement( 'canvas' );
+
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext( '2d', { willReadFrequently: true } ) as CanvasRenderingContext2D;
+
+  ctx.drawImage( source, 0, 0, w, h );
+
+  const rgba = ctx.getImageData( 0, 0, w, h ).data;
+  const alpha = new Uint8ClampedArray( w * h );
+
+  for( let i = 0; i < w * h; i++ ){ alpha[ i ] = rgba[ i * 4 + 3 ]; }
+
+  return { alpha, width: w, height: h };
+};
+
 const rasterSvg = async (
   blob: Blob, targetPx: number
 ): Promise<DecodedImage> => {
@@ -77,8 +106,50 @@ export const createBrowserImageDecoder = (
     }
 
     const blob = await response.blob();
+    const isSvg = SVG_TYPE.test( blob.type ) || ( blob.type === '' && SVG_URL.test( url ) );
 
-    if( SVG_TYPE.test( blob.type ) || ( blob.type === '' && SVG_URL.test( url ) ) ){
+    // sdf-icon mode (15.5): raster at the fixed sdf size preserving
+    // aspect and hand back the alpha grid — the silhouette is all the
+    // EDT consumes (a multi-color source collapses to it; recorded)
+    if( opts.sdf ){
+      const target = opts.targetPx;
+      let source: CanvasImageSource;
+      let natW: number;
+      let natH: number;
+
+      if( isSvg ){
+        const objectUrl = URL.createObjectURL( blob );
+
+        try {
+          const img = new Image();
+
+          img.src = objectUrl;
+          await img.decode();
+          natW = img.naturalWidth || target;
+          natH = img.naturalHeight || target;
+          source = img;
+
+          const k = target / Math.max( natW, natH );
+          const grid = toAlphaGrid( source,
+            Math.max( 1, Math.round( natW * k ) ), Math.max( 1, Math.round( natH * k ) ) );
+
+          return { data: grid, width: grid.width, height: grid.height, vector: true };
+        } finally {
+          URL.revokeObjectURL( objectUrl );
+        }
+      }
+
+      const bitmap = await createImageBitmap( blob, { premultiplyAlpha: 'none' } );
+      const k = target / Math.max( bitmap.width, bitmap.height );
+      const grid = toAlphaGrid( bitmap,
+        Math.max( 1, Math.round( bitmap.width * k ) ), Math.max( 1, Math.round( bitmap.height * k ) ) );
+
+      bitmap.close();
+
+      return { data: grid, width: grid.width, height: grid.height, vector: false };
+    }
+
+    if( isSvg ){
       return rasterSvg( blob, opts.targetPx );
     }
 

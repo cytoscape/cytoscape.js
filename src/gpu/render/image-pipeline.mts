@@ -75,7 +75,9 @@ export class ImagePipeline {
         { binding: 0, visibility: F, texture: { viewDimension: '2d-array' } },
         { binding: 1, visibility: F, texture: { viewDimension: '2d-array' } },
         { binding: 2, visibility: F, texture: { viewDimension: '2d-array' } },
-        { binding: 3, visibility: F, sampler: {} }
+        { binding: 3, visibility: F, sampler: {} },
+        // the r8 sdf-icon array (round 15.5)
+        { binding: 4, visibility: F, texture: { viewDimension: '2d-array' } }
       ]
     } );
 
@@ -134,7 +136,8 @@ export class ImagePipeline {
         { binding: 0, resource: arrays.view( 0 ) },
         { binding: 1, resource: arrays.view( 1 ) },
         { binding: 2, resource: arrays.view( 2 ) },
-        { binding: 3, resource: arrays.sampler }
+        { binding: 3, resource: arrays.sampler },
+        { binding: 4, resource: arrays.iconView() }
       ]
     } );
 

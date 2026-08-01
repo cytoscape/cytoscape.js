@@ -1192,6 +1192,21 @@ records).  Landed so far:
   translucent blending) and a second live v3 parity scene at
   0.000% mismatch.
 
+- **15.5 — sdf icon mode**: `background-image-type: 'sdf-icon'`
+  sends a source through the glyph pipeline — the decoder returns
+  its alpha silhouette (multi-color sources collapse to it;
+  recorded), the glyph atlas's exact EDT runs at upload, and the
+  distance field lives in a dedicated 128² r8 array (~16 KB per
+  icon vs ~1.3 MB for a 512² rgba mip chain).  The FS thresholds
+  at 0.5 with an analytic AA width (the field re-thresholds at
+  screen resolution, so icons stay **crisp at every zoom** with no
+  promotion machinery) and tints by `background-image-color` —
+  mapper-drivable, so one shared raster serves any per-type
+  palette.  `background-image-type` itself is constants-only (a
+  list prop, the 12b rule; recorded).  Pinned by the
+  `images-sdf-icons` golden and a crispness spec: at zoom 6 the
+  sdf edge ramps ≤ 2 px where the rgba path ramps ≥ 3.
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each

@@ -1634,6 +1634,110 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'images-multi', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: sdf icon mode — tint mapper, crisp at zoom (round 15.5)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', hue: 'red' }, position: { x: -32, y: 0 } },
+        { data: { id: 'b', hue: 'teal' }, position: { x: 32, y: 0 } }
+      ],
+      style: { nodes: { 'width': 40, 'height': 40 } },
+      zoom: 2.5,
+      pan: { x: 200, y: 150 }
+    } );
+    await page.evaluate( () => {
+      const heart = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>` +
+        `<path d='M16 29 C2 18 2 8 9 5 C13 3 16 6 16 9 C16 6 19 3 23 5 C30 8 30 18 16 29Z'/></svg>` );
+
+      window.cy.style( {
+        nodes: {
+          'width': 40, 'height': 40, 'shape': 'round-rectangle',
+          'background-color': '#f5f6fa', 'border-width': 1.5, 'border-color': '#7f8c8d',
+          'background-image': heart,
+          'background-fit': 'contain',
+          'background-image-type': 'sdf-icon', // constants-only (recorded)
+          'background-image-color': { case: [
+            { when: { data: 'hue', eq: 'teal' }, then: '#00b894' }
+          ], else: '#d63031' }
+        }
+      } );
+    } );
+    await waitForImages( page );
+
+    // svg rasterization + the EDT ride the browser raster stack, so the
+    // golden carries the label-family tolerance
+    checkGolden( 'images-sdf-icons', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
+  test( 'sdf icons stay crisp where the rgba path softens (round 15.5)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // a solid square: its vertical edge gives a clean scanline transition
+    // to measure.  At zoom 6 a 128px raster stretches ~3x (soft ramp);
+    // the sdf field re-thresholds at screen resolution (~1px ramp).
+    // background-image-type is constants-only, so the same node restyles
+    // between the two exports.
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: { 'width': 30, 'height': 30 } },
+      zoom: 6,
+      pan: { x: 200, y: 150 }
+    } );
+
+    const styleWith = async type => {
+      await page.evaluate( type => {
+        const square = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+          `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>` +
+          `<rect x='6' y='6' width='20' height='20'/></svg>` );
+
+        window.cy.style( {
+          nodes: {
+            'width': 30, 'height': 30, 'shape': 'rectangle',
+            'background-color': '#ffffff',
+            'background-image': square,
+            'background-fit': 'contain',
+            'background-image-type': type,
+            'background-image-color': '#000000'
+          }
+        } );
+      }, type );
+      await waitForImages( page );
+    };
+
+    // transition width along the center scanline: the longest run of
+    // intermediate (neither white nor black) pixels
+    const transition = png => {
+      const y = Math.round( png.height / 2 );
+      let run = 0;
+      let best = 0;
+
+      for( let x = 0; x < png.width; x++ ){
+        const v = png.data[ ( y * png.width + x ) * 4 ]; // r channel
+
+        if( v > 30 && v < 225 ){ run++; best = Math.max( best, run ); }
+        else { run = 0; }
+      }
+
+      return best;
+    };
+
+    await styleWith( 'sdf-icon' );
+
+    const sdfRamp = transition( decodePng( await exportPng( page, { bg: '#fff' } ) ) );
+
+    await styleWith( 'auto' );
+
+    const rgbaRamp = transition( decodePng( await exportPng( page, { bg: '#fff' } ) ) );
+
+    expect( sdfRamp, 'sdf edge transition (px)' ).toBeLessThanOrEqual( 2 );
+    expect( rgbaRamp, 'rgba edge transition (px)' ).toBeGreaterThanOrEqual( 3 );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

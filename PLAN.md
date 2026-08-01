@@ -4005,10 +4005,26 @@ below signed off in the 2026-08-01 sitting.
   convention; verified against v3's drawImages loop and now
   pixel-pinned).  The cap-overflow warn landed in 15.2.  2083 Node
   tests, 124/124 Playwright, typecheck + lint clean.
-- [ ] **15.5 SDF icon mode** — r8 tier + EDT reuse, threshold/AA FS
-  branch, `background-image-color` tint (mapper-capable single
-  form); crispness pin: a high-zoom golden where the icon edge
-  stays sharp vs the rgba path.
+- [x] **15.5 SDF icon mode** (2026-08-01) — the glyph trick,
+  generalized: sdf-icon sources raster once through the decoder's
+  alpha-grid path (SVG via img + canvas, rasters via bitmap +
+  canvas — a multi-color source collapses to its alpha silhouette;
+  recorded), the **glyph atlas's exact `computeSdf` EDT** runs at
+  upload, and the field lands in a dedicated r8
+  `texture_2d_array` (fixed 128², layers slot-allocated as tier
+  index 3 in the shared TierAllocator, no mips — the field
+  re-thresholds at any scale).  The FS icon branch samples with
+  the same explicit gradients and applies an **analytic AA width**
+  (fwidth is illegal in the non-uniform record loop: coverage per
+  screen px = sampled texels-per-px / SDF_RADIUS), tinting by the
+  record's `background-image-color` — so icon color is
+  mapper-drivable while the raster is shared.  Pins: the
+  `images-sdf-icons` golden (tint mapper, red + teal hearts from
+  one SVG entry) and a programmatic crispness spec — at zoom 6 the
+  sdf edge transition stays ≤ 2 px while the rgba path's 128px
+  raster ramps ≥ 3 px (the same node restyled between exports,
+  since `background-image-type` is constants-only — recorded).
+  2083 Node tests, 126/126 Playwright, typecheck + lint clean.
 - [ ] **15.6 SVG zoom-promotion + export re-raster** — demand meter
   + hysteresis + async tier swap; Playwright: zoom in → sharper
   after settle, `png({ scale })` re-rasters; the WYSIWYG self-diff

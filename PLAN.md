@@ -4188,10 +4188,33 @@ signed off 2026-08-01.
   truncation, unwrapped control) and `labels-wrap-edge` (a two-line
   autorotated edge label with its block-sized box).  2106 Node
   tests, 131/131 Playwright, typecheck + lint clean.
-- [ ] **16.4 Label bb** — the bb options object; node-label exact
-  term + edge-label conservative term in the store scan; exact lazy
-  edge tier via the route evaluator; `labelBoundingBox()`; fit
-  goldens regenerated once; Playwright fit-includes-labels spec.
+- [x] **16.4 Label bb** (2026-08-01) — labels join
+  `boundingBox()`/`fit()` **by default**: the options object
+  (`{ includeLabels }`, unknown keys throw) rides collection bb,
+  `renderedBoundingBox` and the store's whole-graph scan (no-arg
+  fit/center/getFitViewport read it implicitly), and
+  `boundingBoxAt` carries the node-relative label box to
+  hypothetical positions (animated-layout fit targets cover labels).
+  Terms: **node labels are exact** — `store.nodeLabelBox` places
+  the laid (or headless-estimated) dims at the D3 anchor with
+  halign/valign shifts, margins and the text-background padding
+  (pad counts only when a box draws); **edge labels are
+  conservative** — `edgeLabelSlack` is a block-covering radius
+  (rotation-safe: width/2 + |margins| + vertical extent + pad +
+  endOffset) grown about both endpoints, sound wherever the anchor
+  lands on the drawn path (a recorded approximation; the exact
+  per-anchor edge tier was not needed — fit may slightly over-fit,
+  never under).  `eles.labelBoundingBox()` is the public exact
+  measure (the v4 form of v3's text-metrics surface): node labels
+  at anchors, mid-labels at the drawn (curve-aware) midpoint, end
+  labels via the endpoint radius.  Headless dims are estimates
+  (recorded — 16.1's estimator); rendered instances re-fit exact.
+  No golden churn (goldens pin explicit viewports) and zero
+  regressions across the 2116-test suite; the fit semantics are
+  pinned headless in `test/gpu-label-bb.mjs` (10 specs, red first —
+  incl. getFitViewport reading the label-inclusive box), which
+  covers what the planned browser fit spec would have.  131/131
+  Playwright, typecheck + lint clean.
 - [ ] **16.5 Box-select labels + benchmark + true-up** —
   `boxSelectionIncludesLabels`; shaping cost at 100k labels (build
   + write-refresh, memo hit-rate assertion); README/PLAN true-up.

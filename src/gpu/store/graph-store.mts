@@ -2416,7 +2416,64 @@ export class GraphStore implements ModelView {
    * edge geometry (arrow heads, 12c endpoints) extends the edge term
    * here and there together.  Returns null when empty.
    */
-  boundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
+  /**
+   * A node label's box in node-local model px (round 16.4): the laid
+   * (or headless-estimated) block at its D3 anchor, grown by the
+   * text-background padding when a box draws.  Null when unlabelled.
+   */
+  nodeLabelBox( slot: number ): { x1: number; y1: number; x2: number; y2: number } | null {
+    const entry = this.labels.nodes[ slot ];
+    const dims = this.labelDims.nodes.get( slot );
+
+    if( entry == null || dims == null ){ return null; }
+
+    const pad = ( entry.bgColor >>> 24 ) > 0 ? entry.bgPadding : 0;
+    const dx = entry.anchorX + entry.halignShift * dims.w + entry.marginX;
+    const dy = entry.anchorY + entry.valignShift * dims.h;
+
+    return {
+      x1: dx - dims.w / 2 - pad,
+      y1: dy - pad,
+      x2: dx + dims.w / 2 + pad,
+      y2: dy + dims.h + pad
+    };
+  }
+
+  /**
+   * The conservative edge-label slack (16.4): a radius covering the
+   * label block wherever its anchor lands on the drawn path (mid or
+   * end streams, rotation included), added to the edge term's growth.
+   */
+  edgeLabelSlack( slot: number ): number {
+    let r = 0;
+
+    for( const stream of [ 'edges', 'edgeSource', 'edgeTarget' ] as LabelStream[] ){
+      const entry = this.labels[ stream ][ slot ];
+      const dims = this.labelDims[ stream ].get( slot );
+
+      if( entry == null || dims == null ){ continue; }
+
+      const pad = ( entry.bgColor >>> 24 ) > 0 ? entry.bgPadding : 0;
+      const vert = Math.max( Math.abs( entry.anchorY ), Math.abs( entry.anchorY + dims.h ) );
+      const own = dims.w / 2 + Math.abs( entry.marginX ) + vert + pad + entry.endOffset;
+
+      if( own > r ){ r = own; }
+    }
+
+    return r;
+  }
+
+  /** true when any edge-stream label exists (the scan's cheap gate) */
+  hasEdgeLabels(): boolean {
+    return this.labelDims.edges.size > 0
+      || this.labelDims.edgeSource.size > 0 || this.labelDims.edgeTarget.size > 0;
+  }
+
+  hasNodeLabels(): boolean {
+    return this.labelDims.nodes.size > 0;
+  }
+
+  boundingBox( includeLabels: boolean = true ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
     this.flushDerived(); // the edge term reads derived curve params
 
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
@@ -2427,6 +2484,8 @@ export class GraphStore implements ModelView {
 
     const ghost = this.column( 'node.ghost' ) as Float32Array;
     const anyGhosts = this.ghosts > 0;
+    const anyNodeLabels = includeLabels && this.hasNodeLabels();
+    const anyEdgeLabels = includeLabels && this.hasEdgeLabels();
     const over = this.column( 'node.overlay' ) as Uint32Array;
     const under = this.column( 'node.underlay' ) as Uint32Array;
     const anyLayers = this.overlays > 0 || this.underlays > 0;
@@ -2477,6 +2536,19 @@ export class GraphStore implements ModelView {
         if( gx + hw > x2 ){ x2 = gx + hw; }
         if( gy + hh > y2 ){ y2 = gy + hh; }
       }
+
+      // labels join the box by default (round 16.4): the laid (or
+      // headless-estimated) block at its anchor
+      if( anyNodeLabels ){
+        const lb = this.nodeLabelBox( slot );
+
+        if( lb != null ){
+          if( x + lb.x1 < x1 ){ x1 = x + lb.x1; }
+          if( y + lb.y1 < y1 ){ y1 = y + lb.y1; }
+          if( x + lb.x2 > x2 ){ x2 = x + lb.x2; }
+          if( y + lb.y2 > y2 ){ y2 = y + lb.y2; }
+        }
+      }
     } );
 
     const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
@@ -2506,6 +2578,12 @@ export class GraphStore implements ModelView {
 
           dev += Math.hypot( pos[ t * 2 ] - pos[ s * 2 ], pos[ t * 2 + 1 ] - pos[ s * 2 + 1 ] );
         }
+      }
+
+      // edge labels (16.4): conservative — the block-covering radius,
+      // valid wherever the anchor lands along the drawn path
+      if( anyEdgeLabels ){
+        dev += this.edgeLabelSlack( slot );
       }
 
       for( let end = 0; end < 2; end++ ){

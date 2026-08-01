@@ -1500,7 +1500,18 @@ export class GpuCollection {
     return ( this._store.column( 'node.borderWidth' ) as Float32Array )[ ref.slot ];
   }
 
-  boundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+  boundingBox( options?: { includeLabels?: boolean } ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+    // labels join the box by default (round 16.4); unknown keys throw —
+    // a typo must not silently change fit semantics
+    if( options != null ){
+      for( const key of Object.keys( options ) ){
+        if( key !== 'includeLabels' ){
+          throw new Error( `Unknown boundingBox() option '${key}'; supported: includeLabels` );
+        }
+      }
+    }
+
+    const includeLabels = options?.includeLabels !== false;
     const store = this._store;
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
 
@@ -1544,6 +1555,16 @@ export class GpuCollection {
             hw, hh
           );
         }
+
+        // the node label's laid box at its anchor (round 16.4)
+        if( includeLabels ){
+          const lb = store.nodeLabelBox( slot );
+
+          if( lb != null ){
+            expandPoint( store.getX( slot ) + lb.x1, store.getY( slot ) + lb.y1 );
+            expandPoint( store.getX( slot ) + lb.x2, store.getY( slot ) + lb.y2 );
+          }
+        }
       } else {
         // curved edges use the exact lazy bound (memoized flattened
         // polyline); straight edges span their endpoint centers
@@ -1561,6 +1582,88 @@ export class GpuCollection {
           expandPoint( store.getX( endpoints[ ref.slot * 2 ] ), store.getY( endpoints[ ref.slot * 2 ] ) );
           expandPoint( store.getX( endpoints[ ref.slot * 2 + 1 ] ), store.getY( endpoints[ ref.slot * 2 + 1 ] ) );
         }
+
+        // edge labels (16.4): the conservative block-covering radius
+        // about both endpoints (the anchor lies on the drawn path) — a
+        // recorded approximation; node labels are exact above
+        if( includeLabels ){
+          const r = store.edgeLabelSlack( ref.slot );
+
+          if( r > 0 ){
+            expandPoint( store.getX( endpoints[ ref.slot * 2 ] ), store.getY( endpoints[ ref.slot * 2 ] ), r, r );
+            expandPoint( store.getX( endpoints[ ref.slot * 2 + 1 ] ), store.getY( endpoints[ ref.slot * 2 + 1 ] ), r, r );
+          }
+        }
+      }
+    }
+
+    if( x1 === Infinity ){
+      return { x1: 0, y1: 0, x2: 0, y2: 0, w: 0, h: 0 };
+    }
+
+    return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
+  }
+
+  /**
+   * The exact laid label boxes of this collection's elements, unioned
+   * (round 16.4 — the v4 form of v3's text-metrics surface): node
+   * labels at their anchors, edge mid-labels at the drawn midpoint,
+   * end labels conservatively about their endpoint.  Empty (zero) when
+   * nothing is labelled.  Headless dims are estimates (recorded).
+   */
+  labelBoundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+    const store = this._store;
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+
+    const expand = ( bx1: number, by1: number, bx2: number, by2: number ): void => {
+      x1 = Math.min( x1, bx1 );
+      y1 = Math.min( y1, by1 );
+      x2 = Math.max( x2, bx2 );
+      y2 = Math.max( y2, by2 );
+    };
+
+    for( const ref of this._liveRefs() ){
+      if( ref.group === 'nodes' ){
+        const lb = store.nodeLabelBox( ref.slot );
+
+        if( lb != null ){
+          const x = store.getX( ref.slot );
+          const y = store.getY( ref.slot );
+
+          expand( x + lb.x1, y + lb.y1, x + lb.x2, y + lb.y2 );
+        }
+
+        continue;
+      }
+
+      // edge mid-labels: the block about the drawn midpoint; end labels
+      // ride the conservative endpoint radius
+      const entry = store.labelAt( ref.slot, 'edges' );
+      const dims = store.labelDimsAt( ref.slot, 'edges' );
+
+      if( entry != null && dims != null ){
+        const m = this._cy._ele( ref.group, ref.slot ).midpoint() ?? { x: 0, y: 0 };
+        const dx = entry.marginX;
+        const pad = ( entry.bgColor >>> 24 ) > 0 ? entry.bgPadding : 0;
+
+        expand(
+          m.x + dx - dims.w / 2 - pad, m.y + entry.anchorY - pad,
+          m.x + dx + dims.w / 2 + pad, m.y + entry.anchorY + dims.h + pad );
+      }
+
+      const r = Math.max(
+        store.labelDimsAt( ref.slot, 'edgeSource' ) != null ? store.edgeLabelSlack( ref.slot ) : 0,
+        store.labelDimsAt( ref.slot, 'edgeTarget' ) != null ? store.edgeLabelSlack( ref.slot ) : 0 );
+
+      if( r > 0 ){
+        const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
+
+        for( let end = 0; end < 2; end++ ){
+          const node = endpoints[ ref.slot * 2 + end ];
+
+          expand( store.getX( node ) - r, store.getY( node ) - r,
+            store.getX( node ) + r, store.getY( node ) + r );
+        }
       }
     }
 
@@ -1572,8 +1675,8 @@ export class GpuCollection {
   }
 
   /** boundingBox() transformed into rendered (on-screen) coordinates. */
-  renderedBoundingBox(): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
-    const bb = this.boundingBox();
+  renderedBoundingBox( options?: { includeLabels?: boolean } ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
+    const bb = this.boundingBox( options );
     const zoom = this._cy.zoom() as number;
     const pan = this._cy.pan() as Position;
     const x1 = bb.x1 * zoom + pan.x;
@@ -2879,6 +2982,15 @@ export class GpuCollection {
 
       expandPoint( pos.x - halfW, pos.y - halfH );
       expandPoint( pos.x + halfW, pos.y + halfH );
+
+      // the node-relative label box comes along (round 16.4): an
+      // animated layout's fit target covers the labels too
+      const lb = this._store.nodeLabelBox( node._refs[ 0 ].slot );
+
+      if( lb != null ){
+        expandPoint( pos.x + lb.x1, pos.y + lb.y1 );
+        expandPoint( pos.x + lb.x2, pos.y + lb.y2 );
+      }
     }
 
     const curveParams = this._store.column( 'edge.curveParams' ) as Float32Array;

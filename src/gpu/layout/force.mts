@@ -20,6 +20,8 @@ import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { ForceSim, defaultForceParams, seedPositions } from './force-sim.mjs';
 import type { GpuLayoutContext, GpuLayoutImpl } from './contract.mjs';
 import type { GpuCollection } from '../collection.mjs';
+import type { Renderer } from '../render/renderer.mjs';
+import type { GpuForceRuntime } from '../render/gpu-force.mjs';
 
 export interface ForceLayoutOptions {
   /** ideal edge length: a number, or a plain function of the edge
@@ -158,6 +160,59 @@ export class ForceLayoutImpl implements GpuLayoutImpl {
 
     this.stopped = false;
 
+    // the GPU fast path (18.3): flat rendered graphs under live
+    // animation hand per-iteration integration to the device — the
+    // position column is GPU-owned for the run (the tween lease), CPU
+    // reads are stale mid-run, and one readback settles on convergence
+    // (the round-9 design).  Compounds demote to the CPU executor (a
+    // lease would starve the auto-bounds derivation — the 14.11 rule).
+    if( options.animate === true && !store.hasCompounds() ){
+      const renderer = cy.renderer() as Renderer | null;
+
+      if( renderer != null && typeof renderer.startForce === 'function' ){
+        // the fixed grid frame for the whole run: the seed bounds grown
+        // generously (outliers clamp into edge cells — sound, recorded)
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        for( let i = 0; i < n; i++ ){
+          minX = Math.min( minX, positions[ i * 2 ] );
+          maxX = Math.max( maxX, positions[ i * 2 ] );
+          minY = Math.min( minY, positions[ i * 2 + 1 ] );
+          maxY = Math.max( maxY, positions[ i * 2 + 1 ] );
+        }
+
+        const spanW = Math.max( 1000, ( maxX - minX ) * 3 );
+        const spanH = Math.max( 1000, ( maxY - minY ) * 3 );
+
+        let sum = 0;
+
+        for( const L of lengths ){ sum += L; }
+
+        const cutoff = Math.max( 40, lengths.length > 0 ? sum / lengths.length : DEFAULT_EDGE_LENGTH );
+
+        const runtime = renderer.startForce( {
+          n,
+          edges: Uint32Array.from( simEdges ),
+          edgeLength: Float32Array.from( lengths ),
+          positions,
+          pinned,
+          slots: simSlots,
+          params,
+          cutoff,
+          frame: {
+            x: ( minX + maxX ) / 2 - spanW / 2,
+            y: ( minY + maxY ) / 2 - spanH / 2,
+            w: spanW,
+            h: spanH
+          }
+        }, options.stepsPerFrame ?? 3 );
+
+        if( runtime != null ){
+          return this.runGpu( runtime, ctx, renderer, movableSlots, movable, applyViewport );
+        }
+      }
+    }
+
     if( options.animate !== true ){
       // settle-then-draw: run to convergence synchronously, apply once
       while( !sim.converged() && !this.stopped ){ sim.step( 50 ); }
@@ -191,6 +246,41 @@ export class ForceLayoutImpl implements GpuLayoutImpl {
       };
 
       frame();
+    } );
+  }
+
+  /** Poll the device sim to convergence, then the one settle readback. */
+  private runGpu(
+    runtime: GpuForceRuntime, ctx: GpuLayoutContext, renderer: Renderer,
+    movableSlots: number[], movable: number[], applyViewport: () => void
+  ): Promise<void> {
+    return new Promise<void>( resolve => {
+      const poll = (): void => {
+        if( !this.stopped && !runtime.converged() ){
+          setTimeout( poll, 60 );
+
+          return;
+        }
+
+        runtime.readPositions().then( finalPositions => {
+          // release the lease before the CPU write, so the settle
+          // uploads through the normal dirty-span path
+          renderer.finishForce();
+
+          const xy = new Array<number>( movable.length * 2 );
+
+          for( let k = 0; k < movable.length; k++ ){
+            xy[ k * 2 ] = finalPositions[ movable[ k ] * 2 ];
+            xy[ k * 2 + 1 ] = finalPositions[ movable[ k ] * 2 + 1 ];
+          }
+
+          ctx.setPositions( movableSlots, xy );
+          applyViewport();
+          resolve();
+        } );
+      };
+
+      poll();
     } );
   }
 

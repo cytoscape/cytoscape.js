@@ -20,6 +20,8 @@ import { ImageArrays } from './image-arrays.mjs';
 import { ImagePipeline } from './image-pipeline.mjs';
 import { createBrowserImageDecoder } from './image-decoder.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
+import { GpuForceRuntime } from './gpu-force.mjs';
+import type { GpuForceInputs } from './gpu-force.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
@@ -392,6 +394,8 @@ export class Renderer {
     this.labelLayer?.destroy();
     this.imageArrays?.destroy();
     this.imageArrays = null;
+    this.forceRuntime?.destroy();
+    this.forceRuntime = null;
     this.cy._store.images.setDecoder( null ); // headless again on unmount
 
     if( this.imagePromoteTimer != null ){
@@ -563,6 +567,35 @@ export class Renderer {
   }
 
   private imagePromoteTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** the live GPU force integrator (round 18.3), while a run holds it */
+  private forceRuntime: GpuForceRuntime | null = null;
+  private forceStepsPerFrame = 3;
+
+  /**
+   * Start the GPU force integrator (18.3): returns null when the device
+   * isn't ready (the layout falls back to the CPU executor).  While
+   * attached, node.position is GPU-owned (the tween lease machinery) and
+   * the frame loop encodes the sim ahead of the cull pass.
+   */
+  startForce( inputs: GpuForceInputs, stepsPerFrame: number ): GpuForceRuntime | null {
+    if( this.destroyed || !this.isReady || this.device == null || this.forceRuntime != null ){
+      return null;
+    }
+
+    this.forceRuntime = new GpuForceRuntime( this.device, inputs );
+    this.forceStepsPerFrame = stepsPerFrame;
+    this.needsRedraw = true;
+    this.schedule();
+
+    return this.forceRuntime;
+  }
+
+  /** Detach + destroy the integrator (after the settle readback). */
+  finishForce(): void {
+    this.forceRuntime?.destroy();
+    this.forceRuntime = null;
+  }
 
   /** Debounced svg zoom-promotion check (15.6): runs shortly after the
    * viewport settles, never per wheel tick. */
@@ -1009,7 +1042,19 @@ export class Renderer {
     // settle in tick() releases ownership before setTweenOwned below, so
     // the settled values upload on this same frame
     this.cy._animations.tick( t0 );
-    mirror.setTweenOwned( this.tweenRuntime?.ownedColumns() ?? [] );
+
+    // a live force run owns node.position like a tween lease (18.3)
+    const forceOwned = this.forceRuntime != null && !this.forceRuntime.converged()
+      ? this.forceRuntime.ownedColumns() : [];
+
+    mirror.setTweenOwned( [
+      ...( this.tweenRuntime?.ownedColumns() ?? [] ), ...forceOwned
+    ] as Parameters<ColumnMirror['setTweenOwned']>[ 0 ] );
+
+    if( this.forceRuntime != null ){
+      this.needsRedraw = true; // the sim advances every frame
+      this.forceRuntime.pollConvergence();
+    }
 
     if( this.cy._animations.active() ){ this.needsRedraw = true; }
 
@@ -1085,6 +1130,14 @@ export class Renderer {
 
         this.tweenRuntime.encode( tweenPass, t0, 'position' );
         tweenPass.end();
+      }
+
+      // the GPU force integrator (18.3): its iterations advance the
+      // sim and publish into the mirror's position buffer before the
+      // cull pass reads it — edges and labels follow for free
+      if( this.forceRuntime != null && !this.forceRuntime.converged() ){
+        this.forceRuntime.encode(
+          encoder, mirror.buffer( 'node.position' ), this.forceStepsPerFrame );
       }
 
       // compact each group's visible slots + indirect args before drawing
@@ -1177,6 +1230,7 @@ export class Renderer {
     this.cpuFrameMs = performance.now() - t0;
 
     if( store.hasDirty() || this.needsRedraw || this.cy._animations.active()
+        || this.forceRuntime != null // a live force run drives the clock (18.3)
         || ( picking?.hasPending() ?? false ) || this.pendingExports.length > 0 ){
       this.schedule();
     }

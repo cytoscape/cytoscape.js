@@ -4496,10 +4496,35 @@ design, built.  Signed off 2026-08-01.
   determinism end-to-end, fn edge lengths, locked pinning, compound
   leaves-only, subset scoping, live streaming + stop.  2142 Node
   tests, typecheck + lint clean.
-- [ ] **18.3 GPU kernels** — grid build (count/scan/scatter), force
-  gather, integrate; lease wiring (pre-cull pass slot, mirror
-  skip); Playwright on a real adapter: positions move on screen
-  while `position()` reads stale, then settle.
+- [x] **18.3 GPU kernels** (2026-08-01) — `render/gpu-force.mts`:
+  six dispatches per iteration (clear grid → bin count → serial
+  exclusive scan → scatter → force gather → apply), sim-indexed
+  with `apply` publishing movable nodes into the slot-indexed
+  mirror position buffer — encoded ahead of the cull pass, so
+  edges/labels follow live; node.position rides the tween-lease
+  ownership (mirror skips its uploads; the frame loop keeps its
+  clock while a run is live).  **Binding-budget lesson re-hit on
+  compute**: three shared bind groups totalled 16 storage buffers
+  (the console guard caught it) — each kernel now carries its own
+  group with exactly its buffers, the hot gather packing inputs
+  (CSR as one [starts][entries] buffer; edges at stride 3 with
+  bitcast lengths; the pin flag on bit 31 of the slot map; the
+  alpha window + tick + displacement max sharing one atomic meta
+  buffer) to land the force kernel at exactly 8.  WGSL lesson #3:
+  `meta` is reserved too.  Alpha annealing pre-computes a
+  64-iteration window per frame indexed by a device tick (any k
+  iterations per submit, no per-iteration uniform writes);
+  convergence rides an atomicMax over monotonic f32 bits with a
+  4-byte latest-wins staging poll; `readPositions()` is the one
+  settle readback (round 9), after which the layout writes the CPU
+  columns through the normal dirty-span path.  **Recorded
+  narrowing**: the scatter's atomic in-cell order means GPU
+  trajectories aren't bit-stable run-to-run — seeded
+  reproducibility is the CPU executor's guarantee.  Pinned on a
+  real adapter: a provably-long run holds the lease (CPU
+  `position()` stale mid-run while pixels advance), `stop()`
+  settles real simulated coordinates, and the ring spreads.  2142
+  Node tests, 138/138 Playwright, typecheck + lint clean.
 - [ ] **18.4 Convergence + readback** — GPU displacement reduction
   (per iteration batch, not per iteration), settle readback,
   flushDerived + `layoutstop` ordering; the invariant parity suite

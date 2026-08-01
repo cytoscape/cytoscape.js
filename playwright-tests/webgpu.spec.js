@@ -1087,6 +1087,73 @@ test.describe( 'WebGPU renderer', () => {
     expect( pinched ).not.toContain( 'dragpan' );
   } );
 
+  test( 'the GPU force integrator holds the lease and settles (round 18.3)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: ( () => {
+        const els = [];
+
+        for( let i = 0; i < 40; i++ ){
+          els.push( { data: { id: 'n' + i }, position: { x: 0, y: 0 } } );
+          els.push( { data: { id: 'e' + i, source: 'n' + i, target: 'n' + ( ( i + 1 ) % 40 ) } } );
+        }
+
+        return els;
+      } )(),
+      style: { nodes: { 'width': 12, 'height': 12, 'background-color': '#c0392b' } },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    const result = await page.evaluate( async () => {
+      const cy = window.cy;
+      const before = { ...cy.$id( 'n7' ).position() };
+      // a provably long run: threshold 0 never settles by displacement
+      // and the tiny decay keeps alpha hot, so the 300ms sample below
+      // is guaranteed mid-run; stop() then triggers the settle readback
+      const layout = cy.layout( {
+        name: 'force', seed: 9, animate: true, fit: false,
+        iterations: 100000, threshold: 0, decay: 0.0005, stepsPerFrame: 6
+      } );
+
+      let resolved = false;
+
+      layout.run();
+      layout.promise().then( () => { resolved = true; } );
+
+      // mid-run: the CPU column is leased to the GPU — sync reads stay
+      // at their pre-run values while pixels move (the tween contract)
+      await new Promise( resolve => setTimeout( resolve, 300 ) );
+
+      const midRun = { ...cy.$id( 'n7' ).position() };
+      const staleDuring = midRun.x === before.x && midRun.y === before.y;
+      const stillRunning = !resolved;
+
+      layout.stop();
+      await layout.promise();
+
+      const after = { ...cy.$id( 'n7' ).position() };
+
+      // settled: the one readback landed real simulated coordinates
+      const settledMoved = Math.hypot( after.x - before.x, after.y - before.y ) > 20;
+
+      // the ring spread out from the coincident seed pile
+      const a = cy.$id( 'n3' ).position();
+      const b = cy.$id( 'n4' ).position();
+      const linkLen = Math.hypot( b.x - a.x, b.y - a.y );
+
+      return { staleDuring, stillRunning, settledMoved, linkLen };
+    } );
+
+    expect( result.stillRunning, 'the run outlived the sample' ).toBe( true );
+    expect( result.staleDuring, 'CPU reads stale mid-run (the lease)' ).toBe( true );
+    expect( result.settledMoved, 'settle readback landed' ).toBe( true );
+    expect( result.linkLen ).toBeGreaterThan( 10 );
+    expect( result.linkLen ).toBeLessThan( 250 );
+  } );
+
   test( 'two-finger pinch zooms about the midpoint', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

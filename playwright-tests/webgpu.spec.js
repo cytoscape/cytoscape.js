@@ -634,6 +634,73 @@ test.describe( 'WebGPU renderer', () => {
     expect( bg ).toContain( 'tapend:cy' );
   } );
 
+  test( 'the drag-state family: grab/drag/free with companions (round 17.2)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 }, selected: true },
+        { data: { id: 'b' }, position: { x: 120, y: 0 }, selected: true }
+      ],
+      style: { nodes: { 'width': 60, 'height': 60, 'shape': 'rectangle', 'background-color': '#888' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__events = [];
+
+      for( const type of [ 'grab', 'grabon', 'drag', 'free', 'freeon', 'dragfree', 'dragfreeon' ] ){
+        window.cy.on( type, e =>
+          window.__events.push( type + ':' + ( e.target === window.cy ? 'cy' : e.target.id() ) ) );
+      }
+    } );
+
+    // drag the selected node a: its selected companion b rides along.
+    // -on variants fire only on the directly grabbed element (v3).
+    await page.mouse.move( center.x, center.y );
+    await page.mouse.down();
+    await page.mouse.move( center.x + 60, center.y + 30, { steps: 4 } );
+    await page.mouse.up();
+
+    const seq = await page.evaluate( () => window.__events );
+    const joined = seq.join( ',' );
+    const count = name => seq.filter( x => x === name ).length;
+
+    expect( count( 'grab:a' ) ).toBe( 1 );
+    expect( count( 'grabon:a' ) ).toBe( 1 );
+    expect( count( 'grab:b' ) ).toBe( 1 );
+    expect( count( 'grabon:b' ) ).toBe( 0 ); // companions never get -on
+    expect( count( 'drag:a' ) ).toBeGreaterThan( 0 );
+    expect( count( 'drag:b' ) ).toBeGreaterThan( 0 );
+    expect( count( 'free:a' ) ).toBe( 1 );
+    expect( count( 'free:b' ) ).toBe( 1 );
+    expect( count( 'freeon:a' ) ).toBe( 1 );
+    expect( count( 'freeon:b' ) ).toBe( 0 );
+    expect( count( 'dragfree:a' ) ).toBe( 1 );
+    expect( count( 'dragfree:b' ) ).toBe( 1 );
+    expect( count( 'dragfreeon:a' ) ).toBe( 1 );
+    // ordering: grab before drag before free
+    expect( joined.indexOf( 'grab:a' ) ).toBeLessThan( joined.indexOf( 'drag:a' ) );
+    expect( joined.indexOf( 'drag:a' ) ).toBeLessThan( joined.indexOf( 'free:a' ) );
+
+    // a press-release without movement grabs and frees, but never dragfrees
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.move( center.x + 60, center.y + 30 );
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const still = await page.evaluate( () => window.__events );
+
+    expect( still.filter( x => x.startsWith( 'grab' ) ).length ).toBeGreaterThan( 0 );
+    expect( still.filter( x => x.startsWith( 'free' ) ).length ).toBeGreaterThan( 0 );
+    expect( still.join( ',' ) ).not.toContain( 'dragfree' );
+    expect( still.join( ',' ) ).not.toContain( 'drag:' );
+  } );
+
   test( 'gesture parity: cxttap family, dbltap, taphold (round 10)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

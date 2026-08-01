@@ -4318,9 +4318,18 @@ gate ecosystem work.
   mouse-driver spec (hover-over/out, press-drag-release on the node
   and on the background).  2117 Node tests, 134/134 Playwright,
   typecheck + lint clean.
-- [ ] **17.2 Drag-state family** — grab/drag/free + `-on` variants
-  incl. drag companions; the exact v3 firing rules pinned red
-  first.
+- [x] **17.2 Drag-state family** (2026-08-01) — `grab`/`grabon`,
+  `drag`, `free`/`freeon`, `dragfree`/`dragfreeon` with v3's firing
+  rules: the `-on` variants fire only on the *directly* grabbed
+  element; the plain forms fire on it **and every selected
+  companion** in the drag set; `drag` fires per movement on all of
+  them; the dragfree pair fires only when the gesture actually
+  moved; a cancelled gesture frees without dragfree.  Pinned red
+  first in a `webgpu` mouse-driver spec: exact per-name counts on a
+  two-selected-node drag (companion never gets `-on`), grab → drag
+  → free ordering, and a moveless press grabbing/freeing without
+  drag events.  2117 Node tests, 135/135 Playwright, typecheck +
+  lint clean.
 - [ ] **17.3 Selection + hover-during-drag** — `tapselect`/
   `tapunselect`, `tapdragover`/`tapdragout`,
   `cxtdragover`/`cxtdragout`.

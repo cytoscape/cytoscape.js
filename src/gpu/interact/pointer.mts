@@ -252,6 +252,11 @@ export class PointerHandler {
       } else {
         this.setFlagOn( picked, FLAG_GRABBED, true );
       }
+
+      // the drag-state family (17.2): 'grabon' only on the directly
+      // grabbed element; 'grab' on it and every selected companion (v3)
+      this.emitDragState( 'grabon', picked, null, pos );
+      this.emitDragState( 'grab', picked, dragSet, pos );
     }
 
     // the pointer re-emits + the normalized press (round 17.1): the
@@ -375,6 +380,9 @@ export class PointerHandler {
 
         down.grabbed.position( { x: p.x + dx / zoom, y: p.y + dy / zoom } );
       }
+
+      // 'drag' fires per movement on every node the gesture moves (17.2)
+      this.emitDragState( 'drag', down.grabbed, down.dragSet, pos );
     }
   }
 
@@ -457,6 +465,21 @@ export class PointerHandler {
       this.setFlagOn( down.grabbed, FLAG_GRABBED, false );
     }
 
+    // release side of the drag-state family (17.2): 'free' on every
+    // grabbed node, 'freeon' on the direct one; the dragfree pair only
+    // when the gesture actually moved them
+    if( down.mode === 'grab' && down.grabbed != null ){
+      const pos = this.eventPos( e );
+
+      this.emitDragState( 'free', down.grabbed, down.dragSet, pos );
+      this.emitDragState( 'freeon', down.grabbed, null, pos );
+
+      if( down.moved ){
+        this.emitDragState( 'dragfree', down.grabbed, down.dragSet, pos );
+        this.emitDragState( 'dragfreeon', down.grabbed, null, pos );
+      }
+    }
+
     if( !down.moved ){
       this.tap( down.grabbed ?? ( this.lastPick?.inside() ? this.lastPick : null ), e );
     } else if( down.mode === 'box' ){
@@ -487,6 +510,14 @@ export class PointerHandler {
       for( let i = 0; i < down.dragSet.length; i++ ){ this.setFlagOn( down.dragSet[ i ], FLAG_GRABBED, false ); }
     } else if( down.grabbed != null ){
       this.setFlagOn( down.grabbed, FLAG_GRABBED, false );
+    }
+
+    // a cancelled gesture still frees (17.2); no dragfree — it aborted
+    if( down.mode === 'grab' && down.grabbed != null ){
+      const pos = this.eventPos( e );
+
+      this.emitDragState( 'free', down.grabbed, down.dragSet, pos );
+      this.emitDragState( 'freeon', down.grabbed, null, pos );
     }
 
     if( this.boxEl != null ){
@@ -711,6 +742,29 @@ export class PointerHandler {
       this.lastTap = null;
       this.emitModelGesture( 'onetap', target, position );
     }, debounce );
+  }
+
+  /**
+   * Emit a drag-state event (17.2): on the direct element alone
+   * (companions null — the -on variants), or on the direct element and
+   * every companion in the drag set.
+   */
+  private emitDragState(
+    type: string, direct: GpuCollection, companions: GpuCollection | null, renderedPos: Position
+  ): void {
+    const position = this.cy._viewport.renderedToModel( renderedPos );
+
+    if( companions != null ){
+      for( let i = 0; i < companions.length; i++ ){
+        const ele = companions[ i ];
+
+        if( ele.inside() ){ this.cy._emitOnEle( type, ele, undefined, { position } ); }
+      }
+
+      return; // the drag set includes the direct element
+    }
+
+    if( direct.inside() ){ this.cy._emitOnEle( type, direct, undefined, { position } ); }
   }
 
   /** Emit a gesture on the element (or the core) at a rendered position. */

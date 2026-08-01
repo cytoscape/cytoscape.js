@@ -135,7 +135,7 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 - **Node/edge pipelines**: pure vertex pulling from the mirrored columns; colors bound as `array<u32>` + `unpack4x8unorm` (byte-identical uploads); border band + selected accent ring (#0169d9) + hover/grab brighten in the node FS; edges extrude in screen space and fetch endpoints from the node position buffer (drags follow on-GPU).
 - **Z-order**: single pass — edges, then nodes, then labels; slot order within a group. **Early-z (added)**: a depth buffer + node depth prepass (opaque interiors only, conservative cheap SD tests, no Newton solver) kills edge fragments under opaque nodes before blending; depth = per-element z-rank (edges far / nodes near), designed to generalize to `z-index`/compound ordering as more ranks + batches. Pixel-identical output (verified by screenshot diff); ndex-x-large fit-all at dpr 2: 37.7 → 31.4 ms.
 - **ColumnMirror**: per-column storage buffers, span uploads at `start × bps`, realloc + full re-upload on `resized` with `destroy()` deferred behind `onSubmittedWorkDone()`, version-bumped lazy bind-group rebuild. Unit-tested against a mock GPUQueue.
-- **Picking**: r32uint id target, same draw order, ids 0/slot+1/high-bit-edge; latest-wins requests through a ring of 3 staging buffers (drop-to-null when full). Exposed as `cy.pick(x, y)`. Reworked after the initial pass (the original full-scene pick pass + unbounded frame queueing made hover picks take ~1 s on GPU-bound graphs): the pick pass now draws a fixed 64×64 cursor-centered tile — a pick-specific Frame uniform whose viewport is the tile turns the shaders' own conservative culling into cursor-region culling, O(region) not O(scene) — submits in its own command buffer ahead of scene work, reads back a single center texel, and pick-only frames skip the scene pass entirely. Scene submissions are capped at 2 in flight (backpressure; a behind GPU coalesces state into the next frame instead of queueing deeper). Result at 100k×300k: hover-while-panning pick latency ~956 ms → ~70 ms median, idle picks ~58 ms → ~13 ms.
+- **Picking**: r32uint id target, same draw order, ids 0/slot+1/high-bit-edge; latest-wins requests through a ring of 3 staging buffers (a full ring defers the pending request to the next frame with a free slot — drop-to-null was removed by the 2026-08-01 pick-ring look at the end of this file). Exposed as `cy.pick(x, y)`. Reworked after the initial pass (the original full-scene pick pass + unbounded frame queueing made hover picks take ~1 s on GPU-bound graphs): the pick pass now draws a fixed 64×64 cursor-centered tile — a pick-specific Frame uniform whose viewport is the tile turns the shaders' own conservative culling into cursor-region culling, O(region) not O(scene) — submits in its own command buffer ahead of scene work, reads back a single center texel, and pick-only frames skip the scene pass entirely. Scene submissions are capped at 2 in flight (backpressure; a behind GPU coalesces state into the next frame instead of queueing deeper). Result at 100k×300k: hover-while-panning pick latency ~956 ms → ~70 ms median, idle picks ~58 ms → ~13 ms.
 - **Culling/LOD**: originally VS conservative collapse; now a **compute cull pre-pass + drawIndexedIndirect** per group (nodes, edges, glyphs) — a deterministic three-dispatch stream compaction (count / serial scan / scatter with a workgroup Hillis-Steele scan) that preserves slot order, with an exact Liang-Barsky segment-vs-rect test for edges; the pick pass reuses the kernels with the pick-tile uniform (O(region) picks). LOD: edge width floor with alpha compensation; **far-zoom edge decimation** (below half alpha, a hash-stable 1-in-N subset at N× alpha, N ≤ 64); plain-disc nodes below ~3 px; sub-pixel size flooring with alpha compensation; optional zoom-based edge dimming. Indexed instance quads (4 VS invocations per quad via vertex reuse). Node decoration columns moved to the fragment stage (flat-instance fetch) to stay within per-stage storage-buffer limits. ndex-x-large pan benchmarks (GPU ms/frame): far zoom 33 → 3.5; zoomed-in 20× at dpr 1 12.4 → 8.8; fit-all at dpr 1 18.5 → 10.2; labels at 117k glyphs now ~free (38.6 vs 37.7 ms at dpr 2 fit-all).
 - **Labels (added)**: runtime SDF glyph atlas (TinySDF-style canvas raster → exact Euclidean distance transform → one shelf-packed 1024² r8 texture, glyphs added lazily; edge encoded at sample 0.5, fwidth-AA in the FS). Persistent glyph-instance buffer (40 B/glyph) with per-node ranges, tombstones + compaction, coalesced span uploads and ColumnMirror realloc rules. Glyph instances reference the **node slot**, so labels follow drags/layouts on-GPU with zero rebuild (a node move uploads 8 bytes). Labels fade out below `labelFadePx`; single-line, centered below the node, not pickable.
 - **Interaction**: wheel zoom-about-cursor, drag pan, throttled latest-wins hover picking (HOVERED bit + mouseover/mouseout), pan-vs-grab via an exact synchronous CPU node pick (no staleness), node drag through the core position API, tap-toggle selection (shift additive, background clears). Hover picking pauses during viewport-only gestures (pan drags never pick; wheel zooms suppress picks and re-pick once settled). Pinch deferred.
@@ -4622,13 +4622,63 @@ times are vsync-bound at 60 Hz, so 16.7 ms is the floor):
   compound scene's parent stream costs ~nothing (2.0 ms fit-all).
 - **Init**: v4 246 ms–1.7 s vs v3 2.6–19.2 s per scene (10–20×).
 - **Picks under continuous pan**: p50 17–19 ms; 4–5 of 25 requests
-  return null (staging-ring exhaustion, the documented latest-wins
-  drop).  Flagged for a look — the drop rate under sustained pan is
-  higher than the design's "requests drop when the ring is
-  exhausted" phrasing suggests — but not a regression.
+  return null.  ~~Flagged for a look~~ — resolved by the pick-ring
+  look below: the nulls were **background answers**, not staging-ring
+  drops (the scenario holds at most one pick in flight, so the 3-slot
+  ring cannot exhaust — the attribution here was wrong), and the
+  drop-on-exhaustion policy itself is gone (a full ring now defers
+  the request a frame instead).
 - **Live layout (`--layout`)**: v4 `force` converges in 697 ms
   (25k), 1472 ms (100k) and 952 ms (ndex) on the GPU executor;
   the compound scene settles in 15.5 s on the CPU executor (the
   14.11 lease rule).  v3 cose reports "> 60 s — bailed" on every
   scene; measured floors from the pre-fix runs: 67 s at 25k,
   3169 s at 100k.
+
+## Landed (pick-ring look, 2026-08-01)
+
+The hardware pass flagged its pick numbers — 4–5 of 25
+hover-while-panning requests returning null, attributed to
+staging-ring exhaustion — for a look.  The look found the attribution
+**wrong**, and a latent policy wart behind the phrasing it leaned on:
+
+- **The nulls were background answers, not drops.**  The benchmark's
+  pick scenario holds at most *one* pick in flight (a new `cy.pick()`
+  is only issued once the previous one resolved, with a 120 ms gap),
+  and one logical request consumes at most one ring slot — so the
+  3-slot staging ring **cannot exhaust under that driver**.  The
+  nulls are genuine background answers: at fit-all the five probe
+  points (0.3–0.7 along the diagonal) mostly sample empty space
+  between hairline edges, and far-zoom decimation additionally makes
+  sub-half-alpha edges unpickable (the recorded deviation).  The
+  scenario's own comment admitted the ambiguity ("background answer
+  or a dropped request — the API can't tell them apart"); the
+  hardware-pass note picked the wrong branch.
+- **Drop-on-exhaustion is gone; a full ring defers instead.**  The
+  old policy resolved requests null when no staging buffer was free —
+  and the frame had *already encoded and submitted* the full pick
+  cull + draw pass before `encodeCopy` threw the copy away.  Now the
+  frame checks `hasFreeSlot()` before encoding anything: a saturated
+  ring skips the pick pass entirely and leaves the request pending
+  (still coalescing latest-wins), and the frame loop's existing
+  `hasPending()` reschedule retries it — a slot frees as soon as the
+  oldest readback maps, so the extra latency is bounded by in-flight
+  GPU work (~1–2 frames).  A pick now resolves null only for
+  background, destroy, or device loss — spurious nulls are
+  structurally impossible, which also makes the benchmark's `nulls`
+  count unambiguous (background only).
+- **Saturation is observable**: `renderer().stats().pickDeferrals`
+  counts frames that found the ring full and deferred; the pick
+  scenario reports it per run (`N background, M ring-deferred`).
+- **Confirmed on the hardware-pass box** (RX 580, same config): the
+  pick scenario on the four 25k scenes (flat, curved, compound,
+  images) reports 4/4/5/5 background answers and **0 ring-deferred**
+  on every scene at p50 16.9–18.1 ms — the same numbers the hardware
+  pass recorded, now with the null counts attributed correctly.
+- Tests: `test/modules/gpu-picking.mjs` unit-tests the ring against a
+  fake device (latest-wins coalescing; exhaustion defers — the
+  request survives the full ring unresolved, acquires the next freed
+  slot, and resolves with a real answer; destroy resolves null), seen
+  red under the drop policy first.  A `webgpu` Playwright spec
+  saturates picks across frames over an edge (pan-jiggled so every
+  request misses the cache) and asserts none resolve null.

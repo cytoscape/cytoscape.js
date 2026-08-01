@@ -337,7 +337,14 @@ layouts" design, built:
   which emits no per-node position events.
 - Harness: `debug/webgpu/?layout=force` (+ `&seed=N`); benchmark:
   `benchmark:gpu:renderer -- --layout` runs a live force to
-  convergence per scene (v3's cose as the classic baseline).
+  convergence per scene (v3's cose as the classic baseline, bounded
+  by nested test-style timeouts — a 30 s in-page stop reporting a
+  measured floor and a 60 s runner-side bail reporting "> 60 s",
+  since a single cose iteration outgrows any in-page cap at
+  benchmark scale; `--layout-uncapped` measures full runs).  On an
+  RX 580 (2026-08-01, PLAN.md "hardware validation pass"): force
+  converges in 0.7–1.5 s at 25k–100k where the cose baseline
+  exceeds the 60 s bail on every scene.
 
 ## Event vocabulary + the extension contract (round 17)
 

@@ -4133,10 +4133,23 @@ signed off 2026-08-01.
 
 **Pass split** (tests-first per item; docs in-commit):
 
-- [ ] **16.0 Docs-first** — this plan section + the README pointer.
-- [ ] **16.1 Shaping engine** — breaker/justify/metrics + memo as a
-  pure module (Node specs: `\n`, whitespace vs anywhere breaking,
-  ellipsis, justification, line-height, memo keying).
+- [x] **16.0 Docs-first** — landed with the design-sitting commit
+  (`0f0ee859`), before any round-16 implementation.
+- [x] **16.1 Shaping engine** (2026-08-01) —
+  `render/label-wrap.mts`: `breakLines` (v3's `text-wrap` semantics —
+  `none` collapses newlines, `wrap` honors `\n` + greedy word wrap
+  with `whitespace` overflow vs `anywhere` mid-word splits,
+  `ellipsis` truncates one line with '…'), `layoutLabelBlock`
+  (lines stacked by lineHeight × em, justified inside the block,
+  block centered about x = 0), and **`estimateBlock`** — the same
+  breaking logic over flat per-char advances, which is what keeps
+  the 16.4 label bb meaningful *headless*: the store estimates dims
+  with no renderer, and rendered instances upgrade them to exact
+  laid dims (a recorded approximation).  Advances are injected, so
+  one breaker serves both consumers by construction.  11 Node specs
+  in `test/gpu-label-wrap.mjs`.  2096 Node tests, typecheck + lint
+  clean.  (The memo lands with the LabelLayer integration in 16.3,
+  where the atlas-keyed cache lives.)
 - [ ] **16.2 Props + sidecar** — parse/readback/mappers for the five
   props; laid dims + line data in the label sidecar; refresh gating
   on shaping-input writes.

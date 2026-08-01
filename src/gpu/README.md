@@ -284,6 +284,49 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
   builds ~5 µs/label at 100k (write-driven, never per frame); the
   whole-graph bb scan pays ~0.1 µs/label for its label terms.
 
+## Event vocabulary + the extension contract (round 17)
+
+Landed 2026-08-01, per the PLAN.md round-17 plan — two permanent-API
+calls made deliberately rather than by accretion:
+
+- **The curated event vocabulary.**  Adopted with v3 semantics:
+  the drag-state family (`grab`/`grabon`, `drag`, `free`/`freeon`,
+  `dragfree`/`dragfreeon` — the `-on` variants only on the directly
+  grabbed element, the plain forms on it and every selected
+  companion), the device-normalized family (`tapstart`, `tapdrag`
+  while pressed, `tapend`, `tapselect`/`tapunselect`,
+  `tapdragover`/`tapdragout`, `cxtdragover`/`cxtdragout`), the
+  viewport gestures (`dragpan`, `scrollzoom`, `pinchzoom` — core
+  level, with positions), and the **official pointer family**
+  (`pointerdown`/`pointermove`/`pointerup`/`pointercancel`/
+  `pointerover`/`pointerout`) — the events the interaction layer
+  itself consumes, so touch rides the same paths by construction.
+  **Dropped, recorded**: the `vmouse*` aliases (`tap*` is the
+  normalized vocabulary) and v3's raw mouse/touch re-emits
+  (`mousedown`/`click`/`touchstart`/... — `pointer*` is their one
+  modern spelling; the existing `mouseover`/`mouseout` stay);
+  `event.preventDefault()` stays unported (gesture defaults are
+  gated by options, and `originalEvent` keeps the DOM method).
+  Deviation: `tapdragover`/`cxtdragover` target **nodes only** (the
+  synchronous CPU pick; edges would need the async GPU tile).
+- **Extensions are direct objects — no registry.**  No
+  `cytoscape.use`, no string registration, no global state: an
+  extension layout is an import passed straight to
+  `cy.layout({ impl, ...opts })` (or `eles.layout`) — a class or
+  object implementing `{ run(ctx), stop?() }`, `run` optionally
+  async (the GPU-layout shape).  The **LayoutContext** is
+  columnar-first — `nodeSlots()` pre-filtered to unlocked leaves,
+  live position/endpoint views, O(1) CSR degrees, bulk
+  `setPositions`, the `layoutPositions` finisher with the whole v3
+  plumbing — with handles reachable at `ctx.eles`.  Lifecycle
+  events fire on the core exactly once per run; layout instances
+  stay non-emitters.  Core/collection/renderer extension points
+  stay out (recorded: mappers + predicates cover the common cases;
+  revisit on demand).  A worked example (`SpiralLayout`) ships in
+  `debug/webgpu` (`?layout=spiral`), and the contract-conformance
+  specs in `test/gpu-layout-contract.mjs` are the template external
+  authors can crib.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

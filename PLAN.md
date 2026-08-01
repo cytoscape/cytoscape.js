@@ -4316,7 +4316,7 @@ gate ecosystem work.
   element, background to the core; touch arrives through the same
   pointer handlers by construction.  Pinned by a `webgpu`
   mouse-driver spec (hover-over/out, press-drag-release on the node
-  and on the background).  2117 Node tests, 134/134 Playwright,
+  and on the background).  2117 Node tests, 133/133 Playwright,
   typecheck + lint clean.
 - [x] **17.2 Drag-state family** (2026-08-01) — `grab`/`grabon`,
   `drag`, `free`/`freeon`, `dragfree`/`dragfreeon` with v3's firing
@@ -4328,7 +4328,7 @@ gate ecosystem work.
   first in a `webgpu` mouse-driver spec: exact per-name counts on a
   two-selected-node drag (companion never gets `-on`), grab → drag
   → free ordering, and a moveless press grabbing/freeing without
-  drag events.  2117 Node tests, 135/135 Playwright, typecheck +
+  drag events.  2117 Node tests, 134/134 Playwright, typecheck +
   lint clean.
 - [x] **17.3 Selection + hover-during-drag** (2026-08-01) —
   `tapselect`/`tapunselect` fire on the tapped element beside its
@@ -4341,7 +4341,7 @@ gate ecosystem work.
   lesson kept in-file: a *panning* background drag moves the
   content with the cursor, so nothing is ever crossed — the pin
   drags across the node under the box gesture (panning disabled)
-  and under a cxt drag.  2117 Node tests, 136/136 Playwright,
+  and under a cxt drag.  2117 Node tests, 135/135 Playwright,
   typecheck + lint clean.
 - [x] **17.4 Viewport gesture events** (2026-08-01) — `dragpan`
   (each applied background pan step), `scrollzoom` (each wheel zoom
@@ -4350,7 +4350,7 @@ gate ecosystem work.
   core-level with the gesture's model position.  Pinned in a
   `webgpu` spec (wheel, background drag-pan, and a synthetic
   two-finger pinch — each firing its own name and not the others').
-  2117 Node tests, 137/137 Playwright, typecheck + lint clean.
+  2117 Node tests, 136/136 Playwright, typecheck + lint clean.
 - [x] **17.5 The layout contract** (2026-08-01) —
   `layout/contract.mts`: `cy.layout({ impl, ...opts })` (and
   `eles.layout`) runs a user class (constructed argless) or object
@@ -4376,8 +4376,14 @@ gate ecosystem work.
   (the conformance shape external authors can crib).  Two
   error-message pins updated for the new layout dispatch text.
   2127 Node tests, typecheck + lint clean.
-- [ ] **17.6 Example + true-up** — a worked example extension layout
-  in `debug/webgpu`; README design-decisions entries; PLAN true-up.
+- [x] **17.6 Example + true-up** (2026-08-01) — `debug/webgpu`
+  gained the worked example: `SpiralLayout`, a plain class run via
+  `cy.layout({ impl: SpiralLayout })` with `?layout=spiral`
+  (smoke-verified live in scripted Chromium: spiral positions, no
+  page errors).  README gained the round-17 section (the curated
+  vocabulary with its recorded drops + the direct-object contract).
+  **Round 17 is complete.**  2127 Node tests, 136/136 Playwright,
+  typecheck + lint clean.
 
 **Risks tracked**: name-semantics divergence from v3 (red specs
 against v3-source readings per event, before implementation); emit

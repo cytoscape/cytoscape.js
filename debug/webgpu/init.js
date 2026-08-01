@@ -283,6 +283,26 @@ const paramDefs = {
       console.log('serialized elements: ' + (elements.byteLength / 1048576).toFixed(1) + ' MB');
     }
 
+    // the extension-contract worked example (round 17.5/17.6): a spiral
+    // layout as a plain class — no registry, passed straight to
+    // cy.layout({ impl }).  Try it with ?layout=spiral
+    class SpiralLayout {
+      run(ctx) {
+        const slots = ctx.nodeSlots();
+        const xy = [];
+        const step = Number(ctx.options.spiralStep || 14);
+
+        for(let i = 0; i < slots.length; i++) {
+          const t = Math.sqrt(i) * 0.9;
+
+          xy.push(Math.cos(t * 2 * Math.PI) * t * step, Math.sin(t * 2 * Math.PI) * t * step);
+        }
+
+        ctx.setPositions(slots, xy);
+        cy.fit(undefined, 30);
+      }
+    }
+
     cy = cytoscapeGpu({
       container: $('#cytoscape'),
       elements: elements,
@@ -301,6 +321,12 @@ const paramDefs = {
 
     console.timeEnd('cytoscapeGpu init');
     window.cy = cy;
+    window.SpiralLayout = SpiralLayout;
+
+    if(urlParams.get('layout') === 'spiral') {
+      cy.ready.then(() => cy.layout({ impl: SpiralLayout }).run());
+    }
+
 
     cy.ready.then(() => {
       console.log('webgpu ready');

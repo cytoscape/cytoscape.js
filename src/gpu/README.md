@@ -92,6 +92,9 @@ export — see the design decisions below),
 `batchData`/`batching` — see below), `json()` (export-only),
 box selection (`elementsInBox` + the pointer gesture),
 `selectionType` and `boxSelectionIncludesLabels` (round 16.5),
+the round-20.1 interaction tuning quartet (`wheelSensitivity`,
+`desktopTapThreshold`/`touchTapThreshold`, `tapholdDuration` —
+ctor options + getter/setters, see the gestures notes below),
 interaction gating
 (`autolock`/`autoungrabify`/`autounselectify`,
 `panningEnabled`/`zoomingEnabled` + `user*` variants,
@@ -1894,14 +1897,27 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 - **Gestures** (round 10 additions): the **cxttap family** — right
   button emits `cxttapstart` / `cxtdrag` (once moving) / `cxttapend`,
   plus `cxttap` when the press never moved; the browser context menu is
-  suppressed on the canvas.  **`taphold`** fires after a 500 ms
-  unmoved press (v3's duration).  **`dbltap`** fires on a second tap
+  suppressed on the canvas.  **`taphold`** fires after an unmoved
+  press of `cy.tapholdDuration()` ms (default 500 — v3's constant,
+  made a ctor option + getter/setter in round 20.1).  **`dbltap`**
+  fires on a second tap
   on the same target within `cy.multiClickDebounceTime()` (default
   250 ms; ctor option + getter/setter), and the debounced **`onetap`**
   fires when no second tap arrives — plain `tap` always fires
   immediately, as v3.  **Dragging a selected node drags every
   draggable selected node** (the whole set moves via one bulk shift
   per pointer move, all flagged grabbed).
+- **Interaction tuning options** (round 20.1, all v3 defaults, all
+  ctor options with `multiClickDebounceTime`-style validated
+  getter/setters read live by the pointer layer):
+  `wheelSensitivity` (default 1 — a multiplier on the wheel-zoom
+  exponent; custom values keep v3's once-per-instance console
+  warning about hardware variance), `desktopTapThreshold` (default
+  4) and `touchTapThreshold` (default 8) — css px a press may move
+  and still count as a tap, chosen per event by pointer type (v4
+  previously used 4 for all pointer types) — and `tapholdDuration`
+  (default 500 ms; v3 hardcodes it, v4 makes it configurable — a
+  deliberate small surface addition).
 - **Box selection**: with `boxSelectionEnabled` (default on), a drag
   while a multiple-select key (shift/ctrl/cmd) is held — or any drag
   when panning is disabled — draws a selection box (a DOM overlay above

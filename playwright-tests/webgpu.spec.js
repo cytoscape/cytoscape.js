@@ -983,6 +983,103 @@ test.describe( 'WebGPU renderer', () => {
     await expect.poll( () => page.evaluate( () => window.__events.join() ) ).toContain( 'taphold:a' );
   } );
 
+  test( 'interaction options: wheelSensitivity, desktopTapThreshold, tapholdDuration (round 20.1)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // -- wheelSensitivity: a multiplier on the zoom-per-tick exponent --
+
+    await page.mouse.move( center.x, center.y );
+
+    const zoomAfterWheel = async () => {
+      const before = await page.evaluate( () => window.cy.zoom() );
+
+      await page.mouse.wheel( 0, 120 );
+      await expect.poll( () => page.evaluate( () => window.cy.zoom() ) ).not.toBe( before );
+
+      return { before, after: await page.evaluate( () => window.cy.zoom() ) };
+    };
+
+    const base = await zoomAfterWheel();
+
+    await page.evaluate( () => window.cy.wheelSensitivity( 2 ) );
+
+    const doubled = await zoomAfterWheel();
+
+    // log-ratio doubles with sensitivity 2 (same tick size)
+    const baseExp = Math.log10( base.after / base.before );
+    const doubledExp = Math.log10( doubled.after / doubled.before );
+
+    expect( doubledExp / baseExp ).toBeCloseTo( 2, 1 );
+
+    // -- desktopTapThreshold: a 6 px press-move drags at 4, taps at 10 --
+
+    await page.evaluate( () => {
+      window.cy.zoom( 1 );
+      window.cy.$id( 'a' ).position( { x: 0, y: 0 } );
+      window.__taps = 0;
+      window.cy.$id( 'a' ).on( 'tap', () => window.__taps++ );
+    } );
+    await centerPan( page );
+    await waitFrames( page );
+
+    const smallDrag = async () => {
+      await page.mouse.move( center.x, center.y );
+      await page.mouse.down();
+      await page.mouse.move( center.x + 6, center.y, { steps: 2 } );
+      await page.mouse.up();
+
+      return await page.evaluate( () => ( {
+        x: window.cy.$id( 'a' ).position().x,
+        taps: window.__taps
+      } ) );
+    };
+
+    const atDefault = await smallDrag();
+
+    expect( atDefault.x ).toBeCloseTo( 6, 0 ); // threshold 4: it dragged
+    expect( atDefault.taps ).toBe( 0 );
+
+    await page.evaluate( () => {
+      window.cy.desktopTapThreshold( 10 );
+      window.cy.$id( 'a' ).position( { x: 0, y: 0 } );
+    } );
+    await waitFrames( page );
+
+    const atTen = await smallDrag();
+
+    expect( atTen.x ).toBeCloseTo( 0, 0 ); // threshold 10: still a tap
+    expect( atTen.taps ).toBe( 1 );
+
+    // -- tapholdDuration: configurable (v3 hardcodes 500) --
+
+    await page.evaluate( () => {
+      window.__tapholds = 0;
+      window.cy.on( 'taphold', () => window.__tapholds++ );
+      window.cy.tapholdDuration( 5000 );
+    } );
+
+    await page.mouse.move( center.x, center.y );
+    await page.mouse.down();
+    await page.waitForTimeout( 350 );
+    await page.mouse.up();
+
+    expect( await page.evaluate( () => window.__tapholds ) ).toBe( 0 ); // 5000 ms: never fired
+
+    await page.evaluate( () => window.cy.tapholdDuration( 150 ) );
+
+    await page.mouse.down();
+    await page.waitForTimeout( 350 );
+    await page.mouse.up();
+
+    await expect.poll( () => page.evaluate( () => window.__tapholds ) ).toBe( 1 ); // 150 ms: fired
+  } );
+
   test( 'dragging a selected node drags the whole selection (round 10)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

@@ -123,6 +123,12 @@ export class GpuCore {
   private _boxSelectionIncludesLabels: boolean;
   private _selectionType: 'single' | 'additive';
   private _multiClickDebounceTime: number;
+  /** round 20.1: the interaction option quartet (v3 defaults) */
+  private _wheelSensitivity: number;
+  private _wheelSensitivityWarned: boolean;
+  private _desktopTapThreshold: number;
+  private _touchTapThreshold: number;
+  private _tapholdDuration: number;
   private _batchDepth: number;
   private _batchPending: BatchPending | null;
   _animations: AnimationManager;
@@ -176,6 +182,11 @@ export class GpuCore {
     this._boxSelectionIncludesLabels = options.boxSelectionIncludesLabels ?? false;
     this._selectionType = 'single';
     this._multiClickDebounceTime = 250; // v3's default
+    this._wheelSensitivity = 1; // v3's default (a multiplier on the zoom rate)
+    this._wheelSensitivityWarned = false;
+    this._desktopTapThreshold = 4; // v3's defaults: css px of movement
+    this._touchTapThreshold = 8;   // before a press stops being a tap
+    this._tapholdDuration = 500; // v3's (hardcoded) press-and-hold duration
     this._batchDepth = 0;
     this._batchPending = null;
 
@@ -185,6 +196,22 @@ export class GpuCore {
 
     if( options.multiClickDebounceTime != null ){
       this.multiClickDebounceTime( options.multiClickDebounceTime );
+    }
+
+    if( options.wheelSensitivity != null ){
+      this.wheelSensitivity( options.wheelSensitivity );
+    }
+
+    if( options.desktopTapThreshold != null ){
+      this.desktopTapThreshold( options.desktopTapThreshold );
+    }
+
+    if( options.touchTapThreshold != null ){
+      this.touchTapThreshold( options.touchTapThreshold );
+    }
+
+    if( options.tapholdDuration != null ){
+      this.tapholdDuration( options.tapholdDuration );
     }
     this._readyResolved = this._container == null; // headless is ready immediately
     this._viewport = new Viewport( this, {
@@ -1225,6 +1252,68 @@ export class GpuCore {
     }
 
     this._multiClickDebounceTime = ms;
+
+    return this;
+  }
+
+  /**
+   * Wheel-zoom sensitivity: a multiplier on the zoom-per-wheel-tick
+   * exponent (v3 parity; default 1).  Non-default values warn once per
+   * instance, as v3 does — a custom sensitivity tuned on one mouse/OS
+   * zooms unnaturally on others.
+   */
+  wheelSensitivity( mult?: number ): number | this {
+    if( mult === undefined ){ return this._wheelSensitivity; }
+
+    if( typeof mult !== 'number' || !isFinite( mult ) || mult <= 0 ){
+      throw new Error( `wheelSensitivity must be a positive number; got '${String( mult )}'` );
+    }
+
+    if( mult !== 1 && !this._wheelSensitivityWarned ){
+      this._wheelSensitivityWarned = true;
+      console.warn( 'You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.' );
+    }
+
+    this._wheelSensitivity = mult;
+
+    return this;
+  }
+
+  /** Css px a mouse/pen press may move and still count as a tap (v3 parity; default 4). */
+  desktopTapThreshold( px?: number ): number | this {
+    if( px === undefined ){ return this._desktopTapThreshold; }
+
+    if( typeof px !== 'number' || !isFinite( px ) || px < 0 ){
+      throw new Error( `desktopTapThreshold must be a non-negative number; got '${String( px )}'` );
+    }
+
+    this._desktopTapThreshold = px;
+
+    return this;
+  }
+
+  /** Css px a touch press may move and still count as a tap (v3 parity; default 8). */
+  touchTapThreshold( px?: number ): number | this {
+    if( px === undefined ){ return this._touchTapThreshold; }
+
+    if( typeof px !== 'number' || !isFinite( px ) || px < 0 ){
+      throw new Error( `touchTapThreshold must be a non-negative number; got '${String( px )}'` );
+    }
+
+    this._touchTapThreshold = px;
+
+    return this;
+  }
+
+  /** Unmoved-press duration before 'taphold' fires, ms (default 500 — v3's constant, configurable in v4). */
+  tapholdDuration( ms?: number ): number | this {
+    if( ms === undefined ){ return this._tapholdDuration; }
+
+    if( typeof ms !== 'number' || !isFinite( ms ) || ms < 0 ){
+      throw new Error( `tapholdDuration must be a non-negative number; got '${String( ms )}'` );
+    }
+
+    this._tapholdDuration = ms;
 
     return this;
   }

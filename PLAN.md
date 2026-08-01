@@ -5034,14 +5034,24 @@ front (the round-17 discipline).
 
 - [ ] **20.0 Docs-first** — this plan section; gap item 8 marked
   scoped.
-- [ ] **20.1 The option quartet** — `wheelSensitivity`,
+- [x] **20.1 The option quartet** (2026-08-01) — `wheelSensitivity`,
   `desktopTapThreshold`, `touchTapThreshold`, `tapholdDuration`:
-  ctor options + getter/setters + validation (Node specs), pointer
-  layer reads live values, per-pointer-type threshold selection, the
-  wheel exponent multiplier + the v3 warning.  Playwright pins:
-  sensitivity 2 ≈ double the zoom exponent of sensitivity 1; a 6 px
-  desktop press is a drag at threshold 4 and a tap at threshold 10;
-  a shortened `tapholdDuration` fires `taphold` sooner.
+  ctor options + validated getter/setters on the core (throws on
+  non-finite/negative; wheelSensitivity must be > 0 and keeps v3's
+  once-per-instance warning on non-default values, from ctor or
+  setter), read live by the pointer layer — the wheel exponent
+  gains the multiplier (base rate unchanged), press-move thresholds
+  resolve per event by pointer type (touch 8 / desktop 4 — v4
+  previously used 4 for both), and the taphold timer takes the
+  configured duration.  Tests-first: 4 Node specs
+  (`test/gpu-interaction-options.mjs`, red then green) for the
+  option surface incl. the warn-once rule, and a `webgpu`
+  Playwright spec pinning behavior — sensitivity 2 doubles the
+  zoom log-ratio of an identical wheel tick; a 6 px desktop
+  press-move drags at threshold 4 and taps (position unmoved,
+  `tap` fired) at threshold 10; a 350 ms hold fires no `taphold`
+  at duration 5000 and fires it at 150.  2179 Node tests,
+  typecheck + lint clean.
 - [ ] **20.2 `events`** — prop parsing/readback/mapper (Node specs:
   sheet + case mapper + readback + `interactive()`), the flag bit,
   CPU pick + box-gesture exclusion, the `pickMode` Frame field + the

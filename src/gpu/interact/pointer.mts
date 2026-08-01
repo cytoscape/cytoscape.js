@@ -31,10 +31,8 @@ Pointer/wheel interaction over the WebGPU canvas:
   pinches arrive as ctrl+wheel and take the wheel path.
 */
 
-const TAP_THRESHOLD = 4; // css px of movement before a press becomes a drag
-const TAPHOLD_MS = 500; // press-and-hold duration for 'taphold' (v3's tapholdDuration)
 const HOVER_THROTTLE_MS = 25;
-const WHEEL_SENSITIVITY = 500; // higher = slower zoom
+const WHEEL_RATE = 500; // base zoom rate divisor (higher = slower); scaled by cy.wheelSensitivity()
 const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last wheel tick
 
 interface DownState {
@@ -168,8 +166,12 @@ export class PointerHandler {
     const zoom = this.cy.zoom() as number;
     const dy = e.deltaY * ( e.deltaMode === 1 ? 33 : 1 ); // lines -> px-ish
 
+    // v3's wheelSensitivity is a multiplier on the zoom-per-tick exponent
+    // (round 20.1); v4's base rate is the same as before
+    const sensitivity = this.cy.wheelSensitivity() as number;
+
     this.cy.zoom( {
-      level: zoom * Math.pow( 10, -dy / WHEEL_SENSITIVITY ),
+      level: zoom * Math.pow( 10, -dy / WHEEL_RATE * sensitivity ),
       renderedPosition: pos
     } );
 
@@ -289,7 +291,7 @@ export class PointerHandler {
       this.emitGesture( 'taphold',
         d.grabbed ?? ( this.lastPick?.inside() ? this.lastPick : null ),
         { x: d.startX, y: d.startY } );
-    }, TAPHOLD_MS );
+    }, this.cy.tapholdDuration() as number );
   }
 
   /** Whether a picked node may be dragged: grabbable, unlocked, not globally gated. */
@@ -349,7 +351,7 @@ export class PointerHandler {
     const cxt = this.cxtDown;
 
     if( cxt != null && cxt.pointerId === e.pointerId ){
-      if( !cxt.moved && Math.hypot( pos.x - cxt.startX, pos.y - cxt.startY ) >= TAP_THRESHOLD ){
+      if( !cxt.moved && Math.hypot( pos.x - cxt.startX, pos.y - cxt.startY ) >= this.tapThreshold( e ) ){
         cxt.moved = true;
       }
 
@@ -372,7 +374,7 @@ export class PointerHandler {
     if( !down.moved ){
       const dist = Math.hypot( pos.x - down.startX, pos.y - down.startY );
 
-      if( dist < TAP_THRESHOLD ){ return; }
+      if( dist < this.tapThreshold( e ) ){ return; }
 
       down.moved = true;
       this.clearTaphold();
@@ -835,6 +837,14 @@ export class PointerHandler {
     } else {
       this.cy.emit( { type, position } );
     }
+  }
+
+  /** Css px a press may move before it stops being a tap: per pointer
+   * type, live off the core options (round 20.1 — v3's threshold pair). */
+  private tapThreshold( e: PointerEvent ): number {
+    return e.pointerType === 'touch'
+      ? this.cy.touchTapThreshold() as number
+      : this.cy.desktopTapThreshold() as number;
   }
 
   private clearTaphold(): void {

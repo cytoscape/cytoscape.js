@@ -547,6 +547,19 @@ export interface CytoscapeGpuOptions {
   selectionType?: 'single' | 'additive';
   /** the dbltap/onetap debounce window in ms (default 250, as v3) */
   multiClickDebounceTime?: number;
+  /** wheel-zoom rate multiplier (default 1, as v3; custom values warn
+   * once — a sensitivity tuned to one mouse/OS zooms unnaturally on
+   * others).  Round 20.1. */
+  wheelSensitivity?: number;
+  /** css px a mouse/pen press may move and still count as a tap
+   * (default 4, as v3).  Round 20.1. */
+  desktopTapThreshold?: number;
+  /** css px a touch press may move and still count as a tap
+   * (default 8, as v3).  Round 20.1. */
+  touchTapThreshold?: number;
+  /** unmoved-press duration before 'taphold' fires, in ms (default
+   * 500 — v3's hardcoded constant, configurable in v4).  Round 20.1. */
+  tapholdDuration?: number;
   /** rendered dimensions used when headless */
   headlessWidth?: number;
   headlessHeight?: number;

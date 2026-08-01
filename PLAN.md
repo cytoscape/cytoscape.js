@@ -5115,11 +5115,31 @@ front (the round-17 discipline).
   verified red against the pre-20.4 pointer layer before the
   implementation was restored.  80/80 webgpu Playwright specs,
   2190 Node tests, typecheck + lint clean.
-- [ ] **20.5 Three-finger box** — the centroid box + didSelect
-  latch, riding the existing box overlay/flow.  Playwright pins:
-  three-finger swipe selects the swept nodes (boxstart/boxend
-  counts), never pans/zooms, and a two-finger release after boxing
-  does not pinch.
+- [x] **20.5 Three-finger box** (2026-08-01) — v3's centroid box on
+  the pointer layer: three fingers (with `boxSelectionEnabled`)
+  sweep from the start centroid (+1 px seed, v3) to the moving
+  centroid, `boxstart` on the first move, the themed DOM box drawn
+  live (the overlay/styling shared with the mouse box via a new
+  `showBoxRect` helper), applied on any box finger's lift —
+  boxend/box/boxselect through `elementsInBox` (so the 16.5 label
+  option applies) filtered to `interactive()` (the 20.2 rule), and
+  **additive** as v3's touch box is (it never clears the prior
+  selection).  The box preempts a pinch in progress (v3's
+  touchmove branch order) and the didSelect latch keeps leftover
+  fingers inert until all lift.  **Design call, recorded**: a third
+  finger landing on an *undragged* cxt pair converts it to the box
+  gesture (`cxttapend` first) — pointer events land fingers
+  sequentially, so v3's simultaneous three-finger landing has no
+  direct v4 equivalent, and without the conversion the gesture
+  would be unreachable over close pairs.  An aborted gesture
+  (pointercancel) hides the box and selects nothing.  Pinned in a
+  `webgpu` Playwright spec (close-pair + third finger →
+  cxttapstart/cxttapend then boxstart/boxend/boxselect of exactly
+  the swept nodes, zoom + pan byte-unchanged, leftover fingers
+  inert; boxSelectionEnabled off → no box events, nothing
+  selected), verified red against the pre-20.5 pointer layer.
+  81/81 webgpu Playwright specs, 2190 Node tests, typecheck + lint
+  clean.
 - [ ] **20.6 pixelRatio spec + closing docs sweep** — a `webgpu`
   spec pinning `pixelRatio: 2` vs `1` (backing-store size scales;
   picking unaffected in css px), README round-20 section +

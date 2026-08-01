@@ -1960,8 +1960,22 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   deferred from 12a); straight edges keep the endpoint-*center*
   approximation (a recorded deviation).  `selectionType()`
   is 'single' (tap/box replaces the selection) or 'additive' (taps
-  toggle, boxes add).  Mouse/pen only — v3's three-finger touch box
-  gesture is not implemented.
+  toggle, boxes add).  **Three-finger touch box selection** landed in
+  round 20.5 (v3's gesture): with `boxSelectionEnabled`, three fingers
+  sweep a box from the start *centroid* of the three to the moving
+  centroid — `boxstart` on the first move, the themed DOM box drawn
+  live, applied (boxend / box / boxselect, the 20.2 interactive
+  filter, the 16.5 label-containment option) when a finger lifts —
+  and a gesture that boxed never degrades to a pinch (v3's didSelect
+  latch; leftover fingers stay inert until all lift).  The box
+  preempts a pinch in progress (v3's branch order), and a third
+  finger landing on an *undragged* cxt pair converts it to the box
+  gesture (`cxttapend` first) — pointer events land fingers
+  sequentially, so this is the v4 form of v3's simultaneous
+  three-finger landing (recorded call).  As v3, the touch box is
+  **additive** (it never clears the prior selection, unlike the
+  mouse box under 'single'), and an aborted gesture (pointercancel)
+  selects nothing.
 - **Batch flush granularity**: `endBatch` re-applies style to elements
   added during the batch and refreshes mapped labels; a sheet set during
   the batch flushes as one whole-graph `applyAll`.  Unlike v3 there is

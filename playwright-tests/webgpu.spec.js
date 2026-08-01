@@ -1676,6 +1676,134 @@ test.describe( 'WebGPU renderer', () => {
     expect( run.farRun.some( ev => ev.startsWith( 'cxt' ) ) ).toBe( false );
   } );
 
+  test( 'three-finger box selection on touch (round 20.5)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b' }, position: { x: 60, y: 40 } },
+        { data: { id: 'far' }, position: { x: 400, y: 0 } }
+      ],
+      style: { nodes: { width: 40, height: 40, 'background-color': 'red' } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const run = await page.evaluate( async center => {
+      const canvas = document.querySelector( 'canvas' );
+      const rect = canvas.getBoundingClientRect();
+      const fire = ( type, id, x, y ) => canvas.dispatchEvent( new PointerEvent( type, {
+        pointerId: id, pointerType: 'touch',
+        clientX: rect.left + x, clientY: rect.top + y,
+        button: 0, buttons: 1, bubbles: true
+      } ) );
+
+      window.__events = [];
+
+      for( const type of [ 'boxstart', 'boxend', 'cxttapstart', 'cxttapend', 'cxttap', 'pinchzoom', 'dragpan' ] ){
+        window.cy.on( type, e => window.__events.push( type ) );
+      }
+
+      window.cy.on( 'boxselect', e => window.__events.push( 'boxselect:' + e.target.id() ) );
+
+      const before = { zoom: window.cy.zoom(), pan: window.cy.pan() };
+
+      // three fingers land close together (a cxt pair + a third — the
+      // third converts the undragged cxt gesture to the box gesture),
+      // centroid starting past the top-left of the nodes...
+      const sx = center.x - 120, sy = center.y - 100;
+
+      fire( 'pointerdown', 71, sx - 30, sy );
+      fire( 'pointerdown', 72, sx + 30, sy - 20 );
+      fire( 'pointerdown', 73, sx, sy + 20 );
+
+      // ...then swipe the centroid to past the bottom-right of a and b
+      for( let step = 1; step <= 6; step++ ){
+        const dx = step * 40, dy = step * 30;
+
+        fire( 'pointermove', 71, sx - 30 + dx, sy + dy );
+        fire( 'pointermove', 72, sx + 30 + dx, sy - 20 + dy );
+        fire( 'pointermove', 73, sx + dx, sy + 20 + dy );
+      }
+
+      fire( 'pointerup', 71, sx + 210, sy + 180 );
+
+      const afterApply = window.cy.elements( { selected: true } ).map( ele => ele.id() ).sort();
+
+      // the two leftover fingers must be inert: moving them must not zoom/pan
+      fire( 'pointermove', 72, sx + 300, sy + 200 );
+      fire( 'pointermove', 73, sx + 320, sy + 260 );
+      fire( 'pointerup', 72, sx + 300, sy + 200 );
+      fire( 'pointerup', 73, sx + 320, sy + 260 );
+
+      return {
+        events: window.__events.slice(),
+        selected: afterApply,
+        zoomUnchanged: window.cy.zoom() === before.zoom,
+        panUnchanged: window.cy.pan().x === before.pan.x && window.cy.pan().y === before.pan.y
+      };
+    }, center );
+
+    expect( run.events ).toContain( 'cxttapstart' ); // the close pair started cxt...
+    expect( run.events ).toContain( 'cxttapend' );   // ...and the third finger ended it
+    expect( run.events ).not.toContain( 'cxttap' );
+    expect( run.events ).toContain( 'boxstart' );
+    expect( run.events ).toContain( 'boxend' );
+    expect( run.events ).toContain( 'boxselect:a' );
+    expect( run.events ).toContain( 'boxselect:b' );
+    expect( run.events ).not.toContain( 'pinchzoom' );
+    expect( run.events ).not.toContain( 'dragpan' );
+    expect( run.selected ).toEqual( [ 'a', 'b' ] ); // 'far' is outside the swept box
+    expect( run.zoomUnchanged ).toBe( true );
+    expect( run.panUnchanged ).toBe( true );
+
+    // with boxSelectionEnabled off, the same gesture selects nothing
+    const disabled = await page.evaluate( async center => {
+      window.cy.elements( { selected: true } ).unselect();
+      window.cy.boxSelectionEnabled( false );
+      window.__events = [];
+
+      const canvas = document.querySelector( 'canvas' );
+      const rect = canvas.getBoundingClientRect();
+      const fire = ( type, id, x, y ) => canvas.dispatchEvent( new PointerEvent( type, {
+        pointerId: id, pointerType: 'touch',
+        clientX: rect.left + x, clientY: rect.top + y,
+        button: 0, buttons: 1, bubbles: true
+      } ) );
+      const sx = center.x - 120, sy = center.y - 100;
+
+      fire( 'pointerdown', 81, sx - 30, sy );
+      fire( 'pointerdown', 82, sx + 30, sy - 20 );
+      fire( 'pointerdown', 83, sx, sy + 20 );
+
+      for( let step = 1; step <= 6; step++ ){
+        const dx = step * 40, dy = step * 30;
+
+        fire( 'pointermove', 81, sx - 30 + dx, sy + dy );
+        fire( 'pointermove', 82, sx + 30 + dx, sy - 20 + dy );
+        fire( 'pointermove', 83, sx + dx, sy + 20 + dy );
+      }
+
+      fire( 'pointerup', 81, sx + 210, sy + 180 );
+      fire( 'pointerup', 82, sx + 270, sy + 160 );
+      fire( 'pointerup', 83, sx + 240, sy + 200 );
+
+      window.cy.boxSelectionEnabled( true );
+
+      return {
+        events: window.__events.slice(),
+        selected: window.cy.elements( { selected: true } ).length
+      };
+    }, center );
+
+    expect( disabled.events ).not.toContain( 'boxstart' );
+    expect( disabled.selected ).toBe( 0 );
+  } );
+
   test( 'tap selects and background tap clears', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

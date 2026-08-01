@@ -88,6 +88,11 @@ export class PointerHandler {
     target: GpuCollection | null; dragged: boolean; baseDist: number;
     startX: number; startY: number;
   } | null;
+  /** the three-finger box gesture (round 20.5): start + current centroid */
+  private touchBox: { x1: number; y1: number; x2: number; y2: number } | null;
+  /** a gesture that boxed never degrades to a pinch/pan (v3's didSelect latch);
+   * cleared when the last finger lifts */
+  private touchDidSelect: boolean;
   private deadTouch: number | null;
   private wheelingUntil: number;
   private wheelSettleTimer: ReturnType<typeof setTimeout> | null;
@@ -114,6 +119,8 @@ export class PointerHandler {
     this.touches = new Map();
     this.pinch = null;
     this.touchCxt = null;
+    this.touchBox = null;
+    this.touchDidSelect = false;
     this.deadTouch = null;
     this.wheelingUntil = 0;
     this.wheelSettleTimer = null;
@@ -217,8 +224,23 @@ export class PointerHandler {
         return;
       }
 
+      // a third finger during an *undragged* cxt gesture converts it to
+      // the box gesture (20.5): pointer events land fingers sequentially,
+      // so this is the v4 form of v3's simultaneous three-finger landing
+      if( this.touchCxt != null && !this.touchCxt.dragged && this.touches.size === 3
+        && this.cy.boxSelectionEnabled() === true ){
+        const cxt = this.touchCxt;
+
+        this.touchCxt = null;
+        this.dragHover = null;
+        this.emitGesture( 'cxttapend', cxt.target, this.eventPos( e ) );
+
+        return;
+      }
+
       // extra fingers mid-gesture just get tracked
-      if( this.pinch != null || this.touchCxt != null || this.deadTouch != null ){ return; }
+      if( this.pinch != null || this.touchCxt != null || this.deadTouch != null
+        || this.touchDidSelect || this.touches.size >= 3 ){ return; }
     }
 
     // right button: the cxttap family (cxttapstart / cxtdrag / cxttapend / cxttap)
@@ -371,6 +393,15 @@ export class PointerHandler {
 
         return;
       }
+
+      // three fingers box-select (20.5, before pinch — v3's branch order)
+      if( this.touches.size >= 3 && this.cy.boxSelectionEnabled() === true ){
+        this.touchBoxMove();
+
+        return;
+      }
+
+      if( this.touchDidSelect ){ return; } // boxed: leftover fingers stay inert
 
       if( this.pinch != null ){
         this.pinchMove();
@@ -702,11 +733,30 @@ export class PointerHandler {
 
     const wasPinching = this.pinch != null && this.touches.has( e.pointerId );
     const wasCxt = this.touchCxt != null && this.touches.has( e.pointerId );
+    const wasBoxing = this.touchBox != null && this.touches.has( e.pointerId );
 
     this.touches.delete( e.pointerId );
 
     if( this.deadTouch === e.pointerId ){
       this.deadTouch = null;
+
+      if( this.touches.size === 0 ){ this.touchDidSelect = false; }
+
+      return true;
+    }
+
+    // a box finger lifting applies the swept box (20.5); the didSelect
+    // latch keeps the leftover fingers inert until every one lifts
+    if( wasBoxing ){
+      this.applyTouchBox( e, cancelled );
+
+      if( this.touches.size === 0 ){ this.touchDidSelect = false; }
+
+      return true;
+    }
+
+    if( this.touchDidSelect ){
+      if( this.touches.size === 0 ){ this.touchDidSelect = false; }
 
       return true;
     }
@@ -775,8 +825,13 @@ export class PointerHandler {
       } );
     }
 
+    this.showBoxRect( down.startX, down.startY, pos.x, pos.y );
+  }
+
+  /** Show the DOM selection box over a rendered rect (themed from the
+   * core sheet — round 13 A2's selection-box-* props). */
+  private showBoxRect( x1: number, y1: number, x2: number, y2: number ): void {
     const el = this.boxElement();
-    // themed from the core sheet (round 13 A2: selection-box-* props)
     const core = this.cy._styleEngine.core();
     const [ br, bg, bb ] = core.selectionBoxColor;
     const [ rr, rg, rb ] = core.selectionBoxBorderColor;
@@ -785,10 +840,86 @@ export class PointerHandler {
     el.style.border = `${core.selectionBoxBorderWidth}px solid rgba(${rr}, ${rg}, ${rb}, 1)`;
 
     el.style.display = 'block';
-    el.style.left = Math.min( down.startX, pos.x ) + 'px';
-    el.style.top = Math.min( down.startY, pos.y ) + 'px';
-    el.style.width = Math.abs( pos.x - down.startX ) + 'px';
-    el.style.height = Math.abs( pos.y - down.startY ) + 'px';
+    el.style.left = Math.min( x1, x2 ) + 'px';
+    el.style.top = Math.min( y1, y2 ) + 'px';
+    el.style.width = Math.abs( x2 - x1 ) + 'px';
+    el.style.height = Math.abs( y2 - y1 ) + 'px';
+  }
+
+  // -- the three-finger box gesture (round 20.5) --
+
+  /**
+   * Three fingers box-select (v3): the box spans the start centroid to
+   * the moving centroid, applied when the third finger lifts.  Starting
+   * one cancels any cxt/pinch/pan in progress, and the gesture never
+   * degrades to a pinch afterwards (the didSelect latch).
+   */
+  private touchBoxMove(): void {
+    const [ a, b, c ] = [ ...this.touches.values() ];
+    const cx = ( a.x + b.x + c.x ) / 3;
+    const cyPx = ( a.y + b.y + c.y ) / 3;
+
+    if( this.touchBox == null ){
+      const down = this.down;
+
+      if( down != null ){
+        if( down.grabbed != null ){ this.setFlagOn( down.grabbed, FLAG_GRABBED, false ); }
+
+        this.down = null;
+      }
+
+      this.clearTaphold();
+      this.hideActiveBg();
+      this.updateHover( null );
+      this.pinch = null; // the box preempts a pinch in progress (v3's branch order)
+      this.touchDidSelect = true;
+      this.touchBox = { x1: cx, y1: cyPx, x2: cx + 1, y2: cyPx + 1 }; // v3's +1 seed
+      this.cy.emit( {
+        type: 'boxstart',
+        position: this.cy._viewport.renderedToModel( { x: cx, y: cyPx } )
+      } );
+    } else {
+      this.touchBox.x2 = cx;
+      this.touchBox.y2 = cyPx;
+    }
+
+    this.showBoxRect( this.touchBox.x1, this.touchBox.y1, this.touchBox.x2, this.touchBox.y2 );
+  }
+
+  /** Apply the swept box with v3's touch semantics: additive (no
+   * clearing), interactive elements only, boxend/box/boxselect. */
+  private applyTouchBox( e: PointerEvent, cancelled: boolean ): void {
+    const cy = this.cy;
+    const box = this.touchBox as NonNullable<typeof this.touchBox>;
+
+    this.touchBox = null;
+
+    if( this.boxEl != null ){ this.boxEl.style.display = 'none'; }
+
+    if( cancelled ){ return; } // an aborted gesture selects nothing (no boxend)
+
+    const p1 = cy._viewport.renderedToModel( { x: box.x1, y: box.y1 } );
+    const p2 = cy._viewport.renderedToModel( { x: box.x2, y: box.y2 } );
+    const position = p2;
+
+    cy.emit( { type: 'boxend', position } );
+
+    const eles = cy.elementsInBox( p1.x, p1.y, p2.x, p2.y )
+      .filter( ( ele: GpuCollection ) => ele.interactive() ); // the 20.2 rule
+
+    for( let i = 0; i < eles.length; i++ ){
+      cy._emitOnEle( 'box', eles[ i ], undefined, { position } );
+    }
+
+    if( cy.autounselectify() === true ){ return; }
+
+    const toSelect = eles.filter( ( ele: GpuCollection ) => ele.selectable() && !ele.selected() );
+
+    toSelect.select();
+
+    for( let i = 0; i < toSelect.length; i++ ){
+      cy._emitOnEle( 'boxselect', toSelect[ i ], undefined, { position } );
+    }
   }
 
   /** Apply the released box with v3 semantics (boxend, box, boxselect). */

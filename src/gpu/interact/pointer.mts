@@ -77,6 +77,9 @@ export class PointerHandler {
   private wheelingUntil: number;
   private wheelSettleTimer: ReturnType<typeof setTimeout> | null;
   private cxtDown: { pointerId: number; target: GpuCollection | null; startX: number; startY: number; moved: boolean } | null;
+  /** the node under the cursor during an active press (17.3) */
+  private dragHover: GpuCollection | null = null;
+  private lastDragHoverAt = 0;
   private tapholdTimer: ReturnType<typeof setTimeout> | null;
   private onetapTimer: ReturnType<typeof setTimeout> | null;
   private lastTap: { target: GpuCollection | null; at: number } | null;
@@ -317,7 +320,16 @@ export class PointerHandler {
 
     this.emitGesture( 'pointermove', pressTarget, pos );
 
-    if( pressed ){ this.emitGesture( 'tapdrag', pressTarget, pos ); }
+    if( pressed ){
+      this.emitGesture( 'tapdrag', pressTarget, pos );
+
+      // hover-during-drag (17.3): a throttled sync node pick drives
+      // tapdragover/tapdragout while the press is active (nodes only —
+      // the CPU pick; recorded)
+      if( this.down != null && this.down.pointerId === e.pointerId ){
+        this.dragHoverPick( pos, 'tapdrag' );
+      }
+    }
 
     if( e.pointerType === 'touch' && this.touches.has( e.pointerId ) ){
       this.touches.set( e.pointerId, pos );
@@ -338,7 +350,10 @@ export class PointerHandler {
         cxt.moved = true;
       }
 
-      if( cxt.moved ){ this.emitGesture( 'cxtdrag', cxt.target, pos ); }
+      if( cxt.moved ){
+        this.emitGesture( 'cxtdrag', cxt.target, pos );
+        this.dragHoverPick( pos, 'cxtdrag' ); // 17.3
+      }
 
       return;
     }
@@ -442,6 +457,7 @@ export class PointerHandler {
 
     if( cxt != null && cxt.pointerId === e.pointerId ){
       this.cxtDown = null;
+      this.dragHover = null; // 17.3
 
       const pos = this.eventPos( e );
 
@@ -458,6 +474,7 @@ export class PointerHandler {
 
     this.down = null;
     this.clearTaphold();
+    this.dragHover = null; // 17.3: the gesture ended
 
     if( down.dragSet != null ){
       for( let i = 0; i < down.dragSet.length; i++ ){ this.setFlagOn( down.dragSet[ i ], FLAG_GRABBED, false ); }
@@ -707,12 +724,14 @@ export class PointerHandler {
 
     if( target.selected() ){
       target.unselect(); // toggle off
+      cy._emitOnEle( 'tapunselect', target, undefined, { position } ); // 17.3
     } else {
       if( !additive ){
         cy.elements( { selected: true } ).difference( target ).unselect();
       }
 
       target.select();
+      cy._emitOnEle( 'tapselect', target, undefined, { position } ); // 17.3
     }
   }
 
@@ -742,6 +761,37 @@ export class PointerHandler {
       this.lastTap = null;
       this.emitModelGesture( 'onetap', target, position );
     }, debounce );
+  }
+
+  /**
+   * Hover-during-drag (17.3): while a press is active, a throttled
+   * synchronous node pick drives `<prefix>over` / `<prefix>out` as the
+   * cursor enters and leaves nodes.  Nodes only — the exact CPU pick;
+   * edges would need the async GPU tile (recorded).
+   */
+  private dragHoverPick( pos: Position, prefix: 'tapdrag' | 'cxtdrag' ): void {
+    const now = performance.now();
+
+    if( now - this.lastDragHoverAt < HOVER_THROTTLE_MS ){ return; }
+
+    this.lastDragHoverAt = now;
+
+    const ele = this.renderer.pickNodeSync( pos.x, pos.y );
+    const prev = this.dragHover;
+
+    if( prev === ele ){ return; }
+
+    const position = this.cy._viewport.renderedToModel( pos );
+
+    if( prev != null && prev.inside() ){
+      this.cy._emitOnEle( prefix + 'out', prev, undefined, { position } );
+    }
+
+    this.dragHover = ele;
+
+    if( ele != null && ele.inside() ){
+      this.cy._emitOnEle( prefix + 'over', ele, undefined, { position } );
+    }
   }
 
   /**

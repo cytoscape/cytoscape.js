@@ -701,6 +701,72 @@ test.describe( 'WebGPU renderer', () => {
     expect( still.join( ',' ) ).not.toContain( 'drag:' );
   } );
 
+  test( 'tapselect/tapunselect + hover-during-drag events (round 17.3)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__events = [];
+
+      for( const type of [ 'tapselect', 'tapunselect', 'tapdragover', 'tapdragout', 'cxtdragover', 'cxtdragout' ] ){
+        window.cy.on( type, e =>
+          window.__events.push( type + ':' + ( e.target === window.cy ? 'cy' : e.target.id() ) ) );
+      }
+    } );
+
+    // tap the node: selected by the gesture -> tapselect; tap again:
+    // the toggle-off -> tapunselect
+    await page.mouse.click( center.x, center.y );
+    await expect.poll( () => page.evaluate( () => window.__events.join( ',' ) ) )
+      .toContain( 'tapselect:a' );
+
+    await page.mouse.click( center.x, center.y );
+    await expect.poll( () => page.evaluate( () => window.__events.join( ',' ) ) )
+      .toContain( 'tapunselect:a' );
+
+    // a background press dragged across the node: tapdragover on
+    // entry, tapdragout on exit (nodes only — the sync pick; recorded).
+    // Panning must not apply, else the content follows the cursor and
+    // nothing is ever crossed — the box gesture keeps the scene still.
+    await page.evaluate( () => { window.cy.userPanningEnabled( false ); window.__events = []; } );
+    await page.mouse.move( center.x - 150, center.y );
+    await page.mouse.down();
+
+    for( let i = 0; i <= 10; i++ ){
+      await page.mouse.move( center.x - 150 + i * 30, center.y );
+      await page.waitForTimeout( 35 ); // beyond the hover throttle
+    }
+
+    await page.mouse.up();
+
+    const seq = await page.evaluate( () => window.__events.join( ',' ) );
+
+    expect( seq ).toContain( 'tapdragover:a' );
+    expect( seq ).toContain( 'tapdragout:a' );
+
+    // the right-button drag gets the cxt pair
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.move( center.x - 150, center.y );
+    await page.mouse.down( { button: 'right' } );
+
+    for( let i = 0; i <= 10; i++ ){
+      await page.mouse.move( center.x - 150 + i * 30, center.y );
+      await page.waitForTimeout( 35 );
+    }
+
+    await page.mouse.up( { button: 'right' } );
+
+    const cxtSeq = await page.evaluate( () => window.__events.join( ',' ) );
+
+    expect( cxtSeq ).toContain( 'cxtdragover:a' );
+    expect( cxtSeq ).toContain( 'cxtdragout:a' );
+  } );
+
   test( 'gesture parity: cxttap family, dbltap, taphold (round 10)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

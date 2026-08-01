@@ -4330,9 +4330,19 @@ gate ecosystem work.
   → free ordering, and a moveless press grabbing/freeing without
   drag events.  2117 Node tests, 135/135 Playwright, typecheck +
   lint clean.
-- [ ] **17.3 Selection + hover-during-drag** — `tapselect`/
-  `tapunselect`, `tapdragover`/`tapdragout`,
-  `cxtdragover`/`cxtdragout`.
+- [x] **17.3 Selection + hover-during-drag** (2026-08-01) —
+  `tapselect`/`tapunselect` fire on the tapped element beside its
+  gesture-driven select/toggle-off (background clears and box
+  selection keep their own events, as v3); `tapdragover`/
+  `tapdragout` and `cxtdragover`/`cxtdragout` ride a throttled
+  synchronous node pick while a press is active — **nodes only**
+  (the exact CPU pick; edges would need the async GPU tile —
+  recorded), state cleared silently when the gesture ends.  Spec
+  lesson kept in-file: a *panning* background drag moves the
+  content with the cursor, so nothing is ever crossed — the pin
+  drags across the node under the box gesture (panning disabled)
+  and under a cxt drag.  2117 Node tests, 136/136 Playwright,
+  typecheck + lint clean.
 - [ ] **17.4 Viewport gesture events** — `dragpan`, `scrollzoom`,
   `pinchzoom` (incl. the trackpad ctrl+wheel path).
 - [ ] **17.5 The layout contract** — LayoutContext + `{ impl }`

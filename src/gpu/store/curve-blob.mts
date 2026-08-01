@@ -1,3 +1,5 @@
+import { NO_SLOT } from '../contract.mjs';
+
 /*
 CurveBlob (round 12b): the variable-length curve parameter pool.
 
@@ -108,6 +110,25 @@ export class CurveBlob {
   }
 
   /** Release a slot's record (no-op when it has none). */
+  /** Slot compaction (19.2): permute the slot-indexed offset/length
+   * tables through the monotone remap.  Pool bytes and waste metering
+   * are offset-space and untouched; record headers riding element
+   * columns moved with their table, so both sides stay aligned. */
+  remapSlots( remap: Uint32Array ): void {
+    const n = Math.min( remap.length, this.offsets.length );
+
+    for( let s = 0; s < n; s++ ){
+      const d = remap[ s ];
+
+      if( d === NO_SLOT || d === s ){ continue; }
+
+      this.offsets[ d ] = this.offsets[ s ];
+      this.lengths[ d ] = this.lengths[ s ];
+      this.offsets[ s ] = -1;
+      this.lengths[ s ] = 0;
+    }
+  }
+
   free( slot: number ): void {
     if( slot >= this.offsets.length || this.offsets[ slot ] < 0 ){ return; }
 

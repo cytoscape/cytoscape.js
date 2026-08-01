@@ -1,4 +1,4 @@
-import { FLAG_ALIVE, FLAG_CHILD, FLAG_PARENT, FLAG_VISIBLE } from '../contract.mjs';
+import { FLAG_ALIVE, FLAG_CHILD, FLAG_PARENT, FLAG_VISIBLE, NO_SLOT } from '../contract.mjs';
 
 const SHOWN = FLAG_ALIVE | FLAG_VISIBLE;
 
@@ -421,6 +421,93 @@ export class HierarchyIndex {
       flags[ slot ] = next;
       this.host.markFlag( slot );
     }
+  }
+
+  /**
+   * Slot compaction (19.2): repoint every slot-keyed structure through
+   * the monotone remap.  `parent` is both slot-indexed and slot-valued;
+   * `parentGen` re-stamps against the *post-compaction* gen array (moved
+   * parents took fresh generations); child lists keep link order; the
+   * draw permutation regenerates lazily.  Call with derived geometry
+   * flushed (`pending` is remapped defensively all the same).
+   */
+  remapSlots( remap: Uint32Array, gen: Uint32Array ): void {
+    const oldLen = this.parent.length;
+    const n = Math.min( remap.length, oldLen );
+    const parent = new Int32Array( oldLen ).fill( -1 );
+    const parentGen = new Uint32Array( oldLen );
+    const depth = new Uint16Array( oldLen );
+
+    for( let s = 0; s < n; s++ ){
+      const d = remap[ s ];
+
+      if( d === NO_SLOT ){ continue; }
+
+      const p = this.parent[ s ];
+
+      if( p >= 0 ){
+        const dp = p < remap.length ? remap[ p ] : NO_SLOT;
+
+        if( dp !== NO_SLOT ){
+          parent[ d ] = dp;
+          parentGen[ d ] = gen[ dp ];
+        }
+      }
+
+      depth[ d ] = this.depth[ s ];
+    }
+
+    this.parent = parent;
+    this.parentGen = parentGen;
+    this.depth = depth;
+
+    const rekey = ( old: number ): number =>
+      old < remap.length ? remap[ old ] : NO_SLOT;
+
+    const children = new Map<number, number[]>();
+
+    for( const [ p, kids ] of this.children ){
+      const dp = rekey( p );
+
+      if( dp === NO_SLOT ){ continue; }
+
+      children.set( dp, kids
+        .map( rekey )
+        .filter( d => d !== NO_SLOT ) );
+    }
+
+    this.children = children;
+    this.order = null;
+
+    const pending = new Set<number>();
+
+    for( const p of this.pending ){
+      const dp = rekey( p );
+
+      if( dp !== NO_SLOT ){ pending.add( dp ); }
+    }
+
+    this.pending = pending;
+
+    const styles = new Map<number, CompoundStyle>();
+
+    for( const [ p, style ] of this.compoundStyle ){
+      const dp = rekey( p );
+
+      if( dp !== NO_SLOT ){ styles.set( dp, style ); }
+    }
+
+    this.compoundStyle = styles;
+
+    const pads = new Map<number, number>();
+
+    for( const [ p, pad ] of this.resolvedPad ){
+      const dp = rekey( p );
+
+      if( dp !== NO_SLOT ){ pads.set( dp, pad ); }
+    }
+
+    this.resolvedPad = pads;
   }
 
   private ensure( slot: number ): void {

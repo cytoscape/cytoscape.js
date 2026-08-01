@@ -1,4 +1,5 @@
 import type { GroupName } from '../contract.mjs';
+import { NO_SLOT } from '../contract.mjs';
 import type { GpuDataColumn, GpuDictColumn } from '../gpu-types.mjs';
 
 /*
@@ -239,6 +240,63 @@ export class DataStore {
       if( value == null || ( typeof value === 'number' && Number.isNaN( value ) ) ){ continue; }
 
       this.set( group, slots[ i ], key, value );
+    }
+  }
+
+  /**
+   * Slot compaction (19.2): move every column's per-slot payload through
+   * the monotone remap **in place** — bound mapper evaluators close over
+   * these buffers by reference (the dict-remap precedent), so the arrays
+   * must keep their identity.  Dictionary refcounts are untouched: the
+   * values are the same, only their slots moved.
+   */
+  remapSlots( group: GroupName, remap: Uint32Array ): void {
+    for( const col of this.cols[ group ].values() ){
+      switch( col.kind ){
+        case 'number': {
+          const n = Math.min( remap.length, col.present.length, col.values.length );
+
+          for( let s = 0; s < n; s++ ){
+            const d = remap[ s ];
+
+            if( d === NO_SLOT || d === s ){ continue; }
+
+            col.values[ d ] = col.values[ s ];
+            col.present[ d ] = col.present[ s ];
+            col.present[ s ] = 0;
+          }
+
+          break;
+        }
+        case 'string': {
+          const n = Math.min( remap.length, col.indices.length );
+
+          for( let s = 0; s < n; s++ ){
+            const d = remap[ s ];
+
+            if( d === NO_SLOT || d === s ){ continue; }
+
+            col.indices[ d ] = col.indices[ s ];
+            col.indices[ s ] = 0;
+          }
+
+          break;
+        }
+        case 'mixed': {
+          const n = Math.min( remap.length, col.values.length );
+
+          for( let s = 0; s < n; s++ ){
+            const d = remap[ s ];
+
+            if( d === NO_SLOT || d === s ){ continue; }
+
+            col.values[ d ] = col.values[ s ];
+            col.values[ s ] = undefined;
+          }
+
+          break;
+        }
+      }
     }
   }
 

@@ -2862,7 +2862,81 @@ export class GraphStore implements ModelView {
       this.dirty.touch();
     }
 
+    // -- dependent store indexes (19.2) --
+
+    if( edgesRes != null ){
+      this.blob.remapSlots( edgesRes.remap );
+      this.data.remapSlots( 'edges', edgesRes.remap );
+      this.remapLabelStream( 'edges', edgesRes.remap );
+      this.remapLabelStream( 'edgeSource', edgesRes.remap );
+      this.remapLabelStream( 'edgeTarget', edgesRes.remap );
+    }
+
+    if( nodesRes != null ){
+      this.polyPool.remapSlots( nodesRes.remap );
+      this.imagePool.remapSlots( nodesRes.remap );
+      this.data.remapSlots( 'nodes', nodesRes.remap );
+      this.remapLabelStream( 'nodes', nodesRes.remap );
+      this.hierarchy.remapSlots( nodesRes.remap, this.nodes.gen );
+      this.opacityBase = rekeyMap( this.opacityBase, nodesRes.remap );
+      this.parentFallback = rekeyMap( this.parentFallback, nodesRes.remap );
+    }
+
+    if( nodesRes != null || edgesRes != null ){
+      // pair/loop keys are node slots and member lists edge slots — the
+      // index rebuilds both from the rewritten endpoints; derived params
+      // stay valid (the remap is monotone, so bundle order is unchanged)
+      this.curves.remapSlots( edgesRes?.remap ?? null );
+
+      // stale mapper spans carry old-coordinate ranges: replace them
+      // with whole-column spans per watched key of a compacted group
+      for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
+        const res = group === 'nodes' ? nodesRes : edgesRes;
+
+        if( res == null ){ continue; }
+
+        for( const key of Array.from( this.mapperSpans.keys() ) ){
+          if( key.startsWith( `${group}:` ) ){ this.mapperSpans.delete( key ); }
+        }
+
+        for( const key of this.watchedKeys[ group ] ){
+          this.markDataWrite( group, key, 0, this.table( group ).highWater );
+        }
+      }
+
+      // owner slots are baked into the renderer's glyph instances; the
+      // label-dirty channel is the existing rebuild path (19.4 consumes)
+      this.markAllLabelsDirty();
+    }
+
     return { nodes: nodesRes, edges: edgesRes };
+  }
+
+  /** Permute one label stream's entries, dims and dirty slots (19.2). */
+  private remapLabelStream( stream: LabelStream, remap: Uint32Array ): void {
+    const entries = this.labels[ stream ];
+    const n = Math.min( remap.length, entries.length );
+
+    for( let s = 0; s < n; s++ ){
+      const d = remap[ s ];
+
+      if( d === NO_SLOT || d === s ){ continue; }
+
+      entries[ d ] = entries[ s ];
+      entries[ s ] = undefined;
+    }
+
+    this.labelDims[ stream ] = rekeyMap( this.labelDims[ stream ], remap );
+
+    const dirty = new Set<number>();
+
+    for( const s of this.labelDirty[ stream ] ){
+      const d = s < remap.length ? remap[ s ] : NO_SLOT;
+
+      if( d !== NO_SLOT ){ dirty.add( d ); }
+    }
+
+    this.labelDirty[ stream ] = dirty;
   }
 
   private compactGroup( group: GroupName ): GroupCompaction | null {
@@ -2937,6 +3011,19 @@ export class GraphStore implements ModelView {
     this.order[ group ] = { slots, gens, stale: 0 };
   }
 }
+
+/** Rebuild a slot-keyed map through a compaction remap (19.2). */
+const rekeyMap = <V,>( map: Map<number, V>, remap: Uint32Array ): Map<number, V> => {
+  const next = new Map<number, V>();
+
+  for( const [ slot, value ] of map ){
+    const d = slot < remap.length ? remap[ slot ] : NO_SLOT;
+
+    if( d !== NO_SLOT ){ next.set( d, value ); }
+  }
+
+  return next;
+};
 
 const initialFlags = ( opts: AddElementOpts, pannableDefault: boolean ): number => {
   let flags = FLAG_ALIVE;

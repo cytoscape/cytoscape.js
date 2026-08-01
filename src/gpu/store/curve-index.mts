@@ -1,6 +1,6 @@
 import {
   CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI,
-  CURVE_SEGMENTS, CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE
+  CURVE_SEGMENTS, CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE, NO_SLOT
 } from '../contract.mjs';
 import {
   bundleOffset, haystackAngle, loopAngles, loopRadius,
@@ -597,6 +597,73 @@ export class CurveIndex {
     );
 
     this.host.writeParams( slot, dist, j, factor * stretch * 2, CURVE_CMPD );
+  }
+
+  /**
+   * Slot compaction (19.2).  The per-edge styled records permute through
+   * `edgeRemap` (null when only nodes compacted); the pair/loop maps —
+   * keyed on *node* slots — rebuild from the live endpoints either way.
+   * The remap is monotone, so bundle rank, loop stagger and the σ
+   * orientation all read identically through the new slots: derived
+   * params in the curveParams column (already moved with the table) stay
+   * valid with **no re-derivation**.  Call after the endpoints column is
+   * rewritten, with derivations flushed.
+   */
+  remapSlots( edgeRemap: Uint32Array | null ): void {
+    if( edgeRemap != null ){
+      const n = Math.min( edgeRemap.length, this.style.length );
+
+      for( let s = 0; s < n; s++ ){
+        const d = edgeRemap[ s ];
+
+        if( d === NO_SLOT || d === s ){ continue; }
+
+        this.style[ d ] = this.style[ s ];
+        this.step[ d ] = this.step[ s ];
+        this.weight[ d ] = this.weight[ s ];
+        this.loopDir[ d ] = this.loopDir[ s ];
+        this.loopSweep[ d ] = this.loopSweep[ s ];
+        this.hayRadius[ d ] = this.hayRadius[ s ];
+        this.extra[ d ] = this.extra[ s ];
+        this.endpt[ d ] = this.endpt[ s ];
+
+        this.style[ s ] = CURVE_STYLE_STRAIGHT;
+        this.step[ s ] = 0;
+        this.weight[ s ] = 0;
+        this.loopDir[ s ] = 0;
+        this.loopSweep[ s ] = 0;
+        this.hayRadius[ s ] = 0;
+        this.extra[ s ] = null;
+        this.endpt[ s ] = null;
+      }
+    }
+
+    // node-keyed maps: every key may have moved — rebuild from the truth
+    if( this.pairs != null ){ this.buildPairIndex(); }
+
+    const loops = new Map<number, number[]>();
+    const endpoints = this.host.endpoints();
+
+    for( const slot of this.host.aliveEdgeSlots() ){
+      const source = endpoints[ slot * 2 ];
+
+      if( source !== endpoints[ slot * 2 + 1 ] ){ continue; }
+
+      let list = loops.get( source );
+
+      if( list == null ){
+        list = [];
+        loops.set( source, list );
+      }
+
+      list.push( slot );
+    }
+
+    this.loops = loops;
+
+    // derivations were flushed before the move; stale keys must not leak
+    this.pending.clear();
+    this.pendingSlots.clear();
   }
 
   private markPair( a: number, b: number ): void {

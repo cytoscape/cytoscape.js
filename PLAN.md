@@ -21,7 +21,11 @@ this file) landed in full the same day — **round 14 is complete**
 (14.0 docs-first → 14.1–14.8 model/CPU → 14.9–14.11 renderer/
 interaction → 14.12 benchmarks, every item tests-first with Node
 specs, and the renderer items with goldens + live v3 pixel-parity
-scenes).  `src/gpu/README.md` is
+scenes).  A 2026-08-01 design sitting **dropped z-index outright**
+(decided design) and scoped rounds 15–18 — background images,
+multiline labels + label bb, the event vocabulary + extension
+contract, and the GPU force layout — as the plans at the end of this
+file.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -231,7 +235,8 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 
 All follow-ups are done.  Open hooks beyond pass 1: slot compaction
 (the slot-stable blob/CSR/dictionary reclaim landed in round 11 below),
-z-index ranks, compound nodes, curved edges (bundled bezier +
+~~z-index ranks~~ (z-index dropped by decided design 2026-08-01),
+compound nodes, curved edges (bundled bezier +
 self-loops landed round 12a, the unbundled/segments/taxi families
 round 12b; 12c remains),
 more layouts, a binary export of live graphs (serializeElements already
@@ -536,7 +541,8 @@ adapter).  `src/gpu/README.md` records the policies.
   `panify`~~ — landed in round 6): `multiClickDebounceTime`
   (multi-click), `eles.layout()`/`layoutPositions`/`layoutDimensions`,
   `boundingBoxAt` (bbox at a hypothetical position),
-  `sortByZIndex`/`zDepth` (needs z-index),
+  ~~`sortByZIndex`/`zDepth`~~ (closed 2026-08-01: z-index is dropped
+  by decided design — see the design-sitting section below),
   `padding`/`paddedWidth`/`paddedHeight`.
 
 ## Selector removal + stylesheet reshape (v4 API direction)
@@ -1775,7 +1781,9 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    ubiquitous in real apps (`background-image` + fit/clip/position/
    repeat/opacity/smoothing/crossorigin...).  GPU shape: a texture
    atlas or array keyed per element; interacts with the fixed-atlas
-   discipline.  High app value; sizeable renderer feature.
+   discipline.  High app value; sizeable renderer feature.  **Scoped
+   as round 15 (2026-08-01, below): tiered texture arrays + mips,
+   SVG zoom-promotion, an SDF icon mode, multi-image parity.**
 3. **Pie / stripe backgrounds** (51 + 50 props) — SDF-friendly in
    principle; the call is whether v4 wants them (or a leaner
    generalization) at all.
@@ -1806,7 +1814,9 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    excluded from `boundingBox()`** in v4 — v3's `includeLabels`
    (and the bb options object generally) affects `fit()` semantics;
    the conservative-label-bound design (already sketched for
-   multiline) is the likely answer.
+   multiline) is the likely answer.  **The multiline/wrap family and
+   label bb are scoped as round 16 (2026-08-01, below); labels join
+   bb/fit by default there.**
 7. **Event vocabulary** — v4 lacks the element state events
    (`grab`/`grabon`/`drag`/`free`/`freeon`/`dragfree`/
    `dragfreeon`), the normalized device events (`tapstart`/
@@ -1818,7 +1828,8 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    `preventDefault`/`stopPropagation` and bubbling semantics.
    Mostly cheap plumbing, but every name is permanent API — one
    deliberate call on the v4 event vocabulary is better than
-   accretion.
+   accretion.  **Call made — scoped as round 17 (2026-08-01, below):
+   the curated set plus the official pointer-event family.**
 8. **Interaction options + touch parity** — `wheelSensitivity`,
    `touchTapThreshold`/`desktopTapThreshold`, configurable taphold
    duration, `pixelRatio`, per-element `events`/`text-events`
@@ -1838,7 +1849,9 @@ spellings, redundant `attr`-family duplicates — one name per concept).
     gates the entire external ecosystem (fcose, dagre, elk, cola,
     edgehandles, ...).  At minimum a v4 **layout extension
     contract** needs designing; core/collection extension points are
-    a separate call.
+    a separate call.  **Call made — scoped as round 17 (2026-08-01,
+    below): direct objects, no registry; core/collection extension
+    points stay deferred (recorded there).**
 11. **`display` vs `visibility`** — v3 distinguishes `display: none`
     (no space) from `visibility: hidden` (occupies space) from
     zero opacity; v4 has one `show`/`hide` flag.  Call: is one flag
@@ -1907,6 +1920,13 @@ proposed-drops list was triaged 2026-07-29 (see the section above):
 four entries dropped into the decided-design ledger, three kept with
 direction, and `text-metrics`/`box-select-labels` folded into the
 label-bb round.
+
+**2026-08-01 design sitting**: with rounds 12–14 landed, the
+remainder of the queue was scoped in one sitting (plans at the end
+of this file): **z-index dropped outright** (decided design, no
+round at all) → background images (round 15) → multiline labels +
+label bb (round 16) → event vocabulary + extension contract
+(round 17) → GPU force layout (round 18).
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -3740,3 +3760,458 @@ stash/restore, label re-anchor); deep-nesting drag cost
 mid-tween reparent settle; parent decoration bands above edges
 (recorded, z-index round); the shared pick/draw order helper; wire
 backward compat (optional section).
+
+## Design sitting (2026-08-01) — z-index dropped; rounds 15–18 scoped
+
+Decided with the user in one sitting.  Every round below runs under
+the round-10 process rules plus the round-14 amendments, now standing
+policy: **docs land first** (each round's 0-item commits its plan
+section + README pointer before any implementation) and every item is
+**tests-first** (specs written and seen red before the implementation
+brings them green, landing together as the item's isolated commit).
+
+**The z-index call — dropped outright.**  v4 ships no `z-index`, no
+`z-compound-depth`, no `z-index-compare`, and no built-in grab-raise
+either.  Reasoning, recorded: element stacking is a document/UI
+concept without a strong graph use case — node overlap is a layout
+artifact rather than an authored arrangement, layered emphasis is
+already served structurally (parents under edges under leaves under
+labels; overlay/underlay props; opacity dimming), and v3 carried the
+prop triple at the cost of a whole-scene comparator sort per frame.
+The compound worry raised in the sitting (edges into child nodes must
+stay visible) is already answered by the round-14 stream split:
+parent *bodies* draw under all edges, leaves above them.
+Consequences, now permanent (all were already recorded deviations):
+draw order is structural + slot order within a stream; a grabbed node
+does not pop above later-inserted nodes; parent decorations
+(ghost/underlay/overlay/label bands) keep their post-edge positions.
+`sortByZIndex`/`zDepth` close with the props.  The only logged future
+extension, if real demand ever appears, is a single boolean
+**elevated tier** (one extra batch per group drawn over the leaf
+stream) — never arbitrary integer stacking; logged, not planned.
+
+**Queue after the sitting**: background images (round 15) →
+multiline labels + label bb (round 16) → event vocabulary + the
+extension contract (round 17) → GPU force layout (round 18).
+
+## Round 15 plan — background images (planned 2026-08-01)
+
+The 16-prop `background-image` family — the "sleeper third" pillar of
+the 2026-07-29 sweep (near-universal in production apps).  All calls
+below signed off in the 2026-08-01 sitting.
+
+**Signed-off design calls:**
+
+1. **Storage is size-tiered texture arrays with hardware mips** —
+   not a shelf atlas, not batch-per-image.  Unique images dedup by
+   URL into an `ImageRegistry` (the string-dictionary discipline:
+   refcounted entries, round-11 waste-threshold reclaim); each image
+   rasters into a layer of a per-tier `texture_2d_array` (128² /
+   512² / 1024², rgba8, full mip chain generated at upload), native
+   w/h kept per entry for UV/aspect math.  Layers are slots:
+   free-list alloc/reclaim, growth by realloc-copy.  Rationale from
+   the sitting, recorded: mips make minification *cheaper* as well
+   as crisper (coherent low-mip reads vs scattered full-res texels —
+   an unmipped atlas is a bandwidth spike at far zoom); array layers
+   churn and grow like every other store structure, where a shelf
+   atlas fragments toward a repack-the-world cliff; and the draw
+   stays one instanced call per stream (batch-per-unique-image was
+   ruled out — it breaks the cull → indirect-draw shape).  Cap:
+   images raster at most at the top tier (1024²; the `imageMaxSize`
+   renderer option moves the cap) — a recorded deviation for large
+   photo sources.
+
+2. **Full-color SVG stays crisp by zoom-promotion.**  A vector
+   source has no native resolution, so a fixed raster is our
+   artifact: per unique SVG the renderer tracks the max on-screen
+   device-px demand among visible users (a CPU-side max over unique
+   images riding existing per-frame state) and, when demand exceeds
+   the current raster by ~1.5× (with hysteresis), re-rasters into
+   the next tier asynchronously and swaps the (tier, layer) ref —
+   momentary softness that self-corrects, the glyph-atlas
+   `loadingdone` precedent.  Promotion ends at the cap tier
+   (recorded blur past it).  Raster sources never promote (source
+   resolution is their ceiling, as in v3).  **Exports re-raster**:
+   `png()`/`jpg()` raster visible SVG images at the export scale
+   before encoding (the export path is already async), preserving
+   the WYSIWYG guarantee at high `scale`.
+
+3. **SDF icon mode — the glyph trick, generalized.**  A large class
+   of node images (SBGN glyphs, icon sets) are monochrome
+   silhouettes — glyph-shaped data.  The per-image
+   `background-image-type: 'auto' | 'sdf-icon'` (explicit, never
+   sniffed — detecting "really monochrome" SVGs is fragile) sends
+   `sdf-icon` sources through the glyph pipeline: one raster at
+   128², the glyph atlas's exact EDT, a single-channel r8 array
+   layer (~16 KB vs ~1.3 MB for a 512² rgba mip chain), rendered by
+   threshold + fwidth AA — **crisp at every zoom** with no promotion
+   machinery — and tinted at render time by
+   `background-image-color` (the label-color precedent), which makes
+   icon color mapper-drivable.  Recorded: a multi-color source in
+   icon mode collapses to its alpha-thresholded silhouette in one
+   color — well-defined, documented; full-color imagery belongs to
+   `auto`.
+
+4. **Multi-image parity.**  v3's image arrays port: up to **4
+   images per node** (a fixed FS loop — cap recorded, the round-13
+   list discipline), composited in v3's layer order (the exact
+   order is pinned against v3 in the live parity scene during
+   implementation), each with its own per-image props.  Per-node
+   image lists are **blob-pool records** (the curve-blob/polygon
+   pattern: packed per-image entries — registry ref + fit/position/
+   size/offset/repeat/flags/opacity/tint — with round-11
+   compaction), one packed offset|count ref column on nodes.
+
+5. **Prop surface** (14 of v3's 16, plus the two new props):
+   `background-image` (URL / data-URI; list-capable),
+   `background-fit` (`none | contain | cover`),
+   `background-image-opacity`, `background-position-x/-y`,
+   `background-offset-x/-y`, `background-width/-height`
+   (`auto` | %/px), `background-repeat` (`no-repeat | repeat-x |
+   repeat-y | repeat`), `background-clip`,
+   `background-image-containment` (`inside | over`),
+   `background-image-smoothing` (`yes | no`),
+   `background-image-crossorigin` (`anonymous | use-credentials |
+   null`), plus `background-image-type` and
+   `background-image-color` (keyword sets and %-defaults are v3's,
+   verified against v3 source at implementation).
+   `background-width/height-relative-to` is **not ported** (one name
+   per concept: leaves have no padding in v4, and a compound
+   parent's stored size is already the padded box — matching v3's
+   `include-padding` default; the `inner` variant is the unported
+   spelling, recorded).
+   **Mapper rules** (the 12b list discipline): list forms are
+   constants-only; the single-image forms of `background-image`,
+   `background-image-opacity` and `background-image-color` take
+   mappers (`data(key)` URLs resolve through the ordinal-dictionary
+   path — the icon-per-type pattern; `case` works as everywhere).
+   All image props are draw-only **paint** evaluated on the CPU into
+   the blob records — a mapped image channel does not join the GPU
+   eval kernel (recorded scope note).
+
+6. **Async loading policy.**  Images decode off the hot path
+   (`fetch` + `createImageBitmap`, crossorigin per prop); a node
+   whose image hasn't landed draws its other layers and
+   self-corrects when the upload lands (dirty the touched slots —
+   the late-font precedent).  A failed load warns once per URL and
+   renders imageless (recorded; no per-element error state).
+   Headless instances parse/validate and store records with no
+   raster (Node-testable); ghosts do not carry images (the A1
+   simplified-body rule, recorded).
+
+7. **Geometry non-interaction + LOD.**  Images never grow
+   `boundingBox()` (unclipped overflow is not in bb — consistent
+   with the `bounds-expansion` drop) and never affect picking (the
+   pick body stays the shape).  The FS skips image sampling below
+   the `imageMinPx` on-screen node size (default ~8 px; below ~3 px
+   the plain-disc LOD already owns the pixel) — recorded.
+
+8. **Bindings budget.**  Image sampling is FS-only: three rgba tier
+   arrays + one r8 icon array + samplers ride the sampled-texture
+   binding budget (16 per stage at base limits — separate from the
+   8-storage-buffer budget), and the image blob pool is one more FS
+   storage buffer, rebalanced per the C3 split precedent if a
+   layout overflows.
+
+**Pass split** (tests-first per item; docs in-commit):
+
+- [ ] **15.0 Docs-first** — this plan section + the README pointer.
+- [ ] **15.1 ImageRegistry + loader** — URL dedup/refcount, tier
+  assignment, layer free-list + waste-threshold reclaim, async
+  decode behind an injectable rasterizer (Node specs headless with
+  a mock; `test/gpu-image-registry.mjs`).
+- [ ] **15.2 Props + model** — contract.mts first (blob column +
+  packed ref), parse/validate/readback for all 16 props, the
+  per-node image-list records, mapper rules incl. the `data(key)`
+  URL ordinal path, refcount lifecycle on restyle/remove.
+- [ ] **15.3 RGBA draw path** — tier arrays + mip generation +
+  mirror upload/realloc rules; the node FS single-image path
+  (fit/position/size/offset/repeat/clip/containment/opacity/
+  smoothing); goldens + a live v3 parity scene (a fit/position/
+  repeat grid).
+- [ ] **15.4 Multi-image compositing** — up to 4 records per node,
+  layer order pinned vs v3 in the parity scene, per-image prop
+  independence, cap-overflow warn.
+- [ ] **15.5 SDF icon mode** — r8 tier + EDT reuse, threshold/AA FS
+  branch, `background-image-color` tint (mapper-capable single
+  form); crispness pin: a high-zoom golden where the icon edge
+  stays sharp vs the rgba path.
+- [ ] **15.6 SVG zoom-promotion + export re-raster** — demand meter
+  + hysteresis + async tier swap; Playwright: zoom in → sharper
+  after settle, `png({ scale })` re-rasters; the WYSIWYG self-diff
+  extended to an imaged scene.
+- [ ] **15.7 LOD + benchmark + true-up** — `imageMinPx`; a
+  `gen-25k-images` renderer-benchmark scene (icon-per-type via a
+  data mapper); README/PLAN true-up.
+
+**Risks tracked**: upload bursts on initial load (decode is already
+async; uploads coalesce per frame); WGSL non-uniform texture access
+(explicit-gradient sampling or sample-both-select — chosen at
+implementation, pinned by goldens); crossorigin/tainting differences
+between decode paths; registry leaks under style churn (refcount
+specs); multi-image FS cost (the benchmark item guards it).
+
+## Round 16 plan — multiline labels + label bounding boxes (planned 2026-08-01)
+
+The multiline/label-bb round the parity triage kept deferring to —
+`text-wrap` and friends, plus the labels-in-bb call.  All calls
+signed off 2026-08-01.
+
+**Signed-off design calls:**
+
+1. **Labels join `boundingBox()` and `fit()` by default** (v3
+   parity — the most user-visible payoff: fit stops cropping
+   labels).  `boundingBox(options?)` gains an options object —
+   `{ includeLabels: true }` default, unknown keys throw — honored
+   by element/collection bb, `renderedBoundingBox`, the store's
+   whole-graph scan (no-arg `fit`/`center`), `getFitViewport`,
+   animated `fit:`/`center:` targets and `boundingBoxAt`.  Because
+   label shaping is **write-eager and memoized** (it runs on
+   text/font/wrap writes, never per frame — the model-space
+   decision), node-label laid dims sit in the sidecar before any bb
+   read: the store scan's node-label term is the anchored laid box
+   (cheap and exact).  Edge labels keep the dual tier: the scan
+   uses a conservative anchor bound (chord midpoint / end-offset
+   position ± block + margins + curve slack), public `.bb()` the
+   exact anchor via the route evaluator.  Goldens whose fits change
+   regenerate once, in the landing item (recorded).
+
+2. **The wrap family** (v3 semantics; node labels, edge labels and
+   the D4 end-label streams alike): `text-wrap` (`none | wrap |
+   ellipsis`, default `none`), `text-max-width` (model px),
+   `line-height` (multiplier, default 1), `text-overflow-wrap`
+   (`whitespace | anywhere`), `text-justification` (`auto | left |
+   center | right`, `auto` side-aware per v3).  `wrap` honors
+   embedded `\n` and breaks at `text-max-width`; `ellipsis`
+   truncates with `…`; `none` keeps today's single line.  All
+   mapper-capable (CPU-evaluated, the label sidecar tier).
+
+3. **Shaping stays CPU — memoized, write-driven.**  One pure module
+   (extending `label-layout.mts`): breaker + justification + block
+   metrics, keyed by (text, face, font-size, wrap, max-width,
+   overflow-wrap, line-height); glyph runs rebuild only on
+   shaping-input writes.  The earlier design sketch of a *GPU
+   metrics pass* is **retired as unnecessary** (recorded): shaping
+   costs ~µs/label and runs on writes only; the offload slot stays
+   logged if a profile ever disagrees.
+
+4. **Renderer**: multi-line glyph emission into the existing
+   GlyphBuffer ranges (per-line x offsets by justification, y by
+   line-height), the text background/border box takes the block
+   extent, the `text-valign`/`halign` grid anchors the block,
+   autorotate rotates the block as a unit, and the
+   fade/`min-zoomed-font-size` cull predicates are unchanged (the
+   block AABB grows the cull bound).
+
+5. **The parked props' v4 forms** (from the 2026-07-29 triage):
+   `box-select-labels` becomes the core option
+   `boxSelectionIncludesLabels` (default false, v3's default) — one
+   more term in `refsInBox` off the same laid dims;
+   `text-metrics`'s v4 form is the public exact measure
+   `eles.labelBoundingBox()` (laid block at the anchor, memoized) —
+   an API, not a style prop.
+
+**Pass split** (tests-first per item; docs in-commit):
+
+- [ ] **16.0 Docs-first** — this plan section + the README pointer.
+- [ ] **16.1 Shaping engine** — breaker/justify/metrics + memo as a
+  pure module (Node specs: `\n`, whitespace vs anywhere breaking,
+  ellipsis, justification, line-height, memo keying).
+- [ ] **16.2 Props + sidecar** — parse/readback/mappers for the five
+  props; laid dims + line data in the label sidecar; refresh gating
+  on shaping-input writes.
+- [ ] **16.3 Renderer** — multi-line emission for all four glyph
+  streams, block-sized text boxes, autorotate-as-block;
+  wrap/ellipsis/justification goldens (label tolerance; no v3 pixel
+  parity for labels by recorded design — behavioral pins instead).
+- [ ] **16.4 Label bb** — the bb options object; node-label exact
+  term + edge-label conservative term in the store scan; exact lazy
+  edge tier via the route evaluator; `labelBoundingBox()`; fit
+  goldens regenerated once; Playwright fit-includes-labels spec.
+- [ ] **16.5 Box-select labels + benchmark + true-up** —
+  `boxSelectionIncludesLabels`; shaping cost at 100k labels (build
+  + write-refresh, memo hit-rate assertion); README/PLAN true-up.
+
+**Risks tracked**: golden churn confined to 16.4's one commit;
+whole-graph scan cost with the label term (two extra reads per
+labelled slot — benchmarked); long-text glyph counts (no new cap —
+glyph instances already scale; ellipsis is the bounding tool);
+edge-label conservative bounds vs autorotated blocks (reuse the D4
+chord-slack machinery).
+
+## Round 17 plan — event vocabulary + the extension contract (planned 2026-08-01)
+
+Two permanent-API calls made in one sitting: the v4 event names, and
+how extensions plug in.  Both are cheap to build once decided; both
+gate ecosystem work.
+
+**Signed-off design calls:**
+
+1. **The curated vocabulary, plus the official pointer family.**
+   Adopted with v3 semantics (each firing rule pinned against v3
+   source in a red spec before implementation):
+   - *Drag-state* (elements): `grab`, `grabon`, `drag`, `free`,
+     `freeon`, `dragfree`, `dragfreeon` — the `-on` variants fire
+     only on the directly grabbed element; the plain forms fire on
+     every node the gesture moves (drag companions included);
+     `dragfree`/`dragfreeon` only when the node actually moved.
+   - *Device-normalized*: `tapstart`, `tapdrag`, `tapdragover`,
+     `tapdragout`, `tapend` (element + core), `tapselect`/
+     `tapunselect`, `cxtdragover`/`cxtdragout`.
+   - *Viewport gestures* (core): `dragpan`, `scrollzoom`,
+     `pinchzoom`.
+   - *Pointer re-emits* (element + core): `pointerdown`,
+     `pointermove`, `pointerup`, `pointercancel`, `pointerover`,
+     `pointerout` — the official DOM vocabulary v4's interaction
+     layer already consumes, re-emitted with graph positions and
+     `originalEvent`.
+   **Dropped, recorded**: the `vmouse*` aliases (the `tap*` names
+   *are* the normalized vocabulary) and the raw mouse/touch re-emits
+   (`mousedown`/`mousemove`/`mouseup`/`click`, `touchstart`/...) —
+   `pointer*` is their one modern spelling; the existing
+   `mouseover`/`mouseout` emissions stay.  `event.preventDefault()`
+   stays unported (gesture defaults are gated by options/flags, not
+   handlers; `originalEvent` keeps the DOM method) — recorded.  All
+   new element events bubble through the round-14.5 phase machinery.
+
+2. **Extensions are direct objects — no registry.**  No
+   `cytoscape.use`, no string registration, no global state: an
+   extension is an import the app passes in (tree-shakeable, typed).
+   Pass 1 designs the **layout contract** only; core/collection/
+   renderer extension points stay out (recorded: mappers +
+   predicates cover the common cases; revisit on demand).
+   - **Shape**: a layout impl implements
+     `{ run(ctx): void | Promise<void>, stop?(): void }`.
+     `cy.layout({ impl: Fcose, ...options })` (and
+     `eles.layout({ impl, ... })`) construct and run it through the
+     existing lifecycle — `layoutstart`/`layoutready`/`layoutstop`
+     on the core, `promiseOn`, `stop()`, the animate/fit plumbing;
+     `{ name }` keeps addressing builtins.
+   - **LayoutContext (`ctx`) is columnar-first**: slot-indexed reads
+     (a positions view, node iteration pre-filtered to unlocked
+     leaves per the round-14 rule, CSR adjacency, per-slot degree,
+     the scoped element list for subset layouts, bb/viewport
+     helpers, resolved options) and one bulk write —
+     `setPositions(slots, xy)` on the round-5 slot path (one dirty
+     span, listener-gated events) — plus the `layoutPositions`
+     finisher (spacingFactor/transform/animate/fit, v3 plumbing).
+     Handles stay reachable (`ctx.eles`) at handle cost; the
+     contract makes the columnar path the obvious one.
+   - Layout instances stay non-emitters (v4 layout events fire on
+     the core — the round-10 rule, recorded).
+
+**Pass split** (tests-first per item; docs in-commit):
+
+- [ ] **17.0 Docs-first** — this plan section + the README pointer.
+- [ ] **17.1 Pointer re-emits + tap family** — pointer.mts emits;
+  Playwright specs per event (mouse + touch drivers), Node specs
+  where the pointer state machine drives headless.
+- [ ] **17.2 Drag-state family** — grab/drag/free + `-on` variants
+  incl. drag companions; the exact v3 firing rules pinned red
+  first.
+- [ ] **17.3 Selection + hover-during-drag** — `tapselect`/
+  `tapunselect`, `tapdragover`/`tapdragout`,
+  `cxtdragover`/`cxtdragout`.
+- [ ] **17.4 Viewport gesture events** — `dragpan`, `scrollzoom`,
+  `pinchzoom` (incl. the trackpad ctrl+wheel path).
+- [ ] **17.5 The layout contract** — LayoutContext + `{ impl }`
+  plumbing on `cy.layout`/`eles.layout`; pinned by re-expressing
+  the `random` builtin through the public contract in specs, plus a
+  conformance suite external authors can crib.
+- [ ] **17.6 Example + true-up** — a worked example extension layout
+  in `debug/webgpu`; README design-decisions entries; PLAN true-up.
+
+**Risks tracked**: name-semantics divergence from v3 (red specs
+against v3-source readings per event, before implementation); emit
+volume on drag hot paths (all listener-gated; the 17.2 specs assert
+the no-listener fast path stays allocation-free); contract surface
+creep (pass 1 exposes only what random-via-contract and an
+fcose-shaped consumer demand).
+
+## Round 18 plan — GPU force layout (planned 2026-08-01)
+
+The last queue pillar: the round-9 "GPU layouts: logged for later"
+design, built.  Signed off 2026-08-01.
+
+**Signed-off design calls:**
+
+1. **A new GPU-native layout, `force`** — not a cose port (v3's
+   cose stays in v3: its option surface and per-iteration structure
+   are CPU-shaped, and ports arrive later via the round-17
+   contract).  The model: spring attraction along edges toward
+   `edgeLength`, short-range repulsion via a **uniform-grid cutoff**
+   (grid rebuilt per iteration by counting sort — the
+   stream-compaction discipline — repulsion gathered over the 3×3
+   cell neighborhood), a weak centering gravity that keeps
+   disconnected components in frame, velocity integration with
+   alpha cooling, and seeded deterministic initial scatter (id-hash,
+   the haystack precedent).  Force accumulation is **gather-only —
+   no atomics** — so a run is deterministic on a given executor
+   (fixed reduction order).
+2. **Ownership: GPU-authoritative with readback on settle** — the
+   round-9 logged design.  During a run the position column is
+   GPU-owned under the existing lease machinery (mirror skips
+   uploads; CPU reads stale per the motion-staleness rule); the sim
+   integrates in its own pre-cull pass so cull/edges/labels read
+   live positions and the graph **renders live every frame** — the
+   watchable-layout-at-100k showpiece.  On convergence (max
+   displacement < ε for K consecutive iterations) or `stop()`, one
+   readback settles the CPU columns — the sole readback exception
+   in the architecture, per the round-9 call — then derived
+   geometry flushes and `layoutstop` fires.
+3. **The CPU reference is the spec.**  A complete CPU implementation
+   (same options, same grid/cutoff math) runs headless instances
+   and is what the Node specs pin (seeded runs to fixed coordinates
+   on small graphs, energy decay under cooling, convergence,
+   locked-node pinning).  CPU and GPU trajectories are **not
+   bit-agreed** (recorded — parallel FP reduction order differs):
+   GPU correctness pins invariants instead — no NaN/exploded
+   positions, displacement decay, seeded summary statistics (edge
+   length distribution, bb extents) within tolerance of the CPU
+   run.
+4. **Demotions and scoping** (the 14.11 pattern): compound graphs
+   run the CPU executor (a GPU lease would leave the auto-bounds
+   derivation reading stale positions; leaves simulate, parents
+   derive per flush).  Locked nodes pin (skip integration).
+   Subset layouts (`eles.layout`) simulate the subset only;
+   non-members are inert (recorded).  Flat graphs at scale — the
+   perf case — take the GPU path.
+5. **Options surface** (minimal, consumed identically by both
+   executors): `edgeLength` (number, or a plain function evaluated
+   once into a per-edge column at start — the algorithms-round
+   rule), `repulsion`, `gravity`, `decay`, `iterations` (cap),
+   `threshold` (ε), `seed`, `randomize` (fresh seeded scatter vs
+   current positions), `animate` (`true` live | `false`
+   settle-then-draw), `fit`/`padding`.
+
+**Pass split** (tests-first per item; docs in-commit):
+
+- [ ] **18.0 Docs-first** — this plan section + the README pointer.
+- [ ] **18.1 CPU reference** — grid binning + forces + integrator +
+  convergence as a pure Node-testable module; seeded
+  fixed-coordinate pins, energy/convergence invariants, locked
+  pins, fn `edgeLength`.
+- [ ] **18.2 Layout plumbing** — `force` through the round-17
+  contract (its first production consumer): animate-live on the CPU
+  executor, events/promise/stop, compound/subset/headless rules.
+- [ ] **18.3 GPU kernels** — grid build (count/scan/scatter), force
+  gather, integrate; lease wiring (pre-cull pass slot, mirror
+  skip); Playwright on a real adapter: positions move on screen
+  while `position()` reads stale, then settle.
+- [ ] **18.4 Convergence + readback** — GPU displacement reduction
+  (per iteration batch, not per iteration), settle readback,
+  flushDerived + `layoutstop` ordering; the invariant parity suite
+  vs the CPU reference.
+- [ ] **18.5 Benchmarks + harness + true-up** — `?layout=force` in
+  debug/webgpu; renderer-benchmark scenario (25k/100k live-layout
+  fps + time-to-converge; v3 cose as the 25k baseline); README/PLAN
+  true-up.
+
+**Risks tracked**: pathological densities collapsing the grid (all
+nodes in one cell → O(n²) gather; cell-capacity clamp + jittered
+seeds, recorded); convergence-check cost (batched reduction);
+readback vs in-flight frames (reuse the pick-ring discipline);
+executor parameter drift (all constants resolved once, shared by
+both executors); interaction mid-run (grab during a layout follows
+the animation rule — grabbing is forbidden while an element's
+position is leased).

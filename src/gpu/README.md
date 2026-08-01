@@ -281,6 +281,21 @@ each is deliberate, not a pass-1 deferral:
   role classes played in v3 — user-defined state driving filtering and
   styling — belongs to the columnar `data()` sidecar (for state) plus
   mappers and predicates (for behaviour).
+- **No z-index in v4** (decided 2026-08-01).  Draw order is
+  structural — compound parent bodies, then edges, then leaf nodes,
+  then labels, slot order within a stream — and stays that way:
+  `z-index`, `z-compound-depth` and `z-index-compare` are not coming
+  to v4, and neither is a built-in grab-raise.  Element stacking is a
+  document/UI concept without a strong graph use case: node overlap
+  is a layout artifact rather than an authored arrangement, layered
+  emphasis is served structurally (overlay/underlay props, opacity
+  dimming), and v3 carried the prop triple at the cost of a
+  whole-scene comparator sort per frame.  Edges into child nodes stay
+  visible because parent bodies draw under all edges (the round-14
+  stream split).  If real demand for raise-above-the-crowd styling
+  ever appears, the logged extension is a single boolean elevated
+  tier (one extra batch per group) — never arbitrary integer
+  stacking.
 - **Style is `{ nodes, edges }`, no selector blocks and no style
   functions.**  Each key is a props object whose values are constants or
   mapper objects; all per-element variation is declarative (scales and
@@ -896,7 +911,8 @@ usual one-name-per-concept and geometry-tier calls): the four
 min-size bias props (the centered clamp instead; a future round may
 add per-side padding props), `compound-sizing-wrt-labels: 'include'`
 (labels are excluded from bb), `:parent:selected` restyling, and
-`z-compound-depth`/`z-index-compare` (the z-index round).
+`z-compound-depth`/`z-index-compare` (dropped outright with z-index,
+2026-08-01).
 
 Landed so far (round 14.1 — the hierarchy model): `parent` is a
 **first-class node field**, not sidecar data — like edge
@@ -1028,8 +1044,9 @@ padding band picks the parent.  Recorded deviations: parents are
 excluded from the early-z prepass (their interiors must not kill
 the edges/children drawn over them — they lose the occlusion
 benefit); parent ghost/underlay/overlay/label decorations keep
-their existing post-edge draw positions (deferred to the z-index
-round); and v4's parent boxes can sit sub-pixel smaller than v3's
+their existing post-edge draw positions (permanent since the
+2026-08-01 z-index drop — decorations are top-tier accents by
+design); and v4's parent boxes can sit sub-pixel smaller than v3's
 when children have borders — v3's node bb includes the border's
 miter-corner overshoot (~(√2−1)·border/2 per side on cornered
 shapes) while v4's child extents are the plain border-inclusive
@@ -1085,7 +1102,11 @@ geometry* tier — the tier every curved-edge family now ships under
 for cull/fit, exact lazy CPU eval for public `.bb()`, no readback);
 manual edge endpoints + haystack/straight-triangle landed as round
 12c (2026-07-30/31 — the round-12 curved-edges plan is complete), and
-GPU layouts remain logged for later.
+GPU layouts remain logged for later.  (2026-08-01: both are now
+scoped — multiline labels + label bb as round 16 and the GPU `force`
+layout as round 18, with background images as round 15 and the event
+vocabulary + extension contract as round 17; z-index is dropped
+outright.  Plans in PLAN.md, "Design sitting (2026-08-01)".)
 
 ## Benchmarks
 
@@ -1251,8 +1272,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   depth-asc/slot-asc order), then edges, then leaf nodes, then labels;
   within a stream draw order is slot order (≈ insertion order, but a
   reused slot draws at the recycled position).  A grabbed node does not
-  pop above later-inserted nodes.
-  Escape hatch: an optional `array<u32>` index-indirection pass later.
+  pop above later-inserted nodes.  **Permanent since 2026-08-01**:
+  z-index is dropped from v4 by decided design (see "Design
+  decisions" above), so draw order stays structural for good.
 - **Float32 positions**: ~7 significant digits of precision (pure-memcpy
   uploads are worth the trade at this stage).
 - **Pan-vs-grab is exact**: pointerdown does a synchronous CPU node pick
@@ -1364,10 +1386,10 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   interiors (skipping translucent fills/borders, LOD alpha and the AA
   fringe — output is pixel-identical), and edges depth-test against it so
   fragments under opaque nodes skip blending.  Depth values come from a
-  per-element **z-rank** (two ranks today: edges far, nodes near), which
-  is the same mechanism a future `z-index` pass would use — more ranks,
-  more batches; content ranked above merely loses the occlusion benefit,
-  never correctness.  The round-14 compound split took the batch route
+  per-element **z-rank** (two ranks today: edges far, nodes near), a
+  mechanism that could carry more ranks and batches if ever needed
+  (z-index itself is dropped by decided design — see above); content
+  ranked above merely loses the occlusion benefit, never correctness.  The round-14 compound split took the batch route
   instead of a rank: parent bodies draw in their own pre-edge stream and
   are excluded from the prepass (they must not occlude the edges and
   children drawn over them).  Nodes that can't occlude (translucent or
@@ -1553,7 +1575,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 - **Compound nodes** (round 14) — the deviations in one place (the
   round-14 paragraphs above carry the detail): parent decorations
   (ghost/underlay/overlay/labels) keep their post-edge draw
-  positions while parent *bodies* draw first (z-index round);
+  positions while parent *bodies* draw first (permanent — z-index
+  dropped 2026-08-01);
   parents are excluded from the early-z prepass; parent boxes can
   sit sub-pixel smaller than v3's with bordered children (no
   miter-corner overshoot in the child extents); `parent()` always

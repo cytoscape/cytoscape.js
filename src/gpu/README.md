@@ -1902,6 +1902,7 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   slot-stable tier — id blob, CSR adjacency, string dictionaries —
   self-compacts since round 11 (see the design decision above); what
   remains is moving live element slots so `highWater`, column capacity
-  and pass-iteration widths can shrink, which carries the open policy
-  calls (ref survival across a move, trigger, draw order) logged in
-  `PLAN.md` ("Logged — compaction").
+  and pass-iteration widths can shrink.  **The policy calls are made
+  and the round is planned** (PLAN.md "Round 19 plan", 2026-08-01):
+  forwarding + lazy ref repair, auto threshold + explicit
+  `cy.compact()`, stable draw order via a monotone remap.

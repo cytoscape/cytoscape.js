@@ -428,31 +428,68 @@
         // fps + wall time on the gpu side, v3's cose as the classic
         // baseline.  Layout quality differs by design; the numbers
         // compare the interactive experience of a live layout at scale.
-        async function forceLayoutScenario(){
+        // Both sides stop at the runner-supplied wall-clock cap (0 =
+        // uncapped): cose's per-iteration cost is superlinear in n, so a
+        // full numIter run at benchmark scale is hours — a capped run
+        // reports its elapsed time as a floor (timedOut: true), which
+        // already answers the interactive-experience question.  The cap
+        // is a requestAnimationFrame watchdog, not a setTimeout: cose's
+        // animate loop runs its iterations in synchronous blocks and
+        // Chromium starves timers under that jank (measured minutes late
+        // at 25k), while a rAF callback competes fairly with the
+        // layout's own frame loop.  The baseline also runs refresh: 1 so
+        // cose yields (and the watchdog checks) every iteration;
+        // overshoot is ≤ 1 iteration — the runner's bail covers
+        // iterations too long for even that (see render-bench.mjs).
+        function stopAtCap( l, t0, capMs ){
+          const state = { timedOut: false, rafId: 0, cancel: () => cancelAnimationFrame( state.rafId ) };
+
+          if( capMs > 0 ){
+            const watchdog = () => {
+              if( performance.now() - t0 >= capMs ){
+                state.timedOut = true;
+                l.stop();
+              } else {
+                state.rafId = requestAnimationFrame( watchdog );
+              }
+            };
+
+            state.rafId = requestAnimationFrame( watchdog );
+          }
+
+          return state;
+        }
+
+        async function forceLayoutScenario( capMs ){
           if( side === 'gpu' ){
             const framesBefore = cy.renderer().stats().frames;
             const t0 = performance.now();
-
-            await cy.layout( {
+            const l = cy.layout( {
               name: 'force', animate: true, seed: 1, iterations: 300, fit: false
-            } ).run().promise();
+            } );
+            const cap = stopAtCap( l, t0, capMs );
+
+            await l.run().promise();
+            cap.cancel();
 
             const wallMs = performance.now() - t0;
             const frames = cy.renderer().stats().frames - framesBefore;
 
-            return { wallMs, frames, fps: frames / ( wallMs / 1000 ) };
+            return { wallMs, frames, fps: frames / ( wallMs / 1000 ), timedOut: cap.timedOut };
           }
 
           const t0 = performance.now();
+          let cap;
 
           await new Promise( res => {
-            const l = cy.layout( { name: 'cose', animate: true, numIter: 300, fit: false } );
+            const l = cy.layout( { name: 'cose', animate: true, numIter: 300, refresh: 1, fit: false } );
 
-            l.on( 'layoutstop', res );
+            cap = stopAtCap( l, t0, capMs );
+            l.on( 'layoutstop', () => { cap.cancel(); res(); } );
             l.run();
           } );
 
-          return { wallMs: performance.now() - t0, frames: null, fps: null };
+          return { wallMs: performance.now() - t0, frames: null, fps: null, timedOut: cap.timedOut };
         }
 
         window.bench = {

@@ -7,6 +7,9 @@
 //
 //   npm run benchmark:gpu:renderer                 # all scenes
 //   npm run benchmark:gpu:renderer -- --scene gen  # filter by key/label
+//   npm run benchmark:gpu:renderer -- --layout     # live layout mode
+//                                                  # (+ --layout-uncapped
+//                                                  #  for full baseline runs)
 //   node --import tsx benchmark/gpu/render-bench.mjs --json out.json
 //                                                  # jobs bundle only
 //                                                  # (report.mjs --renderer)
@@ -48,7 +51,17 @@ const SCENES = [
 // live on the gpu side (fps + wall time to convergence) and v3's cose as
 // the classic baseline — layout quality differs by design; the numbers
 // compare the *interactive experience* of a live layout at scale.
+//
+// Layout runs are double-bounded by default, like test timeouts:
+// the page asks the layout to stop after LAYOUT_CAP_MS (reported as a
+// floor value), and if even that can't land — cose only yields between
+// iterations, and a single iteration at 100k nodes is ~50 min — the
+// runner bails at LAYOUT_BAIL_MS, force-closes the hung page and reports
+// "> bail".  --layout-uncapped removes both bounds to measure a full run.
 const LAYOUT_MODE = process.argv.includes( '--layout' );
+const LAYOUT_UNCAPPED = process.argv.includes( '--layout-uncapped' );
+const LAYOUT_CAP_MS = 30000; // polite stop — reports the measured floor
+const LAYOUT_BAIL_MS = 60000; // hard bail — must exceed the cap + one iteration
 
 const PAN_VIEWS = [
   [ 'fit-all', 'frame: pan fit-all' ],
@@ -146,15 +159,28 @@ const browser = await chromium.launch( {
   ]
 } );
 const context = await browser.newContext( { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 } );
-const page = await context.newPage();
 
+let page;
 let pageError = null;
 
-page.on( 'pageerror', err => { pageError = err; } );
+const openPage = async () => {
+  page = await context.newPage();
+  page.on( 'pageerror', err => { pageError = err; } );
 
-if( process.env.DEBUG ){ page.on( 'console', msg => console.log( `  [page] ${msg.text()}` ) ); }
+  if( process.env.DEBUG ){ page.on( 'console', msg => console.log( `  [page] ${msg.text()}` ) ); }
 
-await page.goto( `http://127.0.0.1:${port}/benchmark/gpu/render-bench.html` );
+  await page.goto( `http://127.0.0.1:${port}/benchmark/gpu/render-bench.html` );
+};
+
+// After a layout bail the page's main thread is wedged in a synchronous
+// layout iteration, so no in-page cleanup can run: close the hung page
+// from the browser process and start a fresh one.
+const recyclePage = async () => {
+  await page.close( { runBeforeUnload: false } ).catch( () => {} );
+  await openPage();
+};
+
+await openPage();
 
 const adapter = await page.evaluate( async () => {
   const a = await navigator.gpu?.requestAdapter();
@@ -220,9 +246,34 @@ for( const scene of scenes ){
       // --layout (round 18.5): live force to convergence instead of the
       // pan scenarios (v3 runs cose — the classic baseline experience)
       if( LAYOUT_MODE ){
-        const r = await step( 'forceLayoutScenario' );
+        // Two bounds unless --layout-uncapped (see the flag comment up
+        // top): the in-page cap asks the layout to stop at LAYOUT_CAP_MS,
+        // and the runner-side bail covers the case where the page can't
+        // even do that (a single synchronous iteration longer than the
+        // cap — cose at 100k measured ~52 min/iteration).
+        let bailed = false;
+        const run = step( 'forceLayoutScenario', LAYOUT_UNCAPPED ? 0 : LAYOUT_CAP_MS )
+          .catch( err => { if( !bailed ){ throw err; } return null; } );
+        let bailTimer = null;
+        const r = LAYOUT_UNCAPPED ? await run : await Promise.race( [
+          run,
+          new Promise( res => { bailTimer = setTimeout( () => res( 'bail' ), LAYOUT_BAIL_MS ); } )
+        ] );
 
-        console.log( `  ${side} live layout: ${r.wallMs.toFixed( 0 )} ms to converge` +
+        clearTimeout( bailTimer );
+
+        if( r === 'bail' ){
+          bailed = true;
+          console.log( `  ${side} live layout: > ${( LAYOUT_BAIL_MS / 1000 ).toFixed( 0 )} s — ` +
+            `bailed (--layout-uncapped measures the full run)` );
+          pushBench( groups, 'layout: live run to convergence', benchSide, oneShotStats( LAYOUT_BAIL_MS ) );
+          await recyclePage();
+          await step( 'loadScene', scene.page );
+          continue;
+        }
+
+        console.log( `  ${side} live layout: ${r.wallMs.toFixed( 0 )} ms to ` +
+          ( r.timedOut ? 'wall-clock cap (floor value — did not converge)' : 'converge' ) +
           ( r.fps != null ? `, ${r.fps.toFixed( 0 )} fps` : '' ) );
         pushBench( groups, 'layout: live run to convergence', benchSide, oneShotStats( r.wallMs ) );
 

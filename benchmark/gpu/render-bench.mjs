@@ -297,7 +297,7 @@ for( const scene of scenes ){
       if( side === 'gpu' ){
         const pick = await step( 'pickScenario' );
 
-        console.log( `  gpu pick: ${pick.latenciesMs.length} picks, p50 ${median( pick.latenciesMs ).toFixed( 1 )} ms (${pick.nulls} null)` );
+        console.log( `  gpu pick: ${pick.latenciesMs.length} picks, p50 ${median( pick.latenciesMs ).toFixed( 1 )} ms (${pick.nulls} background, ${pick.deferrals ?? 0} ring-deferred)` );
         pushBench( groups, 'pick: hover while panning', 'gpu', toStats( pick.latenciesMs ) );
       }
 

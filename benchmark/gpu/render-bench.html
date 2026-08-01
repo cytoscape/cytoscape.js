@@ -375,7 +375,12 @@
           const h = cy.height();
           const points = [ 0.3, 0.4, 0.5, 0.6, 0.7 ].map( f => ( { x: w * f, y: h * f } ) );
           const latencies = [];
-          let nulls = 0; // background answer or a dropped request — the API can't tell them apart
+          // nulls are *background* answers (probe points over empty space /
+          // decimated far-zoom edges): a saturated staging ring defers a
+          // request to a later frame — counted in stats().pickDeferrals —
+          // and never resolves it null
+          let nulls = 0;
+          const deferrals0 = cy.renderer().stats().pickDeferrals ?? 0;
           let dir = 1;
           let tick = 0;
           let lastPick = 0;
@@ -408,7 +413,11 @@
 
           if( pending != null ){ await pending; }
 
-          return { latenciesMs: latencies, nulls };
+          return {
+            latenciesMs: latencies,
+            nulls,
+            deferrals: ( cy.renderer().stats().pickDeferrals ?? 0 ) - deferrals0
+          };
         }
 
         async function exportPng(){

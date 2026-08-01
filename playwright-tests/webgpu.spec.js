@@ -321,6 +321,119 @@ test.describe( 'WebGPU renderer', () => {
     expect( result.deferrals ).toBeGreaterThanOrEqual( 0 ); // stat exists
   } );
 
+  test( 'slot compaction is a visual no-op and keeps picking + labels working (19.4)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const elements = [];
+
+    for( let i = 0; i < 30; i++ ){
+      elements.push( { data: { id: `x${i}` }, position: { x: -400 + i * 10, y: -200 } } );
+    }
+
+    elements.push(
+      { data: { id: 'a', name: 'alpha' }, position: { x: -60, y: 0 } },
+      { data: { id: 'b', name: 'beta' }, position: { x: 60, y: 0 } },
+      { data: { id: 'c' }, position: { x: -60, y: 80 } },
+      { data: { id: 'd' }, position: { x: 60, y: 80 } },
+      { data: { id: 'p' } },
+      { data: { id: 'k1', parent: 'p' }, position: { x: -20, y: -70 } },
+      { data: { id: 'k2', parent: 'p' }, position: { x: 30, y: -55 } },
+      { data: { id: 'ab1', source: 'a', target: 'b' } },
+      { data: { id: 'ab2', source: 'b', target: 'a' } },
+      { data: { id: 'cd', source: 'c', target: 'd' } }
+    );
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'label': { data: 'name' }, 'font-size': 12 },
+        edges: { 'width': 4, 'curve-style': 'bezier' }
+      },
+      renderer: { renderScaleMin: 1, renderScaleMax: 1 }
+    } );
+
+    const center = await centerPan( page );
+
+    await page.evaluate( () => {
+      window.cy.getElementById( 'a' ).select();
+
+      for( let i = 0; i < 30; i++ ){ window.cy.getElementById( `x${i}` ).remove(); }
+    } );
+    await waitFrames( page, 6 );
+
+    const before = ( await page.screenshot() ).toString( 'base64' );
+
+    const hw = await page.evaluate( () => {
+      window.cy._compact();
+
+      return {
+        nodes: window.cy._store.highWater( 'nodes' ),
+        edges: window.cy._store.highWater( 'edges' )
+      };
+    } );
+
+    expect( hw.nodes ).toBe( 7 ); // a b c d p k1 k2
+    expect( hw.edges ).toBe( 3 );
+
+    await waitFrames( page, 6 );
+
+    const after = ( await page.screenshot() ).toString( 'base64' );
+
+    expect( after ).toBe( before ); // stable draw order: a visual no-op
+
+    // picking answers through the moved slots (CPU node pick + GPU tile)
+    const picked = await page.evaluate( async center => {
+      const node = await window.cy.pick( center.x - 60, center.y );
+      const edge = await window.cy.pick( center.x, center.y + 80 );
+
+      return {
+        node: node == null ? null : node.id(),
+        edge: edge == null ? null : edge.id()
+      };
+    }, center );
+
+    expect( picked.node ).toBe( 'a' );
+    expect( picked.edge ).toBe( 'cd' );
+
+    // glyph runs rebuilt against the new owner slots
+    const glyphs = await page.evaluate( () => window.cy.renderer().stats().glyphs );
+
+    expect( glyphs ).toBeGreaterThan( 0 );
+  } );
+
+  test( 'a mid-flight animation survives a compaction and completes (19.4)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const elements = [];
+
+    for( let i = 0; i < 20; i++ ){
+      elements.push( { data: { id: `x${i}` }, position: { x: -300 + i * 10, y: -150 } } );
+    }
+
+    elements.push( { data: { id: 'a' }, position: { x: -100, y: 0 } } );
+
+    await makeReadyCy( page, { elements } );
+
+    const finalPos = await page.evaluate( async () => {
+      const cy = window.cy;
+      const played = cy.getElementById( 'a' )
+        .animation( { position: { x: 100, y: 0 }, duration: 500, easing: 'linear' } )
+        .play();
+
+      await new Promise( resolve => setTimeout( resolve, 150 ) );
+
+      for( let i = 0; i < 20; i++ ){ cy.getElementById( `x${i}` ).remove(); }
+
+      cy._compact(); // settles the GPU lease, repairs the tween's slots
+
+      await played;
+
+      return cy.getElementById( 'a' ).position();
+    } );
+
+    expect( finalPos ).toEqual( { x: 100, y: 0 } );
+  } );
+
   test( 'columnar elements load renders and picks', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

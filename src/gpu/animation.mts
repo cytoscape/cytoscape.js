@@ -372,7 +372,12 @@ export class Animation {
    * on-GPU); paint qualifies because nothing on the CPU reads it; geometry
    * style channels and the viewport do not.
    */
+  /** set when a slot compaction demoted this animation mid-flight: the
+   * rest of its run stays on the CPU (its GPU buffers held old slots) */
+  private _gpuBarred = false;
+
   get gpuEligible(): boolean {
+    if( this._gpuBarred ){ return false; }
     if( this.isViewport ){ return false; }
 
     if( this.position == null && this.style.length === 0 ){ return false; } // a bare delay
@@ -432,6 +437,28 @@ export class Animation {
 
     this.apply( this.easing( t ) );
     this.finish();
+  }
+
+  /**
+   * Leave the GPU path mid-flight without ending the animation (slot
+   * compaction, 19.4): write the exact value reached onto the CPU
+   * columns and keep ticking as a CPU tween — the device-side slot
+   * buffers held pre-compaction slots, and 19.3's repair re-points the
+   * CPU slot arrays.  The caller unregisters the GPU batch.
+   */
+  demoteGpu( now: number ): void {
+    this._gpuBarred = true;
+
+    if( this._done || this.gpuId == null ){ return; }
+
+    this.gpuId = null;
+    this.gpuDriven = false;
+
+    if( !this.started ){ this.capture(); this.started = true; }
+
+    const t = this.duration === 0 ? 1 : clamp01( ( now - ( this.startTime ?? now ) ) / this.duration );
+
+    this.apply( this.easing( t ) );
   }
 
   // -- internals --
@@ -662,10 +689,31 @@ export class AnimationManager {
   }
 
   /**
+   * Slot compaction (19.4): demote every GPU-driven animation to the CPU
+   * path — the device-side slot buffers hold pre-compaction slots.  Each
+   * writes the exact value it reached onto the CPU columns, unregisters
+   * its batch, and keeps running as a CPU tween (whose slot lists 19.3's
+   * `onCompacted` repair re-points).  Unlike `settleGpuAll` (the
+   * reparent path), the animation is *not* finished early.
+   */
+  demoteGpuAll(): void {
+    if( this.sink == null ){ return; }
+
+    for( const q of this.queues.values() ){
+      const ani = q[ 0 ];
+
+      if( ani?.gpuId != null ){
+        this.sink.unregister( ani.gpuId );
+        ani.demoteGpu( now() );
+      }
+    }
+  }
+
+  /**
    * Slot compaction (19.3): repair every queued animation's refs/slots
    * and re-key the per-element queues (keys pack the pre-move identity).
-   * GPU-driven animations were settled by the caller before the store
-   * compacted (`settleGpuAll`, the reparent precedent).
+   * GPU-driven animations were demoted to the CPU by the caller before
+   * the store compacted (`demoteGpuAll`).
    */
   onCompacted( store: GraphStore ): void {
     const next = new Map<number, Animation[]>();

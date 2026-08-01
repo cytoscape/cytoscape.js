@@ -92,6 +92,25 @@ export class GlyphBuffer {
   }
 
   /**
+   * Slot compaction (19.4): drop every run at once — the owner slots
+   * baked into the instances are stale wholesale, and an incremental
+   * rebuild would leave ghost ranges keyed by old slots (a moved
+   * element's stale run can alias a different element's new slot).  The
+   * store marks all labels dirty at compaction, so the next process()
+   * pass rebuilds the live runs against the new slots.
+   */
+  clear(): void {
+    if( this.highWater === 0 && this.ranges.size === 0 ){ return; }
+
+    this.ranges.clear();
+    this.garbage = 0;
+    this.highWater = 0;
+    this.dirtyStart = Infinity;
+    this.dirtyEnd = 0;
+    this.fullUpload = true;
+  }
+
+  /**
    * Replace (or clear, with null) a node's glyph run.  `glyphWords` is the
    * interleaved GLYPH_WORDS-per-glyph data (f32 fields bit-cast into u32).
    */

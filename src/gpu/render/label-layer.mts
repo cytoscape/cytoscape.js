@@ -58,6 +58,17 @@ export class LabelLayer {
       + this.sourceGlyphs.uploadedBytes + this.targetGlyphs.uploadedBytes;
   }
 
+  /** Slot compaction (19.4): every glyph instance's owner word went
+   * stale — drop all runs; the store marked every label dirty, so the
+   * next process() rebuilds them against the new slots.  The shaping
+   * memo survives (it keys on text/wrap params, not slots). */
+  onCompacted(): void {
+    this.glyphs.clear();
+    this.edgeGlyphs.clear();
+    this.sourceGlyphs.clear();
+    this.targetGlyphs.clear();
+  }
+
   /** Rebuild glyph runs for label-dirty elements and upload; no-op when clean. */
   process(): void {
     // a font change arrives with every labelled slot already label-dirty,

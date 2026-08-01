@@ -182,6 +182,8 @@ export class Renderer {
   private pickFrameData: Float32Array;
   private needsRedraw: boolean;
   private inFlightFrames: number;
+  /** the store compaction epoch this renderer last synced against (19.4) */
+  private seenCompactEpoch = 0;
   private labelLayer: LabelLayer | null;
   private onFontsLoadingDone: ( () => void ) | null = null;
   /** wired by the factory: an external device loss hands recovery to the core */
@@ -335,6 +337,12 @@ export class Renderer {
     this.applySize();
     this.needsRedraw = true;
     this.schedule();
+  }
+
+  /** True while a GPU force-layout run owns the position column (18.3) —
+   * a slot compaction must defer rather than move slots under the sim. */
+  forceActive(): boolean {
+    return this.forceRuntime != null && !this.forceRuntime.converged();
   }
 
   /** Force a redraw on the next frame (the loop is otherwise render-on-dirty). */
@@ -1056,6 +1064,15 @@ export class Renderer {
     // unconditional: a sheet change reconfigures on the next frame even
     // when the store itself is clean
     this.mapperRuntime?.update( delta ?? EMPTY_DELTA );
+
+    // slot compaction (19.4): glyph owner words are stale wholesale —
+    // drop every run before the rebuild pass below (the store marked all
+    // labels dirty at compaction); the column mirror handles its own
+    // capacity change, and `resized` already invalidated the pick cache
+    if( store.compactEpoch !== this.seenCompactEpoch ){
+      this.seenCompactEpoch = store.compactEpoch;
+      this.labelLayer?.onCompacted();
+    }
 
     this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
 

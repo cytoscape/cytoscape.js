@@ -50,6 +50,8 @@ export interface RendererLike {
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
+  /** true while a GPU force-layout run owns the position column (18.3) */
+  forceActive(): boolean;
   exportImage( options: GpuExportOptions ): Promise<{ data: Uint8ClampedArray<ArrayBuffer>; width: number; height: number }>;
 }
 
@@ -246,7 +248,17 @@ export class GpuCore {
       throw new Error( 'Can not compact inside a batch' );
     }
 
-    this._animations.settleGpuAll();
+    if( this._renderer?.forceActive() ){
+      // the sim owns node.position on-device (the 18.3 lease); moving
+      // slots under it would scatter the integrator's writes — defer
+      console.warn( 'Deferring slot compaction: a GPU force layout is running' );
+
+      return;
+    }
+
+    // GPU-driven tweens leave the device (their slot buffers hold the
+    // old slots) but keep running on the CPU with repaired slot lists
+    this._animations.demoteGpuAll();
 
     const result = this._store.compact();
 

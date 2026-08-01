@@ -2,8 +2,10 @@
 // Playwright, replaying the interactions behind PLAN.md's recorded
 // renderer numbers — continuous-pan steady state (fit-all / zoomed-in
 // 20× / far-zoom, labels off and on), hover-while-panning pick latency,
-// and one-shot costs (init, columnar init, full png export) — for the v3
-// canvas renderer and the v4 WebGPU renderer on the same scenes.
+// one-shot costs (init, columnar init, full png export), and the
+// round-19 compaction scenario (gpu only: peak-slot pan vs compacted
+// pan) — for the v3 canvas renderer and the v4 WebGPU renderer on the
+// same scenes.
 //
 //   npm run benchmark:gpu:renderer                 # all scenes
 //   npm run benchmark:gpu:renderer -- --scene gen  # filter by key/label

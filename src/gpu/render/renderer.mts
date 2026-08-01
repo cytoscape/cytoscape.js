@@ -312,6 +312,7 @@ export class Renderer {
     this.onViewport = () => {
       this.needsRedraw = true;
       this.picking?.invalidateCache(); // cached pick tile is in device px
+      this.schedulePromotionCheck(); // svg zoom-promotion meter (15.6)
       this.schedule();
     };
     cy.on( 'viewport', this.onViewport );
@@ -385,6 +386,11 @@ export class Renderer {
     this.imageArrays?.destroy();
     this.imageArrays = null;
     this.cy._store.images.setDecoder( null ); // headless again on unmount
+
+    if( this.imagePromoteTimer != null ){
+      clearTimeout( this.imagePromoteTimer );
+      this.imagePromoteTimer = null;
+    }
     this.parentOrderBuf?.destroy();
     this.parentOrderBuf = null;
     this.parentOrderRef = null;
@@ -527,10 +533,106 @@ export class Renderer {
 
     const view = this.computeExportView( opts );
 
+    // 15.6: a high-scale export can demand resolution the screen never
+    // did — re-raster vector images at the export scale and wait for
+    // the decodes (bounded), so the WYSIWYG figure is crisp
+    if( this.cy._store.imageCount() > 0 ){
+      this.promoteVectors( view.zoom, false );
+
+      if( this.cy._store.images.busy() ){
+        await Promise.race( [
+          this.cy._store.images.whenSettled(),
+          new Promise<void>( resolve => setTimeout( resolve, 2000 ) )
+        ] );
+        // let the fresh rasters upload before the export frame encodes
+        this.imageArrays?.sync( this.cy._store.images );
+      }
+    }
+
     return new Promise( ( resolve, reject ) => {
       this.pendingExports.push( { view, resolve, reject } );
       this.schedule();
     } );
+  }
+
+  private imagePromoteTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Debounced svg zoom-promotion check (15.6): runs shortly after the
+   * viewport settles, never per wheel tick. */
+  private schedulePromotionCheck(): void {
+    if( this.cy._store.imageCount() === 0 ){ return; }
+
+    if( this.imagePromoteTimer != null ){ clearTimeout( this.imagePromoteTimer ); }
+
+    this.imagePromoteTimer = setTimeout( () => {
+      this.imagePromoteTimer = null;
+
+      if( !this.destroyed && this.isReady ){ this.promoteVectors(); }
+    }, 250 );
+  }
+
+  /**
+   * The demand meter (15.6): per unique *vector* rgba entry, the max
+   * on-screen device-px demand among its visible user nodes; entries
+   * whose demand exceeds their raster by 1.5x re-raster at the covering
+   * tier (registry.promote snaps and clamps; raster sources never
+   * promote).  Runs on viewport settles, fresh uploads, and — with the
+   * export scale and no viewport test — before image exports.
+   */
+  private promoteVectors( zoomDprOverride?: number, checkViewport: boolean = true ): void {
+    const store = this.cy._store;
+
+    if( store.imageCount() === 0 ){ return; }
+
+    const registry = store.images;
+    const zoomDpr = zoomDprOverride ?? ( this.frameData[ 4 ] || 1 );
+    const refs = store.column( 'node.imageRef' ) as Uint32Array;
+    const sizes = store.column( 'node.size' ) as Float32Array;
+    const positions = store.column( 'node.position' ) as Float32Array;
+    const flags = store.column( 'node.flags' ) as Uint32Array;
+    const high = store.highWater( 'nodes' );
+    const panX = this.frameData[ 2 ], panY = this.frameData[ 3 ];
+    const vw = this.frameData[ 0 ], vh = this.frameData[ 1 ];
+    const demand = new Map<number, number>();
+
+    for( let slot = 0; slot < high; slot++ ){
+      if( refs[ slot ] === 0 ){ continue; }
+      if( ( flags[ slot ] & 3 ) !== 3 ){ continue; } // SHOWN = ALIVE | VISIBLE
+
+      const sizePx = Math.max( sizes[ slot * 2 ], sizes[ slot * 2 + 1 ] ) * zoomDpr;
+
+      if( checkViewport ){
+        const x = positions[ slot * 2 ] * zoomDpr + panX;
+        const y = positions[ slot * 2 + 1 ] * zoomDpr + panY;
+
+        if( x < -sizePx || x > vw + sizePx || y < -sizePx || y > vh + sizePx ){ continue; }
+      }
+
+      const recs = store.nodeImagesAt( slot );
+
+      if( recs == null ){ continue; }
+
+      for( const rec of recs ){
+        if( rec.sdf ){ continue; } // icons re-threshold; no promotion
+
+        const entry = registry.get( rec.entryId );
+
+        if( entry == null || !entry.vector ){ continue; }
+
+        const prev = demand.get( rec.entryId );
+
+        if( prev == null || sizePx > prev ){ demand.set( rec.entryId, sizePx ); }
+      }
+    }
+
+    for( const [ id, px ] of demand ){
+      const entry = registry.get( id );
+
+      // 1.5x hysteresis: wheel jitter never thrashes re-rasters
+      if( entry != null && px > entry.rasterPx * 1.5 ){
+        registry.promote( id, px );
+      }
+    }
   }
 
   /** Resolve the export options to output dimensions + Frame transform. */
@@ -925,8 +1027,12 @@ export class Renderer {
     this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
 
     // background images (15.3): reclaim freed layers, upload rasters that
-    // landed since the last frame (+ their mip chains, own submits)
-    this.imageArrays?.sync( store.images );
+    // landed since the last frame (+ their mip chains, own submits).
+    // Fresh uploads re-check the promotion meter — a graph built while
+    // already zoomed in promotes its vectors on arrival (15.6).
+    if( this.imageArrays != null && this.imageArrays.sync( store.images ) > 0 ){
+      this.schedulePromotionCheck();
+    }
 
     // pick pass first, in its own submit: a tiny cursor-centered tile whose
     // readback maps as soon as it executes, never queued behind a scene draw

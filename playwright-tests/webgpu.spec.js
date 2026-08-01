@@ -1530,6 +1530,36 @@ test.describe( 'WebGPU renderer', () => {
     }
 
     expect( ratio ).toBeLessThanOrEqual( 0.001 );
+
+    // second phase (round 15.6): the same pin with background images in
+    // the scene — the export path shares the image pass and, at scale 1,
+    // promotion no-ops, so the pixels must still agree exactly
+    await page.evaluate( () => {
+      const quad = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg==';
+
+      window.cy.style( {
+        nodes: {
+          'width': 60, 'height': 60, 'shape': 'round-rectangle',
+          'background-color': '#c0392b', 'border-width': 4, 'border-color': '#2c3e50',
+          'background-image': quad, 'background-fit': 'contain',
+          'label': { data: 'id' }, 'font-size': 14, 'color': '#222'
+        },
+        edges: { 'width': 3, 'line-color': '#7f8c8d', 'target-arrow-shape': 'triangle' }
+      } );
+    } );
+    await page.waitForFunction( () => window.cy._store.images.pendingCount() === 0 );
+    await waitFrames( page, 4 );
+
+    const uri2 = await page.evaluate( () => window.cy.png( { bg: '#ffffff' } ) );
+    const actual2 = decodePng( uri2 );
+    const expected2 = decodePng( await page.screenshot( { clip } ) );
+    const imaged = diffPngs( actual2, expected2, { threshold: 0.1 } );
+
+    if( imaged.ratio > 0.001 ){
+      writeDiffArtifacts( testInfo.outputPath( '' ), 'wysiwyg-imaged', actual2, expected2, imaged.diff );
+    }
+
+    expect( imaged.ratio, 'imaged WYSIWYG self-diff' ).toBeLessThanOrEqual( 0.001 );
   } );
 
   test( 'font-family change re-rasters the atlas and re-lays-out labels live', async ( { page } ) => {

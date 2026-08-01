@@ -1678,8 +1678,10 @@ test.describe( 'WebGPU visual goldens', () => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 
     // a solid square: its vertical edge gives a clean scanline transition
-    // to measure.  At zoom 6 a 128px raster stretches ~3x (soft ramp);
-    // the sdf field re-thresholds at screen resolution (~1px ramp).
+    // to measure.  The sdf path (an svg square) re-thresholds at screen
+    // resolution (~1px ramp); the rgba contrast uses a 32px *raster*
+    // square — raster sources never promote (source resolution is the
+    // ceiling), so at zoom 6 its edge smears across several px.
     // background-image-type is constants-only, so the same node restyles
     // between the two exports.
     await makeReadyCy( page, {
@@ -1691,15 +1693,17 @@ test.describe( 'WebGPU visual goldens', () => {
 
     const styleWith = async type => {
       await page.evaluate( type => {
-        const square = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        const svgSquare = 'data:image/svg+xml;utf8,' + encodeURIComponent(
           `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>` +
           `<rect x='6' y='6' width='20' height='20'/></svg>` );
+        // the same square as a 32px raster png (transparent margins)
+        const pngSquare = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAP0lEQVR4Ae3BsQ2AQADEsHz23xkWgA4pBWcz83uHdxffOjyQmMQkJjGJSUxiEpOYxCQmMYlJTGISk5jEZGZiN04cASgO7jz2AAAAAElFTkSuQmCC';
 
         window.cy.style( {
           nodes: {
             'width': 30, 'height': 30, 'shape': 'rectangle',
             'background-color': '#ffffff',
-            'background-image': square,
+            'background-image': type === 'sdf-icon' ? svgSquare : pngSquare,
             'background-fit': 'contain',
             'background-image-type': type,
             'background-image-color': '#000000'
@@ -1736,6 +1740,100 @@ test.describe( 'WebGPU visual goldens', () => {
 
     expect( sdfRamp, 'sdf edge transition (px)' ).toBeLessThanOrEqual( 2 );
     expect( rgbaRamp, 'rgba edge transition (px)' ).toBeGreaterThanOrEqual( 3 );
+  } );
+
+  // shared scanline-ramp measure for the 15.6 promotion specs
+  const rampOf = png => {
+    const y = Math.round( png.height / 2 );
+    let run = 0;
+    let best = 0;
+
+    for( let x = 0; x < png.width; x++ ){
+      const v = png.data[ ( y * png.width + x ) * 4 ];
+
+      if( v > 30 && v < 225 ){ run++; best = Math.max( best, run ); }
+      else { run = 0; }
+    }
+
+    return best;
+  };
+
+  const SQUARE_SVG_STYLE = {
+    'width': 30, 'height': 30, 'shape': 'rectangle',
+    'background-color': '#ffffff',
+    'background-fit': 'contain',
+    'background-image-color': '#000000'
+  };
+
+  test( 'svg images re-raster to a higher tier after zooming in (round 15.6)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: { 'width': 30, 'height': 30 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await page.evaluate( style => {
+      const square = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>` +
+        `<rect x='6' y='6' width='20' height='20'/></svg>` );
+
+      window.cy.style( { nodes: { ...style, 'background-image': square } } );
+    }, SQUARE_SVG_STYLE );
+    await waitForImages( page );
+
+    // at zoom 1 the 32px intrinsic raster suffices
+    const before = await page.evaluate( () => {
+      const entry = window.cy._store.images.get( 0 );
+
+      return { rasterPx: entry.rasterPx, vector: entry.vector };
+    } );
+
+    expect( before.vector ).toBe( true );
+    expect( before.rasterPx ).toBeLessThanOrEqual( 128 );
+
+    // zoom in: demand 30 * 6 = 180 px -> the meter re-rasters at 512
+    await page.evaluate( () => window.cy.zoom( 6 ) );
+    await page.waitForFunction( () => window.cy._store.images.get( 0 ).rasterPx >= 512 );
+    await page.waitForFunction( () => window.cy._store.images.pendingCount() === 0 );
+    await waitFrames( page, 6 );
+
+    const png = decodePng( await exportPng( page, { bg: '#fff' } ) );
+
+    // the promoted raster keeps the edge tight where the 32px original
+    // would have smeared ~6px
+    expect( rampOf( png ), 'edge ramp after promotion (px)' ).toBeLessThanOrEqual( 3 );
+  } );
+
+  test( 'png export re-rasters svg images at the export scale (round 15.6)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: { 'width': 30, 'height': 30 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await page.evaluate( style => {
+      const square = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'>` +
+        `<rect x='6' y='6' width='20' height='20'/></svg>` );
+
+      window.cy.style( { nodes: { ...style, 'background-image': square } } );
+    }, SQUARE_SVG_STYLE );
+    await waitForImages( page );
+
+    // the screen never demanded more than 30px — the export must
+    // promote for its own scale before encoding (WYSIWYG at scale)
+    const uri = await page.evaluate( async () => await window.cy.png( { bg: '#fff', scale: 6 } ) );
+    const promoted = await page.evaluate( () => window.cy._store.images.get( 0 ).rasterPx );
+
+    expect( promoted ).toBeGreaterThanOrEqual( 512 );
+
+    const png = decodePng( uri );
+
+    expect( rampOf( png ), 'export edge ramp (px)' ).toBeLessThanOrEqual( 3 );
   } );
 
 } );

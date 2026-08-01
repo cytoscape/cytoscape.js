@@ -87,6 +87,9 @@ export class ImageRegistry {
   private freedQueue: number[] = [];
   private warned = new Set<string>();
   private tiers: readonly number[];
+  /** decodes in flight (initial and promotion re-rasters alike) */
+  private inFlight = 0;
+  private settleResolvers: ( () => void )[] = [];
 
   /** fires when any entry changes state (ready, failed, freed) — the
    * store routes it to the dirty scheduler so a frame redraws */
@@ -213,6 +216,31 @@ export class ImageRegistry {
     return this.byKey.size;
   }
 
+  /** true while any decode (initial or promotion) is in flight */
+  busy(): boolean {
+    return this.inFlight > 0;
+  }
+
+  /** Resolves once no decode is in flight (immediately when idle) —
+   * the export path awaits this after promoting at export scale (15.6). */
+  whenSettled(): Promise<void> {
+    if( this.inFlight === 0 ){ return Promise.resolve(); }
+
+    return new Promise( resolve => { this.settleResolvers.push( resolve ); } );
+  }
+
+  private settle(): void {
+    this.inFlight--;
+
+    if( this.inFlight === 0 && this.settleResolvers.length > 0 ){
+      const resolvers = this.settleResolvers;
+
+      this.settleResolvers = [];
+
+      for( const resolve of resolvers ){ resolve(); }
+    }
+  }
+
   pendingCount(): number {
     let n = 0;
 
@@ -233,7 +261,10 @@ export class ImageRegistry {
       sdf
     };
 
+    this.inFlight++;
     this.decoder( entry.url, opts ).then( decoded => {
+      this.settle();
+
       // dropped if the entry was freed (or recycled) while in flight
       if( this.entries[ entry.id ] !== entry ){ return; }
 
@@ -247,6 +278,8 @@ export class ImageRegistry {
       this.readyQueue.push( entry.id );
       this.onChange?.();
     }, ( err: unknown ) => {
+      this.settle();
+
       if( this.entries[ entry.id ] !== entry ){ return; }
 
       if( !this.warned.has( entry.url ) ){

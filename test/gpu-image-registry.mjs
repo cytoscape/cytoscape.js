@@ -238,6 +238,43 @@ describe('gpu/render: image registry (round 15.1)', function(){
     expect( decoder.calls.length ).to.equal( callsBefore );
   });
 
+  it('tracks in-flight decodes and settles (15.6)', async function(){
+    const resolvers = [];
+    const reg = new ImageRegistry();
+
+    // idle registries settle immediately
+    let settledEarly = false;
+
+    reg.whenSettled().then( () => { settledEarly = true; } );
+    await tick();
+    expect( settledEarly ).to.equal( true );
+
+    reg.setDecoder( () => new Promise( resolve => { resolvers.push( resolve ); } ) );
+
+    const id = reg.acquire( 'slow.svg', IMAGE_KIND_AUTO );
+
+    expect( reg.busy() ).to.equal( true );
+
+    let settled = false;
+
+    reg.whenSettled().then( () => { settled = true; } );
+    await tick();
+    expect( settled ).to.equal( false );
+
+    resolvers[ 0 ]( { data: {}, width: 32, height: 32, vector: true } );
+    await tick();
+    expect( reg.busy() ).to.equal( false );
+    expect( settled ).to.equal( true );
+
+    // promotion re-decodes count as busy too
+    reg.promote( id, 400 );
+    expect( reg.busy() ).to.equal( true );
+
+    resolvers[ 1 ]( { data: {}, width: 512, height: 512, vector: true } );
+    await tick();
+    expect( reg.busy() ).to.equal( false );
+  });
+
   it('fires onChange on ready and on free', async function(){
     let changes = 0;
     const reg = new ImageRegistry();

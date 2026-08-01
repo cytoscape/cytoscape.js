@@ -1207,6 +1207,22 @@ records).  Landed so far:
   `images-sdf-icons` golden and a crispness spec: at zoom 6 the
   sdf edge ramps ≤ 2 px where the rgba path ramps ≥ 3.
 
+- **15.6 — svg zoom-promotion + export re-raster**: vector sources
+  have no native resolution, so a fixed raster is v4's artifact —
+  the renderer meters each unique svg entry's max on-screen demand
+  (shown, in-viewport users; debounced 250 ms behind viewport
+  events; re-checked when uploads land) and re-rasters at the
+  smallest covering tier once demand exceeds the current raster by
+  1.5× (hysteresis).  Momentary softness self-corrects — the
+  late-font precedent — and promotion ends at the cap tier
+  (recorded blur past it); raster sources never promote, and there
+  is no demotion (the waste policy reclaims; recorded).
+  `png()`/`jpg()` promote at the *export* scale and await the
+  decodes before encoding, so a high-scale figure is crisp even
+  when the screen never demanded it; at scale 1 promotion no-ops
+  and the WYSIWYG self-diff (now with an imaged phase) still
+  pixel-matches the screen.
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each

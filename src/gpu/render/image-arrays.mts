@@ -239,15 +239,19 @@ export class ImageArrays {
 
   /**
    * Drain the registry's freed and ready queues: reclaim layers, upload
-   * new rasters into their tier layers (+ mip chain), refresh table rows.
+   * new rasters into their tier layers (+ mip chain), refresh table
+   * rows.  Returns the upload count (the promotion meter re-checks on
+   * fresh arrivals, 15.6).
    */
-  sync( registry: ImageRegistry ): void {
-    if( this.destroyed ){ return; }
+  sync( registry: ImageRegistry ): number {
+    if( this.destroyed ){ return 0; }
 
     for( const id of registry.takeFreed() ){
       this.alloc.free( id );
       this.writeTableRow( id, [ 0, 0, 0, 0 ] );
     }
+
+    let uploaded = 0;
 
     for( const id of registry.takeReady() ){
       const entry = registry.get( id );
@@ -259,7 +263,11 @@ export class ImageArrays {
       } else {
         this.uploadRgba( id, entry );
       }
+
+      uploaded++;
     }
+
+    return uploaded;
   }
 
   destroy(): void {

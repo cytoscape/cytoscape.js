@@ -4025,10 +4025,28 @@ below signed off in the 2026-08-01 sitting.
   raster ramps ≥ 3 px (the same node restyled between exports,
   since `background-image-type` is constants-only — recorded).
   2083 Node tests, 126/126 Playwright, typecheck + lint clean.
-- [ ] **15.6 SVG zoom-promotion + export re-raster** — demand meter
-  + hysteresis + async tier swap; Playwright: zoom in → sharper
-  after settle, `png({ scale })` re-rasters; the WYSIWYG self-diff
-  extended to an imaged scene.
+- [x] **15.6 SVG zoom-promotion + export re-raster** (2026-08-01) —
+  the demand meter: per unique *vector* entry, the max on-screen
+  device-px demand among its shown, in-viewport user nodes (one
+  scan over the imageRef column), debounced 250 ms behind viewport
+  events and re-checked when fresh uploads land (a graph built
+  zoomed-in promotes on arrival); demand > raster × 1.5 (the
+  hysteresis — wheel jitter never thrashes) calls
+  `registry.promote`, which snaps to the covering tier and clamps
+  at the cap.  No demotion — the round-11 waste policy is the
+  eventual reclaimer (recorded simplification).  **Exports
+  re-raster**: `exportImage` promotes at the export view's
+  zoomDpr (no viewport test) and awaits `registry.whenSettled()`
+  (bounded 2 s; in-flight tracking landed in the registry with its
+  own Node specs), syncing the fresh rasters before the export
+  frame encodes.  Fix fallout caught by the suite: the 15.5
+  crispness spec's rgba contrast switched to a *raster* square —
+  the meter (correctly) sharpened its auto SVG.  Pins: zoom 6 →
+  rasterPx ≥ 512 + edge ramp ≤ 3 px after settle; `png({ scale: 6 })`
+  promotes and exports crisp while the screen never demanded it;
+  the WYSIWYG self-diff gained an imaged phase (scale-1 exports
+  still pixel-match the screen).  2084 Node tests, 128/128
+  Playwright, typecheck + lint clean.
 - [ ] **15.7 LOD + benchmark + true-up** — `imageMinPx`; a
   `gen-25k-images` renderer-benchmark scene (icon-per-type via a
   data mapper); README/PLAN true-up.

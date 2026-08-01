@@ -21,6 +21,13 @@ auto-sized parents materialized into the columnar model,
 parents-under-descendants draw order, ancestor-gated visibility and
 rendered effective opacity, ported event bubbling, a `parents` sheet
 group with structural query/case terms, and compound loop edges.
+Rounds 15–18 (2026-08-01) closed the design queue: **background
+images** (tiered texture arrays + mips, SVG zoom-promotion, the SDF
+icon mode, multi-image parity), **multiline labels + label bounding
+boxes** (the wrap family; labels join bb/fit by default),
+the **event vocabulary + extension contract** (the curated set +
+pointer events; registry-free layouts), and the **GPU force layout**
+(CPU reference + on-device integrator under the position lease).
 The existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
@@ -62,8 +69,11 @@ plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 `onRender`/`offRender`; delegation via predicate functions), graph
 manipulation, `style()` (the `{ nodes, edges, parents, core }`
 sheet), `layout()`/
-`makeLayout` (grid, preset, circle, concentric, breadthfirst, random —
-plus `eles.layout()` for subset scopes and the v3 `layoutPositions`
+`makeLayout` (grid, preset, circle, concentric, breadthfirst, random,
+and — round 18 — the GPU-capable `force`; plus the round-17
+**extension contract**: `cy.layout({ impl })` runs a user layout
+class/object with no registry — plus `eles.layout()` for subset
+scopes and the v3 `layoutPositions`
 plumbing with spacingFactor/transform/animate — an animated layout
 fits by animating the viewport to the box at the *final* positions,
 concurrently with the node tweens), `pick()`, `png()`/`jpg()` (async image
@@ -71,8 +81,9 @@ export — see the design decisions below),
 `renderer()`/`forceRender()`/`resize()`, graph-level
 `data()`/`scratch()`, batching (`startBatch`/`endBatch`/`batch`/
 `batchData`/`batching` — see below), `json()` (export-only),
-box selection (`elementsInBox` + the pointer gesture) and
-`selectionType`, interaction gating
+box selection (`elementsInBox` + the pointer gesture),
+`selectionType` and `boxSelectionIncludesLabels` (round 16.5),
+interaction gating
 (`autolock`/`autoungrabify`/`autounselectify`,
 `panningEnabled`/`zoomingEnabled` + `user*` variants,
 `boxSelectionEnabled`), introspection (`instanceString`, `isReady`,
@@ -105,7 +116,11 @@ in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
 `show`/`hide`, `data()`/`scratch()`/`json()`, `label()` (read-only),
 read-only style getters (`style`/`css`, `renderedStyle`,
 `numericStyle`, `effectiveOpacity`/`transparent`/`takesUpSpace`/
-`interactive` — see below), and graph algorithms (round 10, growing):
+`interactive` — see below), `boundingBox({ includeLabels })` +
+`labelBoundingBox()` (round 16.4), the `background-image` family
+(round 15) and the wrap family (round 16) in the sheet, the round-17
+event vocabulary (pointer*/tap*/grab-drag-free families, viewport
+gestures), and graph algorithms (round 10, growing):
 `bfs`/`dfs` (+ long aliases), `dijkstra`, `aStar`, `bellmanFord`,
 `floydWarshall`, `kruskal`, `tarjanStronglyConnected` (+`tsc` etc.,
 iterative — deep graphs cannot overflow the JS stack),
@@ -982,7 +997,8 @@ each is deliberate, not a pass-1 deferral:
   affordances (shader hover/active brighten, the accent ring, the DOM
   selection box) as the styled defaults.  *Deferred*:
   `text-metrics`/`box-select-labels` get their v4 form in the
-  multiline/label-bb round.
+  multiline/label-bb round.  (Since landed, round 16.4/16.5:
+  `eles.labelBoundingBox()` and `boxSelectionIncludesLabels`.)
 
 `data()`: element data lives in a **columnar sidecar** — per-(group, key)
 columns, not per-element objects: numbers as Float64Array, strings
@@ -1038,7 +1054,9 @@ the deviations list below.  v3 compound surface *not* ported (the
 usual one-name-per-concept and geometry-tier calls): the four
 min-size bias props (the centered clamp instead; a future round may
 add per-side padding props), `compound-sizing-wrt-labels: 'include'`
-(labels are excluded from bb), `:parent:selected` restyling, and
+(compound auto-sizing reads child body extents, not labels — the
+reason narrowed by round 16.4, which put labels into public bb/fit),
+`:parent:selected` restyling, and
 `z-compound-depth`/`z-index-compare` (dropped outright with z-index,
 2026-08-01).
 
@@ -1143,8 +1161,10 @@ group and are constants-only: `padding` (px, or `'N%'` of the
 children bb per `padding-relative-to`: width | height | average |
 min | max), `min-width`/`min-height` (the centered clamp), and
 `compound-sizing-wrt-labels`, where `'exclude'` is the only
-accepted value (`'include'` throws — labels are excluded from
-bounding boxes in v4; recorded).  Compound props throw outside the
+accepted value (`'include'` throws — compound auto-sizing reads
+the children's *body* extents, not their labels; since round 16.4
+public bb/fit do include labels, but the auto-bounds derivation
+deliberately does not — recorded).  Compound props throw outside the
 parents group.  Readback answers from the per-parent record
 (`style('padding')` returns the declared px number or the percent
 string; leaves read 0, as v3 leaves do).  The v3 `:parent:selected`
@@ -1224,17 +1244,15 @@ pick order and the position write shifts the subtree; dragging a
 selected parent together with its selected child moves the child
 exactly once (the collection shift dedupe).
 
-Multiline labels remain a v4 direction in the *expensive GPU-computed
-geometry* tier — the tier every curved-edge family now ships under
-(rounds 12a/12b: dual CPU/WGSL implementations, conservative CPU bound
-for cull/fit, exact lazy CPU eval for public `.bb()`, no readback);
-manual edge endpoints + haystack/straight-triangle landed as round
-12c (2026-07-30/31 — the round-12 curved-edges plan is complete), and
-GPU layouts remain logged for later.  (2026-08-01: both are now
-scoped — multiline labels + label bb as round 16 and the GPU `force`
-layout as round 18, with background images as round 15 and the event
-vocabulary + extension contract as round 17; z-index is dropped
-outright.  Plans in PLAN.md, "Design sitting (2026-08-01)".)
+Manual edge endpoints + haystack/straight-triangle landed as round
+12c (2026-07-30/31 — the round-12 curved-edges plan is complete).
+The 2026-08-01 design sitting dropped z-index outright and scoped
+rounds 15–18, **all landed the same day**: background images (15),
+multiline labels + label bounding boxes (16 — closing the multiline
+direction), the event vocabulary + extension contract (17), and the
+GPU `force` layout (18 — closing the round-9 "GPU layouts: logged"
+hook).  Their sections above and the PLAN.md records carry the
+detail.
 
 ## Background images (round 15, landing)
 
@@ -1693,7 +1711,10 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   midpoint, following endpoint moves on-GPU; horizontal by default, or
   rotated to the edge's angle with `text-rotation: autorotate`, never
   upside-down — see the edge-labels design decision),
-  single line (newlines collapse to spaces), placement on v3's 3×3
+  **multiline since round 16** (`text-wrap: wrap | ellipsis`,
+  `text-max-width`, `line-height`, `text-overflow-wrap`,
+  `text-justification`; under `text-wrap: none` newlines still
+  collapse to spaces), placement on v3's 3×3
   `text-halign`/`text-valign` grid for nodes (round 13 D3 —
   mapper-capable; **v4 defaults to `'bottom'` valign**, keeping the
   round-10 below-node placement, where v3 defaults to `'top'`; the
@@ -1828,7 +1849,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   anchor outside-to-node rather than v3's outside-to-line;
   `boundingBoxAt` skips parent bodies (fit-target approximation);
   drag sets don't flag descendants `grabbed`; and the min-size
-  bias props / `compound-sizing-wrt-labels: 'include'` /
+  bias props / `compound-sizing-wrt-labels: 'include'` (compound
+  auto-sizing reads body extents; public bb includes labels since
+  16.4) /
   `:parent:selected` / `z-compound-depth`/`z-index-compare` are
   not ported (decided design).
 - **Background images** (round 15) — the deviations in one place

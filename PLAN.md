@@ -68,9 +68,14 @@ src/gpu/
   style.mts              # StyleEngine: constant-value blocks compiled into channel columns + label sidecar
   style-scales.mts       # mapper DSL: object specs compiled to a closure-free IR + CPU evaluator
   style-schemes.mts      # named color schemes (viridis, ColorBrewer, ...) + sRGB↔OKLab
+  image-registry.mts     # round 15: the unique-image pool (url dedup, tiers, async decode)
+  label-wrap.mts         # round 16: multiline breaker/justify/ellipsis + the headless estimator
   animation.mts          # Animation + AnimationManager: CPU tween + queue; routes position to the GPU sink
   layout/grid.mts        # ported grid layout (cell-packing math from src/extensions/layout/grid.mts)
   layout/                # + preset (round 5) and circle/concentric/breadthfirst/random (round 10)
+  layout/contract.mts    # round 17: the extension contract (CustomLayout + the columnar LayoutContext)
+  layout/force-sim.mts   # round 18: the CPU reference force simulation (the kernels' spec)
+  layout/force.mts       # round 18: the built-in force layout (contract consumer; picks the executor)
   algorithms/            # round 10: the full v3 algorithm surface, slot-native over CSR
   shape-points.mts       # round 10: unit polygon + arrowhead point tables shared by WGSL gen + CPU pick
   store/
@@ -90,6 +95,10 @@ src/gpu/
     mapper-runtime.mts   # GPU mapper eval: program/stop/data packing + the per-frame runtime
     mapper-shaders.mts   # the eval kernel WGSL (scale math mirrors style-scales.mts)
     gpu-tween.mts        # GPU position tween runtime + kernel (per-slot from/to, now uniform)
+    image-arrays.mts     # round 15: tiered rgba arrays + mips + the r8 icon array + image table
+    image-pipeline.mts   # round 15: the image compositing draw (own pass off the node streams)
+    image-decoder.mts    # round 15: the browser rasterizer (fetch/createImageBitmap/svg canvas)
+    gpu-force.mts        # round 18: the on-device force integrator (grid/gather/apply + lease)
     label-layer.mts      # consumes the label-dirty channel; lays out glyphs into the GlyphBuffer
     label-layout.mts     # pure single-line centered glyph layout (Node-testable)
     glyph-atlas.mts      # runtime SDF atlas: canvas-2D raster → exact EDT → shelf-packed r8 texture
@@ -1783,7 +1792,7 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    ubiquitous in real apps (`background-image` + fit/clip/position/
    repeat/opacity/smoothing/crossorigin...).  GPU shape: a texture
    atlas or array keyed per element; interacts with the fixed-atlas
-   discipline.  High app value; sizeable renderer feature.  **Scoped
+   discipline.  High app value; sizeable renderer feature.  **Landed
    as round 15 (2026-08-01, below): tiered texture arrays + mips,
    SVG zoom-promotion, an SDF icon mode, multi-image parity.**
 3. **Pie / stripe backgrounds** (51 + 50 props) — SDF-friendly in
@@ -1816,9 +1825,9 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    excluded from `boundingBox()`** in v4 — v3's `includeLabels`
    (and the bb options object generally) affects `fit()` semantics;
    the conservative-label-bound design (already sketched for
-   multiline) is the likely answer.  **The multiline/wrap family and
-   label bb are scoped as round 16 (2026-08-01, below); labels join
-   bb/fit by default there.**
+   multiline) is the likely answer.  **Landed as round 16
+   (2026-08-01, below): the wrap family, and labels join bb/fit by
+   default with { includeLabels } opt-out.**
 7. **Event vocabulary** — v4 lacks the element state events
    (`grab`/`grabon`/`drag`/`free`/`freeon`/`dragfree`/
    `dragfreeon`), the normalized device events (`tapstart`/
@@ -1830,8 +1839,8 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    `preventDefault`/`stopPropagation` and bubbling semantics.
    Mostly cheap plumbing, but every name is permanent API — one
    deliberate call on the v4 event vocabulary is better than
-   accretion.  **Call made — scoped as round 17 (2026-08-01, below):
-   the curated set plus the official pointer-event family.**
+   accretion.  **Landed as round 17 (2026-08-01, below): the curated
+   set plus the official pointer-event family.**
 8. **Interaction options + touch parity** — `wheelSensitivity`,
    `touchTapThreshold`/`desktopTapThreshold`, configurable taphold
    duration, `pixelRatio`, per-element `events`/`text-events`
@@ -1851,9 +1860,9 @@ spellings, redundant `attr`-family duplicates — one name per concept).
     gates the entire external ecosystem (fcose, dagre, elk, cola,
     edgehandles, ...).  At minimum a v4 **layout extension
     contract** needs designing; core/collection extension points are
-    a separate call.  **Call made — scoped as round 17 (2026-08-01,
-    below): direct objects, no registry; core/collection extension
-    points stay deferred (recorded there).**
+    a separate call.  **The layout contract landed as round 17
+    (2026-08-01, below): direct objects, no registry;
+    core/collection extension points stay deferred (recorded).**
 11. **`display` vs `visibility`** — v3 distinguishes `display: none`
     (no space) from `visibility: hidden` (occupies space) from
     zero opacity; v4 has one `show`/`hide` flag.  Call: is one flag
@@ -1928,7 +1937,8 @@ remainder of the queue was scoped in one sitting (plans at the end
 of this file): **z-index dropped outright** (decided design, no
 round at all) → background images (round 15) → multiline labels +
 label bb (round 16) → event vocabulary + extension contract
-(round 17) → GPU force layout (round 18).
+(round 17) → GPU force layout (round 18).  **All four rounds landed
+in full the same day** — the queue is clear.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

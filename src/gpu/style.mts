@@ -2752,7 +2752,7 @@ const splitCompoundProps = ( props: GpuStyleProps ): {
         if( value === 'include' ){
           throw new Error(
             `compound-sizing-wrt-labels: 'include' is unsupported ` +
-            `(labels are excluded from bounding boxes in the GPU prototype); use 'exclude'` );
+            `(compound auto-sizing reads the children's body extents, not labels); use 'exclude'` );
         }
 
         if( value !== 'exclude' ){

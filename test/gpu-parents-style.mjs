@@ -92,7 +92,7 @@ describe('gpu/style: parents sheet group (round 14.6)', function(){
     expect( p3.style( 'min-width' ) ).to.equal( 300 );
   });
 
-  it('accepts compound-sizing-wrt-labels: exclude; include throws (labels are not in bb)', function(){
+  it('accepts compound-sizing-wrt-labels: exclude; include throws (auto-sizing reads body extents)', function(){
     const cy = make( { parents: { 'compound-sizing-wrt-labels': 'exclude' } } );
 
     expect( cy.$id( 'p' ).style( 'compound-sizing-wrt-labels' ) ).to.equal( 'exclude' );

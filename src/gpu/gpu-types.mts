@@ -251,7 +251,9 @@ export interface GpuStylesheet {
    * mappers — plus the compound props `padding`, `padding-relative-to`,
    * `min-width`, `min-height` and `compound-sizing-wrt-labels`
    * (constants only; `'exclude'` is the only accepted sizing value —
-   * labels are excluded from bounding boxes in v4).
+   * compound auto-sizing reads the children's body extents, not
+   * their labels — public bb/fit include labels since round 16.4,
+   * the auto-bounds derivation deliberately does not).
    */
   parents?: GpuStyleProps;
   /**
@@ -299,7 +301,10 @@ export interface GpuLayoutBaseOptions {
   fit?: boolean;
   padding?: number;
   boundingBox?: GpuBoundingBoxInput;
-  /** include labels in node dimensions (v4 note: label metrics are not in bb yet) */
+  /** include labels in node dimensions (v4 note: since round 16.4
+   * `boundingBox()`/fit include labels by default; this layout option
+   * remains accepted for v3 compatibility but the discrete layouts
+   * still place by node body size) */
   nodeDimensionsIncludeLabels?: boolean;
   spacingFactor?: number;
   /** transform a computed position (e.g. to flip an axis) */

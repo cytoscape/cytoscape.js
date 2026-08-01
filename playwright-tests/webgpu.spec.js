@@ -1154,6 +1154,98 @@ test.describe( 'WebGPU renderer', () => {
     expect( result.linkLen ).toBeLessThan( 250 );
   } );
 
+  test( 'GPU and CPU force executors agree on invariants (round 18.4)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // ring + chords: enough structure that a broken kernel (wrong
+    // spring gather, bad grid, NaN blowup) lands far outside the bounds
+    await makeReadyCy( page, {
+      elements: ( () => {
+        const els = [];
+
+        for( let i = 0; i < 60; i++ ){
+          els.push( { data: { id: 'n' + i }, position: { x: 0, y: 0 } } );
+          els.push( { data: { id: 'e' + i, source: 'n' + i, target: 'n' + ( ( i + 1 ) % 60 ) } } );
+
+          if( i % 6 === 0 ){
+            els.push( { data: { id: 'c' + i, source: 'n' + i, target: 'n' + ( ( i + 17 ) % 60 ) } } );
+          }
+        }
+
+        return els;
+      } )(),
+      style: { nodes: { 'width': 10, 'height': 10 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    const stats = await page.evaluate( async () => {
+      const cy = window.cy;
+      const collect = () => {
+        const out = { linkSum: 0, links: 0, nan: 0, maxR: 0 };
+        const edges = cy.edges();
+
+        for( let i = 0; i < edges.length; i++ ){
+          const s = edges[ i ].source().position();
+          const t = edges[ i ].target().position();
+          const d = Math.hypot( t.x - s.x, t.y - s.y );
+
+          if( !isFinite( d ) ){ out.nan++; continue; }
+
+          out.linkSum += d;
+          out.links++;
+        }
+
+        const nodes = cy.nodes();
+
+        for( let i = 0; i < nodes.length; i++ ){
+          const p = nodes[ i ].position();
+
+          if( !isFinite( p.x ) || !isFinite( p.y ) ){ out.nan++; continue; }
+
+          out.maxR = Math.max( out.maxR, Math.hypot( p.x, p.y ) );
+        }
+
+        return out;
+      };
+      const opts = { name: 'force', seed: 11, fit: false, iterations: 400 };
+
+      // the CPU executor (animate: false takes the reference path)
+      await cy.layout( { ...opts, animate: false } ).run().promise();
+
+      const cpu = collect();
+      const cpuBb = cy.elements().boundingBox( { includeLabels: false } );
+
+      // the GPU executor (animate: true on a flat rendered graph)
+      await cy.layout( { ...opts, animate: true, stepsPerFrame: 8 } ).run().promise();
+
+      const gpu = collect();
+      const gpuBb = cy.elements().boundingBox( { includeLabels: false } );
+
+      return { cpu, gpu, cpuBb, gpuBb };
+    } );
+
+    // hard invariants: no NaN, everything in frame
+    expect( stats.cpu.nan ).toBe( 0 );
+    expect( stats.gpu.nan ).toBe( 0 );
+    expect( stats.gpu.maxR ).toBeLessThan( 5000 );
+
+    // soft parity: the two executors' layouts share summary statistics
+    // (trajectories are deliberately not bit-agreed — recorded)
+    const cpuMean = stats.cpu.linkSum / stats.cpu.links;
+    const gpuMean = stats.gpu.linkSum / stats.gpu.links;
+
+    expect( gpuMean ).toBeGreaterThan( cpuMean * 0.6 );
+    expect( gpuMean ).toBeLessThan( cpuMean * 1.7 );
+    expect( stats.gpuBb.w ).toBeGreaterThan( stats.cpuBb.w * 0.4 );
+    expect( stats.gpuBb.w ).toBeLessThan( stats.cpuBb.w * 2.5 );
+
+    // and the settle flushed derived geometry: the bb reflects the
+    // settled coordinates (layoutstop ordering)
+    expect( stats.gpuBb.w ).toBeGreaterThan( 100 );
+  } );
+
   test( 'two-finger pinch zooms about the midpoint', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

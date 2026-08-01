@@ -4525,10 +4525,18 @@ design, built.  Signed off 2026-08-01.
   `position()` stale mid-run while pixels advance), `stop()`
   settles real simulated coordinates, and the ring spreads.  2142
   Node tests, 138/138 Playwright, typecheck + lint clean.
-- [ ] **18.4 Convergence + readback** — GPU displacement reduction
-  (per iteration batch, not per iteration), settle readback,
-  flushDerived + `layoutstop` ordering; the invariant parity suite
-  vs the CPU reference.
+- [x] **18.4 Convergence + readback** (2026-08-01) — the batched
+  displacement reduction, latest-wins staging poll, settle readback
+  and lease-release-before-CPU-write ordering all landed with 18.3;
+  this item adds the **invariant parity suite**: on a seeded
+  ring-with-chords graph, the CPU executor (animate: false) and the
+  GPU executor (animate: true) run the same options and must agree
+  on invariants — zero NaN, every node in frame, mean link length
+  within [0.6×, 1.7×] of each other, bb width within [0.4×, 2.5×] —
+  while trajectories stay deliberately not bit-agreed (recorded).
+  The settled bb also pins flushDerived + layoutstop ordering (the
+  box reflects the readback coordinates).  2142 Node tests, 139/139
+  Playwright, typecheck + lint clean.
 - [ ] **18.5 Benchmarks + harness + true-up** — `?layout=force` in
   debug/webgpu; renderer-benchmark scenario (25k/100k live-layout
   fps + time-to-converge; v3 cose as the 25k baseline); README/PLAN

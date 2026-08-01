@@ -1836,6 +1836,75 @@ test.describe( 'WebGPU visual goldens', () => {
     expect( rampOf( png ), 'export edge ramp (px)' ).toBeLessThanOrEqual( 3 );
   } );
 
+  test( 'golden: multiline labels — wrap, ellipsis, justification (round 16.3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', mode: 'wrap', just: 'left' }, position: { x: -120, y: -70 } },
+        { data: { id: 'b', mode: 'wrap', just: 'center' }, position: { x: 0, y: -70 } },
+        { data: { id: 'c', mode: 'wrap', just: 'right' }, position: { x: 120, y: -70 } },
+        { data: { id: 'd', mode: 'ellipsis', just: 'center' }, position: { x: -120, y: 60 } },
+        { data: { id: 'e', mode: 'none', just: 'center' }, position: { x: 60, y: 60 } }
+      ],
+      style: {
+        nodes: {
+          'width': 50, 'height': 30, 'shape': 'rectangle',
+          'background-color': '#dfe6e9', 'border-width': 1, 'border-color': '#636e72',
+          'label': 'wrapping label text here',
+          'font-size': 12, 'color': '#2d3436',
+          'text-background-color': '#ffeaa7', 'text-background-opacity': 1,
+          'text-background-padding': 2,
+          'text-wrap': { data: 'mode' },
+          'text-max-width': 70,
+          'line-height': 1.2,
+          'text-justification': { data: 'just' }
+        },
+        edges: {}
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'labels-wrap', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
+  test( 'golden: wrapped edge labels rotate as a block (round 16.3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -130, y: -80 } },
+        { data: { id: 'b' }, position: { x: 130, y: 60 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 24, 'height': 24, 'background-color': '#b2bec3' },
+        edges: {
+          'width': 2, 'line-color': '#636e72',
+          'label': 'two line\nedge label',
+          'font-size': 12, 'color': '#2d3436',
+          'text-background-color': '#dfe6e9', 'text-background-opacity': 1,
+          'text-background-padding': 2,
+          'text-wrap': 'wrap',
+          'text-rotation': 'autorotate'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'labels-wrap-edge', await exportPng( page, { bg: '#fff' } ), testInfo, {
+      threshold: 0.25,
+      maxDiffRatio: 0.02
+    } );
+  } );
+
   test( 'imageMinPx skips image sampling on unreadably small nodes (round 15.7)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

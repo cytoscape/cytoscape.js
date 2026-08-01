@@ -1,5 +1,6 @@
 import { GlyphAtlas, SDF_FONT_SIZE, SDF_RADIUS } from './glyph-atlas.mjs';
-import { layoutLabel } from './label-layout.mjs';
+import { layoutLabelBlock } from '../label-wrap.mjs';
+import type { LaidBlock } from '../label-wrap.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
 import type { LabelStream } from '../contract.mjs';
@@ -20,6 +21,13 @@ export class LabelLayer {
   targetGlyphs: GlyphBuffer;
 
   private store: GraphStore;
+  /** the shaping memo (16.3): line breaking is zoom-invariant (labels
+   * are model-space), so identical (text, wrap params) pairs share one
+   * laid block; the cache clears with the atlas face. */
+  private shapeMemo = new Map<string, LaidBlock>();
+  private memoFont = '';
+  memoHits = 0;
+  memoMisses = 0;
 
   constructor( device: GPUDevice, store: GraphStore ){
     this.store = store;
@@ -41,6 +49,7 @@ export class LabelLayer {
    */
   reraster(): void {
     this.atlas.reraster();
+    this.shapeMemo.clear(); // metrics may change with the real face
     this.store.markAllLabelsDirty();
   }
 
@@ -55,6 +64,13 @@ export class LabelLayer {
     // so the reset and the rebuild land in this same pass
     this.atlas.setFont(
       this.store.labelFont, this.store.labelFontStyle, this.store.labelFontWeight );
+
+    const fontKey = `${this.store.labelFontStyle} ${this.store.labelFontWeight} ${this.store.labelFont}`;
+
+    if( fontKey !== this.memoFont ){
+      this.memoFont = fontKey;
+      this.shapeMemo.clear();
+    }
 
     this.processGroup( 'nodes', this.glyphs );
     this.processGroup( 'edges', this.edgeGlyphs );
@@ -74,15 +90,40 @@ export class LabelLayer {
         continue;
       }
 
-      const laid = layoutLabel( entry.text, ch => this.atlas.metrics( ch ), this.atlas.ascent );
+      const scale = entry.fontSize / SDF_FONT_SIZE;
+
+      // shaping (16.3): break/justify/lay through the shared block
+      // engine, memoized — maxWidth converts model px -> SDF px so the
+      // memo key is scale-free like the layout itself
+      const memoKey = `${entry.wrap}|${entry.maxWidth / scale}|${entry.overflowWrap}|` +
+        `${entry.justification}|${entry.lineHeight}|${entry.text}`;
+      let block = this.shapeMemo.get( memoKey );
+
+      if( block == null ){
+        this.memoMisses++;
+        block = layoutLabelBlock(
+          entry.text, ch => this.atlas.metrics( ch ), this.atlas.ascent, SDF_FONT_SIZE, {
+            wrap: entry.wrap,
+            maxWidth: entry.maxWidth / scale,
+            overflowWrap: entry.overflowWrap,
+            justification: entry.justification,
+            lineHeight: entry.lineHeight
+          } );
+        this.shapeMemo.set( memoKey, block );
+      } else {
+        this.memoHits++;
+      }
+
+      const laid = block.glyphs;
+
+      // exact laid dims feed the label bb term (16.4); model px
+      this.store.setLabelDims( slot, group, block.width * scale, block.height * scale );
 
       if( laid.length === 0 ){
         glyphs.set( slot, null );
 
         continue;
       }
-
-      const scale = entry.fontSize / SDF_FONT_SIZE;
 
       // outline width in SDF sample units: model px → raster px (/ scale)
       // → samples (/ SDF_RADIUS); clamped so it can't cross the whole range
@@ -102,22 +143,18 @@ export class LabelLayer {
         ? Math.min( entry.outlineWidth / scale / SDF_RADIUS, 0.45 )
         : 0;
 
-      // laid block extents (model px after scale) for the alignment
-      // shifts (D3) and the background quad
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-      for( const g of laid ){
-        minX = Math.min( minX, g.x );
-        minY = Math.min( minY, g.y );
-        maxX = Math.max( maxX, g.x + g.w );
-        maxY = Math.max( maxY, g.y + g.h );
-      }
+      // block metrics (16.3): alignment shifts and the background quad
+      // use the *block* extents (advance width x line-stacked height),
+      // which are also what the bb term stores — ink extents undershoot
+      // multi-line blocks and made boxes hug descenders
+      const blockW = block.width;
+      const blockH = block.height;
 
       // text-halign/-valign (D3): the entry carries the node-extent base
       // (anchorX/anchorY) plus block-fraction shifts resolved here,
       // where the laid dimensions are known
-      const dx = entry.anchorX + entry.halignShift * ( maxX - minX ) * scale + entry.marginX;
-      const dy = entry.anchorY + entry.valignShift * ( maxY - minY ) * scale;
+      const dx = entry.anchorX + entry.halignShift * blockW * scale + entry.marginX;
+      const dy = entry.anchorY + entry.valignShift * blockH * scale;
 
       // an optional solid background quad precedes the glyphs in the run
       const hasBg = ( ( entry.bgColor >>> 24 ) & 0xff ) > 0;
@@ -136,12 +173,12 @@ export class LabelLayer {
 
         u32[ at ] = owner;
         u32[ at + 1 ] = entry.bgColor;
-        f32[ at + 2 ] = minX * scale + dx - pad;
-        f32[ at + 3 ] = dy + minY * scale - pad;
-        f32[ at + 4 ] = ( maxX - minX ) * scale + 2 * pad;
-        f32[ at + 5 ] = ( maxY - minY ) * scale + 2 * pad;
+        f32[ at + 2 ] = -blockW / 2 * scale + dx - pad;
+        f32[ at + 3 ] = dy - pad;
+        f32[ at + 4 ] = blockW * scale + 2 * pad;
+        f32[ at + 5 ] = blockH * scale + 2 * pad;
         f32[ at + 6 ] = -1; // u0 < 0: solid quad, no atlas sample
-        f32[ at + 7 ] = ( maxY - minY ) * scale; // LOD height: the glyph block's
+        f32[ at + 7 ] = blockH * scale; // LOD height: the glyph block's
         // uv1.x carries the background shape (B6: 1 = round-rectangle);
         // the solid branch never samples the atlas, so the slot is free
         f32[ at + 8 ] = entry.bgShape;

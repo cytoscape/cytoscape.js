@@ -4172,10 +4172,22 @@ signed off 2026-08-01.
   decided design) instead.  Tests-first: 10 specs in
   `test/gpu-text-wrap-props.mjs` red then green — 2106 Node tests,
   typecheck + lint clean.
-- [ ] **16.3 Renderer** — multi-line emission for all four glyph
-  streams, block-sized text boxes, autorotate-as-block;
-  wrap/ellipsis/justification goldens (label tolerance; no v3 pixel
-  parity for labels by recorded design — behavioral pins instead).
+- [x] **16.3 Renderer** (2026-08-01) — LabelLayer lays every stream
+  through `layoutLabelBlock` behind the **shaping memo** (keyed on
+  text + scale-free wrap params, cleared with the atlas face — hit
+  counters exposed for the 16.5 benchmark), feeds **exact laid
+  dims** back to the store per build (the 16.4 bb term's upgrade
+  path), and switched the alignment shifts + text-background box
+  from ink extents to **block metrics** (advance width ×
+  line-stacked height — ink undershot multi-line blocks); the
+  change stayed within the label goldens' tolerance, so no golden
+  churn.  Autorotate needed nothing: glyphs rotate about the anchor
+  individually, so a multi-line block rotates as a unit by
+  construction.  Pins: the `labels-wrap` golden (three-line wrap
+  under left/center/right justification via mappers, ellipsis
+  truncation, unwrapped control) and `labels-wrap-edge` (a two-line
+  autorotated edge label with its block-sized box).  2106 Node
+  tests, 131/131 Playwright, typecheck + lint clean.
 - [ ] **16.4 Label bb** — the bb options object; node-label exact
   term + edge-label conservative term in the store scan; exact lazy
   edge tier via the route evaluator; `labelBoundingBox()`; fit

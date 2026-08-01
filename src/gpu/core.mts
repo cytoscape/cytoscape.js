@@ -3,7 +3,7 @@ import { GpuCollection } from './collection.mjs';
 import { isColumnarElements } from './columnar.mjs';
 import { deserializeElements, isSerializedElements, serializeElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
-import { hasListeners, makeCoreEmitter, predicateQualifier } from './events.mjs';
+import { hasListeners, makeCoreEmitter, predicateQualifier, refKey } from './events.mjs';
 import type { ElePredicate, GpuQualifier, PhasedEvent } from './events.mjs';
 import CyEvent from '../event.mjs';
 import { compileQuery } from './matcher.mjs';
@@ -33,7 +33,7 @@ import type Emitter from '../emitter.mjs';
 import type { EventHandler } from '../emitter.mjs';
 import type Event from '../event.mjs';
 import type { EventProps } from '../event.mjs';
-import { FLAG_SELECTABLE, FLAG_SELECTED } from './contract.mjs';
+import { FLAG_SELECTABLE, FLAG_SELECTED, NO_SLOT } from './contract.mjs';
 import { NO_PARENT } from './gpu-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
@@ -229,6 +229,66 @@ export class GpuCore {
   /** True while inside a startBatch()/endBatch() pair. */
   batching(): boolean {
     return this._batchDepth > 0;
+  }
+
+  /**
+   * Slot compaction, core tier (round 19.3; the public trigger policy is
+   * 19.5): settle any GPU-driven tweens (the reparent precedent), compact
+   * the store, then repair the core-held slot-keyed state — the interned
+   * handle pool moves with its elements (handle identity and scratch
+   * survive), element-bound listener qualifiers repair in place and
+   * re-key so later off() calls match, and the animation queues re-key
+   * with their slot arrays re-pointed.  Throws mid-batch: the deferred
+   * style refs hold slots and the flush must not straddle a remap.
+   */
+  _compact(): void {
+    if( this._batchDepth > 0 ){
+      throw new Error( 'Can not compact inside a batch' );
+    }
+
+    this._animations.settleGpuAll();
+
+    const result = this._store.compact();
+
+    if( result.nodes == null && result.edges == null ){ return; }
+
+    this._remapPool( 'nodes', result.nodes?.remap ?? null );
+    this._remapPool( 'edges', result.edges?.remap ?? null );
+
+    for( const listener of this._emitter.listeners ){
+      const qualifier = listener.qualifier;
+
+      if( qualifier?.ref != null ){
+        this._store.isCurrent( qualifier.ref ); // repairs in place
+        qualifier.key = 'ref:' + refKey( qualifier.ref );
+      }
+    }
+
+    this._animations.onCompacted( this._store );
+  }
+
+  /** Move the interned singleton handles to their elements' new slots
+   * (dead slots' handles drop out of the pool; holders keep dead reads). */
+  private _remapPool( group: GroupName, remap: Uint32Array | null ): void {
+    if( remap == null ){ return; }
+
+    const pool = this._pool[ group ];
+    const n = Math.min( remap.length, pool.length );
+
+    for( let s = 0; s < n; s++ ){
+      const ele = pool[ s ];
+
+      if( ele == null ){ continue; }
+
+      pool[ s ] = undefined;
+
+      const d = remap[ s ];
+
+      if( d === NO_SLOT ){ continue; }
+
+      void ele._refs; // the epoch-guarded getter repairs the singleton's ref
+      pool[ d ] = ele;
+    }
   }
 
   startBatch(): this {

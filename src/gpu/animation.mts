@@ -304,6 +304,23 @@ export class Animation {
 
   get done(): boolean { return this._done; }
 
+  /**
+   * Slot compaction (19.3): repair the target and channel-write refs
+   * through the store's forwarding (in place) and re-point the parallel
+   * slot arrays — `apply` indexes columns by `slots[i]`, which would
+   * otherwise write the tween into whatever moved into the old slot.
+   */
+  repairRefs( store: GraphStore ): void {
+    for( const ref of this.refs ){ store.isCurrent( ref ); }
+
+    for( const w of this.writes ){
+      for( let i = 0; i < w.refs.length; i++ ){
+        store.isCurrent( w.refs[ i ] );
+        w.slots[ i ] = w.refs[ i ].slot;
+      }
+    }
+  }
+
   /** True once the delay has elapsed and interpolation is under way. */
   get running(): boolean { return this.started && !this._done; }
 
@@ -642,6 +659,39 @@ export class AnimationManager {
     for( const q of this.queues.values() ){
       if( q[ 0 ]?.gpuId != null ){ q[ 0 ].settleGpu( now() ); }
     }
+  }
+
+  /**
+   * Slot compaction (19.3): repair every queued animation's refs/slots
+   * and re-key the per-element queues (keys pack the pre-move identity).
+   * GPU-driven animations were settled by the caller before the store
+   * compacted (`settleGpuAll`, the reparent precedent).
+   */
+  onCompacted( store: GraphStore ): void {
+    const next = new Map<number, Animation[]>();
+    const repaired = new Set<Animation>();
+
+    for( const [ key, q ] of this.queues ){
+      for( const ani of q ){
+        if( !repaired.has( ani ) ){
+          repaired.add( ani );
+          ani.repairRefs( store );
+        }
+      }
+
+      const isEdge = key >= 0x10000000000000;
+      const rem = isEdge ? key - 0x10000000000000 : key;
+      const ref: Ref = {
+        group: isEdge ? 'edges' : 'nodes',
+        slot: Math.floor( rem / 0x1000000 ),
+        gen: rem % 0x1000000
+      };
+
+      store.isCurrent( ref ); // repairs a forwarded identity in place
+      next.set( packRef( ref ), q );
+    }
+
+    this.queues = next;
   }
 
   /** Enqueue an animation; nudges the driver (or starts the auto-loop). */

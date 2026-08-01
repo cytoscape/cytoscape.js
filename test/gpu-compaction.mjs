@@ -163,11 +163,12 @@ describe( 'gpu/store: slot compaction (19.1)', function(){
     }
   } );
 
-  it( 'returns a remap with NO_SLOT holes and stales old refs to moved elements', function(){
+  it( 'returns a remap with NO_SLOT holes and forwards refs to moved elements', function(){
     const store = chainStore( 10 );
 
     const keepRef = store.ref( 'nodes', store.lookup( 'n0' ).slot ); // unmoved prefix
     const moveRef = store.ref( 'nodes', store.lookup( 'n9' ).slot ); // will move
+    const deadRef = store.ref( 'nodes', store.lookup( 'n4' ).slot ); // will be removed
 
     for( let i = 1; i < 9; i++ ){ removeNodeCascade( store, i ); }
 
@@ -178,10 +179,13 @@ describe( 'gpu/store: slot compaction (19.1)', function(){
     expect( remap[ moveRef.slot ] ).to.equal( 1 );
     expect( remap[ 4 ] ).to.equal( NO_SLOT );
 
-    // the unmoved element's ref stays current; the moved one's old ref
-    // must *fail* plain validation (19.3 repairs it through forwarding)
+    // the unmoved element's ref stays current untouched; the moved one's
+    // repairs in place through the forwarding chain (19.3); a removed
+    // element's ref stays dead — repair never resurrects
     expect( store.isCurrent( keepRef ) ).to.equal( true );
-    expect( store.isCurrent( moveRef ) ).to.equal( false );
+    expect( store.isCurrent( moveRef ) ).to.equal( true );
+    expect( moveRef.slot ).to.equal( 1 );
+    expect( store.isCurrent( deadRef ) ).to.equal( false );
     expect( store.lookup( 'n9' ).slot ).to.equal( 1 );
   } );
 

@@ -178,6 +178,13 @@ export class GraphStore implements ModelView {
   /** coalesced watched-key write spans, keyed 'group:key' (consumed by the renderer) */
   private mapperSpans: Map<string, MapperSpan>;
 
+  /** forwarding chains for refs staled by slot compaction (19.3):
+   * packed (slot, gen) → packed (newSlot, newGen), per group */
+  private forwards: Record<GroupName, Map<number, number>> = {
+    nodes: new Map(), edges: new Map()
+  };
+  private _compactEpoch = 0;
+
   constructor(){
     this.nodes = new ColumnTable( 'nodes', columnSpecsForGroup( 'nodes' ) );
     this.edges = new ColumnTable( 'edges', columnSpecsForGroup( 'edges' ) );
@@ -595,11 +602,60 @@ export class GraphStore implements ModelView {
     return { group, slot, gen: this.table( group ).gen[ slot ] };
   }
 
-  /** Whether a ref still points at the live element it was created for. */
+  /**
+   * Whether a ref still points at the live element it was created for.
+   * Since round 19.3 a stale ref whose element merely *moved* in a slot
+   * compaction is repaired **in place** through the forwarding chain
+   * (fixing every holder of that ref object) and reads as current;
+   * a removed element's ref stays dead — repair never resurrects.
+   */
   isCurrent( ref: Ref ): boolean {
     const table = this.table( ref.group );
 
-    return ref.slot < table.cap && table.gen[ ref.slot ] === ref.gen;
+    if( ref.slot < table.cap && table.gen[ ref.slot ] === ref.gen ){ return true; }
+
+    return this.repairStale( ref );
+  }
+
+  /** Bumped once per slot-moving compaction; collections use it to
+   * invalidate cached packed-key membership sets (19.3). */
+  get compactEpoch(): number {
+    return this._compactEpoch;
+  }
+
+  /**
+   * Chase a stale ref through the forwarding chain (each compaction a
+   * moved element survives adds one link) and, on reaching a live
+   * identity, rewrite the ref in place.  Entries persist and compose, so
+   * repair is total for any ref whose element still exists.
+   */
+  private repairStale( ref: Ref ): boolean {
+    const fwd = this.forwards[ ref.group ];
+
+    if( fwd.size === 0 ){ return false; }
+
+    let cur = fwd.get( ref.slot * 0x1000000 + ref.gen );
+
+    if( cur == null ){ return false; }
+
+    for( ;; ){
+      const next = fwd.get( cur );
+
+      if( next == null ){ break; }
+
+      cur = next;
+    }
+
+    const slot = Math.floor( cur / 0x1000000 );
+    const gen = cur % 0x1000000;
+    const table = this.table( ref.group );
+
+    if( slot >= table.cap || table.gen[ slot ] !== gen ){ return false; } // moved, then removed
+
+    ref.slot = slot;
+    ref.gen = gen;
+
+    return true;
   }
 
   lookup( id: string ): Ref | undefined {
@@ -2859,6 +2915,7 @@ export class GraphStore implements ModelView {
         this.nodes.cap
       );
       this.geoEpoch++; // the slot-indexed edge-bb memo is stale wholesale
+      this._compactEpoch++; // collections invalidate cached membership sets
       this.dirty.touch();
     }
 
@@ -2967,6 +3024,18 @@ export class GraphStore implements ModelView {
     const oldGen = table.gen;
 
     table.compact( remap, next );
+
+    // forwarding entries for every moved element (19.3): stale refs
+    // chase these chains and repair in place; identity slots need none
+    const fwd = this.forwards[ group ];
+
+    for( let s = 0; s < hw; s++ ){
+      const d = remap[ s ];
+
+      if( d === NO_SLOT || d === s ){ continue; }
+
+      fwd.set( s * 0x1000000 + oldGen[ s ], d * 0x1000000 + table.gen[ d ] );
+    }
 
     const order = this.order[ group ];
     const slots: number[] = [];

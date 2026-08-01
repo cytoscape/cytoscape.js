@@ -82,13 +82,44 @@ export class GpuCollection {
 
   length: number;
   _cy: GpuCore;
-  _refs: Ref[];
+  private __refs!: Ref[];
+  /** the store's compactEpoch this collection last synced against (19.3) */
+  private _syncEpoch = -1;
   _id: string | undefined;
   _group: GroupName | undefined;
   /** per-element scratchpad, lazily created on the interned singleton handle */
   _scratch?: Record<string, unknown>;
   /** lazily-built packed-key membership set; safe to cache since _refs is immutable */
   _keys?: Set<number>;
+
+  /**
+   * The collection's refs, repaired lazily after a slot compaction
+   * (19.3): on first access past a new compaction epoch, every stale-
+   * but-forwarded ref rewrites in place (fixing all holders of that ref
+   * object) and the packed membership cache drops.  The array identity
+   * and length never change — dead refs stay dead in place, matching
+   * removed-element semantics.
+   */
+  get _refs(): Ref[] {
+    const store = this._cy._store;
+
+    if( this._syncEpoch !== store.compactEpoch ){
+      this._syncEpoch = store.compactEpoch;
+
+      const refs = this.__refs;
+
+      for( let i = 0; i < refs.length; i++ ){ store.isCurrent( refs[ i ] ); }
+
+      this._keys = undefined;
+    }
+
+    return this.__refs;
+  }
+
+  set _refs( refs: Ref[] ){
+    this.__refs = refs;
+    this._syncEpoch = this._cy._store.compactEpoch;
+  }
 
   constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {} ){
     this._cy = cy;
@@ -145,13 +176,16 @@ export class GpuCollection {
       let i = 0;
 
       for( const ref of refs ){
+        // intern first: _eleFromRef repairs a compaction-forwarded stale
+        // ref in place, so the packed key below is its current identity
+        const ele = cy._eleFromRef( ref );
         const key = packRef( ref );
 
         if( seen.has( key ) ){ continue; }
 
         seen.add( key );
         deduped.push( ref );
-        this[ i ] = cy._eleFromRef( ref );
+        this[ i ] = ele;
         i++;
       }
     }

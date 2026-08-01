@@ -38,7 +38,15 @@ options + touch parity gap: the tuning quartet (`wheelSensitivity`,
 `desktopTapThreshold`/`touchTapThreshold`, `tapholdDuration` — ctor
 options + getter/setters), the `events`/`text-events`
 pointer-transparency props (a flag bit read by every pick path), and
-v3's two-finger cxt and three-finger box touch gestures.
+v3's two-finger cxt and three-finger box touch gestures.  Rounds
+21–23 (2026-08-01, the third design sitting) removed the animation
+queue (concurrency by channel; promises sequence), split
+display/visibility (`show()`/`hide()` keeps the structural tier —
+now re-fanning bezier bundles — while the `visibility` style prop is
+paint-only invisibility that keeps space and bundle ranks), and
+brought **node charts**: v3's pie/stripe props as the lean
+list-valued `chart` family with data-driven values and scheme
+palettes.
 The existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
@@ -138,7 +146,8 @@ read-only style getters (`style`/`css`, `renderedStyle`,
 `interactive` — since round 20.2 `interactive()` folds the `events`
 prop — see below), `boundingBox({ includeLabels })` +
 `labelBoundingBox()` (round 16.4), the `background-image` family
-(round 15) and the wrap family (round 16) in the sheet, the round-17
+(round 15), the wrap family (round 16), the round-22 `visibility`
+prop and the round-23 `chart` family in the sheet, the round-17
 event vocabulary (pointer*/tap*/grab-drag-free families, viewport
 gestures), and graph algorithms (round 10, growing):
 `bfs`/`dfs` (+ long aliases), `dijkstra`, `aStar`, `bellmanFord`,
@@ -893,9 +902,9 @@ each is deliberate, not a pass-1 deferral:
   LUT and uploaded index shadow repack through the normal watched-key
   span path while element values never change (ordinal domains are
   explicit, so no styling output can move).  *Slot-moving* compaction
-  (dead element slots, `highWater`, pass widths) is deliberately not
-  built: its policy calls (ref survival across a move, trigger, draw
-  order) are logged open in `PLAN.md`.
+  (dead element slots, `highWater`, pass widths) was deferred here and
+  **since landed as round 19** (see the slot-compaction section above —
+  the policy calls this bullet once logged open are all taken).
 - **GPU layouts: logged for later.**  A force layout is *stateful*
   (`pos[t+1] = pos[t] + forces(pos[t])`), so unlike animation it is *not*
   cheaply CPU-reproducible — the GPU would be authoritative during a run
@@ -1986,6 +1995,39 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `style('visibility')` reads the element's own state.
   `cy.elementsInBox()` stays geometric (invisible elements are
   inside; the box gesture's interactive filter skips them).
+- **Node charts: pie + stripes** (round 23; third-sitting call —
+  "definitely yes, and consider other charts in future"): v3's 101
+  numbered `pie-*`/`stripe-*` props return as the lean 8-prop
+  **`chart` family** (node-only): `chart`
+  (`none | pie | stripes`), `chart-values` (a number list — a
+  constant array/string, or the `{ data: key }` passthrough reading
+  a **per-element array** from the sidecar, refreshed on writes of
+  the key), `chart-colors` (a color list *or* a named scheme from
+  the mapper DSL's palette table — `category10` default, cycling
+  past its length), `chart-size` and `chart-hole` ([0, 1] fractions
+  or 'N%' — the hole makes donuts from the same surface),
+  `chart-start-angle`, `chart-direction`
+  (stripes: `vertical | horizontal`) and `chart-opacity` (folds
+  into slice alphas, the B1 pattern).  Scalars/enums are
+  mapper-capable; the two list props are constants-only (the 12b
+  rule) with the values passthrough as the per-element form.
+  Values are **absolute fractions of the whole** (v3's percents: a
+  sum under 1 leaves an unpainted remainder, over 1 clamps);
+  slices cap at 16 (v3's N).  Records live in a
+  round-11-compacting blob behind `node.chartRef`; rendering is a
+  dedicated pass (one quad per charted node off the culled visible
+  lists, after the image pass — v3's order — clipped to the node
+  shape at the border's inner edge, SDF-native with px-space AA at
+  slice boundaries), skipped outright while nothing charts.
+  Charts are paint-only: never in bb, never pickable.  Pinned by
+  the `charts-pie-stripes` golden and two live v3 parity scenes —
+  pies at **0.000%** (pixel-exact), stripes at 0.005%.  Recorded:
+  charts share the `imageMinPx` readability floor; two upstream v3
+  stripe bugs constrain the stripe parity to vertical square-node
+  scenes (v3's 'horizontal' keyword is inert — its draw switch
+  tests a typo'd 'righward' — and its drawStripe swaps W/H in the
+  centering offsets), with the golden pinning v4's horizontal and
+  non-square behavior.
 - **Interaction tuning options** (round 20.1, all v3 defaults, all
   ctor options with `multiClickDebounceTime`-style validated
   getter/setters read live by the pointer layer):

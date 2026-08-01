@@ -34,7 +34,19 @@ closed gap item 8: the interaction tuning options
 (`wheelSensitivity`, the tap-threshold pair, `tapholdDuration`), the
 `events`/`text-events` pointer-transparency props, and the
 two-finger-cxt + three-finger-box touch gestures (2190 Node tests
-and 147 Playwright specs green at the close).  `src/gpu/README.md` is
+and 147 Playwright specs green at the close).  A **third design
+sitting** (2026-08-01) took three user calls and scoped rounds
+21–23, all landed the same day: **round 21** removed the animation
+queue (concurrency by channel, promises as the sequencing
+mechanism), **round 22** split display/visibility (show/hide stays
+the structural tier — now re-fanning bezier bundles — and the
+`visibility` style prop is paint-only invisibility keeping space
+and bundle ranks, via a derived FLAG_DRAWN and a one-line WGSL mask
+flip), and **round 23** brought node charts (v3's 101 pie/stripe
+props as the lean list-valued `chart` family — data-driven values,
+scheme palettes, donut holes — with the pie parity scene at 0.000%
+against v3; 2214 Node tests and 151 Playwright specs green at the
+close).  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -5426,8 +5438,40 @@ chart types.
   (as does removal).  Tests-first: 10 Node specs
   (`test/gpu-charts.mjs`, red then green).  2214 Node tests,
   typecheck + lint clean.
-- [ ] **23.2 Render** — FS chart branch (pie + stripes + hole +
-  AA), goldens.
-- [ ] **23.3 Parity + polish** — live v3 pie/stripe parity scenes,
-  `debug/webgpu` toggle, README/PLAN records + closing sweep for
-  the three-round arc.
+- [x] **23.2 Render** (2026-08-01) — a dedicated ChartPipeline (the
+  node FS sits at its 8-buffer cap, so charts get their own pass —
+  the image pipeline's shape: one quad per charted node off the
+  culled visible lists, leaves after the image pass and parents
+  after theirs, chartless instances collapsing in the VS, the whole
+  pass skipped at chartCount 0).  The FS clips to the node shape at
+  the border's inner edge (poly blob bound for custom polygons),
+  resolves the fraction coordinate (clockwise from 12 o'clock for
+  pies — v3; the advancing axis for stripes) and walks the record's
+  stops with px-space AA into the neighboring region (wrapping
+  across the start angle on full pies), radial AA at rim + hole,
+  sub-box edge AA for stripes; element opacity multiplies;
+  derivatives hoist above every branch (WGSL uniformity, caught by
+  the device-error guard).  The chart blob mirrors beside the image
+  blob.  Two fixes shaken out by the golden: the chart-refresh fast
+  path re-routes through the full mapped write when the def has
+  mappers (the narrow path wrote the constants record — wrong when
+  `chart` itself is case-mapped), and the scalar/enum chart props
+  joined the mapper-capable set (the 12b constants-only rule covers
+  lists, not scalars).  Pinned by the `charts-pie-stripes` golden:
+  full pie on the default palette, remainder gap, donut with start
+  angle on a bordered ellipse, both stripe directions,
+  chart-size < 1.
+- [x] **23.3 Parity + close** (2026-08-01) — two live v3 parity
+  scenes: pies against the numbered `pie-i-*` props at **0.000%**
+  (pixel-exact — fractions, remainder, hole, start angle) and
+  stripes against `stripe-i-*` at 0.005%.  **Two upstream v3
+  stripe bugs found and recorded** (they constrain the parity
+  scene to vertical square-node stripes; the golden pins v4's
+  horizontal + non-square behavior): v3's
+  `stripe-direction: horizontal` is inert — the canvas draw switch
+  tests a typo'd 'righward' keyword its own style type rejects —
+  and `drawStripe` swaps W/H in its centering offsets, visible on
+  non-square nodes.  The planned `debug/webgpu` toggle was dropped
+  (the golden + parity scenes cover the visual surface; recorded).
+  2214 Node tests, 151/151 Playwright, typecheck + lint clean.
+  **Round 23 is complete.**

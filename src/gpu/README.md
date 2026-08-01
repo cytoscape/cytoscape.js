@@ -1184,6 +1184,14 @@ records).  Landed so far:
   **0.000%** mismatch (fit/position/opacity math is pixel-exact
   against v3's canvas renderer).
 
+- **15.4 — multi-image parity**: up to 4 images per node composite
+  in **v3's layer order — later list entries on top** (v3's canvas
+  draws ascending index with source-over; not the CSS first-on-top
+  convention), each with fully independent per-image props at its
+  list index.  Pinned by the `images-multi` golden (overlaps +
+  translucent blending) and a second live v3 parity scene at
+  0.000% mismatch.
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each

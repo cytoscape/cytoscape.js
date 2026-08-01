@@ -257,6 +257,28 @@ describe('gpu/style: background images (round 15.2)', function(){
     expect( cy._store.images.liveCount() ).to.equal( 0 );
   });
 
+  it('keeps every per-image prop independent across the list (15.4)', function(){
+    const cy = mk( { nodes: {
+      'background-image': [ 'a.png', 'b.svg', 'c.png', 'd.png' ],
+      'background-fit': [ 'none', 'contain', 'cover', 'none' ],
+      'background-repeat': [ 'no-repeat', 'repeat', 'repeat-x', 'repeat-y' ],
+      'background-clip': [ 'node', 'none', 'node', 'none' ],
+      'background-image-containment': [ 'inside', 'over', 'inside', 'over' ],
+      'background-image-smoothing': [ 'yes', 'no', 'yes', 'no' ],
+      'background-image-type': [ 'auto', 'sdf-icon', 'auto', 'auto' ]
+    } } );
+    const recs = recsOf( cy, 'a' );
+
+    expect( recs.map( r => r.fit ) ).to.deep.equal( [ 0, 1, 2, 0 ] );
+    expect( recs.map( r => r.repeat ) ).to.deep.equal( [ 0, 3, 1, 2 ] );
+    expect( recs.map( r => r.clip ) ).to.deep.equal( [ 1, 0, 1, 0 ] );
+    expect( recs.map( r => r.containment ) ).to.deep.equal( [ 0, 1, 0, 1 ] );
+    expect( recs.map( r => r.smoothing ) ).to.deep.equal( [ true, false, true, false ] );
+    expect( recs.map( r => r.sdf ) ).to.deep.equal( [ false, true, false, false ] );
+    // four distinct urls = four registry entries (the sdf one keyed apart)
+    expect( cy._store.images.liveCount() ).to.equal( 4 );
+  });
+
   it('packs the imageRef column and reports blob dirt in the delta', function(){
     const cy = mk( {} );
 

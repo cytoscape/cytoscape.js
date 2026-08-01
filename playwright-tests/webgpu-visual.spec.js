@@ -1598,6 +1598,42 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'images-cover-clip', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  // 8x8 #6c5ce7, top half opaque / bottom half 50% alpha — pins the
+  // multi-image blend math as well as the layer order
+  const HALF_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4AYXBAREAIAzEsPI3mUjABGqRwRysyTr7fQZBBBFEAZdBEEEE0QaYA0GAoqM/AAAAAElFTkSuQmCC';
+
+  test( 'golden: multi-image compositing — order, overlap, per-image props (round 15.4)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: { 'width': 160, 'height': 120 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await page.evaluate( ( { quad, half } ) => {
+      window.cy.style( {
+        nodes: {
+          'width': 160, 'height': 120, 'shape': 'rectangle',
+          'background-color': '#ecf0f1', 'border-width': 3, 'border-color': '#2c3e50',
+          // four images, per-image sizes and positions; the overlaps pin
+          // v3's layer order (later list entries composite on top) and
+          // the translucent half pins the blend math
+          'background-image': [ quad, half, quad, half ],
+          'background-fit': 'none',
+          'background-width': [ '50%', '45%', '30%', '35%' ],
+          'background-height': [ '50%', '45%', '30%', '35%' ],
+          'background-position-x': [ '0%', '30%', '100%', '65%' ],
+          'background-position-y': [ '0%', '30%', '0%', '85%' ],
+          'background-image-opacity': [ 1, 0.8, 1, 1 ]
+        }
+      } );
+    }, { quad: QUAD_PNG, half: HALF_PNG } );
+    await waitForImages( page );
+
+    checkGolden( 'images-multi', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1776,6 +1812,61 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }, { elements, shared } );
 
     expectParity( v3uri, v4uri, 'parity-images', testInfo );
+  } );
+
+  test( 'parity: multi-image layer order (round 15.4)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // two overlapping images per node: if either side drew index 0 on
+    // top (the CSS convention) instead of v3's later-on-top canvas
+    // order, the overlap region diffs solidly
+    const QUAD = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg==';
+    const HALF = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4AYXBAREAIAzEsPI3mUjABGqRwRysyTr7fQZBBBFEAZdBEEEE0QaYA0GAoqM/AAAAAElFTkSuQmCC';
+    const elements = [
+      { data: { id: 'a' }, position: { x: -100, y: 0 } },
+      { data: { id: 'b' }, position: { x: 100, y: 0 } }
+    ];
+    const shared = {
+      'width': 100, 'height': 80, 'shape': 'rectangle',
+      'background-color': '#ecf0f1', 'border-width': 3, 'border-color': '#2c3e50',
+      'background-image': [ QUAD, HALF ],
+      'background-fit': 'none',
+      'background-width': [ '60%', '55%' ],
+      'background-height': [ '60%', '55%' ],
+      'background-position-x': [ '15%', '70%' ],
+      'background-position-y': [ '15%', '70%' ]
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, shared } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(),
+        style: [ { selector: 'node', style: shared } ],
+        layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: { nodes: shared }, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => {
+        const poll = () => {
+          if( cy4._store.images.pendingCount() === 0 ){ resolve(); }
+          else { setTimeout( poll, 20 ); }
+        };
+
+        poll();
+      } );
+      await new Promise( resolve => setTimeout( resolve, 250 ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, shared } );
+
+    expectParity( v3uri, v4uri, 'parity-images-multi', testInfo );
   } );
 
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {

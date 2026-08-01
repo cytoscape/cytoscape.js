@@ -3992,9 +3992,19 @@ below signed off in the 2026-08-01 sitting.
   `images-cover-clip` goldens, and **`parity-images` vs v3 at
   0.000%** — fit/position/opacity math is pixel-exact.  2082 Node
   tests, 122/122 Playwright, typecheck + lint clean.
-- [ ] **15.4 Multi-image compositing** — up to 4 records per node,
-  layer order pinned vs v3 in the parity scene, per-image prop
-  independence, cap-overflow warn.
+- [x] **15.4 Multi-image compositing** (2026-08-01) — the 15.3 FS
+  loop verified across full multi-image records: a Node spec pins
+  per-image independence of every list prop at its index (fit /
+  repeat / clip / containment / smoothing / type, four distinct
+  registry entries), the `images-multi` golden pins four
+  overlapping images with per-image sizes/positions/opacities and
+  a half-translucent source (blend math), and
+  **`parity-images-multi` vs v3 at 0.000%** pins the layer order —
+  v3's canvas draws ascending index with source-over, so **later
+  list entries composite on top** (not the CSS first-on-top
+  convention; verified against v3's drawImages loop and now
+  pixel-pinned).  The cap-overflow warn landed in 15.2.  2083 Node
+  tests, 124/124 Playwright, typecheck + lint clean.
 - [ ] **15.5 SDF icon mode** — r8 tier + EDT reuse, threshold/AA FS
   branch, `background-image-color` tint (mapper-capable single
   form); crispness pin: a high-zoom golden where the icon edge

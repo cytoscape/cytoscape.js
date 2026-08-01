@@ -2171,7 +2171,11 @@ export class GpuCollection {
       cy._emitOnEle( 'remove', ele );
     }
 
-    return this._spawn( [ ...edgeHandles, ...nodeHandles ].map( ele => ele._refs[0] ) );
+    const removed = this._spawn( [ ...edgeHandles, ...nodeHandles ].map( ele => ele._refs[0] ) );
+
+    cy._maybeCompact(); // the auto dead-slot trigger's safe boundary (19.5)
+
+    return removed;
   }
 
   /**

@@ -62,6 +62,9 @@ export interface LayoutLike {
 const DEFAULT_HEADLESS_WIDTH = 800;
 const DEFAULT_HEADLESS_HEIGHT = 600;
 
+/** dead slots below this never auto-compact (small graphs don't churn) */
+const COMPACT_FLOOR = 1024;
+
 /** Style work deferred by an open batch (flushed once at the outermost endBatch). */
 interface BatchPending {
   /** the sheet changed during the batch: one applyAll() subsumes the per-slot work */
@@ -234,6 +237,46 @@ export class GpuCore {
   }
 
   /**
+   * Slot-moving compaction, explicit form (round 19.5): move live
+   * elements down to a dense slot prefix so `highWater`, column capacity
+   * and pass-iteration widths shrink to the current graph instead of its
+   * peak.  A monotone remap keeps draw order — compaction is a visual
+   * no-op — and held refs/handles/listeners repair through forwarding
+   * (19.3).  The automatic dead-slot-ratio trigger covers the common
+   * shrink/churn profiles; this call is for deterministic timing (e.g.
+   * right after a bulk filter, before an animation).  Throws mid-batch;
+   * defers with a warning while a GPU force layout runs.
+   */
+  compact(): this {
+    this._compact();
+
+    return this;
+  }
+
+  /**
+   * The automatic trigger (19.5), checked at safe boundaries — a
+   * completed removal, the outermost endBatch: compact when a group's
+   * dead slots exceed its live count (the round-11 waste-over-half
+   * policy) past a floor that keeps small graphs from churning.  Defers
+   * silently while batching or while a GPU force run owns positions.
+   */
+  _maybeCompact(): void {
+    if( this._batchDepth > 0 || this._destroyed ){ return; }
+    if( this._renderer?.forceActive() ){ return; } // re-checked on the next boundary
+
+    for( const group of [ 'nodes', 'edges' ] as GroupName[] ){
+      const table = this._store.table( group );
+      const dead = table.highWater - table.count;
+
+      if( dead > COMPACT_FLOOR && dead > table.count ){
+        this._compact();
+
+        return;
+      }
+    }
+  }
+
+  /**
    * Slot compaction, core tier (round 19.3; the public trigger policy is
    * 19.5): settle any GPU-driven tweens (the reparent precedent), compact
    * the store, then repair the core-held slot-keyed state — the interned
@@ -326,6 +369,7 @@ export class GpuCore {
 
     if( pending.sheet ){
       this._styleEngine.applyAll(); // covers every live element, so the per-slot work is subsumed
+      this._maybeCompact();
 
       return this;
     }
@@ -356,6 +400,8 @@ export class GpuCore {
 
     this._styleEngine.refreshMapped( 'nodes', mappedNodes, keys );
     this._styleEngine.refreshMapped( 'edges', mappedEdges, keys );
+
+    this._maybeCompact(); // removals inside the batch deferred to here
 
     return this;
   }

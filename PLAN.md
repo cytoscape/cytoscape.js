@@ -4476,9 +4476,26 @@ design, built.  Signed off 2026-08-01.
   separation, gravity containment, cooling/convergence, pinning,
   and the path-relaxation invariants.  2135 Node tests, typecheck +
   lint clean.
-- [ ] **18.2 Layout plumbing** — `force` through the round-17
-  contract (its first production consumer): animate-live on the CPU
-  executor, events/promise/stop, compound/subset/headless rules.
+- [x] **18.2 Layout plumbing** (2026-08-01) — `layout/force.mts`:
+  `cy.layout({ name: 'force' })` wraps `ForceLayoutImpl` in the
+  **round-17 CustomLayout plumbing — the contract's first
+  production consumer** (an external layout would ship identical
+  code).  Options: `edgeLength` (number or a plain fn of the edge
+  handle, resolved once — the algorithms rule), the sim params
+  (repulsion/stiffness/gravity/decay/iterations/threshold),
+  `seed`/`randomize` (fresh deterministic scatter vs relaxing
+  current positions; pinned nodes keep real coordinates either
+  way), `animate` (live streaming per frame through the bulk slot
+  path — which, as recorded, emits no per-node position events —
+  vs settle-then-draw), `stepsPerFrame`, `fit`/`padding`.  Scoping:
+  leaves only (parents derive); **locked nodes pin** — they join
+  every force pair but never move; subset scopes simulate the
+  subset only (recorded).  `stop()` settles early through the
+  wrapper.  Tests-first: 7 specs in `test/gpu-force-layout.mjs` red
+  then green — lifecycle + ring relaxation + fit, seeded
+  determinism end-to-end, fn edge lengths, locked pinning, compound
+  leaves-only, subset scoping, live streaming + stop.  2142 Node
+  tests, typecheck + lint clean.
 - [ ] **18.3 GPU kernels** — grid build (count/scan/scatter), force
   gather, integrate; lease wiring (pre-cull pass slot, mirror
   skip); Playwright on a real adapter: positions move on screen

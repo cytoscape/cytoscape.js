@@ -17,6 +17,7 @@ import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import * as math from '../math.mjs';
 import type { BoundsLike } from './viewport.mjs';
 import { CustomLayout } from './layout/contract.mjs';
+import { ForceLayoutImpl } from './layout/force.mjs';
 import type { GpuCustomLayoutOptions } from './gpu-types.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
@@ -321,11 +322,19 @@ export class GpuCore {
     if( options?.name === 'breadthfirst' ){ return new BreadthFirstLayout( this, options ); }
     if( options?.name === 'random' ){ return new RandomLayout( this, options ); }
 
+    // the built-in force layout (round 18.2) rides the extension
+    // contract — exactly what an external layout would do
+    if( ( options as { name?: string } )?.name === 'force' ){
+      return new CustomLayout( this, {
+        ...( options as object ), impl: ForceLayoutImpl
+      } as GpuCustomLayoutOptions );
+    }
+
     const got = ( options as { name?: string } | null )?.name;
 
     throw new Error(
       `A layout needs a built-in name ('grid', 'preset', 'circle', 'concentric', ` +
-      `'breadthfirst', 'random') or an impl (the extension contract)` +
+      `'breadthfirst', 'random', 'force') or an impl (the extension contract)` +
       ( got != null ? `; got name '${got}'` : '' )
     );
   }

@@ -399,6 +399,31 @@ export interface GpuRandomLayoutOptions extends GpuLayoutBaseOptions {
   name: 'random';
 }
 
+/** The built-in force layout (round 18): spring–electric with
+ * uniform-grid cutoff repulsion, seeded and deterministic; runs
+ * through the extension contract. */
+export interface GpuForceLayoutOptions extends GpuLayoutBaseOptions {
+  name: 'force';
+  /** ideal edge length: number, or a plain fn of the edge handle
+   * (resolved once at start) */
+  edgeLength?: number | ( ( edge: unknown ) => number );
+  repulsion?: number;
+  stiffness?: number;
+  gravity?: number;
+  /** alpha annealing rate per iteration */
+  decay?: number;
+  iterations?: number;
+  /** convergence: settled when max displacement stays under this */
+  threshold?: number;
+  seed?: number;
+  /** fresh seeded scatter (default) vs relaxing current positions */
+  randomize?: boolean;
+  /** live display: stream positions per frame while the sim runs */
+  animate?: boolean;
+  /** iterations per animation frame (animate: true; default 3) */
+  stepsPerFrame?: number;
+}
+
 /** The extension contract (round 17.5): a direct impl object/class —
  * no name, no registry — plus any custom knobs the impl reads off
  * ctx.options. */
@@ -413,7 +438,7 @@ export interface GpuCustomLayoutOptions extends GpuLayoutBaseOptions {
 export type GpuLayoutOptions =
   GpuGridLayoutOptions | GpuPresetLayoutOptions | GpuCircleLayoutOptions |
   GpuConcentricLayoutOptions | GpuBreadthFirstLayoutOptions | GpuRandomLayoutOptions |
-  GpuCustomLayoutOptions;
+  GpuForceLayoutOptions | GpuCustomLayoutOptions;
 
 /** Renderer tuning knobs (all LOD values in device px). */
 export interface GpuRendererOptions {

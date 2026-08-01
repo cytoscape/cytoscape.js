@@ -7,6 +7,9 @@
 //
 //   npm run benchmark:gpu:renderer                 # all scenes
 //   npm run benchmark:gpu:renderer -- --scene gen  # filter by key/label
+//   npm run benchmark:gpu:renderer -- --gpu-only   # skip the v3 side
+//                                                  # (gpu-vs-gpu scenarios
+//                                                  #  like compaction)
 //   npm run benchmark:gpu:renderer -- --layout     # live layout mode
 //                                                  # (+ --layout-uncapped
 //                                                  #  for full baseline runs)
@@ -76,6 +79,7 @@ const flagValue = name => { const i = argv.indexOf( name ); return i >= 0 ? argv
 const jsonOut = flagValue( '--json' );
 const sceneFilter = flagValue( '--scene' );
 const headed = argv.includes( '--headed' );
+const GPU_ONLY = argv.includes( '--gpu-only' );
 
 // -- preflight ---------------------------------------------------------------
 const BUNDLES = [ 'build/cytoscape.umd.js', 'build/cytoscape-gpu.umd.js' ].map( p => join( ROOT, p ) );
@@ -234,7 +238,7 @@ for( const scene of scenes ){
     const counts = await step( 'loadScene', scene.page );
     const groups = new Map();
 
-    for( const side of [ 'v3', 'gpu' ] ){
+    for( const side of GPU_ONLY ? [ 'gpu' ] : [ 'v3', 'gpu' ] ){
       const benchSide = side; // bench names: 'v3' | 'gpu'
 
       // labels off: init, the three pan views, export, pick (gpu)
@@ -318,6 +322,27 @@ for( const scene of scenes ){
       }
 
       await step( 'destroyInstance' );
+
+      // slot compaction (round 19.5, gpu only, mutates the graph — a
+      // fresh instance, destroyed after): peak-slot pan vs compacted pan
+      if( side === 'gpu' ){
+        await step( 'createInstance', 'gpu', false );
+
+        const comp = await step( 'compactionScenario' );
+
+        console.log(
+          `  gpu compaction: ${comp.live.nodes} live of ${comp.peakHighWater.nodes} peak slots; ` +
+          `pan wall p50 ${median( comp.peakWallMs ).toFixed( 1 )} → ${median( comp.compactedWallMs ).toFixed( 1 )} ms, ` +
+          `device ${median( comp.peakGpuMs ).toFixed( 1 )} → ${median( comp.compactedGpuMs ).toFixed( 1 )} ms; ` +
+          `compact() ${comp.compactMs.toFixed( 1 )} ms one-shot`
+        );
+        pushBench( groups, 'compaction: pan fit-all, 10% live', 'gpu (peak slots)', toStats( comp.peakWallMs ) );
+        pushBench( groups, 'compaction: pan fit-all, 10% live', 'gpu (compacted)', toStats( comp.compactedWallMs ) );
+        pushBench( groups, 'compaction: pan fit-all, 10% live', 'gpu device (peak slots)', toStats( comp.peakGpuMs ) );
+        pushBench( groups, 'compaction: pan fit-all, 10% live', 'gpu device (compacted)', toStats( comp.compactedGpuMs ) );
+        pushBench( groups, 'compaction: compact() one-shot', 'gpu', oneShotStats( comp.compactMs ) );
+        await step( 'destroyInstance' );
+      }
     }
 
     // gpu-only: the columnar-form init
@@ -334,6 +359,7 @@ for( const scene of scenes ){
       ...PAN_VIEWS.map( ( [ , g ] ) => g ),
       ...LABEL_VIEWS.map( ( [ , g ] ) => `${g} (labels)` ),
       'pick: hover while panning',
+      'compaction: pan fit-all, 10% live', 'compaction: compact() one-shot',
       'init: create + ready', 'init: create + ready (labels)',
       'init: columnar form (gpu-only)', 'export: png full (≤2048 px)'
     ];

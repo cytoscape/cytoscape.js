@@ -420,6 +420,64 @@
           };
         }
 
+        // slot-compaction scenario (round 19.5, gpu only): cut the scene
+        // to ~10% of its nodes *through the store* — eles.remove() would
+        // auto-compact the peak state this exists to measure — then pan
+        // at peak slot widths, cy.compact(), and pan again.  The delta is
+        // what dispatch-width + mirror shrink buy on a real device.
+        // Mutates the graph irreversibly; the runner gives it a fresh
+        // instance and destroys it after.
+        async function compactionScenario( opts ){
+          const store = cy._store;
+          const nodes = cy.nodes();
+          const doomed = [];
+
+          for( let i = 0; i < nodes.length; i++ ){
+            if( i % 10 === 0 ){ continue; }
+
+            const slot = nodes[ i ]._refs[ 0 ].slot;
+
+            // leaves only: store-level removal refuses parents (compound scenes)
+            if( store.childrenOf( slot ).length > 0 ){ continue; }
+
+            doomed.push( slot );
+          }
+
+          for( const slot of doomed ){
+            for( const edgeSlot of store.adj.connectedEdges( slot ) ){
+              store.removeEdge( edgeSlot );
+            }
+
+            store.removeNode( slot );
+          }
+
+          await raf(); await raf();
+
+          const peakHighWater = {
+            nodes: store.highWater( 'nodes' ), edges: store.highWater( 'edges' )
+          };
+          const peak = await panScenario( 'fit-all', opts );
+
+          const t0 = performance.now();
+
+          cy.compact();
+
+          const compactMs = performance.now() - t0;
+
+          await raf(); await raf();
+
+          const compacted = await panScenario( 'fit-all', opts );
+
+          return {
+            peakWallMs: peak.wallMs, peakGpuMs: peak.gpuMs,
+            compactedWallMs: compacted.wallMs, compactedGpuMs: compacted.gpuMs,
+            compactMs,
+            live: { nodes: store.count( 'nodes' ), edges: store.count( 'edges' ) },
+            peakHighWater,
+            highWater: { nodes: store.highWater( 'nodes' ), edges: store.highWater( 'edges' ) }
+          };
+        }
+
         async function exportPng(){
           const t0 = performance.now();
           const opts = { full: true, maxWidth: 2048, maxHeight: 2048 };
@@ -503,7 +561,7 @@
 
         window.bench = {
           loadScene, createInstance, destroyInstance,
-          panScenario, pickScenario, exportPng, forceLayoutScenario,
+          panScenario, pickScenario, compactionScenario, exportPng, forceLayoutScenario,
           hasGpu: () => typeof navigator !== 'undefined' && navigator.gpu != null
         };
       } )();

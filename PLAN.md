@@ -1844,7 +1844,10 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    SVG zoom-promotion, an SDF icon mode, multi-image parity.**
 3. **Pie / stripe backgrounds** (51 + 50 props) — SDF-friendly in
    principle; the call is whether v4 wants them (or a leaner
-   generalization) at all.
+   generalization) at all.  **Call taken 2026-08-01 (third design
+   sitting): yes, as the lean list-valued `chart` family designed
+   for future chart kinds — scoped as round 23 (plan at the end of
+   this file).**
 4. **Node visual parity batch** — gradients
    (`background-fill`/`line-fill` linear/radial + stop props),
    `corner-radius` control, `border-style`/`-cap`/`-join`/
@@ -1904,7 +1907,10 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    v4's handle has `play`/`stop`/`promise`), and **style
    transitions** (`transition-property`/`-duration`/`-delay`/
    `-timing-function`): call whether transitions return as sugar
-   over the animation system or stay out.
+   over the animation system or stay out.  **Partially resolved
+   2026-08-01 (third design sitting): v4 animations need not match
+   v3 — the queue is dropped outright (round 21) and `step` stays
+   out; controls and transitions remain the open follow-up.**
 10. **Extension system** — `cytoscape.use()` and
     `cytoscape(type, name, registrant)` registration for
     layout/renderer/core/collection extensions.  v4 has none; this
@@ -1918,6 +1924,11 @@ spellings, redundant `attr`-family duplicates — one name per concept).
     (no space) from `visibility: hidden` (occupies space) from
     zero opacity; v4 has one `show`/`hide` flag.  Call: is one flag
     enough, and what do `visible()`/`takesUpSpace()` mean exactly.
+    **Resolved 2026-08-01 (third design sitting): both tiers exist
+    — show/hide stays the display tier (now re-fanning bezier
+    bundles, v3's structural semantics), `visibility` lands as a
+    mapper-capable style prop keeping space and bundle ranks —
+    scoped as round 22 (plan at the end of this file).**
 12. **Odds and ends** — `cy.gc()`, `cy.window()`,
     `cytoscape.warnings()`, graph-level `data` in the wire format,
     `panBy` animation target, layout instances as event emitters
@@ -5174,3 +5185,191 @@ fidelity in Playwright (the pinch spec's synthetic-pointer precedent;
 gestures are driven through pointer events, so no Touch APIs needed);
 threshold semantics drift (the pointer layer must pick the threshold
 by `pointerType` per event, not per instance).
+
+## Design sitting (2026-08-01, third) — animation trims; display/visibility; charts
+
+Three calls taken with the user (quick answers, follow-up expected on
+the finer points), scoping rounds 21–23:
+
+1. **v4 animations do not have to match v3, and the queue goes.**
+   The per-element animation queue exists to sequence animations —
+   which promises already do better (`await a.promise()`); it was
+   valuable pre-promises, not now.  v4 drops queueing outright (there
+   is no `queue: false` option because there is no queue), and the
+   v3 `step` callback stays out (v4 never had it; `onRender` +
+   promises cover progress observation).  The rest of the v3 surface
+   (`pause`/`progress`/`reverse`/`apply`, style transitions) stays
+   **logged open for follow-up** — not built, not dropped.
+   Scoped as **round 21**.
+2. **`display` and `visibility` both exist — the distinction is
+   useful.**  Two tiers with different use cases: structural hiding
+   (no space) vs paint-only invisibility (space kept).  The
+   motivating cases: **bundled beziers** — structurally hiding a
+   bundle member should re-fan its siblings, while making it
+   invisible must keep every rank stable (no sibling jump) — and
+   **compound nodes** — a display-hidden child leaves its parent's
+   auto-bounds, an invisible child still sizes it.  Scoped as
+   **round 22**.
+3. **Pie/stripe backgrounds: yes — designed as a charts surface.**
+   Ported not as v3's 101 numbered props but as a lean list-valued
+   `chart` family designed to grow into other chart kinds later
+   (the pie hole is a first instance: donuts fall out of the same
+   surface).  Scoped as **round 23**.
+
+Gap-list updates: item 9 (animation surface) partially resolved by
+call 1 (queue/step decided; controls + transitions remain the open
+follow-up); item 11 (display vs visibility) resolved by call 2;
+item 3 (pie/stripe) resolved by call 3.
+
+## Round 21 plan — animation queue removal (planned 2026-08-01)
+
+**Signed-off design calls:**
+
+- **No queue, concurrency by channel.**  The manager keeps a set of
+  *concurrently running* animations per element (and for the
+  viewport) instead of a queue: starting an animation whose channels
+  are **disjoint** from every running one's runs it immediately
+  alongside them (position tween + opacity fade compose); starting
+  one that **overlaps** a running animation's channels stops that
+  older animation in place (its promise resolves, values freeze
+  where they are, any GPU lease settles) and the new one captures
+  from the frozen state — whole-animation eviction, never a
+  half-stopped animation.  Sequencing is the caller's job via
+  `await a.promise()`.
+- `delay` stays (it is part of one animation's timeline, not
+  queueing).  `play`/`stop`/`promise`/`playing`/`animated` keep
+  their shapes; `stop()` stops every running animation on the
+  collection.
+- Recorded: this is a deliberate v4 divergence from v3's
+  queue-by-default (user-approved 2026-08-01); v3's `queue: false`
+  option spelling is rejected (unknown-keys-throw — there is no
+  queue to opt out of).
+
+**Pass split** (tests-first; docs in-commit):
+
+- [ ] **21.1** Manager rework (queue → concurrent set + channel
+  eviction), Node specs: disjoint channels run concurrently to
+  distinct targets; overlapping starts evict (older promise
+  resolves, value frozen at eviction, new capture starts there);
+  stop() stops all; a GPU-leased animation evicted mid-flight
+  settles to the CPU first (browser spec if needed); the
+  `queue` option key throws.
+
+## Round 22 plan — display/visibility split (planned 2026-08-01)
+
+**Signed-off design calls:**
+
+1. **`show()`/`hide()` stay the display tier** (structural, element
+   state): no draw, no pick, no space — excluded from bb/fit and
+   compound auto-bounds (already true) — and, **new**, a hidden
+   `bezier`-styled bundle member leaves its bundle: siblings re-fan
+   (v3's display semantics; v4 previously kept the rank, which is
+   visibility semantics).  Same rule for the per-node loop stagger
+   and compound-loop member index.  A hidden *node* needs no bundle
+   work: every member of a pair shares both endpoints, so the whole
+   bundle disappears together — recorded.
+2. **`visibility` is a style prop** (`'visible' | 'hidden'`, both
+   groups, default visible, constants or `case` mappers — the v4
+   mechanism for per-element variation; there is no element-state
+   setter).  Paint-only: an invisible element draws nothing but
+   **keeps its space** — bb/fit, compound auto-bounds, layouts and
+   bundle ranks all unchanged — and is not pickable, not hoverable,
+   not box-selectable (`interactive()` rides `visible()`).
+   Ancestor-gated for nodes (v3: descendants of an invisible parent
+   are invisible); an edge is additionally invisible while either
+   endpoint is (rides the kernels' existing endpoint tests).
+3. **Mechanism: one derived bit, one WGSL constant.**  The style
+   engine maintains `FLAG_SELF_INVISIBLE`; the store derives
+   **`FLAG_DRAWN`** (= effective shown AND no invisibility on self
+   or, for nodes, any ancestor) in the same subtree walk that
+   maintains effective `FLAG_VISIBLE`.  The WGSL `SHOWN` constant
+   redefines from `ALIVE|VISIBLE` to `ALIVE|DRAWN`, so **every**
+   cull kernel, vertex shader, depth prepass and glyph/ghost/layer
+   stream honors visibility with zero per-kernel edits and zero new
+   bindings; CPU picking tests DRAWN; bb/fit/box-geometry scans keep
+   testing VISIBLE (space semantics — invisible elements stay in).
+4. **Getter semantics** (v3's): `visible()` = drawn (edges fold
+   endpoints); `hidden()` its negation; `takesUpSpace()` = the
+   display tier alone (shown, whatever the visibility — it may now
+   differ from `visible()`); `interactive()` = `visible()` && the
+   20.2 events rule.  Readback: `style('visibility')` from the flag.
+
+**Pass split** (tests-first; docs in-commit):
+
+- [ ] **22.1 Store + prop** — FLAG_SELF_INVISIBLE/FLAG_DRAWN,
+  the derivation walk, the `visibility` prop
+  (parse/readback/mappers/defaults), getter updates.  Node specs:
+  readback, ancestor gating, edge-endpoint folding, bb/fit
+  inclusion, auto-bounds inclusion, pick exclusion (CPU),
+  takesUpSpace vs visible divergence, case-mapper refresh.
+- [ ] **22.2 Renderer** — the SHOWN constant flip + pick paths;
+  Playwright: an invisible node's pixels vanish while `fit()`
+  still frames it (and its label/ghost/overlay vanish with it);
+  an invisible edge vanishes with stable siblings; hover/tap pass
+  through; pick-cache invalidation on the flag flip (flags column
+  — free, spec-pinned).
+- [ ] **22.3 Bundle re-fan** — derivePair/deriveLoops skip hidden
+  members + the visibility-flip no-op; markPair hooks on hide/show
+  of bezier-styled edges.  Node specs on controlPoints(); a
+  Playwright/golden pin: hide a 3-bundle's middle member → the
+  outer two re-fan; make it invisible → the outer two
+  byte-identical.
+
+## Round 23 plan — node charts: pie + stripes (planned 2026-08-01)
+
+v3's 51 + 50 numbered props (`pie-1-background-color` ...
+`stripe-16-background-size`) return as a **lean, list-valued chart
+family** designed to grow more kinds later — the user's call
+(2026-08-01): definitely port, and shape the surface for future
+chart types.
+
+**Signed-off design calls:**
+
+1. **The `chart` family** (node-only): `chart`
+   (`none | pie | stripes` — the open enum future kinds extend),
+   `chart-values` (a number list — a constant array, or the
+   `{ data: key }` passthrough reading a **per-element array** from
+   the data sidecar, the headline capability: data-driven pies),
+   `chart-colors` (a constant color list *or* a named scheme string
+   from the mapper DSL's palette table — `'category10'` is the
+   default), `chart-size` (fraction or `'N%'` of the node box,
+   default 100%), `chart-hole` (0–1 inner cutout — donuts from the
+   same surface, v3's `pie-hole` analogue), `chart-start-angle`
+   (pie; v3's `pie-start-angle`, default 12 o'clock),
+   `chart-direction` (stripes: `horizontal | vertical`) and
+   `chart-opacity` (folds into slice alphas, the B1 pattern).
+   Values are **absolute fractions of the whole** (v3's percent
+   semantics: a sum under 1 leaves unpainted remainder, over 1
+   clamps at 1) — no normalize option for now, apps can normalize
+   (recorded).  Slice count caps at 16 (v3's N; recorded).
+2. **Storage: a chart blob record per element** ([kind, config,
+   n, then n × (value, packed rgba)]) in a round-11-compacting blob
+   pool behind a packed `node.chartRef` column — colors resolve at
+   style-write (constants-only props bake per record).
+   `chart-values` via `{ data }` refreshes on writes of the mapped
+   key like any mapped channel; every other chart prop is
+   constants-only except `chart` itself and `chart-opacity`
+   (mapper-capable enums/numbers).
+3. **Rendering: in the node FS, SDF-native.**  A `chartRef == 0`
+   early-out keeps unused cost ~zero; pie tests the fragment's
+   local angle against cumulative stops (start at 12 o'clock,
+   clockwise — v3), stripes test the local coordinate; both clip to
+   the node's shape SDF and the `chart-size`d box, draw **over**
+   fill/gradient/background-images and **under** border/outline
+   (v3's order), and AA at slice boundaries analytically.  Charts
+   are paint-only: never in bb, never pickable, no cull impact.
+4. **Verification**: Node specs (parse/readback/blob/refresh),
+   goldens (pie fractions incl. remainder gap + hole + start angle;
+   stripes both directions), and a **live v3 parity scene** mapping
+   `chart` pies onto v3's `pie-i-*` props (and stripes onto
+   `stripe-i-*`) at matching geometry.
+
+**Pass split** (tests-first; docs in-commit):
+
+- [ ] **23.1 Props + model** — parse/validate/readback, the chart
+  blob + ref column, the data-passthrough values channel + refresh.
+- [ ] **23.2 Render** — FS chart branch (pie + stripes + hole +
+  AA), goldens.
+- [ ] **23.3 Parity + polish** — live v3 pie/stripe parity scenes,
+  `debug/webgpu` toggle, README/PLAN records + closing sweep for
+  the three-round arc.

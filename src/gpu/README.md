@@ -611,6 +611,18 @@ each is deliberate, not a pass-1 deferral:
   promoting to mixed).  Headless or adapterless instances run the whole
   DSL eagerly on the CPU — the kernel is an optimization layer, not a
   requirement.
+- **Animations sequence by promise, not by queue** (decided
+  2026-08-01, third design sitting; built as round 21): v4 drops
+  v3's per-element animation queue — queueing existed to sequence
+  animations, which `await a.promise()` does better.  Animations on
+  disjoint channels run concurrently; starting one that overlaps a
+  running animation's channels stops the older one in place (its
+  promise resolves, values freeze, any GPU lease settles) and the
+  new one captures from there.  There is no `queue` option (nothing
+  to opt out of — the spelling throws) and no v3 `step` callback
+  (`onRender` + promises observe progress).  The
+  `pause`/`progress`/`reverse` controls and style transitions are
+  an open follow-up — neither built nor dropped.
 - **Animation: CPU-canonical, with a GPU fast path for position and paint
   under a transient lease.**  An animation tweens element style/position
   (or the viewport) from captured start values to explicit targets over a

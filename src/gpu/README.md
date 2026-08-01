@@ -1108,6 +1108,33 @@ layout as round 18, with background images as round 15 and the event
 vocabulary + extension contract as round 17; z-index is dropped
 outright.  Plans in PLAN.md, "Design sitting (2026-08-01)".)
 
+## Background images (round 15, landing)
+
+The 16-prop `background-image` family lands on the design calls
+recorded in PLAN.md ("Round 15 plan"): size-tiered texture arrays
+with hardware mips (never a shelf atlas), SVG zoom-promotion with
+export-time re-raster, an explicit SDF icon mode for monochrome
+vector icons, and multi-image parity (up to 4 per node, blob-pool
+records).  Landed so far:
+
+- **15.1 — the ImageRegistry** (`src/gpu/image-registry.mts`):
+  unique images dedup by (kind, crossorigin, url) into refcounted
+  entries — the string-dictionary discipline applied to rasters.
+  Entry ids are slots (free-list recycle; `takeFreed()` is the
+  renderer's layer-reclaim channel), rgba entries take a size tier
+  from their decoded longest side (128² / 512² / 1024² cap), and
+  sdf-icon entries raster once at the fixed 128² for the r8 icon
+  array.  Decoding runs behind an injectable async rasterizer —
+  headless instances stay pending and never throw, the renderer
+  attaches the browser decoder at mount (`setDecoder` kicks
+  everything acquired before it), a failed url warns once and
+  renders imageless (recorded: no per-element error state), and
+  stale decodes landing after a free are dropped by object
+  identity.  `promote(id, demandPx)` re-rasters vector entries at
+  the smallest covering tier — the primitive under 15.6's
+  zoom-promotion meter; raster sources never promote (source
+  resolution is their ceiling, as in v3).
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each

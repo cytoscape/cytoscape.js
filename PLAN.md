@@ -3915,11 +3915,26 @@ below signed off in the 2026-08-01 sitting.
 
 **Pass split** (tests-first per item; docs in-commit):
 
-- [ ] **15.0 Docs-first** — this plan section + the README pointer.
-- [ ] **15.1 ImageRegistry + loader** — URL dedup/refcount, tier
-  assignment, layer free-list + waste-threshold reclaim, async
-  decode behind an injectable rasterizer (Node specs headless with
-  a mock; `test/gpu-image-registry.mjs`).
+- [x] **15.0 Docs-first** — landed with the design-sitting commit
+  (`0f0ee859`): this plan section + the README pointer preceded all
+  round-15 implementation.
+- [x] **15.1 ImageRegistry + loader** (2026-08-01) —
+  `src/gpu/image-registry.mts`: entries dedup by (kind, crossorigin,
+  url) with refcounts; freed ids recycle through a free-list and
+  report to the renderer via `takeFreed()` (the layer reclaim
+  channel); rgba tier assignment from the decoded longest side
+  (128/512/1024, cap tier clamps); sdf-icon entries raster at the
+  fixed `SDF_IMAGE_SIZE` and carry no rgba tier; decode runs behind
+  an injectable async rasterizer (`setDecoder` kicks entries
+  acquired headless — the mount path), failures warn once per url
+  and stay failed (re-acquire never re-kicks), and a decode
+  resolving after its entry was freed is dropped by object identity
+  so recycled ids can never take stale rasters.  `promote(id,
+  demandPx)` re-rasters *vector* entries at the smallest covering
+  tier (the 15.6 meter's primitive; raster sources and covered
+  demands no-op).  Tests-first: 10 specs in
+  `test/gpu-image-registry.mjs` red then green — 2059 Node tests,
+  typecheck + lint clean.
 - [ ] **15.2 Props + model** — contract.mts first (blob column +
   packed ref), parse/validate/readback for all 16 props, the
   per-node image-list records, mapper rules incl. the `data(key)`

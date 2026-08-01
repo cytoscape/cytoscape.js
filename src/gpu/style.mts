@@ -2684,6 +2684,27 @@ const MAPPABLE: Record<string, MappableChannel> = {
     set: ( c, v ) => { c.chartOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
     default: () => 1
   },
+  'chart-size': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.chartSize = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => 1
+  },
+  'chart-hole': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.chartHole = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => 0
+  },
+  'chart-start-angle': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.chartStartAngle = v as number; },
+    default: () => 0
+  },
+  'chart-direction': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => v === 'vertical' ? 0 : v === 'horizontal' ? 1 : null,
+    set: ( c, v ) => { c.chartDirection = v as number; },
+    default: () => 0
+  },
   // text-events (round 20.3): the label box picks the node; node-only
   'text-events': {
     kind: 'enum', groups: [ 'nodes' ],
@@ -3505,10 +3526,13 @@ export class StyleEngine {
       }
     };
 
-    if( mapped ){
+    // a chart refresh under mapped channels must re-evaluate per slot
+    // (the narrow path writes def.computed — the constants record —
+    // which is wrong whenever `chart`/size/etc. are themselves mapped)
+    if( mapped || ( chart && def.mappers.length > 0 ) ){
       const owned = this.gpuOwnedProps[ group ];
 
-      if( this.demoted[ group ] || def.mappers.some( bm => !owned.has( bm.m.prop ) ) ){
+      if( chart || this.demoted[ group ] || def.mappers.some( bm => !owned.has( bm.m.prop ) ) ){
         this.applyMapped( group, def, slots, true );
       } else {
         // every mapped channel is GPU-owned: no CPU restyle at all — the

@@ -18,6 +18,7 @@ import type { GlyphBuffer } from './glyph-buffer.mjs';
 import { MapperRuntime } from './mapper-runtime.mjs';
 import { ImageArrays } from './image-arrays.mjs';
 import { ImagePipeline } from './image-pipeline.mjs';
+import { ChartPipeline } from './chart-pipeline.mjs';
 import { createBrowserImageDecoder } from './image-decoder.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { GpuForceRuntime } from './gpu-force.mjs';
@@ -160,6 +161,7 @@ export class Renderer {
   private context: GPUCanvasContext | null;
   private nodePipeline: NodePipeline | null;
   private imagePipeline: ImagePipeline | null = null;
+  private chartPipeline: ChartPipeline | null = null;
   private imageArrays: ImageArrays | null = null;
   private overlayPipeline: NodeLayerPipeline | null = null;
   private underlayPipeline: NodeLayerPipeline | null = null;
@@ -979,6 +981,7 @@ export class Renderer {
 
     this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
     this.imagePipeline = new ImagePipeline( device, format, kernels.visibleLayout );
+    this.chartPipeline = new ChartPipeline( device, format, kernels.visibleLayout );
     this.imageArrays = new ImageArrays( device );
     // the browser rasterizer: entries acquired while headless kick now
     this.cy._store.images.setDecoder( createBrowserImageDecoder() );
@@ -1269,6 +1272,11 @@ export class Renderer {
         this.imagePipeline?.draw(
           pass, device, uniform, mirror, this.imageArrays, store.highWater( 'nodes' ), cull.parent );
       }
+
+      // parent charts over their images (round 23; v3's pie order)
+      if( store.chartCount() > 0 ){
+        this.chartPipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.parent );
+      }
     }
 
     if( store.edgeUnderlayCount() > 0 ){
@@ -1332,6 +1340,11 @@ export class Renderer {
     if( store.imageCount() > 0 && this.imageArrays != null ){
       this.imagePipeline?.draw(
         pass, device, uniform, mirror, this.imageArrays, store.highWater( 'nodes' ), cull.node );
+    }
+
+    // leaf charts over their images (round 23), under overlays/labels
+    if( store.chartCount() > 0 ){
+      this.chartPipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
     }
 
     if( store.overlayCount() > 0 && cull.overlay != null ){

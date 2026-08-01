@@ -44,6 +44,7 @@ export class ColumnMirror {
   private blobCapacity: number;
   private poly!: GPUBuffer;
   private image!: GPUBuffer;
+  private chart!: GPUBuffer;
 
   constructor( device: MirrorDevice, view: ModelView ){
     this.device = device;
@@ -59,6 +60,7 @@ export class ColumnMirror {
     this.blob = this.reallocBlob();
     this.poly = this.reallocPolyBlob();
     this.image = this.reallocImageBlob();
+    this.chart = this.reallocChartBlob();
 
     this.realloc( 'nodes' );
     this.realloc( 'edges' );
@@ -106,6 +108,11 @@ export class ColumnMirror {
   /** The background-image record blob's storage buffer (round 15.3). */
   imageBlobBuffer(): GPUBuffer {
     return this.image;
+  }
+
+  /** The chart record blob's storage buffer (round 23). */
+  chartBlobBuffer(): GPUBuffer {
+    return this.chart;
   }
 
   /** Apply a StoreDelta: reallocate resized groups, upload dirty spans for the rest. */
@@ -178,6 +185,20 @@ export class ColumnMirror {
         this.uploadedBytes += byteLength;
       }
     }
+
+    if( delta.chartBlob != null ){
+      if( delta.chartBlob.resized ){
+        this.chart = this.reallocChartBlob();
+      } else {
+        const data = this.view.chartBlob();
+        const byteStart = delta.chartBlob.start * 4;
+        const byteLength = ( delta.chartBlob.end - delta.chartBlob.start ) * 4;
+
+        this.device.queue.writeBuffer(
+          this.chart, byteStart, data.buffer, data.byteOffset + byteStart, byteLength );
+        this.uploadedBytes += byteLength;
+      }
+    }
   }
 
   destroy(): void {
@@ -191,6 +212,7 @@ export class ColumnMirror {
     this.blob.destroy();
     this.poly.destroy();
     this.image.destroy();
+    this.chart.destroy();
   }
 
   /** (Re)allocate the blob mirror at the pool's backing capacity and
@@ -225,6 +247,30 @@ export class ColumnMirror {
     const old = this.poly;
     const buffer = this.device.createBuffer( {
       label: 'cy-gpu:poly-blob',
+      size: Math.max( data.byteLength, 4 ),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
+    } );
+
+    if( data.byteLength > 0 ){
+      this.device.queue.writeBuffer( buffer, 0, data.buffer, data.byteOffset, data.byteLength );
+      this.uploadedBytes += data.byteLength;
+    }
+
+    this.version++;
+
+    if( old != null ){
+      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    }
+
+    return buffer;
+  }
+
+  /** The round-23 chart blob's realloc twin. */
+  private reallocChartBlob(): GPUBuffer {
+    const data = this.view.chartBlob();
+    const old = this.chart;
+    const buffer = this.device.createBuffer( {
+      label: 'cy-gpu:chart-blob',
       size: Math.max( data.byteLength, 4 ),
       usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
     } );

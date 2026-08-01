@@ -1905,6 +1905,62 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
   } );
 
+  test( 'golden: node charts — pies, hole, start angle, stripes (round 23)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        // full pie on the default palette
+        { data: { id: 'full', kind: 'pieFull' }, position: { x: -120, y: -70 } },
+        // partial pie: the remainder stays unpainted (v3 percents)
+        { data: { id: 'partial', kind: 'piePart' }, position: { x: 0, y: -70 } },
+        // donut with a start angle, on an ellipse with a border
+        { data: { id: 'donut', kind: 'donut' }, position: { x: 120, y: -70 } },
+        // vertical stripes (v3's default direction)
+        { data: { id: 'sv', kind: 'stripesV' }, position: { x: -120, y: 70 } },
+        // horizontal stripes on a round-rectangle (shape clip)
+        { data: { id: 'sh', kind: 'stripesH' }, position: { x: 30, y: 70 } },
+        // chart-size < 1 leaves a ring of plain body
+        { data: { id: 'small', kind: 'small' }, position: { x: 140, y: 70 } }
+      ],
+      style: {
+        nodes: {
+          'width': 80, 'height': { case: [ { when: { data: 'kind', eq: 'donut' }, then: 60 } ], else: 80 },
+          'background-color': '#dfe6e9',
+          'shape': { case: [
+            { when: { data: 'kind', eq: 'donut' }, then: 'ellipse' },
+            { when: { data: 'kind', eq: 'stripesH' }, then: 'round-rectangle' },
+            { when: { data: 'kind', eq: 'stripesV' }, then: 'rectangle' }
+          ], else: 'ellipse' },
+          'border-width': { case: [ { when: { data: 'kind', eq: 'donut' }, then: 4 } ], else: 0 },
+          'border-color': '#2d3436',
+          'chart': { case: [
+            { when: { data: 'kind', in: [ 'stripesV', 'stripesH' ] }, then: 'stripes' }
+          ], else: 'pie' },
+          'chart-values': { data: 'parts' },
+          'chart-hole': { case: [ { when: { data: 'kind', eq: 'donut' }, then: 0.5 } ], else: 0 },
+          'chart-start-angle': { case: [ { when: { data: 'kind', eq: 'donut' }, then: 0.7853981634 } ], else: 0 }, // 45deg
+          'chart-size': { case: [ { when: { data: 'kind', eq: 'small' }, then: 0.6 } ], else: 1 },
+          'chart-direction': { case: [ { when: { data: 'kind', eq: 'stripesH' }, then: 'horizontal' } ], else: 'vertical' }
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+
+    await page.evaluate( () => {
+      window.cy.$id( 'full' ).data( 'parts', [ 0.4, 0.3, 0.2, 0.1 ] );
+      window.cy.$id( 'partial' ).data( 'parts', [ 0.25, 0.25 ] );
+      window.cy.$id( 'donut' ).data( 'parts', [ 0.5, 0.3, 0.2 ] );
+      window.cy.$id( 'sv' ).data( 'parts', [ 0.3, 0.3, 0.4 ] );
+      window.cy.$id( 'sh' ).data( 'parts', [ 0.2, 0.2, 0.2, 0.4 ] );
+      window.cy.$id( 'small' ).data( 'parts', [ 0.6, 0.4 ] );
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'charts-pie-stripes', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'imageMinPx skips image sampling on unreadably small nodes (round 15.7)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 
@@ -3014,6 +3070,99 @@ test.describe( 'v3-vs-v4 render parity', () => {
     };
 
     await runParity( page, testInfo, 'parity-polygon', elements, v3Style, v4Style, { minInk: 1500 } );
+  } );
+
+  test( 'parity: pie charts vs the v3 pie-i props (round 23)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the same fractions and colors through both prop surfaces: v3's
+    // numbered pie-i-background-* vs v4's chart-values list.  Angular
+    // slice edges AA differently between the canvas and the SDF, so
+    // the bound is looser than pure-geometry scenes.
+    const elements = [
+      { data: { id: 'full' }, position: { x: -100, y: -50 } },   // full pie
+      { data: { id: 'part', partial: 1 }, position: { x: 60, y: -50 } },   // remainder gap
+      { data: { id: 'donut', holed: 1 }, position: { x: -20, y: 80 } }    // hole + start angle
+    ];
+    const colors = [ '#e74c3c', '#f1c40f', '#2ecc71', '#3498db' ];
+    const v3Pie = {
+      'pie-1-background-color': colors[ 0 ], 'pie-1-background-size': 40,
+      'pie-2-background-color': colors[ 1 ], 'pie-2-background-size': 30,
+      'pie-3-background-color': colors[ 2 ], 'pie-3-background-size': 20,
+      'pie-4-background-color': colors[ 3 ], 'pie-4-background-size': 10
+    };
+    const v3Style = [
+      { selector: 'node', style: Object.assign( {
+        'width': 80, 'height': 80, 'background-color': '#dfe6e9', 'pie-size': '100%'
+      }, v3Pie ) },
+      { selector: 'node[partial = 1]', style: {
+        'pie-3-background-size': 0, 'pie-4-background-size': 0
+      } },
+      { selector: 'node[holed = 1]', style: {
+        'pie-hole': '50%', 'pie-start-angle': '45deg'
+      } }
+    ];
+    // list props are constants-only in v4, so per-node value lists ride
+    // the data passthrough
+    const v4Style = {
+      nodes: {
+        'width': 80, 'height': 80, 'background-color': '#dfe6e9',
+        'chart': 'pie',
+        'chart-colors': colors.join( ' ' ),
+        'chart-values': { data: 'parts' },
+        'chart-hole': { case: [ { when: { data: 'holed', eq: 1 }, then: 0.5 } ], else: 0 },
+        'chart-start-angle': { case: [ { when: { data: 'holed', eq: 1 }, then: 0.7853981634 } ], else: 0 }
+      }
+    };
+
+    elements[ 0 ].data.parts = [ 0.4, 0.3, 0.2, 0.1 ];
+    elements[ 1 ].data.parts = [ 0.4, 0.3 ];
+    elements[ 2 ].data.parts = [ 0.4, 0.3, 0.2, 0.1 ];
+
+    await runParity( page, testInfo, 'parity-charts-pie', elements, v3Style, v4Style, {
+      minInk: 8000, bound: 0.02
+    } );
+  } );
+
+  test( 'parity: stripe charts vs the v3 stripe-i props (round 23)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // vertical only, on square nodes: v3's 'horizontal' keyword is
+    // inert upstream (the canvas draw switch tests a typo'd 'righward'
+    // the style type rejects, so horizontal renders as vertical) and
+    // v3's drawStripe swaps W/H in its centering offsets (visible on
+    // non-square nodes) — v4's horizontal direction and non-square
+    // stripes are pinned by the charts golden instead (recorded)
+    const elements = [
+      { data: { id: 'v' }, position: { x: -80, y: -40 } },
+      { data: { id: 'v2', partial: 1 }, position: { x: 80, y: 40 } }
+    ];
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 90, 'height': 90, 'shape': 'rectangle', 'background-color': '#dfe6e9',
+        'stripe-size': '100%', 'stripe-direction': 'vertical',
+        'stripe-1-background-color': '#e74c3c', 'stripe-1-background-size': 30,
+        'stripe-2-background-color': '#f1c40f', 'stripe-2-background-size': 30,
+        'stripe-3-background-color': '#2ecc71', 'stripe-3-background-size': 40
+      } },
+      { selector: 'node[partial = 1]', style: { 'stripe-3-background-size': 0 } }
+    ];
+    const v4Style = {
+      nodes: {
+        'width': 90, 'height': 90, 'shape': 'rectangle', 'background-color': '#dfe6e9',
+        'chart': 'stripes',
+        'chart-values': { data: 'parts' },
+        'chart-colors': '#e74c3c #f1c40f #2ecc71',
+        'chart-direction': 'vertical'
+      }
+    };
+
+    elements[ 0 ].data.parts = [ 0.3, 0.3, 0.4 ];
+    elements[ 1 ].data.parts = [ 0.3, 0.3 ]; // the remainder stays unpainted
+
+    await runParity( page, testInfo, 'parity-charts-stripes', elements, v3Style, v4Style, {
+      minInk: 8000, bound: 0.02
+    } );
   } );
 
 } );

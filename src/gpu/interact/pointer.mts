@@ -172,6 +172,9 @@ export class PointerHandler {
       level: zoom * Math.pow( 10, -dy / WHEEL_SENSITIVITY ),
       renderedPosition: pos
     } );
+
+    // the viewport-gesture vocabulary (17.4)
+    this.cy.emit( { type: 'scrollzoom', position: this.cy._viewport.renderedToModel( pos ) } );
   }
 
   private onPointerDown( e: PointerEvent ): void {
@@ -382,7 +385,10 @@ export class PointerHandler {
     down.lastY = pos.y;
 
     if( down.mode === 'pan' ){
-      if( this.cy.userPanningEnabled() === true ){ this.cy.panBy( { x: dx, y: dy } ); }
+      if( this.cy.userPanningEnabled() === true ){
+        this.cy.panBy( { x: dx, y: dy } );
+        this.cy.emit( { type: 'dragpan', position: this.cy._viewport.renderedToModel( pos ) } ); // 17.4
+      }
     } else if( down.mode === 'box' ){
       this.boxUpdate( down, pos );
     } else if( down.grabbed != null && down.grabbed.inside() ){
@@ -576,6 +582,7 @@ export class PointerHandler {
         level: ( this.cy.zoom() as number ) * dist / pinch.dist,
         renderedPosition: mid
       } );
+      this.cy.emit( { type: 'pinchzoom', position: this.cy._viewport.renderedToModel( mid ) } ); // 17.4
     }
 
     if( this.cy.userPanningEnabled() === true ){

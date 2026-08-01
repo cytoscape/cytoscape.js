@@ -1026,6 +1026,67 @@ test.describe( 'WebGPU renderer', () => {
     } );
   } );
 
+  test( 'viewport gesture events: dragpan, scrollzoom, pinchzoom (round 17.4)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__events = [];
+
+      for( const type of [ 'dragpan', 'scrollzoom', 'pinchzoom' ] ){
+        window.cy.on( type, () => window.__events.push( type ) );
+      }
+    } );
+
+    // wheel zoom -> scrollzoom
+    await page.mouse.move( center.x, center.y );
+    await page.mouse.wheel( 0, -120 );
+    await expect.poll( () => page.evaluate( () => window.__events.join( ',' ) ) )
+      .toContain( 'scrollzoom' );
+
+    // background drag-pan -> dragpan
+    await page.evaluate( () => { window.__events = []; } );
+    await page.mouse.move( center.x - 150, center.y - 100 );
+    await page.mouse.down();
+    await page.mouse.move( center.x - 100, center.y - 60, { steps: 4 } );
+    await page.mouse.up();
+
+    const panned = await page.evaluate( () => window.__events );
+
+    expect( panned ).toContain( 'dragpan' );
+    expect( panned ).not.toContain( 'scrollzoom' );
+
+    // a synthetic two-finger pinch -> pinchzoom
+    const pinched = await page.evaluate( center => {
+      window.__events = [];
+
+      const canvas = document.querySelector( 'canvas' );
+      const rect = canvas.getBoundingClientRect();
+      const fire = ( type, id, x, y ) => canvas.dispatchEvent( new PointerEvent( type, {
+        pointerId: id, pointerType: 'touch',
+        clientX: rect.left + x, clientY: rect.top + y,
+        button: 0, buttons: 1, bubbles: true
+      } ) );
+
+      fire( 'pointerdown', 21, center.x - 50, center.y );
+      fire( 'pointerdown', 22, center.x + 50, center.y );
+      fire( 'pointermove', 21, center.x - 80, center.y );
+      fire( 'pointermove', 22, center.x + 80, center.y );
+      fire( 'pointerup', 21, center.x - 80, center.y );
+      fire( 'pointerup', 22, center.x + 80, center.y );
+
+      return window.__events;
+    }, center );
+
+    expect( pinched ).toContain( 'pinchzoom' );
+    expect( pinched ).not.toContain( 'dragpan' );
+  } );
+
   test( 'two-finger pinch zooms about the midpoint', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

@@ -4343,8 +4343,14 @@ gate ecosystem work.
   drags across the node under the box gesture (panning disabled)
   and under a cxt drag.  2117 Node tests, 136/136 Playwright,
   typecheck + lint clean.
-- [ ] **17.4 Viewport gesture events** — `dragpan`, `scrollzoom`,
-  `pinchzoom` (incl. the trackpad ctrl+wheel path).
+- [x] **17.4 Viewport gesture events** (2026-08-01) — `dragpan`
+  (each applied background pan step), `scrollzoom` (each wheel zoom
+  — trackpad pinches arrive as ctrl+wheel and take this path, the
+  round-10 rule) and `pinchzoom` (each two-finger zoom step), all
+  core-level with the gesture's model position.  Pinned in a
+  `webgpu` spec (wheel, background drag-pan, and a synthetic
+  two-finger pinch — each firing its own name and not the others').
+  2117 Node tests, 137/137 Playwright, typecheck + lint clean.
 - [ ] **17.5 The layout contract** — LayoutContext + `{ impl }`
   plumbing on `cy.layout`/`eles.layout`; pinned by re-expressing
   the `random` builtin through the public contract in specs, plus a

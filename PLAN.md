@@ -3935,10 +3935,29 @@ below signed off in the 2026-08-01 sitting.
   demands no-op).  Tests-first: 10 specs in
   `test/gpu-image-registry.mjs` red then green — 2059 Node tests,
   typecheck + lint clean.
-- [ ] **15.2 Props + model** — contract.mts first (blob column +
-  packed ref), parse/validate/readback for all 16 props, the
-  per-node image-list records, mapper rules incl. the `data(key)`
-  URL ordinal path, refcount lifecycle on restyle/remove.
+- [x] **15.2 Props + model** (2026-08-01) — contract first:
+  `node.imageRef` (offset | count << 24 into the new image-record
+  pool — a third `CurveBlob` with round-11 compaction, relocations
+  rewriting the ref column) + `delta.imageBlob` +
+  `ModelView.imageBlob()/images`.  `GraphStore.setNodeImages` packs
+  IMG_STRIDE(12)-float records (entry id, mode flags, opacity,
+  pos/offset/size values + unit bits, sdf tint at 2 bytes/float) and
+  acquires new registry entries *before* releasing old ones, so
+  shared urls never transit refcount 0 on restyle; the imageless
+  fast path is one ref-column read; `removeNode` releases through
+  the same call.  Style: all 16 props parse/validate/read back
+  (v3's keyword sets and defaults; per-image lists distribute
+  last-value-repeats; `relative-to` throws as unported; image props
+  are node-only), stored-truth readback reads the blob records
+  (lists space-joined, the 12b convention).  Mappers: the
+  **string-interning enum channel** — `background-image` compiles
+  as an enum mapper whose parseEnum interns urls per compile (case
+  `then`s, ordinal ranges and raw passthrough data values alike),
+  covering both icon-per-type and photo-per-node; `-image-opacity`
+  and `-image-color` are plain number/color channels; every other
+  image prop rejects mappers (the 12b list rule).  Tests-first: 17
+  specs in `test/gpu-background-image.mjs` red then green — 2076
+  Node tests, typecheck + lint clean.
 - [ ] **15.3 RGBA draw path** — tier arrays + mip generation +
   mirror upload/realloc rules; the node FS single-image path
   (fit/position/size/offset/repeat/clip/containment/opacity/

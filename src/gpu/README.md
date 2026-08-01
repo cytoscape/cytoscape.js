@@ -1135,6 +1135,29 @@ records).  Landed so far:
   zoom-promotion meter; raster sources never promote (source
   resolution is their ceiling, as in v3).
 
+- **15.2 — props + model**: the 16-prop surface parses, validates
+  and reads back with v3's keyword sets and defaults —
+  `background-image` (url / data-URI lists; `url(...)` wrappers
+  strip), `-fit` (none | contain | cover), `-image-opacity`,
+  `-position-x/-y` and `-offset-x/-y` (%/px), `-width/-height`
+  (auto | %/px), `-repeat`, `-clip` (none | node),
+  `-image-containment` (inside | over), `-image-smoothing`,
+  `-image-crossorigin`, plus the v4 `-image-type` (auto | sdf-icon)
+  and `-image-color` (the icon tint).  Per-image lists distribute
+  v3-style (last value repeats); at most **4 images per node** (a
+  fixed FS loop — recorded); `background-width/height-relative-to`
+  throws as unported (a parent's stored size is already the padded
+  box — v3's include-padding default).  Records live in an image
+  param blob (round-11 compaction) behind the packed
+  `node.imageRef` column; restyles acquire-then-release so shared
+  urls survive; image props are draw-only paint — never in
+  `boundingBox()`, never pickable, and always CPU-evaluated.
+  **Mapper rules**: `background-image` takes mappers through a
+  string-interning enum channel — `{ data: 'photo' }` passthrough
+  (photo-per-node), `case`/ordinal urls (icon-per-type) — and
+  `-image-opacity`/`-image-color` are plain number/color channels;
+  every other image prop is a constants-only list (the 12b rule).
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each

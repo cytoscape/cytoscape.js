@@ -247,6 +247,16 @@ export type ColumnId =
   | 'node.overlay'
   | 'node.underlay'
   | 'node.flags' // Uint32Array(cap)
+  /**
+   * Uint32Array(cap) — background-image list ref (round 15.2): record
+   * offset into the image param blob | image count << 24 (0 = no
+   * images; count ≤ 4 — the recorded multi-image cap).  Records are
+   * IMG_STRIDE floats per image (see store/graph-store.mts
+   * setNodeImages): registry entry id, packed mode flags, opacity,
+   * position/offset/size values with unit bits, and the sdf tint.
+   * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
+   */
+  | 'node.imageRef'
   | 'edge.endpoints' // Uint32Array(2·cap), source,target node *slots*
   | 'edge.lineColor' // Uint8Array(4·cap)
   | 'edge.width' // Float32Array(cap)
@@ -366,6 +376,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.gradient', 'nodes', Uint32Array, 8 ),
   spec( 'node.overlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.underlay', 'nodes', Uint32Array, 4 ),
+  spec( 'node.imageRef', 'nodes', Uint32Array, 1 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),
   spec( 'edge.endpoints', 'edges', Uint32Array, 2 ),
   spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),
@@ -433,6 +444,8 @@ export interface StoreDelta {
   curveBlob?: { resized: boolean; start: number; end: number };
   /** Node polygon-point blob dirt (round 13 C3) — same rules. */
   polyBlob?: { resized: boolean; start: number; end: number };
+  /** Node image-record blob dirt (round 15.2) — same rules. */
+  imageBlob?: { resized: boolean; start: number; end: number };
 }
 
 // -- labels --
@@ -525,6 +538,12 @@ export interface ModelView {
    * borderGeom[0] as offset | count << 24). */
   polyBlob(): Float32Array;
   polyBlobLength(): number;
+  /** The 15.2 background-image record blob (refs ride node.imageRef). */
+  imageBlob(): Float32Array;
+  imageBlobLength(): number;
+  /** The unique-image pool (round 15.1) — the renderer uploads ready
+   * entries into its tier arrays and reclaims freed layers from it. */
+  images: import( './image-registry.mjs' ).ImageRegistry;
   /** The element's label on the given stream, or undefined. */
   labelAt( slot: number, group?: LabelStream ): LabelEntry | undefined;
   /** Slots whose labels changed since the last call; returns-and-clears (default: nodes). */

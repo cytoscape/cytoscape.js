@@ -20,6 +20,7 @@ import {
 } from './store/curve-index.mjs';
 import type { CurveStyleExtras, EndpointSpec } from './store/curve-index.mjs';
 import type { CompoundStyle } from './store/hierarchy.mjs';
+import type { BgLen, BgSize, NodeImageRecord, NodeImageSpec } from './store/graph-store.mjs';
 import {
   EDGE_DIST_INTERSECTION, EDGE_DIST_NODE_POSITION,
   TAXI_AUTO, TAXI_DOWNWARD, TAXI_HORIZONTAL, TAXI_LEFTWARD, TAXI_RIGHTWARD, TAXI_UPWARD,
@@ -165,6 +166,27 @@ interface NodeComputed {
   underlayPadding: number;
   underlayShape: number;
   underlayRadius: number;
+  // background images (round 15.2): per-image lists distribute v3-style
+  // (index i reads list[min(i, len-1)]); [] = no images
+  backgroundImage: string[];
+  backgroundFit: number[];
+  backgroundImageOpacity: number[];
+  backgroundPositionX: BgLen[];
+  backgroundPositionY: BgLen[];
+  backgroundOffsetX: BgLen[];
+  backgroundOffsetY: BgLen[];
+  backgroundWidth: BgSize[];
+  backgroundHeight: BgSize[];
+  backgroundRepeat: number[];
+  backgroundClip: number[];
+  backgroundImageContainment: number[];
+  backgroundImageSmoothing: boolean[];
+  /** one per node (the registry dedup key includes it) */
+  backgroundImageCrossorigin: string;
+  /** background-image-type per image: 0 auto (rgba), 1 sdf-icon */
+  backgroundImageType: number[];
+  /** the sdf-icon tint (render-time color, mapper-capable) */
+  backgroundImageColor: RGBA;
 }
 
 interface EdgeComputed {
@@ -332,7 +354,23 @@ const NODE_DEFAULTS: NodeComputed = {
   underlayOpacity: 0,
   underlayPadding: 10,
   underlayShape: 0,
-  underlayRadius: -1
+  underlayRadius: -1,
+  backgroundImage: [], // none, as v3
+  backgroundFit: [ 0 ], // none, as v3
+  backgroundImageOpacity: [ 1 ],
+  backgroundPositionX: [ { v: 50, pct: true } ], // '50%', as v3
+  backgroundPositionY: [ { v: 50, pct: true } ],
+  backgroundOffsetX: [ { v: 0, pct: false } ],
+  backgroundOffsetY: [ { v: 0, pct: false } ],
+  backgroundWidth: [ { mode: 0, v: 0 } ], // auto, as v3
+  backgroundHeight: [ { mode: 0, v: 0 } ],
+  backgroundRepeat: [ 0 ], // no-repeat, as v3
+  backgroundClip: [ 1 ], // node, as v3
+  backgroundImageContainment: [ 0 ], // inside, as v3
+  backgroundImageSmoothing: [ true ], // yes, as v3
+  backgroundImageCrossorigin: 'anonymous', // as v3
+  backgroundImageType: [ 0 ], // auto (rgba)
+  backgroundImageColor: [ 153, 153, 153, 255 ] // #999 (icon tint; v4-only prop)
 };
 
 /** gap between the node edge and the label block on the top/bottom
@@ -489,6 +527,12 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'outline-color', 'outline-opacity', 'outline-width', 'outline-offset',
   'label', 'font-size', 'font-family', 'font-style', 'font-weight', 'color',
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity',
+  'background-image', 'background-fit', 'background-image-opacity',
+  'background-position-x', 'background-position-y',
+  'background-offset-x', 'background-offset-y',
+  'background-width', 'background-height', 'background-repeat', 'background-clip',
+  'background-image-containment', 'background-image-smoothing',
+  'background-image-crossorigin', 'background-image-type', 'background-image-color',
   'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius',
   'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
@@ -848,6 +892,97 @@ const parsePercentList = ( prop: string, value: unknown ): number[] => {
 };
 
 /** text-halign/-valign (round 13 D3): v3's 3x3 node-label grid. */
+// background images (round 15.2) — v3's keyword sets verbatim
+const BG_FITS: Record<string, number> = { 'none': 0, 'contain': 1, 'cover': 2 };
+const BG_FIT_NAMES = [ 'none', 'contain', 'cover' ];
+const BG_REPEATS: Record<string, number> = {
+  'no-repeat': 0, 'repeat-x': 1, 'repeat-y': 2, 'repeat': 3
+};
+const BG_REPEAT_NAMES = [ 'no-repeat', 'repeat-x', 'repeat-y', 'repeat' ];
+const BG_CLIPS: Record<string, number> = { 'none': 0, 'node': 1 };
+const BG_CLIP_NAMES = [ 'none', 'node' ];
+const BG_CONTAINMENTS: Record<string, number> = { 'inside': 0, 'over': 1 };
+const BG_CONTAINMENT_NAMES = [ 'inside', 'over' ];
+const IMAGE_TYPES: Record<string, number> = { 'auto': 0, 'sdf-icon': 1 };
+const IMAGE_TYPE_NAMES = [ 'auto', 'sdf-icon' ];
+const BG_CROSSORIGINS = new Set( [ 'anonymous', 'use-credentials', 'null' ] );
+
+const BG_PCT = /^\s*(-?(?:\d+\.?\d*|\.\d+))\s*%\s*$/;
+const BG_PX = /^\s*(-?(?:\d+\.?\d*|\.\d+))\s*px\s*$/;
+
+/** Parse one prop value as a per-image list: arrays distribute per
+ * image (index i reads entry min(i, len-1)); scalars apply to all. */
+const parseImageList = <T,>( prop: string, value: unknown, one: ( v: unknown ) => T ): T[] => {
+  const list = Array.isArray( value ) ? value : [ value ];
+
+  if( list.length === 0 ){
+    throw new Error( `The ${prop} list must not be empty` );
+  }
+
+  return list.map( one );
+};
+
+const parseImageEnum = ( prop: string, table: Record<string, number> ) =>
+  ( v: unknown ): number => {
+    const id = table[ String( v ) ];
+
+    if( id == null ){
+      throw new Error(
+        `The ${prop} '${String( v )}' is unsupported; use one of: ${Object.keys( table ).join( ', ' )}` );
+    }
+
+    return id;
+  };
+
+/** %/px length ('N%' | 'Npx' | number) → { v, pct } */
+const parseBgLen = ( prop: string ) => ( v: unknown ): BgLen => {
+  if( typeof v === 'number' && Number.isFinite( v ) ){ return { v, pct: false }; }
+
+  const s = String( v );
+  const pct = BG_PCT.exec( s );
+
+  if( pct != null ){ return { v: Number( pct[ 1 ] ), pct: true }; }
+
+  const px = BG_PX.exec( s );
+
+  if( px != null ){ return { v: Number( px[ 1 ] ), pct: false }; }
+
+  throw new Error( `The ${prop} '${s}' must be a number of px or an 'N%' string` );
+};
+
+/** 'auto' | %/px length → { mode: 0 auto | 1 px | 2 pct, v } */
+const parseBgSize = ( prop: string ) => ( v: unknown ): BgSize => {
+  if( v === 'auto' ){ return { mode: 0, v: 0 }; }
+
+  const len = parseBgLen( prop )( v );
+
+  if( len.v < 0 ){
+    throw new Error( `The ${prop} '${String( v )}' must be non-negative` );
+  }
+
+  return { mode: len.pct ? 2 : 1, v: len.v };
+};
+
+/** url list: 'none' → [], strings strip an optional url(...) wrapper */
+const parseUrls = ( prop: string, value: unknown ): string[] => {
+  if( value === 'none' || value == null ){ return []; }
+
+  const list = Array.isArray( value ) ? value : [ value ];
+  const urls: string[] = [];
+
+  for( const v of list ){
+    const s = String( v ).trim();
+
+    if( s === 'none' || s === '' ){ continue; }
+
+    const wrapped = /^url\s*\(\s*['"]?(.*?)['"]?\s*\)$/.exec( s );
+
+    urls.push( wrapped != null ? wrapped[ 1 ] : s );
+  }
+
+  return urls;
+};
+
 const HALIGNS: Record<string, number> = { 'left': 0, 'center': 1, 'right': 2 };
 const VALIGNS: Record<string, number> = { 'top': 0, 'center': 1, 'bottom': 2 };
 const HALIGN_NAMES = [ 'left', 'center', 'right' ];
@@ -1739,10 +1874,98 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       computed.targetDistanceFromNode = parseNonNegative( prop, value );
       break;
 
+    // background images (round 15.2); per-image props accept scalars or
+    // arrays (v3's multiple: true), distributing last-value-repeats
+    case 'background-image':
+      computed.backgroundImage = parseUrls( prop, value );
+      break;
+    case 'background-fit':
+      computed.backgroundFit = parseImageList( prop, value, parseImageEnum( prop, BG_FITS ) );
+      break;
+    case 'background-image-opacity':
+      computed.backgroundImageOpacity = parseImageList( prop, value, v => {
+        const op = parseNumber( prop, v );
+
+        if( op < 0 || op > 1 ){
+          throw new Error( `The ${prop} '${String( v )}' must be within [0, 1]` );
+        }
+
+        return op;
+      } );
+      break;
+    case 'background-position-x':
+      computed.backgroundPositionX = parseImageList( prop, value, parseBgLen( prop ) );
+      break;
+    case 'background-position-y':
+      computed.backgroundPositionY = parseImageList( prop, value, parseBgLen( prop ) );
+      break;
+    case 'background-offset-x':
+      computed.backgroundOffsetX = parseImageList( prop, value, parseBgLen( prop ) );
+      break;
+    case 'background-offset-y':
+      computed.backgroundOffsetY = parseImageList( prop, value, parseBgLen( prop ) );
+      break;
+    case 'background-width':
+      computed.backgroundWidth = parseImageList( prop, value, parseBgSize( prop ) );
+      break;
+    case 'background-height':
+      computed.backgroundHeight = parseImageList( prop, value, parseBgSize( prop ) );
+      break;
+    case 'background-repeat':
+      computed.backgroundRepeat = parseImageList( prop, value, parseImageEnum( prop, BG_REPEATS ) );
+      break;
+    case 'background-clip':
+      computed.backgroundClip = parseImageList( prop, value, parseImageEnum( prop, BG_CLIPS ) );
+      break;
+    case 'background-image-containment':
+      computed.backgroundImageContainment =
+        parseImageList( prop, value, parseImageEnum( prop, BG_CONTAINMENTS ) );
+      break;
+    case 'background-image-smoothing':
+      computed.backgroundImageSmoothing =
+        parseImageList( prop, value, v => parseYesNo( prop, v ) );
+      break;
+    case 'background-image-type':
+      computed.backgroundImageType = parseImageList( prop, value, parseImageEnum( prop, IMAGE_TYPES ) );
+      break;
+    case 'background-image-color':
+      computed.backgroundImageColor = parseColor( prop, value );
+      break;
+    case 'background-image-crossorigin': {
+      const co = String( value );
+
+      if( !BG_CROSSORIGINS.has( co ) ){
+        throw new Error(
+          `The ${prop} '${co}' is unsupported; use anonymous, use-credentials or null` );
+      }
+
+      computed.backgroundImageCrossorigin = co;
+      break;
+    }
+    case 'background-width-relative-to':
+    case 'background-height-relative-to':
+      throw new Error(
+        `'${prop}' is not supported in the GPU prototype: a compound parent's stored ` +
+        `size is already the padded box (v3's include-padding default), and leaves have no padding` );
+
     default:
       throw new Error( `The style property '${prop}' is unsupported in the GPU prototype` );
   }
 };
+
+/** background-image props are node-only (round 15.2). */
+const IMAGE_PROPS: ReadonlySet<string> = new Set( [
+  'background-image', 'background-fit', 'background-image-opacity',
+  'background-position-x', 'background-position-y',
+  'background-offset-x', 'background-offset-y',
+  'background-width', 'background-height',
+  'background-repeat', 'background-clip',
+  'background-image-containment', 'background-image-smoothing',
+  'background-image-crossorigin', 'background-image-type', 'background-image-color'
+] );
+
+/** the recorded multi-image cap (a fixed FS compositing loop) */
+const IMAGE_CAP = 4;
 
 const ARROW_ENUM: Record<string, number> = {
   'none': ARROW_NONE,
@@ -1775,6 +1998,14 @@ interface MappableChannel {
   parseEnum?: ( value: unknown ) => number | null;
   set: ( computed: Computed, value: Evaluated ) => void;
   default: ( group: GroupName ) => Evaluated;
+  /**
+   * String-interning enum channel (round 15.2): range/then/data values
+   * are arbitrary strings (urls) interned per compile into an index
+   * table; the bound channel's set() maps the evaluated index back.
+   * Only discrete programs make sense (continuous already throws on
+   * enum kinds).
+   */
+  intern?: boolean;
 }
 
 /** Mapper-capable props ('label' rides the labelKey channel instead). */
@@ -2257,6 +2488,25 @@ const MAPPABLE: Record<string, MappableChannel> = {
     parseEnum: v => ARROW_ENUM[ String( v ) ] ?? null,
     set: ( c, v ) => { c.targetArrowShape = ARROW_NAMES[ v as number ] ?? 'none'; },
     default: () => 0
+  },
+  // background images (round 15.2): the three mapper-capable single
+  // forms; every other image prop is a constants-only list (the 12b
+  // scope rule).  The url channel interns strings per compile —
+  // set() is wrapped in compileChannel with the intern table.
+  'background-image': {
+    kind: 'enum', groups: [ 'nodes' ], intern: true,
+    set: () => { /* wrapped per compile */ },
+    default: () => 0 // 0 = none in the intern index space
+  },
+  'background-image-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.backgroundImageOpacity = [ Math.max( 0, Math.min( 1, v as number ) ) ]; },
+    default: () => 1
+  },
+  'background-image-color': {
+    kind: 'color', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.backgroundImageColor = v as RGBA; },
+    default: () => NODE_DEFAULTS.backgroundImageColor
   }
 };
 
@@ -2286,6 +2536,41 @@ const compileChannel = ( group: GroupName, prop: string, spec: GpuMapperSpec ): 
   if( channel == null || !channel.groups.includes( group ) ){
     throw new Error( `The style property '${prop}' does not support mappers` +
       ( channel == null ? '' : ` on ${group}` ) );
+  }
+
+  if( channel.intern ){
+    // url channel (15.2): intern every string the program can yield
+    // (range entries, case `then`s, raw data values on passthrough)
+    // into a per-compile table; index 0 is 'none'
+    const urls: string[] = [];
+    const parseEnum = ( v: unknown ): number | null => {
+      if( v == null ){ return 0; }
+
+      const s = String( v ).trim();
+
+      if( s === '' || s === 'none' ){ return 0; }
+
+      let i = urls.indexOf( s );
+
+      if( i < 0 ){
+        urls.push( s );
+        i = urls.length - 1;
+      }
+
+      return i + 1;
+    };
+
+    return {
+      m: compileMapper( spec, { kind: 'enum', prop, parseEnum } ),
+      channel: {
+        ...channel,
+        set: ( c, v ) => {
+          const idx = v as number;
+
+          c.backgroundImage = idx > 0 && idx <= urls.length ? [ urls[ idx - 1 ] ] : [];
+        }
+      }
+    };
   }
 
   return {
@@ -3083,6 +3368,26 @@ export class StyleEngine {
         return Math.round( ( store.column( 'node.fillColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
       case 'border-opacity':
         return Math.round( ( store.column( 'node.borderColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
+      // background images (15.2): stored-truth readback off the blob
+      // records; per-image lists read back space-joined (the 12b list
+      // convention), single images as scalars
+      case 'background-image':
+      case 'background-fit':
+      case 'background-image-opacity':
+      case 'background-position-x':
+      case 'background-position-y':
+      case 'background-offset-x':
+      case 'background-offset-y':
+      case 'background-width':
+      case 'background-height':
+      case 'background-repeat':
+      case 'background-clip':
+      case 'background-image-containment':
+      case 'background-image-smoothing':
+      case 'background-image-crossorigin':
+      case 'background-image-type':
+      case 'background-image-color':
+        return this.readImageProp( slot, prop );
       case 'ghost':
         return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
       case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
@@ -3545,7 +3850,7 @@ export class StyleEngine {
       }
 
       if( ( GHOST_PROPS.has( norm ) || LAYER_SHAPE_PROPS.has( norm )
-          || NODE_ONLY_EXTRA.has( norm ) ) && group === 'edges' ){
+          || NODE_ONLY_EXTRA.has( norm ) || IMAGE_PROPS.has( norm ) ) && group === 'edges' ){
         throw new Error( `'${norm}' is a node style property` );
       }
 
@@ -3588,6 +3893,68 @@ export class StyleEngine {
     }
 
     return computed;
+  }
+
+  /** Stored-truth readback for the background-image family (15.2). */
+  private readImageProp( slot: number, prop: string ): string | number {
+    const recs = this.store.nodeImagesAt( slot );
+
+    if( recs == null ){
+      // imageless nodes read the v3 defaults
+      switch( prop ){
+        case 'background-image': return 'none';
+        case 'background-fit': return 'none';
+        case 'background-image-opacity': return 1;
+        case 'background-position-x':
+        case 'background-position-y': return '50%';
+        case 'background-offset-x':
+        case 'background-offset-y': return 0;
+        case 'background-width':
+        case 'background-height': return 'auto';
+        case 'background-repeat': return 'no-repeat';
+        case 'background-clip': return 'node';
+        case 'background-image-containment': return 'inside';
+        case 'background-image-smoothing': return 'yes';
+        case 'background-image-crossorigin': return 'anonymous';
+        case 'background-image-type': return 'auto';
+        default: return formatRgba( ...NODE_DEFAULTS.backgroundImageColor );
+      }
+    }
+
+    const lenOf = ( l: BgLen ): string | number => l.pct ? `${l.v}%` : l.v;
+    const sizeOf = ( s: BgSize ): string | number =>
+      s.mode === 0 ? 'auto' : s.mode === 2 ? `${s.v}%` : s.v;
+    // per-image lists read back space-joined; single images as scalars
+    const per = ( f: ( r: NodeImageRecord ) => string | number ): string | number => {
+      const list = recs.map( f );
+
+      return list.length === 1 ? list[ 0 ] : list.join( ' ' );
+    };
+
+    switch( prop ){
+      case 'background-image': return per( r => r.url );
+      case 'background-fit': return per( r => BG_FIT_NAMES[ r.fit ] );
+      case 'background-image-opacity': return per( r => r.opacity );
+      case 'background-position-x': return per( r => lenOf( r.posX ) );
+      case 'background-position-y': return per( r => lenOf( r.posY ) );
+      case 'background-offset-x': return per( r => lenOf( r.offX ) );
+      case 'background-offset-y': return per( r => lenOf( r.offY ) );
+      case 'background-width': return per( r => sizeOf( r.w ) );
+      case 'background-height': return per( r => sizeOf( r.h ) );
+      case 'background-repeat': return per( r => BG_REPEAT_NAMES[ r.repeat ] );
+      case 'background-clip': return per( r => BG_CLIP_NAMES[ r.clip ] );
+      case 'background-image-containment':
+        return per( r => BG_CONTAINMENT_NAMES[ r.containment ] );
+      case 'background-image-smoothing': return per( r => r.smoothing ? 'yes' : 'no' );
+      case 'background-image-crossorigin':
+        return this.store.images.get( recs[ 0 ].entryId )?.crossOrigin ?? 'anonymous';
+      case 'background-image-type': return per( r => IMAGE_TYPE_NAMES[ r.sdf ? 1 : 0 ] );
+      default: {
+        const [ r, g, b, a ] = recs[ 0 ].tint;
+
+        return formatRgba( r, g, b, a );
+      }
+    }
   }
 
   private write( group: GroupName, slot: number, computed: Computed ): void {
@@ -3648,6 +4015,7 @@ export class StyleEngine {
         'node.underlay', slot, layerRgba( computed.underlayColor, computed.underlayOpacity ),
         computed.underlayPadding, computed.underlayShape, computed.underlayRadius );
 
+      this.writeImages( slot, computed );
       this.writeLabel( slot, computed );
     } else {
       const foldE = ( [ r, g, b, a ]: RGBA, opacity: number ): RGBA =>
@@ -3768,6 +4136,54 @@ export class StyleEngine {
 
       this.writeLabel( slot, computed, 'edges' );
     }
+  }
+
+  /** warn-once flag for the multi-image cap (recorded: 4 per node) */
+  private warnedImageCap = false;
+
+  /** Resolve a node's background-image records and store them (15.2). */
+  private writeImages( slot: number, computed: NodeComputed ): void {
+    let urls = computed.backgroundImage;
+
+    if( urls.length === 0 ){
+      this.store.setNodeImages( slot, null );
+
+      return;
+    }
+
+    if( urls.length > IMAGE_CAP ){
+      if( !this.warnedImageCap ){
+        this.warnedImageCap = true;
+        console.warn(
+          `background-image supports at most ${IMAGE_CAP} images per node ` +
+          `in the GPU prototype; extra images are dropped` );
+      }
+
+      urls = urls.slice( 0, IMAGE_CAP );
+    }
+
+    // per-image lists distribute v3-style: index i reads min(i, len-1)
+    const at = <T,>( list: T[], i: number ): T => list[ Math.min( i, list.length - 1 ) ];
+    const specs: NodeImageSpec[] = urls.map( ( url, i ) => ( {
+      url,
+      sdf: at( computed.backgroundImageType, i ) === 1,
+      crossOrigin: computed.backgroundImageCrossorigin,
+      fit: at( computed.backgroundFit, i ),
+      repeat: at( computed.backgroundRepeat, i ),
+      clip: at( computed.backgroundClip, i ),
+      containment: at( computed.backgroundImageContainment, i ),
+      smoothing: at( computed.backgroundImageSmoothing, i ),
+      opacity: at( computed.backgroundImageOpacity, i ),
+      posX: at( computed.backgroundPositionX, i ),
+      posY: at( computed.backgroundPositionY, i ),
+      offX: at( computed.backgroundOffsetX, i ),
+      offY: at( computed.backgroundOffsetY, i ),
+      w: at( computed.backgroundWidth, i ),
+      h: at( computed.backgroundHeight, i ),
+      tint: [ ...computed.backgroundImageColor ]
+    } ) );
+
+    this.store.setNodeImages( slot, specs );
   }
 
   /** Resolve an element's label text from its computed channels and store it. */

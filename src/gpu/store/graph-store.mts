@@ -25,6 +25,41 @@ import {
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import { NO_PARENT } from '../gpu-types.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
+import { ImageRegistry, IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../image-registry.mjs';
+
+/** floats per image record in the image pool (round 15.2) */
+export const IMG_STRIDE = 12;
+
+/** A percent-or-px value ({ v, pct }) as parsed by the style engine. */
+export interface BgLen { v: number; pct: boolean; }
+/** A background-width/-height value: mode 0 auto, 1 px, 2 percent. */
+export interface BgSize { mode: number; v: number; }
+
+/** One styled background image, as the style engine hands it over. */
+export interface NodeImageSpec {
+  url: string;
+  sdf: boolean;
+  crossOrigin: string;
+  fit: number;
+  repeat: number;
+  clip: number;
+  containment: number;
+  smoothing: boolean;
+  opacity: number;
+  posX: BgLen;
+  posY: BgLen;
+  offX: BgLen;
+  offY: BgLen;
+  w: BgSize;
+  h: BgSize;
+  tint: [ number, number, number, number ];
+}
+
+/** A stored image record decoded back out of the pool (readback). */
+export interface NodeImageRecord extends Omit<NodeImageSpec, 'url' | 'crossOrigin'> {
+  entryId: number;
+  url: string;
+}
 
 export interface AddElementOpts {
   selected?: boolean;
@@ -104,6 +139,10 @@ export class GraphStore implements ModelView {
   private blob: CurveBlob;
   /** the C3 custom-polygon unit-point pool */
   private polyPool!: CurveBlob;
+  /** the 15.2 background-image record pool (IMG_STRIDE floats per image) */
+  private imagePool!: CurveBlob;
+  /** the unique-image registry (round 15.1); style writes acquire/release */
+  readonly images = new ImageRegistry();
 
   // exact-curve-bb memo (see curveBBAt): any geometry write bumps the
   // epoch, invalidating every cached edge box at once — sound and cheap
@@ -238,6 +277,19 @@ export class GraphStore implements ModelView {
       geom[ slot * 4 ] = ( offset | ( count << 24 ) ) >>> 0;
       this.dirty.mark( 'node.borderGeom', slot );
     } );
+
+    // 15.2: the image-record pool; a relocation rewrites node.imageRef
+    this.imagePool = new CurveBlob( ( slot, offset ) => {
+      const refs = this.nodes.column( 'node.imageRef' ) as Uint32Array;
+      const count = refs[ slot ] >>> 24;
+
+      refs[ slot ] = ( offset | ( count << 24 ) ) >>> 0;
+      this.dirty.mark( 'node.imageRef', slot );
+    } );
+
+    // an image decode landing (or an entry freeing) redraws the scene;
+    // no column changes, so the pick-tile cache stays valid
+    this.images.onChange = () => this.dirty.touch();
   }
 
   table( group: GroupName ): ColumnTable {
@@ -274,6 +326,10 @@ export class GraphStore implements ModelView {
     const polyDirty = this.polyPool.takeDirty();
 
     if( polyDirty != null ){ delta.polyBlob = polyDirty; }
+
+    const imageDirty = this.imagePool.takeDirty();
+
+    if( imageDirty != null ){ delta.imageBlob = imageDirty; }
 
     return delta;
   }
@@ -312,6 +368,129 @@ export class GraphStore implements ModelView {
     this.dirty.touch();
 
     return ( offset | ( ( points.length / 2 ) << 24 ) ) >>> 0;
+  }
+
+  imageBlob(): Float32Array {
+    return this.imagePool.data();
+  }
+
+  imageBlobLength(): number {
+    return this.imagePool.length();
+  }
+
+  /**
+   * Store a node's background-image records (round 15.2), or null to
+   * clear.  Acquires the new urls' registry entries *before* releasing
+   * the old ones, so a shared url surviving a restyle never transits
+   * refcount 0.  Encoding per image (IMG_STRIDE floats): [entryId,
+   * modeFlags (fit | repeat<<2 | clip<<4 | containment<<5 |
+   * smoothing<<6 | sdf<<7), opacity, posX, posY, offX, offY, w, h,
+   * unitFlags (posXPct | posYPct<<1 | offXPct<<2 | offYPct<<3 |
+   * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256)].
+   * Draw-only paint: no geoEpoch bump, no bb/pick involvement.
+   */
+  setNodeImages( slot: number, specs: NodeImageSpec[] | null ): void {
+    const refs = this.nodes.column( 'node.imageRef' ) as Uint32Array;
+    const oldRef = refs[ slot ];
+    const clearing = specs == null || specs.length === 0;
+
+    if( clearing && oldRef === 0 ){ return; } // the imageless fast path
+
+    const oldIds: number[] = [];
+
+    if( oldRef !== 0 ){
+      const pool = this.imagePool.data();
+      const off = oldRef & 0xffffff;
+      const count = oldRef >>> 24;
+
+      for( let i = 0; i < count; i++ ){ oldIds.push( pool[ off + i * IMG_STRIDE ] ); }
+    }
+
+    if( clearing ){
+      this.imagePool.free( slot );
+      refs[ slot ] = 0;
+      this.dirty.mark( 'node.imageRef', slot );
+    } else {
+      const values = new Array<number>( specs.length * IMG_STRIDE );
+
+      for( let i = 0; i < specs.length; i++ ){
+        const s = specs[ i ];
+        const id = this.images.acquire(
+          s.url, s.sdf ? IMAGE_KIND_SDF : IMAGE_KIND_AUTO, s.crossOrigin );
+        const base = i * IMG_STRIDE;
+
+        values[ base ] = id;
+        values[ base + 1 ] = s.fit | ( s.repeat << 2 ) | ( s.clip << 4 )
+          | ( s.containment << 5 ) | ( ( s.smoothing ? 1 : 0 ) << 6 )
+          | ( ( s.sdf ? 1 : 0 ) << 7 );
+        values[ base + 2 ] = s.opacity;
+        values[ base + 3 ] = s.posX.v;
+        values[ base + 4 ] = s.posY.v;
+        values[ base + 5 ] = s.offX.v;
+        values[ base + 6 ] = s.offY.v;
+        values[ base + 7 ] = s.w.v;
+        values[ base + 8 ] = s.h.v;
+        values[ base + 9 ] = ( s.posX.pct ? 1 : 0 ) | ( ( s.posY.pct ? 1 : 0 ) << 1 )
+          | ( ( s.offX.pct ? 1 : 0 ) << 2 ) | ( ( s.offY.pct ? 1 : 0 ) << 3 )
+          | ( s.w.mode << 4 ) | ( s.h.mode << 6 );
+        values[ base + 10 ] = s.tint[ 0 ] + s.tint[ 1 ] * 256;
+        values[ base + 11 ] = s.tint[ 2 ] + s.tint[ 3 ] * 256;
+      }
+
+      const offset = this.imagePool.write( slot, values );
+      const ref = ( offset | ( specs.length << 24 ) ) >>> 0;
+
+      if( refs[ slot ] !== ref ){
+        refs[ slot ] = ref;
+        this.dirty.mark( 'node.imageRef', slot );
+      }
+    }
+
+    for( const id of oldIds ){ this.images.release( id ); }
+
+    this.dirty.touch();
+  }
+
+  /** A node's decoded background-image records, or null when imageless. */
+  nodeImagesAt( slot: number ): NodeImageRecord[] | null {
+    const ref = ( this.nodes.column( 'node.imageRef' ) as Uint32Array )[ slot ];
+
+    if( ref === 0 ){ return null; }
+
+    const pool = this.imagePool.data();
+    const off = ref & 0xffffff;
+    const count = ref >>> 24;
+    const out: NodeImageRecord[] = [];
+
+    for( let i = 0; i < count; i++ ){
+      const base = off + i * IMG_STRIDE;
+      const entryId = pool[ base ];
+      const flags = pool[ base + 1 ];
+      const units = pool[ base + 9 ];
+      const rg = pool[ base + 10 ];
+      const ba = pool[ base + 11 ];
+
+      out.push( {
+        entryId,
+        url: this.images.get( entryId )?.url ?? '',
+        fit: flags & 3,
+        repeat: ( flags >> 2 ) & 3,
+        clip: ( flags >> 4 ) & 1,
+        containment: ( flags >> 5 ) & 1,
+        smoothing: ( ( flags >> 6 ) & 1 ) === 1,
+        sdf: ( ( flags >> 7 ) & 1 ) === 1,
+        opacity: pool[ base + 2 ],
+        posX: { v: pool[ base + 3 ], pct: ( units & 1 ) === 1 },
+        posY: { v: pool[ base + 4 ], pct: ( ( units >> 1 ) & 1 ) === 1 },
+        offX: { v: pool[ base + 5 ], pct: ( ( units >> 2 ) & 1 ) === 1 },
+        offY: { v: pool[ base + 6 ], pct: ( ( units >> 3 ) & 1 ) === 1 },
+        w: { mode: ( units >> 4 ) & 3, v: pool[ base + 7 ] },
+        h: { mode: ( units >> 6 ) & 3, v: pool[ base + 8 ] },
+        tint: [ rg % 256, Math.floor( rg / 256 ), ba % 256, Math.floor( ba / 256 ) ]
+      } );
+    }
+
+    return out;
   }
 
   /** A node's custom polygon points (unit pairs), or null. */
@@ -646,6 +825,7 @@ export class GraphStore implements ModelView {
     this.hierarchy.onRemoveNode( slot );
     this.adj.clearNode( slot );
     this.polyPool.free( slot );
+    this.setNodeImages( slot, null ); // releases registry refs too (15.2)
     this.freeSlot( 'nodes', slot );
   }
 

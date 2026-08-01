@@ -663,28 +663,119 @@ describe('gpu/animation', function(){
     });
   });
 
-  describe('AnimationManager queue', function(){
-    it('runs queued animations in sequence per element', function(){
+  describe('AnimationManager concurrency (round 21 — no queue)', function(){
+    it('an overlapping animation evicts the running one in place', function(){
       const store = new GraphStore();
       store.addNode( 'a', 0, 0 );
       const ref = store.ref( 'nodes', store.lookup('a').slot );
       const mgr = new AnimationManager( () => {} );
+      const first = new Animation( store, null, [ ref ], false, { position: { x: 100, y: 0 }, duration: 100, easing: 'linear' } );
 
-      mgr.enqueue( new Animation( store, null, [ ref ], false, { position: { x: 100, y: 0 }, duration: 100, easing: 'linear' } ) );
-      mgr.enqueue( new Animation( store, null, [ ref ], false, { position: { x: 100, y: 100 }, duration: 100, easing: 'linear' } ) );
+      mgr.start( first );
 
       const x = () => store.column('node.position')[ ref.slot*2 ];
       const y = () => store.column('node.position')[ ref.slot*2+1 ];
 
       mgr.tick( 0 );
-      mgr.tick( 100 ); // first done → x=100
-      expect( x() ).to.equal( 100 );
-      expect( y() ).to.equal( 0 );
+      mgr.tick( 50 );
+      expect( x() ).to.be.closeTo( 50, 1e-4 );
 
-      mgr.tick( 100 ); // second starts (captures y=0)
-      mgr.tick( 200 ); // second done → y=100
+      // both touch node.position: starting the second stops the first
+      // where it got to (its promise resolves; no jump to end)
+      mgr.start( new Animation( store, null, [ ref ], false, { position: { y: 100 }, duration: 100, easing: 'linear' } ) );
+
+      expect( first.done ).to.be.true;
+      expect( x() ).to.be.closeTo( 50, 1e-4 ); // frozen, not 100
+
+      mgr.tick( 50 ); // second captures from the frozen state
+      mgr.tick( 150 );
+      expect( x() ).to.be.closeTo( 50, 1e-4 );
       expect( y() ).to.equal( 100 );
       expect( mgr.active() ).to.be.false;
+    });
+
+    it('disjoint channels run concurrently on one element', function(){
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ] } );
+
+      cy.$id('a').animate( { position: { x: 100, y: 0 }, duration: 100, easing: 'linear' } );
+      cy.$id('a').animate( { style: { opacity: 0 }, duration: 200, easing: 'linear' } );
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 50 );
+
+      expect( cy.$id('a').position('x') ).to.be.closeTo( 50, 1e-4 ); // both mid-flight
+      expect( cy.$id('a').numericStyle('opacity') ).to.be.closeTo( 0.75, 1e-3 );
+
+      cy._animations.tick( 100 ); // position done, opacity still going
+      expect( cy.$id('a').position('x') ).to.equal( 100 );
+      expect( cy.$id('a').animated() ).to.be.true;
+
+      cy._animations.tick( 200 );
+      expect( cy.$id('a').numericStyle('opacity') ).to.equal( 0 );
+      expect( cy.$id('a').animated() ).to.be.false;
+    });
+
+    it('stop() stops every running animation on the element', function(){
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ] } );
+
+      cy.$id('a').animate( { position: { x: 100, y: 0 }, duration: 100, easing: 'linear' } );
+      cy.$id('a').animate( { style: { opacity: 0 }, duration: 100, easing: 'linear' } );
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 50 );
+      cy.$id('a').stop();
+
+      expect( cy.$id('a').animated() ).to.be.false;
+      expect( cy.$id('a').position('x') ).to.be.closeTo( 50, 1e-4 ); // frozen where it was
+      expect( cy.$id('a').numericStyle('opacity') ).to.be.closeTo( 0.5, 1e-2 );
+
+      cy._animations.tick( 100 ); // nothing left to advance
+      expect( cy.$id('a').position('x') ).to.be.closeTo( 50, 1e-4 );
+    });
+
+    it('a delay() pause never evicts a concurrent animation', function(){
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ] } );
+
+      cy.$id('a').animate( { position: { x: 100, y: 0 }, duration: 100, easing: 'linear' } );
+      cy.$id('a').delay( 50 ); // a no-op tween: touches no channels
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 100 );
+      expect( cy.$id('a').position('x') ).to.equal( 100 ); // ran to completion
+    });
+
+    it('viewport pan and zoom animations compose; a second pan evicts the first', function(){
+      const cy = cytoscapeGpu( { elements: [] } );
+
+      cy.pan( { x: 0, y: 0 } );
+      cy.zoom( 1 );
+      cy.animate( { pan: { x: 100, y: 0 }, duration: 100, easing: 'linear' } );
+      cy.animate( { zoom: 2, duration: 200, easing: 'linear' } ); // disjoint: composes
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 50 );
+      expect( cy.pan().x ).to.be.closeTo( 50, 1e-4 );
+      expect( cy.zoom() ).to.be.closeTo( 1.25, 1e-4 );
+
+      cy.animate( { pan: { x: 0, y: 100 }, duration: 100, easing: 'linear' } ); // evicts the pan, not the zoom
+
+      cy._animations.tick( 50 );
+      cy._animations.tick( 150 );
+      expect( cy.pan().x ).to.be.closeTo( 0, 1e-4 );
+      expect( cy.pan().y ).to.be.closeTo( 100, 1e-4 );
+
+      cy._animations.tick( 200 );
+      expect( cy.zoom() ).to.equal( 2 ); // the zoom ran undisturbed
+      expect( cy.animated() ).to.be.false;
+    });
+
+    it('the v3 queue/step option spellings throw', function(){
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ] } );
+
+      expect( () => cy.$id('a').animate( { position: { x: 1 }, queue: false } ) )
+        .to.throw( /queue/ );
+      expect( () => cy.$id('a').animate( { position: { x: 1 }, step: () => {} } ) )
+        .to.throw( /step/ );
     });
   });
 

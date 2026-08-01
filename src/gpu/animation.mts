@@ -285,6 +285,18 @@ export class Animation {
     this.onComplete = opts.complete ?? null;
     this.style = [];
 
+    // round 21: v4 has no animation queue and no step callback — reject
+    // the v3 spellings loudly rather than silently ignoring them
+    if( 'queue' in ( opts as Record<string, unknown> ) ){
+      throw new Error( `v4 animations have no queue (the 'queue' option does not exist) — ` +
+        `sequence animations with 'await animation.promise()' instead` );
+    }
+
+    if( 'step' in ( opts as Record<string, unknown> ) ){
+      throw new Error( `The 'step' callback is not supported in v4 — ` +
+        `observe progress via 'onRender' or poll between awaits` );
+    }
+
     for( const prop of Object.keys( opts.style ?? {} ) ){
       const norm = normalizeProp( prop );
       const channel = STYLE_CHANNELS[ norm ];
@@ -303,6 +315,31 @@ export class Animation {
   }
 
   get done(): boolean { return this._done; }
+
+  /** Columns this animation writes (round 21: the concurrency contract —
+   * animations sharing an element may run together iff these are
+   * disjoint).  A no-op tween (delay()) touches nothing. */
+  private _columns: ReadonlySet<string> | null = null;
+
+  touchedColumns(): ReadonlySet<string> {
+    if( this._columns == null ){
+      const cols = new Set<string>();
+
+      if( this.position != null ){ cols.add( 'node.position' ); }
+
+      for( const s of this.style ){
+        for( const col of Object.values( s.channel.columns ) ){ cols.add( col ); }
+      }
+
+      this._columns = cols;
+    }
+
+    return this._columns;
+  }
+
+  /** Viewport channels (round 21): pan and zoom compose when disjoint. */
+  get hasPan(): boolean { return this.pan != null; }
+  get hasZoom(): boolean { return this.zoom != null; }
 
   /**
    * Slot compaction (19.3): repair the target and channel-write refs
@@ -629,11 +666,15 @@ export class Animation {
 }
 
 /**
- * Per-core animation manager: one queue per element (and one for the
- * viewport), advanced each tick.  The head of each queue runs; on
- * completion the next queued animation starts.  An auto-driver ticks via
- * rAF (or setTimeout when headless) while anything is active; tests can
- * drive `tick(now)` directly.
+ * Per-core animation manager (round 21: no queue).  Every started
+ * animation runs immediately; animations sharing an element compose when
+ * their channel columns are disjoint, and starting one that overlaps a
+ * running animation's columns stops that older animation in place (its
+ * promise resolves, values freeze where they got to, any GPU lease
+ * settles) — whole-animation eviction, never a half-stopped animation.
+ * Sequencing is the caller's job via `await animation.promise()`.  An
+ * auto-driver ticks via rAF (or setTimeout when headless) while anything
+ * is active; tests can drive `tick(now)` directly.
  */
 /** The renderer's GPU tween executor, seen by the manager. */
 export interface GpuTweenSink {
@@ -645,8 +686,8 @@ export interface GpuTweenSink {
 }
 
 export class AnimationManager {
-  private queues = new Map<number, Animation[]>(); // packed ref → queue
-  private viewportQueue: Animation[] = [];
+  private running = new Map<number, Animation[]>(); // packed ref → running set
+  private viewportRunning: Animation[] = [];
   private onTick: () => void;
   private ticking = false;
   private raf: ( ( cb: ( t: number ) => void ) => void ) | null;
@@ -683,9 +724,21 @@ export class AnimationManager {
    * auto-bounds/fold derivations, which read the CPU columns — the
    * store's reparent hook settles active leases before they go stale. */
   settleGpuAll(): void {
-    for( const q of this.queues.values() ){
-      if( q[ 0 ]?.gpuId != null ){ q[ 0 ].settleGpu( now() ); }
+    for( const ani of this.allRunning() ){
+      if( ani.gpuId != null ){ ani.settleGpu( now() ); }
     }
+  }
+
+  /** Every distinct running element animation (one entry per animation,
+   * however many refs it spans). */
+  private allRunning(): Set<Animation> {
+    const seen = new Set<Animation>();
+
+    for( const arr of this.running.values() ){
+      for( const ani of arr ){ seen.add( ani ); }
+    }
+
+    return seen;
   }
 
   /**
@@ -699,10 +752,8 @@ export class AnimationManager {
   demoteGpuAll(): void {
     if( this.sink == null ){ return; }
 
-    for( const q of this.queues.values() ){
-      const ani = q[ 0 ];
-
-      if( ani?.gpuId != null ){
+    for( const ani of this.allRunning() ){
+      if( ani.gpuId != null ){
         this.sink.unregister( ani.gpuId );
         ani.demoteGpu( now() );
       }
@@ -719,8 +770,8 @@ export class AnimationManager {
     const next = new Map<number, Animation[]>();
     const repaired = new Set<Animation>();
 
-    for( const [ key, q ] of this.queues ){
-      for( const ani of q ){
+    for( const [ key, arr ] of this.running ){
+      for( const ani of arr ){
         if( !repaired.has( ani ) ){
           repaired.add( ani );
           ani.repairRefs( store );
@@ -736,56 +787,109 @@ export class AnimationManager {
       };
 
       store.isCurrent( ref ); // repairs a forwarded identity in place
-      next.set( packRef( ref ), q );
+      next.set( packRef( ref ), arr );
     }
 
-    this.queues = next;
+    this.running = next;
   }
 
-  /** Enqueue an animation; nudges the driver (or starts the auto-loop). */
-  enqueue( ani: Animation ): void {
+  /**
+   * Start an animation (round 21: immediately — there is no queue).  A
+   * running animation sharing a ref *and* a channel column with the new
+   * one is stopped in place first (whole-animation eviction); disjoint
+   * channels compose.  Nudges the driver (or starts the auto-loop).
+   */
+  start( ani: Animation ): void {
     if( ani.isViewport ){
-      this.viewportQueue.push( ani );
+      for( const other of [ ...this.viewportRunning ] ){
+        if( ( ani.hasPan && other.hasPan ) || ( ani.hasZoom && other.hasZoom ) ){
+          other.stop( false );
+        }
+      }
+
+      this.viewportRunning = this.viewportRunning.filter( a => !a.done );
+      this.viewportRunning.push( ani );
     } else {
+      const cols = ani.touchedColumns();
+      const evicted = new Set<Animation>();
+
+      for( const ref of ani.refs ){
+        const arr = this.running.get( packRef( ref ) );
+
+        if( arr == null ){ continue; }
+
+        for( const other of arr ){
+          if( evicted.has( other ) ){ continue; }
+
+          for( const col of other.touchedColumns() ){
+            if( cols.has( col ) ){ evicted.add( other ); break; }
+          }
+        }
+      }
+
+      for( const other of evicted ){
+        this.stopOne( other, false );
+        this.remove( other );
+      }
+
       for( const ref of ani.refs ){
         const key = packRef( ref );
-        const q = this.queues.get( key );
+        const arr = this.running.get( key );
 
-        if( q == null ){ this.queues.set( key, [ ani ] ); } else { q.push( ani ); }
+        if( arr == null ){ this.running.set( key, [ ani ] ); } else { arr.push( ani ); }
       }
     }
 
     if( this.driven ){ this.onTick(); } else { this.schedule(); } // wake the renderer, or auto-loop
   }
 
-  /** True while any animation is active or queued. */
-  active(): boolean {
-    return this.viewportQueue.length > 0 || this.queues.size > 0;
+  /** Drop an animation from every ref's running set. */
+  private remove( ani: Animation ): void {
+    for( const ref of ani.refs ){
+      const key = packRef( ref );
+      const arr = this.running.get( key );
+
+      if( arr == null ){ continue; }
+
+      const filtered = arr.filter( a => a !== ani );
+
+      if( filtered.length === 0 ){ this.running.delete( key ); } else { this.running.set( key, filtered ); }
+    }
   }
 
-  /** True when a specific element has a running or queued animation. */
-  isAnimating( ref: Ref ): boolean {
-    const q = this.queues.get( packRef( ref ) );
+  /** True while any animation is running. */
+  active(): boolean {
+    return this.viewportRunning.length > 0 || this.running.size > 0;
+  }
 
-    return q != null && q.length > 0;
+  /** True when a specific element has a running animation. */
+  isAnimating( ref: Ref ): boolean {
+    const arr = this.running.get( packRef( ref ) );
+
+    return arr != null && arr.length > 0;
   }
 
   /** True when the viewport is animating. */
   isViewportAnimating(): boolean {
-    return this.viewportQueue.length > 0;
+    return this.viewportRunning.length > 0;
   }
 
-  /** Stop the running (and optionally queued) animations for the given refs. */
-  stop( refs: Ref[], clearQueue: boolean, jumpToEnd: boolean ): void {
+  /** Stop every running animation on the given refs (round 21: there is
+   * no queue to clear — all of them are running). */
+  stop( refs: Ref[], jumpToEnd: boolean ): void {
+    const toStop = new Set<Animation>();
+
     for( const ref of refs ){
-      const key = packRef( ref );
-      const q = this.queues.get( key );
+      const arr = this.running.get( packRef( ref ) );
 
-      if( q == null ){ continue; }
+      if( arr == null ){ continue; }
 
-      if( q[ 0 ] != null ){ this.stopOne( q[ 0 ], jumpToEnd ); }
+      for( const ani of arr ){ toStop.add( ani ); }
+    }
 
-      if( clearQueue ){ this.queues.delete( key ); } else { q.shift(); if( q.length === 0 ){ this.queues.delete( key ); } }
+    for( const ani of toStop ){
+      this.stopOne( ani, jumpToEnd );
+      this.remove( ani );
     }
   }
 
@@ -803,35 +907,46 @@ export class AnimationManager {
     ani.settleGpu( jumpToEnd ? ani.startMs + ani.durationMs : now() );
   }
 
-  stopViewport( clearQueue: boolean, jumpToEnd: boolean ): void {
-    this.viewportQueue[ 0 ]?.stop( jumpToEnd );
+  stopViewport( jumpToEnd: boolean ): void {
+    for( const ani of this.viewportRunning ){ ani.stop( jumpToEnd ); }
 
-    if( clearQueue ){ this.viewportQueue.length = 0; } else { this.viewportQueue.shift(); }
+    this.viewportRunning.length = 0;
   }
 
   /**
-   * Advance every queue head to `now`; dequeue finished animations so the
-   * next queued one starts on the following tick.  Position and paint
-   * animations route to the GPU sink when one is attached (registered once,
-   * driven on-device, completion detected here from the shared clock).
-   * Returns true if any animation remains active.
+   * Advance every running animation to `now`; drop finished ones.
+   * Position and paint animations route to the GPU sink when one is
+   * attached (registered once, driven on-device, completion detected here
+   * from the shared clock).  Returns true if any animation remains active.
    */
   tick( now: number ): boolean {
-    for( const [ key, q ] of this.queues ){
-      while( q.length > 0 && this.advanceHead( q[ 0 ], now ) ){ q.shift(); }
+    const advanced = new Set<Animation>();
 
-      if( q.length === 0 ){ this.queues.delete( key ); }
+    for( const [ key, arr ] of this.running ){
+      for( const ani of arr ){
+        if( !advanced.has( ani ) ){
+          advanced.add( ani );
+          this.advanceOne( ani, now );
+        }
+      }
+
+      const alive = arr.filter( a => !a.done );
+
+      if( alive.length === 0 ){ this.running.delete( key ); }
+      else if( alive.length !== arr.length ){ this.running.set( key, alive ); }
     }
 
-    while( this.viewportQueue.length > 0 && this.advanceHead( this.viewportQueue[ 0 ], now ) ){
-      this.viewportQueue.shift();
+    if( this.viewportRunning.length > 0 ){
+      for( const ani of this.viewportRunning ){ this.advanceOne( ani, now ); }
+
+      this.viewportRunning = this.viewportRunning.filter( a => !a.done );
     }
 
     return this.active();
   }
 
-  /** Advance one head; returns true when it is finished (dequeue it). */
-  private advanceHead( ani: Animation, now: number ): boolean {
+  /** Advance one animation; returns true when it is finished. */
+  private advanceOne( ani: Animation, now: number ): boolean {
     if( ani.done ){ return true; } // completed (possibly via another queue, or stopped)
 
     if( this.sink != null && ani.gpuEligible ){

@@ -198,7 +198,7 @@ describe( 'gpu: ref forwarding across compaction (19.3)', function(){
     const ani = new Animation( store, null, [ ref ], false,
       { position: { x: 9, y: 9 }, duration: 100, easing: 'linear' } );
 
-    mgr.enqueue( ani );
+    mgr.start( ani );
     expect( mgr.isAnimating( ref ) ).to.equal( true );
 
     for( let i = 0; i < 6; i++ ){ store.removeNode( store.lookup( `x${i}` ).slot ); }

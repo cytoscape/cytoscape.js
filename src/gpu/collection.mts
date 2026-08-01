@@ -819,9 +819,12 @@ export class GpuCollection {
 
   /**
    * Animate these elements' style/position to explicit targets over
-   * `duration` ms, easing the normalized time.  Queues per element (a
-   * second animate() on the same element runs after the first).  Returns
-   * the collection; use `animation()` for a handle with `.promise()`.
+   * `duration` ms, easing the normalized time.  Round 21: there is no
+   * queue — the animation starts immediately; animations on disjoint
+   * channels compose, and one overlapping a running animation's channels
+   * stops that older one in place (sequence with `await
+   * animation().play()` / `.promise()`).  Returns the collection; use
+   * `animation()` for a handle with `.promise()`.
    * Animatable: position, opacity, background-color, border-color,
    * line-color, border-width.  Colours interpolate in OKLab.
    */
@@ -837,14 +840,16 @@ export class GpuCollection {
     const ani = new Animation( cy._store, null, this._liveRefs(), false, opts, cy._styleEngine );
 
     return {
-      play: () => { cy._animations.enqueue( ani ); return ani.promise(); },
+      play: () => { cy._animations.start( ani ); return ani.promise(); },
       stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
       promise: () => ani.promise(),
       playing: () => ani.running
     };
   }
 
-  /** A no-op tween of `duration` ms — chains a pause into an element's queue. */
+  /** A no-op tween of `duration` ms — a timed pause that touches no
+   * channels, so it composes with any running animation (round 21: use
+   * `delayAnimation().play()` + await to sequence). */
   delay( duration: number, complete?: () => void ): this {
     return this.animate( { duration, complete } );
   }
@@ -854,7 +859,7 @@ export class GpuCollection {
     return this.animation( { duration, complete } );
   }
 
-  /** True when any of these elements has a running or queued animation. */
+  /** True when any of these elements has a running animation. */
   animated(): boolean {
     for( const ref of this._refs ){
       if( this._cy._animations.isAnimating( ref ) ){ return true; }
@@ -863,9 +868,10 @@ export class GpuCollection {
     return false;
   }
 
-  /** Stop (and optionally clear the queue / jump to end) animations on these elements. */
-  stop( clearQueue: boolean = true, jumpToEnd: boolean = false ): this {
-    this._cy._animations.stop( this._liveRefs(), clearQueue, jumpToEnd );
+  /** Stop every running animation on these elements (round 21: no queue —
+   * the v3 clearQueue argument is gone; `jumpToEnd` applies final values). */
+  stop( jumpToEnd: boolean = false ): this {
+    this._cy._animations.stop( this._liveRefs(), jumpToEnd );
 
     return this;
   }

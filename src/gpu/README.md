@@ -392,7 +392,7 @@ the element slots themselves):
   on the hot path; the packed membership cache drops with it),
   interned handles keep their identity and scratch (`cy.$id` returns
   the same object), element-bound listeners keep firing and stay
-  removable, and animation queues re-key with their slot lists
+  removable, and running animations re-key with their slot lists
   re-pointed.  A removed element's ref stays dead — repair never
   resurrects.  Forwarding entries persist and compose across
   compactions.
@@ -726,7 +726,7 @@ each is deliberate, not a pass-1 deferral:
     `pan`/`zoom`, plus `fit: { eles | boundingBox, padding }` and
     `center: { eles }` — resolved to concrete pan/zoom when the
     animation is *created* (v3 semantics), so later graph changes don't
-    retarget a queued fit.  `eles.boundingBoxAt(posOrFn)` computes the
+    retarget a pending fit.  `eles.boundingBoxAt(posOrFn)` computes the
     box at hypothetical positions (no store writes), which is what an
     animated layout fit targets.
 - **Synchronous reads reflect writes; staleness is scoped to motion,

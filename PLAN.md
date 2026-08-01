@@ -5247,13 +5247,28 @@ item 3 (pie/stripe) resolved by call 3.
 
 **Pass split** (tests-first; docs in-commit):
 
-- [ ] **21.1** Manager rework (queue → concurrent set + channel
-  eviction), Node specs: disjoint channels run concurrently to
-  distinct targets; overlapping starts evict (older promise
-  resolves, value frozen at eviction, new capture starts there);
-  stop() stops all; a GPU-leased animation evicted mid-flight
-  settles to the CPU first (browser spec if needed); the
-  `queue` option key throws.
+- [x] **21.1** (2026-08-01) — the manager rework landed: the
+  per-element queues became per-element *running sets*
+  (`start()` replaces `enqueue()`), eviction compares
+  `touchedColumns()` (position → node.position; style channels →
+  their columns; a delay() no-op touches nothing and composes with
+  everything) across shared refs and stops the older animation in
+  place via the existing GPU-settling stopOne; the viewport
+  composes pan and zoom as separate channels; `tick` advances
+  every running animation (dedup across refs) and `stop()` stops
+  them all — its `clearQueue` argument is gone from
+  `eles.stop`/`cy.stop` (no queue to clear).  `queue`/`step`
+  option spellings throw with pointers at promises/onRender.
+  settle/demote/onCompacted iterate the running sets, so the GPU
+  lease, compaction-demotion and ref-repair paths carry over —
+  pinned by the untouched compaction + tween suites.  Tests-first:
+  the old runs-in-sequence spec replaced by 6 concurrency specs
+  (red then green — in-place eviction with frozen values + resolved
+  promise, disjoint-channel composition on one element, stop()
+  stopping all, delay() never evicting, viewport pan/zoom
+  composition with pan-evicts-pan, the queue/step throws).
+  2195 Node tests, 82/82 webgpu Playwright specs, typecheck +
+  lint clean.  **Round 21 is complete.**
 
 ## Round 22 plan — display/visibility split (planned 2026-08-01)
 

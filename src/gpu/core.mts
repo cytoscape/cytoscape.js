@@ -858,7 +858,7 @@ export class GpuCore {
       if( opts.zoom != null && !this._zoomingEnabled ){ return this; }
     }
 
-    this._animations.enqueue(
+    this._animations.start(
       new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) ) );
 
     return this;
@@ -872,7 +872,7 @@ export class GpuCore {
     const ani = new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) );
 
     return {
-      play: () => { this._animations.enqueue( ani ); return ani.promise(); },
+      play: () => { this._animations.start( ani ); return ani.promise(); },
       stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
       promise: () => ani.promise(),
       playing: () => ani.running
@@ -903,9 +903,10 @@ export class GpuCore {
     return this._animations.isViewportAnimating();
   }
 
-  /** Stop the viewport animation. */
-  stop( clearQueue: boolean = true, jumpToEnd: boolean = false ): this {
-    this._animations.stopViewport( clearQueue, jumpToEnd );
+  /** Stop every running viewport animation (round 21: no queue — the v3
+   * clearQueue argument is gone; `jumpToEnd` applies final values). */
+  stop( jumpToEnd: boolean = false ): this {
+    this._animations.stopViewport( jumpToEnd );
 
     return this;
   }

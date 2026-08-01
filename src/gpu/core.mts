@@ -38,16 +38,18 @@ import { NO_PARENT } from './gpu-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
   CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
-  GpuElementsInput, GpuExportOptions, GpuLayoutOptions, GpuStylesheet, Position
+  GpuElementsInput, GpuExportOptions, GpuLayoutOptions, GpuStylesheet, Position, RendererStats
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
-/** What the core needs from the renderer (wired by the factory). */
+/** What the core needs from the renderer (wired by the factory), plus the
+ * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 export interface RendererLike {
   destroy(): void;
   pick( x: number, y: number ): Promise<GpuCollection | null>;
   requestRender(): void;
   resize(): void;
+  stats(): RendererStats;
   exportImage( options: GpuExportOptions ): Promise<{ data: Uint8ClampedArray<ArrayBuffer>; width: number; height: number }>;
 }
 

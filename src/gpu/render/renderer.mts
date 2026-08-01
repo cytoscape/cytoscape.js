@@ -29,7 +29,7 @@ import { FLAG_ALIVE } from '../contract.mjs';
 import { color2tuple } from '../../util/colors.mjs';
 import type { GpuCore } from '../core.mjs';
 import type { GpuCollection } from '../collection.mjs';
-import type { GpuExportOptions, GpuRendererOptions } from '../gpu-types.mjs';
+import type { GpuExportOptions, GpuRendererOptions, RendererStats } from '../gpu-types.mjs';
 
 /*
 The frame graph: a render-on-dirty rAF loop.
@@ -89,31 +89,6 @@ interface SceneCullGroups {
   ghost: CulledGroup;
   overlay: CulledGroup;
   underlay: CulledGroup;
-}
-
-interface RendererStats {
-  frames: number;
-  /** CPU cost of building + submitting the last frame (encoding is fire-and-forget) */
-  cpuFrameMs: number;
-  /** GPU execution time of the last measured scene pass; 0 when 'timestamp-query' is unavailable */
-  gpuFrameMs: number;
-  /** current adaptive render scale (fraction of native resolution) */
-  renderScale: number;
-  uploadedBytes: number;
-  nodes: number;
-  edges: number;
-  glyphs: number;
-  pickLatencyMs: number;
-  /** frames that found the pick staging ring full and deferred the request
-   * to a later frame (saturation meter; requests are never dropped) */
-  pickDeferrals: number;
-  /** data bytes uploaded for GPU mapper evaluation (paint-channel restyles) */
-  mapperUploadedBytes: number;
-  /** mapper eval dispatches encoded */
-  mapperDispatches: number;
-  /** shaping-memo hits/misses (round 16.5): shared label texts shape once */
-  labelShapeHits: number;
-  labelShapeMisses: number;
 }
 
 const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px

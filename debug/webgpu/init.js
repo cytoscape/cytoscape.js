@@ -394,7 +394,8 @@ const paramDefs = {
         `${stats.nodes} nodes, ${stats.edges} edges, ${stats.glyphs} glyphs\n` +
         `${fps.toFixed(0)} fps (rendered), ${stats.cpuFrameMs.toFixed(2)} ms CPU / ${gpuMs} per frame, scale ${stats.renderScale}\n` +
         `${kbps.toFixed(1)} KiB/s uploaded (${(stats.uploadedBytes / 1024 / 1024).toFixed(1)} MiB total)\n` +
-        `pick latency ${stats.pickLatencyMs.toFixed(1)} ms`;
+        `pick latency ${stats.pickLatencyMs.toFixed(1)} ms` +
+        (stats.pickDeferrals > 0 ? ` (${stats.pickDeferrals} ring-deferred frames)` : '');
     }, 500);
   }
 

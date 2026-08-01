@@ -484,6 +484,32 @@ export interface GpuRendererOptions {
   pixelRatio?: number | 'auto';
 }
 
+/** Snapshot returned by `cy.renderer().stats()`. */
+export interface RendererStats {
+  frames: number;
+  /** CPU cost of building + submitting the last frame (encoding is fire-and-forget) */
+  cpuFrameMs: number;
+  /** GPU execution time of the last measured scene pass; 0 when 'timestamp-query' is unavailable */
+  gpuFrameMs: number;
+  /** current adaptive render scale (fraction of native resolution) */
+  renderScale: number;
+  uploadedBytes: number;
+  nodes: number;
+  edges: number;
+  glyphs: number;
+  pickLatencyMs: number;
+  /** frames that found the pick staging ring full and deferred the request
+   * to a later frame (saturation meter; requests are never dropped) */
+  pickDeferrals: number;
+  /** data bytes uploaded for GPU mapper evaluation (paint-channel restyles) */
+  mapperUploadedBytes: number;
+  /** mapper eval dispatches encoded */
+  mapperDispatches: number;
+  /** shaping-memo hits/misses (round 16.5): shared label texts shape once */
+  labelShapeHits: number;
+  labelShapeMisses: number;
+}
+
 export interface CytoscapeGpuOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws

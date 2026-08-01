@@ -59,7 +59,10 @@ shader over every allocated slot.
   without them Dawn renders fine but WebGPU canvases *present* blank in
   headless Chromium (adapters acquire, composited pixels stay
   transparent); the flags are Linux-gated because `--use-angle=vulkan`
-  does not exist on macOS (Metal).
+  does not exist on macOS (Metal).  A second adapter footgun
+  (2026-08-01): `requestAdapter()` returns null on `about:blank`, so
+  probe adapters from a served page — a bare-page probe reads as
+  "no GPU" on a box that has one.
 
 ## API scope (pass 1)
 
@@ -1396,9 +1399,11 @@ JSON — quick profile by default, `-- --full` for the 2k/20k/200k matrix
 via Playwright — needs built UMD bundles and a **real GPU adapter** (the
 run aborts on none; software adapters are warned about, their numbers are
 a different machine class).  It replays the interactions behind the
-recorded renderer numbers on four scenes (seeded 25k×50k and 100k×300k
-generators, ndex-x-large, and a 25k×50k *curved* scene whose edges come
-in bezier parallel pairs so every edge actually curves), v3 canvas vs
+recorded renderer numbers on six scenes (seeded 25k×50k and 100k×300k
+generators, ndex-x-large, a 25k×50k *curved* scene whose edges come
+in bezier parallel pairs so every edge actually curves, a 25k×50k
+*compound* scene with 1k parents, and a 25k×50k *images* scene with
+icon-per-type url mappers), v3 canvas vs
 v4 WebGPU: continuous-pan steady
 state at fit-all / zoomed-in 20× / far-zoom (labels off and on),
 hover-while-panning `pick()` latency, and one-shot init / columnar-init /
@@ -1406,7 +1411,9 @@ full-png-export timings.  Wall ms-per-rendered-frame is the comparison
 metric (vsync-bound — both sides floor at the display refresh when
 fast); `gpu (device)` table rows carry the GPU-pass time from
 `timestamp-query`, the unbounded cost.  dpr 2, 1280×800, adaptive render
-scale pinned to 1; `--scene <substr>` filters scenes, `--headed` debugs.  Read-heavy structure ops are where
+scale pinned to 1; `--scene <substr>` filters scenes, `--headed` debugs,
+`--layout` swaps the pan scenarios for the live force-layout mode (see
+the round-18 section above; `--layout-uncapped` lifts its bounds).  Read-heavy structure ops are where
 v4 pulls ahead:
 `degree`/`totalDegree` are O(1) off the adjacency index (~100–200× v3),
 `components`/`add`+`remove` ~25–35×, set operations up to ~25×.  Collection

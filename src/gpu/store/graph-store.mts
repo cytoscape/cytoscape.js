@@ -389,12 +389,22 @@ export class GraphStore implements ModelView {
    * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256)].
    * Draw-only paint: no geoEpoch bump, no bb/pick involvement.
    */
+  /** live imaged-node count (the renderer's zero-cost gate, 15.3) */
+  private imagedNodes = 0;
+
+  imageCount(): number {
+    return this.imagedNodes;
+  }
+
   setNodeImages( slot: number, specs: NodeImageSpec[] | null ): void {
     const refs = this.nodes.column( 'node.imageRef' ) as Uint32Array;
     const oldRef = refs[ slot ];
     const clearing = specs == null || specs.length === 0;
 
     if( clearing && oldRef === 0 ){ return; } // the imageless fast path
+
+    if( clearing ){ this.imagedNodes--; }
+    else if( oldRef === 0 ){ this.imagedNodes++; }
 
     const oldIds: number[] = [];
 

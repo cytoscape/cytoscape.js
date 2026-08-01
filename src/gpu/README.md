@@ -1158,6 +1158,32 @@ records).  Landed so far:
   `-image-opacity`/`-image-color` are plain number/color channels;
   every other image prop is a constants-only list (the 12b rule).
 
+- **15.3 — the RGBA draw path**: imaged nodes draw one extra
+  instanced quad per stream (leaves right after their bodies,
+  parents right after theirs — v3's layering), off the same culled
+  visible lists, with imageless instances collapsing in the VS and
+  the whole pass skipped while no node styles an image.  Unique
+  images live in per-tier `texture_2d_array`s (128²/512²/1024²)
+  with full blit-generated mip chains — minification samples a
+  coherent low mip instead of scattering across full-res texels —
+  behind an entry-indexed image-table buffer (status/tier/layer +
+  natural/raster dims); layers are slots with free-list reclaim and
+  doubling growth, capped at the 256-layer base limit (warn-once,
+  the glyph-atlas precedent).  The FS composites a node's records
+  in list order (later over earlier), sampling with explicit
+  gradients (`textureSampleGrad`, so per-record branching needs no
+  uniformity), and `smoothing: no` snaps to texel centers.
+  Deviations, recorded: `clip: node` masks by the node SDF with
+  containment `inside` clipping at the border's *inner edge* — the
+  border stays visible over the image, but a translucent border
+  shows fill rather than image (the B1 band-rule sibling); repeat
+  tiles are confined to the node box; the browser decoder narrows
+  crossorigin `null` to same-origin fetches (WebGPU cannot upload
+  tainted content).  Pinned by the `images-basic` /
+  `images-cover-clip` goldens and a live v3 parity scene at
+  **0.000%** mismatch (fit/position/opacity math is pixel-exact
+  against v3's canvas renderer).
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each

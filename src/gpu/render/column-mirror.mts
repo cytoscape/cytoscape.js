@@ -43,6 +43,7 @@ export class ColumnMirror {
   private blob: GPUBuffer;
   private blobCapacity: number;
   private poly!: GPUBuffer;
+  private image!: GPUBuffer;
 
   constructor( device: MirrorDevice, view: ModelView ){
     this.device = device;
@@ -57,6 +58,7 @@ export class ColumnMirror {
     this.blobCapacity = 0;
     this.blob = this.reallocBlob();
     this.poly = this.reallocPolyBlob();
+    this.image = this.reallocImageBlob();
 
     this.realloc( 'nodes' );
     this.realloc( 'edges' );
@@ -99,6 +101,11 @@ export class ColumnMirror {
   /** The custom-polygon point blob's storage buffer (round 13 C3). */
   polyBlobBuffer(): GPUBuffer {
     return this.poly;
+  }
+
+  /** The background-image record blob's storage buffer (round 15.3). */
+  imageBlobBuffer(): GPUBuffer {
+    return this.image;
   }
 
   /** Apply a StoreDelta: reallocate resized groups, upload dirty spans for the rest. */
@@ -157,6 +164,20 @@ export class ColumnMirror {
         this.uploadedBytes += byteLength;
       }
     }
+
+    if( delta.imageBlob != null ){
+      if( delta.imageBlob.resized ){
+        this.image = this.reallocImageBlob();
+      } else {
+        const data = this.view.imageBlob();
+        const byteStart = delta.imageBlob.start * 4;
+        const byteLength = ( delta.imageBlob.end - delta.imageBlob.start ) * 4;
+
+        this.device.queue.writeBuffer(
+          this.image, byteStart, data.buffer, data.byteOffset + byteStart, byteLength );
+        this.uploadedBytes += byteLength;
+      }
+    }
   }
 
   destroy(): void {
@@ -169,6 +190,7 @@ export class ColumnMirror {
     this.buffers.clear();
     this.blob.destroy();
     this.poly.destroy();
+    this.image.destroy();
   }
 
   /** (Re)allocate the blob mirror at the pool's backing capacity and
@@ -203,6 +225,30 @@ export class ColumnMirror {
     const old = this.poly;
     const buffer = this.device.createBuffer( {
       label: 'cy-gpu:poly-blob',
+      size: Math.max( data.byteLength, 4 ),
+      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
+    } );
+
+    if( data.byteLength > 0 ){
+      this.device.queue.writeBuffer( buffer, 0, data.buffer, data.byteOffset, data.byteLength );
+      this.uploadedBytes += data.byteLength;
+    }
+
+    this.version++;
+
+    if( old != null ){
+      this.device.queue.onSubmittedWorkDone().then( () => old.destroy() );
+    }
+
+    return buffer;
+  }
+
+  /** The 15.3 image blob's realloc twin. */
+  private reallocImageBlob(): GPUBuffer {
+    const data = this.view.imageBlob();
+    const old = this.image;
+    const buffer = this.device.createBuffer( {
+      label: 'cy-gpu:image-blob',
       size: Math.max( data.byteLength, 4 ),
       usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST
     } );

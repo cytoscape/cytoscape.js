@@ -1515,6 +1515,89 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'compound-loops', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  // a deterministic 16x16 quadrant png (red/green/blue/yellow) as a data
+  // uri — no fixture files, byte-identical everywhere
+  const QUAD_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg==';
+
+  /** Wait until every registry entry settled (ready or failed), then a
+   * few frames so uploads land on screen. */
+  const waitForImages = async page => {
+    await page.waitForFunction( () => window.cy._store.images.pendingCount() === 0 );
+    await waitFrames( page, 4 );
+  };
+
+  test( 'golden: background images — auto size, position, clip, opacity (round 15.3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', kind: 'plain' }, position: { x: -120, y: -60 } },
+        { data: { id: 'b', kind: 'faded' }, position: { x: 0, y: -60 } },
+        { data: { id: 'c', kind: 'bare' }, position: { x: 120, y: -60 } },
+        { data: { id: 'd', kind: 'plain' }, position: { x: -120, y: 60 } },
+        { data: { id: 'e', kind: 'plain' }, position: { x: 0, y: 60 } }
+      ],
+      style: { nodes: { 'width': 60, 'height': 50 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+
+    // the imaged style lands page-side (the data uri rides an argument);
+    // the imageless node opts out via the url mapper, and image opacity
+    // varies per node through its own mapper
+    await page.evaluate( uri => {
+      window.cy.style( {
+        nodes: {
+          'width': 60, 'height': 50, 'shape': 'rectangle',
+          'background-color': '#ecf0f1', 'border-width': 3, 'border-color': '#2c3e50',
+          'background-image': { case: [
+            { when: { data: 'kind', eq: 'bare' }, then: 'none' }
+          ], else: uri },
+          'background-image-opacity': { case: [
+            { when: { data: 'kind', eq: 'faded' }, then: 0.35 }
+          ], else: 1 },
+          // fit none + auto size: the 16px quadrant image at natural size,
+          // positioned toward the top-left, nudged by a px offset
+          'background-fit': 'none',
+          'background-position-x': '25%', 'background-position-y': '25%',
+          'background-offset-y': 4
+        }
+      } );
+    }, QUAD_PNG );
+    await waitForImages( page );
+
+    checkGolden( 'images-basic', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
+  test( 'golden: background images — cover on ellipses, clip vs none, repeat (round 15.3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -110, y: 0 } },
+        { data: { id: 'b' }, position: { x: 110, y: 0 } }
+      ],
+      style: { nodes: { 'width': 70, 'height': 56 } },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await page.evaluate( uri => {
+      window.cy.style( {
+        nodes: {
+          'width': 70, 'height': 56, 'shape': 'ellipse',
+          'background-color': '#ecf0f1', 'border-width': 4, 'border-color': '#2c3e50',
+          'background-image': uri,
+          // cover scales the quadrant image over the ellipse; clip: node
+          // masks it by the shape with the border kept visible
+          'background-fit': 'cover'
+        }
+      } );
+    }, QUAD_PNG );
+    await waitForImages( page );
+
+    checkGolden( 'images-cover-clip', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {
@@ -1635,6 +1718,64 @@ test.describe( 'v3-vs-v4 render parity', () => {
     const { v3uri, v4uri } = await exportBoth( page, { zoom: 1.7, pan: { x: 57, y: 23 } } );
 
     expectParity( v3uri, v4uri, 'parity-transform', testInfo );
+  } );
+
+  test( 'parity: background images — fit, position, opacity (round 15.3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the same 16px quadrant data uri both sides: fit contain on
+    // rectangles pins the scale-to-box math, the 25%/75% position pins
+    // v3's percent-of-free-space placement, and the 0.5 image opacity
+    // pins the alpha fold.  Solid borders, so the border-inner-edge clip
+    // (v4) and the shape-path clip (v3) are pixel-equivalent.
+    const QUAD = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg==';
+    const elements = [
+      { data: { id: 'a' }, position: { x: -120, y: -60 } },
+      { data: { id: 'b' }, position: { x: 120, y: -60 } },
+      { data: { id: 'c' }, position: { x: 0, y: 60 } }
+    ];
+    const shared = {
+      'width': 64, 'height': 48, 'shape': 'rectangle',
+      'background-color': '#ecf0f1', 'border-width': 4, 'border-color': '#2c3e50',
+      'background-image': QUAD,
+      'background-fit': 'contain',
+      'background-position-x': '25%', 'background-position-y': '75%',
+      'background-image-opacity': 0.5
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, shared } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(),
+        style: [ { selector: 'node', style: shared } ],
+        layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: { nodes: shared }, ...viewport } );
+
+      await cy4.ready;
+
+      // both sides load the image asynchronously; v4 exposes the pending
+      // count, v3 settles within the same generous window
+      await new Promise( resolve => {
+        const poll = () => {
+          if( cy4._store.images.pendingCount() === 0 ){ resolve(); }
+          else { setTimeout( poll, 20 ); }
+        };
+
+        poll();
+      } );
+      await new Promise( resolve => setTimeout( resolve, 250 ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, shared } );
+
+    expectParity( v3uri, v4uri, 'parity-images', testInfo );
   } );
 
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {

@@ -3958,11 +3958,40 @@ below signed off in the 2026-08-01 sitting.
   image prop rejects mappers (the 12b list rule).  Tests-first: 17
   specs in `test/gpu-background-image.mjs` red then green — 2076
   Node tests, typecheck + lint clean.
-- [ ] **15.3 RGBA draw path** — tier arrays + mip generation +
-  mirror upload/realloc rules; the node FS single-image path
-  (fit/position/size/offset/repeat/clip/containment/opacity/
-  smoothing); goldens + a live v3 parity scene (a fit/position/
-  repeat grid).
+- [x] **15.3 RGBA draw path** (2026-08-01) — the tiered-array draw,
+  in its own pass + pipeline: the node FS sits at exactly 8 storage
+  buffers, so imaged nodes draw **one extra instanced quad** off the
+  same culled visible lists (leaf stream right after the node
+  bodies, parent stream right after the parent bodies — v3's
+  layering), imageless instances collapsing in the VS and the whole
+  pass skipped at `store.imageCount() === 0`.
+  `render/image-arrays.mts`: per-tier `texture_2d_array`s with full
+  mip chains (blit-generated — WebGPU has no generateMipmaps),
+  layers as slots (`TierAllocator`: free-list, doubling growth with
+  live-mip copy-over, 256-layer base-limit cap warn-once), and the
+  entry-indexed **image table** storage buffer
+  (status/tier/layer + natural + raster dims) that gates sampling
+  and scales UVs into partially-filled layers.  The FS walks the
+  blob records in list order compositing later-over-earlier,
+  samples with **textureSampleGrad** (explicit gradients hoisted to
+  uniform flow, so the per-record branching is legal), emulates
+  smoothing: no by texel-center snapping, masks `clip: node` by the
+  node SDF — containment `inside` clips at the border's inner edge
+  (border stays visible; a translucent border shows fill, not
+  image — recorded beside the B1 band rule), `over` at the shape
+  boundary — and confines repeat tiles to the node box (recorded).
+  `clip: none` rects grow the quad in the VS.  The mirror gained
+  the image blob's realloc/span twin; the browser decoder
+  (`render/image-decoder.mts`: fetch + createImageBitmap, SVG via
+  img + canvas at target size, decode-time downscale into the cap
+  tier, crossorigin modes with `null` narrowed to same-origin —
+  recorded) attaches at init and detaches on destroy.  WGSL lesson
+  re-hit and re-recorded: `ref` is reserved (the console-error
+  guard caught it).  Verifies: 6 Node specs
+  (`test/gpu-image-arrays.mjs`, tests-first), the `images-basic` and
+  `images-cover-clip` goldens, and **`parity-images` vs v3 at
+  0.000%** — fit/position/opacity math is pixel-exact.  2082 Node
+  tests, 122/122 Playwright, typecheck + lint clean.
 - [ ] **15.4 Multi-image compositing** — up to 4 records per node,
   layer order pinned vs v3 in the parity scene, per-image prop
   independence, cap-overflow warn.

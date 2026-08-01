@@ -16,6 +16,9 @@ import { LabelPipeline } from './label-pipeline.mjs';
 import { GLYPH_BYTES } from './glyph-buffer.mjs';
 import type { GlyphBuffer } from './glyph-buffer.mjs';
 import { MapperRuntime } from './mapper-runtime.mjs';
+import { ImageArrays } from './image-arrays.mjs';
+import { ImagePipeline } from './image-pipeline.mjs';
+import { createBrowserImageDecoder } from './image-decoder.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
@@ -172,6 +175,8 @@ export class Renderer {
   private opts: GpuRendererOptions;
   private context: GPUCanvasContext | null;
   private nodePipeline: NodePipeline | null;
+  private imagePipeline: ImagePipeline | null = null;
+  private imageArrays: ImageArrays | null = null;
   private overlayPipeline: NodeLayerPipeline | null = null;
   private underlayPipeline: NodeLayerPipeline | null = null;
   private edgePipeline: EdgePipeline | null;
@@ -377,6 +382,9 @@ export class Renderer {
     this.picking?.destroy();
     this.gpuTimer?.destroy();
     this.labelLayer?.destroy();
+    this.imageArrays?.destroy();
+    this.imageArrays = null;
+    this.cy._store.images.setDecoder( null ); // headless again on unmount
     this.parentOrderBuf?.destroy();
     this.parentOrderBuf = null;
     this.parentOrderRef = null;
@@ -839,6 +847,10 @@ export class Renderer {
     };
 
     this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
+    this.imagePipeline = new ImagePipeline( device, format, kernels.visibleLayout );
+    this.imageArrays = new ImageArrays( device );
+    // the browser rasterizer: entries acquired while headless kick now
+    this.cy._store.images.setDecoder( createBrowserImageDecoder() );
     this.overlayPipeline = new NodeLayerPipeline( device, format, kernels.visibleLayout, 'node.overlay' );
     this.underlayPipeline = new NodeLayerPipeline( device, format, kernels.visibleLayout, 'node.underlay' );
     this.edgePipeline = new EdgePipeline( device, format, kernels.visibleLayout );
@@ -911,6 +923,10 @@ export class Renderer {
     this.mapperRuntime?.update( delta ?? EMPTY_DELTA );
 
     this.labelLayer?.process(); // rebuild glyph runs for label-dirty nodes
+
+    // background images (15.3): reclaim freed layers, upload rasters that
+    // landed since the last frame (+ their mip chains, own submits)
+    this.imageArrays?.sync( store.images );
 
     // pick pass first, in its own submit: a tiny cursor-centered tile whose
     // readback maps as soon as it executes, never queued behind a scene draw
@@ -1075,6 +1091,12 @@ export class Renderer {
     // excluded from the prepass so edges/children still draw over them
     if( store.parentCount() > 0 ){
       this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.parent );
+
+      // parent background images ride their bodies' tier (v3's layering)
+      if( store.imageCount() > 0 && this.imageArrays != null ){
+        this.imagePipeline?.draw(
+          pass, device, uniform, mirror, this.imageArrays, store.highWater( 'nodes' ), cull.parent );
+      }
     }
 
     if( store.edgeUnderlayCount() > 0 ){
@@ -1132,6 +1154,13 @@ export class Renderer {
     }
 
     this.nodePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
+
+    // leaf background images composite right over their bodies (15.3),
+    // under overlays and labels; zero-cost while no node styles one
+    if( store.imageCount() > 0 && this.imageArrays != null ){
+      this.imagePipeline?.draw(
+        pass, device, uniform, mirror, this.imageArrays, store.highWater( 'nodes' ), cull.node );
+    }
 
     if( store.overlayCount() > 0 && cull.overlay != null ){
       this.overlayPipeline?.draw(

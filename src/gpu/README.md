@@ -1584,10 +1584,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   (a pick-specific Frame uniform turns the cull pass's viewport test into
   cursor-region culling, O(region) not O(scene)), submits in its own
   command buffer ahead of scene work, and reads the whole tile back
-  through a ring of 3 staging buffers (latest-wins; requests drop to
-  `null` when the ring is exhausted).  Scene submissions are capped at 2
-  in flight, so even stage-3 picks resolve in ~1 rAF plus bounded GPU
-  work on GPU-bound graphs.  Measured on ndex-x-large at dpr 2: node
+  through a ring of 3 staging buffers (latest-wins; a frame that finds
+  the ring exhausted *defers* the still-coalescing request to the next
+  frame with a free slot — bounded extra latency, never a spurious
+  `null`; ring saturation is observable as `stats().pickDeferrals`).
+  Scene submissions are capped at 2 in flight, so even stage-3 picks
+  resolve in ~1 rAF plus bounded GPU work on GPU-bound graphs.  Measured on ndex-x-large at dpr 2: node
   hovers ~0 ms, cold background/edge ~7 ms, cached ~0.2 ms,
   hover-while-panning median ~0 ms (was ~70 ms).
 - **Far-zoom edge decimation**: once width-floored (hairline) edges fall

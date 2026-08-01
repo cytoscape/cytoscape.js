@@ -22,9 +22,15 @@ invalidates on viewport events and geometry dirt (an epoch guard drops
 readbacks that raced an invalidation).
 
 Requests within a frame coalesce latest-wins; when the ring is exhausted
-the request resolves null (unknown).  The pick pass is submitted in its own
-command buffer ahead of any scene draw, so mapAsync never waits behind a
-full-frame render.
+the frame *defers* — the pending request (still coalescing) waits for the
+next frame with a free slot, which arrives as soon as the oldest readback
+maps, so latency stays bounded by in-flight GPU work and a pick never
+resolves null just because the ring was momentarily full (null means
+background, destroy or device loss).  The frame loop re-schedules while a
+request is pending, and checks `hasFreeSlot()` before encoding the pick
+pass so a full ring costs no GPU work.  The pick pass is submitted in its
+own command buffer ahead of any scene draw, so mapAsync never waits behind
+a full-frame render.
 */
 
 /** pick tile size, device px; the cursor sits at the center texel */
@@ -61,6 +67,10 @@ export class Picking {
   /** request-to-resolution latency of the most recent resolved GPU pick */
   lastLatencyMs: number;
 
+  /** frames that found the staging ring full and deferred the pending
+   * request (observable saturation; the request itself is never dropped) */
+  deferrals: number;
+
   private texture: GPUTexture;
   private view: GPUTextureView;
   private ring: RingSlot[];
@@ -79,6 +89,7 @@ export class Picking {
     this.cacheEpoch = 0;
     this.destroyed = false;
     this.lastLatencyMs = 0;
+    this.deferrals = 0;
 
     this.texture = device.createTexture( {
       label: 'cy-gpu:pick-tile',
@@ -126,6 +137,12 @@ export class Picking {
     return this.pending != null;
   }
 
+  /** Whether a staging buffer is free — checked before encoding the pick
+   * pass, so a saturated ring skips the GPU work along with the copy. */
+  hasFreeSlot(): boolean {
+    return this.ring.some( slot => !slot.busy );
+  }
+
   /** The coalesced pending cursor position (device px), for the pick uniform. */
   peekPending(): { xPx: number; yPx: number } | null {
     return this.pending == null ? null : { xPx: this.pending.xPx, yPx: this.pending.yPx };
@@ -154,23 +171,24 @@ export class Picking {
   /**
    * Encode the whole-tile staging copy for the pending request (call after
    * the pick pass on the same encoder).  Returns the in-flight token to pass
-   * to `finish()` after submit, or null when idle or the ring is full.
+   * to `finish()` after submit, or null when idle or the ring is full — a
+   * full ring keeps the request pending (still coalescing latest-wins) for
+   * a later frame, so saturation defers answers instead of dropping them.
    */
   encodeCopy( encoder: GPUCommandEncoder ): InFlightCopy | null {
     const pending = this.pending;
 
     if( pending == null ){ return null; }
 
-    this.pending = null;
-
     const slot = this.ring.find( s => !s.busy );
 
-    if( slot == null ){ // ring full: drop (resolve unknown)
-      for( const resolve of pending.resolvers ){ resolve( null ); }
+    if( slot == null ){ // ring full: defer to a frame with a free slot
+      this.deferrals++;
 
       return null;
     }
 
+    this.pending = null;
     slot.busy = true;
 
     encoder.copyTextureToBuffer(

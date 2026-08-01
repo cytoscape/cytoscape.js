@@ -104,6 +104,9 @@ interface RendererStats {
   edges: number;
   glyphs: number;
   pickLatencyMs: number;
+  /** frames that found the pick staging ring full and deferred the request
+   * to a later frame (saturation meter; requests are never dropped) */
+  pickDeferrals: number;
   /** data bytes uploaded for GPU mapper evaluation (paint-channel restyles) */
   mapperUploadedBytes: number;
   /** mapper eval dispatches encoded */
@@ -342,6 +345,7 @@ export class Renderer {
       edges: this.cy._store.count( 'edges' ),
       glyphs: this.labelLayer?.count() ?? 0,
       pickLatencyMs: this.pickLatencyMs(),
+      pickDeferrals: this.picking?.deferrals ?? 0,
       mapperUploadedBytes: this.mapperRuntime?.uploadedBytes ?? 0,
       mapperDispatches: this.mapperRuntime?.dispatches ?? 0,
       // the shaping memo (16.5): shared texts shape once per face
@@ -447,7 +451,8 @@ export class Renderer {
    *    instant;
    * 3. GPU edge pick: draws only the cursor tile, submits ahead of scene
    *    work, so latency is ~one rAF plus bounded in-flight GPU work
-   *    (latest-wins coalescing; requests never queue up).
+   *    (latest-wins coalescing; requests never queue up — a saturated
+   *    staging ring defers the coalesced request a frame, never drops it).
    */
   async pick( x: number, y: number ): Promise<GpuCollection | null> {
     if( this.destroyed || !this.isReady || this.picking == null ){ return null; }
@@ -1088,26 +1093,33 @@ export class Renderer {
     }
 
     // pick pass first, in its own submit: a tiny cursor-centered tile whose
-    // readback maps as soon as it executes, never queued behind a scene draw
+    // readback maps as soon as it executes, never queued behind a scene draw.
+    // A full staging ring defers the request — no encode, no drop; the
+    // pending check in the reschedule tail below retries it next frame,
+    // and a slot frees as soon as the oldest readback maps
     const picking = this.picking;
     const pending = picking?.peekPending() ?? null;
 
     if( picking != null && pending != null && this.pickCull != null ){
-      this.writePickUniform( pending.xPx, pending.yPx );
+      if( picking.hasFreeSlot() ){
+        this.writePickUniform( pending.xPx, pending.yPx );
 
-      const pickEncoder = device.createCommandEncoder( { label: 'cy-gpu:pick' } );
+        const pickEncoder = device.createCommandEncoder( { label: 'cy-gpu:pick' } );
 
-      // the pick-tile Frame uniform turns the cull predicates' viewport
-      // test into cursor-region culling: the pick draw stays O(region)
-      this.encodeCulls( pickEncoder, this.pickUniform as GPUBuffer, this.pickCull, false );
-      this.drawPickPasses( pickEncoder, picking.targetView() );
+        // the pick-tile Frame uniform turns the cull predicates' viewport
+        // test into cursor-region culling: the pick draw stays O(region)
+        this.encodeCulls( pickEncoder, this.pickUniform as GPUBuffer, this.pickCull, false );
+        this.drawPickPasses( pickEncoder, picking.targetView() );
 
-      const copy = picking.encodeCopy( pickEncoder );
+        const copy = picking.encodeCopy( pickEncoder );
 
-      device.queue.submit( [ pickEncoder.finish() ] );
+        device.queue.submit( [ pickEncoder.finish() ] );
 
-      if( copy != null ){
-        void picking.finish( copy );
+        if( copy != null ){
+          void picking.finish( copy );
+        }
+      } else {
+        picking.deferrals++; // observable saturation (stats().pickDeferrals)
       }
     }
 

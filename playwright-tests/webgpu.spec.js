@@ -271,6 +271,56 @@ test.describe( 'WebGPU renderer', () => {
     expect( onEdge ).toBe( 'ab' );
   } );
 
+  test( 'saturating edge picks across frames never yields spurious nulls', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { 'width': 30, 'height': 30 },
+        edges: { 'width': 4 }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // fire un-awaited picks over the edge midpoint on consecutive frames,
+    // jiggling the pan each frame so the cached pick tile is invalidated
+    // and every request goes through the GPU tile + staging ring.  A full
+    // ring must defer requests (bounded latency), never resolve them null
+    // — spurious nulls are indistinguishable from background at the API.
+    const result = await page.evaluate( async center => {
+      const cy = window.cy;
+      const raf = () => new Promise( r => requestAnimationFrame( r ) );
+      const picks = [];
+
+      for( let i = 0; i < 10; i++ ){
+        // horizontal jiggle along the horizontal edge: the canvas center
+        // stays on the line while the viewport write drops the pick cache
+        cy.panBy( { x: i % 2 === 0 ? 2 : -2, y: 0 } );
+        picks.push( cy.pick( center.x, center.y ) );
+        await raf();
+      }
+
+      const eles = await Promise.all( picks );
+
+      return {
+        ids: eles.map( ele => ( ele == null ? null : ele.id() ) ),
+        deferrals: cy.renderer().stats().pickDeferrals
+      };
+    }, center );
+
+    expect( result.ids ).toEqual( Array( 10 ).fill( 'ab' ) );
+    expect( result.deferrals ).toBeGreaterThanOrEqual( 0 ); // stat exists
+  } );
+
   test( 'columnar elements load renders and picks', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

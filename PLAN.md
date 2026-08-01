@@ -1882,6 +1882,10 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    (pointer-transparency), `box-selection: overlap` mode (v4 is
    'contain' only), two-finger cxttap on touch, and the
    three-finger box gesture (currently listed as not implemented).
+   **Scoped as round 20 (2026-08-01, plan at the end of this
+   file)**: the option quartet + `events`/`text-events` + both
+   touch gestures; `pixelRatio` found already landed; the overlap
+   box mode deferred as a demand-gated hook (not v3 surface).
 9. **Animation surface** — `step` callback, `queue: false`,
    `renderedPosition` targets, Animation object controls
    (`pause`/`progress`/`reverse`/`apply`/`applying`/`completed` —
@@ -4940,3 +4944,140 @@ Verification: 28 store-level + 9 ref-level + 5 trigger Node specs
 `webgpu-visual` Playwright projects (143 specs — goldens and live v3
 parity untouched).  With this round the "Follow-up hooks" list in
 `src/gpu/README.md` holds no open architecture items.
+
+## Round 20 plan — interaction options + touch parity (planned 2026-08-01)
+
+With the architecture queue closed (round 19), round 20 takes the
+largest remaining "needs a call" cluster: gap item 8 — the
+interaction tuning options and the touch gestures v4 still lacks.
+Everything here is app-facing parity work; the option names and prop
+semantics are permanent API, so the calls are made deliberately up
+front (the round-17 discipline).
+
+**Signed-off design calls:**
+
+1. **The option quartet is core-level, with getter/setters.**  v3
+   buries `wheelSensitivity`, `desktopTapThreshold` and
+   `touchTapThreshold` in renderer options and hardcodes
+   `tapholdDuration = 500`; v4 has no renderer-option surface for
+   interaction (the `renderer` block is GPU tuning), so all four are
+   **constructor options with `multiClickDebounceTime`-style
+   getter/setters** — readable and settable at runtime, validated
+   (throw on non-finite/negative; `wheelSensitivity` must be > 0),
+   live-read by the pointer layer (no re-init).  Defaults are v3's:
+   `wheelSensitivity: 1` (a multiplier on the wheel-zoom exponent —
+   v4's base rate is unchanged), `desktopTapThreshold: 4`,
+   `touchTapThreshold: 8` (css px of movement before a press stops
+   being a tap; v4 previously used 4 for all pointer types),
+   `tapholdDuration: 500` ms (v4 makes v3's constant configurable —
+   the one deliberate surface addition, logged in the gap list).
+   v3's console warning on a custom `wheelSensitivity` is **kept
+   verbatim** (the hardware-variance advice is as true under WebGPU;
+   emitted once per instance, from the setter or ctor).
+2. **`events` is a style prop compiled to a flag bit.**  v3's
+   `events: 'yes' | 'no'` ports to both element groups (default
+   `'yes'`), constants or `case` mappers (CPU-evaluated — a flag
+   write, like every non-paint channel).  The engine maintains a new
+   store-managed `FLAG_NO_EVENTS` bit; **every pointer path excludes
+   flagged elements by reading the one bit**: the CPU node pick
+   (grab/tap targeting, hover, tapdragover), the GPU edge pick tile
+   (the cull kernels gain a `pickMode` Frame field and drop flagged
+   edges in pick mode only — scene draws are untouched: `events: no`
+   elements still render), and the **box-selection gesture** (v3's
+   `getAllInBox` runs over the `interactive` set, so `events: no`
+   elements are not box-selectable; the gesture filters, while
+   `cy.elementsInBox()` stays a pure geometric query — a recorded
+   scope note).  `interactive()` becomes
+   `visible() && events !== 'no'`.  An `events` flag change
+   invalidates the pick-tile cache (it changes pick answers, not
+   pixels).
+3. **`text-events` is node-only in v4.**  v3's default is `'no'`
+   (labels are pointer-transparent), which v4 already matches; the
+   port makes `'yes'` mean *the node's label box is part of the node
+   for picking* — the CPU pick tests the exact laid label block at
+   its D3 anchor (the round-16 dims; node labels never rotate, so
+   the test is an AABB in model space) after the shape test misses.
+   Constants or `case` mappers, `FLAG_TEXT_EVENTS`.  **Edge labels
+   stay unpickable** whatever the prop says (edges pick through the
+   GPU tile, which draws edge geometry only; the label quads are a
+   different stream — a recorded deviation, consistent with the
+   round-10 "labels are not pickable" rule).  The label bb term
+   already rides `boundingBox({ includeLabels })`, so no bounds work.
+4. **Touch gestures port v3's rules verbatim.**  Two-finger cxt: a
+   second finger landing within 200 css px of the first starts the
+   cxt gesture — `cxttapstart` on the node under finger 1 (else
+   finger 2, else the core; the synchronous CPU pick), `cxtdrag`
+   (+ `cxtdragover`/`cxtdragout`) while the pair moves, **cancelling
+   into a pinch** when the finger distance grows past 1.5× or 150 px
+   (`cxttapend` fires, then the pinch machinery takes over),
+   `cxttapend` + `cxttap` (when never dragged) on release.  A
+   two-finger press *farther* than 200 px apart pinches immediately
+   (v3's threshold).  Three-finger box: with `boxSelectionEnabled`,
+   three fingers select — the box spans the start centroid to the
+   moving centroid (v3's `(f1+f2+f3)/3` corners), `boxstart` on the
+   first move, applied through the existing box flow (boxend / box /
+   boxselect + the round-16.5 label containment option) when the
+   third finger lifts; a gesture that boxed never degrades to a
+   pinch (v3's `didSelect` latch).  Both gestures ride the existing
+   pointer-event handlers (v4 has no touch-event path by design).
+5. **Closed or deferred without building:** `pixelRatio` turned out
+   to be **already landed** (ctor option, `'auto' | number`, plumbed
+   to the renderer's dpr — this round adds the missing spec + docs
+   and records it); a box-selection **overlap mode** is *not* v3
+   surface (v3 selects by containment) and is **deferred as a
+   demand-gated hook** — the logged shape is a
+   `boxSelectionMode: 'contain' | 'overlap'` core option whose
+   overlap test is bb-intersect for nodes and segment/route-vs-rect
+   for edges (the cull pass already owns that math).
+
+**Pass split** (tests-first per item; docs in-commit):
+
+- [ ] **20.0 Docs-first** — this plan section; gap item 8 marked
+  scoped.
+- [ ] **20.1 The option quartet** — `wheelSensitivity`,
+  `desktopTapThreshold`, `touchTapThreshold`, `tapholdDuration`:
+  ctor options + getter/setters + validation (Node specs), pointer
+  layer reads live values, per-pointer-type threshold selection, the
+  wheel exponent multiplier + the v3 warning.  Playwright pins:
+  sensitivity 2 ≈ double the zoom exponent of sensitivity 1; a 6 px
+  desktop press is a drag at threshold 4 and a tap at threshold 10;
+  a shortened `tapholdDuration` fires `taphold` sooner.
+- [ ] **20.2 `events`** — prop parsing/readback/mapper (Node specs:
+  sheet + case mapper + readback + `interactive()`), the flag bit,
+  CPU pick + box-gesture exclusion, the `pickMode` Frame field + the
+  edge pick-cull test, pick-cache invalidation.  Playwright pins: a
+  press on an `events: no` node pans (and picks nothing), hover
+  passes through to the element beneath, an `events: no` edge is
+  not hover-pickable while a plain edge in the same scene is, and
+  the box gesture skips both.
+- [ ] **20.3 `text-events`** — prop + flag (Node specs incl. the
+  edges-group throw... **call: the prop parses on edges for v3
+  sheet compatibility but is inert — recorded** — and readback),
+  the CPU pick label-box test.  Playwright pins: a tap on the label
+  below an `events`-normal node selects it with `text-events: yes`
+  and background-taps with the default.
+- [ ] **20.4 Two-finger cxt** — the gesture state machine on the
+  existing touch bookkeeping (Node-testable pieces factored pure
+  where practical; the behavior pinned in a `webgpu` Playwright spec
+  with synthetic touch pointers: close-pair press → cxttapstart /
+  cxttap; drag → cxtdrag + over/out; spread → cxttapend then
+  pinchzoom fires; far-pair press → pinch immediately, no cxt
+  events).
+- [ ] **20.5 Three-finger box** — the centroid box + didSelect
+  latch, riding the existing box overlay/flow.  Playwright pins:
+  three-finger swipe selects the swept nodes (boxstart/boxend
+  counts), never pans/zooms, and a two-finger release after boxing
+  does not pinch.
+- [ ] **20.6 pixelRatio spec + closing docs sweep** — a `webgpu`
+  spec pinning `pixelRatio: 2` vs `1` (backing-store size scales;
+  picking unaffected in css px), README round-20 section +
+  deviations entries, both docs swept per the standing rule.
+
+**Risks tracked**: Frame-uniform layout change touches every pass
+(one struct, asserted by the existing goldens — any misalignment is
+loudly visual); pick-cache staleness on `events` writes (spec pins a
+flag flip between two picks at the same cursor); touch synthesis
+fidelity in Playwright (the pinch spec's synthetic-pointer precedent;
+gestures are driven through pointer events, so no Touch APIs needed);
+threshold semantics drift (the pointer layer must pick the threshold
+by `pointerType` per event, not per instance).

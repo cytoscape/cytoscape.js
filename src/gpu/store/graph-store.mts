@@ -15,6 +15,7 @@ import {
 import type { CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import {
   columnSpec, columnSpecsForGroup,
+  CHART_HEADER,
   CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI,
   CURVE_SEGMENTS,
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
@@ -151,6 +152,10 @@ export class GraphStore implements ModelView {
   private polyPool!: CurveBlob;
   /** the 15.2 background-image record pool (IMG_STRIDE floats per image) */
   private imagePool!: CurveBlob;
+  /** round 23: chart records (node.chartRef = offset | n << 24) */
+  private chartPool!: CurveBlob;
+  /** live charted nodes (the chart pass skips at 0) */
+  private chartedNodes = 0;
   /** the unique-image registry (round 15.1); style writes acquire/release */
   readonly images = new ImageRegistry();
 
@@ -311,6 +316,15 @@ export class GraphStore implements ModelView {
       this.dirty.mark( 'node.imageRef', slot );
     } );
 
+    // round 23: the chart-record pool; a relocation rewrites node.chartRef
+    this.chartPool = new CurveBlob( ( slot, offset ) => {
+      const refs = this.nodes.column( 'node.chartRef' ) as Uint32Array;
+      const n = refs[ slot ] >>> 24;
+
+      refs[ slot ] = ( offset | ( n << 24 ) ) >>> 0;
+      this.dirty.mark( 'node.chartRef', slot );
+    } );
+
     // an image decode landing (or an entry freeing) redraws the scene;
     // no column changes, so the pick-tile cache stays valid
     this.images.onChange = () => this.dirty.touch();
@@ -354,6 +368,10 @@ export class GraphStore implements ModelView {
     const imageDirty = this.imagePool.takeDirty();
 
     if( imageDirty != null ){ delta.imageBlob = imageDirty; }
+
+    const chartDirty = this.chartPool.takeDirty();
+
+    if( chartDirty != null ){ delta.chartBlob = chartDirty; }
 
     return delta;
   }
@@ -400,6 +418,19 @@ export class GraphStore implements ModelView {
 
   imageBlobLength(): number {
     return this.imagePool.length();
+  }
+
+  chartBlob(): Float32Array {
+    return this.chartPool.data();
+  }
+
+  chartBlobLength(): number {
+    return this.chartPool.length();
+  }
+
+  /** Live charted nodes (round 23) — the renderer's pass-skip gate. */
+  chartCount(): number {
+    return this.chartedNodes;
   }
 
   /**
@@ -483,6 +514,105 @@ export class GraphStore implements ModelView {
     for( const id of oldIds ){ this.images.release( id ); }
 
     this.dirty.touch();
+  }
+
+  /**
+   * Write (or clear) a node's chart record (round 23).  The blob layout
+   * is CHART_HEADER floats — kind, size, hole, startAngle, direction,
+   * n — then n × (value, r+g·256, b+a·256): colors split across two
+   * small-integer floats (the image-record trick — packed u32 color
+   * bits would risk NaN canonicalization through the f32 pool).
+   * Colors arrive alpha-folded (chart-opacity, the B1 pattern).
+   */
+  setChart(
+    slot: number,
+    rec: {
+      kind: number; size: number; hole: number; startAngle: number;
+      direction: number; opacity: number;
+      values: number[]; colors: [ number, number, number, number ][];
+    } | null
+  ): void {
+    const refs = this.nodes.column( 'node.chartRef' ) as Uint32Array;
+    const oldRef = refs[ slot ];
+    const clearing = rec == null || rec.values.length === 0;
+
+    if( clearing && oldRef === 0 ){ return; } // the chartless fast path
+
+    if( clearing ){
+      this.chartedNodes--;
+      this.chartPool.free( slot );
+      refs[ slot ] = 0;
+      this.dirty.mark( 'node.chartRef', slot );
+      this.dirty.touch();
+
+      return;
+    }
+
+    if( oldRef === 0 ){ this.chartedNodes++; }
+
+    const { values, colors } = rec;
+    const n = values.length;
+    const record = new Array<number>( CHART_HEADER + n * 3 );
+
+    record[ 0 ] = rec.kind;
+    record[ 1 ] = rec.size;
+    record[ 2 ] = rec.hole;
+    record[ 3 ] = rec.startAngle;
+    record[ 4 ] = rec.direction;
+    record[ 5 ] = rec.opacity;
+    record[ 6 ] = n;
+
+    for( let i = 0; i < n; i++ ){
+      const [ r, g, b, a ] = colors[ i ];
+
+      record[ CHART_HEADER + i * 3 ] = values[ i ];
+      record[ CHART_HEADER + i * 3 + 1 ] = r + g * 256;
+      record[ CHART_HEADER + i * 3 + 2 ] = b + a * 256;
+    }
+
+    const offset = this.chartPool.write( slot, record );
+    const ref = ( offset | ( n << 24 ) ) >>> 0;
+
+    if( refs[ slot ] !== ref ){
+      refs[ slot ] = ref;
+      this.dirty.mark( 'node.chartRef', slot );
+    }
+
+    this.dirty.touch();
+  }
+
+  /** A node's decoded chart record, or null when chartless (round 23). */
+  chartAt( slot: number ): {
+    kind: number; size: number; hole: number; startAngle: number;
+    direction: number; opacity: number;
+    values: number[]; colors: [ number, number, number, number ][];
+  } | null {
+    const ref = ( this.nodes.column( 'node.chartRef' ) as Uint32Array )[ slot ];
+
+    if( ref === 0 ){ return null; }
+
+    const pool = this.chartPool.data();
+    const off = ref & 0xffffff;
+    const n = ref >>> 24;
+    const values: number[] = [];
+    const colors: [ number, number, number, number ][] = [];
+    // the pool is f32: snap fractions back to a friendly precision
+    const snap = ( v: number ): number => Math.round( v * 1e6 ) / 1e6;
+
+    for( let i = 0; i < n; i++ ){
+      const base = off + CHART_HEADER + i * 3;
+      const rg = pool[ base + 1 ];
+      const ba = pool[ base + 2 ];
+
+      values.push( snap( pool[ base ] ) );
+      colors.push( [ rg % 256, Math.floor( rg / 256 ), ba % 256, Math.floor( ba / 256 ) ] );
+    }
+
+    return {
+      kind: pool[ off ], size: snap( pool[ off + 1 ] ), hole: snap( pool[ off + 2 ] ),
+      startAngle: pool[ off + 3 ], direction: pool[ off + 4 ],
+      opacity: snap( pool[ off + 5 ] ), values, colors
+    };
   }
 
   /** A node's decoded background-image records, or null when imageless. */
@@ -909,6 +1039,7 @@ export class GraphStore implements ModelView {
     this.adj.clearNode( slot );
     this.polyPool.free( slot );
     this.setNodeImages( slot, null ); // releases registry refs too (15.2)
+    this.setChart( slot, null ); // frees the chart record (round 23)
     this.freeSlot( 'nodes', slot );
   }
 
@@ -3015,6 +3146,7 @@ export class GraphStore implements ModelView {
     if( nodesRes != null ){
       this.polyPool.remapSlots( nodesRes.remap );
       this.imagePool.remapSlots( nodesRes.remap );
+      this.chartPool.remapSlots( nodesRes.remap );
       this.data.remapSlots( 'nodes', nodesRes.remap );
       this.remapLabelStream( 'nodes', nodesRes.remap );
       this.hierarchy.remapSlots( nodesRes.remap, this.nodes.gen );

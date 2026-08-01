@@ -2,6 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
+  CHART_MAX_SLICES, CHART_NONE, CHART_PIE, CHART_STRIPES,
   FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_SELF_INVISIBLE, FLAG_TEXT_EVENTS,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
@@ -9,6 +10,7 @@ import {
   SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID,
   SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
+import { SCHEMES, resolveScheme, hexToRgb } from './style-schemes.mjs';
 import {
   compileMapper, bindEvaluator, isMapperSpec, autoExtentFor, applyAutoExtent
 } from './style-scales.mjs';
@@ -91,6 +93,20 @@ interface NodeComputed {
   textEvents: boolean;
   /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
   invisible: boolean;
+  /** chart (round 23): CHART_NONE | CHART_PIE | CHART_STRIPES */
+  chartKind: number;
+  /** constant value list (null when unset or the data passthrough is used) */
+  chartValues: number[] | null;
+  /** the `{ data: key }` passthrough key (per-element arrays) */
+  chartValuesKey: string | null;
+  /** resolved palette (null = the default category10 scheme) */
+  chartColors: RGBA[] | null;
+  chartSize: number;
+  chartHole: number;
+  chartStartAngle: number;
+  /** stripes: 0 = vertical (bands advance top->bottom), 1 = horizontal */
+  chartDirection: number;
+  chartOpacity: number;
   /** literal label text ('' for none) when labelKey is null */
   label: string;
   /** `data(key)` mapper key ('id' reads the first-class id) */
@@ -326,6 +342,15 @@ const NODE_DEFAULTS: NodeComputed = {
   eventsEnabled: true, // v3's default: elements receive events
   textEvents: false, // v3's default: labels are pointer-transparent
   invisible: false, // visibility: visible (round 22)
+  chartKind: CHART_NONE,
+  chartValues: null,
+  chartValuesKey: null,
+  chartColors: null, // the category10 default resolves at write
+  chartSize: 1, // v3's pie-size 100%
+  chartHole: 0,
+  chartStartAngle: 0,
+  chartDirection: 0, // vertical (v3's stripe default)
+  chartOpacity: 1,
   borderWidth: 0,
   label: '', // no label
   labelKey: null,
@@ -552,6 +577,8 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'shape-polygon-points', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
   'events', 'text-events', 'visibility',
+  'chart', 'chart-values', 'chart-colors', 'chart-size', 'chart-hole',
+  'chart-start-angle', 'chart-direction', 'chart-opacity',
   'corner-radius', 'border-position',
   'background-fill', 'background-gradient-stop-colors',
   'background-gradient-stop-positions', 'background-gradient-direction',
@@ -706,6 +733,16 @@ const NODE_ONLY_EXTRA: ReadonlySet<string> = new Set( [
 
 const GHOST_PROPS: ReadonlySet<string> = new Set( [
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity'
+] );
+
+/** the default chart palette: the mapper DSL's category10 scheme */
+const DEFAULT_CHART_COLORS: RGBA[] =
+  resolveScheme( 'category10' ).stops.map( hex => [ ...hexToRgb( hex ), 255 ] as RGBA );
+
+/** chart props are node-only (round 23). */
+const CHART_PROPS: ReadonlySet<string> = new Set( [
+  'chart', 'chart-values', 'chart-colors', 'chart-size', 'chart-hole',
+  'chart-start-angle', 'chart-direction', 'chart-opacity'
 ] );
 
 /** overlay/underlay *shape* props are node-only (edge layers stroke
@@ -1094,6 +1131,78 @@ const gradientStops = (
 };
 
 /** v3's bool type: 'yes'/'no' keywords (booleans accepted too). */
+const parseChartKind = ( prop: string, value: unknown ): number => {
+  if( value === 'none' ){ return CHART_NONE; }
+  if( value === 'pie' ){ return CHART_PIE; }
+  if( value === 'stripes' ){ return CHART_STRIPES; }
+
+  throw new Error( `The chart kind '${String( value )}' must be 'none', 'pie' or 'stripes'` );
+};
+
+/** A number list (array or space-separated string) of finite fractions >= 0. */
+const parseChartValues = ( prop: string, value: unknown ): number[] => {
+  const raw = Array.isArray( value )
+    ? value
+    : typeof value === 'string' ? value.trim().split( /\s+/ ) : null;
+
+  if( raw == null || raw.length === 0 ){
+    throw new Error( `The ${prop} '${String( value )}' must be a number list` );
+  }
+
+  return raw.map( v => {
+    const n = typeof v === 'number' ? v : parseFloat( String( v ) );
+
+    if( !isFinite( n ) || n < 0 ){
+      throw new Error( `The ${prop} entry '${String( v )}' must be a non-negative number` );
+    }
+
+    return n;
+  } );
+};
+
+/** A palette: a named scheme, or a color list (array or space-separated). */
+const parseChartColors = ( prop: string, value: unknown ): RGBA[] => {
+  if( typeof value === 'string' && SCHEMES[ value.trim().toLowerCase() ] != null ){
+    // a named scheme (scheme names never collide with CSS color names)
+    return resolveScheme( value ).stops.map( hex => [ ...hexToRgb( hex ), 255 ] as RGBA );
+  }
+
+  if( typeof value === 'string' && !/\s/.test( value.trim() )
+    && !value.startsWith( '#' ) && !value.startsWith( 'rgb' ) ){
+    // a bare single word that is neither a scheme nor obviously a color:
+    // let resolveScheme throw its scheme-list error unless the color
+    // parser accepts it (e.g. 'red')
+    try {
+      return [ parseColor( prop, value ) ];
+    } catch {
+      return resolveScheme( value ).stops.map( hex => [ ...hexToRgb( hex ), 255 ] as RGBA );
+    }
+  }
+
+  const list = Array.isArray( value )
+    ? value
+    : typeof value === 'string' ? value.trim().split( /\s+/ ) : null;
+
+  if( list == null || list.length === 0 ){
+    throw new Error( `The ${prop} '${String( value )}' must be a color list or scheme name` );
+  }
+
+  return list.map( v => parseColor( prop, v ) );
+};
+
+/** A fraction in [0, 1], as a number or an 'N%' string. */
+const parseChartFraction = ( prop: string, value: unknown ): number => {
+  const n = typeof value === 'string' && value.trim().endsWith( '%' )
+    ? parseFloat( value ) / 100
+    : typeof value === 'number' ? value : NaN;
+
+  if( !isFinite( n ) || n < 0 || n > 1 ){
+    throw new Error( `The ${prop} '${String( value )}' must be a fraction in [0, 1] (or 'N%')` );
+  }
+
+  return n;
+};
+
 const parseYesNo = ( prop: string, value: unknown ): boolean => {
   if( typeof value === 'boolean' ){ return value; }
 
@@ -1659,6 +1768,35 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       }
 
       computed.invisible = value === 'hidden';
+      break;
+    case 'chart':
+      computed.chartKind = parseChartKind( prop, value );
+      break;
+    case 'chart-values':
+      computed.chartValues = parseChartValues( prop, value );
+      computed.chartValuesKey = null;
+      break;
+    case 'chart-colors':
+      computed.chartColors = parseChartColors( prop, value );
+      break;
+    case 'chart-size':
+      computed.chartSize = parseChartFraction( prop, value );
+      break;
+    case 'chart-hole':
+      computed.chartHole = parseChartFraction( prop, value );
+      break;
+    case 'chart-start-angle':
+      computed.chartStartAngle = parseAngle( prop, value );
+      break;
+    case 'chart-direction':
+      if( value !== 'vertical' && value !== 'horizontal' ){
+        throw new Error( `The chart-direction '${String( value )}' must be 'vertical' or 'horizontal'` );
+      }
+
+      computed.chartDirection = value === 'horizontal' ? 1 : 0;
+      break;
+    case 'chart-opacity':
+      computed.chartOpacity = parseZeroOne( prop, value );
       break;
     case 'text-events':
       computed.textEvents = parseYesNo( prop, value );
@@ -2532,6 +2670,20 @@ const MAPPABLE: Record<string, MappableChannel> = {
     set: ( c, v ) => { c.invisible = ( v as number ) === 1; },
     default: () => 0
   },
+  // chart (round 23): the kind and opacity take mappers; every other
+  // chart prop is constants-only (list/config props, the 12b rule)
+  'chart': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => v === 'none' ? CHART_NONE : v === 'pie' ? CHART_PIE
+      : v === 'stripes' ? CHART_STRIPES : null,
+    set: ( c, v ) => { c.chartKind = v as number; },
+    default: () => CHART_NONE
+  },
+  'chart-opacity': {
+    kind: 'number', groups: [ 'nodes' ],
+    set: ( c, v ) => { c.chartOpacity = Math.max( 0, Math.min( 1, v as number ) ); },
+    default: () => 1
+  },
   // text-events (round 20.3): the label box picks the node; node-only
   'text-events': {
     kind: 'enum', groups: [ 'nodes' ],
@@ -2716,7 +2868,7 @@ interface GroupDef {
   computed: Computed;
   mappers: BoundMapper[];
   /** data key → what depends on it (null when nothing does) */
-  deps: Map<string, { label: boolean; mappers: boolean }> | null;
+  deps: Map<string, { label: boolean; mappers: boolean; chart: boolean }> | null;
 }
 
 const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges', 'parents', 'core' ] );
@@ -2914,12 +3066,12 @@ export class StyleEngine {
       // which mutable data() keys the group's style derives from — the
       // data-write refresh gate (id is immutable and never registers)
       let deps: GroupDef['deps'] = null;
-      const dep = ( key: string, what: 'label' | 'mappers' ): void => {
+      const dep = ( key: string, what: 'label' | 'mappers' | 'chart' ): void => {
         if( key === 'id' ){ return; }
 
         deps ??= new Map();
 
-        const entry = deps.get( key ) ?? { label: false, mappers: false };
+        const entry = deps.get( key ) ?? { label: false, mappers: false, chart: false };
 
         entry[ what ] = true;
         deps.set( key, entry );
@@ -2928,6 +3080,7 @@ export class StyleEngine {
       if( computed.labelKey != null ){ dep( computed.labelKey, 'label' ); }
       if( computed.sourceLabelKey != null ){ dep( computed.sourceLabelKey, 'label' ); }
       if( computed.targetLabelKey != null ){ dep( computed.targetLabelKey, 'label' ); }
+      if( computed.chartValuesKey != null ){ dep( computed.chartValuesKey, 'chart' ); }
 
       for( const bm of mappers ){
         for( const key of bm.m.keys ){ dep( key, 'mappers' ); }
@@ -3326,6 +3479,7 @@ export class StyleEngine {
 
     let label = false;
     let mapped = false;
+    let chart = false;
 
     for( const key of keys ){
       const entry = def.deps.get( key );
@@ -3334,7 +3488,22 @@ export class StyleEngine {
 
       label = label || entry.label;
       mapped = mapped || entry.mappers;
+      chart = chart || entry.chart;
     }
+
+    const narrow = (): void => { // the label/chart-only fast paths
+      if( label ){
+        for( let i = 0; i < slots.length; i++ ){
+          this.writeLabel( slots[ i ], def.computed, group );
+        }
+      }
+
+      if( chart ){
+        for( let i = 0; i < slots.length; i++ ){
+          this.writeChart( slots[ i ], def.computed );
+        }
+      }
+    };
 
     if( mapped ){
       const owned = this.gpuOwnedProps[ group ];
@@ -3345,17 +3514,10 @@ export class StyleEngine {
         // every mapped channel is GPU-owned: no CPU restyle at all — the
         // data-write spans drive the kernel; only the extents need a look
         this.checkAutoExtents( group, def );
-
-        if( label ){
-          for( let i = 0; i < slots.length; i++ ){
-            this.writeLabel( slots[ i ], def.computed, group );
-          }
-        }
+        narrow();
       }
-    } else if( label ){
-      for( let i = 0; i < slots.length; i++ ){
-        this.writeLabel( slots[ i ], def.computed, group );
-      }
+    } else {
+      narrow();
     }
   }
 
@@ -3526,6 +3688,21 @@ export class StyleEngine {
         return store.hasFlag( 'nodes', slot, FLAG_TEXT_EVENTS ) ? 'yes' : 'no';
       case 'visibility': // 22: stored truth is the element's own state
         return store.hasFlag( ref.group, slot, FLAG_SELF_INVISIBLE ) ? 'hidden' : 'visible';
+      case 'chart': { // 23: stored truth is the record (no values = none)
+        const rec = store.chartAt( slot );
+
+        return rec == null ? 'none' : rec.kind === CHART_PIE ? 'pie' : 'stripes';
+      }
+      case 'chart-values':
+        return store.chartAt( slot )?.values.join( ' ' ) ?? '';
+      case 'chart-colors':
+        return store.chartAt( slot )?.colors.map( c => formatRgba( ...c ) ).join( ' ' ) ?? '';
+      case 'chart-size': return store.chartAt( slot )?.size ?? 1;
+      case 'chart-hole': return store.chartAt( slot )?.hole ?? 0;
+      case 'chart-start-angle': return store.chartAt( slot )?.startAngle ?? 0;
+      case 'chart-direction':
+        return ( store.chartAt( slot )?.direction ?? 0 ) === 1 ? 'horizontal' : 'vertical';
+      case 'chart-opacity': return store.chartAt( slot )?.opacity ?? 1;
       case 'ghost':
         return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
       case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
@@ -4014,7 +4191,8 @@ export class StyleEngine {
       }
 
       if( ( GHOST_PROPS.has( norm ) || LAYER_SHAPE_PROPS.has( norm )
-          || NODE_ONLY_EXTRA.has( norm ) || IMAGE_PROPS.has( norm ) ) && group === 'edges' ){
+          || NODE_ONLY_EXTRA.has( norm ) || IMAGE_PROPS.has( norm )
+          || CHART_PROPS.has( norm ) ) && group === 'edges' ){
         throw new Error( `'${norm}' is a node style property` );
       }
 
@@ -4033,6 +4211,22 @@ export class StyleEngine {
       }
 
       if( isMapperSpec( value ) ){
+        // chart-values (round 23): the data passthrough reads a
+        // per-element *array* — only { data: key } is supported
+        if( norm === 'chart-values' ){
+          const asScale = value as GpuMapper;
+          const passthrough = !( 'case' in value ) && typeof asScale.data === 'string'
+            && asScale.scale == null && asScale.domain == null && asScale.range == null;
+
+          if( !passthrough ){
+            throw new Error( `Only the passthrough mapper ({ data: key }) is supported for 'chart-values'` );
+          }
+
+          computed.chartValues = null;
+          computed.chartValuesKey = asScale.data;
+          continue;
+        }
+
         if( norm === 'label' || norm === 'source-label' || norm === 'target-label' ){
           // the label passthrough rides the per-stream key channel
           const asScale = value as GpuMapper;
@@ -4183,6 +4377,7 @@ export class StyleEngine {
         computed.underlayPadding, computed.underlayShape, computed.underlayRadius );
 
       this.writeImages( slot, computed );
+      this.writeChart( slot, computed );
       this.writeLabel( slot, computed );
     } else {
       const foldE = ( [ r, g, b, a ]: RGBA, opacity: number ): RGBA =>
@@ -4311,6 +4506,83 @@ export class StyleEngine {
   private warnedImageCap = false;
 
   /** Resolve a node's background-image records and store them (15.2). */
+  /**
+   * Resolve and store a node's chart record (round 23).  Values come
+   * from the constant list or the `{ data: key }` passthrough (a
+   * per-element array; non-arrays and invalid entries mean no chart);
+   * slices cap at CHART_MAX_SLICES and the running total clamps at 1
+   * (v3's percent semantics — the remainder stays unpainted).  Colors
+   * cycle the palette (category10 by default) and fold chart-opacity
+   * into their alphas (the B1 pattern; the header keeps the exact
+   * opacity for readback).
+   */
+  private writeChart( slot: number, computed: Computed ): void {
+    const store = this.store;
+
+    if( computed.chartKind === CHART_NONE ){
+      store.setChart( slot, null );
+
+      return;
+    }
+
+    let raw: readonly unknown[] | null = computed.chartValues;
+
+    if( computed.chartValuesKey != null ){
+      const dataValue = store.data.get( 'nodes', slot, computed.chartValuesKey );
+
+      raw = Array.isArray( dataValue ) ? dataValue : null;
+    }
+
+    if( raw == null || raw.length === 0 ){
+      store.setChart( slot, null );
+
+      return;
+    }
+
+    // clamp cumulative fractions at 1 (v3); zero slices keep their
+    // palette position, beyond-full slices drop
+    const values: number[] = [];
+    let acc = 0;
+
+    for( let i = 0; i < raw.length && i < CHART_MAX_SLICES; i++ ){
+      if( acc >= 1 ){ break; }
+
+      const v = typeof raw[ i ] === 'number' ? raw[ i ] as number : parseFloat( String( raw[ i ] ) );
+
+      if( !isFinite( v ) || v < 0 ){ continue; } // sidecar junk: skip the entry
+
+      const take = Math.min( v, 1 - acc );
+
+      values.push( take );
+      acc += take;
+    }
+
+    if( values.length === 0 ){
+      store.setChart( slot, null );
+
+      return;
+    }
+
+    const palette = computed.chartColors ?? DEFAULT_CHART_COLORS;
+    const op = computed.chartOpacity;
+    const colors = values.map( ( _, i ) => {
+      const [ r, g, b, a ] = palette[ i % palette.length ];
+
+      return [ r, g, b, Math.round( a * op ) ] as [ number, number, number, number ];
+    } );
+
+    store.setChart( slot, {
+      kind: computed.chartKind,
+      size: computed.chartSize,
+      hole: computed.chartHole,
+      startAngle: computed.chartStartAngle,
+      direction: computed.chartDirection,
+      opacity: op,
+      values,
+      colors
+    } );
+  }
+
   private writeImages( slot: number, computed: NodeComputed ): void {
     let urls = computed.backgroundImage;
 

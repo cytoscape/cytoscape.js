@@ -5405,8 +5405,27 @@ chart types.
 
 **Pass split** (tests-first; docs in-commit):
 
-- [ ] **23.1 Props + model** — parse/validate/readback, the chart
-  blob + ref column, the data-passthrough values channel + refresh.
+- [x] **23.1 Props + model** (2026-08-01) — the 8-prop surface
+  parses/validates/reads back (chart + chart-opacity mapper-capable;
+  values as arrays or space-separated strings, or the
+  `{ data: key }` passthrough reading per-element arrays with a new
+  'chart' dep kind + narrow refresh path beside the label one;
+  colors as lists or named schemes with category10 the default,
+  cycling past their length; size/hole as [0,1] fractions or 'N%';
+  start-angle via the shared angle parser; direction
+  vertical | horizontal; every list/config prop constants-only).
+  Records live in a chart blob (round-11-compacting CurveBlob pool,
+  compaction-remapped) behind the packed `node.chartRef` column —
+  header kind/size/hole/startAngle/direction/opacity/n then
+  n × (value, r+g·256, b+a·256): colors split across small-integer
+  floats (packed u32 bits would risk NaN canonicalization through
+  the f32 pool), alpha-folded with the exact opacity kept in the
+  header for readback.  Slices cap at 16 (v3's N) and the running
+  total clamps at 1 (v3's percents; the remainder stays unpainted);
+  invalid sidecar entries skip; a chartless write frees the record
+  (as does removal).  Tests-first: 10 Node specs
+  (`test/gpu-charts.mjs`, red then green).  2214 Node tests,
+  typecheck + lint clean.
 - [ ] **23.2 Render** — FS chart branch (pie + stripes + hole +
   AA), goldens.
 - [ ] **23.3 Parity + polish** — live v3 pie/stripe parity scenes,

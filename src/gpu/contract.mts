@@ -141,6 +141,18 @@ export const SHAPE_TAG = 13;
  * corner-radius word is meaningless for polygons. */
 export const SHAPE_POLYGON_CUSTOM = 14;
 
+// -- node chart kinds (round 23; stored in the chart blob record) --
+
+export const CHART_NONE = 0;
+export const CHART_PIE = 1;
+export const CHART_STRIPES = 2;
+/** floats before the (value, color) triples: kind, size, hole,
+ * startAngle, direction, opacity, n.  (Opacity is folded into the
+ * slice alphas for the FS; the header copy keeps readback exact.) */
+export const CHART_HEADER = 7;
+/** slice cap (v3's numbered-prop N; longer value lists truncate) */
+export const CHART_MAX_SLICES = 16;
+
 // -- edge curve kinds (rounds 12a/12b; stored in edge.curveParams[3]) --
 
 export const CURVE_STRAIGHT = 0;
@@ -298,6 +310,14 @@ export type ColumnId =
    * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
    */
   | 'node.imageRef'
+  /**
+   * Uint32Array(cap) — chart record ref (round 23): offset into the
+   * chart blob | slice count << 24 (0 = no chart).  The record is
+   * CHART_HEADER floats (kind, size, hole, startAngle, direction,
+   * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
+   * paint, like images: nothing in bb, cull-extent or CPU-pick.
+   */
+  | 'node.chartRef'
   | 'edge.endpoints' // Uint32Array(2·cap), source,target node *slots*
   | 'edge.lineColor' // Uint8Array(4·cap)
   | 'edge.width' // Float32Array(cap)
@@ -418,6 +438,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.overlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.underlay', 'nodes', Uint32Array, 4 ),
   spec( 'node.imageRef', 'nodes', Uint32Array, 1 ),
+  spec( 'node.chartRef', 'nodes', Uint32Array, 1 ),
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),
   spec( 'edge.endpoints', 'edges', Uint32Array, 2 ),
   spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),
@@ -487,6 +508,8 @@ export interface StoreDelta {
   polyBlob?: { resized: boolean; start: number; end: number };
   /** Node image-record blob dirt (round 15.2) — same rules. */
   imageBlob?: { resized: boolean; start: number; end: number };
+  /** chart blob dirt (round 23): float range [start, end) or a realloc */
+  chartBlob?: { resized: boolean; start: number; end: number };
 }
 
 // -- labels --
@@ -593,6 +616,9 @@ export interface ModelView {
   /** The 15.2 background-image record blob (refs ride node.imageRef). */
   imageBlob(): Float32Array;
   imageBlobLength(): number;
+  /** The round-23 chart record blob (refs ride node.chartRef). */
+  chartBlob(): Float32Array;
+  chartBlobLength(): number;
   /** The unique-image pool (round 15.1) — the renderer uploads ready
    * entries into its tier arrays and reclaims freed layers from it. */
   images: import( './image-registry.mjs' ).ImageRegistry;

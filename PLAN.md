@@ -24,8 +24,10 @@ specs, and the renderer items with goldens + live v3 pixel-parity
 scenes).  A 2026-08-01 design sitting **dropped z-index outright**
 (decided design) and scoped rounds 15–18 — background images,
 multiline labels + label bb, the event vocabulary + extension
-contract, and the GPU force layout — as the plans at the end of this
-file.  `src/gpu/README.md` is
+contract, and the GPU force layout — and all four rounds **landed in
+full the same day** (plans + per-item records at the end of this
+file; every item tests-first, 2142 Node + 60 module tests and
+138 Playwright specs green at the close).  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 

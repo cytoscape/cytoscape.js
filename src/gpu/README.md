@@ -28,6 +28,12 @@ boxes** (the wrap family; labels join bb/fit by default),
 the **event vocabulary + extension contract** (the curated set +
 pointer events; registry-free layouts), and the **GPU force layout**
 (CPU reference + on-device integrator under the position lease).
+Round 19 (2026-08-01) closed the last open architecture item:
+**slot-moving compaction** — live elements move down to a dense slot
+prefix (a monotone remap, so compaction is a visual no-op) with
+forwarded lazy ref repair, an automatic dead-slot trigger plus
+`cy.compact()`, and highWater/capacity shrinking to the current graph
+instead of its peak.
 The existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
@@ -91,7 +97,8 @@ interaction gating
 `panningEnabled`/`zoomingEnabled` + `user*` variants,
 `boxSelectionEnabled`), introspection (`instanceString`, `isReady`,
 `headless`, `mutableElements`, `hasElementWithId`/`$id`, `options`),
-`destroy()`, `width()`/`height()`.
+`destroy()`, `width()`/`height()`, and `compact()` (round 19 — the
+explicit form of the automatic slot-compaction trigger; see below).
 Collections: `cy()`/`renderer()`/`element()`, events, graph
 manipulation (incl. edge `move()`), position/dimensions (model +
 rendered, `shift`, silent variants, edge `midpoint`/endpoints —
@@ -348,6 +355,64 @@ layouts" design, built:
   RX 580 (2026-08-01, PLAN.md "hardware validation pass"): force
   converges in 0.7–1.5 s at 25k–100k where the cose baseline
   exceeds the 60 s bail on every scene.
+
+## Slot compaction (round 19)
+
+Landed 2026-08-01, per the PLAN.md round-19 plan — the last open
+architecture item, closing the policy questions logged since the
+2026-07-27 compaction analysis (the slot-stable tier — id blob, CSR,
+dictionaries — has self-compacted since round 11; this round moves
+the element slots themselves):
+
+- **What it does.**  Live elements move down to a dense slot prefix
+  per group, so `highWater` (every CPU pick walk and GPU cull
+  dispatch width) and column capacity (CPU columns, GPU mirrors,
+  mapper regions) shrink to the *current* graph instead of its peak.
+  The remap is **monotone** — relative slot order is preserved by
+  construction — which is what makes the three design calls cheap:
+  draw order is unchanged (compaction is a **visual no-op**, pinned
+  by a byte-identical screenshot spec), curve bundle rank / loop
+  stagger / orientation signs are unchanged (derived params survive
+  with no re-derivation), and CSR incident order is unchanged.
+- **Refs survive via forwarding + lazy repair.**  Moved elements take
+  fresh generations, so every stale ref *fails* plain validation and
+  routes through a per-group forwarding chain that rewrites the ref
+  **in place** on first touch — fixing every holder of that object.
+  Collections sync lazily against a compaction epoch (one int compare
+  on the hot path; the packed membership cache drops with it),
+  interned handles keep their identity and scratch (`cy.$id` returns
+  the same object), element-bound listeners keep firing and stay
+  removable, and animation queues re-key with their slot lists
+  re-pointed.  A removed element's ref stays dead — repair never
+  resurrects.  Forwarding entries persist and compose across
+  compactions.
+- **Triggers: auto + explicit.**  The automatic trigger applies the
+  round-11 waste-over-half policy to slots — dead slots exceeding the
+  live count, past a 1024-slot floor — at safe boundaries (a
+  completed `remove()`, the outermost `endBatch`).  `cy.compact()` is
+  the explicit form for deterministic timing; it throws mid-batch and
+  defers (with a warning) while a GPU force run owns the position
+  column.  Mid-flight GPU tweens **demote** to the CPU path (they
+  write the value reached, leave the device, and finish on repaired
+  slot lists — not ended early, unlike the reparent settle).
+- **Renderer handshake**: the `resized` flags drive the mirror's
+  capacity-aware realloc + full re-upload and the pick-cache
+  invalidation; the mapper runtime rebuilds its capacity-aligned data
+  regions; the parent draw permutation re-uploads; and the glyph
+  streams **clear wholesale** before rebuilding (owner slots are baked
+  into glyph instances — an incremental rebuild could alias a moved
+  element's stale run onto a different element's new slot).
+- Recorded limits: data-sidecar column buffers permute **in place**
+  and never shrink (bound mapper evaluators hold them by reference);
+  the conservative monotone maxima (curve slack terms) are not
+  recomputed at compaction (sound — slack can only be loose); the
+  auto trigger never fires mid-batch or during a live force run
+  (deferred to the next boundary).
+- Costs (Node sweep, `benchmark/gpu/compaction.mjs`, 200k-node peak
+  cut to 10%): `compact()` is a ~95 ms one-shot; the synchronous CPU
+  node pick drops ~5.2–5.5× (2.15 → 0.39 ms background miss); cull
+  dispatch width falls 200k → 20k lanes per group per frame; node
+  column capacity falls 262144 → 32768 slots.
 
 ## Event vocabulary + the extension contract (round 17)
 
@@ -1887,6 +1952,14 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   zoom-promotion (the waste policy reclaims); `imageMinPx`
   (default 8 displayed px) skips images on unreadably small nodes;
   ghosts do not carry images (the A1 simplified-body rule).
+- **Slot compaction** (round 19) — the deviations in one place (the
+  round-19 section above carries the detail): moved elements take
+  fresh generations, so refs held across a compaction repair lazily
+  (in place) rather than staying bit-identical; data-sidecar column
+  buffers never shrink (in-place constraint); the curve-slack maxima
+  stay monotone rather than recomputing; the auto trigger defers
+  mid-batch and during a live GPU force run; a compaction demotes
+  mid-flight GPU tweens to the CPU for the rest of their run.
 - **Device-loss recovery** (round 10): an external device loss emits
   `devicelost` and auto-recovers once — the core re-mounts a fresh
   renderer against the same container (the model is CPU-canonical, so
@@ -1897,12 +1970,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 
 ## Follow-up hooks
 
-- Slot compaction (tombstones + degenerate quads for now; the cull
-  pass already keeps tombstones out of the draw stream).  The
-  slot-stable tier — id blob, CSR adjacency, string dictionaries —
-  self-compacts since round 11 (see the design decision above); what
-  remains is moving live element slots so `highWater`, column capacity
-  and pass-iteration widths can shrink.  **The policy calls are made
-  and the round is planned** (PLAN.md "Round 19 plan", 2026-08-01):
-  forwarding + lazy ref repair, auto threshold + explicit
-  `cy.compact()`, stable draw order via a monotone remap.
+- ~~Slot compaction~~ — **closed by round 19** (2026-08-01, the
+  section above): live slots compact with a monotone remap, forwarded
+  lazy ref repair, and the auto + explicit trigger pair.  The
+  slot-stable tier (id blob, CSR adjacency, string dictionaries) has
+  self-compacted since round 11.  No architecture hooks remain open;
+  demand-gated feature hooks (the elevated draw tier, per-side
+  compound padding, multilevel force refinement, more layouts) stay
+  logged in their sections above.

@@ -25,14 +25,26 @@ Pointer/wheel interaction over the WebGPU canvas:
   on release selects the contained elements with v3 semantics
   (boxstart/boxend on the core, box/boxselect per element); mouse/pen
   only for now
-- two touch pointers pinch-zoom about their midpoint (and pan with it);
-  a second finger cancels any pan/grab in progress, and the finger left
-  over after a pinch stays inert until lifted (no pan jump).  Trackpad
-  pinches arrive as ctrl+wheel and take the wheel path.
+- two touch pointers: a close pair (< 200 css px, v3's threshold)
+  starts the cxt gesture — cxttapstart on the node under finger 1
+  (else finger 2, else the core), cxtdrag (+ cxtdragover/out) as the
+  pair moves, cxttapend + cxttap on release, and a spread past 1.5x
+  (or 150 px) cancels it into a pinch (round 20.4) — while a far pair
+  pinch-zooms about its midpoint immediately (and pans with it).
+  Either way the second finger cancels any pan/grab in progress, and
+  the finger left over after the gesture stays inert until lifted (no
+  pan jump).  Trackpad pinches arrive as ctrl+wheel and take the
+  wheel path.
 */
 
 const HOVER_THROTTLE_MS = 25;
 const WHEEL_RATE = 500; // base zoom rate divisor (higher = slower); scaled by cy.wheelSensitivity()
+// v3's two-finger split (round 20.4): pairs closer than 200 css px start
+// the cxt gesture; spreading past 1.5x (or 150 px absolute) cancels it
+// into a pinch
+const TOUCH_CXT_MAX_DIST = 200;
+const TOUCH_CXT_CANCEL_DIST = 150;
+const TOUCH_CXT_CANCEL_FACTOR = 1.5;
 const WHEEL_SETTLE_MS = 200; // hover picking resumes this long after the last wheel tick
 
 interface DownState {
@@ -71,6 +83,11 @@ export class PointerHandler {
   private activeEl: HTMLDivElement | null;
   private touches: Map<number, Position>;
   private pinch: { dist: number; mid: Position } | null;
+  /** the two-finger cxt gesture (round 20.4, v3's touch cxt family) */
+  private touchCxt: {
+    target: GpuCollection | null; dragged: boolean; baseDist: number;
+    startX: number; startY: number;
+  } | null;
   private deadTouch: number | null;
   private wheelingUntil: number;
   private wheelSettleTimer: ReturnType<typeof setTimeout> | null;
@@ -96,6 +113,7 @@ export class PointerHandler {
     this.activeEl = null;
     this.touches = new Map();
     this.pinch = null;
+    this.touchCxt = null;
     this.deadTouch = null;
     this.wheelingUntil = 0;
     this.wheelSettleTimer = null;
@@ -183,15 +201,24 @@ export class PointerHandler {
     if( e.pointerType === 'touch' ){
       this.touches.set( e.pointerId, this.eventPos( e ) );
 
-      if( this.touches.size === 2 && this.pinch == null ){
+      if( this.touches.size === 2 && this.pinch == null && this.touchCxt == null ){
         this.capture( e.pointerId );
-        this.beginPinch();
+
+        // v3's two-finger split (20.4): close pairs start the cxt
+        // gesture, far pairs pinch immediately
+        const [ a, b ] = [ ...this.touches.values() ];
+
+        if( Math.hypot( b.x - a.x, b.y - a.y ) < TOUCH_CXT_MAX_DIST ){
+          this.beginTouchCxt();
+        } else {
+          this.beginPinch();
+        }
 
         return;
       }
 
-      // extra fingers mid-pinch (or after one) just get tracked
-      if( this.pinch != null || this.deadTouch != null ){ return; }
+      // extra fingers mid-gesture just get tracked
+      if( this.pinch != null || this.touchCxt != null || this.deadTouch != null ){ return; }
     }
 
     // right button: the cxttap family (cxttapstart / cxtdrag / cxttapend / cxttap)
@@ -338,6 +365,12 @@ export class PointerHandler {
 
     if( e.pointerType === 'touch' && this.touches.has( e.pointerId ) ){
       this.touches.set( e.pointerId, pos );
+
+      if( this.touchCxt != null ){
+        this.touchCxtMove();
+
+        return;
+      }
 
       if( this.pinch != null ){
         this.pinchMove();
@@ -514,7 +547,7 @@ export class PointerHandler {
 
   private onPointerCancel( e: PointerEvent ): void {
     this.hideActiveBg();
-    if( this.endTouch( e ) ){ return; }
+    if( this.endTouch( e, true ) ){ return; }
 
     this.emitGesture( 'pointercancel', null, this.eventPos( e ) ); // 17.1
 
@@ -548,6 +581,75 @@ export class PointerHandler {
     if( this.boxEl != null ){
       this.boxEl.style.display = 'none';
     }
+  }
+
+  // -- the two-finger cxt gesture (round 20.4) --
+
+  /**
+   * A close second finger starts v3's touch cxt gesture: 'cxttapstart'
+   * on the node under finger 1 (else finger 2, else the core), any
+   * pan/grab in progress cancelled like a pinch's.
+   */
+  private beginTouchCxt(): void {
+    const down = this.down;
+
+    if( down != null ){
+      if( down.grabbed != null ){ this.setFlagOn( down.grabbed, FLAG_GRABBED, false ); }
+
+      this.down = null;
+    }
+
+    this.clearTaphold();
+    this.hideActiveBg();
+    this.updateHover( null );
+
+    const [ a, b ] = [ ...this.touches.values() ];
+    const target = this.renderer.pickNodeSync( a.x, a.y )
+      ?? this.renderer.pickNodeSync( b.x, b.y ); // v3: nodes only, finger 1 first
+
+    this.touchCxt = {
+      target,
+      dragged: false,
+      baseDist: Math.hypot( b.x - a.x, b.y - a.y ),
+      startX: a.x,
+      startY: a.y
+    };
+
+    this.emitGesture( 'cxttapstart', target, a );
+  }
+
+  private touchCxtMove(): void {
+    const cxt = this.touchCxt as NonNullable<typeof this.touchCxt>;
+    const [ a, b ] = [ ...this.touches.values() ];
+
+    if( b != null ){
+      const dist = Math.hypot( b.x - a.x, b.y - a.y );
+
+      // v3's swipe-out rule: the pair spreading past 1.5x (or 150 px)
+      // cancels the cxt gesture into a pinch (cxttapend, then the pinch
+      // machinery takes over from the current spread — no zoom jump)
+      if( dist >= TOUCH_CXT_CANCEL_DIST
+        || ( cxt.baseDist > 0 && dist >= cxt.baseDist * TOUCH_CXT_CANCEL_FACTOR ) ){
+        this.touchCxt = null;
+        this.dragHover = null;
+        this.emitGesture( 'cxttapend', cxt.target, a );
+        this.pinch = this.pinchBase();
+
+        return;
+      }
+    }
+
+    // finger-1 movement past the touch tap threshold drags (v4 rule:
+    // the mouse cxt path thresholds too — v3's touch cxt emits cxtdrag
+    // on any move event, a recorded deviation)
+    if( !cxt.dragged
+      && Math.hypot( a.x - cxt.startX, a.y - cxt.startY ) < ( this.cy.touchTapThreshold() as number ) ){
+      return;
+    }
+
+    cxt.dragged = true;
+    this.emitGesture( 'cxtdrag', cxt.target, a );
+    this.dragHoverPick( a, 'cxtdrag' ); // cxtdragover/out, as v3
   }
 
   // -- pinch --
@@ -594,16 +696,35 @@ export class PointerHandler {
     this.pinch = { dist, mid };
   }
 
-  /** Touch bookkeeping on up/cancel; true when the event is consumed by pinch state. */
-  private endTouch( e: PointerEvent ): boolean {
+  /** Touch bookkeeping on up/cancel; true when the event is consumed by pinch/cxt state. */
+  private endTouch( e: PointerEvent, cancelled: boolean = false ): boolean {
     if( e.pointerType !== 'touch' ){ return false; }
 
     const wasPinching = this.pinch != null && this.touches.has( e.pointerId );
+    const wasCxt = this.touchCxt != null && this.touches.has( e.pointerId );
 
     this.touches.delete( e.pointerId );
 
     if( this.deadTouch === e.pointerId ){
       this.deadTouch = null;
+
+      return true;
+    }
+
+    // either cxt finger lifting ends the gesture (20.4): cxttapend, and
+    // cxttap when it never dragged (never on pointercancel); the
+    // leftover finger stays inert until lifted, like a pinch's
+    if( wasCxt ){
+      const cxt = this.touchCxt as NonNullable<typeof this.touchCxt>;
+      const pos = this.eventPos( e );
+
+      this.touchCxt = null;
+      this.dragHover = null;
+      this.emitGesture( 'cxttapend', cxt.target, pos );
+
+      if( !cxt.dragged && !cancelled ){ this.emitGesture( 'cxttap', cxt.target, pos ); }
+
+      this.deadTouch = this.touches.keys().next().value ?? null;
 
       return true;
     }

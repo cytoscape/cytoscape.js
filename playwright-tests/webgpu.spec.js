@@ -1333,12 +1333,14 @@ test.describe( 'WebGPU renderer', () => {
         button: 0, buttons: 1, bubbles: true
       } ) );
 
-      fire( 'pointerdown', 21, center.x - 50, center.y );
-      fire( 'pointerdown', 22, center.x + 50, center.y );
-      fire( 'pointermove', 21, center.x - 80, center.y );
-      fire( 'pointermove', 22, center.x + 80, center.y );
-      fire( 'pointerup', 21, center.x - 80, center.y );
-      fire( 'pointerup', 22, center.x + 80, center.y );
+      // fingers >= 200 css px apart pinch immediately (a closer pair
+      // would start the 20.4 two-finger cxt gesture instead)
+      fire( 'pointerdown', 21, center.x - 110, center.y );
+      fire( 'pointerdown', 22, center.x + 110, center.y );
+      fire( 'pointermove', 21, center.x - 160, center.y );
+      fire( 'pointermove', 22, center.x + 160, center.y );
+      fire( 'pointerup', 21, center.x - 160, center.y );
+      fire( 'pointerup', 22, center.x + 160, center.y );
 
       return window.__events;
     }, center );
@@ -1533,18 +1535,20 @@ test.describe( 'WebGPU renderer', () => {
         underMid: window.cy._viewport.renderedToModel( center )
       };
 
-      // two fingers 100 apart widen to 200 apart: zoom should double
-      fire( 'pointerdown', 11, center.x - 50, center.y );
-      fire( 'pointerdown', 12, center.x + 50, center.y );
+      // two fingers 220 apart widen to 440 apart: zoom should double
+      // (>= 200 apart pinches immediately; a closer pair would start
+      // the 20.4 two-finger cxt gesture)
+      fire( 'pointerdown', 11, center.x - 110, center.y );
+      fire( 'pointerdown', 12, center.x + 110, center.y );
 
       for( let step = 1; step <= 5; step++ ){
-        const spread = 50 + step * 10;
+        const spread = 110 + step * 22;
 
         fire( 'pointermove', 11, center.x - spread, center.y );
         fire( 'pointermove', 12, center.x + spread, center.y );
       }
 
-      fire( 'pointerup', 11, center.x - 100, center.y );
+      fire( 'pointerup', 11, center.x - 220, center.y );
 
       // the leftover finger must be inert: moving it must not pan
       const panBeforeDrag = window.cy.pan();
@@ -1569,6 +1573,107 @@ test.describe( 'WebGPU renderer', () => {
     expect( result.after.underMid.x ).toBeCloseTo( result.before.underMid.x, 0 );
     expect( result.after.underMid.y ).toBeCloseTo( result.before.underMid.y, 0 );
     expect( result.deadTouchPanned ).toBe( false );
+  } );
+
+  test( 'two-finger cxt gesture: cxttap family on touch (round 20.4)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH ); // node 'a', 100x100 at the origin
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    const run = await page.evaluate( async center => {
+      const canvas = document.querySelector( 'canvas' );
+      const rect = canvas.getBoundingClientRect();
+      const fire = ( type, id, x, y ) => canvas.dispatchEvent( new PointerEvent( type, {
+        pointerId: id, pointerType: 'touch',
+        clientX: rect.left + x, clientY: rect.top + y,
+        button: 0, buttons: 1, bubbles: true
+      } ) );
+      const record = () => {
+        window.__events = [];
+
+        for( const type of [ 'cxttapstart', 'cxtdrag', 'cxttapend', 'cxttap', 'pinchzoom' ] ){
+          window.cy.on( type, e => window.__events.push(
+            type + ':' + ( e.target === window.cy ? 'cy' : e.target.id() ) ) );
+        }
+      };
+
+      record();
+
+      // 1. close pair on the node, no movement: cxttapstart -> cxttapend + cxttap on 'a'
+      fire( 'pointerdown', 31, center.x - 30, center.y );
+      fire( 'pointerdown', 32, center.x + 30, center.y );
+      fire( 'pointerup', 31, center.x - 30, center.y );
+      fire( 'pointerup', 32, center.x + 30, center.y );
+
+      const tapRun = window.__events.slice();
+
+      // 2. close pair on the background, dragged: cxtdrag, no cxttap
+      window.__events = [];
+      const bgX = center.x + 250;
+
+      fire( 'pointerdown', 41, bgX - 30, center.y );
+      fire( 'pointerdown', 42, bgX + 30, center.y );
+
+      for( let step = 1; step <= 4; step++ ){ // parallel move: spread stays 60
+        fire( 'pointermove', 41, bgX - 30 + step * 8, center.y );
+        fire( 'pointermove', 42, bgX + 30 + step * 8, center.y );
+      }
+
+      fire( 'pointerup', 41, bgX + 2, center.y );
+      fire( 'pointerup', 42, bgX + 62, center.y );
+
+      const dragRun = window.__events.slice();
+
+      // 3. close pair spreading out: cxttapend, then the pinch takes over
+      window.__events = [];
+      const zoomBefore = window.cy.zoom();
+
+      fire( 'pointerdown', 51, center.x - 40, center.y );
+      fire( 'pointerdown', 52, center.x + 40, center.y );
+
+      for( let step = 1; step <= 4; step++ ){ // 80 -> 240 apart (past 1.5x and 150 px)
+        fire( 'pointermove', 51, center.x - 40 - step * 20, center.y );
+        fire( 'pointermove', 52, center.x + 40 + step * 20, center.y );
+      }
+
+      fire( 'pointerup', 51, center.x - 120, center.y );
+      fire( 'pointerup', 52, center.x + 120, center.y );
+
+      const spreadRun = window.__events.slice();
+      const zoomAfter = window.cy.zoom();
+
+      // 4. far pair: pinch immediately, no cxt events
+      window.__events = [];
+      fire( 'pointerdown', 61, center.x - 110, center.y );
+      fire( 'pointerdown', 62, center.x + 110, center.y );
+      fire( 'pointermove', 61, center.x - 130, center.y );
+      fire( 'pointermove', 62, center.x + 130, center.y );
+      fire( 'pointerup', 61, center.x - 130, center.y );
+      fire( 'pointerup', 62, center.x + 130, center.y );
+
+      return { tapRun, dragRun, spreadRun, farRun: window.__events.slice(), zoomBefore, zoomAfter };
+    }, center );
+
+    expect( run.tapRun ).toEqual( [ 'cxttapstart:a', 'cxttapend:a', 'cxttap:a' ] );
+
+    expect( run.dragRun[ 0 ] ).toBe( 'cxttapstart:cy' );
+    expect( run.dragRun ).toContain( 'cxtdrag:cy' );
+    expect( run.dragRun ).toContain( 'cxttapend:cy' );
+    expect( run.dragRun ).not.toContain( 'cxttap:cy' );
+    expect( run.dragRun ).not.toContain( 'pinchzoom:cy' );
+
+    expect( run.spreadRun[ 0 ] ).toBe( 'cxttapstart:a' );
+    expect( run.spreadRun ).toContain( 'cxttapend:a' );
+    expect( run.spreadRun ).toContain( 'pinchzoom:cy' ); // the pinch took over
+    expect( run.spreadRun ).not.toContain( 'cxttap:a' );
+    expect( run.zoomAfter ).toBeGreaterThan( run.zoomBefore ); // it actually zoomed
+
+    expect( run.farRun ).toContain( 'pinchzoom:cy' );
+    expect( run.farRun.some( ev => ev.startsWith( 'cxt' ) ) ).toBe( false );
   } );
 
   test( 'tap selects and background tap clears', async ( { page } ) => {

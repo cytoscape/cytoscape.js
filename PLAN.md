@@ -5092,13 +5092,29 @@ front (the round-17 discipline).
   label below the node background-taps under the default and
   selects the node under `text-events: 'yes'`).  2190 Node tests,
   typecheck + lint clean.
-- [ ] **20.4 Two-finger cxt** — the gesture state machine on the
-  existing touch bookkeeping (Node-testable pieces factored pure
-  where practical; the behavior pinned in a `webgpu` Playwright spec
-  with synthetic touch pointers: close-pair press → cxttapstart /
-  cxttap; drag → cxtdrag + over/out; spread → cxttapend then
-  pinchzoom fires; far-pair press → pinch immediately, no cxt
-  events).
+- [x] **20.4 Two-finger cxt** (2026-08-01) — the v3 split lands in
+  the pointer layer's touch bookkeeping: a second finger closer
+  than 200 css px starts the cxt gesture (`cxttapstart` on the node
+  under finger 1, else finger 2, else the core — the sync CPU
+  pick), the pair moving emits `cxtdrag` + `cxtdragover`/`out`
+  (via the existing 17.3 drag-hover pick), spreading past 1.5× or
+  150 px cancels into a pinch (`cxttapend`, pinch rebased at the
+  current spread — no zoom jump), and either finger lifting ends it
+  (`cxttapend` + `cxttap` when never dragged, never on
+  pointercancel) with the leftover finger inert, like a pinch's.  A
+  pair ≥ 200 px apart pinches immediately, so the two existing
+  pinch specs' fingers moved to 220 px spacing (they'd have started
+  cxt gestures under the new rule — exactly v3's behavior).
+  Recorded deviation: `cxtdrag` thresholds on finger-1 movement
+  past `touchTapThreshold` (v4's mouse cxt rule) where v3's touch
+  cxt fires on any move event.  Pinned in a `webgpu` Playwright
+  spec (four synthetic-touch scenarios: close-pair tap on the node
+  → exactly cxttapstart/cxttapend/cxttap; parallel background drag
+  → cxtdrag, no cxttap, no pinchzoom; spread → cxttapend then
+  pinchzoom with the zoom actually rising; far pair → pinch only),
+  verified red against the pre-20.4 pointer layer before the
+  implementation was restored.  80/80 webgpu Playwright specs,
+  2190 Node tests, typecheck + lint clean.
 - [ ] **20.5 Three-finger box** — the centroid box + didSelect
   latch, riding the existing box overlay/flow.  Playwright pins:
   three-finger swipe selects the swept nodes (boxstart/boxend

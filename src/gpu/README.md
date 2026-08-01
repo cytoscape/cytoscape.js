@@ -1970,11 +1970,23 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   (rebuilding from a snapshot needs stored defs the prototype does not
   keep).  Exported element jsons round-trip through the definition form
   of `elements`/`cy.add()`.
-- **Pinch zoom**: two touch pointers zoom about their midpoint (panning
-  with it); a second finger cancels any pan/grab in progress, and the
-  finger left over after a pinch stays inert until lifted.  Like other
-  viewport gestures, no hover/tap semantics apply mid-pinch.  Trackpad
-  pinches arrive as ctrl+wheel and take the wheel path.
+- **Two-finger touch: cxt or pinch** (the round-20.4 split, v3's
+  rules): a second finger landing **closer than 200 css px** to the
+  first starts the **touch cxt gesture** — `cxttapstart` on the node
+  under finger 1 (else finger 2, else the core; the synchronous CPU
+  pick), `cxtdrag` + `cxtdragover`/`cxtdragout` as the pair moves,
+  `cxttapend` (+ `cxttap` when it never dragged) when either finger
+  lifts — and the pair **spreading past 1.5× (or 150 px)** cancels it
+  into a pinch (`cxttapend`, then the pinch machinery takes over from
+  the current spread).  A farther pair pinch-zooms about its midpoint
+  immediately (panning with it).  Either way the second finger
+  cancels any pan/grab in progress, and the finger left over after
+  the gesture stays inert until lifted.  Like other viewport
+  gestures, no hover/tap semantics apply mid-pinch.  Trackpad pinches
+  arrive as ctrl+wheel and take the wheel path.  Recorded deviation:
+  v4 thresholds `cxtdrag` on finger-1 movement past
+  `touchTapThreshold` (matching its mouse cxt path) where v3's touch
+  cxt emits `cxtdrag` on any move event.
 - **Image export is promise-only**: `png()`/`jpg()` return promises for
   every output form (a synchronous readback is impossible on WebGPU;
   `'blob-promise'` is accepted as an alias of `'blob'`).  Output

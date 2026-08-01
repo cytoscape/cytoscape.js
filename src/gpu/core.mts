@@ -108,6 +108,8 @@ export class GpuCore {
   private _zoomingEnabled: boolean;
   private _userZoomingEnabled: boolean;
   private _boxSelectionEnabled: boolean;
+  /** box selection also requires label containment (16.5; default off — v3) */
+  private _boxSelectionIncludesLabels: boolean;
   private _selectionType: 'single' | 'additive';
   private _multiClickDebounceTime: number;
   private _batchDepth: number;
@@ -160,6 +162,7 @@ export class GpuCore {
     this._zoomingEnabled = options.zoomingEnabled ?? true;
     this._userZoomingEnabled = options.userZoomingEnabled ?? true;
     this._boxSelectionEnabled = options.boxSelectionEnabled ?? true;
+    this._boxSelectionIncludesLabels = options.boxSelectionIncludesLabels ?? false;
     this._selectionType = 'single';
     this._multiClickDebounceTime = 250; // v3's default
     this._batchDepth = 0;
@@ -517,7 +520,10 @@ export class GpuCore {
    * semantics, with straight-edge endpoints taken at the node centers).
    */
   elementsInBox( x1: number, y1: number, x2: number, y2: number ): GpuCollection {
-    return new GpuCollection( this, this._store.refsInBox( x1, y1, x2, y2 ), { unique: true, live: true } );
+    return new GpuCollection(
+      this,
+      this._store.refsInBox( x1, y1, x2, y2, this._boxSelectionIncludesLabels ),
+      { unique: true, live: true } );
   }
 
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
@@ -1035,6 +1041,16 @@ export class GpuCore {
     if( bool === undefined ){ return this._userZoomingEnabled; }
 
     this._userZoomingEnabled = bool;
+
+    return this;
+  }
+
+  /** Box selection requires label containment too when on (round 16.5;
+   * v3's box-select-labels, reshaped as a core option — default off). */
+  boxSelectionIncludesLabels( bool?: boolean ): boolean | this {
+    if( bool === undefined ){ return this._boxSelectionIncludesLabels; }
+
+    this._boxSelectionIncludesLabels = bool;
 
     return this;
   }

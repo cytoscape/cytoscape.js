@@ -121,6 +121,28 @@ describe('gpu/collection: label bounding boxes (round 16.4)', function(){
     expect( at.x1 ).to.be.lessThan( 500 - 15 );
   });
 
+  it('gates box selection on label containment when opted in (16.5)', function(){
+    const elements = [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ];
+    const style = { nodes: { 'width': 20, 'height': 20, 'label': 'a very wide label', 'font-size': 16 } };
+
+    // default (v3): labels don't gate containment
+    const off = cytoscapeGpu( { elements, style } );
+
+    expect( off.boxSelectionIncludesLabels() ).to.equal( false );
+    expect( off.elementsInBox( -12, -12, 12, 40 ).length ).to.equal( 1 );
+
+    // opted in: the label must be contained too
+    const on = cytoscapeGpu( { elements, style, boxSelectionIncludesLabels: true } );
+
+    expect( on.boxSelectionIncludesLabels() ).to.equal( true );
+    expect( on.elementsInBox( -12, -12, 12, 40 ).length ).to.equal( 0 ); // label pokes out
+    expect( on.elementsInBox( -80, -12, 80, 40 ).length ).to.equal( 1 ); // box covers it
+
+    // runtime toggle
+    on.boxSelectionIncludesLabels( false );
+    expect( on.elementsInBox( -12, -12, 12, 40 ).length ).to.equal( 1 );
+  });
+
   it('honors the option through renderedBoundingBox', function(){
     const cy = mk( { nodes: { 'width': 30, 'height': 30, 'label': 'wide wide wide', 'font-size': 16 } } );
 

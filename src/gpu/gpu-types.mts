@@ -472,6 +472,9 @@ export interface CytoscapeGpuOptions {
   userZoomingEnabled?: boolean;
   /** allow box selection (default true) */
   boxSelectionEnabled?: boolean;
+  /** box selection also requires label containment (round 16.5 — the
+   * v4 form of v3's box-select-labels; default false, as v3) */
+  boxSelectionIncludesLabels?: boolean;
   /** 'single' (tap/box replaces the selection) or 'additive' (taps toggle, boxes add); default 'single' */
   selectionType?: 'single' | 'additive';
   /** the dbltap/onetap debounce window in ms (default 250, as v3) */

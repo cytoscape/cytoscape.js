@@ -4215,9 +4215,21 @@ signed off 2026-08-01.
   incl. getFitViewport reading the label-inclusive box), which
   covers what the planned browser fit spec would have.  131/131
   Playwright, typecheck + lint clean.
-- [ ] **16.5 Box-select labels + benchmark + true-up** —
-  `boxSelectionIncludesLabels`; shaping cost at 100k labels (build
-  + write-refresh, memo hit-rate assertion); README/PLAN true-up.
+- [x] **16.5 Box-select labels + benchmark + true-up** (2026-08-01)
+  — **`boxSelectionIncludesLabels`** (ctor option +
+  getter/setter, default false — v3's box-select-labels default):
+  `refsInBox` additionally requires the node's label box inside the
+  band; Node-pinned (label poking out excludes the node only when
+  opted in; runtime toggle).  **Shaping cost swept**
+  (`benchmark/gpu/labels.mjs`, pure Node at 100k wrapped labels):
+  breakLines ~3.8 µs, estimateBlock ~4.6 µs, the full
+  setLabel-with-estimate write ~5.1 µs/label (write-driven, never
+  per frame), and the whole-graph bb scan pays ~0.1 µs/label for
+  its label terms.  **Memo hit-rate pinned** in a `webgpu` spec:
+  120 same-text wrapped labels shape ≤ 3 times
+  (`stats().labelShapeHits/Misses`).  Final docs true-up (README
+  round-16 section).  **Round 16 is complete.**  2117 Node tests,
+  132/132 Playwright, typecheck + lint clean.
 
 **Risks tracked**: golden churn confined to 16.4's one commit;
 whole-graph scan cost with the label term (two extra reads per

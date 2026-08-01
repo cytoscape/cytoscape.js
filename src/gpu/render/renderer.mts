@@ -106,6 +106,9 @@ interface RendererStats {
   mapperUploadedBytes: number;
   /** mapper eval dispatches encoded */
   mapperDispatches: number;
+  /** shaping-memo hits/misses (round 16.5): shared label texts shape once */
+  labelShapeHits: number;
+  labelShapeMisses: number;
 }
 
 const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
@@ -338,7 +341,10 @@ export class Renderer {
       glyphs: this.labelLayer?.count() ?? 0,
       pickLatencyMs: this.pickLatencyMs(),
       mapperUploadedBytes: this.mapperRuntime?.uploadedBytes ?? 0,
-      mapperDispatches: this.mapperRuntime?.dispatches ?? 0
+      mapperDispatches: this.mapperRuntime?.dispatches ?? 0,
+      // the shaping memo (16.5): shared texts shape once per face
+      labelShapeHits: this.labelLayer?.memoHits ?? 0,
+      labelShapeMisses: this.labelLayer?.memoMisses ?? 0
     };
   }
 

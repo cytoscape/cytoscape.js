@@ -241,6 +241,49 @@ constants-only (one list per sheet), validated (even count, >= 3
 pairs, values in [-1, 1]) and capped at 32 points (recorded); unit
 points keep the bb term at the node box.
 
+## Multiline labels + label bounding boxes (round 16)
+
+Landed 2026-08-01, per the PLAN.md round-16 plan:
+
+- **The wrap family** (both label groups, mapper-capable):
+  `text-wrap` (`none | wrap | ellipsis`), `text-max-width`,
+  `line-height`, `text-overflow-wrap` (`whitespace | anywhere`) and
+  `text-justification` (`auto | left | center | right`) — v3's
+  keyword sets, defaults and breaking rules (`wrap` honors embedded
+  newlines and greedily word-wraps; over-long words overflow under
+  `whitespace` and split under `anywhere`; `ellipsis` truncates one
+  line with '…'; `auto` justification resolves against
+  `text-halign`, v3's hanging-label rule).
+- **One breaker, three consumers**: `label-wrap.mts` (gpu root) is a
+  pure module with injected advances — the renderer lays glyphs with
+  real atlas advances behind a **shaping memo** (labels are
+  model-space, so breaking is zoom-invariant and identical
+  (text, wrap-params) pairs share one laid block; hits/misses ride
+  `renderer().stats()`), while the store estimates dims with flat
+  advances so bounds work headless.  Exact laid dims feed back into
+  the store per glyph build.
+- **Labels join `boundingBox()`/`fit()` by default**:
+  `boundingBox({ includeLabels })` (default true; unknown keys
+  throw) on collections, `renderedBoundingBox`, the whole-graph
+  store scan behind no-arg `fit`/`center`/`getFitViewport`, and
+  `boundingBoxAt` (animated-layout fit targets cover labels).  Node
+  labels are exact (the laid block at its D3 anchor + text-box
+  padding); edge labels are conservative (a rotation-safe
+  block-covering radius about both endpoints — sound wherever the
+  anchor lands on the drawn path).  `eles.labelBoundingBox()` is
+  the public exact measure — the v4 form of v3's text-metrics.
+- **`boxSelectionIncludesLabels`** (core option + ctor, default
+  false — v3's box-select-labels default): when on, box selection
+  requires the node's label box to be contained too.
+- Recorded deviations: headless label dims are flat-advance
+  *estimates* (rendered instances upgrade them to exact); the
+  edge-label bb term is conservative (fit may slightly over-fit,
+  never under); alignment shifts and text boxes use block metrics
+  (advance width × line-stacked height), not ink extents.
+- Costs (Node sweep, `benchmark/gpu/labels.mjs`): wrapped-label
+  builds ~5 µs/label at 100k (write-driven, never per frame); the
+  whole-graph bb scan pays ~0.1 µs/label for its label terms.
+
 ## Design decisions (v4 API direction)
 
 Decisions made for the v4 direction and reflected in this prototype;

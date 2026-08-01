@@ -2303,7 +2303,10 @@ export class GraphStore implements ModelView {
    * approximation (a recorded deviation).  Corners may be given in any
    * order.
    */
-  refsInBox( x1: number, y1: number, x2: number, y2: number ): Ref[] {
+  refsInBox(
+    x1: number, y1: number, x2: number, y2: number,
+    includeLabels: boolean = false
+  ): Ref[] {
     this.flushDerived(); // curved edges read derived params below
     const lx = Math.min( x1, x2 );
     const hx = Math.max( x1, x2 );
@@ -2331,6 +2334,16 @@ export class GraphStore implements ModelView {
       const y = pos[ slot * 2 + 1 ];
 
       if( x - hw >= lx && x + hw <= hx && y - hh >= ly && y + hh <= hy ){
+        // boxSelectionIncludesLabels (16.5, default off — v3's default):
+        // the label box must be contained too
+        if( includeLabels ){
+          const lb = this.nodeLabelBox( slot );
+
+          if( lb != null && !(
+            x + lb.x1 >= lx && x + lb.x2 <= hx && y + lb.y1 >= ly && y + lb.y2 <= hy
+          ) ){ continue; }
+        }
+
         out.push( { group: 'nodes', slot, gen: g } );
       }
     }

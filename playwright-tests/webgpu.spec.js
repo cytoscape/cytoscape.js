@@ -1562,6 +1562,29 @@ test.describe( 'WebGPU renderer', () => {
     expect( imaged.ratio, 'imaged WYSIWYG self-diff' ).toBeLessThanOrEqual( 0.001 );
   } );
 
+  test( 'the shaping memo shares laid blocks across same-text labels (round 16.5)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: Array.from( { length: 120 }, ( _, i ) => ( {
+        data: { id: 'n' + i }, position: { x: ( i % 12 ) * 40, y: Math.floor( i / 12 ) * 40 }
+      } ) ),
+      style: { nodes: {
+        'width': 20, 'height': 20,
+        'label': 'shared label', 'font-size': 12,
+        'text-wrap': 'wrap', 'text-max-width': 50
+      } },
+      zoom: 1
+    } );
+    await waitFrames( page );
+
+    const stats = await page.evaluate( () => window.cy.renderer().stats() );
+
+    // 120 identical (text, wrap params) labels shape once
+    expect( stats.labelShapeMisses ).toBeLessThanOrEqual( 3 );
+    expect( stats.labelShapeHits ).toBeGreaterThanOrEqual( 117 );
+  } );
+
   test( 'font-family change re-rasters the atlas and re-lays-out labels live', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

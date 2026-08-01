@@ -85,6 +85,14 @@ export const FLAG_SELF_HIDDEN = 16384;
  * Maintained by the StyleEngine's write() — never a user switch.
  */
 export const FLAG_NO_EVENTS = 32768;
+/**
+ * Node-only, style-managed (round 20.3): set while the node styles
+ * `text-events: 'yes'` — the label block box (the exact laid dims at
+ * the D3 anchor) is part of the node for the CPU pick.  Default off
+ * (v3's default: labels are pointer-transparent).  Edge labels are
+ * never pickable in v4 (recorded), so the bit is meaningless on edges.
+ */
+export const FLAG_TEXT_EVENTS = 65536;
 
 /** The fixed model-px gap between a node's box and a top/bottom-row
  * label (see the D3 label-alignment record); shared by the StyleEngine's
@@ -579,6 +587,9 @@ export interface ModelView {
    * stream, and the reverse of the CPU pick's parent pass.  Owned by
    * the store: identity changes exactly when the hierarchy changes. */
   parentOrder(): Uint32Array;
+  /** A node label's box in node-local model px (round 16.4), or null
+   * when unlabelled — the CPU pick's text-events test (round 20.3). */
+  nodeLabelBox( slot: number ): { x1: number; y1: number; x2: number; y2: number } | null;
 }
 
 /** A validated reference to an element slot; stale when `gen` no longer matches. */

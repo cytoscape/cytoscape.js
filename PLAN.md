@@ -5073,12 +5073,25 @@ front (the round-17 discipline).
   pin; the box gesture selects and box-events only the interactive
   elements).  2185 Node tests, 143/143 Playwright, typecheck +
   lint clean.
-- [ ] **20.3 `text-events`** — prop + flag (Node specs incl. the
-  edges-group throw... **call: the prop parses on edges for v3
-  sheet compatibility but is inert — recorded** — and readback),
-  the CPU pick label-box test.  Playwright pins: a tap on the label
-  below an `events`-normal node selects it with `text-events: yes`
-  and background-taps with the default.
+- [x] **20.3 `text-events`** (2026-08-01) — node-only enum channel
+  (constants or `case` mappers) maintaining `FLAG_TEXT_EVENTS`; the
+  CPU pick tests the label block box (`store.nodeLabelBox`, the
+  round-16.4 laid dims at the D3 anchor — now on the ModelView
+  contract) in device px before the body's quick reject, so label
+  hits resolve the node for tap/grab/hover alike; `events: 'no'`
+  still wins (checked first).  **Call finalized during the pass**
+  (the plan draft waffled between parse-inert and throw): the
+  edges group **throws** — accepting an inert prop would be a
+  silent no-op, against the unknown-keys-throw rule; edge labels
+  stay unpickable (recorded).  Also recorded: the label box picks
+  even when the label is LOD-faded (labelFadePx is a readability
+  threshold, not a pick predicate).  Tests-first: 5 Node specs
+  (`test/gpu-text-events.mjs`, red then green — default/readback,
+  edges-group throw, case mapper, label-box pick on/off, the
+  events-wins rule) and a `webgpu` Playwright spec (a click on the
+  label below the node background-taps under the default and
+  selects the node under `text-events: 'yes'`).  2190 Node tests,
+  typecheck + lint clean.
 - [ ] **20.4 Two-finger cxt** — the gesture state machine on the
   existing touch bookkeeping (Node-testable pieces factored pure
   where practical; the behavior pinned in a `webgpu` Playwright spec

@@ -2,7 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
-  FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT,
+  FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
@@ -87,6 +87,8 @@ interface NodeComputed {
   borderWidth: number;
   /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
   eventsEnabled: boolean;
+  /** text-events (round 20.3): true = the label box picks the node (FLAG_TEXT_EVENTS) */
+  textEvents: boolean;
   /** literal label text ('' for none) when labelKey is null */
   label: string;
   /** `data(key)` mapper key ('id' reads the first-class id) */
@@ -318,6 +320,7 @@ const NODE_DEFAULTS: NodeComputed = {
   shape: SHAPE_ELLIPSE,
   opacity: 1,
   eventsEnabled: true, // v3's default: elements receive events
+  textEvents: false, // v3's default: labels are pointer-transparent
   borderWidth: 0,
   label: '', // no label
   labelKey: null,
@@ -542,7 +545,7 @@ const SHAPE_NAMES: Record<number, string> = {
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'shape-polygon-points', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
-  'events',
+  'events', 'text-events',
   'corner-radius', 'border-position',
   'background-fill', 'background-gradient-stop-colors',
   'background-gradient-stop-positions', 'background-gradient-direction',
@@ -689,9 +692,10 @@ const END_LABEL_PROPS: ReadonlySet<string> = new Set( [
   'target-text-margin-y', 'target-text-rotation'
 ] );
 
-/** further node-only props (C3/D3): rejected on the edges group */
+/** further node-only props (C3/D3; text-events since 20.3 — edge
+ * labels are never pickable in v4): rejected on the edges group */
 const NODE_ONLY_EXTRA: ReadonlySet<string> = new Set( [
-  'shape-polygon-points', 'text-halign', 'text-valign'
+  'shape-polygon-points', 'text-halign', 'text-valign', 'text-events'
 ] );
 
 const GHOST_PROPS: ReadonlySet<string> = new Set( [
@@ -1643,6 +1647,9 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'events':
       computed.eventsEnabled = parseYesNo( prop, value );
       break;
+    case 'text-events':
+      computed.textEvents = parseYesNo( prop, value );
+      break;
     case 'ghost':
       computed.ghost = parseYesNo( prop, value );
       break;
@@ -2504,6 +2511,13 @@ const MAPPABLE: Record<string, MappableChannel> = {
     parseEnum: v => v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
     set: ( c, v ) => { c.eventsEnabled = ( v as number ) === 1; },
     default: () => 1
+  },
+  // text-events (round 20.3): the label box picks the node; node-only
+  'text-events': {
+    kind: 'enum', groups: [ 'nodes' ],
+    parseEnum: v => v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
+    set: ( c, v ) => { c.textEvents = ( v as number ) === 1; },
+    default: () => 0
   },
   // ghost props (round 13 A1; node-only)
   'ghost': {
@@ -3488,6 +3502,8 @@ export class StyleEngine {
         return this.readImageProp( slot, prop );
       case 'events': // 20.2: stored truth is the flag bit
         return store.hasFlag( ref.group, slot, FLAG_NO_EVENTS ) ? 'no' : 'yes';
+      case 'text-events': // 20.3
+        return store.hasFlag( 'nodes', slot, FLAG_TEXT_EVENTS ) ? 'yes' : 'no';
       case 'ghost':
         return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
       case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
@@ -4100,6 +4116,7 @@ export class StyleEngine {
 
       store.setPair( 'node.size', slot, computed.width, computed.height );
       store.setFlag( 'nodes', slot, FLAG_NO_EVENTS, !computed.eventsEnabled ); // 20.2
+      store.setFlag( 'nodes', slot, FLAG_TEXT_EVENTS, computed.textEvents ); // 20.3
       store.setColor( 'node.fillColor', slot, ...foldA( computed.fillColor, computed.backgroundOpacity ) );
       store.setColor( 'node.borderColor', slot, ...foldA( computed.borderColor, computed.borderOpacity ) );
       store.setScalar( 'node.borderWidth', slot, computed.borderWidth );

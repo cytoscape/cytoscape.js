@@ -1924,6 +1924,17 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   query (the gesture filters, the query does not), and an `events`
   flag change invalidates the pick-tile cache through the flags
   column's dirty span (it changes pick answers, not pixels).
+  **`text-events`** (round 20.3, default `'no'` — v3's): with
+  `'yes'` the node's *label block box* (the exact laid dims at the
+  D3 anchor + text-background padding, round 16.4) is part of the
+  node for the CPU pick — tap/grab/hover on the label resolve the
+  node; node labels never rotate, so the test is an exact AABB.
+  Node-only in v4: the edges group **throws** (edge labels are
+  never pickable — the GPU tile draws edge geometry only; recorded
+  deviation), and an `events: 'no'` element stays transparent
+  whatever `text-events` says.  Recorded: the label box picks even
+  when the label is LOD-faded at far zoom (`labelFadePx` is a
+  renderer readability threshold, not a pick predicate).
 - **Interaction tuning options** (round 20.1, all v3 defaults, all
   ctor options with `multiClickDebounceTime`-style validated
   getter/setters read live by the pointer layer):

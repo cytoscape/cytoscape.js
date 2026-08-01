@@ -1,5 +1,5 @@
 import {
-  FLAG_ALIVE, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_VISIBLE,
+  FLAG_ALIVE, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS, FLAG_VISIBLE,
   SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
@@ -67,6 +67,20 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
     const dx = xPx - ( pos[ slot * 2 ] * frame.zoomDpr + frame.panXPx );
     const dy = yPx - ( pos[ slot * 2 + 1 ] * frame.zoomDpr + frame.panYPx );
     const hmax = Math.max( hw, hh );
+
+    // 20.3: with text-events the label block is part of the node — its
+    // box (node-local model px, round 16.4) tests in device px; node
+    // labels never rotate, so an AABB is exact.  Checked before the
+    // quick reject: label boxes extend outside the node body.
+    if( ( flags[ slot ] & FLAG_TEXT_EVENTS ) !== 0 ){
+      const lb = view.nodeLabelBox( slot );
+
+      if( lb != null
+        && dx >= lb.x1 * frame.zoomDpr && dx <= lb.x2 * frame.zoomDpr
+        && dy >= lb.y1 * frame.zoomDpr && dy <= lb.y2 * frame.zoomDpr ){
+        return true;
+      }
+    }
 
     if( Math.abs( dx ) > hmax || Math.abs( dy ) > hmax ){ return false; } // quick reject
 

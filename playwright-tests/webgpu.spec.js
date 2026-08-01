@@ -1773,6 +1773,48 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.__boxed.sort() ) ).toEqual( [ 'under', 'x1', 'x2' ] );
   } );
 
+  test( "text-events: 'yes' makes the label box tap the node (round 20.3)", async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const style = textEvents => ( {
+      nodes: {
+        width: 40, height: 40, shape: 'rectangle', 'background-color': 'red',
+        label: 'HELLO WORLD', 'font-size': 18, 'text-events': textEvents
+      }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      style: style( 'no' ), // v3's default: the label is pointer-transparent
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the label center in rendered coords (zoom 1: model + pan)
+    const label = await page.evaluate( () => {
+      const bb = window.cy.$id( 'a' ).labelBoundingBox();
+      const pan = window.cy.pan();
+
+      return { x: ( bb.x1 + bb.x2 ) / 2 + pan.x, y: ( bb.y1 + bb.y2 ) / 2 + pan.y };
+    } );
+
+    expect( label.y ).toBeGreaterThan( center.y + 20 ); // below the node body
+
+    await page.mouse.click( label.x, label.y );
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).selected() ) ).toBe( false ); // background tap
+
+    await page.evaluate( s => window.cy.style( s ), style( 'yes' ) );
+    await waitFrames( page );
+
+    await page.mouse.click( label.x, label.y );
+
+    await expect.poll( () => page.evaluate( () => window.cy.$id( 'a' ).selected() ) ).toBe( true );
+  } );
+
   test( 'mapped opacity evaluates on the GPU: a data write repaints without a CPU restyle', async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );

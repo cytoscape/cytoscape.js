@@ -3080,7 +3080,11 @@ export class GpuCollection {
       : this.nodes();
     const eles = ( options.eles as GpuCollection | undefined ) ?? this;
 
-    cy.emit( { type: 'layoutstart', layout } );
+    // the extension wrapper emits its own layoutstart before run()
+    // (round 17.5); the finisher folds into that lifecycle
+    if( ( options as { _startEmitted?: boolean } )._startEmitted !== true ){
+      cy.emit( { type: 'layoutstart', layout } );
+    }
 
     // memoize by handle: handles are interned singletons
     const rawMemo = new Map<GpuCollection, Position>();

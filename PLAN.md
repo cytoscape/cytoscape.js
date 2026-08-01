@@ -4351,10 +4351,31 @@ gate ecosystem work.
   `webgpu` spec (wheel, background drag-pan, and a synthetic
   two-finger pinch — each firing its own name and not the others').
   2117 Node tests, 137/137 Playwright, typecheck + lint clean.
-- [ ] **17.5 The layout contract** — LayoutContext + `{ impl }`
-  plumbing on `cy.layout`/`eles.layout`; pinned by re-expressing
-  the `random` builtin through the public contract in specs, plus a
-  conformance suite external authors can crib.
+- [x] **17.5 The layout contract** (2026-08-01) —
+  `layout/contract.mts`: `cy.layout({ impl, ...opts })` (and
+  `eles.layout`) runs a user class (constructed argless) or object
+  implementing `{ run(ctx), stop?() }` — **no registry, no
+  cytoscape.use, no global state**.  `run` may return a promise
+  (the GPU-layout shape); the wrapper exposes `promise()` and
+  drives the core lifecycle exactly once per run whether the impl
+  uses the discrete finisher (`ctx.layoutPositions(fn)` — the full
+  v3 plumbing, its layoutstart folded into the wrapper's via an
+  internal flag) or the direct bulk path (`ctx.setPositions` on
+  the round-5 slot path).  The **LayoutContext is columnar-first**:
+  `nodeSlots()` (scope order, pre-filtered to unlocked leaves —
+  the 14.11 rule), live `positions()`/`endpoints()` views,
+  O(1) `degreeOf` off CSR, `edgeSlots()`, scope bb + viewport
+  dims, `ctx.options` carrying custom knobs, with handles reachable
+  at `ctx.eles`/`ctx.nodes`.  Layout instances stay non-emitters
+  (round-10 rule; events fire on the core with the wrapper as
+  `event.layout`).  Tests-first: 10 specs in
+  `test/gpu-layout-contract.mjs` red then green — object + class
+  impls, single-lifecycle finisher, async run, scoping, the
+  leaf/unlocked filter, columnar reads, stop(), malformed rejects,
+  and the random builtin re-expressed through the public contract
+  (the conformance shape external authors can crib).  Two
+  error-message pins updated for the new layout dispatch text.
+  2127 Node tests, typecheck + lint clean.
 - [ ] **17.6 Example + true-up** — a worked example extension layout
   in `debug/webgpu`; README design-decisions entries; PLAN true-up.
 

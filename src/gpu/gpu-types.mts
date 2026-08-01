@@ -399,9 +399,21 @@ export interface GpuRandomLayoutOptions extends GpuLayoutBaseOptions {
   name: 'random';
 }
 
+/** The extension contract (round 17.5): a direct impl object/class —
+ * no name, no registry — plus any custom knobs the impl reads off
+ * ctx.options. */
+export interface GpuCustomLayoutOptions extends GpuLayoutBaseOptions {
+  impl: unknown;
+  name?: undefined;
+  /** internal (round 17.5): the wrapper already emitted layoutstart */
+  _startEmitted?: boolean;
+  [ key: string ]: unknown;
+}
+
 export type GpuLayoutOptions =
   GpuGridLayoutOptions | GpuPresetLayoutOptions | GpuCircleLayoutOptions |
-  GpuConcentricLayoutOptions | GpuBreadthFirstLayoutOptions | GpuRandomLayoutOptions;
+  GpuConcentricLayoutOptions | GpuBreadthFirstLayoutOptions | GpuRandomLayoutOptions |
+  GpuCustomLayoutOptions;
 
 /** Renderer tuning knobs (all LOD values in device px). */
 export interface GpuRendererOptions {

@@ -16,6 +16,8 @@ import { Animation, AnimationManager } from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import * as math from '../math.mjs';
 import type { BoundsLike } from './viewport.mjs';
+import { CustomLayout } from './layout/contract.mjs';
+import type { GpuCustomLayoutOptions } from './gpu-types.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
 import { CircleLayout } from './layout/circle.mjs';
@@ -24,6 +26,7 @@ import { BreadthFirstLayout } from './layout/breadthfirst.mjs';
 import { RandomLayout } from './layout/random.mjs';
 
 export type GpuLayout =
+  CustomLayout |
   GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
 import type Emitter from '../emitter.mjs';
 import type { EventHandler } from '../emitter.mjs';
@@ -306,6 +309,11 @@ export class GpuCore {
   // -- layout --
 
   layout( options: GpuLayoutOptions ): GpuLayout {
+    // the extension contract (round 17.5): direct objects, no registry
+    if( ( options as { impl?: unknown } )?.impl != null ){
+      return new CustomLayout( this, options as GpuCustomLayoutOptions );
+    }
+
     if( options?.name === 'grid' ){ return new GridLayout( this, options ); }
     if( options?.name === 'preset' ){ return new PresetLayout( this, options ); }
     if( options?.name === 'circle' ){ return new CircleLayout( this, options ); }
@@ -316,9 +324,9 @@ export class GpuCore {
     const got = ( options as { name?: string } | null )?.name;
 
     throw new Error(
-      `Only the 'grid', 'preset', 'circle', 'concentric', 'breadthfirst' and 'random' ` +
-      `layouts are available in the GPU prototype` +
-      ( got != null ? `; got '${got}'` : '' )
+      `A layout needs a built-in name ('grid', 'preset', 'circle', 'concentric', ` +
+      `'breadthfirst', 'random') or an impl (the extension contract)` +
+      ( got != null ? `; got name '${got}'` : '' )
     );
   }
 

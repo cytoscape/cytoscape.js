@@ -379,6 +379,6 @@ describe('gpu/layouts', function(){
   it('cy.layout still throws on unknown names', function(){
     cy = star();
 
-    expect( () => cy.layout({ name: 'cose' }) ).to.throw(/layouts are available/);
+    expect( () => cy.layout({ name: 'cose' }) ).to.throw(/built-in name/);
   });
 });

@@ -20,7 +20,7 @@ describe('gpu/layout: preset', function(){
 
   it('is accepted by cy.layout alongside grid', function(){
     expect(function(){ cy.layout({ name: 'preset' }); }).to.not.throw();
-    expect(function(){ cy.layout({ name: 'cose' }); }).to.throw(/layouts are available/);
+    expect(function(){ cy.layout({ name: 'cose' }); }).to.throw(/built-in name/);
   });
 
   it('applies an id-keyed positions map; absent ids keep their position', function(){

@@ -4450,11 +4450,32 @@ design, built.  Signed off 2026-08-01.
 
 **Pass split** (tests-first per item; docs in-commit):
 
-- [ ] **18.0 Docs-first** — this plan section + the README pointer.
-- [ ] **18.1 CPU reference** — grid binning + forces + integrator +
-  convergence as a pure Node-testable module; seeded
-  fixed-coordinate pins, energy/convergence invariants, locked
-  pins, fn `edgeLength`.
+- [x] **18.0 Docs-first** — landed with the design-sitting commit
+  (`0f0ee859`), before any round-18 implementation.
+- [x] **18.1 CPU reference** (2026-08-01) —
+  `layout/force-sim.mts`, pure and slot-indexed: uniform-grid
+  cutoff repulsion (counting-sort rebuild per iteration; stable
+  ascending order inside cells — the deterministic gather order
+  both executors share), springs off CSR-style incident lists,
+  centering gravity, and **pure damped gradient integration**
+  (`F · alpha` per step, no velocity state — no ringing, one less
+  GPU buffer, and displacement tracks force so the threshold
+  settle is robust; velocity integration was tried and dropped for
+  exactly the ringing-trips-the-settle failure).  Forces gather
+  into a scratch and apply in a second pass (the kernel's
+  two-dispatch structure).  **Model calls made empirically**, both
+  recorded: the repulsion cutoff is the *mean ideal edge length* —
+  repulsion vanishes exactly where a spring rests, so a connected
+  pair's equilibrium is L itself (cutoff 2L left it at 1.7L); and
+  a cutoff model does **not** promise global untangling — a curled
+  chain is a legitimate local minimum (sfdp-style multilevel is
+  future work).  Coincident points separate along a deterministic
+  index-hash direction (no NaNs on degenerate input).  Tests-first:
+  8 specs in `test/gpu-force-sim.mjs` — seeded determinism,
+  identical-run reproducibility, spring rest length, repulsion
+  separation, gravity containment, cooling/convergence, pinning,
+  and the path-relaxation invariants.  2135 Node tests, typecheck +
+  lint clean.
 - [ ] **18.2 Layout plumbing** — `force` through the round-17
   contract (its first production consumer): animate-live on the CPU
   executor, events/promise/stop, compound/subset/headless rules.

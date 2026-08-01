@@ -39,7 +39,9 @@ const SCENES = [
   // round 12a: bundled-bezier pan cost — edges come in parallel pairs so
   // every edge actually curves (a lone bezier edge renders straight)
   { key: 'gen-25k-curved', label: 'generated 25k × 50k curved (bezier pairs)', page: { n: 25000, m: 50000, parallel: 2, curved: true } },
-  { key: 'gen-25k-compound', label: 'generated 25k × 50k compound (1k parents)', page: { n: 25000, m: 50000, compound: 1000 } }
+  { key: 'gen-25k-compound', label: 'generated 25k × 50k compound (1k parents)', page: { n: 25000, m: 50000, compound: 1000 } },
+  // round 15.7: icon-per-type background images through the url mapper
+  { key: 'gen-25k-images', label: 'generated 25k × 50k images (icon-per-type)', page: { n: 25000, m: 50000, images: true } }
 ];
 
 const PAN_VIEWS = [

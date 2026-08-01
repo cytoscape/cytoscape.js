@@ -1836,6 +1836,52 @@ test.describe( 'WebGPU visual goldens', () => {
     expect( rampOf( png ), 'export edge ramp (px)' ).toBeLessThanOrEqual( 3 );
   } );
 
+  test( 'imageMinPx skips image sampling on unreadably small nodes (round 15.7)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: { 'width': 20, 'height': 20 } },
+      renderer: { imageMinPx: 30 },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await page.evaluate( uri => {
+      window.cy.style( { nodes: {
+        'width': 20, 'height': 20, 'shape': 'rectangle',
+        'background-color': '#ffffff', 'border-width': 1, 'border-color': '#ccc',
+        'background-image': uri, 'background-fit': 'cover'
+      } } );
+    }, QUAD_PNG );
+    await waitForImages( page );
+
+    const inkOf = png => {
+      let n = 0;
+
+      for( let i = 0; i < png.data.length; i += 4 ){
+        const [ r, g, b ] = [ png.data[ i ], png.data[ i + 1 ], png.data[ i + 2 ] ];
+
+        // the quadrant image's saturated colors, not the white/gray body
+        if( Math.max( r, g, b ) - Math.min( r, g, b ) > 60 ){ n++; }
+      }
+
+      return n;
+    };
+
+    // at zoom 1 the node shows 20px < imageMinPx: no image sampled
+    const small = inkOf( decodePng( await exportPng( page, { bg: '#fff' } ) ) );
+
+    expect( small, 'image ink below the floor' ).toBe( 0 );
+
+    // at zoom 2 it shows 40px >= imageMinPx: the image appears
+    await page.evaluate( () => window.cy.zoom( 2 ) );
+    await waitFrames( page, 3 );
+
+    const big = inkOf( decodePng( await exportPng( page, { bg: '#fff' } ) ) );
+
+    expect( big, 'image ink above the floor' ).toBeGreaterThan( 200 );
+  } );
+
 } );
 
 test.describe( 'v3-vs-v4 render parity', () => {

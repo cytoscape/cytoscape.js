@@ -168,6 +168,24 @@ describe('gpu/style: background images (round 15.2)', function(){
     expect( recsOf( cy, 'b' )[ 0 ].url ).to.equal( 'other.svg' );
   });
 
+  it('maps urls through an ordinal scale (the icon-per-type bench form)', function(){
+    const cy = mk(
+      { nodes: { 'background-image': {
+        data: 'itype', scale: 'ordinal', domain: [ 0, 1, 2 ],
+        range: [ 'a.png', 'b.png', 'c.png' ]
+      } } },
+      [
+        { data: { id: 'a', itype: 0 } },
+        { data: { id: 'b', itype: 2 } },
+        { data: { id: 'c', itype: 9 } } // outside the domain -> no image
+      ]
+    );
+
+    expect( recsOf( cy, 'a' )[ 0 ].url ).to.equal( 'a.png' );
+    expect( recsOf( cy, 'b' )[ 0 ].url ).to.equal( 'c.png' );
+    expect( recsOf( cy, 'c' ) ).to.equal( null );
+  });
+
   it('rejects mappers on list-only image props', function(){
     expect( () => mk( { nodes: {
       'background-image': 'i.png',

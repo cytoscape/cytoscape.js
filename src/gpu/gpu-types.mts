@@ -422,6 +422,11 @@ export interface GpuRendererOptions {
    * too small to read anyway (default 0 = off; the fade's own cutoff at
    * labelFadePx/2 still applies) */
   labelMinPx?: number;
+  /** background images are skipped on nodes below this displayed px
+   * size — unreadable anyway, and far-zoom sampling is pure cost
+   * (default 8; the plain-disc LOD owns the pixel below ~3px).
+   * Round 15.7. */
+  imageMinPx?: number;
   /** adaptive resolution band, lower bound (default 0.5).  Under GPU
    * load the renderer drops the render scale in quarter steps toward
    * this; frames below the bound's cost budget raise it back.  Scenes

@@ -39,7 +39,7 @@ struct Frame {
   haystackSlack: f32,    // 12c: haystack endpoint-offset bound, model px (0 = no haystack)
   outlineSlack: f32,     // B5: max outline outward extent, model px (ghost cull bound)
   arrowScaleMax: f32,    // B7: max arrow-scale styled (arrow quads size for it)
-  pad2: f32,
+  imageMinPx: f32,       // 15.7: skip image sampling below this on-screen node size (displayed px)
 }
 `;
 
@@ -3198,6 +3198,17 @@ fn vsImage(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let count = iref >> 24u;
   let off = iref & 0xffffffu;
   let half = sizes[slot] * 0.5;
+
+  // 15.7: below imageMinPx on-screen the image is unreadable anyway —
+  // collapse the quad (the plain-disc LOD owns the pixel below ~3px)
+  if (max(half.x, half.y) * 2.0 * frame.zoomDpr < frame.imageMinPx) {
+    out.position = vec4f(2.0, 2.0, 0.0, 1.0);
+    out.local = vec2f(0.0);
+    out.instance = slot;
+
+    return out;
+  }
+
   var ext = half;
 
   // clip: none images may overflow the node box — grow the quad to the

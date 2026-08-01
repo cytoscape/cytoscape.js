@@ -1703,6 +1703,23 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   bias props / `compound-sizing-wrt-labels: 'include'` /
   `:parent:selected` / `z-compound-depth`/`z-index-compare` are
   not ported (decided design).
+- **Background images** (round 15) — the deviations in one place
+  (the round-15 section above carries the detail): at most 4 images
+  per node (fixed FS loop; warn-once); every per-image list prop is
+  constants-only, with mappers on the single forms of
+  `background-image`, `-image-opacity` and `-image-color` only;
+  `background-width/height-relative-to` is not ported; images never
+  join `boundingBox()` or picking (unclipped overflow is not in bb —
+  the `bounds-expansion` drop's sibling); `clip: node` +
+  `containment: inside` clips at the border's *inner* edge, so a
+  translucent border shows fill rather than image; repeat tiles
+  confine to the node box; raster resolution caps at the top tier
+  (1024²); sdf-icon mode collapses multi-color sources to their
+  alpha silhouette; crossorigin `null` narrows to same-origin
+  fetches (WebGPU cannot upload tainted content); no demotion after
+  zoom-promotion (the waste policy reclaims); `imageMinPx`
+  (default 8 displayed px) skips images on unreadably small nodes;
+  ghosts do not carry images (the A1 simplified-body rule).
 - **Device-loss recovery** (round 10): an external device loss emits
   `devicelost` and auto-recovers once — the core re-mounts a fresh
   renderer against the same container (the model is CPU-canonical, so

@@ -112,6 +112,7 @@ const DEFAULT_EDGE_WIDTH_FLOOR = 1; // device px
 const DEFAULT_NODE_LOD_PX = 3;
 const DEFAULT_HIDE_PX = 1;
 const DEFAULT_LABEL_FADE_PX = 6;
+const DEFAULT_IMAGE_MIN_PX = 8;
 const DEFAULT_LABEL_MIN_PX = 0; // 0 = no hard label cutoff
 const DEFAULT_RENDER_SCALE_MIN = 0.5;
 const DEFAULT_RENDER_SCALE_MAX = 1;
@@ -729,6 +730,7 @@ export class Renderer {
     f[12] = this.cy._store.haystackSlack();
     f[13] = this.cy._store.outlineSlack();
     f[14] = this.cy._store.arrowScaleMax();
+    f[15] = opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX; // export scale is the figure's own resolution
 
     device.queue.writeBuffer( this.exportUniform, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -1610,6 +1612,7 @@ export class Renderer {
     f[12] = this.cy._store.haystackSlack();
     f[13] = this.cy._store.outlineSlack();
     f[14] = this.cy._store.arrowScaleMax();
+    f[15] = ( opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX ) * this.scaleCtl.scale; // displayed px, like labelMinPx
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
   }
@@ -1648,6 +1651,7 @@ export class Renderer {
     f[12] = this.cy._store.haystackSlack();
     f[13] = this.cy._store.outlineSlack();
     f[14] = this.cy._store.arrowScaleMax();
+    f[15] = ( opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX ) * this.scaleCtl.scale; // displayed px, like labelMinPx
 
     ( this.device as GPUDevice ).queue.writeBuffer(
       this.pickUniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength

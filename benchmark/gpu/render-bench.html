@@ -70,6 +70,32 @@
           ];
         }
 
+        // four 32px icon data-uris built once at runtime (round 15.7)
+        let iconUris = null;
+
+        function icons(){
+          if( iconUris != null ){ return iconUris; }
+
+          const colors = [ '#e74c3c', '#27ae60', '#2980b9', '#f39c12' ];
+
+          iconUris = colors.map( ( color, i ) => {
+            const canvas = document.createElement( 'canvas' );
+
+            canvas.width = canvas.height = 32;
+
+            const ctx = canvas.getContext( '2d' );
+
+            ctx.fillStyle = color;
+
+            if( i % 2 === 0 ){ ctx.beginPath(); ctx.arc( 16, 16, 13, 0, Math.PI * 2 ); ctx.fill(); }
+            else { ctx.fillRect( 4, 4, 24, 24 ); }
+
+            return canvas.toDataURL();
+          } );
+
+          return iconUris;
+        }
+
         let scene = null; // { spec, make() -> fresh { nodes, edges } defs }
         let cy = null;
         let side = null; // 'v3' | 'gpu'
@@ -88,6 +114,10 @@
             // (round 14.12 — both sides run their default parent styling
             // and auto-bounds over identical hierarchies)
             const parents = spec.compound ?? 0;
+            // images: icon-per-type via a data key (round 15.7) — four
+            // types, styled through the url mapper on the gpu side and
+            // type selectors on the v3 side
+            const images = spec.images === true;
 
             for( let p = 0; p < parents; p++ ){
               nodes.push( { data: { id: 'p' + p } } );
@@ -101,10 +131,14 @@
             for( let i = 0; i < spec.n; i++ ){
               const c = parents > 0 ? i % parents : 0;
 
+              const data = parents > 0
+                ? { id: 'n' + i, parent: 'p' + c }
+                : { id: 'n' + i };
+
+              if( images ){ data.itype = i & 3; }
+
               nodes.push( {
-                data: parents > 0
-                  ? { id: 'n' + i, parent: 'p' + c }
-                  : { id: 'n' + i },
+                data,
                 position: parents > 0
                   ? { x: ( c % cols ) * 420 + rand() * 320, y: Math.floor( c / cols ) * 420 + rand() * 320 }
                   : { x: rand() * side_, y: rand() * side_ }
@@ -177,6 +211,14 @@
             // both sides opt into bundled bezier explicitly on curved scenes
             style[ 1 ].style[ 'curve-style' ] = curved ? 'bezier' : 'straight';
 
+            if( scene.spec.images === true ){
+              icons().forEach( ( uri, k ) => {
+                style.push( { selector: 'node[itype = ' + k + ']', style: {
+                  'background-image': uri, 'background-fit': 'contain'
+                } } );
+              } );
+            }
+
             cy = cytoscape( {
               container: stage,
               elements: defs,
@@ -195,7 +237,15 @@
               convertMs = performance.now() - c0;
             }
 
-            const nodesStyle = labels ? Object.assign( {}, V4_BASE_STYLE.nodes, V4_LABELS ) : V4_BASE_STYLE.nodes;
+            let nodesStyle = labels ? Object.assign( {}, V4_BASE_STYLE.nodes, V4_LABELS ) : V4_BASE_STYLE.nodes;
+
+            if( scene.spec.images === true ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                'background-image': { data: 'itype', scale: 'ordinal', domain: [ 0, 1, 2, 3 ], range: icons() },
+                'background-fit': 'contain'
+              } );
+            }
+
             const edgesStyle = curved
               ? Object.assign( {}, V4_BASE_STYLE.edges, { 'curve-style': 'bezier' } )
               : V4_BASE_STYLE.edges;

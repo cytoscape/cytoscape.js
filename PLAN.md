@@ -4047,9 +4047,22 @@ below signed off in the 2026-08-01 sitting.
   the WYSIWYG self-diff gained an imaged phase (scale-1 exports
   still pixel-match the screen).  2084 Node tests, 128/128
   Playwright, typecheck + lint clean.
-- [ ] **15.7 LOD + benchmark + true-up** — `imageMinPx`; a
-  `gen-25k-images` renderer-benchmark scene (icon-per-type via a
-  data mapper); README/PLAN true-up.
+- [x] **15.7 LOD + benchmark + true-up** (2026-08-01) —
+  **`imageMinPx`** (renderer option, default 8): the image VS
+  collapses the quad when the node shows below the floor in
+  displayed px (the labelMinPx semantics; export uniforms use the
+  export scale — a figure's own resolution), so far-zoom scenes pay
+  zero image sampling; pinned by a Playwright spec (no image ink at
+  20 px under a 30 px floor, ink appears at zoom 2).  The renderer
+  benchmark gained **`gen-25k-images`** (25k × 50k, four icon types
+  via `data.itype`, styled through the ordinal url mapper on the
+  gpu side and type selectors on v3; icon data-uris built at page
+  runtime) — the scene is wired like its siblings; numbers were not
+  recorded on this box (software adapter — a different machine
+  class, per the benchmark's own warning).  The ordinal-url mapper
+  form is Node-pinned.  Final docs true-up in this commit.
+  **Round 15 is complete.**  2085 Node tests, 129/129 Playwright,
+  typecheck + lint clean.
 
 **Risks tracked**: upload bursts on initial load (decode is already
 async; uploads coalesce per frame); WGSL non-uniform texture access

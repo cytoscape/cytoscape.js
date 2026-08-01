@@ -41,6 +41,18 @@ plan and outcome.
   file — including the logbook: the round records ("Landed (round N)"
   sections and their verification notes) are written or amended in the
   same commit as the work they describe, not batched at the end.
+- **A closing docs sweep ends every round** (rule added 2026-08-01,
+  after the post-round-19 sweep caught drift the per-commit rule had
+  missed).  Per-commit doc updates track the sections a change
+  obviously owns; the long-lived overview sections — the directory
+  layout, the follow-up/open-hooks lists, the README header and
+  "Follow-up hooks", cross-references like "still open"/"remains" —
+  belong to no single commit and drift silently.  So once a round's
+  last item lands, sweep both docs end to end before calling the
+  round complete: grep for the round's own vocabulary and for
+  staleness markers ("open", "remains", "planned", "not yet", stale
+  counts and file lists), verify every section the round touched
+  reads true, and land the fixes as the round's closing docs commit.
 
 ## Context
 

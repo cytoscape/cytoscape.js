@@ -5311,24 +5311,48 @@ item 3 (pie/stripe) resolved by call 3.
 
 **Pass split** (tests-first; docs in-commit):
 
-- [ ] **22.1 Store + prop** — FLAG_SELF_INVISIBLE/FLAG_DRAWN,
-  the derivation walk, the `visibility` prop
-  (parse/readback/mappers/defaults), getter updates.  Node specs:
-  readback, ancestor gating, edge-endpoint folding, bb/fit
-  inclusion, auto-bounds inclusion, pick exclusion (CPU),
-  takesUpSpace vs visible divergence, case-mapper refresh.
-- [ ] **22.2 Renderer** — the SHOWN constant flip + pick paths;
-  Playwright: an invisible node's pixels vanish while `fit()`
-  still frames it (and its label/ghost/overlay vanish with it);
-  an invisible edge vanishes with stable siblings; hover/tap pass
-  through; pick-cache invalidation on the flag flip (flags column
-  — free, spec-pinned).
-- [ ] **22.3 Bundle re-fan** — derivePair/deriveLoops skip hidden
-  members + the visibility-flip no-op; markPair hooks on hide/show
-  of bezier-styled edges.  Node specs on controlPoints(); a
-  Playwright/golden pin: hide a 3-bundle's middle member → the
-  outer two re-fan; make it invisible → the outer two
-  byte-identical.
+- [x] **22.1 Store + prop** (2026-08-01) — FLAG_SELF_INVISIBLE +
+  FLAG_DRAWN landed with the derivation folded into
+  refreshEffectiveVisibility (one subtree walk maintains both bits;
+  a drawn-only change skips the geo/auto-bounds invalidation —
+  invisible elements keep their space), `setInvisibility` as the
+  style write's entry, `isDrawn(ref)` folding edge endpoints, the
+  `visibility` prop (parse/readback/case mappers, both groups) and
+  the getter updates (`visible()` = drawn + endpoint fold — v3's
+  edge rule, now implemented; `hidden()` its negation;
+  `takesUpSpace()` = the display tier).  **Two pre-existing space
+  gaps closed en route**: the whole-graph fit scan
+  (`store.boundingBox`) and the collection `boundingBox()` never
+  filtered display-hidden elements — both now skip unshown
+  elements (and edges with unshown endpoints), v3's rule, while
+  deliberately including invisible ones.  7 Node specs
+  (`test/gpu-visibility-prop.mjs`, red then green) + the
+  cpu-pick hidden-node spec moved onto the real hide path.
+- [x] **22.2 Renderer** (2026-08-01) — the WGSL `SHOWN` constant
+  flipped to ALIVE|DRAWN (one line — every cull kernel, the depth
+  prepass and all glyph/ghost/layer streams honor visibility with
+  zero new bindings; scene pixels for fully-visible graphs are
+  untouched, pinned by the unchanged goldens) and the CPU pick
+  masks the same way.  Playwright: an invisible node paints
+  nothing (body + label + incident edge via the endpoint test)
+  while `fit()` still frames it; a tap where it sits
+  background-taps; a restyle to visible returns the pixels; and a
+  display-tier `hide()` then shrinks the fit box (the
+  22.1-closed gap, pinned).
+- [x] **22.3 Bundle re-fan** (2026-08-01) — `CurveHost.edgeShown`
+  (reads FLAG_VISIBLE — the display tier by construction),
+  `onEdgeShownChanged` marking the pair/loop on hide/show (wired
+  from `setVisibility`; no-op for straight-only graphs until the
+  pair index exists), and derivation filters: hidden members leave
+  the bundle array, the compound-relation index and the loop
+  stagger, and their own params freeze until a show() re-derives.
+  Visibility flips never touch the curve index, so invisible
+  members keep every rank by construction.  2 Node specs (red then
+  green): hiding a 3-bundle's middle re-fans the outer pair (and
+  show() restores byte-exact params); an invisible middle keeps
+  the 3-bundle stagger byte-identical against a reference
+  instance.  2204 Node tests, 148/148 Playwright (goldens
+  untouched), typecheck + lint clean.  **Round 22 is complete.**
 
 ## Round 23 plan — node charts: pie + stripes (planned 2026-08-01)
 

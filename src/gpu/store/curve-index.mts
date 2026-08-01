@@ -233,6 +233,10 @@ export interface CurveHost {
   idHash( slot: number ): number;
   /** schedule a frame / mark non-column dirt (DirtyTracker.touch) */
   schedule(): void;
+  /** display-tier shown state (round 22.3): hidden edges leave their
+   * bundles and loop staggers; `visibility: 'hidden'` edges do NOT
+   * (paint-only — ranks stay stable), so this reads FLAG_VISIBLE */
+  edgeShown( slot: number ): boolean;
   /** compound relation (round 14.10): the two nodes are in an
    * ancestor/descendant relation, or a === b names a parent — such
    * edges route around the outside regardless of curve style */
@@ -421,6 +425,25 @@ export class CurveIndex {
   }
 
   /** A hierarchy change moved the relation of this pair (round 14.10). */
+  /**
+   * A display-tier shown/hidden flip (round 22.3): the edge's bundle
+   * membership (or loop stagger) changes, so its pair re-derives —
+   * v3's display semantics, where siblings re-fan around a hidden
+   * member.  Visibility flips never come here, so `visibility: hidden`
+   * keeps every rank stable by construction.
+   */
+  onEdgeShownChanged( slot: number ): void {
+    const endpoints = this.host.endpoints();
+    const a = endpoints[ slot * 2 ];
+    const b = endpoints[ slot * 2 + 1 ];
+
+    // loops always re-stagger; non-loop pairs only matter once the
+    // bezier pair index exists (straight-only graphs stay free)
+    if( a === b || this.pairs != null || this.host.relation( a, b ) ){
+      this.invalidateRelation( a, b );
+    }
+  }
+
   invalidateRelation( a: number, b: number ): void {
     if( a !== b && this.pairs == null && this.host.relation( a, b ) ){
       this.buildPairIndex(); // the compound derivation needs bundle indices
@@ -708,22 +731,26 @@ export class CurveIndex {
 
     if( this.host.relation( hi, lo ) ){
       const endpoints = this.host.endpoints();
+      let i = 0; // hidden members leave the stagger (22.3, display tier)
 
-      for( let i = 0; i < members.length; i++ ){
-        const slot = members[ i ];
+      for( const slot of members ){
+        if( !this.host.edgeShown( slot ) ){ continue; }
 
-        this.writeCompoundDerived( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ], i );
+        this.writeCompoundDerived( slot, endpoints[ slot * 2 ], endpoints[ slot * 2 + 1 ], i++ );
       }
 
       return;
     }
 
-    // the bundle: bezier-styled members in slot order (v3 sorts by pool
-    // index; slot order is the v4 analogue)
+    // the bundle: *shown* bezier-styled members in slot order (v3 sorts
+    // by pool index; slot order is the v4 analogue).  Display-hidden
+    // members leave the bundle — siblings re-fan (22.3); invisible ones
+    // never reach this code, so their ranks hold.
     const bundle: number[] = [];
 
     for( const slot of members ){
-      if( slot < this.style.length && this.style[ slot ] === CURVE_STYLE_BEZIER ){
+      if( slot < this.style.length && this.style[ slot ] === CURVE_STYLE_BEZIER
+        && this.host.edgeShown( slot ) ){
         bundle.push( slot );
       }
     }
@@ -735,6 +762,10 @@ export class CurveIndex {
     const endpoints = this.host.endpoints();
 
     for( const slot of members ){
+      // hidden members take no part (22.3): their params freeze until a
+      // show() re-derives the pair
+      if( !this.host.edgeShown( slot ) ){ continue; }
+
       // blob-family and 12c straight-stream members own their params
       // (per-edge derivation) — a pair re-derivation must not clobber
       const st = slot < this.style.length ? this.style[ slot ] : CURVE_STYLE_STRAIGHT;
@@ -763,7 +794,8 @@ export class CurveIndex {
 
     if( list == null || list.length === 0 ){ return; }
 
-    const sorted = [ ...list ].sort( ( x, y ) => x - y );
+    // hidden loops leave the stagger (22.3, display tier)
+    const sorted = list.filter( slot => this.host.edgeShown( slot ) ).sort( ( x, y ) => x - y );
 
     // a self-loop on a compound parent routes around the outside (14.10)
     if( this.host.relation( node, node ) ){

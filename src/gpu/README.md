@@ -1953,6 +1953,39 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   whatever `text-events` says.  Recorded: the label box picks even
   when the label is LOD-faded at far zoom (`labelFadePx` is a
   renderer readability threshold, not a pick predicate).
+- **The display/visibility split** (round 22; third-sitting call —
+  "the distinction is useful"): two tiers.  **`show()`/`hide()` stays
+  the display tier** (structural element state): a hidden element
+  draws nothing, picks nothing and **takes no space** — excluded
+  from bb/fit (round 22 also closed a gap where the fit scan and
+  collection `boundingBox()` still included hidden elements) and
+  from compound auto-bounds — and, new in 22.3, a hidden
+  `bezier`-styled bundle member **leaves its bundle**: siblings
+  re-fan, and the per-node loop stagger and compound-loop index skip
+  it (v3's display semantics; a hidden *node* needs no bundle work —
+  every member of a pair shares both endpoints, so the whole bundle
+  disappears together, recorded).  **`visibility` is a style prop**
+  (`'visible' | 'hidden'`, both groups, constants or `case` mappers
+  — the v4 mechanism for per-element variation): paint-only — an
+  invisible element draws nothing (body, label, ghost, layers — the
+  one WGSL `SHOWN` mask covers every stream) and is not
+  pickable/hoverable/box-selectable, but **keeps its space** (bb,
+  fit, auto-bounds, layouts) **and its bundle ranks** (visibility
+  flips never touch the curve index, so sibling curves are
+  byte-stable).  Ancestor-gated for nodes (descendants of an
+  invisible parent are invisible — v3); an edge is invisible while
+  either endpoint is (the kernels' existing endpoint tests).
+  Mechanism: the style engine maintains `FLAG_SELF_INVISIBLE`; the
+  store derives **`FLAG_DRAWN`** beside effective `FLAG_VISIBLE` in
+  the same subtree walk, and the WGSL `SHOWN` constant reads
+  `ALIVE|DRAWN` — every cull kernel and the CPU pick honor
+  visibility with zero new bindings.  Getters: `visible()` = drawn
+  (edges fold endpoints — v3's rule, now implemented);
+  `takesUpSpace()` = the display tier alone (it can now differ from
+  `visible()`); `interactive()` rides `visible()`;
+  `style('visibility')` reads the element's own state.
+  `cy.elementsInBox()` stays geometric (invisible elements are
+  inside; the box gesture's interactive filter skips them).
 - **Interaction tuning options** (round 20.1, all v3 defaults, all
   ctor options with `multiClickDebounceTime`-style validated
   getter/setters read live by the pointer layer):

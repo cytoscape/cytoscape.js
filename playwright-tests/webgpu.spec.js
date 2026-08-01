@@ -2086,6 +2086,80 @@ test.describe( 'WebGPU renderer', () => {
     await expect.poll( () => page.evaluate( () => window.cy.$id( 'a' ).selected() ) ).toBe( true );
   } );
 
+  test( "visibility: 'hidden' blanks pixels but keeps space (round 22)", async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const style = vis => ( {
+      nodes: {
+        width: 60, height: 60, shape: 'rectangle', 'background-color': 'red',
+        label: 'GHOST', 'font-size': 16,
+        visibility: { case: [ { when: { data: 'kind', eq: 'ghosty' }, then: vis } ], else: 'visible' }
+      },
+      edges: { width: 8, 'line-color': 'red' }
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a', kind: 'ghosty' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', kind: 'plain' }, position: { x: 150, y: 0 } },
+        { data: { id: 'e', source: 'a', target: 'b' } },
+        { data: { id: 'far', kind: 'plain' }, position: { x: 400, y: 300 } }
+      ],
+      style: style( 'hidden' ),
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // the invisible node paints nothing (background white), and its
+    // incident edge (invisible endpoint) is gone too
+    const nodePx = await pixelAt( page, center.x, center.y );
+    const edgePx = await pixelAt( page, center.x + 75, center.y );
+
+    expect( nodePx[ 0 ] ).toBeGreaterThan( 200 ); // white, not red
+    expect( nodePx[ 1 ] ).toBeGreaterThan( 200 );
+    expect( edgePx[ 1 ] ).toBeGreaterThan( 200 );
+
+    // no label either (the glyph stream reads the same bit)
+    const labelDark = await darkPixelsInBand( page, center.x - 60, 120, center.y + 45 );
+
+    expect( labelDark ).toBe( 0 );
+
+    // but the space holds: fit() frames the invisible node too
+    await page.evaluate( () => window.cy.fit() );
+
+    const fitWithInvisible = await page.evaluate( () => window.cy.zoom() );
+
+    // a tap where the invisible node sits is a background tap
+    await page.evaluate( () => { window.cy.zoom( 1 ); } );
+    await centerPan( page );
+    await waitFrames( page );
+    await page.evaluate( () => {
+      window.__bgTaps = 0;
+      window.cy.on( 'tap', e => { if( e.target === window.cy ){ window.__bgTaps++; } } );
+    } );
+    await page.mouse.click( center.x, center.y );
+    await expect.poll( () => page.evaluate( () => window.__bgTaps ) ).toBe( 1 );
+
+    // restyle to visible: pixels return (pick/pixel state both flip live)
+    await page.evaluate( s => window.cy.style( s ), style( 'visible' ) );
+    await waitFrames( page );
+
+    const backPx = await pixelAt( page, center.x, center.y );
+
+    expect( backPx[ 0 ] ).toBeGreaterThan( 150 ); // red again
+    expect( backPx[ 1 ] ).toBeLessThan( 100 );
+
+    // display-tier hide() gives up the space: fit() zooms in further
+    await page.evaluate( () => { window.cy.$id( 'far' ).hide(); window.cy.fit(); } );
+
+    const fitWithoutFar = await page.evaluate( () => window.cy.zoom() );
+
+    expect( fitWithoutFar ).toBeGreaterThan( fitWithInvisible * 1.2 );
+  } );
+
   test( 'mapped opacity evaluates on the GPU: a data write repaints without a CPU restyle', async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );

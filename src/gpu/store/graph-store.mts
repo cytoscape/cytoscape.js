@@ -19,8 +19,8 @@ import {
   CURVE_SEGMENTS,
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
   FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
-  FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
-  FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT
+  FLAG_DRAWN, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
+  FLAG_SELF_INVISIBLE, FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import { NO_PARENT } from '../gpu-types.mjs';
@@ -218,6 +218,9 @@ export class GraphStore implements ModelView {
         this.setCurveParamsBlob( slot, kind, values, n, dev, box, endptPct ),
       idHash: ( slot ) => this.ids.hashAt( 'edges', slot ),
       schedule: () => this.dirty.touch(),
+      // display tier (round 22.3): hidden members leave their bundles
+      edgeShown: ( slot ) =>
+        ( ( this.edges.column( 'edge.flags' ) as Uint32Array )[ slot ] & FLAG_VISIBLE ) !== 0,
       // compound relation (14.10): ancestor/descendant endpoints, or a
       // self-loop on a parent — such edges route around the outside
       relation: ( a, b ) => a === b
@@ -1106,8 +1109,13 @@ export class GraphStore implements ModelView {
       const ref = refs[ i ];
 
       if( ref.group === 'edges' ){
-        // edges have no ancestors: effective = own state
+        // edges have no ancestors: effective = own state; DRAWN also
+        // folds the visibility prop (round 22)
         this.setFlag( 'edges', ref.slot, FLAG_VISIBLE, visible );
+        this.refreshEdgeDrawn( ref.slot );
+        // display-tier semantics (22.3): a hidden bezier-bundle member
+        // leaves its bundle — siblings re-fan
+        this.curves.onEdgeShownChanged( ref.slot );
       } else {
         this.refreshEffectiveVisibility( ref.slot );
       }
@@ -1117,10 +1125,65 @@ export class GraphStore implements ModelView {
   }
 
   /**
-   * Recompute effective FLAG_VISIBLE for a node subtree, top-down with
-   * pruning: a node whose effective bit is unchanged has consistent
-   * descendants (their inputs did not move).  A changed node marks its
-   * ancestor chain's auto-bounds stale (it entered or left the bb).
+   * The `visibility` style prop (round 22): paint-only invisibility.
+   * Sets the element's own FLAG_SELF_INVISIBLE and re-derives FLAG_DRAWN
+   * (over the subtree for nodes — descendants of an invisible parent are
+   * invisible, v3's rule).  Deliberately touches nothing else: space
+   * consumers (bb, auto-bounds) and the curve bundles read FLAG_VISIBLE,
+   * so an invisible element keeps its space and its bundle rank.
+   */
+  setInvisibility( group: GroupName, slot: number, invisible: boolean ): void {
+    const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+    const flags = this.table( group ).column( id ) as Uint32Array;
+    const cur = ( flags[ slot ] & FLAG_SELF_INVISIBLE ) !== 0;
+
+    if( cur === invisible ){ return; }
+
+    this.setFlag( group, slot, FLAG_SELF_INVISIBLE, invisible );
+
+    if( group === 'edges' ){
+      this.refreshEdgeDrawn( slot );
+    } else {
+      this.refreshEffectiveVisibility( slot );
+    }
+  }
+
+  /** Re-derive an edge's FLAG_DRAWN from its shown + invisible state.
+   * (Endpoint invisibility is folded by the consumers — the kernels'
+   * endpoint tests and the edge `visible()` read — not stored here.) */
+  private refreshEdgeDrawn( slot: number ): void {
+    const flags = this.edges.column( 'edge.flags' ) as Uint32Array;
+    const drawn = ( flags[ slot ] & FLAG_VISIBLE ) !== 0
+      && ( flags[ slot ] & FLAG_SELF_INVISIBLE ) === 0;
+
+    this.setFlag( 'edges', slot, FLAG_DRAWN, drawn );
+  }
+
+  /** Whether the element renders (round 22): the derived FLAG_DRAWN, with
+   * edges additionally folding their endpoints (v3's visible() rule). */
+  isDrawn( ref: Ref ): boolean {
+    if( ref.group === 'nodes' ){
+      return this.hasFlag( 'nodes', ref.slot, FLAG_DRAWN );
+    }
+
+    if( !this.hasFlag( 'edges', ref.slot, FLAG_DRAWN ) ){ return false; }
+
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const nodeFlags = this.nodes.column( 'node.flags' ) as Uint32Array;
+    const drawnMask = FLAG_ALIVE | FLAG_DRAWN;
+
+    return ( nodeFlags[ endpoints[ ref.slot * 2 ] ] & drawnMask ) === drawnMask
+      && ( nodeFlags[ endpoints[ ref.slot * 2 + 1 ] ] & drawnMask ) === drawnMask;
+  }
+
+  /**
+   * Recompute effective FLAG_VISIBLE — and, round 22, the derived
+   * FLAG_DRAWN (visible AND no `visibility: 'hidden'` on self or any
+   * ancestor) — for a node subtree, top-down with pruning: a node with
+   * both bits unchanged has consistent descendants (their inputs did not
+   * move).  A shown-bit change marks the ancestor chain's auto-bounds
+   * stale (it entered or left the bb); a drawn-only change is paint-only
+   * (invisible elements keep their space).
    */
   private refreshEffectiveVisibility( root: number ): void {
     const flags = this.nodes.column( 'node.flags' ) as Uint32Array;
@@ -1130,17 +1193,25 @@ export class GraphStore implements ModelView {
       const slot = stack.pop() as number;
       const p = this.hierarchy.parentOf( slot );
       const parentEff = p < 0 || ( flags[ p ] & FLAG_VISIBLE ) !== 0;
+      const parentDrawn = p < 0 || ( flags[ p ] & FLAG_DRAWN ) !== 0;
       const eff = parentEff
         && ( flags[ slot ] & FLAG_SELF_HIDDEN ) === 0
         && ( flags[ slot ] & FLAG_ALIVE ) !== 0;
+      const drawn = eff && parentDrawn
+        && ( flags[ slot ] & FLAG_SELF_INVISIBLE ) === 0;
       const cur = ( flags[ slot ] & FLAG_VISIBLE ) !== 0;
+      const curDrawn = ( flags[ slot ] & FLAG_DRAWN ) !== 0;
 
-      if( eff === cur ){ continue; }
+      if( eff === cur && drawn === curDrawn ){ continue; }
 
       flags[ slot ] = eff ? ( flags[ slot ] | FLAG_VISIBLE ) : ( flags[ slot ] & ~FLAG_VISIBLE );
+      flags[ slot ] = drawn ? ( flags[ slot ] | FLAG_DRAWN ) : ( flags[ slot ] & ~FLAG_DRAWN );
       this.dirty.mark( 'node.flags', slot );
-      this.geoEpoch++;
-      this.hierarchy.markGeo( slot );
+
+      if( eff !== cur ){ // the space tier moved: bounds re-derive
+        this.geoEpoch++;
+        this.hierarchy.markGeo( slot );
+      }
 
       for( const kid of this.hierarchy.childrenOf( slot ) ){ stack.push( kid ); }
     }
@@ -2569,8 +2640,14 @@ export class GraphStore implements ModelView {
     const anyLayers = this.overlays > 0 || this.underlays > 0;
     const bGeom = this.column( 'node.borderGeom' ) as Uint32Array;
     const anyOutlines = this.outlineSlackMax > 0;
+    // the space tier (round 22): display-hidden elements take no space
+    // (v3's rule — previously the fit scan included them, a gap this
+    // closed); `visibility: 'hidden'` ones keep theirs (VISIBLE, not DRAWN)
+    const nodeFlags = this.column( 'node.flags' ) as Uint32Array;
 
     this.forEachAlive( 'nodes', slot => {
+      if( ( nodeFlags[ slot ] & FLAG_VISIBLE ) === 0 ){ return; }
+
       const x = pos[ slot * 2 ];
       const y = pos[ slot * 2 + 1 ];
       let hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
@@ -2634,6 +2711,12 @@ export class GraphStore implements ModelView {
     const edgeFlags = this.column( 'edge.flags' ) as Uint32Array;
 
     this.forEachAlive( 'edges', slot => {
+      // the space tier (round 22): hidden edges — or edges with a hidden
+      // endpoint (the drawn-edge rule) — take no space
+      if( ( edgeFlags[ slot ] & FLAG_VISIBLE ) === 0
+        || ( nodeFlags[ endpoints[ slot * 2 ] ] & FLAG_VISIBLE ) === 0
+        || ( nodeFlags[ endpoints[ slot * 2 + 1 ] ] & FLAG_VISIBLE ) === 0 ){ return; }
+
       // curved edges: the conservative hull bound — the quadratic lies
       // within the endpoint/control hull, whose controls sit at most
       // the header deviation from the center segment (exact lazy bb is
@@ -2747,7 +2830,7 @@ export class GraphStore implements ModelView {
   ): void {
     const flagsId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
     const flags = this.table( group ).column( flagsId ) as Uint32Array;
-    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_SELECTABLE | FLAG_GRABBABLE
+    const defaults = FLAG_ALIVE | FLAG_VISIBLE | FLAG_DRAWN | FLAG_SELECTABLE | FLAG_GRABBABLE
       | ( group === 'edges' ? FLAG_PANNABLE : 0 ); // edges default pannable, as in v3
     const count = slots.length;
 
@@ -3097,7 +3180,7 @@ const rekeyMap = <V,>( map: Map<number, V>, remap: Uint32Array ): Map<number, V>
 const initialFlags = ( opts: AddElementOpts, pannableDefault: boolean ): number => {
   let flags = FLAG_ALIVE;
 
-  if( opts.visible !== false ){ flags |= FLAG_VISIBLE; }
+  if( opts.visible !== false ){ flags |= FLAG_VISIBLE | FLAG_DRAWN; }
   else { flags |= FLAG_SELF_HIDDEN; }
   if( opts.selectable !== false ){ flags |= FLAG_SELECTABLE; }
   if( opts.selected === true ){ flags |= FLAG_SELECTED; }

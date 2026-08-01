@@ -1,5 +1,5 @@
 import {
-  FLAG_ALIVE, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS, FLAG_VISIBLE,
+  FLAG_ALIVE, FLAG_DRAWN, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS,
   SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
@@ -23,7 +23,9 @@ matching the r32uint target's overwrite order.
 A uniform spatial grid is the follow-up if node counts grow ~10×.
 */
 
-const SHOWN = FLAG_ALIVE | FLAG_VISIBLE;
+// round 22: picking is a draw-tier consumer — `visibility: 'hidden'`
+// elements neither render nor pick, so the mask is ALIVE|DRAWN
+const SHOWN = FLAG_ALIVE | FLAG_DRAWN;
 
 /** device-px view state, mirroring writePickUniform */
 export interface CpuPickFrame {

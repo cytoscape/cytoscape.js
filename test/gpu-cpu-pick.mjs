@@ -68,7 +68,9 @@ describe('gpu/render: CPU node pick', function(){
     var a = addNode( 'a', 0, 0, 30, 30, SHAPE_CIRCLE );
     var b = addNode( 'b', 0, 0, 30, 30, SHAPE_CIRCLE );
 
-    store.setFlag( 'nodes', b, FLAG_VISIBLE, false );
+    // the real hide path: clears FLAG_VISIBLE and the derived FLAG_DRAWN
+    // (round 22 — the pick masks on ALIVE|DRAWN)
+    store.setVisibility( [ store.ref( 'nodes', b ) ], false );
 
     expect( pickNodeAt( store, frame, 0, 0 ) ).to.equal( a );
   });

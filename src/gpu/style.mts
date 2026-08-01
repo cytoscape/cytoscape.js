@@ -2,7 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
-  FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS,
+  FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_SELF_INVISIBLE, FLAG_TEXT_EVENTS,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
   SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
@@ -89,6 +89,8 @@ interface NodeComputed {
   eventsEnabled: boolean;
   /** text-events (round 20.3): true = the label box picks the node (FLAG_TEXT_EVENTS) */
   textEvents: boolean;
+  /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
+  invisible: boolean;
   /** literal label text ('' for none) when labelKey is null */
   label: string;
   /** `data(key)` mapper key ('id' reads the first-class id) */
@@ -207,6 +209,8 @@ interface EdgeComputed {
   lineColor: RGBA;
   /** events (round 20.2): false = pointer-transparent (FLAG_NO_EVENTS) */
   eventsEnabled: boolean;
+  /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
+  invisible: boolean;
   /** line-fill (C2): 0 solid, 1 linear-gradient, 2 radial-gradient */
   lineFill: number;
   lineGradientStopColors: RGBA[];
@@ -321,6 +325,7 @@ const NODE_DEFAULTS: NodeComputed = {
   opacity: 1,
   eventsEnabled: true, // v3's default: elements receive events
   textEvents: false, // v3's default: labels are pointer-transparent
+  invisible: false, // visibility: visible (round 22)
   borderWidth: 0,
   label: '', // no label
   labelKey: null,
@@ -404,6 +409,7 @@ const DATA_MAPPER = /^\s*data\s*\(\s*([\w-]+)\s*\)\s*$/;
 const EDGE_DEFAULTS: EdgeComputed = {
   lineColor: [ 153, 153, 153, 255 ], // #999
   eventsEnabled: true, // v3's default: elements receive events
+  invisible: false, // visibility: visible (round 22)
   lineFill: 0,
   lineGradientStopColors: [],
   lineGradientStopPositions: null,
@@ -545,7 +551,7 @@ const SHAPE_NAMES: Record<number, string> = {
 const NODE_READ: ReadonlySet<string> = new Set( [
   'background-color', 'border-color', 'border-width', 'width', 'height',
   'shape', 'shape-polygon-points', 'opacity', 'background-opacity', 'border-opacity', 'text-opacity',
-  'events', 'text-events',
+  'events', 'text-events', 'visibility',
   'corner-radius', 'border-position',
   'background-fill', 'background-gradient-stop-colors',
   'background-gradient-stop-positions', 'background-gradient-direction',
@@ -572,7 +578,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
   'line-color', 'line-style', 'width', 'opacity', 'line-opacity', 'text-opacity',
-  'events',
+  'events', 'visibility',
   'line-cap', 'line-dash-pattern', 'line-dash-offset',
   'line-outline-width', 'line-outline-color',
   'line-fill', 'line-gradient-stop-colors', 'line-gradient-stop-positions',
@@ -1647,6 +1653,13 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
     case 'events':
       computed.eventsEnabled = parseYesNo( prop, value );
       break;
+    case 'visibility':
+      if( value !== 'visible' && value !== 'hidden' ){
+        throw new Error( `The visibility '${String( value )}' must be 'visible' or 'hidden'` );
+      }
+
+      computed.invisible = value === 'hidden';
+      break;
     case 'text-events':
       computed.textEvents = parseYesNo( prop, value );
       break;
@@ -2511,6 +2524,13 @@ const MAPPABLE: Record<string, MappableChannel> = {
     parseEnum: v => v === 'yes' || v === true ? 1 : v === 'no' || v === false ? 0 : null,
     set: ( c, v ) => { c.eventsEnabled = ( v as number ) === 1; },
     default: () => 1
+  },
+  // visibility (round 22): paint-only invisibility, both groups
+  'visibility': {
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => v === 'hidden' ? 1 : v === 'visible' ? 0 : null,
+    set: ( c, v ) => { c.invisible = ( v as number ) === 1; },
+    default: () => 0
   },
   // text-events (round 20.3): the label box picks the node; node-only
   'text-events': {
@@ -3504,6 +3524,8 @@ export class StyleEngine {
         return store.hasFlag( ref.group, slot, FLAG_NO_EVENTS ) ? 'no' : 'yes';
       case 'text-events': // 20.3
         return store.hasFlag( 'nodes', slot, FLAG_TEXT_EVENTS ) ? 'yes' : 'no';
+      case 'visibility': // 22: stored truth is the element's own state
+        return store.hasFlag( ref.group, slot, FLAG_SELF_INVISIBLE ) ? 'hidden' : 'visible';
       case 'ghost':
         return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
       case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
@@ -4117,6 +4139,7 @@ export class StyleEngine {
       store.setPair( 'node.size', slot, computed.width, computed.height );
       store.setFlag( 'nodes', slot, FLAG_NO_EVENTS, !computed.eventsEnabled ); // 20.2
       store.setFlag( 'nodes', slot, FLAG_TEXT_EVENTS, computed.textEvents ); // 20.3
+      store.setInvisibility( 'nodes', slot, computed.invisible ); // 22
       store.setColor( 'node.fillColor', slot, ...foldA( computed.fillColor, computed.backgroundOpacity ) );
       store.setColor( 'node.borderColor', slot, ...foldA( computed.borderColor, computed.borderOpacity ) );
       store.setScalar( 'node.borderWidth', slot, computed.borderWidth );
@@ -4166,6 +4189,7 @@ export class StyleEngine {
         [ r, g, b, Math.round( a * opacity ) ];
 
       store.setFlag( 'edges', slot, FLAG_NO_EVENTS, !computed.eventsEnabled ); // 20.2
+      store.setInvisibility( 'edges', slot, computed.invisible ); // 22
       store.setColor( 'edge.lineColor', slot, ...foldE( computed.lineColor, computed.lineOpacity ) );
       // line-fill gradient (C2), stops folded by line-opacity
       store.setGradient( 'edge.gradient', slot,

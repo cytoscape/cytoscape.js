@@ -63,7 +63,7 @@ const FLAG_CURVED_BOX: u32 = 2048u;
 // in their own pre-edge stream, so the main node cull excludes them
 const FLAG_PARENT: u32 = 4096u;
 const FLAG_NO_EVENTS: u32 = 32768u; // 20.2: pointer-transparent (pick-mode culls only)
-const SHOWN: u32 = 3u; // ALIVE | VISIBLE
+const SHOWN: u32 = 262145u; // ALIVE | DRAWN (round 22: the draw tier — visibility folds in)
 
 const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9
 

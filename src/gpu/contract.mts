@@ -93,6 +93,24 @@ export const FLAG_NO_EVENTS = 32768;
  * never pickable in v4 (recorded), so the bit is meaningless on edges.
  */
 export const FLAG_TEXT_EVENTS = 65536;
+/**
+ * Style-managed own state (round 22): set while the element styles
+ * `visibility: 'hidden'` — paint-only invisibility.  Consumers never
+ * read this bit directly; the derived FLAG_DRAWN folds it (with the
+ * ancestor chain for nodes).
+ */
+export const FLAG_SELF_INVISIBLE = 131072;
+/**
+ * The derived *rendered* bit (round 22): effective shown
+ * (FLAG_VISIBLE) AND no `visibility: 'hidden'` on the element or, for
+ * nodes, any ancestor.  The draw tier — the WGSL SHOWN mask, the CPU
+ * pick and `visible()` — reads ALIVE|DRAWN, while space consumers
+ * (bb/fit scans, compound auto-bounds, box geometry) keep reading
+ * ALIVE|VISIBLE: an invisible element draws nothing but keeps its
+ * space.  Maintained by the store beside FLAG_VISIBLE in the same
+ * subtree walk.
+ */
+export const FLAG_DRAWN = 262144;
 
 /** The fixed model-px gap between a node's box and a top/bottom-row
  * label (see the D3 label-alignment record); shared by the StyleEngine's

@@ -1,7 +1,7 @@
 import {
   CURVE_MULTI, CURVE_STRAIGHT, CURVE_TAXI,
-  FLAG_ACTIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED, FLAG_NO_EVENTS,
-  FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
+  FLAG_ACTIVE, FLAG_ALIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED,
+  FLAG_NO_EVENTS, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
@@ -1459,9 +1459,11 @@ export class GpuCollection {
     return this.effectiveOpacity() === 0;
   }
 
-  /** Hidden elements are culled from drawing and picking, so only visible ones take up space. */
+  /** The space tier (round 22): shown elements occupy space — they join
+   * bb/fit and size their compound parents — even when `visibility:
+   * 'hidden'` keeps them from rendering.  display-tier hide() clears it. */
   takesUpSpace(): boolean {
-    return this.visible();
+    return this._hasBit( FLAG_VISIBLE );
   }
 
   /** Whether the element can be interacted with: visible and not
@@ -1571,7 +1573,23 @@ export class GpuCollection {
 
     store.flushDerived(); // parent auto-bounds + curved-edge params derive below
 
+    // the space tier (round 22): display-hidden elements take no space
+    // (v3's rule; the whole-graph fit scan already excluded them), while
+    // `visibility: 'hidden'` elements keep theirs — the mask is VISIBLE,
+    // not DRAWN.  An edge needs both endpoints shown (the drawn-edge rule).
+    const nodeFlags = store.column( 'node.flags' ) as Uint32Array;
+    const edgeFlags = store.column( 'edge.flags' ) as Uint32Array;
+    const shownMask = FLAG_ALIVE | FLAG_VISIBLE;
+    const shown = ( flags: Uint32Array, slot: number ): boolean =>
+      ( flags[ slot ] & shownMask ) === shownMask;
+
     for( const ref of this._liveRefs() ){
+      if( ref.group === 'nodes' && !shown( nodeFlags, ref.slot ) ){ continue; }
+
+      if( ref.group === 'edges' && !( shown( edgeFlags, ref.slot )
+        && shown( nodeFlags, endpoints[ ref.slot * 2 ] )
+        && shown( nodeFlags, endpoints[ ref.slot * 2 + 1 ] ) ) ){ continue; }
+
       if( ref.group === 'nodes' ){
         const slot = ref.slot;
         let hw = size[ slot * 2 ] / 2 + border[ slot ] / 2;
@@ -1989,18 +2007,22 @@ export class GpuCollection {
   // -- visibility --
 
   /**
-   * Whether the first element is shown (FLAG_VISIBLE).  The renderer's cull
-   * pass and CPU picking both mask on ALIVE|VISIBLE, so hiding removes an
-   * element from drawing and picking; edges of a hidden node also drop out.
+   * Whether the first element renders (round 22: the derived FLAG_DRAWN
+   * — shown AND not `visibility: 'hidden'` on self or, for nodes, any
+   * ancestor; edges additionally fold their endpoints, v3's rule).  The
+   * renderer's cull pass and CPU picking mask on the same bit, so an
+   * element that is not visible() neither draws nor picks.  For
+   * space-tier state (in the bb, sizing its compound parent) see
+   * `takesUpSpace()` — an invisible element keeps its space.
    */
   visible(): boolean {
-    return this._hasBit( FLAG_VISIBLE );
+    const ref = this._first();
+
+    return ref != null && this._store.isCurrent( ref ) && this._store.isDrawn( ref );
   }
 
   hidden(): boolean {
-    const ref = this._first();
-
-    return ref == null || !this._store.isCurrent( ref ) || !this._store.hasFlag( ref.group, ref.slot, FLAG_VISIBLE );
+    return !this.visible();
   }
 
   show(): this {

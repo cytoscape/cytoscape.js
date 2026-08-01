@@ -3,7 +3,7 @@ import {
   breakLines, layoutLabelBlock, estimateBlock,
   WRAP_NONE, WRAP_WRAP, WRAP_ELLIPSIS, OFLOW_WHITESPACE, OFLOW_ANYWHERE,
   JUSTIFY_LEFT, JUSTIFY_CENTER, JUSTIFY_RIGHT
-} from '../src/gpu/render/label-wrap.mjs';
+} from '../src/gpu/label-wrap.mjs';
 
 // round 16.1: the multiline shaping engine — line breaking (v3's
 // text-wrap semantics), justification, ellipsis and the block metrics —

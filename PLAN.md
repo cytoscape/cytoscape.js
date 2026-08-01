@@ -4150,9 +4150,28 @@ signed off 2026-08-01.
   in `test/gpu-label-wrap.mjs`.  2096 Node tests, typecheck + lint
   clean.  (The memo lands with the LabelLayer integration in 16.3,
   where the atlas-keyed cache lives.)
-- [ ] **16.2 Props + sidecar** — parse/readback/mappers for the five
-  props; laid dims + line data in the label sidecar; refresh gating
-  on shaping-input writes.
+- [x] **16.2 Props + sidecar** (2026-08-01) — the five wrap props
+  parse/read back/map with v3's keyword sets and defaults
+  (`text-wrap` none | wrap | ellipsis, `text-max-width` 9999,
+  `line-height` 1, `text-overflow-wrap` whitespace | anywhere,
+  `text-justification` auto | left | center | right); all five are
+  mapper-capable (the sidecar tier), both label groups.  The
+  sidecar entry stores the **resolved** justification (auto folds
+  against `text-halign` at write — v3's hanging-label rule; edges
+  center) while `style('text-justification')` reads back the
+  declared value incl. 'auto', as v3.  **Label dims live in the
+  store** (`labelDimsAt`/`setLabelDims`, per stream): `setLabel`
+  estimates immediately via `estimateBlock` — the headless bb
+  input — and the renderer's glyph build upgrades to exact laid
+  dims (never marking label-dirty — no rebuild loop); dims changes
+  bump the geometry epoch, since labels join bounding boxes in
+  16.4.  `label-wrap.mts` moved to the gpu root (a dual-consumer
+  module, the curve-geometry precedent).  One historical pin
+  updated: gpu-style's unsupported-prop example was `text-wrap`,
+  which now exists — it pins `background-blacken` (dropped by
+  decided design) instead.  Tests-first: 10 specs in
+  `test/gpu-text-wrap-props.mjs` red then green — 2106 Node tests,
+  typecheck + lint clean.
 - [ ] **16.3 Renderer** — multi-line emission for all four glyph
   streams, block-sized text boxes, autorotate-as-block;
   wrap/ellipsis/justification goldens (label tolerance; no v3 pixel

@@ -512,6 +512,17 @@ export interface LabelEntry {
    * the baseline angle stays within (-90°, 90°]).
    */
   rotate: boolean;
+  /** text-wrap (round 16.2): 0 none, 1 wrap, 2 ellipsis */
+  wrap: number;
+  /** text-max-width, model px (the wrap/truncation width) */
+  maxWidth: number;
+  /** line-height: the line advance as a multiple of the em */
+  lineHeight: number;
+  /** text-overflow-wrap: 0 whitespace (v3 default), 1 anywhere */
+  overflowWrap: number;
+  /** text-justification, resolved (auto folds against text-halign at
+   * style write — v3's rule): 0 left, 1 center, 2 right */
+  justification: number;
 }
 
 // -- the read surface the renderer consumes --

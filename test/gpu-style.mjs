@@ -225,8 +225,10 @@ describe('gpu/style', function(){
     });
 
     it('throws on unsupported properties', function(){
+      // background-blacken is dropped by decided design (the 2026-07-29
+      // triage); text-wrap — the old example here — landed in round 16.2
       expect(function(){
-        cy.style({ nodes: { 'text-wrap': 'wrap' } });
+        cy.style({ nodes: { 'background-blacken': 0.5 } });
       }).to.throw();
     });
 

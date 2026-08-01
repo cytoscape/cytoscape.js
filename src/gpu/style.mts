@@ -142,6 +142,16 @@ interface NodeComputed {
   textOpacity: number;
   /** text-transform (B6): 0 none, 1 uppercase, 2 lowercase */
   textTransform: number;
+  /** text-wrap (16.2): 0 none, 1 wrap, 2 ellipsis */
+  textWrap: number;
+  /** text-max-width, model px */
+  textMaxWidth: number;
+  /** line-height multiplier */
+  lineHeight: number;
+  /** text-overflow-wrap: 0 whitespace, 1 anywhere */
+  textOverflowWrap: number;
+  /** text-justification: -1 auto (resolves against halign at write) */
+  textJustification: number;
   /** text-background-shape (B6): 0 rectangle, 1 round-rectangle */
   textBgShape: number;
   /** text-border (B6): a band inward from the padded background box */
@@ -337,6 +347,11 @@ const NODE_DEFAULTS: NodeComputed = {
   borderOpacity: 1,
   textOpacity: 1,
   textTransform: 0, // none, as v3
+  textWrap: 0, // none, as v3
+  textMaxWidth: 9999, // as v3
+  lineHeight: 1, // as v3
+  textOverflowWrap: 0, // whitespace, as v3
+  textJustification: -1, // auto, as v3
   textBgShape: 0, // rectangle, as v3
   textBorderWidth: 0,
   textBorderColor: [ 0, 0, 0, 255 ], // '#000', as v3
@@ -540,6 +555,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'text-margin-x', 'text-margin-y', 'min-zoomed-font-size',
   'text-halign', 'text-valign',
   'text-transform', 'text-background-shape',
+  'text-wrap', 'text-max-width', 'line-height', 'text-overflow-wrap', 'text-justification',
   'text-border-width', 'text-border-color', 'text-border-opacity',
   'padding', 'padding-relative-to', 'min-width', 'min-height', 'compound-sizing-wrt-labels'
 ] );
@@ -563,6 +579,7 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'target-label', 'target-text-offset', 'target-text-margin-x',
   'target-text-margin-y', 'target-text-rotation',
   'text-transform', 'text-background-shape',
+  'text-wrap', 'text-max-width', 'line-height', 'text-overflow-wrap', 'text-justification',
   'text-border-width', 'text-border-color', 'text-border-opacity',
   'curve-style', 'control-point-step-size', 'control-point-weight', 'loop-direction', 'loop-sweep',
   'control-point-distances', 'control-point-weights',
@@ -733,6 +750,24 @@ const parseLayerRadius = ( prop: string, value: unknown ): number => {
 };
 
 const TEXT_TRANSFORMS: Record<string, number> = { 'none': 0, 'uppercase': 1, 'lowercase': 2 };
+// the wrap family (round 16.2) — v3's keyword sets
+const TEXT_WRAPS: Record<string, number> = { 'none': 0, 'wrap': 1, 'ellipsis': 2 };
+const TEXT_WRAP_NAMES = [ 'none', 'wrap', 'ellipsis' ];
+const OFLOW_WRAPS: Record<string, number> = { 'whitespace': 0, 'anywhere': 1 };
+const OFLOW_WRAP_NAMES = [ 'whitespace', 'anywhere' ];
+const JUSTIFICATIONS: Record<string, number> = { 'auto': -1, 'left': 0, 'center': 1, 'right': 2 };
+const JUSTIFICATION_NAMES: Record<number, string> = { [ -1 ]: 'auto', 0: 'left', 1: 'center', 2: 'right' };
+
+const parseKeyword = ( prop: string, table: Record<string, number> ) => ( value: unknown ): number => {
+  const id = table[ String( value ) ];
+
+  if( id == null ){
+    throw new Error(
+      `The ${prop} '${String( value )}' is unsupported; use one of: ${Object.keys( table ).join( ', ' )}` );
+  }
+
+  return id;
+};
 const TEXT_TRANSFORM_NAMES: Record<number, string> = { 0: 'none', 1: 'uppercase', 2: 'lowercase' };
 
 const parseTextTransform = ( value: unknown ): number => {
@@ -1500,6 +1535,21 @@ const applyProp = ( computed: Computed, prop: string, value: unknown ): void => 
       break;
     case 'text-transform':
       computed.textTransform = parseTextTransform( value );
+      break;
+    case 'text-wrap':
+      computed.textWrap = parseKeyword( prop, TEXT_WRAPS )( value );
+      break;
+    case 'text-max-width':
+      computed.textMaxWidth = parseNonNegative( prop, value );
+      break;
+    case 'line-height':
+      computed.lineHeight = parseNonNegative( prop, value );
+      break;
+    case 'text-overflow-wrap':
+      computed.textOverflowWrap = parseKeyword( prop, OFLOW_WRAPS )( value );
+      break;
+    case 'text-justification':
+      computed.textJustification = parseKeyword( prop, JUSTIFICATIONS )( value );
       break;
     case 'text-background-shape':
       computed.textBgShape = parseTextBgShape( value );
@@ -2287,6 +2337,36 @@ const MAPPABLE: Record<string, MappableChannel> = {
     parseEnum: v => TEXT_BG_SHAPES[ String( v ) ] ?? null,
     set: ( c, v ) => { c.textBgShape = v as number; },
     default: () => NODE_DEFAULTS.textBgShape
+  },
+  // the wrap family (16.2): scalar/enum forms are mapper-capable like
+  // every other label channel (CPU-evaluated, the sidecar tier)
+  'text-wrap': {
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => TEXT_WRAPS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textWrap = v as number; },
+    default: () => NODE_DEFAULTS.textWrap
+  },
+  'text-max-width': {
+    kind: 'number', groups: [ 'nodes', 'edges' ],
+    set: ( c, v ) => { c.textMaxWidth = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.textMaxWidth
+  },
+  'line-height': {
+    kind: 'number', groups: [ 'nodes', 'edges' ],
+    set: ( c, v ) => { c.lineHeight = Math.max( 0, v as number ); },
+    default: () => NODE_DEFAULTS.lineHeight
+  },
+  'text-overflow-wrap': {
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => OFLOW_WRAPS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textOverflowWrap = v as number; },
+    default: () => NODE_DEFAULTS.textOverflowWrap
+  },
+  'text-justification': {
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => JUSTIFICATIONS[ String( v ) ] ?? null,
+    set: ( c, v ) => { c.textJustification = v as number; },
+    default: () => NODE_DEFAULTS.textJustification
   },
   'text-border-width': {
     kind: 'number', groups: [ 'nodes', 'edges' ],
@@ -3462,6 +3542,32 @@ export class StyleEngine {
       }
       case 'text-transform':
         return TEXT_TRANSFORM_NAMES[ this.defFor( ref ).computed.textTransform ] ?? 'none';
+      case 'text-wrap': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return TEXT_WRAP_NAMES[ entry != null ? entry.wrap : this.defFor( ref ).computed.textWrap ] ?? 'none';
+      }
+      case 'text-max-width': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null ? entry.maxWidth : this.defFor( ref ).computed.textMaxWidth;
+      }
+      case 'line-height': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return entry != null ? entry.lineHeight : this.defFor( ref ).computed.lineHeight;
+      }
+      case 'text-overflow-wrap': {
+        const entry = store.labelAt( slot, ref.group );
+
+        return OFLOW_WRAP_NAMES[ entry != null
+          ? entry.overflowWrap
+          : this.defFor( ref ).computed.textOverflowWrap ] ?? 'whitespace';
+      }
+      case 'text-justification':
+        // the sidecar stores the *resolved* justification; the sheet's
+        // declared value (incl. 'auto') is what reads back, as v3
+        return JUSTIFICATION_NAMES[ this.defFor( ref ).computed.textJustification ] ?? 'auto';
       case 'text-background-shape': {
         const entry = store.labelAt( slot, ref.group );
 
@@ -4225,6 +4331,15 @@ export class StyleEngine {
       valignShift = ( nc.textValign - 2 ) * 0.5;
     }
 
+    // text-justification 'auto' resolves against text-halign (v3's
+    // rule: a label hanging left of its node right-justifies); edges
+    // always center under auto (halign is node-only)
+    const justification = computed.textJustification !== -1
+      ? computed.textJustification
+      : group === 'nodes'
+        ? ( nc.textHalign === 0 ? 2 : nc.textHalign === 2 ? 0 : 1 )
+        : 1;
+
     // the shared text channels (font, color, box, opacity — v3 reads
     // these unprefixed for all three edge labels)
     const shared = {
@@ -4237,7 +4352,13 @@ export class StyleEngine {
       bgPadding: computed.textBgPadding,
       bgShape: computed.textBgShape,
       bgBorderColor: fold( computed.textBorderColor, computed.textBorderOpacity ),
-      bgBorderWidth: computed.textBorderWidth
+      bgBorderWidth: computed.textBorderWidth,
+      // the wrap family (16.2)
+      wrap: computed.textWrap,
+      maxWidth: computed.textMaxWidth,
+      lineHeight: computed.lineHeight,
+      overflowWrap: computed.textOverflowWrap,
+      justification
     };
 
     store.setLabel( slot, text === '' ? null : {

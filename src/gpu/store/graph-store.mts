@@ -26,6 +26,7 @@ import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelVi
 import { NO_PARENT } from '../gpu-types.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
 import { ImageRegistry, IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../image-registry.mjs';
+import { estimateBlock } from '../label-wrap.mjs';
 
 /** floats per image record in the image pool (round 15.2) */
 export const IMG_STRIDE = 12;
@@ -155,6 +156,10 @@ export class GraphStore implements ModelView {
   private order: { nodes: OrderList; edges: OrderList };
   private labels: Record<LabelStream, ( LabelEntry | undefined )[]>;
   private labelDirty: Record<LabelStream, Set<number>>;
+  /** laid (or estimated) label block dims per stream (round 16.2) */
+  private labelDims: Record<LabelStream, Map<number, { w: number; h: number; exact: boolean }>> = {
+    nodes: new Map(), edges: new Map(), edgeSource: new Map(), edgeTarget: new Map()
+  };
   /** global label font-family (one font per glyph atlas); style-owned */
   labelFont: string;
   labelFontStyle: string;
@@ -2157,13 +2162,55 @@ export class GraphStore implements ModelView {
         prev.minZoomedFontSize === entry.minZoomedFontSize &&
         prev.anchorX === entry.anchorX && prev.halignShift === entry.halignShift &&
         prev.valignShift === entry.valignShift && prev.endOffset === entry.endOffset &&
-        prev.rotate === entry.rotate
+        prev.rotate === entry.rotate &&
+        prev.wrap === entry.wrap && prev.maxWidth === entry.maxWidth &&
+        prev.lineHeight === entry.lineHeight && prev.overflowWrap === entry.overflowWrap &&
+        prev.justification === entry.justification
       ){ return; }
 
       labels[ slot ] = entry;
     }
 
+    // label dims (16.2): estimate immediately — the headless bb term —
+    // and let the renderer's glyph build upgrade to exact laid dims.
+    // Labels participate in bounding boxes (16.4), so dims changes
+    // invalidate the bb memo like any geometry write.
+    if( entry == null ){
+      this.labelDims[ group ].delete( slot );
+    } else {
+      const est = estimateBlock( entry.text, entry.fontSize, {
+        wrap: entry.wrap,
+        maxWidth: entry.maxWidth,
+        overflowWrap: entry.overflowWrap,
+        justification: entry.justification,
+        lineHeight: entry.lineHeight
+      } );
+
+      this.labelDims[ group ].set( slot, { w: est.width, h: est.height, exact: false } );
+    }
+
+    this.geoEpoch++;
     this.labelDirty[ group ].add( slot );
+    this.dirty.touch();
+  }
+
+  /** A label's laid (or headless-estimated) block dims, model px. */
+  labelDimsAt( slot: number, group: LabelStream = 'nodes' ): { w: number; h: number; exact: boolean } | null {
+    return this.labelDims[ group ].get( slot ) ?? null;
+  }
+
+  /**
+   * The renderer's exact-dims feedback (16.2): the glyph build lays the
+   * block with real atlas advances and reports the true extent.  Never
+   * marks label-dirty (no rebuild loop) — only the bb consumers wake.
+   */
+  setLabelDims( slot: number, group: LabelStream, w: number, h: number ): void {
+    const prev = this.labelDims[ group ].get( slot );
+
+    if( prev != null && prev.exact && prev.w === w && prev.h === h ){ return; }
+
+    this.labelDims[ group ].set( slot, { w, h, exact: true } );
+    this.geoEpoch++;
     this.dirty.touch();
   }
 

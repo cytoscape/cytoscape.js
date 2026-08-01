@@ -15,8 +15,13 @@ geometry, dashes and casing, arrow scalars and mid-arrows, gradients,
 custom polygons, and the label prop families (fonts,
 min-zoomed-font-size, the alignment grid, source/target labels) —
 each with stored-truth readback and a golden and/or live v3
-pixel-parity pin (details per prop below and in PLAN.md).  The
-existing v3 core, collection and renderers are untouched.
+pixel-parity pin (details per prop below and in PLAN.md).  Round 14
+(2026-07-31) brought **compound nodes**: parent/child hierarchy with
+auto-sized parents materialized into the columnar model,
+parents-under-descendants draw order, ancestor-gated visibility and
+rendered effective opacity, ported event bubbling, a `parents` sheet
+group with structural query/case terms, and compound loop edges.
+The existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
@@ -1238,11 +1243,15 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 ## Known deviations from v3 (accepted for pass 1)
 
 - **Listener firing order**: one core emitter with ref/predicate-qualified
-  listeners; element-vs-core listeners fire in plain registration order, not
-  v3 bubble order.
-- **No z-index**: edges always draw under nodes; within a group draw order
-  is slot order (≈ insertion order, but a reused slot draws at the recycled
-  position).  A grabbed node does not pop above later-inserted nodes.
+  listeners.  Since round 14.5, compound bubbling gives v3's cross-phase
+  order (origin → ancestors → core, stopPropagation honored); the
+  remaining deviation is *within* a phase, where listeners fire in plain
+  registration order.
+- **No z-index**: compound parent bodies draw first (round 14.9, in
+  depth-asc/slot-asc order), then edges, then leaf nodes, then labels;
+  within a stream draw order is slot order (≈ insertion order, but a
+  reused slot draws at the recycled position).  A grabbed node does not
+  pop above later-inserted nodes.
   Escape hatch: an optional `array<u32>` index-indirection pass later.
 - **Float32 positions**: ~7 significant digits of precision (pure-memcpy
   uploads are worth the trade at this stage).
@@ -1356,9 +1365,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   fringe — output is pixel-identical), and edges depth-test against it so
   fragments under opaque nodes skip blending.  Depth values come from a
   per-element **z-rank** (two ranks today: edges far, nodes near), which
-  is the same mechanism a future `z-index`/compound pass would use — more
-  ranks, more batches; content ranked above merely loses the occlusion
-  benefit, never correctness.  Nodes that can't occlude (translucent or
+  is the same mechanism a future `z-index` pass would use — more ranks,
+  more batches; content ranked above merely loses the occlusion benefit,
+  never correctness.  The round-14 compound split took the batch route
+  instead of a rank: parent bodies draw in their own pre-edge stream and
+  are excluded from the prepass (they must not occlude the edges and
+  children drawn over them).  Nodes that can't occlude (translucent or
   < 4 px) collapse out of the prepass so it costs ~nothing at far zoom.
 - **Adaptive render scale** (`renderScaleMin`/`renderScaleMax`, defaults
   0.5/1): the renderer moves its resolution in quarter steps within the

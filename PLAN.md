@@ -158,8 +158,8 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
 
 ## Known deviations (accepted; detailed in src/gpu/README.md)
 
-- Element/core listener firing order is registration order (not v3 bubble order).
-- No z-index; edges under nodes under labels; within a group, slot order (reused slots draw at the recycled position).
+- Element/core listener firing order is registration order *within a bubbling phase* (compound bubbling landed round 14.5 with v3's cross-phase order).
+- No z-index; compound parent bodies (round 14.9, depth order) under edges under leaf nodes under labels; within a stream, slot order (reused slots draw at the recycled position).
 - Float32 position precision (~7 significant digits).
 - Pan-vs-grab uses the ≤2-frame-stale resolved pick.
 - `cy.elements()` returns nodes then edges, not mixed insertion order.
@@ -1681,8 +1681,9 @@ object-sheet decision — worth recording explicitly);
 selection-dependent restyling (`:selected` blocks → shader accent
 ring); `restore`/`clone`/`copy` and `cy.json()` import; custom easing
 functions and `spring(tension, friction)` (→ `spring(bounce)`); event
-namespaces; v3 bubble order (registration order instead — compound
-bubbling re-opens with compounds); per-element `font-family`;
+namespaces; v3 bubble order *within a phase* (registration order
+instead; compound bubbling itself landed round 14.5 with v3's
+cross-phase order); per-element `font-family`;
 viewport-fixed labels; `renderTo`; `cy.notify`/`notifications`/
 `noNotifications` (dirty-driven renderer).  Added by the 2026-07-29
 triage (below): the canvas-era perf degradation options

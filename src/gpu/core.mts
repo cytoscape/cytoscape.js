@@ -879,12 +879,20 @@ export class GpuCore {
   animation( opts: AnimateOptions ): AnimationHandle {
     const ani = new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) );
 
-    return {
+    const handle: AnimationHandle = {
       play: () => { this._animations.start( ani ); return ani.promise(); },
       stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
       promise: () => ani.promise(),
-      playing: () => ani.running
+      playing: () => ani.running && !ani.paused,
+      // round 24.3: the controls (progress is read-only — no scrubbing)
+      pause: () => { this._animations.pauseAni( ani ); return handle; },
+      resume: () => { this._animations.resumeAni( ani ); return handle; },
+      reverse: () => { this._animations.reverseAni( ani ); return handle; },
+      progress: () => ani.progress,
+      paused: () => ani.paused
     };
+
+    return handle;
   }
 
   /** Resolve `fit`/`center` targets to concrete pan/zoom at creation time, as v3 does. */

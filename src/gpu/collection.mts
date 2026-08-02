@@ -839,12 +839,20 @@ export class GpuCollection {
     const cy = this._cy;
     const ani = new Animation( cy._store, null, this._liveRefs(), false, opts, cy._styleEngine );
 
-    return {
+    const handle: AnimationHandle = {
       play: () => { cy._animations.start( ani ); return ani.promise(); },
       stop: ( jumpToEnd = false ) => ani.stop( jumpToEnd ),
       promise: () => ani.promise(),
-      playing: () => ani.running
+      playing: () => ani.running && !ani.paused,
+      // round 24.3: the controls (progress is read-only — no scrubbing)
+      pause: () => { cy._animations.pauseAni( ani ); return handle; },
+      resume: () => { cy._animations.resumeAni( ani ); return handle; },
+      reverse: () => { cy._animations.reverseAni( ani ); return handle; },
+      progress: () => ani.progress,
+      paused: () => ani.paused
     };
+
+    return handle;
   }
 
   /** A no-op tween of `duration` ms — a timed pause that touches no

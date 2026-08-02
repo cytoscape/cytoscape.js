@@ -5658,13 +5658,33 @@ the `pause`/`resume`/`reverse` control set.
   domain-contract browser spec folded into the Node spec + the
   benchmark's explicit-domain group (recorded).  2237 Node tests,
   153/153 Playwright (2 new), typecheck + lint clean.
-- [ ] **24.3 Controls** — `pause()`/`resume()`/`reverse()` on the
-  Animation handle (and collection-level forms), timeline semantics:
-  pause freezes elapsed (promise stays pending), resume continues,
-  reverse swaps from/to remapping elapsed so the current value is
-  continuous; GPU lease settle-on-pause / re-acquire-on-resume;
-  interaction with eviction (a paused animation still owns its
-  channels and is evictable).  Node + Playwright specs.
+- [x] **24.3 Controls** (2026-08-01) — `pause()`/`resume()`/
+  `reverse()` on the Animation handle (element and viewport alike),
+  plus read-only `progress()` and `paused()` introspection
+  (`progress` is a getter only — no scrubbing; `apply`/`applying`
+  stay out).  Timeline semantics: pause freezes elapsed in place
+  (values hold, the promise stays pending, `playing()` reads false)
+  and resume shifts the start clock by the paused span; reverse
+  swaps every write's from/to halves (and the viewport targets) and
+  remaps elapsed to 1 − t, so the current value is continuous —
+  exactly for point-symmetric easings (linear included; v3's
+  start/end swap carried the same rule) — and reversing inside the
+  delay completes at the captured start state.  The controls read a
+  `lastNow` clock the manager stamps every advance, so they stay
+  deterministic under test-driven ticks.  GPU lease: pause and
+  reverse settle a GPU-driven animation's exact current value onto
+  the CPU and release the device (`applyNow` — a settle that does
+  not finish); resume/the next advance re-registers through the
+  normal eligibility path with the shifted clock (pinned: the
+  re-registered start keeps 160 − start = elapsed, and a reversed
+  re-registration uploads the swapped from/to).  A paused animation
+  still owns its channels — the round-21 eviction stops it like any
+  running one (pinned).  Tests-first: 11 Node specs
+  (`test/gpu-animation-controls.mjs`, red then green) — timeline
+  shift, pending promise, stop-on-paused, eviction-of-paused,
+  reverse continuity + delay edge, progress states, both mock-sink
+  lease specs, and the viewport.  2248 Node tests, 63 module tests,
+  153/153 Playwright, typecheck + lint clean.
 - [ ] **24.4 Docs closing sweep** — README section (+ the design-
   decisions bullet updated from "open follow-up" to landed), the
   gap-ledger item 9 closed, the geometry-tween follow-up round

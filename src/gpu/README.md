@@ -634,10 +634,21 @@ each is deliberate, not a pass-1 deferral:
   (`onRender` + promises observe progress).  The
   `pause`/`progress`/`reverse` controls and style transitions were
   logged open at the sitting; the fourth sitting (2026-08-01) scoped
-  both as round 24 — **style transitions landed as 24.1** (the
-  bullet below) and the `pause`/`resume`/`reverse` controls are
-  round 24.3 (`progress` stays a getter; `apply`/`applying` stay
-  out).
+  both as round 24 — **style transitions landed as 24.1/24.2** (the
+  bullet below) and **the controls landed as 24.3**:
+  `pause()`/`resume()`/`reverse()` on the Animation handle (element
+  and viewport), plus read-only `progress()`/`paused()` (`progress`
+  is a getter only — no scrubbing; `apply`/`applying` stay out).
+  Pause freezes elapsed in place (values hold, the promise stays
+  pending) and resume excludes the paused span from the timeline;
+  reverse swaps the tween's ends remapping elapsed to 1 − t — value-
+  continuous exactly for point-symmetric easings (linear included),
+  v3's start/end-swap rule — and reversing inside the delay
+  completes at the captured start state.  A paused GPU tween settles
+  its lease (the CPU holds the exact value reached) and re-acquires
+  on resume with the shifted clock; a paused animation still owns
+  its channels, so the round-21 eviction stops it like any running
+  one.
 - **Style transitions (round 24.1, landed 2026-08-01).**  The
   `transition-property`/`-duration`/`-delay`/`-timing-function`
   family, per sheet group (`nodes`/`edges`/`parents` — the parents

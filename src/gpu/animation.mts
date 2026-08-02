@@ -110,6 +110,16 @@ export interface AnimationHandle {
   stop( jumpToEnd?: boolean ): void;
   promise(): Promise<void>;
   playing(): boolean;
+  /** Round 24.3: freeze in place — values hold, the promise stays
+   * pending, and the paused span is excluded from the timeline. */
+  pause(): AnimationHandle;
+  resume(): AnimationHandle;
+  /** Swap the tween's ends, remapping elapsed so the current value is
+   * continuous (exactly for point-symmetric easings — linear included). */
+  reverse(): AnimationHandle;
+  /** Elapsed fraction of the duration (read-only — no scrubbing). */
+  progress(): number;
+  paused(): boolean;
 }
 
 /** Options accepted by animate()/animation(). */
@@ -293,6 +303,13 @@ export class Animation {
   /** round 24.1: a transition built from pre-resolved ChannelWrites —
    * capture is a no-op and eligibility/columns derive from the writes */
   private preset = false;
+  /** round 24.3: paused state — values hold, the promise stays pending */
+  private _paused = false;
+  private pausedAt: number | null = null;
+  /** the shared clock as of the last manager tick — what pause/resume/
+   * reverse/progress read, so the controls stay deterministic under
+   * test-driven ticks (the manager stamps it every advance) */
+  lastNow = 0;
 
   /**
    * A transition animation (round 24.1): the style engine diffed stored
@@ -420,7 +437,11 @@ export class Animation {
 
   /** Advance to `now` (ms).  Returns true when finished this tick. */
   tick( now: number ): boolean {
+    this.lastNow = now;
+
     if( this._done ){ return true; }
+
+    if( this._paused ){ return false; } // frozen — the clock still stamps lastNow
 
     if( this.startTime == null ){ this.startTime = now + this.delay; }
 
@@ -449,6 +470,111 @@ export class Animation {
     }
 
     this.finish();
+  }
+
+  // -- controls (round 24.3) --
+
+  get paused(): boolean { return this._paused; }
+
+  /** Elapsed fraction of the duration (0 before start, 1 when done;
+   * frozen at the pause point while paused).  Read-only — no scrubbing. */
+  get progress(): number {
+    if( this._done ){ return 1; }
+    if( this.startTime == null ){ return 0; }
+    if( this.duration === 0 ){ return this.started ? 1 : 0; }
+
+    const basis = this._paused && this.pausedAt != null ? this.pausedAt : this.lastNow;
+
+    return clamp01( ( basis - this.startTime ) / this.duration );
+  }
+
+  /** Freeze in place at the shared clock's last tick. */
+  pause( now: number = this.lastNow ): void {
+    if( this._done || this._paused ){ return; }
+
+    this._paused = true;
+    this.pausedAt = now;
+  }
+
+  /** Continue, excluding the paused span from the timeline. */
+  resume( now: number = this.lastNow ): void {
+    if( !this._paused ){ return; }
+
+    if( this.startTime != null && this.pausedAt != null ){
+      this.startTime += now - this.pausedAt;
+    }
+
+    this._paused = false;
+    this.pausedAt = null;
+  }
+
+  /**
+   * Swap the tween's ends and remap elapsed to `1 − t`, so the current
+   * value is continuous (exactly for point-symmetric easings — linear
+   * included; v3's start/end swap carried the same rule).  Reversing
+   * inside the delay completes at the captured start state.  Works
+   * paused (the frozen value is the pivot) — resume plays backward.
+   */
+  reverse(): void {
+    if( this._done ){ return; }
+
+    const nowMs = this._paused && this.pausedAt != null ? this.pausedAt : this.lastNow;
+
+    if( this.startTime == null ){ this.startTime = nowMs + this.delay; }
+
+    if( !this.started ){ this.capture(); this.started = true; }
+
+    const t = this.duration === 0 ? 1 : clamp01( ( nowMs - this.startTime ) / this.duration );
+
+    this.swapEnds();
+    this.startTime = nowMs - ( 1 - t ) * this.duration;
+  }
+
+  /** Write the value reached at `now` onto the CPU columns without
+   * finishing — how a GPU-driven animation leaves the device for a
+   * pause or reverse (the caller unregisters the batch). */
+  applyNow( now: number = this.lastNow ): void {
+    if( this._done ){ return; }
+
+    if( !this.started ){ this.capture(); this.started = true; }
+
+    const t = this.duration === 0 ? 1 : clamp01( ( now - ( this.startTime ?? now ) ) / this.duration );
+
+    this.apply( this.easing( t ) );
+  }
+
+  /** Swap every write's from/to halves (and the viewport targets). */
+  private swapEnds(): void {
+    for( const w of this.writes ){
+      const stride = STRIDE[ w.kind ];
+      const half = stride / 2;
+      const data = w.data;
+
+      for( let i = 0; i < w.refs.length; i++ ){
+        const base = i * stride;
+
+        for( let j = 0; j < half; j++ ){
+          const a = data[ base + j ];
+
+          data[ base + j ] = data[ base + half + j ];
+          data[ base + half + j ] = a;
+        }
+      }
+    }
+
+    if( this.pan != null && this.fromPan != null ){
+      const p = this.pan;
+
+      this.pan = this.fromPan;
+      this.fromPan = p;
+    }
+
+    if( this.zoom != null && this.fromZoom != null ){
+      const z = this.zoom;
+
+      this.zoom = this.fromZoom;
+      this.fromZoom = z;
+    }
   }
 
   /**
@@ -969,6 +1095,55 @@ export class AnimationManager {
     this.viewportRunning.length = 0;
   }
 
+  // -- controls (round 24.3) --
+
+  /**
+   * Pause one animation.  A GPU-driven one settles its lease first —
+   * the device is released and the CPU columns hold the exact value it
+   * reached — so the freeze is readable and the mirror resumes its
+   * uploads; resume re-acquires through the normal advance path.
+   */
+  pauseAni( ani: Animation ): void {
+    if( ani.done || ani.paused ){ return; }
+
+    if( ani.gpuId != null ){
+      this.sink?.unregister( ani.gpuId );
+      ani.gpuId = null;
+      ani.gpuDriven = false;
+      ani.applyNow();
+    }
+
+    ani.pause();
+  }
+
+  resumeAni( ani: Animation ): void {
+    if( ani.done || !ani.paused ){ return; }
+
+    ani.resume();
+
+    if( this.driven ){ this.onTick(); } else { this.schedule(); }
+  }
+
+  /** Reverse one animation in place.  A GPU-driven one leaves the
+   * device at its current value first; the next advance re-registers
+   * the swapped writes on the remapped clock. */
+  reverseAni( ani: Animation ): void {
+    if( ani.done ){ return; }
+
+    if( ani.gpuId != null ){
+      this.sink?.unregister( ani.gpuId );
+      ani.gpuId = null;
+      ani.gpuDriven = false;
+      ani.applyNow();
+    }
+
+    ani.reverse();
+
+    if( !ani.paused ){
+      if( this.driven ){ this.onTick(); } else { this.schedule(); }
+    }
+  }
+
   /**
    * Advance every running animation to `now`; drop finished ones.
    * Position and paint animations route to the GPU sink when one is
@@ -1003,7 +1178,11 @@ export class AnimationManager {
 
   /** Advance one animation; returns true when it is finished. */
   private advanceOne( ani: Animation, now: number ): boolean {
+    ani.lastNow = now; // the controls' clock (pause/resume/reverse/progress)
+
     if( ani.done ){ return true; } // completed (possibly via another queue, or stopped)
+
+    if( ani.paused ){ return false; } // frozen — and never (re-)registered on the GPU
 
     if( this.sink != null && ani.gpuEligible ){
       if( ani.gpuId == null ){

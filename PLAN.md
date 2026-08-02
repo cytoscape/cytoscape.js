@@ -1945,7 +1945,8 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    `pause`/`resume`/`reverse` land (`progress` stays a getter,
    `apply`/`applying` stay out).  Round 24 landed in full the same
    day — item closed; the geometry tween (size-channel transitions
-   + animation, one benchmarked round) is the successor follow-up.**
+   + animation, one benchmarked round) was the successor follow-up,
+   built as round 25 (2026-08-02) — also closed.**
 10. **Extension system** — `cytoscape.use()` and
     `cytoscape(type, name, registrant)` registration for
     layout/renderer/core/collection extensions.  v4 has none; this
@@ -2045,8 +2046,8 @@ display/visibility split, node charts) — see the plans and records
 below.  What remains of the needs-a-call list: ~~the animation
 controls/transitions follow-up~~ (item 9's open half — **scoped as
 round 24 by the fourth design sitting and landed in full the same
-day, 2026-08-01**; the geometry-tween round it logs is the new open
-follow-up), the small parity remnants noted inline in items 4–6,
+day, 2026-08-01**; ~~the geometry-tween round it logged~~ landed as
+round 25, 2026-08-02), the small parity remnants noted inline in items 4–6,
 and items 8's deferred overlap box mode, 10's core/collection
 extension points and 12's odds and ends.
 
@@ -5987,7 +5988,19 @@ commit(s)):
   mid-state is *polled*, not slept for — suite load shifts the
   clock).  87/87 webgpu Playwright (2 new), run twice for
   stability.
-- [ ] **25.7 Closing docs sweep** — README + PLAN true-up, the
-  gap-ledger sequencing tail moves past the geometry-tween round,
-  full verification (Node, modules, Playwright, lint,
-  typecheck).
+- [x] **25.7 Closing docs sweep** (2026-08-02) — swept both docs
+  for the round's vocabulary and staleness markers: the README
+  header carries round 25, the follow-up hooks close the
+  geometry-tween item (the parity remnants stay the open tail),
+  the two-tiers bullet notes the round kept the geometry-stays-CPU
+  rule, the round-16 label-cost line qualifies "never per frame"
+  (per frame exactly under a wrapped font-size tween, recorded),
+  and the gap ledger's two live sequencing references move past
+  the round.  Full verification: typecheck, 2280 Node tests, 63
+  module tests, lint, and 173/173 Playwright across the
+  chromium + webgpu + webgpu-visual projects (goldens untouched;
+  the webkit/webgpu-webkit projects could not launch on this
+  box — `browserType.launch` fails on missing host system
+  libraries, an environment gap needing sudo, not a regression;
+  re-verify on a webkit-capable machine when convenient).
+  **Round 25 is complete.**

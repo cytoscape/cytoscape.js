@@ -52,7 +52,14 @@ config per sheet group — restyles tween on stored truth with
 latest-wins eviction, GPU-offloaded when all-paint, under the
 auto-vs-explicit mapper-domain performance contract) and the
 **animation controls** (`pause`/`resume`/`reverse` + read-only
-`progress`/`paused`); the geometry tween is the logged follow-up.
+`progress`/`paused`).  Round 25 (2026-08-02) built that record's
+logged follow-up, the **geometry tweens**: node `width`/`height`,
+edge `width` (its style-write-baked derivatives riding along),
+compound `padding` and `font-size` animate and transition on the
+CPU path — never leased, never stale (`width()`/`bb()`/pick read
+the mid-flight value) — with the per-tick invalidation cascade run
+by the store's write funnel (label re-anchor, auto-bounds, the
+ride lanes) and priced by a dedicated benchmark sweep.
 The existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
@@ -334,8 +341,10 @@ Landed 2026-08-01, per the PLAN.md round-16 plan:
   never under); alignment shifts and text boxes use block metrics
   (advance width × line-stacked height), not ink extents.
 - Costs (Node sweep, `benchmark/gpu/labels.mjs`): wrapped-label
-  builds ~5 µs/label at 100k (write-driven, never per frame); the
-  whole-graph bb scan pays ~0.1 µs/label for its label terms.
+  builds ~5 µs/label at 100k (write-driven — per frame only under a
+  round-25 font-size tween on a *wrapped* label, the recorded
+  expensive configuration; wrap-none tweens ride the dims fast path);
+  the whole-graph bb scan pays ~0.1 µs/label for its label terms.
 
 ## The force layout (round 18)
 
@@ -751,10 +760,12 @@ each is deliberate, not a pass-1 deferral:
     cull pass after `mapperRuntime.encode()`**: dispatches in one pass
     observe prior dispatches' writes, so a live tween wins the channel
     over the mapper eval kernel.  *Geometry* (`width`/`height`,
-    `border-width`, `edge.width`) stays CPU: it is read by cull, CPU pick,
-    and every columnar scan (`width()`/`height()`, `boundingBox`/fit, box
-    select), so a GPU-owned size tween reopens the store→style layering
-    seam R8.5 flagged and belongs with that geometry work.  Eligibility is
+    `border-width`, `edge.width`, padding, font-size) stays CPU: it is
+    read by cull, CPU pick, and every columnar scan
+    (`width()`/`height()`, `boundingBox`/fit, box select), so a
+    GPU-owned size tween would reopen the store→style layering seam
+    R8.5 flagged — round 25 built the geometry tweens and kept this
+    rule (the geometry-tweens bullet below).  Eligibility is
     **all-or-nothing per animation** (`gpuEligible`), so a column is never
     half-owned.  Easings never affect eligibility: every accepted form
     compiles to something both executors can run.
@@ -2408,8 +2419,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   bullets above): transitions landed with the stored-truth trigger
   diff + GPU offload, and the handle carries
   `pause`/`resume`/`reverse` + read-only `progress`/`paused`.
-  Still open: the **geometry-tween round** (size-channel
-  transitions + animation — the per-tick invalidation cascade,
-  built once with benchmarks), and the small parity remnants
-  (compound arrow shapes, per-element numeric `text-rotation`, the
-  unported shape keywords, `border-style`/`outline-style`).
+  ~~The geometry-tween round~~ — **closed by round 25**
+  (2026-08-02, the geometry-tweens bullet above): node
+  width/height, edge width (+ ride lanes), compound padding and
+  font-size tween through the animation system and
+  `transition-property`, CPU-canonical per tick with the
+  invalidation cascade in the store's write funnel, benchmarked.
+  Still open: the small parity remnants (compound arrow shapes,
+  per-element numeric `text-rotation`, the unported shape
+  keywords, `border-style`/`outline-style`).

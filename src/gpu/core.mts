@@ -158,6 +158,13 @@ export class GpuCore {
       this._styleEngine.refreshMapped( 'nodes', [ slot ], [ '::parent', '::child' ] );
     };
     this._animations = new AnimationManager( () => this._afterAnimationTick() );
+
+    // round 24.1: the engine's transition diffs spawn preset bulk tweens
+    // through the manager — the round-21 channel eviction gives uniform
+    // latest-wins between transitions and user animations
+    this._styleEngine.transitionSink = ( refs, writes, opts ) => {
+      this._animations.start( Animation.preset( this._store, refs, writes, opts ) );
+    };
     this._renderer = null;
     this._pointer = null;
     this._attachFn = null;
@@ -347,6 +354,7 @@ export class GpuCore {
     }
 
     this._animations.onCompacted( this._store );
+    this._styleEngine.onCompacted(); // refresh the styled-generation marks (24.1)
   }
 
   /** Move the interned singleton handles to their elements' new slots

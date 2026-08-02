@@ -5585,18 +5585,49 @@ the `pause`/`resume`/`reverse` control set.
 
 **Pass split** (tests-first; docs in-commit):
 
-- [ ] **24.1 Transition props + CPU path** — the four props parse/
-  validate/read back per sheet group (`nodes`/`edges`/`parents`;
-  constants-only — transition config is not per-element-mappable,
-  recorded); trigger detection as a per-channel resolved-value diff
-  at the style-apply seams (sheet re-application, the mapper refresh
-  paths — case/structural included — and the batch flush), spawning
-  bulk ChannelWrite tweens through the round-21 manager (eviction
-  falls out); instant-on-add; discrete/geometry props snap at start;
-  `transition-property` validates names against the prop tables
-  (unknown throws).  Node specs: trigger matrix (sheet swap, case
-  flip, scale move, extent shift, add, batch net-change), eviction
-  both directions, snap tiers, readback.
+- [x] **24.1 Transition props + CPU path** (2026-08-01) — landed as
+  planned, with the trigger detection shaped as **one mechanism**:
+  the four props split out of each sheet block at compile
+  (per-group `TransitionSpec`; the parents def merges
+  nodes-then-parents under v3's order precedence; constants-only —
+  mapper values throw; `transition-property` accepts arrays or
+  space-separated strings and validates every name against the
+  group's read set, so unknown or wrong-group names throw while
+  discrete/geometry names are accepted and snap), and a **capture
+  wrap around the one channel funnel** (`write()`): any apply pass
+  under a configured spec (sheet re-application, the mapper refresh
+  paths — case flips, scale moves, auto-extent escalation,
+  structural `::parent` refreshes, the leaf↔parent flip restyle —
+  and the batch flush) snapshots the tweenable columns per slot
+  before the write, diffs **stored truth** after it, restores the
+  old value (the store holds the pre-restyle state until the first
+  post-delay tick — CSS's delay rule, and no target flash), and
+  packs the accumulated diffs into **bulk per-column ChannelWrites**
+  wrapped in one preset Animation started through the round-21
+  manager — so latest-wins eviction between transitions and user
+  animations falls out in both directions with zero new eviction
+  code.  Instant-on-add is a per-slot **styled-generation mark**
+  (gen + 1; recycled slots fail on their fresh generation; marks
+  refresh on slot compaction), which also makes the batch flush's
+  applyAll net-change-correct with no call-site special-casing.
+  Diffing stored truth gives the fold semantics for free, recorded:
+  channel-opacity folds ride the color they fold into, and an
+  edge-`opacity` transition carries the pre-folded arrow alphas
+  along as ride-along color writes (only when the opacity itself
+  moved).  Tweenable set = the animation system's channels
+  (opacity both groups, background/border/line colors,
+  border-width); preset animations derive `touchedColumns`/
+  `gpuEligible` from their writes (all-paint may offload — 24.2's
+  hook; border-width stays CPU).  Tests-first: 23 Node specs
+  (`test/gpu-transitions.mjs`, red then green) — the full trigger
+  matrix (sheet swap, add, case flip, scale move, auto-extent
+  shift, explicit-domain confinement, batch net-change + batch-add,
+  parent flip, show/hide non-trigger, zero-duration), snap tiers,
+  eviction both directions, delay, edge line-color, the arrow
+  ride, and prop parse/validate/readback.  2237 Node tests,
+  63 module tests, 151/151 Playwright (goldens untouched — rendered
+  scenes without transitions are pixel-identical under the capture
+  wrap), typecheck + lint clean.
 - [ ] **24.2 GPU bulk path + scale proof** — whole-channel
   transitions ride the gpu-tween kernels off one record (slot list +
   packed from/to; paint channels only); the auto-domain-shift case

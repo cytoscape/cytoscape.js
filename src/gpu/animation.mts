@@ -43,7 +43,7 @@ requested duration times the easing's `durationScale`.
 
 const clamp01 = ( t: number ): number => t < 0 ? 0 : t > 1 ? 1 : t;
 
-type RGBA = [ number, number, number, number ];
+export type RGBA = [ number, number, number, number ];
 
 const GROUPS: GroupName[] = [ 'nodes', 'edges' ];
 
@@ -223,6 +223,33 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
 };
 
 /**
+ * Round 24.1: build a pre-resolved ChannelWrite for a style transition.
+ * The style engine diffs stored truth around a restyle (from = the
+ * pre-restyle values, to = the newly resolved ones) and the tween
+ * machinery consumes the write exactly as it would a captured
+ * animation's — one set of numbers, the same two executors.
+ */
+export const buildChannelWrite = (
+  column: ColumnId, kind: 'scalar' | 'color', paint: boolean, refs: Ref[],
+  from: ( number | RGBA )[], to: ( number | RGBA )[],
+  min = -Infinity, max = Infinity
+): ChannelWrite => {
+  const write = blankWrite( column, kind, paint, refs, min, max );
+
+  for( let i = 0; i < refs.length; i++ ){
+    if( kind === 'scalar' ){
+      write.data[ i * 2 ] = from[ i ] as number;
+      write.data[ i * 2 + 1 ] = to[ i ] as number;
+    } else {
+      packOklab( write.data, i * 8, from[ i ] as RGBA );
+      packOklab( write.data, i * 8 + 4, to[ i ] as RGBA );
+    }
+  }
+
+  return write;
+};
+
+/**
  * One element (or viewport) animation.  `refs` is empty for a viewport
  * animation.  Start values are captured lazily on the first tick after
  * the delay elapses, so queued animations pick up the true state left by
@@ -263,6 +290,26 @@ export class Animation {
   gpuDriven = false;
   /** batch id in the GPU tween runtime (null until registered) */
   gpuId: number | null = null;
+  /** round 24.1: a transition built from pre-resolved ChannelWrites —
+   * capture is a no-op and eligibility/columns derive from the writes */
+  private preset = false;
+
+  /**
+   * A transition animation (round 24.1): the style engine diffed stored
+   * truth around a restyle into per-column writes; nothing to capture.
+   */
+  static preset(
+    store: GraphStore, refs: Ref[], writes: ChannelWrite[],
+    opts: { duration: number; delay?: number; easing?: string }
+  ): Animation {
+    const ani = new Animation( store, null, refs, false, opts );
+
+    ani.writes = writes;
+    ani.captured = true;
+    ani.preset = true;
+
+    return ani;
+  }
 
   constructor(
     store: GraphStore, viewport: Viewport | null,
@@ -330,6 +377,9 @@ export class Animation {
       for( const s of this.style ){
         for( const col of Object.values( s.channel.columns ) ){ cols.add( col ); }
       }
+
+      // a preset transition's channels live in its pre-resolved writes
+      for( const w of this.writes ){ cols.add( w.column ); }
 
       this._columns = cols;
     }
@@ -416,6 +466,12 @@ export class Animation {
   get gpuEligible(): boolean {
     if( this._gpuBarred ){ return false; }
     if( this.isViewport ){ return false; }
+
+    // a preset transition's tier is per write: all-paint may offload
+    // (24.2's territory); a geometry write (border-width) keeps it CPU
+    if( this.preset ){
+      return this.writes.length > 0 && this.writes.every( w => w.paint );
+    }
 
     if( this.position == null && this.style.length === 0 ){ return false; } // a bare delay
 

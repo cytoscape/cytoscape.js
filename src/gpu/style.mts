@@ -46,8 +46,11 @@ interface EndpointEnd {
 
 const ENDPT_END_DEFAULT: EndpointEnd = { mode: ENDPT_DEFAULT, a: 0, b: 0, pct: 0 };
 
+import { compileEasing } from './easing.mjs';
+import { buildChannelWrite } from './animation.mjs';
+import type { ChannelWrite } from './animation.mjs';
 import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './style-scales.mjs';
-import type { GroupName, Ref } from './contract.mjs';
+import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { GpuStyleProps, GpuStylesheet, GpuMapper, GpuMapperSpec } from './gpu-types.mjs';
 
@@ -600,7 +603,8 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'text-transform', 'text-background-shape',
   'text-wrap', 'text-max-width', 'line-height', 'text-overflow-wrap', 'text-justification',
   'text-border-width', 'text-border-color', 'text-border-opacity',
-  'padding', 'padding-relative-to', 'min-width', 'min-height', 'compound-sizing-wrt-labels'
+  'padding', 'padding-relative-to', 'min-width', 'min-height', 'compound-sizing-wrt-labels',
+  'transition-property', 'transition-duration', 'transition-delay', 'transition-timing-function'
 ] );
 
 const EDGE_READ: ReadonlySet<string> = new Set( [
@@ -632,7 +636,8 @@ const EDGE_READ: ReadonlySet<string> = new Set( [
   'haystack-radius', 'source-endpoint', 'target-endpoint',
   'source-distance-from-node', 'target-distance-from-node',
   'overlay-color', 'overlay-opacity', 'overlay-padding',
-  'underlay-color', 'underlay-opacity', 'underlay-padding'
+  'underlay-color', 'underlay-opacity', 'underlay-padding',
+  'transition-property', 'transition-duration', 'transition-delay', 'transition-timing-function'
 ] );
 
 /** curve props are edge-only (constants and mappers alike). */
@@ -2885,11 +2890,168 @@ const compileChannel = ( group: GroupName, prop: string, spec: GpuMapperSpec ): 
 };
 
 /** A per-group stylesheet entry as stored: the resolved base + compiled mappers. */
+// -- transitions (round 24.1) --
+
+/** The four transition config props — engine config per sheet group,
+ * constants-only, never element channels. */
+const TRANSITION_CONFIG_PROPS: ReadonlySet<string> = new Set( [
+  'transition-property', 'transition-duration', 'transition-delay', 'transition-timing-function'
+] );
+
+interface TransitionSpec {
+  /** normalized prop names, validated against the group's read set */
+  props: readonly string[];
+  duration: number;
+  delay: number;
+  easing: string;
+}
+
+const DEFAULT_TRANSITION: TransitionSpec = { props: [], duration: 0, delay: 0, easing: 'linear' };
+
+/**
+ * Where a transitionable prop tweens, per group — the animation system's
+ * channel set (geometry numerics and discrete props snap at the
+ * transition's start until the geometry-tween round).  Diffs run on
+ * *stored truth*, so channel-opacity folds ride the color they fold
+ * into, and `rides` carries the arrow columns an edge-opacity fold
+ * writes (they tween along only when the main channel moved).
+ */
+interface TransitionChannel {
+  column: ColumnId;
+  kind: 'scalar' | 'color';
+  paint: boolean;
+  min: number;
+  max: number;
+  rides?: readonly ColumnId[];
+}
+
+const TRANSITION_CHANNELS: Record<GroupName, Record<string, TransitionChannel>> = {
+  nodes: {
+    'opacity': { column: 'node.opacity', kind: 'scalar', paint: true, min: 0, max: 1 },
+    'background-color': { column: 'node.fillColor', kind: 'color', paint: true, min: -Infinity, max: Infinity },
+    'border-color': { column: 'node.borderColor', kind: 'color', paint: true, min: -Infinity, max: Infinity },
+    'border-width': { column: 'node.borderWidth', kind: 'scalar', paint: false, min: 0, max: Infinity }
+  },
+  edges: {
+    'opacity': {
+      column: 'edge.opacity', kind: 'scalar', paint: true, min: 0, max: 1,
+      rides: [ 'edge.sourceArrow', 'edge.targetArrow' ]
+    },
+    'line-color': { column: 'edge.lineColor', kind: 'color', paint: true, min: -Infinity, max: Infinity }
+  }
+};
+
+/** Split the transition config props out of a sheet block. */
+const splitTransitionProps = ( props: GpuStyleProps ): { channels: GpuStyleProps; config: Record<string, unknown> } => {
+  let any = false;
+
+  for( const raw of Object.keys( props ) ){
+    if( TRANSITION_CONFIG_PROPS.has( normalizeProp( raw ) ) ){ any = true; break; }
+  }
+
+  if( !any ){ return { channels: props, config: {} }; }
+
+  const channels: GpuStyleProps = {};
+  const config: Record<string, unknown> = {};
+
+  for( const raw of Object.keys( props ) ){
+    const norm = normalizeProp( raw );
+
+    if( TRANSITION_CONFIG_PROPS.has( norm ) ){
+      config[ norm ] = ( props as Record<string, unknown> )[ raw ];
+    } else {
+      ( channels as Record<string, unknown> )[ raw ] = ( props as Record<string, unknown> )[ raw ];
+    }
+  }
+
+  return { channels, config };
+};
+
+const parseTransitionSpec = ( group: GroupName, config: Record<string, unknown> ): TransitionSpec => {
+  const readSet = group === 'nodes' ? NODE_READ : EDGE_READ;
+  const constOnly = ( prop: string, v: unknown ): void => {
+    if( v != null && typeof v === 'object' && !Array.isArray( v ) ){
+      throw new Error( `'${prop}' takes constants only (transition config can not be mapped)` );
+    }
+  };
+
+  let props: string[] = [];
+  const rawProps = config[ 'transition-property' ];
+
+  constOnly( 'transition-property', rawProps );
+
+  if( rawProps != null && rawProps !== 'none' ){
+    const list = Array.isArray( rawProps )
+      ? rawProps
+      : String( rawProps ).trim().split( /\s+/ ).filter( s => s.length > 0 );
+
+    props = list.map( p => normalizeProp( String( p ) ) );
+
+    for( const p of props ){
+      // every prop name is accepted so the surface never changes as more
+      // channels become tweenable — but it has to *be* a prop of this group
+      if( TRANSITION_CONFIG_PROPS.has( p ) || !readSet.has( p ) ){
+        throw new Error( `'${p}' is not a ${group === 'nodes' ? 'node' : 'edge'} style property ` +
+          `(transition-property lists the group's own props)` );
+      }
+    }
+  }
+
+  const num = ( prop: string ): number => {
+    const v = config[ prop ];
+
+    if( v == null ){ return 0; }
+
+    constOnly( prop, v );
+
+    if( typeof v !== 'number' || !isFinite( v ) || v < 0 ){
+      throw new Error( `'${prop}' must be a non-negative number of milliseconds` );
+    }
+
+    return v;
+  };
+
+  const rawEasing = config[ 'transition-timing-function' ];
+
+  constOnly( 'transition-timing-function', rawEasing );
+
+  const easing = rawEasing == null ? 'linear' : String( rawEasing );
+
+  compileEasing( easing ); // validate at parse time — unknown names throw here
+
+  return { props, duration: num( 'transition-duration' ), delay: num( 'transition-delay' ), easing };
+};
+
+/** One channel's accumulated transition diffs over an apply pass. */
+interface TxnEntry {
+  column: ColumnId;
+  kind: 'scalar' | 'color';
+  paint: boolean;
+  min: number;
+  max: number;
+  refs: Ref[];
+  from: ( number | RGBA )[];
+  to: ( number | RGBA )[];
+}
+
+/** An open transition capture (one per group-def apply pass). */
+interface TxnCapture {
+  group: GroupName;
+  spec: TransitionSpec;
+  channels: { main: TransitionChannel; rides: TransitionChannel[] }[];
+  entries: Map<ColumnId, TxnEntry>;
+}
+
+const rgbaEq = ( a: RGBA, b: RGBA ): boolean =>
+  a[ 0 ] === b[ 0 ] && a[ 1 ] === b[ 1 ] && a[ 2 ] === b[ 2 ] && a[ 3 ] === b[ 3 ];
+
 interface GroupDef {
   computed: Computed;
   mappers: BoundMapper[];
   /** data key → what depends on it (null when nothing does) */
   deps: Map<string, { label: boolean; mappers: boolean; chart: boolean }> | null;
+  /** the group's transition config (round 24.1) */
+  transition: TransitionSpec;
 }
 
 const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges', 'parents', 'core' ] );
@@ -3022,6 +3184,25 @@ export class StyleEngine {
   /** a mapped key's column promoted to mixed while kernel-owned: re-derive on CPU */
   private demoted: Record<GroupName, boolean> = { nodes: false, edges: false };
 
+  /** Round 24.1: styled-generation marks (gen + 1; 0 = never styled).  A
+   * slot joins transition diffs only when its *current* element has been
+   * styled before — the first application on add is instant (v3's rule),
+   * and a recycled slot's fresh generation fails the check on its own. */
+  private styledGen: Record<GroupName, Uint32Array> = {
+    nodes: new Uint32Array( 0 ), edges: new Uint32Array( 0 )
+  };
+
+  /** Round 24.1: the open transition capture (one per group-def pass). */
+  private txn: TxnCapture | null = null;
+
+  /** Round 24.1: receives the diffed transition tweens — wired by the
+   * core to AnimationManager.start (the round-21 eviction gives uniform
+   * latest-wins); null in engine-only contexts disables capture. */
+  transitionSink: ( (
+    refs: Ref[], writes: ChannelWrite[],
+    opts: { duration: number; delay: number; easing: string }
+  ) => void ) | null = null;
+
   /** value reader for mapper/condition keys ('id' is first-class, not in
    * the sidecar; '::parent'/'::child' answer the structural case
    * conditions from the hierarchy flags, round 14.7) */
@@ -3038,9 +3219,9 @@ export class StyleEngine {
     this.store = store;
     this.sheet = {};
     this.defs = {
-      nodes: { computed: this.resolveConst( 'nodes', {}, [] ), mappers: [], deps: null },
-      edges: { computed: this.resolveConst( 'edges', {}, [] ), mappers: [], deps: null },
-      parents: { computed: this.resolveConst( 'nodes', PARENT_CHANNEL_OVERLAY, [] ), mappers: [], deps: null }
+      nodes: { computed: this.resolveConst( 'nodes', {}, [] ), mappers: [], deps: null, transition: DEFAULT_TRANSITION },
+      edges: { computed: this.resolveConst( 'edges', {}, [] ), mappers: [], deps: null, transition: DEFAULT_TRANSITION },
+      parents: { computed: this.resolveConst( 'nodes', PARENT_CHANNEL_OVERLAY, [] ), mappers: [], deps: null, transition: DEFAULT_TRANSITION }
     };
 
     // a mixed column can't evaluate in the kernel: demote its group's
@@ -3081,8 +3262,12 @@ export class StyleEngine {
     const parentsSplit = splitCompoundProps( sheet.parents ?? {} );
 
     const compile = ( group: GroupName, def: GpuStylesheet['nodes'] ): GroupDef => {
+      // the transition config props are engine config, not channels
+      // (round 24.1) — split them out before channel resolution
+      const { channels, config } = splitTransitionProps( def ?? {} );
+      const transition = parseTransitionSpec( group, config );
       const mappers: BoundMapper[] = [];
-      const computed = this.resolveConst( group, def ?? {}, mappers );
+      const computed = this.resolveConst( group, channels, mappers );
 
       // which mutable data() keys the group's style derives from — the
       // data-write refresh gate (id is immutable and never registers)
@@ -3107,7 +3292,7 @@ export class StyleEngine {
         for( const key of bm.m.keys ){ dep( key, 'mappers' ); }
       }
 
-      return { computed, mappers, deps };
+      return { computed, mappers, deps, transition };
     };
 
     const defs = {
@@ -3351,16 +3536,201 @@ export class StyleEngine {
   }
 
   private applyGroupDef( group: GroupName, def: GroupDef, slots: ArrayLike<number> ): void {
-    if( def.mappers.length > 0 ){
-      this.applyMapped( group, def, slots );
+    const txn = this.openTxn( group, def );
 
-      return;
+    try {
+      if( def.mappers.length > 0 ){
+        this.applyMapped( group, def, slots );
+      } else {
+        const computed = def.computed;
+
+        for( let i = 0; i < slots.length; i++ ){
+          this.write( group, slots[ i ], computed );
+        }
+      }
+    } finally {
+      this.closeTxn( txn );
+    }
+  }
+
+  // -- transitions (round 24.1) --
+
+  /**
+   * Open a transition capture for one group-def apply pass: every
+   * already-styled slot the pass writes gets its tweenable channels
+   * diffed on stored truth.  Null (capture off) when nothing can
+   * transition — unconfigured specs cost nothing.
+   */
+  private openTxn( group: GroupName, def: GroupDef ): TxnCapture | null {
+    const spec = def.transition;
+
+    if( this.transitionSink == null || this.txn != null ){ return null; }
+    if( spec.duration <= 0 || spec.props.length === 0 ){ return null; }
+
+    const table = TRANSITION_CHANNELS[ group ];
+    const channels: TxnCapture['channels'] = [];
+
+    for( const prop of spec.props ){
+      const ch = table[ prop ];
+
+      // props with no tweenable channel (discrete, geometry) snap — the
+      // apply pass already wrote them, so snapping is doing nothing here
+      if( ch != null ){
+        channels.push( {
+          main: ch,
+          rides: ( ch.rides ?? [] ).map( column =>
+            ( { column, kind: 'color' as const, paint: true, min: -Infinity, max: Infinity } ) )
+        } );
+      }
     }
 
-    const computed = def.computed;
+    if( channels.length === 0 ){ return null; }
 
-    for( let i = 0; i < slots.length; i++ ){
-      this.write( group, slots[ i ], computed );
+    this.txn = { group, spec, channels, entries: new Map() };
+
+    return this.txn;
+  }
+
+  /** Close a capture: pack the accumulated diffs into bulk ChannelWrites
+   * (one per column — never per-element animations) and hand them to the
+   * sink as one transition animation. */
+  private closeTxn( txn: TxnCapture | null ): void {
+    if( txn == null ){ return; }
+
+    this.txn = null;
+
+    if( txn.entries.size === 0 ){ return; }
+
+    const writes: ChannelWrite[] = [];
+    const refs: Ref[] = [];
+    const seen = new Set<number>();
+
+    for( const e of txn.entries.values() ){
+      writes.push( buildChannelWrite( e.column, e.kind, e.paint, e.refs, e.from, e.to, e.min, e.max ) );
+
+      for( const ref of e.refs ){
+        if( !seen.has( ref.slot ) ){ seen.add( ref.slot ); refs.push( ref ); }
+      }
+    }
+
+    this.transitionSink!( refs, writes, {
+      duration: txn.spec.duration, delay: txn.spec.delay, easing: txn.spec.easing
+    } );
+  }
+
+  private readTxnValue( ch: { column: ColumnId; kind: 'scalar' | 'color' }, slot: number ): number | RGBA {
+    if( ch.kind === 'scalar' ){
+      return ( this.store.column( ch.column ) as Float32Array )[ slot ];
+    }
+
+    const bytes = this.store.column( ch.column ) as Uint8Array;
+    const i = slot * 4;
+
+    return [ bytes[ i ], bytes[ i + 1 ], bytes[ i + 2 ], bytes[ i + 3 ] ];
+  }
+
+  /** Pre-write snapshot of one slot's capture channels (mains + rides). */
+  private txnPre( txn: TxnCapture, slot: number ): ( number | RGBA )[] {
+    const out: ( number | RGBA )[] = [];
+
+    for( const { main, rides } of txn.channels ){
+      out.push( this.readTxnValue( main, slot ) );
+
+      for( const r of rides ){ out.push( this.readTxnValue( r, slot ) ); }
+    }
+
+    return out;
+  }
+
+  /**
+   * Post-write diff of one slot: record each moved channel (from = the
+   * snapshot, to = the newly stored value) and *restore* the old value —
+   * the store holds the pre-restyle state until the tween's first
+   * post-delay tick, so sync reads during a transition-delay report the
+   * old value (CSS's rule) and no frame can flash the target.
+   */
+  private txnPost( txn: TxnCapture, group: GroupName, slot: number, pre: ( number | RGBA )[] ): void {
+    let i = 0;
+    let ref: Ref | null = null;
+
+    const record = ( ch: { column: ColumnId; kind: 'scalar' | 'color'; paint: boolean; min: number; max: number },
+      from: number | RGBA, to: number | RGBA ): void => {
+      ref ??= this.store.ref( group, slot );
+
+      let entry = txn.entries.get( ch.column );
+
+      if( entry == null ){
+        entry = { column: ch.column, kind: ch.kind, paint: ch.paint, min: ch.min, max: ch.max, refs: [], from: [], to: [] };
+        txn.entries.set( ch.column, entry );
+      }
+
+      entry.refs.push( ref );
+      entry.from.push( from );
+      entry.to.push( to );
+
+      if( ch.kind === 'scalar' ){
+        this.store.setScalar( ch.column, slot, from as number );
+      } else {
+        const [ r, g, b, a ] = from as RGBA;
+
+        this.store.setColor( ch.column, slot, r, g, b, a );
+      }
+    };
+
+    for( const { main, rides } of txn.channels ){
+      const from = pre[ i++ ];
+      const to = this.readTxnValue( main, slot );
+      const changed = main.kind === 'scalar'
+        ? ( from as number ) !== ( to as number )
+        : !rgbaEq( from as RGBA, to as RGBA );
+
+      if( changed ){ record( main, from, to ); }
+
+      for( const r of rides ){
+        const rideFrom = pre[ i++ ];
+
+        if( !changed ){ continue; } // rides move only with their main channel
+
+        const rideTo = this.readTxnValue( r, slot );
+
+        if( !rgbaEq( rideFrom as RGBA, rideTo as RGBA ) ){ record( r, rideFrom, rideTo ); }
+      }
+    }
+  }
+
+  private wasStyled( group: GroupName, slot: number ): boolean {
+    const arr = this.styledGen[ group ];
+
+    return slot < arr.length && arr[ slot ] === this.store.table( group ).gen[ slot ] + 1;
+  }
+
+  private markStyled( group: GroupName, slot: number ): void {
+    let arr = this.styledGen[ group ];
+
+    if( slot >= arr.length ){
+      const next = new Uint32Array( Math.max( 16, arr.length * 2, slot + 1 ) );
+
+      next.set( arr );
+      arr = next;
+      this.styledGen[ group ] = arr;
+    }
+
+    arr[ slot ] = this.store.table( group ).gen[ slot ] + 1;
+  }
+
+  /** Slot compaction: live elements moved (and took fresh generations) —
+   * refresh the styled marks over the live slots, all of which have been
+   * styled (style applies on add, and compaction never runs mid-batch). */
+  onCompacted(): void {
+    for( const group of [ 'nodes', 'edges' ] as const ){
+      const table = this.store.table( group );
+      const arr = this.styledGen[ group ];
+
+      arr.fill( 0 );
+
+      for( const slot of this.store.slotsOrdered( group ) ){
+        if( slot < arr.length ){ arr[ slot ] = table.gen[ slot ] + 1; }
+      }
     }
   }
 
@@ -3498,6 +3868,18 @@ export class StyleEngine {
   private refreshGroupDef( group: GroupName, def: GroupDef, slots: ArrayLike<number>, keys: string[] ): void {
     if( slots.length === 0 || def.deps == null ){ return; }
 
+    const txn = this.openTxn( group, def );
+
+    try {
+      this.refreshGroupDefInner( group, def, slots, keys );
+    } finally {
+      this.closeTxn( txn );
+    }
+  }
+
+  private refreshGroupDefInner( group: GroupName, def: GroupDef, slots: ArrayLike<number>, keys: string[] ): void {
+    if( def.deps == null ){ return; } // narrowed by the caller; re-checked for the types
+
     let label = false;
     let mapped = false;
     let chart = false;
@@ -3569,6 +3951,19 @@ export class StyleEngine {
     const forGroup = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
 
     if( !forGroup.has( prop ) ){ return undefined; }
+
+    // transition config (round 24.1): answered from the group's spec
+    // (the parents overlay for parent nodes, like every channel read)
+    if( TRANSITION_CONFIG_PROPS.has( prop ) ){
+      const spec = this.defFor( ref ).transition;
+
+      switch( prop ){
+        case 'transition-property': return spec.props.length === 0 ? 'none' : spec.props.join( ' ' );
+        case 'transition-duration': return spec.duration;
+        case 'transition-delay': return spec.delay;
+        default: return spec.easing;
+      }
+    }
 
     // GPU-owned channels: the stored bytes go stale after data writes, so
     // evaluate the shared IR lazily (same math the kernel runs, ±1/byte).
@@ -4339,7 +4734,24 @@ export class StyleEngine {
     }
   }
 
+  /**
+   * The one channel funnel, wrapped by the transition capture (round
+   * 24.1): an already-styled slot written inside an open capture gets
+   * its tweenable channels snapshotted before and diffed after — the
+   * body itself stays transition-blind.
+   */
   private write( group: GroupName, slot: number, computed: Computed ): void {
+    const txn = this.txn;
+    const pre = txn != null && this.wasStyled( group, slot ) ? this.txnPre( txn, slot ) : null;
+
+    this.writeChannels( group, slot, computed );
+
+    if( txn != null && pre != null ){ this.txnPost( txn, group, slot, pre ); }
+
+    this.markStyled( group, slot );
+  }
+
+  private writeChannels( group: GroupName, slot: number, computed: Computed ): void {
     const store = this.store;
 
     if( group === 'nodes' ){

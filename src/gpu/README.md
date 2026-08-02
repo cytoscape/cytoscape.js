@@ -632,8 +632,52 @@ each is deliberate, not a pass-1 deferral:
   new one captures from there.  There is no `queue` option (nothing
   to opt out of — the spelling throws) and no v3 `step` callback
   (`onRender` + promises observe progress).  The
-  `pause`/`progress`/`reverse` controls and style transitions are
-  an open follow-up — neither built nor dropped.
+  `pause`/`progress`/`reverse` controls and style transitions were
+  logged open at the sitting; the fourth sitting (2026-08-01) scoped
+  both as round 24 — **style transitions landed as 24.1** (the
+  bullet below) and the `pause`/`resume`/`reverse` controls are
+  round 24.3 (`progress` stays a getter; `apply`/`applying` stay
+  out).
+- **Style transitions (round 24.1, landed 2026-08-01).**  The
+  `transition-property`/`-duration`/`-delay`/`-timing-function`
+  family, per sheet group (`nodes`/`edges`/`parents` — the parents
+  spec merges nodes-then-parents under v3's order precedence),
+  constants-only.  A transition fires whenever a *restyle* changes
+  an element's stored tweenable channel — sheet re-application,
+  mapper re-evaluation on data writes (`case` flips, scale moves,
+  auto-domain extent shifts), structural restyles (leaf↔parent
+  flips) — under the *destination* sheet's config; an element's
+  first style application on add is instant (v3's rule, kept by a
+  per-slot styled-generation mark), batched writes capture one
+  transition per net change at the outermost `endBatch`, and
+  `show()`/`hide()`/`visibility` flips are non-triggers (fade is
+  spelled with an `opacity` transition).  Interruption is the
+  round-21 rule uniformly: latest wins between transitions and user
+  animations, both directions, capturing from the frozen mid-flight
+  value.  `transition-property` accepts **every** prop name of its
+  group (unknown or wrong-group names throw): number/color channels
+  in the animatable set tween (opacity both groups,
+  background/border/line colors, border-width), discrete and
+  not-yet-animatable geometry props snap at the transition's start
+  (recorded — the geometry tween is the logged follow-up round).
+  Mechanics: the diff runs on **stored truth** around the engine's
+  one channel funnel and packs into bulk per-column ChannelWrites
+  (one preset animation per apply pass — never per-element
+  animations), which keeps the auto-domain worst case (one write
+  moves a live extent → the whole channel re-derives) in the cost
+  class it already occupies; the store holds the pre-restyle values
+  until the first post-delay tick (CSS's delay semantics — no
+  target flash, and sync reads during the delay report the old
+  state).  Recorded consequences of stored-truth diffing:
+  channel-opacity folds ride the color they fold into
+  (`background-opacity` moves transition under
+  `'background-color'`), and an edge-`opacity` transition carries
+  the pre-folded arrow alphas along.  **The domain performance
+  contract** (docs guidance, both modes supported): with an
+  explicit `domain` a data write re-evaluates the written elements
+  only — O(changed), never whole-channel — while `'auto'` pays the
+  O(n) re-derive only when a write actually moves the live extent;
+  pin `domain` when a stream grows its own extent.
 - **Animation: CPU-canonical, with a GPU fast path for position and paint
   under a transient lease.**  An animation tweens element style/position
   (or the viewport) from captured start values to explicit targets over a

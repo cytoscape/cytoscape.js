@@ -349,7 +349,7 @@ describe('gpu/style: transitions (round 24.1)', function(){
       expect( fillBytes( cy, 'a' ) ).to.deep.equal( [ 0, 0, 0, 255 ] );
     });
 
-    it('discrete and geometry props are accepted in the list but snap at start', function(){
+    it('discrete props are accepted in the list but snap; geometry tweens (round 25)', function(){
       const cy = makeCy( {
         shape: 'ellipse',
         width: 30,
@@ -372,13 +372,185 @@ describe('gpu/style: transitions (round 24.1)', function(){
 
       const a = cy.$id( 'a' );
 
-      // discrete (shape) and geometry (width) snapped; the color tweens
+      // discrete (shape) snapped; width and the color hold pre-restyle
+      // values until the first tick (round 25.3: geometry tweens)
       expect( a.style( 'shape' ) ).to.equal( 'rectangle' );
-      expect( a.width() ).to.equal( 60 );
+      expect( a.width() ).to.equal( 30 );
       expect( fillBytes( cy, 'a' ) ).to.deep.equal( [ 0, 0, 0, 255 ] );
 
-      drive( cy, 0, 100 );
+      drive( cy, 0, 50 );
+      expect( a.width() ).to.be.closeTo( 45, 1e-4 );
+
+      drive( cy, 100 );
+      expect( a.width() ).to.equal( 60 );
       expect( fillBytes( cy, 'a' ) ).to.deep.equal( [ 255, 255, 255, 255 ] );
+    });
+  });
+
+  describe('geometry transitions (round 25.3)', function(){
+    it('a sheet-swap size transition tweens both lanes with bb reading live', function(){
+      const cy = makeCy( {
+        width: 20, height: 40,
+        'transition-property': [ 'width', 'height' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } );
+
+      cy.style( { nodes: {
+        width: 60, height: 80,
+        'transition-property': [ 'width', 'height' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } } );
+
+      const a = cy.$id( 'a' );
+
+      expect( a.width() ).to.equal( 20 ); // held until the first tick
+
+      drive( cy, 0, 50 );
+      expect( a.width() ).to.be.closeTo( 40, 1e-4 );
+      expect( a.height() ).to.be.closeTo( 60, 1e-4 );
+      expect( a.boundingBox( { includeLabels: false } ).w ).to.be.closeTo( 40, 1e-4 );
+
+      drive( cy, 100 );
+      expect( a.width() ).to.equal( 60 );
+      expect( a.height() ).to.equal( 80 );
+    });
+
+    it('a size transition re-anchors the label per tick', function(){
+      const cy = makeCy( {
+        width: 30,
+        label: { data: 'id' }, 'text-halign': 'left',
+        'transition-property': [ 'width' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } );
+      const slot = cy._store.lookup( 'a' ).slot;
+      const anchorX = () => cy._store.labelAt( slot, 'nodes' ).anchorX;
+
+      cy.style( { nodes: {
+        width: 90,
+        label: { data: 'id' }, 'text-halign': 'left',
+        'transition-property': [ 'width' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } } );
+
+      expect( anchorX() ).to.be.closeTo( -15, 1e-4 ); // restored with the held size
+
+      drive( cy, 0, 50 );
+      expect( anchorX() ).to.be.closeTo( -30, 1e-4 ); // -60/2 mid-flight
+
+      drive( cy, 100 );
+      expect( anchorX() ).to.be.closeTo( -45, 1e-4 );
+    });
+
+    it('an edge width transition carries the baked derivatives as rides', function(){
+      const cy = cytoscapeGpu( {
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ],
+        style: { edges: {
+          width: 4,
+          'source-arrow-shape': 'triangle', 'source-arrow-width': 'match-line',
+          'line-outline-width': 6, 'line-outline-color': 'black',
+          'transition-property': [ 'width' ],
+          'transition-duration': 100,
+          'transition-timing-function': 'linear'
+        } }
+      } );
+      const s = cy.$id( 'ab' )._first().slot;
+      const aw = () => cy._store.column( 'edge.arrowWidths' )[ s * 2 ];
+      const casing = () => cy._store.column( 'edge.casing' )[ s * 2 + 1 ] / 256;
+
+      cy.style( { edges: {
+        width: 14,
+        'source-arrow-shape': 'triangle', 'source-arrow-width': 'match-line',
+        'line-outline-width': 6, 'line-outline-color': 'black',
+        'transition-property': [ 'width' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } } );
+
+      // held at the pre-restyle values (width 4: arrow 4, casing 10)
+      expect( aw() ).to.equal( 4 );
+      expect( casing() ).to.be.closeTo( 10, 1 / 256 );
+
+      drive( cy, 0, 50 );
+      expect( cy.$id( 'ab' ).width() ).to.be.closeTo( 9, 1e-4 );
+      expect( aw() ).to.be.closeTo( 9, 1e-4 );
+      expect( casing() ).to.be.closeTo( 15, 1 / 256 );
+
+      drive( cy, 100 );
+      expect( aw() ).to.equal( 14 );
+      expect( casing() ).to.be.closeTo( 20, 1 / 256 );
+    });
+
+    it('a mapped size transition tweens on a data write (scale move)', function(){
+      const cy = cytoscapeGpu( {
+        elements: [ { data: { id: 'a', w: 10 }, position: { x: 0, y: 0 } } ],
+        style: { nodes: {
+          width: { data: 'w', scale: 'linear', domain: [ 0, 100 ], range: [ 10, 110 ] },
+          'transition-property': [ 'width' ],
+          'transition-duration': 100,
+          'transition-timing-function': 'linear'
+        } }
+      } );
+      const a = cy.$id( 'a' );
+
+      expect( a.width() ).to.equal( 20 );
+
+      a.data( 'w', 90 );
+      expect( a.width() ).to.equal( 20 ); // held (CSS delay rule at delay 0 pre-tick)
+
+      drive( cy, 0, 50 );
+      expect( a.width() ).to.be.closeTo( 60, 1e-4 );
+
+      drive( cy, 100 );
+      expect( a.width() ).to.equal( 100 );
+    });
+
+    it('parent slots never record a size transition (auto-bounds own them)', function(){
+      const cy = cytoscapeGpu( {
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } }
+        ],
+        style: {
+          parents: { padding: 0, 'border-width': 0 },
+          nodes: {
+            width: 30,
+            'transition-property': [ 'width' ],
+            'transition-duration': 100,
+            'transition-timing-function': 'linear'
+          }
+        }
+      } );
+
+      cy._store.flushDerived();
+
+      cy.style( {
+        parents: { padding: 0, 'border-width': 0 },
+        nodes: {
+          width: 90,
+          'transition-property': [ 'width' ],
+          'transition-duration': 100,
+          'transition-timing-function': 'linear'
+        }
+      } );
+
+      drive( cy, 0, 50 );
+      cy._store.flushDerived();
+
+      // the leaf tweens; the parent follows through auto-bounds only
+      expect( cy.$id( 'a' ).width() ).to.be.closeTo( 60, 1e-4 );
+      expect( cy.$id( 'p' ).width() ).to.be.closeTo( 60, 1e-3 );
+
+      drive( cy, 100 );
+      cy._store.flushDerived();
+      expect( cy.$id( 'p' ).width() ).to.be.closeTo( 90, 1e-3 );
     });
   });
 

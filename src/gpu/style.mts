@@ -3,6 +3,7 @@ import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
   CHART_MAX_SLICES, CHART_NONE, CHART_PIE, CHART_STRIPES,
+  columnSpec,
   FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_SELF_INVISIBLE, FLAG_TEXT_EVENTS,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
@@ -2910,19 +2911,26 @@ const DEFAULT_TRANSITION: TransitionSpec = { props: [], duration: 0, delay: 0, e
 
 /**
  * Where a transitionable prop tweens, per group — the animation system's
- * channel set (geometry numerics and discrete props snap at the
- * transition's start until the geometry-tween round).  Diffs run on
- * *stored truth*, so channel-opacity folds ride the color they fold
- * into, and `rides` carries the arrow columns an edge-opacity fold
- * writes (they tween along only when the main channel moved).
+ * channel set (discrete props snap at the transition's start; the
+ * geometry numerics tween since round 25).  Diffs run on *stored
+ * truth*, so channel-opacity folds ride the color they fold into, and
+ * `rides` carries the derived columns a main channel's style-write
+ * bakes (they tween along only when the main channel moved): the arrow
+ * columns for the edge-opacity fold, and the stroke/arrow-width lanes
+ * for edge width.  `lane` channels (round 25.3) tween one component of
+ * a multi-lane column through the store's cascading `setLane`.
  */
-interface TransitionChannel {
+interface TxnChannelDesc {
   column: ColumnId;
-  kind: 'scalar' | 'color';
+  kind: 'scalar' | 'color' | 'lane';
+  lane?: number;
   paint: boolean;
   min: number;
   max: number;
-  rides?: readonly ColumnId[];
+}
+
+interface TransitionChannel extends TxnChannelDesc {
+  rides?: readonly TxnChannelDesc[];
 }
 
 const TRANSITION_CHANNELS: Record<GroupName, Record<string, TransitionChannel>> = {
@@ -2930,14 +2938,36 @@ const TRANSITION_CHANNELS: Record<GroupName, Record<string, TransitionChannel>> 
     'opacity': { column: 'node.opacity', kind: 'scalar', paint: true, min: 0, max: 1 },
     'background-color': { column: 'node.fillColor', kind: 'color', paint: true, min: -Infinity, max: Infinity },
     'border-color': { column: 'node.borderColor', kind: 'color', paint: true, min: -Infinity, max: Infinity },
-    'border-width': { column: 'node.borderWidth', kind: 'scalar', paint: false, min: 0, max: Infinity }
+    'border-width': { column: 'node.borderWidth', kind: 'scalar', paint: false, min: 0, max: Infinity },
+    // round 25.3: the size lanes.  Parent slots never record (their
+    // size is auto-bounds-derived); the lane restore/tick runs the
+    // full size cascade (outerHalf, label re-anchor, auto-bounds).
+    'width': { column: 'node.size', kind: 'lane', lane: 0, paint: false, min: 0, max: Infinity },
+    'height': { column: 'node.size', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity }
   },
   edges: {
     'opacity': {
       column: 'edge.opacity', kind: 'scalar', paint: true, min: 0, max: 1,
-      rides: [ 'edge.sourceArrow', 'edge.targetArrow' ]
+      rides: [
+        { column: 'edge.sourceArrow', kind: 'color', paint: true, min: -Infinity, max: Infinity },
+        { column: 'edge.targetArrow', kind: 'color', paint: true, min: -Infinity, max: Infinity }
+      ]
     },
-    'line-color': { column: 'edge.lineColor', kind: 'color', paint: true, min: -Infinity, max: Infinity }
+    'line-color': { column: 'edge.lineColor', kind: 'color', paint: true, min: -Infinity, max: Infinity },
+    // round 25.3: width plus its style-write-baked derivatives — the
+    // apply pass rewrites them in the same funnel, so stored-truth
+    // diffing catches each as a lane ride (moving only when the width
+    // itself moved)
+    'width': {
+      column: 'edge.width', kind: 'scalar', paint: false, min: 0, max: Infinity,
+      rides: [
+        { column: 'edge.casing', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity },
+        { column: 'edge.overlay', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity },
+        { column: 'edge.underlay', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity },
+        { column: 'edge.arrowWidths', kind: 'lane', lane: 0, paint: false, min: 0, max: Infinity },
+        { column: 'edge.arrowWidths', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity }
+      ]
+    }
   }
 };
 
@@ -3025,7 +3055,8 @@ const parseTransitionSpec = ( group: GroupName, config: Record<string, unknown> 
 /** One channel's accumulated transition diffs over an apply pass. */
 interface TxnEntry {
   column: ColumnId;
-  kind: 'scalar' | 'color';
+  kind: 'scalar' | 'color' | 'lane';
+  lane?: number;
   paint: boolean;
   min: number;
   max: number;
@@ -3034,12 +3065,14 @@ interface TxnEntry {
   to: ( number | RGBA )[];
 }
 
-/** An open transition capture (one per group-def apply pass). */
+/** An open transition capture (one per group-def apply pass).  Entries
+ * key on `column:lane` — a lane column (edge.arrowWidths) can carry
+ * two independent entries. */
 interface TxnCapture {
   group: GroupName;
   spec: TransitionSpec;
-  channels: { main: TransitionChannel; rides: TransitionChannel[] }[];
-  entries: Map<ColumnId, TxnEntry>;
+  channels: { main: TransitionChannel; rides: readonly TxnChannelDesc[] }[];
+  entries: Map<string, TxnEntry>;
 }
 
 const rgbaEq = ( a: RGBA, b: RGBA ): boolean =>
@@ -3587,14 +3620,10 @@ export class StyleEngine {
     for( const prop of spec.props ){
       const ch = table[ prop ];
 
-      // props with no tweenable channel (discrete, geometry) snap — the
-      // apply pass already wrote them, so snapping is doing nothing here
+      // props with no tweenable channel (discrete) snap — the apply
+      // pass already wrote them, so snapping is doing nothing here
       if( ch != null ){
-        channels.push( {
-          main: ch,
-          rides: ( ch.rides ?? [] ).map( column =>
-            ( { column, kind: 'color' as const, paint: true, min: -Infinity, max: Infinity } ) )
-        } );
+        channels.push( { main: ch, rides: ch.rides ?? [] } );
       }
     }
 
@@ -3620,7 +3649,7 @@ export class StyleEngine {
     const seen = new Set<number>();
 
     for( const e of txn.entries.values() ){
-      writes.push( buildChannelWrite( e.column, e.kind, e.paint, e.refs, e.from, e.to, e.min, e.max ) );
+      writes.push( buildChannelWrite( e.column, e.kind, e.paint, e.refs, e.from, e.to, e.min, e.max, e.lane ) );
 
       for( const ref of e.refs ){
         if( !seen.has( ref.slot ) ){ seen.add( ref.slot ); refs.push( ref ); }
@@ -3632,9 +3661,21 @@ export class StyleEngine {
     } );
   }
 
-  private readTxnValue( ch: { column: ColumnId; kind: 'scalar' | 'color' }, slot: number ): number | RGBA {
+  private readTxnValue( ch: TxnChannelDesc, slot: number ): number | RGBA {
     if( ch.kind === 'scalar' ){
       return ( this.store.column( ch.column ) as Float32Array )[ slot ];
+    }
+
+    if( ch.kind === 'lane' ){
+      // the edge layer records hold their stroke in lane 1, ×256
+      // fixed-point (matching setLane's encode)
+      if( ch.column === 'edge.casing' || ch.column === 'edge.overlay' || ch.column === 'edge.underlay' ){
+        return ( this.store.column( ch.column ) as Uint32Array )[ slot * 2 + 1 ] / 256;
+      }
+
+      const arr = this.store.column( ch.column ) as Float32Array;
+
+      return arr[ slot * columnSpec( ch.column ).components + ( ch.lane as number ) ];
     }
 
     const bytes = this.store.column( ch.column ) as Uint8Array;
@@ -3667,15 +3708,18 @@ export class StyleEngine {
     let i = 0;
     let ref: Ref | null = null;
 
-    const record = ( ch: { column: ColumnId; kind: 'scalar' | 'color'; paint: boolean; min: number; max: number },
-      from: number | RGBA, to: number | RGBA ): void => {
+    const record = ( ch: TxnChannelDesc, from: number | RGBA, to: number | RGBA ): void => {
       ref ??= this.store.ref( group, slot );
 
-      let entry = txn.entries.get( ch.column );
+      const key = ch.lane == null ? ch.column : `${ch.column}:${ch.lane}`;
+      let entry = txn.entries.get( key );
 
       if( entry == null ){
-        entry = { column: ch.column, kind: ch.kind, paint: ch.paint, min: ch.min, max: ch.max, refs: [], from: [], to: [] };
-        txn.entries.set( ch.column, entry );
+        entry = {
+          column: ch.column, kind: ch.kind, lane: ch.lane, paint: ch.paint,
+          min: ch.min, max: ch.max, refs: [], from: [], to: []
+        };
+        txn.entries.set( key, entry );
       }
 
       entry.refs.push( ref );
@@ -3684,6 +3728,10 @@ export class StyleEngine {
 
       if( ch.kind === 'scalar' ){
         this.store.setScalar( ch.column, slot, from as number );
+      } else if( ch.kind === 'lane' ){
+        // the lane restore runs the full cascade (a node.size restore
+        // re-anchors the label the apply pass just baked at the target)
+        this.store.setLane( ch.column, slot, ch.lane as number, from as number );
       } else {
         const [ r, g, b, a ] = from as RGBA;
 
@@ -3691,12 +3739,19 @@ export class StyleEngine {
       }
     };
 
+    const eq = ( ch: TxnChannelDesc, a: number | RGBA, b: number | RGBA ): boolean =>
+      ch.kind === 'color' ? rgbaEq( a as RGBA, b as RGBA ) : ( a as number ) === ( b as number );
+
+    // a compound parent's size is auto-bounds-derived: its lanes never
+    // record (the tween would fight the derivation — round 25.3)
+    const isParentSlot = group === 'nodes' && this.store.hasCompounds()
+      && this.store.hasFlag( 'nodes', slot, FLAG_PARENT );
+
     for( const { main, rides } of txn.channels ){
       const from = pre[ i++ ];
       const to = this.readTxnValue( main, slot );
-      const changed = main.kind === 'scalar'
-        ? ( from as number ) !== ( to as number )
-        : !rgbaEq( from as RGBA, to as RGBA );
+      const skip = isParentSlot && main.column === 'node.size';
+      const changed = !skip && !eq( main, from, to );
 
       if( changed ){ record( main, from, to ); }
 
@@ -3707,7 +3762,7 @@ export class StyleEngine {
 
         const rideTo = this.readTxnValue( r, slot );
 
-        if( !rgbaEq( rideFrom as RGBA, rideTo as RGBA ) ){ record( r, rideFrom, rideTo ); }
+        if( !eq( r, rideFrom, rideTo ) ){ record( r, rideFrom, rideTo ); }
       }
     }
   }

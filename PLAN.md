@@ -5897,11 +5897,29 @@ commit(s)):
   additive casing ride, ride-only-when-enabled (a disabled
   underlay's record never moves).  2264 Node tests, 63 module
   tests, typecheck + lint clean.
-- [ ] **25.3 Size transitions** — `TRANSITION_CHANNELS`
-  width/height/edge-width (+ rides), txn lane support, flip the
-  round-24 snap specs, transition specs: sheet-swap size tween,
-  delay holds pre-restyle size, batch net-change, mapper-driven
-  size transition (data write → size scale moves → tween).
+- [x] **25.3 Size transitions** (2026-08-02) — landed:
+  `TRANSITION_CHANNELS` gains nodes `width`/`height` (`node.size`
+  lane channels) and edges `width` with its baked derivatives as
+  **lane rides** (casing/overlay/underlay stroke lanes ×256
+  fixed-point, both `edge.arrowWidths` lanes — stored-truth
+  diffing catches them because the apply pass rewrites them in
+  the same funnel; rides move only when the width moved).  The
+  txn machinery learned the `lane` kind end to end: descriptors
+  (`TxnChannelDesc`, rides as full descriptors now), lane
+  read/restore (restore runs the full size cascade, so the label
+  the apply pass baked at the target re-anchors back to the held
+  size), entries keyed `column:lane` (arrowWidths carries two),
+  `buildChannelWrite` takes the lane through to the write.
+  Parent slots never record a `node.size` transition (the
+  auto-bounds rule, checked per slot in the diff).  The round-24
+  "geometry snaps" spec flipped to "geometry tweens"; 5 new specs:
+  sheet-swap both lanes with live bb, per-tick label re-anchor
+  under a transition (held size restores the anchor too),
+  edge-width rides (match-line + casing) with held pre-restyle
+  values, a mapped width transition on a data write (scale move),
+  and the parent-slot never-records pin (parent follows through
+  auto-bounds only).  2269 Node tests, 63 module tests, typecheck
+  + lint clean.
 - [ ] **25.4 Padding** — the `padding` write kind (animation) +
   the parents-apply transition capture, specs: per-tick
   auto-bounds, % unit, unit-flip snap, leaf filter,

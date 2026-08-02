@@ -270,19 +270,21 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
  * animation's — one set of numbers, the same two executors.
  */
 export const buildChannelWrite = (
-  column: ColumnId, kind: 'scalar' | 'color', paint: boolean, refs: Ref[],
+  column: ColumnId, kind: 'scalar' | 'color' | 'lane', paint: boolean, refs: Ref[],
   from: ( number | RGBA )[], to: ( number | RGBA )[],
-  min = -Infinity, max = Infinity
+  min = -Infinity, max = Infinity, lane?: number
 ): ChannelWrite => {
   const write = blankWrite( column, kind, paint, refs, min, max );
 
+  if( lane != null ){ write.lane = lane; }
+
   for( let i = 0; i < refs.length; i++ ){
-    if( kind === 'scalar' ){
-      write.data[ i * 2 ] = from[ i ] as number;
-      write.data[ i * 2 + 1 ] = to[ i ] as number;
-    } else {
+    if( kind === 'color' ){
       packOklab( write.data, i * 8, from[ i ] as RGBA );
       packOklab( write.data, i * 8 + 4, to[ i ] as RGBA );
+    } else { // scalar and lane share the (from, to) stride
+      write.data[ i * 2 ] = from[ i ] as number;
+      write.data[ i * 2 + 1 ] = to[ i ] as number;
     }
   }
 

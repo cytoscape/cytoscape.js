@@ -678,9 +678,13 @@ each is deliberate, not a pass-1 deferral:
   value.  `transition-property` accepts **every** prop name of its
   group (unknown or wrong-group names throw): number/color channels
   in the animatable set tween (opacity both groups,
-  background/border/line colors, border-width), discrete and
-  not-yet-animatable geometry props snap at the transition's start
-  (recorded — the geometry tween is the logged follow-up round).
+  background/border/line colors, border-width, and — round 25.3 —
+  node `width`/`height` as `node.size` lane channels and edge
+  `width` with its baked derivatives as lane rides: casing/overlay/
+  underlay strokes and the match-line/percent arrow widths, moving
+  only when the width itself moved; parent slots never record a
+  size transition — auto-bounds own them), while discrete props
+  snap at the transition's start (recorded).
   Mechanics: the diff runs on **stored truth** around the engine's
   one channel funnel and packs into bulk per-column ChannelWrites
   (one preset animation per apply pass — never per-element
@@ -2319,8 +2323,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   mapper re-evaluations trigger; v3 transitioned on class/bypass
   changes); durations/delays are plain numbers of milliseconds (no
   v3 time-unit strings); transition config is constants-only (no
-  per-element transition props); discrete and geometry channels
-  snap at the transition's start until the geometry-tween round;
+  per-element transition props); discrete channels snap at the
+  transition's start (geometry numerics tween since round 25);
   channel-opacity folds transition under their color prop
   (stored-truth diffing); a listed prop's mapper eval never runs on
   the GPU eval kernel (mutually exclusive per channel); `progress`

@@ -4518,6 +4518,19 @@ export class StyleEngine {
     return ( this.defs.edges.computed as Computed ).lineOpacity;
   }
 
+  /** The sheet's arrow-width modes (constants-only props) — an
+   * edge-width tween needs these to carry the style-write-resolved
+   * `edge.arrowWidths` along (round 25.2): 'match-line' and percent
+   * forms baked the width, plain numbers did not. */
+  arrowWidthModes(): {
+    source: number | 'match-line' | { percent: number };
+    target: number | 'match-line' | { percent: number };
+  } {
+    const computed = this.defs.edges.computed as Computed;
+
+    return { source: computed.sourceArrowWidth, target: computed.targetArrowWidth };
+  }
+
   arrowBase( ref: Ref, colorProp: string ): RGBA {
     const def = this.defs.edges;
     const computed = def.computed as Computed;

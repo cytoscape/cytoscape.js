@@ -812,8 +812,8 @@ each is deliberate, not a pass-1 deferral:
     which cannot recover it when the folded opacity was 0.
   - Animatable today: `position`, `opacity` (both groups), node
     `background-color`/`border-color`, `edge.line-color`, node
-    `border-width`, and — round 25.1 — node `width`/`height` (the
-    geometry-tween round; see the bullet below).
+    `border-width`, and — round 25 — node `width`/`height` and edge
+    `width` (the geometry-tween round; see the bullet below).
   - **Viewport targets** (round 10): `cy.animate`/`cy.animation` take
     `pan`/`zoom`, plus `fit: { eles | boundingBox, padding }` and
     `center: { eles }` — resolved to concrete pan/zoom when the
@@ -834,7 +834,20 @@ each is deliberate, not a pass-1 deferral:
   monotone cull meters, **label re-anchor** — hoisted from the
   parent-materialize path, closing the raw-size-write staleness hole —
   and compound auto-bounds marking, so a child's size tween drives its
-  parent's derived box per tick).  The compound-loop excursion bound
+  parent's derived box per tick).  Landed 25.2 — **edge `width`**: the
+  width column itself reads live everywhere (quad/strip expansion,
+  arrow sizing, cull), but three derived channels bake it at
+  style-write, all linear in it, so the capture carries them as
+  ride-along lane writes (the arrow-alpha-fold pattern): the casing
+  and overlay/underlay strokes ride *additively from stored truth*
+  (to = stored + Δwidth — mapper-resolved paddings and outline widths
+  need no engine round trip), gated per slot on the layer being
+  enabled, and the hollow-arrow `edge.arrowWidths` ride by mode
+  ('match-line' → the target width, percent → pct × target, plain
+  numbers never baked the width and stay), modes answered by
+  `StyleEngine.arrowWidthModes()` (arrow widths are constants-only
+  props).  The stroke lanes of the layer records are ×256 fixed-point;
+  the store's `setLane` encodes on the way in.  The compound-loop excursion bound
   needs no new invalidation: auto-bounds read children's *outer*
   halves, so an ancestor's outerHalfW always dominates its
   descendants' and the bound (a max over both ends' stretches) can

@@ -5880,10 +5880,23 @@ commit(s)):
   CMPD p2-growth pin, width-vs-height channel eviction, reverse
   continuity, spring clamp at the 0 floor, pause/resume.  2260
   Node tests, 63 module tests, typecheck + lint clean.
-- [ ] **25.2 Edge width + rides** — edge `width` animation with
-  the ride set (arrowWidths modes, casing, overlay/underlay
-  strokes), engine mode helpers, specs incl. each ride form and
-  ride-only-when-enabled.
+- [x] **25.2 Edge width + rides** (2026-08-02) — landed as
+  planned: `STYLE_CHANNELS.width` gains the `edge.width` column
+  (plain scalar, geometry tier) and the capture carries the three
+  style-write-baked derivatives as ride-along lane writes
+  (`captureEdgeWidthRides`, the `captureArrowFold` pattern): the
+  casing/overlay/underlay strokes additively from stored truth
+  (to = stored + Δwidth, per-slot gated on the layer record being
+  enabled — mapper-resolved paddings/outline widths need no
+  engine round trip), and `edge.arrowWidths` by mode via the new
+  constants-only `StyleEngine.arrowWidthModes()` ('match-line' →
+  target width, percent → pct × target, numbers stay).
+  `setLane` encodes the layer records' ×256 fixed-point stroke
+  lane.  Tests: 4 specs (red then green) — live `width()` reads,
+  match-line + percent rides with stored-truth readback, the
+  additive casing ride, ride-only-when-enabled (a disabled
+  underlay's record never moves).  2264 Node tests, 63 module
+  tests, typecheck + lint clean.
 - [ ] **25.3 Size transitions** — `TRANSITION_CHANNELS`
   width/height/edge-width (+ rides), txn lane support, flip the
   round-24 snap specs, transition specs: sheet-swap size tween,

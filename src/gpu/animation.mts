@@ -99,8 +99,11 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // round 25.1: node size — two lanes of one pair column.  Sharing the
   // column means width and height share the round-21 eviction channel
   // (recorded).  Compound parents are skipped at capture *and* per tick
-  // (auto-bounds own their size column).
-  'width': { columns: { nodes: 'node.size' }, lanes: { nodes: 0 }, kind: 'scalar', tier: 'geometry', min: 0 },
+  // (auto-bounds own their size column).  25.2: edge width is a plain
+  // scalar column, but three derived channels bake it at style-write —
+  // the capture carries them as ride-along lane writes (see
+  // captureEdgeWidthRides).
+  'width': { columns: { nodes: 'node.size', edges: 'edge.width' }, lanes: { nodes: 0 }, kind: 'scalar', tier: 'geometry', min: 0 },
   'height': { columns: { nodes: 'node.size' }, lanes: { nodes: 1 }, kind: 'scalar', tier: 'geometry', min: 0 }
 };
 
@@ -754,6 +757,10 @@ export class Animation {
         // in opacity, so each arrow rides as a plain colour tween from its
         // stored bytes to base × the target opacity.
         if( column === 'edge.opacity' ){ this.captureArrowFold( refs, s.toScalar as number ); }
+
+        // 25.2: three derived channels bake the edge width at style-write
+        // (all linear in width), so a width tween carries them along
+        if( column === 'edge.width' ){ this.captureEdgeWidthRides( refs, s.toScalar as number ); }
       }
     }
 
@@ -827,6 +834,65 @@ export class Animation {
     }
 
     return write;
+  }
+
+  /**
+   * Ride-along writes for an edge-width tween (25.2): the derived
+   * channels that resolve against the width at style-write, all linear
+   * in it.  Strokes ride additively from stored truth
+   * (to = stored + Δwidth — mapper-resolved paddings/outline widths
+   * need no engine round trip), gated per slot on the layer being
+   * enabled; hollow-arrow strokes ride by mode ('match-line' → the
+   * target width, percent → pct × target; plain numbers never baked
+   * the width, so they stay).  Arrow-width modes are constants-only
+   * sheet props, answered by the engine.
+   */
+  private captureEdgeWidthRides( refs: Ref[], toWidth: number ): void {
+    const store = this.store;
+    const width = store.column( 'edge.width' ) as Float32Array;
+
+    for( const column of [ 'edge.casing', 'edge.overlay', 'edge.underlay' ] as const ){
+      const rec = store.column( column ) as Uint32Array;
+      const enabled = refs.filter( r => rec[ r.slot * 2 ] !== 0 );
+
+      if( enabled.length === 0 ){ continue; }
+
+      const write = blankWrite( column, 'lane', false, enabled, 0, Infinity );
+
+      write.lane = 1;
+
+      for( let i = 0; i < enabled.length; i++ ){
+        const slot = enabled[ i ].slot;
+        const stroke = rec[ slot * 2 + 1 ] / 256;
+
+        write.data[ i * 2 ] = stroke;
+        write.data[ i * 2 + 1 ] = stroke + ( toWidth - width[ slot ] );
+      }
+
+      this.writes.push( write );
+    }
+
+    const modes = this.styleEngine?.arrowWidthModes();
+
+    if( modes == null ){ return; }
+
+    const aw = store.column( 'edge.arrowWidths' ) as Float32Array;
+
+    for( const [ mode, lane ] of [ [ modes.source, 0 ], [ modes.target, 1 ] ] as const ){
+      if( typeof mode === 'number' ){ continue; }
+
+      const to = mode === 'match-line' ? toWidth : mode.percent * toWidth;
+      const write = blankWrite( 'edge.arrowWidths', 'lane', false, refs, 0, Infinity );
+
+      write.lane = lane;
+
+      for( let i = 0; i < refs.length; i++ ){
+        write.data[ i * 2 ] = aw[ refs[ i ].slot * 2 + lane ];
+        write.data[ i * 2 + 1 ] = to;
+      }
+
+      this.writes.push( write );
+    }
   }
 
   /** Arrow colour writes that keep the pre-folded alpha in step with an edge-opacity tween. */

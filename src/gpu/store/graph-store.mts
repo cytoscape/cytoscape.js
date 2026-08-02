@@ -1787,6 +1787,20 @@ export class GraphStore implements ModelView {
       return;
     }
 
+    // the edge layer records store their stroke in lane 1 as ×256
+    // fixed-point (see the contract) — encode on the way in
+    if( id === 'edge.casing' || id === 'edge.overlay' || id === 'edge.underlay' ){
+      const arr = this.edges.column( id ) as Uint32Array;
+      const enc = Math.max( 0, Math.round( value * 256 ) );
+
+      if( arr[ slot * 2 + 1 ] === enc ){ return; }
+
+      arr[ slot * 2 + 1 ] = enc;
+      this.dirty.mark( id, slot );
+
+      return;
+    }
+
     const spec = columnSpec( id );
     const arr = this.table( spec.group ).column( id ) as Float32Array;
     const i = slot * spec.components + lane;

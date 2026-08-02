@@ -248,6 +248,109 @@ describe('gpu/animation: geometry tweens (round 25)', function(){
       expect( seen[ seen.length - 1 ] ).to.equal( 0 );
     });
 
+    it('edge width: tweens the width column with width() reading live', function(){
+      const cy = cytoscapeGpu( {
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ]
+      } );
+      const ab = cy.$id( 'ab' );
+      const from = ab.width();
+
+      ab.animation( { style: { width: from + 10 }, duration: 100, easing: 'linear' } ).play();
+
+      drive( cy, 0, 50 );
+      expect( ab.width() ).to.be.closeTo( from + 5, 1e-4 );
+
+      drive( cy, 100 );
+      expect( ab.width() ).to.equal( from + 10 );
+    });
+
+    it('edge width: match-line and percent arrow widths ride; numbers stay', function(){
+      const cy = cytoscapeGpu( {
+        style: { edges: {
+          'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+          'source-arrow-width': 'match-line', 'target-arrow-width': '50%',
+          width: 4
+        } },
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ]
+      } );
+      const ab = cy.$id( 'ab' );
+      const s = ab._first().slot;
+      const aw = () => {
+        const c = cy._store.column( 'edge.arrowWidths' );
+
+        return { source: c[ s * 2 ], target: c[ s * 2 + 1 ] };
+      };
+
+      expect( aw() ).to.deep.equal( { source: 4, target: 2 } );
+
+      ab.animation( { style: { width: 12 }, duration: 100, easing: 'linear' } ).play();
+
+      drive( cy, 0, 50 );
+      expect( aw().source ).to.be.closeTo( 8, 1e-4 );  // match-line follows
+      expect( aw().target ).to.be.closeTo( 4, 1e-4 );  // 50% of 8
+
+      drive( cy, 100 );
+      expect( aw().source ).to.equal( 12 );
+      expect( aw().target ).to.equal( 6 );
+      expect( ab.style( 'source-arrow-width' ) ).to.equal( 12 ); // stored-truth readback
+    });
+
+    it('edge width: the casing stroke rides additively when enabled', function(){
+      const cy = cytoscapeGpu( {
+        style: { edges: { 'line-outline-width': 4, 'line-outline-color': 'black', width: 3 } },
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ]
+      } );
+      const ab = cy.$id( 'ab' );
+      const s = ab._first().slot;
+      const stroke = () => cy._store.column( 'edge.casing' )[ s * 2 + 1 ] / 256;
+
+      expect( stroke() ).to.be.closeTo( 7, 1 / 256 ); // width + outline
+
+      ab.animation( { style: { width: 13 }, duration: 100, easing: 'linear' } ).play();
+
+      drive( cy, 0, 50 );
+      expect( stroke() ).to.be.closeTo( 12, 1 / 256 ); // 8 + 4
+
+      drive( cy, 100 );
+      expect( stroke() ).to.be.closeTo( 17, 1 / 256 );
+    });
+
+    it('edge width: overlay strokes ride only when the layer is enabled', function(){
+      const cy = cytoscapeGpu( {
+        style: { edges: { 'overlay-opacity': 0.5, 'overlay-padding': 2, width: 3 } },
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ]
+      } );
+      const ab = cy.$id( 'ab' );
+      const s = ab._first().slot;
+      const overlayStroke = () => cy._store.column( 'edge.overlay' )[ s * 2 + 1 ] / 256;
+      const underlayRec = () => cy._store.column( 'edge.underlay' )[ s * 2 + 1 ];
+      const underlayBefore = underlayRec();
+
+      expect( overlayStroke() ).to.be.closeTo( 7, 1 / 256 ); // width + 2·padding
+
+      ab.animation( { style: { width: 9 }, duration: 100, easing: 'linear' } ).play();
+      drive( cy, 0, 100 );
+
+      expect( overlayStroke() ).to.be.closeTo( 13, 1 / 256 ); // 9 + 4
+      expect( underlayRec() ).to.equal( underlayBefore ); // disabled layer: no ride
+    });
+
     it('pauses and resumes a size tween with the frozen value readable', function(){
       const cy = makeCy();
       const a = cy.$id( 'a' );

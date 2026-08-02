@@ -1171,6 +1171,12 @@ export class GraphStore implements ModelView {
     this.hierarchy.setCompoundStyle( slot, style );
   }
 
+  /** Partial compound-style update over the current record — the
+   * padding tween's write (round 25.4; see HierarchyIndex). */
+  updateCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
+    this.hierarchy.updateCompoundStyle( slot, style );
+  }
+
   /** The parent's resolved px padding (0 for leaves); flush first. */
   paddingOf( slot: number ): number {
     this.flushDerived();

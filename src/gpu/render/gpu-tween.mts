@@ -258,10 +258,11 @@ fn csTween(@builtin(global_invocation_id) gid: vec3u) {
 }
 `;
 
-/** The kinds the kernels evaluate.  `lane` (round 25) is geometry-tier
- * by construction — lane writes never reach the device (`gpuEligible`
- * is false for any animation carrying one), so it has no shader. */
-export type GpuWriteKind = Exclude<WriteKind, 'lane'>;
+/** The kinds the kernels evaluate.  `lane` and `padding` (round 25)
+ * are geometry-tier by construction — such writes never reach the
+ * device (`gpuEligible` is false for any animation carrying one), so
+ * they have no shaders. */
+export type GpuWriteKind = Exclude<WriteKind, 'lane' | 'padding'>;
 
 export const TWEEN_SHADERS: Record<GpuWriteKind, string> = {
   position: POSITION_SHADER,
@@ -385,10 +386,10 @@ export class GpuTweenRuntime {
     for( const w of writes ){
       if( w.slots.length === 0 ){ continue; }
 
-      if( w.kind === 'lane' ){
-        // unreachable by the eligibility rule (a lane write bars the
+      if( w.kind === 'lane' || w.kind === 'padding' ){
+        // unreachable by the eligibility rule (a geometry write bars the
         // whole animation from the device); guard the invariant anyway
-        throw new Error( `lane writes never register on the GPU (column ${w.column})` );
+        throw new Error( `${w.kind} writes never register on the GPU (column ${w.column})` );
       }
 
       const slotBuffer = dev.createBuffer( {
@@ -404,7 +405,7 @@ export class GpuTweenRuntime {
       dev.queue.writeBuffer( dataBuffer, 0, w.data.buffer, w.data.byteOffset, w.data.byteLength );
 
       channels.push( {
-        column: w.column, kind: w.kind, count: w.slots.length,
+        column: w.column as ColumnId, kind: w.kind, count: w.slots.length,
         slotBuffer, dataBuffer, bindGroup: null, bindVersion: -1
       } );
     }

@@ -5920,10 +5920,29 @@ commit(s)):
   and the parent-slot never-records pin (parent follows through
   auto-bounds only).  2269 Node tests, 63 module tests, typecheck
   + lint clean.
-- [ ] **25.4 Padding** — the `padding` write kind (animation) +
-  the parents-apply transition capture, specs: per-tick
-  auto-bounds, % unit, unit-flip snap, leaf filter,
-  instant-on-add.
+- [x] **25.4 Padding** (2026-08-02) — landed: the `padding` write
+  kind targets the `node.padding` pseudo-column (`TweenColumn` =
+  `ColumnId` + the pseudo target; padding is a compound style
+  input, not a stored column) and writes through a new
+  **`updateCompoundStyle`** — a partial merge over the *current*
+  record, split from `setCompoundStyle` because a `{ padding }`
+  tick must not reset the unit/min sizes while sheet writes keep
+  their reset-what-you-omit semantics.  Parents-only mirrors the
+  size rule (leaves filtered at capture, re-checked per tick);
+  the declared value tweens in its declared unit (px, or the
+  %-fraction — the auto-bounds flush resolves relative modes
+  live).  The transition capture wraps the parents' compound
+  write beside the channel funnel (`applyCompoundStyle`): styled
+  marks read *before* the channel pass marks fresh slots
+  (instant-on-add holds), diff + held-value restore as usual, and
+  a px↔% unit flip snaps (recorded).  The GPU-kind narrowing
+  extends to `padding` (`GpuWriteKind` excludes both geometry
+  kinds; the runtime guard throws).  5 specs (red then green,
+  minus the unit-flip snap which pinned the status quo):
+  auto-bounds per tick via `paddedWidth()`, leaf no-op that still
+  completes, %-fraction tween, the parents-sheet transition with
+  held value, unit-flip snap.  2274 Node tests, 63 module tests,
+  typecheck + lint clean.
 - [ ] **25.5 Font-size** — the four label-path fixes,
   `setLabelFontSize` (three streams, edge anchorY),
   animation + transition wiring both groups, specs: node + edge

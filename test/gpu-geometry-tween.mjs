@@ -351,6 +351,72 @@ describe('gpu/animation: geometry tweens (round 25)', function(){
       expect( underlayRec() ).to.equal( underlayBefore ); // disabled layer: no ride
     });
 
+    it('padding: tweens the declared padding with auto-bounds following per tick', function(){
+      const cy = cytoscapeGpu( {
+        style: { parents: { padding: 10, 'border-width': 0 } },
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } }
+        ]
+      } );
+      const p = cy.$id( 'p' );
+
+      cy._store.flushDerived();
+      expect( p.paddedWidth() ).to.be.closeTo( 50, 1e-3 ); // 30 + 2·10
+
+      p.animation( { style: { padding: 30 }, duration: 100, easing: 'linear' } ).play();
+
+      drive( cy, 0, 50 );
+      cy._store.flushDerived();
+      expect( p.padding() ).to.be.closeTo( 20, 1e-4 );
+      expect( p.paddedWidth() ).to.be.closeTo( 70, 1e-3 ); // 30 + 2·20
+
+      drive( cy, 100 );
+      cy._store.flushDerived();
+      expect( p.padding() ).to.equal( 30 );
+      expect( p.paddedWidth() ).to.be.closeTo( 90, 1e-3 );
+    });
+
+    it('padding: leaf slots are filtered (a leaf has no padding)', function(){
+      const cy = makeCy();
+      const a = cy.$id( 'a' );
+      const handle = a.animation( { style: { padding: 40 }, duration: 100, easing: 'linear' } );
+
+      handle.play();
+      drive( cy, 0, 50, 100 );
+
+      expect( a.padding() ).to.equal( 0 ); // still a leaf: no-op
+      expect( handle.playing() ).to.equal( false ); // and it completed
+    });
+
+    it('padding: a percent unit tweens the declared fraction', function(){
+      const cy = cytoscapeGpu( {
+        style: { parents: { padding: '10%', 'padding-relative-to': 'width', 'border-width': 0 } },
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b', parent: 'p' }, position: { x: 70, y: 0 } }
+        ]
+      } );
+      const p = cy.$id( 'p' );
+      const slot = cy._store.lookup( 'p' ).slot;
+
+      cy._store.flushDerived();
+      // children bb 100 wide → pad 10 → box 120
+      expect( p.paddedWidth() ).to.be.closeTo( 120, 1e-3 );
+
+      p.animation( { style: { padding: 0.3 }, duration: 100, easing: 'linear' } ).play();
+
+      drive( cy, 0, 50 );
+      cy._store.flushDerived();
+      expect( cy._store.compoundStyleOf( slot ).padding ).to.be.closeTo( 0.2, 1e-6 );
+      expect( p.paddedWidth() ).to.be.closeTo( 140, 1e-3 ); // 100 + 2·(0.2·100)
+
+      drive( cy, 100 );
+      cy._store.flushDerived();
+      expect( p.paddedWidth() ).to.be.closeTo( 160, 1e-3 );
+    });
+
     it('pauses and resumes a size tween with the frozen value readable', function(){
       const cy = makeCy();
       const a = cy.$id( 'a' );

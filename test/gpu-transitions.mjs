@@ -512,6 +512,63 @@ describe('gpu/style: transitions (round 24.1)', function(){
       expect( a.width() ).to.equal( 100 );
     });
 
+    it('a parents-sheet padding transition tweens with the held pre-restyle value', function(){
+      const parentsBlock = padding => ( {
+        padding, 'border-width': 0,
+        'transition-property': [ 'padding' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } );
+      const cy = cytoscapeGpu( {
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } }
+        ],
+        style: { parents: parentsBlock( 10 ) }
+      } );
+      const p = cy.$id( 'p' );
+
+      cy._store.flushDerived();
+      expect( p.paddedWidth() ).to.be.closeTo( 50, 1e-3 ); // 30 + 2·10
+
+      cy.style( { parents: parentsBlock( 40 ) } );
+
+      cy._store.flushDerived();
+      expect( p.padding() ).to.be.closeTo( 10, 1e-4 ); // held (CSS delay rule)
+
+      drive( cy, 0, 50 );
+      cy._store.flushDerived();
+      expect( p.padding() ).to.be.closeTo( 25, 1e-4 );
+      expect( p.paddedWidth() ).to.be.closeTo( 80, 1e-3 );
+
+      drive( cy, 100 );
+      cy._store.flushDerived();
+      expect( p.padding() ).to.equal( 40 );
+      expect( p.paddedWidth() ).to.be.closeTo( 110, 1e-3 );
+    });
+
+    it('a padding unit flip snaps instead of tweening', function(){
+      const parentsBlock = padding => ( {
+        padding, 'border-width': 0,
+        'transition-property': [ 'padding' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } );
+      const cy = cytoscapeGpu( {
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } }
+        ],
+        style: { parents: parentsBlock( 10 ) }
+      } );
+
+      cy.style( { parents: parentsBlock( '50%' ) } );
+      cy._store.flushDerived();
+
+      // px → % is not tweenable: the new declared value applies at once
+      expect( cy.$id( 'p' ).padding() ).to.be.closeTo( 15, 1e-3 ); // 0.5 × 30 (bb width)
+    });
+
     it('parent slots never record a size transition (auto-bounds own them)', function(){
       const cy = cytoscapeGpu( {
         elements: [

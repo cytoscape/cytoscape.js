@@ -816,8 +816,9 @@ each is deliberate, not a pass-1 deferral:
     which cannot recover it when the folded opacity was 0.
   - Animatable today: `position`, `opacity` (both groups), node
     `background-color`/`border-color`, `edge.line-color`, node
-    `border-width`, and — round 25 — node `width`/`height` and edge
-    `width` (the geometry-tween round; see the bullet below).
+    `border-width`, and — round 25 — node `width`/`height`, edge
+    `width` and compound `padding` (the geometry-tween round; see the
+    bullet below).
   - **Viewport targets** (round 10): `cy.animate`/`cy.animation` take
     `pan`/`zoom`, plus `fit: { eles | boundingBox, padding }` and
     `center: { eles }` — resolved to concrete pan/zoom when the
@@ -851,7 +852,19 @@ each is deliberate, not a pass-1 deferral:
   numbers never baked the width and stay), modes answered by
   `StyleEngine.arrowWidthModes()` (arrow widths are constants-only
   props).  The stroke lanes of the layer records are ×256 fixed-point;
-  the store's `setLane` encodes on the way in.  The compound-loop excursion bound
+  the store's `setLane` encodes on the way in.  Landed 25.4 —
+  **compound `padding`**: the tween writes the *declared* padding (px,
+  or the fraction under the '%' unit) through a new partial-merge
+  `updateCompoundStyle` (a `{ padding }` tick must not reset the unit
+  or min sizes — sheet writes keep their reset-what-you-omit
+  semantics), the auto-bounds flush resolves it per tick (relative
+  modes follow live), and parents-only is the mirror of the size
+  rule: leaves are filtered at capture and re-checked per tick.  The
+  transition capture wraps the parents' compound-style write beside
+  the channel funnel (the styled marks are read before the channel
+  pass marks fresh slots, so instant-on-add holds for padding too),
+  and a px↔% unit flip snaps — tweening across units has no meaning
+  (recorded).  The compound-loop excursion bound
   needs no new invalidation: auto-bounds read children's *outer*
   halves, so an ancestor's outerHalfW always dominates its
   descendants' and the bound (a max over both ends' stretches) can

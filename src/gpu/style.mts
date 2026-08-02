@@ -49,7 +49,7 @@ const ENDPT_END_DEFAULT: EndpointEnd = { mode: ENDPT_DEFAULT, a: 0, b: 0, pct: 0
 
 import { compileEasing } from './easing.mjs';
 import { buildChannelWrite } from './animation.mjs';
-import type { ChannelWrite } from './animation.mjs';
+import type { ChannelWrite, TweenColumn } from './animation.mjs';
 import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './style-scales.mjs';
 import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
@@ -3054,8 +3054,8 @@ const parseTransitionSpec = ( group: GroupName, config: Record<string, unknown> 
 
 /** One channel's accumulated transition diffs over an apply pass. */
 interface TxnEntry {
-  column: ColumnId;
-  kind: 'scalar' | 'color' | 'lane';
+  column: TweenColumn;
+  kind: 'scalar' | 'color' | 'lane' | 'padding';
   lane?: number;
   paint: boolean;
   min: number;
@@ -3067,12 +3067,15 @@ interface TxnEntry {
 
 /** An open transition capture (one per group-def apply pass).  Entries
  * key on `column:lane` — a lane column (edge.arrowWidths) can carry
- * two independent entries. */
+ * two independent entries.  `padding` (round 25.4) marks the compound
+ * padding as listed — its diff runs beside the channel funnel, in the
+ * parents' compound-style write. */
 interface TxnCapture {
   group: GroupName;
   spec: TransitionSpec;
   channels: { main: TransitionChannel; rides: readonly TxnChannelDesc[] }[];
   entries: Map<string, TxnEntry>;
+  padding: boolean;
 }
 
 const rgbaEq = ( a: RGBA, b: RGBA ): boolean =>
@@ -3569,10 +3572,26 @@ export class StyleEngine {
       if( leaves.length > 0 ){ this.applyGroupDef( 'nodes', this.defs.nodes, leaves ); }
 
       if( parents.length > 0 ){
-        this.applyGroupDef( 'nodes', this.defs.parents, parents );
+        const def = this.defs.parents;
+        // padding transitions (25.4): the compound-style write sits
+        // outside the write() funnel, so it takes its own capture.
+        // The styled marks are read before the channel pass marks
+        // fresh slots (instant-on-add must hold for padding too).
+        const txn = this.openTxn( 'nodes', def );
+        const styledBefore = txn != null && txn.padding
+          ? parents.map( slot => this.wasStyled( 'nodes', slot ) )
+          : null;
 
-        for( const slot of parents ){
-          this.store.setCompoundStyle( slot, this.parentCompound );
+        try {
+          // the inner openTxn no-ops while this capture is open, so
+          // the channel diffs land in the same preset animation
+          this.applyGroupDef( 'nodes', def, parents );
+
+          for( let i = 0; i < parents.length; i++ ){
+            this.applyCompoundStyle( txn, parents[ i ], styledBefore == null ? false : styledBefore[ i ] );
+          }
+        } finally {
+          this.closeTxn( txn );
         }
       }
 
@@ -3580,6 +3599,47 @@ export class StyleEngine {
     }
 
     this.applyGroupDef( group, this.defs[ group ], slots );
+  }
+
+  /**
+   * The parents' compound-style write with the padding transition
+   * capture (round 25.4): diff the declared padding around the sheet
+   * write, snap on a px↔% unit flip (tweening across units has no
+   * meaning — recorded), and restore the held pre-restyle value
+   * (CSS's delay rule, like the channel diffs).
+   */
+  private applyCompoundStyle( txn: TxnCapture | null, slot: number, styled: boolean ): void {
+    const store = this.store;
+
+    if( txn == null || !txn.padding || !styled ){
+      store.setCompoundStyle( slot, this.parentCompound );
+
+      return;
+    }
+
+    const before = store.compoundStyleOf( slot );
+
+    store.setCompoundStyle( slot, this.parentCompound );
+
+    const after = store.compoundStyleOf( slot );
+
+    if( after.paddingUnit !== before.paddingUnit || after.padding === before.padding ){ return; }
+
+    let entry = txn.entries.get( 'node.padding' );
+
+    if( entry == null ){
+      entry = {
+        column: 'node.padding', kind: 'padding', paint: false,
+        min: 0, max: Infinity, refs: [], from: [], to: []
+      };
+      txn.entries.set( 'node.padding', entry );
+    }
+
+    entry.refs.push( store.ref( 'nodes', slot ) );
+    entry.from.push( before.padding );
+    entry.to.push( after.padding );
+
+    store.updateCompoundStyle( slot, { padding: before.padding } );
   }
 
   private applyGroupDef( group: GroupName, def: GroupDef, slots: ArrayLike<number> ): void {
@@ -3627,9 +3687,13 @@ export class StyleEngine {
       }
     }
 
-    if( channels.length === 0 ){ return null; }
+    // compound padding (25.4) diffs in the parents' compound-style
+    // write, not the channel funnel — flag it as listed
+    const padding = group === 'nodes' && spec.props.includes( 'padding' );
 
-    this.txn = { group, spec, channels, entries: new Map() };
+    if( channels.length === 0 && !padding ){ return null; }
+
+    this.txn = { group, spec, channels, entries: new Map(), padding };
 
     return this.txn;
   }

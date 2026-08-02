@@ -207,9 +207,19 @@ export class HierarchyIndex {
     return this.pending.size > 0;
   }
 
-  /** Store a parent's compound style inputs (partial; merged over defaults). */
+  /** Store a parent's compound style inputs (partial; merged over
+   * defaults — a sheet write's omitted fields deliberately reset). */
   setCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
     this.compoundStyle.set( slot, { ...COMPOUND_STYLE_DEFAULTS, ...style } );
+    this.markGeo( slot );
+  }
+
+  /** Merge a partial update over the *current* record (round 25.4: a
+   * padding tween tick writes `{ padding }` alone and must not reset
+   * the unit or min sizes — unlike a sheet write, which resets what it
+   * omits). */
+  updateCompoundStyle( slot: number, style: Partial<CompoundStyle> ): void {
+    this.compoundStyle.set( slot, { ...COMPOUND_STYLE_DEFAULTS, ...this.compoundStyle.get( slot ), ...style } );
     this.markGeo( slot );
   }
 

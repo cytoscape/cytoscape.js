@@ -73,7 +73,7 @@ const GROUPS: GroupName[] = [ 'nodes', 'edges' ];
  * seam and belongs with that work, not here.
  */
 interface StyleChannel {
-  columns: Partial<Record<GroupName, ColumnId>>;
+  columns: Partial<Record<GroupName, TweenColumn>>;
   kind: 'scalar' | 'color';
   tier: 'paint' | 'geometry';
   /** round 25: the channel is one lane of a multi-component column
@@ -104,7 +104,11 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // the capture carries them as ride-along lane writes (see
   // captureEdgeWidthRides).
   'width': { columns: { nodes: 'node.size', edges: 'edge.width' }, lanes: { nodes: 0 }, kind: 'scalar', tier: 'geometry', min: 0 },
-  'height': { columns: { nodes: 'node.size' }, lanes: { nodes: 1 }, kind: 'scalar', tier: 'geometry', min: 0 }
+  'height': { columns: { nodes: 'node.size' }, lanes: { nodes: 1 }, kind: 'scalar', tier: 'geometry', min: 0 },
+  // round 25.4: compound padding — the declared value in its declared
+  // unit (px, or a fraction under '%'); parents only, resolved by the
+  // auto-bounds flush per tick
+  'padding': { columns: { nodes: 'node.padding' }, kind: 'scalar', tier: 'geometry', min: 0 }
 };
 
 const normalizeProp = ( prop: string ): string => prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
@@ -186,7 +190,16 @@ interface CompiledStyle {
   toColor?: RGBA;
 }
 
-export type WriteKind = 'position' | 'scalar' | 'color' | 'lane';
+export type WriteKind = 'position' | 'scalar' | 'color' | 'lane' | 'padding';
+
+/**
+ * Tween write targets: the real columns plus the compound-padding
+ * pseudo-column (round 25.4) — padding is a per-parent compound style
+ * input, not a stored column; `padding` writes route through
+ * `setCompoundStyle` and the auto-bounds derivation resolves them
+ * (px, or a fraction under the '%' unit) at the lazy flush.
+ */
+export type TweenColumn = ColumnId | 'node.padding';
 
 /**
  * One column's worth of resolved tween data, captured once at start.
@@ -198,7 +211,7 @@ export type WriteKind = 'position' | 'scalar' | 'color' | 'lane';
  * exact same numbers.
  */
 export interface ChannelWrite {
-  column: ColumnId;
+  column: TweenColumn;
   kind: WriteKind;
   /** the column has no CPU consumer, so a GPU tween may own it outright */
   paint: boolean;
@@ -220,10 +233,10 @@ const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
 const clampTo = ( v: number, lo: number, hi: number ): number => v < lo ? lo : v > hi ? hi : v;
 
 /** Floats per slot in `ChannelWrite.data`, by kind. */
-export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8, lane: 2 };
+export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8, lane: 2, padding: 2 };
 
 const blankWrite = (
-  column: ColumnId, kind: WriteKind, paint: boolean, refs: Ref[],
+  column: TweenColumn, kind: WriteKind, paint: boolean, refs: Ref[],
   min = -Infinity, max = Infinity
 ): ChannelWrite => ( {
   column, kind, paint, refs, min, max,
@@ -270,7 +283,7 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
  * animation's — one set of numbers, the same two executors.
  */
 export const buildChannelWrite = (
-  column: ColumnId, kind: 'scalar' | 'color' | 'lane', paint: boolean, refs: Ref[],
+  column: TweenColumn, kind: 'scalar' | 'color' | 'lane' | 'padding', paint: boolean, refs: Ref[],
   from: ( number | RGBA )[], to: ( number | RGBA )[],
   min = -Infinity, max = Infinity, lane?: number
 ): ChannelWrite => {
@@ -735,12 +748,15 @@ export class Animation {
 
         // round 25.1: a compound parent's size is auto-bounds-derived —
         // width/height tweens skip parent slots (padding is the parent
-        // knob; recorded)
+        // knob; recorded); 25.4: padding conversely is parents-only
         const lane = s.channel.lanes?.[ group ];
 
         if( column === 'node.size' ){
           refs = refs.filter( r =>
             ( this.store.flags( 'nodes', r.slot ) & FLAG_PARENT ) === 0 );
+        } else if( column === 'node.padding' ){
+          refs = refs.filter( r =>
+            ( this.store.flags( 'nodes', r.slot ) & FLAG_PARENT ) !== 0 );
         }
 
         if( refs.length === 0 ){ continue; }
@@ -748,10 +764,12 @@ export class Animation {
         const paint = s.channel.tier === 'paint';
 
         this.writes.push( s.channel.kind === 'color'
-          ? this.colorWrite( column, refs, paint, () => s.toColor as RGBA )
-          : lane != null
-            ? this.laneWrite( column, refs, lane, s.toScalar as number, s.channel )
-            : this.scalarWrite( column, refs, paint, s.toScalar as number, s.channel ) );
+          ? this.colorWrite( column as ColumnId, refs, paint, () => s.toColor as RGBA )
+          : column === 'node.padding'
+            ? this.paddingWrite( refs, s.toScalar as number, s.channel )
+            : lane != null
+              ? this.laneWrite( column as ColumnId, refs, lane, s.toScalar as number, s.channel )
+              : this.scalarWrite( column as ColumnId, refs, paint, s.toScalar as number, s.channel ) );
 
         // edge opacity is pre-folded into the stored arrow alpha (the arrow
         // vertex stage has no spare storage binding for the opacity column),
@@ -802,6 +820,20 @@ export class Animation {
 
     for( let i = 0; i < refs.length; i++ ){
       write.data[ i * 2 ] = readScalar( this.store, column, refs[ i ].slot );
+      write.data[ i * 2 + 1 ] = to;
+    }
+
+    return write;
+  }
+
+  /** Round 25.4: tween a parent's declared compound padding — from is
+   * the stored declaration in its declared unit; the auto-bounds flush
+   * resolves it per tick. */
+  private paddingWrite( refs: Ref[], to: number, channel: StyleChannel ): ChannelWrite {
+    const write = blankWrite( 'node.padding', 'padding', false, refs, channel.min, channel.max );
+
+    for( let i = 0; i < refs.length; i++ ){
+      write.data[ i * 2 ] = this.store.compoundStyleOf( refs[ i ].slot ).padding;
       write.data[ i * 2 + 1 ] = to;
     }
 
@@ -936,13 +968,13 @@ export class Animation {
               lerp( w.data[ i * 4 + 1 ], w.data[ i * 4 + 3 ], e ) );
             break;
           case 'scalar':
-            store.setScalar( w.column, slot,
+            store.setScalar( w.column as ColumnId, slot,
               clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
             break;
           case 'color': {
             const [ r, g, b, a ] = mixOklab( w.data, i * 8, e );
 
-            store.setColor( w.column, slot, r, g, b, a );
+            store.setColor( w.column as ColumnId, slot, r, g, b, a );
             break;
           }
           case 'lane':
@@ -951,8 +983,16 @@ export class Animation {
             if( w.column === 'node.size'
               && ( store.flags( 'nodes', slot ) & FLAG_PARENT ) !== 0 ){ break; }
 
-            store.setLane( w.column, slot, w.lane as number,
+            store.setLane( w.column as ColumnId, slot, w.lane as number,
               clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
+            break;
+          case 'padding':
+            // parents only — a mid-tween parent→leaf flip drops the slot
+            if( ( store.flags( 'nodes', slot ) & FLAG_PARENT ) === 0 ){ break; }
+
+            store.updateCompoundStyle( slot, {
+              padding: clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max )
+            } );
             break;
         }
       }

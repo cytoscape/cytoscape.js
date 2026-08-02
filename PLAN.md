@@ -6005,3 +6005,119 @@ commit(s)):
   libraries, an environment gap needing sudo, not a regression;
   re-verify on a webkit-capable machine when convenient).
   **Round 25 is complete.**
+
+## Round 26 plan — the authoring surface: JSDoc + shipped types (planned 2026-08-02)
+
+**Direction taken 2026-08-02 (user).**  The v3 code *and* the v3
+documentation stay untouched until v4 actually ships, so every v3
+asset remains available for comparison benchmarks and parity work.
+The near-term documentation task is therefore **not** a v4 docs
+site: it is **JSDoc on the v4 source** — the whole public API, and
+ideally every class and every function within it — from which
+docmaker input can later be *generated* rather than hand-written.
+Nothing in this round changes runtime behaviour or public API
+semantics; it is the authoring surface for the docs that come at
+release.
+
+**Code investigation (2026-08-02, precedes this plan):**
+
+- Public-member JSDoc coverage across `src/gpu` is **395/852 (46%)**
+  (audit rule: members of exported classes whose names do not start
+  with `_`).  The two files that *are* the public API are the worst
+  covered: `collection.mts` 66/204 (32%) and `core.mts` 33/89 (37%).
+  `animation.mts` is 33/48 (69%), `viewport.mts` 11/18, and the
+  built-in layouts are 0/3 each.
+- The comments that exist already **drift**:
+  `GpuCollection.animate()` still advertises the pre-round-25
+  animatable set (no width/height, edge width, padding or
+  font-size).  A JSDoc pass is also a true-up pass.
+- The docmaker target shape (`documentation/docmaker.json`) is
+  `{ name, descr, formats: [ { descr, args: [ { name, descr } ] } ],
+  md }` — a summary sentence, per-overload descriptions and named
+  arguments, grouped into named subsections.  Standard JSDoc
+  (`@param`, `@returns`, overload blocks) carries all of it.
+- Both public classes already carry `// -- <group> --` banner
+  comments whose groupings mirror docmaker's subsections almost 1:1
+  (24 banners in `collection.mts`, 14 in `core.mts` — "graph
+  manipulation", "viewport", "traversal", "events", ...).  So
+  section placement needs **no new tag**: the banners already are
+  the grouping.
+- The `./gpu` package export maps `"import"` only — **no `types`
+  key and no `.d.ts`** — and the seven `test:types:*` scripts
+  contain zero gpu references, so `import cytoscapeGpu from
+  'cytoscape/gpu'` resolves to untyped JS today.  Pointing the
+  existing `rolldown.dts.config.mjs` at `src/gpu/index.mts` emits a
+  complete 4,508-line / 191 KB declaration bundle in ~300 ms with
+  no errors: the declarations are a config addition, not a project.
+
+**Design calls (round 26):**
+
+1. **JSDoc is the documentation source of truth for v4.**  Prose
+   about what a member does lives next to the member, not in a
+   parallel markdown tree.  `src/gpu/README.md` keeps its role —
+   scope, design decisions, deviations, the cross-cutting
+   narrative — and PLAN.md keeps the logbook; neither duplicates
+   per-member documentation.  The eventual release docs are
+   *generated* from these comments.
+2. **Standard tags only; banners are the sections.**  `@param`,
+   `@returns`, `@throws`, `@example`, `@see`, `@defaultValue`.  No
+   bespoke `@section`/`@docs` tag: a generator reads the existing
+   `// -- <group> --` banners for placement, so this round's job is
+   to make the banners complete and consistent rather than to
+   invent a vocabulary.  Overloads get one doc block per signature,
+   matching docmaker's `formats` array.
+3. **A doc comment states the contract, not the implementation.**
+   What it does, what it takes, what it returns, what it throws,
+   and — where v4 deliberately differs — the deviation, in the
+   voice the README already uses ("v3 does X; v4 does Y because
+   Z").  Round references (`(19.3)`, `(round 25)`) stay: they are
+   how this codebase cites its own history.  Existing comments are
+   corrected where they have drifted rather than left beside new
+   ones.
+4. **Declarations ship with the docs in them.**  `cytoscape/gpu`
+   gains a real `.d.ts` built by the existing pipeline, so the
+   JSDoc written in this round reaches consumers' editors as
+   hover text.  This is the payoff that makes the comment pass
+   immediately useful instead of only useful at release.
+5. **Coverage is enforced, not aspirational.**  The audit becomes
+   a checked-in script plus a Node test: the *public API tier*
+   (the entry point, `GpuCore`, `GpuCollection`, the animation
+   handle, the layout contract and the public style/option types)
+   is gated at 100%, and the internal tier is reported with a
+   floor that ratchets up as passes land.  Without a gate a
+   46%-covered surface silently returns to 46%.
+
+**Pass split** (docs in-commit; each pass its own commit(s)):
+
+- [x] **26.1 The convention + the core surface** (2026-08-02) —
+  landed as planned: `scripts/gpu-jsdoc-coverage.mjs` (the two-tier
+  audit, `--verbose` for the per-member list),
+  `test/gpu-jsdoc-coverage.mjs` (the completed-files ratchet + the
+  tier floors), the conventions recorded in `src/gpu/README.md`
+  ("Documenting the source"), and `core.mts` 33/89 → **89/89** plus
+  `viewport.mts` 11/18 → **18/18**.  Two drift fixes found by
+  writing the comments: `json()`'s doc block had become stranded
+  above `serialize()` (so `json()` read as undocumented and
+  `serialize()` carried the wrong prose), and the batching
+  narrative was a bare `/* */` note rather than doc comments on
+  `startBatch`/`endBatch`/`batch`.  Public tier 42.4% → **58.1%**;
+  floors set to 58/49.  Typecheck, 2286 Node tests (6 new), 63
+  module tests, lint clean.
+- [ ] **26.2 The collection surface** — every public member of
+  `GpuCollection` (`collection.mts`), the largest single surface
+  (204 members), including the traversal, compound, algorithm and
+  style-getter families.
+- [ ] **26.3 Animation, layouts, style, entry points** —
+  `animation.mts`, `layout/` (the contract + the six built-ins),
+  the public half of `style.mts`, and `index.mts`/`wire.mts`/
+  `columnar.mts`/`gpu-types.mts`.
+- [ ] **26.4 The internal subsystems** — `store/`, `render/`,
+  `interact/`, `algorithms/`: classes and functions documented for
+  the next maintainer rather than for the docs site.
+- [ ] **26.5 Shipped declarations for `cytoscape/gpu`** — the dts
+  build wired for the gpu entry, the `./gpu` export's `types` key,
+  and a types-surface test that pins the exported shape and proves
+  the doc comments survive into the declarations.
+- [ ] **26.6 Closing docs sweep** — the standing rule: sweep both
+  documents end to end, verify every section the round touched
+  reads true, and land the fixes as the round's closing commit.

@@ -37,13 +37,22 @@ export interface ViewportHost {
  * the setters and emits zoom/pan/viewport/fit events.
  */
 export class Viewport {
+  /** Lower zoom bound; the current zoom is clamped into it on every set. */
   minZoom: number;
+
+  /** Upper zoom bound; the current zoom is clamped into it on every set. */
   maxZoom: number;
 
   private host: ViewportHost;
   private _zoom: number;
   private _pan: Position;
 
+  /**
+   * @param host — supplies the rendered viewport dimensions (the core)
+   * @param opts — initial `zoom` (default 1, clamped) and `pan` (default
+   *   the origin), plus the `minZoom`/`maxZoom` bounds, which default
+   *   wide enough (1e-50 … 1e50) to be effectively unbounded
+   */
   constructor( host: ViewportHost, opts: { zoom?: number; pan?: Position; minZoom?: number; maxZoom?: number } = {} ){
     this.host = host;
     this.minZoom = opts.minZoom ?? 1e-50;
@@ -52,6 +61,11 @@ export class Viewport {
     this._pan = { x: opts.pan?.x ?? 0, y: opts.pan?.y ?? 0 };
   }
 
+  /**
+   * The current zoom level.
+   *
+   * @returns model-to-rendered scale
+   */
   zoom(): number {
     return this._zoom;
   }
@@ -115,6 +129,12 @@ export class Viewport {
     return true;
   }
 
+  /**
+   * Shift the pan by a rendered-space delta.
+   *
+   * @param delta — the offset to add; missing components count as 0
+   * @returns true when the pan changed
+   */
   panBy( delta: Position ): boolean {
     return this.setPan( { x: this._pan.x + ( delta.x || 0 ), y: this._pan.y + ( delta.y || 0 ) } );
   }
@@ -204,10 +224,23 @@ export class Viewport {
     return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
   }
 
+  /**
+   * Project a model-space point into rendered (CSS px) space.
+   *
+   * @param pos — the model-space point
+   * @returns the rendered-space point
+   */
   modelToRendered( pos: Position ): Position {
     return { x: pos.x * this._zoom + this._pan.x, y: pos.y * this._zoom + this._pan.y };
   }
 
+  /**
+   * Unproject a rendered (CSS px) point back into model space — the
+   * inverse of `modelToRendered`.
+   *
+   * @param pos — the rendered-space point
+   * @returns the model-space point
+   */
   renderedToModel( pos: Position ): Position {
     return { x: ( pos.x - this._pan.x ) / this._zoom, y: ( pos.y - this._pan.y ) / this._zoom };
   }

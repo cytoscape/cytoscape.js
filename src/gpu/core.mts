@@ -134,6 +134,17 @@ export class GpuCore {
   private _batchPending: BatchPending | null;
   _animations: AnimationManager;
 
+  /**
+   * Build a core over a fresh columnar store.  Prefer the `cytoscapeGpu(
+   * options )` factory: it is the documented entry point and additionally
+   * ingests `options.elements`, runs `options.layout`, and attaches a
+   * renderer when a `container` is given.  Constructing directly yields a
+   * headless, empty instance regardless of those options.
+   *
+   * @param options — the instance options (see `CytoscapeGpuOptions`);
+   *   viewport, interaction-gating and interaction-tuning options are
+   *   applied here, and `style` compiles immediately.
+   */
   constructor( options: CytoscapeGpuOptions = {} ){
     this._store = new GraphStore();
     this._emitter = makeCoreEmitter<GpuCore>( this );
@@ -237,6 +248,25 @@ export class GpuCore {
 
   // -- style --
 
+  /**
+   * Get the style engine, or set the stylesheet and return it.
+   *
+   * v4's sheet is a plain `{ nodes, edges, parents, core }` object of prop
+   * objects — there are no selector blocks and no style functions.  All
+   * per-element variation is declarative: mapper objects (`{ data, scale,
+   * … }`) and `case` conditionals, which is what keeps every value
+   * analyzable, serializable and GPU-evaluable.
+   *
+   * Inside a batch the sheet is compiled and validated immediately (so
+   * errors still throw at the call site) but applied once at the outermost
+   * `endBatch()`.
+   *
+   * @param sheet — the stylesheet to install; omit to read the engine
+   * @returns the style engine (also reachable as the return value when
+   *   setting, so calls chain)
+   * @throws if the sheet references an unknown property or an invalid
+   *   value
+   */
   style( sheet?: GpuStylesheet ): StyleEngine {
     if( sheet != null ){
       if( this._batchPending != null ){
@@ -382,6 +412,13 @@ export class GpuCore {
     }
   }
 
+  /**
+   * Open a batch: defer style application until the matching `endBatch()`.
+   * Pairs nest — only the outermost `endBatch()` flushes.  Prefer
+   * `batch( fn )`, which cannot leak a depth on an exception.
+   *
+   * @returns this core, for chaining
+   */
   startBatch(): this {
     if( this._batchDepth === 0 ){
       this._batchPending = { sheet: false, style: [], mapped: [], mappedKeys: new Set() };
@@ -392,6 +429,18 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Close a batch.  At the outermost close the deferred work flushes as
+   * one bulk pass — filtered to elements still live, so adding and
+   * removing within the same batch costs nothing — and the automatic
+   * slot-compaction trigger gets its boundary check.  A sheet change
+   * during the batch subsumes the per-element work: one `applyAll()`
+   * covers every live element.
+   *
+   * Unbalanced calls are a no-op rather than an error, matching v3.
+   *
+   * @returns this core, for chaining
+   */
   endBatch(): this {
     if( this._batchDepth === 0 ){ return this; }
 
@@ -442,6 +491,13 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Run `fn` inside a `startBatch()`/`endBatch()` pair.  The batch closes
+   * even if `fn` throws, so this is the form to prefer.
+   *
+   * @param fn — the mutations to batch; its return value is discarded
+   * @returns this core, for chaining
+   */
   batch( fn: () => void ): this {
     this.startBatch();
 
@@ -465,6 +521,28 @@ export class GpuCore {
 
   // -- layout --
 
+  /**
+   * Make a layout over the whole graph.  The layout does not run until you
+   * call `.run()` on it.
+   *
+   * Built-ins: `grid`, `preset`, `circle`, `concentric`, `breadthfirst`,
+   * `random` and `force` (the GPU-capable spring–electric layout, round
+   * 18).  An external layout is passed **directly** rather than
+   * registered — v4 has no `cytoscape.use` and no string registry — by
+   * giving `impl`: a class or object implementing `{ run( ctx ), stop?() }`
+   * (see `layout/contract.mts` for the `LayoutContext` it receives).
+   *
+   * Lifecycle events (`layoutstart`/`layoutready`/`layoutstop`) fire on
+   * the core, once per run; layout instances are not emitters.
+   *
+   * @param options — `{ name }` for a built-in or `{ impl }` for an
+   *   extension, plus that layout's own options and the shared
+   *   `layoutPositions` plumbing (`animate`, `spacingFactor`, `transform`,
+   *   `fit`, `padding`, …)
+   * @returns the layout instance, unstarted
+   * @throws if neither a known `name` nor an `impl` is given
+   * @see GpuCollection#layout to lay out a subset
+   */
   layout( options: GpuLayoutOptions ): GpuLayout {
     // the extension contract (round 17.5): direct objects, no registry
     if( ( options as { impl?: unknown } )?.impl != null ){
@@ -500,6 +578,23 @@ export class GpuCore {
 
   // -- graph manipulation --
 
+  /**
+   * Add elements to the graph and return them as a collection.
+   *
+   * Takes all three input forms: the classic v3 definition form (one
+   * object, an array, or `{ nodes, edges }`), the columnar bulk form
+   * (typed-array columns with edge endpoints as node *indices*), and the
+   * binary wire buffer produced by `serializeElements`/`cy.serialize()`.
+   * Nodes are added before edges, so an edge may reference a node added in
+   * the same call.
+   *
+   * Fires `add` per element.  Inside a batch the first style application
+   * of the new elements defers to the outermost `endBatch()`, so
+   * style-derived reads (`width()`, `label()`) may be stale until then.
+   *
+   * @param input — elements in definition, columnar or wire form
+   * @returns a collection of the added elements
+   */
   add( input: GpuElementsInput ): GpuCollection {
     const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
     const refs = isColumnarElements( defs )
@@ -636,34 +731,90 @@ export class GpuCore {
     return refs;
   }
 
+  /**
+   * Remove elements from the graph.  Removing a node removes its
+   * connected edges, and removing a compound parent removes its
+   * descendants.  Equivalent to `eles.remove()`.
+   *
+   * @param eles — the elements to remove
+   * @returns the removed elements
+   */
   remove( eles: GpuCollection ): GpuCollection {
     return eles.remove();
   }
 
   // -- collections --
 
+  /**
+   * An empty collection bound to this core — the accumulator for
+   * `union`/`add` chains.
+   *
+   * @returns a collection of zero elements
+   */
   collection(): GpuCollection {
     return new GpuCollection( this, [] );
   }
 
+  /**
+   * Look up one element by id through the O(1) id index.
+   *
+   * @param id — the element id
+   * @returns a collection of one element, or an empty collection when no
+   *   element has that id
+   */
   getElementById( id: string ): GpuCollection {
     const ref = this._store.lookup( id );
 
     return ref == null ? this.collection() : this._ele( ref.group, ref.slot );
   }
 
+  /**
+   * All elements, optionally filtered — nodes (in insertion order) then
+   * edges.
+   *
+   * v4 has no selector strings: pass a structured **query object**
+   * (`{ group, selected, parent, data: { weight: { gt: 0.5 } } }`), which
+   * compiles to per-group flag tests answered by one columnar scan, or a
+   * **predicate function** for anything richer.  Unknown query keys throw,
+   * so a typo cannot silently match everything.
+   *
+   * @param query — a query object or an `( ele ) => boolean` predicate;
+   *   omit for everything
+   * @returns the matching elements
+   */
   elements( query?: GpuQuery | EleFilterFn ): GpuCollection {
     return this._query( query, null );
   }
 
+  /**
+   * The graph's nodes, optionally filtered.  Same query forms as
+   * `elements()`, restricted to the node group.
+   *
+   * @param query — a query object or an `( ele ) => boolean` predicate
+   * @returns the matching nodes
+   */
   nodes( query?: GpuQuery | EleFilterFn ): GpuCollection {
     return this._query( query, 'nodes' );
   }
 
+  /**
+   * The graph's edges, optionally filtered.  Same query forms as
+   * `elements()`, restricted to the edge group.
+   *
+   * @param query — a query object or an `( ele ) => boolean` predicate
+   * @returns the matching edges
+   */
   edges( query?: GpuQuery | EleFilterFn ): GpuCollection {
     return this._query( query, 'edges' );
   }
 
+  /**
+   * Filter the whole graph.  Identical to `elements( query )`, kept for
+   * symmetry with `eles.filter()`.
+   *
+   * @param query — a query object or an `( ele ) => boolean` predicate
+   * @returns the matching elements
+   */
   filter( query: GpuQuery | EleFilterFn ): GpuCollection {
     return this._query( query, null );
   }
@@ -723,10 +874,22 @@ export class GpuCore {
 
   // -- events --
 
-  // Delegation is predicate-based (no selector strings): with a trailing
-  // callback, the middle argument is a predicate over the event target,
-  // e.g. `cy.on('tap', ele => ele.isNode(), cb)`.  Predicates compare by
-  // function identity in off().
+  /**
+   * Listen for events on the core.
+   *
+   * Delegation is **predicate-based** — there are no selector strings.
+   * With a trailing callback the middle argument is a predicate over the
+   * event target: `cy.on( 'tap', ele => ele.isNode(), handler )`.
+   *
+   * @param events — one or more space-separated event names
+   * @param predicateOrCb — the delegation predicate when `callback` is
+   *   given, otherwise the handler itself
+   * @param callback — the handler, when delegating
+   * @returns this core, for chaining
+   * @see GpuCore#off — removing a delegated handler takes the same
+   *   `( events, predicate, handler )` triple, since predicates compare
+   *   by function identity
+   */
   on( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
     if( callback != null ){
       this._emitter.on( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
@@ -742,6 +905,16 @@ export class GpuCore {
   declare listen: this['on'];
   declare bind: this['on'];
 
+  /**
+   * Like `on()`, but the handler runs at most once and then removes
+   * itself.
+   *
+   * @param events — one or more space-separated event names
+   * @param predicateOrCb — the delegation predicate when `callback` is
+   *   given, otherwise the handler itself
+   * @param callback — the handler, when delegating
+   * @returns this core, for chaining
+   */
   one( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
     if( callback != null ){
       this._emitter.one( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
@@ -754,6 +927,19 @@ export class GpuCore {
 
   declare once: this['one'];
 
+  /**
+   * Stop listening.  Removing a delegated handler takes the same
+   * `( events, predicate, handler )` triple it was added with —
+   * predicates compare by function identity, so the predicate must be the
+   * same function object, not an equivalent one.
+   *
+   * @param events — one or more space-separated event names
+   * @param predicateOrCb — the delegation predicate when `callback` is
+   *   given, otherwise the handler itself; omit both to remove every
+   *   handler for `events`
+   * @param callback — the handler, when delegating
+   * @returns this core, for chaining
+   */
   off( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
     if( callback != null ){
       this._emitter.off( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
@@ -768,12 +954,27 @@ export class GpuCore {
   declare unlisten: this['off'];
   declare unbind: this['off'];
 
+  /**
+   * Remove every listener on the core, including element-bound and
+   * delegated ones.
+   *
+   * @returns this core, for chaining
+   */
   removeAllListeners(): this {
     this._emitter.removeAllListeners();
 
     return this;
   }
 
+  /**
+   * Emit an event on the core.
+   *
+   * @param events — one or more space-separated event names, or an event
+   *   props object
+   * @param extraParams — extra arguments passed to each handler after the
+   *   event object
+   * @returns this core, for chaining
+   */
   emit( events: string | EventProps, extraParams?: unknown[] ): this {
     this._emitter.emit( events, extraParams );
 
@@ -782,6 +983,14 @@ export class GpuCore {
 
   declare trigger: this['emit'];
 
+  /**
+   * Resolve once the next matching event fires — the promise form of
+   * `one()`.
+   *
+   * @param events — one or more space-separated event names
+   * @param predicate — an optional delegation predicate over the target
+   * @returns a promise for the event object
+   */
   promiseOn( events: string, predicate?: ElePredicate ): Promise<Event> {
     return new Promise( resolve => {
       if( predicate != null ){
@@ -796,6 +1005,15 @@ export class GpuCore {
 
   // -- viewport --
 
+  /**
+   * Get the zoom level, or set it.  Setting is a no-op while
+   * `zoomingEnabled()` is false, and the level is clamped to
+   * `zoomRange()`.
+   *
+   * @param zoom — the new level, or `{ level, position | renderedPosition }`
+   *   to zoom about a fixed point; omit to read
+   * @returns the current zoom when reading, this core when setting
+   */
   zoom( zoom?: number | Parameters<Viewport['setZoom']>[0] ): number | this {
     if( zoom === undefined ){
       return this._viewport.zoom();
@@ -808,6 +1026,13 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get the pan offset, or set it.  Setting is a no-op while
+   * `panningEnabled()` is false.
+   *
+   * @param pan — the new rendered-space offset; omit to read
+   * @returns the current pan when reading, this core when setting
+   */
   pan( pan?: Position ): Position | this {
     if( pan === undefined ){
       return this._viewport.pan();
@@ -820,6 +1045,12 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Shift the pan by a delta.  A no-op while `panningEnabled()` is false.
+   *
+   * @param delta — the rendered-space offset to add
+   * @returns this core, for chaining
+   */
   panBy( delta: Position ): this {
     if( this._panningEnabled && this._viewport.panBy( delta ) ){
       this._emitViewportEvents( [ 'pan' ] );
@@ -828,6 +1059,17 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Pan and zoom so the given elements fill the viewport.
+   *
+   * Bounds **include labels by default** (round 16), so a fit never
+   * clips the text it was asked to show; edge-label terms are
+   * conservative, so a fit may slightly over-fit but never under-fits.
+   *
+   * @param eles — the elements to fit; omit for the whole graph
+   * @param padding — rendered-space padding around the box
+   * @returns this core, for chaining
+   */
   fit( eles?: GpuCollection, padding: number = 0 ): this {
     const bb = this._boundsOf( eles );
 
@@ -839,6 +1081,13 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Pan so the given elements are centred, leaving the zoom alone.
+   * Bounds include labels, as in `fit()`.
+   *
+   * @param eles — the elements to centre on; omit for the whole graph
+   * @returns this core, for chaining
+   */
   center( eles?: GpuCollection ): this {
     const bb = this._boundsOf( eles );
 
@@ -937,6 +1186,14 @@ export class GpuCore {
     this._renderer?.requestRender();
   }
 
+  /**
+   * The model-space rectangle currently visible, as
+   * `{ x1, y1, x2, y2, w, h }` — the inverse of the pan/zoom transform
+   * applied to the viewport box.
+   *
+   * @returns the visible extent in model coordinates
+   * @see GpuCore#renderedExtent for the same box in rendered coordinates
+   */
   extent(): ReturnType<Viewport['extent']> {
     return this._viewport.extent();
   }
@@ -951,6 +1208,12 @@ export class GpuCore {
     return { width: this.width(), height: this.height() };
   }
 
+  /**
+   * Get the minimum zoom, or set it.  Setting re-clamps the current zoom.
+   *
+   * @param zoom — the new minimum; omit to read
+   * @returns the current minimum when reading, this core when setting
+   */
   minZoom( zoom?: number ): number | this {
     if( zoom === undefined ){ return this._viewport.minZoom; }
 
@@ -959,6 +1222,12 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get the maximum zoom, or set it.  Setting re-clamps the current zoom.
+   *
+   * @param zoom — the new maximum; omit to read
+   * @returns the current maximum when reading, this core when setting
+   */
   maxZoom( zoom?: number ): number | this {
     if( zoom === undefined ){ return this._viewport.maxZoom; }
 
@@ -1022,6 +1291,14 @@ export class GpuCore {
 
   // -- renderer --
 
+  /**
+   * The renderer, or null when headless.  Its `stats()` carry the frame
+   * timings, cache hit rates and pass counters — note that `cpuFrameMs`
+   * is encode/submit cost only (submission is fire-and-forget), so
+   * reconcile fps against `gpuFrameMs`.
+   *
+   * @returns the renderer, or null on a headless instance
+   */
   renderer(): RendererLike | null {
     return this._renderer;
   }
@@ -1043,10 +1320,24 @@ export class GpuCore {
 
   declare invalidateSize: this['resize'];
 
+  /**
+   * Run a callback after each rendered frame — sugar for
+   * `on( 'render', … )`.  With no animation queue and no `step` callback,
+   * this plus animation promises is how v4 observes progress.
+   *
+   * @param callback — the per-frame handler
+   * @returns this core, for chaining
+   */
   onRender( callback: EventHandler ): this {
     return this.on( 'render', callback );
   }
 
+  /**
+   * Stop running a per-frame callback.
+   *
+   * @param callback — the handler to remove; omit to remove all of them
+   * @returns this core, for chaining
+   */
   offRender( callback?: EventHandler ): this {
     return this.off( 'render', callback );
   }
@@ -1118,10 +1409,27 @@ export class GpuCore {
 
   // -- graph-level data & scratch (plain objects, not columns) --
 
+  /**
+   * Graph-level data — read all, read one key, or write.  This is a plain
+   * object, not a columnar sidecar (which is `ele.data()`), and it is not
+   * part of the wire format.  Writing emits `data`.
+   *
+   * @param args — `()` for the whole object, `( key )` to read one,
+   *   `( key, value )` or `( patchObject )` to write
+   * @returns the data object or value when reading, this core when
+   *   writing
+   */
   data( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
     return this._objectAccess( this._graphData, args, 'data' );
   }
 
+  /**
+   * Delete graph-level data keys.  Emits `data` when anything was
+   * removed.
+   *
+   * @param names — space-separated key names; omit to clear everything
+   * @returns this core, for chaining
+   */
   removeData( names?: string ): this {
     return this._objectRemove( this._graphData, names, 'data' );
   }
@@ -1129,10 +1437,26 @@ export class GpuCore {
   declare attr: this['data'];
   declare removeAttr: this['removeData'];
 
+  /**
+   * Graph-level scratchpad — like `data()`, but for transient state that
+   * is never exported and never emits.  Namespace your keys (an
+   * extension convention: `'_myExtension'`).
+   *
+   * @param args — `()` for the whole object, `( key )` to read one,
+   *   `( key, value )` or `( patchObject )` to write
+   * @returns the scratch object or value when reading, this core when
+   *   writing
+   */
   scratch( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
     return this._objectAccess( this._scratch, args, null );
   }
 
+  /**
+   * Delete graph-level scratch keys.
+   *
+   * @param names — space-separated key names; omit to clear everything
+   * @returns this core, for chaining
+   */
   removeScratch( names?: string ): this {
     return this._objectRemove( this._scratch, names, null );
   }
@@ -1168,6 +1492,13 @@ export class GpuCore {
 
   // -- interaction gating --
 
+  /**
+   * Get or set whether every node is locked (immovable) regardless of its
+   * own `locked` flag — the graph-wide override.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   autolock( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._autolock; }
 
@@ -1176,6 +1507,14 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get or set whether every node is ungrabbable regardless of its own
+   * `grabbable` flag.  Unlike `autolock()`, this blocks only user
+   * dragging; programmatic position writes still apply.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   autoungrabify( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._autoungrabify; }
 
@@ -1184,6 +1523,13 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get or set whether every element is unselectable regardless of its
+   * own `selectable` flag.  Programmatic `select()` still applies.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   autounselectify( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._autounselectify; }
 
@@ -1195,6 +1541,13 @@ export class GpuCore {
   declare autolockNodes: this['autolock'];
   declare autoungrabifyNodes: this['autoungrabify'];
 
+  /**
+   * Get or set whether panning is allowed at all — programmatic `pan()`
+   * included.  Use `userPanningEnabled()` to block only the gesture.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   panningEnabled( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._panningEnabled; }
 
@@ -1203,6 +1556,13 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get or set whether the user may pan by dragging.  Programmatic
+   * `pan()` is unaffected.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   userPanningEnabled( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._userPanningEnabled; }
 
@@ -1211,6 +1571,13 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get or set whether zooming is allowed at all — programmatic `zoom()`
+   * included.  Use `userZoomingEnabled()` to block only the gesture.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   zoomingEnabled( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._zoomingEnabled; }
 
@@ -1219,6 +1586,13 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get or set whether the user may zoom by wheel or pinch.
+   * Programmatic `zoom()` is unaffected.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   userZoomingEnabled( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._userZoomingEnabled; }
 
@@ -1237,6 +1611,12 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Get or set whether the box-selection gesture is available.
+   *
+   * @param bool — the new setting; omit to read
+   * @returns the current setting when reading, this core when setting
+   */
   boxSelectionEnabled( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._boxSelectionEnabled; }
 
@@ -1339,26 +1719,67 @@ export class GpuCore {
 
   // -- environment --
 
+  /**
+   * The type tag `'core'` — the counterpart of a collection's
+   * `'collection'`, for code that accepts either.
+   *
+   * @returns `'core'`
+   */
   instanceString(): string {
     return 'core';
   }
 
+  /**
+   * Whether the render pipeline is usable yet.  Always true on a headless
+   * instance; on a rendered one this flips when `cy.ready` resolves.
+   *
+   * @returns true once rendering can proceed
+   */
   isReady(): boolean {
     return this._readyResolved;
   }
 
+  /**
+   * Whether this instance has no container and therefore no GPU — the
+   * Node-testable mode, in which every model API works and the render,
+   * pick and image-export paths are no-ops or reject.
+   *
+   * @returns true when running headless
+   */
   headless(): boolean {
     return this._container == null;
   }
 
+  /**
+   * Always true: v4 has no style-disabled mode, since the columnar model
+   * derives geometry from stored style channels rather than treating
+   * style as an optional layer.  Kept so v3 code that checks it works.
+   *
+   * @returns true
+   */
   styleEnabled(): boolean {
     return true;
   }
 
+  /**
+   * Whether any node currently has a parent.  Worth checking because the
+   * compound tier changes paint evaluation and draw order; the renderer
+   * pays nothing for compounds while this is false.
+   *
+   * @returns true when the graph has at least one parent/child relation
+   */
   hasCompoundNodes(): boolean {
     return this._store.hasCompounds();
   }
 
+  /**
+   * Whether an element with this id exists, via the O(1) id index —
+   * cheaper than `getElementById( id ).nonempty()` because no handle is
+   * materialized.
+   *
+   * @param id — the element id
+   * @returns true when the graph holds that element
+   */
   hasElementWithId( id: string ): boolean {
     return this._store.lookup( id ) != null;
   }
@@ -1370,6 +1791,12 @@ export class GpuCore {
     return this.elements();
   }
 
+  /**
+   * The `window` this instance renders into, or null when there is no DOM
+   * (Node).  v3 parity, for extensions that need the hosting realm.
+   *
+   * @returns the global window, or null outside a browser
+   */
   window(): ( Window & typeof globalThis ) | null {
     return typeof window !== 'undefined' ? window : null;
   }
@@ -1379,13 +1806,6 @@ export class GpuCore {
     return this._options;
   }
 
-  /**
-   * Export the graph as a plain object (elements, stylesheet, viewport,
-   * gating flags, graph-level data).  `json(true)` exports elements as one
-   * flat array instead of `{ nodes, edges }` (as in v3).  The v3 import/
-   * restore form (`json(obj)`) is not supported — rebuilding from a
-   * snapshot needs stored defs, which the prototype does not keep.
-   */
   /**
    * Export the live graph as the binary wire format (the buffer
    * `options.elements`/`add()` accept directly): the columnar counterpart
@@ -1474,6 +1894,22 @@ export class GpuCore {
     } );
   }
 
+  /**
+   * Export the graph as a plain object — elements, stylesheet, viewport,
+   * gating flags and graph-level data.
+   *
+   * Export-only: the v3 import/restore form (`json( obj )`) is not
+   * supported, because rebuilding from a snapshot needs the stored
+   * element definitions that the columnar model deliberately does not
+   * keep.  Use `serialize()` for the compact binary counterpart, which
+   * *can* be fed back in.
+   *
+   * @param flat — when true, elements export as one flat array instead of
+   *   `{ nodes, edges }` (v3's option)
+   * @returns the exported graph
+   * @throws if given anything but a boolean — the guard that catches an
+   *   attempted `json( obj )` import
+   */
   json( flat?: boolean ): Record<string, unknown> {
     if( flat != null && typeof flat !== 'boolean' ){
       throw new Error(
@@ -1599,22 +2035,49 @@ export class GpuCore {
     } );
   }
 
+  /**
+   * The DOM element this instance renders into, or null when headless or
+   * unmounted.
+   *
+   * @returns the container element, or null
+   */
   container(): HTMLElement | null {
     return this._container;
   }
 
+  /**
+   * The rendered width in CSS px.  Headless instances report the
+   * configured `headlessWidth` (default 800), so viewport maths works
+   * without a DOM.
+   *
+   * @returns the viewport width in CSS px
+   */
   width(): number {
     return this._container != null
       ? ( this._container.clientWidth || this._headlessWidth )
       : this._headlessWidth;
   }
 
+  /**
+   * The rendered height in CSS px.  Headless instances report the
+   * configured `headlessHeight` (default 600).
+   *
+   * @returns the viewport height in CSS px
+   */
   height(): number {
     return this._container != null
       ? ( this._container.clientHeight || this._headlessHeight )
       : this._headlessHeight;
   }
 
+  /**
+   * Tear the instance down: emit `destroy`, drop every listener, and
+   * release the pointer handler and the renderer (with its GPU
+   * resources).  Idempotent.  The store is left intact but the instance
+   * must not be used afterwards.
+   *
+   * @returns this core
+   */
   destroy(): this {
     if( this._destroyed ){ return this; }
 
@@ -1634,6 +2097,11 @@ export class GpuCore {
     return this;
   }
 
+  /**
+   * Whether `destroy()` has run.
+   *
+   * @returns true once destroyed
+   */
   destroyed(): boolean {
     return this._destroyed;
   }

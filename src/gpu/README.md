@@ -1687,6 +1687,48 @@ records).  Landed so far:
   and the WYSIWYG self-diff (now with an imaged phase) still
   pixel-matches the screen.
 
+## Documenting the source (round 26)
+
+The v3 code **and** the v3 documentation stay in the repo untouched
+until v4 ships, so every v3 asset remains available for comparison
+benchmarks and parity work.  v4 therefore has no docs site yet, and
+`documentation/` is not touched by v4 work.  Instead:
+
+- **JSDoc on the source is v4's documentation source of truth.**
+  Prose about what a member does lives next to the member.  The
+  release documentation will be *generated* from these comments
+  (docmaker's per-function shape is `{ name, descr, formats: [ {
+  descr, args: [ { name, descr } ] } ] }` — a summary sentence,
+  per-overload descriptions and named arguments, all of which
+  standard JSDoc carries).
+- **This file and PLAN.md keep their roles.**  The README is scope,
+  design decisions, deviations and the cross-cutting narrative;
+  PLAN.md is the logbook.  Neither duplicates per-member
+  documentation.
+- **Standard tags only** — `@param`, `@returns`, `@throws`,
+  `@example`, `@see`, `@defaultValue`.  Overloads get one block per
+  signature (docmaker's `formats`).  There is deliberately **no**
+  bespoke `@section`/`@docs` tag: a generator reads the existing
+  `// -- <group> --` banner comments in `core.mts` and
+  `collection.mts` for placement, since those groupings already
+  mirror the docs' subsections, so the banners must stay complete
+  and accurate.
+- **A doc comment states the contract, not the implementation** —
+  what it does, what it takes, what it returns, what it throws, and
+  where v4 deliberately differs from v3, in this file's voice ("v3
+  does X; v4 does Y because Z").  Round references (`(19.3)`,
+  `(round 25)`) stay: they are how this codebase cites its own
+  history.
+- **Coverage is enforced.**  `scripts/gpu-jsdoc-coverage.mjs`
+  audits every member of an exported class whose name does not
+  start with `_`, split into a public-API tier (the entry point,
+  `GpuCore`, `GpuCollection`, `Viewport`, the animation handle, the
+  layout contract, the public style/wire/columnar surface) and an
+  internal tier.  `test/gpu-jsdoc-coverage.mjs` gates it: files
+  listed as complete may never regress, and each tier carries a
+  ratcheting floor.  Run `node scripts/gpu-jsdoc-coverage.mjs
+  --verbose` for the per-member list.
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each

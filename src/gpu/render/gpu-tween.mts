@@ -258,11 +258,11 @@ fn csTween(@builtin(global_invocation_id) gid: vec3u) {
 }
 `;
 
-/** The kinds the kernels evaluate.  `lane` and `padding` (round 25)
- * are geometry-tier by construction — such writes never reach the
- * device (`gpuEligible` is false for any animation carrying one), so
- * they have no shaders. */
-export type GpuWriteKind = Exclude<WriteKind, 'lane' | 'padding'>;
+/** The kinds the kernels evaluate.  The round-25 geometry kinds
+ * (`lane`, `padding`, `fontSize`) never reach the device
+ * (`gpuEligible` is false for any animation carrying one), so they
+ * have no shaders. */
+export type GpuWriteKind = Exclude<WriteKind, 'lane' | 'padding' | 'fontSize'>;
 
 export const TWEEN_SHADERS: Record<GpuWriteKind, string> = {
   position: POSITION_SHADER,
@@ -386,7 +386,7 @@ export class GpuTweenRuntime {
     for( const w of writes ){
       if( w.slots.length === 0 ){ continue; }
 
-      if( w.kind === 'lane' || w.kind === 'padding' ){
+      if( w.kind === 'lane' || w.kind === 'padding' || w.kind === 'fontSize' ){
         // unreachable by the eligibility rule (a geometry write bars the
         // whole animation from the device); guard the invariant anyway
         throw new Error( `${w.kind} writes never register on the GPU (column ${w.column})` );

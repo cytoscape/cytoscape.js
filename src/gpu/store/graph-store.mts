@@ -27,7 +27,7 @@ import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelVi
 import { NO_PARENT } from '../gpu-types.mjs';
 import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
 import { ImageRegistry, IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../image-registry.mjs';
-import { estimateBlock } from '../label-wrap.mjs';
+import { estimateBlock, WRAP_NONE } from '../label-wrap.mjs';
 
 /** floats per image record in the image pool (round 15.2) */
 export const IMG_STRIDE = 12;
@@ -2495,25 +2495,69 @@ export class GraphStore implements ModelView {
 
     // label dims (16.2): estimate immediately — the headless bb term —
     // and let the renderer's glyph build upgrade to exact laid dims.
-    // Labels participate in bounding boxes (16.4), so dims changes
-    // invalidate the bb memo like any geometry write.
     if( entry == null ){
       this.labelDims[ group ].delete( slot );
     } else {
-      const est = estimateBlock( entry.text, entry.fontSize, {
-        wrap: entry.wrap,
-        maxWidth: entry.maxWidth,
-        overflowWrap: entry.overflowWrap,
-        justification: entry.justification,
-        lineHeight: entry.lineHeight
-      } );
+      const prevDims = prev != null ? this.labelDims[ group ].get( slot ) : undefined;
 
-      this.labelDims[ group ].set( slot, { w: est.width, h: est.height, exact: false } );
+      // 25.5: a pure font-size delta with unchanged breaking is
+      // scale-linear — under wrap 'none' (the default, where maxWidth
+      // is ignored) the laid block scales with the em, so patch the
+      // dims by the ratio (exactness preserved) instead of re-running
+      // the estimator.  The font-size tween's per-tick path.
+      if(
+        prevDims != null && prev != null && prev.fontSize > 0
+        && entry.wrap === WRAP_NONE && prev.wrap === WRAP_NONE
+        && entry.text === prev.text && entry.lineHeight === prev.lineHeight
+        && entry.overflowWrap === prev.overflowWrap
+        && entry.justification === prev.justification
+      ){
+        const ratio = entry.fontSize / prev.fontSize;
+
+        this.labelDims[ group ].set( slot,
+          { w: prevDims.w * ratio, h: prevDims.h * ratio, exact: prevDims.exact } );
+      } else {
+        const est = estimateBlock( entry.text, entry.fontSize, {
+          wrap: entry.wrap,
+          maxWidth: entry.maxWidth,
+          overflowWrap: entry.overflowWrap,
+          justification: entry.justification,
+          lineHeight: entry.lineHeight
+        } );
+
+        this.labelDims[ group ].set( slot, { w: est.width, h: est.height, exact: false } );
+      }
     }
 
-    this.geoEpoch++;
+    // 25.5: no geoEpoch bump — its only consumer is the per-edge exact
+    // curve-bb memo, which has no label terms; the label bb terms read
+    // the dims maps live
     this.labelDirty[ group ].add( slot );
     this.dirty.touch();
+  }
+
+  /**
+   * The font-size tween's per-tick write (round 25.5): patch the
+   * sidecar entry's fontSize without an engine round trip (the
+   * reanchorLabel pattern).  The edge streams' anchorY is
+   * fontSize-derived (-fs/2 + marginY) and re-derives with it; node
+   * anchors are size-derived, not font-derived.  One edge font-size
+   * drives all three of its streams (mid + end labels).
+   */
+  setLabelFontSize( slot: number, group: GroupName, fontSize: number ): void {
+    const streams: LabelStream[] = group === 'nodes'
+      ? [ 'nodes' ]
+      : [ 'edges', 'edgeSource', 'edgeTarget' ];
+
+    for( const stream of streams ){
+      const entry = this.labels[ stream ][ slot ];
+
+      if( entry == null || entry.fontSize === fontSize ){ continue; }
+
+      const anchorY = stream === 'nodes' ? entry.anchorY : -fontSize / 2 + entry.marginY;
+
+      this.setLabel( slot, { ...entry, fontSize, anchorY }, stream );
+    }
   }
 
   /** A label's laid (or headless-estimated) block dims, model px. */
@@ -2532,8 +2576,7 @@ export class GraphStore implements ModelView {
     if( prev != null && prev.exact && prev.w === w && prev.h === h ){ return; }
 
     this.labelDims[ group ].set( slot, { w, h, exact: true } );
-    this.geoEpoch++;
-    this.dirty.touch();
+    this.dirty.touch(); // no geoEpoch bump (25.5) — see setLabel
   }
 
   takeLabelDirty( group: LabelStream = 'nodes' ): number[] {

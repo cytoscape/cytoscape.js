@@ -5943,12 +5943,28 @@ commit(s)):
   completes, %-fraction tween, the parents-sheet transition with
   held value, unit-flip snap.  2274 Node tests, 63 module tests,
   typecheck + lint clean.
-- [ ] **25.5 Font-size** — the four label-path fixes,
-  `setLabelFontSize` (three streams, edge anchorY),
-  animation + transition wiring both groups, specs: node + edge
-  label tweens, dims scale-patch vs re-break, memo behaviour
-  (stats-pinned), glyph-buffer in-place (module-level), label
-  epoch split.
+- [x] **25.5 Font-size** (2026-08-02) — landed: the `fontSize`
+  write kind (pseudo-columns `node.fontSize`/`edge.fontSize`) and
+  `GraphStore.setLabelFontSize` — the per-tick sidecar patch, no
+  engine round trip: an edge write drives all three streams and
+  re-derives the fontSize-baked edge `anchorY` (−fs/2 + marginY);
+  node anchors are size-derived and untouched.  Unlabelled
+  elements filter at capture (animation) and snap via the −1
+  sentinel (transition diff — a label added by a restyle has
+  nothing to tween from).  The four label-path fixes shipped
+  with it: the wrap-none scale-patch keeps dims **exact** (the
+  round-16 wrap spec updated to pin the new contract — scaling a
+  laid block is exact; a text change still re-estimates), the
+  memo key drops `maxWidth` under wrap none, `GlyphBuffer.set`
+  rewrites same-count replacements in place (pinned by a
+  50-tick no-growth/no-tombstone spec with a single coalesced
+  span), and label writes stop bumping `geoEpoch` (its only
+  consumer is the edge curve-bb memo — no label terms).
+  Tests: 3 animation specs (node dims/readback, edge anchorY +
+  end-stream ride, unlabelled filter), 2 transition specs (held
+  value tween, label-added snap), the glyph-buffer in-place
+  spec, and the amended wrap-dims spec.  2280 Node tests, 63
+  module tests, typecheck + lint clean.
 - [ ] **25.6 Benchmarks + browser specs** — the geometry-tween
   sweep above; Playwright: a size transition tweens pixels
   mid-flight with the label riding along, an edge-width

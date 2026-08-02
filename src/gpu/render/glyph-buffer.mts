@@ -117,6 +117,17 @@ export class GlyphBuffer {
   set( nodeSlot: number, glyphWords: Uint32Array | null ): void {
     const old = this.ranges.get( nodeSlot );
 
+    // round 25.5: a same-count replacement — the steady state of a
+    // font-size tween's per-tick rebuild — rewrites the run in place:
+    // no tombstones, no highWater growth, no compaction churn, and the
+    // dirty span covers exactly the rewritten range
+    if( old != null && glyphWords != null && glyphWords.length === old.count * GLYPH_WORDS ){
+      this.words.set( glyphWords, old.start * GLYPH_WORDS );
+      this.markDirty( old.start, old.start + old.count );
+
+      return;
+    }
+
     if( old != null ){
       for( let i = 0; i < old.count; i++ ){
         this.words[ ( old.start + i ) * GLYPH_WORDS ] = DEAD_GLYPH;

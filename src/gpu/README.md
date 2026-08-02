@@ -817,8 +817,8 @@ each is deliberate, not a pass-1 deferral:
   - Animatable today: `position`, `opacity` (both groups), node
     `background-color`/`border-color`, `edge.line-color`, node
     `border-width`, and — round 25 — node `width`/`height`, edge
-    `width` and compound `padding` (the geometry-tween round; see the
-    bullet below).
+    `width`, compound `padding` and `font-size` (the geometry-tween
+    round; see the bullet below).
   - **Viewport targets** (round 10): `cy.animate`/`cy.animation` take
     `pan`/`zoom`, plus `fit: { eles | boundingBox, padding }` and
     `center: { eles }` — resolved to concrete pan/zoom when the
@@ -852,7 +852,30 @@ each is deliberate, not a pass-1 deferral:
   numbers never baked the width and stay), modes answered by
   `StyleEngine.arrowWidthModes()` (arrow widths are constants-only
   props).  The stroke lanes of the layer records are ×256 fixed-point;
-  the store's `setLane` encodes on the way in.  Landed 25.4 —
+  the store's `setLane` encodes on the way in.  Landed 25.5 —
+  **`font-size`** (both label groups): the tween patches the label
+  sidecar per tick through `setLabelFontSize` — no engine round trip
+  (the `reanchorLabel` pattern); an edge's write drives all three of
+  its streams (mid + end labels) and re-derives the fontSize-baked
+  edge `anchorY` (−fs/2 + marginY); unlabelled elements are filtered
+  at capture, and a transition diff with no sidecar entry on either
+  side snaps (the −1 sentinel — a label added by a restyle has
+  nothing to tween from).  Wrapped labels re-break honestly per tick
+  (correct, and the expensive configuration — priced in the
+  benchmark); the default `text-wrap: none` case is cheap through
+  four label-path fixes shipped with the pass, each useful beyond
+  tweens: (a) a pure font-size delta with unchanged breaking
+  scale-patches the stored dims by the ratio — exactness *preserved*
+  (scaling a laid block is exact) — instead of re-running the
+  estimator; (b) the shaping-memo key drops `maxWidth` under wrap
+  'none' (the breaker ignores it), so a tween tick is a memo hit
+  instead of an unbounded-growth miss; (c) `GlyphBuffer.set` rewrites
+  a same-count replacement **in place** (no tombstones, no highWater
+  growth, no compaction-forced whole-stream re-uploads under a steady
+  tween); (d) label writes no longer bump the global `geoEpoch` — its
+  only consumer is the per-edge exact curve-bb memo, which has no
+  label terms, so a font-size tick no longer invalidates every edge's
+  cached bb.  Landed 25.4 —
   **compound `padding`**: the tween writes the *declared* padding (px,
   or the fraction under the '%' unit) through a new partial-merge
   `updateCompoundStyle` (a `{ padding }` tick must not reset the unit

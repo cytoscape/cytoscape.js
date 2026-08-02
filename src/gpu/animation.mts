@@ -108,7 +108,10 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // round 25.4: compound padding — the declared value in its declared
   // unit (px, or a fraction under '%'); parents only, resolved by the
   // auto-bounds flush per tick
-  'padding': { columns: { nodes: 'node.padding' }, kind: 'scalar', tier: 'geometry', min: 0 }
+  'padding': { columns: { nodes: 'node.padding' }, kind: 'scalar', tier: 'geometry', min: 0 },
+  // round 25.5: label font-size — the sidecar, patched per tick;
+  // unlabelled elements are filtered at capture
+  'font-size': { columns: { nodes: 'node.fontSize', edges: 'edge.fontSize' }, kind: 'scalar', tier: 'geometry', min: 0 }
 };
 
 const normalizeProp = ( prop: string ): string => prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
@@ -190,16 +193,18 @@ interface CompiledStyle {
   toColor?: RGBA;
 }
 
-export type WriteKind = 'position' | 'scalar' | 'color' | 'lane' | 'padding';
+export type WriteKind = 'position' | 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize';
 
 /**
- * Tween write targets: the real columns plus the compound-padding
- * pseudo-column (round 25.4) — padding is a per-parent compound style
- * input, not a stored column; `padding` writes route through
- * `setCompoundStyle` and the auto-bounds derivation resolves them
- * (px, or a fraction under the '%' unit) at the lazy flush.
+ * Tween write targets: the real columns plus the pseudo-columns of the
+ * round-25 geometry kinds — compound padding (25.4: a per-parent
+ * compound style input routed through `updateCompoundStyle`, resolved
+ * by the auto-bounds flush) and label font-size (25.5: the label
+ * sidecar, patched per tick through `setLabelFontSize` — an edge's
+ * write drives its end-label streams and fontSize-derived anchorY
+ * along).
  */
-export type TweenColumn = ColumnId | 'node.padding';
+export type TweenColumn = ColumnId | 'node.padding' | 'node.fontSize' | 'edge.fontSize';
 
 /**
  * One column's worth of resolved tween data, captured once at start.
@@ -233,7 +238,7 @@ const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
 const clampTo = ( v: number, lo: number, hi: number ): number => v < lo ? lo : v > hi ? hi : v;
 
 /** Floats per slot in `ChannelWrite.data`, by kind. */
-export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8, lane: 2, padding: 2 };
+export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8, lane: 2, padding: 2, fontSize: 2 };
 
 const blankWrite = (
   column: TweenColumn, kind: WriteKind, paint: boolean, refs: Ref[],
@@ -283,7 +288,7 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
  * animation's — one set of numbers, the same two executors.
  */
 export const buildChannelWrite = (
-  column: TweenColumn, kind: 'scalar' | 'color' | 'lane' | 'padding', paint: boolean, refs: Ref[],
+  column: TweenColumn, kind: 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize', paint: boolean, refs: Ref[],
   from: ( number | RGBA )[], to: ( number | RGBA )[],
   min = -Infinity, max = Infinity, lane?: number
 ): ChannelWrite => {
@@ -757,6 +762,10 @@ export class Animation {
         } else if( column === 'node.padding' ){
           refs = refs.filter( r =>
             ( this.store.flags( 'nodes', r.slot ) & FLAG_PARENT ) !== 0 );
+        } else if( column === 'node.fontSize' || column === 'edge.fontSize' ){
+          // 25.5: only labelled elements have a fontSize to tween
+          refs = refs.filter( r =>
+            this.store.labelAt( r.slot, r.group === 'nodes' ? 'nodes' : 'edges' ) != null );
         }
 
         if( refs.length === 0 ){ continue; }
@@ -767,9 +776,11 @@ export class Animation {
           ? this.colorWrite( column as ColumnId, refs, paint, () => s.toColor as RGBA )
           : column === 'node.padding'
             ? this.paddingWrite( refs, s.toScalar as number, s.channel )
-            : lane != null
-              ? this.laneWrite( column as ColumnId, refs, lane, s.toScalar as number, s.channel )
-              : this.scalarWrite( column as ColumnId, refs, paint, s.toScalar as number, s.channel ) );
+            : column === 'node.fontSize' || column === 'edge.fontSize'
+              ? this.fontSizeWrite( column, group, refs, s.toScalar as number, s.channel )
+              : lane != null
+                ? this.laneWrite( column as ColumnId, refs, lane, s.toScalar as number, s.channel )
+                : this.scalarWrite( column as ColumnId, refs, paint, s.toScalar as number, s.channel ) );
 
         // edge opacity is pre-folded into the stored arrow alpha (the arrow
         // vertex stage has no spare storage binding for the opacity column),
@@ -834,6 +845,22 @@ export class Animation {
 
     for( let i = 0; i < refs.length; i++ ){
       write.data[ i * 2 ] = this.store.compoundStyleOf( refs[ i ].slot ).padding;
+      write.data[ i * 2 + 1 ] = to;
+    }
+
+    return write;
+  }
+
+  /** Round 25.5: tween a label's font-size — from is the sidecar
+   * entry's current value (refs are pre-filtered to labelled slots). */
+  private fontSizeWrite(
+    column: TweenColumn, group: GroupName, refs: Ref[], to: number, channel: StyleChannel
+  ): ChannelWrite {
+    const write = blankWrite( column, 'fontSize', false, refs, channel.min, channel.max );
+    const stream = group === 'nodes' ? 'nodes' : 'edges';
+
+    for( let i = 0; i < refs.length; i++ ){
+      write.data[ i * 2 ] = this.store.labelAt( refs[ i ].slot, stream )?.fontSize ?? to;
       write.data[ i * 2 + 1 ] = to;
     }
 
@@ -993,6 +1020,11 @@ export class Animation {
             store.updateCompoundStyle( slot, {
               padding: clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max )
             } );
+            break;
+          case 'fontSize':
+            store.setLabelFontSize( slot,
+              w.column === 'node.fontSize' ? 'nodes' : 'edges',
+              clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
             break;
         }
       }

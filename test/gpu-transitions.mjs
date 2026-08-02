@@ -569,6 +569,47 @@ describe('gpu/style: transitions (round 24.1)', function(){
       expect( cy.$id( 'p' ).padding() ).to.be.closeTo( 15, 1e-3 ); // 0.5 × 30 (bb width)
     });
 
+    it('a font-size transition tweens the label sidecar with the held value', function(){
+      const nodesBlock = fs => ( {
+        label: { data: 'id' }, 'font-size': fs,
+        'transition-property': [ 'font-size' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } );
+      const cy = makeCy( nodesBlock( 20 ) );
+      const s = cy._store.lookup( 'a' ).slot;
+
+      cy.style( { nodes: nodesBlock( 60 ) } );
+
+      expect( cy._store.labelAt( s, 'nodes' ).fontSize ).to.equal( 20 ); // held
+
+      drive( cy, 0, 50 );
+      expect( cy._store.labelAt( s, 'nodes' ).fontSize ).to.be.closeTo( 40, 1e-4 );
+
+      drive( cy, 100 );
+      expect( cy._store.labelAt( s, 'nodes' ).fontSize ).to.equal( 60 );
+    });
+
+    it('a label added by the restyle snaps its font-size (nothing to tween from)', function(){
+      const cy = makeCy( {
+        'transition-property': [ 'font-size' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } );
+      const s = cy._store.lookup( 'a' ).slot;
+
+      expect( cy._store.labelAt( s, 'nodes' ) ).to.equal( undefined );
+
+      cy.style( { nodes: {
+        label: { data: 'id' }, 'font-size': 50,
+        'transition-property': [ 'font-size' ],
+        'transition-duration': 100,
+        'transition-timing-function': 'linear'
+      } } );
+
+      expect( cy._store.labelAt( s, 'nodes' ).fontSize ).to.equal( 50 ); // snapped
+    });
+
     it('parent slots never record a size transition (auto-bounds own them)', function(){
       const cy = cytoscapeGpu( {
         elements: [

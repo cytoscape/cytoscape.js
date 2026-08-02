@@ -1,5 +1,5 @@
 import { GlyphAtlas, SDF_FONT_SIZE, SDF_RADIUS } from './glyph-atlas.mjs';
-import { layoutLabelBlock } from '../label-wrap.mjs';
+import { layoutLabelBlock, WRAP_NONE } from '../label-wrap.mjs';
 import type { LaidBlock } from '../label-wrap.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
@@ -105,8 +105,12 @@ export class LabelLayer {
 
       // shaping (16.3): break/justify/lay through the shared block
       // engine, memoized — maxWidth converts model px -> SDF px so the
-      // memo key is scale-free like the layout itself
-      const memoKey = `${entry.wrap}|${entry.maxWidth / scale}|${entry.overflowWrap}|` +
+      // memo key is scale-free like the layout itself.  Under wrap
+      // 'none' the breaker ignores maxWidth entirely (25.5): drop it
+      // from the key, or a font-size tween would miss (and grow the
+      // memo) every tick for the default wrap mode.
+      const keyWidth = entry.wrap === WRAP_NONE ? 0 : entry.maxWidth / scale;
+      const memoKey = `${entry.wrap}|${keyWidth}|${entry.overflowWrap}|` +
         `${entry.justification}|${entry.lineHeight}|${entry.text}`;
       let block = this.shapeMemo.get( memoKey );
 

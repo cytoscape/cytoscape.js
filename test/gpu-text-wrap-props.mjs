@@ -145,9 +145,18 @@ describe('gpu/style: text wrap props (round 16.2)', function(){
 
     expect( dimsOf( cy, 'a' ) ).to.deep.equal( { w: 123, h: 45, exact: true } );
 
-    // a restyle re-estimates (the renderer feeds exact dims back after
-    // the next glyph build)
+    // 25.5: a pure font-size change with unchanged breaking (wrap none)
+    // is scale-linear — the dims patch by the ratio and *keep* their
+    // exactness (16 → 20 = ×1.25)
     cy.style( { nodes: { 'label': 'text', 'font-size': 20 } } );
+
+    expect( dimsOf( cy, 'a' ).exact ).to.equal( true );
+    expect( dimsOf( cy, 'a' ).w ).to.be.closeTo( 123 * 1.25, 1e-6 );
+    expect( dimsOf( cy, 'a' ).h ).to.be.closeTo( 45 * 1.25, 1e-6 );
+
+    // a text change re-estimates (the renderer feeds exact dims back
+    // after the next glyph build)
+    cy.style( { nodes: { 'label': 'other text', 'font-size': 20 } } );
 
     expect( dimsOf( cy, 'a' ).exact ).to.equal( false );
   });

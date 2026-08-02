@@ -2921,8 +2921,8 @@ const DEFAULT_TRANSITION: TransitionSpec = { props: [], duration: 0, delay: 0, e
  * a multi-lane column through the store's cascading `setLane`.
  */
 interface TxnChannelDesc {
-  column: ColumnId;
-  kind: 'scalar' | 'color' | 'lane';
+  column: TweenColumn;
+  kind: 'scalar' | 'color' | 'lane' | 'fontSize';
   lane?: number;
   paint: boolean;
   min: number;
@@ -2943,7 +2943,10 @@ const TRANSITION_CHANNELS: Record<GroupName, Record<string, TransitionChannel>> 
     // size is auto-bounds-derived); the lane restore/tick runs the
     // full size cascade (outerHalf, label re-anchor, auto-bounds).
     'width': { column: 'node.size', kind: 'lane', lane: 0, paint: false, min: 0, max: Infinity },
-    'height': { column: 'node.size', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity }
+    'height': { column: 'node.size', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity },
+    // round 25.5: the label sidecar's font-size (a fontSize diff with
+    // no sidecar entry on either side never records — the -1 sentinel)
+    'font-size': { column: 'node.fontSize', kind: 'fontSize', paint: false, min: 0, max: Infinity }
   },
   edges: {
     'opacity': {
@@ -2967,7 +2970,8 @@ const TRANSITION_CHANNELS: Record<GroupName, Record<string, TransitionChannel>> 
         { column: 'edge.arrowWidths', kind: 'lane', lane: 0, paint: false, min: 0, max: Infinity },
         { column: 'edge.arrowWidths', kind: 'lane', lane: 1, paint: false, min: 0, max: Infinity }
       ]
-    }
+    },
+    'font-size': { column: 'edge.fontSize', kind: 'fontSize', paint: false, min: 0, max: Infinity }
   }
 };
 
@@ -3055,7 +3059,7 @@ const parseTransitionSpec = ( group: GroupName, config: Record<string, unknown> 
 /** One channel's accumulated transition diffs over an apply pass. */
 interface TxnEntry {
   column: TweenColumn;
-  kind: 'scalar' | 'color' | 'lane' | 'padding';
+  kind: 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize';
   lane?: number;
   paint: boolean;
   min: number;
@@ -3727,7 +3731,15 @@ export class StyleEngine {
 
   private readTxnValue( ch: TxnChannelDesc, slot: number ): number | RGBA {
     if( ch.kind === 'scalar' ){
-      return ( this.store.column( ch.column ) as Float32Array )[ slot ];
+      return ( this.store.column( ch.column as ColumnId ) as Float32Array )[ slot ];
+    }
+
+    if( ch.kind === 'fontSize' ){
+      // -1 = no sidecar entry (unlabelled); a diff with a sentinel on
+      // either side snaps rather than tweening from/to nothing
+      const stream = ch.column === 'node.fontSize' ? 'nodes' : 'edges';
+
+      return this.store.labelAt( slot, stream )?.fontSize ?? -1;
     }
 
     if( ch.kind === 'lane' ){
@@ -3737,12 +3749,12 @@ export class StyleEngine {
         return ( this.store.column( ch.column ) as Uint32Array )[ slot * 2 + 1 ] / 256;
       }
 
-      const arr = this.store.column( ch.column ) as Float32Array;
+      const arr = this.store.column( ch.column as ColumnId ) as Float32Array;
 
-      return arr[ slot * columnSpec( ch.column ).components + ( ch.lane as number ) ];
+      return arr[ slot * columnSpec( ch.column as ColumnId ).components + ( ch.lane as number ) ];
     }
 
-    const bytes = this.store.column( ch.column ) as Uint8Array;
+    const bytes = this.store.column( ch.column as ColumnId ) as Uint8Array;
     const i = slot * 4;
 
     return [ bytes[ i ], bytes[ i + 1 ], bytes[ i + 2 ], bytes[ i + 3 ] ];
@@ -3791,15 +3803,18 @@ export class StyleEngine {
       entry.to.push( to );
 
       if( ch.kind === 'scalar' ){
-        this.store.setScalar( ch.column, slot, from as number );
+        this.store.setScalar( ch.column as ColumnId, slot, from as number );
       } else if( ch.kind === 'lane' ){
         // the lane restore runs the full cascade (a node.size restore
         // re-anchors the label the apply pass just baked at the target)
-        this.store.setLane( ch.column, slot, ch.lane as number, from as number );
+        this.store.setLane( ch.column as ColumnId, slot, ch.lane as number, from as number );
+      } else if( ch.kind === 'fontSize' ){
+        this.store.setLabelFontSize( slot,
+          ch.column === 'node.fontSize' ? 'nodes' : 'edges', from as number );
       } else {
         const [ r, g, b, a ] = from as RGBA;
 
-        this.store.setColor( ch.column, slot, r, g, b, a );
+        this.store.setColor( ch.column as ColumnId, slot, r, g, b, a );
       }
     };
 
@@ -3814,7 +3829,10 @@ export class StyleEngine {
     for( const { main, rides } of txn.channels ){
       const from = pre[ i++ ];
       const to = this.readTxnValue( main, slot );
-      const skip = isParentSlot && main.column === 'node.size';
+      const skip = ( isParentSlot && main.column === 'node.size' )
+        // a fontSize sentinel on either side means no sidecar entry to
+        // tween from/to — the label change snaps (25.5)
+        || ( main.kind === 'fontSize' && ( ( from as number ) < 0 || ( to as number ) < 0 ) );
       const changed = !skip && !eq( main, from, to );
 
       if( changed ){ record( main, from, to ); }

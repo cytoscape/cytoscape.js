@@ -204,6 +204,39 @@ describe('gpu/labels: render pieces', function(){
       expect( buffer.highWater ).to.be.at.most(8); // bounded garbage tail
     });
 
+    it('rewrites a same-count replacement in place (25.5: no growth under a tween)', function(){
+      buffer.set(0, glyphWords(3, 7));
+      buffer.set(1, glyphWords(2, 9));
+      buffer.sync();
+      mock.writes.length = 0;
+
+      var before = buffer.highWater;
+
+      // the font-size tween's steady state: same glyph count per tick
+      for( var t = 0; t < 50; t++ ){
+        buffer.set(0, glyphWords(3, 100 + t));
+      }
+
+      expect( buffer.highWater ).to.equal(before); // no append growth
+      expect( buffer.count() ).to.equal(5);        // no tombstones
+
+      // one coalesced span over node 0's existing range only, holding
+      // the last tick's in-place words
+      var captured;
+
+      mock.device.queue.writeBuffer = function( buf, offset, data, dataOffset, size ){
+        mock.writes.push({ buf, offset, dataOffset, size });
+        captured = new Uint32Array( data.slice(dataOffset, dataOffset + size) );
+      };
+
+      buffer.sync();
+
+      expect( mock.writes ).to.have.length(1);
+      expect( mock.writes[0].offset ).to.equal(0);
+      expect( mock.writes[0].size ).to.equal(3 * GLYPH_WORDS * 4);
+      expect( captured[1] ).to.equal(149);
+    });
+
     it('reallocates the GPU buffer on growth with a version bump', async function(){
       var oldGpu = buffer.buffer();
       var versionBefore = buffer.version;

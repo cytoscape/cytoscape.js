@@ -417,6 +417,62 @@ describe('gpu/animation: geometry tweens (round 25)', function(){
       expect( p.paddedWidth() ).to.be.closeTo( 160, 1e-3 );
     });
 
+    it('font-size: tweens a node label with dims and readback following', function(){
+      const cy = makeCy( { style: { nodes: { label: { data: 'id' }, 'font-size': 20 } } } );
+      const a = cy.$id( 'a' );
+      const s = slotOf( cy, 'a' );
+
+      a.animation( { style: { 'font-size': 40 }, duration: 100, easing: 'linear' } ).play();
+
+      drive( cy, 0, 50 );
+      expect( cy._store.labelAt( s, 'nodes' ).fontSize ).to.be.closeTo( 30, 1e-4 );
+      expect( cy._store.labelDimsAt( s, 'nodes' ).h ).to.be.closeTo( 30, 1e-4 ); // one line: h = em
+      expect( a.style( 'font-size' ) ).to.be.closeTo( 30, 1e-4 );
+
+      drive( cy, 100 );
+      expect( cy._store.labelAt( s, 'nodes' ).fontSize ).to.equal( 40 );
+    });
+
+    it('font-size: an edge label re-anchors and the end streams ride', function(){
+      const cy = cytoscapeGpu( {
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 100, y: 0 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ],
+        style: { edges: {
+          label: { data: 'id' }, 'source-label': { data: 'id' },
+          'font-size': 20, 'source-text-offset': 30
+        } }
+      } );
+      const ab = cy.$id( 'ab' );
+      const s = ab._first().slot;
+
+      expect( cy._store.labelAt( s, 'edges' ).anchorY ).to.be.closeTo( -10, 1e-4 );
+
+      ab.animation( { style: { 'font-size': 40 }, duration: 100, easing: 'linear' } ).play();
+
+      drive( cy, 0, 50 );
+      expect( cy._store.labelAt( s, 'edges' ).fontSize ).to.be.closeTo( 30, 1e-4 );
+      expect( cy._store.labelAt( s, 'edges' ).anchorY ).to.be.closeTo( -15, 1e-4 ); // -fs/2
+      expect( cy._store.labelAt( s, 'edgeSource' ).fontSize ).to.be.closeTo( 30, 1e-4 );
+
+      drive( cy, 100 );
+      expect( cy._store.labelAt( s, 'edges' ).anchorY ).to.be.closeTo( -20, 1e-4 );
+    });
+
+    it('font-size: unlabelled elements are filtered and the tween completes', function(){
+      const cy = makeCy(); // no label styled
+      const a = cy.$id( 'a' );
+      const handle = a.animation( { style: { 'font-size': 40 }, duration: 100, easing: 'linear' } );
+
+      handle.play();
+      drive( cy, 0, 50, 100 );
+
+      expect( cy._store.labelAt( slotOf( cy, 'a' ), 'nodes' ) ).to.equal( undefined );
+      expect( handle.playing() ).to.equal( false );
+    });
+
     it('pauses and resumes a size tween with the frozen value readable', function(){
       const cy = makeCy();
       const a = cy.$id( 'a' );

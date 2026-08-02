@@ -5628,15 +5628,36 @@ the `pause`/`resume`/`reverse` control set.
   63 module tests, 151/151 Playwright (goldens untouched — rendered
   scenes without transitions are pixel-identical under the capture
   wrap), typecheck + lint clean.
-- [ ] **24.2 GPU bulk path + scale proof** — whole-channel
-  transitions ride the gpu-tween kernels off one record (slot list +
-  packed from/to; paint channels only); the auto-domain-shift case
-  benchmarked at 200k against the plain re-derive (the 15.9 ms
-  baseline) in `benchmark/gpu/`; Playwright: a data write mid-scene
-  tweens pixels (sampled mid-flight, the tween-suite pattern) and
-  lands exactly on the mapper's resolved end state; the domain
-  contract pinned by an explicit-domain spec whose out-of-range
-  write touches one element's channel only.
+- [x] **24.2 GPU bulk path + scale proof** (2026-08-01) — the
+  offload came almost free from 24.1's preset shape: an all-paint
+  preset reports `gpuEligible` and the manager registers its
+  ChannelWrites with the existing gpu-tween kernels verbatim, so
+  the only new renderer-side code is a **demotion rule**: a listed
+  transition prop's mapper eval can not be kernel-owned (the diff
+  reads stored truth on the CPU, which is stale exactly when the
+  kernel owns the channel) — `paintInputs` demotes every prop in
+  the group's spec (the parents overlay's spec too, under
+  compounds); transitions and mapper kernel eval are mutually
+  exclusive *per channel*, while the tween itself still runs
+  on-device (different kernels).  Playwright (both discriminating,
+  in the `webgpu` project): a sheet-swap transition tweens pixels
+  through OKLab while `style()` reads the pre-restyle value (the
+  motion-staleness rule) and settles on the exact resolved end
+  state; a scale-mapper transition on a data write tweens rather
+  than snapping — the spec fails on the mid-flight green>red
+  strictness if the demotion is removed.  Scale proof
+  (`benchmark/gpu/transitions.mjs`, headless 200k nodes): the
+  auto-extent shift's whole-channel re-derive is 326 ms off →
+  594 ms with transitions (1.82× — the diff + restore + bulk spawn
+  is a constant factor, not a new class); the explicit-domain
+  write is 4.2 → 6.8 µs (O(changed) pinned — ~2.6 µs to diff and
+  spawn a one-element tween); a whole-sheet swap is 1.46 → 1.67 s
+  (1.15×); and the spawned 200k-slot tween costs 15 ms per CPU
+  tick — the number the GPU offload deletes (all-paint presets
+  tick on-device at ~zero CPU, the round-9.4 contract).  The
+  domain-contract browser spec folded into the Node spec + the
+  benchmark's explicit-domain group (recorded).  2237 Node tests,
+  153/153 Playwright (2 new), typecheck + lint clean.
 - [ ] **24.3 Controls** — `pause()`/`resume()`/`reverse()` on the
   Animation handle (and collection-level forms), timeline semantics:
   pause freezes elapsed (promise stays pending), resume continues,

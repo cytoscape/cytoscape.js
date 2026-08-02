@@ -3420,6 +3420,20 @@ export class StyleEngine {
       }
     }
 
+    // round 24.2: a listed transition prop's diff reads *stored truth*
+    // on the CPU, which is stale exactly when the eval kernel owns the
+    // channel — so transitions and kernel ownership are mutually
+    // exclusive per channel (the tween itself still rides the GPU tween
+    // kernels; only the mapper eval stays CPU).  Under compounds the
+    // parents overlay's spec demotes too (parent slots diff through it).
+    if( def.transition.duration > 0 ){
+      for( const p of def.transition.props ){ demoted.add( p ); }
+    }
+
+    if( group === 'nodes' && this.store.hasCompounds() && this.defs.parents.transition.duration > 0 ){
+      for( const p of this.defs.parents.transition.props ){ demoted.add( p ); }
+    }
+
     return def.mappers
       .filter( bm => PAINT_PROPS[ group ].has( bm.m.prop ) && !demoted.has( bm.m.prop ) )
       .map( bm => ( { m: bm.m, fallback: bm.m.fallback ?? bm.channel.default( group ) } ) );

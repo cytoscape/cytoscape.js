@@ -677,7 +677,21 @@ each is deliberate, not a pass-1 deferral:
   explicit `domain` a data write re-evaluates the written elements
   only — O(changed), never whole-channel — while `'auto'` pays the
   O(n) re-derive only when a write actually moves the live extent;
-  pin `domain` when a stream grows its own extent.
+  pin `domain` when a stream grows its own extent.  **GPU path
+  (24.2)**: an all-paint transition offloads to the existing
+  gpu-tween kernels (per-frame CPU ~zero; a border-width write
+  keeps the whole preset on the CPU, the all-or-nothing rule), and
+  a listed transition prop's *mapper eval* demotes to the CPU —
+  the diff needs fresh stored bytes, so transitions and kernel
+  ownership are mutually exclusive per channel while the tween
+  itself still runs on-device.  Measured
+  (`benchmark/gpu/transitions.mjs`, headless 200k): the
+  auto-extent whole-channel re-derive is 326 → 594 ms with
+  transitions on (a 1.82× constant factor, not a new class), an
+  explicit-domain write 4.2 → 6.8 µs (O(changed)), a whole-sheet
+  swap 1.46 → 1.67 s (1.15×), and the 200k-slot CPU tween tick is
+  15 ms/frame — the cost the GPU offload deletes on rendered
+  instances.
 - **Animation: CPU-canonical, with a GPU fast path for position and paint
   under a transient lease.**  An animation tweens element style/position
   (or the viewport) from captured start values to explicit targets over a

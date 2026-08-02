@@ -2390,6 +2390,102 @@ test.describe( 'WebGPU renderer', () => {
     expect( ( await pixelAt( page, center.x, center.y ) )[ 0 ] ).toBeGreaterThan( 200 );
   } );
 
+  test( 'a style transition rides the GPU tween path and lands on the resolved end state (24.2)', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    const TRANSITION = {
+      'transition-property': [ 'background-color' ],
+      'transition-duration': 2000,
+      'transition-timing-function': 'linear'
+    };
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'background-color': 'rgb(0,0,255)', 'width': 100, 'height': 100, 'shape': 'rectangle',
+        ...TRANSITION
+      } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+    expect( ( await pixelAt( page, center.x, center.y ) ).slice( 0, 3 ) ).toEqual( [ 0, 0, 255 ] );
+
+    // a restyle triggers the transition — an all-paint preset offloads
+    // to the GPU tween kernels, so pixels move while the CPU column
+    // holds the pre-restyle value (the motion-staleness rule)
+    await page.evaluate( ( t ) => window.cy.style( { nodes: {
+      'background-color': 'rgb(255,255,0)', 'width': 100, 'height': 100, 'shape': 'rectangle', ...t
+    } } ), TRANSITION );
+    await page.waitForTimeout( 900 );
+    await waitFrames( page );
+
+    const mid = await pixelAt( page, center.x, center.y );
+
+    expect( mid[ 0 ] ).toBeGreaterThan( 30 ); // visibly off blue...
+    expect( mid[ 2 ] ).toBeLessThan( 245 );
+    expect( mid[ 1 ] ).toBeGreaterThan( mid[ 0 ] ); // ...through OKLab (green leads red)
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).style( 'background-color' ) ) )
+      .toBe( 'rgb(0,0,255)' );
+
+    // completion settles the exact resolved end state onto the CPU
+    await page.waitForTimeout( 1400 );
+    await waitFrames( page );
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).style( 'background-color' ) ) )
+      .toBe( 'rgb(255,255,0)' );
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).animated() ) ).toBe( false );
+    expect( ( await pixelAt( page, center.x, center.y ) ).slice( 0, 3 ) ).toEqual( [ 255, 255, 0 ] );
+  } );
+
+  test( 'a mapped-channel transition works under the renderer: listing a prop demotes its kernel eval (24.2)', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    // background-color is a single-key scale mapper — kernel-ownable —
+    // but it is listed in transition-property, so its eval stays CPU
+    // (the diff needs fresh stored bytes) and a data write transitions
+    // instead of snapping through the narrow GPU-owned refresh path
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a', w: 0 }, position: { x: 0, y: 0 } } ],
+      style: { nodes: {
+        'background-color': { data: 'w', domain: [ 0, 1 ], range: [ 'rgb(0,0,255)', 'rgb(255,255,0)' ] },
+        'width': 100, 'height': 100, 'shape': 'rectangle',
+        'transition-property': [ 'background-color' ],
+        'transition-duration': 2000,
+        'transition-timing-function': 'linear'
+      } },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+    expect( ( await pixelAt( page, center.x, center.y ) ).slice( 0, 3 ) ).toEqual( [ 0, 0, 255 ] );
+
+    await page.evaluate( () => window.cy.$id( 'a' ).data( 'w', 1 ) );
+    await page.waitForTimeout( 900 );
+    await waitFrames( page );
+
+    const mid = await pixelAt( page, center.x, center.y );
+
+    expect( mid[ 0 ] ).toBeGreaterThan( 30 ); // tweening, not snapped
+    expect( mid[ 2 ] ).toBeLessThan( 245 );
+    expect( mid[ 1 ] ).toBeGreaterThan( mid[ 0 ] );
+
+    await page.waitForTimeout( 1400 );
+    await waitFrames( page );
+
+    // the settled end state is the mapper's resolved value at w=1
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).style( 'background-color' ) ) )
+      .toBe( 'rgb(255,255,0)' );
+    expect( ( await pixelAt( page, center.x, center.y ) ).slice( 0, 3 ) ).toEqual( [ 255, 255, 0 ] );
+  } );
+
   test( 'spring() overshoots on the device: the node passes the target, then settles on it', async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );

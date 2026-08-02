@@ -1939,6 +1939,11 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    2026-08-01 (third design sitting): v4 animations need not match
    v3 — the queue is dropped outright (round 21) and `step` stays
    out; controls and transitions remain the open follow-up.**
+   **Remainder scoped 2026-08-01 (fourth design sitting) as round
+   24 (plan at the end of this file): transitions return with a
+   v4-specific trigger taxonomy + the domain perf contract, and
+   `pause`/`resume`/`reverse` land (`progress` stays a getter,
+   `apply`/`applying` stay out).**
 10. **Extension system** — `cytoscape.use()` and
     `cytoscape(type, name, registrant)` registration for
     layout/renderer/core/collection extensions.  v4 has none; this
@@ -2036,7 +2041,9 @@ touch parity), and the **third design sitting** (2026-08-01) scoped
 and landed rounds 21–23 (animation queue removal, the
 display/visibility split, node charts) — see the plans and records
 below.  What remains of the needs-a-call list: the animation
-controls/transitions follow-up (item 9's open half), the small
+controls/transitions follow-up (item 9's open half — **since scoped
+as round 24 by the fourth design sitting, 2026-08-01**; the
+geometry-tween pass it logs is the new open follow-up), the small
 parity remnants noted inline in items 4–6, and items 8's deferred
 overlap box mode, 10's core/collection extension points and 12's
 odds and ends.
@@ -5502,3 +5509,112 @@ chart types.
   (the golden + parity scenes cover the visual surface; recorded).
   2214 Node tests, 151/151 Playwright, typecheck + lint clean.
   **Round 23 is complete.**
+
+## Design sitting (2026-08-01, fourth) — style transitions + animation controls
+
+The open half of gap item 9, scoped with the user as **round 24**.
+Calls taken:
+
+1. **Transitions are in** — the `transition-property`/`-duration`/
+   `-delay`/`-timing-function` family returns as sugar over the
+   animation system.  The trigger taxonomy is v4-specific (no
+   classes, no bypass): a transition fires whenever an element's
+   *resolved* channel value changes through a restyle — sheet
+   re-application, mapper re-evaluation on data writes (`case`
+   clause flips, scale output moves, auto-domain extent shifts) and
+   structural restyles (leaf↔parent flips, structural `case`
+   conditions).  **Instant on add** (v3's rule — a new element's
+   first style application never tweens from channel defaults).
+   Non-triggers, recorded: `visibility`/`show`/`hide` flips (flags,
+   not tweenable channels — fade is spelled with an `opacity`
+   transition) and descendant effective-opacity folds (they follow
+   an ancestor's tween per tick; no per-descendant transitions).
+   Batched writes capture at the outermost `endBatch` — one
+   transition per *net* change.
+2. **Interruption: latest wins, uniformly.**  The round-21
+   channel-eviction rule applies with no priority tiers: whichever
+   starts later (transition or user animation) captures from the
+   current mid-flight value and stops the older one in place, both
+   directions.
+3. **`transition-property` accepts every prop name from day one;
+   executors are tiered.**  Number/color channels that are
+   animatable today actually tween — the paint set (opacity,
+   background/border/line colors, with the arrow-alpha fold riding
+   along) on the GPU bulk path, `border-width` on the CPU path —
+   while discrete channels (enums, strings, lists) snap at the
+   transition's start (CSS's rule, recorded) and the not-yet-
+   animatable geometry numerics (`width`/`height`, `font-size`,
+   `padding`, edge `width`) snap too, **logged as the
+   geometry-tween follow-up round**: their per-tick invalidation
+   cascade (curve re-derivation, compound auto-bounds, label
+   anchors) is the same work the width/height *animation* follow-up
+   needs, so both land together, once, with benchmarks.  The API
+   surface never changes when that round lands.
+4. **Whole-channel transitions must be one bulk tween record** —
+   a slot list + packed from/to buffers (the round-9.4 shape),
+   never per-element Animation objects.  This keeps the
+   auto-domain-shift worst case (one write moves the live extent →
+   the whole channel re-derives) in the cost class it already
+   occupies today: the O(n) re-derive plus a constant (one stored-
+   channel read for the from values, one from/to upload, ~zero per
+   frame while running).
+5. **The domain performance contract** (user's condition: both
+   modes stay supported).  Explicit `domain` — already in the
+   round-7 DSL, no new mapper type — is the documented escape
+   hatch: with a pinned domain a data write re-evaluates *written
+   elements only* (O(changed), never whole-channel); with
+   `'auto'`, in-range writes are identically O(changed) and only
+   extent-moving writes pay the O(n) re-derive.  Recorded as docs
+   guidance (mapper docs + transition docs): auto is the ergonomic
+   default, pin `domain` when a stream grows its own extent.  No
+   warning machinery.
+6. **Controls: `pause`/`resume`/`reverse` land; `progress` stays a
+   getter** (no scrubbing), and v3's `apply`/`applying` stay out
+   (promises cover the use case; one name per concept).  A paused
+   GPU tween settles its lease (values freeze on the CPU) and
+   re-acquires on resume.
+
+## Round 24 plan — style transitions + animation controls (planned 2026-08-01)
+
+**Signed-off design calls**: the fourth-sitting record above —
+trigger taxonomy with instant-on-add, uniform latest-wins eviction,
+all-props-accepted with tiered executors (paint tweens now, discrete
++ geometry snap, geometry-tween round logged), bulk-record
+whole-channel transitions, the auto-vs-explicit domain contract, and
+the `pause`/`resume`/`reverse` control set.
+
+**Pass split** (tests-first; docs in-commit):
+
+- [ ] **24.1 Transition props + CPU path** — the four props parse/
+  validate/read back per sheet group (`nodes`/`edges`/`parents`;
+  constants-only — transition config is not per-element-mappable,
+  recorded); trigger detection as a per-channel resolved-value diff
+  at the style-apply seams (sheet re-application, the mapper refresh
+  paths — case/structural included — and the batch flush), spawning
+  bulk ChannelWrite tweens through the round-21 manager (eviction
+  falls out); instant-on-add; discrete/geometry props snap at start;
+  `transition-property` validates names against the prop tables
+  (unknown throws).  Node specs: trigger matrix (sheet swap, case
+  flip, scale move, extent shift, add, batch net-change), eviction
+  both directions, snap tiers, readback.
+- [ ] **24.2 GPU bulk path + scale proof** — whole-channel
+  transitions ride the gpu-tween kernels off one record (slot list +
+  packed from/to; paint channels only); the auto-domain-shift case
+  benchmarked at 200k against the plain re-derive (the 15.9 ms
+  baseline) in `benchmark/gpu/`; Playwright: a data write mid-scene
+  tweens pixels (sampled mid-flight, the tween-suite pattern) and
+  lands exactly on the mapper's resolved end state; the domain
+  contract pinned by an explicit-domain spec whose out-of-range
+  write touches one element's channel only.
+- [ ] **24.3 Controls** — `pause()`/`resume()`/`reverse()` on the
+  Animation handle (and collection-level forms), timeline semantics:
+  pause freezes elapsed (promise stays pending), resume continues,
+  reverse swaps from/to remapping elapsed so the current value is
+  continuous; GPU lease settle-on-pause / re-acquire-on-resume;
+  interaction with eviction (a paused animation still owns its
+  channels and is evictable).  Node + Playwright specs.
+- [ ] **24.4 Docs closing sweep** — README section (+ the design-
+  decisions bullet updated from "open follow-up" to landed), the
+  gap-ledger item 9 closed, the geometry-tween follow-up round
+  logged where the size-channel note already lives, and the domain
+  contract added to the mapper docs.

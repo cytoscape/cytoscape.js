@@ -144,7 +144,9 @@ in v3 — the whole-collection sum is `totalDegree` — plus min/max stats),
 read-only style getters (`style`/`css`, `renderedStyle`,
 `numericStyle`, `effectiveOpacity`/`transparent`/`takesUpSpace`/
 `interactive` — since round 20.2 `interactive()` folds the `events`
-prop — see below), `boundingBox({ includeLabels })` +
+prop, and since round 22 `visible()` is the draw tier while
+`takesUpSpace()` is the space tier — see below),
+`boundingBox({ includeLabels })` +
 `labelBoundingBox()` (round 16.4), the `background-image` family
 (round 15), the wrap family (round 16), the round-22 `visibility`
 prop and the round-23 `chart` family in the sheet, the round-17
@@ -2154,6 +2156,41 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   stay monotone rather than recomputing; the auto trigger defers
   mid-batch and during a live GPU force run; a compaction demotes
   mid-flight GPU tweens to the CPU for the rest of their run.
+- **Interaction + pointer transparency** (round 20) — the deviations
+  in one place (the round-20 bullets above carry the detail): the
+  touch tap threshold now differs from the desktop one (8 vs 4 — v4
+  previously applied 4 to both); `tapholdDuration` is configurable
+  (v3 hardcodes 500); `events: 'no'` elements stay out of the box
+  *gesture* while `cy.elementsInBox()` stays geometric;
+  `text-events` is node-only (the edges group throws; edge labels
+  are never pickable) and a LOD-faded label still picks; touch
+  `cxtdrag` thresholds on finger movement (v3 fires on any move
+  event); the touch box is additive and a third finger on an
+  undragged cxt pair converts to the box gesture (the sequential
+  pointer-events form of v3's simultaneous landing).
+- **No animation queue** (round 21, user-approved divergence):
+  animations start immediately and compose by channel; overlapping
+  channels evict the older animation in place; sequencing is
+  `await animation.promise()`; `stop(jumpToEnd?)` lost v3's
+  clearQueue argument; the `queue`/`step` option spellings throw.
+- **Display vs visibility** (round 22) — the deviations in one place
+  (the split's bullet above carries the detail): `visibility` is a
+  style prop, not an element-state API (per-element variation is a
+  `case` mapper); edge `visible()` now folds endpoint state (v3's
+  rule — previously own-flag only); `hide()` re-fans bezier bundles
+  (previously kept ranks); the fit scan and collection
+  `boundingBox()` now exclude display-hidden elements (previously a
+  gap); `takesUpSpace()` can now differ from `visible()`.
+- **Node charts** (round 23) — the deviations in one place (the
+  charts bullet above carries the detail): 16-slice cap; values are
+  absolute fractions clamping at 1 (no normalize option — apps
+  normalize); list props (`chart-values`, `chart-colors`) are
+  constants-only with the `{ data }` passthrough as the per-element
+  form; charts share the `imageMinPx` readability floor; readback
+  reports resolved fractions (declared percent strings do not
+  round-trip); the stripe v3 parity covers vertical square-node
+  scenes only — v3's 'horizontal' keyword and non-square centering
+  are broken upstream (recorded), the golden pins v4's behavior.
 - **Device-loss recovery** (round 10): an external device loss emits
   `devicelost` and auto-recovers once — the core re-mounts a fresh
   renderer against the same container (the model is CPU-canonical, so
@@ -2170,5 +2207,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   slot-stable tier (id blob, CSR adjacency, string dictionaries) has
   self-compacted since round 11.  No architecture hooks remain open;
   demand-gated feature hooks (the elevated draw tier, per-side
-  compound padding, multilevel force refinement, more layouts) stay
+  compound padding, multilevel force refinement, more layouts, future
+  chart kinds on the round-23 surface) stay
   logged in their sections above.
+- **Open API follow-ups** (logged, awaiting a user call): the
+  animation controls (`pause`/`progress`/`reverse`) and style
+  transitions (the round-21 sitting deferred both — neither built
+  nor dropped), and the small parity remnants (compound arrow
+  shapes, per-element numeric `text-rotation`, the unported shape
+  keywords, `border-style`/`outline-style`).

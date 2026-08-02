@@ -107,7 +107,7 @@ src/gpu/
   element-defs.mts       # classic definition-form parsing shared by the factory and cy.add()
   image-registry.mts     # round 15: the unique-image pool (url dedup, tiers, async decode)
   label-wrap.mts         # round 16: multiline breaker/justify/ellipsis + the headless estimator
-  animation.mts          # Animation + AnimationManager: CPU tween + queues; routes position/paint to the GPU sink
+  animation.mts          # Animation + AnimationManager: CPU tween, concurrent per-channel runs (round 21 — no queue); routes position/paint to the GPU sink
   layout/                # grid, preset, circle, concentric, breadthfirst, random
     contract.mts         #   round 17: the extension contract (CustomLayout + the columnar LayoutContext)
     force-sim.mts        #   round 18: the CPU reference force simulation (the kernels' spec)
@@ -146,6 +146,8 @@ src/gpu/
     gpu-force.mts        # round 18: the on-device force integrator (grid/gather/apply + lease)
     image-arrays.mts     # round 15: tiered rgba arrays + mips + the r8 icon array + image table
     image-pipeline.mts   # round 15: the image compositing draw (own pass off the node streams)
+    chart-pipeline.mts   # round 23: the pie/stripe chart draw (own pass, after images)
+    node-layer-pipeline.mts    # round 13 A2: overlay/underlay layer quads
     image-decoder.mts    # round 15: the browser rasterizer (fetch/createImageBitmap/svg canvas)
     cpu-pick.mts         # synchronous CPU node pick: shader-semantics replica over the columns
     picking.mts          # r32uint pick tile, 3-buffer staging ring, latest-wins + full-ring deferral
@@ -157,7 +159,7 @@ src/gpu/
     webgpu-constants.mts # numeric usage/stage flags so render modules stay Node-importable
   interact/pointer.mts   # pointer/wheel/touch: pan, zoom, hover, taps, box select, drag, pinch, cxt
   README.md              # scope + accepted deviations (the maintained doc)
-debug/webgpu/            # dev harness: network/bg/LOD/labels URL params, ?gen=NxM generator, stats overlay
+debug/webgpu/            # dev harness: network/bg/LOD/labels URL params, ?gen=NxM generator, ?layout=force|spiral|... (rounds 17-18), stats overlay
 playwright-page/webgpu.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/webgpu.spec.js (+ webgpu-visual.spec.js + goldens/)
 test/gpu-*.mjs           # 100+ Node-runner suites (auto-picked-up by the test:js glob)
@@ -168,7 +170,7 @@ benchmark/gpu/           # mitata suites + the renderer/report runners (see the 
 
 Columns, flag bits and shape ids are exactly as originally specced; `contract.mts` is the co-signed source of truth and was implemented first. Key decisions that held up:
 
-- **Stable slots**: free-list + tombstones (cleared flags) + per-slot generation counters; renderer draws `highWater` instances, dead ones collapse to degenerate quads in the VS. No compaction in pass 1.
+- **Stable slots**: free-list + tombstones (cleared flags) + per-slot generation counters; renderer draws `highWater` instances, dead ones collapse to degenerate quads in the VS. No compaction in pass 1 (since landed: the slot-stable tier round 11, slot-moving round 19).
 - **Dirty tracking**: one coalesced `[min,end)` span per column per frame + `resized` flag; `takeDelta()` returns-and-clears; `onInvalidate(cb)` fires ≤ once per microtask. Extended with `touch()` so non-column sidecars (labels) join the same scheduling.
 - **Adjacency**: incremental per-node `outEdges[]`/`inEdges[]` (O(1) degree, cascade removal). CSR deferred.
 - **Element handles**: interned singleton length-1 collections per live slot; `{group, slot, gen}` refs validated on access; cached `id()`/`group()` stay readable after removal (needed for `remove` events).
@@ -181,7 +183,7 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 ## Render half — implemented as planned, plus labels
 
 - **Init/ready/device-lost**: as specced (sync throw without `navigator.gpu`; `.ready` rejects on null adapter; premultiplied canvas; dead instance + `error` event on loss).
-- **Frame uniform**: 48-byte struct — viewportPx, panPx, zoomDpr, edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx (+2 pads). Not a mat3x3, as planned.
+- **Frame uniform**: 48-byte struct at pass 1 — viewportPx, panPx, zoomDpr, edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx. Not a mat3x3, as planned.  (Since grown to 17 fields / 72 bytes: labelMinPx, the curve/haystack/outline slack bounds, arrowScaleMax, imageMinPx, and the round-20.2 pickMode.)
 - **Node/edge pipelines**: pure vertex pulling from the mirrored columns; colors bound as `array<u32>` + `unpack4x8unorm` (byte-identical uploads); border band + selected accent ring (#0169d9) + hover/grab brighten in the node FS; edges extrude in screen space and fetch endpoints from the node position buffer (drags follow on-GPU).
 - **Z-order**: single pass — edges, then nodes, then labels; slot order within a group. **Early-z (added)**: a depth buffer + node depth prepass (opaque interiors only, conservative cheap SD tests, no Newton solver) kills edge fragments under opaque nodes before blending; depth = per-element z-rank (edges far / nodes near), designed to generalize to `z-index`/compound ordering as more ranks + batches. Pixel-identical output (verified by screenshot diff); ndex-x-large fit-all at dpr 2: 37.7 → 31.4 ms.
 - **ColumnMirror**: per-column storage buffers, span uploads at `start × bps`, realloc + full re-upload on `resized` with `destroy()` deferred behind `onSubmittedWorkDone()`, version-bumped lazy bind-group rebuild. Unit-tested against a mock GPUQueue.
@@ -736,7 +738,8 @@ the API.
   element style/position (and the viewport) from captured start values to
   explicit targets over a duration, easing normalized time.  Collection:
   `animate`/`animation`/`animated`/`stop`/`delay`/`delayAnimation` +
-  `promise()` + a per-element queue; core: `animate` (viewport pan/zoom),
+  `promise()` + a per-element queue (the queue since removed — round
+  21 runs animations concurrently by channel); core: `animate` (viewport pan/zoom),
   `animated`, `stop`.  Each tick writes the store columns (works headless;
   a rAF-or-timeout auto-driver, plus a deterministic `tick(now)` for
   tests).  Standard easings.  Animatable: `position`, node `opacity`,
@@ -1741,7 +1744,7 @@ iteration/comparison/building surface (incl. `eq`/`first`/`last`/
 (incl. `active`/`pannable`), the full v3 algorithm surface, layouts
 grid/preset/circle/concentric/breadthfirst/random (+ `eles.layout()`
 plumbing), `png`/`jpg` export options, `mount`/`unmount`/`destroy`,
-`stop(clearQueue, jumpToEnd)`/`delay`/`delayAnimation`, box selection
+`stop(clearQueue, jumpToEnd)` (since round 21 `stop(jumpToEnd)` — no queue)/`delay`/`delayAnimation`, box selection
 with `selectionType`, pinch zoom, the cxttap/dbltap/taphold gesture
 set, and `data`/`scratch`/`json()` export.  (Where v3 takes a
 selector these take collections/queries/predicates — the decided v4
@@ -1871,19 +1874,32 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    `bottom-round-rectangle`).  Each is small-to-medium; needs a
    scope call on which subset earns its shader/channel cost.
    (`background-blacken` and `bounds-expansion` were in this batch
-   until the 2026-07-29 triage dropped them.)
+   until the 2026-07-29 triage dropped them.)  **Landed as round 13
+   (2026-07-31, B/C series)**: gradients, corner-radius,
+   border-position, dash pattern/offset/cap, the outline group, the
+   custom polygon.  Still open: `border-style`/`outline-style` (SDF
+   perimeter parameterization) and the unported shape keywords.
 5. **Arrow parity** — `mid-source`/`mid-target` positions,
    `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
    shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/
    `triangle-backcurve`).  Mid-arrows are cheap on straight edges
-   but really belong with curved-edge midpoint math.
+   but really belong with curved-edge midpoint math.  **Landed as
+   round 13 (2026-07-31, B7/C1)**: arrow-scale, per-end
+   fill/width, mid-arrows on the curve/route midpoint.  Still
+   open: the compound arrow shapes and v3's nonlinear arrow-size
+   formula (recorded deviation).
 6. **Label parity** — placement (`text-valign`/`text-halign` grid
    vs v4's fixed below-node), per-element numeric `text-rotation`,
    **source/target edge labels** (10 props — second/third label
    streams), `text-opacity`, `text-transform`,
    `font-style`/`font-weight`, `text-border-*`,
    `text-background-shape`, and per-element `min-zoomed-font-size`
-   vs v4's global `labelFadePx`/`labelMinPx`.  Also: **labels are
+   vs v4's global `labelFadePx`/`labelMinPx`.  **Landed as round 13
+   (2026-07-31, B6/D series)**: the halign/valign grid,
+   text-opacity/transform/border/background-shape,
+   font-style/-weight, per-element min-zoomed-font-size, and the
+   source/target label streams.  Still open: per-element numeric
+   `text-rotation` (the logged parity gap).  Also: **labels are
    excluded from `boundingBox()`** in v4 — v3's `includeLabels`
    (and the bb options object generally) affects `fit()` semantics;
    the conservative-label-bound design (already sketched for
@@ -2013,6 +2029,17 @@ round at all) → background images (round 15) → multiline labels +
 label bb (round 16) → event vocabulary + extension contract
 (round 17) → GPU force layout (round 18).  **All four rounds landed
 in full the same day** — the queue is clear.
+
+**Since then**: round 19 (slot-moving compaction) closed the last
+architecture item, round 20 closed gap item 8 (interaction options +
+touch parity), and the **third design sitting** (2026-08-01) scoped
+and landed rounds 21–23 (animation queue removal, the
+display/visibility split, node charts) — see the plans and records
+below.  What remains of the needs-a-call list: the animation
+controls/transitions follow-up (item 9's open half), the small
+parity remnants noted inline in items 4–6, and items 8's deferred
+overlap box mode, 10's core/collection extension points and 12's
+odds and ends.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

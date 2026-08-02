@@ -2,7 +2,7 @@ import { color2tuple } from '../util/colors.mjs';
 import { compileEasing } from './easing.mjs';
 import { oklabToSrgb, srgbToOklab } from './style-schemes.mjs';
 import type { Easing, EasingProgram } from './easing.mjs';
-import { FLAG_CHILD, FLAG_PARENT } from './contract.mjs';
+import { columnSpec, FLAG_CHILD, FLAG_PARENT } from './contract.mjs';
 import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { StyleEngine } from './style.mjs';
@@ -30,10 +30,14 @@ animating (the core checks `animated()` before starting a drag), so an
 interactive override can't fight the tween.
 
 Animatable: `position`, `opacity` (both groups), `background-color`,
-`border-color`, `line-color`, `border-width`.  Colours interpolate in
-OKLab — the same space mappers ramp in by default — so an animation to a
-colour and a mapper ramp to it take the same path.  Size (width/height,
-circle collapse) and label channels are a follow-up.
+`border-color`, `line-color`, `border-width`, and — round 25 — node
+`width`/`height` (two lanes of the size pair column; the store's lane
+writer runs the per-tick cascade: outerHalf, label re-anchor, compound
+auto-bounds).  Colours interpolate in OKLab — the same space mappers
+ramp in by default — so an animation to a colour and a mapper ramp to
+it take the same path.  Geometry tweens never offload and are never
+stale: every tick is a CPU column write, so `width()`/`bb()`/pick
+mid-tween read the mid-flight value.
 
 Style transitions (round 24) ride this layer as *preset* animations:
 the style engine diffs stored truth around a restyle into per-column
@@ -72,6 +76,10 @@ interface StyleChannel {
   columns: Partial<Record<GroupName, ColumnId>>;
   kind: 'scalar' | 'color';
   tier: 'paint' | 'geometry';
+  /** round 25: the channel is one lane of a multi-component column
+   * (node.size lanes 0/1) — tweened via the `lane` write kind, which
+   * routes through the store's cascading lane writer */
+  lanes?: Partial<Record<GroupName, number>>;
   /**
    * Valid range for a scalar channel.  A bouncy easing overshoots its
    * endpoints on purpose — fine for position, but an opacity of 1.04 or a
@@ -87,7 +95,13 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   'background-color': { columns: { nodes: 'node.fillColor' }, kind: 'color', tier: 'paint' },
   'border-color': { columns: { nodes: 'node.borderColor' }, kind: 'color', tier: 'paint' },
   'line-color': { columns: { edges: 'edge.lineColor' }, kind: 'color', tier: 'paint' },
-  'border-width': { columns: { nodes: 'node.borderWidth' }, kind: 'scalar', tier: 'geometry', min: 0 }
+  'border-width': { columns: { nodes: 'node.borderWidth' }, kind: 'scalar', tier: 'geometry', min: 0 },
+  // round 25.1: node size — two lanes of one pair column.  Sharing the
+  // column means width and height share the round-21 eviction channel
+  // (recorded).  Compound parents are skipped at capture *and* per tick
+  // (auto-bounds own their size column).
+  'width': { columns: { nodes: 'node.size' }, lanes: { nodes: 0 }, kind: 'scalar', tier: 'geometry', min: 0 },
+  'height': { columns: { nodes: 'node.size' }, lanes: { nodes: 1 }, kind: 'scalar', tier: 'geometry', min: 0 }
 };
 
 const normalizeProp = ( prop: string ): string => prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
@@ -169,7 +183,7 @@ interface CompiledStyle {
   toColor?: RGBA;
 }
 
-export type WriteKind = 'position' | 'scalar' | 'color';
+export type WriteKind = 'position' | 'scalar' | 'color' | 'lane';
 
 /**
  * One column's worth of resolved tween data, captured once at start.
@@ -192,6 +206,10 @@ export interface ChannelWrite {
   /** scalar bounds against easing overshoot (see StyleChannel) */
   min: number;
   max: number;
+  /** round 25: which component a `lane` write targets.  Lane writes are
+   * geometry-tier (never GPU-registered) and route through the store's
+   * cascading lane writer. */
+  lane?: number;
 }
 
 const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
@@ -199,7 +217,7 @@ const lerp = ( a: number, b: number, t: number ): number => a + ( b - a ) * t;
 const clampTo = ( v: number, lo: number, hi: number ): number => v < lo ? lo : v > hi ? hi : v;
 
 /** Floats per slot in `ChannelWrite.data`, by kind. */
-export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8 };
+export const STRIDE: Record<WriteKind, number> = { position: 4, scalar: 2, color: 8, lane: 2 };
 
 const blankWrite = (
   column: ColumnId, kind: WriteKind, paint: boolean, refs: Ref[],
@@ -708,7 +726,17 @@ export class Animation {
 
         if( column == null ){ continue; }
 
-        const refs = this.refs.filter( r => r.group === group && this.store.isCurrent( r ) );
+        let refs = this.refs.filter( r => r.group === group && this.store.isCurrent( r ) );
+
+        // round 25.1: a compound parent's size is auto-bounds-derived —
+        // width/height tweens skip parent slots (padding is the parent
+        // knob; recorded)
+        const lane = s.channel.lanes?.[ group ];
+
+        if( column === 'node.size' ){
+          refs = refs.filter( r =>
+            ( this.store.flags( 'nodes', r.slot ) & FLAG_PARENT ) === 0 );
+        }
 
         if( refs.length === 0 ){ continue; }
 
@@ -716,7 +744,9 @@ export class Animation {
 
         this.writes.push( s.channel.kind === 'color'
           ? this.colorWrite( column, refs, paint, () => s.toColor as RGBA )
-          : this.scalarWrite( column, refs, paint, s.toScalar as number, s.channel ) );
+          : lane != null
+            ? this.laneWrite( column, refs, lane, s.toScalar as number, s.channel )
+            : this.scalarWrite( column, refs, paint, s.toScalar as number, s.channel ) );
 
         // edge opacity is pre-folded into the stored arrow alpha (the arrow
         // vertex stage has no spare storage binding for the opacity column),
@@ -763,6 +793,25 @@ export class Animation {
 
     for( let i = 0; i < refs.length; i++ ){
       write.data[ i * 2 ] = readScalar( this.store, column, refs[ i ].slot );
+      write.data[ i * 2 + 1 ] = to;
+    }
+
+    return write;
+  }
+
+  /** Round 25: tween one component of a multi-lane column (node size).
+   * Geometry-tier by construction — lane writes never offload. */
+  private laneWrite(
+    column: ColumnId, refs: Ref[], lane: number, to: number, channel: StyleChannel
+  ): ChannelWrite {
+    const write = blankWrite( column, 'lane', false, refs, channel.min, channel.max );
+    const arr = this.store.column( column ) as Float32Array;
+    const comps = columnSpec( column ).components;
+
+    write.lane = lane;
+
+    for( let i = 0; i < refs.length; i++ ){
+      write.data[ i * 2 ] = arr[ refs[ i ].slot * comps + lane ];
       write.data[ i * 2 + 1 ] = to;
     }
 
@@ -828,6 +877,15 @@ export class Animation {
             store.setColor( w.column, slot, r, g, b, a );
             break;
           }
+          case 'lane':
+            // a mid-tween leaf→parent flip hands the slot to auto-bounds
+            // rather than fighting the derivation (round 25.1)
+            if( w.column === 'node.size'
+              && ( store.flags( 'nodes', slot ) & FLAG_PARENT ) !== 0 ){ break; }
+
+            store.setLane( w.column, slot, w.lane as number,
+              clampTo( lerp( w.data[ i * 2 ], w.data[ i * 2 + 1 ], e ), w.min, w.max ) );
+            break;
         }
       }
     }

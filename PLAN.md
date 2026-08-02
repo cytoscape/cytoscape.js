@@ -5771,14 +5771,26 @@ live-read vs derivation-baked:
    `fontSize` (patches the label sidecar per tick).  Store entry
    points: `setLane` (with per-column cascade) and
    `setLabelFontSize`; both usable by the style engine too.
-3. **The size-write cascade closes both holes at the store.**
-   `setPair('node.size')`/`setLane` re-anchor the label
-   (`reanchorLabel` hoisted out of the parent-only path) and
-   invalidate incident CURVE_CMPD relations (the
-   `materializeParentGeom` loop hoisted into the size write) —
-   the latter also fixes the pre-existing pinned-parent hole for
-   plain style writes.  Cheap when unlabelled/uncompounded:
-   both early-out.
+3. **The size-write cascade closes the label hole at the store;
+   the CMPD bound needs nothing** (amended while building 25.1 —
+   the investigation's "pinned-parent hole" did not survive a
+   closer look).  `setPair('node.size')`/`setLane` re-anchor the
+   label (`reanchorLabel` hoisted out of the parent-only path;
+   early-outs when unlabelled or center-anchored).  The planned
+   CMPD `invalidateRelation` hoist is **unnecessary by a
+   containment argument**: the excursion bound is a max over both
+   ends' stretches, stretch is monotone in `outerHalfW`, and
+   auto-bounds derive parents from children's *outer* halves — so
+   an ancestor's outerHalfW always dominates its descendants' and
+   the max is always the ancestor's, which can only change when
+   the ancestor's own box changes: exactly the event
+   `materializeParentGeom` already invalidates on.  A
+   descendant-size change that leaves the ancestor's box unmoved
+   provably leaves the bound unmoved too.  (The same argument
+   dissolves the investigation's monotone-safety worry: a stretch
+   change implies a parent-box change implies a re-derive.)
+   Pinned by a spec: a child size tween grows p2 through the
+   parent's own materialization.
 4. **Edge width carries its baked derivatives as ride-along lane
    writes**, the arrow-alpha-fold pattern: casing and
    overlay/underlay strokes ride additively (to = stored + Δwidth,
@@ -5846,15 +5858,28 @@ live-read vs derivation-baked:
 **Pass split** (tests-first; docs in-commit; each pass its own
 commit(s)):
 
-- [ ] **25.1 The lane vocabulary + node width/height** — the
-  `lane` write kind, `setLane` + the size-write cascade fixes
-  (label re-anchor + CMPD invalidation, landing as correctness
-  fixes for style writes too), `STYLE_CHANNELS` width/height
-  (parent-slot skip), animation specs: tween width/height, label
-  re-anchor mid-tween, live `width()`/`bb()`/pick reads,
-  child-size tween drives parent auto-bounds, the pinned-parent
-  CMPD regression, width-vs-height eviction, pause/reverse on a
-  size tween.
+- [x] **25.1 The lane vocabulary + node width/height**
+  (2026-08-02) — landed as planned, with design call 3 amended
+  (above): the `lane` write kind (`ChannelWrite.lane`, stride 2,
+  geometry-tier by construction — `TWEEN_SHADERS`/pipelines
+  narrowed to a `GpuWriteKind` that excludes it, and the runtime
+  throws if one ever reaches `register`), the store's cascading
+  `setLane` (`node.size` routes through `setPair`; other float
+  columns write the lane raw + dirty), the **label re-anchor
+  hoist** into `setPair('node.size')` (the raw-size-write anchor
+  staleness hole, closed for style writes and tween ticks alike),
+  and `STYLE_CHANNELS` `width`/`height` as `node.size` lanes 0/1
+  with parent slots filtered at capture and re-checked per tick
+  (a mid-tween leaf→parent flip hands the slot to auto-bounds).
+  No CMPD invalidation was added — the containment argument in
+  call 3, pinned by the p2-growth spec.  Tests-first: 12 Node
+  specs (`test/gpu-geometry-tween.mjs`, red then green) — width+
+  height and width-only tweens, never-stale `width()`/`bb()`
+  reads, outerHalf write-through, hanging-label re-anchor
+  mid-tween, child tween drives parent auto-bounds per tick, the
+  CMPD p2-growth pin, width-vs-height channel eviction, reverse
+  continuity, spring clamp at the 0 floor, pause/resume.  2260
+  Node tests, 63 module tests, typecheck + lint clean.
 - [ ] **25.2 Edge width + rides** — edge `width` animation with
   the ride set (arrowWidths modes, casing, overlay/underlay
   strokes), engine mode helpers, specs incl. each ride form and

@@ -1757,9 +1757,44 @@ export class GraphStore implements ModelView {
     if( id === 'node.size' ){
       this.updateOuterHalf( slot );
 
+      // round 25.1: label anchors bake the node extents (the sidecar
+      // entry + the glyph run's offsets), so a size write re-anchors —
+      // previously only the style engine's same-pass writeLabel covered
+      // this, leaving raw size writes (tween ticks) stale.  Early-outs
+      // when unlabelled or the anchor is the center (the default).
+      this.reanchorLabel( slot, a, b );
+
       // stale ancestors (and the parent's own derived size, if any)
       if( this.hierarchy.hasCompounds() ){ this.hierarchy.markGeo( slot ); }
     }
+  }
+
+  /**
+   * Write one component of a multi-lane column (round 25): the tween
+   * executor's entry for lane writes.  `node.size` routes through
+   * `setPair`, which runs the size cascade (outerHalf, label re-anchor,
+   * compound auto-bounds staleness); other float columns write the lane
+   * raw with a dirty mark.
+   */
+  setLane( id: ColumnId, slot: number, lane: number, value: number ): void {
+    if( id === 'node.size' ){
+      const size = this.nodes.column( 'node.size' ) as Float32Array;
+
+      this.setPair( 'node.size', slot,
+        lane === 0 ? value : size[ slot * 2 ],
+        lane === 1 ? value : size[ slot * 2 + 1 ] );
+
+      return;
+    }
+
+    const spec = columnSpec( id );
+    const arr = this.table( spec.group ).column( id ) as Float32Array;
+    const i = slot * spec.components + lane;
+
+    if( arr[ i ] === value ){ return; }
+
+    arr[ i ] = value;
+    this.dirty.mark( id, slot );
   }
 
   /**

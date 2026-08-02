@@ -258,18 +258,23 @@ fn csTween(@builtin(global_invocation_id) gid: vec3u) {
 }
 `;
 
-export const TWEEN_SHADERS: Record<WriteKind, string> = {
+/** The kinds the kernels evaluate.  `lane` (round 25) is geometry-tier
+ * by construction — lane writes never reach the device (`gpuEligible`
+ * is false for any animation carrying one), so it has no shader. */
+export type GpuWriteKind = Exclude<WriteKind, 'lane'>;
+
+export const TWEEN_SHADERS: Record<GpuWriteKind, string> = {
   position: POSITION_SHADER,
   scalar: SCALAR_SHADER,
   color: COLOR_SHADER
 };
 
-const KINDS = Object.keys( TWEEN_SHADERS ) as WriteKind[];
+const KINDS = Object.keys( TWEEN_SHADERS ) as GpuWriteKind[];
 
 /** One column's dispatch within a registered animation. */
 interface Channel {
   column: ColumnId;
-  kind: WriteKind;
+  kind: GpuWriteKind;
   count: number;
   slotBuffer: GPUBuffer;
   dataBuffer: GPUBuffer;
@@ -295,7 +300,7 @@ export class GpuTweenRuntime {
   private columnBuffer: ( id: ColumnId ) => GPUBuffer;
   private mirrorVersion: () => number;
   private layout: GPUBindGroupLayout;
-  private pipelines: Record<WriteKind, GPUComputePipeline>;
+  private pipelines: Record<GpuWriteKind, GPUComputePipeline>;
   private batches = new Map<number, Batch>();
   /** stands in at binding 4 for easings that need no progression array */
   private dummyPoints: GPUBuffer;
@@ -334,7 +339,7 @@ export class GpuTweenRuntime {
           label: `cy-gpu:tween-${kind}-shader`, code: TWEEN_SHADERS[ kind ] } ),
         entryPoint: 'csTween'
       }
-    } ) ] ) ) as Record<WriteKind, GPUComputePipeline>;
+    } ) ] ) ) as Record<GpuWriteKind, GPUComputePipeline>;
   }
 
   active(): boolean { return this.batches.size > 0; }
@@ -379,6 +384,12 @@ export class GpuTweenRuntime {
 
     for( const w of writes ){
       if( w.slots.length === 0 ){ continue; }
+
+      if( w.kind === 'lane' ){
+        // unreachable by the eligibility rule (a lane write bars the
+        // whole animation from the device); guard the invariant anyway
+        throw new Error( `lane writes never register on the GPU (column ${w.column})` );
+      }
 
       const slotBuffer = dev.createBuffer( {
         label: `cy-gpu:tween-slots:${id}:${w.column}`, size: Math.max( 4, w.slots.byteLength ),

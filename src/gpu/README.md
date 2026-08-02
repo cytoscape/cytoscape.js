@@ -812,8 +812,8 @@ each is deliberate, not a pass-1 deferral:
     which cannot recover it when the folded opacity was 0.
   - Animatable today: `position`, `opacity` (both groups), node
     `background-color`/`border-color`, `edge.line-color`, node
-    `border-width`.  Size (width/height circle-collapse) is a follow-up
-    with the geometry seam.
+    `border-width`, and — round 25.1 — node `width`/`height` (the
+    geometry-tween round; see the bullet below).
   - **Viewport targets** (round 10): `cy.animate`/`cy.animation` take
     `pan`/`zoom`, plus `fit: { eles | boundingBox, padding }` and
     `center: { eles }` — resolved to concrete pan/zoom when the
@@ -821,6 +821,32 @@ each is deliberate, not a pass-1 deferral:
     retarget a pending fit.  `eles.boundingBoxAt(posOrFn)` computes the
     box at hypothetical positions (no store writes), which is what an
     animated layout fit targets.
+- **Geometry tweens (round 25): CPU-canonical per tick, never leased,
+  never stale.**  The geometry numerics tween on the CPU path with the
+  per-tick invalidation cascade run by the store's write funnel — the
+  round-9.4 tier rule kept, now a recorded contract point: because a
+  geometry tween is a plain column write every tick, `width()`/
+  `boundingBox()`/pick mid-tween read the exact mid-flight value
+  (unlike leased paint/position tweens, which go stale against the
+  device).  Landed 25.1 — node `width`/`height`: two lanes of the size
+  pair column via the `lane` write kind and the store's cascading
+  `setLane` (`setPair` runs the cascade: outerHalf write-through, the
+  monotone cull meters, **label re-anchor** — hoisted from the
+  parent-materialize path, closing the raw-size-write staleness hole —
+  and compound auto-bounds marking, so a child's size tween drives its
+  parent's derived box per tick).  The compound-loop excursion bound
+  needs no new invalidation: auto-bounds read children's *outer*
+  halves, so an ancestor's outerHalfW always dominates its
+  descendants' and the bound (a max over both ends' stretches) can
+  only change when the ancestor's own box changes — exactly the event
+  `materializeParentGeom` already invalidates on (the containment
+  argument, recorded in PLAN.md round 25).  Recorded calls: `width`
+  and `height` share the `node.size` eviction channel (a running width
+  tween is evicted by a starting height tween); compound parents are
+  skipped at capture *and* per tick (auto-bounds own their size —
+  `padding` is the parent knob); lane writes are geometry-tier by
+  construction and never register on the device (the runtime throws on
+  the invariant).
 - **Synchronous reads reflect writes; staleness is scoped to motion,
   never to a frame.**  A frame-stale read contract was considered
   (let the GPU own expensive geometry and read back a frame later) and

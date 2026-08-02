@@ -5701,3 +5701,184 @@ the `pause`/`resume`/`reverse` control set.
   (size-channel transitions + animation, one benchmarked round
   with the per-tick invalidation cascade) as the successor open
   follow-up.  **Round 24 is complete.**
+
+## Round 25 plan — geometry tweens (planned 2026-08-02)
+
+The follow-up round 24.4 logged: the geometry numerics —
+node `width`/`height`, edge `width`, `font-size`, parent `padding` —
+become animatable and transition-tweenable, with the per-tick
+invalidation cascade built once and benchmarked.  The API surface
+does not change (the fourth sitting's call): `transition-property`
+already accepts these names and `animate({ style })` starts
+accepting them; what changes is that they tween instead of
+snapping/throwing.
+
+**Code investigation (2026-08-02, precedes this plan)** — every
+consumer of node size / edge width / font-size classified as
+live-read vs derivation-baked:
+
+- Node size is read **live** by nearly everything: node/ghost/
+  overlay/underlay/image/chart quads and their cull extents, CPU
+  pick, `refsInBox`, `boundingBox`, endpoint clipping, haystack
+  offsets, taxi/segment/bezier evaluation (curve *derivations* are
+  size-free).  Exactly two consumers bake it: **label anchors**
+  (sidecar `anchorX`/`anchorY` + the glyph run's baked offsets —
+  today only the style engine's same-pass `writeLabel` keeps them
+  in sync, and the store's `reanchorLabel` covers only the parent
+  auto-bounds path) and the **compound-loop excursion bound** `p2`
+  (cull slack only; drawn CMPD geometry is live).  The CMPD
+  invalidation lives only in `materializeParentGeom`, so it has a
+  pre-existing hole: a child size change that does not move the
+  parent's box (non-extremal child, or a min-size-pinned parent)
+  never refreshes the bound.  Slack meters (`nodeHalfMax`,
+  `borderMax`) are monotone grow-only — sound under tweens.
+- Edge width is read live by the quad/strip expansion, arrow
+  sizing and edge cull; three derived channels bake it at
+  style-write, all **linear in width**: `edge.arrowWidths` under
+  `match-line`/percent, `edge.casing` stroke (width + outline
+  width), `edge.overlay`/`edge.underlay` strokes (width +
+  2·padding).
+- Font-size is baked into the glyph instances in model px (the
+  build is per-label incremental, never whole-stream), and the
+  shaping memo keys on `maxWidth/fontSize` — a tween would miss
+  (and grow the memo) every tick, `GlyphBuffer.set` would
+  tombstone-and-append per tick until compaction forces
+  whole-stream re-uploads, and every label write bumps the global
+  `geoEpoch`, nuking the per-edge exact-bb memo.  Edge-label
+  `anchorY` is fontSize-dependent (`-fontSize/2 + marginY`); node
+  label anchors are not.
+- Padding already cascades: `setCompoundStyle` marks the hierarchy
+  geo-stale and the lazy flush re-derives auto-bounds.
+
+**Design calls (round 25):**
+
+1. **Geometry tweens never offload and are never stale.**  The
+   round-9.4 tier rule stands: these channels are read by cull,
+   CPU pick and the columnar scans, so every tick is a CPU column
+   write (the mirror uploads dirty spans as usual).  Consequence,
+   recorded as a contract point: unlike leased paint/position
+   tweens, a geometry tween is always synchronously readable —
+   `width()`/`bb()`/pick mid-tween report the mid-flight value
+   (v3's behaviour).  `gpuEligible` stays false via the existing
+   tier mechanism; the GPU tween kernels never see the new write
+   kinds.
+2. **The write vocabulary grows three CPU-only kinds.**
+   `ChannelWrite` gains `lane` (scalar tween of one component of a
+   multi-lane column — `node.size` lanes 0/1, `edge.arrowWidths`
+   lanes, and the ×256 fixed-point stroke lanes of
+   `edge.casing`/`edge.overlay`/`edge.underlay`), `padding`
+   (writes `setCompoundStyle({ padding })` per tick), and
+   `fontSize` (patches the label sidecar per tick).  Store entry
+   points: `setLane` (with per-column cascade) and
+   `setLabelFontSize`; both usable by the style engine too.
+3. **The size-write cascade closes both holes at the store.**
+   `setPair('node.size')`/`setLane` re-anchor the label
+   (`reanchorLabel` hoisted out of the parent-only path) and
+   invalidate incident CURVE_CMPD relations (the
+   `materializeParentGeom` loop hoisted into the size write) —
+   the latter also fixes the pre-existing pinned-parent hole for
+   plain style writes.  Cheap when unlabelled/uncompounded:
+   both early-out.
+4. **Edge width carries its baked derivatives as ride-along lane
+   writes**, the arrow-alpha-fold pattern: casing and
+   overlay/underlay strokes ride additively (to = stored + Δwidth,
+   only when the layer/casing is enabled), `arrowWidths` rides per
+   mode (match-line → toWidth, percent → pct·toWidth, number →
+   no ride), modes answered by the style engine at capture (the
+   `captureArrowFold` precedent).  Transitions get the same rides
+   from stored-truth diffing (the apply pass rewrites the derived
+   channels; the txn records them as lane rides of `width`).
+5. **Parent size is auto-bounds-owned: width/height tweens skip
+   parent slots** (capture filters them; apply re-checks
+   FLAG_PARENT per tick so a mid-tween leaf→parent flip drops the
+   slot rather than fighting the derivation).  Recorded deviation:
+   animating/transitioning `width`/`height` on a compound parent
+   is a no-op — `padding`/min-size are the parent knobs, and the
+   padding tween is this round's parent-size story.  Also
+   recorded: `width` and `height` share the `node.size` channel,
+   so the round-21 eviction treats them as one channel (a running
+   width tween is evicted by a starting height tween).
+6. **Padding tweens the declared value in its declared unit** (px
+   or %-fraction; the resolution against the children bb happens
+   at the flush, per tick, so relative modes follow live).  A
+   unit change between sheets snaps (recorded).  Leaves have no
+   padding — capture filters to parent slots.  The transition
+   capture wraps the parents' `setCompoundStyle` apply (its own
+   small capture beside the `write()` funnel, honouring the
+   styled-generation instant-on-add rule).
+7. **Font-size tweens re-break honestly, made affordable by four
+   label-path fixes** (each useful beyond tweens): (a) a pure
+   fontSize delta with unchanged breaking (wrap `none`, the
+   default) scale-patches the stored dims instead of re-running
+   `estimateBlock`; (b) the shaping-memo key drops `maxWidth`
+   when wrap is `none` (kills the spurious per-tick miss +
+   unbounded memo growth); (c) `GlyphBuffer.set` updates in place
+   when the new run has the same glyph count (no tombstone
+   growth, no forced compactions/whole-stream re-uploads under a
+   steady tween); (d) label writes stop bumping the global
+   `geoEpoch` (labels get their own epoch; the per-edge exact-bb
+   memo keys on geometry alone).  Wrapped labels (`wrap`/
+   `ellipsis` with a finite `maxWidth`) genuinely re-break per
+   tick — correct, priced in the benchmark, and recorded as the
+   expensive configuration.  The tween patches `fontSize` (and
+   the fontSize-dependent `anchorY` on the three edge streams)
+   across `nodes`/`edges` + end-label streams; min-zoomed-font
+   culling follows automatically (the per-glyph threshold is
+   rebuilt with the instances).
+8. **Transitions wire through the same channels.**
+   `TRANSITION_CHANNELS` gains nodes `width`/`height` (size
+   lanes), `padding`, `font-size` and edges `width` (+ lane
+   rides), `font-size`; the txn capture learns the lane/fontSize
+   read-restore forms (the delay rule keeps holding pre-restyle
+   values, sidecar included).  The round-24 "geometry snaps"
+   specs flip to "geometry tweens" — the API surface is
+   unchanged.
+9. **Scale is measured, not assumed.**  A new
+   `benchmark/gpu/geometry-tween.mjs` sweep prices: the size-tween
+   tick at 2k/20k/200k animated nodes (labelled vs unlabelled —
+   the re-anchor term), the edge-width tick with rides, the
+   padding tick (auto-bounds flush per tick at compound scale),
+   the font-size tick (wrap none vs wrapped — the re-break term),
+   against the round-24 paint-tick baseline (15 ms/200k slots).
+   The glyph-buffer in-place path is pinned by a
+   no-growth/no-compaction assertion under a steady tween.
+
+**Pass split** (tests-first; docs in-commit; each pass its own
+commit(s)):
+
+- [ ] **25.1 The lane vocabulary + node width/height** — the
+  `lane` write kind, `setLane` + the size-write cascade fixes
+  (label re-anchor + CMPD invalidation, landing as correctness
+  fixes for style writes too), `STYLE_CHANNELS` width/height
+  (parent-slot skip), animation specs: tween width/height, label
+  re-anchor mid-tween, live `width()`/`bb()`/pick reads,
+  child-size tween drives parent auto-bounds, the pinned-parent
+  CMPD regression, width-vs-height eviction, pause/reverse on a
+  size tween.
+- [ ] **25.2 Edge width + rides** — edge `width` animation with
+  the ride set (arrowWidths modes, casing, overlay/underlay
+  strokes), engine mode helpers, specs incl. each ride form and
+  ride-only-when-enabled.
+- [ ] **25.3 Size transitions** — `TRANSITION_CHANNELS`
+  width/height/edge-width (+ rides), txn lane support, flip the
+  round-24 snap specs, transition specs: sheet-swap size tween,
+  delay holds pre-restyle size, batch net-change, mapper-driven
+  size transition (data write → size scale moves → tween).
+- [ ] **25.4 Padding** — the `padding` write kind (animation) +
+  the parents-apply transition capture, specs: per-tick
+  auto-bounds, % unit, unit-flip snap, leaf filter,
+  instant-on-add.
+- [ ] **25.5 Font-size** — the four label-path fixes,
+  `setLabelFontSize` (three streams, edge anchorY),
+  animation + transition wiring both groups, specs: node + edge
+  label tweens, dims scale-patch vs re-break, memo behaviour
+  (stats-pinned), glyph-buffer in-place (module-level), label
+  epoch split.
+- [ ] **25.6 Benchmarks + browser specs** — the geometry-tween
+  sweep above; Playwright: a size transition tweens pixels
+  mid-flight with the label riding along, an edge-width
+  transition thickens the casing in step.
+- [ ] **25.7 Closing docs sweep** — README + PLAN true-up, the
+  gap-ledger sequencing tail moves past the geometry-tween round,
+  full verification (Node, modules, Playwright, lint,
+  typecheck).

@@ -160,7 +160,9 @@ export class GraphStore implements ModelView {
   readonly images = new ImageRegistry();
 
   // exact-curve-bb memo (see curveBBAt): any geometry write bumps the
-  // epoch, invalidating every cached edge box at once — sound and cheap
+  // epoch, invalidating every cached edge box at once — sound and cheap.
+  // Label writes deliberately do not bump it (25.5): the memo has no
+  // label terms, and a font-size tween would otherwise nuke it per tick.
   private geoEpoch = 1;
   private edgeBBEpoch = new Uint32Array( 0 );
   private edgeBB = new Float64Array( 0 );

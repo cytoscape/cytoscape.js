@@ -162,8 +162,10 @@ prop, and since round 22 `visible()` is the draw tier while
 `boundingBox({ includeLabels })` +
 `labelBoundingBox()` (round 16.4), the `background-image` family
 (round 15), the wrap family (round 16), the round-22 `visibility`
-prop, the round-23 `chart` family and the round-24 `transition-*`
-config in the sheet, the round-17
+prop, the round-23 `chart` family, the round-24 `transition-*`
+config in the sheet (whose tweenable set grew the geometry numerics
+in round 25 — width/height, edge width, padding, font-size — the
+same channels `animate()` accepts), the round-17
 event vocabulary (pointer*/tap*/grab-drag-free families, viewport
 gestures), and graph algorithms (round 10, growing):
 `bfs`/`dfs` (+ long aliases), `dijkstra`, `aStar`, `bellmanFord`,
@@ -687,13 +689,17 @@ each is deliberate, not a pass-1 deferral:
   value.  `transition-property` accepts **every** prop name of its
   group (unknown or wrong-group names throw): number/color channels
   in the animatable set tween (opacity both groups,
-  background/border/line colors, border-width, and — round 25.3 —
-  node `width`/`height` as `node.size` lane channels and edge
-  `width` with its baked derivatives as lane rides: casing/overlay/
+  background/border/line colors, border-width; since round 25 —
+  node `width`/`height` as `node.size` lane channels, edge
+  `width` with its baked derivatives as lane rides — casing/overlay/
   underlay strokes and the match-line/percent arrow widths, moving
-  only when the width itself moved; parent slots never record a
-  size transition — auto-bounds own them), while discrete props
-  snap at the transition's start (recorded).
+  only when the width itself moved, with parent slots never
+  recording a size transition (auto-bounds own them) — plus
+  compound `padding` (captured beside the channel funnel in the
+  parents' compound-style write; a px↔% unit flip snaps) and
+  `font-size` (the label sidecar; a diff with no entry on either
+  side snaps)), while discrete props snap at the transition's
+  start (recorded).
   Mechanics: the diff runs on **stored truth** around the engine's
   one channel funnel and packs into bulk per-column ChannelWrites
   (one preset animation per apply pass — never per-element
@@ -863,7 +869,19 @@ each is deliberate, not a pass-1 deferral:
   numbers never baked the width and stay), modes answered by
   `StyleEngine.arrowWidthModes()` (arrow widths are constants-only
   props).  The stroke lanes of the layer records are ×256 fixed-point;
-  the store's `setLane` encodes on the way in.  Landed 25.5 —
+  the store's `setLane` encodes on the way in.  Landed 25.4 —
+  **compound `padding`**: the tween writes the *declared* padding (px,
+  or the fraction under the '%' unit) through a new partial-merge
+  `updateCompoundStyle` (a `{ padding }` tick must not reset the unit
+  or min sizes — sheet writes keep their reset-what-you-omit
+  semantics), the auto-bounds flush resolves it per tick (relative
+  modes follow live), and parents-only is the mirror of the size
+  rule: leaves are filtered at capture and re-checked per tick.  The
+  transition capture wraps the parents' compound-style write beside
+  the channel funnel (the styled marks are read before the channel
+  pass marks fresh slots, so instant-on-add holds for padding too),
+  and a px↔% unit flip snaps — tweening across units has no meaning
+  (recorded).  Landed 25.5 —
   **`font-size`** (both label groups): the tween patches the label
   sidecar per tick through `setLabelFontSize` — no engine round trip
   (the `reanchorLabel` pattern); an edge's write drives all three of
@@ -886,19 +904,7 @@ each is deliberate, not a pass-1 deferral:
   tween); (d) label writes no longer bump the global `geoEpoch` — its
   only consumer is the per-edge exact curve-bb memo, which has no
   label terms, so a font-size tick no longer invalidates every edge's
-  cached bb.  Landed 25.4 —
-  **compound `padding`**: the tween writes the *declared* padding (px,
-  or the fraction under the '%' unit) through a new partial-merge
-  `updateCompoundStyle` (a `{ padding }` tick must not reset the unit
-  or min sizes — sheet writes keep their reset-what-you-omit
-  semantics), the auto-bounds flush resolves it per tick (relative
-  modes follow live), and parents-only is the mirror of the size
-  rule: leaves are filtered at capture and re-checked per tick.  The
-  transition capture wraps the parents' compound-style write beside
-  the channel funnel (the styled marks are read before the channel
-  pass marks fresh slots, so instant-on-add holds for padding too),
-  and a px↔% unit flip snaps — tweening across units has no meaning
-  (recorded).  The compound-loop excursion bound
+  cached bb.  The compound-loop excursion bound
   needs no new invalidation: auto-bounds read children's *outer*
   halves, so an ancestor's outerHalfW always dominates its
   descendants' and the bound (a max over both ends' stretches) can

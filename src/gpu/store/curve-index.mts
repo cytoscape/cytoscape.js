@@ -601,6 +601,12 @@ export class CurveIndex {
    * control offset x the current max stretch x 2 — stretch grows only
    * logarithmically with node size, so the margin outlasts any
    * realistic auto-bounds growth, and relation changes re-derive.
+   * Freshness under size changes (round 25's containment argument):
+   * auto-bounds derive parents from children's *outer* halves, so an
+   * ancestor's outerHalfW always dominates its descendants' — the max
+   * stretch below is always the ancestor end's, and it can only move
+   * when the ancestor's own box moves, which materializeParentGeom
+   * invalidates.  No per-size-write invalidation is needed.
    */
   private writeCompoundDerived( slot: number, source: number, target: number, i: number ): void {
     this.ensure( slot );

@@ -33,11 +33,15 @@ Animatable: `position`, `opacity` (both groups), `background-color`,
 `border-color`, `line-color`, `border-width`, and — round 25 — node
 `width`/`height` (two lanes of the size pair column; the store's lane
 writer runs the per-tick cascade: outerHalf, label re-anchor, compound
-auto-bounds).  Colours interpolate in OKLab — the same space mappers
-ramp in by default — so an animation to a colour and a mapper ramp to
-it take the same path.  Geometry tweens never offload and are never
-stale: every tick is a CPU column write, so `width()`/`bb()`/pick
-mid-tween read the mid-flight value.
+auto-bounds), edge `width` (its style-write-baked derivatives — casing
+and overlay/underlay strokes, match-line/percent arrow widths — ride
+along), compound `padding` (parents only; the declared value in its
+declared unit) and `font-size` (the label sidecar, patched per tick).
+Colours interpolate in OKLab — the same space mappers ramp in by
+default — so an animation to a colour and a mapper ramp to it take the
+same path.  Geometry tweens never offload and are never stale: every
+tick is a CPU column write, so `width()`/`bb()`/pick mid-tween read
+the mid-flight value.
 
 Style transitions (round 24) ride this layer as *preset* animations:
 the style engine diffs stored truth around a restyle into per-column

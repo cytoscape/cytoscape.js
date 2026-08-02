@@ -745,7 +745,8 @@ the API.
   tests).  Standard easings.  Animatable: `position`, node `opacity`,
   `border-width`, `background/border/line-color` — the coupling-free set;
   size (width/height circle-collapse) and arrow-folded channels are a
-  follow-up.
+  follow-up (both since landed — the arrow fold in round 9.4, the
+  geometry channels in round 25).
 - **Ownership: transient lease** (design set this round).  A tween is
   CPU-reproducible (pure fn of time), so the CPU columns stay
   authoritative on the CPU path.  The lease model — default

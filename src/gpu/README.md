@@ -46,7 +46,13 @@ now re-fanning bezier bundles — while the `visibility` style prop is
 paint-only invisibility that keeps space and bundle ranks), and
 brought **node charts**: v3's pie/stripe props as the lean
 list-valued `chart` family with data-driven values and scheme
-palettes.
+palettes.  Round 24 (2026-08-01, the fourth design sitting) closed
+the animation follow-up: **style transitions** (the `transition-*`
+config per sheet group — restyles tween on stored truth with
+latest-wins eviction, GPU-offloaded when all-paint, under the
+auto-vs-explicit mapper-domain performance contract) and the
+**animation controls** (`pause`/`resume`/`reverse` + read-only
+`progress`/`paused`); the geometry tween is the logged follow-up.
 The existing v3 core, collection and renderers are untouched.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
@@ -149,7 +155,8 @@ prop, and since round 22 `visible()` is the draw tier while
 `boundingBox({ includeLabels })` +
 `labelBoundingBox()` (round 16.4), the `background-image` family
 (round 15), the wrap family (round 16), the round-22 `visibility`
-prop and the round-23 `chart` family in the sheet, the round-17
+prop, the round-23 `chart` family and the round-24 `transition-*`
+config in the sheet, the round-17
 event vocabulary (pointer*/tap*/grab-drag-free families, viewport
 gestures), and graph algorithms (round 10, growing):
 `bfs`/`dfs` (+ long aliases), `dijkstra`, `aStar`, `bellmanFord`,
@@ -589,7 +596,10 @@ each is deliberate, not a pass-1 deferral:
   `domain` omitted/'auto' is a **live extent** (Vega-Lite semantics):
   the data extent re-checks on writes of the mapped key and a moved
   extent re-derives the whole channel (log auto-extents use positive
-  values only).  Refresh is dependency-gated per (group, key, channel);
+  values only) — the O(n) case; an explicit `domain` keeps every data
+  write O(changed elements), the round-24 performance contract (pin
+  `domain` when a stream grows its own extent — see the transitions
+  bullet).  Refresh is dependency-gated per (group, key, channel);
   edge data writes refresh edge channels; `label` takes the passthrough
   form only (`{ data: key }`, or the legacy `'data(key)'` string sugar).
 - **Conditionals: the `case` mapper.**  `{ case: [{ when: { data,
@@ -707,7 +717,9 @@ each is deliberate, not a pass-1 deferral:
   under a transient lease.**  An animation tweens element style/position
   (or the viewport) from captured start values to explicit targets over a
   duration, easing normalized time (`eles.animate/animation/animated/
-  stop/delay`, `cy.animate` for the viewport).  Because a tween is a
+  stop/delay`, `cy.animate` for the viewport; since round 24.3 the
+  handle also carries `pause`/`resume`/`reverse` and read-only
+  `progress`/`paused` — see the controls bullet above).  Because a tween is a
   *pure function of time*, it is CPU-reproducible — the CPU is always the
   reference (works headless, Node-testable), and there is **no readback**
   (a settle/stop re-derives the exact current value on the CPU).

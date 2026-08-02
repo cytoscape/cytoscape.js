@@ -1943,7 +1943,9 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    24 (plan at the end of this file): transitions return with a
    v4-specific trigger taxonomy + the domain perf contract, and
    `pause`/`resume`/`reverse` land (`progress` stays a getter,
-   `apply`/`applying` stay out).**
+   `apply`/`applying` stay out).  Round 24 landed in full the same
+   day — item closed; the geometry tween (size-channel transitions
+   + animation, one benchmarked round) is the successor follow-up.**
 10. **Extension system** — `cytoscape.use()` and
     `cytoscape(type, name, registrant)` registration for
     layout/renderer/core/collection extensions.  v4 has none; this
@@ -2040,13 +2042,13 @@ architecture item, round 20 closed gap item 8 (interaction options +
 touch parity), and the **third design sitting** (2026-08-01) scoped
 and landed rounds 21–23 (animation queue removal, the
 display/visibility split, node charts) — see the plans and records
-below.  What remains of the needs-a-call list: the animation
-controls/transitions follow-up (item 9's open half — **since scoped
-as round 24 by the fourth design sitting, 2026-08-01**; the
-geometry-tween pass it logs is the new open follow-up), the small
-parity remnants noted inline in items 4–6, and items 8's deferred
-overlap box mode, 10's core/collection extension points and 12's
-odds and ends.
+below.  What remains of the needs-a-call list: ~~the animation
+controls/transitions follow-up~~ (item 9's open half — **scoped as
+round 24 by the fourth design sitting and landed in full the same
+day, 2026-08-01**; the geometry-tween round it logs is the new open
+follow-up), the small parity remnants noted inline in items 4–6,
+and items 8's deferred overlap box mode, 10's core/collection
+extension points and 12's odds and ends.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -5685,8 +5687,16 @@ the `pause`/`resume`/`reverse` control set.
   reverse continuity + delay edge, progress states, both mock-sink
   lease specs, and the viewport.  2248 Node tests, 63 module tests,
   153/153 Playwright, typecheck + lint clean.
-- [ ] **24.4 Docs closing sweep** — README section (+ the design-
-  decisions bullet updated from "open follow-up" to landed), the
-  gap-ledger item 9 closed, the geometry-tween follow-up round
-  logged where the size-channel note already lives, and the domain
-  contract added to the mapper docs.
+- [x] **24.4 Docs closing sweep** (2026-08-01) — README trued up:
+  the top summary carries round 24, the sheet listing carries the
+  `transition-*` config, the promise-sequencing bullet's "open
+  follow-up" became the landed controls paragraph (24.3 commit),
+  the animation-surface listing carries the handle controls, and
+  the mapper DSL bullet carries the domain performance contract
+  (O(n) auto-extent vs O(changed) explicit — the transitions
+  bullet holds the long form and the measured numbers).  PLAN.md:
+  gap-ledger item 9 closed (round 24 landed in full 2026-08-01);
+  the sequencing tail names the **geometry-tween round**
+  (size-channel transitions + animation, one benchmarked round
+  with the per-tick invalidation cascade) as the successor open
+  follow-up.  **Round 24 is complete.**

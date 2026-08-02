@@ -899,7 +899,23 @@ each is deliberate, not a pass-1 deferral:
   skipped at capture *and* per tick (auto-bounds own their size —
   `padding` is the parent knob); lane writes are geometry-tier by
   construction and never register on the device (the runtime throws on
-  the invariant).
+  the invariant).  Costs (25.6, headless 200k-element ticks,
+  `benchmark/gpu/geometry-tween.mjs` — relative factors are the story;
+  wall numbers are machine-local): against a 65 ms paint-tick
+  baseline, a node size tick is 122 ms unlabelled and 136 ms with
+  center-anchored labels (the re-anchor diff early-outs), rising to
+  510 ms when every label hangs off an edge of the node (a sidecar
+  rewrite per tick — riding the dims fast path, never the estimator);
+  an edge width tick over 400k edges is 86 ms bare and 130 ms with
+  the full ride set; a padding tick + auto-bounds flush over 25k
+  parents (×8 children) is 75 ms; a font-size tick is 213 ms under
+  wrap `none` vs 767 ms wrapped (the honest per-tick re-break —
+  the recorded expensive configuration).  Browser pins (the `webgpu`
+  project): a sheet-swap width transition tweens pixels mid-flight
+  with `width()` reading the mid-flight value and the hanging label's
+  anchor tracking −w/2 exactly, and an edge-width transition passes
+  through the casing-band state (white → black casing → red line) at
+  a fixed sample point — only a riding stroke produces it.
 - **Synchronous reads reflect writes; staleness is scoped to motion,
   never to a frame.**  A frame-stale read contract was considered
   (let the GPU own expensive geometry and read back a frame later) and

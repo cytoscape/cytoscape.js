@@ -2486,6 +2486,127 @@ test.describe( 'WebGPU renderer', () => {
     expect( ( await pixelAt( page, center.x, center.y ) ).slice( 0, 3 ) ).toEqual( [ 255, 255, 0 ] );
   } );
 
+  test( 'a size transition tweens pixels mid-flight with the label anchor riding (25.6)', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    const TRANSITION = {
+      'transition-property': [ 'width' ],
+      'transition-duration': 2000,
+      'transition-timing-function': 'linear'
+    };
+    const block = width => ( {
+      'background-color': 'rgb(255,0,0)', width, height: 40, shape: 'rectangle',
+      label: { data: 'id' }, 'text-halign': 'left',
+      ...TRANSITION
+    } );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: block( 40 ) },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+    // x+40 is outside the 40px-wide box (half 20)
+    expect( ( await pixelAt( page, center.x + 40, center.y ) )[ 1 ] ).toBeGreaterThan( 200 );
+
+    await page.evaluate( ( b ) => window.cy.style( { nodes: b } ), block( 200 ) );
+    await page.waitForTimeout( 900 );
+    await waitFrames( page );
+
+    // mid-flight the box has grown past x+40 (t≈0.45 → width ≈ 112)...
+    expect( ( await pixelAt( page, center.x + 40, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+    // ...but not to its target half-width yet
+    expect( ( await pixelAt( page, center.x + 95, center.y ) )[ 1 ] ).toBeGreaterThan( 200 );
+
+    // geometry tweens are never stale: the sync read is the mid-flight
+    // value (unlike a leased paint transition, which holds pre-restyle);
+    // width and anchor read in one evaluate — no tick between them
+    const midState = await page.evaluate( () => ( {
+      width: window.cy.$id( 'a' ).width(),
+      anchorX: window.cy._store.labelAt( window.cy._store.lookup( 'a' ).slot, 'nodes' ).anchorX
+    } ) );
+
+    expect( midState.width ).toBeGreaterThan( 50 );
+    expect( midState.width ).toBeLessThan( 190 );
+
+    // the hanging label re-anchors in step (-w/2 at text-halign left)
+    expect( midState.anchorX ).toBeCloseTo( -midState.width / 2, 3 );
+
+    await page.waitForTimeout( 1400 );
+    await waitFrames( page );
+
+    expect( await page.evaluate( () => window.cy.$id( 'a' ).width() ) ).toBe( 200 );
+    expect( ( await pixelAt( page, center.x + 95, center.y ) )[ 1 ] ).toBeLessThan( 80 );
+  } );
+
+  test( 'an edge-width transition thickens the casing in step (25.6)', async ( { page } ) => {
+    await page.goto( PAGE );
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );
+
+    const TRANSITION = {
+      'transition-property': [ 'width' ],
+      'transition-duration': 3000,
+      'transition-timing-function': 'linear'
+    };
+    const block = width => ( {
+      width, 'line-color': 'rgb(255,0,0)',
+      'line-outline-width': 6, 'line-outline-color': 'rgb(0,0,0)',
+      ...TRANSITION
+    } );
+
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -60, y: 0 } },
+        { data: { id: 'b' }, position: { x: 60, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ],
+      style: {
+        nodes: { width: 20, height: 20 },
+        edges: block( 2 )
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+    // y+8 clears the initial casing entirely (half = (2+6)/2 = 4)
+    expect( ( await pixelAt( page, center.x, center.y + 8 ) )[ 1 ] ).toBeGreaterThan( 200 );
+
+    await page.evaluate( ( b ) => window.cy.style( { edges: b } ), block( 30 ) );
+
+    // mid-flight, y+8 sits in the black casing band while the line is
+    // still short of it — casing half (w+6)/2 > 8 while line half
+    // w/2 < 8, i.e. w ∈ (10, 16): a ~640ms window under the linear
+    // 3s tween.  Poll rather than sleep (suite load shifts the clock);
+    // only a riding stroke ever puts casing pixels here.
+    let sawCasing = false;
+
+    for( let i = 0; i < 60; i++ ){
+      const p = await pixelAt( page, center.x, center.y + 8 );
+
+      if( p[ 0 ] < 80 && p[ 1 ] < 80 ){ sawCasing = true; break; }
+      if( p[ 0 ] > 200 && p[ 1 ] < 80 ){ break; } // already the red line: window missed
+
+      await page.waitForTimeout( 50 );
+    }
+
+    expect( sawCasing ).toBe( true );
+
+    await page.waitForTimeout( 3200 );
+    await waitFrames( page );
+
+    // settled: the line itself (half 15) covers y+8 in red
+    const end = await pixelAt( page, center.x, center.y + 8 );
+
+    expect( end[ 0 ] ).toBeGreaterThan( 200 );
+    expect( end[ 1 ] ).toBeLessThan( 80 );
+  } );
+
   test( 'spring() overshoots on the device: the node passes the target, then settles on it', async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter' );

@@ -5965,10 +5965,28 @@ commit(s)):
   value tween, label-added snap), the glyph-buffer in-place
   spec, and the amended wrap-dims spec.  2280 Node tests, 63
   module tests, typecheck + lint clean.
-- [ ] **25.6 Benchmarks + browser specs** — the geometry-tween
-  sweep above; Playwright: a size transition tweens pixels
-  mid-flight with the label riding along, an edge-width
-  transition thickens the casing in step.
+- [x] **25.6 Benchmarks + browser specs** (2026-08-02) — landed:
+  `benchmark/gpu/geometry-tween.mjs` (standalone, the
+  transitions.mjs pattern) prices one manager tick per geometry
+  channel at `BENCH_N` scale.  At 200k elements (headless,
+  avg/iter, machine-local — the factors are the story): paint
+  baseline 65 ms; node size 122 ms unlabelled / 136 ms with
+  center-anchored labels (the re-anchor early-out is ~12%) /
+  510 ms with hanging labels (a sidecar rewrite per tick — the
+  25.5 dims fast path keeps the estimator out of the loop); edge
+  width over 400k edges 86 ms bare / 130 ms with the full ride
+  set; padding + auto-bounds flush 75 ms over 25k parents × 8
+  children; font-size 213 ms wrap-none vs 767 ms wrapped (the
+  honest re-break, the recorded expensive configuration).  Two
+  `webgpu`-project Playwright specs: the sheet-swap width
+  transition (pixels move mid-flight; `width()` reads the
+  mid-flight value — the never-stale contract — and the hanging
+  label's anchorX tracks −w/2 exactly, read atomically in one
+  evaluate), and the edge-width casing ride (a fixed sample
+  point passes white → black casing band → red line; the
+  mid-state is *polled*, not slept for — suite load shifts the
+  clock).  87/87 webgpu Playwright (2 new), run twice for
+  stability.
 - [ ] **25.7 Closing docs sweep** — README + PLAN true-up, the
   gap-ledger sequencing tail moves past the geometry-tween round,
   full verification (Node, modules, Playwright, lint,

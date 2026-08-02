@@ -659,7 +659,7 @@ each is deliberate, not a pass-1 deferral:
   on resume with the shifted clock; a paused animation still owns
   its channels, so the round-21 eviction stops it like any running
   one.
-- **Style transitions (round 24.1, landed 2026-08-01).**  The
+- **Style transitions (rounds 24.1–24.2, landed 2026-08-01).**  The
   `transition-property`/`-duration`/`-delay`/`-timing-function`
   family, per sheet group (`nodes`/`edges`/`parents` — the parents
   spec merges nodes-then-parents under v3's order precedence),
@@ -1584,7 +1584,9 @@ stays runnable at `BENCH_N=200000`; `compaction.mjs` is the round-19
 slot-compaction sweep — the shrink profile measured before/after
 `compact()`, the trigger and repair one-shots, the forwarding hot-path
 parity checks, and honesty controls for the order-list scans compaction
-does not change).
+does not change; `transitions.mjs` is the round-24 transitions-off-vs-on
+sweep — the auto-extent whole-channel case, the explicit-domain
+O(changed) write, the bulk tween tick, and the whole-sheet swap).
 `npm run benchmark:gpu:report` runs every suite and renders a
 self-contained single-page HTML report (v3-vs-gpu medians as dumbbells on
 log time axes, a ranked speedup overview, per-suite stat tables) into
@@ -2272,6 +2274,21 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   round-trip); the stripe v3 parity covers vertical square-node
   scenes only — v3's 'horizontal' keyword and non-square centering
   are broken upstream (recorded), the golden pins v4's behavior.
+- **Transitions + controls** (round 24) — the deviations in one
+  place (the design bullets above carry the detail): the trigger
+  taxonomy is v4-specific (no classes, no bypass — restyles and
+  mapper re-evaluations trigger; v3 transitioned on class/bypass
+  changes); durations/delays are plain numbers of milliseconds (no
+  v3 time-unit strings); transition config is constants-only (no
+  per-element transition props); discrete and geometry channels
+  snap at the transition's start until the geometry-tween round;
+  channel-opacity folds transition under their color prop
+  (stored-truth diffing); a listed prop's mapper eval never runs on
+  the GPU eval kernel (mutually exclusive per channel); `progress`
+  is a getter only (v3's setter/scrubbing is out), `apply`/
+  `applying` are out, and reverse's value continuity is exact only
+  for point-symmetric easings (v3's start/end swap shared the
+  rule).
 - **Device-loss recovery** (round 10): an external device loss emits
   `devicelost` and auto-recovers once — the core re-mounts a fresh
   renderer against the same container (the model is CPU-canonical, so
@@ -2291,9 +2308,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   compound padding, multilevel force refinement, more layouts, future
   chart kinds on the round-23 surface) stay
   logged in their sections above.
-- **Open API follow-ups** (logged, awaiting a user call): the
-  animation controls (`pause`/`progress`/`reverse`) and style
-  transitions (the round-21 sitting deferred both — neither built
-  nor dropped), and the small parity remnants (compound arrow
-  shapes, per-element numeric `text-rotation`, the unported shape
-  keywords, `border-style`/`outline-style`).
+- **Open API follow-ups**: ~~the animation controls and style
+  transitions~~ — **closed by round 24** (2026-08-01, the design
+  bullets above): transitions landed with the stored-truth trigger
+  diff + GPU offload, and the handle carries
+  `pause`/`resume`/`reverse` + read-only `progress`/`paused`.
+  Still open: the **geometry-tween round** (size-channel
+  transitions + animation — the per-tick invalidation cascade,
+  built once with benchmarks), and the small parity remnants
+  (compound arrow shapes, per-element numeric `text-rotation`, the
+  unported shape keywords, `border-style`/`outline-style`).

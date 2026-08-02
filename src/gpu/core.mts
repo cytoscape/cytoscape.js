@@ -80,8 +80,9 @@ interface BatchPending {
 /**
  * The GpuCore facade: the familiar synchronous core API over the columnar
  * store (#3486).  See src/gpu/README.md for the maintained API scope —
- * viewport, events, graph manipulation, style/mappers, layouts,
- * animation, algorithms, image export, mount/unmount; no compound nodes.
+ * viewport, events, graph manipulation, compounds, style/mappers/
+ * transitions, layouts, animation, algorithms, image export,
+ * mount/unmount.
  */
 export class GpuCore {
   _store: GraphStore;

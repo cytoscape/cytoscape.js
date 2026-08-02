@@ -35,6 +35,15 @@ OKLab — the same space mappers ramp in by default — so an animation to a
 colour and a mapper ramp to it take the same path.  Size (width/height,
 circle collapse) and label channels are a follow-up.
 
+Style transitions (round 24) ride this layer as *preset* animations:
+the style engine diffs stored truth around a restyle into per-column
+ChannelWrites and `Animation.preset` wraps them — capture is a no-op,
+and eligibility/columns derive from the writes.  Controls (round 24.3):
+`pause`/`resume`/`reverse` freeze, continue (excluding the paused
+span) and swap-the-ends in place, with read-only `progress`; a
+GPU-driven animation settles its lease for a pause/reverse and
+re-acquires on the next advance.
+
 Easing curves live in easing.mts, which compiles a name (or
 `cubic-bezier()`/`linear()`/`spring()`) into the one form both executors
 evaluate.  A spring's `duration` is perceptual, so `durationMs` is the

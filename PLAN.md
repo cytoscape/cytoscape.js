@@ -5266,7 +5266,8 @@ the finer points), scoping rounds 21–23:
 
 Gap-list updates: item 9 (animation surface) partially resolved by
 call 1 (queue/step decided; controls + transitions remain the open
-follow-up); item 11 (display vs visibility) resolved by call 2;
+follow-up — since scoped and landed as round 24, fourth sitting);
+item 11 (display vs visibility) resolved by call 2;
 item 3 (pie/stripe) resolved by call 3.
 
 ## Round 21 plan — animation queue removal (planned 2026-08-01)
@@ -5576,7 +5577,7 @@ Calls taken:
    GPU tween settles its lease (values freeze on the CPU) and
    re-acquires on resume.
 
-## Round 24 plan — style transitions + animation controls (planned 2026-08-01)
+## Round 24 plan — style transitions + animation controls (planned 2026-08-01; landed in full the same day — see the pass records below)
 
 **Signed-off design calls**: the fourth-sitting record above —
 trigger taxonomy with instant-on-add, uniform latest-wins eviction,

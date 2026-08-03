@@ -124,7 +124,7 @@ export function toWebGLColor(color, opacity, outArray) {
   const r = color[0] / 255;
   const g = color[1] / 255;
   const b = color[2] / 255;
-  const a = opacity;
+  const a = (color[3] == null ? 1 : color[3]) * opacity;
 
   const arr = outArray || new Array(4);
   arr[0] = r * a;

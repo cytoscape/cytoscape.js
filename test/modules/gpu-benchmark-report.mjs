@@ -1,5 +1,9 @@
 import { renderReport, fmtTime, fmtSpeedup } from '../../benchmark/gpu/report-html.mjs';
 import { toStats, oneShotStats } from '../../benchmark/gpu/render-stats.mjs';
+import { finishManualRun } from '../../benchmark/gpu/bench-run.mjs';
+import { readFileSync, rmSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect } from 'chai';
 
 const stats = ( p50, extra = {} ) => ( {
@@ -38,6 +42,15 @@ const fixture = () => ( {
           { name: 'v3', stats: stats( 999 ) },
           { name: 'gpu', stats: stats( 999 ) }
         ] }
+      ]
+    },
+    // a manually-timed suite (round 33.10): one bench per group, every
+    // percentile the single measurement
+    {
+      suite: 'labels', n: 20000, op: null, durationMs: 4000,
+      context: { arch: 'arm64-darwin', runtime: 'node', cpu: 'Test CPU' },
+      groups: [
+        { name: 'labels: breakLines x 20000', benches: [ { name: 'gpu', stats: stats( 76e6 ) } ] }
       ]
     },
     // a gpu-only suite (no v3/gpu pair) must still render
@@ -111,6 +124,16 @@ describe( 'gpu benchmark report', function(){
       expect( html ).to.include( 'gpu path' );
     } );
 
+    it( 'renders a single-bench (manually timed) section', function(){
+      const html = renderReport( fixture() );
+
+      // round 33.10: curves.mjs and labels.mjs time one shot per row and
+      // join the job table through finishManualRun, so a group may hold
+      // exactly one bench and must still get a row and a table entry
+      expect( html ).to.include( 'labels: breakLines x 20000' );
+      expect( html ).to.include( '76.0 ms' );
+    } );
+
     it( 'lists failed jobs when present', function(){
       const results = fixture();
 
@@ -138,6 +161,56 @@ describe( 'gpu benchmark report', function(){
 
       expect( html ).to.include( 'Wall frame times are vsync-bound.' );
       expect( html ).to.not.include( 'must not double-render' );
+    } );
+  } );
+
+  describe( 'finishManualRun (round 33.10)', function(){
+    let dir;
+
+    beforeEach( function(){
+      dir = mkdtempSync( join( tmpdir(), 'gpu-bench-' ) );
+    } );
+
+    it( 'writes the report job shape from one-shot rows', function(){
+      const path = join( dir, 'job.json' );
+
+      process.env.BENCH_JSON = path;
+
+      try {
+        finishManualRun( 'curves', [
+          { name: 'curve premium: drag', benches: [ { name: 'curved', ms: 12 }, { name: 'straight', ms: 8 } ] }
+        ] );
+      } finally {
+        delete process.env.BENCH_JSON;
+      }
+
+      const job = JSON.parse( readFileSync( path, 'utf8' ) );
+
+      expect( job.suite ).to.equal( 'curves' );
+      expect( job.groups ).to.have.length( 1 );
+      expect( job.groups[ 0 ].benches.map( b => b.name ) ).to.eql( [ 'curved', 'straight' ] );
+
+      // a one-shot measurement is every percentile of itself, in ns
+      const s = job.groups[ 0 ].benches[ 0 ].stats;
+
+      expect( s.p50 ).to.equal( 12e6 );
+      expect( s.p99 ).to.equal( 12e6 );
+      expect( s.min ).to.equal( 12e6 );
+      expect( s.samples ).to.equal( 1 );
+
+      // and the shape the report reads must survive a round-trip
+      expect( () => renderReport( { meta: { totalMs: 1, failures: [] }, jobs: [ { ...job, durationMs: 1 } ] } ) )
+        .to.not.throw();
+    } );
+
+    it( 'writes nothing without BENCH_JSON (terminal runs are unchanged)', function(){
+      delete process.env.BENCH_JSON;
+
+      expect( () => finishManualRun( 'curves', [] ) ).to.not.throw();
+    } );
+
+    afterEach( function(){
+      rmSync( dir, { recursive: true, force: true } );
     } );
   } );
 

@@ -3,6 +3,7 @@
 // single-page HTML report.
 //
 //   npm run benchmark:gpu:report                # quick profile (~minutes)
+//   npm run benchmark:gpu:report -- --all       # + every standalone suite
 //   npm run benchmark:gpu:report -- --full      # 2k/20k/200k matrix (long)
 //   npm run benchmark:gpu:report -- --renderer  # + the browser renderer bench
 //                                               #   (render-bench.mjs: built
@@ -24,7 +25,20 @@ const DIR = dirname( fileURLToPath( import.meta.url ) );
 const RESULTS_DIR = join( DIR, 'results' );
 
 // -- job tables --------------------------------------------------------------
-// Quick: every suite at its documented default scale.
+// Three tiers, and the reason for the split is the reason open call 7
+// existed (round 33.10): before this, six suites were standalone and
+// absent from every table, so the report understated what had been
+// measured.  Now every suite is addressable from here — but the *quick*
+// profile stays quick, because a default profile nobody waits for is
+// worth as little as a report that shows half the suite.
+//
+//   quick  — the v3-vs-v4 micro/scenario suites at their default scale
+//   --all  — + every standalone suite (the subsystem sweeps, which are
+//            mostly gpu-only and each take minutes)
+//   --full — + the 2k/20k/200k matrix
+//
+// `--suite <substr>` filters any of them, which is how a single sweep
+// gets run and re-rendered on its own.
 const QUICK_JOBS = [
   { file: 'index.mjs',          n: 2000 },
   { file: 'materializers.mjs',  n: 2000 },
@@ -42,6 +56,28 @@ const QUICK_JOBS = [
 // substrings — these must track the group names in the suite files.
 const MUTATOR_OPS = [ 'select', 'hide', 'lock', 'positions(obj)', 'positions(fn)', 'shift', 'data', 'remove' ];
 const SCENARIO_OPS = [ 'explore', 'select-all', 'drag', 'edit', 'refresh' ];
+
+// The standalone sweeps.  Most are gpu-only (no v3 counterpart exists for
+// compaction, the store internals, the curve premium, ...), which the
+// report already renders as individual labelled rows rather than as
+// dumbbells against a 1x line that would mean nothing for them.
+const STANDALONE_JOBS = [
+  { file: 'layouts.mjs',        n: 2000 },
+  { file: 'style.mjs',          n: 2000 },
+  { file: 'load.mjs',           n: 2000 },
+  { file: 'spatial.mjs',        n: 2000 },
+  { file: 'data.mjs',           n: 2000 },
+  { file: 'events.mjs',         n: 2000 },
+  { file: 'store.mjs',          n: 2000 },
+  { file: 'surface.mjs',        n: 2000 },
+  { file: 'compaction.mjs',     n: 20000 },
+  { file: 'compound.mjs',       n: 2000 },
+  { file: 'curves.mjs',         n: 2000 },
+  { file: 'labels.mjs',         n: 20000 },
+  { file: 'transitions.mjs',    n: 2000 },
+  { file: 'geometry-tween.mjs', n: 2000 },
+  { file: 'algorithms.mjs',     n: 500 }   // the superlinear + clustering tier
+];
 
 const FULL_JOBS = [
   { file: 'materializers.mjs', n: 20000 },
@@ -65,6 +101,7 @@ function flagValue( name ){
 }
 
 const full = argv.includes( '--full' );
+const all = argv.includes( '--all' );
 const withRenderer = argv.includes( '--renderer' );
 const suiteFilter = flagValue( '--suite' );
 const sceneFilter = flagValue( '--scene' ); // forwarded to the renderer bench
@@ -94,7 +131,10 @@ if( renderOnly ){
 }
 
 // -- run ---------------------------------------------------------------------
-let jobs = full ? [ ...QUICK_JOBS, ...FULL_JOBS ] : QUICK_JOBS;
+let jobs = [ ...QUICK_JOBS ];
+
+if( all ){ jobs = [ ...jobs, ...STANDALONE_JOBS ]; }
+if( full ){ jobs = [ ...jobs, ...FULL_JOBS ]; }
 
 if( suiteFilter != null ){ jobs = jobs.filter( j => j.file.includes( suiteFilter ) ); }
 
@@ -163,7 +203,7 @@ results.meta = {
   cpu: context.cpu ?? null,
   arch: context.arch ?? null,
   runtime: context.runtime ?? null,
-  profile: full ? 'full' : 'quick',
+  profile: full ? 'full' : all ? 'all' : 'quick',
   suiteFilter,
   totalMs: Date.now() - startedAt,
   failures

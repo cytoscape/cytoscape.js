@@ -21,6 +21,7 @@ node pair, so every endpoint move re-fans a whole bundle.
 */
 
 import cytoscapeGpu from '../../src/gpu/index.mjs';
+import { finishManualRun } from './bench-run.mjs';
 
 const N = Number( process.env.BENCH_N ?? 20000 );
 const BUNDLE = Number( process.env.BENCH_BUNDLE ?? 4 );
@@ -220,8 +221,9 @@ for( const r of [ ...rows ].sort( ( a, b ) => b.ratio - a.ratio ) ){
   console.log( `  ${r.ratio.toFixed( 2 ).padStart( 6 )}x  ${r.label}` );
 }
 
-if( process.env.BENCH_JSON ){
-  const { writeFileSync } = await import( 'node:fs' );
-
-  writeFileSync( process.env.BENCH_JSON, JSON.stringify( { n: N, bundle: BUNDLE, rows }, null, 2 ) );
-}
+// join report.mjs's job table (round 33.10): one group per row, the
+// curved and straight sides as its two benches
+finishManualRun( 'curves', rows.map( r => ( {
+  name: `curve premium: ${r.label}`,
+  benches: [ { name: 'curved', ms: r.curvedMs }, { name: 'straight', ms: r.straightMs } ]
+} ) ) );

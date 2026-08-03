@@ -12,6 +12,7 @@ label rewritten by a data write).  Run:
 
 import { breakLines, estimateBlock, WRAP_WRAP, OFLOW_WHITESPACE, JUSTIFY_CENTER } from '../../src/gpu/label-wrap.mjs';
 import { GraphStore } from '../../src/gpu/store/graph-store.mjs';
+import { finishManualRun } from './bench-run.mjs';
 
 const N = Number( process.env.BENCH_N ?? 100000 );
 const opts = {
@@ -23,12 +24,15 @@ const adv = ch => ( ch === ' ' ? 0.28 : 0.54 ) * 16;
 const texts = Array.from( { length: N }, ( _, i ) =>
   `node ${i} with a label long enough to wrap over lines` );
 
+const rows = [];
+
 const time = ( label, fn ) => {
   const t0 = performance.now();
   const out = fn();
   const ms = performance.now() - t0;
 
   console.log( `${label}: ${ms.toFixed( 1 )} ms (${( ms * 1e6 / N ).toFixed( 0 )} ns/label)` );
+  rows.push( { label, ms } );
 
   return out;
 };
@@ -73,3 +77,9 @@ time( `setLabel (rewrite) x ${N}`, () => {
 } );
 
 time( `boundingBox with ${N} label terms`, () => store.boundingBox() );
+
+// join report.mjs's job table (round 33.10)
+finishManualRun( 'labels', rows.map( r => ( {
+  name: `labels: ${r.label}`,
+  benches: [ { name: 'gpu', ms: r.ms } ]
+} ) ) );

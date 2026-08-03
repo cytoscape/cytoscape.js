@@ -8539,15 +8539,38 @@ describe and no suite prices:
   (1.9 ms here, against 1.1 µs for the same instance unstyled).  That
   is a real cost a v3 app pays, so the rows stay — but a reader should
   not take 87,000× as a statement about v4's scratch.
-- [ ] **33.10 The report: every suite, one command** — finding 15,
-  design call 3, and **open call 7's answer**.  The job table takes
-  all fourteen suites plus the new ones, `gpuOnly` jobs render as
-  absolute costs, `--all` runs everything including the renderer
-  bench, and `test/modules/gpu-benchmark-report.mjs` gains coverage of
-  the gpu-only rendering path (it is the report's existing unit-test
-  seam — a pure results→HTML renderer, which is why it is testable at
-  all).  The `BENCH_OP` tables must track the new suites' group names,
-  the coupling `report.mjs` already documents.
+- [x] **33.10 The report: every suite, one command** (2026-08-03) —
+  landed, and **open call 7 is answered**.  `report.mjs` now has three
+  tiers instead of two: `quick` (the v3-vs-v4 micro and scenario suites
+  at their default scales — deliberately unchanged, because a default
+  profile nobody waits for is worth as little as a report showing half
+  the suite), **`--all`** (+ the fifteen standalone sweeps: the eight
+  this round added plus `compaction`, `compound`, `curves`, `labels`,
+  `transitions`, `geometry-tween` and the algorithms' superlinear
+  tier), and `--full` (+ the 2k/20k/200k matrix).  `--suite <substr>`
+  filters any tier, which is how one sweep gets run and re-rendered on
+  its own.
+  The blocker was mechanical and is now gone: `curves.mjs` and
+  `labels.mjs` **time one shot per row** rather than sampling through
+  mitata — deliberately, since their rows mutate or are one-offs — so
+  they had no mitata results to hand over and wrote their own JSON
+  shape (or none), which `report.mjs` cannot read (it needs
+  `job.groups`).  `finishManualRun( suite, groups )` in `bench-run.mjs`
+  turns one-shot rows into that shape via `oneShotStats`, the
+  convention the renderer bench already uses for its init/export
+  timings.  No suite's terminal behaviour changed: without `BENCH_JSON`
+  it writes nothing, exactly like `finishRun`.
+  The renderer already handled gpu-only groups (benches not named
+  `v3`/`gpu` render as individual labelled rows rather than as
+  dumbbells against a 1× line that would mean nothing for them), so no
+  `gpuOnly` marker was needed — the plan's proposed flag turned out to
+  be describing something the report already did.
+  Verified end to end: `report.mjs --all --suite labels` runs the suite
+  and its five rows appear in `report.html`.  `test/modules/
+  gpu-benchmark-report.mjs` gains three specs (the manual-run shape,
+  the no-`BENCH_JSON` no-op, and a single-bench section rendering) —
+  14 module tests, with the control run: breaking `finishManualRun`'s
+  group mapping fails the spec written for it.
 - [ ] **33.11 The renderer bench gaps** — finding 14.  Measure the
   `gen-25k-images` scene on the RX 580 (never measured, and its
   "software adapter" note was wrong three times over); re-run the 100k

@@ -6406,8 +6406,48 @@ commit(s)):
   The pass changes no pixels, and that is the point: 2293 Node
   tests, 63 module tests, typecheck, lint, 87/87 webgpu and
   **68/68 webgpu-visual with the goldens untouched**.
-- [ ] **27.2 The three plain-polygon keywords** —
-  `right-rhomboid`, `concave-hexagon`, `cut-rectangle`.
+  *Correction, made while landing 27.2*: that browser verification
+  was first run against a **stale bundle** and re-run afterwards
+  before it meant anything.  `playwright.config.js` sets
+  `reuseExistingServer: !CI`, so with an `http-server` already
+  listening on 3333 Playwright attaches to it and the
+  `test:playwright:build` half of `test:playwright:setup` never
+  runs — the suite exercises whatever was built last, and a green
+  run proves nothing about the change under test.  Re-run against a
+  freshly built bundle (with 27.2 in as well), the 68 pre-existing
+  goldens are still byte-identical, so the repack *is* the visual
+  no-op claimed — but the first run had not shown it.  The trap is
+  now recorded in `AGENTS.md`'s testing notes, since its only
+  symptom is a pass you did not earn.
+- [x] **27.2 The three unported shape keywords** (2026-08-02) —
+  landed, with the plan's own framing corrected: only **two** of
+  the three are plain polygons.  `right-rhomboid` and
+  `concave-hexagon` are v3 point tables, so they are entries in
+  `POLYGON_POINTS` and nothing else — the SDF codegen, the CPU
+  pick and the depth prepass pick them up with no per-shape code,
+  which is the payoff of the round-10 table design.
+  `cut-rectangle` is **not** a unit polygon: v3 chamfers by an
+  *absolute* length (`getCutRectangleCornerLength()` = 8 model px,
+  or the element's `corner-radius`), so a unit table would make the
+  chamfer scale with the node, which is exactly what v3 does not
+  do.  It gets its own SDF — the box intersected with the diagonal
+  half-plane `|x| + |y| <= hw + hh - c`, whose max of two exact
+  convex fields is itself exact — plus a matching `cpu-pick`
+  branch.  Its `'auto'` resolves to a flat 8 px where
+  round-rectangle's is `min(w/4, h/4, 8)`: **one prop, two
+  defaults**, as in v3, so the shader gained `cornerLengthPx` over
+  `cornerRadiusPx` and every one of the five call sites now passes
+  the shape.  Tests-first: 11 Node specs (red then green) covering
+  compile/store/readback per keyword, both v3 point tables
+  verbatim, the fact that `cut-rectangle` is deliberately absent
+  from `POLYGON_POINTS`, the explicit-radius path, and that an
+  unported keyword still throws.  A `shapes-27` golden shows all
+  three, with `cut-rectangle` at three sizes under `'auto'` — the
+  24px node is what makes the golden discriminate between the two
+  auto rules, since at 60px they coincide at 8.
+  2304 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu
+  and 69/69 webgpu-visual (68 unchanged goldens + the new one),
+  all against a freshly built bundle.
 - [ ] **27.3 v3's nonlinear arrow-size formula** — with the quad
   extents and the slack meter grown to match.
 - [ ] **27.4 The round-corner SDF** — the per-corner arc primitive

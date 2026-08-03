@@ -141,6 +141,17 @@ export const SHAPE_TAG = 13;
  * corner-radius word is meaningless for polygons. */
 export const SHAPE_POLYGON_CUSTOM = 14;
 
+// round 27.2: the plain-polygon keywords v3 had and round 13 left
+// unported.  `cut-rectangle` is not a unit polygon — its chamfer is an
+// absolute length (v3's 8 model px, or the element's corner-radius) —
+// so it carries its own SDF rather than a point table.
+export const SHAPE_RIGHT_RHOMBOID = 15;
+export const SHAPE_CONCAVE_HEXAGON = 16;
+export const SHAPE_CUT_RECTANGLE = 17;
+
+/** v3's default cut-rectangle chamfer, in model px (`getCutRectangleCornerLength`). */
+export const CUT_RECTANGLE_CORNER = 8;
+
 /*
 The node shape id rides `borderGeom.y` alongside the border position
 (bits 0..7).  Round 27.1 widened the field from four bits to a full byte

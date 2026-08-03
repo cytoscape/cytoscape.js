@@ -11,8 +11,9 @@ import {
   FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_SELF_INVISIBLE, FLAG_TEXT_EVENTS,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
-  SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
-  SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID,
+  SHAPE_CIRCLE, SHAPE_CONCAVE_HEXAGON, SHAPE_CUT_RECTANGLE, SHAPE_DIAMOND,
+  SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
+  SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID, SHAPE_RIGHT_RHOMBOID,
   SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
 import { SCHEMES, resolveScheme, hexToRgb } from './style-schemes.mjs';
@@ -543,7 +544,11 @@ const SHAPES: Record<string, number> = {
   'vee': SHAPE_VEE,
   'star': SHAPE_STAR,
   'tag': SHAPE_TAG,
-  'polygon': SHAPE_POLYGON_CUSTOM
+  'polygon': SHAPE_POLYGON_CUSTOM,
+  // round 27.2
+  'right-rhomboid': SHAPE_RIGHT_RHOMBOID,
+  'concave-hexagon': SHAPE_CONCAVE_HEXAGON,
+  'cut-rectangle': SHAPE_CUT_RECTANGLE
 };
 
 /** RGBA bytes packed little-endian, matching WGSL unpack4x8unorm. */
@@ -577,7 +582,10 @@ const SHAPE_NAMES: Record<number, string> = {
   [ SHAPE_VEE ]: 'vee',
   [ SHAPE_STAR ]: 'star',
   [ SHAPE_TAG ]: 'tag',
-  [ SHAPE_POLYGON_CUSTOM ]: 'polygon'
+  [ SHAPE_POLYGON_CUSTOM ]: 'polygon',
+  [ SHAPE_RIGHT_RHOMBOID ]: 'right-rhomboid',
+  [ SHAPE_CONCAVE_HEXAGON ]: 'concave-hexagon',
+  [ SHAPE_CUT_RECTANGLE ]: 'cut-rectangle'
 };
 
 /** Readable props per group ('width' and 'opacity' exist for both). */

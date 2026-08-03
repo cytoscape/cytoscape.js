@@ -1,6 +1,8 @@
 import {
   FLAG_ALIVE, FLAG_DRAWN, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS,
-  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
+  CUT_RECTANGLE_CORNER,
+  SHAPE_CIRCLE, SHAPE_CUT_RECTANGLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM,
+  SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
 import { POLYGON_POINTS, insideUnitPolygon } from '../shape-points.mjs';
@@ -95,11 +97,16 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
       hh = hmax;
     }
 
-    // B2: per-node corner radius (device px; 0xffffffff = v3's auto)
+    // B2: per-node corner radius (device px; 0xffffffff = v3's auto).
+    // 27.2: cut-rectangle reads the same word as its chamfer length, but
+    // its 'auto' is a flat 8 model px rather than the size-relative rule
+    // — the twin of the shader's cornerLengthPx.
     const storedR = borderGeom[ slot * 4 ];
-    const radius = storedR === 0xffffffff
-      ? Math.min( Math.min( hw, hh ) * 0.5, 8 * frame.zoomDpr )
-      : storedR / 256 * frame.zoomDpr;
+    const radius = storedR !== 0xffffffff
+      ? storedR / 256 * frame.zoomDpr
+      : shape === SHAPE_CUT_RECTANGLE
+        ? CUT_RECTANGLE_CORNER * frame.zoomDpr
+        : Math.min( Math.min( hw, hh ) * 0.5, 8 * frame.zoomDpr );
 
     // C3: custom polygons test their blob points (the same record the
     // FS reads — dual consumers of one ref, agreeing by construction)
@@ -149,6 +156,12 @@ function insideShape(
       const my = Math.max( qy, 0 );
 
       return Math.min( Math.max( qx, qy ), 0 ) + Math.sqrt( mx * mx + my * my ) - r <= 0;
+    }
+    case SHAPE_CUT_RECTANGLE: { // 27.2: the box intersected with the corner chamfers
+      const c = Math.min( radius, Math.min( hw, hh ) );
+
+      return Math.abs( dx ) <= hw && Math.abs( dy ) <= hh
+        && Math.abs( dx ) + Math.abs( dy ) <= hw + hh - c;
     }
     default: { // polygon shapes: inside-ness in normalized space (affine-invariant)
       const points = POLYGON_POINTS.get( shape );

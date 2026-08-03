@@ -3,8 +3,9 @@ import {
 } from '../math.mjs';
 import {
   ARROW_CHEVRON, ARROW_DIAMOND, ARROW_SQUARE, ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
-  SHAPE_DIAMOND, SHAPE_HEPTAGON, SHAPE_HEXAGON, SHAPE_OCTAGON, SHAPE_PENTAGON,
-  SHAPE_RHOMBOID, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
+  SHAPE_CONCAVE_HEXAGON, SHAPE_DIAMOND, SHAPE_HEPTAGON, SHAPE_HEXAGON,
+  SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RHOMBOID, SHAPE_RIGHT_RHOMBOID,
+  SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
 
 /*
@@ -51,7 +52,13 @@ export const POLYGON_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
   [ SHAPE_RHOMBOID, [ -1, -1, 0.333, -1, 1, 1, -0.333, 1 ] ],
   [ SHAPE_VEE, [ -1, -1, 0, -0.333, 1, -1, 0, 1 ] ],
   [ SHAPE_STAR, star5() ],
-  [ SHAPE_TAG, [ -1, -1, 0.25, -1, 1, 0, 0.25, 1, -1, 1 ] ]
+  [ SHAPE_TAG, [ -1, -1, 0.25, -1, 1, 0, 0.25, 1, -1, 1 ] ],
+  // round 27.2 — v3's tables verbatim.  right-rhomboid slants the other
+  // way from `rhomboid`; concave-hexagon's waist is the mid-side pair
+  // pulled inward to ±0.75.
+  [ SHAPE_RIGHT_RHOMBOID, [ -0.333, -1, 1, -1, 0.333, 1, -1, 1 ] ],
+  [ SHAPE_CONCAVE_HEXAGON,
+    [ -1, -0.95, -0.75, 0, -1, 0.95, 1, 0.95, 0.75, 0, 1, -0.95 ] ]
 ] );
 
 /**

@@ -21,7 +21,8 @@ import {
 import {
   ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
-  ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, SHAPE_MASK, SHAPE_SHIFT
+  ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, CUT_RECTANGLE_CORNER,
+  SHAPE_CUT_RECTANGLE, SHAPE_MASK, SHAPE_POLYGON_CUSTOM, SHAPE_SHIFT
 } from '../contract.mjs';
 
 /**
@@ -1121,17 +1122,31 @@ fn customPolySD(p: vec2f, half: vec2f, polyRef: u32) -> f32 {
   return sgn * sqrt(d);
 }
 
+// A rectangle with its four corners chamfered by 'cut' (v3's
+// cut-rectangle, round 27.2).  The chamfered box is the box intersected
+// with the diagonal half-plane |x| + |y| <= hw + hh - cut, and the max
+// of two exact convex distance fields is itself exact — the same
+// standard the generated polygons meet.
+fn cutRectangleSD(p: vec2f, half: vec2f, cut: f32) -> f32 {
+  let c = min(cut, min(half.x, half.y));
+  let diag = (abs(p.x) + abs(p.y) - (half.x + half.y - c)) * 0.70710678;
+
+  return max(rectangleSD(p, half), diag);
+}
+
 // shape ids match contract.mts: 0 circle, 1 ellipse, 2 rectangle,
 // 3 round-rectangle, 4+ generated polygon shapes, 14 custom polygon
-// (C3 — polyRef packs its blob record).  radius is the
-// round-rectangle corner radius in device px, pre-resolved (B2).
+// (C3 — polyRef packs its blob record), 17 cut-rectangle (27.2).
+// radius is the round-rectangle corner radius in device px, pre-resolved
+// (B2); cut-rectangle reads the same word as its chamfer length.
 fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32) -> f32 {
   switch shape {
     case 0u: { return circleSD(p, half.x); }
     case 1u: { return ellipseSD(p, half); }
     case 2u: { return rectangleSD(p, half); }
 ${ POLY.cases }
-    case 14u: { return customPolySD(p, half, polyRef); }
+    case ${ SHAPE_POLYGON_CUSTOM }u: { return customPolySD(p, half, polyRef); }
+    case ${ SHAPE_CUT_RECTANGLE }u: { return cutRectangleSD(p, half, radius); }
     default: { return roundRectangleSD(p, half, min(radius, min(half.x, half.y))); }
   }
 }
@@ -1141,6 +1156,17 @@ ${ POLY.cases }
 fn cornerRadiusPx(stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
   if (stored == 0xffffffffu) { return min(min(half.x, half.y) * 0.5, 8.0 * zoomDpr); }
   return f32(stored) / 256.0 * zoomDpr;
+}
+
+// The same word, resolved for cut-rectangle (27.2): v3's 'auto' chamfer
+// is a flat ${ CUT_RECTANGLE_CORNER } model px, *not* round-rectangle's
+// size-relative rule — the two shapes read one prop with two defaults,
+// as they do in v3.
+fn cornerLengthPx(shape: u32, stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
+  if (shape == ${ SHAPE_CUT_RECTANGLE }u && stored == 0xffffffffu) {
+    return ${ CUT_RECTANGLE_CORNER }.0 * zoomDpr;
+  }
+  return cornerRadiusPx(stored, half, zoomDpr);
 }
 
 // border-position (B2): how far the border band extends past the shape
@@ -1319,7 +1345,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
     half = vec2f(max(in.halfSize.x, in.halfSize.y));
   }
 
-  let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
+  let radius = cornerLengthPx(shape, borderGeom[slot].x, half, frame.zoomDpr);
   let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x);
   var color = unpack4x8unorm(fillColors[slot]);
 
@@ -1440,7 +1466,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
     half = vec2f(max(in.halfSize.x, in.halfSize.y));
   }
 
-  let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
+  let radius = cornerLengthPx(shape, borderGeom[slot].x, half, frame.zoomDpr);
   let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x);
   var color = unpack4x8unorm(fillColors[slot]);
 
@@ -1560,7 +1586,7 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
     half = vec2f(max(in.halfSize.x, in.halfSize.y));
   }
 
-  let radius = cornerRadiusPx(borderGeom[slot].x, half, frame.zoomDpr);
+  let radius = cornerLengthPx(shape, borderGeom[slot].x, half, frame.zoomDpr);
 
   if (!nodeInterior(shape, in.local, half, 1.5, radius, borderGeom[slot].x)) { // stay inside the AA fringe
     discard;
@@ -3269,7 +3295,7 @@ fn fsImage(in: ImageVSOut) -> @location(0) vec4f {
   // so 'auto' matches the body shader's model-space value)
   let bg = borderGeom[slot];
   let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
-  let radius = cornerRadiusPx(bg.x, half, 1.0);
+  let radius = cornerLengthPx(shape, bg.x, half, 1.0);
   let sd = nodeSD(shape, p, half, radius, bg.x);
   let aa = max(fwidth(sd), 1e-4);
   let bw = borderWidths[slot];
@@ -3454,7 +3480,7 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
   // the border stays visible over the chart)
   let bg = borderGeom[slot];
   let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
-  let radius = cornerRadiusPx(bg.x, half, 1.0);
+  let radius = cornerLengthPx(shape, bg.x, half, 1.0);
   let sd = nodeSD(shape, p, half, radius, bg.x);
   let aa = max(fwidth(sd), 1e-4);
   let bw = borderWidths[slot];

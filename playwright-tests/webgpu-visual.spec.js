@@ -203,6 +203,53 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'polygon-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: the round-27.2 shape keywords', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // right-rhomboid and concave-hexagon are point tables.  cut-rectangle
+    // is not — its chamfer is an absolute length, so the scene shows it
+    // at three sizes with corner-radius left at 'auto': the chamfer must
+    // stay the same size as the box grows and stretches, and on the small
+    // node it must stay 8px where round-rectangle's auto rule would give
+    // 6 — that last node is what makes this golden discriminate between
+    // the two 'auto' meanings.
+    const elements = [
+      { data: { id: 'rr', shape: 'right-rhomboid' }, position: { x: -110, y: -45 } },
+      { data: { id: 'ch', shape: 'concave-hexagon' }, position: { x: -35, y: -45 } },
+      { data: { id: 'cr', shape: 'cut-rectangle' }, position: { x: 40, y: -45 } },
+      { data: { id: 'cr-small', shape: 'cut-rectangle' }, position: { x: 105, y: -45 } },
+      { data: { id: 'cr-wide', shape: 'cut-rectangle' }, position: { x: -20, y: 45 } }
+    ];
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: {
+          'width': { case: [
+            { when: { data: 'id', eq: 'cr-wide' }, then: 150 },
+            { when: { data: 'id', eq: 'cr-small' }, then: 24 }
+          ], else: 60 },
+          'height': { case: [
+            { when: { data: 'id', eq: 'cr-wide' }, then: 40 },
+            { when: { data: 'id', eq: 'cr-small' }, then: 24 }
+          ], else: 60 },
+          'shape': { case: [
+            { when: { data: 'shape', eq: 'right-rhomboid' }, then: 'right-rhomboid' },
+            { when: { data: 'shape', eq: 'concave-hexagon' }, then: 'concave-hexagon' },
+            { when: { data: 'shape', eq: 'cut-rectangle' }, then: 'cut-rectangle' }
+          ], else: 'ellipse' },
+          'background-color': '#3498db',
+          'border-width': 3, 'border-color': '#2c3e50'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'shapes-27', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: arrowhead shapes (round 10)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

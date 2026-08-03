@@ -60,6 +60,13 @@ CPU path — never leased, never stale (`width()`/`bb()`/pick read
 the mid-flight value) — with the per-tick invalidation cascade run
 by the store's write funnel (label re-anchor, auto-bounds, the
 ride lanes) and priced by a dedicated benchmark sweep.
+Round 26 (2026-08-02) changed no behaviour at all: it built the
+**authoring surface** the release documentation will be generated
+from — JSDoc on every public member of the prototype (a 46% → 100%
+sweep, gated by a coverage test), and the first shipped
+**TypeScript declarations** for `cytoscape/gpu`, which carry those
+comments into consumers' editors.  See "Documenting the source"
+below.
 Round 27 (2026-08-02) closed the visual-parity tail rounds 13–16 had
 left: v4 now renders **v3's complete node-shape vocabulary** (the
 seven `round-*` keywords, `cut-rectangle`, `right-rhomboid`,
@@ -71,13 +78,6 @@ arrowheads by v3's own nonlinear formula, and accepts a numeric
 v3-vs-v4 parity diff rather than by a golden alone — see the
 round-27 records in PLAN.md for the measurements.  `border-style`/
 `outline-style` remain the one unported style pair.
-Round 26 (2026-08-02) changed no behaviour at all: it built the
-**authoring surface** the release documentation will be generated
-from — JSDoc on every public member of the prototype (a 46% → 100%
-sweep, gated by a coverage test), and the first shipped
-**TypeScript declarations** for `cytoscape/gpu`, which carry those
-comments into consumers' editors.  See "Documenting the source"
-below.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -106,7 +106,15 @@ shader over every allocated slot.
   the goldens are machine-independent; regenerate intended changes with
   `UPDATE_GOLDENS=1`) and live v3-vs-v4 parity diffs
   (`playwright-page/parity.html` renders both renderers side by side —
-  no v3 baselines are checked in).  A WYSIWYG self-diff spec pins
+  no v3 baselines are checked in).  The two answer different
+  questions, and round 27 is the cautionary tale: a golden compares
+  v4 against *its own* previous output at a 0.5% tolerance, so it
+  asks "did this change?", while only the parity diff asks "is this
+  right?".  v4's arrow sizing deviated from v3 at every width and
+  the arrow goldens passed throughout, before and after the fix.
+  **Anything claiming v3 parity needs the parity diff**, and a new
+  parity test should be run once with its feature disabled to prove
+  it can fail.  A WYSIWYG self-diff spec pins
   `png()` to the on-screen pixels.  On Linux both Chromium projects add
   ANGLE-on-Vulkan compositing flags (see `playwright.config.js`) —
   without them Dawn renders fine but WebGPU canvases *present* blank in
@@ -1068,7 +1076,8 @@ each is deliberate, not a pass-1 deferral:
   anchor at the edge midpoint computed **in the vertex shader** from
   the two endpoint positions, so edge labels follow drags, layouts and
   position tweens on-GPU with zero rebuild (spec-pinned: an endpoint
-  move re-uploads ≤ 64 bytes and the label lands at the new midpoint).
+  move re-uploads ≤ 64 bytes *of position column* — no glyph is
+  rewritten — and the label lands at the new midpoint).
   The cull predicate mirrors the edge cull (edge SHOWN + both endpoint
   nodes SHOWN); the model side group-keys the label sidecar,
   label-dirty channel and StyleEngine label channels (the `label`
@@ -1765,15 +1774,21 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   in the `test:types` project.  Recorded: `event.target` types as
   `unknown` because the event object is still the shared v3 type;
   a v4-specific event type is an open call, so consumers narrow it.
-- **Coverage is enforced.**  `scripts/gpu-jsdoc-coverage.mjs`
-  audits every member of an exported class whose name does not
-  start with `_`, split into a public-API tier (the entry point,
-  `GpuCore`, `GpuCollection`, `Viewport`, the animation handle, the
-  layout contract, the public style/wire/columnar surface) and an
-  internal tier.  `test/gpu-jsdoc-coverage.mjs` gates it: files
-  listed as complete may never regress, and each tier carries a
-  ratcheting floor.  Run `node scripts/gpu-jsdoc-coverage.mjs
-  --verbose` for the per-member list.
+- **Coverage is enforced, and it is at 100%.**
+  `scripts/gpu-jsdoc-coverage.mjs` audits every member of an
+  exported class whose name does not start with `_`, plus every
+  top-level exported function, split into a public-API tier (the
+  entry point, `GpuCore`, `GpuCollection`, `Viewport`, the
+  animation handle, the layout contract, the public
+  style/wire/columnar surface) and an internal tier.  Round 26 took
+  both tiers from 46% to **100%**, so `test/gpu-jsdoc-coverage.mjs`
+  gates the simplest possible rule: **no file in `src/gpu` may have
+  an undocumented public member**, and the failure message names
+  it.  Overload *signatures* each carry their own block; the
+  implementation signature that closes a run of them is not
+  separately documentable and is skipped.  Run
+  `node scripts/gpu-jsdoc-coverage.mjs --verbose` for the
+  per-member list.
 
 ## Benchmarks
 

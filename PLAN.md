@@ -72,6 +72,15 @@ plan and outcome.
   staleness markers ("open", "remains", "planned", "not yet", stale
   counts and file lists), verify every section the round touched
   reads true, and land the fixes as the round's closing docs commit.
+  **Sweep this file too, not just the README** (amended 2026-08-02,
+  after round 27's sweep did the README end to end and left
+  PLAN.md's own gap ledger asserting that shape keywords, compound
+  arrows and numeric `text-rotation` were still unbuilt — the round
+  had just built all three).  Two places here drift on almost every
+  round and are worth grepping by name: the **"Needs a call" gap
+  ledger**, whose per-item "Still open:" lines outlive the work
+  that closes them, and the **"Suggested sequencing"** summary of
+  what remains.  A round record is not the whole record.
 
 ## Context
 
@@ -113,7 +122,9 @@ src/gpu/
     force-sim.mts        #   round 18: the CPU reference force simulation (the kernels' spec)
     force.mts            #   round 18: the built-in force layout (contract consumer; picks the executor)
   algorithms/            # round 10: the full v3 algorithm surface, slot-native over CSR
-  shape-points.mts       # round 10: unit polygon + arrowhead point tables shared by WGSL gen + CPU pick
+  shape-points.mts       # unit polygon + arrowhead point tables shared by WGSL gen + CPU pick (round 10;
+                         #   round 27 added the round-corner indirection, the compound-arrow parts and
+                         #   the computed ARROW_MAX_BACK quad bound)
   store/
     graph-store.mts      # GraphStore: tables + indexes + sidecars; mutation API; compact() (round 19)
     table.mts            # ColumnTable: typed-array columns, x2 growth, free-list, generations, compact()
@@ -124,7 +135,8 @@ src/gpu/
     curve-blob.mts       # variable-length record pools (curve params, polygons, images) + waste reclaim
     data-store.mts       # the data() sidecar: per-(group, key) adaptive columns, dict reclaim
     dirty.mts            # DirtyTracker: per-column coalesced [min,end) span, resized flag, touch() for sidecars
-  contract.mts           # model↔renderer contract: ColumnId specs, flag bits, ModelView, StoreDelta, LabelEntry
+  contract.mts           # model↔renderer contract: ColumnId specs, flag bits, ModelView, StoreDelta, LabelEntry;
+                         #   also the shared field packings (round 27.1: arrow ids, the node shape byte)
   gpu-context.mts        # adapter/device/canvas configure, device-lost handling
   render/
     renderer.mts         # frame graph: rAF render-on-dirty loop, pass ordering, stats(), pick/export driving
@@ -1885,17 +1897,30 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    until the 2026-07-29 triage dropped them.)  **Landed as round 13
    (2026-07-31, B/C series)**: gradients, corner-radius,
    border-position, dash pattern/offset/cap, the outline group, the
-   custom polygon.  Still open: `border-style`/`outline-style` (SDF
-   perimeter parameterization) and the unported shape keywords.
+   custom polygon.  **The shape keywords landed as round 27**
+   (2026-08-02): the two plain-polygon ones as point tables,
+   `cut-rectangle`/`bottom-round-rectangle`/`barrel` as
+   parameterized fields, and the seven `round-*` keywords as
+   `sdPolygon( inward-offset ) − r` — the identity that makes
+   corner-rounding exact under anisotropic scaling, which is what
+   the earlier "no clean closed form" note had missed.  **v3's
+   node-shape vocabulary is complete.**  Still open:
+   `border-style`/`outline-style`, held for exactly the scope call
+   this item's own sentence above asks for — see the round-27.8
+   entry for the three cost tiers.
 5. **Arrow parity** — `mid-source`/`mid-target` positions,
    `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
    shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/
    `triangle-backcurve`).  Mid-arrows are cheap on straight edges
    but really belong with curved-edge midpoint math.  **Landed as
    round 13 (2026-07-31, B7/C1)**: arrow-scale, per-end
-   fill/width, mid-arrows on the curve/route midpoint.  Still
-   open: the compound arrow shapes and v3's nonlinear arrow-size
-   formula (recorded deviation).
+   fill/width, mid-arrows on the curve/route midpoint.
+   **Closed by round 27** (2026-08-02): the four compound heads
+   landed in 27.6 and v3's nonlinear arrow-size formula in 27.3, so
+   **v3's arrow vocabulary is complete** and arrow sizes match v3's
+   in every width regime — measured, not asserted, with the live
+   parity diff moving 4.459% → 0.013%.  Recorded deviation: a
+   hollow compound head falls back to filled.
 6. **Label parity** — placement (`text-valign`/`text-halign` grid
    vs v4's fixed below-node), per-element numeric `text-rotation`,
    **source/target edge labels** (10 props — second/third label
@@ -1906,8 +1931,10 @@ spellings, redundant `attr`-family duplicates — one name per concept).
    (2026-07-31, B6/D series)**: the halign/valign grid,
    text-opacity/transform/border/background-shape,
    font-style/-weight, per-element min-zoomed-font-size, and the
-   source/target label streams.  Still open: per-element numeric
-   `text-rotation` (the logged parity gap).  Also: **labels are
+   source/target label streams.  **Numeric `text-rotation` landed
+   as round 27.7** (2026-08-02), on any label, alongside the
+   `autorotate` keyword (edge-only — it resolves from an edge's
+   slope).  Also: **labels are
    excluded from `boundingBox()`** in v4 — v3's `includeLabels`
    (and the bb options object generally) affects `fit()` semantics;
    the conservative-label-bound design (already sketched for
@@ -2055,9 +2082,21 @@ below.  What remains of the needs-a-call list: ~~the animation
 controls/transitions follow-up~~ (item 9's open half — **scoped as
 round 24 by the fourth design sitting and landed in full the same
 day, 2026-08-01**; ~~the geometry-tween round it logged~~ landed as
-round 25, 2026-08-02), the small parity remnants noted inline in items 4–6,
-and items 8's deferred overlap box mode, 10's core/collection
-extension points and 12's odds and ends.
+round 25, 2026-08-02), ~~the small parity remnants noted inline in
+items 4–6~~ (**closed by round 27, 2026-08-02** — v3's node-shape and
+arrowhead vocabularies are complete and numeric `text-rotation`
+landed; the one remainder is `border-style`/`outline-style`, held for
+the scope call item 4 itself asks for), and items 8's deferred overlap
+box mode, 10's core/collection extension points and 12's odds and
+ends.
+
+**2026-08-02, rounds 26–27**: round 26 built the authoring surface —
+JSDoc across the whole prototype (46% → 100%, gated) and the first
+shipped TypeScript declarations for `cytoscape/gpu` — and round 27
+closed the visual-parity tail.  What is left of the whole ledger:
+**`border-style`/`outline-style`** (a scope call, 27.8), item 8's
+overlap box mode, item 10's core/collection extension points, and
+item 12's odds and ends.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -6684,5 +6723,21 @@ commit(s)):
   discouraged exactly the work that closed it.  The follow-up hooks
   now list `border-style`/`outline-style` as the single remaining
   parity item, waiting on a scope call rather than on a technique.
+  **Amended after a second pass (2026-08-02)**: this sweep did the
+  README end to end and stopped there, leaving *this file's* gap
+  ledger still asserting that the shape keywords, the compound
+  arrow shapes and numeric `text-rotation` were unbuilt — three
+  things the round had just built — and the "Suggested sequencing"
+  summary still listing them as remaining.  Items 4, 5 and 6 of the
+  needs-a-call ledger and the sequencing paragraph are now true up;
+  the directory layout picked up round 27's changes to
+  `shape-points.mts` and `contract.mts`; the README's JSDoc-coverage
+  paragraph still described round 26.1's file-allowlist gate rather
+  than the 100%-everywhere rule 26.4 replaced it with; and both
+  documents now record the round's most transferable finding — that
+  a golden answers "did this change?" while only a parity diff
+  answers "is this right?", and that a parity test should be run
+  once with its feature disabled to prove it can fail.  The standing
+  process rule above gained "sweep this file too".
   **Round 27 is complete apart from 27.8, which is held for that
   call.**

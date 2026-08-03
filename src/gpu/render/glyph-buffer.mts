@@ -13,7 +13,7 @@ garbage.  Uploads are one coalesced dirty span per frame; capacity growth
 reallocates the GPU buffer (old one destroyed behind onSubmittedWorkDone)
 and bumps `version` for lazy bind-group rebuild — the ColumnMirror rules.
 
-CPU-canonical layout, 14 words (56 bytes) per glyph, matching the WGSL
+CPU-canonical layout, 16 words (64 bytes) per glyph, matching the WGSL
 Glyph struct:
   u32 owner word (0xffffffff = dead; else bits 0..30 the owner slot, bit
   31 the autorotate flag — set only on the edge stream), u32 packed RGBA
@@ -23,7 +23,9 @@ Glyph struct:
   f32 zoomDprMin (min-zoomed-font-size / fontSize; the glyph cull hides
   the glyph when frame.zoomDpr < zoomDprMin — round 13 D2), f32 endParam
   (0 on the node and mid-edge streams; on the end-label streams the sign
-  picks the end and |v| - 1 is the arc offset — round 13 D4).
+  picks the end and |v| - 1 is the arc offset — round 13 D4),
+  f32 rotation (the label's own text-rotation in radians, 0 when none —
+  round 27.7; autorotate rides the owner word's flag instead), f32 pad.
 A negative u0 marks a solid background quad (no atlas sample); its v0
 carries the run's glyph-block height for LOD purposes.
 */

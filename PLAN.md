@@ -7442,7 +7442,12 @@ read them as the round's starting state, not its current one:
   deferred like every other derivation.  Reading a *sibling* inside the
   loop moved it to 3.79×.
   Numbers at 20k nodes / 40k edges: box selection **3.29×** (the exact
-  curve-vs-rect test), re-fan **3.79×** (~5.2 µs per hide/show pair),
+  curve-vs-rect test) — ***wrong, corrected to ~2.3× by round 33.5***:
+  the row passed a box object to `cy.elementsInBox`, which takes four
+  numbers and answers the empty collection when handed one, so it never
+  ran the test it names — re-fan **3.79×** (~5.2 µs per hide/show pair;
+  2.66–2.98× on re-measurement, this suite being single-shot rather than
+  sampled),
   `controlPoints()` 1.57×, drag 1.46×, first read after a bulk move
   1.46× against 1.22× warm, build 1.18×, exact whole-graph
   `boundingBox()` 1.16×, `midpoint()` 1.15×, conservative `fit()` scan

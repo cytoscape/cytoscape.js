@@ -1305,14 +1305,24 @@ each is deliberate, not a pass-1 deferral:
     first read**, which is the shape of every number here — a bulk
     `positions()` write is 0.97× (curves cost the *write* nothing), the
     first read after it 1.46×, the same read again 1.22×.  The
-    premiums that matter: box selection **3.29×** (the exact
-    curve-vs-rect test), a bundle re-fan on `hide()`/`show()`
-    **3.79×** (~5.2 µs per pair, paid at a sibling's next read),
-    `controlPoints()` 1.57×, a single-node drag 1.46×, the whole-graph
-    exact `boundingBox()` 1.16×, the conservative `fit()` scan 1.05×.
+    premiums that matter: box selection **~2.3×** (the exact
+    curve-vs-rect test — *corrected in round 33.5, see below*), a bundle
+    re-fan on `hide()`/`show()` **2.7–3.8×** (~3.5–5.2 µs per pair, paid
+    at a sibling's next read), `controlPoints()` ~1.6×, a single-node
+    drag ~1.5×, the whole-graph exact `boundingBox()` ~1.2×, the
+    conservative `fit()` scan 1.05×.
     Two rows read ≈1.0× until the benchmark was corrected to force the
     deferred work: the bulk write genuinely is free, but the re-fan row
     was measuring a flag write until it read a sibling afterwards.
+    **Round 33.5 corrected a third**: the box-selection row passed a box
+    *object* to `cy.elementsInBox`, which takes four numbers and silently
+    answers the empty collection when handed one — so the 3.29×
+    originally published here was measured on a call that never ran the
+    curve-vs-rect test it names.  Fixed, the premium is 2.28–2.35× over
+    two runs.  Note also that this suite times one shot per row rather
+    than sampling like the mitata suites, so its ratios move ~±20%
+    run-to-run (the unchanged re-fan row read 3.79× when first published
+    and 2.66–2.98× on re-measurement); read them as magnitudes.
   - *Rendering (12a)*: curved edges draw in their own pipeline — one
     instance per edge as a strip of 24 quads whose vertex shader
     evaluates the curve analytically from live positions + the params

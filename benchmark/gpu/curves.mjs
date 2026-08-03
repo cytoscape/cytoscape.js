@@ -177,11 +177,17 @@ compare( 'cy.fit() x 20 (store scan)', 'call', 20, cy => {
   for( let i = 0; i < 20; i++ ){ cy.fit(); }
 } );
 
+// `elementsInBox` takes four numbers, not a box object.  Until round
+// 33.5 this row passed an object, which silently answers the *empty*
+// collection — so the 3.29x premium first published here (and quoted in
+// src/gpu/README.md) was measured on a degenerate call that never ran the
+// curve-vs-rect test it names.  Fixed and re-measured; see the round-33.5
+// record in PLAN.md.
 compare( 'elementsInBox x 20 (half the graph)', 'call', 20, cy => {
   const bb = cy.elements().boundingBox();
 
   for( let i = 0; i < 20; i++ ){
-    cy.elementsInBox( { x1: bb.x1, y1: bb.y1, x2: ( bb.x1 + bb.x2 ) / 2, y2: bb.y2 } );
+    cy.elementsInBox( bb.x1, bb.y1, ( bb.x1 + bb.x2 ) / 2, bb.y2 );
   }
 } );
 

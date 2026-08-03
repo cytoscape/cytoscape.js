@@ -6797,3 +6797,106 @@ commit(s)):
   shape vocabulary.
   **Round 27 is complete apart from 27.8, which is held for that
   call.**
+
+## Round 28 plan — the no-call remainder (planned 2026-08-03)
+
+Round 27 is complete apart from 27.8, which is held for a scope call
+on which shapes `border-style`/`outline-style` covers.  This round is
+the opposite kind of work: the items left in the ledger that need no
+design call at all, because the behaviour is already decided and
+either implemented-but-unverified or plainly absent.  No API is
+invented here and no scope is widened.
+
+**Finding (2026-08-03, precedes this plan) — round 27's shapes have
+no CPU-pick coverage, and three specs that look like they provide it
+do not.**
+
+Round 27 added three branches to `render/cpu-pick.mts`: the
+`cut-rectangle` chamfer (27.2), `insideBarrel` (27.5) and
+`insideRoundPolygon` (27.4).  None of them is exercised by any test.
+`test/gpu-cpu-pick.mjs` — the harness that actually drives the pick
+path against the store — stops at round 10's polygon family.
+
+Three specs in `test/gpu-shapes-27.mjs` are *named* for picking and
+assert something else entirely:
+
+- `'picks by its slanted outline, not its bounding box'` (right-rhomboid)
+  → asserts `boundingBox().w === 100`
+- `'picks inside the body and outside the cut corners'` (cut-rectangle)
+  → asserts `boundingBox().w === 100`
+- `'picks inside the body (the rounded field agrees with the sharp one
+  there)'` (round-hexagon vs hexagon) → compares two bounding-box widths
+
+All three hold for *every* shape keyword, because the bounding box is
+the node box regardless of shape.  Each spec's comment describes the
+pick property it means to check — a miss at the cut corner, a hit at
+dead centre — and then never calls a pick path.  **Measured, not
+assumed**: with the shape under test swapped for `ellipse` (and the
+round-vs-sharp pair swapped for ellipse-vs-star), the file still
+passes 20/20.  `barrel` has no pick spec at all.
+
+Why this matters beyond the missing assertions: the shapes' whole
+correctness argument is that the shader and the CPU replica are **dual
+consumers of one description, agreeing by construction** — and only
+the shader half is pinned, by round 27's live parity diffs.  The CPU
+replica is a separate implementation in a different language, and
+27.4 explicitly recorded that `insideRoundPolygon` is **not
+affine-invariant** the way the sharp polygons are, so it must test in
+device space.  That is the single most breakable property in the
+round, and nothing tests it at any zoom.
+
+This is the same failure mode 27.7 caught in its own parity test — a
+test that passes with the feature disabled is not evidence — occurring
+inside round 27's Node suite rather than its browser suite.  The
+generalized rule is now in `AGENTS.md`: it applies to plain unit specs,
+not just parity diffs.
+
+**Two smaller items, same no-call character:**
+
+- **`cy.animate({ panBy })`** — the viewport animation accepts `pan`,
+  `zoom`, `fit` and `center` (`animation.mts`), but not v3's `panBy`.
+  `cy.panBy()` itself exists (`core.mts`).  The semantics are
+  unambiguous (target = the pan captured at start, plus the delta), so
+  this is mechanical.  Ledger item 12.
+- **Ledger drift in item 12 itself** — it lists `cy.window()` as a gap,
+  but that method exists (`core.mts`, with a "v3 parity" doc comment),
+  and it lists "layout instances as event emitters" as open, when round
+  17 *decided* layout instances stay non-emitters (recorded in the
+  README's extension-contract section).  Docs only.
+
+**Explicitly not in this round** (each needs a call, and saying so is
+the point): `border-style`/`outline-style` (27.8's scope call); the
+`roundrectangle` alias inconsistency; `cy.gc()` and
+`cytoscape.warnings()` (both are "does v4 want this at all", and
+compaction already covers gc); and graph-level `data` in the binary
+wire format — `cy.json()` already exports it, but `serializeElements`
+is elements-only and its output feeds `cy.add()`, which raises whether
+adding elements should overwrite the target's `data()`.  Also still
+open and blocked on hardware rather than on a decision: the device-side
+frame cost of round 27's new shader branches (27.9 — this box has only
+SwiftShader).
+
+**Pass split** (tests-first; docs in-commit; each pass its own
+commit(s)):
+
+- [ ] **28.1 CPU-pick coverage for the round-27 shapes.**  Rewrite the
+  three vacuous specs to assert what they are named for, and extend
+  `test/gpu-cpu-pick.mjs` to the round-27 branches: `cut-rectangle`
+  (inside the body, outside the chamfered corners, and the absolute
+  chamfer length holding as the node grows — the property a unit table
+  would break), the `round-*` family (a corner point inside the sharp
+  polygon but outside the rounded one — the discriminating case), and
+  `barrel` (inside the waisted body, outside the corner curves, across
+  the capped and uncapped size regimes).  `insideRoundPolygon` is
+  tested **at a non-unit zoom** specifically, since it is the one
+  branch documented as not affine-invariant.  Each new spec is run once
+  against the sharp/unstyled counterpart to prove it discriminates, per
+  the round-27 rule.
+- [ ] **28.2 `cy.animate({ panBy })`.**  A viewport channel resolved to
+  a `pan` target at capture, so it composes with the existing pan/zoom
+  channel rules and the round-24.3 controls with no new machinery.
+  Rejected alongside an explicit `pan` in the same call (the two
+  spell the same channel).
+- [ ] **28.3 Ledger drift + closing docs sweep.**  True up item 12,
+  and sweep both documents for this round's vocabulary per the
+  standing rule.

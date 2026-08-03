@@ -2323,7 +2323,7 @@ during the round and left standing by 29.6's own sweep.  Removed in
 30.5, and noted here because it is the third round running that this
 summary has been the thing that drifted.)
 
-**2026-08-03, rounds 30–31.**  Continuing round 29's axis onto the part of
+**2026-08-03, rounds 30–32.**  Continuing round 29's axis onto the part of
 the surface v4 states most and tests least — **what it throws**.
 Measured with source-mapped coverage: 34 of the 191 throw sites in
 `src/gpu` had never executed.  30.1 closed every Node-reachable one
@@ -2343,6 +2343,12 @@ gate, and covered `mouseout`/`pointercancel`, the last two names of
 the round-17 event vocabulary no test mentioned.  Its lesson is about
 sweeps rather than about errors: the markdown had been right all
 along, and the wrong text was in a runtime string and a JSDoc block.
+**Round 32** finished the contract sentence's remaining clause —
+`@param` on every public member that takes arguments (143 → 221 of
+221, gated) — with the boundary drawn by docmaker's own shape:
+arguments carry a description the generator emits, returns do not, so
+the `@returns` tail (133 of 348) is measured and logged rather than
+built.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

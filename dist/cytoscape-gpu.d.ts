@@ -4729,8 +4729,16 @@ declare class GpuCollection {
    * Resolved style read off the stored channels: `style()` returns all of
    * the first element's group props, `style(name)` one value (numbers for
    * numeric props, `rgb()`/`rgba()` strings for colors, keywords
-   * otherwise).  Setter forms throw — v4 has no per-element bypass; use
-   * the fn form of the stylesheet.
+   * otherwise).
+   *
+   * Setter forms throw — v4 has no per-element bypass.  Per-element
+   * styling is declarative instead: a `case` mapper for conditionals, a
+   * `data(key)` scale for per-element values.  (Until round 31 both this
+   * comment and the throw pointed at "the function form of the
+   * stylesheet", which round 8 removed and 29.3 made throw — following
+   * the advice hit a second error.)
+   *
+   * @throws if called in any setter form
    */
   style(name?: string | Record<string, unknown>, value?: unknown): unknown;
   css: this['style'];

@@ -201,6 +201,30 @@ describe('gpu/decided drops (29.3)', function(){
         .to.throw( /bypass/ );
     });
 
+    // round 31.1: the message has to name a replacement that works.  It
+    // used to say "use the function form of the stylesheet", which round
+    // 8 removed and 29.3 made throw — so following the error produced a
+    // second error.  The spec asserts both halves: what it now says, and
+    // that the advice actually runs.
+    it('the bypass error names a replacement that v4 accepts', function(){
+      var message;
+
+      try { cy.$id('a').style( 'background-color', 'red' ); }
+      catch ( e ){ message = e.message; }
+
+      expect( message ).to.match( /case.*mapper|mapper/ );
+      expect( message, 'must not send the caller at a removed form' )
+        .to.not.match( /function form/ );
+
+      // and the form it names is accepted
+      expect( () => cytoscapeGpu({
+        elements: [ { data: { id: 'a', kind: 'x' } } ],
+        style: { nodes: { 'background-color': {
+          case: [ { when: { data: 'kind', eq: 'x' }, then: 'red' } ], else: 'blue'
+        } } }
+      }) ).to.not.throw();
+    });
+
     it('cy.json( obj ) — export only', function(){
       expect( () => cy.json( {} ) ).to.throw( /export-only/ );
     });

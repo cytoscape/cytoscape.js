@@ -7758,9 +7758,26 @@ names rather than by literal call sites.
 **Pass split** (tests-first; docs in-commit; each pass its own
 commit(s)):
 
-- [ ] **31.1 The message that recommends a removed form** — fix the
-  throw text and the doc comment, and pin both: the message must name
-  the replacement that exists, and following it must not throw.
+- [x] **31.1 The message that recommends a removed form** (2026-08-03)
+  — landed.  The throw now reads "Per-element style bypass is not
+  supported in v4; per-element styling is declarative: use a 'case'
+  mapper for conditionals and 'data(key)' scales for per-element
+  values", matching 29.3's wording for the sibling rejection, and the
+  doc comment says the same (with a parenthesis recording what it used
+  to say, since the old text is what a v3-era app will have been
+  following).
+  The spec asserts **both halves**, which is what makes it more than a
+  string check: the message names a mapper and *does not* name the
+  function form, and the form it names is then handed to
+  `cytoscapeGpu` and expected not to throw.  A message that advises a
+  rejected form is only detectable if the advice is executed.
+  Control: the old advice restored → the spec fails.
+  `dist/cytoscape-gpu.d.ts` is regenerated and committed (the comment
+  is shipped hover text — the whole reason the defect mattered), and
+  `test:types:gpu` re-run: 37 type exports, 3 statics, 1093 doc blocks.
+  2483 Node tests, typecheck, lint, JSDoc 100%, and — since this pass
+  changes source — 91/91 `webgpu` and 75/75 `webgpu-visual` against a
+  freshly built bundle.
 - [ ] **31.2 `@throws` where a public member throws** — the 13
   comments, plus the audit that finds them.
 - [ ] **31.3 `mouseout` and `pointercancel`** in the `webgpu` project.

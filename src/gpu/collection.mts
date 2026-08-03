@@ -326,7 +326,12 @@ export class GpuCollection {
     return this.getElementById( id ).nonempty();
   }
 
-  /** Index of `ele` (the first element of it) within this collection, or -1. */
+  /**
+   * Index of an element within this collection.
+   *
+   * @param ele — the element to find; only its first element is used
+   * @returns the index, or -1 when it is not in this collection
+   */
   indexOf( ele: GpuCollection ): number {
     assertCollection( ele, 'indexOf' );
 
@@ -751,7 +756,12 @@ export class GpuCollection {
   declare equal: this['same'];
   declare equals: this['same'];
 
-  /** Whether every element of `other` is in this collection's neighborhood. */
+  /**
+   * Whether every element of `other` is in this collection's neighborhood.
+   *
+   * @param other — the elements to test
+   * @returns true when all of them are neighbors
+   */
   allAreNeighbors( other: GpuCollection ): boolean {
     assertCollection( other, 'allAreNeighbors' );
 
@@ -1001,7 +1011,12 @@ export class GpuCollection {
   declare complement: this['absoluteComplement'];
   declare abscomp: this['absoluteComplement'];
 
-  /** { left: only in this, right: only in other, both: in both }. */
+  /**
+   * Three-way set difference against another collection.
+   *
+   * @param other — the collection to compare with
+   * @returns `{ left: only in this, right: only in other, both: in both }`
+   */
   diff( other: GpuCollection ): {
     left: GpuCollection; right: GpuCollection; both: GpuCollection;
   } {
@@ -1206,7 +1221,13 @@ export class GpuCollection {
     return this;
   }
 
-  /** Build an animation for these elements without starting it (call `.play()`). */
+  /**
+   * Build an animation for these elements without starting it.
+   *
+   * @param opts — the tween targets (`position`, `style`) plus
+   *   `duration`, `delay`, `easing` and `complete`
+   * @returns the handle; nothing runs until `play()`
+   */
   animation( opts: AnimateOptions ): AnimationHandle {
     const cy = this._cy;
     const ani = new Animation( cy._store, null, this._liveRefs(), false, opts, cy._styleEngine );
@@ -1227,14 +1248,26 @@ export class GpuCollection {
     return handle;
   }
 
-  /** A no-op tween of `duration` ms — a timed pause that touches no
-   * channels, so it composes with any running animation (round 21: use
-   * `delayAnimation().play()` + await to sequence). */
+  /**
+   * A no-op tween — a timed pause that touches no channels, so it
+   * composes with any running animation (round 21: use
+   * `delayAnimation().play()` + await to sequence).
+   *
+   * @param duration — the pause in ms
+   * @param complete — called when it elapses
+   * @returns this collection, for chaining
+   */
   delay( duration: number, complete?: () => void ): this {
     return this.animate( { duration, complete } );
   }
 
-  /** Like delay(), but returns the animation handle instead of chaining. */
+  /**
+   * Like {@link delay}, but returns the handle instead of chaining.
+   *
+   * @param duration — the pause in ms
+   * @param complete — called when it elapses
+   * @returns the handle; nothing runs until `play()`
+   */
   delayAnimation( duration: number, complete?: () => void ): AnimationHandle {
     return this.animation( { duration, complete } );
   }
@@ -1248,8 +1281,14 @@ export class GpuCollection {
     return false;
   }
 
-  /** Stop every running animation on these elements (round 21: no queue —
-   * the v3 clearQueue argument is gone; `jumpToEnd` applies final values). */
+  /**
+   * Stop every running animation on these elements (round 21: no queue —
+   * the v3 clearQueue argument is gone).
+   *
+   * @param jumpToEnd — apply each animation's final values instead of
+   *   freezing each channel where its tween reached
+   * @returns this collection, for chaining
+   */
   stop( jumpToEnd: boolean = false ): this {
     this._cy._animations.stop( this._liveRefs(), jumpToEnd );
 
@@ -1371,7 +1410,13 @@ export class GpuCollection {
     }
   }
 
-  /** Offset positions by a vector or a single dimension. */
+  /**
+   * Offset positions by a vector or along one axis.
+   *
+   * @param dim — a `{ x, y }` delta, or 'x' / 'y' with `value`
+   * @param value — the offset, when `dim` names an axis
+   * @returns this collection, for chaining
+   */
   shift( dim: string | Position, value?: number ): this {
     return this._shift( dim, value, false );
   }
@@ -1442,9 +1487,16 @@ export class GpuCollection {
     return this;
   }
 
-  /** Compound-relative position: the model position minus the immediate
+  /**
+   * Compound-relative position: the model position minus the immediate
    * parent's (derived) position — the model position for orphans and
-   * compound-free graphs (round 14.3, v3 semantics). */
+   * compound-free graphs (round 14.3, v3 semantics).
+   *
+   * @param dim — omit to read the pair, 'x' / 'y' to read one axis, or
+   *   pass a `{ x, y }` (with no `value`) to write both
+   * @param value — the relative coordinate to write, when `dim` names an axis
+   * @returns the position or coordinate when reading, this when writing
+   */
   relativePosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
     const store = this._store;
 
@@ -1611,6 +1663,10 @@ export class GpuCollection {
    * edges) are first-class and immutable — reading them works, writing
    * them throws.  Setters apply to every element in the collection and
    * emit `data` per element; a write refreshes data-mapped labels.
+   *
+   * @param args — nothing (read the first element's whole object), a key
+   *   (read it), a key and a value, or an object of keys to merge
+   * @returns the read value, or this collection when writing
    */
   data( ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ] ): unknown {
     const [ key, value ] = args;
@@ -1724,7 +1780,12 @@ export class GpuCollection {
     return this;
   }
 
-  /** Remove named sidecar keys (space-separated), or all of them when omitted. */
+  /**
+   * Remove sidecar data keys.
+   *
+   * @param names — space-separated key names; omit to clear every key
+   * @returns this collection, for chaining
+   */
   removeData( names?: string ): this {
     const store = this._store;
     const requested = names == null ? null : names.split( /\s+/ ).filter( n => n !== '' );
@@ -1820,6 +1881,11 @@ export class GpuCollection {
    * stylesheet", which round 8 removed and 29.3 made throw — following
    * the advice hit a second error.)
    *
+   * @param name — a property name to read one value; omit for the whole
+   *   group.  An object or a second argument is a setter form
+   * @param value — never valid; present so the setter form throws rather
+   *   than silently ignoring it
+   * @returns one resolved value, or the whole group's props
    * @throws if called in any setter form
    */
   style( name?: string | Record<string, unknown>, value?: unknown ): unknown {
@@ -1845,6 +1911,9 @@ export class GpuCollection {
   /**
    * Like `style()`, but with length props (width, height, border-width,
    * font-size) scaled into rendered (on-screen) px by the zoom.
+   *
+   * @param name — a property name; omit for the whole group
+   * @returns the rendered-space value, or the whole group's props
    */
   renderedStyle( name?: string ): unknown {
     const value = this.style( name );
@@ -2221,7 +2290,13 @@ export class GpuCollection {
     return { x1, y1, x2, y2, w: x2 - x1, h: y2 - y1 };
   }
 
-  /** boundingBox() transformed into rendered (on-screen) coordinates. */
+  /**
+   * `boundingBox()` transformed into rendered (on-screen) coordinates.
+   *
+   * @param options — as `boundingBox()`: `{ includeLabels }`, default
+   *   true; an unknown key throws
+   * @returns the rendered-space box
+   */
   renderedBoundingBox( options?: { includeLabels?: boolean } ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
     const bb = this.boundingBox( options );
     const zoom = this._cy.zoom() as number;
@@ -2872,7 +2947,12 @@ export class GpuCollection {
    * `{ source, target }` re-points edges.  As in v3 the modes are
    * exclusive — a `parent` key takes precedence.  An unknown parent id is
    * a silent no-op (v3); a cyclic assignment warns and drops (the
-   * hierarchy rule).  Returns this collection.
+   * hierarchy rule).
+   *
+   * @param opts — `{ parent }` to re-parent nodes (null orphans them), or
+   *   `{ source, target }` to re-point edges; `parent` wins if both are
+   *   given
+   * @returns this collection, for chaining
    */
   move( opts: { source?: string; target?: string; parent?: string | null } ): this {
     const store = this._store;
@@ -3243,7 +3323,11 @@ export class GpuCollection {
 
   /** Immediate parents of every node in the collection (unique).  v4
    * always returns a proper collection — v3's single-element raw-ref
-   * shortcut (which also ignored the selector argument) is not ported. */
+   * shortcut (which also ignored the selector argument) is not ported.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the immediate parents
+   */
   parent( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const refs: Ref[] = [];
@@ -3267,8 +3351,13 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
-  /** All ancestors, level by level: every nearest parent first, then the
-   * grandparents, and so on (v3's iterated-parent() order). */
+  /**
+   * All ancestors, level by level: every nearest parent first, then the
+   * grandparents, and so on (v3's iterated-parent() order).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the ancestors, nearest first
+   */
   parents( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const refs: Ref[] = [];
@@ -3304,7 +3393,12 @@ export class GpuCollection {
 
   declare ancestors: this['parents'];
 
-  /** Direct children of every node, in link order per parent. */
+  /**
+   * Direct children of every node, in link order per parent.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the children
+   */
   children( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const refs: Ref[] = [];
@@ -3328,7 +3422,13 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
-  /** The subtree below every node in pre-order, excluding the nodes themselves. */
+  /**
+   * The subtree below every node in pre-order, excluding the nodes
+   * themselves.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the descendants
+   */
   descendants( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const refs: Ref[] = [];
@@ -3364,20 +3464,35 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
-  /** Nodes sharing a parent with the collection's nodes, excluding them;
-   * orphans are nobody's siblings (v3). */
+  /**
+   * Nodes sharing a parent with the collection's nodes, excluding them;
+   * orphans are nobody's siblings (v3).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the siblings
+   */
   siblings( criterion?: FilterLike ): GpuCollection {
     const eles = this.parent().children().difference( this );
 
     return criterion == null ? eles : eles.filter( criterion );
   }
 
-  /** The collection's nodes without a parent. */
+  /**
+   * The collection's nodes without a parent.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the parentless nodes
+   */
   orphans( criterion?: FilterLike ): GpuCollection {
     return this._byParentedness( false, criterion );
   }
 
-  /** The collection's nodes that have a parent. */
+  /**
+   * The collection's nodes that have a parent.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the parented nodes
+   */
   nonorphans( criterion?: FilterLike ): GpuCollection {
     return this._byParentedness( true, criterion );
   }
@@ -3401,8 +3516,13 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
-  /** Ancestors common to every element, closest first (an edge in the
-   * collection has no ancestors, so it empties the result — v3). */
+  /**
+   * Ancestors common to every element, closest first (an edge in the
+   * collection has no ancestors, so it empties the result — v3).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the shared ancestors, closest first
+   */
   commonAncestors( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     let chain: number[] | null = null;
@@ -3470,12 +3590,23 @@ export class GpuCollection {
 
   // -- DAG traversal --
 
-  /** Collection nodes with no non-loop incoming edge (whole-graph incidence, as in v3). */
+  /**
+   * Collection nodes with no non-loop incoming edge (whole-graph
+   * incidence, as in v3).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the source nodes
+   */
   roots( criterion?: FilterLike ): GpuCollection {
     return this._dagExtremity( 'in', criterion );
   }
 
-  /** Collection nodes with no non-loop outgoing edge. */
+  /**
+   * Collection nodes with no non-loop outgoing edge.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the sink nodes
+   */
   leaves( criterion?: FilterLike ): GpuCollection {
     return this._dagExtremity( 'out', criterion );
   }
@@ -3698,7 +3829,10 @@ export class GpuCollection {
   /**
    * Connected components within this collection (undirected), each as a
    * collection of the reached nodes plus the collection's edges internal
-   * to that component.  `root` restricts the seed nodes.
+   * to that component.
+   *
+   * @param root — restricts the seed nodes; omit to seed from every node
+   * @returns one collection per component
    */
   components( root?: GpuCollection | null ): GpuCollection[] {
     const store = this._store;
@@ -3887,7 +4021,13 @@ export class GpuCollection {
 
   // -- layouts --
 
-  /** Node dimensions for layout spacing, as v3's layoutDimensions. */
+  /**
+   * Node dimensions for layout spacing, as v3's layoutDimensions.
+   *
+   * @param options — `{ nodeDimensionsIncludeLabels }` to measure the
+   *   label box too rather than the node body alone
+   * @returns the first element's `{ w, h }`
+   */
   layoutDimensions( options: { nodeDimensionsIncludeLabels?: boolean } = {} ): { w: number; h: number } {
     let dims: { w: number; h: number };
 
@@ -4061,7 +4201,13 @@ export class GpuCollection {
     return this;
   }
 
-  /** A layout scoped to this collection (`options.eles` is set to it). */
+  /**
+   * A layout scoped to this collection.
+   *
+   * @param options — the layout options, as `cy.layout()`; `eles` is set
+   *   to this collection
+   * @returns the layout instance; nothing runs until `run()`
+   */
   layout( options: GpuLayoutOptions ): ReturnType<GpuCore['layout']> {
     return this._cy.layout( { ...options, eles: this } );
   }

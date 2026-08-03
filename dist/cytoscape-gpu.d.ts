@@ -3280,9 +3280,21 @@ declare class Viewport {
   zoom(): number;
   /** The current pan.  Live internal object (as in v3) — treat as read-only. */
   pan(): Position;
-  /** Returns true when the state changed. */
+  /**
+   * Set the zoom, optionally about a fixed point.
+   *
+   * @param zoom — the level, or `{ level, position | renderedPosition }`
+   *   to keep that point stationary while zooming
+   * @returns true when the state changed
+   */
   setZoom(zoom: number | ZoomOptions): boolean;
-  /** Returns true when the state changed. */
+  /**
+   * Set the pan.
+   *
+   * @param pan — the rendered-space pan; non-numeric components are
+   *   rejected rather than written
+   * @returns true when the state changed
+   */
   setPan(pan: Position): boolean;
   /**
    * Shift the pan by a rendered-space delta.
@@ -3291,21 +3303,55 @@ declare class Viewport {
    * @returns true when the pan changed
    */
   panBy(delta: Position): boolean;
-  /** Set the min zoom bound and re-clamp the current zoom; true when zoom changed. */
+  /**
+   * Set the min zoom bound and re-clamp the current zoom.
+   *
+   * @param min — the new lower bound
+   * @returns true when the current zoom moved to satisfy it
+   */
   setMinZoom(min: number): boolean;
-  /** Set the max zoom bound and re-clamp the current zoom; true when zoom changed. */
+  /**
+   * Set the max zoom bound and re-clamp the current zoom.
+   *
+   * @param max — the new upper bound
+   * @returns true when the current zoom moved to satisfy it
+   */
   setMaxZoom(max: number): boolean;
   private reclampZoom;
-  /** The { zoom, pan } that would fit the given bounds — computed, not applied. */
+  /**
+   * The { zoom, pan } that would fit the given bounds — computed, not
+   * applied.
+   *
+   * @param bb — the model-space bounds to fit
+   * @param padding — rendered px of margin on every side
+   * @returns the fitting viewport, with the zoom clamped to the bounds
+   */
   fitViewport(bb: BoundsLike, padding?: number): {
     zoom: number;
     pan: Position;
   };
-  /** Compute-and-apply a fit to the given bounds; returns true when the state changed. */
+  /**
+   * Compute-and-apply a fit to the given bounds.
+   *
+   * @param bb — the model-space bounds to fit
+   * @param padding — rendered px of margin on every side
+   * @returns true when the state changed
+   */
   fit(bb: BoundsLike, padding?: number): boolean;
-  /** The pan that would center the given bounds at `zoom` (current zoom by default). */
+  /**
+   * The pan that would center the given bounds.
+   *
+   * @param bb — the model-space bounds to center
+   * @param zoom — the zoom to center at; defaults to the current one
+   * @returns the pan
+   */
   centerPan(bb: BoundsLike, zoom?: number): Position;
-  /** Pan (keeping zoom) so the given bounds are centered; returns true when the state changed. */
+  /**
+   * Pan (keeping the zoom) so the given bounds are centered.
+   *
+   * @param bb — the model-space bounds to center
+   * @returns true when the state changed
+   */
   centerOn(bb: BoundsLike): boolean;
   /** The rendered (on-screen) viewport rectangle. */
   renderedExtent(): Extent;
@@ -6125,7 +6171,12 @@ declare class GpuCore {
    * @returns this core, for chaining
    */
   batch(fn: () => void): this;
-  /** v3 compat: per-id data() patches applied in one batch. */
+  /**
+   * v3 compat: per-id data() patches applied in one batch.
+   *
+   * @param map — element id → the data keys to merge into that element
+   * @returns this core, for chaining
+   */
   batchData(map: Record<string, Record<string, unknown>>): this;
   /**
    * Make a layout over the whole graph.  The layout does not run until you
@@ -6260,6 +6311,12 @@ declare class GpuCore {
    * scan.  Nodes count when their bounding box lies fully inside; edges
    * when both endpoint node centers do (v3's default 'contain'
    * semantics, with straight-edge endpoints taken at the node centers).
+   *
+   * @param x1 — one corner's model x
+   * @param y1 — that corner's model y
+   * @param x2 — the opposite corner's model x
+   * @param y2 — that corner's model y
+   * @returns the contained elements
    */
   elementsInBox(x1: number, y1: number, x2: number, y2: number): GpuCollection;
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
@@ -6423,11 +6480,20 @@ declare class GpuCore {
    * animation is on the collection (`eles.animate`).  Tweens are
    * CPU-canonical; a data write / manual pan mid-animation is not
    * prevented but will be overwritten by the next tick.
+   *
+   * @param opts — the viewport targets (`pan`, `panBy`, `zoom`, `fit`,
+   *   `center`) plus `duration`, `easing` and `complete`; `fit` beats
+   *   `center` beats `panBy` beats `pan`, and `panBy` with `pan` throws
+   * @returns this core, for chaining
    */
   animate(opts: AnimateOptions): this;
   /**
    * Like `animate`, but returns a handle with `play`/`stop`/`promise` —
    * the viewport counterpart of `eles.animation`.
+   *
+   * @param opts — as {@link animate}; the animation does not start until
+   *   `play()`
+   * @returns the handle
    */
   animation(opts: AnimateOptions): AnimationHandle;
   /**
@@ -6438,8 +6504,14 @@ declare class GpuCore {
   private _resolveViewportTargets;
   /** True while the viewport is animating. */
   animated(): boolean;
-  /** Stop every running viewport animation (round 21: no queue — the v3
-   * clearQueue argument is gone; `jumpToEnd` applies final values). */
+  /**
+   * Stop every running viewport animation (round 21: no queue — the v3
+   * clearQueue argument is gone).
+   *
+   * @param jumpToEnd — apply each animation's final values instead of
+   *   freezing the viewport where the tween reached
+   * @returns this core, for chaining
+   */
   stop(jumpToEnd?: boolean): this;
   /** Called after each animation tick: redraw, and emit viewport events while it pans/zooms. */
   private _afterAnimationTick;
@@ -6473,28 +6545,57 @@ declare class GpuCore {
    * @returns the current maximum when reading, this core when setting
    */
   maxZoom(zoom?: number): number | this;
-  /** Set both zoom bounds; accepts (min, max) or { min, max }. */
+  /**
+   * Set both zoom bounds; accepts (min, max) or { min, max }.
+   *
+   * @param min — the minimum zoom, or an object carrying both bounds
+   * @param max — the maximum zoom, when `min` is a number
+   * @returns this core, for chaining
+   */
   zoomRange(min: number | {
     min?: number;
     max?: number;
   }, max?: number): this;
-  /** Set zoom and/or pan together, emitting once. */
+  /**
+   * Set zoom and/or pan together, emitting once.
+   *
+   * @param opts — the `zoom` and/or `pan` to apply; omitted keys are left
+   *   as they are
+   * @returns this core, for chaining
+   */
   viewport(opts: {
     zoom?: number;
     pan?: Position;
   }): this;
   /** Reset the viewport to zoom 1, pan (0, 0). */
   reset(): this;
-  /** The { zoom, pan } that would fit the given elements (null when empty) — computed, not applied. */
+  /**
+   * The { zoom, pan } that would fit the given elements — computed, not
+   * applied.
+   *
+   * @param eles — the elements to fit; omit for the whole graph
+   * @param padding — rendered px of margin to leave on every side
+   * @returns the viewport, or null when there is nothing to fit
+   */
   getFitViewport(eles?: GpuCollection, padding?: number): {
     zoom: number;
     pan: Position;
   } | null;
-  /** The pan that would center the given elements at `zoom` (null when empty). */
+  /**
+   * The pan that would center the given elements.
+   *
+   * @param eles — the elements to center; omit for the whole graph
+   * @param zoom — the zoom to center at; defaults to the current one
+   * @returns the pan, or null when there is nothing to center
+   */
   getCenterPan(eles?: GpuCollection, zoom?: number): Position | null;
   /**
    * Async GPU pick at a rendered (CSS px) position; resolves with the
    * element under the point or null (always null when headless).
+   *
+   * @param x — rendered (CSS px) x, relative to the container
+   * @param y — rendered (CSS px) y
+   * @returns the element under the point, or null
    */
   pick(x: number, y: number): Promise<GpuCollection | null>;
   /**
@@ -6535,10 +6636,18 @@ declare class GpuCore {
    * `output` ('base64uri' default | 'base64' | 'blob'; 'blob-promise' is
    * an accepted alias of 'blob').  Headless instances reject — there is
    * no renderer to export from.
+   *
+   * @param options — the v3 export options named above
+   * @returns the encoded image in the requested output form
    */
   png(options?: GpuExportOptions): Promise<string | Blob>;
-  /** Export as JPEG: as {@link png}, plus `quality` (0..1) and a white
-   * default `bg` (JPEG has no alpha channel). */
+  /**
+   * Export as JPEG: as {@link png}, plus `quality` (0..1) and a white
+   * default `bg` (JPEG has no alpha channel).
+   *
+   * @param options — as {@link png}, plus `quality`
+   * @returns the encoded image in the requested output form
+   */
   jpg(options?: GpuExportOptions): Promise<string | Blob>;
   jpeg: this['jpg'];
   private _exportImage;
@@ -6642,8 +6751,13 @@ declare class GpuCore {
    * @returns the current setting when reading, this core when setting
    */
   userZoomingEnabled(bool?: boolean): boolean | this;
-  /** Box selection requires label containment too when on (round 16.5;
-   * v3's box-select-labels, reshaped as a core option — default off). */
+  /**
+   * Box selection requires label containment too when on (round 16.5;
+   * v3's box-select-labels, reshaped as a core option — default off).
+   *
+   * @param bool — the setting to apply; omit to read it
+   * @returns the setting, or this when setting
+   */
   boxSelectionIncludesLabels(bool?: boolean): boolean | this;
   /**
    * Get or set whether the box-selection gesture is available.

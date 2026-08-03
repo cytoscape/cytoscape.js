@@ -75,7 +75,13 @@ export class Viewport {
     return this._pan;
   }
 
-  /** Returns true when the state changed. */
+  /**
+   * Set the zoom, optionally about a fixed point.
+   *
+   * @param zoom — the level, or `{ level, position | renderedPosition }`
+   *   to keep that point stationary while zooming
+   * @returns true when the state changed
+   */
   setZoom( zoom: number | ZoomOptions ): boolean {
     let level: number;
     let rendered: Position | null = null;
@@ -119,7 +125,13 @@ export class Viewport {
     return true;
   }
 
-  /** Returns true when the state changed. */
+  /**
+   * Set the pan.
+   *
+   * @param pan — the rendered-space pan; non-numeric components are
+   *   rejected rather than written
+   * @returns true when the state changed
+   */
   setPan( pan: Position ): boolean {
     if( typeof pan.x !== 'number' || typeof pan.y !== 'number' ){ return false; }
     if( pan.x === this._pan.x && pan.y === this._pan.y ){ return false; }
@@ -139,14 +151,24 @@ export class Viewport {
     return this.setPan( { x: this._pan.x + ( delta.x || 0 ), y: this._pan.y + ( delta.y || 0 ) } );
   }
 
-  /** Set the min zoom bound and re-clamp the current zoom; true when zoom changed. */
+  /**
+   * Set the min zoom bound and re-clamp the current zoom.
+   *
+   * @param min — the new lower bound
+   * @returns true when the current zoom moved to satisfy it
+   */
   setMinZoom( min: number ): boolean {
     this.minZoom = min;
 
     return this.reclampZoom();
   }
 
-  /** Set the max zoom bound and re-clamp the current zoom; true when zoom changed. */
+  /**
+   * Set the max zoom bound and re-clamp the current zoom.
+   *
+   * @param max — the new upper bound
+   * @returns true when the current zoom moved to satisfy it
+   */
   setMaxZoom( max: number ): boolean {
     this.maxZoom = max;
 
@@ -163,7 +185,14 @@ export class Viewport {
     return true;
   }
 
-  /** The { zoom, pan } that would fit the given bounds — computed, not applied. */
+  /**
+   * The { zoom, pan } that would fit the given bounds — computed, not
+   * applied.
+   *
+   * @param bb — the model-space bounds to fit
+   * @param padding — rendered px of margin on every side
+   * @returns the fitting viewport, with the zoom clamped to the bounds
+   */
   fitViewport( bb: BoundsLike, padding: number = 0 ): { zoom: number; pan: Position } {
     const w = this.host.width();
     const h = this.host.height();
@@ -180,7 +209,13 @@ export class Viewport {
     return { zoom, pan: this.centerPan( bb, zoom ) };
   }
 
-  /** Compute-and-apply a fit to the given bounds; returns true when the state changed. */
+  /**
+   * Compute-and-apply a fit to the given bounds.
+   *
+   * @param bb — the model-space bounds to fit
+   * @param padding — rendered px of margin on every side
+   * @returns true when the state changed
+   */
   fit( bb: BoundsLike, padding: number = 0 ): boolean {
     const { zoom, pan } = this.fitViewport( bb, padding );
     const changed = zoom !== this._zoom || pan.x !== this._pan.x || pan.y !== this._pan.y;
@@ -191,7 +226,13 @@ export class Viewport {
     return changed;
   }
 
-  /** The pan that would center the given bounds at `zoom` (current zoom by default). */
+  /**
+   * The pan that would center the given bounds.
+   *
+   * @param bb — the model-space bounds to center
+   * @param zoom — the zoom to center at; defaults to the current one
+   * @returns the pan
+   */
   centerPan( bb: BoundsLike, zoom: number = this._zoom ): Position {
     return {
       x: ( this.host.width() - zoom * ( bb.x1 + bb.x2 ) ) / 2,
@@ -199,7 +240,12 @@ export class Viewport {
     };
   }
 
-  /** Pan (keeping zoom) so the given bounds are centered; returns true when the state changed. */
+  /**
+   * Pan (keeping the zoom) so the given bounds are centered.
+   *
+   * @param bb — the model-space bounds to center
+   * @returns true when the state changed
+   */
   centerOn( bb: BoundsLike ): boolean {
     return this.setPan( this.centerPan( bb ) );
   }

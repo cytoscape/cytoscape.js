@@ -510,7 +510,12 @@ export class GpuCore {
     return this;
   }
 
-  /** v3 compat: per-id data() patches applied in one batch. */
+  /**
+   * v3 compat: per-id data() patches applied in one batch.
+   *
+   * @param map — element id → the data keys to merge into that element
+   * @returns this core, for chaining
+   */
   batchData( map: Record<string, Record<string, unknown>> ): this {
     return this.batch( () => {
       for( const id of Object.keys( map ) ){
@@ -842,6 +847,12 @@ export class GpuCore {
    * scan.  Nodes count when their bounding box lies fully inside; edges
    * when both endpoint node centers do (v3's default 'contain'
    * semantics, with straight-edge endpoints taken at the node centers).
+   *
+   * @param x1 — one corner's model x
+   * @param y1 — that corner's model y
+   * @param x2 — the opposite corner's model x
+   * @param y2 — that corner's model y
+   * @returns the contained elements
    */
   elementsInBox( x1: number, y1: number, x2: number, y2: number ): GpuCollection {
     return new GpuCollection(
@@ -1143,6 +1154,11 @@ export class GpuCore {
    * animation is on the collection (`eles.animate`).  Tweens are
    * CPU-canonical; a data write / manual pan mid-animation is not
    * prevented but will be overwritten by the next tick.
+   *
+   * @param opts — the viewport targets (`pan`, `panBy`, `zoom`, `fit`,
+   *   `center`) plus `duration`, `easing` and `complete`; `fit` beats
+   *   `center` beats `panBy` beats `pan`, and `panBy` with `pan` throws
+   * @returns this core, for chaining
    */
   animate( opts: AnimateOptions ): this {
     // resolve first, so a `panBy` delta gates on panningEnabled exactly
@@ -1163,6 +1179,10 @@ export class GpuCore {
   /**
    * Like `animate`, but returns a handle with `play`/`stop`/`promise` —
    * the viewport counterpart of `eles.animation`.
+   *
+   * @param opts — as {@link animate}; the animation does not start until
+   *   `play()`
+   * @returns the handle
    */
   animation( opts: AnimateOptions ): AnimationHandle {
     const ani = new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) );
@@ -1221,8 +1241,14 @@ export class GpuCore {
     return this._animations.isViewportAnimating();
   }
 
-  /** Stop every running viewport animation (round 21: no queue — the v3
-   * clearQueue argument is gone; `jumpToEnd` applies final values). */
+  /**
+   * Stop every running viewport animation (round 21: no queue — the v3
+   * clearQueue argument is gone).
+   *
+   * @param jumpToEnd — apply each animation's final values instead of
+   *   freezing the viewport where the tween reached
+   * @returns this core, for chaining
+   */
   stop( jumpToEnd: boolean = false ): this {
     this._animations.stopViewport( jumpToEnd );
 
@@ -1288,7 +1314,13 @@ export class GpuCore {
     return this;
   }
 
-  /** Set both zoom bounds; accepts (min, max) or { min, max }. */
+  /**
+   * Set both zoom bounds; accepts (min, max) or { min, max }.
+   *
+   * @param min — the minimum zoom, or an object carrying both bounds
+   * @param max — the maximum zoom, when `min` is a number
+   * @returns this core, for chaining
+   */
   zoomRange( min: number | { min?: number; max?: number }, max?: number ): this {
     const lo = typeof min === 'object' ? min.min : min;
     const hi = typeof min === 'object' ? min.max : max;
@@ -1302,7 +1334,13 @@ export class GpuCore {
     return this;
   }
 
-  /** Set zoom and/or pan together, emitting once. */
+  /**
+   * Set zoom and/or pan together, emitting once.
+   *
+   * @param opts — the `zoom` and/or `pan` to apply; omitted keys are left
+   *   as they are
+   * @returns this core, for chaining
+   */
   viewport( opts: { zoom?: number; pan?: Position } ): this {
     const events: string[] = [];
 
@@ -1319,14 +1357,27 @@ export class GpuCore {
     return this.viewport( { zoom: 1, pan: { x: 0, y: 0 } } );
   }
 
-  /** The { zoom, pan } that would fit the given elements (null when empty) — computed, not applied. */
+  /**
+   * The { zoom, pan } that would fit the given elements — computed, not
+   * applied.
+   *
+   * @param eles — the elements to fit; omit for the whole graph
+   * @param padding — rendered px of margin to leave on every side
+   * @returns the viewport, or null when there is nothing to fit
+   */
   getFitViewport( eles?: GpuCollection, padding: number = 0 ): { zoom: number; pan: Position } | null {
     const bb = this._boundsOf( eles );
 
     return bb == null ? null : this._viewport.fitViewport( bb, padding );
   }
 
-  /** The pan that would center the given elements at `zoom` (null when empty). */
+  /**
+   * The pan that would center the given elements.
+   *
+   * @param eles — the elements to center; omit for the whole graph
+   * @param zoom — the zoom to center at; defaults to the current one
+   * @returns the pan, or null when there is nothing to center
+   */
   getCenterPan( eles?: GpuCollection, zoom?: number ): Position | null {
     const bb = this._boundsOf( eles );
 
@@ -1336,6 +1387,10 @@ export class GpuCore {
   /**
    * Async GPU pick at a rendered (CSS px) position; resolves with the
    * element under the point or null (always null when headless).
+   *
+   * @param x — rendered (CSS px) x, relative to the container
+   * @param y — rendered (CSS px) y
+   * @returns the element under the point, or null
    */
   pick( x: number, y: number ): Promise<GpuCollection | null> {
     return this._renderer != null ? this._renderer.pick( x, y ) : Promise.resolve( null );
@@ -1404,13 +1459,21 @@ export class GpuCore {
    * `output` ('base64uri' default | 'base64' | 'blob'; 'blob-promise' is
    * an accepted alias of 'blob').  Headless instances reject — there is
    * no renderer to export from.
+   *
+   * @param options — the v3 export options named above
+   * @returns the encoded image in the requested output form
    */
   png( options: GpuExportOptions = {} ): Promise<string | Blob> {
     return this._exportImage( 'image/png', options );
   }
 
-  /** Export as JPEG: as {@link png}, plus `quality` (0..1) and a white
-   * default `bg` (JPEG has no alpha channel). */
+  /**
+   * Export as JPEG: as {@link png}, plus `quality` (0..1) and a white
+   * default `bg` (JPEG has no alpha channel).
+   *
+   * @param options — as {@link png}, plus `quality`
+   * @returns the encoded image in the requested output form
+   */
   jpg( options: GpuExportOptions = {} ): Promise<string | Blob> {
     return this._exportImage( 'image/jpeg', { bg: '#fff', ...options } );
   }
@@ -1653,8 +1716,13 @@ export class GpuCore {
     return this;
   }
 
-  /** Box selection requires label containment too when on (round 16.5;
-   * v3's box-select-labels, reshaped as a core option — default off). */
+  /**
+   * Box selection requires label containment too when on (round 16.5;
+   * v3's box-select-labels, reshaped as a core option — default off).
+   *
+   * @param bool — the setting to apply; omit to read it
+   * @returns the setting, or this when setting
+   */
   boxSelectionIncludesLabels( bool?: boolean ): boolean | this {
     if( bool === undefined ){ return this._boxSelectionIncludesLabels; }
 

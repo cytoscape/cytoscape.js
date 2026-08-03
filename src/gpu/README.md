@@ -2168,6 +2168,15 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   different 'auto' rules — `min(w/4, h/4, 8)` for round-rectangle,
   a flat 8 for cut-rectangle, `min(w/10, h/10, 8)` for the round-*
   family — all of them v3's.
+  Each parameterized shape carries a matching `cpu-pick` branch, and
+  since 28.1 the twins are pinned by specs rather than only by
+  construction: the shader halves are proved by round 27's live v3
+  parity diffs, the CPU halves by hit tests aimed at what is
+  particular to each branch (the absolute chamfer, the capped barrel
+  offsets, the rounded vertex).  Note that `insideRoundPolygon` is
+  the one shape test that is **not** affine-invariant — the corner
+  radius is a device-px length — so unlike the sharp polygons it
+  works in device space and is pinned at more than one zoom.
   The custom `polygon` landed in round 13 C3 with per-element points
   in a blob pool (`shape-polygon-points`, constants-only).  Arrow
   tips on

@@ -6895,19 +6895,44 @@ run here; see the correction in the 27.9 entry.
 **Pass split** (tests-first; docs in-commit; each pass its own
 commit(s)):
 
-- [ ] **28.1 CPU-pick coverage for the round-27 shapes.**  Rewrite the
-  three vacuous specs to assert what they are named for, and extend
-  `test/gpu-cpu-pick.mjs` to the round-27 branches: `cut-rectangle`
-  (inside the body, outside the chamfered corners, and the absolute
-  chamfer length holding as the node grows — the property a unit table
-  would break), the `round-*` family (a corner point inside the sharp
-  polygon but outside the rounded one — the discriminating case), and
-  `barrel` (inside the waisted body, outside the corner curves, across
-  the capped and uncapped size regimes).  `insideRoundPolygon` is
-  tested **at a non-unit zoom** specifically, since it is the one
-  branch documented as not affine-invariant.  Each new spec is run once
-  against the sharp/unstyled counterpart to prove it discriminates, per
-  the round-27 rule.
+- [x] **28.1 CPU-pick coverage for the round-27 shapes** (2026-08-03) —
+  landed, and the controls are the part worth recording: **two of the
+  five new specs did not discriminate on their first version**, which
+  is the same defect the pass exists to fix, caught this time because
+  the control was run before the commit rather than after.
+  The specs live in two places by design.  `test/gpu-shapes-27.mjs`
+  gets the keyword-level ones, which run the whole public path — the
+  sheet compiles, the style engine writes `borderGeom`, `pickNodeAt`
+  reads the stored words — and each case is chosen to be a *hit* for
+  `rectangle` (or, for the round family, for the sharp counterpart),
+  with that control asserted inline in the same spec.  `cy.pick()`
+  itself resolves null on a headless instance, so these call the pick
+  path directly; that is what the three replaced specs had backed away
+  from into `boundingBox()` assertions.
+  `test/gpu-cpu-pick.mjs` gets the branch-level properties, aimed at
+  what is *particular* to each branch rather than at re-checking that
+  a shape has an inside: cut-rectangle's chamfer holding at a flat
+  8 px as the node grows 100 → 400 px (a size-relative chamfer would
+  put the boundary 24 px away) and its explicit `corner-radius` path;
+  barrel's height offset capping at 15 px, shown by the *same relative
+  point* picking differently at 100 and 600 px tall; and
+  `bottom-round-rectangle`'s asymmetry, whose two assertions fail for
+  `rectangle` and for `round-rectangle` respectively.
+  **The round family's spec is the one that needed rebuilding.**  Its
+  point is that `insideRoundPolygon` is not affine-invariant — the
+  radius is a device-px length that must scale with the zoom — and the
+  first version asserted a miss at a point that was already outside the
+  *sharp* hexagon, so it held under both controls.  The rewritten spec
+  picks model (-199, -2) on a 400 px round-hexagon: inside the sharp
+  polygon, outside the rounded one, and at zoom 2 the case that
+  separates the correct 16-device-px radius from the 8 px an unscaled
+  cap would give.  Controls run, each by patching `cpu-pick.mts` and
+  re-running: cut-rectangle → plain rectangle (3 specs fail), barrel →
+  plain rectangle (2 fail), round-* → the sharp polygon test (2 fail),
+  and the radius cap left unscaled by zoom (1 fails — the one written
+  for it, and nothing else, which is what a targeted spec should do).
+  7 new specs; 2335 Node tests, 63 module tests, typecheck, lint.
+  No source changed, so the browser suites are unaffected.
 - [ ] **28.2 `cy.animate({ panBy })`.**  A viewport channel resolved to
   a `pan` target at capture, so it composes with the existing pan/zoom
   channel rules and the round-24.3 controls with no new machinery.

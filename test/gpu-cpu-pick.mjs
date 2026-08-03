@@ -2,8 +2,10 @@ import { expect } from 'chai';
 import { GraphStore } from '../src/gpu/store/graph-store.mjs';
 import { pickNodeAt } from '../src/gpu/render/cpu-pick.mjs';
 import {
-  FLAG_VISIBLE, SHAPE_CIRCLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEXAGON,
-  SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TRIANGLE, SHAPE_VEE
+  FLAG_VISIBLE, SHAPE_BARREL, SHAPE_BOTTOM_ROUND_RECTANGLE, SHAPE_CIRCLE,
+  SHAPE_CUT_RECTANGLE, SHAPE_DIAMOND, SHAPE_ELLIPSE, SHAPE_HEXAGON,
+  SHAPE_RECTANGLE, SHAPE_ROUND_HEXAGON, SHAPE_ROUND_RECTANGLE, SHAPE_STAR,
+  SHAPE_TRIANGLE, SHAPE_VEE
 } from '../src/gpu/contract.mjs';
 
 describe('gpu/render: CPU node pick', function(){
@@ -147,6 +149,117 @@ describe('gpu/render: CPU node pick', function(){
       expect( pickNodeAt( store, frame, 0, 9 ) ).to.equal( n );    // mid-edge, tall axis
       expect( pickNodeAt( store, frame, 39, 9 ) ).to.equal( null ); // stretched corner clipped
     });
+  });
+
+  describe('round-27 shapes (28.1)', function(){
+
+    /*
+    Round 27 gave cpu-pick three new branches — cut-rectangle's chamfer
+    (27.2), insideRoundPolygon (27.4) and insideBarrel (27.5).  The shader
+    twins are pinned by live v3 parity diffs; these pin the CPU replica,
+    which is a separate implementation of the same description.
+
+    The cases target what is *particular* to each branch — the absolute
+    (not size-relative) chamfer, the device-space rounding, the capped
+    offsets — rather than re-checking that a shape has an inside.
+    */
+
+    var withRadius = function( id, w, h, shape, r ){
+      var slot = store.addNode( id, 0, 0 );
+
+      store.setPair( 'node.size', slot, w, h );
+      store.setScalar( 'node.shape', slot, shape );
+      store.setBorderGeom( slot, r, 0, 0, 0, 0 );
+
+      return slot;
+    };
+
+    it('cut-rectangle chamfers by an absolute length, not a fraction of the node', function(){
+      // 'auto' is a flat 8 model px at every size (v3's
+      // getCutRectangleCornerLength), so the clipped corner keeps the same
+      // 8 px legs as the node grows.  A unit point table — the thing this
+      // shape is deliberately not — would scale the chamfer with the node.
+      var small = addNode( 'small', 0, 0, 100, 100, SHAPE_CUT_RECTANGLE );
+
+      expect( pickNodeAt( store, frame, 46, 46 ) ).to.equal( small );  // sum 92 = hw + hh - 8
+      expect( pickNodeAt( store, frame, 49, 49 ) ).to.equal( null );   // sum 98, past the chamfer
+
+      store = new GraphStore();
+
+      var big = addNode( 'big', 0, 0, 400, 400, SHAPE_CUT_RECTANGLE );
+
+      // still an 8 px chamfer: bound 392.  Scaled with the node it would
+      // be 32 px (bound 368) and this point would miss.
+      expect( pickNodeAt( store, frame, 195, 195 ) ).to.equal( big );
+      expect( pickNodeAt( store, frame, 199, 199 ) ).to.equal( null );
+    });
+
+    it('cut-rectangle takes corner-radius as the chamfer length', function(){
+      var n = withRadius( 'a', 100, 100, SHAPE_CUT_RECTANGLE, 30 );
+
+      expect( pickNodeAt( store, frame, 30, 30 ) ).to.equal( n );    // sum 60 <= 70
+      expect( pickNodeAt( store, frame, 40, 40 ) ).to.equal( null ); // sum 80 > 70
+
+      store = new GraphStore();
+      addNode( 'auto', 0, 0, 100, 100, SHAPE_CUT_RECTANGLE );
+
+      // the control: under 'auto' (c = 8) that same point is inside, so
+      // the explicit radius is what moved the boundary
+      expect( pickNodeAt( store, frame, 40, 40 ) ).to.not.equal( null );
+    });
+
+    it('the round-* family rounds in device space, so zoom does not change the model outline', function(){
+      // 27.4 recorded that insideRoundPolygon, unlike the sharp polygons,
+      // is *not* affine-invariant: the radius is a device-px length, so it
+      // must scale with the zoom.  At 400 model px the 'auto' radius is
+      // capped at 8 model px (min(w/10, h/10, 8)), which is exactly where
+      // an unscaled cap would show up.
+      var n = addNode( 'a', 0, 0, 400, 400, SHAPE_ROUND_HEXAGON );
+      var zoomed = { panXPx: 0, panYPx: 0, zoomDpr: 2, hidePx: 1, nodeLodPx: 3 };
+
+      // model (-199, -2) sits just past the arc that replaces the left
+      // vertex — inside the *sharp* hexagon, outside the rounded one — so
+      // it misses at both zooms.  At zoom 2 it is the discriminating case:
+      // with the 8 px cap left unscaled the radius would be half as big in
+      // model terms and this point would pick.
+      expect( pickNodeAt( store, frame, -199, -2 ) ).to.equal( null );
+      expect( pickNodeAt( store, zoomed, -398, -4 ) ).to.equal( null );
+
+      // and a point inside the arc agrees at both zooms
+      expect( pickNodeAt( store, frame, -190, 6 ) ).to.equal( n );
+      expect( pickNodeAt( store, zoomed, -380, 12 ) ).to.equal( n );
+    });
+
+    it('bottom-round-rectangle rounds only the bottom corners', function(){
+      var n = addNode( 'a', 0, 0, 100, 100, SHAPE_BOTTOM_ROUND_RECTANGLE );
+
+      expect( pickNodeAt( store, frame, 49, -49 ) ).to.equal( n );    // sharp top
+      expect( pickNodeAt( store, frame, -49, -49 ) ).to.equal( n );
+      expect( pickNodeAt( store, frame, 49, 49 ) ).to.equal( null );  // rounded bottom
+      expect( pickNodeAt( store, frame, -49, 49 ) ).to.equal( null );
+    });
+
+    it('barrel caps its corner offsets absolutely, so it is not a unit shape', function(){
+      // v3's height offset is min(15, 5% of height).  At 600 px tall the
+      // cap binds at 15, so the corner curve starts 15 px from the end —
+      // a purely relative offset would be 30 and would swallow this point.
+      var tall = addNode( 'a', 0, 0, 100, 600, SHAPE_BARREL );
+
+      expect( pickNodeAt( store, frame, 49, -282 ) ).to.equal( tall );
+      expect( pickNodeAt( store, frame, 49, -288 ) ).to.equal( null ); // into the curve
+      expect( pickNodeAt( store, frame, 0, 299 ) ).to.equal( tall );   // the end midpoint
+
+      store = new GraphStore();
+
+      // 100 px tall is the uncapped regime (5% = 5 px), so the *same
+      // relative* point — 49/50 across, 47/50 up — lands outside instead:
+      // the two sizes are genuinely different outlines
+      var short = addNode( 'a', 0, 0, 100, 100, SHAPE_BARREL );
+
+      expect( pickNodeAt( store, frame, 49, -47 ) ).to.equal( null );
+      expect( pickNodeAt( store, frame, 49, -44 ) ).to.equal( short );
+    });
+
   });
 
   describe('compound draw order (round 14.9)', function(){

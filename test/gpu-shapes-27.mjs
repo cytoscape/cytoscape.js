@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import cytoscapeGpu from '../src/gpu/index.mjs';
+import { pickNodeAt } from '../src/gpu/render/cpu-pick.mjs';
 import {
   POLYGON_POINTS, ROUND_POLYGON_SOURCE, pointsForShape
 } from '../src/gpu/shape-points.mjs';
@@ -22,6 +23,17 @@ depth prepass all pick them up with no per-shape code.
 parameterized shape like round-rectangle rather than a unit polygon.  It
 gets its own SDF and its own CPU-pick branch, and its 'auto' resolves to
 a flat 8 px — not round-rectangle's min(w/4, h/4, 8).
+
+28.1: the pick specs here go through the whole public path — the sheet
+compiles, the style engine writes borderGeom, and `pickNodeAt` reads the
+stored words — so they pin the shader's CPU twin end to end.  They
+replace three specs that were *named* for picking and asserted only
+`boundingBox()`, which is the node box for every keyword and so held
+whatever shape was under test.  Every case below is chosen to be a hit
+for `rectangle` (or, for the round family, for the sharp counterpart),
+so a spec that stopped consulting the shape would fail.  `cy.pick()`
+itself resolves null on a headless instance — it is the renderer's —
+which is why these call the pick path directly.
 */
 
 const at = ( x, y ) => ( { data: { id: 'a' }, position: { x, y } } );
@@ -30,6 +42,12 @@ const makeCy = props => cytoscapeGpu( {
   elements: [ at( 0, 0 ) ],
   style: { nodes: { width: 100, height: 100, ...props } }
 } );
+
+/* the node sits at the origin at 100 × 100, so device px are model px */
+const PICK_FRAME = { panXPx: 0, panYPx: 0, zoomDpr: 1, hidePx: 1, nodeLodPx: 3 };
+
+/** Whether the graph's single node picks at (x, y), in device px. */
+const picks = ( cy, x, y ) => pickNodeAt( cy._store, PICK_FRAME, x, y ) !== null;
 
 /** The stored shape id for the graph's single node. */
 const shapeIdOf = cy => {
@@ -60,10 +78,19 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
     it('picks by its slanted outline, not its bounding box', function(){
       const cy = makeCy( { shape: 'right-rhomboid' } );
 
-      // the top-left corner is cut away by the slant (the top edge starts
-      // at x = -0.333), so a point just inside the box there misses
-      expect( cy.$id( 'a' ).boundingBox().w ).to.equal( 100 );
+      // the top edge runs from x = -0.333 to x = 1, so the slant cuts the
+      // top-*left* corner away and leaves the top-right one: the pair
+      // below is the asymmetry, and a rectangle would hit both
+      expect( picks( cy, -40, -45 ) ).to.equal( false );
+      expect( picks( cy, 40, -45 ) ).to.equal( true );
+      expect( picks( cy, 0, 0 ) ).to.equal( true );
+
+      const box = makeCy( { shape: 'rectangle' } );
+
+      expect( picks( box, -40, -45 ) ).to.equal( true ); // the control
+
       cy.destroy();
+      box.destroy();
     });
 
   });
@@ -89,6 +116,20 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
       expect( Math.abs( pts[ 2 ] ) ).to.be.below( Math.abs( pts[ 0 ] ) );
     });
 
+    it('misses the waist a rectangle would hit', function(){
+      const cy = makeCy( { shape: 'concave-hexagon' } );
+      const box = makeCy( { shape: 'rectangle' } );
+
+      // the mid-side vertices pull in to |x| = 0.75, so the full-width
+      // band at y = 0 is outside the body
+      expect( picks( cy, -49, 2 ) ).to.equal( false );
+      expect( picks( box, -49, 2 ) ).to.equal( true ); // the control
+      expect( picks( cy, 0, 0 ) ).to.equal( true );
+
+      cy.destroy();
+      box.destroy();
+    });
+
   });
 
   describe('cut-rectangle', function(){
@@ -109,11 +150,17 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
 
     it('picks inside the body and outside the cut corners', function(){
       const cy = makeCy( { shape: 'cut-rectangle' } );
-      const node = cy.$id( 'a' );
+      const box = makeCy( { shape: 'rectangle' } );
 
-      // dead centre is inside every shape
-      expect( node.boundingBox().w ).to.equal( 100 );
+      // 'auto' chamfers by a flat 8 model px, so the corner is clipped
+      // along |x| + |y| = hw + hh - 8 = 92
+      expect( picks( cy, 0, 0 ) ).to.equal( true );
+      expect( picks( cy, 46, 46 ) ).to.equal( true );  // sum 92, on the chamfer
+      expect( picks( cy, 49, 49 ) ).to.equal( false ); // sum 98, past it
+      expect( picks( box, 49, 49 ) ).to.equal( true ); // the control
+
       cy.destroy();
+      box.destroy();
     });
 
     it('takes an explicit corner-radius as the chamfer length', function(){
@@ -169,13 +216,18 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
       cy.destroy();
     });
 
-    it('picks inside the body (the rounded field agrees with the sharp one there)', function(){
-      // rounding only removes area near the corners, so a point well
-      // inside the sharp polygon must stay inside the rounded one
+    it('rounds the corners off the sharp counterpart it borrows its table from', function(){
       const round = makeCy( { shape: 'round-hexagon' } );
       const sharp = makeCy( { shape: 'hexagon' } );
 
-      expect( round.$id( 'a' ).boundingBox().w ).to.equal( sharp.$id( 'a' ).boundingBox().w );
+      // rounding only removes area near the vertices, so the interior
+      // agrees and the tip does not: the left vertex of the sharp hexagon
+      // sits at (-50, 0) and the arc pulls it back
+      expect( picks( round, 0, 0 ) ).to.equal( true );
+      expect( picks( sharp, 0, 0 ) ).to.equal( true );
+      expect( picks( sharp, -49, 2 ) ).to.equal( true );  // the control
+      expect( picks( round, -49, 2 ) ).to.equal( false );
+
       round.destroy();
       sharp.destroy();
     });
@@ -206,6 +258,22 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
 
     it('samples each corner at v3\'s own hit-test fidelity', function(){
       expect( BARREL_CURVE_SEGMENTS ).to.equal( 4 );
+    });
+
+    it('picks inside the body and outside the curved corners', function(){
+      const cy = makeCy( { shape: 'barrel' } );
+      const box = makeCy( { shape: 'rectangle' } );
+
+      // the four bezier corners curve in; the side and end midpoints
+      // still reach the box
+      expect( picks( cy, 0, 0 ) ).to.equal( true );
+      expect( picks( cy, 49, 0 ) ).to.equal( true );
+      expect( picks( cy, 0, 49 ) ).to.equal( true );
+      expect( picks( cy, 49, 49 ) ).to.equal( false );
+      expect( picks( box, 49, 49 ) ).to.equal( true ); // the control
+
+      cy.destroy();
+      box.destroy();
     });
 
   });

@@ -8326,17 +8326,38 @@ describe and no suite prices:
   passes): the compound row first read 3.55× *faster* than flat, which
   was 4000 edges missing from one side rather than the partition being
   free; both sides now come from one generator.
-- [ ] **33.4 Loading and the wire format** (`benchmark/gpu/load.mjs`,
-  new) — finding 4, and design call 2's headline.  Definition-form
-  init, columnar init, wire deserialize + init, `toColumnarElements`,
-  `serializeElements`, `cy.serialize()`, and `cy.add()` of a band in
-  all three forms — each against v3 init where v3 has the form at all
-  (it has only the definition form, which is itself the point).  The
-  ndex-x-large fixture is a downloaded asset (`benchmark:download`),
-  so the suite generates its own graph at `BENCH_N` and the ndex
-  figures stay in the round record as a separate, explicitly-labelled
-  run.  Retires the four historical one-offs by replacing them with
-  rows, or marks them historical in place.
+- [x] **33.4 Loading and the wire format** (2026-08-03) — landed as
+  `benchmark/gpu/load.mjs`.  At N=2000 (6000 elements): definition-form
+  init is **5.47×** v3 (153 → 28 ms, construct *and* dispose on both
+  sides), v4's own three ingest forms are 25.7 ms (definitions) / 17.7
+  (columnar) / 17.0 (wire), and the def-clone control that the def rows
+  necessarily pay is 628 µs — so the columnar and wire payloads are
+  ~1.5× v4's own definition path, not the headline the pass-1 record's
+  ndex figures suggest at a different scale and fixture.  Conversion:
+  `toColumnarElements` 789 µs, `serializeElements` 967 µs from
+  definitions and 211 µs from columnar, and **`deserializeElements`
+  4.09 µs** — 52–236× cheaper than every other path in the group, which
+  is the wire format's whole point (numeric columns deserialize as
+  zero-copy views) and is now a row rather than a recollection.
+  `cy.json()` is 1.17× and `cy.serialize()` 5.5× cheaper than
+  `cy.json()` on the same graph; a 256-node band `add()` is 1.39×, and
+  the three forms of the same add are 3.04 / 2.76 / 2.77 ms.
+  **Two methodology bugs in this suite's own first version, pulling in
+  opposite directions**, which is why the number moved from 1.89× to
+  5.47×: a headless v3 defaults `styleEnabled` to *false*, so the v3
+  side was doing less work than v4 (which always applies its sheet);
+  and v3's default layout is **grid**, so `cytoscape( { elements } )`
+  ran a whole layout inside the measured region.  The v3 side is now
+  `styleEnabled` with an explicit preset layout — the configuration
+  `scenarios.mjs` and `layouts.mjs` already use, for exactly these
+  reasons.
+  Also recorded in the header: the def-form rows **must** clone inside
+  the timed region, because a factory consumes its definition objects
+  (v3 adopts position objects by reference and writes through them —
+  measured: positions read back as {0,0} from the second iteration on),
+  which is why the clone gets its own control row.  Columnar and wire
+  payloads are re-used as-is, verified by reading positions and data
+  back after repeated loads — and that re-use is the realistic case.
 - [x] **33.5 Pick, box selection and bounds** (2026-08-03) — landed as
   `benchmark/gpu/spatial.mjs`.
   *Plan correction, measured*: picking and box selection **cannot** be

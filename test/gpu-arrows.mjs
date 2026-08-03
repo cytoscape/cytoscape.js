@@ -73,11 +73,40 @@ describe('gpu/style: arrows', function(){
     expect( cy._styleEngine.arrowEnds ).to.deep.equal( { source: false, target: false } );
   });
 
-  it('rejects unsupported arrow shapes', function(){
+  it('rejects an unknown arrow-shape keyword', function(){
     const cy = cytoscapeGpu( { elements: GRAPH } );
 
-    expect( () => cy.style( { edges: { 'target-arrow-shape': 'triangle-backcurve' } } ) )
+    // 27.6 completed v3's arrow vocabulary, so this used to name
+    // 'triangle-backcurve' and now has to name a non-shape
+    expect( () => cy.style( { edges: { 'target-arrow-shape': 'fishtail' } } ) )
       .to.throw( /unsupported/ );
+  });
+
+  it('supports v3\'s compound arrow shapes (round 27.6)', function(){
+    for( const shape of [ 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve' ] ){
+      const cy = cytoscapeGpu( {
+        elements: GRAPH,
+        style: { edges: { 'target-arrow-shape': shape, 'target-arrow-color': '#f00' } }
+      } );
+
+      expect( cy.edges()[0].style( 'target-arrow-shape' ), shape ).to.equal( shape );
+      cy.destroy();
+    }
+  });
+
+  it('a hollow compound head falls back to filled (recorded deviation)', function(){
+    const cy = cytoscapeGpu( {
+      elements: GRAPH,
+      style: { edges: {
+        'target-arrow-shape': 'triangle-tee', 'target-arrow-color': '#f00',
+        'target-arrow-fill': 'hollow'
+      } }
+    } );
+
+    // the stroke abs(sd) is wrong at the seam between a union's parts,
+    // and v3 does not stroke compounds either
+    expect( cy.edges()[0].style( 'target-arrow-fill' ) ).to.equal( 'filled' );
+    cy.destroy();
   });
 
   it('supports the round-10 arrow shapes with readback', function(){

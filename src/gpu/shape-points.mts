@@ -2,7 +2,10 @@ import {
   fitPolygonToSquare, generateUnitNgonPoints, generateUnitNgonPointsFitToSquare
 } from '../math.mjs';
 import {
-  ARROW_CHEVRON, ARROW_DIAMOND, ARROW_SQUARE, ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
+  ARROW_BACKCURVE_SEGMENTS, ARROW_CHEVRON, ARROW_CIRCLE_TRIANGLE,
+  ARROW_CIRCLE_TRIANGLE_RADIUS, ARROW_DIAMOND,
+  ARROW_SQUARE, ARROW_TEE, ARROW_TRIANGLE, ARROW_TRIANGLE_BACKCURVE,
+  ARROW_TRIANGLE_CROSS, ARROW_TRIANGLE_TEE, ARROW_VEE,
   SHAPE_CONCAVE_HEXAGON, SHAPE_DIAMOND, SHAPE_HEPTAGON, SHAPE_HEXAGON,
   SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RHOMBOID, SHAPE_RIGHT_RHOMBOID,
   SHAPE_ROUND_DIAMOND, SHAPE_ROUND_HEPTAGON, SHAPE_ROUND_HEXAGON,
@@ -43,6 +46,53 @@ const star5 = (): number[] => {
 
   return fitPolygonToSquare( points );
 };
+
+/**
+ * v3's triangle-backcurve as a flat point list: the tip, the right base
+ * corner, then the quadratic base sampled back to the left corner.
+ */
+const backcurvePoints = (): number[] => {
+  const pts = [ 0, 0, 0.15, -0.3 ];
+  const [ ax, ay ] = [ 0.15, -0.3 ];
+  const [ cx, cy ] = [ 0, -0.15 ]; // v3's controlPoint
+  const [ bx, by ] = [ -0.15, -0.3 ];
+
+  for( let i = 1; i <= ARROW_BACKCURVE_SEGMENTS; i++ ){
+    const t = i / ARROW_BACKCURVE_SEGMENTS;
+    const u = 1 - t;
+
+    pts.push(
+      ax * u * u + cx * 2 * u * t + bx * t * t,
+      ay * u * u + cy * 2 * u * t + by * t * t
+    );
+  }
+
+  return pts;
+};
+
+/**
+ * Arrowheads that are a *union* of two disjoint parts (round 27.6), as
+ * flat point lists.  Coverage is a smoothstep over the distance, so a
+ * union is `min( sdA, sdB )` — the parts need no stitching.
+ * `circle-triangle`'s disc is analytic and lives in the shader.
+ */
+export const ARROW_COMPOUND_POINTS: ReadonlyMap<number, readonly ( readonly number[] )[]> = new Map( [
+  [ ARROW_TRIANGLE_TEE, [
+    [ 0, 0, 0.15, -0.3, -0.15, -0.3 ],
+    [ -0.15, -0.4, -0.15, -0.5, 0.15, -0.5, 0.15, -0.4 ]
+  ] ],
+  // v3 pulls circle-triangle back by its circle radius (the shape's
+  // `spacing`), so the *disc* touches the node boundary rather than the
+  // disc's centre sitting on it.  Baking that 0.15 shift into the points
+  // (and into the disc centre in the shader) makes it exact with no
+  // runtime spacing logic — the only head v3 offsets at all.
+  [ ARROW_CIRCLE_TRIANGLE, [
+    [ 0, -0.3, 0.15, -0.6, -0.15, -0.6 ]
+  ] ],
+  [ ARROW_TRIANGLE_CROSS, [
+    [ 0, 0, 0.15, -0.3, -0.15, -0.3 ]
+  ] ]
+] );
 
 /** shape id → flat [x0, y0, x1, y1, ...] unit points (matching v3's tables) */
 export const POLYGON_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
@@ -105,8 +155,39 @@ export const ARROW_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
   [ ARROW_CHEVRON, [ 0, 0, -0.15, -0.15, -0.1, -0.2, 0, -0.1, 0.1, -0.2, 0.15, -0.15 ] ],
   [ ARROW_SQUARE, [ -0.15, 0, 0.15, 0, 0.15, -0.3, -0.15, -0.3 ] ],
   [ ARROW_DIAMOND, [ -0.15, -0.15, 0, -0.3, 0.15, -0.15, 0, 0 ] ],
-  [ ARROW_TEE, [ -0.15, 0, -0.15, -0.1, 0.15, -0.1, 0.15, 0 ] ]
+  [ ARROW_TEE, [ -0.15, 0, -0.15, -0.1, 0.15, -0.1, 0.15, 0 ] ],
+  // round 27.6: triangle-backcurve is v3's triangle with its base edge
+  // drawn as a quadratic through the control point (0, -0.15).  Sampling
+  // that curve at codegen turns it into an ordinary point table, so it
+  // needs no per-fragment curve maths and no new SDF — the same finding
+  // round 27.5 measured for barrel.
+  [ ARROW_TRIANGLE_BACKCURVE, backcurvePoints() ]
 ] );
+
+/**
+ * How far behind the tip any arrowhead reaches, in arrow-frame units —
+ * the max over every table, compound parts included.
+ *
+ * The arrow quad is sized from this.  Before round 27.6 it was hardcoded
+ * to 0.3, which was the max over the *simple* heads; the compound ones
+ * reach 0.5 (triangle-tee) and 0.6 (the shifted circle-triangle), so
+ * they drew clipped until this became a computed bound.  Deriving it
+ * keeps the next added head from repeating that.
+ */
+export const ARROW_MAX_BACK: number = ( () => {
+  let max = 0;
+
+  const scan = ( pts: readonly number[] ): void => {
+    for( let i = 1; i < pts.length; i += 2 ){ max = Math.max( max, -pts[ i ] ); }
+  };
+
+  for( const pts of ARROW_POINTS.values() ){ scan( pts ); }
+  for( const parts of ARROW_COMPOUND_POINTS.values() ){ for( const pts of parts ){ scan( pts ); } }
+
+  // the analytic circle reaches 2 x its radius behind the tip
+  return Math.max( max, 2 * ARROW_CIRCLE_TRIANGLE_RADIUS );
+} )();
+
 
 /**
  * Even-odd point-in-polygon over a flat unit point list.  The shapes above

@@ -291,7 +291,9 @@ test.describe( 'WebGPU visual goldens', () => {
   test( 'golden: arrowhead shapes (round 10)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 
-    const shapes = [ 'triangle', 'vee', 'chevron', 'circle', 'square', 'diamond', 'tee' ];
+    const shapes = [ 'triangle', 'vee', 'chevron', 'circle', 'square', 'diamond', 'tee',
+      // round 27.6: v3's compound heads
+      'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve' ];
     const elements = [];
 
     for( let i = 0; i < shapes.length; i++ ){
@@ -2500,6 +2502,74 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }, { elements, v3Style, v4Style } );
 
     expectParity( v3uri, v4uri, 'parity-barrel', testInfo );
+  } );
+
+  test( 'parity: compound arrowheads (round 27.6)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // The four heads are built three different ways — a union of two
+    // polygons (triangle-tee), a polygon plus an analytic disc
+    // (circle-triangle), a polygon plus an edge-width-driven bar
+    // (triangle-cross), and a sampled curve baked into a point table
+    // (triangle-backcurve).  v3 judges all four at once.
+    const heads = [ 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve' ];
+    const elements = [];
+
+    heads.forEach( ( head, i ) => {
+      const y = i * 60 - 90;
+
+      elements.push( { data: { id: `a${i}` }, position: { x: -140, y } } );
+      elements.push( { data: { id: `b${i}` }, position: { x: 140, y } } );
+      // widths differ per row so triangle-cross's bar is exercised
+      elements.push( { data: { id: `e${i}`, head, w: 2 + i * 2 }, source: undefined,
+        target: undefined } );
+      elements[ elements.length - 1 ].data.source = `a${i}`;
+      elements[ elements.length - 1 ].data.target = `b${i}`;
+    } );
+
+    const edgeCommon = {
+      'line-color': '#7f8c8d', 'target-arrow-color': '#2c3e50', 'curve-style': 'straight'
+    };
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 26, 'height': 26, 'background-color': '#bdc3c7', 'border-width': 0
+      } },
+      { selector: 'edge', style: { ...edgeCommon, 'width': 'data(w)' } },
+      ...heads.map( head => ( {
+        selector: `edge[head = "${head}"]`, style: { 'target-arrow-shape': head }
+      } ) )
+    ];
+    const v4Style = {
+      nodes: { 'width': 26, 'height': 26, 'background-color': '#bdc3c7', 'border-width': 0 },
+      edges: {
+        'line-color': '#7f8c8d', 'target-arrow-color': '#2c3e50',
+        'width': { data: 'w' },
+        'target-arrow-shape': {
+          case: heads.map( head => ( { when: { data: 'head', eq: head }, then: head } ) ),
+          else: 'none'
+        }
+      }
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    expectParity( v3uri, v4uri, 'parity-compound-arrows', testInfo );
   } );
 
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {

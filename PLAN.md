@@ -6549,8 +6549,43 @@ commit(s)):
   spec that used `'barrel'` as its example of an unsupported
   keyword had to be changed to name something that is not a shape
   at all — there is no unported v3 node shape left.
-- [ ] **27.6 Compound arrow shapes** — `triangle-tee`,
-  `circle-triangle`, `triangle-cross`, `triangle-backcurve`.
+- [x] **27.6 Compound arrow shapes** (2026-08-02) — landed, built
+  three different ways.  `triangle-tee` is a union of two generated
+  polygons (`min( sdA, sdB )` — coverage is a smoothstep over the
+  distance, so a union needs no stitching); `circle-triangle` is a
+  polygon plus an analytic disc; `triangle-cross`'s bar tracks the
+  **edge width** rather than the arrow size, so it is computed per
+  fragment from the model-width varying 27.3 introduced — the
+  reason that varying carries the width instead of the finished
+  size.  And `triangle-backcurve` needed **no new machinery at
+  all**: 27.5 established that sampling a quadratic at codegen is
+  indistinguishable from solving it, so its curve is baked into an
+  ordinary point table and it rides the existing generator.  The
+  exact bezier SDF the plan reserved for it was never needed.
+  **Two real bugs surfaced from the parity diff, not from the
+  suites.**  The first measurement came back at 0.141% — passing,
+  but an order of magnitude worse than 27.4's and 27.5's, which is
+  what prompted a per-head breakdown rather than acceptance.
+  (a) The arrow quad's extent was hardcoded to the plain triangle's
+  0.3 reach, so `triangle-tee` (0.5) and `circle-triangle` (0.6)
+  drew **clipped**.  `ARROW_MAX_BACK` is now *computed* from the
+  tables, so adding a head cannot silently clip it again, and
+  `triangle-cross`'s bar adds the edge width on top.  (b) v3 pulls
+  `circle-triangle` back by its circle radius (the shape's
+  `spacing` — the only head v3 offsets at all) so the *disc* meets
+  the node boundary rather than the disc's centre; that shift is
+  baked into the points and the disc centre, so it costs no runtime
+  logic.  After both: **44 px (0.037%)**, in line with the round's
+  other heads.
+  Recorded deviation: `arrow-fill: hollow` on a compound head falls
+  back to filled — the stroke `abs( sd )` is wrong at the seam
+  where a union's parts meet, and v3 does not stroke compounds
+  either.
+  **This completes v3's arrow vocabulary**, and as with 27.5's
+  shapes a pre-existing spec had to stop using a real keyword
+  (`'triangle-backcurve'`) as its example of an unsupported one.
+  2315 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu,
+  74/74 webgpu-visual.
 - [ ] **27.7 Numeric `text-rotation`** — the glyph word, the node
   rotation path, the cull frame and the CPU pick OBB.
 - [ ] **27.8 `border-style` / `outline-style`** — the perimeter

@@ -2,6 +2,8 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
+  ARROW_CIRCLE_TRIANGLE, ARROW_TRIANGLE_BACKCURVE, ARROW_TRIANGLE_CROSS,
+  ARROW_TRIANGLE_TEE,
   ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET,
   ARROW_SHIFT_SCALE, ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET,
@@ -343,7 +345,10 @@ interface EdgeComputed {
 
 type Computed = NodeComputed & EdgeComputed;
 
-type ArrowShape = 'none' | 'triangle' | 'vee' | 'chevron' | 'circle' | 'square' | 'diamond' | 'tee';
+type ArrowShape =
+  | 'none' | 'triangle' | 'vee' | 'chevron' | 'circle' | 'square' | 'diamond' | 'tee'
+  // round 27.6: v3's compound heads
+  | 'triangle-tee' | 'circle-triangle' | 'triangle-cross' | 'triangle-backcurve';
 
 const NODE_DEFAULTS: NodeComputed = {
   fillColor: [ 153, 153, 153, 255 ], // #999
@@ -2236,7 +2241,12 @@ const ARROW_ENUM: Record<string, number> = {
   'circle': ARROW_CIRCLE,
   'square': ARROW_SQUARE,
   'diamond': ARROW_DIAMOND,
-  'tee': ARROW_TEE
+  'tee': ARROW_TEE,
+  // round 27.6: v3's compound heads
+  'triangle-tee': ARROW_TRIANGLE_TEE,
+  'circle-triangle': ARROW_CIRCLE_TRIANGLE,
+  'triangle-cross': ARROW_TRIANGLE_CROSS,
+  'triangle-backcurve': ARROW_TRIANGLE_BACKCURVE
 };
 
 /** enum id → shape keyword (for enum-mapper writes and readback) */
@@ -2248,8 +2258,22 @@ const ARROW_NAMES: Record<number, ArrowShape> = {
   [ ARROW_CIRCLE ]: 'circle',
   [ ARROW_SQUARE ]: 'square',
   [ ARROW_DIAMOND ]: 'diamond',
-  [ ARROW_TEE ]: 'tee'
+  [ ARROW_TEE ]: 'tee',
+  [ ARROW_TRIANGLE_TEE ]: 'triangle-tee',
+  [ ARROW_CIRCLE_TRIANGLE ]: 'circle-triangle',
+  [ ARROW_TRIANGLE_CROSS ]: 'triangle-cross',
+  [ ARROW_TRIANGLE_BACKCURVE ]: 'triangle-backcurve'
 };
+
+/**
+ * The compound heads (27.6).  `arrow-fill: hollow` strokes `abs( sd )`,
+ * which is wrong at the seam where a union's two parts meet — and v3
+ * does not stroke compounds either — so a hollow compound falls back to
+ * filled.  Recorded deviation.
+ */
+const COMPOUND_ARROWS: ReadonlySet<number> = new Set( [
+  ARROW_TRIANGLE_TEE, ARROW_CIRCLE_TRIANGLE, ARROW_TRIANGLE_CROSS
+] );
 
 /** How a mapped prop lands on the computed record. */
 interface MappableChannel {
@@ -5099,10 +5123,16 @@ export class StyleEngine {
       const scaleQ = Math.max( 1, Math.min( 255, Math.round( computed.arrowScale * 16 ) ) );
 
       store.noteArrowScale( computed.arrowScale );
+      const srcArrowId = ARROW_ENUM[ computed.sourceArrowShape ];
+      const tgtArrowId = ARROW_ENUM[ computed.targetArrowShape ];
+
       store.setScalar( 'edge.arrowShapes', slot, packArrowShapes(
-        ARROW_ENUM[ computed.sourceArrowShape ], ARROW_ENUM[ computed.targetArrowShape ],
+        srcArrowId, tgtArrowId,
         ARROW_ENUM[ computed.midSourceArrowShape ], ARROW_ENUM[ computed.midTargetArrowShape ],
-        computed.sourceArrowFill, computed.targetArrowFill, scaleQ ) );
+        // 27.6: a hollow compound head falls back to filled (recorded)
+        COMPOUND_ARROWS.has( srcArrowId ) ? 0 : computed.sourceArrowFill,
+        COMPOUND_ARROWS.has( tgtArrowId ) ? 0 : computed.targetArrowFill,
+        scaleQ ) );
 
       // mid-arrow colors fold like the end arrows (C1)
       store.setMidArrow( 'edge.midSourceArrow', slot,

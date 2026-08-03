@@ -296,6 +296,19 @@ export const ARROW_SQUARE = 5;
 export const ARROW_DIAMOND = 6;
 export const ARROW_TEE = 7;
 
+// round 27.6: v3's compound arrowheads.  All four fit the 4-bit fields
+// the 27.1 repack created, which is what that pass existed for.
+export const ARROW_TRIANGLE_TEE = 8;
+export const ARROW_CIRCLE_TRIANGLE = 9;
+export const ARROW_TRIANGLE_CROSS = 10;
+export const ARROW_TRIANGLE_BACKCURVE = 11;
+
+/** v3's circle-triangle circle radius, in arrow-frame units. */
+export const ARROW_CIRCLE_TRIANGLE_RADIUS = 0.15;
+
+/** Segments the backcurve's quadratic is sampled into (see round 27.5). */
+export const ARROW_BACKCURVE_SEGMENTS = 6;
+
 /*
 `edge.arrowShapes` packing (repacked in round 27.1).
 

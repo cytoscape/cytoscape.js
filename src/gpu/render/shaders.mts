@@ -11,7 +11,10 @@ Colour columns are RGBA bytes bound as array<u32> and expanded with
 unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
-import { ARROW_POINTS, POLYGON_POINTS, ROUND_POLYGON_SOURCE } from '../shape-points.mjs';
+import {
+  ARROW_COMPOUND_POINTS, ARROW_MAX_BACK, ARROW_POINTS, POLYGON_POINTS,
+  ROUND_POLYGON_SOURCE
+} from '../shape-points.mjs';
 import { IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL, SDF_IMAGE_SIZE as SDF_IMAGE_SIZE_WGSL } from '../image-registry.mjs';
 import {
   AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS, MAX_CURVE_PTS
@@ -22,6 +25,8 @@ import {
   ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
   ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, CUT_RECTANGLE_CORNER,
+  ARROW_CIRCLE_TRIANGLE, ARROW_CIRCLE_TRIANGLE_RADIUS, ARROW_TRIANGLE_CROSS,
+  ARROW_TRIANGLE_TEE,
   BARREL_CTRL_OFFSET_PCT, BARREL_CURVE_SEGMENTS,
   BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT,
   BARREL_WIDTH_OFFSET_MAX, BARREL_WIDTH_OFFSET_PCT,
@@ -1115,6 +1120,56 @@ fn arrow${ id }SD(p: vec2f, s: f32) -> f32 {
 `;
     cases += `    case ${ id }u: { sd = arrow${ id }SD(p, s); }\n`;
   }
+
+  // Compound arrowheads (27.6): a union of disjoint parts.  Coverage is
+  // a smoothstep over the distance, so the union is min(sdA, sdB) and
+  // the parts need no stitching.  Each part gets its own generated
+  // function; the dispatch case takes the min.
+  for( const [ id, parts ] of ARROW_COMPOUND_POINTS ){
+    parts.forEach( ( pts, part ) => {
+      const n = pts.length / 2;
+      const lits = Array.from( { length: n }, ( _, i ) =>
+        `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+
+      fns += `
+fn arrow${ id }p${ part }SD(p: vec2f, s: f32) -> f32 {
+  var v = array<vec2f, ${ n }>(${ lits });
+  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * s; }
+  var d = dot(p - v[0], p - v[0]);
+  var sgn = 1.0;
+  var j = ${ n - 1 };
+  for (var i = 0; i < ${ n }; i++) {
+    let e = v[j] - v[i];
+    let w = p - v[i];
+    let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(b, b));
+    let c1 = p.y >= v[i].y;
+    let c2 = p.y < v[j].y;
+    let c3 = e.x * w.y > e.y * w.x;
+    if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) { sgn = -sgn; }
+    j = i;
+  }
+  return sgn * sqrt(d);
+}
+`;
+    } );
+  }
+
+  // triangle-tee: the triangle plus its detached bar
+  cases += `    case ${ ARROW_TRIANGLE_TEE }u: { ` +
+    `sd = min(arrow${ ARROW_TRIANGLE_TEE }p0SD(p, s), arrow${ ARROW_TRIANGLE_TEE }p1SD(p, s)); }\n`;
+
+  // circle-triangle: the disc sits at the tip, the triangle behind it
+  cases += `    case ${ ARROW_CIRCLE_TRIANGLE }u: { ` +
+    `sd = min(arrow${ ARROW_CIRCLE_TRIANGLE }p0SD(p, s), ` +
+    `length(p - vec2f(0.0, -${ ARROW_CIRCLE_TRIANGLE_RADIUS } * s)) - ` +
+    `${ ARROW_CIRCLE_TRIANGLE_RADIUS } * s); }\n`;
+
+  // triangle-cross: the bar's thickness tracks the *edge width*, not the
+  // arrow size, so its points cannot be a static table — this is why the
+  // arrow fragment stage carries the model width as a varying (27.3)
+  cases += `    case ${ ARROW_TRIANGLE_CROSS }u: { ` +
+    `sd = min(arrow${ ARROW_TRIANGLE_CROSS }p0SD(p, s), crossBarSD(p, s, in.widthModel * frame.zoomDpr)); }\n`;
 
   return { fns, cases };
 };
@@ -2534,8 +2589,9 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
-  let halfBase = arrowLen * 0.5;
+  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2563,11 +2619,34 @@ fn arrowSizePx(widthModel: f32, scale: f32, zoomDpr: f32) -> f32 {
   return max(pow(widthModel * 13.37, 0.9), 29.0) * scale * zoomDpr;
 }
 
-// v3 scales its arrow point table (lateral ±0.15, body to y = -0.3) by
-// 'size' directly, so the drawn arrow is 0.3 x size long and 0.3 x size
-// across — 'size' is the point scale, not the length.  Getting this
-// backwards makes arrows 3.3x too long, which is how it was caught.
-const ARROW_TABLE_SPAN: f32 = 0.3;
+// v3's triangle-cross bar (27.6): a rectangle spanning the triangle's
+// base, offset to y = -0.4 * s, whose thickness is the *edge width*
+// rather than a fraction of the arrow — v3 shifts its two back points by
+// edgeWidth / size so the bar reads as a continuation of the line.
+fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
+  let halfX = 0.15 * s;
+  let yTop = -0.4 * s;
+  let yBot = yTop - edgeWidthPx;
+  let c = vec2f(0.0, (yTop + yBot) * 0.5);
+  let h = vec2f(halfX, (yTop - yBot) * 0.5);
+  let q = abs(p - c) - h;
+
+  return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0)));
+}
+
+
+// v3 scales its arrow point tables by 'size' directly, so 'size' is the
+// point scale, not a length — getting that backwards makes arrows 3.3x
+// too long, which is how it was caught (27.3).
+//
+// The quad has to cover the furthest-reaching head, which is *not* the
+// plain triangle's 0.3: triangle-tee reaches 0.5 and the back-shifted
+// circle-triangle 0.6.  ARROW_MAX_BACK is computed from the tables so
+// adding a head cannot silently clip it (27.6).  triangle-cross's bar
+// additionally hangs the edge width below its base, so that is added at
+// the call site.
+const ARROW_MAX_BACK: f32 = ${ ARROW_MAX_BACK };
+const ARROW_HALF_LATERAL: f32 = 0.15;
 
 // this end's shape id from the packed word (C1: ends + mids)
 fn endShapeOf(pair: u32, endId: u32) -> u32 {
@@ -2648,8 +2727,9 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
-  let halfBase = arrowLen * 0.5;
+  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2728,11 +2808,34 @@ fn arrowSizePx(widthModel: f32, scale: f32, zoomDpr: f32) -> f32 {
   return max(pow(widthModel * 13.37, 0.9), 29.0) * scale * zoomDpr;
 }
 
-// v3 scales its arrow point table (lateral ±0.15, body to y = -0.3) by
-// 'size' directly, so the drawn arrow is 0.3 x size long and 0.3 x size
-// across — 'size' is the point scale, not the length.  Getting this
-// backwards makes arrows 3.3x too long, which is how it was caught.
-const ARROW_TABLE_SPAN: f32 = 0.3;
+// v3's triangle-cross bar (27.6): a rectangle spanning the triangle's
+// base, offset to y = -0.4 * s, whose thickness is the *edge width*
+// rather than a fraction of the arrow — v3 shifts its two back points by
+// edgeWidth / size so the bar reads as a continuation of the line.
+fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
+  let halfX = 0.15 * s;
+  let yTop = -0.4 * s;
+  let yBot = yTop - edgeWidthPx;
+  let c = vec2f(0.0, (yTop + yBot) * 0.5);
+  let h = vec2f(halfX, (yTop - yBot) * 0.5);
+  let q = abs(p - c) - h;
+
+  return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0)));
+}
+
+
+// v3 scales its arrow point tables by 'size' directly, so 'size' is the
+// point scale, not a length — getting that backwards makes arrows 3.3x
+// too long, which is how it was caught (27.3).
+//
+// The quad has to cover the furthest-reaching head, which is *not* the
+// plain triangle's 0.3: triangle-tee reaches 0.5 and the back-shifted
+// circle-triangle 0.6.  ARROW_MAX_BACK is computed from the tables so
+// adding a head cannot silently clip it (27.6).  triangle-cross's bar
+// additionally hangs the edge width below its base, so that is added at
+// the call site.
+const ARROW_MAX_BACK: f32 = ${ ARROW_MAX_BACK };
+const ARROW_HALF_LATERAL: f32 = 0.15;
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
 fn arrowScaleOf(pair: u32) -> f32 {
@@ -2830,8 +2933,9 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
-  let halfBase = arrowLen * 0.5;
+  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2920,8 +3024,9 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
-  let halfBase = arrowLen * 0.5;
+  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);

@@ -95,11 +95,11 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   };
 
   let setupBorderColor = ( bdrOpy = borderOpacity ) => {
-    r.colorStrokeStyle( context, borderColor[0], borderColor[1], borderColor[2], bdrOpy );
+    r.colorStrokeStyle( context, borderColor, bdrOpy );
   };
 
   let setupOutlineColor = ( otlnOpy = outlineOpacity ) => {
-    r.colorStrokeStyle( context, outlineColor[0], outlineColor[1], outlineColor[2], otlnOpy );
+    r.colorStrokeStyle( context, outlineColor, otlnOpy );
   };
 
   //
@@ -254,7 +254,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     let c = darkness > 0 ? 0 : 255;
 
     if( darkness !== 0 ){
-      r.colorFillStyle( context, c, c, c, opacity );
+      r.colorFillStyle( context, [c, c, c], opacity );
 
       if( usePaths ){
         context.fill( path );
@@ -619,11 +619,11 @@ const drawNodeOverlayUnderlay = function( overlayOrUnderlay ) {
         } else {
           // fallback to single-color if gradient config is invalid
           const color = node.pstyle(`${overlayOrUnderlay}-color`).value;
-          r.colorFillStyle( context, color[0], color[1], color[2], opacity );
+          r.colorFillStyle( context, color, opacity );
         }
       } else {
         const color = node.pstyle(`${overlayOrUnderlay}-color`).value;
-        r.colorFillStyle( context, color[0], color[1], color[2], opacity );
+        r.colorFillStyle( context, color, opacity );
       }
 
       r.nodeShapes[shape].draw(
@@ -731,7 +731,7 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
       context.closePath();
     }
 
-    this.colorFillStyle( context, color[0], color[1], color[2], opacity );
+    this.colorFillStyle( context, color, opacity );
 
     context.fill();
 
@@ -809,7 +809,7 @@ CRp.drawStripe = function( context, node, nodeOpacity, pos ){
     context.rect( x, y + stripeH * lastPercent, stripeW, stripeH * percent );
     context.closePath();
 
-    this.colorFillStyle( context, color[0], color[1], color[2], opacity );
+    this.colorFillStyle( context, color, opacity );
 
     context.fill();
 

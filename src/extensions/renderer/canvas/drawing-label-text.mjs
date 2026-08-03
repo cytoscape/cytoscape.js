@@ -126,9 +126,9 @@ CRp.setupTextStyle = function( context, ele, useEleOpacity = true ){
 
   context.lineJoin = 'round'; // so text outlines aren't jagged
 
-  this.colorFillStyle( context, color[ 0 ], color[ 1 ], color[ 2 ], opacity );
+  this.colorFillStyle( context, color, opacity );
 
-  this.colorStrokeStyle( context, outlineColor[ 0 ], outlineColor[ 1 ], outlineColor[ 2 ], outlineOpacity );
+  this.colorStrokeStyle( context, outlineColor, outlineOpacity );
 };
 
 function circle(ctx, x, y, width, height) {

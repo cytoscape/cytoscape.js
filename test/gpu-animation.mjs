@@ -744,6 +744,41 @@ describe('gpu/animation', function(){
       expect( cy.$id('a').position('x') ).to.equal( 100 ); // ran to completion
     });
 
+    it('delayAnimation() is delay() with a handle (29.2)', async function(){
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ] } );
+
+      // the handle form is what makes a delay sequenceable: delay()
+      // chains, delayAnimation() gives you something to await
+      const ani = cy.$id('a').delayAnimation( 20 );
+
+      expect( typeof ani.play ).to.equal( 'function' );
+
+      const done = ani.play();
+
+      expect( cy.$id('a').animated() ).to.equal( true );
+
+      await done;
+
+      expect( cy.$id('a').animated() ).to.equal( false );
+      expect( cy.$id('a').position() ).to.deep.equal( { x: 0, y: 0 } ); // touched no channel
+
+      cy.destroy();
+    });
+
+    it('a delayAnimation() owns no channels, so it evicts nothing', function(){
+      const cy = cytoscapeGpu( { elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ] } );
+
+      cy.$id('a').animate( { position: { x: 100, y: 0 }, duration: 100, easing: 'linear' } );
+      cy.$id('a').delayAnimation( 50 ).play();
+
+      cy._animations.tick( 0 );
+      cy._animations.tick( 100 );
+
+      expect( cy.$id('a').position('x') ).to.equal( 100 ); // ran to completion
+
+      cy.destroy();
+    });
+
     it('viewport pan and zoom animations compose; a second pan evicts the first', function(){
       const cy = cytoscapeGpu( { elements: [] } );
 

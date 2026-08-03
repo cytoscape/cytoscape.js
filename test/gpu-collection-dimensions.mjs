@@ -88,6 +88,61 @@ describe('gpu/collection: rendered dimensions, shift, endpoints', function(){
     expect( cy.$id('n1').renderedWidth() ).to.equal( 80 );
     expect( cy.$id('n1').renderedHeight() ).to.equal( 40 );
     expect( cy.$id('n1').renderedOuterWidth() ).to.equal( 80 );
+    // 29.2: the sibling this line had always omitted
+    expect( cy.$id('n1').renderedOuterHeight() ).to.equal( 40 );
+  });
+
+  it('renderedOuterHeight() covers the border, like outerHeight()', function(){
+    var bordered = cytoscapeGpu({
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: { nodes: { width: 40, height: 20, 'border-width': 5 } },
+      zoom: 2
+    });
+    var n = bordered.$id('n');
+
+    // v4 keeps v3's outerHalf convention under the default centred
+    // border position: half the band lies outside, so outer = h + width
+    expect( n.outerHeight() ).to.equal( 25 );
+    expect( n.renderedOuterHeight() ).to.equal( 50 );  // × zoom
+    expect( n.renderedOuterHeight() ).to.equal( n.outerHeight() * bordered.zoom() );
+
+    bordered.destroy();
+  });
+
+  it('silentPositions() moves every element without emitting position', function(){
+    var fired = 0;
+
+    cy.on('position', () => fired++);
+    cy.nodes().silentPositions( ( n, i ) => ( { x: i * 10, y: i * 20 } ) );
+
+    expect( fired ).to.equal( 0 );
+    expect( cy.$id('n1').position() ).to.deep.equal({ x: 0, y: 0 });
+    expect( cy.$id('n2').position() ).to.deep.equal({ x: 10, y: 20 });
+
+    // the loud form is what fires, so the silence above is the method's
+    cy.nodes().positions( () => ( { x: 1, y: 1 } ) );
+    expect( fired ).to.be.above( 0 );
+  });
+
+  it('silentShift() offsets without emitting position', function(){
+    var fired = 0;
+
+    cy.on('position', () => fired++);
+    cy.$id('n1').silentShift({ x: 5, y: -5 });
+
+    expect( fired ).to.equal( 0 );
+    expect( cy.$id('n1').position() ).to.deep.equal({ x: 105, y: 95 });
+
+    cy.$id('n1').shift({ x: 5, y: -5 });
+
+    expect( fired ).to.equal( 1 );
+    expect( cy.$id('n1').position() ).to.deep.equal({ x: 110, y: 90 });
+  });
+
+  it('silentShift() takes the single-dim form too', function(){
+    cy.$id('n1').silentShift( 'x', 50 );
+
+    expect( cy.$id('n1').position() ).to.deep.equal({ x: 150, y: 100 });
   });
 
   it('renderedBoundingBox() transforms boundingBox', function(){

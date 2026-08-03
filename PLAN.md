@@ -7115,7 +7115,26 @@ worth as much as the findings:
   set — so adding an alias without listing it fails, and deleting a
   wiring line fails.  The table doubles as the written record of the
   alias surface.
-- [ ] **29.2 The four unmentioned public methods.**  Behavioural specs,
+- [x] **29.2 The four unmentioned public methods** (2026-08-03) —
+  landed, extending the files that already own the surface rather than
+  adding a parallel one: `silentPositions`, `silentShift` (both forms)
+  and `renderedOuterHeight` in `gpu-collection-dimensions.mjs`,
+  `delayAnimation` in `gpu-animation.mjs`.  The silent specs assert the
+  *silence* — a `position` listener counts zero — and then fire the
+  loud sibling in the same spec, so the zero is the method's doing and
+  not a listener that was never wired.
+  One finding while writing them: `outerHeight()` on a 20 px node with
+  a 5 px border is **25, not 30** — v4 keeps v3's outerHalf convention
+  under the default centred border position, so half the band lies
+  outside.  The first draft of the spec asserted 30 and failed, which
+  is the spec doing its job on its first run.
+  Controls: making either silent method loud fails its spec, leaving
+  `renderedOuterHeight` in model units fails two, and giving
+  `delayAnimation` a real channel makes it evict the concurrent
+  animation and fails the no-channels spec.
+  8 new specs.  *(Original plan text below.)*
+
+  **29.2 The four unmentioned public methods.**  Behavioural specs,
   not smoke: `silentPositions`/`silentShift` must move nodes *without*
   emitting position events (the whole point of "silent"), and
   `delayAnimation` must delay without touching any channel.

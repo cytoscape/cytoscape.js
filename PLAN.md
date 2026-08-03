@@ -8413,15 +8413,33 @@ describe and no suite prices:
   own miss point, and the suite **asserts the miss** at startup — a row
   that hits prints a warning naming itself, because a shape-test row
   that stops early is measuring nothing.
-- [ ] **33.6 The data sidecar and structured queries**
-  (`benchmark/gpu/data.mjs`, new) — findings 8–9.  Writes and reads
-  per column kind (numeric, dictionary string, plain-array fallback),
-  a dictionary-churn row that drives the round-11 refcount reclaim,
-  `removeData`, whole-object reads, and the `DataStore.reader` path;
-  then data-condition queries (`{ data: { k: { gt } } }`) and
-  structural queries (`{ parent: true }`) against v3's `[weight > 0.5]`
-  and `:parent` selectors — the comparisons a v3 user will actually
-  make.
+- [x] **33.6 The data sidecar and structured queries** (2026-08-03) —
+  landed as `benchmark/gpu/data.mjs`.  At N=2000, bulk writes across
+  the whole node set are **18–24× v3** and the storage kind barely
+  moves it: numeric 24×, dictionary string (4 values) 19×, one new
+  dictionary entry per pass 18×, the plain-array object fallback 23×.
+  `removeData` is 1.7×.  Reads are parity — one numeric key 1.04×, one
+  dictionary string 1.34× *v4's way* (the decode is cheaper than v3's
+  object hop) — with one exception recorded as a finding: **the
+  whole-object `data()` read is 6.3× slower on v4** (266 ns against
+  42 ns), because v4 rebuilds the object from its columns where v3
+  hands back the object it already stores.  That is the columnar
+  trade-off showing up exactly where the design predicts, and it is
+  worth knowing before someone writes `data()` inside a loop.
+  **Structured queries against the selector strings they replaced** —
+  the comparison a porting v3 user actually makes: data equality 15.6×,
+  a comparison (`gt`) 11.9×, two keys AND-ed 12.7×, membership (`in`)
+  14.9×; the predicate form (both sides materializing handles) is the
+  narrow one.  Structural terms are the widest: `{ parent: true }`
+  **49.8×** against `:parent`, `{ child: false }` **48.5×** against
+  `:orphan`, `{ parent: false }` 16.3× against `:childless` — pure
+  flag scans against v3's per-element pseudo evaluation.
+  One row is named for what it does rather than what it was meant to
+  do: a "dictionary churn" row would need per-element distinct strings,
+  which takes a per-element loop that would measure the loop on both
+  sides rather than the column.  The row writes one *new* value across
+  the collection per pass, so the dictionary grows by an entry per pass
+  and not per element, and it says so.
 - [ ] **33.7 Events and the animation manager**
   (`benchmark/gpu/events.mjs`, new) — findings 10–11.  Emit cost by
   qualifier kind and listener count, the listener-gated no-op path,

@@ -6620,9 +6620,69 @@ commit(s)):
   which is why this one bound is 3% where the shape diffs sit near
   0.05%.  13 Node specs; 2328 Node tests, 63 module tests,
   typecheck, lint, 87/87 webgpu, 75/75 webgpu-visual.
-- [ ] **27.8 `border-style` / `outline-style`** — the perimeter
-  parameter and the dash/double band.
-- [ ] **27.9 Benchmarks + browser specs** — the shape and arrow
-  golden grids, the parity diffs, and a check that the added
-  shader branches do not move the steady-state frame cost.
-- [ ] **27.10 Closing docs sweep.**
+- [ ] **27.8 `border-style` / `outline-style`** — **stopped for a
+  scope call** (2026-08-02), not for a technical blocker.
+  The technique is settled.  `double` is not a dash at all — a
+  second inner band, no parameterization needed, and it works on
+  every shape.  For `dashed`/`dotted` the existing `dashInsideSd`
+  machinery is reusable verbatim; the only missing ingredient is a
+  **perimeter coordinate** in the node fragment shader, which comes
+  in three tiers of cost:
+  - *closed form, cheap*: circle (exact — `θ·r`), rectangle and
+    round-rectangle (walk the sides plus corner arcs, ~30 lines);
+  - *closed form, approximate*: ellipse, whose arc length is an
+    elliptic integral — angle-parameterizing it makes dashes
+    unevenly spaced on eccentric ellipses, a recordable deviation;
+  - *real work*: the polygon family (the round-* shapes, `barrel`
+    and the custom `polygon` included), where the SDF loop must also
+    track the argmin edge and its clamped projection against a
+    per-fragment cumulative perimeter — roughly doubling the polygon
+    fragment cost wherever a dash is enabled.
+  The 2026-07-28 gap ledger flagged this family as **"needs a scope
+  call on which subset earns its shader/channel cost"**, and that
+  call is still open: shipping `dashed`/`dotted` on
+  circle/rect/round-rect only is a genuine v3 deviation (v3 dashes
+  any shape), while covering every shape is the round's largest
+  single piece of shader work for a property with no other consumer.
+  Deciding that unilaterally would be improvising API scope, so it
+  waits.  Everything else in round 27 landed.
+- [x] **27.9 Verification** (2026-08-02) — the golden grids and
+  parity diffs landed with their own passes rather than in a
+  trailing sweep, which is why each was able to *change the code*:
+  27.3's diff caught two wrong ports of v3's arrow formula, 27.6's
+  caught a clipped arrow quad and a missing offset, and 27.7's first
+  version was rebuilt after a control showed it passed with the
+  feature disabled.  Five new live parity tests in total (arrow
+  sizing, the round family, barrel, compound arrowheads, text
+  rotation), two new goldens, and three golden grids extended.
+  Costs: `benchmark/gpu/labels.mjs` re-run at 100k — breakLines
+  3.8 µs, estimateBlock 4.6 µs, setLabel build 5.1 µs, the
+  whole-graph bb's label terms 0.11 µs — all matching the round-16
+  baselines, so 27.7's wider glyph instance costs nothing on the
+  CPU side.  Its device-side cost is arithmetic and recorded: 64
+  bytes per glyph instead of 56.
+  **Not measured here**: the device-side frame cost of the new
+  shader branches.  `benchmark:gpu:renderer` requires a real
+  adapter and this box has only SwiftShader, where the numbers are
+  a different machine class — the same gap the round-18 and
+  round-19 records note, closed on a hardware pass rather than
+  guessed at.
+- [x] **27.10 Closing docs sweep** (2026-08-02) — swept both
+  documents for the round's vocabulary.  The README header carries
+  round 27; the node-shape section now records the completed
+  vocabulary, the three parameterized shapes, and the fact that one
+  `corner-radius` prop carries **three** different 'auto' rules (all
+  v3's); the arrowhead section records the compound heads, how each
+  is built, the hollow-fallback deviation, and v3's sizing formula
+  with its model-space caveat; the label section records numeric
+  `text-rotation` and its glyph-memory cost; and the border-geometry
+  note now explains *why* `border-style` is unported (the missing
+  perimeter coordinate) instead of just asserting it.
+  Corrected while sweeping: the shape section still said the
+  `round-*` family had "no clean closed form" under anisotropic
+  scaling — 27.4 found one, so leaving that note in place would have
+  discouraged exactly the work that closed it.  The follow-up hooks
+  now list `border-style`/`outline-style` as the single remaining
+  parity item, waiting on a scope call rather than on a technique.
+  **Round 27 is complete apart from 27.8, which is held for that
+  call.**

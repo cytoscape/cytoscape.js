@@ -80,7 +80,9 @@ const refSet = ( refs: Ref[] ): Set<number> => {
 export class GpuCollection {
   [index: number]: GpuCollection;
 
+  /** How many elements this collection holds. */
   length: number;
+
   _cy: GpuCore;
   private __refs!: Ref[];
   /** the store's compactEpoch this collection last synced against (19.3) */
@@ -121,6 +123,18 @@ export class GpuCollection {
     this._syncEpoch = this._cy._store.compactEpoch;
   }
 
+  /**
+   * Build a collection over a ref list.  Not part of the public API —
+   * collections come from the core (`cy.nodes()`, `cy.$id()`,
+   * `cy.collection()`) and from other collections; going through those
+   * keeps handle interning and dedupe correct.
+   *
+   * @param cy — the owning core
+   * @param refs — the element refs to hold
+   * @param opts — `singleton` for the interned per-slot handle, `unique`
+   *   when the refs are already deduped, `live` when they are also known
+   *   current (both skip work on the hot path)
+   */
   constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {} ){
     this._cy = cy;
 
@@ -251,6 +265,12 @@ export class GpuCollection {
 
   // -- core reference & identity --
 
+  /**
+   * The type tag `'collection'` — the counterpart of the core's
+   * `'core'`, for code that accepts either.
+   *
+   * @returns `'collection'`
+   */
   instanceString(): string {
     return 'collection';
   }
@@ -275,6 +295,12 @@ export class GpuCollection {
     return this._cy.collection();
   }
 
+  /**
+   * Whether this collection contains an element with the given id.
+   *
+   * @param id — the element id
+   * @returns true when a member has that id
+   */
   hasElementWithId( id: string ): boolean {
     return this.getElementById( id ).nonempty();
   }
@@ -294,6 +320,12 @@ export class GpuCollection {
     return -1;
   }
 
+  /**
+   * Position of the element with this id within the collection.
+   *
+   * @param id — the element id
+   * @returns the index, or -1 when absent
+   */
   indexOfId( id: string ): number {
     for( let i = 0; i < this.length; i++ ){
       if( this[ i ]._id === id ){ return i; }
@@ -304,18 +336,45 @@ export class GpuCollection {
 
   // -- iteration --
 
+  /**
+   * The number of elements — the method form of `length`.
+   *
+   * @returns the element count
+   */
   size(): number {
     return this.length;
   }
 
+  /**
+   * Whether the collection holds no elements.
+   *
+   * @returns true when empty
+   */
   empty(): boolean {
     return this.length === 0;
   }
 
+  /**
+   * Whether the collection holds at least one element.
+   *
+   * @returns true when non-empty
+   */
   nonempty(): boolean {
     return this.length > 0;
   }
 
+  /**
+   * Call `fn` for each element.  Returning `false` from the callback
+   * stops the iteration early, as in v3.
+   *
+   * With no `thisArg` the callback is plain-called, so `this` is
+   * undefined inside it — v3's semantics, and deliberate: rebinding the
+   * receiver per element costs about 2x on large collections.
+   *
+   * @param fn — `( ele, i, eles )`; return `false` to stop
+   * @param thisArg — optional receiver for the callback
+   * @returns this collection, for chaining
+   */
   forEach( fn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => void | false, thisArg?: unknown ): this {
     const n = this.length;
 
@@ -333,6 +392,11 @@ export class GpuCollection {
 
   declare each: this['forEach'];
 
+  /**
+   * The elements as a plain array of length-1 collections.
+   *
+   * @returns a new array of the members
+   */
   toArray(): GpuCollection[] {
     const array: GpuCollection[] = [];
 
@@ -343,6 +407,14 @@ export class GpuCollection {
     return array;
   }
 
+  /**
+   * A sub-range of the collection, with `Array#slice` semantics
+   * (negative indices count from the end).
+   *
+   * @param start — first index, inclusive
+   * @param end — last index, exclusive
+   * @returns the sub-range as a new collection
+   */
   slice( start: number = 0, end: number = this.length ): GpuCollection {
     if( start < 0 ){ start = this.length + start; }
     if( end < 0 ){ end = this.length + end; }
@@ -350,6 +422,15 @@ export class GpuCollection {
     return this._spawnUnique( this._refs.slice( start, end ) );
   }
 
+  /**
+   * A copy sorted by a comparator.  Note that sort order is a property
+   * of the *collection*, not of drawing: v4 draw order is structural and
+   * there is no `z-index`.
+   *
+   * @param sortFn — `( a, b )` comparator over length-1 collections; a
+   *   non-function is ignored and returns this collection unchanged
+   * @returns a new, sorted collection
+   */
   sort( sortFn: ( a: GpuCollection, b: GpuCollection ) => number ): GpuCollection {
     if( typeof sortFn !== 'function' ){ return this; }
 
@@ -358,18 +439,41 @@ export class GpuCollection {
     return this._spawn( sorted.map( ele => ele._refs[ 0 ] ) );
   }
 
+  /**
+   * The element at an index, as a length-1 collection.
+   *
+   * @param i — the index
+   * @returns that element, or an empty collection when out of range
+   */
   eq( i: number ): GpuCollection {
     return this[ i ] ?? this._spawn( [] );
   }
 
+  /**
+   * The first element, as a length-1 collection.
+   *
+   * @returns the first element, or an empty collection
+   */
   first(): GpuCollection {
     return this.eq( 0 );
   }
 
+  /**
+   * The last element, as a length-1 collection.
+   *
+   * @returns the last element, or an empty collection
+   */
   last(): GpuCollection {
     return this.eq( this.length - 1 );
   }
 
+  /**
+   * Map each element through `fn` into a plain array.
+   *
+   * @param fn — `( ele, i, eles )`
+   * @param thisArg — optional receiver for the callback
+   * @returns an array of the results
+   */
   map<T>( fn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => T, thisArg?: unknown ): T[] {
     const n = this.length;
     const array: T[] = new Array( n );
@@ -383,6 +487,13 @@ export class GpuCollection {
     return array;
   }
 
+  /**
+   * Whether any element satisfies the predicate.  Short-circuits.
+   *
+   * @param fn — `( ele, i, eles ) => boolean`
+   * @param thisArg — optional receiver for the callback
+   * @returns true when at least one element matches
+   */
   some( fn: EleFilterFn, thisArg?: unknown ): boolean {
     for( let i = 0; i < this.length; i++ ){
       const ret = thisArg == null ? fn( this[ i ], i, this ) : fn.call( thisArg, this[ i ], i, this );
@@ -393,6 +504,14 @@ export class GpuCollection {
     return false;
   }
 
+  /**
+   * Whether every element satisfies the predicate.  Short-circuits, and
+   * is vacuously true for an empty collection.
+   *
+   * @param fn — `( ele, i, eles ) => boolean`
+   * @param thisArg — optional receiver for the callback
+   * @returns true when all elements match
+   */
   every( fn: EleFilterFn, thisArg?: unknown ): boolean {
     for( let i = 0; i < this.length; i++ ){
       const ret = thisArg == null ? fn( this[ i ], i, this ) : fn.call( thisArg, this[ i ], i, this );
@@ -405,10 +524,22 @@ export class GpuCollection {
 
   // -- identity --
 
+  /**
+   * The first element's id.  Cached on the handle, so it stays readable
+   * after the element is removed.
+   *
+   * @returns the id, or undefined when the collection is empty
+   */
   id(): string | undefined {
     return this[0]?._id;
   }
 
+  /**
+   * The first element's group.  Cached on the handle, so it stays
+   * readable after removal.
+   *
+   * @returns `'nodes'` or `'edges'`, or undefined when empty
+   */
   group(): GroupName | undefined {
     return this[0]?._group;
   }
@@ -452,18 +583,39 @@ export class GpuCollection {
     return out;
   }
 
+  /**
+   * Whether the first element is a node.
+   *
+   * @returns true for a node
+   */
   isNode(): boolean {
     return this.group() === 'nodes';
   }
 
+  /**
+   * Whether the first element is an edge.
+   *
+   * @returns true for an edge
+   */
   isEdge(): boolean {
     return this.group() === 'edges';
   }
 
+  /**
+   * Whether the first element is a self-loop — an edge whose source and
+   * target are the same node.
+   *
+   * @returns true for a loop edge; false for nodes and removed elements
+   */
   isLoop(): boolean {
     return this._isLoop( true );
   }
 
+  /**
+   * Whether the first element is a non-loop edge.
+   *
+   * @returns true for an edge between two distinct nodes
+   */
   isSimple(): boolean {
     return this._isLoop( false );
   }
@@ -479,12 +631,25 @@ export class GpuCollection {
     return wantLoop ? isLoop : !isLoop;
   }
 
+  /**
+   * Whether the first element has been removed from the graph.  A
+   * removed element's handle stays usable — reads are no-ops or
+   * undefined, and the cached `id()`/`group()` remain readable.
+   *
+   * @returns true when the element is no longer in the graph
+   */
   removed(): boolean {
     const ref = this._first();
 
     return ref == null ? false : !this._store.isCurrent( ref );
   }
 
+  /**
+   * Whether the first element is still in the graph — the complement of
+   * `removed()`.
+   *
+   * @returns true when the element is live
+   */
   inside(): boolean {
     const ref = this._first();
 
@@ -493,6 +658,13 @@ export class GpuCollection {
 
   // -- comparison --
 
+  /**
+   * Whether both collections hold exactly the same elements, ignoring
+   * order.
+   *
+   * @param other — the collection to compare against
+   * @returns true when the element sets are equal
+   */
   same( other: GpuCollection ): boolean {
     if( this === other ){ return true; }
     if( this.length !== other.length ){ return false; }
@@ -507,6 +679,12 @@ export class GpuCollection {
     return true;
   }
 
+  /**
+   * Whether the two collections share at least one element.
+   *
+   * @param other — the collection to compare against
+   * @returns true when the sets intersect
+   */
   anySame( other: GpuCollection ): boolean {
     if( this === other ){ return this.length > 0; }
 
@@ -520,6 +698,12 @@ export class GpuCollection {
     return false;
   }
 
+  /**
+   * Whether every element of `other` is also in this collection.
+   *
+   * @param other — the candidate subset
+   * @returns true when `other` is contained
+   */
   contains( other: GpuCollection ): boolean {
     if( this === other ){ return true; }
     if( other.length > this.length ){ return false; }
@@ -547,6 +731,13 @@ export class GpuCollection {
 
   declare allAreNeighbours: this['allAreNeighbors'];
 
+  /**
+   * Whether every element matches the criterion.
+   *
+   * @param criterion — a query object or an `( ele ) => boolean`
+   *   predicate (there are no selector strings in v4)
+   * @returns true when all elements match
+   */
   allAre( criterion: FilterLike ): boolean {
     if( typeof criterion === 'function' ){
       return this.every( criterion );
@@ -557,6 +748,13 @@ export class GpuCollection {
     return this._refs.every( ref => planMatchesRef( this._store, ref, plan ) );
   }
 
+  /**
+   * Whether any element matches the criterion.
+   *
+   * @param criterion — a query object or an `( ele ) => boolean`
+   *   predicate
+   * @returns true when at least one element matches
+   */
   is( criterion: FilterLike ): boolean {
     if( typeof criterion === 'function' ){
       return this.some( criterion );
@@ -569,6 +767,12 @@ export class GpuCollection {
 
   // -- building and filtering --
 
+  /**
+   * The union of the two collections, deduped.
+   *
+   * @param other — the collection to add
+   * @returns a new collection holding both sets
+   */
   union( other: GpuCollection ): GpuCollection {
     return this._spawn( [ ...this._refs, ...other._refs ] );
   }
@@ -578,6 +782,12 @@ export class GpuCollection {
   declare add: this['union'];
   declare merge: this['union'];
 
+  /**
+   * This collection's elements that are not in `other`.
+   *
+   * @param other — the collection to subtract
+   * @returns a new collection
+   */
   difference( other: GpuCollection ): GpuCollection {
     const keys = other._keySet();
 
@@ -589,6 +799,12 @@ export class GpuCollection {
   declare unmerge: this['difference'];
   declare relativeComplement: this['difference'];
 
+  /**
+   * The elements present in both collections.
+   *
+   * @param other — the collection to intersect with
+   * @returns a new collection
+   */
   intersection( other: GpuCollection ): GpuCollection {
     const keys = other._keySet();
 
@@ -598,6 +814,12 @@ export class GpuCollection {
   declare intersect: this['intersection'];
   declare and: this['intersection'];
 
+  /**
+   * The elements in exactly one of the two collections.
+   *
+   * @param other — the other collection
+   * @returns a new collection
+   */
   symmetricDifference( other: GpuCollection ): GpuCollection {
     const otherEles = other;
     const mine = this._keySet();
@@ -613,6 +835,22 @@ export class GpuCollection {
   declare symdiff: this['symmetricDifference'];
   declare xor: this['symmetricDifference'];
 
+  /**
+   * The subset matching the criterion.
+   *
+   * A structured **query object** is answered directly off the flags
+   * column — no per-element handles and no closures — while a
+   * **predicate function** is called per element.  v4 has no selector
+   * strings, so those two forms cover what v3 spelled with a selector.
+   *
+   * @param criterion — a query object (`{ selected: true }`,
+   *   `{ data: { weight: { gt: 0.5 } } }`, …) or an
+   *   `( ele, i, eles ) => boolean` predicate
+   * @param thisArg — optional receiver, for the predicate form
+   * @returns a new collection of the matching elements
+   * @throws if a query object carries an unknown key — a typo must not
+   *   silently match everything
+   */
   filter( criterion: FilterLike, thisArg?: unknown ): GpuCollection {
     // the result is a subset of this collection's (already unique) refs
     if( typeof criterion === 'function' ){
@@ -672,18 +910,37 @@ export class GpuCollection {
     return this._spawnUnique( refs );
   }
 
+  /**
+   * The nodes in this collection, optionally filtered.
+   *
+   * @param criterion — a query object or predicate; omit for all nodes
+   * @returns a new collection of nodes
+   */
   nodes( criterion?: FilterLike ): GpuCollection {
     const nodes = this._spawnUnique( this._refs.filter( ref => ref.group === 'nodes' ) );
 
     return criterion == null ? nodes : nodes.filter( criterion );
   }
 
+  /**
+   * The edges in this collection, optionally filtered.
+   *
+   * @param criterion — a query object or predicate; omit for all edges
+   * @returns a new collection of edges
+   */
   edges( criterion?: FilterLike ): GpuCollection {
     const edges = this._spawnUnique( this._refs.filter( ref => ref.group === 'edges' ) );
 
     return criterion == null ? edges : edges.filter( criterion );
   }
 
+  /**
+   * Find a member by id.  This is a linear scan of the collection; use
+   * `cy.$id( id )` for the O(1) whole-graph index.
+   *
+   * @param id — the element id
+   * @returns a collection of one element, or an empty collection
+   */
   getElementById( id: string ): GpuCollection {
     for( let i = 0; i < this.length; i++ ){
       if( this[ i ]._id === id ){ return this[ i ]; }
@@ -720,6 +977,14 @@ export class GpuCollection {
     };
   }
 
+  /**
+   * Fold the collection into a single value.
+   *
+   * @param fn — `( accumulator, ele, i, eles )`
+   * @param initial — the starting accumulator (required, unlike
+   *   `Array#reduce`)
+   * @returns the final accumulator
+   */
   reduce<T>( fn: ( acc: T, ele: GpuCollection, i: number, eles: GpuCollection ) => T, initial: T ): T {
     let val = initial;
 
@@ -737,6 +1002,14 @@ export class GpuCollection {
     return this._extremum( valFn, thisArg, 1 );
   }
 
+  /**
+   * The element minimizing `valFn`, with its value.
+   *
+   * @param valFn — `( ele, i, eles ) => number`
+   * @param thisArg — optional receiver for the callback
+   * @returns `{ value, ele }`, or `{ value: Infinity, ele: undefined }`
+   *   when the collection is empty
+   */
   min(
     valFn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => number, thisArg?: unknown
   ): { value: number; ele: GpuCollection | undefined } {
@@ -764,10 +1037,35 @@ export class GpuCollection {
 
   // -- position and dimensions --
 
+  /**
+   * Get or set the first element's model-space position (nodes only).
+   *
+   * Reading a **compound parent** settles pending auto-bounds first, so
+   * the derived centre is current.  Reading a node whose position is
+   * under a GPU-owned tween (an offloaded position animation or a live
+   * force layout) reports the stale mirror until the tween settles — the
+   * motion-staleness rule; geometry channels like `width()` do *not*
+   * behave this way.
+   *
+   * @param dim — `'x'` or `'y'` to read/write one axis, or a
+   *   `{ x, y }` object to write both; omit to read the pair
+   * @param value — the new coordinate, with the `'x'`/`'y'` form
+   * @returns the position or coordinate when reading (undefined for
+   *   edges and removed elements), this collection when writing
+   */
   position( dim?: string | Position, value?: number ): Position | number | undefined | this {
     return this._positionImpl( dim, value, false );
   }
 
+  /**
+   * Like `position()`, but a write emits no `position` event.  For bulk
+   * or intermediate moves — a layout's own iterations — where per-step
+   * events would be noise.
+   *
+   * @param dim — `'x'`/`'y'`, or a `{ x, y }` object
+   * @param value — the new coordinate, with the `'x'`/`'y'` form
+   * @returns the position when reading, this collection when writing
+   */
   silentPosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
     return this._positionImpl( dim, value, true );
   }
@@ -804,10 +1102,23 @@ export class GpuCollection {
     return this._positions( dim, silent );
   }
 
+  /**
+   * Set every node's position, from a constant or per-element function.
+   *
+   * @param pos — a `{ x, y }` for all of them, or
+   *   `( ele, i ) => ( { x, y } )`
+   * @returns this collection, for chaining
+   */
   positions( pos: Position | ElePositionFn ): this {
     return this._positions( pos, false );
   }
 
+  /**
+   * Like `positions()`, but emits no `position` events.
+   *
+   * @param pos — a `{ x, y }` for all of them, or `( ele, i ) => pos`
+   * @returns this collection, for chaining
+   */
   silentPositions( pos: Position | ElePositionFn ): this {
     return this._positions( pos, true );
   }
@@ -818,15 +1129,35 @@ export class GpuCollection {
   // -- animation --
 
   /**
-   * Animate these elements' style/position to explicit targets over
-   * `duration` ms, easing the normalized time.  Round 21: there is no
-   * queue — the animation starts immediately; animations on disjoint
-   * channels compose, and one overlapping a running animation's channels
-   * stops that older one in place (sequence with `await
-   * animation().play()` / `.promise()`).  Returns the collection; use
-   * `animation()` for a handle with `.promise()`.
-   * Animatable: position, opacity, background-color, border-color,
-   * line-color, border-width.  Colours interpolate in OKLab.
+   * Animate these elements' style and/or position to explicit targets
+   * over `duration` ms, easing the normalized time.
+   *
+   * There is no queue (round 21): the animation starts immediately,
+   * animations on disjoint channels run concurrently, and starting one
+   * that overlaps a running animation's channels stops the older one in
+   * place — its promise resolves, its values freeze, and the new
+   * animation captures from there.  Sequence with `await
+   * animation( … ).play()` rather than by queueing.
+   *
+   * Animatable: `position`; `opacity` (both groups); node
+   * `background-color`/`border-color`/`border-width`, edge `line-color`;
+   * and — since round 25 — the geometry numerics node `width`/`height`,
+   * edge `width`, compound `padding` and `font-size`.  Colours
+   * interpolate in **OKLab**, matching the colour mappers, which
+   * deliberately differs from v3's per-channel sRGB tweening.
+   *
+   * Easings are names, not functions: v3's full enum plus
+   * `cubic-bezier( … )`, CSS `linear( … )` and `spring( bounce )`.  A
+   * custom easing *function* is rejected — a closure cannot cross to the
+   * GPU, so accepting one would mean a curve that silently depended on
+   * whether the animation got offloaded.
+   *
+   * @param opts — targets (`position`, `style`, plus the viewport forms
+   *   on `cy.animate`), `duration`, `easing`, `delay`, `complete`
+   * @returns this collection, for chaining; use `animation()` when you
+   *   want the handle
+   * @see GpuCollection#animation for the handle form with
+   *   `promise`/`pause`/`resume`/`reverse`
    */
   animate( opts: AnimateOptions ): this {
     this.animation( opts ).play();
@@ -1004,6 +1335,13 @@ export class GpuCollection {
     return this._shift( dim, value, false );
   }
 
+  /**
+   * Like `shift()`, but emits no `position` events.
+   *
+   * @param dim — `'x'`/`'y'`, or a `{ x, y }` offset
+   * @param value — the offset, with the `'x'`/`'y'` form
+   * @returns this collection, for chaining
+   */
   silentShift( dim: string | Position, value?: number ): this {
     return this._shift( dim, value, true );
   }
@@ -1119,6 +1457,18 @@ export class GpuCollection {
 
   declare relativePoint: this['relativePosition'];
 
+  /**
+   * Get or set the first element's position in rendered (CSS px) space —
+   * `position()` put through the current pan and zoom.  Writing
+   * unprojects back to model space, so the element lands under the given
+   * screen point at the current viewport.
+   *
+   * @param dim — `'x'`/`'y'`, or a `{ x, y }` object to write both;
+   *   omit to read the pair
+   * @param value — the new coordinate, with the `'x'`/`'y'` form
+   * @returns the rendered position when reading, this collection when
+   *   writing
+   */
   renderedPosition( dim?: string | Position, value?: number ): Position | number | undefined | this {
     const zoom = this._cy.zoom() as number;
     const pan = this._cy.pan() as Position;
@@ -1152,6 +1502,19 @@ export class GpuCollection {
 
   declare renderedPoint: this['renderedPosition'];
 
+  /**
+   * The first element's width — a node's model-space width, or an edge's
+   * stroke width.
+   *
+   * For a compound parent this is the *content* width, with the padding
+   * subtracted from the stored drawn box (v3's `autoWidth`).  Mid-tween
+   * this reads the exact current value: geometry tweens are
+   * CPU-canonical every tick and never leased to the GPU (round 25), so
+   * unlike a position tween there is no staleness window.
+   *
+   * @returns the width, or undefined when empty or removed
+   * @see GpuCollection#outerWidth to include the border
+   */
   width(): number | undefined {
     const ref = this._first();
 
@@ -1162,6 +1525,19 @@ export class GpuCollection {
       : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot ];
   }
 
+  /**
+   * The first element's height — a node's model-space height, or an
+   * edge's stroke width (as in v3, where an edge's `height` is its
+   * width).
+   *
+   * For a compound parent this is the *content* height: the column
+   * stores the padded drawn box, so the padding is subtracted here
+   * (v3's `autoHeight`).  Mid-tween this reads the exact current value:
+   * geometry tweens are CPU-canonical every tick and never leased to the
+   * GPU (round 25).
+   *
+   * @returns the height, or undefined when empty or removed
+   */
   height(): number | undefined {
     const ref = this._first();
 
@@ -1365,6 +1741,13 @@ export class GpuCollection {
     return this;
   }
 
+  /**
+   * Delete scratchpad keys from every element.
+   *
+   * @param namespace — the key to remove; omit to clear each element's
+   *   whole scratchpad
+   * @returns this collection, for chaining
+   */
   removeScratch( namespace?: string ): this {
     for( let i = 0; i < this.length; i++ ){
       const ele = this[ i ];
@@ -1463,6 +1846,12 @@ export class GpuCollection {
     return this.numericStyle( 'opacity' );
   }
 
+  /**
+   * Whether the first element is fully transparent — its effective
+   * opacity, with compound ancestors folded in, is exactly 0.
+   *
+   * @returns true when invisible through opacity
+   */
   transparent(): boolean {
     return this.effectiveOpacity() === 0;
   }
@@ -1511,6 +1900,13 @@ export class GpuCollection {
     return this._paddedDim( 0 );
   }
 
+  /**
+   * The drawn box height: content height plus twice the padding (v3's
+   * `paddedHeight`).  Identical to `height()` for leaves, which have no
+   * padding.
+   *
+   * @returns the padded height, or undefined when empty or removed
+   */
   paddedHeight(): number | undefined {
     return this._paddedDim( 1 );
   }
@@ -1531,12 +1927,23 @@ export class GpuCollection {
     return axis === 0 ? this.width() : this.height();
   }
 
+  /**
+   * The full drawn width including the border — padded width plus the
+   * border width.  This is the box bounds and endpoint clipping use.
+   *
+   * @returns the outer width, or undefined when empty or removed
+   */
   outerWidth(): number | undefined {
     const w = this.paddedWidth();
 
     return w == null ? undefined : w + this._borderWidth();
   }
 
+  /**
+   * The full drawn height including the border.
+   *
+   * @returns the outer height, or undefined when empty or removed
+   */
   outerHeight(): number | undefined {
     const h = this.paddedHeight();
 
@@ -1551,6 +1958,22 @@ export class GpuCollection {
     return ( this._store.column( 'node.borderWidth' ) as Float32Array )[ ref.slot ];
   }
 
+  /**
+   * The model-space box enclosing every element of the collection.
+   *
+   * **Labels are included by default** (round 16.4) — v3 excluded them
+   * unless asked.  Node label terms are exact (the laid text block at its
+   * anchor plus text-box padding); edge label terms are conservative (a
+   * rotation-safe radius about both endpoints), so a box may be slightly
+   * larger than the ink but never smaller.  The box also covers ghost
+   * offsets, overlay/underlay padding and outlines.
+   *
+   * @param options — `{ includeLabels }` (default true)
+   * @returns `{ x1, y1, x2, y2, w, h }` in model coordinates
+   * @throws on an unknown option key — a typo must not silently change
+   *   fit semantics
+   * @see GpuCollection#labelBoundingBox for the label box alone
+   */
   boundingBox( options?: { includeLabels?: boolean } ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
     // labels join the box by default (round 16.4); unknown keys throw —
     // a typo must not silently change fit semantics
@@ -1756,18 +2179,40 @@ export class GpuCollection {
 
   declare renderedBoundingbox: this['renderedBoundingBox'];
 
+  /**
+   * `width()` scaled by the current zoom — the on-screen width in CSS px.
+   *
+   * @returns the rendered width, or undefined when empty or removed
+   */
   renderedWidth(): number | undefined {
     return this._rendered( this.width() );
   }
 
+  /**
+   * `height()` scaled by the current zoom.
+   *
+   * @returns the rendered height, or undefined when empty or removed
+   */
   renderedHeight(): number | undefined {
     return this._rendered( this.height() );
   }
 
+  /**
+   * `outerWidth()` scaled by the current zoom.
+   *
+   * @returns the rendered outer width, or undefined when empty or
+   *   removed
+   */
   renderedOuterWidth(): number | undefined {
     return this._rendered( this.outerWidth() );
   }
 
+  /**
+   * `outerHeight()` scaled by the current zoom.
+   *
+   * @returns the rendered outer height, or undefined when empty or
+   *   removed
+   */
   renderedOuterHeight(): number | undefined {
     return this._rendered( this.outerHeight() );
   }
@@ -1817,6 +2262,11 @@ export class GpuCollection {
     };
   }
 
+  /**
+   * `midpoint()` in rendered (CSS px) space.
+   *
+   * @returns the rendered midpoint, or undefined for non-edges
+   */
   renderedMidpoint(): Position | undefined {
     return this._toRenderedPoint( this.midpoint() );
   }
@@ -1826,14 +2276,31 @@ export class GpuCollection {
     return this._endpointPoint( 0 );
   }
 
+  /**
+   * The edge's target-side endpoint in model space, resolved through the
+   * route evaluator — so it accounts for curve family, node boundary
+   * clipping, haystack offsets and any manual `target-endpoint`.
+   *
+   * @returns the endpoint, or undefined for non-edges
+   */
   targetEndpoint(): Position | undefined {
     return this._endpointPoint( 1 );
   }
 
+  /**
+   * `sourceEndpoint()` in rendered (CSS px) space.
+   *
+   * @returns the rendered endpoint, or undefined for non-edges
+   */
   renderedSourceEndpoint(): Position | undefined {
     return this._toRenderedPoint( this.sourceEndpoint() );
   }
 
+  /**
+   * `targetEndpoint()` in rendered (CSS px) space.
+   *
+   * @returns the rendered endpoint, or undefined for non-edges
+   */
   renderedTargetEndpoint(): Position | undefined {
     return this._toRenderedPoint( this.targetEndpoint() );
   }
@@ -1875,6 +2342,12 @@ export class GpuCollection {
     return this._routeInteriorPoints( route );
   }
 
+  /**
+   * `controlPoints()` in rendered (CSS px) space.
+   *
+   * @returns the rendered control points, or undefined when the edge has
+   *   none
+   */
   renderedControlPoints(): Position[] | undefined {
     const pts = this.controlPoints();
 
@@ -1898,6 +2371,12 @@ export class GpuCollection {
     return this._routeInteriorPoints( route );
   }
 
+  /**
+   * `segmentPoints()` in rendered (CSS px) space.
+   *
+   * @returns the rendered segment points, or undefined when the edge has
+   *   none
+   */
   renderedSegmentPoints(): Position[] | undefined {
     const pts = this.segmentPoints();
 
@@ -1961,6 +2440,11 @@ export class GpuCollection {
 
   // -- selection --
 
+  /**
+   * Whether the first element is selected.
+   *
+   * @returns true when selected
+   */
   selected(): boolean {
     const ref = this._first();
 
@@ -1968,6 +2452,12 @@ export class GpuCollection {
       && this._store.hasFlag( ref.group, ref.slot, FLAG_SELECTED );
   }
 
+  /**
+   * Whether the first element may be selected by the user.  The
+   * graph-wide `cy.autounselectify()` overrides this for user gestures.
+   *
+   * @returns true when selectable
+   */
   selectable(): boolean {
     const ref = this._first();
 
@@ -1975,20 +2465,43 @@ export class GpuCollection {
       && this._store.hasFlag( ref.group, ref.slot, FLAG_SELECTABLE );
   }
 
+  /**
+   * Select every selectable element, emitting `select` for each one that
+   * changed.  Unselectable elements are skipped.
+   *
+   * @returns this collection, for chaining
+   */
   select(): this {
     return this._setSelected( true );
   }
 
+  /**
+   * Deselect every element, emitting `unselect` for each one that
+   * changed.
+   *
+   * @returns this collection, for chaining
+   */
   unselect(): this {
     return this._setSelected( false );
   }
 
   declare deselect: this['unselect'];
 
+  /**
+   * Make these elements selectable.
+   *
+   * @returns this collection, for chaining
+   */
   selectify(): this {
     return this._setBit( FLAG_SELECTABLE, true );
   }
 
+  /**
+   * Make these elements unselectable.  Does not deselect them; call
+   * `unselect()` for that.
+   *
+   * @returns this collection, for chaining
+   */
   unselectify(): this {
     return this._setBit( FLAG_SELECTABLE, false );
   }
@@ -2000,14 +2513,30 @@ export class GpuCollection {
     return this._hasBit( FLAG_GRABBABLE ) && !this._hasBit( FLAG_PANNABLE );
   }
 
+  /**
+   * Whether the first element is currently held by a drag gesture.
+   *
+   * @returns true while grabbed
+   */
   grabbed(): boolean {
     return this._hasBit( FLAG_GRABBED );
   }
 
+  /**
+   * Make these elements grabbable.
+   *
+   * @returns this collection, for chaining
+   */
   grabify(): this {
     return this._setBit( FLAG_GRABBABLE, true );
   }
 
+  /**
+   * Make these elements ungrabbable — the user can no longer drag them,
+   * while programmatic position writes still apply.
+   *
+   * @returns this collection, for chaining
+   */
   ungrabify(): this {
     return this._setBit( FLAG_GRABBABLE, false );
   }
@@ -2029,14 +2558,38 @@ export class GpuCollection {
     return ref != null && this._store.isCurrent( ref ) && this._store.isDrawn( ref );
   }
 
+  /**
+   * The complement of `visible()`.
+   *
+   * @returns true when the first element does not draw
+   */
   hidden(): boolean {
     return !this.visible();
   }
 
+  /**
+   * Show these elements — the **display tier**, v3's structural
+   * `display: element`.  Shown elements take up space again, rejoin
+   * bounds and fit, and re-fan their bezier bundles.
+   *
+   * For paint-only invisibility that keeps space and bundle ranks, use
+   * the `visibility` style property instead (round 22), and for a fade
+   * use an `opacity` transition.
+   *
+   * @returns this collection, for chaining
+   */
   show(): this {
     return this._setVisibility( true );
   }
 
+  /**
+   * Hide these elements structurally — v3's `display: none`.  They stop
+   * drawing and picking, leave the bounding box and their ancestors'
+   * auto-bounds, and their bezier bundles re-fan without them.
+   * Descendants of a hidden node are gated too.
+   *
+   * @returns this collection, for chaining
+   */
   hide(): this {
     return this._setVisibility( false );
   }
@@ -2051,14 +2604,31 @@ export class GpuCollection {
     return this;
   }
 
+  /**
+   * Whether the first element is locked — immovable, by layouts and
+   * position writes alike.  The force layout treats locked nodes as
+   * fixed obstacles.
+   *
+   * @returns true when locked
+   */
   locked(): boolean {
     return this._hasBit( FLAG_LOCKED );
   }
 
+  /**
+   * Lock these elements against movement.
+   *
+   * @returns this collection, for chaining
+   */
   lock(): this {
     return this._setBit( FLAG_LOCKED, true );
   }
 
+  /**
+   * Unlock these elements.
+   *
+   * @returns this collection, for chaining
+   */
   unlock(): this {
     return this._setBit( FLAG_LOCKED, false );
   }
@@ -2078,10 +2648,21 @@ export class GpuCollection {
       && !this._store.hasFlag( ref.group, ref.slot, FLAG_ACTIVE );
   }
 
+  /**
+   * Put these elements into the transient pressed ("active") state, the
+   * one the pointer layer sets while a press is held.
+   *
+   * @returns this collection, for chaining
+   */
   activate(): this {
     return this._setBit( FLAG_ACTIVE, true );
   }
 
+  /**
+   * Clear the pressed ("active") state.
+   *
+   * @returns this collection, for chaining
+   */
   unactivate(): this {
     return this._setBit( FLAG_ACTIVE, false );
   }
@@ -2091,10 +2672,22 @@ export class GpuCollection {
     return this._hasBit( FLAG_PANNABLE );
   }
 
+  /**
+   * Make dragging these elements pan the viewport instead of moving
+   * them.  Pannable overrides grabbable, as in v3.
+   *
+   * @returns this collection, for chaining
+   */
   panify(): this {
     return this._setBit( FLAG_PANNABLE, true );
   }
 
+  /**
+   * Stop these elements from panning the viewport when dragged, so a
+   * grabbable one becomes draggable again.
+   *
+   * @returns this collection, for chaining
+   */
   unpanify(): this {
     return this._setBit( FLAG_PANNABLE, false );
   }
@@ -2298,18 +2891,38 @@ export class GpuCollection {
 
   // -- traversal --
 
+  /**
+   * The source node of the first edge.
+   *
+   * @returns the source node, or an empty collection for a non-edge
+   */
   source(): GpuCollection {
     return this._endpoint( 0 );
   }
 
+  /**
+   * The target node of the first edge.
+   *
+   * @returns the target node, or an empty collection for a non-edge
+   */
   target(): GpuCollection {
     return this._endpoint( 1 );
   }
 
+  /**
+   * The source nodes of every edge in the collection, deduped.
+   *
+   * @returns the source nodes
+   */
   sources(): GpuCollection {
     return this._endpoints( 0 );
   }
 
+  /**
+   * The target nodes of every edge in the collection, deduped.
+   *
+   * @returns the target nodes
+   */
   targets(): GpuCollection {
     return this._endpoints( 1 );
   }
@@ -2346,6 +2959,15 @@ export class GpuCollection {
     return this._spawnLive( refs );
   }
 
+  /**
+   * Every edge incident on the nodes in this collection, deduped —
+   * answered off the CSR adjacency index, so it is O(incident edges)
+   * rather than a scan.  Loops appear once.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the incident edges
+   */
   connectedEdges( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const adj = store.adj;
@@ -2384,6 +3006,13 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
+  /**
+   * The endpoint nodes of every edge in this collection, deduped.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the endpoint nodes
+   */
   connectedNodes( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -2414,10 +3043,28 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
+  /**
+   * The immediate outgoing neighbourhood: the edges leaving these nodes
+   * plus the nodes they point at.  One hop only — use `successors()` for
+   * the transitive closure.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the outgoing edges and their target nodes
+   */
   outgoers( criterion?: FilterLike ): GpuCollection {
     return this._goers( 'out', criterion );
   }
 
+  /**
+   * The immediate incoming neighbourhood: the edges arriving at these
+   * nodes plus the nodes they come from.  One hop only — use
+   * `predecessors()` for the transitive closure.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the incoming edges and their source nodes
+   */
   incomers( criterion?: FilterLike ): GpuCollection {
     return this._goers( 'in', criterion );
   }
@@ -2458,6 +3105,16 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
+  /**
+   * The *open* neighbourhood: the incident edges and the nodes on their
+   * far ends, ignoring edge direction, excluding the collection's own
+   * elements.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the neighbouring edges and nodes
+   * @see GpuCollection#closedNeighborhood to include these nodes
+   */
   neighborhood( criterion?: FilterLike ): GpuCollection {
     const store = this._store;
     const adj = store.adj;
@@ -2512,6 +3169,13 @@ export class GpuCollection {
 
   declare openNeighborhood: this['neighborhood'];
 
+  /**
+   * The open neighbourhood plus this collection's own nodes.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the closed neighbourhood
+   */
   closedNeighborhood( criterion?: FilterLike ): GpuCollection {
     const eles = this.neighborhood().union( this.nodes() );
 
@@ -2788,10 +3452,27 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
+  /**
+   * Everything reachable by following outgoing edges, transitively — the
+   * edges and nodes of the forward closure, excluding these nodes
+   * themselves (unless a cycle reaches them).
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the reachable edges and nodes
+   */
   successors( criterion?: FilterLike ): GpuCollection {
     return this._dagAllHops( 'out', criterion );
   }
 
+  /**
+   * Everything that reaches these nodes by following incoming edges,
+   * transitively.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the edges and nodes of the backward closure
+   */
   predecessors( criterion?: FilterLike ): GpuCollection {
     return this._dagAllHops( 'in', criterion );
   }
@@ -2846,10 +3527,25 @@ export class GpuCollection {
 
   // -- edge relations --
 
+  /**
+   * The edges connecting this collection's nodes with `others`, in
+   * either direction.
+   *
+   * @param others — the nodes on the far side (a collection, never a
+   *   selector string)
+   * @returns the connecting edges
+   */
   edgesWith( others: GpuCollection ): GpuCollection {
     return this._edgesWith( others, false );
   }
 
+  /**
+   * The edges running *from* this collection's nodes *to* `others` —
+   * `edgesWith()` restricted by direction.
+   *
+   * @param others — the target-side nodes
+   * @returns the directed connecting edges
+   */
   edgesTo( others: GpuCollection ): GpuCollection {
     return this._edgesWith( others, true );
   }
@@ -2882,10 +3578,27 @@ export class GpuCollection {
     return this._spawn( refs );
   }
 
+  /**
+   * The edges sharing endpoints with these edges, in either direction —
+   * including each edge itself.  These are the edges a bezier bundle
+   * fans apart.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the parallel edges
+   */
   parallelEdges( criterion?: FilterLike ): GpuCollection {
     return this._parallelEdges( false, criterion );
   }
 
+  /**
+   * The parallel edges pointing the same way — same source and same
+   * target — including each edge itself.
+   *
+   * @param criterion — an optional query object or predicate to filter
+   *   the result
+   * @returns the codirected edges
+   */
   codirectedEdges( criterion?: FilterLike ): GpuCollection {
     return this._parallelEdges( true, criterion );
   }
@@ -3297,10 +4010,26 @@ export class GpuCollection {
 
   // -- graph algorithms (slot-native implementations in ./algorithms/) --
 
+  /**
+   * Breadth-first search from one or more roots over this collection's
+   * subgraph, walking slot-native over the CSR adjacency.
+   *
+   * @param args — v3's option shape (`{ roots, visit, directed }`) or the
+   *   positional form; `roots` is a **collection**, since v4 has no
+   *   selector strings
+   * @returns `{ path, found }`
+   */
   breadthFirstSearch( ...args: SearchArgs ): SearchResult {
     return searchImpl( this, true, args );
   }
 
+  /**
+   * Depth-first search from one or more roots.  Same options as
+   * `breadthFirstSearch`.
+   *
+   * @param args — `{ roots, visit, directed }` or the positional form
+   * @returns `{ path, found }`
+   */
   depthFirstSearch( ...args: SearchArgs ): SearchResult {
     return searchImpl( this, false, args );
   }
@@ -3308,26 +4037,66 @@ export class GpuCollection {
   declare bfs: this['breadthFirstSearch'];
   declare dfs: this['depthFirstSearch'];
 
+  /**
+   * Dijkstra shortest paths from a root over non-negative weights.
+   *
+   * @param args — `{ root, weight, directed }`; `weight` is a plain
+   *   function `( edge ) => number`
+   * @returns `{ distanceTo, pathTo }`
+   */
   dijkstra( ...args: DijkstraArgs ): DijkstraResult {
     return dijkstraImpl( this, args );
   }
 
+  /**
+   * A* shortest path between two nodes.
+   *
+   * @param options — `{ root, goal, weight, heuristic, directed }`, with
+   *   `weight` and `heuristic` as plain functions
+   * @returns `{ found, distance, path }`
+   */
   aStar( options?: AStarOptions ): AStarResult {
     return aStarImpl( this, options );
   }
 
+  /**
+   * Bellman–Ford shortest paths, which unlike Dijkstra tolerates
+   * negative weights and reports negative cycles.
+   *
+   * @param options — `{ root, weight, directed }`
+   * @returns `{ distanceTo, pathTo, hasNegativeWeightCycle, negativeWeightCycles }`
+   */
   bellmanFord( options?: BellmanFordOptions ): BellmanFordResult {
     return bellmanFordImpl( this, options );
   }
 
+  /**
+   * Floyd–Warshall all-pairs shortest paths.  O(n³) — for a single
+   * source prefer `dijkstra`/`bellmanFord`.
+   *
+   * @param options — `{ weight, directed }`
+   * @returns `{ distance, path }` accessors
+   */
   floydWarshall( options?: FloydWarshallOptions ): FloydWarshallResult {
     return floydWarshallImpl( this, options );
   }
 
+  /**
+   * Kruskal's minimum spanning tree/forest.
+   *
+   * @param weight — `( edge ) => number`; defaults to unit weights
+   * @returns the spanning forest's nodes and edges
+   */
   kruskal( weight?: WeightFn ): GpuCollection {
     return kruskalImpl( this, weight );
   }
 
+  /**
+   * Tarjan's strongly connected components.  Implemented iteratively, so
+   * deep graphs cannot overflow the JS stack.
+   *
+   * @returns `{ components, cut }`
+   */
   tarjanStronglyConnected(): TarjanStronglyConnectedResult {
     return tarjanImpl( this );
   }
@@ -3336,6 +4105,11 @@ export class GpuCollection {
   declare tscc: this['tarjanStronglyConnected'];
   declare tarjanStronglyConnectedComponents: this['tarjanStronglyConnected'];
 
+  /**
+   * Hopcroft–Tarjan biconnected components and articulation points.
+   *
+   * @returns `{ components, cut }`
+   */
   hopcroftTarjanBiconnected(): HopcroftTarjanBiconnectedResult {
     return hopcroftTarjanImpl( this );
   }
@@ -3344,24 +4118,55 @@ export class GpuCollection {
   declare htb: this['hopcroftTarjanBiconnected'];
   declare hopcroftTarjanBiconnectedComponents: this['hopcroftTarjanBiconnected'];
 
+  /**
+   * Hierholzer's Eulerian path/circuit.
+   *
+   * @param args — `{ root }` or the positional form
+   * @returns `{ found, trail }`
+   */
   hierholzer( ...args: HierholzerArgs ): HierholzerResult {
     return hierholzerImpl( this, args );
   }
 
+  /**
+   * Karger–Stein randomized minimum cut.  Randomized, so repeated runs
+   * may differ.
+   *
+   * @returns `{ cut, components, partition1, partition2 }`
+   */
   kargerStein(): KargerSteinResult {
     return kargerSteinImpl( this );
   }
 
+  /**
+   * PageRank over the (directed) subgraph.
+   *
+   * @param options — `{ dampingFactor, precision, iterations }`
+   * @returns `{ rank }`, a per-node accessor
+   */
   pageRank( options?: PageRankOptions ): PageRankResult {
     return pageRankImpl( this, options );
   }
 
+  /**
+   * Degree centrality of one node relative to the collection.
+   *
+   * @param options — `{ root, weight, alpha, directed }`
+   * @returns `{ degree }`, or `{ indegree, outdegree }` when directed
+   */
   degreeCentrality( options?: DegreeCentralityOptions ): DegreeCentralityResult {
     return degreeCentralityImpl( this, options );
   }
 
   declare dc: this['degreeCentrality'];
 
+  /**
+   * Degree centrality for every node, normalized to [0, 1].
+   *
+   * @param options — `{ weight, alpha, directed }`
+   * @returns a `degree` accessor, or `indegree`/`outdegree` when
+   *   directed
+   */
   degreeCentralityNormalized( options?: DegreeCentralityOptions ): DegreeCentralityNormalizedResult {
     return degreeCentralityNormalizedImpl( this, options );
   }
@@ -3369,12 +4174,25 @@ export class GpuCollection {
   declare dcn: this['degreeCentralityNormalized'];
   declare degreeCentralityNormalised: this['degreeCentralityNormalized'];
 
+  /**
+   * Closeness centrality of one node — the reciprocal of its summed
+   * shortest-path distances to the rest of the collection.
+   *
+   * @param options — `{ root, weight, directed, harmonic }`
+   * @returns the closeness score
+   */
   closenessCentrality( options?: ClosenessCentralityOptions ): number {
     return closenessCentralityImpl( this, options );
   }
 
   declare cc: this['closenessCentrality'];
 
+  /**
+   * Closeness centrality for every node, normalized to [0, 1].
+   *
+   * @param options — `{ weight, directed, harmonic }`
+   * @returns a `closeness` accessor
+   */
   closenessCentralityNormalized( options?: ClosenessCentralityOptions ): ClosenessCentralityNormalizedResult {
     return closenessCentralityNormalizedImpl( this, options );
   }
@@ -3382,38 +4200,91 @@ export class GpuCollection {
   declare ccn: this['closenessCentralityNormalized'];
   declare closenessCentralityNormalised: this['closenessCentralityNormalized'];
 
+  /**
+   * Betweenness centrality — how often each node lies on shortest paths
+   * between other pairs.
+   *
+   * @param options — `{ weight, directed }`
+   * @returns `{ betweenness, betweennessNormalized }` accessors
+   */
   betweennessCentrality( options?: BetweennessCentralityOptions ): BetweennessCentralityResult {
     return betweennessCentralityImpl( this, options );
   }
 
   declare bc: this['betweennessCentrality'];
 
+  /**
+   * k-means clustering in attribute space.  Like v3's clustering
+   * algorithms this works on handles and `attributes` accessors rather
+   * than on graph structure.
+   *
+   * @param options — `{ k, attributes, distance, maxIterations,
+   *   sensitivityThreshold }`, with `attributes` as plain functions
+   * @returns one collection per cluster
+   */
   kMeans( options?: KClusteringOptions ): GpuCollection[] {
     return kMeansImpl( this, options );
   }
 
+  /**
+   * k-medoids clustering — like k-means, but cluster centres are actual
+   * elements, which makes it robust to outliers.
+   *
+   * @param options — as `kMeans`
+   * @returns one collection per cluster
+   */
   kMedoids( options?: KClusteringOptions ): GpuCollection[] {
     return kMedoidsImpl( this, options );
   }
 
+  /**
+   * Fuzzy c-means clustering: each element gets a degree of membership
+   * in every cluster rather than one hard assignment.
+   *
+   * @param options — as `kMeans`, plus the fuzziness exponent
+   * @returns `{ clusters, degreeOfMembership }`
+   */
   fuzzyCMeans( options?: KClusteringOptions ): FuzzyCMeansResult {
     return fuzzyCMeansImpl( this, options );
   }
 
   declare fcm: this['fuzzyCMeans'];
 
+  /**
+   * Agglomerative hierarchical clustering.
+   *
+   * @param options — `{ attributes, distance, linkage, mode,
+   *   dendrogramDepth }`
+   * @returns one collection per cluster
+   */
   hierarchicalClustering( options?: HierarchicalClusteringOptions ): GpuCollection[] {
     return hierarchicalClusteringImpl( this, options );
   }
 
   declare hca: this['hierarchicalClustering'];
 
+  /**
+   * Markov clustering (MCL) — flow simulation over the graph, so unlike
+   * the attribute-space algorithms this one clusters by structure.
+   *
+   * @param options — `{ attributes, expandFactor, inflateFactor,
+   *   multFactor, maxIterations }`
+   * @returns one collection per cluster
+   */
   markovClustering( options?: MarkovClusteringOptions ): GpuCollection[] {
     return markovClusteringImpl( this, options );
   }
 
   declare mcl: this['markovClustering'];
 
+  /**
+   * Affinity propagation, which picks exemplars by message passing and
+   * so needs no target cluster count.
+   *
+   * @param options — `{ attributes, distance, preference, damping,
+   *   minIterations, maxIterations }`
+   * @returns one collection per cluster
+   */
   affinityPropagation( options?: AffinityPropagationOptions ): GpuCollection[] {
     return affinityPropagationImpl( this, options );
   }
@@ -3425,43 +4296,112 @@ export class GpuCollection {
   // degree()/indegree()/outdegree() are singular accessors: they report the
   // FIRST element's degree (undefined if it isn't a live node), as in v3. The
   // whole-collection sum is totalDegree().
+  /**
+   * The **first** element's total degree, in + out, answered in O(1) off
+   * the adjacency index.
+   *
+   * This is a singular accessor, as in v3 — it reports one node's
+   * degree, not a collection-wide figure.  For the sum over the whole
+   * collection use `totalDegree()`.
+   *
+   * @param includeLoops — whether self-loops count (each contributes 2)
+   * @returns the degree, or undefined when the first element is not a
+   *   live node
+   */
   degree( includeLoops: boolean = true ): number | undefined {
     return this._degree( includeLoops, ( store, slot ) =>
       store.adj.outDegree( slot ) + store.adj.inDegree( slot ) );
   }
 
+  /**
+   * The first element's out-degree, in O(1).  Singular, like `degree()`.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the out-degree, or undefined when not a live node
+   */
   outdegree( includeLoops: boolean = true ): number | undefined {
     return this._degree( includeLoops, ( store, slot ) => store.adj.outDegree( slot ), 'out' );
   }
 
+  /**
+   * The first element's in-degree, in O(1).  Singular, like `degree()`.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the in-degree, or undefined when not a live node
+   */
   indegree( includeLoops: boolean = true ): number | undefined {
     return this._degree( includeLoops, ( store, slot ) => store.adj.inDegree( slot ), 'in' );
   }
 
+  /**
+   * The smallest total degree among the collection's nodes.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the minimum degree, or undefined when there are no nodes
+   */
   minDegree( includeLoops: boolean = true ): number | undefined {
     return this._degreeBound( 'degree', includeLoops, -1 );
   }
 
+  /**
+   * The largest total degree among the collection's nodes.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the maximum degree, or undefined when there are no nodes
+   */
   maxDegree( includeLoops: boolean = true ): number | undefined {
     return this._degreeBound( 'degree', includeLoops, 1 );
   }
 
+  /**
+   * The smallest in-degree among the collection's nodes.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the minimum in-degree, or undefined when there are no nodes
+   */
   minIndegree( includeLoops: boolean = true ): number | undefined {
     return this._degreeBound( 'indegree', includeLoops, -1 );
   }
 
+  /**
+   * The largest in-degree among the collection's nodes.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the maximum in-degree, or undefined when there are no nodes
+   */
   maxIndegree( includeLoops: boolean = true ): number | undefined {
     return this._degreeBound( 'indegree', includeLoops, 1 );
   }
 
+  /**
+   * The smallest out-degree among the collection's nodes.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the minimum out-degree, or undefined when there are no
+   *   nodes
+   */
   minOutdegree( includeLoops: boolean = true ): number | undefined {
     return this._degreeBound( 'outdegree', includeLoops, -1 );
   }
 
+  /**
+   * The largest out-degree among the collection's nodes.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the maximum out-degree, or undefined when there are no
+   *   nodes
+   */
   maxOutdegree( includeLoops: boolean = true ): number | undefined {
     return this._degreeBound( 'outdegree', includeLoops, 1 );
   }
 
+  /**
+   * The summed degree of every node in the collection — the
+   * whole-collection figure that `degree()` deliberately is not.
+   *
+   * @param includeLoops — whether self-loops count
+   * @returns the total degree (0 when there are no nodes)
+   */
   totalDegree( includeLoops: boolean = true ): number {
     let total = 0;
 
@@ -3523,6 +4463,18 @@ export class GpuCollection {
 
   // -- events --
 
+  /**
+   * Listen for events on each element of this collection.  The handler
+   * is bound per element, and keeps firing across slot compaction —
+   * listeners repair with their elements rather than going stale.
+   *
+   * Events bubble from an element through its compound ancestors to the
+   * core (round 14.5), with `stopPropagation()` honoured.
+   *
+   * @param events — one or more space-separated event names
+   * @param callback — the handler
+   * @returns this collection, for chaining
+   */
   on( events: string, callback?: EventHandler ): this {
     for( const ref of this._refs ){
       this._cy._emitter.on( events, refQualifier( ref ), callback );
@@ -3533,6 +4485,13 @@ export class GpuCollection {
 
   declare addListener: this['on'];
 
+  /**
+   * Like `on()`, but each element's handler runs at most once.
+   *
+   * @param events — one or more space-separated event names
+   * @param callback — the handler
+   * @returns this collection, for chaining
+   */
   one( events: string, callback?: EventHandler ): this {
     for( const ref of this._refs ){
       this._cy._emitter.on( events, refQualifier( ref ), callback, { one: true } );
@@ -3545,6 +4504,14 @@ export class GpuCollection {
   declare listen: this['on'];
   declare bind: this['on'];
 
+  /**
+   * Stop listening on each element of this collection.
+   *
+   * @param events — one or more space-separated event names
+   * @param callback — the handler to remove; omit to remove every
+   *   handler these elements have for `events`
+   * @returns this collection, for chaining
+   */
   off( events: string, callback?: EventHandler ): this {
     for( const ref of this._refs ){
       this._cy._emitter.off( events, refQualifier( ref ), callback );
@@ -3557,6 +4524,15 @@ export class GpuCollection {
   declare unlisten: this['off'];
   declare unbind: this['off'];
 
+  /**
+   * Emit an event on each element, bubbling through compound ancestors
+   * to the core.
+   *
+   * @param events — one or more space-separated event names
+   * @param extraParams — extra arguments passed to each handler after
+   *   the event object
+   * @returns this collection, for chaining
+   */
   emit( events: string, extraParams?: unknown[] ): this {
     // v4 does not support event namespaces (see PLAN.md); types are emitted verbatim
     for( let i = 0; i < this.length; i++ ){
@@ -3572,6 +4548,13 @@ export class GpuCollection {
 
   declare trigger: this['emit'];
 
+  /**
+   * Resolve once the next matching event fires on any element of this
+   * collection — the promise form of `one()`.
+   *
+   * @param events — one or more space-separated event names
+   * @returns a promise for the event object
+   */
   promiseOn( events: string ): Promise<Event> {
     return new Promise( resolve => {
       this.one( events, event => resolve( event ) );

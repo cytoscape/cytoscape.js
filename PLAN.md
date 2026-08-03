@@ -6103,10 +6103,24 @@ release.
   `startBatch`/`endBatch`/`batch`.  Public tier 42.4% → **58.1%**;
   floors set to 58/49.  Typecheck, 2286 Node tests (6 new), 63
   module tests, lint clean.
-- [ ] **26.2 The collection surface** — every public member of
-  `GpuCollection` (`collection.mts`), the largest single surface
-  (204 members), including the traversal, compound, algorithm and
-  style-getter families.
+- [x] **26.2 The collection surface** (2026-08-02) — landed:
+  `collection.mts` 66/204 → **204/204**, the largest single surface,
+  covering iteration/comparison/set-building, position and
+  dimensions, the visibility/selection/grab flag families, traversal
+  and edge relations, the whole graph-algorithm surface, degree, and
+  the element event methods.  Drift fixed while writing:
+  `animate()`'s block still advertised the pre-round-25 animatable
+  set (no width/height, edge width, padding or font-size) and said
+  nothing about OKLab or the names-only easing rule.  Contract
+  points that had never been written down anywhere a caller would
+  look now are: `position()` reads stale under a GPU-owned tween
+  while `width()`/`height()` never do (the round-25 geometry-tween
+  rule), `boundingBox()` includes labels by default with exact node
+  terms and conservative edge terms, `degree()` is singular where
+  `totalDegree()` is the collection-wide sum, and `filter()`'s
+  query/predicate split is what replaced selector strings.  Public
+  tier 58.1% → **92.3%**; floor raised to 92.  Typecheck, 2287 Node
+  tests, 63 module tests, lint clean.
 - [ ] **26.3 Animation, layouts, style, entry points** —
   `animation.mts`, `layout/` (the contract + the six built-ins),
   the public half of `style.mts`, and `index.mts`/`wire.mts`/

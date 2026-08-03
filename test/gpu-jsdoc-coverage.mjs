@@ -22,11 +22,12 @@ Raise the floors when a pass raises the number; never lower them.
 /** Public-API files whose public members are 100% documented. */
 const COMPLETE = [
   'src/gpu/core.mts',
-  'src/gpu/viewport.mts'
+  'src/gpu/viewport.mts',
+  'src/gpu/collection.mts'
 ];
 
 /** Ratcheting tier floors, in percent. Raise as passes land. */
-const PUBLIC_FLOOR = 58;
+const PUBLIC_FLOOR = 92;
 const INTERNAL_FLOOR = 49;
 
 describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){

@@ -3255,6 +3255,10 @@ export class StyleEngine {
     return key === 'id' ? this.store.idAt( group, slot ) : this.store.data.get( group, slot, key );
   };
 
+  /**
+   * @param store — the columnar store whose channel columns this engine
+   *   resolves style into
+   */
   constructor( store: GraphStore ){
     this.store = store;
     this.sheet = {};
@@ -3275,11 +3279,6 @@ export class StyleEngine {
     };
   }
 
-  /**
-   * Replace the stylesheet and (re-)apply to all alive elements — the
-   * mapped channels too.  `apply: false` compiles and validates without
-   * applying (the core defers the apply while batching).
-   */
   private coreStyle: CoreStyle = { ...CORE_DEFAULTS };
 
   /** The resolved core theming props (round 13 A2). */
@@ -3287,6 +3286,22 @@ export class StyleEngine {
     return this.coreStyle;
   }
 
+  /**
+   * Replace the stylesheet and re-apply it to every live element,
+   * mapped channels included.
+   *
+   * The sheet is a plain `{ nodes, edges, parents, core }` object of
+   * prop objects — no selector blocks, no style functions.  The
+   * `parents` group overlays the `nodes` block under v3's `:parent`
+   * defaults.
+   *
+   * @param sheet — the stylesheet to install
+   * @param apply — when false, compile and validate without applying;
+   *   the core uses this to defer the apply to the outermost
+   *   `endBatch()` while still throwing on a bad sheet at the call site
+   * @throws on an unknown sheet key, an unknown property, or an invalid
+   *   value
+   */
   setSheet( sheet: GpuStylesheet, apply: boolean = true ): void {
     for( const key of Object.keys( sheet ) ){
       if( !SHEET_KEYS.has( key ) ){
@@ -3537,10 +3552,20 @@ export class StyleEngine {
     return this.arrows;
   }
 
+  /**
+   * Which mid-edge arrow ends the current sheet can enable.  The
+   * renderer skips the mid-arrow draw entirely when neither is
+   * possible.
+   */
   get midArrowEnds(): { source: boolean; target: boolean } {
     return this.midArrows;
   }
 
+  /**
+   * The installed stylesheet, as given.  Part of `cy.json()`'s export.
+   *
+   * @returns the sheet object (live, not a copy — treat as read-only)
+   */
   json(): GpuStylesheet {
     return this.sheet;
   }
@@ -3550,6 +3575,10 @@ export class StyleEngine {
     this.applyAll();
   }
 
+  /**
+   * Apply the sheet across every live element of both groups.  This is
+   * the whole-graph pass a sheet change or a batch flush runs.
+   */
   applyAll(): void {
     this.applyBulk( 'nodes', this.store.slotsOrdered( 'nodes' ) );
     this.applyBulk( 'edges', this.store.slotsOrdered( 'edges' ) );
@@ -4668,6 +4697,21 @@ export class StyleEngine {
     return { source: computed.sourceArrowWidth, target: computed.targetArrowWidth };
   }
 
+  /**
+   * An arrow's colour *before* the edge-opacity fold.
+   *
+   * The arrow vertex stage sits at WebGPU's base 8-storage-buffer
+   * limit, so edge opacity is pre-folded into the stored arrow alpha —
+   * which means the stored bytes cannot recover the base when the
+   * folded opacity was 0.  Animations and transitions that move edge
+   * opacity read the base from here instead.
+   *
+   * @param ref — the edge
+   * @param colorProp — `'source-arrow-color'` or
+   *   `'target-arrow-color'`
+   * @returns the unfolded RGBA, or the no-arrow value when that end
+   *   draws no arrow
+   */
   arrowBase( ref: Ref, colorProp: string ): RGBA {
     const def = this.defs.edges;
     const computed = def.computed as Computed;

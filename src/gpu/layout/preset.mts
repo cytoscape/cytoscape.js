@@ -23,16 +23,39 @@ const defaults: Omit<GpuPresetLayoutOptions, 'name'> = {
   padding: 30 // padding on fit
 };
 
+/**
+ * Place nodes at explicitly supplied positions.
+ *
+ * `positions` is a map from element id to `{ x, y }`, or a function of the node; nodes without a position keep the one they have.
+ */
 export class PresetLayout {
+  /** the resolved options this layout was created with */
   options: GpuPresetLayoutOptions;
 
   private cy: GpuCore;
 
+  /**
+   * Reached through `cy.layout( { name: 'preset' } )` /
+   * `eles.layout( … )` rather than constructed directly.
+   *
+   * @param cy — the core to lay out
+   * @param options — this layout's options merged over its defaults,
+   *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
+   *   `transform`, `animate`, the lifecycle callbacks)
+   */
   constructor( cy: GpuCore, options: GpuPresetLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
 
+  /**
+   * Run the layout: emits `layoutstart`, writes the positions, then
+   * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
+   * tween to their targets and a `fit` animates the viewport to the box
+   * at the *final* positions, concurrently.
+   *
+   * @returns this layout, for chaining
+   */
   run(): this {
     const cy = this.cy;
     const options = this.options;

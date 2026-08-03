@@ -13,18 +13,46 @@ callers holding classic elements JSON.  Payloads are self-contained:
 every edge endpoint must name a node in the same payload.
 */
 
+/**
+ * Whether an id column is in the packed byte form rather than a plain
+ * array of strings.
+ *
+ * @param ids — the id column to test
+ * @returns true for the `{ offsets, blob }` packed form
+ */
 export const isPackedIds = (
   ids: ( string | undefined )[] | GpuPackedIds
 ): ids is GpuPackedIds => {
   return !Array.isArray( ids );
 };
 
+/**
+ * Whether an elements payload is in the columnar bulk-load form.
+ *
+ * @param elements — a payload in definition or columnar form
+ * @returns true when it carries `columnar: true`
+ */
 export const isColumnarElements = (
   elements: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements
 ): elements is GpuColumnarElements => {
   return ( elements as GpuColumnarElements ).columnar === true;
 };
 
+/**
+ * Convert classic v3-style elements JSON into the columnar bulk-load
+ * form: typed-array columns with edge endpoints as node *indices*.
+ *
+ * This is the compatibility path for callers holding definition-form
+ * JSON; the columnar form is what the loader ingests fastest, since
+ * contiguous slot runs become memcpys and no per-element objects or
+ * per-edge id lookups are needed.  Exposed publicly as
+ * `cytoscapeGpu.toColumnarElements`.
+ *
+ * @param defs — one element, an array, or `{ nodes, edges }`
+ * @returns the equivalent self-contained columnar payload
+ * @throws if an edge names a source or target that is not a node in the
+ *   same payload — columnar payloads must be self-contained
+ */
 export const toColumnarElements = (
   defs: GpuElementsDefinition | GpuElementDefinition
 ): GpuColumnarElements => {

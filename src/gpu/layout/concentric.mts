@@ -37,16 +37,39 @@ const defaults: Omit<GpuConcentricLayoutOptions, 'name'> = {
 
 type Level = { value: number; node: GpuCollection }[] & { dTheta?: number; r?: number };
 
+/**
+ * Place nodes on concentric rings, most important innermost.
+ *
+ * `concentric` scores each node (degree by default) and `levelWidth` decides how wide a score band a ring covers.
+ */
 export class ConcentricLayout {
+  /** the resolved options this layout was created with */
   options: GpuConcentricLayoutOptions;
 
   private cy: GpuCore;
 
+  /**
+   * Reached through `cy.layout( { name: 'concentric' } )` /
+   * `eles.layout( … )` rather than constructed directly.
+   *
+   * @param cy — the core to lay out
+   * @param options — this layout's options merged over its defaults,
+   *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
+   *   `transform`, `animate`, the lifecycle callbacks)
+   */
   constructor( cy: GpuCore, options: GpuConcentricLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
 
+  /**
+   * Run the layout: emits `layoutstart`, writes the positions, then
+   * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
+   * tween to their targets and a `fit` animates the viewport to the box
+   * at the *final* positions, concurrently.
+   *
+   * @returns this layout, for chaining
+   */
   run(): this {
     const cy = this.cy;
     const options = this.options;

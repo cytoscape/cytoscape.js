@@ -47,9 +47,43 @@ export interface ForceLayoutOptions {
 
 const DEFAULT_EDGE_LENGTH = 60;
 
+/**
+ * The built-in force layout (round 18): spring–electric with
+ * uniform-grid cutoff repulsion, springs toward per-edge ideal lengths,
+ * centering gravity and damped gradient integration under d3-shaped
+ * alpha annealing.
+ *
+ * It is an ordinary consumer of the round-17 extension contract — the
+ * built-in is the contract's first production user, so an external
+ * layout has exactly the same capabilities.
+ *
+ * Deviations worth knowing: a cutoff model does not promise global
+ * untangling (a curled chain is a legitimate local minimum), and GPU
+ * trajectories are not bit-stable run to run because in-cell scatter
+ * order is atomic — seeded bit-reproducibility is the CPU executor's
+ * guarantee, and the two executors agree on invariants, not
+ * trajectories.
+ */
 export class ForceLayoutImpl implements GpuLayoutImpl {
   private stopped = false;
 
+  /**
+   * Run the simulation.  Two executors, one spec: the CPU reference is
+   * always available (headless instances, compound graphs,
+   * `animate: false`) and is what the specs pin, while under
+   * `animate: true` on a flat rendered graph the GPU integrator takes
+   * over — six dispatches per iteration encoded ahead of the cull pass,
+   * so 100k-node layouts animate live with edges and labels following
+   * on-device.
+   *
+   * While the GPU integrator runs it owns `node.position` (the tween
+   * lease), so CPU position reads are stale for the duration;
+   * convergence triggers a single readback that settles the columns.
+   *
+   * @param ctx — the layout context: unlocked leaf slots, live position
+   *   views, O(1) CSR degrees and the bulk `setPositions` write
+   * @returns a promise that resolves at convergence when animating
+   */
   run( ctx: GpuLayoutContext ): void | Promise<void> {
     const cy = ctx.cy;
     const store = cy._store;
@@ -284,6 +318,10 @@ export class ForceLayoutImpl implements GpuLayoutImpl {
     } );
   }
 
+  /**
+   * Stop the simulation at the next iteration boundary, leaving nodes
+   * where they have reached.
+   */
   stop(): void {
     this.stopped = true;
   }

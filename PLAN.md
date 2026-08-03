@@ -6121,10 +6121,24 @@ release.
   query/predicate split is what replaced selector strings.  Public
   tier 58.1% → **92.3%**; floor raised to 92.  Typecheck, 2287 Node
   tests, 63 module tests, lint clean.
-- [ ] **26.3 Animation, layouts, style, entry points** —
-  `animation.mts`, `layout/` (the contract + the six built-ins),
-  the public half of `style.mts`, and `index.mts`/`wire.mts`/
-  `columnar.mts`/`gpu-types.mts`.
+- [x] **26.3 Animation, layouts, style, entry points**
+  (2026-08-02) — landed: `animation.mts`, `style.mts`,
+  `columnar.mts`, `layout/contract.mts` and all seven layouts
+  (the six built-ins plus `ForceLayoutImpl`) documented, taking the
+  **public API tier to 100%** (408/408).  A third stranded doc block
+  surfaced — `setSheet()`'s prose had drifted onto the
+  `coreStyle` field below it — the same failure mode as 26.1's
+  `json()`, which is now three instances of one pattern: a block
+  comment separated from its member by a later insertion.  The
+  audit itself gained three fixes found by running it against real
+  code: interface members were being attributed to the class above
+  them (`GpuTweenSink.register` counted against `Animation`), prose
+  inside `/* */` blocks could parse as a member declaration (the
+  style-getter narrative's literal `rgba(...,0);` line), and
+  top-level exported functions were not audited at all — adding
+  them widened the surface by 8 public and 104 internal members.
+  Floors: public 100, internal 58.  Typecheck, 2292 Node tests, 63
+  module tests, lint clean.
 - [ ] **26.4 The internal subsystems** — `store/`, `render/`,
   `interact/`, `algorithms/`: classes and functions documented for
   the next maintainer rather than for the docs site.

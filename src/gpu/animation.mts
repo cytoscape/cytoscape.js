@@ -320,7 +320,10 @@ export const buildChannelWrite = (
  * whatever ran before them.
  */
 export class Animation {
+  /** the elements being animated (empty for a viewport animation) */
   readonly refs: Ref[];
+
+  /** true when this animates the viewport rather than elements */
   readonly isViewport: boolean;
   private store: GraphStore;
   private styleEngine: StyleEngine | null;
@@ -349,6 +352,12 @@ export class Animation {
    * settling tail to run past it).
    */
   readonly durationMs: number;
+  /**
+   * The compiled easing: a kind plus either a bezier tuple or a
+   * progression array.  One curve layer, two executors — the CPU tick
+   * calls it directly and the GPU kernel reads it out of its params, so
+   * the two agree to float precision without parallel implementations.
+   */
   readonly easingProgram: EasingProgram;
   /** set when the renderer's GPU tween runtime drives this animation */
   gpuDriven = false;
@@ -382,6 +391,22 @@ export class Animation {
     return ani;
   }
 
+  /**
+   * Build an animation.  Reached through `eles.animate()`/
+   * `eles.animation()` and `cy.animate()`/`cy.animation()` rather than
+   * constructed directly.
+   *
+   * @param store — the columnar store the tween writes into
+   * @param viewport — the viewport, for a viewport animation
+   * @param refs — the elements to animate
+   * @param isViewport — whether this targets the viewport
+   * @param opts — targets, `duration`, `easing`, `delay`, `complete`
+   * @param styleEngine — needed to resolve style targets and the arrow
+   *   colour fold
+   * @throws if `easing` is a function — a closure cannot cross to the
+   *   device, so accepting one would make the curve depend on whether
+   *   the animation got offloaded
+   */
   constructor(
     store: GraphStore, viewport: Viewport | null,
     refs: Ref[], isViewport: boolean, opts: AnimateOptions,
@@ -432,6 +457,7 @@ export class Animation {
     }
   }
 
+  /** True once the animation has completed or been stopped. */
   get done(): boolean { return this._done; }
 
   /** Columns this animation writes (round 21: the concurrency contract —
@@ -439,6 +465,14 @@ export class Animation {
    * disjoint).  A no-op tween (delay()) touches nothing. */
   private _columns: ReadonlySet<string> | null = null;
 
+  /**
+   * The store columns this animation writes — the round-21 concurrency
+   * contract: two animations on the same element run together exactly
+   * when their column sets are disjoint, and overlap evicts the older
+   * one.  A no-op tween (`delay()`) touches nothing.
+   *
+   * @returns the set of column ids, computed once and cached
+   */
   touchedColumns(): ReadonlySet<string> {
     if( this._columns == null ){
       const cols = new Set<string>();
@@ -460,6 +494,7 @@ export class Animation {
 
   /** Viewport channels (round 21): pan and zoom compose when disjoint. */
   get hasPan(): boolean { return this.pan != null; }
+  /** Whether this viewport animation tweens the zoom. */
   get hasZoom(): boolean { return this.zoom != null; }
 
   /**
@@ -528,6 +563,11 @@ export class Animation {
 
   // -- controls (round 24.3) --
 
+  /**
+   * Whether the animation is paused: values hold where they are and the
+   * promise stays pending.  A paused animation still owns its channels,
+   * so the round-21 eviction stops it like any running one.
+   */
   get paused(): boolean { return this._paused; }
 
   /** Elapsed fraction of the duration (0 before start, 1 when done;
@@ -631,18 +671,22 @@ export class Animation {
     }
   }
 
-  /**
-   * Whether the GPU tween runtime can drive this animation outright.
-   * All-or-nothing: a single non-offloadable channel keeps the whole
-   * animation on the CPU, so a column is never half-owned.  Position
-   * qualifies under the round-9 lease (cull reads the tweened positions
-   * on-GPU); paint qualifies because nothing on the CPU reads it; geometry
-   * style channels and the viewport do not.
-   */
   /** set when a slot compaction demoted this animation mid-flight: the
    * rest of its run stays on the CPU (its GPU buffers held old slots) */
   private _gpuBarred = false;
 
+  /**
+   * Whether the GPU tween runtime can drive this animation outright.
+   *
+   * All-or-nothing: one non-offloadable channel keeps the whole
+   * animation on the CPU, so a column is never half-owned.  Position
+   * qualifies under the round-9 lease (the pass barrier lets cull and
+   * the edge shaders read the tweened positions, so edges follow for
+   * free); paint qualifies because nothing on the CPU reads it;
+   * geometry channels and the viewport do not — geometry is read by
+   * cull, the CPU pick replica and every columnar scan, so it stays
+   * CPU-canonical (round 25).
+   */
   get gpuEligible(): boolean {
     if( this._gpuBarred ){ return false; }
     if( this.isViewport ){ return false; }
@@ -1090,6 +1134,11 @@ export class AnimationManager {
   private driven = false;
   private gpuCounter = 0;
 
+  /**
+   * @param onTick — run after each tick; the core uses it to request a
+   *   redraw and to emit viewport events while a viewport animation
+   *   pans or zooms
+   */
   constructor( onTick: () => void ){
     this.onTick = onTick;
 
@@ -1106,6 +1155,10 @@ export class AnimationManager {
     this.driven = true;
   }
 
+  /**
+   * Give the clock back: settle every GPU-driven animation onto the CPU
+   * columns and drop the sink.  Called when the renderer goes away.
+   */
   detachDriver(): void {
     this.settleGpuAll();
     this.sink = null;
@@ -1300,6 +1353,12 @@ export class AnimationManager {
     ani.settleGpu( jumpToEnd ? ani.startMs + ani.durationMs : now() );
   }
 
+  /**
+   * Stop every running viewport animation.
+   *
+   * @param jumpToEnd — finish at the target instead of freezing at the
+   *   current value
+   */
   stopViewport( jumpToEnd: boolean ): void {
     for( const ani of this.viewportRunning ){ ani.stop( jumpToEnd ); }
 
@@ -1327,6 +1386,14 @@ export class AnimationManager {
     ani.pause();
   }
 
+  /**
+   * Resume a paused animation.  The paused span is excluded from the
+   * timeline, so the remaining motion keeps its original pace, and a
+   * previously GPU-driven tween re-acquires the device on the shifted
+   * clock.
+   *
+   * @param ani — the animation to resume
+   */
   resumeAni( ani: Animation ): void {
     if( ani.done || !ani.paused ){ return; }
 

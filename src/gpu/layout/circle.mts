@@ -31,16 +31,39 @@ const defaults: Omit<GpuCircleLayoutOptions, 'name'> = {
   transform: undefined
 };
 
+/**
+ * Place nodes evenly around a single circle.
+ *
+ * The radius derives from the node count and spacing unless given explicitly; `sort` controls the order around the ring.
+ */
 export class CircleLayout {
+  /** the resolved options this layout was created with */
   options: GpuCircleLayoutOptions;
 
   private cy: GpuCore;
 
+  /**
+   * Reached through `cy.layout( { name: 'circle' } )` /
+   * `eles.layout( … )` rather than constructed directly.
+   *
+   * @param cy — the core to lay out
+   * @param options — this layout's options merged over its defaults,
+   *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
+   *   `transform`, `animate`, the lifecycle callbacks)
+   */
   constructor( cy: GpuCore, options: GpuCircleLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
 
+  /**
+   * Run the layout: emits `layoutstart`, writes the positions, then
+   * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
+   * tween to their targets and a `fit` animates the viewport to the box
+   * at the *final* positions, concurrently.
+   *
+   * @returns this layout, for chaining
+   */
   run(): this {
     const cy = this.cy;
     const options = this.options;

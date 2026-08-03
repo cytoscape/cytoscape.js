@@ -3,8 +3,9 @@
 // and the "Documenting the source" section of src/gpu/README.md).
 //
 // A *public member* is a member of an exported class whose name does not begin
-// with `_` and which is not marked `private`/`protected` — i.e. exactly what a
-// consumer can reach and what a docs generator would emit. Coverage is split
+// with `_` and which is not marked `private`/`protected`, plus every top-level
+// exported function — i.e. exactly what a consumer can reach and what a docs
+// generator would emit. Coverage is split
 // into two tiers: the PUBLIC_API files, which are the documented v4 surface and
 // are gated at 100%, and everything else in src/gpu, which is documented for
 // the next maintainer and carries a ratcheting floor.
@@ -41,6 +42,17 @@ const MEMBER_RE =
   /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*(?:\(|[:=])/;
 const CLASS_RE = /^(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/;
 
+// Any other top-level declaration ends the class body we are inside. Without
+// this an `interface`'s members read as members of the class above it.
+const TOP_LEVEL_RE =
+  /^(?:export\s+)?(?:declare\s+)?(?:default\s+)?(?:interface|type|function|const|let|var|enum|namespace|module)\b/;
+
+// A top-level exported function, in either spelling: `export function f(` and
+// `export const f = (` / `= async (` / `= function`. Exported consts that are
+// not functions are data, not API surface, and are left out.
+const EXPORTED_FN_RE =
+  /^export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^export\s+const\s+([A-Za-z_$][\w$]*)(?::[^=]+)?\s*=\s*(?:async\s*)?(?:function\b|(?:<[^>]*>)?\s*\()/;
+
 // Statement keywords that can appear at two-space indentation inside a class
 // body's methods and would otherwise read as member names.
 const KEYWORDS = new Set( [
@@ -48,6 +60,15 @@ const KEYWORDS = new Set( [
   'try', 'const', 'let', 'var', 'new', 'await', 'throw', 'typeof', 'delete',
   'break', 'continue', 'yield', 'function', 'class'
 ] );
+
+/** A doc comment is the nearest non-blank line above, ending the block. */
+function hasDocAbove( lines, i ){
+  let j = i - 1;
+
+  while( j >= 0 && lines[j].trim() === '' ) j--;
+
+  return j >= 0 && lines[j].trim().endsWith( '*/' );
+}
 
 /**
  * Audit one file's public members.
@@ -62,14 +83,48 @@ export function auditFile( file ){
   let documented = 0;
   let currentClass = null;
   let exported = false;
+  let inComment = false;
 
   for( let i = 0; i < lines.length; i++ ){
     const line = lines[i];
+
+    // Prose inside a block comment can look like a member declaration
+    // ("rgba(...,0); label channels ..."), so skip comment bodies outright.
+    if( inComment ){
+      if( line.includes( '*/' ) ) inComment = false;
+      continue;
+    }
+
+    const opened = line.lastIndexOf( '/*' );
+
+    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+      inComment = true;
+      continue;
+    }
+
+    const fn = line.match( EXPORTED_FN_RE );
+
+    if( fn ){
+      currentClass = null;
+
+      const name = fn[1] ?? fn[2];
+
+      if( hasDocAbove( lines, i ) ) documented++;
+      else missing.push( `${name}() (${rel}:${i + 1})` );
+
+      continue;
+    }
+
     const cls = line.match( CLASS_RE );
 
     if( cls ){
       currentClass = cls[2];
       exported = Boolean( cls[1] );
+      continue;
+    }
+
+    if( TOP_LEVEL_RE.test( line ) ){
+      currentClass = null;
       continue;
     }
 
@@ -84,12 +139,7 @@ export function auditFile( file ){
     if( name.startsWith( '_' ) || KEYWORDS.has( name ) ) continue;
     if( access === 'private' || access === 'protected' ) continue;
 
-    // A doc comment is the nearest non-blank line above ending the block.
-    let j = i - 1;
-
-    while( j >= 0 && lines[j].trim() === '' ) j--;
-
-    if( j >= 0 && lines[j].trim().endsWith( '*/' ) ) documented++;
+    if( hasDocAbove( lines, i ) ) documented++;
     else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );
   }
 

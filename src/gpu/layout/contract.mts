@@ -38,6 +38,7 @@ export interface GpuLayoutImpl {
 }
 
 export class GpuLayoutContext {
+  /** the core being laid out */
   readonly cy: GpuCore;
   /** the resolved layout options (custom knobs included) */
   readonly options: GpuCustomLayoutOptions;
@@ -52,6 +53,16 @@ export class GpuLayoutContext {
   private layout: object;
   private slots: number[] | null = null;
 
+  /**
+   * Built by the wrapper, once per run — a layout impl receives one of
+   * these and never constructs it.
+   *
+   * @param cy — the core being laid out
+   * @param layout — the wrapper, passed through as `event.layout` on the
+   *   lifecycle events
+   * @param options — the resolved layout options; `eles` narrows the
+   *   scope (from `eles.layout()`), defaulting to the whole graph
+   */
   constructor( cy: GpuCore, layout: object, options: GpuCustomLayoutOptions ){
     this.cy = cy;
     this.layout = layout;
@@ -116,14 +127,31 @@ export class GpuLayoutContext {
     return adj.outDegree( slot ) + adj.inDegree( slot );
   }
 
+  /**
+   * The scope's current bounding box, labels included.
+   *
+   * @returns `{ x1, y1, x2, y2, w, h }` in model coordinates
+   */
   boundingBox(): ReturnType<GpuCollection['boundingBox']> {
     return this.eles.boundingBox();
   }
 
+  /**
+   * The viewport width in CSS px — what a layout sizing itself to the
+   * screen should use.  Headless instances report the configured
+   * headless width, so a layout still works without a DOM.
+   *
+   * @returns the viewport width
+   */
   width(): number {
     return this.cy.width() as number;
   }
 
+  /**
+   * The viewport height in CSS px.
+   *
+   * @returns the viewport height
+   */
   height(): number {
     return this.cy.height() as number;
   }
@@ -157,12 +185,22 @@ export class GpuLayoutContext {
 /** The wrapper cy.layout({ impl }) returns: the builtins' shape plus
  * promise() (resolves at this run's layoutstop). */
 export class CustomLayout {
+  /** the resolved options this run was created with */
   options: GpuCustomLayoutOptions;
 
   private cy: GpuCore;
   private impl: GpuLayoutImpl;
   private donePromise: Promise<void> = Promise.resolve();
 
+  /**
+   * Wrap a layout impl.  Reached through `cy.layout( { impl } )` /
+   * `eles.layout( { impl } )` rather than constructed directly.
+   *
+   * @param cy — the core to lay out
+   * @param options — must carry `impl`, a class constructed with no
+   *   arguments or a plain object, implementing `{ run( ctx ), stop?() }`
+   * @throws if `impl` is missing, or does not implement `run( ctx )`
+   */
   constructor( cy: GpuCore, options: GpuCustomLayoutOptions ){
     const provided = options.impl;
     let impl: GpuLayoutImpl;
@@ -184,6 +222,19 @@ export class CustomLayout {
     this.options = options;
   }
 
+  /**
+   * Start the layout.  Emits `layoutstart` on the core, calls
+   * `impl.run( ctx )` and awaits it if it returns a promise (the shape a
+   * GPU-resident layout needs).
+   *
+   * The lifecycle fires exactly once per run either way: an impl that
+   * finishes through `ctx.layoutPositions()` lets the finisher emit
+   * `layoutready`/`layoutstop`, and one that writes positions directly
+   * has them emitted here instead.
+   *
+   * @returns this layout, for chaining; await `promise()` for
+   *   completion
+   */
   run(): this {
     const cy = this.cy;
     let resolve!: () => void;
@@ -219,6 +270,12 @@ export class CustomLayout {
     return this.donePromise;
   }
 
+  /**
+   * Ask the layout to stop early, by calling the impl's optional
+   * `stop()`.  An impl without one simply runs to completion.
+   *
+   * @returns this layout, for chaining
+   */
   stop(): this {
     this.impl.stop?.();
 

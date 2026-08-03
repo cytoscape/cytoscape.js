@@ -7969,8 +7969,12 @@ regex.)*
   non-trivial-count guard).
   Docs: the README's JSDoc section carries the rule and the reason the
   boundary sits where it does, and its header carries round 32.
-  Verification: 2485 Node tests, 68 module tests, typecheck, lint,
-  JSDoc coverage 100%, `@throws` 16/16, `@param` 221/221, and the
-  regenerated `dist/cytoscape-gpu.d.ts` (comments only in `src/`, so
-  the browser suites are unaffected).
+  Verification: **2487** Node tests (the gate's own two specs are the
+  round's only additions — 32.1–32.3 changed comments alone), 68 module
+  tests, typecheck, lint, JSDoc coverage 100%, `@throws` 16/16,
+  `@param` 221/221, and the regenerated `dist/cytoscape-gpu.d.ts`
+  (comments only in `src/`, so the browser suites are unaffected).
+  *(First written as 2485: the verification run's tally was read from a
+  grep that missed the line.  Caught by the docs sweep below, which is
+  the argument for re-running a tool rather than re-reading a record.)*
   **Round 32 is complete.**

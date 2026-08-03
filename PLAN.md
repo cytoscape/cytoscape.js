@@ -7899,12 +7899,47 @@ reads badly — nothing downstream consumes it today.
 
 **Pass split** (docs in-commit; one commit per file group):
 
-- [ ] **32.1 `core.mts` + `viewport.mts`** (21 members).
-- [ ] **32.2 `collection.mts`** (28 members).
-- [ ] **32.3 `animation.mts` + `style.mts` + `layout/contract.mts`**
-  (29 members).
-- [ ] **32.4 The audit + gate, and the closing sweep.**  `@param`
-  completeness joins `auditThrowTags` in
-  `scripts/gpu-jsdoc-coverage.mjs` under the same reasoning 31.2
-  recorded: documentation completeness is already a gated concern
-  here.
+- [x] **32.1 `core.mts` + `viewport.mts`** (2026-08-03) — 21 members;
+  143 → 164 of 221.  These are generator output, so each says what the
+  argument *means*: `animate()`'s opts names the override order and the
+  panBy/pan throw, `setZoom`'s option form is the
+  keep-this-point-stationary case, `stop()`'s `jumpToEnd` is the
+  difference between applying the targets and freezing where the tween
+  reached.
+- [x] **32.2 `collection.mts`** (2026-08-03) — 28 members; 164 → 192.
+  Two wording calls worth recording.  The thirteen compound and DAG
+  traversals take the same optional `criterion`, so they share one
+  sentence rather than thirteen paraphrases — a generator emits them
+  side by side and they should read as one family.  And the overloaded
+  readers describe the *forms* rather than naming a type: `data()`'s
+  args line lists its four spellings, `relativePosition`'s `dim` covers
+  read-pair / read-axis / write-pair, and `style()`'s `value` is
+  documented as never valid, since it exists only so the setter form
+  throws instead of silently ignoring it.
+- [x] **32.3 `animation.mts` + `style.mts` + `layout/contract.mts`**
+  (2026-08-03) — 29 members; **221/221**.  The clock parameters are
+  where a description earns its line: `now` is the *shared* clock in
+  every one of them, which is what makes the CPU settle and the GPU
+  evaluation agree, so each says so instead of "the current time".
+  `setPositions` documents the packing (`xy[i*2]` lands on `slots[i]`)
+  — the one thing a layout author must get right — and `refreshMapped`
+  says `keys` is the gate on what re-evaluates, not merely a record of
+  what was written.
+- [x] **32.4 The audit + gate, and the closing sweep** (2026-08-03) —
+  `auditParamTags()` joins `auditThrowTags()` in
+  `scripts/gpu-jsdoc-coverage.mjs`, overload-aware through the same
+  regexes, public tier only, printed under the coverage report and
+  listed by `--verbose`.  Gated in `test/gpu-jsdoc-coverage.mjs` under
+  31.2's reasoning: documentation completeness is already a gated
+  concern here, so this maintains an existing gate.
+  Controls: a `@param` line deleted → 1 failing; an undocumented
+  parameterized member added to `viewport.mts` → 3 failing; the audit
+  short-circuited so it checks nothing → 1 failing (the
+  non-trivial-count guard).
+  Docs: the README's JSDoc section carries the rule and the reason the
+  boundary sits where it does, and its header carries round 32.
+  Verification: 2485 Node tests, 68 module tests, typecheck, lint,
+  JSDoc coverage 100%, `@throws` 16/16, `@param` 221/221, and the
+  regenerated `dist/cytoscape-gpu.d.ts` (comments only in `src/`, so
+  the browser suites are unaffected).
+  **Round 32 is complete.**

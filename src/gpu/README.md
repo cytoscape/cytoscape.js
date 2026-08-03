@@ -124,6 +124,11 @@ only two names of the round-17 event vocabulary no test mentioned.
 Note where that defect lived: *this file* has always described the
 bypass correctly — the stale advice was in the runtime message and the
 JSDoc, which a markdown sweep never reads.
+Round 32 (2026-08-03) finished that sentence's last clause: **every
+public member that takes arguments now documents them** (221/221, up
+from 143), gated the same way, because docmaker emits a description
+per argument and a missing one is a hole in the release docs rather
+than only in an editor.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -1911,6 +1916,16 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   contract is a judgement.  Round 31.1 is why this is worth gating —
   a stale doc comment shipped bad advice into every consumer's editor
   via `dist/cytoscape-gpu.d.ts`.
+- **`@param` is enforced on the public tier, since round 32.**  This
+  one is not about editors: docmaker's per-function shape carries a
+  **description per argument** and has no return field at all, so a
+  missing `@param` is a hole in the release documentation v4 will
+  generate while a missing `@returns` is hover text.  That is where
+  the gate stops, deliberately.  143 of the 221 public members taking
+  arguments documented them when the audit was written; round 32 took
+  it to 221/221.  The `@returns` tail is measured and logged in
+  PLAN.md (133 of 348) rather than built — it is worth doing when
+  someone is generating the docs and can see what reads badly.
 
 ## Measuring the error contract (round 30)
 

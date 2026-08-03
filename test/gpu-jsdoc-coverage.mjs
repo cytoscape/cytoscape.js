@@ -99,6 +99,33 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
 
   });
 
+  /*
+  Round 32: and the "what it takes" half.  docmaker's per-function shape
+  carries a description per argument and has no return field at all, so a
+  missing @param is a hole in the release documentation while a missing
+  @returns is editor hover text — which is exactly where this gate stops.
+  143 of 221 public members taking arguments documented them when the audit
+  was written; the round took it to 221/221.
+
+  Public tier only, for the same reason: those are the files a consumer of
+  `cytoscape/gpu` holds, and they are what a generator would read.
+  */
+  describe('a public member that takes arguments describes them', function(){
+
+    it('every public-API member with parameters carries @param', function(){
+      expect(
+        result.paramTags.missing,
+        'public members taking arguments with no @param:\n  ' +
+        result.paramTags.missing.join( '\n  ' )
+      ).to.deep.equal( [] );
+    });
+
+    it('finds a non-trivial number of parameterized members to check', function(){
+      expect( result.paramTags.tagged ).to.be.at.least( 150 );
+    });
+
+  });
+
   describe('the audit itself', function(){
 
     it('classifies every listed public-API file', function(){

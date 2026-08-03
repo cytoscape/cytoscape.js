@@ -42,6 +42,11 @@ const MEMBER_RE =
   /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*(?:\(|[:=])/;
 const CLASS_RE = /^(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/;
 
+// MEMBER_RE with the argument list captured, for the @param audit. Members
+// declared with `:` or `=` (fields) are excluded: they take nothing.
+const PARAMS_RE =
+  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\(([^)]*)\)/;
+
 // Any other top-level declaration ends the class body we are inside. Without
 // this an `interface`'s members read as members of the class above it.
 const TOP_LEVEL_RE =
@@ -271,6 +276,79 @@ export function auditThrowTags( file ){
   return { file: rel, tagged, missing };
 }
 
+/**
+ * Audit one file for **`@param` completeness**: a public member that takes
+ * arguments should describe them, because docmaker's per-function shape
+ * (round 26) is `{ name, descr, formats: [ { descr, args: [ { name, descr } ]
+ * } ] }` — arguments carry a description the generator emits, so a missing
+ * `@param` is a hole in the release documentation rather than only in editor
+ * hover text.  (There is no return field in that shape, which is why
+ * `@returns` is not audited here; see PLAN.md round 32.)
+ *
+ * Overload-aware in the same way as `auditFile`: each overload signature is
+ * documented separately and the implementation signature closing a run of
+ * them is skipped.
+ *
+ * @param file — absolute path to a `.mts` source file
+ * @returns {{ file: string, tagged: number, missing: string[] }}
+ */
+export function auditParamTags( file ){
+  const lines = readFileSync( file, 'utf8' ).split( '\n' );
+  const rel = relative( ROOT, file );
+  const missing = [];
+  let tagged = 0;
+  let currentClass = null;
+  let exported = false;
+  let inComment = false;
+  let overloaded = new Set();
+
+  for( let i = 0; i < lines.length; i++ ){
+    const line = lines[i];
+
+    if( inComment ){
+      if( line.includes( '*/' ) ) inComment = false;
+      continue;
+    }
+
+    const opened = line.lastIndexOf( '/*' );
+
+    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+      inComment = true;
+      continue;
+    }
+
+    const cls = line.match( CLASS_RE );
+
+    if( cls ){
+      currentClass = cls[2];
+      exported = Boolean( cls[1] );
+      overloaded = new Set();
+      continue;
+    }
+
+    if( TOP_LEVEL_RE.test( line ) ){ currentClass = null; continue; }
+    if( !currentClass || !exported ) continue;
+
+    const sig = line.match( OVERLOAD_SIG_RE );
+    const m = line.match( PARAMS_RE );
+
+    if( !m ) continue;
+
+    const [ , access, , name, args ] = m;
+
+    if( name.startsWith( '_' ) || KEYWORDS.has( name ) ) continue;
+    if( access === 'private' || access === 'protected' ) continue;
+    if( !sig && overloaded.has( name ) ) continue;
+    if( sig ) overloaded.add( name );
+    if( !args.trim() ) continue; // takes nothing: nothing to describe
+
+    if( /@param/.test( docAbove( lines, i ) ) ) tagged++;
+    else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );
+  }
+
+  return { file: rel, tagged, missing };
+}
+
 /** Every `.mts` file under src/gpu, sorted, repo-relative. */
 function sources( dir = GPU_DIR, out = [] ){
   for( const entry of readdirSync( dir ).sort() ){
@@ -305,6 +383,9 @@ export function audit(){
 
   const isPublic = f => PUBLIC_API.includes( f.file );
   const throwTags = sources().map( auditThrowTags ).filter( f => f.tagged + f.missing.length > 0 );
+  const paramTags = sources()
+    .filter( f => PUBLIC_API.includes( relative( ROOT, f ) ) )
+    .map( auditParamTags );
 
   return {
     public: tier( files.filter( isPublic ) ),
@@ -318,6 +399,12 @@ export function audit(){
         .reduce( ( n, f ) => n + f.tagged, 0 ),
       missing: throwTags.filter( f => PUBLIC_API.includes( f.file ) )
         .flatMap( f => f.missing )
+    },
+    // round 32: `@param` over the public tier, the tag docmaker emits
+    paramTags: {
+      files: paramTags,
+      tagged: paramTags.reduce( ( n, f ) => n + f.tagged, 0 ),
+      missing: paramTags.flatMap( f => f.missing )
     }
   };
 }
@@ -353,4 +440,13 @@ if( process.argv[1] && import.meta.url === pathToFileURL( process.argv[1] ).href
   );
 
   if( verbose ) for( const m of t.missing ) console.log( `      NO @throws  ${m}` );
+
+  const pt = result.paramTags;
+
+  console.log(
+    `  @param on public members taking arguments: ` +
+    `${pt.tagged}/${pt.tagged + pt.missing.length}`
+  );
+
+  if( verbose ) for( const m of pt.missing ) console.log( `      NO @param   ${m}` );
 }

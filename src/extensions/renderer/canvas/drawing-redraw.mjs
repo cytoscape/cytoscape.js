@@ -7,6 +7,9 @@ var motionBlurDelay = 100;
 
 // var isFirefox = typeof InstallTrigger !== 'undefined';
 
+const colorAlpha = color => color[3] == null ? 1 : color[3];
+const effectiveAlpha = (color, opacity) => colorAlpha(color) * opacity;
+
 CRp.getPixelRatio = function(){
   var context = this.data.contexts[0];
 
@@ -119,7 +122,7 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
 
   let length = colors.length;
   for (let i = 0; i < length; i++) {
-    let stopAlpha = (colors[i][3] != null ? colors[i][3] : 1) * opacity;
+    let stopAlpha = effectiveAlpha(colors[i], opacity);
     gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + stopAlpha + ')');
   }
 
@@ -132,8 +135,8 @@ CRp.gradientFillStyle = function( context, ele, fill, opacity ){
   context.fillStyle = gradientStyle;
 };
 
-CRp.colorFillStyle = function( context, r, g, b, a ){
-  context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+CRp.colorFillStyle = function( context, color, opacity ){
+  context.fillStyle = 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + effectiveAlpha(color, opacity) + ')';
   // turn off for now, seems context does its own caching
 
   // var cache = this.paintCache(context);
@@ -152,7 +155,7 @@ CRp.eleFillStyle = function( context, ele, opacity ){
     this.gradientFillStyle(context, ele, backgroundFill, opacity);
   } else {
     let backgroundColor = ele.pstyle('background-color').value;
-    this.colorFillStyle( context, backgroundColor[0], backgroundColor[1], backgroundColor[2], opacity );
+    this.colorFillStyle( context, backgroundColor, opacity );
   }
 };
 
@@ -162,8 +165,8 @@ CRp.gradientStrokeStyle = function( context, ele, fill, opacity ){
   context.strokeStyle = gradientStyle;
 };
 
-CRp.colorStrokeStyle = function( context, r, g, b, a ){
-  context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+CRp.colorStrokeStyle = function( context, color, opacity ){
+  context.strokeStyle = 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + effectiveAlpha(color, opacity) + ')';
   // turn off for now, seems context does its own caching
 
   // var cache = this.paintCache(context);
@@ -182,7 +185,7 @@ CRp.eleStrokeStyle = function( context, ele, opacity ){
     this.gradientStrokeStyle(context, ele, lineFill, opacity);
   } else {
     let lineColor = ele.pstyle('line-color').value;
-    this.colorStrokeStyle( context, lineColor[0], lineColor[1], lineColor[2], opacity );
+    this.colorStrokeStyle( context, lineColor, opacity );
   }
 };
 
@@ -381,7 +384,7 @@ CRp.render = function( options ){
     var gco = context.globalCompositeOperation;
 
     context.globalCompositeOperation = 'destination-out';
-    r.colorFillStyle( context, 255, 255, 255, r.motionBlurTransparency );
+    r.colorFillStyle( context, [255, 255, 255], r.motionBlurTransparency );
     context.fillRect( x, y, w, h );
 
     context.globalCompositeOperation = gco;
@@ -484,7 +487,7 @@ CRp.render = function( options ){
 
     var outsideBgColor = style.core( 'outside-texture-bg-color' ).value;
     var outsideBgOpacity = style.core( 'outside-texture-bg-opacity' ).value;
-    r.colorFillStyle( context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity );
+    r.colorFillStyle( context, outsideBgColor, outsideBgOpacity );
     context.fillRect( 0, 0, vp.width, vp.height );
 
     var zoom = cy.zoom();

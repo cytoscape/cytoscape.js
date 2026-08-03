@@ -1,5 +1,5 @@
-import CRp from "../../src/extensions/renderer/canvas/drawing-redraw.mjs";
-import { expect } from "chai";
+import CRp from '../../src/extensions/renderer/canvas/drawing-redraw.mjs';
+import { expect } from 'chai';
 
 describe('drawing-redraw', function(){
   describe('effectiveAlpha', function() {

@@ -2325,7 +2325,7 @@ struct ArrowVSOut {
   @builtin(position) position: vec4f,
   @location(0) p: vec2f,    // arrow-local device px: x lateral, y (≤0) behind the tip
   @location(1) color: vec4f,
-  @location(2) @interpolate(flat) widthPx: f32, // drawn (floored) edge width
+  @location(2) @interpolate(flat) widthModel: f32, // edge width in model px (27.3)
   @location(3) @interpolate(flat) slot: u32,
 }
 
@@ -2381,8 +2381,10 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let lod = edgeLod(slot, edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let sMax = max(frame.arrowScaleMax, 1.0);
-  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
-  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
+  // 27.3: the quad covers the largest arrow this edge could draw (the
+  // frame's max arrow-scale); the FS renders the exact per-edge size
+  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
+  let halfBase = arrowLen * 0.5;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2394,12 +2396,27 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthPx = widthPx;
+  out.widthModel = edgeWidths[slot];
   out.slot = slot;
   // edge opacity is pre-folded into c.a at style-write time
   out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
   return out;
 }
+
+// v3's getArrowWidth (round 27.3): a nonlinear size with a 29-unit
+// floor, evaluated in *model* space and only then scaled to device px.
+// Evaluating in model space is load-bearing — v3's floor is a model
+// floor, so applying the formula to the LOD-floored *device* width would
+// make arrows grow as you zoom out instead of shrinking with the edge.
+fn arrowSizePx(widthModel: f32, scale: f32, zoomDpr: f32) -> f32 {
+  return max(pow(widthModel * 13.37, 0.9), 29.0) * scale * zoomDpr;
+}
+
+// v3 scales its arrow point table (lateral ±0.15, body to y = -0.3) by
+// 'size' directly, so the drawn arrow is 0.3 x size long and 0.3 x size
+// across — 'size' is the point scale, not the length.  Getting this
+// backwards makes arrows 3.3x too long, which is how it was caught.
+const ARROW_TABLE_SPAN: f32 = 0.3;
 
 // this end's shape id from the packed word (C1: ends + mids)
 fn endShapeOf(pair: u32, endId: u32) -> u32 {
@@ -2425,7 +2442,9 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   let hollow = endHollowOf(pair, end.endId);
   let p = in.p;
   // exact per-edge sizing (B7): the uniform scale unit × arrow-scale
-  let s = (in.widthPx * 3.0 + 2.0) / 0.3 * arrowScaleOf(pair);
+  // 27.3: v3's model-space size, resolved per fragment because the exact
+  // arrow scale lives in the fragment-visible shapes word
+  let s = arrowSizePx(in.widthModel, arrowScaleOf(pair), frame.zoomDpr);
   var sd = 1e6;
 
   switch shape {
@@ -2476,8 +2495,10 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   let lod = edgeLod(slot, edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let sMax = max(frame.arrowScaleMax, 1.0);
-  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
-  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
+  // 27.3: the quad covers the largest arrow this edge could draw (the
+  // frame's max arrow-scale); the FS renders the exact per-edge size
+  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
+  let halfBase = arrowLen * 0.5;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2487,7 +2508,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 
   out.position = vec4f(pxToClip(frame, mid + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthPx = widthPx;
+  out.widthModel = edgeWidths[slot];
   out.slot = slot;
   out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
   return out;
@@ -2543,11 +2564,24 @@ struct ArrowVSOut {
   @builtin(position) position: vec4f,
   @location(0) p: vec2f,    // arrow-local device px: x lateral, y (≤0) behind the tip
   @location(1) @interpolate(flat) alphaComp: f32,
-  @location(2) @interpolate(flat) widthPx: f32, // drawn (floored) edge width
+  @location(2) @interpolate(flat) widthModel: f32, // edge width in model px (27.3)
   @location(3) @interpolate(flat) slot: u32,
 }
 
 ${ ARROW_POLY.fns }
+
+// v3's getArrowWidth (27.3) — the twin of the straight shader's copy:
+// a model-space nonlinear size with a 29-unit floor, then scaled to
+// device px.  Keep the two in step.
+fn arrowSizePx(widthModel: f32, scale: f32, zoomDpr: f32) -> f32 {
+  return max(pow(widthModel * 13.37, 0.9), 29.0) * scale * zoomDpr;
+}
+
+// v3 scales its arrow point table (lateral ±0.15, body to y = -0.3) by
+// 'size' directly, so the drawn arrow is 0.3 x size long and 0.3 x size
+// across — 'size' is the point scale, not the length.  Getting this
+// backwards makes arrows 3.3x too long, which is how it was caught.
+const ARROW_TABLE_SPAN: f32 = 0.3;
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
 fn arrowScaleOf(pair: u32) -> f32 {
@@ -2643,8 +2677,10 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let alphaComp = min(edgeWidths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
   let sMax = max(frame.arrowScaleMax, 1.0);
-  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
-  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
+  // 27.3: the quad covers the largest arrow this edge could draw (the
+  // frame's max arrow-scale); the FS renders the exact per-edge size
+  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
+  let halfBase = arrowLen * 0.5;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2654,7 +2690,7 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthPx = widthPx;
+  out.widthModel = edgeWidths[slot];
   out.slot = slot;
   out.alphaComp = alphaComp;
   return out;
@@ -2669,7 +2705,9 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
   let shape = endShapeOf(pair, end.endId);
   let hollow = endHollowOf(pair, end.endId);
   let p = in.p;
-  let s = (in.widthPx * 3.0 + 2.0) / 0.3 * arrowScaleOf(pair);
+  // 27.3: v3's model-space size, resolved per fragment because the exact
+  // arrow scale lives in the fragment-visible shapes word
+  let s = arrowSizePx(in.widthModel, arrowScaleOf(pair), frame.zoomDpr);
   var sd = 1e6;
 
   switch shape {
@@ -2729,8 +2767,10 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
   let alphaComp = min(edgeWidths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
   let sMax = max(frame.arrowScaleMax, 1.0);
-  let arrowLen = (widthPx * 3.0 + 2.0) * sMax;
-  let halfBase = (widthPx * 1.5 + 1.0) * sMax;
+  // 27.3: the quad covers the largest arrow this edge could draw (the
+  // frame's max arrow-scale); the FS renders the exact per-edge size
+  let arrowLen = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr) * ARROW_TABLE_SPAN;
+  let halfBase = arrowLen * 0.5;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
@@ -2740,7 +2780,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 
   out.position = vec4f(pxToClip(frame, midPx + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthPx = widthPx;
+  out.widthModel = edgeWidths[slot];
   out.slot = slot;
   out.alphaComp = alphaComp;
   return out;

@@ -2289,6 +2289,65 @@ test.describe( 'v3-vs-v4 render parity', () => {
     expectParity( v3uri, v4uri, 'parity-images-multi', testInfo );
   } );
 
+  test( 'parity: arrow sizing follows v3\'s nonlinear formula (round 27.3)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // The claim 27.3 makes is "v3's getArrowWidth", so the check is v3
+    // itself.  Three widths spanning the formula's floor: at width 1 and
+    // 2 the 29-unit floor dominates, and by width 6 the pow() term has
+    // taken over — the arrows must be the same size on both renderers in
+    // every regime, which the old linear rule could not manage anywhere.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -150, y: -90 } },
+      { data: { id: 'b' }, position: { x: 150, y: -90 } },
+      { data: { id: 'c' }, position: { x: -150, y: 0 } },
+      { data: { id: 'd' }, position: { x: 150, y: 0 } },
+      { data: { id: 'e' }, position: { x: -150, y: 90 } },
+      { data: { id: 'f' }, position: { x: 150, y: 90 } },
+      { data: { id: 'thin', source: 'a', target: 'b', w: 1 } },
+      { data: { id: 'mid', source: 'c', target: 'd', w: 2 } },
+      { data: { id: 'fat', source: 'e', target: 'f', w: 6 } }
+    ];
+    const edgeStyle = {
+      'line-color': '#7f8c8d', 'curve-style': 'straight',
+      'target-arrow-shape': 'triangle', 'target-arrow-color': '#2c3e50',
+      'source-arrow-shape': 'square', 'source-arrow-color': '#c0392b'
+    };
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 30, 'height': 30, 'shape': 'ellipse',
+        'background-color': '#bdc3c7', 'border-width': 0
+      } },
+      { selector: 'edge', style: { ...edgeStyle, 'width': 'data(w)' } }
+    ];
+    const v4Style = {
+      nodes: { 'width': 30, 'height': 30, 'background-color': '#bdc3c7', 'border-width': 0 },
+      edges: { ...edgeStyle, 'width': { data: 'w' } }
+    };
+
+    delete v4Style.edges['curve-style'];
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    expectParity( v3uri, v4uri, 'parity-arrow-size', testInfo );
+  } );
+
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

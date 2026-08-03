@@ -6448,8 +6448,43 @@ commit(s)):
   2304 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu
   and 69/69 webgpu-visual (68 unchanged goldens + the new one),
   all against a freshly built bundle.
-- [ ] **27.3 v3's nonlinear arrow-size formula** — with the quad
-  extents and the slack meter grown to match.
+- [x] **27.3 v3's nonlinear arrow-size formula** (2026-08-02) —
+  landed.  v4 sized arrows `widthPx * 3 + 2` off the LOD-floored
+  *device* width; v3 uses
+  `max( pow( width * 13.37, 0.9 ), 29 ) * scale` in *model* units.
+  The formula now lives in `arrowSizePx` in both arrow shaders and
+  is evaluated in model space before the zoom scale, because v3's
+  29-unit floor is a model floor — applying it to a floored device
+  width would make arrows *grow* as you zoom out.
+  Two things had to be got right that the plan did not anticipate:
+  the exact arrow scale lives in the packed shapes word, which is a
+  **fragment-visible** binding, so a first attempt that read it in
+  the vertex stage produced pipeline-validation errors on every
+  arrow pipeline; the varying now carries the model width and the
+  fragment stage resolves the size (which is also what 27.6's
+  edge-width-dependent `triangle-cross` will need).  And v3's
+  `size` is the **point-table scale, not the drawn length** — its
+  transform scales the ±0.15 / −0.3 table by `size` directly, so
+  the arrow is 0.3 × size long.  v4's old code folded that 0.3 into
+  its own constant, and porting the formula without unfolding it
+  made arrows 3.3× too long.
+  **The parity diff is what caught both.**  A new live v3-vs-v4
+  arrow-sizing test renders three edge widths spanning the
+  formula's floor (1 and 2, where the 29 floor dominates; 6, where
+  the pow term has taken over).  The measured arrow extents now
+  match v3's **exactly** in all three regimes, and the whole-scene
+  mismatch went 4.459% → **0.013%** (16 px of pure anti-aliasing).
+  Recorded: the 0.5% golden tolerance was loose enough that the
+  arrow goldens *passed* both before and after the change, so the
+  goldens alone would never have caught the old deviation — the
+  parity diff is the load-bearing check for anything claiming to
+  match v3.  Eight arrow-scene goldens regenerated (the intended
+  visual change); eight label-only goldens that also drifted were
+  **reverted**, since their scenes contain no arrows and the drift
+  predates this pass — a sub-tolerance glyph-AA wobble worth
+  noticing but not this pass's to absorb.
+  2304 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu,
+  70/70 webgpu-visual.
 - [ ] **27.4 The round-corner SDF** — the per-corner arc primitive
   and its CPU twin, then the seven `round-*` keywords and
   `bottom-round-rectangle`.

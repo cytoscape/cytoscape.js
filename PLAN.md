@@ -56,7 +56,16 @@ effort**.  Rounds 29–30 (2026-08-03) therefore work a different axis:
 not what is unbuilt but what is **unpinned** — the alias surface, the
 decided drops at the API boundary and the curve premium in 29, and
 v4's **error contract** in 30, which took the throw sites the Node
-suite never runs from 34 to 0.  `src/gpu/README.md` is
+suite never runs from 34 to 0.  Rounds 31–32 (2026-08-03) stayed on
+that axis and moved it onto the *documented* contract: 31 found the
+one error message advising a form v4 rejects and took `@throws` to
+16/16 under a gate, and 32 took `@param` to 221/221 under the same
+gate, the boundary drawn by docmaker's own per-argument shape.
+**Round 33** (planned 2026-08-03, at the end of this file) takes the
+same question to the third measurement axis — *what costs what* —
+where roughly a third of the prototype has no benchmark at all and
+the report's job table runs half the suites that exist.
+`src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -164,7 +173,10 @@ appears to authorize it.
    matches how their rounds used them, but the HTML report
    understates what exists.  *(30.0 re-ran all six at
    `BENCH_N=2000`: every one still works, so this is a reporting
-   question and not bit-rot.)*
+   question and not bit-rot.)*  **Scoped as round 33.9**
+   (2026-08-03), which folds them in behind a `gpuOnly` job marker —
+   the call this item asks for is taken there, so the entry closes
+   when that pass lands.
 8. **Whether error-contract coverage becomes a gate** (logged 30.4) —
    `scripts/gpu-throw-coverage.mjs` reports it and deliberately does
    not enforce it, because a floor is a policy call with three parts:
@@ -7978,3 +7990,361 @@ regex.)*
   grep that missed the line.  Caught by the docs sweep below, which is
   the argument for re-running a tool rather than re-reading a record.)*
   **Round 32 is complete.**
+
+## Round 33 plan — the benchmark sweep (planned 2026-08-03)
+
+Rounds 29–32 worked one axis in four passes: what exists and is
+asserted by nothing (29), what throws and is *run* by nothing (30),
+what those throws say when they fire (31), and what the shipped
+documentation states about what a member takes (32).  This round takes
+the same question to the third measurement axis — **what costs what** —
+and the starting answer is that roughly a third of the prototype has no
+benchmark at all, while the report's job table runs eight jobs out of
+fourteen suites.
+
+The round's scope, set by the user (2026-08-03): **benchmark
+everything possible** — core, elements, layouts, algorithms, the store,
+the style engine, loading, interaction, the renderer.  Not "add a few
+suites": close the gap between what v4 claims about its performance and
+what a single command can reproduce.
+
+### Code investigation (2026-08-03, precedes this plan)
+
+**What exists** — 14 Mitata suites, the browser renderer bench, and
+the report harness (`bench-run.mjs`, `graph.mjs`, `report.mjs`,
+`report-html.mjs`, `render-stats.mjs`):
+
+- **In the job table** (`report.mjs`, quick profile — eight jobs):
+  `index.mjs` (= `core.mjs` + `collection.mjs`), `materializers`,
+  `mutators`, `scenarios`, `traversal`, `algorithms` (twice — at 2k,
+  and at 500 for the superlinear ops the 2k run gates off), `mappers`.
+  `--full` adds the 20k/200k matrix, with `BENCH_OP` splitting
+  `mutators`/`scenarios` one group per process at 200k.
+- **Standalone, by hand only** — the six of open call 7:
+  `compaction` (19.5), `labels` (16.5), `transitions` (24.2),
+  `geometry-tween` (25.6), `compound` (14.12), `curves` (29.4).
+- **Browser** — `render-bench.mjs`: six scenes (25k and 100k flat,
+  ndex-x-large, 25k curved, 25k compound, 25k images), opt-in behind
+  `--renderer`, needing built bundles and a real adapter.
+
+**What is unmeasured.**  Fifteen findings, each a surface the docs
+describe and no suite prices:
+
+1. **Layouts: nothing at all.**  Six built-ins (`grid`, `preset`,
+   `circle`, `concentric`, `breadthfirst`, `random`) plus `force`, and
+   not one Node benchmark — the only layout numbers in this file are
+   the pass-1 record's grid figure (200k nodes 270 → 24 ms, from
+   one-off profiling of the perf-round-2 slot path) and the browser
+   bench's `--layout` force-vs-cose mode, run once on the RX 580.  The
+   `layoutPositions` plumbing (spacingFactor/transform/fit, the
+   animated path) and the round-17 contract's `ctx.setPositions` are
+   likewise unpriced, and the contract is the surface external authors
+   build on.
+2. **The algorithm tail.**  `algorithms.mjs` prices 18 rows covering
+   17 of the 21 algorithms: `kMedoids`, `fuzzyCMeans`,
+   `affinityPropagation`,
+   `kargerStein` and unnormalized `degreeCentrality` have no row, and
+   the *weighted* variants of `betweennessCentrality` and
+   `closenessCentrality` (the branch that actually runs a heap) are
+   only exercised unweighted.
+3. **The style engine.**  `cy.style(sheet)` compile + `applyAll`,
+   the first apply of elements added inside a batch, the round-4
+   selection-restyle skip (`dependsOnSelection`), the round-14.6
+   parents-overlay partition, and the stored-truth readback getters
+   (`style()`/`renderedStyle()`/`numericStyle()`) are all unpriced on
+   their own.  A whole-sheet swap appears in `transitions.mjs`, but
+   only as a transitions-off-vs-on ratio, and in `scenarios.mjs` as
+   one step of the refresh trace.
+4. **Loading and the wire format.**  The init figures this file
+   quotes most (definition-form 662 → 236 ms, columnar 80 ms,
+   deserialize ~5 ms, 9.2 MB vs 30 MB) come from one-off profiling of
+   ndex-x-large during the pass-1 follow-ups.  There is no suite:
+   `toColumnarElements`, `serializeElements`/`deserializeElements`,
+   `cy.serialize()` and the three `options.elements` forms have no
+   re-runnable row.  Round 29's survey dropped this as "already
+   priced", which is exactly the assumption this round exists to
+   question — **a number nobody can re-run is a record, not a
+   measurement.**
+5. **CPU picking.**  `pickNodeAt` is the pointer layer's hot path and
+   is priced only *inside* `compaction.mjs`, as a peak-vs-compacted
+   before/after.  Nothing measures it against v3's renderer pick, or
+   across the shape branches round 27 added (the round-* offset
+   polygon, `barrel`'s four sampled beziers, the custom polygon blob
+   walk), or with `text-events` label boxes in the scan, or at
+   different zooms — and 28.1 recorded `insideRoundPolygon` as the one
+   shape test that is not affine-invariant, so zoom is a real axis.
+6. **Box selection.**  `elementsInBox`/`refsInBox` appears once, as a
+   curve *premium* row in `curves.mjs` (3.29×).  Its absolute cost,
+   and the comparison against v3's `getAllInBox`, are unmeasured — as
+   are the round-16.5 label-containment term and the round-20.2
+   interactive filter.
+7. **Bounds and fit.**  The whole-graph scan is priced only in
+   fragments: label terms in `labels.mjs` (~0.1 µs/label), the curve
+   premium in `curves.mjs` (1.05–1.16×), a parity control in
+   `compaction.mjs`.  The pass-1 fast-path figure (ndex 235 → 15 ms)
+   is another one-off.  Nothing prices `boundingBox`/`fit`/
+   `getFitViewport`/`boundingBoxAt` against v3 across graph sizes.
+8. **The data() sidecar.**  One `data set` row in `mutators.mjs`,
+   which its own record calls GC-noisy at 200k.  Unmeasured: the
+   per-column kind split (f64 + present mask vs dictionary strings vs
+   the plain-array fallback), dictionary growth and the round-11
+   refcount/compaction path, `removeData`, whole-object `data()`
+   reads, and the `DataStore.reader` hoisting the scan paths depend on.
+9. **Queries beyond flag scans.**  `materializers.mjs` covers the
+   `(mask, want)` flag scans thoroughly.  The round-10 A8 **data
+   conditions** (`{ data: { weight: { gt: 0.5 } } }` — per-key readers
+   hoisted out of the loop) and the round-14.7 **structural terms**
+   (`{ parent: true }`) have no row, though both are the documented
+   replacement for v3 selectors people will benchmark against.
+10. **Events.**  The whole emit surface rests on one figure — ~85
+    ns/listener call, from round 5's scenario sweep.  Unmeasured: cost
+    by qualifier kind (ref-qualified vs predicate vs unqualified core),
+    scaling in listener count, the listener-gated no-op path that most
+    of the write side depends on for its numbers, and — the claim most
+    worth pinning — round 14.5's **"the flat no-compounds path stays
+    byte-identical (zero cost)"**, which no measurement has ever
+    checked.
+11. **The animation manager.**  `transitions.mjs` and
+    `geometry-tween.mjs` price *ticks*, thoroughly.  Nothing prices
+    animation **start/stop**, the round-21 channel-eviction compare
+    (`touchedColumns()` across shared refs — the per-start cost that
+    replaced the queue), `delay`, the round-24.3 controls, or the
+    viewport path.
+12. **Images and charts.**  The round-15 registry (url dedup,
+    refcounts, tier assignment, the blob records) and the round-23
+    chart blob writes have no CPU sweep; `chart-values` via the
+    `{ data }` passthrough refreshes per data write and is unpriced.
+    On the device side the `gen-25k-images` scene has **never been
+    measured** — 15.7 recorded "software adapter on this box", which
+    2026-08-03 corrected as wrong for the third time.
+13. **Store internals.**  `compaction.mjs`'s churn section proves the
+    round-11 reclaims *hold* (blob KB, dict entries, CSR shape) but
+    prices none of them: the id-map probe/insert and blob compaction,
+    the `Adjacency.rebuild` two counting passes, `CurveBlob` waste
+    reclaim, and `DirtyTracker` span coalescing are all unpriced, and
+    they are what every bulk path funnels through.
+14. **Renderer-bench gaps.**  Beyond the images scene: `--layout` has
+    been run once (2026-08-01); the 100k and ndex scenes have not been
+    re-run since round 27 (29.5 deliberately scoped its comparison to
+    the four 25k scenes); no scene exercises the round-22 visibility
+    split, the round-20.2 `events` pick mode, or a label-heavy wrapped
+    configuration — the one round 25.6 named as the expensive case.
+15. **The report understates the suite.**  Open call 7: six suites are
+    outside the job table, the renderer bench is opt-in, and there is
+    no profile that runs everything.  A reader of `report.html` sees
+    less than half of what has been measured.
+
+**Negative results, recorded so they are not re-derived.**
+
+- **`benchmark/` (v3's own suites) stays untouched.**  It runs against
+  `documentation/`-era fixtures and the v3 API, and v3 is frozen until
+  v4 ships.  v3 comparisons belong in `benchmark/gpu/`, where
+  `graph.mjs` already builds one element list for both factories.
+- **The anti-hoisting methodology does not need revisiting.**
+  `core.mjs`/`collection.mjs` rotate operands over a pool of K = 8 so
+  V8 cannot hoist a pure loop-invariant call out of the measured
+  region — the fix that stopped `same()` mis-reporting by five orders
+  of magnitude.  New suites reuse it rather than inventing a harness.
+- **Suite health is not the problem.**  30.0 re-ran all six standalone
+  suites at `BENCH_N=2000`, exit 0 apiece.  This round is coverage and
+  reporting, not bit-rot.
+
+### Design calls (round 33)
+
+1. **A benchmark is either v3-comparative or gpu-only, and says
+   which.**  A comparative row needs an *idiomatic* v3 analogue on the
+   other side (the `cmp( name, v3Op, gpuOp )` shape the suites already
+   use where the dialects differ); everything else is a gpu-only
+   absolute cost, or a premium against a v4 baseline of the same shape
+   (the 29.4 form).  No row fakes a comparison by benchmarking v4
+   against a v3 call that means something else — the report's speedup
+   overview is only worth reading if every 1× line is real.
+2. **Every performance claim in the docs gets a re-runnable source.**
+   The round's honesty rule, and the direct analogue of round 30's
+   throw coverage: a figure quoted in `src/gpu/README.md` or this file
+   either becomes a row in a suite, or is marked in place as a
+   **historical one-off** with the date and machine it came from.  The
+   four that matter most are the init figures (finding 4), the grid
+   layout figure (1), the fit fast-path figure (7) and the emit figure
+   (10).
+3. **Standalone suites join the report; the report gains a profile
+   that runs everything.**  `report.mjs`'s job table takes all
+   fourteen suites, with a `gpuOnly: true` marker for the ones that
+   have no v3 side, so `report-html.mjs` renders them as absolute
+   costs rather than against a 1× reference line that means nothing
+   for them.  `--all` runs every suite plus the renderer bench.  This
+   closes open call 7 with the answer the user's scope implies.
+4. **Warmup and deferral discipline is mandatory, and stated per
+   suite.**  29.4's two corrections are the standing method: whichever
+   side is measured first pays the module's JIT warmup (a drag read
+   2.52× and settled at 1.16× once both sides were warm), and v4
+   **defers derivation to the first read**, so a row that writes and
+   never reads measures a flag write.  Every new suite documents which
+   of the two it had to handle, in its header.
+5. **A row that reads ≈1× is checked before it is reported.**  The
+   generalization of the same pass: parity is a finding only after the
+   row has been shown to be measuring the thing it names.  Two of
+   29.4's rows were not.
+6. **Scale points are declared, not implied.**  Comparative suites run
+   the existing 2k/20k/200k ladder (`BENCH_N`), superlinear ops gate
+   on it, and any group whose 200k form exceeds the heap with two live
+   instances runs one group per process via `BENCH_OP` — with the
+   `report.mjs` op tables kept in step with the group names, which is
+   the coupling that already exists for `mutators`/`scenarios`.
+7. **Numbers are recorded as factors first.**  Wall figures are
+   machine-local (the RX 580 / i9-9900K box these rounds have used);
+   the round record states the machine once and reports ratios and
+   per-element costs, the convention 25.6 and 19.5 already follow.
+8. **A benchmark-coverage audit ships, and reports only.**  The third
+   tool in the `gpu-jsdoc-coverage` / `gpu-throw-coverage` family:
+   `scripts/gpu-bench-coverage.mjs` maps a maintained manifest of
+   public surfaces to the suites that price them and lists what has
+   nothing.  It **always exits 0** — a benchmark floor is a policy
+   call, and the mapping is a name-mention scan whose limits are
+   recorded up front (round 31's event survey misreported 31 names
+   because browser specs register them from an array, and the same
+   failure mode applies here).  It answers "is this still true?" for
+   the claim this round is making, and nothing stronger.
+
+### Pass split (docs in-commit; each pass its own commit(s))
+
+- [ ] **33.0 Docs-first** — this plan section, open call 7 marked
+  scoped, and the README's benchmark section given the shape the round
+  will fill in.  Lands before any suite.
+- [ ] **33.1 Layouts** (`benchmark/gpu/layouts.mjs`, new) — finding 1.
+  All six built-ins against their v3 namesakes at 2k/20k/200k (grid
+  and preset take v4's slot path, the other four are handle-level
+  ports, so the split in the numbers is itself the result); the
+  `force` **CPU executor** to a fixed iteration count against v3's
+  cose at a scale cose survives; `layoutPositions` plumbing
+  (spacingFactor/transform/fit) as its own row against a bare
+  `setPositions`; and the round-17 contract's overhead measured as the
+  same layout run through `{ impl }` versus the built-in path — the
+  number an external author needs.  Animated layouts are a tick cost
+  and ride the 33.7 animation rows rather than duplicating them.
+- [ ] **33.2 The algorithm tail** (extend `algorithms.mjs`) —
+  finding 2.  `kMedoids`, `fuzzyCMeans`, `affinityPropagation`,
+  `kargerStein`, unnormalized `degreeCentrality`, and weighted
+  `betweennessCentrality`/`closenessCentrality`.  The four clustering
+  additions are attribute-space and handle-level on both sides (v3's
+  own design, ported deliberately — see round 10 A4), so parity is the
+  expected reading and a large win would mean the row is wrong.
+  `kargerStein` is randomized: seed it or fix its iteration count, or
+  it measures variance.
+- [ ] **33.3 The style engine** (`benchmark/gpu/style.mjs`, new) —
+  finding 3.  Sheet compile alone (no apply), `applyAll` at scale, the
+  first apply of a batch's added elements, the selection restyle skip
+  (a sheet with and without a `:selected`-dependent block, against
+  v3's unconditional per-element bypass — the round-4 finding, never
+  re-measured), the parents partition under compounds, and the
+  readback getters.  v3's comparison is its stylesheet apply; where
+  the dialects differ, the `cmp( name, v3Op, gpuOp )` form.
+- [ ] **33.4 Loading and the wire format** (`benchmark/gpu/load.mjs`,
+  new) — finding 4, and design call 2's headline.  Definition-form
+  init, columnar init, wire deserialize + init, `toColumnarElements`,
+  `serializeElements`, `cy.serialize()`, and `cy.add()` of a band in
+  all three forms — each against v3 init where v3 has the form at all
+  (it has only the definition form, which is itself the point).  The
+  ndex-x-large fixture is a downloaded asset (`benchmark:download`),
+  so the suite generates its own graph at `BENCH_N` and the ndex
+  figures stay in the round record as a separate, explicitly-labelled
+  run.  Retires the four historical one-offs by replacing them with
+  rows, or marks them historical in place.
+- [ ] **33.5 Pick, box selection and bounds**
+  (`benchmark/gpu/spatial.mjs`, new) — findings 5–7, one suite because
+  they share fixtures and all three are columnar scans.  `pickNodeAt`
+  hit/miss against v3's renderer pick, across the shape branches
+  (ellipse, rectangle, polygon table, round-* offset polygon, barrel,
+  custom polygon blob) and at two zooms — the axis 28.1 recorded as
+  the breakable one — plus a `text-events` label-box variant.
+  `elementsInBox` at several box fractions against v3's `getAllInBox`,
+  with and without the label-containment term.  `boundingBox`/`fit`/
+  `getFitViewport`/`boundingBoxAt` against v3, with the label terms on
+  and off (the round-16.4 default is *on*, so the honest default row
+  is the expensive one).
+- [ ] **33.6 The data sidecar and structured queries**
+  (`benchmark/gpu/data.mjs`, new) — findings 8–9.  Writes and reads
+  per column kind (numeric, dictionary string, plain-array fallback),
+  a dictionary-churn row that drives the round-11 refcount reclaim,
+  `removeData`, whole-object reads, and the `DataStore.reader` path;
+  then data-condition queries (`{ data: { k: { gt } } }`) and
+  structural queries (`{ parent: true }`) against v3's `[weight > 0.5]`
+  and `:parent` selectors — the comparisons a v3 user will actually
+  make.
+- [ ] **33.7 Events and the animation manager**
+  (`benchmark/gpu/events.mjs`, new) — findings 10–11.  Emit cost by
+  qualifier kind and listener count, the listener-gated no-op path,
+  and **the flat-vs-phased compound emit** — the same graph with and
+  without a parent, pinning round 14.5's zero-cost claim as a number
+  instead of an assertion.  Then animation start/stop, the round-21
+  eviction compare at increasing channel counts, `delay`, the 24.3
+  controls, and the viewport path.  Tick costs stay where they are
+  (`transitions.mjs`, `geometry-tween.mjs`) and this suite cites them
+  rather than duplicating.
+- [ ] **33.8 Images, charts and store internals** (extend
+  `compaction.mjs`'s neighbours; new rows in a `store.mjs`) —
+  findings 12–13.  Registry acquire/release/dedup and the blob record
+  write; chart record writes and the `{ data }` values refresh; then
+  the id-map (probe insert, lookup, blob compaction), `Adjacency`
+  rebuild, `CurveBlob` reclaim and `DirtyTracker` span coalescing —
+  gpu-only absolute costs, since v3 has no counterpart at all.
+- [ ] **33.9 The report: every suite, one command** — finding 15,
+  design call 3, and **open call 7's answer**.  The job table takes
+  all fourteen suites plus the new ones, `gpuOnly` jobs render as
+  absolute costs, `--all` runs everything including the renderer
+  bench, and `test/modules/gpu-benchmark-report.mjs` gains coverage of
+  the gpu-only rendering path (it is the report's existing unit-test
+  seam — a pure results→HTML renderer, which is why it is testable at
+  all).  The `BENCH_OP` tables must track the new suites' group names,
+  the coupling `report.mjs` already documents.
+- [ ] **33.10 The renderer bench gaps** — finding 14.  Measure the
+  `gen-25k-images` scene on the RX 580 (never measured, and its
+  "software adapter" note was wrong three times over); re-run the 100k
+  and ndex scenes against the round-27 baseline the way 29.5 did for
+  the 25k set; re-run `--layout`; and add the two scenes the round
+  found missing — a wrapped-label configuration (25.6's expensive
+  case) and a `visibility`/`events` scene.  The compound `fit-all`
+  rows are bimodal at ±40% (29.5, recorded): re-measure before
+  reporting anything about them, and say so in the record.
+- [ ] **33.11 `scripts/gpu-bench-coverage.mjs` + the closing docs
+  sweep** — design call 8, then the standing rule.  The audit ships
+  reporting-only with its limits in the header; then both documents
+  are swept end to end for the round's vocabulary and for staleness,
+  with **the three named drift sites checked by name** ("Needs a
+  call", "Suggested sequencing", "Gaps with direction already set"),
+  and the round's numbers recorded — factors first, machine stated
+  once.  The README's Benchmarks section becomes an accurate index of
+  what exists.
+
+### Risks tracked
+
+- **Benchmark bloat vs signal.**  Fourteen suites become ~twenty, and
+  a full profile that nobody waits for is worth as little as a report
+  that shows half the suite.  Mitigation: the quick profile stays
+  quick (default scales only), `--all` is the opt-in, and the round
+  records the wall time of each profile so the cost of running it is
+  itself a documented number.
+- **v3 comparisons that are not comparisons** (design call 1).  The
+  most likely offenders are the layout rows — v3's layouts take
+  different options and, for cose, a wholly different quality target —
+  and the loading rows, where v3 has no columnar or wire form.  Where
+  no honest comparison exists, the row is gpu-only and says so.
+- **Fixture drift.**  `graph.mjs` builds one degree-4 grid graph; the
+  new suites need compound, curved, labelled and imaged fixtures.
+  These should extend `graph.mjs` (the existing shared seam) rather
+  than each suite growing its own generator — the failure mode is six
+  slightly different "20k graphs" whose numbers cannot be compared.
+- **Heap ceilings at 200k.**  Two live instances of a 200k graph
+  already force one-group-per-process for `mutators`/`scenarios`; the
+  style, spatial and data suites will hit the same wall, and the
+  `BENCH_OP` tables in `report.mjs` are a hand-maintained coupling to
+  group names that silently degrades when a group is renamed.
+- **Randomized and deferred work** (design calls 4–5).  `kargerStein`,
+  the force executors and anything reading derived geometry are the
+  rows most likely to measure variance or a deferred no-op.  Each gets
+  the 29.4 treatment: force the work, then check the row can move.
+- **The audit over-claiming** (design call 8).  A name-mention scan
+  will report a surface as benchmarked because a suite happens to
+  mention it, and will miss one exercised through a wrapper.  It
+  reports, it does not gate, and the header says which direction it
+  errs in.

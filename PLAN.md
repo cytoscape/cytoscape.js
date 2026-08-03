@@ -7424,3 +7424,96 @@ read them as the round's starting state, not its current one:
   mean the HTML report understates what exists.  Worth a decision when
   someone next touches the report.
   **Round 29 is complete.**
+
+## Round 30 plan — the error contract (planned 2026-08-03)
+
+Round 29 asked what is *unpinned* rather than what is unbuilt, and
+worked four answers (the alias surface, four unmentioned methods, the
+decided drops, the curve premium).  This round continues that axis on
+the part of the surface v4 talks about most and tests least: **what it
+throws.**
+
+"Fail loudly" is a stated v4 policy — an unknown sheet key, an unknown
+style property, an unknown query key and an unknown `boundingBox()`
+option all throw on the reasoning that a typo must not silently do
+nothing.  29.3 pinned the *decided-drop* subset of that policy at the
+API boundary.  Nothing has ever measured the rest.
+
+**Method, and why the first measurement was wrong.**  Every `throw new`
+in `src/gpu` was mapped against V8 coverage of the Node suite.  The
+first attempt read raw `NODE_V8_COVERAGE` offsets against the `.mts`
+sources and reported 47 dead sites — *including* `arrow-scale must be
+positive` and `not a valid font-family`, both of which have had throw
+specs since round 13.  tsx transpiles before V8 sees the file, so those
+offsets belong to the transpiled text and the mapping was fiction.  The
+measurement that stands runs the suite under
+`--enable-source-maps --experimental-test-coverage --test-reporter=lcov`
+and reads source-mapped `DA:` line counts; it puts the two known-tested
+sites back in the covered column, which is the check that makes the
+rest believable.
+
+**Finding: 191 throw sites in `src/gpu`, 34 never executed** by the
+2453-test Node suite.  ~20 are Node-testable, ~14 need a browser.  The
+list repeats defect shapes rounds 28–29 already named:
+
+- **Sibling gaps** (29.2's `renderedOuterHeight` shape).
+  `GraphStore.addEdge` throws on a nonexistent **source** and, four
+  lines later, on a nonexistent **target**; only the target throw has
+  ever fired in a test.  `renderedSourceEndpoint` is tested;
+  `renderedTargetEndpoint` is called by nothing.
+- **Decided-drop enforcement, half-pinned** (29.3's own theme, one
+  file over).  `bfs`'s options form rejects a selector string and a
+  spec pins it; the **positional** form (`bfs('#a')`) rejects it eight
+  lines later and nothing fires that.  The `breadthfirst` layout's
+  `roots` rejection fires nowhere at all.
+- **A README headline, unasserted.**  "the factory throws
+  synchronously when `navigator.gpu` is missing" is the first thing
+  the README says about headless mode.  `index.mts` checks
+  `options.container != null` before touching the DOM, so the throw is
+  reachable from Node — and no spec has ever taken it.
+- **Public API never called**: `cy.stop()` (the viewport form).  The
+  suite calls `ani.stop()` and `ele.stop()` only.
+- **Untested public options**: the clustering `distance` metrics
+  `squaredEuclidean` and `max` (specs pass `euclidean`, `manhattan`
+  and custom functions only).
+- **Five `cy.png()`/`jpg()` guards** — invalid `bg`, a `full` export of
+  an empty graph, a zero-sized container, a destroyed renderer, an
+  invalid `scale` — public contract, browser-testable.
+- Style validation (5 parser paths), the wire format's corrupt-buffer
+  guards, `mount()`'s two guards, and the `contract.mts` / `table.mts`
+  column guards.
+
+**Negative results, recorded so they are not re-run.**
+
+- **All six standalone benchmark suites still run** (`compaction`,
+  `labels`, `transitions`, `geometry-tween`, `compound`, `curves` at
+  `BENCH_N=2000`, exit 0 apiece).  29.6's open call is about the
+  report's job table, not about bit-rot.
+- **The public-member survey is clean after 29.1/29.2.**  Re-run over
+  406 members of the public sources, the only zero-mention names left
+  are renderer-interface internals (`requestRender`, `forceActive`)
+  and aliases whose targets are tested.  That axis is harvested.
+- **Function-level coverage is not usable here.**  `FN:`/`FNDA:`
+  records misattribute one-line arrow lambdas — the style prop
+  table's 429 `set`/`default`/`parseEnum` closures report 155 as
+  never-called while their props demonstrably round-trip in specs.
+  Statement-level (`DA:`) data on multi-line `throw` bodies is sound;
+  function-level data is not, and no finding here rests on it.
+
+**Pass split** (tests-first; docs in-commit; each pass its own
+commit(s)):
+
+- [ ] **30.1 The Node-testable throw sites.**  Specs in the files that
+  already own each surface, each run once with its guard removed to
+  prove it can fail (the AGENTS.md rule).
+- [ ] **30.2 The image-export guards** in the `webgpu` Playwright
+  project — with the bundle rebuilt by hand first, since a listener on
+  3333 makes a green run prove nothing.
+- [ ] **30.3 The untested public surface** the survey turned up beside
+  the throws: `cy.stop()`, `renderedTargetEndpoint`, and the two
+  clustering distance metrics.
+- [ ] **30.4 `scripts/gpu-throw-coverage.mjs`** — the measurement,
+  shipped, mirroring `scripts/gpu-jsdoc-coverage.mjs`.  **Reporting
+  only, not gated**: choosing a coverage floor is a policy call, so it
+  gets logged rather than taken.
+- [ ] **30.5 Closing docs sweep.**

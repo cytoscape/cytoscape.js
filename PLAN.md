@@ -7569,9 +7569,38 @@ commit(s)):
   already listening on 3333, which is the stale-bundle trap
   `AGENTS.md` describes, and these specs are worthless against a stale
   bundle.  91/91 webgpu (87 + 4).
-- [ ] **30.3 The untested public surface** the survey turned up beside
-  the throws: `cy.stop()`, `renderedTargetEndpoint`, and the two
-  clustering distance metrics.
+- [x] **30.3 The untested public surface** (2026-08-03) — landed, 9
+  specs in the three files that own the surfaces.
+  **`cy.stop()`** (3 specs, `gpu-viewport-animation.mjs`): `ani.stop()`
+  and `ele.stop()` were tested and the core sibling was called by
+  nothing.  Both arms are pinned, since the difference between them is
+  the whole point of the argument — the default freezes the viewport
+  where the tween reached and it stays there, `stop( true )` applies
+  the targets — plus the promise resolving and the idle call being a
+  no-op.  One drafting note: the first `viewport` emit can land at
+  t = 0, so the specs wait for actual movement rather than for the
+  event.
+  **`renderedTargetEndpoint`** (1 spec, `gpu-curve-12c-accessors.mjs`):
+  29.2's `renderedOuterHeight` shape exactly — the source twin has been
+  tested since 12c.  The spec asserts the transform *and* that the
+  answer is the target end, which is what a copy-paste from the
+  sibling would break.
+  **The clustering metrics** (5 specs, `gpu-algorithms-clustering.mjs`):
+  every existing clustering spec passes `euclidean`, `manhattan` or a
+  custom function, so `squaredEuclidean` and `max` — public option
+  values — ran nowhere.  The specs assert the arithmetic through the
+  exported `clusteringDistance` (p = (0,0), q = (3,4) separates all
+  four metrics: 5, 25, 7, 4) rather than through a clustering run,
+  because a run can land on the same partition under several metrics
+  and would not notice one silently resolving to another; v3's two
+  alternate spellings and the documented silent fallback for an
+  unknown name are pinned beside them, with one end-to-end `kMeans`
+  spec for the option plumbing.
+  Controls: 6 mutations run (stop made a no-op, then made
+  always-jump-to-end; `renderedTargetEndpoint` pointed at the source
+  end, then at model space; `squaredEuclidean` given the square root,
+  `max` made a sum) — each failed the specs written for it.
+  2482 Node tests (+9), typecheck, lint.  No source changed.
 - [ ] **30.4 `scripts/gpu-throw-coverage.mjs`** — the measurement,
   shipped, mirroring `scripts/gpu-jsdoc-coverage.mjs`.  **Reporting
   only, not gated**: choosing a coverage floor is a policy call, so it

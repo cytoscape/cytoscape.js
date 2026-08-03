@@ -56,6 +56,27 @@ describe('gpu/curve-12c: accessors and exact bb', function(){
       expect( rs.x ).to.be.closeTo( s.x * 2 + 10, 1e-6 );
       expect( rs.y ).to.be.closeTo( s.y * 2 - 5, 1e-6 );
     });
+
+    // round 30.3: the sibling.  renderedSourceEndpoint has been tested
+    // since 12c; renderedTargetEndpoint was called by nothing in the
+    // suite — the same shape as 29.2's renderedOuterHeight.
+    it('renderedTargetEndpoint applies it too, at the other end', function(){
+      cy = pairWith({ 'curve-style': 'haystack', 'haystack-radius': 0.5 });
+      cy.viewport({ zoom: 2, pan: { x: 10, y: -5 } });
+
+      var e = cy.$id('e');
+      var t = e.targetEndpoint();
+      var rt = e.renderedTargetEndpoint();
+
+      expect( rt.x ).to.be.closeTo( t.x * 2 + 10, 1e-6 );
+      expect( rt.y ).to.be.closeTo( t.y * 2 - 5, 1e-6 );
+
+      // it is the *target* end, not a second copy of the source
+      expect( rt.x ).to.not.be.closeTo( e.renderedSourceEndpoint().x, 1 );
+
+      // non-edges answer undefined, as the source form does
+      expect( cy.$id('a').renderedTargetEndpoint() ).to.equal( undefined );
+    });
   });
 
   describe('manual-endpoint accessors', function(){

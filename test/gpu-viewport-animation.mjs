@@ -187,4 +187,76 @@ describe('gpu/viewport animation targets', function(){
     expect( cy.pan().x ).to.be.closeTo( wantPan.x, 1e-1 );
     expect( cy.pan().y ).to.be.closeTo( wantPan.y, 1e-1 );
   });
+
+  // round 30.3: `cy.stop()` is public API that no spec had ever called
+  // — `ani.stop()` and `ele.stop()` were tested, its core sibling was
+  // not.  Both arms matter: the default freezes where the tween is, and
+  // `jumpToEnd` applies the final values, which is the whole difference
+  // between the two calls.
+  describe('cy.stop()', function(){
+
+    // the first viewport tick can land at t = 0, so wait for movement
+    var untilMoved = async () => {
+      for( var i = 0; i < 100 && cy.zoom() === 1; i++ ){
+        await new Promise( r => setTimeout( r, 5 ) );
+      }
+    };
+
+    it('freezes a running viewport animation in place', async function(){
+      cy.viewport({ zoom: 1, pan: { x: 0, y: 0 } });
+      cy.animate({ zoom: 4, pan: { x: 400, y: 400 }, duration: 400 });
+
+      await untilMoved();
+
+      expect( cy.animated() ).to.equal( true );
+
+      var mid = { zoom: cy.zoom(), pan: { ...cy.pan() } };
+
+      expect( mid.zoom ).to.be.above( 1 ).and.below( 4 );
+      expect( cy.stop() ).to.equal( cy ); // chainable, as v3
+
+      expect( cy.animated() ).to.equal( false );
+
+      // and it stays where it stopped rather than drifting on
+      await new Promise( r => setTimeout( r, 60 ) );
+
+      expect( cy.zoom() ).to.be.closeTo( mid.zoom, 1e-9 );
+      expect( cy.pan().x ).to.be.closeTo( mid.pan.x, 1e-9 );
+    });
+
+    it('stop( true ) applies the final values instead', async function(){
+      cy.viewport({ zoom: 1, pan: { x: 0, y: 0 } });
+      cy.animate({ zoom: 4, pan: { x: 400, y: 400 }, duration: 400 });
+
+      await cy.promiseOn('viewport');
+
+      cy.stop( true );
+
+      expect( cy.animated() ).to.equal( false );
+      expect( cy.zoom() ).to.be.closeTo( 4, 1e-9 );
+      expect( cy.pan().x ).to.be.closeTo( 400, 1e-9 );
+      expect( cy.pan().y ).to.be.closeTo( 400, 1e-9 );
+    });
+
+    it('resolves the animation promise and is a no-op when idle', async function(){
+      var settled = false;
+      var ani = cy.animation({ zoom: 3, duration: 400 });
+
+      ani.play();
+      ani.promise().then( () => { settled = true; } );
+
+      await untilMoved();
+      cy.stop();
+      await new Promise( r => setTimeout( r, 0 ) );
+
+      expect( settled ).to.equal( true );
+
+      // idle: nothing to stop, nothing thrown, viewport untouched
+      var z = cy.zoom();
+
+      expect( () => cy.stop() ).to.not.throw();
+      expect( cy.zoom() ).to.equal( z );
+    });
+
+  });
 });

@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import cytoscapeGpu from '../src/gpu/index.mjs';
+import { clusteringDistance } from '../src/gpu/algorithms/clustering-distances.mjs';
 
 // ported from test/collection-k-means.mjs, -k-medoids, -fuzzy-c-means,
 // -hierarchical, -markov-clustering; affinity propagation gets a compact
@@ -417,6 +418,60 @@ describe('gpu/algorithms: clustering', function(){
 
     it('ap alias resolves', function(){
       expect( cy.elements().ap( opts() ).length ).to.be.above( 0 );
+    });
+  });
+
+  // round 30.3: the two metrics no spec had ever selected.  Every
+  // clustering spec above passes 'euclidean', 'manhattan' or a custom
+  // function, so `squaredEuclidean` and `max` — both public option
+  // values — ran nowhere.  Asserting the arithmetic directly is what
+  // separates them: a clustering run can land on the same partition
+  // under several metrics, so an end-to-end spec would not notice one
+  // metric silently resolving to another.
+  describe('the distance metrics', function(){
+    // p = (0, 0), q = (3, 4): the 3-4-5 triangle makes every metric a
+    // different number — 5, 25, 7 and 4 respectively
+    var p = [ 0, 0 ], q = [ 3, 4 ];
+    var at = v => dim => v[ dim ];
+    var d = name => clusteringDistance( name, 2, at( p ), at( q ) );
+
+    it('squaredEuclidean skips the square root', function(){
+      expect( d('euclidean') ).to.equal( 5 );
+      expect( d('squaredEuclidean') ).to.equal( 25 );
+    });
+
+    it("v3's alternate spellings resolve to the same metric", function(){
+      expect( d('squared-euclidean') ).to.equal( 25 );
+      expect( d('squaredeuclidean') ).to.equal( 25 );
+    });
+
+    it('max is the Chebyshev distance, not a sum', function(){
+      expect( d('manhattan') ).to.equal( 7 );
+      expect( d('max') ).to.equal( 4 );
+    });
+
+    it('an unrecognised name silently falls back to euclidean (v3)', function(){
+      expect( d('mahalanobis') ).to.equal( d('euclidean') );
+    });
+
+    it('kMeans accepts them as option values', function(){
+      // the metrics reach the algorithms through the same option the
+      // specs above exercise with 'euclidean'
+      var cy2 = cytoscapeGpu({ elements: [
+        { data: { id: '1', a: 0, b: 0 } }, { data: { id: '2', a: 1, b: 0 } },
+        { data: { id: '3', a: 9, b: 9 } }, { data: { id: '4', a: 10, b: 9 } }
+      ] });
+      var attributes = [ n => n.data('a'), n => n.data('b') ];
+
+      for( var metric of [ 'squaredEuclidean', 'max' ] ){
+        var clusters = cy2.elements().kMeans( {
+          k: 2, distance: metric, maxIterations: 20, attributes,
+          testMode: true, testCentroids: [ [ 0, 0 ], [ 10, 9 ] ]
+        } );
+
+        expect( ids( clusters[0] ).sort(), metric ).to.deep.equal([ '1', '2' ]);
+        expect( ids( clusters[1] ).sort(), metric ).to.deep.equal([ '3', '4' ]);
+      }
     });
   });
 });

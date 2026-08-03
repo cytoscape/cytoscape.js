@@ -21,6 +21,9 @@
 // left out of the run, and the count of skips is printed at the end.
 
 import { bench, group, summary, do_not_optimize } from 'mitata';
+import cytoscapeGpu from '../../src/gpu/index.mjs';
+import { isColumnarElements, isPackedIds } from '../../src/gpu/columnar.mjs';
+import { isSerializedElements } from '../../src/gpu/wire.mjs';
 import { finishRun } from './bench-run.mjs';
 import { buildElements, makeV3, makeGpu, MIDNUM, N } from './graph.mjs';
 
@@ -53,6 +56,10 @@ const gpuCurve = makeGpu( curveEles );
 gpuCurve.style( { nodes: { width: 20, height: 20 }, edges: { 'curve-style': 'bezier' } } );
 
 const instances = [ v3, gpu, v3c, gpuc, gpuCurve ];
+
+// payloads for the format-predicate row
+const columnarPayload = cytoscapeGpu.toColumnarElements( elements );
+const wirePayload = cytoscapeGpu.serializeElements( columnarPayload );
 
 // operands, resolved once outside every measured region
 const ctx = {
@@ -256,6 +263,61 @@ cmp( 'element data', 'scratch get + set', c => { c.node.scratch( 'k', c.i ); ret
 cmp( 'element data', 'json() one element', c => c.node.json() );
 cmp( 'element data', 'jsons() over 100', c => c.band.jsons() );
 only( 'element data', 'label()', c => c.node.label() );
+
+// -- gaps the 33.12 audit named --------------------------------------------
+// `scripts/gpu-bench-coverage.mjs` reports which public members no
+// benchmark mentions.  Its first run over this suite named these, and
+// they are here because that is the loop the audit exists to drive: it
+// took the callable public surface from 72.7% to the number in the
+// round record.  Members that are inherently browser-only (`png`/`jpg`,
+// `mount`/`unmount`) or asynchronous by contract (`promiseOn`) stay out
+// and are named in the record rather than silently missing.
+cmp( 'core', 'batchData()', c => { c.cy.batchData( { n0: { foo: c.i } } ); } );
+cmp( 'core', 'animated()', c => c.cy.animated() );
+cmp( 'core', 'zoomRange get', c => c.cy.zoomRange() );
+cmp( 'core', 'forceRender() (headless no-op)', c => { c.cy.forceRender(); } );
+cmp( 'core', 'resize() / invalidateSize()', c => { c.cy.resize(); } );
+cmp( 'core', 'onRender + offRender', c => { const h = () => {}; c.cy.onRender( h ); c.cy.offRender( h ); } );
+cmp( 'core', 'removeScratch()', c => { c.cy.scratch( 'tmp', 1 ); c.cy.removeScratch( 'tmp' ); } );
+cmp( 'core', 'selectionType get', c => c.cy.selectionType() );
+cmp( 'core', 'isReady()', c => c.cy.isReady() );
+cmp( 'core', 'window()', c => c.cy.window() );
+cmp( 'core', 'container()', c => c.cy.container() );
+cmp( 'core', 'destroyed()', c => c.cy.destroyed() );
+cmp( 'core', 'removeAllListeners()', c => { c.cy.removeAllListeners(); } );
+
+cmp( 'collection', 'cy()', c => c.node.cy() );
+cmp( 'collection', 'indexOfId()', c => c.nodes.indexOfId( 'n' + MIDNUM ) );
+cmp( 'collection', 'removed() + inside() (2 calls)', c => c.node.removed() + c.node.inside() );
+cmp( 'collection', 'silentPositions( fn ) over 100', c =>
+  { c.band.silentPositions( ( n, k ) => ( { x: k, y: 1 } ) ); } );
+cmp( 'collection', 'animated()', c => c.node.animated() );
+cmp( 'collection', 'delayAnimation()', c => { c.node.delayAnimation( 1 ).stop(); } );
+cmp( 'collection', 'removeScratch()', c => { c.node.scratch( 't', 1 ); c.node.removeScratch( 't' ); } );
+cmp( 'collection', 'component()', c => c.node.component() );
+cmp( 'collection', 'layoutDimensions()', c => c.nodes.layoutDimensions( {} ) );
+cmp( 'degree', 'maxIndegree + minOutdegree (2 calls)', c =>
+  c.nodes.maxIndegree( false ) + c.nodes.minOutdegree( false ) );
+cmp( 'flags', 'grabbed + hidden + inactive (3 calls)', c =>
+  c.node.grabbed() + c.node.hidden() + c.node.inactive() );
+only( 'curves', 'renderedSegmentPoints', c => c.curveEdge.renderedSegmentPoints() );
+
+// the layout contract's columnar reads, through a one-shot impl
+only( 'layout contract', 'edgeSlots + endpoints + degreeOf', c => {
+  let n = 0;
+
+  c.cy.layout( { impl: class {
+    run( ctx ){
+      n = ctx.edgeSlots().length + ctx.endpoints().length + ctx.degreeOf( 0 );
+    }
+  }, fit: false } ).run();
+
+  return n;
+} );
+
+// the format predicates: what `options.elements` dispatches on
+only( 'formats', 'isColumnarElements + isSerializedElements + isPackedIds', () =>
+  isColumnarElements( columnarPayload ) + isSerializedElements( wirePayload ) + isPackedIds( {} ) );
 
 // -- run ----------------------------------------------------------------------
 const sides = [ [ 'v3', ctx.v3 ], [ 'gpu', ctx.gpu ] ];

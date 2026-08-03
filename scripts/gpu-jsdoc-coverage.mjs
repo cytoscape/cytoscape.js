@@ -91,6 +91,11 @@ export function auditFile( file ){
   const lines = readFileSync( file, 'utf8' ).split( '\n' );
   const rel = relative( ROOT, file );
   const missing = [];
+  // every public member this scan saw, for consumers that need the
+  // surface itself rather than its documentation state (round 33.12's
+  // benchmark-coverage audit, which must not re-invent these regexes —
+  // three plan figures have been wrong from throwaway scans that did)
+  const members = [];
   let documented = 0;
   let currentClass = null;
   let exported = false;
@@ -120,6 +125,8 @@ export function auditFile( file ){
       currentClass = null;
 
       const name = fn[1] ?? fn[2];
+
+      members.push( { name, owner: null, line: i + 1, isMethod: true } );
 
       if( hasDocAbove( lines, i ) ) documented++;
       else missing.push( `${name}() (${rel}:${i + 1})` );
@@ -159,11 +166,19 @@ export function auditFile( file ){
 
     if( sig ) overloaded.add( name );
 
+    // MEMBER_RE's tail distinguishes a call signature from a field
+    // (`(` vs `:`/`=`), which the benchmark audit needs: a field is not
+    // something a benchmark can call
+    members.push( {
+      name, owner: currentClass, line: i + 1,
+      isMethod: /\(\s*$|\(/.test( line.slice( line.indexOf( name ) + name.length ).trimStart().charAt( 0 ) )
+    } );
+
     if( hasDocAbove( lines, i ) ) documented++;
     else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );
   }
 
-  return { file: rel, documented, missing };
+  return { file: rel, documented, missing, members };
 }
 
 /** The doc block immediately above line `i`, or '' when there is none. */

@@ -8475,13 +8475,35 @@ describe and no suite prices:
   identically to starting a disjoint one (10.32 vs 10.35 µs), so
   `touchedColumns()` across shared refs is not a cost worth avoiding.
   The 24.3 controls are 3.4 µs (pause + resume) and 4.3 µs (reverse).
-- [ ] **33.8 Images, charts and store internals** (extend
-  `compaction.mjs`'s neighbours; new rows in a `store.mjs`) —
-  findings 12–13.  Registry acquire/release/dedup and the blob record
-  write; chart record writes and the `{ data }` values refresh; then
-  the id-map (probe insert, lookup, blob compaction), `Adjacency`
-  rebuild, `CurveBlob` reclaim and `DirtyTracker` span coalescing —
-  gpu-only absolute costs, since v3 has no counterpart at all.
+- [x] **33.8 Images, charts and store internals** (2026-08-03) —
+  landed as `benchmark/gpu/store.mjs`, gpu-only throughout because v3
+  has no counterpart to any of it.  The structures are driven directly
+  rather than through the public API, so a row is the structure's cost.
+  At N=2000: the **id index** builds in 307 µs (2000 `set`s), and its
+  single-key ops are `has` 55 ns / `get` 62 ns / `hashAt` 7.6 ns /
+  `idAt` 9.2 ns — the last of which is the *memoized* hit, since
+  `idAt` caches the decoded name per slot; the cold UTF-8 decode is not
+  separable through the surface, and that is the useful fact (an id
+  decodes once per slot, ever).  A remove + re-set round-trip, which is
+  what drives the round-11 blob reclaim, is 250 ns.
+  **CSR adjacency** rebuilds 4000 edges in 66 µs (the two counting
+  passes), and its reads are the design in three numbers: `outDegree`
+  **6.5 ns** — the O(1) claim, measured — `outEdges` 48 ns,
+  `connectedEdges` 183 ns; an overlay add + remove is 147 ns.
+  **The blob pool** writes 2000 records in 127 µs, rewrites one in
+  place in 32 ns (the same-length fast path), reads `offsetOf` in
+  4.6 ns, and pays 181 ns for a free + rewrite.
+  **The dirty tracker**, which every column write in the store funnels
+  through, marks in 13.7 ns contiguous / 19.2 ns scattered and drains a
+  64-mark frame in 742 ns.
+  **The image registry** (round 15's bookkeeping, headless — no
+  decoder): 214 ns to acquire a url already known (the icon-per-type
+  case) and 636 ns for a fresh entry plus its release.
+  **Charts**: a `chart` sheet with per-element `{ data }` values costs
+  **1.01×** the same sheet without one — the blob record per node is
+  noise beside the apply it rides in, which is the 33.3 finding showing
+  up from the other side.  A data write refreshing every node's
+  `chart-values` is 529 µs.
 - [ ] **33.9 The remaining public surface**
   (`benchmark/gpu/surface.mjs`, new) — *added to the plan while
   executing it (2026-08-03), on the user's restatement of the scope:

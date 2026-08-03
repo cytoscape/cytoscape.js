@@ -111,6 +111,19 @@ survey turned up beside them are covered (`cy.stop()`,
 metrics), and the measurement itself ships as
 `scripts/gpu-throw-coverage.mjs` — see "Measuring the error contract"
 below.
+Round 31 (2026-08-03) asked the follow-on question — when those throws
+fire, do they say the right thing, and does the shipped documentation
+admit they exist?  It found **one message advising a form v4 rejects**
+(the per-element bypass error sent callers at the style *function*
+form, removed in round 8 and throwing since 29.3, and its doc comment
+said the same), fixed it to name the mapper replacement, and closed
+the documentation half: **every public member that throws now carries
+an `@throws` tag** (16/16, up from 7), gated beside the round-26
+coverage rule.  It also covered `mouseout` and `pointercancel`, the
+only two names of the round-17 event vocabulary no test mentioned.
+Note where that defect lived: *this file* has always described the
+bypass correctly — the stale advice was in the runtime message and the
+JSDoc, which a markdown sweep never reads.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -1887,6 +1900,17 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   separately documentable and is skipped.  Run
   `node scripts/gpu-jsdoc-coverage.mjs --verbose` for the
   per-member list.
+- **`@throws` is enforced too, since round 31.2.**  The rule above
+  gates that a comment *exists*; this one gates half of what it must
+  say.  `auditThrowTags()` (same script, tally printed under the
+  coverage report) flags a public member whose body contains a
+  `throw` and whose comment carries no `@throws` — 7 of 16 did when
+  the audit was written, and the surface is now 16/16.  It
+  **under-detects deliberately**: a member that throws only through a
+  helper it calls is not flagged, since whether that belongs to *its*
+  contract is a judgement.  Round 31.1 is why this is worth gating —
+  a stale doc comment shipped bad advice into every consumer's editor
+  via `dist/cytoscape-gpu.d.ts`.
 
 ## Measuring the error contract (round 30)
 

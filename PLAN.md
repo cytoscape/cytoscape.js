@@ -2323,7 +2323,7 @@ during the round and left standing by 29.6's own sweep.  Removed in
 30.5, and noted here because it is the third round running that this
 summary has been the thing that drifted.)
 
-**2026-08-03, round 30.**  Continuing round 29's axis onto the part of
+**2026-08-03, rounds 30–31.**  Continuing round 29's axis onto the part of
 the surface v4 states most and tests least — **what it throws**.
 Measured with source-mapped coverage: 34 of the 191 throw sites in
 `src/gpu` had never executed.  30.1 closed every Node-reachable one
@@ -2335,6 +2335,14 @@ took the untested public surface the survey turned up beside them
 reporting only, since a coverage floor is a call, now logged as open
 call 12.  Reading at the close: 176 run, 13 browser-only, 2
 unreachable by design, **0 Node-reachable and never run**.
+**Round 31** then asked what those throws *say*: it found the
+per-element bypass error advising the style function form — removed in
+round 8, throwing since 29.3 — fixed the message and its doc comment,
+took `@throws` on public throwing members from 7/16 to 16/16 under a
+gate, and covered `mouseout`/`pointercancel`, the last two names of
+the round-17 event vocabulary no test mentioned.  Its lesson is about
+sweeps rather than about errors: the markdown had been right all
+along, and the wrong text was in a runtime string and a JSDoc block.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -7840,4 +7848,23 @@ commit(s)):
   `pointercancel` never emitted → 1 fails; the cancel path stops
   freeing → 1 fails; the cancel path also reports `dragfree` → 1
   fails.  93/93 `webgpu` (91 + 2).
-- [ ] **31.4 Closing docs sweep.**
+- [x] **31.4 Closing docs sweep** (2026-08-03) — the README header
+  carries round 31, the JSDoc section gains the `@throws` rule beside
+  the round-26 coverage rule, and both records name the thing worth
+  remembering: **this file and the README described the bypass
+  replacement correctly the entire time.**  The stale advice lived in
+  a runtime message and a JSDoc comment, neither of which a markdown
+  sweep reads — so "the docs are swept" was true and the shipped
+  documentation was still wrong.  `AGENTS.md` says so under the
+  JSDoc note, next to the gate that now catches the silent half.
+  This file gains the round-31 paragraph in "Suggested sequencing".
+  No new open call: 31.2's gating question was answered in the pass
+  (documentation completeness is already gated here, so `@throws`
+  maintains an existing gate rather than adding a kind), and it is one
+  `describe` block to remove if the maintainer disagrees.
+  Verification for the round: **2485 Node tests, 68 module tests,
+  93/93 `webgpu` and 75/75 `webgpu-visual` against a freshly built
+  bundle, typecheck, lint, `test:types:all` with the regenerated
+  `dist/cytoscape-gpu.d.ts`, JSDoc coverage 100% and `@throws` 16/16,
+  and `gpu-throw-coverage` still at 0 Node-reachable dead sites.**
+  **Round 31 is complete.**

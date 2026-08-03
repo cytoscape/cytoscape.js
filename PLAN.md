@@ -6306,6 +6306,34 @@ release.
   host-library environment gap recorded in round 25.7).
   **Round 26 is complete.**
 
+## Observed once, unreproduced — a Node-suite flake (2026-08-02)
+
+Logged so the breadcrumb is not lost, not because it is understood.
+
+During the round-27 docs verification a single `npm run test:js` run
+failed one spec; every other run that day passed.  What the output
+showed: a chai `deepStrictEqual` on an array of element ids containing
+at least `'1'` … `'8'`.  What is known:
+
+- **Not reproduced in 37 subsequent full-suite runs**, nor in 60 runs
+  of `test/gpu-algorithms-clustering.mjs` alone.
+- The obvious suspect was **ruled out**.  `fuzzyCMeans` is the only
+  clustering spec that passes `testMode: true` *without*
+  `testCentroids`, so it falls through to `Math.random()` centroid
+  initialization (`algorithms/k-clustering.mts` — the deterministic
+  branch needs both).  Its spec is even named "random init".  But
+  5,000 direct trials of exactly that fixture and options produced
+  **0 mismatches**: the data is separated enough that random init
+  always converges to the same partition.
+- So the id array probably came from a different spec, and the run
+  order or a shared global (the suite runs files concurrently) is the
+  more likely direction than any one algorithm.
+
+If it recurs, capture the failing spec name — that is the missing
+piece.  Nothing here is a reason to distrust the round-27 results:
+the same suite passed 37/37 afterwards, and every round-27 claim is
+additionally pinned by browser specs and live parity diffs.
+
 ## Round 27 plan — the parity remnants (planned 2026-08-02)
 
 The tail the README's follow-up hooks have carried since round 13:

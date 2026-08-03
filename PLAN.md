@@ -7020,3 +7020,103 @@ commit(s)):
   for 28.1 or 28.3 (tests and docs only); 28.2 touches the viewport
   animation path, whose coverage is the Node suite.
   **Round 28 is complete.**
+
+## Round 29 plan — test + benchmark hardening (planned 2026-08-03)
+
+Round 28 closed the ledger's no-call remainder.  This round comes from
+a different question — *not* "what is unbuilt" but "what is unpinned":
+a survey of `src/gpu` (49k lines, 121 Node spec files, 14 benchmark
+suites) for behaviour that exists, is documented, and is measured or
+asserted by nothing.
+
+**Survey method and what it ruled out**, since the negative results are
+worth as much as the findings:
+
+- **Module-level coverage is not the gap.**  Mapping every `src/gpu`
+  module to test files that import it shows ~50 with no direct
+  importer, but almost all of those (the algorithms, the layouts,
+  `core`/`collection` themselves) are exercised through the public
+  entry point, which is the right way round.  Nothing was added on
+  this basis.
+- **The round-27 vacuous-spec defect looks isolated.**  A scan of all
+  121 gpu spec files for specs that assert nothing, or whose name
+  promises a behaviour their body never invokes, produced 64 hits and
+  **no new real ones** — the `NO EXPECT` hits are helper-wrapped
+  assertions (`close()` in `gpu-curve-geometry.mjs`, the `throws()`
+  helpers in `gpu-mappers.mjs`) and the rest are false matches on
+  substrings (`betweennessCentrality` contains "tween").  The three
+  specs 28.1 fixed remain the only known instances.
+- **The binary wire format is already priced** (deserialize ~5 ms,
+  ndex-x-large load 106 → 68 ms — the pass-1 record), so the
+  serialize/bulk-load benchmark this survey first proposed was
+  dropped.
+
+**Findings, all of them things that exist and nothing pins:**
+
+1. **The alias surface is 83 methods wide and 29 of them are never
+   called by any test.**  `declare each: this['forEach']` is a *type*
+   declaration; the runtime wiring is a separate
+   `GpuCollection.prototype.each = GpuCollection.prototype.forEach`
+   line.  Deleting a wiring line leaves the typecheck green — the
+   `declare` keeps asserting the method exists — and breaks the alias
+   at runtime with nothing to catch it.  All 83 are consistent today
+   (verified by parsing both sources); the point is that nothing keeps
+   them that way.  Untested ones include `centre`, `deselect`, `each`'s
+   siblings `point`/`points`/`modelPosition`/`modelPositions`,
+   `renderedCss`, `renderedBoundingbox`, `jpeg`, `invalidateSize`, the
+   British spellings (`allAreNeighbours`, `degreeCentralityNormalised`,
+   `closenessCentralityNormalised`) and four algorithm aliases.
+2. **Four public methods have zero mentions anywhere in the suite**:
+   `silentPositions`, `silentShift`, `delayAnimation` and
+   `renderedOuterHeight` — the last a plain sibling gap, since
+   `renderedOuterWidth` is tested one line away in
+   `gpu-collection-dimensions.mjs`.
+3. **The decided-design drops are barely pinned.**  "No selector
+   strings, anywhere" is v4's most load-bearing API decision, and the
+   only specs asserting it are three in the algorithms files
+   (`bfs({ roots: '#a' })` and friends).  Nothing asserts that a
+   selector string is rejected by `cy.filter`/`cy.nodes`/`eles.filter`,
+   that `cy.$` is absent, that classes are gone, or that `z-index` is
+   rejected by the sheet.  A decision that is not pinned is a decision
+   that regresses back in by accident.
+4. **Curved-edge CPU derivation is unpriced.**  Round 12 benchmarked
+   the *GPU* frame cost (the renderer bench's curved pan scene) but
+   nothing measures the CPU side: the parallel-edge bundle map, the
+   per-edge control-point derivation, the bundle re-fan `show()`/
+   `hide()` triggers, the curve-aware accessors, and the curve-hull
+   term in bounds and box selection.  That work runs on every endpoint
+   move at graph scale, and `curve-geometry.mts` + `curve-index.mts`
+   are 2.5k lines of it.
+5. **The renderer benchmark has not been run since round 27** — and
+   27.9's reason for not running it was wrong (see its correction: this
+   box has an RX 580).  The last recorded device numbers are from the
+   2026-08-01 hardware pass, before round 27 added shader branches to
+   the node and arrow paths.
+
+**Pass split** (tests-first where there is code; docs in-commit):
+
+- [ ] **29.1 The alias surface.**  One spec file walking an explicit
+  table of every alias → target pair, asserting the alias exists, is a
+  function, and is identical (`===`) to its target on the prototype,
+  plus a meta-check that the two sources declare exactly the tabled
+  set — so adding an alias without listing it fails, and deleting a
+  wiring line fails.  The table doubles as the written record of the
+  alias surface.
+- [ ] **29.2 The four unmentioned public methods.**  Behavioural specs,
+  not smoke: `silentPositions`/`silentShift` must move nodes *without*
+  emitting position events (the whole point of "silent"), and
+  `delayAnimation` must delay without touching any channel.
+- [ ] **29.3 Decided drops stay dropped.**  A spec file pinning the
+  design ledger's rejections at the API boundary: selector strings on
+  every query entry point, `cy.$`, classes, `z-index` in a sheet, and
+  the per-element bypass setter.  Each assertion cites the ledger entry
+  it pins.
+- [ ] **29.4 A curved-edge CPU benchmark** (`benchmark/gpu/curves.mjs`),
+  standalone and gpu-only like `labels.mjs`: bundled-bezier build,
+  node-drag re-derivation at bundle scale, the accessors, bounds and
+  box selection over curved edges, and the re-fan triggers — each
+  against the straight-edge baseline, so the number reported is the
+  *curve premium*, not the ambient cost.
+- [ ] **29.5 Run the renderer benchmark on the RX 580** and record the
+  numbers against the 2026-08-01 baseline, which answers 27.9's open
+  question: whether round 27's shader branches cost anything per frame.

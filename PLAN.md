@@ -2120,8 +2120,8 @@ closed the visual-parity tail.  What is left of the whole ledger:
 overlap box mode, item 10's core/collection extension points, and
 item 12's odds and ends.
 
-**2026-08-03, round 28** took the part of that remainder needing no
-design call: CPU-pick coverage for round 27's shapes (28.1 — a
+**2026-08-03, rounds 28–29.**  Round 28 took the part of that
+remainder needing no design call: CPU-pick coverage for round 27's shapes (28.1 — a
 verification gap, not an API one), the `panBy` animation target
 (28.2), and item 12's own drift (28.3, above).  **What remains of the
 ledger is entirely open calls** — decisions, not implementations:
@@ -2130,7 +2130,16 @@ ledger is entirely open calls** — decisions, not implementations:
 item 10's core/collection extension points, and item 12's surviving
 three (`cy.gc()`, `cytoscape.warnings()`, graph data in the binary
 wire format).  Nothing in the ledger is now blocked on
-effort.  Separately open and blocked on neither — just unrun — is the
+effort.  **Round 29** then worked a different axis entirely — not the
+ledger of what is unbuilt but a survey of what is *unpinned* — and
+found the alias surface untested (83 methods whose type declarations
+and runtime wiring are separate things), four public methods no spec
+mentioned, the decided-design drops enforced only by intention in
+three places (a string event qualifier crashed inside the emitter on
+the next event; a style *function* group was silently ignored; the
+collection methods crashed on `other._refs` or answered false), and
+curved edges unpriced on the CPU.  It also closed 27.9 by measuring:
+round 27's shader branches cost nothing per frame.  Separately open and blocked on neither — just unrun — is the
 device-side frame cost of round 27's shader branches (see the 27.9
 correction: this box has an RX 580).
 
@@ -7243,3 +7252,20 @@ worth as much as the findings:
   round 27 touched neither layout nor anything scene-size-dependent,
   and the flat/curved/compound/images 25k set is where its node and
   arrow shaders live.)
+- [x] **29.6 Closing docs sweep** (2026-08-03) — the README header
+  carries round 29; the alias surface is described in the API-scope
+  section, the boundary enforcement in the two design-decision bullets
+  it belongs to, the curve premium beside the curved-edge design it
+  prices, and the renderer bench's noisy rows in the benchmark
+  section.  This file's "Suggested sequencing" summary gains the
+  round-29 paragraph — the standing rule names it as one of the two
+  places that drift every round — and 27.9's "not measured here" now
+  points at the answer.
+  **Logged, not acted on**: six benchmark suites (`compaction`,
+  `labels`, `transitions`, `geometry-tween`, `compound`, and now
+  `curves`) are standalone and absent from `report.mjs`'s job table,
+  so they only ever run by hand.  That matches how their rounds used
+  them — each is a one-round sweep with its own scale — but it does
+  mean the HTML report understates what exists.  Worth a decision when
+  someone next touches the report.
+  **Round 29 is complete.**

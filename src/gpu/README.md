@@ -86,6 +86,18 @@ nothing — and three specs named for picking asserted only
 **`panBy` viewport-animation target**, and the ledger's own drift.
 What remains in the ledger is now open *calls* rather than open work
 — see PLAN.md.
+Round 29 (2026-08-03) asked a different question — not what is
+unbuilt but what is **unpinned** — and answered it in five passes:
+the 83-method alias surface is now asserted (its type declarations
+and its runtime wiring were separate, so deleting a wiring line
+typechecked clean), four public methods no spec had ever called are
+covered, and the **decided-design drops are enforced at the API
+boundary** rather than merely intended — which took fixing three
+places where a dropped v3 form was accepted and then failed
+elsewhere, or silently not at all.  It also priced curved edges on
+the CPU (`benchmark/gpu/curves.mjs`) and re-ran the renderer
+benchmark on real hardware, which showed round 27's shader branches
+cost nothing measurable per frame.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison

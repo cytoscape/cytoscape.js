@@ -5813,11 +5813,11 @@ declare namespace cytoscape {
             /**
              * The colors to use at each stop in the gradient for the overlay; may be specified as a space-separated list or an array.
              */
-            "overlay-gradient-stop-colors"?: PropertyValueEdge<string[]>;
+            "overlay-gradient-stop-colors"?: PropertyValueEdge<string[] | string>;
             /**
              * The positions of each stop in the gradient for the overlay; may be specified as a space-separated list or an array.
              */
-            "overlay-gradient-stop-positions"?: PropertyValueEdge<(number | string)[]>;
+            "overlay-gradient-stop-positions"?: PropertyValueEdge<(number | string)[] | string>;
         }
 
         /**
@@ -5852,11 +5852,11 @@ declare namespace cytoscape {
             /**
              * The colors to use at each stop in the gradient for the underlay; may be specified as a space-separated list or an array.
              */
-            "underlay-gradient-stop-colors"?: PropertyValueNode<string[]>;
+            "underlay-gradient-stop-colors"?: PropertyValueNode<string[] | string>;
             /**
              * The positions of each stop in the gradient for the underlay; may be specified as a space-separated list or an array.
              */
-            "underlay-gradient-stop-positions"?: PropertyValueNode<(number | string)[]>;
+            "underlay-gradient-stop-positions"?: PropertyValueNode<(number | string)[] | string>;
         }
 
         /**

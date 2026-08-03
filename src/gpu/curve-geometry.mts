@@ -112,6 +112,8 @@ export interface CurveEval {
   mx: number; my: number;
 }
 
+/** A zeroed `CurveEval` for callers to reuse as `evalCurve`'s `out`
+ * scratch — the evaluators never allocate on the hot path. */
 export const emptyCurveEval = (): CurveEval => ( {
   kind: 0, sx: 0, sy: 0, ex: 0, ey: 0, c1x: 0, c1y: 0, c2x: 0, c2y: 0, mx: 0, my: 0
 } );
@@ -471,6 +473,9 @@ export interface CurveRoute {
   arcMode: Uint8Array;
 }
 
+/** A zeroed `CurveRoute` for callers to reuse as an `out` scratch.  Its
+ * typed arrays are sized for `MAX_CURVE_PTS` interior points once, so a
+ * single instance serves every route the evaluators produce. */
 export const emptyCurveRoute = (): CurveRoute => ( {
   kind: 0,
   n: 0,
@@ -971,6 +976,8 @@ export interface RouteCorner {
   ccw: boolean;
 }
 
+/** A zeroed `RouteCorner` for callers to reuse as `computeCorner`'s
+ * `out` scratch. */
 export const emptyRouteCorner = (): RouteCorner => ( {
   cx: 0, cy: 0, r: 0, startX: 0, startY: 0, stopX: 0, stopY: 0, a0: 0, a1: 0, ccw: false
 } );

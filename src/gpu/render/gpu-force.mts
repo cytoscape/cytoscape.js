@@ -33,7 +33,7 @@ be encoded per submit with no per-iteration uniform writes.
 
 Convergence: `apply` folds displacements into an atomicMax over the
 f32's monotonic u32 bits; a 4-byte staging readback per frame drives
-the CPU-side settle call, then `settle()`'s one positions readback —
+the CPU-side settle call, then `readPositions()`'s one readback —
 the sole readback exception in the architecture (round 9) — hands the
 final coordinates back for the layout to write into the store.
 
@@ -266,7 +266,11 @@ export interface GpuForceInputs {
 export class GpuForceRuntime {
   /** iterations executed on-device (CPU bookkeeping mirrors the tick) */
   iterations = 0;
+  /** the CPU's mirror of the annealing alpha; decays once per encoded
+   * iteration and is the second convergence test */
   alpha = 1;
+  /** the last polled batch maximum displacement, in model px; Infinity
+   * until the first pollConvergence() readback lands */
   lastMaxDisp = Infinity;
 
   private device: GPUDevice;
@@ -284,6 +288,22 @@ export class GpuForceRuntime {
   private settledRuns = 0;
   private destroyed = false;
 
+  /**
+   * Uploads the whole simulation to the device: the sim-indexed
+   * positions, the incident CSR and packed edge table built here from
+   * `inputs.edges`, the slot/pin map, the grid sized from the run's
+   * fixed frame, and one bind group per kernel.  Everything but the
+   * apply group is bound now, because only apply touches the mirror's
+   * position buffer, whose identity can change under a realloc.
+   *
+   * `inputs` is retained by reference for params and slot lookups, so it
+   * must not be mutated during the run; the grid frame in particular is
+   * fixed for the run's whole life.
+   *
+   * @param device — the device that owns every buffer and pipeline
+   * @param inputs — the compacted simulation: participating leaves, edge
+   * list, initial positions, pins, publish map, params and grid frame
+   */
   constructor( device: GPUDevice, inputs: GpuForceInputs ){
     this.device = device;
     this.inputs = inputs;
@@ -421,12 +441,25 @@ export class GpuForceRuntime {
     ] );
   }
 
+  /**
+   * Whether the run is finished — iteration budget spent, alpha annealed
+   * out, or three consecutive polls under the displacement threshold.
+   * encode() is a no-op once this is true, so the caller must stop the
+   * run and hand ownership back rather than keep encoding.
+   */
   converged(): boolean {
     return this.iterations >= this.inputs.params.iterations
       || this.alpha < 0.001
       || this.settledRuns >= 3;
   }
 
+  /**
+   * The mirror columns this run owns while it is live.  The caller
+   * passes them to the mirror's tween-ownership set so CPU span uploads
+   * skip them — without that, a stale CPU write would clobber the
+   * positions the apply kernel publishes each iteration.  Ownership must
+   * be released once readPositions() has settled the values back.
+   */
   ownedColumns(): string[] {
     return [ 'node.position' ];
   }
@@ -546,6 +579,13 @@ export class GpuForceRuntime {
     return out;
   }
 
+  /**
+   * Destroys every simulation buffer and latches encode(),
+   * pollConvergence() and the in-flight readback callbacks off.  Call
+   * only after the final readPositions() has resolved — the sim
+   * positions are gone afterwards, and the mirror's position column is
+   * left holding whatever the last published iteration wrote.
+   */
   destroy(): void {
     this.destroyed = true;
 

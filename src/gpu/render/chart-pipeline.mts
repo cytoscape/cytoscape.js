@@ -39,6 +39,17 @@ export class ChartPipeline {
   private quadIndex: GPUBuffer;
   private bindGroups = new Map<GPUBuffer, { group: GPUBindGroup; mv: number }>();
 
+  /**
+   * Builds the pie/stripe pipeline.  Unlike the image pass there is no
+   * texture group — chart wedges are procedural, so the record blob in
+   * the mirror is the only per-node input and `mirror.version` alone
+   * invalidates the cached bind groups.
+   *
+   * @param device — the device that owns the pipeline and quad index
+   * @param format — the scene colour target's format
+   * @param visibleLayout — the node culler's @group(1) layout, whose
+   * stream this draw shares
+   */
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:chart-shader', code: CHART_SHADER } );
 
@@ -98,6 +109,21 @@ export class ChartPipeline {
     return group;
   }
 
+  /**
+   * Draws the pie slices and stripe bands over the node bodies and their
+   * background images, clipped to the node's shape.  Encode after the
+   * image pass for the same stream: charts paint on top of images, and
+   * the ordering is the encode order, not a depth test.  The renderer
+   * skips this call while no chart records exist.
+   *
+   * @param pass — the scene render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform; bind groups are cached per buffer
+   * @param mirror — the column mirror; its `version` drives the rebuild
+   * @param instances — the culled node count, used only to skip an empty
+   * draw; the indirect buffer carries the real count
+   * @param cull — the culled node group whose stream this draw shares
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup

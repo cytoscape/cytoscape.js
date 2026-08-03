@@ -20,6 +20,21 @@ export interface LaidGlyph {
   v1: number;
 }
 
+/**
+ * Lays out one line of text as glyph quads in SDF px.  Advances are
+ * accumulated first so the run's total width is known, then each quad is
+ * shifted by -width/2 — the result is centred on x = 0 with y = 0 at the
+ * block top, which is the origin the label pipeline expects.
+ *
+ * @param text — the label's text; newlines and tabs collapse to spaces
+ * @param metricsFor — atlas lookup, returning null when the glyph cannot
+ * be rasterised (atlas full, unrenderable); such glyphs are dropped, and
+ * they contribute no advance
+ * @param ascent — the font ascent in SDF px, added to every glyph's
+ * plane offset to put the baseline below the block top
+ * @returns the drawable quads only — whitespace advances the pen but
+ * emits nothing
+ */
 export const layoutLabel = (
   text: string,
   metricsFor: ( ch: string ) => GlyphMetrics | null,

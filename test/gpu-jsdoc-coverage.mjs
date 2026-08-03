@@ -10,48 +10,37 @@ so the comments have to actually exist and stay existing.
 Design call 5: coverage is enforced, not aspirational.  Without a gate
 a 46%-covered surface silently returns to 46%.  Two mechanisms:
 
-  - COMPLETE — files whose public surface is fully documented.  These
-    are a hard ratchet: adding an undocumented public member to one of
-    them fails this spec.  Each round-26 pass adds the files it closed.
-  - The tier floors — a coarse net for the files not yet complete, so
-    the overall number cannot slide backwards between passes.
+  - Every file stays complete: adding a public member without a doc
+    comment fails this spec, naming the member.  Round 26.4 took both
+    tiers to 100%, so this is now the whole ratchet.
+  - The tier floors, kept as a second net in case the per-file check is
+    ever loosened.
 
-Raise the floors when a pass raises the number; never lower them.
+Never lower the floors.
 */
 
-/** Public-API files whose public members are 100% documented. */
-const COMPLETE = [
-  'src/gpu/core.mts',
-  'src/gpu/viewport.mts',
-  'src/gpu/collection.mts',
-  'src/gpu/animation.mts',
-  'src/gpu/style.mts',
-  'src/gpu/columnar.mts',
-  'src/gpu/wire.mts',
-  'src/gpu/layout/contract.mts'
-];
-
-/** Ratcheting tier floors, in percent. Raise as passes land. */
+/**
+ * Both tiers reached 100% in round 26.4, so the ratchet is simply "every
+ * file stays complete" — there is no partial-coverage file left to list.
+ */
 const PUBLIC_FLOOR = 100;
-const INTERNAL_FLOOR = 58;
+const INTERNAL_FLOOR = 100;
 
 describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
 
   const result = audit();
 
-  describe('the completed files stay complete', function(){
+  describe('every file stays complete', function(){
 
-    for( const file of COMPLETE ){
-      it(`${file} documents every public member`, function(){
-        const entry = result.files.find( f => f.file === file );
+    it('no src/gpu file has an undocumented public member', function(){
+      const offenders = result.files.filter( f => f.missing.length > 0 );
 
-        expect( entry, `${file} is not a src/gpu source file` ).to.exist;
-        expect(
-          entry.missing,
-          `undocumented public members:\n  ${entry.missing.join( '\n  ' )}`
-        ).to.deep.equal( [] );
-      });
-    }
+      expect(
+        offenders.map( f => f.file ),
+        'undocumented public members:\n  ' +
+        offenders.flatMap( f => f.missing ).join( '\n  ' )
+      ).to.deep.equal( [] );
+    });
 
   });
 

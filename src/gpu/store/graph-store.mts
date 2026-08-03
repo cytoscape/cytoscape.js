@@ -82,12 +82,6 @@ interface OrderList {
 
 const emptyOrder = (): OrderList => ( { slots: [], gens: [], stale: 0 } );
 
-/**
- * The CPU-canonical columnar model: NodeTable + EdgeTable + IdMap +
- * Adjacency, with per-column dirty spans for the renderer.  Synchronous API
- * reads always hit these typed-array columns; the store works headless (no
- * GPU, Node-testable).  The store itself never emits events — the core does.
- */
 /** A coalesced [start, end) span of data writes to one watched (group, key). */
 export interface MapperSpan {
   group: GroupName;
@@ -105,13 +99,26 @@ export interface GroupCompaction {
   oldHighWater: number;
 }
 
+/**
+ * The CPU-canonical columnar model: NodeTable + EdgeTable + IdMap +
+ * Adjacency, with per-column dirty spans for the renderer.  Synchronous API
+ * reads always hit these typed-array columns; the store works headless (no
+ * GPU, Node-testable).  The store itself never emits events — the core does.
+ */
 export class GraphStore implements ModelView {
+  /** the node table: one typed-array column per `node.*` column id */
   readonly nodes: ColumnTable;
+  /** the edge table: one typed-array column per `edge.*` column id */
   readonly edges: ColumnTable;
+  /** id <-> (group, slot) index; owns id uniqueness across both groups */
   readonly ids: IdMap;
+  /** the incident-edge index (CSR + overlay); rebuilt on waste */
   readonly adj: Adjacency;
+  /** the sidecar `data()` store (typed columns + dictionaries) */
   readonly data: DataStore;
+  /** per-column dirty spans, drained by takeDelta() once per frame */
   readonly dirty: DirtyTracker;
+  /** styled curve records + the lazy derivation of edge.curveParams */
   readonly curves: CurveIndex;
   /** the compound hierarchy (round 14); reads go through the delegates below */
   private hierarchy: HierarchyIndex;
@@ -178,7 +185,9 @@ export class GraphStore implements ModelView {
   };
   /** global label font-family (one font per glyph atlas); style-owned */
   labelFont: string;
+  /** global label font-style ('normal' / 'italic'); style-owned (13 D1) */
   labelFontStyle: string;
+  /** global label font-weight ('normal', 'bold', a number); style-owned */
   labelFontWeight: string;
   /** data keys whose writes feed GPU-evaluated mappers (registered by the StyleEngine) */
   private watchedKeys: Record<GroupName, ReadonlySet<string>>;
@@ -192,6 +201,17 @@ export class GraphStore implements ModelView {
   };
   private _compactEpoch = 0;
 
+  /**
+   * Build an empty store: both tables at zero capacity, empty id /
+   * adjacency / data / hierarchy / curve indexes, and the sub-index
+   * callbacks wired.  Those callbacks are the whole point of the
+   * constructor — the blob pools' relocation hooks rewrite their
+   * owning header columns, the dict-remap hook re-uploads a watched
+   * data column, the CurveIndex reads endpoints/flags/hierarchy back
+   * out of the store, and the HierarchyIndex writes derived parent
+   * geometry back into the columns.  Takes no arguments: the store is
+   * headless and grows on demand.
+   */
   constructor(){
     this.nodes = new ColumnTable( 'nodes', columnSpecsForGroup( 'nodes' ) );
     this.edges = new ColumnTable( 'edges', columnSpecsForGroup( 'edges' ) );
@@ -332,28 +352,65 @@ export class GraphStore implements ModelView {
     this.images.onChange = () => this.dirty.touch();
   }
 
+  /**
+   * The ColumnTable for a group — the group-generic dispatch every
+   * other method routes through, so callers never branch on 'nodes' /
+   * 'edges' themselves.
+   *
+   * @param group — 'nodes' or 'edges'
+   * @returns the live table (not a copy; its columns are reallocated on
+   * growth, so never cache the arrays across a mutation)
+   */
   table( group: GroupName ): ColumnTable {
     return group === 'nodes' ? this.nodes : this.edges;
   }
 
   // -- ModelView (the renderer's read surface) --
 
+  /**
+   * The group's allocated slot capacity — the length the renderer sizes
+   * its GPU buffers to.  Always >= highWater(); grows by doubling and
+   * shrinks only in a compaction.
+   */
   capacity( group: GroupName ): number {
     return this.table( group ).cap;
   }
 
+  /**
+   * One past the highest slot ever allocated in the group — the only
+   * range the renderer must upload or scan.  Holes below it are
+   * tombstones (flags 0, no FLAG_ALIVE), which collapse to degenerate
+   * quads rather than being skipped.
+   */
   highWater( group: GroupName ): number {
     return this.table( group ).highWater;
   }
 
+  /**
+   * The live typed array backing a column, addressed by column id (the
+   * group is looked up from the contract's spec).  The array is the
+   * store's own storage — writing through it bypasses the dirty
+   * tracker, so readers must not mutate it.
+   */
   column( id: ColumnId ): ColumnArray {
     return this.table( columnSpec( id ).group ).column( id );
   }
 
+  /** Whether any column write or touch() is pending a frame. */
   hasDirty(): boolean {
     return this.dirty.hasDirty();
   }
 
+  /**
+   * Drain the frame's pending writes: flushes the lazy derivations
+   * first (so parent auto-bounds and curve params land as ordinary
+   * column spans inside this delta), then takes the column spans and
+   * each blob pool's dirty range.  Destructive — the trackers are
+   * cleared, so exactly one consumer (the renderer) may call it.
+   *
+   * @returns the delta, with the four blob ranges attached only when
+   * that pool actually changed
+   */
   takeDelta(): StoreDelta {
     // pending curve derivations land as column writes in this delta
     this.flushDerived();
@@ -378,18 +435,24 @@ export class GraphStore implements ModelView {
     return delta;
   }
 
+  /** The 12b curve param pool's backing array (the renderer's upload
+   * source); reallocated on growth, so re-read it every frame. */
   curveBlob(): Float32Array {
     return this.blob.data();
   }
 
+  /** Floats in use in the curve pool — the upload length (data() may be
+   * longer: the pool over-allocates). */
   curveBlobLength(): number {
     return this.blob.length();
   }
 
+  /** The C3 custom-polygon unit-point pool's backing array. */
   polyBlob(): Float32Array {
     return this.polyPool.data();
   }
 
+  /** Floats in use in the polygon pool — the upload length. */
   polyBlobLength(): number {
     return this.polyPool.length();
   }
@@ -414,18 +477,22 @@ export class GraphStore implements ModelView {
     return ( offset | ( ( points.length / 2 ) << 24 ) ) >>> 0;
   }
 
+  /** The 15.2 background-image record pool's backing array. */
   imageBlob(): Float32Array {
     return this.imagePool.data();
   }
 
+  /** Floats in use in the image pool — the upload length. */
   imageBlobLength(): number {
     return this.imagePool.length();
   }
 
+  /** The round-23 chart record pool's backing array. */
   chartBlob(): Float32Array {
     return this.chartPool.data();
   }
 
+  /** Floats in use in the chart pool — the upload length. */
   chartBlobLength(): number {
     return this.chartPool.length();
   }
@@ -433,6 +500,15 @@ export class GraphStore implements ModelView {
   /** Live charted nodes (round 23) — the renderer's pass-skip gate. */
   chartCount(): number {
     return this.chartedNodes;
+  }
+
+  /** live imaged-node count (the renderer's zero-cost gate, 15.3) */
+  private imagedNodes = 0;
+
+  /** Live nodes carrying background images (15.3) — the renderer's
+   * pass-skip gate, so an imageless graph pays nothing. */
+  imageCount(): number {
+    return this.imagedNodes;
   }
 
   /**
@@ -445,14 +521,11 @@ export class GraphStore implements ModelView {
    * unitFlags (posXPct | posYPct<<1 | offXPct<<2 | offYPct<<3 |
    * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256)].
    * Draw-only paint: no geoEpoch bump, no bb/pick involvement.
+   *
+   * @param slot — the node slot
+   * @param specs — the styled images in paint order, or null/empty to
+   * clear (clearing an already-imageless node is a no-op fast path)
    */
-  /** live imaged-node count (the renderer's zero-cost gate, 15.3) */
-  private imagedNodes = 0;
-
-  imageCount(): number {
-    return this.imagedNodes;
-  }
-
   setNodeImages( slot: number, specs: NodeImageSpec[] | null ): void {
     const refs = this.nodes.column( 'node.imageRef' ) as Uint32Array;
     const oldRef = refs[ slot ];
@@ -677,6 +750,14 @@ export class GraphStore implements ModelView {
     return out;
   }
 
+  /**
+   * Subscribe to "the model changed, a frame is needed".  Fires on the
+   * clean -> dirty transition only (not per write), so it is safe to
+   * hook a requestAnimationFrame schedule to it.
+   *
+   * @param cb — called when the store goes dirty
+   * @returns an unsubscribe function
+   */
   onInvalidate( cb: () => void ): () => void {
     return this.dirty.onInvalidate( cb );
   }
@@ -733,6 +814,13 @@ export class GraphStore implements ModelView {
 
   // -- refs --
 
+  /**
+   * Mint a ref for a slot: the (group, slot, gen) triple collections
+   * hold instead of element objects.  The generation stamp is what
+   * makes a recycled slot detectable — see isCurrent().  Cheap (one
+   * object); no validity check, so minting a ref for a dead slot yields
+   * a ref that immediately reads as stale.
+   */
   ref( group: GroupName, slot: number ): Ref {
     return { group, slot, gen: this.table( group ).gen[ slot ] };
   }
@@ -793,12 +881,23 @@ export class GraphStore implements ModelView {
     return true;
   }
 
+  /**
+   * Resolve an element id to a fresh ref (backs cy.getElementById).
+   * Ids are unique across both groups, so no group argument is needed.
+   *
+   * @returns undefined when no live element carries the id
+   */
   lookup( id: string ): Ref | undefined {
     const entry = this.ids.get( id );
 
     return entry == null ? undefined : this.ref( entry.group, entry.slot );
   }
 
+  /**
+   * The id occupying a slot, or undefined when the slot is a hole.
+   * The reverse of lookup(); ids are stored out of line, so this is the
+   * only string the columnar hot paths ever touch.
+   */
   idAt( group: GroupName, slot: number ): string | undefined {
     return this.ids.idAt( group, slot );
   }
@@ -823,6 +922,17 @@ export class GraphStore implements ModelView {
     }
   }
 
+  /**
+   * Add one node at a model position, reusing a free slot when there is
+   * one.  Only position and flags are written — every style column keeps
+   * its zero default until the StyleEngine writes it.
+   *
+   * @param id — must be unused across both groups
+   * @param opts — initial state bits; unset ones take v3's defaults
+   * (visible, selectable, grabbable, unselected, unlocked, not pannable)
+   * @returns the allocated slot
+   * @throws when the id already exists
+   */
   addNode( id: string, x: number, y: number, opts: AddElementOpts = {} ): number {
     const { slot, resized } = this.allocSlot( 'nodes', id );
 
@@ -842,6 +952,18 @@ export class GraphStore implements ModelView {
     return slot;
   }
 
+  /**
+   * Add one edge between two existing nodes, given by *id* (the def
+   * path; the columnar path takes payload indices instead).  Registers
+   * the edge with the adjacency index and the CurveIndex — the latter
+   * makes it a member of its endpoint pair's bundle, so its siblings
+   * re-fan lazily.
+   *
+   * @param opts — as addNode, except `pannable` defaults true (v3)
+   * @returns the allocated slot
+   * @throws when the id already exists, or either endpoint id is not a
+   * live node
+   */
   addEdge( id: string, sourceId: string, targetId: string, opts: AddElementOpts = {} ): number {
     const source = this.ids.get( sourceId );
     const target = this.ids.get( targetId );
@@ -998,6 +1120,12 @@ export class GraphStore implements ModelView {
     return slots;
   }
 
+  /**
+   * Remove one edge: unlinks it from the adjacency index and its curve
+   * bundle (siblings re-fan), then tombstones the slot for reuse.  The
+   * slot's generation bumps, so every outstanding ref to it goes stale
+   * — and stays stale, since ref repair never resurrects a removal.
+   */
   removeEdge( slot: number ): void {
     const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
 
@@ -1464,14 +1592,25 @@ export class GraphStore implements ModelView {
 
   // -- positions --
 
+  /** A node's model x.  Raw column read: a parent's derived position may
+   * be stale, so call flushDerived() first when that matters. */
   getX( slot: number ): number {
     return ( this.nodes.column( 'node.position' ) as Float32Array )[ slot * 2 ];
   }
 
+  /** A node's model y (raw column read; see getX on staleness). */
   getY( slot: number ): number {
     return ( this.nodes.column( 'node.position' ) as Float32Array )[ slot * 2 + 1 ];
   }
 
+  /**
+   * Move one node.  Under compounds this carries v3's beforePositionSet
+   * semantics: moving a parent translates its whole subtree by the
+   * delta (so the parent's own auto-derived position then equals the
+   * written one exactly), and moving a child marks its ancestor chain's
+   * bounds stale.  Bumps the geometry epoch, invalidating the exact
+   * curve-bb memo.
+   */
   setPosition( slot: number, x: number, y: number ): void {
     const pos = this.nodes.column( 'node.position' ) as Float32Array;
 
@@ -1628,16 +1767,27 @@ export class GraphStore implements ModelView {
 
   // -- flags --
 
+  /** The whole flags word for a slot (see the FLAG_* bits in
+   * contract.mts); 0 for a tombstoned slot. */
   flags( group: GroupName, slot: number ): number {
     const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
 
     return ( this.table( group ).column( id ) as Uint32Array )[ slot ];
   }
 
+  /** Whether every bit of `bit` is set — the single-bit tests read as
+   * a predicate, not a mask compare. */
   hasFlag( group: GroupName, slot: number, bit: number ): boolean {
     return ( this.flags( group, slot ) & bit ) !== 0;
   }
 
+  /**
+   * Set or clear flag bits on one slot, marking the flags column dirty
+   * only when the word actually changes.  Raw: derived bits (VISIBLE,
+   * DRAWN, PARENT, CHILD, CURVED) have owners that recompute them —
+   * write those through setVisibility / setInvisibility / setParent /
+   * the curve writers rather than here.
+   */
   setFlag( group: GroupName, slot: number, bit: number, on: boolean ): void {
     const id: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
     const arr = this.table( group ).column( id ) as Uint32Array;
@@ -1712,6 +1862,16 @@ export class GraphStore implements ModelView {
 
   // -- style channel writers --
 
+  /**
+   * Write a single-component numeric column (the StyleEngine's scalar
+   * channel).  No-ops when the value is unchanged, so an idempotent
+   * restyle costs no upload.  Two columns carry a cascade: `node.opacity`
+   * under compounds is a *base* (the column stores the ancestor-folded
+   * product, and a parent's write refolds its subtree — round 14.4), and
+   * `node.borderWidth` refreshes the derived outerHalf column, feeds the
+   * monotone cull slack, and marks the ancestors' auto-bounds stale.
+   * Bumps the geometry epoch: scalar channels can move geometry.
+   */
   setScalar( id: ColumnId, slot: number, value: number ): void {
     // round 14.4: under compounds a node opacity write is a *base* —
     // the column stores the ancestor-folded product
@@ -1740,6 +1900,15 @@ export class GraphStore implements ModelView {
     }
   }
 
+  /**
+   * Write a two-component numeric column (sizes, positions-like pairs).
+   * No-ops on an unchanged pair.  `node.size` runs the size cascade:
+   * the monotone node-half meter, the parent style-size stash (a parent's
+   * column is owned by auto-bounds, so the declared size lives in the
+   * stash — tracked before the no-op check so it can never go stale),
+   * the derived outerHalf write, the label re-anchor (25.1) and the
+   * ancestors' auto-bounds staleness.
+   */
   setPair( id: ColumnId, slot: number, a: number, b: number ): void {
     const spec = columnSpec( id );
     const arr = this.table( spec.group ).column( id ) as Float32Array | Uint32Array;
@@ -1843,6 +2012,8 @@ export class GraphStore implements ModelView {
    * cull + draw entirely while this is 0) */
   private ghosts = 0;
 
+  /** Live ghost-enabled nodes (13 A1) — the renderer's pass-skip gate;
+   * the bb scan also uses it to skip the ghost term. */
   ghostCount(): number {
     return this.ghosts;
   }
@@ -1872,10 +2043,13 @@ export class GraphStore implements ModelView {
 
   // -- overlay / underlay (round 13 A2) --
 
+  /** live counts of nodes with a visible overlay / underlay (13 A2) */
   private overlays = 0;
   private underlays = 0;
 
+  /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
   overlayCount(): number { return this.overlays; }
+  /** Nodes with a visible underlay (13 A2) — the pass-skip gate. */
   underlayCount(): number { return this.underlays; }
 
   /**
@@ -1913,12 +2087,16 @@ export class GraphStore implements ModelView {
     this.dirty.mark( id, slot );
   }
 
+  /** live counts of edges with a visible overlay / underlay / casing */
   private edgeOverlays = 0;
   private edgeUnderlays = 0;
   private casings = 0;
 
+  /** Edges with a visible overlay (13 A2) — the pass-skip gate. */
   edgeOverlayCount(): number { return this.edgeOverlays; }
+  /** Edges with a visible underlay (13 A2) — the pass-skip gate. */
   edgeUnderlayCount(): number { return this.edgeUnderlays; }
+  /** Edges with a visible line casing — the pass-skip gate. */
   casingCount(): number { return this.casings; }
 
   /**
@@ -1956,6 +2134,8 @@ export class GraphStore implements ModelView {
    * the renderer skips the mid draws entirely while 0 */
   private midArrows = 0;
 
+  /** Edges with any visible mid arrow (13 C1) — the renderer skips the
+   * mid-arrow draws entirely at 0. */
   midArrowCount(): number {
     return this.midArrows;
   }
@@ -1980,10 +2160,15 @@ export class GraphStore implements ModelView {
    * the arrow quads size for it and the FS renders the exact scale */
   private arrowScaleMaxV = 1;
 
+  /** The largest arrow-scale any edge has styled (13 B7): the arrow
+   * quads size for it and the FS renders the exact per-edge scale.
+   * Monotone — never shrinks, which only costs quad area. */
   arrowScaleMax(): number {
     return this.arrowScaleMaxV;
   }
 
+  /** Raise the monotone arrow-scale maximum (the style layer's report;
+   * arrow scale is not a store column). */
   noteArrowScale( scale: number ): void {
     if( scale > this.arrowScaleMaxV ){ this.arrowScaleMaxV = scale; }
   }
@@ -1993,6 +2178,9 @@ export class GraphStore implements ModelView {
    * the packed geometry there) */
   private outlineSlackMax = 0;
 
+  /** The largest outward outline extent any node has styled (13 B5) —
+   * the ghost cull grows its tests by this.  Monotone: never shrinks on
+   * a restyle, which costs cull efficiency, never correctness. */
   outlineSlack(): number {
     return this.outlineSlackMax;
   }
@@ -2043,8 +2231,10 @@ export class GraphStore implements ModelView {
     this.dirty.mark( 'node.borderGeom', slot );
   }
 
+  /** live count of elements carrying a gradient record (13 C2) */
   private gradients = 0;
 
+  /** Elements with a gradient fill (13 C2) — the pass-skip gate. */
   gradientCount(): number {
     return this.gradients;
   }
@@ -2430,14 +2620,23 @@ export class GraphStore implements ModelView {
   // edge midpoint, which the renderer computes on-GPU).  The group param
   // defaults to 'nodes' so node-side call sites read unchanged.
 
+  /**
+   * The sidecar label entry for a slot in one stream, or undefined when
+   * unlabelled.  The live object the store holds — treat it as
+   * read-only and write changes back through setLabel(), which is what
+   * marks the glyph run for rebuild.
+   *
+   * @param group — which of the four label streams; defaults 'nodes'
+   * so the node-side call sites read unchanged (round 10)
+   */
   labelAt( slot: number, group: LabelStream = 'nodes' ): LabelEntry | undefined {
     return this.labels[ group ][ slot ];
   }
 
   /**
    * Set the global label font — family, style and weight (round 13
-   * D1); one font per glyph atlas.  Every
-   * labelled node re-lays-out against the new font's metrics via the
+   * D1); one font per glyph atlas.  Every labelled element, in all four
+   * streams, re-lays-out against the new font's metrics via the
    * label-dirty channel; the renderer's atlas resets when it observes
    * the change.
    */
@@ -2581,6 +2780,13 @@ export class GraphStore implements ModelView {
     this.dirty.touch(); // no geoEpoch bump (25.5) — see setLabel
   }
 
+  /**
+   * Drain one stream's queue of slots needing a glyph-run rebuild.
+   * Destructive (the set is cleared), so exactly one consumer — the
+   * renderer's label layer — may call it per stream.
+   *
+   * @returns the queued slots; an empty array when nothing is pending
+   */
   takeLabelDirty( group: LabelStream = 'nodes' ): number[] {
     const dirty = this.labelDirty[ group ];
 
@@ -2595,10 +2801,17 @@ export class GraphStore implements ModelView {
 
   // -- iteration (insertion order) --
 
+  /** Live elements in the group (holes excluded) — not highWater(). */
   count( group: GroupName ): number {
     return this.table( group ).count;
   }
 
+  /**
+   * Visit every live slot in insertion order, skipping tombstones by
+   * generation compare.  A reused slot is visited at its *re-insertion*
+   * position, not its original one.  The callback must not add or
+   * remove elements in the group being walked.
+   */
   forEachAlive( group: GroupName, cb: ( slot: number ) => void ): void {
     const order = this.order[ group ];
     const gen = this.table( group ).gen;
@@ -2784,19 +2997,6 @@ export class GraphStore implements ModelView {
   }
 
   /**
-   * Whole-graph bounding box as a direct columnar scan — no element
-   * handles (a no-arg fit() on a 500k-element graph is a fraction of a
-   * millisecond instead of hundreds).  Nodes contribute position ±
-   * (size/2 + border/2).  Edges contribute their own extent as a
-   * first-class term: the two endpoint node centers, grown by the
-   * conservative curve deviation for curved edges — the hull bound for
-   * chord-bounded kinds, plus the node-half margin (+ chord length for
-   * extrapolated weights) for box-bounded ones (rounds 12a/12b; the
-   * exact lazy curve bb is GpuCollection.boundingBox's tier).  Future
-   * edge geometry (arrow heads, 12c endpoints) extends the edge term
-   * here and there together.  Returns null when empty.
-   */
-  /**
    * A node label's box in node-local model px (round 16.4): the laid
    * (or headless-estimated) block at its D3 anchor, grown by the
    * text-background padding when a box draws.  Null when unlabelled.
@@ -2849,10 +3049,32 @@ export class GraphStore implements ModelView {
       || this.labelDims.edgeSource.size > 0 || this.labelDims.edgeTarget.size > 0;
   }
 
+  /** true when any node label exists (the scan's cheap gate) */
   hasNodeLabels(): boolean {
     return this.labelDims.nodes.size > 0;
   }
 
+  /**
+   * Whole-graph bounding box as a direct columnar scan — no element
+   * handles (a no-arg fit() on a 500k-element graph is a fraction of a
+   * millisecond instead of hundreds).  Nodes contribute position ±
+   * (size/2 + border/2), grown by their outline, overlay/underlay
+   * padding, ghost offset and label box where those apply.  Edges
+   * contribute their own extent as a first-class term: the two endpoint
+   * node centers, grown by the conservative curve deviation for curved
+   * edges — the hull bound for chord-bounded kinds, plus the node-half
+   * margin (+ chord length for extrapolated weights) for box-bounded
+   * ones (rounds 12a/12b; the exact lazy curve bb is
+   * GpuCollection.boundingBox's tier).  Future edge geometry (arrow
+   * heads, 12c endpoints) extends the edge term here and there
+   * together.  Only the space tier counts (round 22): display-hidden
+   * elements are excluded, `visibility: 'hidden'` ones still take
+   * space.  Conservative by design — fit may over-fit, never under.
+   *
+   * @param includeLabels — whether label boxes join the box (v3's
+   * default, on)
+   * @returns null when nothing visible remains
+   */
   boundingBox( includeLabels: boolean = true ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } | null {
     this.flushDerived(); // the edge term reads derived curve params
 

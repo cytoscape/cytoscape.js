@@ -96,6 +96,11 @@ export class HierarchyIndex {
   /** the resolved px padding written at the last flush, per parent */
   private resolvedPad: Map<number, number>;
 
+  /**
+   * @param host — the store's narrow callback surface; the index never
+   *   touches columns directly, so the store keeps sole ownership of
+   *   dirty tracking and the index stays testable against a stub
+   */
   constructor( host: HierarchyHost ){
     this.host = host;
     this.parent = new Int32Array( 0 );
@@ -112,14 +117,28 @@ export class HierarchyIndex {
 
   // -- reads --
 
+  /** live parents, i.e. the length of `parentOrder()` */
   parentCount(): number {
     return this.nParents;
   }
 
+  /**
+   * Whether the graph has any compound nesting at all.  The store gates
+   * the whole compound path on this, so a flat graph pays nothing for
+   * the feature.
+   */
   hasCompounds(): boolean {
     return this.nParents > 0;
   }
 
+  /**
+   * The node's parent slot, or -1 when it is top-level.  Also the guard
+   * point for the recycled-slot case: a link whose recorded generation
+   * no longer matches reads as an orphan (warning once) rather than
+   * resolving to whatever element now occupies that slot.
+   *
+   * @param slot — the node's slot
+   */
   parentOf( slot: number ): number {
     if( slot >= this.parent.length ){ return -1; }
 
@@ -140,10 +159,25 @@ export class HierarchyIndex {
     return p;
   }
 
+  /**
+   * The node's direct children, in link order.  The array is the index's
+   * own — read-only, and mutated in place by later hierarchy changes, so
+   * copy it if it must outlive the call.  Unlike `parentOf`, this does
+   * no generation check; it is only ever reached through live parents.
+   *
+   * @param slot — the node's slot
+   */
   childrenOf( slot: number ): readonly number[] {
     return this.children.get( slot ) ?? EMPTY;
   }
 
+  /**
+   * Nesting depth: 0 for a top-level node, one more than its parent's
+   * otherwise.  Depths are maintained eagerly on `setParent` (the whole
+   * moved subtree is rewalked), so this is a plain lookup.
+   *
+   * @param slot — the node's slot
+   */
   depthOf( slot: number ): number {
     return slot < this.depth.length && this.parent[ slot ] >= 0 ? this.depth[ slot ] : 0;
   }
@@ -203,6 +237,11 @@ export class HierarchyIndex {
     }
   }
 
+  /**
+   * Whether any parent's derived geometry is stale.  True means the
+   * columns do not yet agree with the children — reads that must be
+   * exact (bounds, hit tests, the delta) `flush()` first.
+   */
   hasPending(): boolean {
     return this.pending.size > 0;
   }

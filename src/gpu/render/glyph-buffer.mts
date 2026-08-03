@@ -21,7 +21,9 @@ Glyph struct:
   f32 w/h (model px), f32 u0/v0/u1/v1,
   u32 packed outline RGBA, f32 outline half-width in SDF sample units,
   f32 zoomDprMin (min-zoomed-font-size / fontSize; the glyph cull hides
-  the glyph when frame.zoomDpr < zoomDprMin — round 13 D2), f32 pad.
+  the glyph when frame.zoomDpr < zoomDprMin — round 13 D2), f32 endParam
+  (0 on the node and mid-edge streams; on the end-label streams the sign
+  picks the end and |v| - 1 is the arc offset — round 13 D4).
 A negative u0 marks a solid background quad (no atlas sample); its v0
 carries the run's glyph-block height for LOD purposes.
 */
@@ -65,6 +67,16 @@ export class GlyphBuffer {
   private gpuCap: number;
   private destroyed: boolean;
 
+  /**
+   * Allocates the CPU staging array and its GPU buffer at the same
+   * capacity.  One instance backs one glyph stream (node, mid-edge,
+   * source, target labels), since the owner-slot key space and the
+   * draw's instance range are per-stream.
+   *
+   * @param device — the device (or narrow mock) that owns the buffer
+   * @param initialCap — glyph slots to preallocate; capacity doubles on
+   * demand, so this only trades startup bytes against early reallocs
+   */
   constructor( device: MirrorDevice, initialCap: number = INITIAL_CAP ){
     this.device = device;
     this.version = 0;
@@ -87,6 +99,12 @@ export class GlyphBuffer {
     return this.highWater - this.garbage;
   }
 
+  /**
+   * The glyph instance storage buffer.  Its identity survives set() and
+   * compaction but not a capacity growth, which sync() services by
+   * reallocating and bumping `version` — so callers must re-read it (and
+   * rebuild any bind group holding it) whenever `version` changes.
+   */
   buffer(): GPUBuffer {
     return this.gpu;
   }
@@ -206,6 +224,12 @@ export class GlyphBuffer {
     this.dirtyEnd = 0;
   }
 
+  /**
+   * Destroys the GPU buffer immediately and latches sync() to a no-op.
+   * Unlike the deferred destroy on realloc this does not wait on
+   * submitted work, so the caller must already have stopped encoding
+   * draws against this stream.  The CPU words are left intact.
+   */
   destroy(): void {
     this.destroyed = true;
     this.gpu.destroy();

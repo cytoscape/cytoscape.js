@@ -53,6 +53,12 @@ const TOP_LEVEL_RE =
 const EXPORTED_FN_RE =
   /^export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^export\s+const\s+([A-Za-z_$][\w$]*)(?::[^=]+)?\s*=\s*(?:async\s*)?(?:function\b|(?:<[^>]*>)?\s*\()/;
 
+// An overload *signature*: a call signature terminated by `;` rather than a
+// body. The implementation signature that follows a run of these is not
+// separately documentable — TypeScript hides it from callers — so it is
+// skipped rather than counted as a miss.
+const OVERLOAD_SIG_RE = /^ {2}(?:(?:public|private|protected|static|readonly|async)\s+)*([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\([^;]*\)\s*:[^;]*;\s*$/;
+
 // Statement keywords that can appear at two-space indentation inside a class
 // body's methods and would otherwise read as member names.
 const KEYWORDS = new Set( [
@@ -84,6 +90,7 @@ export function auditFile( file ){
   let currentClass = null;
   let exported = false;
   let inComment = false;
+  let overloaded = new Set();
 
   for( let i = 0; i < lines.length; i++ ){
     const line = lines[i];
@@ -120,6 +127,7 @@ export function auditFile( file ){
     if( cls ){
       currentClass = cls[2];
       exported = Boolean( cls[1] );
+      overloaded = new Set();
       continue;
     }
 
@@ -130,6 +138,7 @@ export function auditFile( file ){
 
     if( !currentClass || !exported ) continue;
 
+    const sig = line.match( OVERLOAD_SIG_RE );
     const m = line.match( MEMBER_RE );
 
     if( !m ) continue;
@@ -138,6 +147,12 @@ export function auditFile( file ){
 
     if( name.startsWith( '_' ) || KEYWORDS.has( name ) ) continue;
     if( access === 'private' || access === 'protected' ) continue;
+
+    // The implementation signature closing a run of overloads: callers only
+    // ever see the overloads, each of which carries its own doc block.
+    if( !sig && overloaded.has( name ) ) continue;
+
+    if( sig ) overloaded.add( name );
 
     if( hasDocAbove( lines, i ) ) documented++;
     else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );

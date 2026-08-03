@@ -87,10 +87,24 @@ export class IdMap {
     return this.blob.length;
   }
 
+  /**
+   * Whether any element — node or edge — holds this id.  Ids are unique
+   * across both groups, so this is also the uniqueness check `set` makes.
+   *
+   * @param id — the id to look up
+   */
   has( id: string ): boolean {
     return this.findEntry( id ) !== EMPTY;
   }
 
+  /**
+   * Resolve an id to its group and slot.  Allocates a fresh result
+   * object per hit but decodes no strings — the probe compares UTF-8
+   * bytes in the blob against the encoded query.
+   *
+   * @param id — the id to look up
+   * @returns the entry, or undefined when no element holds the id
+   */
   get( id: string ): IdEntry | undefined {
     const entry = this.findEntry( id );
 
@@ -99,6 +113,16 @@ export class IdMap {
     return { group: ( entry - BASE ) & 1 ? 'edges' : 'nodes', slot: ( entry - BASE ) >>> 1 };
   }
 
+  /**
+   * The id string at a slot — the reverse direction, and the only place
+   * a JS string is ever materialized.  Decoding is lazy and cached per
+   * slot, so a bulk-loaded graph pays string cost only for the elements
+   * something actually asks about.
+   *
+   * @param group — the element group
+   * @param slot — the slot within that group
+   * @returns the id, or undefined when the slot holds none
+   */
   idAt( group: GroupName, slot: number ): string | undefined {
     const m = this.meta[ group ];
     const cached = m.names[ slot ];
@@ -122,6 +146,16 @@ export class IdMap {
     return slot < m.hash.length ? m.hash[ slot ] : 0;
   }
 
+  /**
+   * Bind an id to a (group, slot).  The id's bytes append to the blob;
+   * nothing is written and no bytes are stranded when the id is already
+   * taken, since the duplicate check runs before the append.
+   *
+   * @param id — the id to bind (unique across both groups)
+   * @param group — the element group
+   * @param slot — the slot within that group
+   * @throws if another element already holds this id
+   */
   set( id: string, group: GroupName, slot: number ): void {
     this.ensure( this._size + 1 );
 
@@ -182,6 +216,14 @@ export class IdMap {
     }
   }
 
+  /**
+   * Unbind an id; a no-op when it is not registered.  The probe entry
+   * becomes a tombstone and the id's blob bytes are stranded, so removal
+   * itself is O(1) — but it may trigger the blob compaction (O(live
+   * bytes)) once stranded bytes exceed half the blob.
+   *
+   * @param id — the id to unbind
+   */
   remove( id: string ): void {
     const len = this.encodeScratch( id );
     const h = fnv( this.scratch, 0, len );
@@ -204,6 +246,7 @@ export class IdMap {
     }
   }
 
+  /** live ids across both groups (tombstones excluded) */
   get size(): number {
     return this._size;
   }

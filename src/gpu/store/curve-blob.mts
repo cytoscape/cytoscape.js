@@ -45,6 +45,12 @@ export class CurveBlob {
   private resized: boolean;
   private onRelocate: ( slot: number, offset: number ) => void;
 
+  /**
+   * @param onRelocate — called for every record a compaction moves, so
+   *   the owner can rewrite that slot's params-column header; the pool
+   *   is otherwise self-contained, and this is the only way the header
+   *   and the record can be kept in agreement
+   */
   constructor( onRelocate: ( slot: number, offset: number ) => void ){
     this.pool = new Float32Array( 0 );
     this.used = 0;
@@ -58,6 +64,12 @@ export class CurveBlob {
     this.onRelocate = onRelocate;
   }
 
+  /**
+   * The backing pool, for the renderer's upload.  Only `[0, length())`
+   * holds records — the tail is uninitialized capacity — and the array
+   * is replaced by growth and compaction, so re-fetch it each frame
+   * rather than caching the reference.
+   */
   data(): Float32Array {
     return this.pool;
   }
@@ -109,7 +121,6 @@ export class CurveBlob {
     return this.offsets[ slot ];
   }
 
-  /** Release a slot's record (no-op when it has none). */
   /** Slot compaction (19.2): permute the slot-indexed offset/length
    * tables through the monotone remap.  Pool bytes and waste metering
    * are offset-space and untouched; record headers riding element
@@ -129,6 +140,14 @@ export class CurveBlob {
     }
   }
 
+  /**
+   * Release a slot's record (no-op when it has none).  The floats become
+   * waste rather than being reclaimed on the spot, so this may trigger
+   * the round-11 compaction and, with it, `onRelocate` calls for other
+   * slots — the caller must be ready to take header rewrites here.
+   *
+   * @param slot — the edge slot whose record is released
+   */
   free( slot: number ): void {
     if( slot >= this.offsets.length || this.offsets[ slot ] < 0 ){ return; }
 

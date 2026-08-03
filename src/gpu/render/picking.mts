@@ -81,6 +81,14 @@ export class Picking {
   private cacheEpoch: number;
   private destroyed: boolean;
 
+  /**
+   * Allocates the fixed PICK_TILE r32uint target and the three-slot
+   * staging ring.  Sizes never change with the canvas — the tile follows
+   * the cursor through the pick Frame uniform instead — so nothing here
+   * is rebuilt on resize.
+   *
+   * @param device — the device that owns the tile texture and the ring
+   */
   constructor( device: GPUDevice ){
     this.pending = null;
     this.cacheTile = null;
@@ -129,10 +137,15 @@ export class Picking {
     this.cacheEpoch++;
   }
 
+  /** The pick pass's colour attachment: the tile view, stable for the
+   * object's lifetime.  Clear it each pick — id 0 means background. */
   targetView(): GPUTextureView {
     return this.view;
   }
 
+  /** Whether a request is waiting to be encoded.  The frame loop keeps
+   * re-scheduling while this is true, since a deferred request only
+   * resolves once a frame finds a free ring slot. */
   hasPending(): boolean {
     return this.pending != null;
   }
@@ -239,6 +252,12 @@ export class Picking {
     for( const resolve of inFlight.resolvers ){ resolve( id ); }
   }
 
+  /**
+   * Resolves any pending request with null, then destroys the tile and
+   * the whole ring.  Readbacks already in flight fail their mapAsync and
+   * resolve null through the same catch, so no request is left hanging;
+   * later request() calls also resolve null immediately.
+   */
   destroy(): void {
     this.destroyed = true;
 

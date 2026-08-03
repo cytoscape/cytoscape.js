@@ -7,6 +7,15 @@ import { BUFFER_USAGE } from './webgpu-constants.mjs';
  */
 export const QUAD_INDICES = new Uint16Array( [ 0, 1, 2, 2, 1, 3 ] );
 
+/**
+ * Uploads QUAD_INDICES into an INDEX buffer.  One such buffer is shared
+ * by every single-quad instanced pipeline (nodes, arrows, labels,
+ * images, charts), so the renderer creates it once and hands the same
+ * buffer to all of them; nobody else may destroy it.
+ *
+ * @param device — the device that owns the buffer
+ * @returns a 12-byte index buffer, already written
+ */
 export function createQuadIndexBuffer( device: GPUDevice ): GPUBuffer {
   const buffer = device.createBuffer( {
     label: 'cy-gpu:quad-index',

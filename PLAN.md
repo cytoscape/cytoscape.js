@@ -6139,9 +6139,52 @@ release.
   them widened the surface by 8 public and 104 internal members.
   Floors: public 100, internal 58.  Typecheck, 2292 Node tests, 63
   module tests, lint clean.
-- [ ] **26.4 The internal subsystems** — `store/`, `render/`,
-  `interact/`, `algorithms/`: classes and functions documented for
-  the next maintainer rather than for the docs site.
+- [x] **26.4 The internal subsystems** (2026-08-02) — landed:
+  `store/`, `render/`, `interact/`, `algorithms/`, `layout/force-sim`
+  and the remaining root files, taking the **internal tier to 100%**
+  (553/553) and the whole prototype to full public-member coverage.
+  Run as four parallel passes over disjoint directories.  ~1,600
+  lines of comment across 49 files; the whole change set is
+  documentation apart from one safe declaration reorder (moving
+  `imagedNodes`/`imageCount()` above the block comment they had been
+  pushed below) and four inline-comment corrections.
+  Emphasis was on the rules a newcomer gets wrong: dispatch ordering
+  and which passes observe which writes (`cull.mts`), what owns a
+  buffer while a lease is live and when it must be handed back
+  (`gpu-force.mts`), aliasing warnings on every accessor that hands
+  out internal state (`outEdges`, `childrenOf`, `ColumnTable.column`,
+  `ImageRegistry.get`), the single-consumer drain-per-frame rule that
+  makes dirty-span widening safe, `Adjacency.clearNode` clearing only
+  the near side so the caller must cascade edges first, `IdMap.idAt`
+  being the only place a JS string is materialized, and — a real
+  surprise worth writing down — `hierarchicalClustering`'s
+  `addDendrogram` option *mutating the graph* (a node plus two edges
+  per internal dendrogram node) rather than just reading it.
+  **Drift and stranding, the round's recurring find.**  Eight
+  stranded doc blocks in total across 26.1–26.4 (`json()`,
+  `setSheet()`, the `GraphStore` class doc, `setNodeImages`,
+  `boundingBox`, `CurveBlob.free`, `CurveIndex.invalidateRelation`,
+  and `collection.animate`'s neighbours) — always the same mechanism:
+  a later insertion lands between a block comment and the member it
+  documents, so the comment silently re-attaches to the wrong thing
+  and the real member reads as undocumented.  Nothing catches this
+  but reading, which is the argument for the coverage gate.  Six
+  drifted comments corrected: `boundingBox`'s node-term list
+  (outline, overlay/underlay padding, ghost offsets, labels and the
+  round-22 space tier had all been added since), `setLabelFont`'s
+  "every labelled node" (group-keyed since round 10 — all four label
+  streams), `force-sim`'s convergence test naming a non-existent
+  `alphaMin` parameter, `arrow-pipeline`'s `endUniforms` comment
+  listing two buffers where mid-arrows made it four (round 13 C1),
+  the glyph-struct comment omitting `endParam`, and a `settle()`
+  reference the code had renamed to `readPositions()`.
+  The audit gained overload handling: 26.5's `on`/`one`/`off`
+  overloads made their implementation signatures read as
+  undocumented members, and an implementation signature is not
+  separately documentable — callers only ever see the overloads.
+  Coverage gate tightened from a file allowlist to "no file has an
+  undocumented public member", now that there is no partial file
+  left.  Typecheck, 2285 Node tests, 63 module tests, lint clean.
 - [x] **26.5 Shipped declarations for `cytoscape/gpu`**
   (2026-08-02) — landed: `rolldown.dts.gpu.config.mjs` rolls the
   prototype's declarations up (the existing pipeline, pointed at

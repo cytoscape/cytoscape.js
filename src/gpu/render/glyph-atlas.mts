@@ -131,13 +131,18 @@ const edt1d = ( f: Float64Array, d: Float64Array, v: Uint32Array, z: Float64Arra
 };
 
 export class GlyphAtlas {
+  /** the r8unorm shelf-packed atlas; its identity never changes, so
+   * label bind groups holding a view of it survive font changes */
   texture: GPUTexture;
+  /** linear/clamped sampler the label fragment shader reads the SDF with */
   sampler: GPUSampler;
   /** baseline offset from the top of a text block, SDF px */
   ascent: number;
   /** CSS font-family list glyphs raster with (one font per atlas) */
   fontFamily: string;
+  /** CSS font-style the raster canvas is set to */
   fontStyle: string;
+  /** CSS font-weight the raster canvas is set to */
   fontWeight: string;
 
   private device: GPUDevice;
@@ -147,6 +152,16 @@ export class GlyphAtlas {
   private penY: number;
   private full: boolean;
 
+  /**
+   * Allocates the atlas texture and sampler and sets up the offscreen 2D
+   * canvas glyphs raster through, then seeds the font to 'sans-serif' so
+   * `ascent` and the canvas font string are valid before the first
+   * metrics() call.  Requires a DOM: this is the one part of the render
+   * directory that cannot run headless.
+   *
+   * @param device — the device that owns the texture and sampler
+   * @throws if a 2D canvas context cannot be obtained
+   */
   constructor( device: GPUDevice ){
     this.device = device;
     this.cache = new Map();
@@ -193,8 +208,8 @@ export class GlyphAtlas {
    * Switch the atlas font: clear the glyph cache and restart packing.
    * Reuses the texture object (bind groups survive); stale cells are
    * overwritten as glyphs re-raster, and every glyph run rebuilds in the
-   * same label-dirty pass, so no run references old UVs.  No-op when the
-   * family is unchanged.
+   * same label-dirty pass, so no run references old UVs.  No-op when
+   * family, style and weight are all unchanged.
    */
   setFont( family: string, style: string = 'normal', weight: string = 'normal' ): void {
     if( family === this.fontFamily && style === this.fontStyle
@@ -315,6 +330,11 @@ export class GlyphAtlas {
     return metrics;
   }
 
+  /**
+   * Destroys the atlas texture.  The raster canvas and glyph cache are
+   * dropped with the object; no metrics() call may follow, since a hit
+   * would return UVs into a destroyed texture.
+   */
   destroy(): void {
     this.texture.destroy();
   }

@@ -96,6 +96,25 @@ const assign = ( n: number, S: number[], exemplars: number[] ): number[] => {
   return clusters;
 };
 
+/**
+ * Affinity propagation over the calling collection's nodes.  Like the
+ * other attribute-space clusterers it ignores the adjacency: similarity is
+ * the negated `distance` between attribute vectors.  The number of
+ * clusters is not given — it falls out of `preference`, the self-similarity
+ * placed on the diagonal (lower preference yields fewer exemplars).
+ * Allocates three dense N-by-N matrices plus an N-by-`minIterations`
+ * convergence history, so cost is quadratic in node count in both time and
+ * memory.  Stops early once the exemplar set is unchanged across
+ * `minIterations` passes.
+ *
+ * @param coll — the calling collection; only its nodes are clustered
+ * @param options — `damping` and `preference` are effectively required
+ *   (v3 validates them); plus `distance`, `attributes`, `maxIterations`,
+ *   `minIterations`
+ * @returns one collection per exemplar, in exemplar-index order
+ * @throws if `damping` is outside [0.5, 1), or `preference` is neither a
+ *   number nor one of 'median' / 'mean' / 'min' / 'max'
+ */
 export const affinityPropagation = ( coll: GpuCollection, options: AffinityPropagationOptions = {} ): GpuCollection[] => {
   const damping = options.damping;
   const preference = options.preference;

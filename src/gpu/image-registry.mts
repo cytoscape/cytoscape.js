@@ -95,6 +95,12 @@ export class ImageRegistry {
    * store routes it to the dirty scheduler so a frame redraws */
   onChange: ( () => void ) | null = null;
 
+  /**
+   * @param tierSizes — the rgba tier ladder, ascending; the last entry is
+   *   the cap tier.  The renderer passes a list trimmed or extended to its
+   *   `imageMaxSize`, so tier indices are only meaningful against the
+   *   registry that produced them
+   */
   constructor( tierSizes: readonly number[] = IMAGE_TIER_SIZES ){
     this.tiers = tierSizes;
   }
@@ -108,6 +114,21 @@ export class ImageRegistry {
     return this.tiers.length - 1;
   }
 
+  /**
+   * Take a reference on the entry for (kind, crossOrigin, url), creating
+   * and kicking a decode for it if it is new.  Every `acquire` must be
+   * paired with exactly one `release`.  Returns immediately: a fresh entry
+   * is `IMAGE_PENDING` and carries no raster until the decode lands (or
+   * forever, if no decoder is attached).  A url that already failed once
+   * is created straight into `IMAGE_FAILED` without re-kicking.
+   *
+   * @param url — the image source
+   * @param kind — `IMAGE_KIND_AUTO` or `IMAGE_KIND_SDF`
+   * @param crossOrigin — part of the dedup key, so the same url under two
+   *   crossorigin modes is two entries
+   * @returns the entry id — a recycled slot, valid only until its last
+   *   `release`
+   */
   acquire( url: string, kind: number, crossOrigin: string = 'anonymous' ): number {
     const key = `${kind}|${crossOrigin}|${url}`;
     const existing = this.byKey.get( key );
@@ -144,6 +165,14 @@ export class ImageRegistry {
     return id;
   }
 
+  /**
+   * Drop one reference.  On the last one the entry is destroyed, its id
+   * pushed to the free list and to `takeFreed()` so the renderer can
+   * reclaim the texture layer, and `onChange` fires.  Releasing an
+   * already-freed id is a no-op; over-releasing a live id is not caught.
+   *
+   * @param id — an id from `acquire`
+   */
   release( id: number ): void {
     const entry = this.entries[ id ];
 
@@ -158,6 +187,14 @@ export class ImageRegistry {
     this.onChange?.();
   }
 
+  /**
+   * The live entry for an id, or null if it was freed.  The entry is the
+   * registry's own mutable object, not a copy: its `status`, `data`, and
+   * `tier` change under the caller as decodes and promotions land, so read
+   * it per frame rather than holding it.
+   *
+   * @param id — an id from `acquire`
+   */
   get( id: number ): ImageEntry | null {
     return this.entries[ id ] ?? null;
   }
@@ -212,6 +249,7 @@ export class ImageRegistry {
     return out;
   }
 
+  /** How many distinct entries are held, in any status. */
   liveCount(): number {
     return this.byKey.size;
   }
@@ -241,6 +279,8 @@ export class ImageRegistry {
     }
   }
 
+  /** How many entries are still awaiting a first decode — an O(n) scan of
+   * the entry table, so for tests and diagnostics, not per frame. */
   pendingCount(): number {
     let n = 0;
 

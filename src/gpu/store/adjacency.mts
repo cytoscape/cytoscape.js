@@ -56,6 +56,17 @@ export class Adjacency {
     return this.overlayCount;
   }
 
+  /**
+   * Register one edge.  Always lands in the overlay — CSR segments are
+   * fixed-size, so an add can never grow one — which is why a graph
+   * built edge-by-edge has no CSR at all until a `rebuild()`.  The
+   * endpoints are passed in rather than read from the column so the
+   * caller controls ordering against its own column writes.
+   *
+   * @param edgeSlot — the edge's slot
+   * @param sourceSlot — the source node's slot
+   * @param targetSlot — the target node's slot (equal to source for a loop)
+   */
   addEdge( edgeSlot: number, sourceSlot: number, targetSlot: number ): void {
     ( this.out[ sourceSlot ] ??= [] ).push( edgeSlot );
     ( this.inn[ targetSlot ] ??= [] ).push( edgeSlot );
@@ -142,6 +153,19 @@ export class Adjacency {
     this.csrN = nodeCap;
   }
 
+  /**
+   * Unregister one edge from both directions.  O(degree): the CSR run is
+   * compacted in place (order preserved) or the overlay list spliced.
+   * The vacated CSR entry is stranded, not reusable — it only comes back
+   * on `rebuild()`, which the owner triggers off the waste meters.
+   *
+   * Silently tolerates an edge that is not indexed, so a double removal
+   * is harmless; the endpoints must be the ones it was added under.
+   *
+   * @param edgeSlot — the edge's slot
+   * @param sourceSlot — the source node's slot at add time
+   * @param targetSlot — the target node's slot at add time
+   */
   removeEdge( edgeSlot: number, sourceSlot: number, targetSlot: number ): void {
     if( !this.removeFromCsr( edgeSlot, sourceSlot, this.csrOutOff, this.csrOutLen, this.csrOutE ) ){
       if( removeFrom( this.out[ sourceSlot ], edgeSlot ) ){ this.overlayCount--; }
@@ -152,18 +176,45 @@ export class Adjacency {
     }
   }
 
+  /**
+   * The node's outgoing edge slots, in incident order.  The result
+   * aliases internal state — a CSR subarray view or the overlay array
+   * itself — so it must be treated as read-only and re-fetched after any
+   * mutation.  Only a node with both CSR *and* overlay edges allocates
+   * (the concatenation); the common cases are allocation-free.
+   *
+   * @param nodeSlot — the node's slot
+   */
   outEdges( nodeSlot: number ): EdgeSlots {
     return this.edgesFor( nodeSlot, this.csrOutOff, this.csrOutLen, this.csrOutE, this.out );
   }
 
+  /**
+   * The node's incoming edge slots, in incident order.  Same aliasing
+   * and allocation rules as `outEdges`.
+   *
+   * @param nodeSlot — the node's slot
+   */
   inEdges( nodeSlot: number ): EdgeSlots {
     return this.edgesFor( nodeSlot, this.csrInnOff, this.csrInnLen, this.csrInnE, this.inn );
   }
 
+  /**
+   * Outgoing degree, counted from the CSR lengths and overlay sizes — no
+   * list is materialized, so this is O(1) even where `outEdges` would
+   * concatenate.  Loops count here and in `inDegree` both.
+   *
+   * @param nodeSlot — the node's slot
+   */
   outDegree( nodeSlot: number ): number {
     return this.csrLen( nodeSlot, this.csrOutLen ) + ( this.out[ nodeSlot ]?.length ?? 0 );
   }
 
+  /**
+   * Incoming degree; O(1), like `outDegree`.
+   *
+   * @param nodeSlot — the node's slot
+   */
   inDegree( nodeSlot: number ): number {
     return this.csrLen( nodeSlot, this.csrInnLen ) + ( this.inn[ nodeSlot ]?.length ?? 0 );
   }
@@ -183,6 +234,15 @@ export class Adjacency {
     return edges;
   }
 
+  /**
+   * Drop every incidence recorded *at* this node, for node removal.  It
+   * clears only this node's own entries: the mirrored entry each edge
+   * holds at its far endpoint is not touched, so the caller must have
+   * removed the incident edges first (v3's cascade rule) or the far
+   * lists will list edges that no longer exist.
+   *
+   * @param nodeSlot — the node's slot
+   */
   clearNode( nodeSlot: number ): void {
     if( this.csrOutLen != null && nodeSlot < this.csrN ){
       this.csrDead += this.csrOutLen[ nodeSlot ] + this.csrInnLen![ nodeSlot ];

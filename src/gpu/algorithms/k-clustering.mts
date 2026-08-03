@@ -176,6 +176,21 @@ const findCost = ( potentialNewMedoid: GpuCollection, cluster: GpuCollection[], 
   return cost;
 };
 
+/**
+ * k-means over the calling collection's nodes in attribute space.  Unlike
+ * the graph-walk algorithms this one never touches the adjacency: nodes
+ * are points given by `attributes`, so the edges of the collection are
+ * irrelevant.  Seeded randomly (uniform within the per-dimension range of
+ * the data) unless `testMode` supplies `testCentroids`, so repeat runs on
+ * the same graph need not agree.  Iterates until every centroid moves less
+ * than `sensitivityThreshold` per dimension, or `maxIterations` passes.
+ *
+ * @param coll — the calling collection; only its nodes are clustered
+ * @param options — `k` (default 2), `attributes`, `distance`,
+ *   `maxIterations`, `sensitivityThreshold`
+ * @returns `k` collections; entries stay empty (`undefined`) for centroids
+ *   that attracted no node, as in v3
+ */
 export const kMeans = ( coll: GpuCollection, options?: KClusteringOptions ): GpuCollection[] => {
   const nodes = coll.nodes();
   const opts = setOptions( options );
@@ -234,6 +249,18 @@ export const kMeans = ( coll: GpuCollection, options?: KClusteringOptions ): Gpu
   return clusters;
 };
 
+/**
+ * k-medoids: like `kMeans`, but each cluster centre is one of the nodes
+ * rather than a synthetic point, and the swap cost is always Manhattan
+ * (v3's choice) regardless of `distance`, which only governs assignment.
+ * Cost is quadratic in cluster size per iteration, so it is markedly more
+ * expensive than k-means on large clusters.
+ *
+ * @param coll — the calling collection; only its nodes are clustered
+ * @param options — as `kMeans`; `testCentroids` here are node handles
+ * @returns `k` collections, empty entries left `undefined` as in v3
+ * @throws if `k` exceeds the node count — distinct medoids are required
+ */
 export const kMedoids = ( coll: GpuCollection, options?: KClusteringOptions ): GpuCollection[] => {
   const nodes = coll.nodes();
   const opts = setOptions( options );
@@ -362,6 +389,20 @@ const assign = ( coll: GpuCollection, nodes: GpuCollection, U: number[][], opts:
   return clustersArr.map( cluster => spawnHandles( coll, cluster ) );
 };
 
+/**
+ * Fuzzy c-means: every node holds a graded membership in every cluster
+ * instead of a single assignment.  Membership is seeded randomly and
+ * normalised per node, then alternately updated with the centroids until
+ * the membership matrix changes by less than `sensitivityThreshold`
+ * everywhere, or `maxIterations` passes.  The returned crisp `clusters`
+ * are the arg-max of each node's memberships.
+ *
+ * @param coll — the calling collection; only its nodes are clustered
+ * @param options — as `kMeans`, plus `m`, the fuzziness exponent
+ *   (default 2; must be > 1)
+ * @returns the `k` crisp clusters plus `degreeOfMembership`, an
+ *   N-by-`k` matrix in node order whose rows sum to 1
+ */
 export const fuzzyCMeans = ( coll: GpuCollection, options?: KClusteringOptions ): FuzzyCMeansResult => {
   const nodes = coll.nodes();
   const opts = setOptions( options );

@@ -12,12 +12,15 @@ import type { LabelStream } from '../contract.mjs';
  * glyphs follow their node on-GPU.
  */
 export class LabelLayer {
+  /** the SDF atlas every stream's quads sample; owned by this layer */
   atlas: GlyphAtlas;
+  /** the node label stream, keyed by node slot */
   glyphs: GlyphBuffer;
   /** the edge label stream: same instance layout, keyed by edge slot */
   edgeGlyphs: GlyphBuffer;
   /** the end-label streams (round 13 D4), keyed by edge slot */
   sourceGlyphs: GlyphBuffer;
+  /** the target end-label stream (round 13 D4), keyed by edge slot */
   targetGlyphs: GlyphBuffer;
 
   private store: GraphStore;
@@ -26,9 +29,21 @@ export class LabelLayer {
    * laid block; the cache clears with the atlas face. */
   private shapeMemo = new Map<string, LaidBlock>();
   private memoFont = '';
+  /** shaping-memo hits since construction (stats) */
   memoHits = 0;
+  /** shaping-memo misses since construction (stats) */
   memoMisses = 0;
 
+  /**
+   * Creates the atlas and all four glyph streams.  Nothing is laid out
+   * here: the first process() consumes whatever the store has marked
+   * label-dirty, which after a fresh load is every labelled slot.
+   *
+   * @param device — the device that owns the atlas texture and the four
+   * glyph buffers
+   * @param store — the graph store this layer reads label entries and
+   * the label-dirty channel from, and writes laid dimensions back to
+   */
   constructor( device: GPUDevice, store: GraphStore ){
     this.store = store;
     this.atlas = new GlyphAtlas( device );
@@ -38,6 +53,7 @@ export class LabelLayer {
     this.targetGlyphs = new GlyphBuffer( device );
   }
 
+  /** live glyph instances across all four streams (stats) */
   count(): number {
     return this.glyphs.count() + this.edgeGlyphs.count()
       + this.sourceGlyphs.count() + this.targetGlyphs.count();
@@ -53,6 +69,8 @@ export class LabelLayer {
     this.store.markAllLabelsDirty();
   }
 
+  /** cumulative glyph bytes written to the GPU across all four streams
+   * (stats); the atlas's own texture uploads are not counted here */
   uploadedBytes(): number {
     return this.glyphs.uploadedBytes + this.edgeGlyphs.uploadedBytes
       + this.sourceGlyphs.uploadedBytes + this.targetGlyphs.uploadedBytes;
@@ -233,6 +251,11 @@ export class LabelLayer {
     glyphs.sync();
   }
 
+  /**
+   * Destroys all four glyph streams and the atlas.  The store is not
+   * owned here and is left alone; no further process() may run, since
+   * the streams' buffers are gone.
+   */
   destroy(): void {
     this.glyphs.destroy();
     this.edgeGlyphs.destroy();

@@ -105,6 +105,15 @@ export class PointerHandler {
   private lastTap: { target: GpuCollection | null; at: number } | null;
   private cleanups: ( () => void )[];
 
+  /**
+   * Attach the whole gesture stack to the renderer's canvas.  Constructing
+   * one registers the DOM listeners immediately, so a handler is live from
+   * this point until `destroy()`; the core builds exactly one per mount.
+   *
+   * @param cy — the core; all state changes go through its public API so
+   *   the usual events fire and the usual dirty spans upload
+   * @param renderer — supplies the canvas to listen on and the async pick
+   */
   constructor( cy: GpuCore, renderer: Renderer ){
     this.cy = cy;
     this.renderer = renderer;
@@ -140,6 +149,13 @@ export class PointerHandler {
     this.listen( 'contextmenu', e => e.preventDefault() );
   }
 
+  /**
+   * Detach every DOM listener, cancel the pending timers (wheel settle,
+   * taphold, onetap), and remove the overlay elements this handler owns
+   * (the selection box and the active-background indicator).  Called on
+   * unmount and before a re-mount after device loss (round 10); the
+   * handler must not be used afterwards.
+   */
   destroy(): void {
     if( this.wheelSettleTimer != null ){
       clearTimeout( this.wheelSettleTimer );

@@ -46,6 +46,17 @@ export class ColumnMirror {
   private image!: GPUBuffer;
   private chart!: GPUBuffer;
 
+  /**
+   * Allocates a buffer per column at the view's current capacity and
+   * uploads every backing array in full, so the mirror is coherent with
+   * the view the moment the constructor returns — no initial sync() is
+   * needed.  The four blobs (curve, poly, image, chart) are allocated
+   * the same way.
+   *
+   * @param device — the device (or narrow mock) that owns every buffer
+   * @param view — the CPU-canonical columns this mirror shadows; held by
+   * reference, so later capacity growth is picked up by sync()
+   */
   constructor( device: MirrorDevice, view: ModelView ){
     this.device = device;
     this.view = view;
@@ -85,6 +96,16 @@ export class ColumnMirror {
     this.tweenOwned = new Set( ids );
   }
 
+  /**
+   * The storage buffer mirroring one column.  The identity is only valid
+   * until the next realloc, so callers must re-read it (and rebuild any
+   * bind group holding it) whenever `version` changes.
+   *
+   * @param id — the column to look up
+   * @returns the current buffer for that column
+   * @throws if the column has no mirror buffer — a spec/group mismatch,
+   * never a capacity condition
+   */
   buffer( id: ColumnId ): GPUBuffer {
     const buffer = this.buffers.get( id );
 
@@ -201,6 +222,12 @@ export class ColumnMirror {
     }
   }
 
+  /**
+   * Destroys every column and blob buffer immediately and latches the
+   * mirror closed: later sync() calls are no-ops.  Unlike the deferred
+   * destroys in realloc(), this does not wait on submitted work, so the
+   * caller must already have stopped encoding frames against it.
+   */
   destroy(): void {
     this.destroyed = true;
 

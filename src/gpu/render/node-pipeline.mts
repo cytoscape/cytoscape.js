@@ -58,6 +58,18 @@ export class NodePipeline {
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
   private bindGroups: Map<GPUBuffer, Map<string, { group: GPUBindGroup; version: number }>>;
 
+  /**
+   * Compiles the node shader once and builds all three pipelines (main,
+   * depth prepass, ghost) plus the two bind group layouts the C3
+   * storage-buffer budget forces.  The @group(1) visible-list layout is
+   * supplied by the culler rather than created here, so every pipeline in
+   * the scene pass shares one layout and one culled list.
+   *
+   * @param device — the device that owns the pipelines and quad index
+   * @param format — the scene colour target's format
+   * @param visibleLayout — the culler's @group(1) layout; the CulledGroup
+   * bound at draw time must have been created against it
+   */
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:node-shader', code: NODE_SHADER } );
 
@@ -175,6 +187,22 @@ export class NodePipeline {
     return group;
   }
 
+  /**
+   * The node body draw: one SDF-shaded quad per visible node, composited
+   * in slot order with the depth test off.  Must be encoded after the
+   * depth prepass, the edges/arrows and the ghost/underlay draws, and
+   * before overlays and labels.
+   *
+   * @param pass — the scene render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform for this pass; bind groups are
+   * cached per uniform buffer, so passing a different one is cheap
+   * @param mirror — the column mirror; its `version` drives the rebuild
+   * @param instances — the culled node count, used only to skip encoding
+   * an empty draw; the real count comes from the indirect buffer
+   * @param cull — the culled node group whose compute pass must already
+   * be encoded and whose indirect args this draw reads
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup

@@ -599,6 +599,24 @@ export class MapperRuntime {
   private lastVersion = -1;
   private destroyed = false;
 
+  /**
+   * Builds the per-group eval layouts, pipelines and fixed-size program
+   * and info buffers.  No mapper is configured yet: the runtime is
+   * inert (active() false, encode() a no-op) until the first update()
+   * observes a new `engine.paintVersion` and packs the programs, so
+   * constructing it on a graph with no data mappers costs two pipelines
+   * and nothing more.  All four collaborators are held by reference.
+   *
+   * @param device — the device (or narrow mock) that owns the pipelines
+   * and every per-group buffer
+   * @param store — supplies group capacities and the data values the
+   * kernel evaluates against
+   * @param engine — the paint source polled by `paintVersion` for
+   * reconfiguration
+   * @param mirror — the column mirror whose buffers the kernel writes;
+   * the caller must register the evaluated columns as GPU-owned, or CPU
+   * span uploads would clobber them
+   */
   constructor( device: EvalDevice, store: EvalStore, engine: PaintSource, mirror: EvalMirror ){
     this.device = device;
     this.store = store;
@@ -791,6 +809,14 @@ export class MapperRuntime {
     }
   }
 
+  /**
+   * Destroys every per-group buffer and latches update() and encode()
+   * off.  The mirror's column buffers are written by the kernel but not
+   * owned here, so they survive with their last evaluated bytes; the
+   * caller should drop the evaluated columns from the mirror's GPU-owned
+   * set afterwards, or those columns would never receive CPU uploads
+   * again.
+   */
   destroy(): void {
     this.destroyed = true;
 

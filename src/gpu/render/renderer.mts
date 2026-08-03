@@ -43,7 +43,9 @@ command buffer, so its readback maps as soon as it executes) the pick cull
 compute pass + the cursor-tile pick pass → if anything changed visually,
 write the Frame uniform and encode the scene cull compute pass (compacting
 each group's visible slots + indirect draw args) followed by the scene
-render pass (edges then nodes then labels, all indirect, no depth buffer).
+render pass (the node depth prepass, then parents, edges and arrows,
+then ghosts, node bodies and their image/chart/overlay passes, then
+labels — all indirect, against a depth buffer used only for early-z).
 Pick-only frames skip the scene work entirely, so hover picking over a
 static graph costs O(cursor region) per tick.  Frames before `.ready`
 resolves are no-ops; readiness triggers the first frame.  An external
@@ -148,6 +150,8 @@ const exportScale = ( w: number, h: number, opts: GpuExportOptions ): number => 
 export class Renderer {
   /** resolves when the device is acquired and the first frame can draw */
   ready: Promise<void>;
+  /** the canvas this renderer created inside the container and owns; it
+   * is removed from the DOM by destroy() */
   canvas: HTMLCanvasElement;
 
   protected cy: GpuCore;
@@ -213,6 +217,26 @@ export class Renderer {
   private parentOrderRef: Uint32Array | null = null;
   private parentOrderVersion = 0;
 
+  /**
+   * Creates and mounts the canvas, subscribes to store invalidation,
+   * viewport events, container resizes and font loading, then starts
+   * device acquisition.  Device-dependent state (mirror, pipelines,
+   * cull kernels, label layer, picking) is all null until `ready`
+   * resolves, and frames scheduled before then are no-ops — so nothing
+   * here throws when WebGPU is unavailable; the failure surfaces through
+   * `ready` instead.
+   *
+   * The container gets `position: relative` when it is statically
+   * positioned, since the canvas is absolutely positioned within it.
+   *
+   * @param cy — the core this renderer draws; its store, animations and
+   * viewport are read every frame and its `viewport` event is subscribed
+   * @param container — the element the canvas is appended to and whose
+   * size the canvas follows
+   * @param opts — renderer options; `pixelRatio` ('auto' or a number)
+   * fixes the device-px scale, and renderScaleMin/Max bound the adaptive
+   * render scale
+   */
   constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
     this.container = container;
@@ -313,6 +337,13 @@ export class Renderer {
     this.ready = this.init();
   }
 
+  /**
+   * A snapshot of the frame counters and subsystem meters.  Cheap and
+   * side-effect free, so it is safe to poll every frame; the counters
+   * are cumulative and never reset, and everything device-dependent
+   * reads 0 before `ready` resolves.  `gpuFrameMs` stays 0 on adapters
+   * without 'timestamp-query'.
+   */
   stats(): RendererStats {
     return {
       frames: this.frameCount,
@@ -333,6 +364,13 @@ export class Renderer {
     };
   }
 
+  /**
+   * Resize the canvas to the container and redraw.  Wired to a
+   * ResizeObserver on the container, so callers only need this when the
+   * size changes without one firing (no ResizeObserver, or a device-pixel
+   * ratio change).  The scene and depth targets are not reallocated here
+   * — the next frame notices the new size and rebuilds them.
+   */
   resize(): void {
     if( this.destroyed ){ return; }
 
@@ -360,6 +398,19 @@ export class Renderer {
     this.device?.destroy();
   }
 
+  /**
+   * Tear the renderer down: unsubscribe every listener and timer, reject
+   * any pending image export, destroy every owned GPU object and finally
+   * the device itself, and remove the canvas from the DOM.  Idempotent,
+   * and safe to call before `ready` resolves — the in-flight init sees
+   * the destroyed flag and abandons.
+   *
+   * The core is not destroyed, but it is left renderer-less: the
+   * animation driver is detached and the image decoder is unset, so the
+   * store goes headless again.  Everything after this is a no-op; a new
+   * renderer must be mounted to draw again (which is how device-loss
+   * recovery works).
+   */
   destroy(): void {
     if( this.destroyed ){ return; }
 

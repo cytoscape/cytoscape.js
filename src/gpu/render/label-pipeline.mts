@@ -22,6 +22,19 @@ export class LabelPipeline {
    * draws three streams (mid/source/target labels — round 13 D4) */
   private bindGroups: Map<GPUBuffer, Map<GlyphBuffer, { group: GPUBindGroup; key: string }>>;
 
+  /**
+   * Compiles the node or edge label shader and its pipeline.  The
+   * variant is fixed at construction because it changes the bind group
+   * layout's shape (2 storage buffers for node labels, 7 for edge
+   * labels, which resolve their anchor from the curve on-GPU), so the
+   * renderer holds one instance per variant.
+   *
+   * @param device — the device that owns the pipeline and quad index
+   * @param format — the scene colour target's format
+   * @param visibleLayout — the @group(1) layout of the culler whose
+   * stream this variant draws (node or edge)
+   * @param variant — which label kind this instance draws
+   */
   constructor(
     device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout,
     variant: 'node' | 'edge' = 'node'
@@ -111,6 +124,26 @@ export class LabelPipeline {
     return group;
   }
 
+  /**
+   * Draws one SDF quad per glyph in the stream, over everything already
+   * in the pass (no depth test), so labels are encoded last.  The glyph
+   * buffer must have been rebuilt for this frame before the call: the
+   * draw reads its contents through the bind group, and `highWater` of 0
+   * is the only skip condition.  The edge variant is called once per
+   * glyph stream (mid, source, target — round 13 D4), each with its own
+   * cached bind group.
+   *
+   * @param pass — the scene render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform; bind groups are cached per buffer
+   * @param glyphs — this stream's laid-out glyphs; its `version` and the
+   * mirror's together key the cache
+   * @param mirror — the column mirror supplying the anchor columns
+   * @param atlas — the glyph atlas the quads sample; its texture must
+   * already hold every glyph the stream references
+   * @param cull — the culled group whose visible list and indirect args
+   * this draw uses
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     glyphs: GlyphBuffer, mirror: ColumnMirror, atlas: GlyphAtlas, cull: CulledGroup

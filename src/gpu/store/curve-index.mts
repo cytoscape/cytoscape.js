@@ -84,6 +84,15 @@ export const ENDPT_SPEC_DEFAULTS: EndpointSpec = {
   tgtMode: 0, tgtA: 0, tgtB: 0, tgtPct: 0, tgtDist: 0
 };
 
+/**
+ * Whether an endpoint spec is the all-default one, i.e. plain node-to-node
+ * endpoints.  Only the modes and distances are checked: the a/b/pct
+ * fields are the *arguments* of a mode, so they are dead weight while the
+ * mode is 0.  A default spec stores as null and emits no endpoint block,
+ * which is what keeps the common case free.
+ *
+ * @param e — the spec, or null for "never styled"
+ */
 export const isDefaultEndpt = ( e: EndpointSpec | null ): boolean => {
   if( e == null ){ return true; }
 
@@ -277,6 +286,13 @@ export class CurveIndex {
   private warnedCap: boolean;
   private warnedEndptDist: boolean;
 
+  /**
+   * @param host — the store's narrow callback surface; the index reads
+   *   and writes columns only through it, so the store keeps sole
+   *   ownership of dirty tracking and the index stays testable against
+   *   a stub.  The pair map starts null — a graph where nothing styles
+   *   `bezier` (and has no compound relation) never builds one.
+   */
   constructor( host: CurveHost ){
     this.host = host;
     this.style = new Uint8Array( 0 );
@@ -382,6 +398,19 @@ export class CurveIndex {
 
   // -- topology maintenance (the store's mutation hooks) --
 
+  /**
+   * Register a new edge in the structural indexes.  A loop joins its
+   * node's loop list and re-staggers immediately; a non-loop edge joins
+   * its pair only if the pair map exists, and does *not* mark the pair
+   * pending — a straight member changes no bundle, and a bezier one is
+   * marked by its own style apply.  A compound relation (14.10) is the
+   * exception: it routes around the outside under every style, so it
+   * forces the pair map to exist and marks the pair.
+   *
+   * @param slot — the new edge's slot
+   * @param source — the source node's slot
+   * @param target — the target node's slot
+   */
   onAddEdge( slot: number, source: number, target: number ): void {
     if( source === target ){
       let list = this.loops.get( source );
@@ -424,7 +453,6 @@ export class CurveIndex {
     }
   }
 
-  /** A hierarchy change moved the relation of this pair (round 14.10). */
   /**
    * A display-tier shown/hidden flip (round 22.3): the edge's bundle
    * membership (or loop stagger) changes, so its pair re-derives —
@@ -444,6 +472,17 @@ export class CurveIndex {
     }
   }
 
+  /**
+   * A hierarchy change moved the relation of this pair (round 14.10):
+   * mark it for re-derivation, building the pair map first if the pair
+   * is now compound-related — the compound derivation reads bundle
+   * indices, so it can not run without one.  Takes node slots, not an
+   * edge slot: a single ancestry change can flip every edge between the
+   * two nodes at once.
+   *
+   * @param a — one endpoint node's slot
+   * @param b — the other endpoint node's slot (a === b names a loop)
+   */
   invalidateRelation( a: number, b: number ): void {
     if( a !== b && this.pairs == null && this.host.relation( a, b ) ){
       this.buildPairIndex(); // the compound derivation needs bundle indices
@@ -452,6 +491,18 @@ export class CurveIndex {
     this.markPair( a, b );
   }
 
+  /**
+   * Unregister an edge: drop it from its loop list or pair, re-derive
+   * the remaining members (a departing bezier member re-fans the
+   * bundle), and reset both the styled record and the derived params so
+   * a recycled slot reads benign defaults — the straight write also
+   * frees any blob record the edge held.  Must be called with the
+   * edge's *current* endpoints, before the store frees the slot.
+   *
+   * @param slot — the departing edge's slot
+   * @param source — the source node's slot
+   * @param target — the target node's slot
+   */
   onRemoveEdge( slot: number, source: number, target: number ): void {
     if( source === target ){
       const list = this.loops.get( source );
@@ -500,6 +551,20 @@ export class CurveIndex {
     this.host.writeParams( slot, 0, 0, 0, CURVE_STRAIGHT );
   }
 
+  /**
+   * Re-point an edge at new endpoints.  Unlike remove + add, the styled
+   * record survives — only membership moves — so the edge keeps its
+   * curve style across a `move()`.  Both the old and the new pair
+   * re-derive, and an edge leaving a loop is reset to straight first,
+   * since its new pair may need no derivation at all and would
+   * otherwise leave the stale loop params standing.
+   *
+   * @param slot — the edge's slot
+   * @param oldSource — the source node's slot before the move
+   * @param oldTarget — the target node's slot before the move
+   * @param source — the source node's slot after the move
+   * @param target — the target node's slot after the move
+   */
   onMoveEdge( slot: number, oldSource: number, oldTarget: number, source: number, target: number ): void {
     // the styled record survives a move (only the pair membership changes)
     const style = slot < this.style.length ? this.style[ slot ] : CURVE_STYLE_STRAIGHT;
@@ -551,6 +616,12 @@ export class CurveIndex {
 
   // -- derivation --
 
+  /**
+   * Whether any pair or per-edge record is awaiting derivation.  True
+   * means the edge.curveParams column does not yet agree with the
+   * styled records — callers that need exact params (the delta, bounds,
+   * the accessors) `flush()` first.
+   */
   hasPending(): boolean {
     return this.pending.size > 0 || this.pendingSlots.size > 0;
   }

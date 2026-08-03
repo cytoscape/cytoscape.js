@@ -46,6 +46,17 @@ export class ImagePipeline {
   private bindGroups = new Map<GPUBuffer, { group: GPUBindGroup; mv: number; av: number }>();
   private texGroup: { group: GPUBindGroup; version: number } | null = null;
 
+  /**
+   * Builds the compositing pipeline and both bind group layouts.  The
+   * tier-array layout is fixed here but its bind group is not built until
+   * draw time: ImageArrays reallocates its texture arrays as tiers grow,
+   * and each realloc bumps `arrays.version` to force a rebuild.
+   *
+   * @param device — the device that owns the pipeline and quad index
+   * @param format — the scene colour target's format
+   * @param visibleLayout — the culler's @group(1) layout; images ride the
+   * node visible lists, so this is the node culler's layout
+   */
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:image-shader', code: IMAGE_SHADER } );
 
@@ -146,6 +157,25 @@ export class ImagePipeline {
     return group;
   }
 
+  /**
+   * Composites background images over the node bodies just drawn, one
+   * quad per instance in the culled list, clipped to the node's shape.
+   * Encode immediately after the matching body draw (leaf stream after
+   * the main node draw, parent stream after the parent bodies) so the
+   * image lands on its own node and not a later one; the renderer skips
+   * this call entirely while no image records exist.
+   *
+   * @param pass — the scene render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform; bind groups are cached per buffer
+   * @param mirror — the column mirror; its `version` drives the rebuild
+   * @param arrays — the tier texture arrays; its `version` drives the
+   * separate texture bind group's rebuild, and any decode uploads for
+   * this frame must already be queued
+   * @param instances — the culled node count, used only to skip an empty
+   * draw; the indirect buffer carries the real count
+   * @param cull — the culled node group whose stream this draw shares
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, arrays: ImageArrays, instances: number, cull: CulledGroup

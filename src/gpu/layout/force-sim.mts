@@ -25,7 +25,7 @@ per executor):
   `F · alpha` per iteration (no velocity state: no ringing, one less
   GPU buffer, and displacement tracks force directly, which makes the
   threshold settle robust); `alpha` anneals toward zero by `decay`
-  (the d3 shape).  Convergence: `alpha < alphaMin`, or the max
+  (the d3 shape).  Convergence: a fixed alpha floor, or the max
   per-node displacement stays under `threshold` for a few consecutive
   iterations.
 
@@ -45,6 +45,12 @@ export interface ForceParams {
   iterations: number;
 }
 
+/**
+ * A fresh set of tuned defaults, one object per call so callers may
+ * overwrite fields freely.  These constants are part of the CPU/GPU
+ * contract: both executors must be driven with the same params to be
+ * comparable at all (18.3).
+ */
 export const defaultForceParams = (): ForceParams => ( {
   repulsion: 200,
   stiffness: 0.1,
@@ -85,10 +91,14 @@ export const seedPositions = (
 const CONVERGE_RUNS = 3;
 
 export class ForceSim {
+  /** the live 2n interleaved coordinates — the caller's own seeded array,
+   * mutated in place, so the caller reads results straight out of it */
   readonly positions: Float32Array;
   /** the last step's max per-node displacement */
   lastMaxDisp = Infinity;
+  /** the annealing temperature, 1 at construction, decaying toward 0 */
   alpha = 1;
+  /** iterations completed so far */
   iteration = 0;
 
   private n: number;
@@ -112,6 +122,16 @@ export class ForceSim {
   private gridY = 0;
   private settledRuns = 0;
 
+  /**
+   * Build a run.  Derives the repulsion cutoff (the mean ideal edge
+   * length, floored at 40) and the CSR incident-edge lists once, so the
+   * topology is fixed for the life of the sim — adding or removing edges
+   * means a new `ForceSim`.
+   *
+   * @param inputs — the params plus the graph; `positions`, `edges`,
+   *   `edgeLength`, and `pinned` are retained by reference, not copied,
+   *   and `positions` is written in place on every `step`
+   */
   constructor( inputs: ForceSimInputs ){
     this.n = inputs.n;
     this.edges = inputs.edges;
@@ -159,6 +179,14 @@ export class ForceSim {
     this.cellItems = new Uint32Array( inputs.n );
   }
 
+  /**
+   * Whether the run is finished.  True once any of three holds: the
+   * iteration cap is reached, `alpha` has annealed below 0.001, or the max
+   * per-node displacement has stayed under `threshold` for
+   * `CONVERGE_RUNS` consecutive iterations.  This is one of the invariants
+   * the GPU integrator must agree on — the two executors need not follow
+   * the same trajectory, but they must stop under the same conditions.
+   */
   converged(): boolean {
     return this.iteration >= this.params.iterations
       || this.alpha < 0.001

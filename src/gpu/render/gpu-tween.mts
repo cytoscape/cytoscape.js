@@ -307,6 +307,19 @@ export class GpuTweenRuntime {
   private dummyPoints: GPUBuffer;
   private destroyed = false;
 
+  /**
+   * Builds the one shared bind group layout, a pipeline per write kind
+   * and the dummy progression buffer.  The mirror is reached through two
+   * callbacks rather than held directly, so a column buffer realloc is
+   * observed lazily at encode time — `mirrorVersion` must change on every
+   * realloc, or a batch would keep dispatching into a destroyed buffer.
+   *
+   * @param device — the device (or narrow mock) that owns the pipelines
+   * and every per-batch buffer
+   * @param columnBuffer — resolves a column id to its current mirror
+   * buffer; called only when a bind group is (re)built
+   * @param mirrorVersion — the mirror's realloc counter
+   */
   constructor( device: TweenDevice, columnBuffer: ( id: ColumnId ) => GPUBuffer, mirrorVersion: () => number ){
     this.device = device;
     this.columnBuffer = columnBuffer;
@@ -343,6 +356,9 @@ export class GpuTweenRuntime {
     } ) ] ) ) as Record<GpuWriteKind, GPUComputePipeline>;
   }
 
+  /** Whether any batch is registered.  Registration, not the clock,
+   * decides this: a batch past its end time still counts until the
+   * caller unregisters it. */
   active(): boolean { return this.batches.size > 0; }
 
   /** True when some batch tweens node position (needs the pre-cull pass). */
@@ -435,6 +451,17 @@ export class GpuTweenRuntime {
     } );
   }
 
+  /**
+   * Drop an animation and destroy its per-batch buffers; unknown ids are
+   * a no-op (register() calls this first to make re-registration safe).
+   * The buffers go immediately, so the caller must not unregister a
+   * batch whose dispatches are encoded in a command buffer not yet
+   * submitted.  The tweened columns keep their last written values —
+   * the caller is responsible for dropping them from the mirror's owned
+   * set so CPU uploads resume.
+   *
+   * @param id — the animation id passed to register()
+   */
   unregister( id: number ): void {
     const b = this.batches.get( id );
 
@@ -509,6 +536,11 @@ export class GpuTweenRuntime {
     }
   }
 
+  /**
+   * Unregisters every batch and destroys the dummy progression buffer,
+   * then latches register() and encode() off.  The mirror's column
+   * buffers are not owned here and survive.
+   */
   destroy(): void {
     this.destroyed = true;
 

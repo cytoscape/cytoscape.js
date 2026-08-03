@@ -555,6 +555,25 @@ const channelDefaultOf = ( opts: CompileOpts ): number | RGBA => {
   return opts.kind === 'color' ? [ 0, 0, 0, 255 ] : 0;
 };
 
+/**
+ * Validate a mapper spec against its target channel and lower it to a
+ * data-only `Program`.  Compilation happens once per stylesheet entry,
+ * not per element: every scale family collapses to one of a handful of
+ * program shapes here so evaluation has no per-spec branching, and the
+ * result serializes to the GPU kernel unchanged.  Domains left to 'auto'
+ * are *not* resolved here — they are filled in at bind time and refreshed
+ * as the data extent moves.
+ *
+ * @param spec — the plain serializable mapper spec; retained (never
+ *   mutated) on the result for `json()` fidelity
+ * @param opts — the target channel: its kind, its normalized prop name
+ *   for error messages, and, for enum channels, the keyword parser
+ * @returns the compiled mapper, including `keys`, the refresh-dependency
+ *   set the style engine watches
+ * @throws with the prop name in the message on any malformed spec —
+ *   an empty data key, an unknown scale, a scaled mapper with no range,
+ *   or a case clause missing 'when'/'then'
+ */
 export const compileMapper = ( spec: GpuMapperSpec, opts: CompileOpts ): CompiledMapper => {
   if( isCaseSpec( spec ) ){
     const { program, keys } = compileCase( opts, spec );

@@ -16,6 +16,18 @@ export interface GpuContext {
   format: GPUTextureFormat;
 }
 
+/**
+ * Acquire a device and configure the canvas for presentation.  Requests
+ * `timestamp-query` when the adapter offers it, so `stats()` can report
+ * real GPU frame times; its absence is not an error.
+ *
+ * @param canvas — the canvas to configure with the preferred format
+ * @param onLost — called for *every* device loss, reason 'destroyed'
+ *   included, so the caller distinguishes its own teardown from an
+ *   external loss it must re-mount from (round 10)
+ * @returns the device, the configured canvas context, and the format
+ * @throws if `navigator.gpu` is missing, or no adapter can be acquired
+ */
 export const initGpuContext = async (
   canvas: HTMLCanvasElement,
   onLost: ( info: GPUDeviceLostInfo ) => void

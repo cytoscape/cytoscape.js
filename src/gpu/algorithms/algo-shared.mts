@@ -27,6 +27,18 @@ export interface SubgraphView {
   edgeIn: Set<number>;
 }
 
+/**
+ * Build the `SubgraphView` every slot-native algorithm starts from.  Walks
+ * the collection once, de-duplicating repeated refs, so nodes get a stable
+ * dense [0, N) index in collection order and edges get a membership set.
+ * The view is a snapshot: it holds slots and a borrowed `edge.endpoints`
+ * column, so it is only valid until the store next adds or removes
+ * elements.  Algorithms build one per call rather than caching.
+ *
+ * @param coll — the calling collection; dead refs are skipped
+ * @returns the snapshot the `eachIncident` / `incidentEdgesInView` helpers
+ *   traverse
+ */
 export const subgraph = ( coll: GpuCollection ): SubgraphView => {
   const cy = coll.cy();
   const store = cy._store;
@@ -139,8 +151,10 @@ export const weightAt = ( view: SubgraphView, weight: WeightFn | undefined ): ( 
   return edgeSlot => weight( view.cy._ele( 'edges', edgeSlot ) );
 };
 
+/** Generation-stamped node ref for a slot, ready to `_spawn` a result. */
 export const nodeRef = ( view: SubgraphView, slot: number ): Ref => view.store.ref( 'nodes', slot );
 
+/** Generation-stamped edge ref for a slot, ready to `_spawn` a result. */
 export const edgeRef = ( view: SubgraphView, slot: number ): Ref => view.store.ref( 'edges', slot );
 
 /**
@@ -152,21 +166,42 @@ export class NodeHeap {
   private pos: Int32Array;
   private n = 0;
 
+  /**
+   * @param capacity — the number of dense indices; indices must stay in
+   *   [0, capacity) since `pos` is sized once and never grown
+   * @param score — the caller's key array, held by reference and re-read
+   *   on every comparison, so writing to it changes the ordering
+   *   immediately; call `update` to restore the invariant afterwards
+   */
   constructor( capacity: number, private score: Float64Array ){
     this.heap = new Int32Array( capacity );
     this.pos = new Int32Array( capacity ).fill( -1 );
   }
 
+  /** How many indices are currently in the heap. */
   get size(): number {
     return this.n;
   }
 
+  /**
+   * Insert a dense index.  Pushing an index that is already present
+   * corrupts the position map, so guard with `has` when in doubt.
+   *
+   * @param i — the dense index to insert
+   */
   push( i: number ): void {
     this.heap[ this.n ] = i;
     this.pos[ i ] = this.n;
     this.up( this.n++ );
   }
 
+  /**
+   * Remove and return the index with the smallest current score.  Callers
+   * must check `size` first: popping an empty heap is unchecked and
+   * returns stale data.
+   *
+   * @returns the dense index of the minimum
+   */
   pop(): number {
     const root = this.heap[ 0 ];
 
@@ -191,6 +226,7 @@ export class NodeHeap {
     if( p >= 0 ){ this.up( p ); }
   }
 
+  /** Whether the dense index is still in the heap (not yet popped). */
   has( i: number ): boolean {
     return this.pos[ i ] >= 0;
   }

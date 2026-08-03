@@ -58,6 +58,18 @@ export class DataStore {
   /** Fires after a dict compaction remapped a column's indices (see the header note). */
   onDictRemap: ( ( group: GroupName, key: string ) => void ) | null = null;
 
+  /**
+   * One element's value for one data key.  Absence and a stored
+   * `undefined` are indistinguishable by design (v3's `data()` reads the
+   * same way), and an unknown key or an out-of-range slot reads
+   * undefined rather than throwing — the columns are sparse and grow
+   * only where written.  For a loop over many slots use `reader`, which
+   * hoists the column lookup and the kind switch out of the loop.
+   *
+   * @param group — the element group
+   * @param slot — the slot within that group
+   * @param key — the data key
+   */
   get( group: GroupName, slot: number, key: string ): unknown {
     const col = this.cols[ group ].get( key );
 
@@ -112,6 +124,14 @@ export class DataStore {
     return out;
   }
 
+  /**
+   * Every data key a group has ever held, in first-write order.  Keys
+   * are never dropped — clearing the last value leaves an empty column
+   * standing — so this is the union over the group's history, not the
+   * keys any particular element carries.
+   *
+   * @param group — the element group
+   */
   keys( group: GroupName ): string[] {
     return [ ...this.cols[ group ].keys() ];
   }
@@ -160,6 +180,19 @@ export class DataStore {
     return out;
   }
 
+  /**
+   * Write one element's value for one data key.  The column adopts the
+   * kind of its first value and promotes to `mixed` — irreversibly, and
+   * firing `onPromote` — the first time a value does not fit, so a
+   * single stray write demotes a GPU-mirrored key to CPU evaluation for
+   * the rest of the session.  Writing `undefined` clears instead, which
+   * can drop a dict entry's last reference and trigger a compaction.
+   *
+   * @param group — the element group
+   * @param slot — the slot within that group
+   * @param key — the data key
+   * @param value — the value; `undefined` clears
+   */
   set( group: GroupName, slot: number, key: string, value: unknown ): void {
     if( value === undefined ){
       this.clearValue( group, slot, key );
@@ -471,6 +504,14 @@ export class DataStore {
   }
 }
 
+/**
+ * Whether a bulk-ingest column arrived pre-dictionary-encoded (the wire
+ * shape) rather than as a plain/typed array.  Structural, since the wire
+ * form crosses a JSON boundary and carries no tag: an object that is
+ * neither an array nor a typed array and has both `dict` and `indices`.
+ *
+ * @param column — the candidate column
+ */
 export const isDictColumn = ( column: ArrayLike<unknown> | GpuDictColumn ): column is GpuDictColumn => {
   return !Array.isArray( column ) && !ArrayBuffer.isView( column )
     && ( column as GpuDictColumn ).dict != null && ( column as GpuDictColumn ).indices != null;

@@ -15,6 +15,7 @@ export interface AllocResult {
  * per-slot generation counters so stale handles can be detected.
  */
 export class ColumnTable {
+  /** which element group this table holds ('nodes' or 'edges') */
   group: GroupName;
   /** current capacity, in slots */
   cap: number;
@@ -29,6 +30,14 @@ export class ColumnTable {
   private arrays: Map<ColumnId, ColumnArray>;
   private free: number[];
 
+  /**
+   * @param group — the element group this table holds
+   * @param specs — the column set, fixed for the table's lifetime: every
+   *   column allocates up front and grows in lockstep, so slot `s`
+   *   addresses the same element in all of them
+   * @param initialCap — starting capacity in slots; pass a known final
+   *   size to skip the doubling cascade of a large bulk load
+   */
   constructor( group: GroupName, specs: ColumnSpec[], initialCap: number = INITIAL_CAP ){
     this.group = group;
     this.cap = initialCap;
@@ -49,6 +58,16 @@ export class ColumnTable {
     return this.free.length;
   }
 
+  /**
+   * The backing typed array for a column, indexed by
+   * `slot * spec.components`.  The array is *not* stable: growth and
+   * compaction replace it, so re-fetch after any mutation rather than
+   * holding the reference across calls.
+   *
+   * @param id — the column to fetch
+   * @returns the live backing array (mutate in place to write)
+   * @throws if the column does not belong to this group's table
+   */
   column( id: ColumnId ): ColumnArray {
     const arr = this.arrays.get( id );
 

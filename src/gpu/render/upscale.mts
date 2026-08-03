@@ -86,6 +86,16 @@ export class Upscaler {
   private bindGroup: GPUBindGroup | null;
   private boundTexture: GPUTexture | null;
 
+  /**
+   * Builds the fullscreen resample pipeline once per renderer.  The
+   * bind group is deliberately not built here: it depends on the scene
+   * texture, which is recreated on every resize, so draw() rebuilds it
+   * lazily whenever the source identity changes.
+   *
+   * @param device — the device that owns the pipeline and sampler
+   * @param format — the swapchain format this pass writes (it replaces,
+   * never blends, so it must be the final target's format)
+   */
   constructor( device: GPUDevice, format: GPUTextureFormat ){
     const module = device.createShaderModule( { label: 'cy-gpu:upscale-shader', code: UPSCALE_SHADER } );
 
@@ -145,6 +155,11 @@ export class Upscaler {
     pass.draw( 3 );
   }
 
+  /**
+   * Releases the uniform buffer.  The scene texture is owned by the
+   * renderer, not by the upscaler, so it is left alone — only the last
+   * bind group referencing it is dropped with this object.
+   */
   destroy(): void {
     this.uniform.destroy();
   }

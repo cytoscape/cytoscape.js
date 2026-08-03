@@ -209,6 +209,27 @@ const buildClustersFromTree = ( root: ClusterNode | undefined, k: number, coll: 
   return leftC.concat( rightC );
 };
 
+/**
+ * Agglomerative hierarchical clustering over the calling collection's
+ * nodes in attribute space — the adjacency is not consulted.  Starts with
+ * one cluster per node and repeatedly merges the closest pair under
+ * `linkage` ('min'/'single', 'max'/'complete', 'mean', or a custom
+ * per-pair function).  In `threshold` mode merging stops once the closest
+ * pair is farther apart than `threshold`, and the surviving clusters are
+ * returned flat; in `dendrogram` mode it merges to a single root, which is
+ * then cut at `dendrogramDepth`.  Holds a dense N-by-N distance matrix, so
+ * cost is quadratic in node count.
+ *
+ * @param coll — the calling collection; only its nodes are clustered
+ * @param options — `distance`, `linkage`, `mode`, `threshold`,
+ *   `attributes`, and, for dendrogram mode, `dendrogramDepth` (0 means
+ *   don't cut) and `addDendrogram`
+ * @returns the clusters; empty when the collection has no nodes
+ *
+ * Note `addDendrogram` mutates the graph: it adds a node per internal
+ * dendrogram node plus two edges joining it to its children, so it is not
+ * a read-only query.
+ */
 export const hierarchicalClustering = ( coll: GpuCollection, options?: HierarchicalClusteringOptions ): GpuCollection[] => {
   const nodes = coll.nodes();
 

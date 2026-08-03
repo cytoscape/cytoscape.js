@@ -45,6 +45,18 @@ export class EdgePipeline {
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
   private bindGroups: Map<GPUBuffer, Map<string, { group: GPUBindGroup; version: number }>>;
 
+  /**
+   * Compiles the edge shader and builds the three pipelines that share
+   * one bind group layout: the scene draw, the r32uint pick draw and the
+   * overlay/underlay/casing stroke draw.  The pick pipeline has no
+   * depthStencil — the pick pass renders without a depth attachment, and
+   * its topmost-wins ordering comes from overwrite order alone.
+   *
+   * @param device — the device that owns the pipelines and quad index
+   * @param format — the scene colour target's format (the pick target is
+   * always r32uint)
+   * @param visibleLayout — the edge culler's @group(1) layout
+   */
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:edge-shader', code: EDGE_SHADER } );
 
@@ -148,6 +160,25 @@ export class EdgePipeline {
     return group;
   }
 
+  /**
+   * The straight-edge draw: one screen-space extruded quad per visible
+   * edge (haystack and triangle stream kinds included).  In the scene
+   * pass it must follow the node depth prepass, since it relies on
+   * early-z to skip fragments hidden by opaque node interiors; in the
+   * pick pass it stands alone.
+   *
+   * @param pass — the render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform; the render and pick frames each
+   * get their own cached bind group
+   * @param mirror — the column mirror; its `version` drives the rebuild
+   * @param instances — the culled edge count, used only to skip an empty
+   * draw; the indirect buffer carries the real count
+   * @param cull — the culled edge group; its compute pass must already be
+   * encoded
+   * @param pick — true to write edge ids to the r32uint pick target
+   * instead of shaded colour
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup, pick: boolean = false

@@ -206,6 +206,9 @@ const samplePoints = ( points: Float32Array, t: number ): number => {
   return y0 + ( y1 - y0 ) * ( ( t - x0 ) / ( x1 - x0 ) );
 };
 
+/** A CSS `linear()` easing over a progression array (flat (x, y) pairs,
+ * x ascending — `parseLinearPoints`'s output).  The array is held by
+ * reference, so it must not be mutated after the easing is built. */
 export const pointsEasing = ( points: Float32Array ): Easing => t => samplePoints( points, t );
 
 const percent = ( s: string, src: string ): number => {

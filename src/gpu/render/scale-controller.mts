@@ -36,7 +36,9 @@ const CLEAN_WINDOWS_TO_RAISE = 2;
 const SCALE_STEP = 0.25;
 
 export class ScaleController {
+  /** the clamped low end of the band; the last entry of `steps` */
   readonly min: number;
+  /** the clamped high end of the band; `steps[0]`, and the idle target */
   readonly max: number;
   /** descending scale steps, max first */
   readonly steps: number[];
@@ -49,6 +51,16 @@ export class ScaleController {
   private cleanWindows: number;
   private lastRaiseAt: number;
 
+  /**
+   * Builds the descending quarter-step ladder for the band.  Both bounds
+   * are clamped into [0.25, 1] and ordered, so a swapped or out-of-range
+   * pair is corrected rather than rejected; `min` is always the ladder's
+   * last step even when the quarter steps do not land on it exactly.
+   * Starts at max.
+   *
+   * @param min — lowest pixel ratio the renderer may drop to
+   * @param max — highest pixel ratio, and where idle frames settle
+   */
   constructor( min: number = 0.5, max: number = 1 ){
     const lo = Math.min( 1, Math.max( 0.25, Math.min( min, max ) ) );
     const hi = Math.min( 1, Math.max( lo, Math.max( min, max ) ) );
@@ -72,6 +84,8 @@ export class ScaleController {
     this.lastRaiseAt = -Infinity;
   }
 
+  /** the current pixel ratio; changes only at the return of a frameDrawn(),
+   * frameStalled() or settleToMax() call that reported a new value */
   get scale(): number {
     return this.steps[ this.idx ];
   }

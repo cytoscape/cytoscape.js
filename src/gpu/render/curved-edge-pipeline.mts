@@ -49,6 +49,19 @@ export class CurvedEdgePipeline {
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
   private bindGroups: Map<GPUBuffer, Map<string, { group: GPUBindGroup; version: number }>>;
 
+  /**
+   * Compiles the curved-edge shader, allocates the CURVE_SEGS-quad strip
+   * index buffer and builds the scene, pick and layer pipelines.  Two
+   * bind group layouts are needed rather than one: the layer draw's
+   * vertex stage would exceed the 8-storage-buffer budget if it kept a
+   * slot for edge.width, and a layout entry counts even when the shader
+   * never reads it.
+   *
+   * @param device — the device that owns the pipelines and strip index
+   * @param format — the scene colour target's format (the pick target is
+   * always r32uint)
+   * @param visibleLayout — the curved-edge culler's @group(1) layout
+   */
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:curved-edge-shader', code: CURVED_EDGE_SHADER } );
 
@@ -205,6 +218,25 @@ export class CurvedEdgePipeline {
     return group;
   }
 
+  /**
+   * The curved-edge draw: one CURVE_SEGS-quad strip per visible curved
+   * edge, the curve re-evaluated in the vertex shader from live endpoint
+   * positions and the edge's route params, so a node drag needs no
+   * geometry re-upload.  Draws off the culled stream's primary indirect
+   * args (offset 0) — the arrowheads use the same stream's single-quad
+   * args instead.
+   *
+   * @param pass — the render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform; the render and pick frames each
+   * get their own cached bind group
+   * @param mirror — the column mirror; its `version` drives the rebuild
+   * @param instances — the culled curved-edge count, used only to skip an
+   * empty draw; the indirect buffer carries the real count
+   * @param cull — the curved-edge culled group; its compute pass must
+   * already be encoded
+   * @param pick — true to write edge ids to the r32uint pick target
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup, pick: boolean = false

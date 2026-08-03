@@ -60,6 +60,21 @@ const distances: Record<string, ( length: number, getP: DimGetter, getQ: DimGett
 distances['squared-euclidean'] = distances.squaredEuclidean;
 distances['squaredeuclidean'] = distances.squaredEuclidean;
 
+/**
+ * Distance between two attribute vectors under the named metric, or under
+ * a caller-supplied function.  An unrecognised name silently falls back to
+ * `euclidean`, matching v3.  A custom function is called with v3's
+ * duck-typed argument shape: with no attribute dimensions it gets the two
+ * raw operands, otherwise `( length, getP, getQ, nodeP, nodeQ )`.
+ *
+ * @param method — a `DistanceMetricName` or a custom function
+ * @param length — the number of attribute dimensions
+ * @param getP — reads dimension `dim` of the first operand
+ * @param getQ — reads dimension `dim` of the second operand
+ * @param nodeP — the first operand itself, for custom functions
+ * @param nodeQ — the second operand itself, for custom functions
+ * @returns the distance; non-negative for every built-in metric
+ */
 export const clusteringDistance = (
   method: DistanceMetric, length: number, getP: DimGetter, getQ: DimGetter,
   nodeP?: unknown, nodeQ?: unknown

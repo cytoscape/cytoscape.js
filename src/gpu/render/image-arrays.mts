@@ -67,16 +67,37 @@ export class TierAllocator {
   private byEntry = new Map<number, { tier: number; layer: number }>();
   private warnedFull = false;
 
+  /**
+   * Starts every tier empty (capacity 0, no free layers), so the first
+   * alloc() in each tier reports `grew` and the caller creates that
+   * tier's texture.
+   *
+   * @param tierCount — number of tiers to track: the rgba tiers plus the
+   * r8 icon tier, indexed as ICON_TIER
+   */
   constructor( tierCount: number ){
     this.caps = new Array( tierCount ).fill( 0 );
     this.high = new Array( tierCount ).fill( 0 );
     this.freeLayers = Array.from( { length: tierCount }, () => [] );
   }
 
+  /**
+   * The tier's allocated layer count — what its texture must be sized
+   * to.  Grows by doubling (minimum 4) and never shrinks, so it can
+   * exceed the number of layers actually in use.
+   *
+   * @param tier — tier index
+   */
   capacity( tier: number ): number {
     return this.caps[ tier ];
   }
 
+  /**
+   * Where an entry currently lives, or null when it has none (never
+   * allocated, or freed).
+   *
+   * @param entryId — registry entry id
+   */
   placement( entryId: number ): { tier: number; layer: number } | null {
     return this.byEntry.get( entryId ) ?? null;
   }
@@ -120,6 +141,14 @@ export class TierAllocator {
     return { layer, grew };
   }
 
+  /**
+   * Return an entry's layer to its tier's free list.  The layer's texels
+   * are left as they are — the caller must also zero the entry's image
+   * table row, or a stale row would still point at readable pixels.
+   *
+   * @param entryId — registry entry id; unknown ids are a no-op
+   * @returns the placement that was freed, or null when there was none
+   */
   free( entryId: number ): { tier: number; layer: number } | null {
     const placement = this.byEntry.get( entryId );
 
@@ -180,11 +209,22 @@ export class ImageArrays {
   private placeholderIconView: GPUTextureView;
   private table: GPUBuffer;
   private tableData: Uint32Array;
+  /** the trilinear sampler the image fragment shader reads every tier
+   * (and the icon array) with; mip filtering is the point of the tiers */
   readonly sampler: GPUSampler;
   private mipPipeline: GPURenderPipeline;
   private mipSampler: GPUSampler;
   private destroyed = false;
 
+  /**
+   * Builds the samplers, the mip-blit pipeline, the 1×1 placeholders and
+   * a small image table.  No tier texture is created here: tiers
+   * allocate lazily on their first upload, and until then view() hands
+   * out the placeholder so bind groups can always be built.
+   *
+   * @param device — the device that owns every texture, the table buffer
+   * and the mip pipeline
+   */
   constructor( device: GPUDevice ){
     this.device = device;
     this.sampler = device.createSampler( {
@@ -225,14 +265,26 @@ export class ImageArrays {
     } );
   }
 
+  /** The image table storage buffer, indexed by registry entry id.  It
+   * reallocates when the table outgrows its length, so re-read it (and
+   * rebuild the bind group) whenever `version` changes. */
   tableBuffer(): GPUBuffer {
     return this.table;
   }
 
+  /**
+   * One rgba tier's array view, or the 1×1 placeholder while that tier
+   * has no texture yet.  Valid only until the next `version` bump.
+   *
+   * @param tier — rgba tier index (not ICON_TIER; use iconView())
+   */
   view( tier: number ): GPUTextureView {
     return this.views[ tier ] ?? this.placeholderView;
   }
 
+  /** The r8 sdf-icon array's view (round 15.5), or the r8 placeholder
+   * while no icon has been uploaded.  Valid until the next `version`
+   * bump. */
   iconView(): GPUTextureView {
     return this.iconViewCache ?? this.placeholderIconView;
   }
@@ -270,6 +322,12 @@ export class ImageArrays {
     return uploaded;
   }
 
+  /**
+   * Destroys every tier texture, the icon array, both placeholders and
+   * the table buffer, and latches sync() to a no-op.  Textures already
+   * retired by a realloc are not touched here — their destroy is still
+   * pending behind onSubmittedWorkDone.
+   */
   destroy(): void {
     this.destroyed = true;
 

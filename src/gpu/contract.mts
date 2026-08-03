@@ -463,6 +463,16 @@ export const COLUMN_SPECS: ColumnSpec[] = [
 
 const specsById = new Map<ColumnId, ColumnSpec>( COLUMN_SPECS.map( s => [ s.id, s ] ) );
 
+/**
+ * The co-signed spec for one column.  Store and renderer both size their
+ * allocations from this, so it is the single place either side may learn
+ * a column's element type and component count.
+ *
+ * @param id — the column id
+ * @returns the shared spec (the module's own object — do not mutate)
+ * @throws if the id is not in `COLUMN_SPECS`, which means the two halves
+ *   have gone out of sync
+ */
 export const columnSpec = ( id: ColumnId ): ColumnSpec => {
   const s = specsById.get( id );
 
@@ -473,6 +483,15 @@ export const columnSpec = ( id: ColumnId ): ColumnSpec => {
   return s;
 };
 
+/**
+ * Every column belonging to one group, in `COLUMN_SPECS` order — which
+ * is the order both halves allocate and upload in.  Filters on each
+ * call, so hoist it out of loops; it is meant for allocation and
+ * teardown, not per frame.
+ *
+ * @param group — 'nodes' or 'edges'
+ * @returns a fresh array of the shared spec objects
+ */
 export const columnSpecsForGroup = ( group: GroupName ): ColumnSpec[] => {
   return COLUMN_SPECS.filter( s => s.group === group );
 };

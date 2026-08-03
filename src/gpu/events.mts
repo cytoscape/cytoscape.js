@@ -59,8 +59,13 @@ export interface EleEventTarget {
   group(): GroupName | undefined;
 }
 
+/** A ref's identity as a string, generation included — so a recycled
+ * slot never collides with the listeners of the element it replaced. */
 export const refKey = ( ref: Ref ): string => `${ref.group}:${ref.slot}:${ref.gen}`;
 
+/** Element qualifier for `eles.on()`.  Ref qualifiers compare by `key`,
+ * so `off()` matches a listener registered through a different handle
+ * for the same element. */
 export const refQualifier = ( ref: Ref ): GpuQualifier => ( { key: 'ref:' + refKey( ref ), ref } );
 
 /** Predicate qualifiers compare by function identity (for off()). */
@@ -87,6 +92,18 @@ export interface GpuCoreLike {
   _store: GraphStore;
 }
 
+/**
+ * Build the one Emitter a core owns.  Every listener in v4 — core,
+ * delegated, and per-element — lives on this single emitter and is told
+ * apart by its qualifier, so the store keeps no per-element emitters.
+ * The wiring here is what implements the phase rules described above:
+ * `eventMatches` decides which listeners fire in which bubbling phase,
+ * and `callbackContext` supplies v3's `currentTarget` semantics.
+ *
+ * @param cy — the core; becomes the emitter context and the default
+ *   `event.target`
+ * @returns the emitter, to be stored on the core
+ */
 export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy, GpuQualifier> => {
   return new Emitter<TCy, GpuQualifier>( {
     context: cy,

@@ -23,6 +23,19 @@ export class NodeLayerPipeline {
   private column: ColumnId;
   private bindGroups: Map<GPUBuffer, { group: GPUBindGroup; version: number }>;
 
+  /**
+   * Builds the depth-tested and untested variants for one layer.  The
+   * layer column is fixed at construction and baked into the bind group,
+   * so the renderer holds two instances of this class — one per column —
+   * rather than switching a column at draw time.
+   *
+   * @param device — the device that owns the pipelines and quad index
+   * @param format — the scene colour target's format
+   * @param visibleLayout — the culler's @group(1) layout, shared with the
+   * node pipelines
+   * @param column — which layer this instance draws; also names its
+   * labels and bind groups
+   */
   constructor(
     device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout,
     column: 'node.overlay' | 'node.underlay'
@@ -90,6 +103,23 @@ export class NodeLayerPipeline {
     return group;
   }
 
+  /**
+   * Draws one rounded-rect wash per visible node from this instance's
+   * layer column.  Called twice per frame with the two instances: the
+   * underlay before the node bodies with depthTested true, the overlay
+   * after them with it false.
+   *
+   * @param pass — the scene render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform; bind groups are cached per buffer
+   * @param mirror — the column mirror; its `version` drives the rebuild
+   * @param instances — the culled node count, used only to skip an empty
+   * draw; the indirect buffer carries the real count
+   * @param cull — the culled node group; its compute pass must already be
+   * encoded
+   * @param depthTested — true to reject fragments under opaque node
+   * interiors (the underlay's layering), false to wash over them
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup, depthTested: boolean

@@ -74,6 +74,23 @@ const hasConverged = ( M: Float64Array, _M: Float64Array, n2: number, roundFacto
   return true;
 };
 
+/**
+ * Markov clustering (MCL) over the calling collection.  Unlike the
+ * attribute-space clusterers this one is a graph algorithm: it builds a
+ * column-stochastic matrix from the subgraph's edges (treated as
+ * undirected — each edge contributes to both entries), adds `multFactor`
+ * self loops on the diagonal, then alternates expansion and inflation
+ * until the matrix stops changing to four decimal places or
+ * `maxIterations` passes.  The matrix is dense N-by-N and expansion
+ * multiplies it, so cost is cubic in node count per iteration.
+ *
+ * @param coll — the calling collection; only edges inside it contribute
+ * @param options — `expandFactor` (matrix power, default 2),
+ *   `inflateFactor` (element-wise power, default 2), `multFactor`
+ *   (diagonal self-loop weight, default 1), `maxIterations`, and
+ *   `attributes`, summed per edge for the similarity (default: 1 each)
+ * @returns one collection per attractor row, de-duplicated by member set
+ */
 export const markovClustering = ( coll: GpuCollection, options: MarkovClusteringOptions = {} ): GpuCollection[] => {
   const expandFactor = options.expandFactor ?? 2;
   const inflateFactor = options.inflateFactor ?? 2;

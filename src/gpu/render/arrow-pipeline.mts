@@ -36,6 +36,20 @@ export class ArrowPipeline {
   /** cached bind groups per (frame uniform, end) */
   private bindGroups: Map<GPUBuffer, { groups: [ GPUBindGroup, GPUBindGroup, GPUBindGroup, GPUBindGroup ]; version: number }>;
 
+  /**
+   * Builds the endpoint and mid-arrow pipelines and writes the four
+   * one-word End uniforms (target, source, mid-target, mid-source) once —
+   * they are immutable for the pipeline's lifetime, so the per-end bind
+   * groups differ only in that uniform and the matching arrow colour
+   * column.
+   *
+   * @param device — the device that owns the pipelines, End uniforms and
+   * quad index
+   * @param format — the scene colour target's format; arrows never draw
+   * into the pick target
+   * @param visibleLayout — the edge culler's @group(1) layout, since
+   * arrows ride the edge visible list
+   */
   constructor( device: GPUDevice, format: GPUTextureFormat, visibleLayout: GPUBindGroupLayout ){
     const module = device.createShaderModule( { label: 'cy-gpu:arrow-shader', code: ARROW_SHADER } );
 
@@ -148,6 +162,23 @@ export class ArrowPipeline {
     return groups;
   }
 
+  /**
+   * The endpoint arrowhead draw: up to two indirect draws over the edge
+   * visible list, target end first so a source arrow composites over it
+   * where they overlap.  Encoded after the edges and under the nodes.
+   *
+   * @param pass — the scene render pass being encoded
+   * @param device — the device, for lazy bind group rebuilds
+   * @param uniform — the Frame uniform; the four per-end bind groups are
+   * cached together per uniform buffer
+   * @param mirror — the column mirror; its `version` drives the rebuild
+   * @param instances — the culled edge count, used only to skip an empty
+   * draw; the indirect buffer carries the real count
+   * @param cull — the culled edge group; its compute pass must already be
+   * encoded
+   * @param ends — which ends the stylesheet actually uses; a false end
+   * skips its whole draw rather than collapsing quads in the VS
+   */
   draw(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
     mirror: ColumnMirror, instances: number, cull: CulledGroup,

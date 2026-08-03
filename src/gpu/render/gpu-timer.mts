@@ -41,10 +41,25 @@ export class GpuTimer {
   private ring: RingSlot[];
   private destroyed: boolean;
 
+  /**
+   * Whether this device can be timed.  The feature has to be requested at
+   * device creation, so a device that could have supported it but did not
+   * ask reports false here; construct a GpuTimer only when this passes.
+   *
+   * @param device — the device to test
+   */
   static isSupported( device: GPUDevice ): boolean {
     return device.features.has( 'timestamp-query' );
   }
 
+  /**
+   * Allocates the six-timestamp query set, its resolve buffer and the
+   * two-slot staging ring.  Only call after isSupported() — creating a
+   * timestamp query set on a device without the feature is a validation
+   * error.
+   *
+   * @param device — the device that owns the query set and buffers
+   */
   constructor( device: GPUDevice ){
     this.lastMs = 0;
     this.destroyed = false;
@@ -121,6 +136,12 @@ export class GpuTimer {
     return () => { void this.read( slot ); };
   }
 
+  /**
+   * Destroys the query set and every buffer, and latches encodeResolve()
+   * to null so no further frame is timed.  Readings already in flight
+   * fail their mapAsync and are swallowed, so destroying mid-frame is
+   * safe; `lastMs` keeps its final value.
+   */
   destroy(): void {
     this.destroyed = true;
     this.querySet.destroy();

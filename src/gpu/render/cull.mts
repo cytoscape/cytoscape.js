@@ -605,15 +605,36 @@ const CULL_SHADERS: Record<CullKind, string> = {
 /** Compiled cull pipelines + the group(1) visible-list layout shared with
  * the render pipelines.  One instance per device. */
 export class CullKernels {
+  /** the device every pipeline here belongs to; CulledGroups read it
+   * rather than taking a device of their own, so a group can never be
+   * built against a different device than its kernels */
   device: GPUDevice;
   /** bind group layout for the render pipelines' @group(1) visible list */
   visibleLayout: GPUBindGroupLayout;
+  /** per kind, the compute bind group layout: frame + meta uniforms, the
+   * kind's INPUT_COUNTS storage inputs, then wgCounts/wgOffsets/visible */
   cullLayouts: Record<CullKind, GPUBindGroupLayout>;
+  /** per kind, the csCount dispatch — survivors per 256-slot workgroup */
   countPipelines: Record<CullKind, GPUComputePipeline>;
+  /** per kind, the csScatter dispatch — writes the visible list; must be
+   * dispatched after that kind's count and scan */
   scatterPipelines: Record<CullKind, GPUComputePipeline>;
+  /** bind group layout for the kind-independent scan dispatch */
   scanLayout: GPUBindGroupLayout;
+  /** the single csScan pipeline, shared by every kind: prefix-scans the
+   * workgroup counts and writes both indirect args blocks */
   scanPipeline: GPUComputePipeline;
 
+  /**
+   * Compiles a count and a scatter pipeline for every CullKind plus the
+   * one shared scan pipeline, and creates the @group(1) layout the render
+   * pipelines are built against.  Expensive enough to be a one-per-device
+   * object: every CulledGroup and every render pipeline shares one
+   * instance, and pipelines must be built from *this* visibleLayout for
+   * the groups' bind groups to be accepted.
+   *
+   * @param device — the device that owns every layout and pipeline
+   */
   constructor( device: GPUDevice ){
     this.device = device;
 
@@ -711,6 +732,21 @@ export class CulledGroup {
   private bindKey: string;
   private destroyed: boolean;
 
+  /**
+   * Allocates only the two fixed-size buffers (the meta uniform and the
+   * indirect args).  The visible list and the workgroup scratch depend on
+   * capacity and are allocated by the first ensure(), so a group costs
+   * almost nothing until it is first used — which is why the scene and
+   * pick passes can each afford a full set.
+   *
+   * @param kernels — the shared kernels; also supplies the device
+   * @param kind — which predicate this stream culls with; fixes the
+   * bind group layout and the input order ensure() expects
+   * @param label — debug-label prefix for this group's buffers
+   * @param indexCount — indices per drawn instance written into the
+   * primary args block: 6 for a quad, 6 × CURVE_SEGS for a curved strip.
+   * The single-quad block at QUAD_ARGS_OFFSET is always 6.
+   */
   constructor( kernels: CullKernels, kind: CullKind, label: string, indexCount: number = 6 ){
     this.kernels = kernels;
     this.kind = kind;
@@ -847,6 +883,12 @@ export class CulledGroup {
     pass.dispatchWorkgroups( numWg );
   }
 
+  /**
+   * Destroys this stream's buffers immediately; idempotent.  Unlike the
+   * deferred destroys in ensure() nothing waits on submitted work, so the
+   * caller must already have stopped encoding passes and draws against
+   * this group.  The shared kernels are not touched.
+   */
   destroy(): void {
     if( this.destroyed ){ return; }
 

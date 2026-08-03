@@ -890,6 +890,18 @@ export class GpuCore {
    *   `( events, predicate, handler )` triple, since predicates compare
    *   by function identity
    */
+  on( events: string, callback: EventHandler ): this;
+  /**
+   * Listen with predicate delegation: the handler runs only for events
+   * whose target satisfies `predicate`.
+   *
+   * @param events — one or more space-separated event names
+   * @param predicate — `( ele ) => boolean` over the event target; only
+   *   runs for element targets
+   * @param callback — the handler
+   * @returns this core, for chaining
+   */
+  on( events: string, predicate: ElePredicate, callback: EventHandler ): this;
   on( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
     if( callback != null ){
       this._emitter.on( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
@@ -915,6 +927,16 @@ export class GpuCore {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
+  one( events: string, callback: EventHandler ): this;
+  /**
+   * Like `on()` with delegation, but the handler runs at most once.
+   *
+   * @param events — one or more space-separated event names
+   * @param predicate — `( ele ) => boolean` over the event target
+   * @param callback — the handler
+   * @returns this core, for chaining
+   */
+  one( events: string, predicate: ElePredicate, callback: EventHandler ): this;
   one( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
     if( callback != null ){
       this._emitter.one( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );
@@ -940,6 +962,18 @@ export class GpuCore {
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
    */
+  off( events: string, callback?: EventHandler ): this;
+  /**
+   * Remove a delegated handler.  The predicate must be the *same
+   * function object* it was registered with — predicates compare by
+   * identity, not by structure.
+   *
+   * @param events — one or more space-separated event names
+   * @param predicate — the predicate the handler was added with
+   * @param callback — the handler to remove
+   * @returns this core, for chaining
+   */
+  off( events: string, predicate: ElePredicate, callback: EventHandler ): this;
   off( events: string, predicateOrCb?: ElePredicate | EventHandler, callback?: EventHandler ): this {
     if( callback != null ){
       this._emitter.off( events, predicateQualifier( predicateOrCb as ElePredicate ), callback );

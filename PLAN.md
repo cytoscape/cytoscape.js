@@ -6142,10 +6142,37 @@ release.
 - [ ] **26.4 The internal subsystems** — `store/`, `render/`,
   `interact/`, `algorithms/`: classes and functions documented for
   the next maintainer rather than for the docs site.
-- [ ] **26.5 Shipped declarations for `cytoscape/gpu`** — the dts
-  build wired for the gpu entry, the `./gpu` export's `types` key,
-  and a types-surface test that pins the exported shape and proves
-  the doc comments survive into the declarations.
+- [x] **26.5 Shipped declarations for `cytoscape/gpu`**
+  (2026-08-02) — landed: `rolldown.dts.gpu.config.mjs` rolls the
+  prototype's declarations up (the existing pipeline, pointed at
+  `src/gpu/index.mts`), `build-dts.mjs` gained `finalizeGpuDts`
+  (the gpu entry is ESM-only — the `./gpu` export has no `require`
+  condition — so no export-assignment reshaping is needed, only the
+  UMD global name), `build:types` builds both entries, and the
+  `./gpu` export gained its `types` key.  Two tests: the
+  `test:types:gpu` shape audit (default export, the 37-name type
+  surface with no leaks, the three factory statics — expando
+  properties a declaration bundler is most likely to drop silently
+  — and a floor on the JSDoc blocks reaching the shipped file) and
+  `typescript/tests/gpu.test-d.ts`, a compile-only consumer test in
+  the existing `test:types` project.
+  **The comment pass pays off here**: 1089 JSDoc blocks reach
+  `dist/cytoscape-gpu.d.ts`, so round 26's prose is hover text in a
+  consumer's editor, not just a source-tree nicety — and the shape
+  audit's block-count floor keeps it that way.
+  Writing the consumer test found a real type-surface defect the
+  audit could not: `cy.on`/`one`/`off` declared their middle
+  argument as `ElePredicate | EventHandler`, and a union parameter
+  defeats contextual typing — so `cy.on( 'tap', ele => …, cb )`
+  gave `ele` an implicit `any` and did not compile under
+  `noImplicitAny`.  Split into explicit overloads (types only; the
+  implementation signature is unchanged), which also matches design
+  call 2: one doc block per signature is exactly docmaker's
+  `formats` array.  Recorded, not fixed: `event.target` is
+  `unknown`, because the event object is the shared v3 type and v3
+  stays untouched until release; a v4-specific event type would be
+  a design call, so consumers narrow it for now.
+  Typecheck, lint, and the full `test:types:all` chain clean.
 - [ ] **26.6 Closing docs sweep** — the standing rule: sweep both
   documents end to end, verify every section the round touched
   reads true, and land the fixes as the round's closing commit.

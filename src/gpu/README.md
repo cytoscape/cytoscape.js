@@ -1719,6 +1719,23 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   does X; v4 does Y because Z").  Round references (`(19.3)`,
   `(round 25)`) stay: they are how this codebase cites its own
   history.
+- **The declarations ship, with the docs in them** (26.5).
+  `cytoscape/gpu` has a real `.d.ts`: `rolldown.dts.gpu.config.mjs`
+  rolls the prototype's declarations up through the same pipeline
+  the v3 entry uses, `build-dts.mjs` finalizes it (the gpu entry is
+  ESM-only — the `./gpu` export has no `require` condition — so it
+  keeps the generated ESM shape and only gains the UMD global
+  name), and the `./gpu` export carries a `types` condition.  Over
+  a thousand JSDoc blocks survive into `dist/cytoscape-gpu.d.ts`,
+  so the comments above are hover text in a consumer's editor —
+  which is what makes the pass pay off now rather than at release.
+  Two guards: `npm run test:types:gpu` audits the shipped shape
+  (default export, the named type surface with no leaks, the
+  factory's statics, and a floor on the surviving doc blocks) and
+  `typescript/tests/gpu.test-d.ts` is a compile-only consumer test
+  in the `test:types` project.  Recorded: `event.target` types as
+  `unknown` because the event object is still the shared v3 type;
+  a v4-specific event type is an open call, so consumers narrow it.
 - **Coverage is enforced.**  `scripts/gpu-jsdoc-coverage.mjs`
   audits every member of an exported class whose name does not
   start with `_`, split into a public-API tier (the entry point,

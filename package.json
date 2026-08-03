@@ -61,6 +61,7 @@
       "require": "./dist/cytoscape.min.js"
     },
     "./gpu": {
+      "types": "./dist/cytoscape-gpu.d.ts",
       "import": "./dist/cytoscape-gpu.esm.mjs"
     }
   },
@@ -69,7 +70,7 @@
   "scripts": {
     "lint": "oxlint src",
     "typecheck": "tsc --noEmit",
-    "build:types": "rolldown -c rolldown.dts.config.mjs && node build-dts.mjs",
+    "build:types": "rolldown -c rolldown.dts.config.mjs && rolldown -c rolldown.dts.gpu.config.mjs && node build-dts.mjs",
     "gen:css-types": "node --import tsx scripts/gen-css-types.mjs",
     "test:types": "run-s build:types test:types:run",
     "test:types:run": "tsc -p tsconfig.types-test.json",
@@ -77,13 +78,15 @@
     "test:types:docs:run": "node test/types-docmaker-surface.mjs",
     "test:types:css": "run-s build:types test:types:css:run",
     "test:types:css:run": "node --import tsx test/types-css-surface.mjs",
+    "test:types:gpu": "run-s build:types test:types:gpu:run",
+    "test:types:gpu:run": "node test/types-gpu-surface.mjs",
     "test:types:exports": "run-s build:types test:types:exports:run",
     "test:types:exports:run": "node test/types-exports.mjs",
     "test:types:compat": "run-s build:types test:types:compat:run",
     "test:types:compat:run": "tsc -p tsconfig.types-compat.json",
     "test:types:fresh": "run-s build:types test:types:fresh:run",
     "test:types:fresh:run": "node --import tsx test/types-generated-fresh.mjs",
-    "test:types:all": "run-s build:types test:types:run test:types:docs:run test:types:css:run test:types:exports:run test:types:compat:run test:types:fresh:run",
+    "test:types:all": "run-s build:types test:types:run test:types:docs:run test:types:css:run test:types:exports:run test:types:gpu:run test:types:compat:run test:types:fresh:run",
     "build": "rolldown -c",
     "build:esm": "cross-env FILE=esm rolldown -c",
     "build:esm.min": "cross-env FILE=esm.min rolldown -c",

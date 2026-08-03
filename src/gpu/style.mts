@@ -11,10 +11,14 @@ import {
   FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_SELF_INVISIBLE, FLAG_TEXT_EVENTS,
   LABEL_MARGIN,
   LINE_DASHED, LINE_DOTTED, LINE_SOLID,
+  SHAPE_BOTTOM_ROUND_RECTANGLE,
   SHAPE_CIRCLE, SHAPE_CONCAVE_HEXAGON, SHAPE_CUT_RECTANGLE, SHAPE_DIAMOND,
   SHAPE_ELLIPSE, SHAPE_HEPTAGON, SHAPE_HEXAGON,
   SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RECTANGLE, SHAPE_RHOMBOID, SHAPE_RIGHT_RHOMBOID,
-  SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_RECTANGLE, SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
+  SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_RECTANGLE,
+  SHAPE_ROUND_DIAMOND, SHAPE_ROUND_HEPTAGON, SHAPE_ROUND_HEXAGON,
+  SHAPE_ROUND_OCTAGON, SHAPE_ROUND_PENTAGON, SHAPE_ROUND_TAG, SHAPE_ROUND_TRIANGLE,
+  SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
 import { SCHEMES, resolveScheme, hexToRgb } from './style-schemes.mjs';
 import {
@@ -548,7 +552,16 @@ const SHAPES: Record<string, number> = {
   // round 27.2
   'right-rhomboid': SHAPE_RIGHT_RHOMBOID,
   'concave-hexagon': SHAPE_CONCAVE_HEXAGON,
-  'cut-rectangle': SHAPE_CUT_RECTANGLE
+  'cut-rectangle': SHAPE_CUT_RECTANGLE,
+  // round 27.4
+  'round-triangle': SHAPE_ROUND_TRIANGLE,
+  'round-diamond': SHAPE_ROUND_DIAMOND,
+  'round-pentagon': SHAPE_ROUND_PENTAGON,
+  'round-hexagon': SHAPE_ROUND_HEXAGON,
+  'round-heptagon': SHAPE_ROUND_HEPTAGON,
+  'round-octagon': SHAPE_ROUND_OCTAGON,
+  'round-tag': SHAPE_ROUND_TAG,
+  'bottom-round-rectangle': SHAPE_BOTTOM_ROUND_RECTANGLE
 };
 
 /** RGBA bytes packed little-endian, matching WGSL unpack4x8unorm. */
@@ -585,7 +598,15 @@ const SHAPE_NAMES: Record<number, string> = {
   [ SHAPE_POLYGON_CUSTOM ]: 'polygon',
   [ SHAPE_RIGHT_RHOMBOID ]: 'right-rhomboid',
   [ SHAPE_CONCAVE_HEXAGON ]: 'concave-hexagon',
-  [ SHAPE_CUT_RECTANGLE ]: 'cut-rectangle'
+  [ SHAPE_CUT_RECTANGLE ]: 'cut-rectangle',
+  [ SHAPE_ROUND_TRIANGLE ]: 'round-triangle',
+  [ SHAPE_ROUND_DIAMOND ]: 'round-diamond',
+  [ SHAPE_ROUND_PENTAGON ]: 'round-pentagon',
+  [ SHAPE_ROUND_HEXAGON ]: 'round-hexagon',
+  [ SHAPE_ROUND_HEPTAGON ]: 'round-heptagon',
+  [ SHAPE_ROUND_OCTAGON ]: 'round-octagon',
+  [ SHAPE_ROUND_TAG ]: 'round-tag',
+  [ SHAPE_BOTTOM_ROUND_RECTANGLE ]: 'bottom-round-rectangle'
 };
 
 /** Readable props per group ('width' and 'opacity' exist for both). */

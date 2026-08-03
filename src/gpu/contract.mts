@@ -152,6 +152,27 @@ export const SHAPE_CUT_RECTANGLE = 17;
 /** v3's default cut-rectangle chamfer, in model px (`getCutRectangleCornerLength`). */
 export const CUT_RECTANGLE_CORNER = 8;
 
+// round 27.4: the round-corner family.  Each of these reuses its sharp
+// counterpart's point table (v3 does the same) and rounds every corner
+// with a tangent arc, so they cost one shared SDF rather than seven.
+export const SHAPE_ROUND_TRIANGLE = 18;
+export const SHAPE_ROUND_DIAMOND = 19;
+export const SHAPE_ROUND_PENTAGON = 20;
+export const SHAPE_ROUND_HEXAGON = 21;
+export const SHAPE_ROUND_HEPTAGON = 22;
+export const SHAPE_ROUND_OCTAGON = 23;
+export const SHAPE_ROUND_TAG = 24;
+export const SHAPE_BOTTOM_ROUND_RECTANGLE = 25;
+
+/**
+ * v3's `getRoundPolygonRadius`: the 'auto' corner radius for the
+ * round-* family, in model px.  A *third* meaning for one prop —
+ * round-rectangle uses min(w/4, h/4, 8) and cut-rectangle a flat 8 —
+ * which is v3's behaviour, not a v4 invention.
+ */
+export const ROUND_POLYGON_RADIUS_DIV = 10;
+export const ROUND_POLYGON_RADIUS_MAX = 8;
+
 /*
 The node shape id rides `borderGeom.y` alongside the border position
 (bits 0..7).  Round 27.1 widened the field from four bits to a full byte

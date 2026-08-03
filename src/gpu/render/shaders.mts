@@ -11,7 +11,7 @@ Colour columns are RGBA bytes bound as array<u32> and expanded with
 unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
-import { ARROW_POINTS, POLYGON_POINTS } from '../shape-points.mjs';
+import { ARROW_POINTS, POLYGON_POINTS, ROUND_POLYGON_SOURCE } from '../shape-points.mjs';
 import { IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL, SDF_IMAGE_SIZE as SDF_IMAGE_SIZE_WGSL } from '../image-registry.mjs';
 import {
   AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS, MAX_CURVE_PTS
@@ -22,7 +22,9 @@ import {
   ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
   ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, CUT_RECTANGLE_CORNER,
-  SHAPE_CUT_RECTANGLE, SHAPE_MASK, SHAPE_POLYGON_CUSTOM, SHAPE_SHIFT
+  ROUND_POLYGON_RADIUS_DIV, ROUND_POLYGON_RADIUS_MAX,
+  SHAPE_BOTTOM_ROUND_RECTANGLE, SHAPE_CUT_RECTANGLE, SHAPE_MASK,
+  SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_TAG, SHAPE_ROUND_TRIANGLE, SHAPE_SHIFT
 } from '../contract.mjs';
 
 /**
@@ -1004,6 +1006,73 @@ fn poly${ id }SD(p: vec2f, half: vec2f) -> f32 {
     cases += `    case ${ id }u: { return poly${ id }SD(p, half); }\n`;
   }
 
+  // Round-corner shapes (27.4).  A polygon with every corner replaced by
+  // a tangent arc of radius r is exactly the Minkowski sum of the
+  // *inward-offset* polygon with a disc of radius r — so the distance
+  // field is sdPolygon(offset) - r, which stays exact under anisotropic
+  // scaling where the naive "offset the sharp polygon's SDF" does not.
+  // That anisotropy is precisely why the family was deferred in round 13.
+  //
+  // The offset vertices are the standard miter form
+  //   o = v + r * (n1 + n2) / (1 + dot(n1, n2))
+  // with n1/n2 the inward edge normals.  The winding sign is folded in
+  // at codegen (signed area), so the shader does no orientation test.
+  for( const [ id, source ] of ROUND_POLYGON_SOURCE ){
+    const pts = POLYGON_POINTS.get( source ) as readonly number[];
+    const n = pts.length / 2;
+    const lits = Array.from( { length: n }, ( _, i ) =>
+      `vec2f(${ fmtF32( pts[ i * 2 ] ) }, ${ fmtF32( pts[ i * 2 + 1 ] ) })` ).join( ', ' );
+
+    // signed area in unit space: positive means counter-clockwise, which
+    // decides which perpendicular of an edge points into the shape
+    let area2 = 0;
+
+    for( let i = 0; i < n; i++ ){
+      const j = ( i + 1 ) % n;
+
+      area2 += pts[ i * 2 ] * pts[ j * 2 + 1 ] - pts[ j * 2 ] * pts[ i * 2 + 1 ];
+    }
+
+    const wind = area2 > 0 ? '1.0' : '-1.0';
+
+    fns += `
+fn roundPoly${ id }SD(p: vec2f, half: vec2f, r: f32) -> f32 {
+  var v = array<vec2f, ${ n }>(${ lits });
+  for (var k = 0; k < ${ n }; k++) { v[k] = v[k] * half; }
+  // keep the offset polygon non-degenerate; v3's 'auto' radius is well
+  // inside this, and an over-large explicit corner-radius clamps here
+  let rr = min(r, min(half.x, half.y) * 0.5);
+  var o = array<vec2f, ${ n }>();
+  for (var i = 0; i < ${ n }; i++) {
+    let prev = v[(i + ${ n - 1 }) % ${ n }];
+    let next = v[(i + 1) % ${ n }];
+    let e1 = normalize(v[i] - prev);
+    let e2 = normalize(next - v[i]);
+    let n1 = vec2f(-e1.y, e1.x) * ${ wind };
+    let n2 = vec2f(-e2.y, e2.x) * ${ wind };
+    let denom = 1.0 + dot(n1, n2);
+    o[i] = v[i] + select(vec2f(0.0), (n1 + n2) * (rr / denom), denom > 1e-4);
+  }
+  var d = dot(p - o[0], p - o[0]);
+  var s = 1.0;
+  var j = ${ n - 1 };
+  for (var i = 0; i < ${ n }; i++) {
+    let e = o[j] - o[i];
+    let w = p - o[i];
+    let b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(b, b));
+    let c1 = p.y >= o[i].y;
+    let c2 = p.y < o[j].y;
+    let c3 = e.x * w.y > e.y * w.x;
+    if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) { s = -s; }
+    j = i;
+  }
+  return s * sqrt(d) - rr;
+}
+`;
+    cases += `    case ${ id }u: { return roundPoly${ id }SD(p, half, radius); }\n`;
+  }
+
   return { fns, cases };
 };
 
@@ -1134,6 +1203,17 @@ fn cutRectangleSD(p: vec2f, half: vec2f, cut: f32) -> f32 {
   return max(rectangleSD(p, half), diag);
 }
 
+// v3's bottom-round-rectangle (27.4): only the two bottom corners are
+// rounded.  Built from the round-rectangle field with the top corners'
+// radius set to zero, which is a per-corner radius selected by the sign
+// of p.y — exact, since the box SDF is separable that way.
+fn bottomRoundRectangleSD(p: vec2f, half: vec2f, r: f32) -> f32 {
+  let rr = select(0.0, min(r, min(half.x, half.y)), p.y > 0.0);
+  let q = abs(p) - half + vec2f(rr, rr);
+
+  return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0))) - rr;
+}
+
 // shape ids match contract.mts: 0 circle, 1 ellipse, 2 rectangle,
 // 3 round-rectangle, 4+ generated polygon shapes, 14 custom polygon
 // (C3 — polyRef packs its blob record), 17 cut-rectangle (27.2).
@@ -1147,6 +1227,7 @@ fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32) -> f32 {
 ${ POLY.cases }
     case ${ SHAPE_POLYGON_CUSTOM }u: { return customPolySD(p, half, polyRef); }
     case ${ SHAPE_CUT_RECTANGLE }u: { return cutRectangleSD(p, half, radius); }
+    case ${ SHAPE_BOTTOM_ROUND_RECTANGLE }u: { return bottomRoundRectangleSD(p, half, radius); }
     default: { return roundRectangleSD(p, half, min(radius, min(half.x, half.y))); }
   }
 }
@@ -1163,8 +1244,17 @@ fn cornerRadiusPx(stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
 // size-relative rule — the two shapes read one prop with two defaults,
 // as they do in v3.
 fn cornerLengthPx(shape: u32, stored: u32, half: vec2f, zoomDpr: f32) -> f32 {
-  if (shape == ${ SHAPE_CUT_RECTANGLE }u && stored == 0xffffffffu) {
-    return ${ CUT_RECTANGLE_CORNER }.0 * zoomDpr;
+  if (stored == 0xffffffffu) {
+    if (shape == ${ SHAPE_CUT_RECTANGLE }u) {
+      return ${ CUT_RECTANGLE_CORNER }.0 * zoomDpr;
+    }
+    // 27.4: the round-* family's 'auto' is v3's getRoundPolygonRadius —
+    // a third meaning for the one prop, as in v3
+    if (shape >= ${ SHAPE_ROUND_TRIANGLE }u && shape <= ${ SHAPE_ROUND_TAG }u) {
+      return min(
+        min(half.x, half.y) * 2.0 / ${ ROUND_POLYGON_RADIUS_DIV }.0,
+        ${ ROUND_POLYGON_RADIUS_MAX }.0 * zoomDpr);
+    }
   }
   return cornerRadiusPx(stored, half, zoomDpr);
 }

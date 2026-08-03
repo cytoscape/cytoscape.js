@@ -1,6 +1,8 @@
 import { expect } from 'chai';
 import cytoscapeGpu from '../src/gpu/index.mjs';
-import { POLYGON_POINTS } from '../src/gpu/shape-points.mjs';
+import {
+  POLYGON_POINTS, ROUND_POLYGON_SOURCE, pointsForShape
+} from '../src/gpu/shape-points.mjs';
 import {
   SHAPE_CONCAVE_HEXAGON, SHAPE_CUT_RECTANGLE, SHAPE_RIGHT_RHOMBOID,
   SHAPE_MASK, SHAPE_SHIFT
@@ -122,6 +124,63 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
 
   });
 
+  describe('the round-corner family (27.4)', function(){
+
+    const ROUND = [
+      'round-triangle', 'round-diamond', 'round-pentagon', 'round-hexagon',
+      'round-heptagon', 'round-octagon', 'round-tag'
+    ];
+
+    it('compiles, stores and reads back every keyword', function(){
+      for( const keyword of ROUND.concat( [ 'bottom-round-rectangle' ] ) ){
+        const cy = makeCy( { shape: keyword } );
+
+        expect( cy.$id( 'a' ).style( 'shape' ), keyword ).to.equal( keyword );
+        cy.destroy();
+      }
+    });
+
+    it('reuses its sharp counterpart\'s point table, as v3 does', function(){
+      for( const round of ROUND ){
+        const cy = makeCy( { shape: round } );
+        const id = shapeIdOf( cy );
+        const source = ROUND_POLYGON_SOURCE.get( id );
+
+        expect( source, `${round} has a source table` ).to.be.a( 'number' );
+        expect( pointsForShape( id ), round ).to.equal( POLYGON_POINTS.get( source ) );
+        cy.destroy();
+      }
+    });
+
+    it('has no point table of its own — the rounding is in the field', function(){
+      for( const round of ROUND ){
+        const cy = makeCy( { shape: round } );
+
+        expect( POLYGON_POINTS.has( shapeIdOf( cy ) ), round ).to.equal( false );
+        cy.destroy();
+      }
+    });
+
+    it('takes an explicit corner-radius', function(){
+      const cy = makeCy( { shape: 'round-hexagon', 'corner-radius': 12 } );
+
+      expect( cy.$id( 'a' ).style( 'corner-radius' ) ).to.equal( 12 );
+      cy.destroy();
+    });
+
+    it('picks inside the body (the rounded field agrees with the sharp one there)', function(){
+      // rounding only removes area near the corners, so a point well
+      // inside the sharp polygon must stay inside the rounded one
+      const round = makeCy( { shape: 'round-hexagon' } );
+      const sharp = makeCy( { shape: 'hexagon' } );
+
+      expect( round.$id( 'a' ).boundingBox().w ).to.equal( sharp.$id( 'a' ).boundingBox().w );
+      round.destroy();
+      sharp.destroy();
+    });
+
+  });
+
   describe('the keyword set', function(){
 
     it('still rejects a keyword v4 has not ported', function(){
@@ -129,11 +188,25 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
     });
 
     it('accepts every ported keyword without throwing', function(){
-      for( const keyword of [ 'right-rhomboid', 'concave-hexagon', 'cut-rectangle' ] ){
+      const ported = [
+        'right-rhomboid', 'concave-hexagon', 'cut-rectangle',
+        'round-triangle', 'round-diamond', 'round-pentagon', 'round-hexagon',
+        'round-heptagon', 'round-octagon', 'round-tag', 'bottom-round-rectangle'
+      ];
+
+      for( const keyword of ported ){
         const cy = makeCy( { shape: keyword } );
 
         expect( cy.$id( 'a' ).style( 'shape' ), keyword ).to.equal( keyword );
         cy.destroy();
+      }
+    });
+
+    it('every shape id still fits the widened field', function(){
+      const ids = [ ...POLYGON_POINTS.keys(), ...ROUND_POLYGON_SOURCE.keys() ];
+
+      for( const id of ids ){
+        expect( id, `shape id ${id}` ).to.be.at.most( SHAPE_MASK );
       }
     });
 

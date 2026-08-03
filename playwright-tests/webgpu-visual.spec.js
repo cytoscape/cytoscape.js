@@ -250,6 +250,43 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'shapes-27', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: the round-corner shape family (round 27.4)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    const shapes = [
+      'round-triangle', 'round-diamond', 'round-pentagon', 'round-hexagon',
+      'round-heptagon', 'round-octagon', 'round-tag', 'bottom-round-rectangle'
+    ];
+    const elements = shapes.map( ( shape, i ) => ( {
+      data: { id: shape, shape },
+      position: { x: ( i % 4 ) * 85 - 128, y: Math.floor( i / 4 ) * 85 - 42 }
+    } ) );
+
+    // the anisotropic case the family was deferred for: the corner arcs
+    // must stay circular while the body stretches
+    elements.push( { data: { id: 'wide', shape: 'round-pentagon' }, position: { x: 0, y: 110 } } );
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: {
+          'width': { case: [ { when: { data: 'id', eq: 'wide' }, then: 160 } ], else: 60 },
+          'height': { case: [ { when: { data: 'id', eq: 'wide' }, then: 44 } ], else: 60 },
+          'corner-radius': 12,
+          'shape': { case: shapes.map( shape => ( { when: { data: 'shape', eq: shape }, then: shape } ) ),
+            else: 'ellipse' },
+          'background-color': '#27ae60',
+          'border-width': 3, 'border-color': '#145a32'
+        }
+      },
+      zoom: 1,
+      pan: { x: 200, y: 130 }
+    } );
+    await waitFrames( page );
+
+    checkGolden( 'shapes-27-round', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: arrowhead shapes (round 10)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 
@@ -2346,6 +2383,68 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }, { elements, v3Style, v4Style } );
 
     expectParity( v3uri, v4uri, 'parity-arrow-size', testInfo );
+  } );
+
+  test( 'parity: the round-corner shape family (round 27.4)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // The round-* family was deferred in round 13 because corner-rounding
+    // an anisotropically scaled polygon has no clean closed form.  27.4
+    // builds the field as sdPolygon(inward-offset) - r, which *is* exact
+    // under anisotropy — so the scene deliberately includes a stretched
+    // node, and v3 is the judge.
+    const shapes = [
+      'round-triangle', 'round-diamond', 'round-pentagon', 'round-hexagon',
+      'round-heptagon', 'round-octagon', 'round-tag'
+    ];
+    const elements = shapes.map( ( shape, i ) => ( {
+      data: { id: shape, shape },
+      position: { x: ( i % 4 ) * 90 - 135, y: Math.floor( i / 4 ) * 90 - 45 }
+    } ) );
+
+    elements.push( { data: { id: 'wide', shape: 'round-hexagon' }, position: { x: 90, y: 45 } } );
+
+    // a deliberately large radius: at v3's 'auto' (6px here) the rounded
+    // and sharp outlines differ by only ~180px, so a generous radius is
+    // what makes a 0-pixel result mean something
+    const nodeStyle = {
+      'background-color': '#3498db', 'border-width': 3, 'border-color': '#2c3e50',
+      'corner-radius': 14
+    };
+    const v3Style = [
+      { selector: 'node', style: { 'width': 60, 'height': 60, ...nodeStyle } },
+      { selector: 'node[id = "wide"]', style: { 'width': 120, 'height': 44 } },
+      ...shapes.map( shape => ( { selector: `node[shape = "${shape}"]`, style: { shape } } ) )
+    ];
+    const v4Style = {
+      nodes: {
+        'width': { case: [ { when: { data: 'id', eq: 'wide' }, then: 120 } ], else: 60 },
+        'height': { case: [ { when: { data: 'id', eq: 'wide' }, then: 44 } ], else: 60 },
+        'shape': { case: shapes.map( shape => ( { when: { data: 'shape', eq: shape }, then: shape } ) ),
+          else: 'ellipse' },
+        ...nodeStyle
+      }
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    expectParity( v3uri, v4uri, 'parity-round-shapes', testInfo );
   } );
 
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {

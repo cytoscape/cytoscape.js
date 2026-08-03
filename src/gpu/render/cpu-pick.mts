@@ -1,11 +1,12 @@
 import {
   FLAG_ALIVE, FLAG_DRAWN, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS,
-  CUT_RECTANGLE_CORNER,
+  CUT_RECTANGLE_CORNER, ROUND_POLYGON_RADIUS_DIV, ROUND_POLYGON_RADIUS_MAX,
+  SHAPE_BOTTOM_ROUND_RECTANGLE,
   SHAPE_CIRCLE, SHAPE_CUT_RECTANGLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM,
-  SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE
+  SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE, SHAPE_ROUND_TAG, SHAPE_ROUND_TRIANGLE
 } from '../contract.mjs';
 import type { ModelView } from '../contract.mjs';
-import { POLYGON_POINTS, insideUnitPolygon } from '../shape-points.mjs';
+import { POLYGON_POINTS, ROUND_POLYGON_SOURCE, insideUnitPolygon } from '../shape-points.mjs';
 
 /*
 Synchronous CPU node picking.
@@ -106,7 +107,12 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
       ? storedR / 256 * frame.zoomDpr
       : shape === SHAPE_CUT_RECTANGLE
         ? CUT_RECTANGLE_CORNER * frame.zoomDpr
-        : Math.min( Math.min( hw, hh ) * 0.5, 8 * frame.zoomDpr );
+        : shape >= SHAPE_ROUND_TRIANGLE && shape <= SHAPE_ROUND_TAG
+          // 27.4: v3's getRoundPolygonRadius, the family's own 'auto'
+          ? Math.min(
+            Math.min( hw, hh ) * 2 / ROUND_POLYGON_RADIUS_DIV,
+            ROUND_POLYGON_RADIUS_MAX * frame.zoomDpr )
+          : Math.min( Math.min( hw, hh ) * 0.5, 8 * frame.zoomDpr );
 
     // C3: custom polygons test their blob points (the same record the
     // FS reads — dual consumers of one ref, agreeing by construction)
@@ -157,13 +163,35 @@ function insideShape(
 
       return Math.min( Math.max( qx, qy ), 0 ) + Math.sqrt( mx * mx + my * my ) - r <= 0;
     }
+    case SHAPE_BOTTOM_ROUND_RECTANGLE: { // 27.4: only the bottom corners round
+      const r = dy > 0 ? Math.min( radius, Math.min( hw, hh ) ) : 0;
+      const qx = Math.abs( dx ) - hw + r;
+      const qy = Math.abs( dy ) - hh + r;
+      const mx = Math.max( qx, 0 );
+      const my = Math.max( qy, 0 );
+
+      return Math.min( Math.max( qx, qy ), 0 ) + Math.sqrt( mx * mx + my * my ) - r <= 0;
+    }
     case SHAPE_CUT_RECTANGLE: { // 27.2: the box intersected with the corner chamfers
       const c = Math.min( radius, Math.min( hw, hh ) );
 
       return Math.abs( dx ) <= hw && Math.abs( dy ) <= hh
         && Math.abs( dx ) + Math.abs( dy ) <= hw + hh - c;
     }
-    default: { // polygon shapes: inside-ness in normalized space (affine-invariant)
+    default: {
+      const round = ROUND_POLYGON_SOURCE.get( shape );
+
+      // 27.4: the round-* family is the offset polygon dilated by r, so
+      // inside-ness is a distance test in *device* space — unlike the
+      // sharp polygons, it is not affine-invariant and cannot be done in
+      // normalized space.  The twin of the shader's roundPolySD.
+      if( round != null ){
+        const points = POLYGON_POINTS.get( round ) as readonly number[];
+
+        return insideRoundPolygon( points, dx, dy, hw, hh, radius );
+      }
+
+      // polygon shapes: inside-ness in normalized space (affine-invariant)
       const points = POLYGON_POINTS.get( shape );
 
       if( points == null ){ return Math.abs( dx ) <= hw && Math.abs( dy ) <= hh; }
@@ -171,4 +199,89 @@ function insideShape(
       return insideUnitPolygon( points, dx / hw, dy / hh );
     }
   }
+}
+
+/**
+ * Inside-ness for a round-corner polygon (27.4): miter-offset the scaled
+ * vertices inward by r, then test the point against that polygon dilated
+ * by r — the CPU twin of the shader's generated `roundPoly*SD`, built
+ * from the same table so the two agree by construction.
+ *
+ * @param unit — the sharp shape's flat unit point list
+ * @param dx — the point's x offset from the node centre, device px
+ * @param dy — the point's y offset from the node centre, device px
+ * @param hw — half width, device px
+ * @param hh — half height, device px
+ * @param radius — the resolved corner radius, device px
+ * @returns true when the point is inside the rounded outline
+ */
+function insideRoundPolygon(
+  unit: readonly number[], dx: number, dy: number, hw: number, hh: number, radius: number
+): boolean {
+  const n = unit.length / 2;
+  const r = Math.min( radius, Math.min( hw, hh ) * 0.5 );
+  const vx = new Array<number>( n );
+  const vy = new Array<number>( n );
+
+  for( let i = 0; i < n; i++ ){
+    vx[ i ] = unit[ i * 2 ] * hw;
+    vy[ i ] = unit[ i * 2 + 1 ] * hh;
+  }
+
+  let area2 = 0;
+
+  for( let i = 0; i < n; i++ ){
+    const j = ( i + 1 ) % n;
+
+    area2 += vx[ i ] * vy[ j ] - vx[ j ] * vy[ i ];
+  }
+
+  const wind = area2 > 0 ? 1 : -1;
+  const ox = new Array<number>( n );
+  const oy = new Array<number>( n );
+
+  for( let i = 0; i < n; i++ ){
+    const p = ( i + n - 1 ) % n;
+    const q = ( i + 1 ) % n;
+    let e1x = vx[ i ] - vx[ p ];
+    let e1y = vy[ i ] - vy[ p ];
+    let e2x = vx[ q ] - vx[ i ];
+    let e2y = vy[ q ] - vy[ i ];
+    const l1 = Math.hypot( e1x, e1y ) || 1;
+    const l2 = Math.hypot( e2x, e2y ) || 1;
+
+    e1x /= l1; e1y /= l1; e2x /= l2; e2y /= l2;
+
+    const n1x = -e1y * wind, n1y = e1x * wind;
+    const n2x = -e2y * wind, n2y = e2x * wind;
+    const denom = 1 + ( n1x * n2x + n1y * n2y );
+    const k = denom > 1e-4 ? r / denom : 0;
+
+    ox[ i ] = vx[ i ] + ( n1x + n2x ) * k;
+    oy[ i ] = vy[ i ] + ( n1y + n2y ) * k;
+  }
+
+  // signed distance to the offset polygon, then dilate by r
+  let d = ( dx - ox[ 0 ] ) ** 2 + ( dy - oy[ 0 ] ) ** 2;
+  let sign = 1;
+
+  for( let i = 0, j = n - 1; i < n; j = i, i++ ){
+    const ex = ox[ j ] - ox[ i ];
+    const ey = oy[ j ] - oy[ i ];
+    const wx = dx - ox[ i ];
+    const wy = dy - oy[ i ];
+    const t = Math.max( 0, Math.min( 1, ( wx * ex + wy * ey ) / ( ex * ex + ey * ey ) ) );
+    const bx = wx - ex * t;
+    const by = wy - ey * t;
+
+    d = Math.min( d, bx * bx + by * by );
+
+    const c1 = dy >= oy[ i ];
+    const c2 = dy < oy[ j ];
+    const c3 = ex * wy > ey * wx;
+
+    if( ( c1 && c2 && c3 ) || ( !c1 && !c2 && !c3 ) ){ sign = -sign; }
+  }
+
+  return sign * Math.sqrt( d ) - r <= 0;
 }

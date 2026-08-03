@@ -5,6 +5,9 @@ import {
   ARROW_CHEVRON, ARROW_DIAMOND, ARROW_SQUARE, ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
   SHAPE_CONCAVE_HEXAGON, SHAPE_DIAMOND, SHAPE_HEPTAGON, SHAPE_HEXAGON,
   SHAPE_OCTAGON, SHAPE_PENTAGON, SHAPE_RHOMBOID, SHAPE_RIGHT_RHOMBOID,
+  SHAPE_ROUND_DIAMOND, SHAPE_ROUND_HEPTAGON, SHAPE_ROUND_HEXAGON,
+  SHAPE_ROUND_OCTAGON, SHAPE_ROUND_PENTAGON, SHAPE_ROUND_TAG,
+  SHAPE_ROUND_TRIANGLE,
   SHAPE_STAR, SHAPE_TAG, SHAPE_TRIANGLE, SHAPE_VEE
 } from './contract.mjs';
 
@@ -60,6 +63,35 @@ export const POLYGON_POINTS: ReadonlyMap<number, readonly number[]> = new Map( [
   [ SHAPE_CONCAVE_HEXAGON,
     [ -1, -0.95, -0.75, 0, -1, 0.95, 1, 0.95, 0.75, 0, 1, -0.95 ] ]
 ] );
+
+/**
+ * Round-corner shape id → the sharp shape whose point table it reuses
+ * (round 27.4).  v3 registers `round-pentagon` from the same
+ * `generateUnitNgonPointsFitToSquare( 5, 0 )` as `pentagon`, and so on,
+ * so the family costs one shared rounded-polygon SDF rather than seven
+ * new tables.
+ */
+export const ROUND_POLYGON_SOURCE: ReadonlyMap<number, number> = new Map( [
+  [ SHAPE_ROUND_TRIANGLE, SHAPE_TRIANGLE ],
+  [ SHAPE_ROUND_DIAMOND, SHAPE_DIAMOND ],
+  [ SHAPE_ROUND_PENTAGON, SHAPE_PENTAGON ],
+  [ SHAPE_ROUND_HEXAGON, SHAPE_HEXAGON ],
+  [ SHAPE_ROUND_HEPTAGON, SHAPE_HEPTAGON ],
+  [ SHAPE_ROUND_OCTAGON, SHAPE_OCTAGON ],
+  [ SHAPE_ROUND_TAG, SHAPE_TAG ]
+] );
+
+/**
+ * The unit point table a shape draws from, following the round-corner
+ * indirection.
+ *
+ * @param shape — a shape id
+ * @returns the flat unit point list, or undefined for shapes that are
+ *   not polygon-backed (circle, the rectangles, custom polygons)
+ */
+export const pointsForShape = ( shape: number ): readonly number[] | undefined => {
+  return POLYGON_POINTS.get( ROUND_POLYGON_SOURCE.get( shape ) ?? shape );
+};
 
 /**
  * Arrowhead polygon points per ARROW_* id, in v3's arrow frame: the tip at

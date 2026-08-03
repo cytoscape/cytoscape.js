@@ -6485,9 +6485,43 @@ commit(s)):
   noticing but not this pass's to absorb.
   2304 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu,
   70/70 webgpu-visual.
-- [ ] **27.4 The round-corner SDF** — the per-corner arc primitive
-  and its CPU twin, then the seven `round-*` keywords and
-  `bottom-round-rectangle`.
+- [x] **27.4 The round-corner SDF** (2026-08-02) — landed, and
+  with a better primitive than the plan called for.  The plan
+  proposed porting v3's per-corner arc construction; the identity
+  that makes it unnecessary is that **a polygon with every corner
+  replaced by a tangent arc of radius r is exactly the Minkowski
+  sum of the inward-offset polygon with a disc of radius r**.  So
+  the field is `sdPolygon( offset ) - r`, with the offset vertices
+  in the standard miter form
+  `o = v + r · (n1 + n2) / (1 + n1·n2)` — and that is exact under
+  anisotropic scaling, which is the precise reason round 13
+  deferred the family ("corner-rounding an anisotropically scaled
+  polygon has no clean closed form" — the README's recorded
+  deviation, now closed).  Winding is folded in at codegen from the
+  signed area, so the shader does no orientation test, and the
+  seven keywords reuse their sharp counterparts' point tables
+  exactly as v3 registers them (`ROUND_POLYGON_SOURCE`), so the
+  family costs one shared generated SDF rather than seven tables.
+  `bottom-round-rectangle` rides the round-rectangle field with the
+  radius selected by the sign of `p.y`.  `cpu-pick` gained the
+  matching `insideRoundPolygon` — note it is *not* affine-invariant
+  the way the sharp polygons are, so unlike them it must test in
+  device space.  The round family's `'auto'` is v3's
+  `getRoundPolygonRadius` = `min(w/10, h/10, 8)`: a **third**
+  meaning for `corner-radius`, after round-rectangle's
+  `min(w/4, h/4, 8)` and cut-rectangle's flat 8 — all three are
+  v3's, not v4 inventions.
+  **The parity diff is the proof**: a live v3-vs-v4 scene of all
+  seven keywords plus a deliberately stretched node differs by
+  **58 px (0.048%)**, pure arc anti-aliasing.  A control run with
+  v4 drawing the *sharp* shapes against v3's round ones was checked
+  first, to confirm the test discriminates at all, and the scene
+  uses a generous 14px radius for the same reason — at v3's 'auto'
+  the rounded and sharp outlines differ by only ~180px, which would
+  have made a clean result far less meaningful.  A
+  `shapes-27-round` golden covers the family plus the anisotropic
+  case.  17 Node specs; 2311 Node tests, 63 module tests,
+  typecheck, lint, 87/87 webgpu, 72/72 webgpu-visual.
 - [ ] **27.5 The quadratic-bezier SDF + `barrel`.**
 - [ ] **27.6 Compound arrow shapes** — `triangle-tee`,
   `circle-triangle`, `triangle-cross`, `triangle-backcurve`.

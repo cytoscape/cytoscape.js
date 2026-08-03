@@ -4206,7 +4206,16 @@ export class StyleEngine {
   (evaluating a fn sheet for that element).
   */
 
-  /** One resolved prop for a live element (undefined when the prop belongs to the other group). */
+  /**
+   * One resolved prop for a live element.
+   *
+   * @param ref — the element to read
+   * @param propRaw — a style property name
+   * @returns the stored value, or undefined when the prop belongs to the
+   *   other element group
+   * @throws if the name is not a v4 style property at all — a typo must
+   *   fail loudly rather than read as undefined
+   */
   readProp( ref: Ref, propRaw: string ): string | number | undefined {
     const prop = normalizeProp( propRaw );
 

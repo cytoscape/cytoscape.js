@@ -64,6 +64,41 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
 
   });
 
+  /*
+  Round 31.2: the same rule applied to what a member *throws*.  Round 26
+  settled that a doc comment states the contract — "what it takes, what it
+  returns, what it throws" — and gated the comment's existence, but nothing
+  checked that half of it.  Seven of the sixteen public members that throw
+  said so; the other nine did not, and these comments are the hover text
+  shipped in dist/cytoscape-gpu.d.ts.
+
+  This is gated where round 30's *test*-coverage measurement deliberately is
+  not, and the difference is the point: documentation completeness is already
+  a gated concern in this repo (round 26 made that call), so keeping @throws
+  complete maintains an existing gate rather than adding a new kind of one.
+  Removing it is this one describe block.
+
+  The audit under-detects on purpose — a member that throws only through a
+  helper is not flagged — so this never demands a tag a human would not.
+  */
+  describe('a public member that throws says so', function(){
+
+    it('every throwing public-API member carries an @throws tag', function(){
+      expect(
+        result.throwTags.missing,
+        'public members that throw with no @throws tag:\n  ' +
+        result.throwTags.missing.join( '\n  ' )
+      ).to.deep.equal( [] );
+    });
+
+    it('finds a non-trivial number of throwing members to check', function(){
+      // the same guard as the coverage floors: a regex change that audits
+      // nothing must not read as a pass
+      expect( result.throwTags.tagged ).to.be.at.least( 10 );
+    });
+
+  });
+
   describe('the audit itself', function(){
 
     it('classifies every listed public-API file', function(){

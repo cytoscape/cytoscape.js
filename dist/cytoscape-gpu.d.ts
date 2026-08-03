@@ -3121,7 +3121,16 @@ declare class StyleEngine {
   refreshMapped(group: GroupName, slots: ArrayLike<number>, keys: string[]): void;
   private refreshGroupDef;
   private refreshGroupDefInner;
-  /** One resolved prop for a live element (undefined when the prop belongs to the other group). */
+  /**
+   * One resolved prop for a live element.
+   *
+   * @param ref — the element to read
+   * @param propRaw — a style property name
+   * @returns the stored value, or undefined when the prop belongs to the
+   *   other element group
+   * @throws if the name is not a v4 style property at all — a typo must
+   *   fail loudly rather than read as undefined
+   */
   readProp(ref: Ref, propRaw: string): string | number | undefined;
   /** All resolved props of a live element's group. */
   readProps(ref: Ref): Record<string, string | number>;
@@ -4748,7 +4757,14 @@ declare class GpuCollection {
    */
   renderedStyle(name?: string): unknown;
   renderedCss: this['renderedStyle'];
-  /** The numeric value of a numeric style prop (throws for colors/keywords). */
+  /**
+   * The numeric value of a numeric style prop.
+   *
+   * @param name — a numeric style property
+   * @returns the number, or undefined when the collection is empty or the
+   *   prop belongs to the other group
+   * @throws if the prop resolves to a colour or a keyword rather than a number
+   */
   numericStyle(name: string): number | undefined;
   /** The rendered opacity: a node's own opacity times its ancestors'
    * (v3's product rule — the store keeps the folded value in the
@@ -6640,22 +6656,58 @@ declare class GpuCore {
    * How user selection composes: 'single' (a tap or box replaces the
    * selection) or 'additive' (taps toggle and boxes add, as if a
    * multiple-select key were always held).
+   *
+   * @param type — the mode to set; omit to read the current one
+   * @returns the mode, or this when setting
+   * @throws if `type` is neither 'single' nor 'additive'
    */
   selectionType(type?: 'single' | 'additive'): ('single' | 'additive') | this;
-  /** The dbltap/onetap debounce window in ms (v3 parity; default 250). */
+  /**
+   * The dbltap/onetap debounce window in ms (v3 parity; default 250).
+   *
+   * @param ms — the window to set; omit to read it
+   * @returns the window, or this when setting
+   * @throws if `ms` is not a finite non-negative number
+   */
   multiClickDebounceTime(ms?: number): number | this;
   /**
    * Wheel-zoom sensitivity: a multiplier on the zoom-per-wheel-tick
    * exponent (v3 parity; default 1).  Non-default values warn once per
    * instance, as v3 does — a custom sensitivity tuned on one mouse/OS
    * zooms unnaturally on others.
+   *
+   * @param mult — the multiplier to set; omit to read it
+   * @returns the multiplier, or this when setting
+   * @throws if `mult` is not a finite positive number (0 would freeze the
+   *   zoom, so the bound is strict where the threshold setters allow 0)
    */
   wheelSensitivity(mult?: number): number | this;
-  /** Css px a mouse/pen press may move and still count as a tap (v3 parity; default 4). */
+  /**
+   * Css px a mouse/pen press may move and still count as a tap (v3 parity;
+   * default 4).
+   *
+   * @param px — the threshold to set; omit to read it
+   * @returns the threshold, or this when setting
+   * @throws if `px` is not a finite non-negative number
+   */
   desktopTapThreshold(px?: number): number | this;
-  /** Css px a touch press may move and still count as a tap (v3 parity; default 8). */
+  /**
+   * Css px a touch press may move and still count as a tap (v3 parity;
+   * default 8).
+   *
+   * @param px — the threshold to set; omit to read it
+   * @returns the threshold, or this when setting
+   * @throws if `px` is not a finite non-negative number
+   */
   touchTapThreshold(px?: number): number | this;
-  /** Unmoved-press duration before 'taphold' fires, ms (default 500 — v3's constant, configurable in v4). */
+  /**
+   * Unmoved-press duration before 'taphold' fires, ms (default 500 — v3's
+   * constant, configurable in v4).
+   *
+   * @param ms — the duration to set; omit to read it
+   * @returns the duration, or this when setting
+   * @throws if `ms` is not a finite non-negative number
+   */
   tapholdDuration(ms?: number): number | this;
   /**
    * The type tag `'core'` — the counterpart of a collection's
@@ -6749,6 +6801,13 @@ declare class GpuCore {
    * (Re)attach a renderer to a container.  Re-mounting to a different
    * container unmounts first; the fresh renderer re-uploads every column
    * from the CPU-canonical model and rebuilds all glyph runs.
+   *
+   * @param container — the element to render into
+   * @returns this
+   * @throws if no container is given, if the instance was built directly
+   *   rather than through the `cytoscapeGpu` factory (there is no renderer
+   *   to attach), or if WebGPU is unavailable — mounting is the one way a
+   *   headless instance can demand a GPU after construction
    */
   mount(container: HTMLElement): this;
   /**

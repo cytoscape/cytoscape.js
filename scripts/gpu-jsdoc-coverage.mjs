@@ -161,6 +161,116 @@ export function auditFile( file ){
   return { file: rel, documented, missing };
 }
 
+/** The doc block immediately above line `i`, or '' when there is none. */
+function docAbove( lines, i ){
+  let end = i - 1;
+
+  while( end >= 0 && lines[end].trim() === '' ) end--;
+  if( end < 0 || !lines[end].trim().endsWith( '*/' ) ) return '';
+
+  let start = end;
+
+  while( start >= 0 && !lines[start].includes( '/**' ) ) start--;
+
+  return start < 0 ? '' : lines.slice( start, end + 1 ).join( '\n' );
+}
+
+/**
+ * The lines of a member's body: from its declaration to the first line that
+ * closes it (`}` at class-member indentation) or starts the next declaration.
+ * The second bound matters for one-line members, which never close at two
+ * spaces and would otherwise swallow the member below.
+ */
+function memberBody( lines, i ){
+  const out = [ lines[i] ];
+
+  for( let j = i + 1; j < lines.length; j++ ){
+    const line = lines[j];
+
+    if( /^ {2}\}/.test( line ) ) break;
+    if( CLASS_RE.test( line ) || TOP_LEVEL_RE.test( line ) ) break;
+
+    const m = line.match( MEMBER_RE );
+
+    if( m && !KEYWORDS.has( m[3] ) ) break;
+
+    out.push( line );
+  }
+
+  return out.join( '\n' );
+}
+
+/**
+ * Audit one file for **`@throws` accuracy**: a public member whose body
+ * throws should say so, since round 26 settled that a doc comment states
+ * what a member throws and those comments ship in `dist/cytoscape-gpu.d.ts`
+ * as the hover text a consumer reads.
+ *
+ * Under-detection is deliberate: a member that throws only through a helper
+ * it calls is not flagged, because deciding whether that is part of *its*
+ * contract needs a human. What is flagged is a `throw` in the member's own
+ * body with no tag above it.
+ *
+ * @param {string} file — absolute path to a `.mts` source file
+ * @returns {{ file: string, tagged: number, missing: string[] }}
+ */
+export function auditThrowTags( file ){
+  const lines = readFileSync( file, 'utf8' ).split( '\n' );
+  const rel = relative( ROOT, file );
+  const missing = [];
+  let tagged = 0;
+  let currentClass = null;
+  let exported = false;
+  let inComment = false;
+
+  for( let i = 0; i < lines.length; i++ ){
+    const line = lines[i];
+
+    if( inComment ){
+      if( line.includes( '*/' ) ) inComment = false;
+      continue;
+    }
+
+    const opened = line.lastIndexOf( '/*' );
+
+    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+      inComment = true;
+      continue;
+    }
+
+    const fn = line.match( EXPORTED_FN_RE );
+    const cls = line.match( CLASS_RE );
+
+    if( cls ){ currentClass = cls[2]; exported = Boolean( cls[1] ); continue; }
+    if( !fn && TOP_LEVEL_RE.test( line ) ){ currentClass = null; continue; }
+
+    let name = null;
+
+    if( fn ){
+      currentClass = null;
+      name = fn[1] ?? fn[2];
+    } else if( currentClass && exported ){
+      const m = line.match( MEMBER_RE );
+
+      if( !m ) continue;
+
+      const [ , access, , member ] = m;
+
+      if( member.startsWith( '_' ) || KEYWORDS.has( member ) ) continue;
+      if( access === 'private' || access === 'protected' ) continue;
+
+      name = `${currentClass}.${member}`;
+    } else continue;
+
+    if( !/throw new/.test( memberBody( lines, i ) ) ) continue;
+
+    if( /@throws/.test( docAbove( lines, i ) ) ) tagged++;
+    else missing.push( `${name} (${rel}:${i + 1})` );
+  }
+
+  return { file: rel, tagged, missing };
+}
+
 /** Every `.mts` file under src/gpu, sorted, repo-relative. */
 function sources( dir = GPU_DIR, out = [] ){
   for( const entry of readdirSync( dir ).sort() ){
@@ -194,11 +304,21 @@ export function audit(){
   };
 
   const isPublic = f => PUBLIC_API.includes( f.file );
+  const throwTags = sources().map( auditThrowTags ).filter( f => f.tagged + f.missing.length > 0 );
 
   return {
     public: tier( files.filter( isPublic ) ),
     internal: tier( files.filter( f => !isPublic( f ) ) ),
-    files
+    files,
+    // round 31.2: `@throws` accuracy over the same members, public tier only
+    // — the tier whose comments ship as `.d.ts` hover text
+    throwTags: {
+      files: throwTags,
+      tagged: throwTags.filter( f => PUBLIC_API.includes( f.file ) )
+        .reduce( ( n, f ) => n + f.tagged, 0 ),
+      missing: throwTags.filter( f => PUBLIC_API.includes( f.file ) )
+        .flatMap( f => f.missing )
+    }
   };
 }
 
@@ -224,4 +344,13 @@ if( process.argv[1] && import.meta.url === pathToFileURL( process.argv[1] ).href
 
   console.log( `\n* public API tier: ${pct( result.public )}` );
   console.log( `  internal tier:   ${pct( result.internal )}` );
+
+  const t = result.throwTags;
+
+  console.log(
+    `\n  @throws on public members that throw: ` +
+    `${t.tagged}/${t.tagged + t.missing.length}`
+  );
+
+  if( verbose ) for( const m of t.missing ) console.log( `      NO @throws  ${m}` );
 }

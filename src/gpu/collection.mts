@@ -1868,7 +1868,14 @@ export class GpuCollection {
 
   declare renderedCss: this['renderedStyle'];
 
-  /** The numeric value of a numeric style prop (throws for colors/keywords). */
+  /**
+   * The numeric value of a numeric style prop.
+   *
+   * @param name — a numeric style property
+   * @returns the number, or undefined when the collection is empty or the
+   *   prop belongs to the other group
+   * @throws if the prop resolves to a colour or a keyword rather than a number
+   */
   numericStyle( name: string ): number | undefined {
     const value = this.style( name );
 

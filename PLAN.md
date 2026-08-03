@@ -7778,7 +7778,39 @@ commit(s)):
   2483 Node tests, typecheck, lint, JSDoc 100%, and — since this pass
   changes source — 91/91 `webgpu` and 75/75 `webgpu-visual` against a
   freshly built bundle.
-- [ ] **31.2 `@throws` where a public member throws** — the 13
-  comments, plus the audit that finds them.
+- [x] **31.2 `@throws` where a public member throws** (2026-08-03) —
+  landed.  The plan said 13 members from a throwaway scan; the audit
+  written for the pass, which reuses the round-26 scanner (class-body
+  tracking, modifiers, overload signatures, comment skipping) rather
+  than a fresh regex, puts it at **16 public members that throw, 7
+  tagged** — so **9** comments gained an `@throws`, and the surface is
+  now 16/16.
+  The nine: `numericStyle`, `mount`, `readProp`, and the six round-20
+  interaction setters (`selectionType`, `multiClickDebounceTime`,
+  `wheelSensitivity`, and the three thresholds).  Each states the
+  condition rather than the fact — `wheelSensitivity` throws on
+  non-*positive* where the thresholds allow 0, and `mount` names its
+  three distinct failures — because "throws on bad input" in a comment
+  is not worth the line.
+  `auditThrowTags()` joins `scripts/gpu-jsdoc-coverage.mjs` and its
+  tally prints under the coverage report (`--verbose` lists the
+  offenders).  It **under-detects deliberately**: a member that throws
+  only through a helper it calls is not flagged, because whether that
+  is part of *its* contract needs a human.
+  **This one is gated**, in `test/gpu-jsdoc-coverage.mjs`, where round
+  30 deliberately did not gate its throw-coverage measurement — and
+  the difference is the reasoning, not an inconsistency: documentation
+  completeness is *already* a gated concern here (round 26 made that
+  call and took both tiers to 100%), so keeping `@throws` complete
+  maintains an existing gate rather than inventing a new kind.  It is
+  one `describe` block to remove.
+  Controls: a tag deleted → 1 failing; a new undocumented throwing
+  member added to `viewport.mts` → 3 failing; the audit's throw
+  detection short-circuited → 1 failing (the non-trivial-count guard,
+  which exists so a regex change that audits nothing cannot read as a
+  pass).
+  Comments only in `src/`, so the browser suites are unaffected;
+  `dist/cytoscape-gpu.d.ts` is regenerated and committed (1093 doc
+  blocks).  2485 Node tests, 68 module tests, typecheck, lint.
 - [ ] **31.3 `mouseout` and `pointercancel`** in the `webgpu` project.
 - [ ] **31.4 Closing docs sweep.**

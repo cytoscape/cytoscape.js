@@ -8283,14 +8283,49 @@ describe and no suite prices:
   One methodology note worth keeping: a one-off probe had `kMedoids`
   reading 1.4× *slower* on v4, which did not survive mitata warming
   both sides — the 29.4 lesson, reproduced.
-- [ ] **33.3 The style engine** (`benchmark/gpu/style.mjs`, new) —
-  finding 3.  Sheet compile alone (no apply), `applyAll` at scale, the
-  first apply of a batch's added elements, the selection restyle skip
-  (a sheet with and without a `:selected`-dependent block, against
-  v3's unconditional per-element bypass — the round-4 finding, never
-  re-measured), the parents partition under compounds, and the
-  readback getters.  v3's comparison is its stylesheet apply; where
-  the dialects differ, the `cmp( name, v3Op, gpuOp )` form.
+- [x] **33.3 The style engine** (2026-08-03) — landed as
+  `benchmark/gpu/style.mjs`, and it found **the place where v4 does not
+  beat v3**, which no previous round had looked at directly.
+  At N=2000 (2000 nodes / 4000 edges, constants-only sheets alternating
+  so no apply can be skipped as unchanged): a whole-sheet swap is
+  **1.09×** — parity — at 14.2 ms for 6000 elements, or ~2.4 µs per
+  element for what is supposed to be a columnar write.  Compile alone
+  is 27.7 µs (separated from apply through the public batching
+  semantics: inside a batch `cy.style()` compiles and validates and
+  defers the apply), so **the whole 14 ms is the apply**.  The first
+  apply of a 256-node band on `add()` is 1.36× v4's way, and the
+  round-14.6 parents partition costs 1.08× against the same graph
+  without the hierarchy (100 parents over 2000 leaves).
+  **The finding: the style getters are 13–21× *slower* than v3.**
+  `ele.style( 'background-color' )` is 2.13 µs on v4 against 106 ns on
+  v3; `style( 'width' )` 15×, `numericStyle` 13×, `renderedStyle` 2.0×,
+  whole-object `style()` 2.2×.  Localized, not just observed: the cost
+  is entirely inside `StyleEngine.readProp` (1.85 µs measured directly
+  against the ref, so the collection wrapper is not it) while the
+  column read underneath it is **9 ns** — a ~200× gap between the read
+  and its data.  It is flat across props (background-color, width and
+  label all ~1.85 µs), which rules out the switch walking to a late
+  case and points at the per-call setup: `readProp` is a ~536-line
+  method with a 145-case switch that allocates four closures before it
+  dispatches.  This matters more than a micro-benchmark usually would,
+  because these getters are the documented public read path — the
+  synchronous-reads invariant is what round 8 called load-bearing, and
+  `renderedStyle`/`numericStyle` sit on it.  **Logged, not fixed**: a
+  measurement round measures, and hoisting the closures out of
+  `readProp` is a source change with its own verification.
+  *Plan correction, recorded*: the **selection restyle skip** cannot be
+  benchmarked as this plan described it.  The round-4 finding compared
+  a sheet with and without a `:selected`-dependent block, and v4 has no
+  selection-dependent blocks at all — they left with the selector
+  removal and the accent ring is shader-drawn, so there is nothing to
+  turn on and off.  What survives of that comparison is the plain
+  select/unselect round-trip, which `mutators.mjs` has priced since
+  round 4 (~38× at 200k).  The suite header says so rather than the
+  row silently not existing.
+  Two rows were corrected before landing (design call 5, twice in two
+  passes): the compound row first read 3.55× *faster* than flat, which
+  was 4000 edges missing from one side rather than the partition being
+  free; both sides now come from one generator.
 - [ ] **33.4 Loading and the wire format** (`benchmark/gpu/load.mjs`,
   new) — finding 4, and design call 2's headline.  Definition-form
   init, columnar init, wire deserialize + init, `toColumnarElements`,

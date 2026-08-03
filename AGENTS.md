@@ -65,6 +65,9 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
 
 ## Documentation notes
 - Documentation HTML is generated. Do not edit generated docs directly when the corresponding markdown or template source (i.e. `docmaker.json` and `template.html`) should be changed instead.
+- `documentation/` is v3's, and stays that way until v4 ships — the v3 code and docs are kept intact so they remain available for comparison benchmarks and parity work. Do not add v4 pages to it.
+- **v4 documents itself in JSDoc** (round 26). For anything under `src/gpu/`, prose about what a member does belongs in a doc comment next to the member; the release documentation will be generated from those comments. Use standard tags only (`@param name — description`, `@returns`, `@throws`, `@see`); one block per overload signature; state the contract and any deliberate deviation from v3, not the implementation. The `// -- <group> --` banner comments in `core.mts`/`collection.mts` are the section grouping a generator reads, so keep them accurate. Coverage is enforced: `node scripts/gpu-jsdoc-coverage.mjs --verbose` lists any public member of an exported class (or exported function) that lacks a comment, and `test/gpu-jsdoc-coverage.mjs` fails the build if one appears.
+- The `cytoscape/gpu` entry ships declarations built by `npm run build:types` (`rolldown.dts.gpu.config.mjs` → `build-dts.mjs` → `dist/cytoscape-gpu.d.ts`), which carry those JSDoc comments to consumers. Regenerate and commit that file when the v4 public surface changes; `npm run test:types:gpu` audits its shape.
 
 ## Contribution notes
 - Keep changes narrowly scoped. Cytoscape.js has a large public API and small internal regressions can surface broadly.

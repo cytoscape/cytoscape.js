@@ -164,6 +164,13 @@ playwright-page/webgpu.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/webgpu.spec.js (+ webgpu-visual.spec.js + goldens/)
 test/gpu-*.mjs           # 100+ Node-runner suites (auto-picked-up by the test:js glob)
 benchmark/gpu/           # mitata suites + the renderer/report runners (see the Benchmarks section of the README)
+scripts/gpu-jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss)
+test/gpu-jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress)
+rolldown.dts.gpu.config.mjs      # round 26.5: rolls src/gpu declarations up (build/dts-gpu/)
+build-dts.mjs                    #   finalizeDts (v3) + finalizeGpuDts (v4) -> dist/*.d.ts
+dist/cytoscape-gpu.d.ts          # round 26.5: the shipped declarations behind the "./gpu" types export
+test/types-gpu-surface.mjs       # round 26.5: shape audit (exports, statics, surviving doc blocks)
+typescript/tests/gpu.test-d.ts   # round 26.5: compile-only consumer test in the test:types project
 ```
 
 ## Model half — implemented as planned
@@ -6168,16 +6175,27 @@ release.
   a later insertion lands between a block comment and the member it
   documents, so the comment silently re-attaches to the wrong thing
   and the real member reads as undocumented.  Nothing catches this
-  but reading, which is the argument for the coverage gate.  Six
-  drifted comments corrected: `boundingBox`'s node-term list
+  but reading, which is the argument for the coverage gate.  **Eight
+  drifted comments corrected** (the tally was corrected from six in
+  the 26.6 sweep — see that pass): `boundingBox`'s node-term list
   (outline, overlay/underlay padding, ghost offsets, labels and the
   round-22 space tier had all been added since), `setLabelFont`'s
   "every labelled node" (group-keyed since round 10 — all four label
   streams), `force-sim`'s convergence test naming a non-existent
-  `alphaMin` parameter, `arrow-pipeline`'s `endUniforms` comment
-  listing two buffers where mid-arrows made it four (round 13 C1),
-  the glyph-struct comment omitting `endParam`, and a `settle()`
-  reference the code had renamed to `readPositions()`.
+  `alphaMin` parameter, `curved-arrow-pipeline`'s `endUniforms`
+  comment listing two buffers where mid-arrows made it four (round
+  13 C1; the straight-arrow twin was already right), the
+  glyph-struct comment calling word 13 `pad` when it has carried the
+  round-13 D4 end-label param since D4, a `settle()` reference the
+  code had renamed to `readPositions()`, `glyph-atlas.setFont`'s
+  "no-op when the family is unchanged" (the guard compares family,
+  style *and* weight), and — the most consequential —
+  `renderer.mts`'s frame-graph header describing the scene pass as
+  "edges then nodes then labels, all indirect, **no depth buffer**"
+  when there is both a depth target and an early-z node prepass, and
+  the real order is prepass → parents → edges/arrows → ghosts →
+  bodies → image/chart/overlay → labels.  A newcomer reading that
+  header would have had the frame graph wrong.
   The audit gained overload handling: 26.5's `on`/`one`/`off`
   overloads made their implementation signatures read as
   undocumented members, and an implementation signature is not
@@ -6216,6 +6234,35 @@ release.
   stays untouched until release; a v4-specific event type would be
   a design call, so consumers narrow it for now.
   Typecheck, lint, and the full `test:types:all` chain clean.
-- [ ] **26.6 Closing docs sweep** — the standing rule: sweep both
-  documents end to end, verify every section the round touched
-  reads true, and land the fixes as the round's closing commit.
+- [x] **26.6 Closing docs sweep** (2026-08-02) — swept both
+  documents end to end.  Fixes: the README header now carries round
+  26 and states the standing constraint that v3's code *and*
+  `documentation/` stay untouched until v4 ships; the follow-up
+  hooks gained a documentation entry that records what deliberately
+  stays open (the docmaker generator and the release docs — neither
+  built until v4 ships, since `documentation/` is v3's until then)
+  plus 26.5's logged `event.target` call; the directory layout
+  gained the round's seven new files, which belong to no single
+  commit and are exactly what this sweep exists to catch; and
+  `AGENTS.md` gained the convention itself under rule 8 — a
+  contributor to `src/gpu/` now reads that v4 documents itself in
+  JSDoc, which tags to use, that the banners are the section
+  grouping, that coverage is gated, and that the shipped
+  declarations must be regenerated when the surface changes.
+  **The round's own record needed correcting**, which is the sweep
+  earning its keep: 26.4's entry said six drifted comments where
+  the true count was eight, having missed `glyph-atlas.setFont`'s
+  guard (family, style *and* weight) and — the one that mattered —
+  `renderer.mts`'s frame-graph header describing the scene pass as
+  having **no depth buffer** when there is both a depth target and
+  an early-z prepass, with the pass order wrong too.  A newcomer
+  starting from that header would have had the frame graph wrong.
+  `dist/cytoscape-gpu.d.ts` regenerated after the final 26.4
+  comments: 6,840 lines, 1,091 JSDoc blocks.
+  Full verification: typecheck, 2285 Node tests, 63 module tests,
+  lint, the whole `test:types:all` chain (including the two new gpu
+  audits), and 173/173 Playwright across chromium + webgpu +
+  webgpu-visual (goldens untouched — the round changes no pixels;
+  the webkit projects still cannot launch on this box, the same
+  host-library environment gap recorded in round 25.7).
+  **Round 26 is complete.**

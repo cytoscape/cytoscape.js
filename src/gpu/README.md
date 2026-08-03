@@ -60,7 +60,17 @@ CPU path — never leased, never stale (`width()`/`bb()`/pick read
 the mid-flight value) — with the per-tick invalidation cascade run
 by the store's write funnel (label re-anchor, auto-bounds, the
 ride lanes) and priced by a dedicated benchmark sweep.
-The existing v3 core, collection and renderers are untouched.
+Round 26 (2026-08-02) changed no behaviour at all: it built the
+**authoring surface** the release documentation will be generated
+from — JSDoc on every public member of the prototype (a 46% → 100%
+sweep, gated by a coverage test), and the first shipped
+**TypeScript declarations** for `cytoscape/gpu`, which carry those
+comments into consumers' editors.  See "Documenting the source"
+below.
+The existing v3 core, collection and renderers are untouched — and
+stay untouched, along with the whole of `documentation/`, until v4
+ships, so every v3 asset remains available for comparison
+benchmarks and parity work.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
@@ -2493,3 +2503,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   Still open: the small parity remnants (compound arrow shapes,
   per-element numeric `text-rotation`, the unported shape
   keywords, `border-style`/`outline-style`).
+- **Documentation** — round 26 (2026-08-02) settled the near-term
+  shape: JSDoc on the source is v4's documentation source of truth
+  and the declarations ship with it (see "Documenting the source"
+  above).  What stays open, deliberately: the **generator** that
+  turns those comments into docmaker input, and the release docs
+  themselves.  Neither is built until v4 ships, because
+  `documentation/` belongs to v3 until then.  Also logged from
+  26.5: `event.target` types as `unknown` on the shared v3 event
+  object — a v4-specific event type is an open design call, not an
+  oversight.

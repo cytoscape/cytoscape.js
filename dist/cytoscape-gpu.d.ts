@@ -2685,7 +2685,29 @@ declare class GraphStore implements ModelView {
   edgeLabelSlack(slot: number): number;
   /** true when any edge-stream label exists (the scan's cheap gate) */
   hasEdgeLabels(): boolean;
+  /** true when any node label exists (the scan's cheap gate) */
   hasNodeLabels(): boolean;
+  /**
+   * Whole-graph bounding box as a direct columnar scan — no element
+   * handles (a no-arg fit() on a 500k-element graph is a fraction of a
+   * millisecond instead of hundreds).  Nodes contribute position ±
+   * (size/2 + border/2), grown by their outline, overlay/underlay
+   * padding, ghost offset and label box where those apply.  Edges
+   * contribute their own extent as a first-class term: the two endpoint
+   * node centers, grown by the conservative curve deviation for curved
+   * edges — the hull bound for chord-bounded kinds, plus the node-half
+   * margin (+ chord length for extrapolated weights) for box-bounded
+   * ones (rounds 12a/12b; the exact lazy curve bb is
+   * GpuCollection.boundingBox's tier).  Future edge geometry (arrow
+   * heads, 12c endpoints) extends the edge term here and there
+   * together.  Only the space tier counts (round 22): display-hidden
+   * elements are excluded, `visibility: 'hidden'` ones still take
+   * space.  Conservative by design — fit may over-fit, never under.
+   *
+   * @param includeLabels — whether label boxes join the box (v3's
+   * default, on)
+   * @returns null when nothing visible remains
+   */
   boundingBox(includeLabels?: boolean): {
     x1: number;
     y1: number;

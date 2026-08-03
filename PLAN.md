@@ -7095,7 +7095,20 @@ worth as much as the findings:
 
 **Pass split** (tests-first where there is code; docs in-commit):
 
-- [ ] **29.1 The alias surface.**  One spec file walking an explicit
+- [x] **29.1 The alias surface** (2026-08-03) — landed.  91 specs in
+  `test/gpu-aliases.mjs`: 83 identity checks (the alias exists, is a
+  function, and is `===` its target on the prototype), 6 that reach the
+  aliases through a live instance (a class field or own property could
+  in principle shadow the prototype, which the identity check alone
+  would not see), and 2 that cross-check the table against the sources
+  in both directions.  All 83 were already consistent — the pass adds
+  no fix, it adds the thing that notices.
+  Controls: deleting the `each` wiring line fails 2 specs (the identity
+  check and the instance check), and declaring an alias that the table
+  does not list fails the source cross-check.  Both were run.
+  2431 Node tests, typecheck, lint.  *(Original plan text below.)*
+
+  **29.1 The alias surface.**  One spec file walking an explicit
   table of every alias → target pair, asserting the alias exists, is a
   function, and is identical (`===`) to its target on the prototype,
   plus a meta-check that the two sources declare exactly the tabled

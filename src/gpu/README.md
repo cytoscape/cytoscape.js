@@ -138,6 +138,15 @@ shader over every allocated slot.
 
 ## API scope (pass 1)
 
+v3's method **aliases** are kept throughout (`each`/`forEach`,
+`centre`/`center`, `bc`/`betweennessCentrality`, the set-op spellings,
+…): 83 of them across the core and collection, each a `declare` in the
+class body plus a separate prototype assignment.  Since round 29.1 the
+whole surface is pinned by a table in `test/gpu-aliases.mjs` that
+asserts alias-target identity and cross-checks itself against the
+sources in both directions — the type declaration alone would keep the
+typecheck green if a wiring line were deleted.
+
 Core: viewport fns (`zoom`, `pan`, `panBy`, `fit`, `center`, `extent`,
 plus `reset`, `viewport`, `zoomRange`, `getFitViewport`/`getCenterPan`,
 `renderedExtent`, `size`), events (with the usual aliases +

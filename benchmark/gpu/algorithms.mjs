@@ -46,6 +46,7 @@ const ctx = ( cy, k ) => ( {
 } );
 
 const weight = edge => 1 + ( edge.data( 'w' ) ?? 0 ); // constant fn: measures the call path
+const attrs = [ n => n.data( 'foo' ), n => n.data( 'weight' ) ]; // feature space for the clustering rows
 
 console.log( `\n== algorithm sweep (N=${ N } nodes, ${ 2 * N } edges) ==` );
 
@@ -62,8 +63,21 @@ cmp( 'algo: betweennessCentrality (unweighted)', ctx, c => c.eles.betweennessCen
 cmp( 'algo: degreeCentralityNormalized', ctx, c => c.eles.degreeCentralityNormalized( {} ) );
 cmp( 'algo: closenessCentrality (one root)', ctx, c => c.eles.closenessCentrality( { root: c.root } ) );
 
+// round 33.2: the unnormalized sibling of the row above it — v3 and v4
+// both require a root here, and the normalized form has had a row since
+// round 10 while this one had none (the 29.2/30.3 sibling-gap shape,
+// arriving in the benchmark suite this time)
+cmp( 'algo: degreeCentrality (one root)', ctx, c => c.eles.degreeCentrality( { root: c.root } ) );
+
 if( N <= 1000 ){
   cmp( 'algo: pageRank (20 iters)', ctx, c => c.eles.pageRank( { iterations: 20 } ) );
+
+  // round 33.2: the weighted branch is the one that actually runs the
+  // heap; every centrality row before this round passed no weight, so
+  // the decrease-key path round 10 A3 deliberately built (v3 re-sorts
+  // instead) had never been measured
+  cmp( 'algo: closenessCentrality (weighted, one root)', ctx,
+    c => c.eles.closenessCentrality( { root: c.root, weight } ) );
 }
 
 if( N <= 500 ){
@@ -79,6 +93,38 @@ if( N <= 500 ){
     testMode: true,
     testCentroids: [ [ 0, 0 ], [ N / 3, 2 ], [ 2 * N / 3, 4 ], [ N, 6 ] ]
   } ) );
+
+  // -- round 33.2: the four algorithms that had no row at all ---------------
+  // The three clustering ones are attribute-space and stay handle-level
+  // on *both* sides by design (round 10 A4: they are feature-space, not
+  // adjacency walks, so v4 ports v3's shape rather than going
+  // slot-native).  Parity is therefore the expected reading here, and a
+  // large win would mean the row is wrong — the opposite of how to read
+  // the slot-native walks above.  Iteration counts are capped on both
+  // sides so the rows measure the algorithm rather than how long each
+  // implementation happens to wander.
+  cmp( 'algo: kMedoids', ctx, c => c.eles.kMedoids( {
+    k: 4, attributes: attrs, maxIterations: 10
+  } ) );
+
+  cmp( 'algo: fuzzyCMeans', ctx, c => c.eles.fuzzyCMeans( {
+    k: 4, attributes: attrs, maxIterations: 10
+  } ) );
+
+  cmp( 'algo: affinityPropagation', ctx, c => c.eles.affinityPropagation( {
+    attributes: attrs, damping: 0.8, preference: 'median',
+    maxIterations: 10, minIterations: 5
+  } ) );
+
+  // kargerStein is randomized on both sides (neither takes a seed), so
+  // what is stable here is the *cost* — the trial count is a function of
+  // n, not of the draw.  Its result is not compared.
+  cmp( 'algo: kargerStein', ctx, c => c.eles.kargerStein() );
+
+  // the weighted centrality branch (see the closeness row above): at
+  // this scale v3 pays its re-sort per relaxation
+  cmp( 'algo: betweennessCentrality (weighted)', ctx,
+    c => c.eles.betweennessCentrality( { weight } ) );
 }
 
 await finishRun( 'algorithms' );

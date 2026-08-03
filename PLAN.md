@@ -8257,15 +8257,32 @@ describe and no suite prices:
   one shared position and asserted to place **200 moved, 200 distinct**
   positions, so no row is measuring a layout that silently does
   nothing — the check `preset` failed.
-- [ ] **33.2 The algorithm tail** (extend `algorithms.mjs`) —
-  finding 2.  `kMedoids`, `fuzzyCMeans`, `affinityPropagation`,
-  `kargerStein`, unnormalized `degreeCentrality`, and weighted
-  `betweennessCentrality`/`closenessCentrality`.  The four clustering
-  additions are attribute-space and handle-level on both sides (v3's
-  own design, ported deliberately — see round 10 A4), so parity is the
-  expected reading and a large win would mean the row is wrong.
-  `kargerStein` is randomized: seed it or fix its iteration count, or
-  it measures variance.
+- [x] **33.2 The algorithm tail** (2026-08-03) — landed in
+  `algorithms.mjs`, taking it from 18 rows over 17 algorithms to 25
+  over all 21.  At N=500: `kMedoids` **1.25×**, `fuzzyCMeans` 1.11×,
+  `affinityPropagation` 1.64×, `kargerStein` 1.06× — parity, which is
+  the *correct* reading for these four and the one the plan predicted:
+  they are attribute-space algorithms that v4 deliberately keeps
+  handle-level on both sides (round 10 A4 — feature space, not
+  adjacency walks), so identical maths dominates and a large win would
+  have meant the row was wrong.  They sit beside the existing
+  dense-matrix rows (floydWarshall 1.2× *to v3*, markov 1.34×,
+  hierarchical 1.02×) which read the same way for the same reason.
+  The two that are not parity are the ones with a real implementation
+  difference: **weighted `betweennessCentrality` 8.9×** and weighted
+  `closenessCentrality`, which are the branch that actually runs the
+  heap — every centrality row before this round passed no weight, so
+  round 10 A3's decrease-key heap (v3 re-sorts instead) had never been
+  measured.  Unnormalized `degreeCentrality` joins its normalized
+  sibling, the 29.2/30.3 shape arriving in the benchmark suite.
+  Iteration counts are capped on both sides (AP 10, kMedoids 10, fcm
+  10) so the rows measure the algorithm and not how long each
+  implementation happens to wander; `kargerStein` is randomized on both
+  sides and neither takes a seed, so what is stable is its *cost* (the
+  trial count is a function of n) and its result is not compared.
+  One methodology note worth keeping: a one-off probe had `kMedoids`
+  reading 1.4× *slower* on v4, which did not survive mitata warming
+  both sides — the 29.4 lesson, reproduced.
 - [ ] **33.3 The style engine** (`benchmark/gpu/style.mjs`, new) —
   finding 3.  Sheet compile alone (no apply), `applyAll` at scale, the
   first apply of a batch's added elements, the selection restyle skip

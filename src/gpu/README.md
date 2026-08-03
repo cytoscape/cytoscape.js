@@ -2230,7 +2230,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   inconsistency*: `roundrectangle` survived that triage and is still
   accepted, so the alias policy is applied unevenly; resolving it
   either way is a small API call, not an oversight to patch
-  silently.  `right-rhomboid` and `concave-hexagon` joined as
+  silently.  The round-29 docs check found the same triage
+  half-applied elsewhere — `cy.autolockNodes()` and
+  `cy.autoungrabifyNodes()` are listed as dropped in PLAN.md's ledger
+  but are declared, wired and working — so it is **one call covering
+  three names**, not two unrelated warts.  `right-rhomboid` and `concave-hexagon` joined as
   point tables; `cut-rectangle` (a chamfer of *absolute* length),
   `bottom-round-rectangle` and `barrel` (four sampled bezier
   corners) are parameterized shapes with their own fields; and the
@@ -2682,7 +2686,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   closed the verification gap round 27 left behind (its CPU-pick
   branches were untested) and trued up the gap ledger, which now
   holds only open design calls: `border-style`/`outline-style`, the
-  `roundrectangle` alias inconsistency, the overlap box-selection
+  **legacy-alias policy** (`roundrectangle`, `autolockNodes` and
+  `autoungrabifyNodes` all survived the triage that lists them as
+  dropped — one call, three names), the overlap box-selection
   mode, core/collection extension points, `cy.gc()`,
   `cytoscape.warnings()`, and graph-level `data` in the *binary*
   wire format (`cy.json()` already exports it).

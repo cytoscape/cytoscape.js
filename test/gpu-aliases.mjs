@@ -47,6 +47,11 @@ const CORE_ALIASES = [
   [ 'jpeg', 'jpg' ],
   [ 'attr', 'data' ],
   [ 'removeAttr', 'removeData' ],
+  // NB: PLAN.md's decided-drops ledger lists these two as dropped by
+  // the 2026-07-29 "one name per concept" triage, but they are wired
+  // and working — an open call, recorded beside the `roundrectangle`
+  // one in the README.  If it goes the ledger's way, these two rows
+  // and the wiring come out together.
   [ 'autolockNodes', 'autolock' ],
   [ 'autoungrabifyNodes', 'autoungrabify' ],
   [ '$id', 'getElementById' ]

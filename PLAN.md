@@ -76,11 +76,16 @@ plan and outcome.
   after round 27's sweep did the README end to end and left
   PLAN.md's own gap ledger asserting that shape keywords, compound
   arrows and numeric `text-rotation` were still unbuilt — the round
-  had just built all three).  Two places here drift on almost every
-  round and are worth grepping by name: the **"Needs a call" gap
-  ledger**, whose per-item "Still open:" lines outlive the work
-  that closes them, and the **"Suggested sequencing"** summary of
-  what remains.  A round record is not the whole record.
+  had just built all three).  **Three** places here drift on almost
+  every round and are worth grepping by name: the **"Needs a call"
+  gap ledger**, whose per-item "Still open:" lines outlive the work
+  that closes them; the **"Suggested sequencing"** summary of what
+  remains; and — added 2026-08-03 — **"Gaps with direction already
+  set"**, which had gone *seventeen rounds* without a sweep: seven of
+  its eight entries still described landed work as pending, and its
+  z-index entry still promised to restore `zDepth`/`sortByZIndex`
+  two days after z-index was dropped outright.  A round record is not
+  the whole record.
 
 ## Context
 
@@ -1794,14 +1799,29 @@ and the legacy aliases (`content`, `autolockNodes`/
 `autoungrabifyNodes`, `padding-{left,right,top,bottom}`, no-dash shape
 spellings, redundant `attr`-family duplicates — one name per concept).
 
+**The legacy-alias line is not true of the code** (found 2026-08-03 by
+the round-29 docs check, and left as a call rather than patched):
+`cy.autolockNodes()` and `cy.autoungrabifyNodes()` are declared, wired
+and working, and round 29.1's alias table now *pins* them; the no-dash
+shape spelling `roundrectangle` likewise still compiles, where
+`cutrectangle` and `concavehexagon` throw.  So the 2026-07-29 triage
+was applied unevenly and three names survive it.  This is one call, not
+three — "does the one-name-per-concept rule actually apply to these?" —
+and whichever way it goes, the alias table in
+`test/gpu-aliases.mjs` and the `roundrectangle` line in
+`test/gpu-decided-drops.mjs` are what have to change with it.
+`content` and `padding-{left,…}` *do* throw, as does every other prop
+in this ledger — pinned since 29.3 by `test/gpu-decided-drops.mjs`.
+
 ### Gaps with direction already set (build when scheduled)
 
 - **Curved edges** — the single biggest *visual* gap.  **Pass 12a
   (bundled `bezier` + self-loops) landed 2026-07-30**, and **pass 12b
   (`unbundled-bezier`, `segments`, `round-segments`, `taxi`,
   `round-taxi`) landed 2026-07-30/31** — see the round records.
-  Still open from v3's `curve-style`: `haystack` and
-  `straight-triangle` plus manual endpoints (the 12c pass).
+  ~~Still open from v3's `curve-style`: `haystack` and
+  `straight-triangle` plus manual endpoints (the 12c pass).~~ —
+  **12c landed 2026-07-30/31**, completing the family.
   Brings with it: **self-loops** (`loop-direction`/`loop-sweep` — a
   loop currently degenerates to a point in v4), `control-point-*`,
   `segment-*`, `taxi-*`, `radius-type`, `edge-distances`,
@@ -1815,39 +1835,46 @@ spellings, redundant `attr`-family duplicates — one name per concept).
   as *real visual styles* (offset-endpoint and triangle-shaped edges),
   not perf modes — v4's culling makes the perf rationale moot but the
   looks stay.
-- **Ghost props** (`ghost`/`ghost-offset-*`/`ghost-opacity`) — kept in
+- ~~**Ghost props**~~ — **landed as round 13 A1** (2026-07-31).  Kept in
   the 2026-07-29 triage (SBGN needs them), in a simplified form: a
   ghost duplicates only the basic node body — shape, border,
   background — at the offset, an extra instance draw, never a
   whole-cloth redraw of the full node (labels and other decorations
   excluded).
-- **Overlay/underlay theming** — the 2026-07-29 triage decided to
+- ~~**Overlay/underlay theming**~~ — **landed as round 13 A2**
+  (2026-07-31), core props included.  The 2026-07-29 triage decided to
   *port the props* (the 10 overlay/underlay element style props plus
   the `active-bg-*` and `selection-box-*` core options) rather than
   keep the affordances baked in; the existing shader hover/active
   brighten, accent ring and DOM selection box become the styled
   defaults.
-- **Multiline labels** — `text-wrap`/`text-max-width`/
+- ~~**Multiline labels**~~ — **landed as round 16** (2026-08-01),
+  along with label bounding boxes.  `text-wrap`/`text-max-width`/
   `text-justification`/`line-height`/`text-overflow-wrap` (+
-  `ellipsis`).  Same decided tier (shaping memoizes; model-space
+  `ellipsis`), on the decided tier (shaping memoizes; model-space
   keeps it zoom-invariant).
 - ~~**Edge label autorotate** (`text-rotation: autorotate`)~~ —
   **landed 2026-07-29** (see the autorotate entry below); the flip
   rule call was taken as v3's verbatim undirected-slope angle.
-  Per-element *numeric* `text-rotation` stays in the label-parity
-  batch.
-- **Force-directed layout** — v3's `cose` is the only built-in
-  force layout, so v4 has *no* force option at all today; the GPU
-  layout direction is logged (GPU-authoritative + readback, CPU
-  reference for headless).  The concrete algorithm (port cose vs a
-  modern fcose-class kernel) is the call to make when scheduled.
+  ~~Per-element *numeric* `text-rotation` stays in the label-parity
+  batch.~~ — **landed as round 27.7** (2026-08-02), on any label.
+- ~~**Force-directed layout**~~ — **landed as round 18**
+  (2026-08-01): `cy.layout({ name: 'force' })`, spring–electric with a
+  CPU reference executor and an on-device integrator under the
+  position lease.  The call this entry left open (port cose vs a
+  modern kernel) was taken for the latter.
 - **Compaction** — slot-stable tier (id blob / CSR / dictionary
-  reclaim) **landed in round 11** with auto waste thresholds; the
-  slot-moving tier still waits on the logged policy calls.
-- **z-index** — mechanism named (more z-ranks or a `u32`
-  index-indirection pass); decide together with compaction's
-  draw-order call.  Restores `zDepth`/`sortByZIndex` and heals the
-  recycled-slot draw-order wart.
+  reclaim) **landed in round 11** with auto waste thresholds; ~~the
+  slot-moving tier still waits on the logged policy calls~~ — the
+  slot-moving tier **landed as round 19** (2026-08-01), policy calls
+  and all.
+- ~~**z-index**~~ — **dropped outright** (decided 2026-08-01, no round
+  at all): draw order is structural and stays that way, so `z-index`,
+  `z-compound-depth` and `z-index-compare` are not coming to v4 and
+  neither is `zDepth`/`sortByZIndex`.  See the decided-design bullet in
+  the README.  The mechanism this entry named (more z-ranks or a `u32`
+  index-indirection pass) survives only as the logged single-boolean
+  elevated tier, if demand ever appears.
 
 ### Needs a call (design open — grouped, with the v3 surface at stake)
 
@@ -2126,7 +2153,10 @@ verification gap, not an API one), the `panBy` animation target
 (28.2), and item 12's own drift (28.3, above).  **What remains of the
 ledger is entirely open calls** — decisions, not implementations:
 `border-style`/`outline-style` (27.8's scope call), the
-`roundrectangle` alias inconsistency, item 8's overlap box mode,
+**legacy-alias policy** (one call over `roundrectangle`,
+`autolockNodes` and `autoungrabifyNodes` — all three survived the
+2026-07-29 triage that says they were dropped), item 8's overlap box
+mode,
 item 10's core/collection extension points, and item 12's surviving
 three (`cy.gc()`, `cytoscape.warnings()`, graph data in the binary
 wire format).  Nothing in the ledger is now blocked on
@@ -7038,9 +7068,9 @@ commit(s)):
 
 Round 28 closed the ledger's no-call remainder.  This round comes from
 a different question — *not* "what is unbuilt" but "what is unpinned":
-a survey of `src/gpu` (49k lines, 121 Node spec files, 14 benchmark
-suites) for behaviour that exists, is documented, and is measured or
-asserted by nothing.
+a survey of `src/gpu` (49k lines; 121 Node spec files and 14 benchmark
+suites at the time — 123 and 15 after this round) for behaviour that
+exists, is documented, and is measured or asserted by nothing.
 
 **Survey method and what it ruled out**, since the negative results are
 worth as much as the findings:
@@ -7064,7 +7094,9 @@ worth as much as the findings:
   serialize/bulk-load benchmark this survey first proposed was
   dropped.
 
-**Findings, all of them things that exist and nothing pins:**
+**Findings (as surveyed 2026-08-03, before the passes below).**  Each
+was true when written and each is what the matching pass then closed —
+read them as the round's starting state, not its current one:
 
 1. **The alias surface is 83 methods wide and 29 of them are never
    called by any test.**  `declare each: this['forEach']` is a *type*

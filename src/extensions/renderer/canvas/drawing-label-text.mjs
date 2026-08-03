@@ -282,11 +282,11 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
       let bgH = textH + 2*backgroundPadding;
 
       if( doFill ){
-        context.fillStyle = `rgba(${textBackgroundColor[0]},${textBackgroundColor[1]},${textBackgroundColor[2]},${backgroundOpacity * parentOpacity})`;
+        this.colorFillStyle( context, textBackgroundColor, backgroundOpacity * parentOpacity );
       }
 
       if( doStroke ){
-        context.strokeStyle = `rgba(${textBorderColor[0]},${textBorderColor[1]},${textBorderColor[2]},${borderOpacity * parentOpacity})`;
+        this.colorStrokeStyle( context, textBorderColor, borderOpacity * parentOpacity );
         context.lineWidth = textBorderWidth;
 
         if( context.setLineDash ){

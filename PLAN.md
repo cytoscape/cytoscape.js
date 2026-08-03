@@ -7601,8 +7601,41 @@ commit(s)):
   end, then at model space; `squaredEuclidean` given the square root,
   `max` made a sum) — each failed the specs written for it.
   2482 Node tests (+9), typecheck, lint.  No source changed.
-- [ ] **30.4 `scripts/gpu-throw-coverage.mjs`** — the measurement,
-  shipped, mirroring `scripts/gpu-jsdoc-coverage.mjs`.  **Reporting
-  only, not gated**: choosing a coverage floor is a policy call, so it
-  gets logged rather than taken.
+- [x] **30.4 `scripts/gpu-throw-coverage.mjs`** (2026-08-03) — landed,
+  mirroring `scripts/gpu-jsdoc-coverage.mjs`: run it bare for the
+  tallies, `--verbose` for every uncovered site, `--lcov <file>` to
+  re-read a report instead of re-running the suite.  It exports
+  `audit()` the same way, and it **always exits 0** — a coverage floor
+  is a policy call, so the script reports and the decision stays with
+  the maintainer.
+  Current reading: **191 sites — 176 run by the Node suite, 13
+  browser-only, 2 unreachable by design, 0 Node-reachable and never
+  run.**
+  The classification lists are the useful part and each entry carries
+  its reason: `BROWSER_ONLY` (needs a device, a canvas or a pointer —
+  pinned in the `webgpu` project instead), and `UNREACHABLE` (the
+  big-endian platform guard; the SHAPE_MASK field invariant).
+  **A third list exists because the tool measured its own error.**
+  Line-level lcov attributes the body of a *module-level arrow const*
+  to the module-evaluation count, so `exportScale`'s guard in
+  `renderer.mts` reads as covered in Node — where there is no renderer
+  at all.  Calibration: of the 14 throw sites under `BROWSER_ONLY`,
+  exactly two read as covered, and one of those (`GlyphBuffer.set`)
+  genuinely is (a Node spec drives it with a mock device).  So the
+  known error is one site in 191; it is listed in `MISATTRIBUTED` with
+  the cause, and the script documents that its tally is a **lower
+  bound** on dead sites rather than an exact count.  Both footguns the
+  round hit are recorded in the file header — the transpiled-offset
+  trap that made the first measurement fiction, and the useless
+  function-level records.
+  5 specs in `test/modules/gpu-throw-coverage.mjs` (the precedent is
+  `gpu-benchmark-report.mjs`: a tool's parser gets a fixture, not
+  trust) against hand-written lcov naming real files and real throw
+  lines.  They pin the three classifications, the misattribution
+  override, and that a *silent* report reads as unknown rather than as
+  dead — "the file never loaded" is a different failure from "loaded
+  and never reached".  Controls: three mutations of the script (dead
+  swallowing the browser tier, the override dropped, the DA parser
+  broken), each failing its spec.
+  68 module tests (+5), lint, typecheck, JSDoc coverage still 100%.
 - [ ] **30.5 Closing docs sweep.**

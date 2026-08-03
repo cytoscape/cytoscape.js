@@ -6739,5 +6739,17 @@ commit(s)):
   answers "is this right?", and that a parity test should be run
   once with its feature disabled to prove it can fail.  The standing
   process rule above gained "sweep this file too".
+  Two more findings from the second pass, both outside the docs
+  themselves: the **debug harness** (`debug/webgpu/init.js`) carried
+  allowlists that silently dropped any shape outside
+  ellipse/rect/round-rect and any arrowhead but triangle when
+  converting a v3 fixture stylesheet — stale since round 10, and
+  now inverted into a much shorter list of the v3 spellings v4 does
+  *not* accept.  And that shorter list exposed a small
+  **inconsistency worth a call rather than a silent patch**: the
+  2026-07-29 triage dropped the no-dash legacy aliases, yet
+  `roundrectangle` is still accepted while `cutrectangle` and
+  `concavehexagon` are not.  Recorded in the README next to the
+  shape vocabulary.
   **Round 27 is complete apart from 27.8, which is held for that
   call.**

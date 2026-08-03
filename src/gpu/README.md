@@ -2138,7 +2138,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   vertices scaled to device space (exact distance, so AA and borders
   stay crisp under anisotropy) and picked by an exact CPU
   point-in-polygon in normalized space.  **Round 27 completed the
-  vocabulary**: `right-rhomboid` and `concave-hexagon` joined as
+  vocabulary** — every v3 shape keyword is accepted, with the two
+  no-dash legacy aliases (`cutrectangle`, `concavehexagon`) left out
+  by the 2026-07-29 "one name per concept" triage.  *Noted
+  inconsistency*: `roundrectangle` survived that triage and is still
+  accepted, so the alias policy is applied unevenly; resolving it
+  either way is a small API call, not an oversight to patch
+  silently.  `right-rhomboid` and `concave-hexagon` joined as
   point tables; `cut-rectangle` (a chamfer of *absolute* length),
   `bottom-round-rectangle` and `barrel` (four sampled bezier
   corners) are parameterized shapes with their own fields; and the

@@ -82,10 +82,13 @@ const paramDefs = {
     'label', 'font-size', 'color',
     'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color'
   ]);
-  const SUPPORTED_ARROW_SHAPES = new Set([ 'none', 'triangle' ]);
-  const SUPPORTED_SHAPES = new Set([
-    'ellipse', 'circle', 'rectangle', 'round-rectangle', 'roundrectangle'
-  ]);
+  // Round 27 completed v3's node-shape and arrowhead vocabularies, so
+  // these lists are no longer "what v4 can draw" — they are only the v3
+  // spellings v4 does not accept.  The 2026-07-29 triage dropped the
+  // no-dash legacy aliases ("one name per concept"), so a fixture using
+  // them keeps its default shape rather than throwing.
+  const UNSUPPORTED_ARROW_SHAPES = new Set();
+  const UNSUPPORTED_SHAPES = new Set([ 'cutrectangle', 'concavehexagon' ]);
   // best-effort conversion of a v3 block stylesheet into the v4 sheet
   // ({ nodes, edges }): constant values of in-scope props on plain group
   // selectors fold into the group's props (later blocks win, as in v3
@@ -110,8 +113,8 @@ const paramDefs = {
         // data(key) label mappers are supported now; other mappers are not
         if(typeof value === 'string' && /mapData\s*\(/.test(value)) { continue; }
         if(typeof value === 'string' && /data\s*\(/.test(value) && !(prop === 'label' && /^\s*data\s*\(\s*[\w-]+\s*\)\s*$/.test(value))) { continue; }
-        if(prop === 'shape' && !SUPPORTED_SHAPES.has(value)) { continue; }
-        if(/-arrow-shape$/.test(prop) && !SUPPORTED_ARROW_SHAPES.has(value)) { continue; }
+        if(prop === 'shape' && UNSUPPORTED_SHAPES.has(value)) { continue; }
+        if(/-arrow-shape$/.test(prop) && UNSUPPORTED_ARROW_SHAPES.has(value)) { continue; }
 
         style[prop] = value;
       }

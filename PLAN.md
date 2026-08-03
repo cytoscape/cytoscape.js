@@ -4229,7 +4229,11 @@ below signed off in the 2026-08-01 sitting.
   gpu side and type selectors on v3; icon data-uris built at page
   runtime) — the scene is wired like its siblings; numbers were not
   recorded on this box (software adapter — a different machine
-  class, per the benchmark's own warning).  The ordinal-url mapper
+  class, per the benchmark's own warning).  *Correction
+  (2026-08-03)*: that parenthesis is wrong for the same reason 18.5's
+  was — this box has an AMD RX 580 and the benchmark reaches it (see
+  the hardware validation pass below); the images scene simply has not
+  been measured.  The ordinal-url mapper
   form is Node-pinned.  Final docs true-up in this commit.
   **Round 15 is complete.**  2085 Node tests, 129/129 Playwright,
   typecheck + lint clean.
@@ -6729,11 +6733,20 @@ commit(s)):
   CPU side.  Its device-side cost is arithmetic and recorded: 64
   bytes per glyph instead of 56.
   **Not measured here**: the device-side frame cost of the new
-  shader branches.  `benchmark:gpu:renderer` requires a real
-  adapter and this box has only SwiftShader, where the numbers are
-  a different machine class — the same gap the round-18 and
-  round-19 records note, closed on a hardware pass rather than
-  guessed at.
+  shader branches.
+  *Correction (2026-08-03)*: the reason given for that was **wrong**.
+  This record said `benchmark:gpu:renderer` "requires a real adapter
+  and this box has only SwiftShader" — the box has an **AMD RX 580**
+  (RADV POLARIS10, alongside an Intel UHD 630), which is the same
+  hardware the 2026-08-01 validation pass benchmarked on, and the
+  benchmark harness does get the hardware adapter.  Only the *golden*
+  project pins SwiftShader, deliberately, and only for the WebGPU
+  adapter.  This is the second time that conclusion has been reached
+  and corrected: the 18.5 note claiming a software-only adapter was
+  corrected by the same hardware pass, which traced it to
+  `requestAdapter()` returning null on `about:blank` — probe from a
+  served page.  The measurement was therefore *skipped*, not blocked,
+  and remains open.
 - [x] **27.10 Closing docs sweep** (2026-08-02) — swept both
   documents for the round's vocabulary.  The README header carries
   round 27; the node-shape section now records the completed
@@ -6872,9 +6885,12 @@ compaction already covers gc); and graph-level `data` in the binary
 wire format — `cy.json()` already exports it, but `serializeElements`
 is elements-only and its output feeds `cy.add()`, which raises whether
 adding elements should overwrite the target's `data()`.  Also still
-open and blocked on hardware rather than on a decision: the device-side
-frame cost of round 27's new shader branches (27.9 — this box has only
-SwiftShader).
+open: the device-side frame cost of round 27's new shader branches
+(27.9).  That one was recorded as blocked on hardware, which was
+**wrong** — this box has an AMD RX 580, the same device the 2026-08-01
+hardware validation pass benchmarked on, and `benchmark:gpu:renderer`
+reaches it.  It is a measurement nobody has run, not one that cannot be
+run here; see the correction in the 27.9 entry.
 
 **Pass split** (tests-first; docs in-commit; each pass its own
 commit(s)):

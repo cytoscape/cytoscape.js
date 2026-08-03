@@ -8504,23 +8504,41 @@ describe and no suite prices:
   noise beside the apply it rides in, which is the 33.3 finding showing
   up from the other side.  A data write refreshing every node's
   `chart-values` is 529 µs.
-- [ ] **33.9 The remaining public surface**
-  (`benchmark/gpu/surface.mjs`, new) — *added to the plan while
-  executing it (2026-08-03), on the user's restatement of the scope:
-  cover as much of the API surface as possible.*  Passes 33.1–33.8
-  price the subsystems with an interesting cost model; this one is the
-  **breadth** pass, and its job is that the 33.12 audit reads
-  near-total rather than "the interesting third".  One row per public
-  member not already priced elsewhere, at a single scale: the core's
-  viewport quartet and its compute-without-committing twins,
-  introspection and the gating flags, `batch`, `json`, the collection's
-  iteration/comparison/building surface, the rendered-coordinate
-  accessors, the flag families, the compound traversals, the curve
-  accessors, the style getters, and `labelBoundingBox`.  Comparative
-  where v3 has the member, gpu-only where it does not — and the rows
-  are deliberately shallow (existence and order of magnitude), because
-  a member that turns out to matter earns a real suite, as every one
-  of 33.1–33.8 did.
+- [x] **33.9 The remaining public surface** (2026-08-03) — landed as
+  `benchmark/gpu/surface.mjs`: **90 rows, 80 of them v3-comparative**,
+  covering the members no dedicated suite touches — the viewport
+  quartet and its compute-without-committing twins, introspection and
+  the gating flags, batching, the iteration/comparison/set-building
+  surface, traversal, degree, the rendered-coordinate accessors, the
+  curve accessors, the compound traversals, the flag families, element
+  data/json/scratch.  Every op is **smoke-tested once before it is
+  benched**, and the three that could not be called are reported by
+  name rather than silently dropped: `midpoint`/`renderedMidpoint` and
+  the two endpoint accessors have no headless v3 side (they go through
+  the renderer — the same cause as 33.5's pick), so those rows are
+  gpu-only.
+  Most of the surface is where the earlier rounds said it would be:
+  set ops 4–175×, traversal 1.3–4×, `reset()` 127× and `viewport()`
+  77×, `collection()` 8.9×, batching ~7×.  **Four rows go the other
+  way, and they are the pass's value:**
+  - **`mutableElements()` — v4 251 µs against v3's 120 ns.**  v4's is
+    `elements()`, so it materializes the whole graph on every call
+    where v3 answers in constant time.
+  - **`indexOf()` — 12.5 µs against 204 ns** over a 2000-collection:
+    v4 scans linearly where v3 keeps an index.
+  - **`effectiveOpacity()` 34× slower** (4.7 µs vs 313 ns) and the
+    `takesUpSpace`/`interactive`/`transparent` trio 11× — all three
+    read through the style engine, which is 33.3's `readProp` finding
+    arriving from a second direction.
+  - `json()`/`jsons()` are ~1.2× v3's way, the columnar
+    rebuild-the-object cost 33.6 found on `data()`.
+  Two rows are named for their mechanism rather than their multiplier,
+  because the multiplier is not about v4: core `data()` and `scratch()`
+  read as ~8,600× and ~87,000×, and the cause is that a **styled** v3
+  runs a whole-graph style update on any core data *or scratch* write
+  (1.9 ms here, against 1.1 µs for the same instance unstyled).  That
+  is a real cost a v3 app pays, so the rows stay — but a reader should
+  not take 87,000× as a statement about v4's scratch.
 - [ ] **33.10 The report: every suite, one command** — finding 15,
   design call 3, and **open call 7's answer**.  The job table takes
   all fourteen suites plus the new ones, `gpuOnly` jobs render as

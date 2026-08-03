@@ -255,7 +255,8 @@ test.describe( 'WebGPU visual goldens', () => {
 
     const shapes = [
       'round-triangle', 'round-diamond', 'round-pentagon', 'round-hexagon',
-      'round-heptagon', 'round-octagon', 'round-tag', 'bottom-round-rectangle'
+      'round-heptagon', 'round-octagon', 'round-tag', 'bottom-round-rectangle',
+      'barrel'
     ];
     const elements = shapes.map( ( shape, i ) => ( {
       data: { id: shape, shape },
@@ -2445,6 +2446,60 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }, { elements, v3Style, v4Style } );
 
     expectParity( v3uri, v4uri, 'parity-round-shapes', testInfo );
+  } );
+
+  test( 'parity: barrel (round 27.5)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // v4 samples barrel's four bezier corners into segments rather than
+    // solving the curve exactly.  Whether that is good enough is not a
+    // judgement call — v3 renders the real quadraticCurveTo, so this diff
+    // is the answer.  Three sizes, because the corner offsets are
+    // size-relative until they hit v3's absolute caps (height 15, width
+    // 100), and the tall node is what exercises the capped regime.
+    const elements = [
+      { data: { id: 'small', shape: 'barrel' }, position: { x: -120, y: -50 } },
+      { data: { id: 'wide', shape: 'barrel' }, position: { x: 60, y: -50 } },
+      { data: { id: 'tall', shape: 'barrel' }, position: { x: -120, y: 70 } },
+      { data: { id: 'huge', shape: 'barrel' }, position: { x: 90, y: 70 } }
+    ];
+    const nodeStyle = { 'background-color': '#8e44ad', 'border-width': 3, 'border-color': '#3c1361' };
+    const size = { small: [ 60, 50 ], wide: [ 150, 44 ], tall: [ 70, 120 ], huge: [ 160, 110 ] };
+    const v3Style = [
+      { selector: 'node', style: { 'shape': 'barrel', ...nodeStyle } },
+      ...Object.entries( size ).map( ( [ id, [ w, h ] ] ) => (
+        { selector: `node[id = "${id}"]`, style: { 'width': w, 'height': h } } ) )
+    ];
+    const v4Style = {
+      nodes: {
+        'shape': 'barrel',
+        'width': { case: Object.entries( size ).map( ( [ id, [ w ] ] ) => (
+          { when: { data: 'id', eq: id }, then: w } ) ), else: 60 },
+        'height': { case: Object.entries( size ).map( ( [ id, [ , h ] ] ) => (
+          { when: { data: 'id', eq: id }, then: h } ) ), else: 50 },
+        ...nodeStyle
+      }
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    expectParity( v3uri, v4uri, 'parity-barrel', testInfo );
   } );
 
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {

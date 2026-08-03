@@ -22,7 +22,10 @@ import {
   ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
   ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, CUT_RECTANGLE_CORNER,
-  ROUND_POLYGON_RADIUS_DIV, ROUND_POLYGON_RADIUS_MAX,
+  BARREL_CTRL_OFFSET_PCT, BARREL_CURVE_SEGMENTS,
+  BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT,
+  BARREL_WIDTH_OFFSET_MAX, BARREL_WIDTH_OFFSET_PCT,
+  ROUND_POLYGON_RADIUS_DIV, ROUND_POLYGON_RADIUS_MAX, SHAPE_BARREL,
   SHAPE_BOTTOM_ROUND_RECTANGLE, SHAPE_CUT_RECTANGLE, SHAPE_MASK,
   SHAPE_POLYGON_CUSTOM, SHAPE_ROUND_TAG, SHAPE_ROUND_TRIANGLE, SHAPE_SHIFT
 } from '../contract.mjs';
@@ -1203,6 +1206,63 @@ fn cutRectangleSD(p: vec2f, half: vec2f, cut: f32) -> f32 {
   return max(rectangleSD(p, half), diag);
 }
 
+// v3's barrel (27.5): a rectangle whose four corners are quadratic
+// beziers.  The corner offsets are size-relative until they hit absolute
+// caps, so the outline is rebuilt per fragment rather than baked into a
+// unit table.  Each corner is sampled into BARREL_CURVE_SEGMENTS
+// segments — the same fidelity v3's own hit test uses — and the
+// resulting closed polygon runs through the standard exact-polygon
+// distance loop, so sign and distance are exact for that outline.
+fn barrelSD(p: vec2f, half: vec2f, zoomDpr: f32) -> f32 {
+  let hOff = min(${ BARREL_HEIGHT_OFFSET_MAX }.0 * zoomDpr, ${ BARREL_HEIGHT_OFFSET_PCT } * half.y * 2.0);
+  let wOff = min(${ BARREL_WIDTH_OFFSET_MAX }.0 * zoomDpr, ${ BARREL_WIDTH_OFFSET_PCT } * half.x * 2.0);
+  let ctrl = ${ BARREL_CTRL_OFFSET_PCT } * half.x * 2.0;
+  let x0 = -half.x;
+  let x1 = half.x;
+  let y0 = -half.y;
+  let y1 = half.y;
+
+  // the four corners, clockwise from the top-left, as (start, control, end)
+  var a = array<vec2f, 4>(
+    vec2f(x0, y0 + hOff), vec2f(x1 - wOff, y0), vec2f(x1, y1 - hOff), vec2f(x0 + wOff, y1));
+  var c = array<vec2f, 4>(
+    vec2f(x0 + ctrl, y0), vec2f(x1 - ctrl, y0), vec2f(x1 - ctrl, y1), vec2f(x0 + ctrl, y1));
+  var b = array<vec2f, 4>(
+    vec2f(x0 + wOff, y0), vec2f(x1, y0 + hOff), vec2f(x1 - wOff, y1), vec2f(x0, y1 - hOff));
+
+  const N: i32 = 4 * (${ BARREL_CURVE_SEGMENTS } + 1);
+  var v = array<vec2f, N>();
+  var k = 0;
+
+  for (var i = 0; i < 4; i++) {
+    for (var j = 0; j <= ${ BARREL_CURVE_SEGMENTS }; j++) {
+      let t = f32(j) / ${ BARREL_CURVE_SEGMENTS }.0;
+      let u = 1.0 - t;
+
+      v[k] = a[i] * (u * u) + c[i] * (2.0 * u * t) + b[i] * (t * t);
+      k = k + 1;
+    }
+  }
+
+  var d = dot(p - v[0], p - v[0]);
+  var s = 1.0;
+  var jj = N - 1;
+
+  for (var i = 0; i < N; i++) {
+    let e = v[jj] - v[i];
+    let w = p - v[i];
+    let bb = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(bb, bb));
+    let c1 = p.y >= v[i].y;
+    let c2 = p.y < v[jj].y;
+    let c3 = e.x * w.y > e.y * w.x;
+    if ((c1 && c2 && c3) || (!c1 && !c2 && !c3)) { s = -s; }
+    jj = i;
+  }
+
+  return s * sqrt(d);
+}
+
 // v3's bottom-round-rectangle (27.4): only the two bottom corners are
 // rounded.  Built from the round-rectangle field with the top corners'
 // radius set to zero, which is a per-corner radius selected by the sign
@@ -1219,7 +1279,7 @@ fn bottomRoundRectangleSD(p: vec2f, half: vec2f, r: f32) -> f32 {
 // (C3 — polyRef packs its blob record), 17 cut-rectangle (27.2).
 // radius is the round-rectangle corner radius in device px, pre-resolved
 // (B2); cut-rectangle reads the same word as its chamfer length.
-fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32) -> f32 {
+fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32, zoomDpr: f32) -> f32 {
   switch shape {
     case 0u: { return circleSD(p, half.x); }
     case 1u: { return ellipseSD(p, half); }
@@ -1228,6 +1288,7 @@ ${ POLY.cases }
     case ${ SHAPE_POLYGON_CUSTOM }u: { return customPolySD(p, half, polyRef); }
     case ${ SHAPE_CUT_RECTANGLE }u: { return cutRectangleSD(p, half, radius); }
     case ${ SHAPE_BOTTOM_ROUND_RECTANGLE }u: { return bottomRoundRectangleSD(p, half, radius); }
+    case ${ SHAPE_BARREL }u: { return barrelSD(p, half, zoomDpr); }
     default: { return roundRectangleSD(p, half, min(radius, min(half.x, half.y))); }
   }
 }
@@ -1436,7 +1497,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let radius = cornerLengthPx(shape, borderGeom[slot].x, half, frame.zoomDpr);
-  let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x);
+  let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x, frame.zoomDpr);
   var color = unpack4x8unorm(fillColors[slot]);
 
   // background gradient (C2): overrides the flat fill inside the shape
@@ -1557,7 +1618,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let radius = cornerLengthPx(shape, borderGeom[slot].x, half, frame.zoomDpr);
-  let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x);
+  let sd = nodeSD(shape, in.local, half, radius, borderGeom[slot].x, frame.zoomDpr);
   var color = unpack4x8unorm(fillColors[slot]);
 
   // the ghost body carries the gradient too (C2/C3; v3 redraws the
@@ -1639,7 +1700,7 @@ fn nodeInterior(shape: u32, p: vec2f, half: vec2f, m: f32, radius: f32, polyRef:
       return dot(q, q) <= lim * lim;
     }
     default: { // polygons: the normalized SD × min axis under-estimates depth
-      return nodeSD(shape, p, half, radius, polyRef) <= -m;
+      return nodeSD(shape, p, half, radius, polyRef, frame.zoomDpr) <= -m;
     }
   }
 }
@@ -3426,7 +3487,7 @@ fn fsImage(in: ImageVSOut) -> @location(0) vec4f {
   let bg = borderGeom[slot];
   let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
   let radius = cornerLengthPx(shape, bg.x, half, 1.0);
-  let sd = nodeSD(shape, p, half, radius, bg.x);
+  let sd = nodeSD(shape, p, half, radius, bg.x, 1.0);
   let aa = max(fwidth(sd), 1e-4);
   let bw = borderWidths[slot];
   let bpos = bg.y & 0xffu;
@@ -3611,7 +3672,7 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
   let bg = borderGeom[slot];
   let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
   let radius = cornerLengthPx(shape, bg.x, half, 1.0);
-  let sd = nodeSD(shape, p, half, radius, bg.x);
+  let sd = nodeSD(shape, p, half, radius, bg.x, 1.0);
   let aa = max(fwidth(sd), 1e-4);
   let bw = borderWidths[slot];
   let bpos = bg.y & 0xffu;

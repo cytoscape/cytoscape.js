@@ -125,8 +125,10 @@ describe('gpu/style', function(){
       expect( shapeOf('a') ).to.equal( SHAPE_RECTANGLE );
     });
 
-    it('still throws on unsupported shapes', function(){
-      expect( () => cy.style({ nodes: { shape: 'barrel' } }) ).to.throw(/unsupported/);
+    it('still throws on an unknown shape keyword', function(){
+      // 27.5 completed v3's node-shape vocabulary, so this used to name
+      // 'barrel' and now has to name something that is not a shape at all
+      expect( () => cy.style({ nodes: { shape: 'trapezoid' } }) ).to.throw(/unsupported/);
     });
 
     it('supports line-style with readback (round 10)', function(){

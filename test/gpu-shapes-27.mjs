@@ -4,8 +4,9 @@ import {
   POLYGON_POINTS, ROUND_POLYGON_SOURCE, pointsForShape
 } from '../src/gpu/shape-points.mjs';
 import {
-  SHAPE_CONCAVE_HEXAGON, SHAPE_CUT_RECTANGLE, SHAPE_RIGHT_RHOMBOID,
-  SHAPE_MASK, SHAPE_SHIFT
+  BARREL_CURVE_SEGMENTS, BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT,
+  SHAPE_BARREL, SHAPE_CONCAVE_HEXAGON, SHAPE_CUT_RECTANGLE,
+  SHAPE_RIGHT_RHOMBOID, SHAPE_MASK, SHAPE_SHIFT
 } from '../src/gpu/contract.mjs';
 
 /*
@@ -181,17 +182,46 @@ describe('gpu/shapes: the unported v3 keywords (round 27.2)', function(){
 
   });
 
+  describe('barrel (27.5)', function(){
+
+    it('compiles, stores and reads back', function(){
+      const cy = makeCy( { shape: 'barrel' } );
+
+      expect( cy.$id( 'a' ).style( 'shape' ) ).to.equal( 'barrel' );
+      expect( shapeIdOf( cy ) ).to.equal( SHAPE_BARREL );
+      cy.destroy();
+    });
+
+    it('is parameterized, not a unit table — the offsets cap absolutely', function(){
+      expect( POLYGON_POINTS.has( SHAPE_BARREL ) ).to.equal( false );
+
+      // v3's caps: heightOffset min(15, 5% of height), widthOffset
+      // min(100, 25% of width).  A tall node is in the capped regime, so
+      // a unit table would be wrong for it.
+      expect( Math.min( BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT * 600 ) )
+        .to.equal( BARREL_HEIGHT_OFFSET_MAX );
+      expect( Math.min( BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT * 100 ) )
+        .to.equal( 5 );
+    });
+
+    it('samples each corner at v3\'s own hit-test fidelity', function(){
+      expect( BARREL_CURVE_SEGMENTS ).to.equal( 4 );
+    });
+
+  });
+
   describe('the keyword set', function(){
 
     it('still rejects a keyword v4 has not ported', function(){
-      expect( () => makeCy( { shape: 'barrel' } ) ).to.throw( /barrel/ );
+      expect( () => makeCy( { shape: 'not-a-shape' } ) ).to.throw( /not-a-shape/ );
     });
 
     it('accepts every ported keyword without throwing', function(){
       const ported = [
         'right-rhomboid', 'concave-hexagon', 'cut-rectangle',
         'round-triangle', 'round-diamond', 'round-pentagon', 'round-hexagon',
-        'round-heptagon', 'round-octagon', 'round-tag', 'bottom-round-rectangle'
+        'round-heptagon', 'round-octagon', 'round-tag', 'bottom-round-rectangle',
+        'barrel'
       ];
 
       for( const keyword of ported ){

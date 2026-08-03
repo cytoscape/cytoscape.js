@@ -173,6 +173,27 @@ export const SHAPE_BOTTOM_ROUND_RECTANGLE = 25;
 export const ROUND_POLYGON_RADIUS_DIV = 10;
 export const ROUND_POLYGON_RADIUS_MAX = 8;
 
+// round 27.5: v3's barrel — a rectangle whose four corners are quadratic
+// beziers.  The offsets are size-relative until they hit absolute caps,
+// so like cut-rectangle it is a parameterized shape, not a unit table.
+export const SHAPE_BARREL = 26;
+
+/** v3's `getBarrelCurveConstants`, in model px. */
+export const BARREL_HEIGHT_OFFSET_MAX = 15;
+export const BARREL_HEIGHT_OFFSET_PCT = 0.05;
+export const BARREL_WIDTH_OFFSET_MAX = 100;
+export const BARREL_WIDTH_OFFSET_PCT = 0.25;
+export const BARREL_CTRL_OFFSET_PCT = 0.05;
+
+/**
+ * Segments each barrel corner's bezier is sampled into.  Four is not a
+ * shortcut: it is exactly the fidelity v3's own hit test uses
+ * (`intersectLine` samples t = 0.15, 0.5, 0.85 between the endpoints),
+ * and at v3's corner offsets the deviation from the drawn curve is
+ * sub-pixel.  The parity diff in round 27.5 is what settled it.
+ */
+export const BARREL_CURVE_SEGMENTS = 4;
+
 /*
 The node shape id rides `borderGeom.y` alongside the border position
 (bits 0..7).  Round 27.1 widened the field from four bits to a full byte

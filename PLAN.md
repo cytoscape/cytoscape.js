@@ -6522,7 +6522,33 @@ commit(s)):
   `shapes-27-round` golden covers the family plus the anisotropic
   case.  17 Node specs; 2311 Node tests, 63 module tests,
   typecheck, lint, 87/87 webgpu, 72/72 webgpu-visual.
-- [ ] **27.5 The quadratic-bezier SDF + `barrel`.**
+- [x] **27.5 `barrel`** (2026-08-02) — landed, and the plan's
+  premise turned out to be wrong in a useful way.  It called for an
+  exact quadratic-bezier SDF (a cubic solve) shared with
+  `triangle-backcurve`.  But **v3 itself approximates**: its barrel
+  hit test samples each corner's curve at t = 0.15/0.5/0.85 and runs
+  a polygon test.  So v4 rebuilds the outline per fragment — four
+  bezier corners sampled into `BARREL_CURVE_SEGMENTS` = 4 segments,
+  the same fidelity v3's own hit test uses — and runs the standard
+  exact-polygon distance loop over the result.  Sign and distance
+  are exact *for that outline*; the only approximation is the
+  outline itself.
+  Barrel's offsets are size-relative until they hit v3's absolute
+  caps (height 15, width 100), so like `cut-rectangle` it is a
+  parameterized shape rather than a unit table, and `nodeSD` gained
+  a `zoomDpr` argument to resolve them.  `cpu-pick` gained
+  `insideBarrel`, built from the same constants.
+  **Whether the sampling is good enough was measured, not
+  asserted**: v3 draws the real `quadraticCurveTo`, so the parity
+  diff is the answer — four sizes spanning the capped and uncapped
+  regimes differ by **14 px (0.012%)**.  At v3's corner offsets the
+  sampled and exact curves are indistinguishable, so the exact
+  bezier SDF was not built.  27.6 will decide `triangle-backcurve`
+  on its own evidence rather than inheriting the assumption.
+  **This completes v3's node-shape vocabulary.**  A pre-existing
+  spec that used `'barrel'` as its example of an unsupported
+  keyword had to be changed to name something that is not a shape
+  at all — there is no unported v3 node shape left.
 - [ ] **27.6 Compound arrow shapes** — `triangle-tee`,
   `circle-triangle`, `triangle-cross`, `triangle-backcurve`.
 - [ ] **27.7 Numeric `text-rotation`** — the glyph word, the node

@@ -1,7 +1,10 @@
 import {
   FLAG_ALIVE, FLAG_DRAWN, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_TEXT_EVENTS,
+  BARREL_CTRL_OFFSET_PCT, BARREL_CURVE_SEGMENTS,
+  BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT,
+  BARREL_WIDTH_OFFSET_MAX, BARREL_WIDTH_OFFSET_PCT,
   CUT_RECTANGLE_CORNER, ROUND_POLYGON_RADIUS_DIV, ROUND_POLYGON_RADIUS_MAX,
-  SHAPE_BOTTOM_ROUND_RECTANGLE,
+  SHAPE_BARREL, SHAPE_BOTTOM_ROUND_RECTANGLE,
   SHAPE_CIRCLE, SHAPE_CUT_RECTANGLE, SHAPE_ELLIPSE, SHAPE_POLYGON_CUSTOM,
   SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE, SHAPE_ROUND_TAG, SHAPE_ROUND_TRIANGLE
 } from '../contract.mjs';
@@ -125,7 +128,7 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
       return insideUnitPolygon( points, dx / hw, dy / hh );
     }
 
-    return insideShape( shape, dx, dy, hw, hh, radius );
+    return insideShape( shape, dx, dy, hw, hh, radius, frame.zoomDpr );
   };
 
   for( let slot = view.highWater( 'nodes' ) - 1; slot >= 0; slot-- ){
@@ -145,7 +148,8 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
 
 // inside tests matching the sign of the shader SDFs (sd <= 0 picks)
 function insideShape(
-  shape: number, dx: number, dy: number, hw: number, hh: number, radius: number
+  shape: number, dx: number, dy: number, hw: number, hh: number, radius: number,
+  zoomDpr: number
 ): boolean {
   switch( shape ){
     case SHAPE_CIRCLE: // circleSD uses half.x as the radius
@@ -163,6 +167,8 @@ function insideShape(
 
       return Math.min( Math.max( qx, qy ), 0 ) + Math.sqrt( mx * mx + my * my ) - r <= 0;
     }
+    case SHAPE_BARREL: // 27.5: the same sampled outline the shader builds
+      return insideBarrel( dx, dy, hw, hh, zoomDpr );
     case SHAPE_BOTTOM_ROUND_RECTANGLE: { // 27.4: only the bottom corners round
       const r = dy > 0 ? Math.min( radius, Math.min( hw, hh ) ) : 0;
       const qx = Math.abs( dx ) - hw + r;
@@ -199,6 +205,59 @@ function insideShape(
       return insideUnitPolygon( points, dx / hw, dy / hh );
     }
   }
+}
+
+/**
+ * Inside-ness for v3's barrel (27.5): rebuild the same sampled outline
+ * the shader's `barrelSD` builds — four quadratic-bezier corners at
+ * BARREL_CURVE_SEGMENTS segments each — and run an even-odd test over
+ * it.  Built from the same constants so the two consumers agree by
+ * construction.
+ *
+ * @param dx — the point's x offset from the node centre, device px
+ * @param dy — the point's y offset from the node centre, device px
+ * @param hw — half width, device px
+ * @param hh — half height, device px
+ * @param zoomDpr — model-to-device scale, for the absolute offset caps
+ * @returns true when the point is inside the barrel outline
+ */
+function insideBarrel(
+  dx: number, dy: number, hw: number, hh: number, zoomDpr: number
+): boolean {
+  const hOff = Math.min( BARREL_HEIGHT_OFFSET_MAX * zoomDpr, BARREL_HEIGHT_OFFSET_PCT * hh * 2 );
+  const wOff = Math.min( BARREL_WIDTH_OFFSET_MAX * zoomDpr, BARREL_WIDTH_OFFSET_PCT * hw * 2 );
+  const ctrl = BARREL_CTRL_OFFSET_PCT * hw * 2;
+  const x0 = -hw, x1 = hw, y0 = -hh, y1 = hh;
+  const a = [ [ x0, y0 + hOff ], [ x1 - wOff, y0 ], [ x1, y1 - hOff ], [ x0 + wOff, y1 ] ];
+  const c = [ [ x0 + ctrl, y0 ], [ x1 - ctrl, y0 ], [ x1 - ctrl, y1 ], [ x0 + ctrl, y1 ] ];
+  const b = [ [ x0 + wOff, y0 ], [ x1, y0 + hOff ], [ x1 - wOff, y1 ], [ x0, y1 - hOff ] ];
+  const pts: number[] = [];
+
+  for( let i = 0; i < 4; i++ ){
+    for( let j = 0; j <= BARREL_CURVE_SEGMENTS; j++ ){
+      const t = j / BARREL_CURVE_SEGMENTS;
+      const u = 1 - t;
+
+      pts.push(
+        a[ i ][ 0 ] * u * u + c[ i ][ 0 ] * 2 * u * t + b[ i ][ 0 ] * t * t,
+        a[ i ][ 1 ] * u * u + c[ i ][ 1 ] * 2 * u * t + b[ i ][ 1 ] * t * t
+      );
+    }
+  }
+
+  let inside = false;
+
+  for( let i = 0, j = pts.length / 2 - 1; i < pts.length / 2; j = i, i++ ){
+    const xi = pts[ i * 2 ], yi = pts[ i * 2 + 1 ];
+    const xj = pts[ j * 2 ], yj = pts[ j * 2 + 1 ];
+
+    if( ( yi > dy ) !== ( yj > dy )
+      && dx < ( xj - xi ) * ( dy - yi ) / ( yj - yi ) + xi ){
+      inside = !inside;
+    }
+  }
+
+  return inside;
 }
 
 /**

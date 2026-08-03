@@ -7812,5 +7812,32 @@ commit(s)):
   Comments only in `src/`, so the browser suites are unaffected;
   `dist/cytoscape-gpu.d.ts` is regenerated and committed (1093 doc
   blocks).  2485 Node tests, 68 module tests, typecheck, lint.
-- [ ] **31.3 `mouseout` and `pointercancel`** in the `webgpu` project.
+- [x] **31.3 `mouseout` and `pointercancel`** (2026-08-03) — landed, 2
+  specs in the `webgpu` project.
+  `mouseout` is the plain sibling gap: hover on, assert `mouseover:a`;
+  move *within* the node and assert no `mouseout` (the half that makes
+  it a hover-boundary test rather than a "some event fired" test);
+  move off and assert `mouseout:a`.
+  `pointercancel` is driven with **synthetic `PointerEvent`s** rather
+  than `page.mouse`, because the handler matches the cancel against the
+  press's `pointerId` and only a synthetic event lets the spec choose
+  it.  (`capture()` already swallows the `setPointerCapture` throw that
+  inactive synthetic pointers raise, so nothing had to change to make
+  this drivable.)  It asserts the recorded 17.2 rule: a cancelled
+  gesture **still frees but never reports `dragfree`** — the drag
+  aborted rather than completed — plus no `tapend`, the node
+  un-grabbed, and, as the precondition that makes the rest mean
+  anything, that the gesture really was mid-drag when cancelled.
+  **Two of the four controls came back BAD on the first attempt, and
+  the cause was the control, not the spec.**  `free`/`freeon` are
+  emitted from two places — `onPointerUp` and `onPointerCancel` — with
+  identical text, so a string replacement patched the *pointerup*
+  copy and the cancel path kept working.  Re-run against the cancel
+  block by line, both fail as they should.  Worth recording as a
+  method note: when a control edits by string match, check the string
+  is unique before believing a BAD result.
+  Controls, all four: `mouseout` never emitted → its spec fails;
+  `pointercancel` never emitted → 1 fails; the cancel path stops
+  freeing → 1 fails; the cancel path also reports `dragfree` → 1
+  fails.  93/93 `webgpu` (91 + 2).
 - [ ] **31.4 Closing docs sweep.**

@@ -797,6 +797,104 @@ test.describe( 'WebGPU renderer', () => {
     expect( bg ).toContain( 'tapend:cy' );
   } );
 
+  /*
+  Round 31.3: the two names in the round-17 vocabulary that no test
+  mentioned.  Surveying every event name in the vocabulary against the
+  whole corpus, `mouseout` and `pointercancel` were the only two that
+  appeared nowhere — `mouseover` is asserted six times in this file and
+  its sibling zero, the shape 29.2 and 30.3 both hit.
+  */
+  test( 'mouseout fires when the hover leaves the node (the mouseover sibling)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+    await page.evaluate( () => {
+      window.__events = [];
+
+      for( const type of [ 'mouseover', 'mouseout' ] ){
+        window.cy.on( type, e =>
+          window.__events.push( type + ':' + ( e.target === window.cy ? 'cy' : e.target.id() ) ) );
+      }
+    } );
+
+    await page.mouse.move( center.x - 150, center.y - 120 );
+    await page.mouse.move( center.x, center.y, { steps: 4 } );
+
+    await expect.poll( () => page.evaluate( () => window.__events.join( ',' ) ) )
+      .toContain( 'mouseover:a' );
+
+    // still on the node: moving within it must not fire the out event
+    await page.mouse.move( center.x + 5, center.y + 5, { steps: 2 } );
+
+    expect( ( await page.evaluate( () => window.__events.join( ',' ) ) ) )
+      .not.toContain( 'mouseout' );
+
+    await page.mouse.move( center.x - 150, center.y - 120, { steps: 4 } );
+
+    await expect.poll( () => page.evaluate( () => window.__events.join( ',' ) ) )
+      .toContain( 'mouseout:a' );
+  } );
+
+  test( 'pointercancel aborts the gesture: free without dragfree (17.1/17.2)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // driven with synthetic PointerEvents so the cancel carries the same
+    // pointerId as the press — which is what the handler matches on
+    const result = await page.evaluate( async center => {
+      window.__events = [];
+
+      for( const type of [ 'pointercancel', 'grab', 'drag', 'free', 'freeon', 'dragfree', 'tapend' ] ){
+        window.cy.on( type, e =>
+          window.__events.push( type + ':' + ( e.target === window.cy ? 'cy' : e.target.id() ) ) );
+      }
+
+      const canvas = document.querySelector( 'canvas' );
+      const send = ( type, x, y ) => canvas.dispatchEvent( new PointerEvent( type, {
+        pointerId: 7, pointerType: 'mouse', isPrimary: true, bubbles: true,
+        clientX: x, clientY: y, button: 0, buttons: type === 'pointerup' ? 0 : 1
+      } ) );
+
+      send( 'pointerdown', center.x, center.y );
+      send( 'pointermove', center.x + 30, center.y + 15 );
+
+      const dragged = window.cy.$id( 'a' ).position();
+      const grabbedMidGesture = window.cy.$id( 'a' ).grabbed();
+
+      send( 'pointercancel', center.x + 30, center.y + 15 );
+
+      return {
+        events: window.__events.join( ',' ),
+        dragged, grabbedMidGesture,
+        grabbedAfter: window.cy.$id( 'a' ).grabbed()
+      };
+    }, center );
+
+    // the gesture really was in progress, so the cancel has something to abort
+    expect( result.grabbedMidGesture ).toBe( true );
+    expect( result.dragged.x ).toBeCloseTo( 30, 0 );
+
+    expect( result.events ).toContain( 'pointercancel:cy' );
+
+    // v4's recorded rule: a cancelled gesture still frees, but never
+    // reports dragfree — the drag aborted rather than completing
+    expect( result.events ).toContain( 'free:a' );
+    expect( result.events ).toContain( 'freeon:a' );
+    expect( result.events ).not.toContain( 'dragfree' );
+    expect( result.events ).not.toContain( 'tapend' );
+
+    expect( result.grabbedAfter ).toBe( false );
+  } );
+
   test( 'the drag-state family: grab/drag/free with companions (round 17.2)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

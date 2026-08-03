@@ -378,8 +378,23 @@ fn isVisible(slot: u32) -> bool {
 
   if (labelFade(heightPx, frame.labelFadePx) <= 0.001) { return false; }
 
-  let originPx = modelToPx(frame, nodePositions[g.nodeSlot]) + g.offset * frame.zoomDpr;
   let sizePx = g.size * frame.zoomDpr;
+  let anchorPx = modelToPx(frame, nodePositions[g.nodeSlot]);
+
+  // 27.7: a node label can carry a numeric rotation, so the bound is the
+  // exact AABB of the rotated rect about its anchor (nodes never
+  // autorotate — that mode needs an edge's slope)
+  if (g.rotation != 0.0) {
+    let cs = vec2f(cos(g.rotation), sin(g.rotation));
+    let centerPx = anchorPx + rotateBy(cs, g.offset + g.size * 0.5) * frame.zoomDpr;
+    let ext = vec2f(abs(cs.x) * sizePx.x + abs(cs.y) * sizePx.y,
+                    abs(cs.y) * sizePx.x + abs(cs.x) * sizePx.y) * 0.5;
+
+    return !(centerPx.x + ext.x < 0.0 || centerPx.x - ext.x > frame.viewportPx.x ||
+             centerPx.y + ext.y < 0.0 || centerPx.y - ext.y > frame.viewportPx.y);
+  }
+
+  let originPx = anchorPx + g.offset * frame.zoomDpr;
 
   return !(originPx.x + sizePx.x < 0.0 || originPx.x > frame.viewportPx.x ||
            originPx.y + sizePx.y < 0.0 || originPx.y > frame.viewportPx.y);
@@ -491,13 +506,16 @@ fn isVisible(slot: u32) -> bool {
     slk = slk + length(modelToPx(frame, pb) - modelToPx(frame, pa)) * 0.5;
   }
 
-  if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
-    // autorotated glyphs: the exact AABB of the rotated rect, in the
-    // same rotation frame as the VS for straight owners.  A curved
-    // owner's frame can differ (a loop rotates by its c1->c2 tangent),
-    // so those take the frame-independent worst case — the half
-    // diagonal — plus the slack-covered anchor shift.
-    let cs = autorotateFrame(pa, pb);
+  if ((g.nodeSlot & GLYPH_ROTATE) != 0u || g.rotation != 0.0) {
+    // rotated glyphs: the exact AABB of the rotated rect, in the same
+    // rotation frame the VS uses.  A curved owner's autorotate frame can
+    // differ (a loop rotates by its c1->c2 tangent), so those take the
+    // frame-independent worst case — the half diagonal — plus the
+    // slack-covered anchor shift.  27.7: a numeric rotation is a stored
+    // angle, so it needs no frame reconstruction at all.
+    let cs = select(vec2f(cos(g.rotation), sin(g.rotation)),
+                    autorotateFrame(pa, pb),
+                    (g.nodeSlot & GLYPH_ROTATE) != 0u);
     var centerPx = modelToPx(frame, mid) + rotateBy(cs, g.offset + g.size * 0.5) * frame.zoomDpr;
     var ext = vec2f(abs(cs.x) * sizePx.x + abs(cs.y) * sizePx.y,
                     abs(cs.y) * sizePx.x + abs(cs.x) * sizePx.y) * 0.5;

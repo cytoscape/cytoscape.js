@@ -6586,8 +6586,40 @@ commit(s)):
   (`'triangle-backcurve'`) as its example of an unsupported one.
   2315 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu,
   74/74 webgpu-visual.
-- [ ] **27.7 Numeric `text-rotation`** — the glyph word, the node
-  rotation path, the cull frame and the CPU pick OBB.
+- [x] **27.7 Numeric `text-rotation`** (2026-08-02) — landed.
+  Rotation was one bit — `autorotate`, edge labels only, the angle
+  derived live on-GPU from the edge's slope.  v3 also takes a plain
+  number of radians, on any label.
+  **The encoding is the interesting call.**  The stored value is the
+  angle in radians with **`NaN` meaning autorotate**.  That works
+  because `'none'` and a rotation of 0 radians are the *same
+  rendering*, so collapsing them costs nothing — and it leaves the
+  whole real line free for numeric values, where an enum id would
+  have collided outright: autorotate's id was `1`, and 1 radian is
+  a perfectly ordinary rotation (pinned by a spec).
+  `GLYPH_WORDS` went 14 → 16.  15 would hold the data but breaks the
+  struct's 8-byte alignment, and the alternative — a per-owner
+  storage buffer — was rejected because the edge label pipeline is
+  already at 7 storage buffers against a base limit of 8.  Recorded
+  cost: 64 bytes per glyph instead of 56, ~14% on the heaviest
+  stream.
+  Node labels gained a rotation path they never had (the VS now
+  takes one branch for both modes), the glyph cull computes the
+  exact rotated-rect AABB from the stored angle on both the node
+  and edge streams, and `cpu-pick` gained an **OBB** test — it
+  previously asserted in a comment that node labels never rotate,
+  which stopped being true here.  `autorotate` stays edge-only and
+  now says so in its error message.
+  **The parity test had to be rebuilt to mean anything.**  The first
+  version — four modest labels at small angles — passed at 0.514%,
+  and then passed at 0.672% with v4 **ignoring rotation entirely**.
+  A test that cannot fail is not evidence.  The scene is now
+  ink-dominated (40px text, ±90°/±45°): 2.3% with rotation honoured
+  against **5.8% for the same control, which fails the bound**.
+  The floor is glyph rasterization, not placement — canvas vs SDF —
+  which is why this one bound is 3% where the shape diffs sit near
+  0.05%.  13 Node specs; 2328 Node tests, 63 module tests,
+  typecheck, lint, 87/87 webgpu, 75/75 webgpu-visual.
 - [ ] **27.8 `border-style` / `outline-style`** — the perimeter
   parameter and the dash/double band.
 - [ ] **27.9 Benchmarks + browser specs** — the shape and arrow

@@ -28,7 +28,15 @@ A negative u0 marks a solid background quad (no atlas sample); its v0
 carries the run's glyph-block height for LOD purposes.
 */
 
-export const GLYPH_WORDS = 14;
+/*
+Round 27.7 widened this from 14 to 16 to carry a per-glyph rotation.
+15 would have been enough for the data but breaks the struct's 8-byte
+alignment (the vec2f members), so 16 it is — 64 bytes per glyph, up from
+56.  That is a real ~14% cost on the heaviest stream, paid so that a
+numeric `text-rotation` needs no extra storage binding: the edge label
+pipeline is already at 7 storage buffers against a base limit of 8.
+*/
+export const GLYPH_WORDS = 16;
 export const GLYPH_BYTES = GLYPH_WORDS * 4;
 export const DEAD_GLYPH = 0xffffffff;
 /**

@@ -99,10 +99,14 @@ describe('gpu/edge labels: model + style', function(){
     expect( cy.$id('ab').style('text-rotation') ).to.equal('autorotate');
   });
 
-  it('text-rotation rejects numbers, unknown keywords, and the nodes group', function(){
-    expect( () => cy.style({ edges: { 'text-rotation': 90 } }) ).to.throw(/numeric rotations/);
-    expect( () => cy.style({ edges: { 'text-rotation': 'sideways' } }) ).to.throw(/unsupported/);
-    expect( () => cy.style({ nodes: { 'text-rotation': 'autorotate' } }) ).to.throw(/edge style property/);
+  it('text-rotation takes numbers (27.7) but rejects unknown keywords', function(){
+    // round 27.7 made numeric rotations legal on every label; only
+    // 'autorotate' stays edge-only, since it resolves from an edge slope
+    cy.style({ edges: { 'text-rotation': 0.9 } });
+    expect( cy.$id('ab').style('text-rotation') ).to.equal( 0.9 );
+
+    expect( () => cy.style({ edges: { 'text-rotation': 'sideways' } }) ).to.throw(/text-rotation/);
+    expect( () => cy.style({ nodes: { 'text-rotation': 'autorotate' } }) ).to.throw(/edge-only/);
   });
 
   it('case mappers drive text-rotation', function(){

@@ -222,6 +222,7 @@ export class LabelLayer {
         f32[ at + 11 ] = entry.bgBorderWidth;
         f32[ at + 12 ] = zoomDprMin; // the box hides with its text
         f32[ at + 13 ] = endParam; // and anchors with it (D4)
+        f32[ at + 14 ] = entry.rotation; // and turns with it (27.7)
         at += GLYPH_WORDS;
       }
 
@@ -242,6 +243,7 @@ export class LabelLayer {
         f32[ at + 11 ] = outlineW;
         f32[ at + 12 ] = zoomDprMin;
         f32[ at + 13 ] = endParam;
+        f32[ at + 14 ] = entry.rotation; // 27.7: numeric text-rotation
         at += GLYPH_WORDS;
       }
 

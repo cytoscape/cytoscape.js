@@ -95,6 +95,9 @@ type RGBA = [ number, number, number, number ];
 
 /** Resolved channel values for one element, before writing to columns. */
 interface NodeComputed {
+  /** text-rotation in radians (27.7); NaN is not valid on nodes. */
+  textRotation: number;
+
   fillColor: RGBA;
   borderColor: RGBA;
   width: number;
@@ -294,7 +297,11 @@ interface EdgeComputed {
   textBgPadding: number;
   textMarginX: number;
   textMarginY: number;
-  /** 0 none (horizontal), 1 autorotate (TEXT_ROTATIONS ids; edges only) */
+  /**
+   * text-rotation in radians, with NaN meaning `autorotate` (27.7).
+   * Numeric rotations apply to any label; autorotate is edge-only,
+   * since it resolves from the edge's own slope.
+   */
   textRotation: number;
   // end labels (round 13 D4): two more glyph streams anchored at arc
   // distance source/target-text-offset from each end; the remaining
@@ -351,6 +358,7 @@ type ArrowShape =
   | 'triangle-tee' | 'circle-triangle' | 'triangle-cross' | 'triangle-backcurve';
 
 const NODE_DEFAULTS: NodeComputed = {
+  textRotation: 0,
   fillColor: [ 153, 153, 153, 255 ], // #999
   borderColor: [ 0, 0, 0, 255 ],
   width: 30,
@@ -639,7 +647,7 @@ const NODE_READ: ReadonlySet<string> = new Set( [
   'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius',
   'text-outline-width', 'text-outline-color', 'text-outline-opacity',
   'text-background-color', 'text-background-opacity', 'text-background-padding',
-  'text-margin-x', 'text-margin-y', 'min-zoomed-font-size',
+  'text-margin-x', 'text-margin-y', 'min-zoomed-font-size', 'text-rotation',
   'text-halign', 'text-valign',
   'text-transform', 'text-background-shape',
   'text-wrap', 'text-max-width', 'line-height', 'text-overflow-wrap', 'text-justification',
@@ -1310,29 +1318,35 @@ const parseLineStyle = ( value: unknown ): number => {
   return style;
 };
 
-/** text-rotation keywords (edge labels): 0 none, 1 autorotate. */
-const TEXT_ROTATIONS: Record<string, number> = {
-  'none': 0,
-  'autorotate': 1
-};
+/*
+text-rotation (round 27.7).  The stored value is the rotation in
+**radians**, with `NaN` as the one sentinel, meaning `autorotate`.
 
-const TEXT_ROTATION_NAMES: Record<number, string> = {
-  0: 'none',
-  1: 'autorotate'
-};
+That works because 'none' and a rotation of 0 radians are the same
+rendering, so collapsing them costs nothing — and it leaves the whole
+real line free for numeric values, where an enum id would have
+collided (v3 accepts a bare number, and 1 radian is a perfectly
+ordinary one).  Autorotate is the only mode that is not an angle at
+all: it is resolved per frame from the edge's own slope.
+*/
+const AUTOROTATE = NaN;
 
 const parseTextRotation = ( value: unknown ): number => {
-  const rotation = TEXT_ROTATIONS[ String( value ) ];
+  if( value === 'none' ){ return 0; }
+  if( value === 'autorotate' ){ return AUTOROTATE; }
+  if( typeof value === 'number' && isFinite( value ) ){ return value; }
 
-  if( rotation == null ){
-    throw new Error(
-      `The text-rotation '${String( value )}' is unsupported in the GPU prototype; ` +
-      `use one of: ${Object.keys( TEXT_ROTATIONS ).join( ', ' )} ` +
-      `(numeric rotations are not supported)`
-    );
-  }
+  throw new Error(
+    `The text-rotation '${String( value )}' is unsupported in the GPU prototype; ` +
+    `use 'none', 'autorotate', or a number of radians`
+  );
+};
 
-  return rotation;
+/** Stored rotation → the resolved value a getter reports. */
+const textRotationName = ( rotation: number ): string | number => {
+  if( Number.isNaN( rotation ) ){ return 'autorotate'; }
+
+  return rotation === 0 ? 'none' : rotation;
 };
 
 /** curve-style keywords (12a: bezier; 12b: the unbundled families). */
@@ -2398,10 +2412,13 @@ const MAPPABLE: Record<string, MappableChannel> = {
     default: () => NODE_DEFAULTS.textMarginY
   },
   'text-rotation': {
-    kind: 'enum', groups: [ 'edges' ],
-    parseEnum: v => TEXT_ROTATIONS[ String( v ) ] ?? null,
+    // 27.7: nodes joined edges here — v3 allows a numeric rotation on any
+    // label, while `autorotate` stays edge-only (it needs a slope)
+    kind: 'enum', groups: [ 'nodes', 'edges' ],
+    parseEnum: v => { try { return parseTextRotation( v ); } catch { return null; } },
     set: ( c, v ) => { c.textRotation = v as number; },
-    default: () => EDGE_DEFAULTS.textRotation
+    default: group => group === 'nodes'
+      ? NODE_DEFAULTS.textRotation : EDGE_DEFAULTS.textRotation
   },
   'source-text-offset': {
     kind: 'number', groups: [ 'edges' ],
@@ -2435,13 +2452,13 @@ const MAPPABLE: Record<string, MappableChannel> = {
   },
   'source-text-rotation': {
     kind: 'enum', groups: [ 'edges' ],
-    parseEnum: v => TEXT_ROTATIONS[ String( v ) ] ?? null,
+    parseEnum: v => { try { return parseTextRotation( v ); } catch { return null; } },
     set: ( c, v ) => { c.sourceTextRotation = v as number; },
     default: () => EDGE_DEFAULTS.sourceTextRotation
   },
   'target-text-rotation': {
     kind: 'enum', groups: [ 'edges' ],
-    parseEnum: v => TEXT_ROTATIONS[ String( v ) ] ?? null,
+    parseEnum: v => { try { return parseTextRotation( v ); } catch { return null; } },
     set: ( c, v ) => { c.targetTextRotation = v as number; },
     default: () => EDGE_DEFAULTS.targetTextRotation
   },
@@ -4541,9 +4558,10 @@ export class StyleEngine {
       case 'text-rotation': {
         const entry = store.labelAt( slot, ref.group );
 
+        // stored truth: the sidecar keeps the flag and the angle apart
         return entry != null
-          ? ( entry.rotate ? 'autorotate' : 'none' )
-          : TEXT_ROTATION_NAMES[ this.defFor( ref ).computed.textRotation ];
+          ? ( entry.rotate ? 'autorotate' : textRotationName( entry.rotation ) )
+          : textRotationName( this.defFor( ref ).computed.textRotation );
       }
       case 'source-label': case 'source-text-offset': case 'source-text-margin-x':
       case 'source-text-margin-y': case 'source-text-rotation':
@@ -4569,8 +4587,8 @@ export class StyleEngine {
         }
 
         return entry != null
-          ? ( entry.rotate ? 'autorotate' : 'none' )
-          : TEXT_ROTATION_NAMES[ src ? d.sourceTextRotation : d.targetTextRotation ];
+          ? ( entry.rotate ? 'autorotate' : textRotationName( entry.rotation ) )
+          : textRotationName( src ? d.sourceTextRotation : d.targetTextRotation );
       }
 
       // shared names, resolved per group
@@ -4866,10 +4884,14 @@ export class StyleEngine {
         throw new Error( `'${norm}' is an edge style property` );
       }
 
-      if( norm === 'text-rotation' && group === 'nodes' ){
-        // autorotate is an edge concept (rotate to the edge's angle);
-        // per-element numeric rotation is a logged parity gap, not built
-        throw new Error( `'text-rotation' is an edge style property in the GPU prototype` );
+      // the raw sheet value may be a mapper object here, so test the
+      // keyword directly rather than parsing
+      if( norm === 'text-rotation' && group === 'nodes' && value === 'autorotate' ){
+        // 27.7: numeric rotations now work on node labels; `autorotate`
+        // is still an edge concept — it resolves from the edge's slope,
+        // and a node has none
+        throw new Error(
+          `text-rotation 'autorotate' is edge-only; nodes take a number of radians` );
       }
 
       if( CURVE_PROPS.has( norm ) && group === 'nodes' ){
@@ -5413,7 +5435,9 @@ export class StyleEngine {
       marginX: computed.textMarginX,
       marginY: computed.textMarginY,
       endOffset: 0,
-      rotate: group === 'edges' && ( computed as Computed ).textRotation === 1
+      rotate: group === 'edges' && Number.isNaN( ( computed as Computed ).textRotation ),
+      rotation: Number.isNaN( ( computed as Computed ).textRotation )
+        ? 0 : ( computed as Computed ).textRotation
     }, group );
 
     // end labels (D4): two more streams per edge, anchored at arc
@@ -5446,7 +5470,9 @@ export class StyleEngine {
           marginX: src ? ec.sourceTextMarginX : ec.targetTextMarginX,
           marginY,
           endOffset: src ? ec.sourceTextOffset : ec.targetTextOffset,
-          rotate: ( src ? ec.sourceTextRotation : ec.targetTextRotation ) === 1
+          rotate: Number.isNaN( src ? ec.sourceTextRotation : ec.targetTextRotation ),
+          rotation: ( r => Number.isNaN( r ) ? 0 : r )(
+            src ? ec.sourceTextRotation : ec.targetTextRotation )
         }, src ? 'edgeSource' : 'edgeTarget' );
       }
     }

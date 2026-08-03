@@ -757,6 +757,14 @@ export interface LabelEntry {
    * the baseline angle stays within (-90°, 90°]).
    */
   rotate: boolean;
+
+  /**
+   * text-rotation as a number: the label's own rotation in radians
+   * (round 27.7).  Zero for the overwhelmingly common unrotated case,
+   * and mutually exclusive with `rotate` — v3's prop is one value, so a
+   * label is either autorotated or turned by a fixed angle, never both.
+   */
+  rotation: number;
   /** text-wrap (round 16.2): 0 none, 1 wrap, 2 ellipsis */
   wrap: number;
   /** text-max-width, model px (the wrap/truncation width) */

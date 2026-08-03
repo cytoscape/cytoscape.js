@@ -2572,6 +2572,74 @@ test.describe( 'v3-vs-v4 render parity', () => {
     expectParity( v3uri, v4uri, 'parity-compound-arrows', testInfo );
   } );
 
+  test( 'parity: numeric text-rotation (round 27.7)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // Glyph rasterization differs between the renderers by design, so
+    // this is not a glyph-shape check — it is a *placement* check: if the
+    // rotation frame or its pivot were wrong the blocks would land in
+    // visibly different places, which a mismatch ratio catches even
+    // through AA noise.  Node labels are the interesting case: they had
+    // no rotation path at all before 27.7.
+    // the scene is deliberately ink-dominated: a small label rotated by a
+    // small angle moves almost no pixels, so an under-powered version of
+    // this test passed even with v4 ignoring rotation entirely (checked)
+    const angles = [ Math.PI / 2, -Math.PI / 2, Math.PI / 4, -Math.PI / 4 ];
+    const elements = angles.map( ( _, i ) => ( {
+      data: { id: `n${i}`, i },
+      position: { x: ( i % 2 ) * 180 - 90, y: Math.floor( i / 2 ) * 140 - 70 }
+    } ) );
+
+    const common = {
+      'width': 20, 'height': 20, 'background-color': '#dfe6e9', 'border-width': 0,
+      'label': 'MMMM', 'font-size': 40, 'color': '#2d3436',
+      'text-valign': 'center', 'text-halign': 'center'
+    };
+    const v3Style = [
+      { selector: 'node', style: common },
+      ...angles.map( ( a, i ) => (
+        { selector: `node[i = ${i}]`, style: { 'text-rotation': a } } ) )
+    ];
+    const v4Style = {
+      nodes: {
+        ...common,
+        'text-rotation': { case: angles.map( ( a, i ) => (
+          { when: { data: 'i', eq: i }, then: a } ) ), else: 0 }
+      }
+    };
+
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+      const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
+      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const cy3 = window.makeV3( {
+        elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
+      } );
+      const cy4 = window.makeV4( { elements: cloneEles(), style: v4Style, ...viewport } );
+
+      await cy4.ready;
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+      await new Promise( resolve => requestAnimationFrame( resolve ) );
+
+      return {
+        v3uri: cy3.png( { bg: '#fff' } ),
+        v4uri: await cy4.png( { bg: '#fff' } )
+      };
+    }, { elements, v3Style, v4Style } );
+
+    // Glyph rasterization differs by design (canvas vs SDF), and this
+    // scene is nearly all 40px text, so the floor is glyph noise rather
+    // than placement error — the bound is 3%, not the 2% used elsewhere.
+    // What makes it meaningful is the control: with v4 ignoring rotation
+    // the same scene measures 5.8% and fails, against 2.3% when it
+    // honours it.
+    const actual = decodePng( v4uri );
+    const expected = decodePng( v3uri );
+    const { ratio } = diffPngs( actual, expected, { threshold: 0.3 } );
+
+    console.log( `[parity] parity-text-rotation: ${( ratio * 100 ).toFixed( 3 )}%` );
+    expect( ratio, 'rotated label placement vs v3' ).toBeLessThanOrEqual( 0.03 );
+  } );
+
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

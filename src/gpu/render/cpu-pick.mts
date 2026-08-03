@@ -77,16 +77,37 @@ export function pickNodeAt( view: ModelView, frame: CpuPickFrame, xPx: number, y
     const hmax = Math.max( hw, hh );
 
     // 20.3: with text-events the label block is part of the node — its
-    // box (node-local model px, round 16.4) tests in device px; node
-    // labels never rotate, so an AABB is exact.  Checked before the
-    // quick reject: label boxes extend outside the node body.
+    // box (node-local model px, round 16.4) tests in device px.  Checked
+    // before the quick reject: label boxes extend outside the node body.
+    //
+    // 27.7: a node label can now carry a numeric text-rotation, so the
+    // AABB is no longer exact.  When the label is turned, the point is
+    // un-rotated about the label's anchor and tested against the
+    // unrotated box — an OBB test, which is what the drawn glyphs
+    // actually occupy.
     if( ( flags[ slot ] & FLAG_TEXT_EVENTS ) !== 0 ){
       const lb = view.nodeLabelBox( slot );
 
-      if( lb != null
-        && dx >= lb.x1 * frame.zoomDpr && dx <= lb.x2 * frame.zoomDpr
-        && dy >= lb.y1 * frame.zoomDpr && dy <= lb.y2 * frame.zoomDpr ){
-        return true;
+      if( lb != null ){
+        const rot = view.labelAt( slot, 'nodes' )?.rotation ?? 0;
+        let lx = dx / frame.zoomDpr;
+        let ly = dy / frame.zoomDpr;
+
+        if( rot !== 0 ){
+          const cos = Math.cos( rot );
+          const sin = Math.sin( rot );
+
+          // rotate by -rot: the VS turns the box by +rot about the anchor
+          const rx = lx * cos + ly * sin;
+          const ry = -lx * sin + ly * cos;
+
+          lx = rx;
+          ly = ry;
+        }
+
+        if( lx >= lb.x1 && lx <= lb.x2 && ly >= lb.y1 && ly <= lb.y2 ){
+          return true;
+        }
       }
     }
 

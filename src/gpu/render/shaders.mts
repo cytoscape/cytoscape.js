@@ -154,7 +154,7 @@ fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
 `;
 
 /** Glyph instance layout, shared by the label shader and the glyph cull
- * pass; matches GlyphBuffer's CPU layout (14 words / 56 bytes per glyph). */
+ * pass; matches GlyphBuffer's CPU layout (16 words / 64 bytes per glyph). */
 export const GLYPH_STRUCT = `
 struct Glyph {
   nodeSlot: u32,     // owner word: 0xffffffff = dead (tombstoned run); else
@@ -171,6 +171,9 @@ struct Glyph {
   endParam: f32,     // end-label encoding (D4): 0 = midpoint stream; else
                      // sign picks the end (+source / -target) and
                      // |endParam| - 1 is the arc offset in model px
+  rotation: f32,     // 27.7: the label's own rotation, radians (0 = none;
+                     // autorotate rides the owner word's flag instead)
+  pad: f32,          // keeps the struct 8-byte aligned (16 words)
 }
 
 const DEAD_GLYPH: u32 = 0xffffffffu;
@@ -3298,19 +3301,23 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let sizePx = g.size * frame.zoomDpr;
   let t = (quadCorner(vi) + vec2f(1.0)) * 0.5;
   var posPx = originPx + t * sizePx;
-${ edge
-    ? `
-  // text-rotation: autorotate — rotate the run's local rect about the
-  // midpoint anchor by the edge's flip-normalized angle (the angle reads
-  // live positions too, so rotation follows drags/tweens on-GPU)
-  if ((g.nodeSlot & GLYPH_ROTATE) != 0u) {
-    let cs = autorotateFrame(rotA, rotB);
+  // text-rotation.  Autorotate (edge stream only) resolves the frame from
+  // the edge's flip-normalized angle, live, so it follows drags and
+  // tweens on-GPU; a numeric rotation (27.7) is a stored angle and works
+  // on every stream, node labels included.  Both take the same path:
+  // rotate the run's local rect about its anchor.
+  ${ edge
+    ? `let autorot = (g.nodeSlot & GLYPH_ROTATE) != 0u;`
+    : `let autorot = false;` }
+
+  if (autorot || g.rotation != 0.0) {
+    ${ edge
+      ? `let cs = select(vec2f(cos(g.rotation), sin(g.rotation)), autorotateFrame(rotA, rotB), autorot);`
+      : `let cs = vec2f(cos(g.rotation), sin(g.rotation));` }
     let local = g.offset + t * g.size; // model px from the anchor
 
     posPx = modelToPx(frame, anchor) + rotateBy(cs, local) * frame.zoomDpr;
   }
-`
-    : '' }
   out.position = vec4f(pxToClip(frame, posPx), 0.0, 1.0);
   out.uv = mix(max(g.uv0, vec2f(0.0)), max(g.uv1, vec2f(0.0)), t);
   out.color = unpack4x8unorm(g.color);

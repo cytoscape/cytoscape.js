@@ -568,6 +568,15 @@ calls made deliberately rather than by accretion:
   `originalEvent` is never populated either (the interaction layer
   emits `{ position }` only), so the underlying DOM event is not
   reachable through it.
+  **"Dropped" here means "never emitted", not "rejected"** (measured
+  2026-08-03): `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
+  `cy.on('click', h)` and `cy.on('touchstart', h)` all register
+  cleanly and then never fire, so a ported v3 handler silently does
+  nothing.  Event **namespaces** behave the same way — `cy.on('tap.ns',
+  h)` never fires, not for `tap` and not for `tap.ns` either.  Whether
+  those spellings should throw is an open call (custom event names
+  must stay legal, so any fix is a curated denylist rather than a
+  blanket rule): see PLAN.md's "Open calls for the maintainer".
   Deviation: `tapdragover`/`cxtdragover` target **nodes only** (the
   synchronous CPU pick; edges would need the async GPU tile).
 - **Extensions are direct objects — no registry.**  No
@@ -2692,6 +2701,14 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   mode, core/collection extension points, `cy.gc()`,
   `cytoscape.warnings()`, and graph-level `data` in the *binary*
   wire format (`cy.json()` already exports it).
+  **All of them, plus the contradictions rounds 28–29 turned up
+  between the code and the decided-design ledger — unknown
+  constructor options ignored silently, dropped v3 event names
+  registering silently, an inert `preventDefault()` — are collected
+  in PLAN.md's "Open calls for the maintainer".**  That section is
+  the one place to read before deciding anything about v4's surface;
+  contradictions are logged there rather than patched, because
+  removing public API is a call to be made, not inferred.
 - **Documentation** — round 26 (2026-08-02) settled the near-term
   shape: JSDoc on the source is v4's documentation source of truth
   and the declarations ship with it (see "Documenting the source"

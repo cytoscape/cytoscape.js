@@ -86,6 +86,122 @@ plan and outcome.
   z-index entry still promised to restore `zDepth`/`sortByZIndex`
   two days after z-index was dropped outright.  A round record is not
   the whole record.
+- **Anything needing the maintainer's decision goes in "Open calls for
+  the maintainer"** (section added 2026-08-03), not only into the
+  round record that found it.  That covers scope calls *and*
+  contradictions — code that disagrees with this file's decided-design
+  ledger, which autonomous rounds accumulate.  **Log a contradiction;
+  never silently patch it**: removing or keeping public API is the
+  maintainer's call even when a ledger entry looks like authorization
+  to delete.  Sweep that section with the rest of the file.
+
+## Open calls for the maintainer (kept current)
+
+Rounds 10–29 ran largely autonomously, and some decisions got absorbed
+into parity work without a human in the loop.  This section is the one
+place those surface: **every open question that needs the maintainer's
+call**, with the evidence and what changes once it is answered.  It is
+swept with the rest of this file at the end of each round — an item
+leaves only when the call is made, and a round that discovers a new
+one adds it here rather than burying it in its own record.
+
+Two kinds of entry live here: *scope calls* (work deliberately not
+done pending a decision) and **contradictions** — places where the
+code and this file's own decided-design ledger disagree, usually
+because an autonomous round kept or added something the ledger says
+was dropped.  Contradictions are logged, never silently patched:
+removing public API is the maintainer's call even when a ledger entry
+appears to authorize it.
+
+### Scope calls
+
+1. **`border-style` / `outline-style`** (27.8, 2026-08-02) — the last
+   unported v3 style pair.  Technique settled, cost known in three
+   tiers: circle/rect/round-rect are closed-form (~30 lines);
+   ellipse is closed-form but approximate (arc length is elliptic —
+   uneven dashes on eccentric ellipses, a recordable deviation); the
+   polygon family (the round-* shapes, `barrel`, the custom
+   `polygon`) needs the SDF loop to track the argmin edge and a
+   cumulative perimeter, roughly
+   doubling polygon fragment cost *where a dash is enabled*.  The
+   call: ship the cheap subset (a genuine v3 deviation — v3 dashes
+   any shape) or cover everything.  `double` is not a dash at all and
+   works on every shape either way.
+2. **The overlap box-selection mode** (gap item 8) — v4 selects by
+   containment only; v3 also offers overlap.  Deferred as a
+   demand-gated hook, not v3-surface-critical.
+3. **Core/collection extension points** (gap item 10) — the layout
+   contract landed in round 17; the other two extension categories
+   stay out on the reasoning that mappers and predicates cover the
+   common cases.  Revisit on demand.
+4. **`cy.gc()` and `cytoscape.warnings()`** (gap item 12) — round 19's
+   `compact()` answers what `gc` was for, and v4 does warn in several
+   places (a deferred `compact()`, a full glyph atlas), so there is
+   something for `warnings()` to silence.  The call is whether either
+   name survives.
+5. **Graph-level `data` in the binary wire format** (gap item 12) —
+   `cy.json()` already exports it; `serializeElements` is
+   elements-only.  Since `cy.serialize()` output feeds `cy.add()`,
+   including graph data raises whether adding elements should
+   overwrite the target's `data()`.
+6. **A v4-specific event type** (logged 26.5) — v4 emits the shared v3
+   `Event`, so `event.target` types as `unknown` in the shipped
+   declarations.  A v4 event type is a design call, not an oversight.
+7. **Six benchmark suites are outside the report** (logged 29.6) —
+   `compaction`, `labels`, `transitions`, `geometry-tween`,
+   `compound` and `curves` are standalone and absent from
+   `report.mjs`'s job table, so they only ever run by hand.  That
+   matches how their rounds used them, but the HTML report
+   understates what exists.
+
+### Contradictions between the code and the decided-design ledger
+
+Each was found by reading the code against this file (rounds 28–29's
+docs checks), and each is left in place pending the call.
+
+8. **The legacy-alias triage was applied unevenly** (found 2026-08-03).
+   The 2026-07-29 triage dropped the no-dash shape spellings and the
+   `autolockNodes`/`autoungrabifyNodes` aliases under "one name per
+   concept".  In the code, `roundrectangle` still compiles (while
+   `cutrectangle` and `concavehexagon` throw), and
+   `cy.autolockNodes()` / `cy.autoungrabifyNodes()` are declared,
+   wired and working — round 29.1's alias table now pins them.
+   **One call over three names.**  If it goes the ledger's way, the
+   two rows in `test/gpu-aliases.mjs`, their wiring and `declare`
+   lines in `core.mts`, and the `roundrectangle` line in
+   `test/gpu-decided-drops.mjs` come out together.
+9. **Unknown constructor options are silently ignored** (found
+   2026-08-03), including the four canvas-era options the triage
+   explicitly dropped: `{ motionBlur: true }` constructs happily and
+   round-trips through `cy.options()`, as does
+   `{ totallyUnknownOption: 1 }`.  v4 throws on an unknown sheet key,
+   an unknown style property and an unknown query key — on the
+   stated reasoning that a typo must fail loudly — and the
+   constructor is the one entry point that does not.  The call: match
+   the rest of the surface (and with what allowance for
+   forward-compatible options?), or record the constructor as
+   deliberately permissive.
+10. **Dropped event names register silently** (found 2026-08-03).
+    Round 17 dropped the `vmouse*` aliases and v3's raw mouse/touch
+    re-emits, but `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
+    `cy.on('click', h)` and `cy.on('touchstart', h)` all register
+    cleanly and then never fire — a v3 handler that silently does
+    nothing.  Event *namespaces* are the same story: `cy.on('tap.ns',
+    h)` never fires, not for `tap` and not for `tap.ns` either.
+    Note the constraint on any fix: custom event names must stay
+    legal (`emit('myevent')` is supported), so the answer is a
+    curated denylist of known-v3 spellings that throws or warns, not
+    a blanket rule.  29.3 fixed the neighbouring case — a *selector
+    string* as an event qualifier now throws instead of detonating
+    inside the emitter — but the event *name* side is untouched.
+11. **`event.preventDefault()` exists and does nothing** (recorded in
+    the README since round 27's fact-check).  v4 emits the shared v3
+    `Event`, so the method is present on every event a handler
+    receives and sets `isDefaultPrevented`, but no v4 code reads that
+    flag — gesture defaults are gated by options instead.  Same
+    family as 10: the call is whether it throws, is removed from the
+    v4 event, or stays documented-as-inert.
+
 
 ## Context
 
@@ -1878,6 +1994,11 @@ in this ledger — pinned since 29.3 by `test/gpu-decided-drops.mjs`.
 
 ### Needs a call (design open — grouped, with the v3 surface at stake)
 
+*(The still-open items here are collected, with their evidence and
+what changes when each is decided, in "Open calls for the maintainer"
+near the top of this file — read that first; this ledger keeps the
+per-item history.)*
+
 1. ~~**Compound nodes**~~ — **landed as round 14** (2026-07-31; the
    plan and per-item records are at the end of this file): hierarchy
    in the columnar store, auto-sized parents materialized into the
@@ -2151,7 +2272,9 @@ item 12's odds and ends.
 remainder needing no design call: CPU-pick coverage for round 27's shapes (28.1 — a
 verification gap, not an API one), the `panBy` animation target
 (28.2), and item 12's own drift (28.3, above).  **What remains of the
-ledger is entirely open calls** — decisions, not implementations:
+ledger is entirely open calls** — decisions, not implementations, and
+all of them (plus the contradictions rounds 28–29 found) are collected
+in "Open calls for the maintainer" near the top of this file:
 `border-style`/`outline-style` (27.8's scope call), the
 **legacy-alias policy** (one call over `roundrectangle`,
 `autolockNodes` and `autoungrabifyNodes` — all three survived the

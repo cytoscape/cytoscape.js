@@ -2000,11 +2000,33 @@ spellings, redundant `attr`-family duplicates — one name per concept).
     bundles, v3's structural semantics), `visibility` lands as a
     mapper-capable style prop keeping space and bundle ranks —
     scoped as round 22 (plan at the end of this file).**
-12. **Odds and ends** — `cy.gc()`, `cy.window()`,
-    `cytoscape.warnings()`, graph-level `data` in the wire format,
-    `panBy` animation target, layout instances as event emitters
-    (v3 layouts have `on`/`promiseOn`; v4 layout events fire on the
-    core only).
+12. **Odds and ends** — trued up 2026-08-03 (round 28.3), because
+    three of the six entries had stopped being true:
+    - ~~`cy.window()`~~ — **exists** (`core.mts`, with a "v3 parity"
+      doc comment).  It was listed as a gap it had already closed.
+    - ~~`panBy` animation target~~ — **landed as round 28.2**
+      (2026-08-03).
+    - ~~layout instances as event emitters~~ — **not a gap but a
+      decision**: round 17 settled that lifecycle events fire on the
+      core exactly once per run and layout instances stay
+      non-emitters (recorded in the README's extension-contract
+      section).  It belongs in the decided-design ledger, not here.
+    Genuinely open, each needing a call rather than an
+    implementation:
+    - **`cy.gc()`** — v3's manual garbage-collect hook.  Round 19 gave
+      v4 `cy.compact()` plus an automatic trigger, so the question is
+      whether `gc` survives as anything but an alias.
+    - **`cytoscape.warnings()`** — the global console-warning toggle.
+      v4 warns in several places (a deferred `compact()`, a full glyph
+      atlas), so there is something to silence; whether a global
+      mutable switch is the v4 spelling is the call.
+    - **graph-level `data` in the wire format** — narrower than it
+      reads: `cy.json()` **already exports** it (`core.mts`), and the
+      gap is the *binary* format (`serializeElements`), which carries
+      elements only.  Since `cy.serialize()` output feeds `cy.add()`,
+      including graph data raises whether adding elements should
+      overwrite the target's `data()` — a semantics call, not an
+      omission to patch.
 
 ### Proposed-drops triage (decided 2026-07-29)
 
@@ -2097,6 +2119,20 @@ closed the visual-parity tail.  What is left of the whole ledger:
 **`border-style`/`outline-style`** (a scope call, 27.8), item 8's
 overlap box mode, item 10's core/collection extension points, and
 item 12's odds and ends.
+
+**2026-08-03, round 28** took the part of that remainder needing no
+design call: CPU-pick coverage for round 27's shapes (28.1 — a
+verification gap, not an API one), the `panBy` animation target
+(28.2), and item 12's own drift (28.3, above).  **What remains of the
+ledger is entirely open calls** — decisions, not implementations:
+`border-style`/`outline-style` (27.8's scope call), the
+`roundrectangle` alias inconsistency, item 8's overlap box mode,
+item 10's core/collection extension points, and item 12's surviving
+three (`cy.gc()`, `cytoscape.warnings()`, graph data in the binary
+wire format).  Nothing in the ledger is now blocked on
+effort.  Separately open and blocked on neither — just unrun — is the
+device-side frame cost of round 27's shader branches (see the 27.9
+correction: this box has an RX 580).
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -6870,12 +6906,17 @@ not just parity diffs.
   `zoom`, `fit` and `center` (`animation.mts`), but not v3's `panBy`.
   `cy.panBy()` itself exists (`core.mts`).  The semantics are
   unambiguous (target = the pan captured at start, plus the delta), so
-  this is mechanical.  Ledger item 12.
+  this is mechanical.  Ledger item 12.  *(Landed as 28.2 — and v3
+  resolves the delta at creation rather than at start, which is the
+  rule v4 kept.)*
 - **Ledger drift in item 12 itself** — it lists `cy.window()` as a gap,
   but that method exists (`core.mts`, with a "v3 parity" doc comment),
   and it lists "layout instances as event emitters" as open, when round
   17 *decided* layout instances stay non-emitters (recorded in the
-  README's extension-contract section).  Docs only.
+  README's extension-contract section).  Docs only.  *(Fixed in
+  28.3, which also narrowed the wire-format entry: `cy.json()` already
+  exports graph-level `data`, so only the binary format is in
+  question.)*
 
 **Explicitly not in this round** (each needs a call, and saying so is
 the point): `border-style`/`outline-style` (27.8's scope call); the
@@ -6959,6 +7000,23 @@ commit(s)):
   public surface, so `dist/cytoscape-gpu.d.ts` is regenerated and
   `npm run test:types:gpu` re-run; `dist/cytoscape.d.ts` (v3) is
   untouched.
-- [ ] **28.3 Ledger drift + closing docs sweep.**  True up item 12,
-  and sweep both documents for this round's vocabulary per the
-  standing rule.
+- [x] **28.3 Ledger drift + closing docs sweep** (2026-08-03) —
+  item 12 is rewritten: `cy.window()` and (now) `panBy` move to the
+  landed side, layout-instance emitters move to the *decided* side
+  (round 17 settled it — it was never a gap), and the wire-format
+  entry is narrowed to what is actually missing, since `cy.json()`
+  already exports graph-level `data`.  What survives there is three
+  entries that each need a call.
+  The "Suggested sequencing" summary gains a round-28 paragraph, and
+  the standing rule's own warning applies to it as much as ever: it
+  is the second place in this file that outlives the work it
+  describes.  The README carries round 28 in its header, records
+  `panBy` in the viewport-targets bullet with the pan/panBy deviation,
+  records the round-27 shapes' CPU-pick twins in the shape section,
+  and its follow-up hooks now list only open design calls.
+  Verification for the round as a whole: 2340 Node tests, 63 module
+  tests, typecheck, lint, JSDoc coverage 100%, `test:types:gpu` with
+  the regenerated declarations.  The browser suites were not re-run
+  for 28.1 or 28.3 (tests and docs only); 28.2 touches the viewport
+  animation path, whose coverage is the Node suite.
+  **Round 28 is complete.**

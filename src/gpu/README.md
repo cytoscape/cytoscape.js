@@ -78,6 +78,14 @@ arrowheads by v3's own nonlinear formula, and accepts a numeric
 v3-vs-v4 parity diff rather than by a golden alone — see the
 round-27 records in PLAN.md for the measurements.  `border-style`/
 `outline-style` remain the one unported style pair.
+Round 28 (2026-08-03) took what was left of the gap ledger that
+needed no design call: **CPU-pick coverage** for round 27's shapes
+(the shader halves were pinned by parity diffs, the CPU replicas by
+nothing — and three specs named for picking asserted only
+`boundingBox()`, so they held with the shape swapped out), the
+**`panBy` viewport-animation target**, and the ledger's own drift.
+What remains in the ledger is now open *calls* rather than open work
+— see PLAN.md.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -2609,6 +2617,15 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   arrowhead vocabularies.  Still open: **`border-style` /
   `outline-style`**, which is waiting on a scope call rather than
   on a technique — see the border-geometry note above.
+  ~~The `panBy` animation target~~ — **closed by round 28.2**
+  (2026-08-03, the viewport-targets bullet above).  Round 28 also
+  closed the verification gap round 27 left behind (its CPU-pick
+  branches were untested) and trued up the gap ledger, which now
+  holds only open design calls: `border-style`/`outline-style`, the
+  `roundrectangle` alias inconsistency, the overlap box-selection
+  mode, core/collection extension points, `cy.gc()`,
+  `cytoscape.warnings()`, and graph-level `data` in the *binary*
+  wire format (`cy.json()` already exports it).
 - **Documentation** — round 26 (2026-08-02) settled the near-term
   shape: JSDoc on the source is v4's documentation source of truth
   and the declarations ship with it (see "Documenting the source"

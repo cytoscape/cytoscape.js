@@ -7704,3 +7704,64 @@ commit(s)):
   built bundle, typecheck, lint, `test:types:all`, JSDoc coverage
   100%, and `gpu-throw-coverage` at 0 Node-reachable dead sites.**
   **Round 30 is complete.**
+
+## Round 31 plan — the documented contract (planned 2026-08-03)
+
+Round 30 made v4's throws *fire* in the suite.  This round asks the
+next question about the same surface: when they fire, do they say the
+right thing — and does the shipped documentation admit they exist at
+all?
+
+**Finding 1 (the defect): one error message advises a form v4
+rejects.**  `eles.style( name, value )` throws
+
+> Per-element style bypass is not supported in the GPU prototype; use
+> the function form of the stylesheet for per-element styling
+
+and its doc comment repeats the advice ("use the fn form of the
+stylesheet").  The function form was **removed in round 8** and, since
+round 29.3, *throws* at `setSheet` with a message naming mappers as the
+replacement.  So a caller who hits the bypass error and follows its
+instruction hits a second throw, and the doc comment that ships in
+`dist/cytoscape-gpu.d.ts` tells them to.  The replacement text already
+exists one file over (29.3's message: a `case` mapper for conditionals,
+`data(key)` scales for per-element values).
+A scan of every other advice-giving message in `src/gpu` found no
+second instance — the other "use ..." messages name keyword sets and
+units that are all still accepted.
+
+**Finding 2: 13 public members throw without an `@throws` tag.**  Round
+26 settled that "a doc comment states the contract... what it takes,
+what it returns, **what it throws**", and gates *presence* of a doc
+comment at 100% — but nothing checks that a member which throws says
+so.  17 public members throw; 4 document it.  The 13 that do not
+include six of round 20's interaction setters (each throws on invalid
+input), `mount()`, `style()` and `numericStyle()`.  These comments are
+the shipped `.d.ts` hover text, so the gap is user-visible.
+
+**Finding 3: two events in the curated vocabulary are named by no
+test.**  Surveying the round-17 vocabulary against the whole test
+corpus: every name appears somewhere except `mouseout` and
+`pointercancel`.  `mouseover` is asserted six times in the file whose
+sibling `mouseout` is asserted zero — the 29.2/30.3 shape again — and
+`pointercancel` is emitted by the pointer layer (17.1) with nothing
+pinning it.
+
+**Negative results from the same survey**, recorded so they are not
+re-run: **no style prop is unexercised** — all 104 entries of the prop
+table are named in `test/`, `playwright-tests/`, `debug/` or
+`benchmark/`; and the **event vocabulary is otherwise covered**, though
+the first pass of that survey wrongly reported 31 names as untested
+because the browser specs register them by looping over an array of
+names rather than by literal call sites.
+
+**Pass split** (tests-first; docs in-commit; each pass its own
+commit(s)):
+
+- [ ] **31.1 The message that recommends a removed form** — fix the
+  throw text and the doc comment, and pin both: the message must name
+  the replacement that exists, and following it must not throw.
+- [ ] **31.2 `@throws` where a public member throws** — the 13
+  comments, plus the audit that finds them.
+- [ ] **31.3 `mouseout` and `pointercancel`** in the `webgpu` project.
+- [ ] **31.4 Closing docs sweep.**

@@ -3511,6 +3511,9 @@ export class StyleEngine {
    * input).  A mapped arrow *shape* demotes all edge paint to the CPU:
    * the shape gates the stored arrow alpha, and splitting that fold
    * between CPU and kernel would race.
+   *
+   * @param group — the element group to collect for
+   * @returns each eligible mapper with the fallback its channel resolves to
    */
   paintInputs( group: GroupName ): { m: CompiledMapper; fallback: Evaluated }[] {
     const def = this.defs[ group ];
@@ -3580,7 +3583,12 @@ export class StyleEngine {
       .map( bm => ( { m: bm.m, fallback: bm.m.fallback ?? bm.channel.default( group ) } ) );
   }
 
-  /** Edge-sheet constants for the kernel's arrow-alpha folding. */
+  /**
+   * Edge-sheet constants for the kernel's arrow-alpha folding.
+   *
+   * @param group — the element group to read the sheet for
+   * @returns the constants the kernel needs to fold arrow alpha itself
+   */
   paintContext( group: GroupName ): {
     opacityMapped: boolean;
     constOpacity: number;
@@ -3619,12 +3627,22 @@ export class StyleEngine {
    * refresh skips their CPU evaluation (the whole point of GPU eval) and
    * the read-back getters evaluate the shared IR lazily instead of
    * trusting the stale stored bytes.
+   *
+   * @param group — the element group the kernel runs over
+   * @param props — the props it evaluates; replaces the previous set
    */
   setGpuOwned( group: GroupName, props: Iterable<string> ): void {
     this.gpuOwnedProps[ group ] = new Set( props );
   }
 
-  /** True when writing any of these data() keys can change the group's computed style. */
+  /**
+   * Whether a data write can change the group's computed style — the gate
+   * that keeps an unrelated write from costing a restyle.
+   *
+   * @param group — the element group being written
+   * @param keys — the data() keys the write touches
+   * @returns true when any mapped channel or label depends on one of them
+   */
   stylesDependOnData( group: GroupName, keys: string[] ): boolean {
     const depends = ( deps: GroupDef['deps'] ): boolean =>
       deps != null && keys.some( key => deps.has( key ) );
@@ -3674,6 +3692,9 @@ export class StyleEngine {
    * Bulk apply over *live* slots of one group.  The group resolves once
    * (the per-element cost is only the column writes); mapped channels
    * evaluate per element in applyMapped.
+   *
+   * @param group — the element group to style
+   * @param slots — the live slots to write; must all be of that group
    */
   applyBulk( group: GroupName, slots: ArrayLike<number> ): void {
     if( slots.length === 0 ){ return; }
@@ -4097,7 +4118,11 @@ export class StyleEngine {
     return moved;
   }
 
-  /** Resolve and write one element's channels (no-op for stale refs). */
+  /**
+   * Resolve and write one element's channels.
+   *
+   * @param ref — the element to style; a stale ref is a no-op
+   */
   apply( ref: Ref ): void {
     if( !this.store.isCurrent( ref ) ){ return; }
 
@@ -4111,6 +4136,10 @@ export class StyleEngine {
    * unchanged); mapped channels re-evaluate through the whole-element
    * scratch pass, which also escalates to the full group when a live
    * auto-domain extent moved.
+   *
+   * @param group — the element group that was written
+   * @param slots — the written slots
+   * @param keys — the data() keys written, which gate what re-evaluates
    */
   refreshMapped( group: GroupName, slots: ArrayLike<number>, keys: string[] ): void {
     if( group === 'nodes' && this.store.hasCompounds() ){
@@ -4754,7 +4783,12 @@ export class StyleEngine {
     return undefined;
   }
 
-  /** All resolved props of a live element's group. */
+  /**
+   * All resolved props of a live element's group.
+   *
+   * @param ref — the element to read
+   * @returns every readable prop of its group, by name
+   */
   readProps( ref: Ref ): Record<string, string | number> {
     const props = ref.group === 'nodes' ? NODE_READ : EDGE_READ;
     const out: Record<string, string | number> = {};

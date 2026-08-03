@@ -2989,12 +2989,20 @@ declare class StyleEngine {
    * input).  A mapped arrow *shape* demotes all edge paint to the CPU:
    * the shape gates the stored arrow alpha, and splitting that fold
    * between CPU and kernel would race.
+   *
+   * @param group — the element group to collect for
+   * @returns each eligible mapper with the fallback its channel resolves to
    */
   paintInputs(group: GroupName): {
     m: CompiledMapper;
     fallback: Evaluated;
   }[];
-  /** Edge-sheet constants for the kernel's arrow-alpha folding. */
+  /**
+   * Edge-sheet constants for the kernel's arrow-alpha folding.
+   *
+   * @param group — the element group to read the sheet for
+   * @returns the constants the kernel needs to fold arrow alpha itself
+   */
   paintContext(group: GroupName): {
     opacityMapped: boolean;
     constOpacity: number;
@@ -3014,9 +3022,19 @@ declare class StyleEngine {
    * refresh skips their CPU evaluation (the whole point of GPU eval) and
    * the read-back getters evaluate the shared IR lazily instead of
    * trusting the stale stored bytes.
+   *
+   * @param group — the element group the kernel runs over
+   * @param props — the props it evaluates; replaces the previous set
    */
   setGpuOwned(group: GroupName, props: Iterable<string>): void;
-  /** True when writing any of these data() keys can change the group's computed style. */
+  /**
+   * Whether a data write can change the group's computed style — the gate
+   * that keeps an unrelated write from costing a restyle.
+   *
+   * @param group — the element group being written
+   * @param keys — the data() keys the write touches
+   * @returns true when any mapped channel or label depends on one of them
+   */
   stylesDependOnData(group: GroupName, keys: string[]): boolean;
   /** Which arrow ends the current stylesheet can enable. */
   get arrowEnds(): {
@@ -3049,6 +3067,9 @@ declare class StyleEngine {
    * Bulk apply over *live* slots of one group.  The group resolves once
    * (the per-element cost is only the column writes); mapped channels
    * evaluate per element in applyMapped.
+   *
+   * @param group — the element group to style
+   * @param slots — the live slots to write; must all be of that group
    */
   applyBulk(group: GroupName, slots: ArrayLike<number>): void;
   /**
@@ -3108,7 +3129,11 @@ declare class StyleEngine {
    * its program uniform and re-evaluates in full.
    */
   private checkAutoExtents;
-  /** Resolve and write one element's channels (no-op for stale refs). */
+  /**
+   * Resolve and write one element's channels.
+   *
+   * @param ref — the element to style; a stale ref is a no-op
+   */
   apply(ref: Ref): void;
   /**
    * The data-write refresh: re-derive the mapped channels of the written
@@ -3117,6 +3142,10 @@ declare class StyleEngine {
    * unchanged); mapped channels re-evaluate through the whole-element
    * scratch pass, which also escalates to the full group when a live
    * auto-domain extent moved.
+   *
+   * @param group — the element group that was written
+   * @param slots — the written slots
+   * @param keys — the data() keys written, which gate what re-evaluates
    */
   refreshMapped(group: GroupName, slots: ArrayLike<number>, keys: string[]): void;
   private refreshGroupDef;
@@ -3132,7 +3161,12 @@ declare class StyleEngine {
    *   fail loudly rather than read as undefined
    */
   readProp(ref: Ref, propRaw: string): string | number | undefined;
-  /** All resolved props of a live element's group. */
+  /**
+   * All resolved props of a live element's group.
+   *
+   * @param ref — the element to read
+   * @returns every readable prop of its group, by name
+   */
   readProps(ref: Ref): Record<string, string | number>;
   /**
    * An arrow's colour *before* the edge-opacity fold — the base the stored
@@ -3590,15 +3624,28 @@ declare class Animation {
    * through the store's forwarding (in place) and re-point the parallel
    * slot arrays — `apply` indexes columns by `slots[i]`, which would
    * otherwise write the tween into whatever moved into the old slot.
+   *
+   * @param store — the store that just compacted, whose forwarding chain
+   *   resolves the pre-move refs
    */
   repairRefs(store: GraphStore): void;
   /** True once the delay has elapsed and interpolation is under way. */
   get running(): boolean;
   /** A promise that resolves when the animation completes (or is stopped). */
   promise(): Promise<void>;
-  /** Advance to `now` (ms).  Returns true when finished this tick. */
+  /**
+   * Advance this animation.
+   *
+   * @param now — the shared clock in ms
+   * @returns true when the animation finished on this tick
+   */
   tick(now: number): boolean;
-  /** Stop now; `jumpToEnd` applies the final frame first. */
+  /**
+   * Stop now.
+   *
+   * @param jumpToEnd — apply the final frame first, instead of freezing
+   *   at the value the tween reached
+   */
   stop(jumpToEnd: boolean): void;
   /**
    * Whether the animation is paused: values hold where they are and the
@@ -3609,9 +3656,17 @@ declare class Animation {
   /** Elapsed fraction of the duration (0 before start, 1 when done;
    * frozen at the pause point while paused).  Read-only — no scrubbing. */
   get progress(): number;
-  /** Freeze in place at the shared clock's last tick. */
+  /**
+   * Freeze in place.
+   *
+   * @param now — the clock to freeze against; defaults to the last tick
+   */
   pause(now?: number): void;
-  /** Continue, excluding the paused span from the timeline. */
+  /**
+   * Continue, excluding the paused span from the timeline.
+   *
+   * @param now — the clock to resume against; defaults to the last tick
+   */
   resume(now?: number): void;
   /**
    * Swap the tween's ends and remap elapsed to `1 − t`, so the current
@@ -3623,7 +3678,10 @@ declare class Animation {
   reverse(): void;
   /** Write the value reached at `now` onto the CPU columns without
    * finishing — how a GPU-driven animation leaves the device for a
-   * pause or reverse (the caller unregisters the batch). */
+   * pause or reverse (the caller unregisters the batch).
+   *
+   * @param now — the clock to evaluate at; defaults to the last tick
+   */
   applyNow(now?: number): void;
   /** Swap every write's from/to halves (and the viewport targets). */
   private swapEnds;
@@ -3647,9 +3705,17 @@ declare class Animation {
    * Resolve this animation into per-column GPU batches, capturing start
    * values.  Sets the start clock so CPU settle and GPU evaluation share
    * it.
+   *
+   * @param now — the clock the batch's params are anchored to
+   * @returns one ChannelWrite per tweened column
    */
   gpuBatches(now: number): ChannelWrite[];
-  /** Pin the start clock on the first tick, so `startMs` reads true before capture. */
+  /**
+   * Pin the start clock on the first tick, so `startMs` reads true before
+   * capture.
+   *
+   * @param now — the clock of that first tick
+   */
   schedule(now: number): void;
   /** Start time in the shared clock (set once scheduled); ms. */
   get startMs(): number;
@@ -3660,6 +3726,8 @@ declare class Animation {
    * interrupted animation lands: without it the CPU would keep the start
    * values while the GPU buffers hold the last frame drawn, and nothing
    * would ever dirty the column to reconcile them.
+   *
+   * @param now — the clock to settle at; t = 1 on natural completion
    */
   settleGpu(now: number): void;
   /**
@@ -3668,6 +3736,8 @@ declare class Animation {
    * columns and keep ticking as a CPU tween — the device-side slot
    * buffers held pre-compaction slots, and 19.3's repair re-points the
    * CPU slot arrays.  The caller unregisters the GPU batch.
+   *
+   * @param now — the clock whose value is written to the CPU columns
    */
   demoteGpu(now: number): void;
   /**
@@ -3740,7 +3810,12 @@ declare class AnimationManager {
    *   pans or zooms
    */
   constructor(onTick: () => void);
-  /** The renderer takes over the clock and provides the GPU tween sink. */
+  /**
+   * The renderer takes over the clock and provides the GPU tween sink.
+   *
+   * @param sink — the renderer's tween sink; the manager cedes its
+   *   auto-loop to the render loop while it is attached
+   */
   attachDriver(sink: GpuTweenSink): void;
   /**
    * Give the clock back: settle every GPU-driven animation onto the CPU
@@ -3769,6 +3844,8 @@ declare class AnimationManager {
    * and re-key the per-element queues (keys pack the pre-move identity).
    * GPU-driven animations were demoted to the CPU by the caller before
    * the store compacted (`demoteGpuAll`).
+   *
+   * @param store — the store that just compacted
    */
   onCompacted(store: GraphStore): void;
   /**
@@ -3776,18 +3853,30 @@ declare class AnimationManager {
    * running animation sharing a ref *and* a channel column with the new
    * one is stopped in place first (whole-animation eviction); disjoint
    * channels compose.  Nudges the driver (or starts the auto-loop).
+   *
+   * @param ani — the animation to run
    */
   start(ani: Animation): void;
   /** Drop an animation from every ref's running set. */
   private remove;
   /** True while any animation is running. */
   active(): boolean;
-  /** True when a specific element has a running animation. */
+  /**
+   * True when a specific element has a running animation.
+   *
+   * @param ref — the element to check
+   * @returns whether anything is tweening it
+   */
   isAnimating(ref: Ref): boolean;
   /** True when the viewport is animating. */
   isViewportAnimating(): boolean;
-  /** Stop every running animation on the given refs (round 21: there is
-   * no queue to clear — all of them are running). */
+  /**
+   * Stop every running animation on the given refs (round 21: there is
+   * no queue to clear — all of them are running).
+   *
+   * @param refs — the elements whose animations stop
+   * @param jumpToEnd — apply each animation's final frame first
+   */
   stop(refs: Ref[], jumpToEnd: boolean): void;
   /**
    * Stop one animation.  A GPU-driven one settles instead of plain-stopping:
@@ -3808,6 +3897,8 @@ declare class AnimationManager {
    * the device is released and the CPU columns hold the exact value it
    * reached — so the freeze is readable and the mirror resumes its
    * uploads; resume re-acquires through the normal advance path.
+   *
+   * @param ani — the animation to freeze
    */
   pauseAni(ani: Animation): void;
   /**
@@ -3819,15 +3910,22 @@ declare class AnimationManager {
    * @param ani — the animation to resume
    */
   resumeAni(ani: Animation): void;
-  /** Reverse one animation in place.  A GPU-driven one leaves the
-   * device at its current value first; the next advance re-registers
-   * the swapped writes on the remapped clock. */
+  /**
+   * Reverse one animation in place.  A GPU-driven one leaves the device
+   * at its current value first; the next advance re-registers the
+   * swapped writes on the remapped clock.
+   *
+   * @param ani — the animation to reverse
+   */
   reverseAni(ani: Animation): void;
   /**
    * Advance every running animation to `now`; drop finished ones.
    * Position and paint animations route to the GPU sink when one is
    * attached (registered once, driven on-device, completion detected here
-   * from the shared clock).  Returns true if any animation remains active.
+   * from the shared clock).
+   *
+   * @param now — the shared clock in ms
+   * @returns true while any animation remains active
    */
   tick(now: number): boolean;
   /** Advance one animation; returns true when it is finished. */
@@ -4257,7 +4355,12 @@ declare class GpuCollection {
    * @returns true when a member has that id
    */
   hasElementWithId(id: string): boolean;
-  /** Index of `ele` (the first element of it) within this collection, or -1. */
+  /**
+   * Index of an element within this collection.
+   *
+   * @param ele — the element to find; only its first element is used
+   * @returns the index, or -1 when it is not in this collection
+   */
   indexOf(ele: GpuCollection): number;
   /**
    * Position of the element with this id within the collection.
@@ -4451,7 +4554,12 @@ declare class GpuCollection {
   has: this['contains'];
   equal: this['same'];
   equals: this['same'];
-  /** Whether every element of `other` is in this collection's neighborhood. */
+  /**
+   * Whether every element of `other` is in this collection's neighborhood.
+   *
+   * @param other — the elements to test
+   * @returns true when all of them are neighbors
+   */
   allAreNeighbors(other: GpuCollection): boolean;
   allAreNeighbours: this['allAreNeighbors'];
   /**
@@ -4558,7 +4666,12 @@ declare class GpuCollection {
   absoluteComplement(): GpuCollection;
   complement: this['absoluteComplement'];
   abscomp: this['absoluteComplement'];
-  /** { left: only in this, right: only in other, both: in both }. */
+  /**
+   * Three-way set difference against another collection.
+   *
+   * @param other — the collection to compare with
+   * @returns `{ left: only in this, right: only in other, both: in both }`
+   */
   diff(other: GpuCollection): {
     left: GpuCollection;
     right: GpuCollection;
@@ -4670,18 +4783,42 @@ declare class GpuCollection {
    *   `promise`/`pause`/`resume`/`reverse`
    */
   animate(opts: AnimateOptions): this;
-  /** Build an animation for these elements without starting it (call `.play()`). */
+  /**
+   * Build an animation for these elements without starting it.
+   *
+   * @param opts — the tween targets (`position`, `style`) plus
+   *   `duration`, `delay`, `easing` and `complete`
+   * @returns the handle; nothing runs until `play()`
+   */
   animation(opts: AnimateOptions): AnimationHandle;
-  /** A no-op tween of `duration` ms — a timed pause that touches no
-   * channels, so it composes with any running animation (round 21: use
-   * `delayAnimation().play()` + await to sequence). */
+  /**
+   * A no-op tween — a timed pause that touches no channels, so it
+   * composes with any running animation (round 21: use
+   * `delayAnimation().play()` + await to sequence).
+   *
+   * @param duration — the pause in ms
+   * @param complete — called when it elapses
+   * @returns this collection, for chaining
+   */
   delay(duration: number, complete?: () => void): this;
-  /** Like delay(), but returns the animation handle instead of chaining. */
+  /**
+   * Like {@link delay}, but returns the handle instead of chaining.
+   *
+   * @param duration — the pause in ms
+   * @param complete — called when it elapses
+   * @returns the handle; nothing runs until `play()`
+   */
   delayAnimation(duration: number, complete?: () => void): AnimationHandle;
   /** True when any of these elements has a running animation. */
   animated(): boolean;
-  /** Stop every running animation on these elements (round 21: no queue —
-   * the v3 clearQueue argument is gone; `jumpToEnd` applies final values). */
+  /**
+   * Stop every running animation on these elements (round 21: no queue —
+   * the v3 clearQueue argument is gone).
+   *
+   * @param jumpToEnd — apply each animation's final values instead of
+   *   freezing each channel where its tween reached
+   * @returns this collection, for chaining
+   */
   stop(jumpToEnd?: boolean): this;
   private _positions;
   /**
@@ -4690,7 +4827,13 @@ declare class GpuCollection {
    * Only called when position listeners exist.
    */
   private _emitSubtreePositions;
-  /** Offset positions by a vector or a single dimension. */
+  /**
+   * Offset positions by a vector or along one axis.
+   *
+   * @param dim — a `{ x, y }` delta, or 'x' / 'y' with `value`
+   * @param value — the offset, when `dim` names an axis
+   * @returns this collection, for chaining
+   */
   shift(dim: string | Position, value?: number): this;
   /**
    * Like `shift()`, but emits no `position` events.
@@ -4701,9 +4844,16 @@ declare class GpuCollection {
    */
   silentShift(dim: string | Position, value?: number): this;
   private _shift;
-  /** Compound-relative position: the model position minus the immediate
+  /**
+   * Compound-relative position: the model position minus the immediate
    * parent's (derived) position — the model position for orphans and
-   * compound-free graphs (round 14.3, v3 semantics). */
+   * compound-free graphs (round 14.3, v3 semantics).
+   *
+   * @param dim — omit to read the pair, 'x' / 'y' to read one axis, or
+   *   pass a `{ x, y }` (with no `value`) to write both
+   * @param value — the relative coordinate to write, when `dim` names an axis
+   * @returns the position or coordinate when reading, this when writing
+   */
   relativePosition(dim?: string | Position, value?: number): Position | number | undefined | this;
   /** The immediate parent's position ({0, 0} for orphans); flushes first. */
   private _relOrigin;
@@ -4759,10 +4909,19 @@ declare class GpuCollection {
    * edges) are first-class and immutable — reading them works, writing
    * them throws.  Setters apply to every element in the collection and
    * emit `data` per element; a write refreshes data-mapped labels.
+   *
+   * @param args — nothing (read the first element's whole object), a key
+   *   (read it), a key and a value, or an object of keys to merge
+   * @returns the read value, or this collection when writing
    */
   data(...args: [] | [string] | [string, unknown] | [Record<string, unknown>]): unknown;
   private _setData;
-  /** Remove named sidecar keys (space-separated), or all of them when omitted. */
+  /**
+   * Remove sidecar data keys.
+   *
+   * @param names — space-separated key names; omit to clear every key
+   * @returns this collection, for chaining
+   */
   removeData(names?: string): this;
   attr: this['data'];
   removeAttr: this['removeData'];
@@ -4793,6 +4952,11 @@ declare class GpuCollection {
    * stylesheet", which round 8 removed and 29.3 made throw — following
    * the advice hit a second error.)
    *
+   * @param name — a property name to read one value; omit for the whole
+   *   group.  An object or a second argument is a setter form
+   * @param value — never valid; present so the setter form throws rather
+   *   than silently ignoring it
+   * @returns one resolved value, or the whole group's props
    * @throws if called in any setter form
    */
   style(name?: string | Record<string, unknown>, value?: unknown): unknown;
@@ -4800,6 +4964,9 @@ declare class GpuCollection {
   /**
    * Like `style()`, but with length props (width, height, border-width,
    * font-size) scaled into rendered (on-screen) px by the zoom.
+   *
+   * @param name — a property name; omit for the whole group
+   * @returns the rendered-space value, or the whole group's props
    */
   renderedStyle(name?: string): unknown;
   renderedCss: this['renderedStyle'];
@@ -4904,7 +5071,13 @@ declare class GpuCollection {
     w: number;
     h: number;
   };
-  /** boundingBox() transformed into rendered (on-screen) coordinates. */
+  /**
+   * `boundingBox()` transformed into rendered (on-screen) coordinates.
+   *
+   * @param options — as `boundingBox()`: `{ includeLabels }`, default
+   *   true; an unknown key throws
+   * @returns the rendered-space box
+   */
   renderedBoundingBox(options?: {
     includeLabels?: boolean;
   }): {
@@ -5178,7 +5351,12 @@ declare class GpuCollection {
    * `{ source, target }` re-points edges.  As in v3 the modes are
    * exclusive — a `parent` key takes precedence.  An unknown parent id is
    * a silent no-op (v3); a cyclic assignment warns and drops (the
-   * hierarchy rule).  Returns this collection.
+   * hierarchy rule).
+   *
+   * @param opts — `{ parent }` to re-parent nodes (null orphans them), or
+   *   `{ source, target }` to re-point edges; `parent` wins if both are
+   *   given
+   * @returns this collection, for chaining
    */
   move(opts: {
     source?: string;
@@ -5273,26 +5451,66 @@ declare class GpuCollection {
   closedNeighborhood(criterion?: FilterLike): GpuCollection;
   /** Immediate parents of every node in the collection (unique).  v4
    * always returns a proper collection — v3's single-element raw-ref
-   * shortcut (which also ignored the selector argument) is not ported. */
+   * shortcut (which also ignored the selector argument) is not ported.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the immediate parents
+   */
   parent(criterion?: FilterLike): GpuCollection;
-  /** All ancestors, level by level: every nearest parent first, then the
-   * grandparents, and so on (v3's iterated-parent() order). */
+  /**
+   * All ancestors, level by level: every nearest parent first, then the
+   * grandparents, and so on (v3's iterated-parent() order).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the ancestors, nearest first
+   */
   parents(criterion?: FilterLike): GpuCollection;
   ancestors: this['parents'];
-  /** Direct children of every node, in link order per parent. */
+  /**
+   * Direct children of every node, in link order per parent.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the children
+   */
   children(criterion?: FilterLike): GpuCollection;
-  /** The subtree below every node in pre-order, excluding the nodes themselves. */
+  /**
+   * The subtree below every node in pre-order, excluding the nodes
+   * themselves.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the descendants
+   */
   descendants(criterion?: FilterLike): GpuCollection;
-  /** Nodes sharing a parent with the collection's nodes, excluding them;
-   * orphans are nobody's siblings (v3). */
+  /**
+   * Nodes sharing a parent with the collection's nodes, excluding them;
+   * orphans are nobody's siblings (v3).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the siblings
+   */
   siblings(criterion?: FilterLike): GpuCollection;
-  /** The collection's nodes without a parent. */
+  /**
+   * The collection's nodes without a parent.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the parentless nodes
+   */
   orphans(criterion?: FilterLike): GpuCollection;
-  /** The collection's nodes that have a parent. */
+  /**
+   * The collection's nodes that have a parent.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the parented nodes
+   */
   nonorphans(criterion?: FilterLike): GpuCollection;
   private _byParentedness;
-  /** Ancestors common to every element, closest first (an edge in the
-   * collection has no ancestors, so it empties the result — v3). */
+  /**
+   * Ancestors common to every element, closest first (an edge in the
+   * collection has no ancestors, so it empties the result — v3).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the shared ancestors, closest first
+   */
   commonAncestors(criterion?: FilterLike): GpuCollection;
   /** Whether the first element is a node with at least one child. */
   isParent(): boolean;
@@ -5303,9 +5521,20 @@ declare class GpuCollection {
   /** Whether the first element is a node without a parent. */
   isOrphan(): boolean;
   private _liveNodeRef;
-  /** Collection nodes with no non-loop incoming edge (whole-graph incidence, as in v3). */
+  /**
+   * Collection nodes with no non-loop incoming edge (whole-graph
+   * incidence, as in v3).   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the source nodes
+   */
   roots(criterion?: FilterLike): GpuCollection;
-  /** Collection nodes with no non-loop outgoing edge. */
+  /**
+   * Collection nodes with no non-loop outgoing edge.   *
+   * @param criterion — an optional query object or predicate applied to
+   *   the result, exactly as `filter()` takes it
+   * @returns the sink nodes
+   */
   leaves(criterion?: FilterLike): GpuCollection;
   private _dagExtremity;
   /**
@@ -5369,7 +5598,10 @@ declare class GpuCollection {
   /**
    * Connected components within this collection (undirected), each as a
    * collection of the reached nodes plus the collection's edges internal
-   * to that component.  `root` restricts the seed nodes.
+   * to that component.
+   *
+   * @param root — restricts the seed nodes; omit to seed from every node
+   * @returns one collection per component
    */
   components(root?: GpuCollection | null): GpuCollection[];
   componentsOf: this['components'];
@@ -5391,7 +5623,13 @@ declare class GpuCollection {
     w: number;
     h: number;
   };
-  /** Node dimensions for layout spacing, as v3's layoutDimensions. */
+  /**
+   * Node dimensions for layout spacing, as v3's layoutDimensions.
+   *
+   * @param options — `{ nodeDimensionsIncludeLabels }` to measure the
+   *   label box too rather than the node body alone
+   * @returns the first element's `{ w, h }`
+   */
   layoutDimensions(options?: {
     nodeDimensionsIncludeLabels?: boolean;
   }): {
@@ -5406,7 +5644,13 @@ declare class GpuCollection {
    * the bounding box at the *final* positions, as v3 does).
    */
   layoutPositions(layout: object, options: GpuLayoutBaseOptions, fn: (node: GpuCollection, i: number) => Position): this;
-  /** A layout scoped to this collection (`options.eles` is set to it). */
+  /**
+   * A layout scoped to this collection.
+   *
+   * @param options — the layout options, as `cy.layout()`; `eles` is set
+   *   to this collection
+   * @returns the layout instance; nothing runs until `run()`
+   */
   layout(options: GpuLayoutOptions): ReturnType<GpuCore['layout']>;
   makeLayout: this['layout'];
   createLayout: this['layout'];

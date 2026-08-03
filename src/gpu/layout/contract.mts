@@ -120,7 +120,12 @@ export class GpuLayoutContext {
     return this.cy._store.column( 'edge.endpoints' ) as Uint32Array;
   }
 
-  /** O(1) degree off the CSR adjacency */
+  /**
+   * O(1) degree off the CSR adjacency.
+   *
+   * @param slot — a node slot, as handed out by `nodeSlots()`
+   * @returns its whole-graph degree, loops counted as v3 counts them
+   */
   degreeOf( slot: number ): number {
     const adj = this.cy._store.adj;
 
@@ -160,6 +165,10 @@ export class GpuLayoutContext {
    * The bulk write: xy[i*2], xy[i*2+1] land on slots[i] — one dirty
    * span, no handles (the round-5 slot path; under compounds it takes
    * the per-slot sequential path so auto-bounds stay exact).
+   *
+   * @param slots — the node slots to move
+   * @param xy — the packed positions: `xy[i*2]`, `xy[i*2+1]` land on
+   *   `slots[i]`
    */
   setPositions( slots: number[], xy: number[] | Float32Array ): void {
     this.cy._store.setPositions( slots, xy );
@@ -171,6 +180,9 @@ export class GpuLayoutContext {
    * fit-at-final-positions viewport animation), fit/zoom/pan, and the
    * layoutready/layoutstop events.  The wrapper's layoutstart covers
    * the start (no double emit).
+   *
+   * @param fn — called per scoped node with the node and its index,
+   *   returning the model position to place it at
    */
   layoutPositions( fn: ( node: GpuCollection, i: number ) => Position ): void {
     this._finisherUsed = true;

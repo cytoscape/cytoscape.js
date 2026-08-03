@@ -510,6 +510,9 @@ export class Animation {
    * through the store's forwarding (in place) and re-point the parallel
    * slot arrays — `apply` indexes columns by `slots[i]`, which would
    * otherwise write the tween into whatever moved into the old slot.
+   *
+   * @param store — the store that just compacted, whose forwarding chain
+   *   resolves the pre-move refs
    */
   repairRefs( store: GraphStore ): void {
     for( const ref of this.refs ){ store.isCurrent( ref ); }
@@ -532,7 +535,12 @@ export class Animation {
     return new Promise( resolve => { this.resolvers.push( resolve ); } );
   }
 
-  /** Advance to `now` (ms).  Returns true when finished this tick. */
+  /**
+   * Advance this animation.
+   *
+   * @param now — the shared clock in ms
+   * @returns true when the animation finished on this tick
+   */
   tick( now: number ): boolean {
     this.lastNow = now;
 
@@ -556,7 +564,12 @@ export class Animation {
     return false;
   }
 
-  /** Stop now; `jumpToEnd` applies the final frame first. */
+  /**
+   * Stop now.
+   *
+   * @param jumpToEnd — apply the final frame first, instead of freezing
+   *   at the value the tween reached
+   */
   stop( jumpToEnd: boolean ): void {
     if( this._done ){ return; }
 
@@ -590,7 +603,11 @@ export class Animation {
     return clamp01( ( basis - this.startTime ) / this.duration );
   }
 
-  /** Freeze in place at the shared clock's last tick. */
+  /**
+   * Freeze in place.
+   *
+   * @param now — the clock to freeze against; defaults to the last tick
+   */
   pause( now: number = this.lastNow ): void {
     if( this._done || this._paused ){ return; }
 
@@ -598,7 +615,11 @@ export class Animation {
     this.pausedAt = now;
   }
 
-  /** Continue, excluding the paused span from the timeline. */
+  /**
+   * Continue, excluding the paused span from the timeline.
+   *
+   * @param now — the clock to resume against; defaults to the last tick
+   */
   resume( now: number = this.lastNow ): void {
     if( !this._paused ){ return; }
 
@@ -634,7 +655,10 @@ export class Animation {
 
   /** Write the value reached at `now` onto the CPU columns without
    * finishing — how a GPU-driven animation leaves the device for a
-   * pause or reverse (the caller unregisters the batch). */
+   * pause or reverse (the caller unregisters the batch).
+   *
+   * @param now — the clock to evaluate at; defaults to the last tick
+   */
   applyNow( now: number = this.lastNow ): void {
     if( this._done ){ return; }
 
@@ -727,6 +751,9 @@ export class Animation {
    * Resolve this animation into per-column GPU batches, capturing start
    * values.  Sets the start clock so CPU settle and GPU evaluation share
    * it.
+   *
+   * @param now — the clock the batch's params are anchored to
+   * @returns one ChannelWrite per tweened column
    */
   gpuBatches( now: number ): ChannelWrite[] {
     if( this.startTime == null ){ this.startTime = now + this.delay; }
@@ -737,7 +764,12 @@ export class Animation {
     return this.writes;
   }
 
-  /** Pin the start clock on the first tick, so `startMs` reads true before capture. */
+  /**
+   * Pin the start clock on the first tick, so `startMs` reads true before
+   * capture.
+   *
+   * @param now — the clock of that first tick
+   */
   schedule( now: number ): void {
     if( this.startTime == null ){ this.startTime = now + this.delay; }
   }
@@ -752,6 +784,8 @@ export class Animation {
    * interrupted animation lands: without it the CPU would keep the start
    * values while the GPU buffers hold the last frame drawn, and nothing
    * would ever dirty the column to reconcile them.
+   *
+   * @param now — the clock to settle at; t = 1 on natural completion
    */
   settleGpu( now: number ): void {
     if( this._done ){ return; }
@@ -770,6 +804,8 @@ export class Animation {
    * columns and keep ticking as a CPU tween — the device-side slot
    * buffers held pre-compaction slots, and 19.3's repair re-points the
    * CPU slot arrays.  The caller unregisters the GPU batch.
+   *
+   * @param now — the clock whose value is written to the CPU columns
    */
   demoteGpu( now: number ): void {
     this._gpuBarred = true;
@@ -1157,7 +1193,12 @@ export class AnimationManager {
       : cb => { setTimeout( () => cb( now() ), 16 ); };
   }
 
-  /** The renderer takes over the clock and provides the GPU tween sink. */
+  /**
+   * The renderer takes over the clock and provides the GPU tween sink.
+   *
+   * @param sink — the renderer's tween sink; the manager cedes its
+   *   auto-loop to the render loop while it is attached
+   */
   attachDriver( sink: GpuTweenSink ): void {
     this.sink = sink;
     this.driven = true;
@@ -1219,6 +1260,8 @@ export class AnimationManager {
    * and re-key the per-element queues (keys pack the pre-move identity).
    * GPU-driven animations were demoted to the CPU by the caller before
    * the store compacted (`demoteGpuAll`).
+   *
+   * @param store — the store that just compacted
    */
   onCompacted( store: GraphStore ): void {
     const next = new Map<number, Animation[]>();
@@ -1252,6 +1295,8 @@ export class AnimationManager {
    * running animation sharing a ref *and* a channel column with the new
    * one is stopped in place first (whole-animation eviction); disjoint
    * channels compose.  Nudges the driver (or starts the auto-loop).
+   *
+   * @param ani — the animation to run
    */
   start( ani: Animation ): void {
     if( ani.isViewport ){
@@ -1316,7 +1361,12 @@ export class AnimationManager {
     return this.viewportRunning.length > 0 || this.running.size > 0;
   }
 
-  /** True when a specific element has a running animation. */
+  /**
+   * True when a specific element has a running animation.
+   *
+   * @param ref — the element to check
+   * @returns whether anything is tweening it
+   */
   isAnimating( ref: Ref ): boolean {
     const arr = this.running.get( packRef( ref ) );
 
@@ -1328,8 +1378,13 @@ export class AnimationManager {
     return this.viewportRunning.length > 0;
   }
 
-  /** Stop every running animation on the given refs (round 21: there is
-   * no queue to clear — all of them are running). */
+  /**
+   * Stop every running animation on the given refs (round 21: there is
+   * no queue to clear — all of them are running).
+   *
+   * @param refs — the elements whose animations stop
+   * @param jumpToEnd — apply each animation's final frame first
+   */
   stop( refs: Ref[], jumpToEnd: boolean ): void {
     const toStop = new Set<Animation>();
 
@@ -1380,6 +1435,8 @@ export class AnimationManager {
    * the device is released and the CPU columns hold the exact value it
    * reached — so the freeze is readable and the mirror resumes its
    * uploads; resume re-acquires through the normal advance path.
+   *
+   * @param ani — the animation to freeze
    */
   pauseAni( ani: Animation ): void {
     if( ani.done || ani.paused ){ return; }
@@ -1410,9 +1467,13 @@ export class AnimationManager {
     if( this.driven ){ this.onTick(); } else { this.schedule(); }
   }
 
-  /** Reverse one animation in place.  A GPU-driven one leaves the
-   * device at its current value first; the next advance re-registers
-   * the swapped writes on the remapped clock. */
+  /**
+   * Reverse one animation in place.  A GPU-driven one leaves the device
+   * at its current value first; the next advance re-registers the
+   * swapped writes on the remapped clock.
+   *
+   * @param ani — the animation to reverse
+   */
   reverseAni( ani: Animation ): void {
     if( ani.done ){ return; }
 
@@ -1434,7 +1495,10 @@ export class AnimationManager {
    * Advance every running animation to `now`; drop finished ones.
    * Position and paint animations route to the GPU sink when one is
    * attached (registered once, driven on-device, completion detected here
-   * from the shared clock).  Returns true if any animation remains active.
+   * from the shared clock).
+   *
+   * @param now — the shared clock in ms
+   * @returns true while any animation remains active
    */
   tick( now: number ): boolean {
     const advanced = new Set<Animation>();

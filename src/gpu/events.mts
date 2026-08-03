@@ -68,8 +68,25 @@ export const refKey = ( ref: Ref ): string => `${ref.group}:${ref.slot}:${ref.ge
  * for the same element. */
 export const refQualifier = ( ref: Ref ): GpuQualifier => ( { key: 'ref:' + refKey( ref ), ref } );
 
-/** Predicate qualifiers compare by function identity (for off()). */
-export const predicateQualifier = ( fn: ElePredicate ): GpuQualifier => ( { fn } );
+/**
+ * Predicate qualifiers compare by function identity (for off()).
+ *
+ * @param fn — the delegation predicate
+ * @throws if given anything but a function — v4 has no selector strings,
+ *   and a v3-style `cy.on('tap', 'node', cb)` used to be accepted here
+ *   and then throw a TypeError inside the emitter on the *next* event of
+ *   that type, which is both late and somewhere else (29.3)
+ */
+export const predicateQualifier = ( fn: ElePredicate ): GpuQualifier => {
+  if( typeof fn !== 'function' ){
+    throw new Error(
+      `Event delegation takes a predicate function, not ${typeof fn === 'string'
+        ? `the selector string '${fn}'` : `a ${typeof fn}`} — ` +
+      `v4 has no selector strings; use e.g. cy.on( 'tap', ele => ele.isNode(), handler )` );
+  }
+
+  return { fn };
+};
 
 const isEleTarget = ( target: unknown ): target is EleEventTarget => {
   return target != null && typeof ( target as EleEventTarget )._eventRef === 'function';

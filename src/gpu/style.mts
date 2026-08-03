@@ -3383,6 +3383,16 @@ export class StyleEngine {
       if( !SHEET_KEYS.has( key ) ){
         throw new Error( `Unknown stylesheet key '${key}'; supported keys: nodes, edges, parents, core` );
       }
+
+      // v3's opaque `( ele ) => props` group form was removed by design
+      // (29.3: it was silently *ignored*, so a ported v3 sheet produced
+      // an unstyled graph with no error)
+      if( typeof ( sheet as Record<string, unknown> )[ key ] === 'function' ){
+        throw new Error(
+          `The style function form ('${key}: ( ele ) => props') is not supported in v4; ` +
+          `a group is a props object whose values are constants or mapper objects ` +
+          `(use a 'case' mapper for conditionals and 'data(key)' scales for per-element values)` );
+      }
     }
 
     this.coreStyle = resolveCoreProps( sheet.core );

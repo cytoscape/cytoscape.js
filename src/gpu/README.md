@@ -605,6 +605,16 @@ each is deliberate, not a pass-1 deferral:
   - *Id lookup*: `cy.$id(id)` / `getElementById` (the O(1) id index).
   - `cy.$()` is gone; set ops and `edgesWith`-style methods take
     collections, not selector strings.
+  - **The rejection is enforced at the boundary** (round 29.3), which it
+    was not before: a selector string now throws from the query
+    compiler, from the twelve collection methods that take another
+    collection, and from event delegation, each message naming the
+    replacement.  Previously a v3 string produced "Unknown query key
+    '0'" (its character indices read as keys), an internal
+    `other._refs is not iterable`, a silent `same() === false`, or — for
+    `cy.on('tap', 'node', cb)` — a TypeError raised *inside the emitter
+    on the next tap*, which is both late and somewhere else.  The whole
+    ledger of removals is pinned by `test/gpu-decided-drops.mjs`.
 - **The matcher IR is the contract, not a syntax.**  `matcher.mts`
   compiles a query to per-group `(mask, want)` flag tests answered by
   one columnar scan (`GraphStore.scanRefsInto`) — no element handles, no
@@ -638,7 +648,12 @@ each is deliberate, not a pass-1 deferral:
   GPU-evaluable.  The opaque `(ele) => props` form was removed — its
   cases are covered by mappers (`case` for conditionals, `data(id)` for
   identity), and selection-dependent recolouring is intentionally gone
-  (the `:selected` accent ring is shader-drawn).  Everything stays fresh
+  (the `:selected` accent ring is shader-drawn).  Removed means
+  **rejected**, since round 29.3: a group written as a function throws
+  at `setSheet`.  Until then it was silently *ignored*, so a v3
+  stylesheet ported wholesale produced an unstyled graph and no error —
+  the worst available failure mode for a decision this deliberate.
+  Everything stays fresh
   automatically: a data write re-derives the affected mapped channels,
   gated on the mapped keys.
 - **Every mapper is cheaply CPU-evaluable — a load-bearing invariant.**

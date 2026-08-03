@@ -62,6 +62,27 @@ const packRef = ( r: Ref ): number =>
 /** Model-px style props that renderedStyle() scales by the zoom. */
 const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set( [ 'width', 'height', 'border-width', 'font-size' ] );
 
+/**
+ * Guard for the methods that take another collection (29.3).  v4 has no
+ * selector strings, so these take collections — but a v3-style string
+ * used to reach the body and either crash with an internal TypeError
+ * (`other._refs is not iterable`) or, worse, answer silently: `same('#a')`
+ * returned false.
+ *
+ * @param other — the argument to check
+ * @param method — the method name, for the message
+ * @throws when `other` is not a collection
+ */
+const assertCollection = ( other: unknown, method: string ): void => {
+  if( other == null || !Array.isArray( ( other as GpuCollection )._refs ) ){
+    throw new Error(
+      `${method}() takes a collection, not ${typeof other === 'string'
+        ? `the selector string '${other}'` : `a ${other === null ? 'null' : typeof other}`} — ` +
+      `v4 has no selector strings; use cy.$id( id ), a query object like ` +
+      `cy.nodes({ selected: true }), or a predicate` );
+  }
+};
+
 const refSet = ( refs: Ref[] ): Set<number> => {
   const set = new Set<number>();
 
@@ -307,6 +328,8 @@ export class GpuCollection {
 
   /** Index of `ele` (the first element of it) within this collection, or -1. */
   indexOf( ele: GpuCollection ): number {
+    assertCollection( ele, 'indexOf' );
+
     const ref = ele._first();
 
     if( ref == null ){ return -1; }
@@ -666,6 +689,8 @@ export class GpuCollection {
    * @returns true when the element sets are equal
    */
   same( other: GpuCollection ): boolean {
+    assertCollection( other, 'same' );
+
     if( this === other ){ return true; }
     if( this.length !== other.length ){ return false; }
 
@@ -686,6 +711,8 @@ export class GpuCollection {
    * @returns true when the sets intersect
    */
   anySame( other: GpuCollection ): boolean {
+    assertCollection( other, 'anySame' );
+
     if( this === other ){ return this.length > 0; }
 
     const keys = this._keySet();
@@ -705,6 +732,8 @@ export class GpuCollection {
    * @returns true when `other` is contained
    */
   contains( other: GpuCollection ): boolean {
+    assertCollection( other, 'contains' );
+
     if( this === other ){ return true; }
     if( other.length > this.length ){ return false; }
 
@@ -724,6 +753,8 @@ export class GpuCollection {
 
   /** Whether every element of `other` is in this collection's neighborhood. */
   allAreNeighbors( other: GpuCollection ): boolean {
+    assertCollection( other, 'allAreNeighbors' );
+
     const nhood = this.neighborhood();
 
     return other.every( ele => nhood.hasElementWithId( ele.id() as string ) );
@@ -774,6 +805,8 @@ export class GpuCollection {
    * @returns a new collection holding both sets
    */
   union( other: GpuCollection ): GpuCollection {
+    assertCollection( other, 'union' );
+
     return this._spawn( [ ...this._refs, ...other._refs ] );
   }
 
@@ -789,6 +822,8 @@ export class GpuCollection {
    * @returns a new collection
    */
   difference( other: GpuCollection ): GpuCollection {
+    assertCollection( other, 'difference' );
+
     const keys = other._keySet();
 
     return this._spawnUnique( this._refs.filter( ref => !keys.has( packRef( ref ) ) ) );
@@ -806,6 +841,8 @@ export class GpuCollection {
    * @returns a new collection
    */
   intersection( other: GpuCollection ): GpuCollection {
+    assertCollection( other, 'intersection' );
+
     const keys = other._keySet();
 
     return this._spawnUnique( this._refs.filter( ref => keys.has( packRef( ref ) ) ) );
@@ -821,6 +858,8 @@ export class GpuCollection {
    * @returns a new collection
    */
   symmetricDifference( other: GpuCollection ): GpuCollection {
+    assertCollection( other, 'symmetricDifference' );
+
     const otherEles = other;
     const mine = this._keySet();
     const theirs = otherEles._keySet();
@@ -966,6 +1005,8 @@ export class GpuCollection {
   diff( other: GpuCollection ): {
     left: GpuCollection; right: GpuCollection; both: GpuCollection;
   } {
+    assertCollection( other, 'diff' );
+
     const otherColl = other;
     const mine = this._keySet();
     const theirs = otherColl._keySet();
@@ -3536,6 +3577,8 @@ export class GpuCollection {
    * @returns the connecting edges
    */
   edgesWith( others: GpuCollection ): GpuCollection {
+    assertCollection( others, 'edgesWith' );
+
     return this._edgesWith( others, false );
   }
 
@@ -3547,6 +3590,8 @@ export class GpuCollection {
    * @returns the directed connecting edges
    */
   edgesTo( others: GpuCollection ): GpuCollection {
+    assertCollection( others, 'edgesTo' );
+
     return this._edgesWith( others, true );
   }
 

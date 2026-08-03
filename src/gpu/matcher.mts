@@ -119,6 +119,16 @@ const compileDataCondition = ( key: string, spec: GpuDataCondition | string | nu
  * silently match everything.
  */
 export const compileQuery = ( query: GpuQuery, restrict: GroupName | null = null ): FlagPlan => {
+  // 29.3: a v3 selector string used to reach the key loop, where its
+  // character indices read as keys and the error came back as
+  // "Unknown query key '0'" — true, but not the thing that went wrong
+  if( typeof query === 'string' ){
+    throw new Error(
+      `Queries take an object, not the selector string '${query}' — v4 has no ` +
+      `selector language; use a query object like cy.nodes({ selected: true }), ` +
+      `a predicate function, or cy.$id( id )` );
+  }
+
   for( const key of Object.keys( query ) ){
     if( !QUERY_KEYS.has( key ) ){
       throw new Error( `Unknown query key '${key}'; supported keys: group, selected, parent, child, data` );

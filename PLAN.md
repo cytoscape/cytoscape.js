@@ -7138,7 +7138,46 @@ worth as much as the findings:
   not smoke: `silentPositions`/`silentShift` must move nodes *without*
   emitting position events (the whole point of "silent"), and
   `delayAnimation` must delay without touching any channel.
-- [ ] **29.3 Decided drops stay dropped.**  A spec file pinning the
+- [x] **29.3 Decided drops stay dropped** (2026-08-03) — landed, and
+  it turned out to be a *fix* pass as well as a test pass: writing the
+  specs found three places where a decided-design removal was accepted
+  and then failed somewhere else, or not at all.
+  - **Event delegation with a selector string** (`cy.on('tap', 'node',
+    cb)`) was wrapped as a predicate without a check, so it registered
+    cleanly and then threw `qualifier.fn is not a function` **inside
+    the emitter, on the next tap** — during `emit`, so it takes the
+    dispatch down with it.  The guard now lives in
+    `predicateQualifier`, the one choke point `on`/`one`/`off` share.
+  - **A style group written as a function** was **silently ignored**:
+    `style: { nodes: ele => ({ ... }) }` compiled to nothing and the
+    graph rendered with defaults, no error.  A v3 sheet ported
+    wholesale therefore looked like a rendering bug.  `setSheet` now
+    throws, naming mappers and `case` as the replacement.
+  - **The collection methods** crashed on `other._refs` — or, in
+    `same()`'s case, quietly returned `false`, which reads as working
+    code.  A shared `assertCollection` guard covers all twelve
+    (`same`, `anySame`, `contains`, `allAreNeighbors`, the four set
+    ops, `diff`, `indexOf`, `edgesWith`, `edgesTo`).
+  Also improved: a selector string reaching `compileQuery` reported
+  "Unknown query key '0'" — its own character indices read as keys —
+  and now says what actually went wrong.  Every message names the v4
+  replacement ($id, a query object, a predicate).
+  `test/gpu-decided-drops.mjs` then pins the ledger: selector strings
+  at every entry point, the absent class methods and `cy.$`, the
+  sheet's rejection of `z-index` and the 2026-07-29 triage drops, the
+  no-dash shape spellings (with `roundrectangle`'s survival pinned
+  *as* the recorded inconsistency, so the line has to change when the
+  call is taken), the bypass setter, `json(obj)`, custom easing
+  functions, and `queue`/`step`.  16 specs, each citing the ledger
+  entry it pins.
+  Verification: 2453 Node tests, 63 module tests, typecheck, lint,
+  JSDoc 100%, and — because this pass changes source — **87/87 webgpu
+  and 75/75 webgpu-visual against a freshly built bundle** (an
+  http-server was already listening on 3333, which is exactly the
+  stale-bundle trap, so the build was run by hand first).
+  *(Original plan text below.)*
+
+  **29.3 Decided drops stay dropped.**  A spec file pinning the
   design ledger's rejections at the API boundary: selector strings on
   every query entry point, `cy.$`, classes, `z-index` in a sheet, and
   the per-element bypass setter.  Each assertion cites the ledger entry

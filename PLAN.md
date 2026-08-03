@@ -6781,8 +6781,12 @@ commit(s)):
   and corrected: the 18.5 note claiming a software-only adapter was
   corrected by the same hardware pass, which traced it to
   `requestAdapter()` returning null on `about:blank` — probe from a
-  served page.  The measurement was therefore *skipped*, not blocked,
-  and remains open.
+  served page.  The measurement was therefore *skipped*, not blocked.
+  **Answered by round 29.5** (2026-08-03): re-run on the RX 580
+  against the pre-round-27 baseline, every stable device row moved
+  +0.3% to +3.6% — the label rows at the top of that band, consistent
+  with 27.7's wider glyph instance, and the shape and arrow branches
+  invisible.  Round 27 cost nothing measurable per frame.
 - [x] **27.10 Closing docs sweep** (2026-08-02) — swept both
   documents for the round's vocabulary.  The README header carries
   round 27; the node-shape section now records the completed
@@ -7214,6 +7218,28 @@ worth as much as the findings:
   box selection over curved edges, and the re-fan triggers — each
   against the straight-edge baseline, so the number reported is the
   *curve premium*, not the ambient cost.
-- [ ] **29.5 Run the renderer benchmark on the RX 580** and record the
-  numbers against the 2026-08-01 baseline, which answers 27.9's open
-  question: whether round 27's shader branches cost anything per frame.
+- [x] **29.5 The renderer benchmark on the RX 580** (2026-08-03) —
+  run, and it answers 27.9: **round 27's shader branches cost nothing
+  measurable per frame.**  Device p50 (timestamp-query, the unbounded
+  metric) against the pre-round-27 baseline of 2026-08-01 19:42, same
+  box, same flags, four generated 25k × 50k scenes × five passes:
+  every stable row moved **+0.3% to +3.6%**, most under +2%.  The
+  label rows sit at the top of that band (+1.5–2.0%), which is the
+  expected shape of 27.7's wider glyph instance (`GLYPH_WORDS` 14 → 16,
+  64 bytes per glyph instead of 56); the shape and arrow branches are
+  invisible.  Wall time is the vsync floor (16.7 ms) on every generated
+  scene and view, as before.
+  **One row is not a signal, and saying so is the point.**  The
+  compound scene's `fit-all` pair first read −29.9% against the
+  baseline — far larger than any plausible effect of this round — so
+  it was re-measured rather than reported.  A repeat run put the same
+  row at 2.11 → 3.00 ms (+42%) with every other row reproducing to
+  ±0.02 ms.  The compound `fit-all` device rows are **bimodal
+  run-to-run at the ±40% level**; they cannot carry a regression
+  claim, and the −30% "improvement" was noise in the other direction.
+  Recorded in the README's renderer-benchmark section so the next
+  reader does not build on it.
+  (The `--layout` mode and the ndex and 100k scenes were not re-run:
+  round 27 touched neither layout nor anything scene-size-dependent,
+  and the flat/curved/compound/images 25k set is where its node and
+  arrow shaders live.)

@@ -1882,7 +1882,14 @@ JSON — quick profile by default, `-- --full` for the 2k/20k/200k matrix
 `benchmark/gpu/render-bench.mjs` drives `render-bench.html` in Chromium
 via Playwright — needs built UMD bundles and a **real GPU adapter** (the
 run aborts on none; software adapters are warned about, their numbers are
-a different machine class).  It replays the interactions behind the
+a different machine class).
+*Reading its device numbers* (round 29.5): most `gpu (device)` rows
+reproduce run-to-run to ±0.02 ms, which is what makes them usable as a
+regression signal — but the **compound scene's `fit-all` pair is bimodal
+at the ±40% level** (2.11 ms and 3.00 ms on consecutive runs of the same
+build).  Re-measure before believing a change in those two rows; the
+round-29.5 comparison first read a 30% "improvement" there that was
+nothing but the other mode.  It replays the interactions behind the
 recorded renderer numbers on six scenes (seeded 25k×50k and 100k×300k
 generators, ndex-x-large, a 25k×50k *curved* scene whose edges come
 in bezier parallel pairs so every edge actually curves, a 25k×50k

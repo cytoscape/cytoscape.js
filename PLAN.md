@@ -7868,3 +7868,43 @@ commit(s)):
   `dist/cytoscape-gpu.d.ts`, JSDoc coverage 100% and `@throws` 16/16,
   and `gpu-throw-coverage` still at 0 Node-reachable dead sites.**
   **Round 31 is complete.**
+
+## Round 32 plan — `@param` completeness (planned 2026-08-03)
+
+Round 31 closed the `@throws` half of round 26's contract sentence
+("what it takes, what it returns, what it throws").  This round closes
+**what it takes**, and stops there deliberately.
+
+**Why `@param` and not `@returns`.**  Round 26 recorded docmaker's
+per-function shape: `{ name, descr, formats: [ { descr, args: [ { name,
+descr } ] } ] }`.  Arguments have a **description field the generator
+emits**; there is no return field at all.  So a missing `@param` is a
+hole in the release documentation v4 will ship, while a missing
+`@returns` is editor hover text only.  That is a boundary in the
+already-decided design rather than an arbitrary cut, which is what
+makes this round no-call work.
+
+**Measured** (public tier — the nine `PUBLIC_API` files, overload-aware
+so an implementation signature closing a run of documented overloads is
+not counted): **221 public members take parameters; 143 document them
+and 78 do not.**  The convention is established practice at 65%, not an
+open question — round 26 simply stopped at doc-comment *presence*.
+By file: `collection.mts` 28, `animation.mts` 18, `core.mts` 13,
+`viewport.mts` 8, `style.mts` 8, `layout/contract.mts` 3.
+
+**The `@returns` tail is measured and logged, not built**: 133 of 348
+value-returning public members lack the tag.  It is worth doing, and it
+is worth doing when someone is generating the docs and can see what
+reads badly — nothing downstream consumes it today.
+
+**Pass split** (docs in-commit; one commit per file group):
+
+- [ ] **32.1 `core.mts` + `viewport.mts`** (21 members).
+- [ ] **32.2 `collection.mts`** (28 members).
+- [ ] **32.3 `animation.mts` + `style.mts` + `layout/contract.mts`**
+  (29 members).
+- [ ] **32.4 The audit + gate, and the closing sweep.**  `@param`
+  completeness joins `auditThrowTags` in
+  `scripts/gpu-jsdoc-coverage.mjs` under the same reasoning 31.2
+  recorded: documentation completeness is already a gated concern
+  here.

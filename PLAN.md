@@ -173,7 +173,7 @@ appears to authorize it.
    matches how their rounds used them, but the HTML report
    understates what exists.  *(30.0 re-ran all six at
    `BENCH_N=2000`: every one still works, so this is a reporting
-   question and not bit-rot.)*  **Scoped as round 33.9**
+   question and not bit-rot.)*  **Scoped as round 33.10**
    (2026-08-03), which folds them in behind a `gpuOnly` job marker —
    the call this item asks for is taken there, so the entry closes
    when that pass lands.
@@ -8288,7 +8288,24 @@ describe and no suite prices:
   the id-map (probe insert, lookup, blob compaction), `Adjacency`
   rebuild, `CurveBlob` reclaim and `DirtyTracker` span coalescing —
   gpu-only absolute costs, since v3 has no counterpart at all.
-- [ ] **33.9 The report: every suite, one command** — finding 15,
+- [ ] **33.9 The remaining public surface**
+  (`benchmark/gpu/surface.mjs`, new) — *added to the plan while
+  executing it (2026-08-03), on the user's restatement of the scope:
+  cover as much of the API surface as possible.*  Passes 33.1–33.8
+  price the subsystems with an interesting cost model; this one is the
+  **breadth** pass, and its job is that the 33.12 audit reads
+  near-total rather than "the interesting third".  One row per public
+  member not already priced elsewhere, at a single scale: the core's
+  viewport quartet and its compute-without-committing twins,
+  introspection and the gating flags, `batch`, `json`, the collection's
+  iteration/comparison/building surface, the rendered-coordinate
+  accessors, the flag families, the compound traversals, the curve
+  accessors, the style getters, and `labelBoundingBox`.  Comparative
+  where v3 has the member, gpu-only where it does not — and the rows
+  are deliberately shallow (existence and order of magnitude), because
+  a member that turns out to matter earns a real suite, as every one
+  of 33.1–33.8 did.
+- [ ] **33.10 The report: every suite, one command** — finding 15,
   design call 3, and **open call 7's answer**.  The job table takes
   all fourteen suites plus the new ones, `gpuOnly` jobs render as
   absolute costs, `--all` runs everything including the renderer
@@ -8297,7 +8314,7 @@ describe and no suite prices:
   seam — a pure results→HTML renderer, which is why it is testable at
   all).  The `BENCH_OP` tables must track the new suites' group names,
   the coupling `report.mjs` already documents.
-- [ ] **33.10 The renderer bench gaps** — finding 14.  Measure the
+- [ ] **33.11 The renderer bench gaps** — finding 14.  Measure the
   `gen-25k-images` scene on the RX 580 (never measured, and its
   "software adapter" note was wrong three times over); re-run the 100k
   and ndex scenes against the round-27 baseline the way 29.5 did for
@@ -8306,7 +8323,7 @@ describe and no suite prices:
   case) and a `visibility`/`events` scene.  The compound `fit-all`
   rows are bimodal at ±40% (29.5, recorded): re-measure before
   reporting anything about them, and say so in the record.
-- [ ] **33.11 `scripts/gpu-bench-coverage.mjs` + the closing docs
+- [ ] **33.12 `scripts/gpu-bench-coverage.mjs` + the closing docs
   sweep** — design call 8, then the standing rule.  The audit ships
   reporting-only with its limits in the header; then both documents
   are swept end to end for the round's vocabulary and for staleness,

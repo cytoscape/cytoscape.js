@@ -1966,6 +1966,21 @@ and reports which the Node suite reaches, the same way
 
 ## Benchmarks
 
+**Round 33 (2026-08-03) is the benchmark sweep**: the suites below grew
+from 14 to cover the surfaces that had no measurement at all — layouts,
+the algorithm tail, the style engine, loading and the wire format,
+picking/box-selection/bounds, the data sidecar and structured queries,
+events and the animation manager, images/charts/store internals, and a
+breadth pass over the remaining public members.  Two rules came out of
+it and now apply to every row here: a row is either **v3-comparative**
+(with an idiomatic v3 analogue on the other side) or **gpu-only** (an
+absolute cost, or a premium against a v4 baseline of the same shape),
+and it says which; and **every performance figure in this file has a
+re-runnable source**, or is marked in place as a historical one-off
+with the date and machine it came from.  A number nobody can re-run is
+a record, not a measurement.  `node scripts/gpu-bench-coverage.mjs`
+reports which public surfaces have a benchmark and which do not.
+
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
 core/collection op against its v3 analogue in `src/`. See
 `benchmark/gpu/` (`materializers.mjs` is a focused standalone sweep that

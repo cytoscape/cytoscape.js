@@ -1247,6 +1247,20 @@ each is deliberate, not a pass-1 deferral:
     subdivision, memoized per edge against a store-wide geometry epoch
     (any geometry write invalidates every cached box — over-broad but
     sound); fit/cull keep the conservative bounds.
+  - *CPU costs (round 29.4, Node sweep, `benchmark/gpu/curves.mjs`,
+    20k nodes / 40k bundled-bezier edges, every row against the
+    straight graph of the same shape)*: **derivation is deferred to the
+    first read**, which is the shape of every number here — a bulk
+    `positions()` write is 0.97× (curves cost the *write* nothing), the
+    first read after it 1.46×, the same read again 1.22×.  The
+    premiums that matter: box selection **3.29×** (the exact
+    curve-vs-rect test), a bundle re-fan on `hide()`/`show()`
+    **3.79×** (~5.2 µs per pair, paid at a sibling's next read),
+    `controlPoints()` 1.57×, a single-node drag 1.46×, the whole-graph
+    exact `boundingBox()` 1.16×, the conservative `fit()` scan 1.05×.
+    Two rows read ≈1.0× until the benchmark was corrected to force the
+    deferred work: the bulk write genuinely is free, but the re-fan row
+    was measuring a flag write until it read a sibling afterwards.
   - *Rendering (12a)*: curved edges draw in their own pipeline — one
     instance per edge as a strip of 24 quads whose vertex shader
     evaluates the curve analytically from live positions + the params
@@ -1851,7 +1865,10 @@ slot-compaction sweep — the shrink profile measured before/after
 parity checks, and honesty controls for the order-list scans compaction
 does not change; `transitions.mjs` is the round-24 transitions-off-vs-on
 sweep — the auto-extent whole-channel case, the explicit-domain
-O(changed) write, the bulk tween tick, and the whole-sheet swap).
+O(changed) write, the bulk tween tick, and the whole-sheet swap;
+`curves.mjs` is the round-29.4 curved-edge CPU sweep — every row run
+against the straight graph of the same shape, so what it prints is the
+**curve premium** rather than the ambient cost).
 `npm run benchmark:gpu:report` runs every suite and renders a
 self-contained single-page HTML report (v3-vs-gpu medians as dumbbells on
 log time axes, a ranked speedup overview, per-suite stat tables) into

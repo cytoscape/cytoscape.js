@@ -7182,7 +7182,33 @@ worth as much as the findings:
   every query entry point, `cy.$`, classes, `z-index` in a sheet, and
   the per-element bypass setter.  Each assertion cites the ledger entry
   it pins.
-- [ ] **29.4 A curved-edge CPU benchmark** (`benchmark/gpu/curves.mjs`),
+- [x] **29.4 A curved-edge CPU benchmark** (2026-08-03) — landed as
+  `benchmark/gpu/curves.mjs`, standalone and gpu-only like
+  `labels.mjs`.  Every row runs the same operation on a straight graph
+  of identical shape, so the printed number is the **curve premium**;
+  the scene is 4 parallel edges per node pair, so an endpoint move
+  re-fans a whole bundle.
+  **The headline is that curve derivation is deferred to the first
+  read**, and the benchmark had to be corrected twice before it showed
+  that rather than hiding it.  First: whichever side was measured first
+  paid the module's JIT warmup, which inflated the curved side's
+  premium (a drag read 2.52× and settled at 1.16× once both sides warm
+  up).  Second: two rows came back at ≈1.0×, and rather than report
+  "curves are free" the rows were checked — a bulk `positions()` write
+  really is free (0.97×: the write defers), but `hide()`/`show()` was
+  measuring a flag write, because the bundle re-fan it triggers is
+  deferred like every other derivation.  Reading a *sibling* inside the
+  loop moved it to 3.79×.
+  Numbers at 20k nodes / 40k edges: box selection **3.29×** (the exact
+  curve-vs-rect test), re-fan **3.79×** (~5.2 µs per hide/show pair),
+  `controlPoints()` 1.57×, drag 1.46×, first read after a bulk move
+  1.46× against 1.22× warm, build 1.18×, exact whole-graph
+  `boundingBox()` 1.16×, `midpoint()` 1.15×, conservative `fit()` scan
+  1.05×.  Recorded in the README's curved-edge section beside the
+  design it prices.
+  *(Original plan text below.)*
+
+  **29.4 A curved-edge CPU benchmark** (`benchmark/gpu/curves.mjs`),
   standalone and gpu-only like `labels.mjs`: bundled-bezier build,
   node-drag re-derivation at bundle scale, the accessors, bounds and
   box selection over curved edges, and the re-fan triggers — each

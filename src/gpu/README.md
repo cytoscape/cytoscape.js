@@ -1924,7 +1924,7 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   the gate stops, deliberately.  143 of the 221 public members taking
   arguments documented them when the audit was written; round 32 took
   it to 221/221.  The `@returns` tail is measured and logged in
-  PLAN.md (133 of 348) rather than built — it is worth doing when
+  PLAN.md (63 of 276) rather than built — it is worth doing when
   someone is generating the docs and can see what reads badly.
 
 ## Measuring the error contract (round 30)
@@ -2806,7 +2806,14 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   above).  What stays open, deliberately: the **generator** that
   turns those comments into docmaker input, and the release docs
   themselves.  Neither is built until v4 ships, because
-  `documentation/` belongs to v3 until then.  Also logged from
+  `documentation/` belongs to v3 until then.  What *is* ready is the
+  input: after rounds 31–32 the public surface carries all three of
+  the tags a generator reads — a doc comment on every member (26),
+  `@throws` wherever a member throws (31.2), and `@param` on every
+  member that takes arguments (32) — each gated, so the generator's
+  input cannot rot before the generator exists.  `@returns` is the
+  one tag still partial (63 of 276), deliberately: docmaker's shape
+  has no return field.  Also logged from
   26.5: `event.target` types as `unknown` on the shared v3 event
   object — a v4-specific event type is an open design call, not an
   oversight.

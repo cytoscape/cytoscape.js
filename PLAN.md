@@ -165,25 +165,30 @@ appears to authorize it.
    understates what exists.  *(30.0 re-ran all six at
    `BENCH_N=2000`: every one still works, so this is a reporting
    question and not bit-rot.)*
-12. **Whether error-contract coverage becomes a gate** (logged 30.4) —
-    `scripts/gpu-throw-coverage.mjs` reports it and deliberately does
-    not enforce it, because a floor is a policy call with three
-    parts: whether a **new Node-reachable throw with no spec should
-    fail the build** (the reading is 0 today, so a zero-tolerance gate
-    would hold as of this round); what to do about the **13
-    browser-only sites**, which the Node measurement cannot see at all
-    and which only the `webgpu` project can pin; and whether the
-    `UNREACHABLE`/`MISATTRIBUTED` lists are a maintained allowlist or
-    a one-off note.  The JSDoc-coverage precedent (a script plus a
-    test that gates it) is right there, so this is a decision about
-    appetite rather than about mechanism.
+8. **Whether error-contract coverage becomes a gate** (logged 30.4) —
+   `scripts/gpu-throw-coverage.mjs` reports it and deliberately does
+   not enforce it, because a floor is a policy call with three parts:
+   whether a **new Node-reachable throw with no spec should fail the
+   build** (the reading is 0 today, so a zero-tolerance gate would
+   hold as of this round); what to do about the **13 browser-only
+   sites**, which the Node measurement cannot see at all and which
+   only the `webgpu` project can pin; and whether the
+   `UNREACHABLE`/`MISATTRIBUTED` lists are a maintained allowlist or a
+   one-off note.  The JSDoc-coverage precedent (a script plus a test
+   that gates it) is right there, so this is a decision about appetite
+   rather than about mechanism.
+   Note that rounds 31.2 and 32 *did* gate the two documentation
+   rules (`@throws`, `@param`) in `test/gpu-jsdoc-coverage.mjs`, on the
+   reasoning that documentation completeness was already gated here by
+   round 26 — so this call is specifically about **test** coverage,
+   and the two decisions are meant to be readable side by side.
 
 ### Contradictions between the code and the decided-design ledger
 
 Each was found by reading the code against this file (rounds 28–29's
 docs checks), and each is left in place pending the call.
 
-8. **The legacy-alias triage was applied unevenly** (found 2026-08-03).
+9. **The legacy-alias triage was applied unevenly** (found 2026-08-03).
    The 2026-07-29 triage dropped the no-dash shape spellings and the
    `autolockNodes`/`autoungrabifyNodes` aliases under "one name per
    concept".  In the code, `roundrectangle` still compiles (while
@@ -194,18 +199,18 @@ docs checks), and each is left in place pending the call.
    two rows in `test/gpu-aliases.mjs`, their wiring and `declare`
    lines in `core.mts`, and the `roundrectangle` line in
    `test/gpu-decided-drops.mjs` come out together.
-9. **Unknown constructor options are silently ignored** (found
-   2026-08-03), including the four canvas-era options the triage
-   explicitly dropped: `{ motionBlur: true }` constructs happily and
-   round-trips through `cy.options()`, as does
-   `{ totallyUnknownOption: 1 }`.  v4 throws on an unknown sheet key,
-   an unknown style property and an unknown query key — on the
-   stated reasoning that a typo must fail loudly — and the
-   constructor is the one entry point that does not.  The call: match
-   the rest of the surface (and with what allowance for
-   forward-compatible options?), or record the constructor as
-   deliberately permissive.
-10. **Dropped event names register silently** (found 2026-08-03).
+10. **Unknown constructor options are silently ignored** (found
+    2026-08-03), including the four canvas-era options the triage
+    explicitly dropped: `{ motionBlur: true }` constructs happily and
+    round-trips through `cy.options()`, as does
+    `{ totallyUnknownOption: 1 }`.  v4 throws on an unknown sheet key,
+    an unknown style property and an unknown query key — on the
+    stated reasoning that a typo must fail loudly — and the
+    constructor is the one entry point that does not.  The call: match
+    the rest of the surface (and with what allowance for
+    forward-compatible options?), or record the constructor as
+    deliberately permissive.
+11. **Dropped event names register silently** (found 2026-08-03).
     Round 17 dropped the `vmouse*` aliases and v3's raw mouse/touch
     re-emits, but `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
     `cy.on('click', h)` and `cy.on('touchstart', h)` all register
@@ -218,7 +223,7 @@ docs checks), and each is left in place pending the call.
     a blanket rule.  29.3 fixed the neighbouring case — a *selector
     string* as an event qualifier now throws instead of detonating
     inside the emitter — but the event *name* side is untouched.
-11. **`event.preventDefault()` exists and does nothing** (recorded in
+12. **`event.preventDefault()` exists and does nothing** (recorded in
     the README since round 27's fact-check).  v4 emits the shared v3
     `Event`, so the method is present on every event a handler
     receives and sets `isDefaultPrevented`, but no v4 code reads that
@@ -321,8 +326,11 @@ playwright-page/webgpu.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/webgpu.spec.js (+ webgpu-visual.spec.js + goldens/)
 test/gpu-*.mjs           # 100+ Node-runner suites (auto-picked-up by the test:js glob)
 benchmark/gpu/           # mitata suites + the renderer/report runners (see the Benchmarks section of the README)
-scripts/gpu-jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss)
-test/gpu-jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress)
+scripts/gpu-jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss);
+                                 #   also @throws accuracy (31.2) and @param completeness (32)
+test/gpu-jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress), + the 31.2/32 rules
+scripts/gpu-throw-coverage.mjs   # round 30.4: which src/gpu throws the Node suite runs (reports, never gates)
+test/modules/gpu-throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture
 rolldown.dts.gpu.config.mjs      # round 26.5: rolls src/gpu declarations up (build/dts-gpu/)
 build-dts.mjs                    #   finalizeDts (v3) + finalizeGpuDts (v4) -> dist/*.d.ts
 dist/cytoscape-gpu.d.ts          # round 26.5: the shipped declarations behind the "./gpu" types export
@@ -2333,7 +2341,7 @@ took the untested public surface the survey turned up beside them
 (`cy.stop()`, `renderedTargetEndpoint`, two clustering metrics), and
 30.4 shipped the measurement as `scripts/gpu-throw-coverage.mjs` —
 reporting only, since a coverage floor is a call, now logged as open
-call 12.  Reading at the close: 176 run, 13 browser-only, 2
+call 8.  Reading at the close: 176 run, 13 browser-only, 2
 unreachable by design, **0 Node-reachable and never run**.
 **Round 31** then asked what those throws *say*: it found the
 per-element bypass error advising the style function form — removed in
@@ -2347,7 +2355,7 @@ along, and the wrong text was in a runtime string and a JSDoc block.
 `@param` on every public member that takes arguments (143 → 221 of
 221, gated) — with the boundary drawn by docmaker's own shape:
 arguments carry a description the generator emits, returns do not, so
-the `@returns` tail (133 of 348) is measured and logged rather than
+the `@returns` tail (63 of 276) is measured and logged rather than
 built.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
@@ -7564,7 +7572,12 @@ commit(s)):
   of the 14 that remain is browser-only (`renderer.mts`'s five export
   guards, `gpu-context`, `column-mirror`, `glyph-atlas`, `gpu-tween`,
   `image-decoder`) or unreachable by design (the SHAPE_MASK field
-  invariant; the big-endian platform guard).  **Every Node-reachable
+  invariant; the big-endian platform guard).
+  *(Read 15, not 14, from 30.4 onward: `renderer.mts` has a **sixth**
+  export guard — `exportScale`'s — which the raw line data reported as
+  covered because it sits in a module-level arrow const.  30.4's
+  calibration found it and moved it into the browser tier, which is why
+  30.2 pins six guards where this entry counts five.)  **Every Node-reachable
   throw in `src/gpu` now runs in the Node suite.**
   What landed, by surface: the style parsers' five guards (the wrap
   family's shared keyword closure, gradient stop percents on both
@@ -7698,7 +7711,7 @@ commit(s)):
   gate, the reading at the close, and both measurement footguns), and
   the follow-up hooks now name the coverage-floor call alongside the
   other open ones.  This file gains the round-30 paragraph in
-  "Suggested sequencing" and open call 12; the status header, which
+  "Suggested sequencing" and open call 8; the status header, which
   still ended at round 23, now runs through 30 and says plainly that
   the ledger's remainder is calls rather than effort.
   **The standing rule caught its own warning again.**  "Suggested
@@ -7750,7 +7763,11 @@ what it returns, **what it throws**", and gates *presence* of a doc
 comment at 100% — but nothing checks that a member which throws says
 so.  17 public members throw; 4 document it.  The 13 that do not
 include six of round 20's interaction setters (each throws on invalid
-input), `mount()`, `style()` and `numericStyle()`.  These comments are
+input), `mount()`, `style()` and `numericStyle()`.
+*(Corrected by the pass: those figures come from a throwaway scan that
+counted `if(` and `for(` as members.  The audit 31.2 actually shipped —
+which reuses the round-26 scanner — puts it at **16 members, 7 tagged,
+9 added**.  Read the 31.2 record, not this paragraph.)*  These comments are
 the shipped `.d.ts` hover text, so the gap is user-visible.
 
 **Finding 3: two events in the curated vocabulary are named by no
@@ -7898,10 +7915,18 @@ open question — round 26 simply stopped at doc-comment *presence*.
 By file: `collection.mts` 28, `animation.mts` 18, `core.mts` 13,
 `viewport.mts` 8, `style.mts` 8, `layout/contract.mts` 3.
 
-**The `@returns` tail is measured and logged, not built**: 133 of 348
+**The `@returns` tail is measured and logged, not built**: **63 of 276**
 value-returning public members lack the tag.  It is worth doing, and it
 is worth doing when someone is generating the docs and can see what
 reads badly — nothing downstream consumes it today.
+*(This figure was first published as "133 of 348" — from the same
+throwaway scan that misreported the `@throws` count in the round-31
+plan, counting `if(`/`for(` as members and not skipping the
+implementation signature that closes a run of overloads.  Re-measured
+2026-08-03 with the overload-aware scanner the shipped audits use.
+Third time that scan has produced a wrong number in a plan: use
+`auditParamTags`/`auditThrowTags` as the template, not a fresh
+regex.)*
 
 **Pass split** (docs in-commit; one commit per file group):
 

@@ -92,6 +92,9 @@ shader over every allocated slot.
 
 - Entry point: `cytoscapeGpu(options)` from `src/gpu/index.mts`
   (`import cytoscapeGpu from 'cytoscape/gpu'`, UMD global `cytoscapeGpu`).
+  It ships **TypeScript declarations** since round 26.5 —
+  `dist/cytoscape-gpu.d.ts`, built by `npm run build:types`, carrying
+  the source JSDoc through to editors.
 - Headless-friendly: without a `container` no GPU is required (Node-testable).
   With a `container`, WebGPU is mandatory — the factory throws synchronously
   when `navigator.gpu` is missing, and `.ready` rejects when no adapter can
@@ -528,8 +531,14 @@ calls made deliberately rather than by accretion:
   normalized vocabulary) and v3's raw mouse/touch re-emits
   (`mousedown`/`click`/`touchstart`/... — `pointer*` is their one
   modern spelling; the existing `mouseover`/`mouseout` stay);
-  `event.preventDefault()` stays unported (gesture defaults are
-  gated by options, and `originalEvent` keeps the DOM method).
+  `event.preventDefault()` has **no effect**: gesture defaults are
+  gated by options instead.  Note the shape of that — v4 emits the
+  shared v3 `Event` object, so the method is present on the event a
+  handler receives and sets `isDefaultPrevented`, but nothing in
+  `src/gpu` reads that flag, so the call silently does nothing.
+  `originalEvent` is never populated either (the interaction layer
+  emits `{ position }` only), so the underlying DOM event is not
+  reachable through it.
   Deviation: `tapdragover`/`cxtdragover` target **nodes only** (the
   synchronous CPU pick; edges would need the async GPU tile).
 - **Extensions are direct objects — no registry.**  No
@@ -1248,8 +1257,10 @@ each is deliberate, not a pass-1 deferral:
     weights clamp to [-1, 2] and any weight outside [0, 1] marks the
     edge box-bounded (FLAG_CURVED_BOX) for the cull tier;
     `unbundled-bezier` without `control-point-distances` takes a
-    single control at the step size (v3's undocumented fallback
-    staggers by the *unbundled pair group* there — not ported);
+    single control at the step size — **matching v3**, whose
+    staggered `normctrlptDist` is dead on that path (its
+    `edgeIsUnbundled` branch assigns the plain `ctrlptDist`), so
+    this is parity, not a deviation;
     unbundled-family **loops** use `control-point-distances[0]` as the
     loop distance (v3), falling back to the step size when unset (v3
     yields NaN geometry there); and segments/taxi-styled loops keep
@@ -1781,7 +1792,8 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   entry point, `GpuCore`, `GpuCollection`, `Viewport`, the
   animation handle, the layout contract, the public
   style/wire/columnar surface) and an internal tier.  Round 26 took
-  both tiers from 46% to **100%**, so `test/gpu-jsdoc-coverage.mjs`
+  the surface from **46% overall** (43% public, 55% internal) to
+  **100% in both tiers**, so `test/gpu-jsdoc-coverage.mjs`
   gates the simplest possible rule: **no file in `src/gpu` may have
   an undocumented public member**, and the failure message names
   it.  Overload *signatures* each carry their own block; the

@@ -6739,6 +6739,22 @@ commit(s)):
   answers "is this right?", and that a parity test should be run
   once with its feature disabled to prove it can fail.  The standing
   process rule above gained "sweep this file too".
+  A read-the-code verification pass over the README's factual
+  claims (13 checked against source, most confirmed) turned up three
+  that were wrong, all now fixed: the curved-edge section recorded a
+  **deviation that does not exist** — it said v3 staggers an
+  `unbundled-bezier` without `control-point-distances` by the
+  unbundled pair group and that v4 does not port it, when v3's
+  `edgeIsUnbundled` branch assigns the plain step size and its
+  staggered `normctrlptDist` is dead on that path, so the two agree;
+  the event section said `event.preventDefault()` "stays unported"
+  with `originalEvent` keeping the DOM method, when in fact the
+  method **is** present (v4 emits the shared v3 `Event`) and
+  silently does nothing because no v4 code reads
+  `isDefaultPrevented`, while `originalEvent` is never populated at
+  all — the old wording told a reader to reach for a route that is
+  not there; and "round 26 took both tiers from 46%" conflated a
+  combined figure with per-tier ones (43% public, 55% internal).
   Two more findings from the second pass, both outside the docs
   themselves: the **debug harness** (`debug/webgpu/init.js`) carried
   allowlists that silently dropped any shape outside

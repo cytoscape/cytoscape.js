@@ -6933,11 +6933,32 @@ commit(s)):
   for it, and nothing else, which is what a targeted spec should do).
   7 new specs; 2335 Node tests, 63 module tests, typecheck, lint.
   No source changed, so the browser suites are unaffected.
-- [ ] **28.2 `cy.animate({ panBy })`.**  A viewport channel resolved to
-  a `pan` target at capture, so it composes with the existing pan/zoom
-  channel rules and the round-24.3 controls with no new machinery.
-  Rejected alongside an explicit `pan` in the same call (the two
-  spell the same channel).
+- [x] **28.2 `cy.animate({ panBy })`** (2026-08-03) — landed as
+  planned, in `_resolveViewportTargets` beside `fit`/`center`: the
+  delta resolves against the pan **at creation**, which is v3's own
+  rule (`define/animation.mts` normalizes `panBy` against `cy.pan()`
+  when the animation is created, not per tick), so by the time the
+  tween runs it is an ordinary absolute `pan` target and needs no new
+  channel, no new capture path and no interaction with the round-21
+  concurrency rules or the round-24.3 controls.
+  One ordering detail was worth getting right: `animate()` gated on
+  `opts.pan` *before* resolving, so a `panBy` would have slipped past
+  a disabled `panningEnabled`.  It now resolves first and gates on the
+  resolved target, which is a no-op for every existing path.
+  Precedence follows v3's override order — `fit` beats `center` beats
+  `panBy` beats `pan` — with one **deliberate deviation, recorded**:
+  passing `panBy` and `pan` together throws, where v3 silently
+  preferred `panBy`.  The two spell one channel and guessing is the
+  kind of thing v4 rejects loudly elsewhere (`queue`, `step`, unknown
+  query keys).
+  Tests-first: 5 specs in `test/gpu-viewport-animation.mjs` (the
+  delta; creation-time resolution, pinned by panning away before
+  `play()`; the `panningEnabled` gate; the throw; and `fit` winning
+  over `panBy`), 4 red before the change.  2340 Node tests, 63 module
+  tests, typecheck, lint, JSDoc coverage 100%.  `AnimateOptions` is
+  public surface, so `dist/cytoscape-gpu.d.ts` is regenerated and
+  `npm run test:types:gpu` re-run; `dist/cytoscape.d.ts` (v3) is
+  untouched.
 - [ ] **28.3 Ledger drift + closing docs sweep.**  True up item 12,
   and sweep both documents for this round's vocabulary per the
   standing rule.

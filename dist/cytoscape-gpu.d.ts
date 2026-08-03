@@ -3349,6 +3349,14 @@ interface AnimateOptions {
   position?: Partial<Position$1>;
   /** viewport targets (core.animate) */
   pan?: Position$1;
+  /**
+   * viewport target: pan by a delta rather than to an absolute position.
+   * Resolved against the pan at creation time (v3's rule), so a manual
+   * pan afterwards does not move the target.  Throws alongside `pan` —
+   * the two spell the same channel, where v3 silently prefers `panBy`.
+   * Core-only, as in v3: an element animation ignores it.
+   */
+  panBy?: Position$1;
   zoom?: number;
   /**
    * viewport target: animate to the viewport that fits the given elements
@@ -6398,7 +6406,11 @@ declare class GpuCore {
    * the viewport counterpart of `eles.animation`.
    */
   animation(opts: AnimateOptions): AnimationHandle;
-  /** Resolve `fit`/`center` targets to concrete pan/zoom at creation time, as v3 does. */
+  /**
+   * Resolve `fit`/`center`/`panBy` targets to concrete pan/zoom at
+   * creation time, as v3 does.  Precedence follows v3's override order:
+   * `fit` beats `center` beats `panBy` beats an explicit `pan`.
+   */
   private _resolveViewportTargets;
   /** True while the viewport is animating. */
   animated(): boolean;

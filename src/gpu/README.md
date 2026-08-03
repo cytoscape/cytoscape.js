@@ -888,7 +888,13 @@ each is deliberate, not a pass-1 deferral:
     animation is *created* (v3 semantics), so later graph changes don't
     retarget a pending fit.  `eles.boundingBoxAt(posOrFn)` computes the
     box at hypothetical positions (no store writes), which is what an
-    animated layout fit targets.
+    animated layout fit targets.  **`panBy` (round 28.2)** joins them as
+    the relative form: the delta resolves against the pan at creation,
+    so it is an absolute target by the time the tween runs and gates on
+    `panningEnabled` like any other.  v3's override order is kept —
+    `fit` beats `center` beats `panBy` beats `pan` — with one deviation:
+    passing `panBy` *and* `pan` throws, where v3 silently preferred
+    `panBy`.  Core-only, as in v3.
 - **Geometry tweens (round 25): CPU-canonical per tick, never leased,
   never stale.**  The geometry numerics tween on the CPU path with the
   per-tick invalidation cascade run by the store's write funnel — the

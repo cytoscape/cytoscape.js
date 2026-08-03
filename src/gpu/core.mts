@@ -1145,13 +1145,17 @@ export class GpuCore {
    * prevented but will be overwritten by the next tick.
    */
   animate( opts: AnimateOptions ): this {
+    // resolve first, so a `panBy` delta gates on panningEnabled exactly
+    // as the absolute target it resolves to
+    const resolved = this._resolveViewportTargets( opts );
+
     if( opts.fit == null && opts.center == null ){
-      if( opts.pan != null && !this._panningEnabled ){ return this; }
-      if( opts.zoom != null && !this._zoomingEnabled ){ return this; }
+      if( resolved.pan != null && !this._panningEnabled ){ return this; }
+      if( resolved.zoom != null && !this._zoomingEnabled ){ return this; }
     }
 
     this._animations.start(
-      new Animation( this._store, this._viewport, [], true, this._resolveViewportTargets( opts ) ) );
+      new Animation( this._store, this._viewport, [], true, resolved ) );
 
     return this;
   }
@@ -1179,8 +1183,18 @@ export class GpuCore {
     return handle;
   }
 
-  /** Resolve `fit`/`center` targets to concrete pan/zoom at creation time, as v3 does. */
+  /**
+   * Resolve `fit`/`center`/`panBy` targets to concrete pan/zoom at
+   * creation time, as v3 does.  Precedence follows v3's override order:
+   * `fit` beats `center` beats `panBy` beats an explicit `pan`.
+   */
   private _resolveViewportTargets( opts: AnimateOptions ): AnimateOptions {
+    if( opts.panBy != null && opts.pan != null ){
+      throw new Error(
+        `'panBy' and 'pan' both target the viewport pan — pass one ` +
+        `(v3 silently preferred panBy; v4 does not guess)` );
+    }
+
     if( opts.fit != null ){
       const fit = opts.fit;
       const padding = fit.padding ?? 0;
@@ -1193,6 +1207,10 @@ export class GpuCore {
       const pan = this.getCenterPan( opts.center.eles as GpuCollection | undefined );
 
       if( pan != null ){ return { ...opts, pan }; }
+    } else if( opts.panBy != null ){
+      const from = this._viewport.pan() as Position;
+
+      return { ...opts, pan: { x: from.x + opts.panBy.x, y: from.y + opts.panBy.y } };
     }
 
     return opts;

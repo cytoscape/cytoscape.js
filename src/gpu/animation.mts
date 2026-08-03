@@ -165,6 +165,14 @@ export interface AnimateOptions {
   position?: Partial<Position>;
   /** viewport targets (core.animate) */
   pan?: Position;
+  /**
+   * viewport target: pan by a delta rather than to an absolute position.
+   * Resolved against the pan at creation time (v3's rule), so a manual
+   * pan afterwards does not move the target.  Throws alongside `pan` —
+   * the two spell the same channel, where v3 silently prefers `panBy`.
+   * Core-only, as in v3: an element animation ignores it.
+   */
+  panBy?: Position;
   zoom?: number;
   /**
    * viewport target: animate to the viewport that fits the given elements

@@ -79,6 +79,56 @@ describe('gpu/viewport animation targets', function(){
     expect( cy.zoom() ).to.be.closeTo( want.zoom, 1e-9 );
   });
 
+  describe('cy.animate({ panBy }) (28.2)', function(){
+
+    it('animates to the pan plus the delta', async function(){
+      cy.pan({ x: 30, y: -10 });
+
+      await cy.animation({ panBy: { x: 100, y: 50 }, duration: 40 }).play();
+
+      expect( cy.pan().x ).to.be.closeTo( 130, 1e-9 );
+      expect( cy.pan().y ).to.be.closeTo( 40, 1e-9 );
+    });
+
+    it('resolves against the pan at creation, as v3 does', async function(){
+      cy.pan({ x: 0, y: 0 });
+
+      var ani = cy.animation({ panBy: { x: 100, y: 0 }, duration: 40 });
+
+      // panning afterwards must not move the resolved target: the delta
+      // was taken when the animation was created, not per tick
+      cy.pan({ x: 500, y: 0 });
+
+      await ani.play();
+
+      expect( cy.pan().x ).to.be.closeTo( 100, 1e-9 );
+    });
+
+    it('is gated by panningEnabled, like an absolute pan target', function(){
+      cy.pan({ x: 0, y: 0 });
+      cy.panningEnabled( false );
+
+      cy.animate({ panBy: { x: 100, y: 0 }, duration: 40 });
+
+      expect( cy.animated() ).to.equal( false );
+      expect( cy.pan().x ).to.equal( 0 );
+    });
+
+    it('rejects panBy alongside an absolute pan — the two spell one channel', function(){
+      expect( () => cy.animate( { panBy: { x: 1, y: 1 }, pan: { x: 0, y: 0 }, duration: 40 } ) )
+        .to.throw( /panBy/ );
+    });
+
+    it('yields to fit and center, as v3 orders them', async function(){
+      var want = cy.getFitViewport( undefined, 0 );
+
+      await cy.animation({ panBy: { x: 999, y: 999 }, fit: {}, duration: 40 }).play();
+
+      expect( cy.pan().x ).to.be.closeTo( want.pan.x, 1e-9 );
+    });
+
+  });
+
   describe('eles.boundingBoxAt()', function(){
     it('computes the box at hypothetical positions without moving nodes', function(){
       var before = { ...cy.$id('a').position() };

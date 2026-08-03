@@ -98,6 +98,19 @@ elsewhere, or silently not at all.  It also priced curved edges on
 the CPU (`benchmark/gpu/curves.mjs`) and re-ran the renderer
 benchmark on real hardware, which showed round 27's shader branches
 cost nothing measurable per frame.
+Round 30 (2026-08-03) continued that axis onto the part of the
+surface this file states most often and the suite tested least:
+**what v4 throws**.  Failing loudly is a decided design — an unknown
+sheet key, style property, query key or `boundingBox()` option all
+throw — and, measured with source-mapped coverage, **34 of the 191
+throw sites in `src/gpu` had never executed**.  Every Node-reachable
+one now does (20 specs), the six `png()`/`jpg()` export guards are
+pinned in the browser project, three pieces of public surface the
+survey turned up beside them are covered (`cy.stop()`,
+`renderedTargetEndpoint`, the `squaredEuclidean`/`max` clustering
+metrics), and the measurement itself ships as
+`scripts/gpu-throw-coverage.mjs` — see "Measuring the error contract"
+below.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -1875,6 +1888,43 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   `node scripts/gpu-jsdoc-coverage.mjs --verbose` for the
   per-member list.
 
+## Measuring the error contract (round 30)
+
+v4 fails loudly by decided design, which makes its throws part of the
+public contract — and until round 30 most of them were unverified.
+`scripts/gpu-throw-coverage.mjs` finds every `throw new` in `src/gpu`
+and reports which the Node suite reaches, the same way
+`gpu-jsdoc-coverage.mjs` reports documented members:
+`node scripts/gpu-throw-coverage.mjs [--verbose] [--lcov <file>]`.
+
+- **Reporting only, deliberately.**  It always exits 0.  A coverage
+  floor is a policy call (see PLAN.md's open calls), so the script
+  measures and the maintainer decides.
+- **Reading at the close of round 30**: 191 sites — 176 run by the
+  Node suite, 13 browser-only, 2 unreachable by design, **0
+  Node-reachable and never run**.  The browser-only tier is pinned in
+  the `webgpu` Playwright project instead (the export guards, round
+  30.2); the unreachable pair are the big-endian platform guard and
+  the SHAPE_MASK field invariant, each listed with its reason rather
+  than silently skipped.
+- **Two measurement footguns are recorded in the script header**,
+  because the round hit both.  Raw `NODE_V8_COVERAGE` offsets do not
+  line up with the `.mts` sources — tsx transpiles before V8 sees the
+  file — so the first version of this measurement was fiction (it
+  reported 47 dead sites including two that have had throw specs
+  since round 13); coverage is collected through the test runner's
+  own source-mapped lcov instead.  And function-level (`FN`/`FNDA`)
+  records misattribute one-line arrow functions badly enough to be
+  useless, so nothing reads them.
+- **The tool measured its own error, and says so.**  Line-level data
+  attributes the body of a module-level arrow const to the
+  module-evaluation count, so one guard (`exportScale` in
+  `renderer.mts`) reads as covered in Node where no renderer exists.
+  Calibrated against the browser-only tier — 2 of its 14 sites read
+  as covered, one of them genuinely (a Node spec drives `GlyphBuffer`
+  with a mock device) — the known error is one site in 191, listed in
+  `MISATTRIBUTED`.  The tally is a **lower bound** on dead sites.
+
 ## Benchmarks
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
@@ -2704,7 +2754,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   **All of them, plus the contradictions rounds 28–29 turned up
   between the code and the decided-design ledger — unknown
   constructor options ignored silently, dropped v3 event names
-  registering silently, an inert `preventDefault()` — are collected
+  registering silently, an inert `preventDefault()` — and round 30's
+  question of whether error-contract coverage should become a gate,
+  are collected
   in PLAN.md's "Open calls for the maintainer".**  That section is
   the one place to read before deciding anything about v4's surface;
   contradictions are logged there rather than patched, because

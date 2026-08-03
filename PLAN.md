@@ -46,7 +46,17 @@ flip), and **round 23** brought node charts (v3's 101 pie/stripe
 props as the lean list-valued `chart` family — data-driven values,
 scheme palettes, donut holes — with the pie parity scene at 0.000%
 against v3; 2214 Node tests and 151 Playwright specs green at the
-close).  `src/gpu/README.md` is
+close).  Rounds 24–28 (2026-08-01/03) closed the remaining ledger
+work — style transitions and the animation controls (24), the
+geometry tweens (25), the authoring surface of JSDoc + shipped
+declarations (26), the visual-parity remnants of v3's shape and
+arrowhead vocabularies (27), and the no-call remainder (28) — after
+which **what was left of the ledger was open calls rather than
+effort**.  Rounds 29–30 (2026-08-03) therefore work a different axis:
+not what is unbuilt but what is **unpinned** — the alias surface, the
+decided drops at the API boundary and the curve premium in 29, and
+v4's **error contract** in 30, which took the throw sites the Node
+suite never runs from 34 to 0.  `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -152,7 +162,21 @@ appears to authorize it.
    `compound` and `curves` are standalone and absent from
    `report.mjs`'s job table, so they only ever run by hand.  That
    matches how their rounds used them, but the HTML report
-   understates what exists.
+   understates what exists.  *(30.0 re-ran all six at
+   `BENCH_N=2000`: every one still works, so this is a reporting
+   question and not bit-rot.)*
+12. **Whether error-contract coverage becomes a gate** (logged 30.4) —
+    `scripts/gpu-throw-coverage.mjs` reports it and deliberately does
+    not enforce it, because a floor is a policy call with three
+    parts: whether a **new Node-reachable throw with no spec should
+    fail the build** (the reading is 0 today, so a zero-tolerance gate
+    would hold as of this round); what to do about the **13
+    browser-only sites**, which the Node measurement cannot see at all
+    and which only the `webgpu` project can pin; and whether the
+    `UNREACHABLE`/`MISATTRIBUTED` lists are a maintained allowlist or
+    a one-off note.  The JSDoc-coverage precedent (a script plus a
+    test that gates it) is right there, so this is a decision about
+    appetite rather than about mechanism.
 
 ### Contradictions between the code and the decided-design ledger
 
@@ -2291,10 +2315,26 @@ mentioned, the decided-design drops enforced only by intention in
 three places (a string event qualifier crashed inside the emitter on
 the next event; a style *function* group was silently ignored; the
 collection methods crashed on `other._refs` or answered false), and
-curved edges unpriced on the CPU.  It also closed 27.9 by measuring:
-round 27's shader branches cost nothing per frame.  Separately open and blocked on neither — just unrun — is the
-device-side frame cost of round 27's shader branches (see the 27.9
-correction: this box has an RX 580).
+curved edges unpriced on the CPU.  It also closed 27.9 by measuring on
+the RX 580: round 27's shader branches cost nothing per frame.  (This
+paragraph ended with a sentence calling that measurement "open and
+blocked on neither — just unrun" *after* 29.5 had run it — written
+during the round and left standing by 29.6's own sweep.  Removed in
+30.5, and noted here because it is the third round running that this
+summary has been the thing that drifted.)
+
+**2026-08-03, round 30.**  Continuing round 29's axis onto the part of
+the surface v4 states most and tests least — **what it throws**.
+Measured with source-mapped coverage: 34 of the 191 throw sites in
+`src/gpu` had never executed.  30.1 closed every Node-reachable one
+(20 specs, one of whose controls came back BAD and forced a sharper
+spec), 30.2 pinned the six export guards in the browser project, 30.3
+took the untested public surface the survey turned up beside them
+(`cy.stop()`, `renderedTargetEndpoint`, two clustering metrics), and
+30.4 shipped the measurement as `scripts/gpu-throw-coverage.mjs` —
+reporting only, since a coverage floor is a call, now logged as open
+call 12.  Reading at the close: 176 run, 13 browser-only, 2
+unreachable by design, **0 Node-reachable and never run**.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -7638,4 +7678,29 @@ commit(s)):
   swallowing the browser tier, the override dropped, the DA parser
   broken), each failing its spec.
   68 module tests (+5), lint, typecheck, JSDoc coverage still 100%.
-- [ ] **30.5 Closing docs sweep.**
+- [x] **30.5 Closing docs sweep** (2026-08-03) — the README header
+  carries round 30, a new "Measuring the error contract" section sits
+  beside the benchmarks (what the script reports, that it does not
+  gate, the reading at the close, and both measurement footguns), and
+  the follow-up hooks now name the coverage-floor call alongside the
+  other open ones.  This file gains the round-30 paragraph in
+  "Suggested sequencing" and open call 12; the status header, which
+  still ended at round 23, now runs through 30 and says plainly that
+  the ledger's remainder is calls rather than effort.
+  **The standing rule caught its own warning again.**  "Suggested
+  sequencing" ended with a sentence calling 27.9's device measurement
+  "open and blocked on neither — just unrun", written during round 29
+  and left standing by *29.6's own sweep*, three paragraphs below
+  29.5's record of having run it.  That is the third consecutive round
+  in which this one summary is the thing that drifted, which is now
+  noted in the paragraph itself.
+  `AGENTS.md` gains two testing notes, both earned this round: a guard
+  nothing has ever triggered is not tested (with the script that says
+  which), and coverage of transpiled sources needs source maps or it
+  lies — with the specific traps (raw `NODE_V8_COVERAGE` offsets;
+  function-level records on one-line arrows).
+  Verification for the round as a whole: **2482 Node tests, 68 module
+  tests, 91/91 `webgpu` and 75/75 `webgpu-visual` against a freshly
+  built bundle, typecheck, lint, `test:types:all`, JSDoc coverage
+  100%, and `gpu-throw-coverage` at 0 Node-reachable dead sites.**
+  **Round 30 is complete.**

@@ -314,4 +314,40 @@ describe('gpu/style: background images (round 15.2)', function(){
     expect( ref >>> 24 ).to.equal( 2 ); // count in the top byte
   });
 
+  // round 30.1: the image family's two parser guards.  Five props share
+  // `parseImageEnum` and two share `parseBgSize`; neither closure had
+  // ever thrown in the suite, so a misspelled keyword and a negative
+  // size were both unmeasured.
+  it('rejects an unsupported keyword on the enum props', function(){
+    const cases = {
+      'background-fit': 'stretch',
+      'background-repeat': 'round',
+      'background-clip': 'border-box',
+      'background-image-containment': 'outside',
+      'background-image-type': 'bitmap'
+    };
+
+    for( const [ prop, bad ] of Object.entries( cases ) ){
+      expect(
+        () => mk( { nodes: { 'background-image': 'i.png', [ prop ]: bad } } ), prop
+      ).to.throw( new RegExp( `${prop} '${bad}' is unsupported` ) );
+    }
+  });
+
+  it('rejects a negative background-width/-height', function(){
+    expect( () => mk( { nodes: { 'background-image': 'i.png', 'background-width': -5 } } ) )
+      .to.throw( /background-width '-5' must be non-negative/ );
+    expect( () => mk( { nodes: { 'background-image': 'i.png', 'background-height': '-10%' } } ) )
+      .to.throw( /background-height '-10%' must be non-negative/ );
+
+    // control: zero and 'auto' are legal sizes, so the guard is on the sign
+    const ok = mk( { nodes: {
+      'background-image': 'i.png', 'background-width': 0, 'background-height': 'auto'
+    } } );
+
+    expect( recsOf( ok, 'a' )[ 0 ].w.v ).to.equal( 0 );
+    expect( recsOf( ok, 'a' )[ 0 ].h.mode ).to.equal( 0 ); // auto
+    ok.destroy();
+  });
+
 });

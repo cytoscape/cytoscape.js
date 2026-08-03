@@ -62,6 +62,32 @@ describe('gpu/store: GraphStore', function(){
       expect(function(){ store.addEdge('ab', 'a', 'b'); }).to.throw();
     });
 
+    // round 30.1: the spec above only ever exercised the *target* guard
+    // (its source exists), so addEdge's source guard — checked four
+    // lines earlier in the same method — had never fired.  Each side
+    // asserts the message names its own endpoint, which is what a
+    // copy-paste swap between the two branches would break.
+    it('names the missing endpoint, on either side', function(){
+      store.addNode('a', 0, 0);
+
+      expect(function(){ store.addEdge('xa', 'nope', 'a'); })
+        .to.throw(/nonexistant source 'nope'/);
+      expect(function(){ store.addEdge('ax', 'a', 'nope'); })
+        .to.throw(/nonexistant target 'nope'/);
+    });
+
+    it('rejects an endpoint id that resolves to an edge', function(){
+      store.addNode('a', 0, 0);
+      store.addNode('b', 0, 0);
+      store.addEdge('ab', 'a', 'b');
+
+      // the guard is group-aware, not just presence-aware
+      expect(function(){ store.addEdge('e2', 'ab', 'b'); })
+        .to.throw(/nonexistant source 'ab'/);
+      expect(function(){ store.addEdge('e3', 'a', 'ab'); })
+        .to.throw(/nonexistant target 'ab'/);
+    });
+
     it('sets initial flags', function(){
       var n = store.addNode('a', 0, 0);
       var flags = store.flags('nodes', n);
@@ -434,6 +460,28 @@ describe('gpu/store: GraphStore', function(){
       expect( span ).to.exist;
       expect( span.start ).to.equal(n);
       expect( span.end ).to.equal(n + 1);
+    });
+  });
+
+  // round 30.1: the two column guards of the co-signed contract.  Both
+  // exist to make a model/renderer divergence loud — contract.mts is
+  // "the single place either side may learn a column's element type" —
+  // and neither had ever fired in the suite.
+  describe('the column contract guards', function(){
+    it('columnSpec rejects an unknown column id', function(){
+      expect(function(){ store.column('node.nosuchcolumn'); })
+        .to.throw(/Unknown GPU column 'node.nosuchcolumn'/);
+
+      // control: a real id resolves through the same path
+      expect( store.column('node.position') ).to.be.an.instanceOf( Float32Array );
+    });
+
+    it('a table rejects a column belonging to the other group', function(){
+      // node.position is a real column, but it lives in the nodes table
+      expect(function(){ store.table('edges').column('node.position'); })
+        .to.throw(/does not belong to the 'edges' table/);
+      expect(function(){ store.table('nodes').column('edge.endpoints'); })
+        .to.throw(/does not belong to the 'nodes' table/);
     });
   });
 

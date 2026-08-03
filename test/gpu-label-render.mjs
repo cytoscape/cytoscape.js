@@ -276,6 +276,23 @@ describe('gpu/labels: render pieces', function(){
       expect( captured[0] ).to.equal(DEAD_GLYPH);
       expect( captured[GLYPH_WORDS] ).to.equal(DEAD_GLYPH);
     });
+
+    // round 30.1: the stride guard.  Every glyph is GLYPH_WORDS wide and
+    // the buffer derives its run count by dividing, so a caller passing
+    // a partial glyph would otherwise install a fractional count and
+    // corrupt every later run's offset.  The guard existed; nothing had
+    // ever run it, and round 27.7 widened GLYPH_WORDS (14 → 16), which
+    // is exactly the kind of change a stale caller survives silently.
+    it('rejects glyph data that is not a whole number of glyphs', function(){
+      expect( () => buffer.set(0, new Uint32Array(GLYPH_WORDS + 1)) )
+        .to.throw(/whole number of glyphs/);
+
+      // control: the exact multiple is accepted, and the buffer is
+      // unharmed by the rejected write
+      buffer.set(0, glyphWords(2, 7));
+
+      expect( buffer.count() ).to.equal(2);
+    });
   });
 
 });

@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import cytoscapeGpu from '../src/gpu/index.mjs';
+import { GpuCore } from '../src/gpu/core.mjs';
 
 describe('gpu/core: introspection, data, scratch, renderer, aliases', function(){
 
@@ -155,6 +156,59 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function()
     var cy2 = cytoscapeGpu({ multiClickDebounceTime: 100 });
 
     expect( cy2.multiClickDebounceTime() ).to.equal( 100 );
+  });
+
+  // round 30.1: the headless/rendered boundary's own guards.  The
+  // README's first claim about headless mode is that "the factory
+  // throws synchronously when navigator.gpu is missing", and no spec
+  // had ever taken that throw — Node is exactly the environment where
+  // it fires, since a container is checked before any DOM is touched.
+  describe('the headless boundary throws', function(){
+
+    it('the factory rejects a container with no WebGPU present, before doing any work', function(){
+      expect( globalThis.navigator?.gpu, 'Node has no WebGPU' ).to.equal( undefined );
+
+      expect( () => cytoscapeGpu({ container: {} }) )
+        .to.throw( /WebGPU is required to render.*omit the container option to run headless/s );
+
+      // *Before* any work is the discriminating half.  The renderer
+      // attach path carries its own copy of this guard, so a spec that
+      // only asserts "constructing with a container throws" passes with
+      // the factory's own check deleted — measured, and it is why this
+      // spec feeds a payload that would itself throw during ingest:
+      // the container problem has to be the one reported.
+      const badEdge = [ { group: 'edges', data: { id: 'e' } } ];
+
+      expect( () => cytoscapeGpu({ container: {}, elements: badEdge }) )
+        .to.throw( /WebGPU is required to render/ );
+
+      // control: with no container the same payload reaches ingest
+      expect( () => cytoscapeGpu({ elements: badEdge }) )
+        .to.throw( /without a source and target/ );
+
+      // control: the same options without a container construct headless
+      expect( cytoscapeGpu({}).headless() ).to.equal( true );
+    });
+
+    it('mount() needs a container', function(){
+      expect( () => cy.mount() ).to.throw( /mount\(\) needs a container element/ );
+      expect( () => cy.mount( null ) ).to.throw( /mount\(\) needs a container element/ );
+    });
+
+    it('mount() refuses on a core built without the factory', function(){
+      // the factory installs _attachFn; `new GpuCore()` has no renderer
+      // attach path at all, and the guard says so instead of failing
+      // later with a null dereference
+      expect( () => new GpuCore({}).mount( {} ) )
+        .to.throw( /cannot mount \(it was not created via the cytoscapeGpu factory\)/ );
+    });
+
+    it('mount() on a container reaches the same WebGPU guard', function(){
+      // the factory guard fires at construction; this is the re-attach
+      // path's copy of it, which is what cy.mount() after unmount() hits
+      expect( () => cy.mount( {} ) ).to.throw( /WebGPU is required to render/ );
+    });
+
   });
 
 });

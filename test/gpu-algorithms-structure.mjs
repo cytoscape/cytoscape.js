@@ -292,5 +292,39 @@ describe('gpu/algorithms: structure', function(){
 
       expect( () => cy2.elements().kargerStein() ).to.throw();
     });
+
+    // round 30.1: the *other* precondition.  The node-count guard above
+    // was pinned; the connectivity guard — raised from inside the
+    // contraction loop when it runs out of edges to collapse — had
+    // never fired in the suite.
+    //
+    // Measured while writing this: it is not a general
+    // disconnected-graph detector.  Two internally-connected components
+    // reach two meta-nodes without exhausting the edge list and return
+    // a result, so what the guard actually catches is a contraction
+    // that runs dry — reachable whenever a *subgraph* scope holds
+    // nodes it has no edges to collapse.
+    it('throws when the contraction runs out of edges', function(){
+      var cy2 = cytoscapeGpu({ elements: [
+        { data: { id: 'a' } }, { data: { id: 'b' } }
+      ] });
+
+      expect( () => cy2.elements().kargerStein() )
+        .to.throw( /connected \(sub\)graph/ );
+
+      // the subgraph form: nodes selected without their edge
+      var cy3 = cytoscapeGpu({ elements: [
+        { data: { id: 'a' } }, { data: { id: 'b' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ] });
+
+      expect( () => cy3.nodes().kargerStein() )
+        .to.throw( /connected \(sub\)graph/ );
+
+      // control: the same nodes *with* the edge answer instead
+      var res = cy3.elements().kargerStein();
+
+      expect( res.partition1.length + res.partition2.length ).to.equal( 2 );
+    });
   });
 });

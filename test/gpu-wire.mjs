@@ -242,4 +242,58 @@ describe('gpu/wire', function(){
       expect( cy.getElementById( 'a' ).selected() ).to.be.false;
     });
   });
+
+  // round 30.1: the format's two malformed-input guards.  Everything
+  // above feeds the reader buffers the writer produced, so neither guard
+  // had ever fired — and a wire format exists precisely to be handed
+  // bytes from elsewhere (a static asset, an older writer, a truncated
+  // fetch), which is when they are the only thing standing between a
+  // bad buffer and silent garbage in the columns.
+  describe('malformed input', function(){
+    it('rejects an unknown data column kind rather than reading past it', function(){
+      const buffer = serializeElements( {
+        nodes: [ { data: { id: 'a', weight: 1 } } ], edges: []
+      } );
+      const bytes = new Uint8Array( buffer );
+
+      // the block is (u32 nameLen, name bytes, u32 kind, column), so the
+      // kind word sits at the 4-aligned position after the key name
+      const name = new TextEncoder().encode( 'weight' );
+      let at = -1;
+
+      for( let i = 0; i + name.length <= bytes.length && at < 0; i++ ){
+        if( name.every( ( b, k ) => bytes[ i + k ] === b ) ){ at = i; }
+      }
+
+      expect( at, 'the key name is in the buffer' ).to.be.greaterThan( 0 );
+
+      const kindAt = ( at + name.length + 3 ) & ~3;
+
+      expect( new Uint32Array( buffer, kindAt, 1 )[ 0 ], 'kind 0 = numeric' ).to.equal( 0 );
+
+      new Uint32Array( buffer, kindAt, 1 )[ 0 ] = 7;
+
+      expect( () => deserializeElements( buffer ) )
+        .to.throw( /Unknown serialized data column kind 7/ );
+    });
+
+    it('rejects packed ids whose offsets are short of count + 1', function(){
+      const short = {
+        columnar: true,
+        nodes: {
+          count: 3,
+          // 3 ids need 4 offsets; this carries 3
+          ids: { offsets: new Uint32Array([ 0, 1, 2 ]), blob: new Uint8Array([ 97, 98 ]) }
+        },
+        edges: { count: 0, sources: new Uint32Array( 0 ), targets: new Uint32Array( 0 ) }
+      };
+
+      expect( () => serializeElements( short ) ).to.throw( /Packed ids must have 4 offsets/ );
+
+      // control: the same payload with the full offset array serializes
+      short.nodes.ids.offsets = new Uint32Array([ 0, 1, 2, 2 ]);
+
+      expect( serializeElements( short ) ).to.be.an.instanceOf( ArrayBuffer );
+    });
+  });
 });

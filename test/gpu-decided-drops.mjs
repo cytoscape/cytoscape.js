@@ -90,6 +90,36 @@ describe('gpu/decided drops (29.3)', function(){
       expect( () => cy.off( 'tap', 'node', () => {} ) ).to.throw( /predicate function/ );
     });
 
+    // round 30.1: two enforcement points this file missed.  Both reject
+    // a selector string, and neither rejection had ever run — measured
+    // by source-mapped coverage of the Node suite, not by inspection.
+    it("the traversals reject one in the positional form too", function(){
+      // the options form is pinned by the algorithms specs; the
+      // positional spelling is a second guard eight lines further down
+      // the same function, and nothing had taken it
+      for( const call of [
+        () => cy.elements().bfs('#a'),
+        () => cy.elements().dfs('#a'),
+        () => cy.elements().breadthFirstSearch('#a'),
+        () => cy.elements().depthFirstSearch('#a')
+      ] ){
+        expect( call ).to.throw( /must be a collection/ );
+      }
+
+      // control: the collection form of the same call runs
+      expect( cy.elements().bfs( cy.$id('a') ).path.length ).to.be.greaterThan( 0 );
+    });
+
+    it('the breadthfirst layout rejects one as its roots', function(){
+      // the layout resolves its roots when it runs, not when it is made
+      expect( () => cy.layout({ name: 'breadthfirst', roots: '#a' }).run() )
+        .to.throw( /must be a collection or an array of node ids/ );
+
+      // control: both supported spellings are accepted
+      expect( () => cy.layout({ name: 'breadthfirst', roots: cy.$id('a') }).run() ).to.not.throw();
+      expect( () => cy.layout({ name: 'breadthfirst', roots: [ 'a' ] }).run() ).to.not.throw();
+    });
+
     it('predicate delegation is the supported form', function(){
       var hits = 0;
 

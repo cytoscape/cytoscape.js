@@ -269,6 +269,22 @@ describe('gpu/curve-12c: haystack, triangle and endpoint derivation', function()
       expect( () => pairWith({ 'source-endpoint': 'outside-to-node-or-label' }) ).to.throw( /label/ );
     });
 
+    // round 30.1: the point form's per-component guard.  The keyword
+    // path above was pinned in 12c; the two-part point path validates
+    // each component against ENDPT_COMPONENT and that throw had never
+    // fired in the suite, so '10 left' was unmeasured.
+    it('a malformed component of the point form throws', function(){
+      expect( () => pairWith({ 'source-endpoint': '10 left' }) )
+        .to.throw( /'left' is not a valid source-endpoint component/ );
+      expect( () => pairWith({ 'target-endpoint': [ '5em', 0 ] }) )
+        .to.throw( /'5em' is not a valid target-endpoint component/ );
+
+      // control: the units the component regex does accept
+      cy = pairWith({ 'source-endpoint': '10px -5', 'target-endpoint': [ '25%', '0%' ] });
+
+      expect( cy.$id('e').style('target-endpoint') ).to.equal( '25% 0%' );
+    });
+
     it('endpoint props read back canonically from the styled record', function(){
       cy = pairWith({
         'source-endpoint': '50% -25%',

@@ -7503,9 +7503,50 @@ list repeats defect shapes rounds 28–29 already named:
 **Pass split** (tests-first; docs in-commit; each pass its own
 commit(s)):
 
-- [ ] **30.1 The Node-testable throw sites.**  Specs in the files that
-  already own each surface, each run once with its guard removed to
-  prove it can fail (the AGENTS.md rule).
+- [x] **30.1 The Node-testable throw sites** (2026-08-03) — landed.
+  20 specs across nine files, each in the file that already owns its
+  surface (29.2's shape, not a parallel error-test file), and the
+  measurement moved **34 never-executed throw sites → 14**.  Every one
+  of the 14 that remain is browser-only (`renderer.mts`'s five export
+  guards, `gpu-context`, `column-mirror`, `glyph-atlas`, `gpu-tween`,
+  `image-decoder`) or unreachable by design (the SHAPE_MASK field
+  invariant; the big-endian platform guard).  **Every Node-reachable
+  throw in `src/gpu` now runs in the Node suite.**
+  What landed, by surface: the style parsers' five guards (the wrap
+  family's shared keyword closure, gradient stop percents on both
+  fills, the image enum shared by five props, the `background-width`/
+  `-height` sign check, and the endpoint point form's per-component
+  regex); `addEdge`'s source guard and its group-awareness; the two
+  column guards of the co-signed contract (`columnSpec` on an unknown
+  id, a table asked for the other group's column); the wire format's
+  two malformed-input guards; the `closenessCentrality`/
+  `degreeCentrality` root preconditions; Karger-Stein's connectivity
+  guard; the two selector-string rejections 29.3 missed; the
+  headless/rendered boundary's four guards; and `GlyphBuffer`'s stride
+  check.
+  **Controls were run for all 20** — each guard neutered in place
+  (`throw` → `if( false ) throw`), the owning spec re-run, the source
+  restored — and **one came back BAD**, which is the pass earning its
+  keep.  `cytoscapeGpu({ container: {} })` throws with the factory's
+  own `navigator.gpu` check deleted, because the renderer attach path
+  25 lines below carries an identical check with an identical message.
+  The two are not redundant — the early one is a fail-fast *before*
+  `new GpuCore`, element ingest and the ctor `layout` run — so the
+  spec now pins that ordering: it constructs with a container **and** a
+  payload that would itself throw during ingest, and asserts the
+  container problem is the one reported.  With the guard restored it
+  passes; with it deleted the ingest error surfaces instead and the
+  spec fails.
+  Two findings worth keeping from writing them: Karger-Stein's
+  "connected (sub)graph" throw is **not** a disconnected-graph detector
+  (two internally-connected components reach two meta-nodes without
+  exhausting the edge list and return a result) — what it catches is a
+  contraction that runs dry, which a *subgraph* scope holding nodes
+  without their edges reaches; and `breadthfirst` resolves its `roots`
+  at `run()`, not at `cy.layout()`, so the first draft of that spec
+  asserted a throw from the wrong call.
+  No source changed, so the browser suites are unaffected.  2473 Node
+  tests (+20), 63 module tests, typecheck, lint.
 - [ ] **30.2 The image-export guards** in the `webgpu` Playwright
   project — with the bundle rebuilt by hand first, since a listener on
   3333 makes a green run prove nothing.

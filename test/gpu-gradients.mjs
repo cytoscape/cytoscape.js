@@ -84,6 +84,23 @@ describe('gpu/gradients (round 13 C2)', function(){
     expect( () => makeCy({ 'background-gradient-direction': 'sideways' }) ).to.throw( /direction/ );
   });
 
+  // round 30.1: the stop-position parser's guard.  The keyword props
+  // above were pinned in round 13; the *numeric list* parser was not,
+  // on either fill, so a non-numeric stop was unmeasured.
+  it('rejects a non-numeric stop position on either fill', function(){
+    expect( () => makeCy({
+      'background-fill': 'linear-gradient',
+      'background-gradient-stop-colors': '#f00 #00f',
+      'background-gradient-stop-positions': '0% half'
+    }) ).to.throw( /'half' is not a valid percent for 'background-gradient-stop-positions'/ );
+
+    expect( () => makeCy( undefined, {
+      'line-fill': 'linear-gradient',
+      'line-gradient-stop-colors': '#f00 #00f',
+      'line-gradient-stop-positions': [ 0, 'x' ]
+    } ) ).to.throw( /is not a valid percent for 'line-gradient-stop-positions'/ );
+  });
+
   afterEach( function(){
     if( cy != null ){ cy.destroy(); cy = null; }
   });

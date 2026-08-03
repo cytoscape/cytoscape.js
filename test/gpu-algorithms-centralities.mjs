@@ -250,6 +250,27 @@ describe('gpu/algorithms: pageRank + centralities', function(){
     expect( res.betweennessNormalized(a) ).to.equal(0);
   });
 
+  // round 30.1: the two single-root centralities require a root, and
+  // said so in a throw nothing had ever taken.  aStar/bellmanFord/
+  // dijkstra have had root specs since round 10; these two were the
+  // siblings without one, so a missing root was unmeasured — and the
+  // edge-only case matters because it reaches the same guard by a
+  // different route (a collection with no node in it).
+  it('degreeCentrality and closenessCentrality require a root', function(){
+    expect( () => cy.elements().degreeCentrality() )
+      .to.throw( /degreeCentrality requires a `root` node/ );
+    expect( () => cy.elements().closenessCentrality({}) )
+      .to.throw( /closenessCentrality requires a `root` node/ );
+
+    // a collection holding no node reaches the same guard
+    expect( () => cy.edges().degreeCentrality({ root: cy.edges() }) )
+      .to.throw( /requires a `root` node/ );
+
+    // control: with a root, both answer
+    expect( cy.elements().degreeCentrality({ root: a }).degree ).to.equal(2);
+    expect( cy.elements().closenessCentrality({ root: b }) ).to.equal(4);
+  });
+
   it('aliases resolve', function(){
     expect( cy.elements().dc({ root: a }).degree ).to.equal(2);
     expect( cy.elements().dcn({}).degree( c ) ).to.equal(1);

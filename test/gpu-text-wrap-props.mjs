@@ -172,4 +172,25 @@ describe('gpu/style: text wrap props (round 16.2)', function(){
     expect( dimsOf( cy, 'ab', 'edges' ) ).to.not.equal( null );
   });
 
+  // round 30.1: the wrap family's keyword guard.  All three props share
+  // one `parseKeyword` closure, and until this spec nothing in the suite
+  // had ever taken its throw — a typo in any of them was unmeasured.
+  it('rejects an unsupported keyword, listing the supported set', function(){
+    expect( () => mk( { nodes: { 'label': 'x', 'text-wrap': 'wrapp' } } ) )
+      .to.throw( /text-wrap.*unsupported.*none, wrap, ellipsis/ );
+    expect( () => mk( { nodes: { 'label': 'x', 'text-overflow-wrap': 'break-word' } } ) )
+      .to.throw( /text-overflow-wrap.*unsupported/ );
+    expect( () => mk( { nodes: { 'label': 'x', 'text-justification': 'justify' } } ) )
+      .to.throw( /text-justification.*unsupported/ );
+
+    // control: the v3 keywords each prop does accept still compile
+    const ok = mk( { nodes: {
+      'label': 'x', 'text-wrap': 'ellipsis',
+      'text-overflow-wrap': 'anywhere', 'text-justification': 'right'
+    } } );
+
+    expect( entryOf( ok, 'a' ).wrap ).to.equal( 2 );
+    ok.destroy();
+  });
+
 });

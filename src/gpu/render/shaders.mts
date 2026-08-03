@@ -16,6 +16,13 @@ import { IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL, SDF_IMAGE_SIZE as SDF_IMAGE_
 import {
   AVOID_IMPOSSIBLE_BEZIER, AVOID_IMPOSSIBLE_BEZIER_L, CURVE_SEGS, MAX_CURVE_PTS
 } from '../curve-geometry.mjs';
+// the packing constants are interpolated into the WGSL below, so the
+// shaders and the store read one source of truth (round 27.1)
+import {
+  ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
+  ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
+  ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, SHAPE_MASK, SHAPE_SHIFT
+} from '../contract.mjs';
 
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
@@ -1304,7 +1311,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
   let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc, no decorations
 
-  var shape = (borderGeom[slot].y >> 16u) & 0xfu;
+  var shape = (borderGeom[slot].y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
   var half = in.halfSize;
 
   if (plain) {
@@ -1425,7 +1432,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
   let plain = sizePx < frame.nodeLodPx; // LOD: plain AA disc
 
-  var shape = (borderGeom[slot].y >> 16u) & 0xfu;
+  var shape = (borderGeom[slot].y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
   var half = in.halfSize;
 
   if (plain) {
@@ -1545,7 +1552,7 @@ fn fsNodeDepth(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   let sizePx = max(in.halfSize.x, in.halfSize.y) * 2.0;
-  var shape = (borderGeom[slot].y >> 16u) & 0xfu;
+  var shape = (borderGeom[slot].y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
   var half = in.halfSize;
 
   if (sizePx < frame.nodeLodPx) {
@@ -2300,7 +2307,7 @@ ${ ARROW_POLY.fns }
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
 fn arrowScaleOf(pair: u32) -> f32 {
-  let q = pair >> 24u;
+  let q = pair >> ${ ARROW_SHIFT_SCALE }u;
 
   return select(f32(q) / 16.0, 1.0, q == 0u);
 }
@@ -2371,17 +2378,17 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 // this end's shape id from the packed word (C1: ends + mids)
 fn endShapeOf(pair: u32, endId: u32) -> u32 {
   switch endId {
-    case 1u: { return pair & 0xffu; }            // source
-    case 2u: { return (pair >> 21u) & 7u; }      // mid-target
-    case 3u: { return (pair >> 18u) & 7u; }      // mid-source
-    default: { return (pair >> 8u) & 0xffu; }    // target
+    case 1u: { return (pair >> ${ ARROW_SHIFT_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; }     // source
+    case 2u: { return (pair >> ${ ARROW_SHIFT_MID_TARGET }u) & ${ ARROW_SHAPE_MASK }u; } // mid-target
+    case 3u: { return (pair >> ${ ARROW_SHIFT_MID_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; } // mid-source
+    default: { return (pair >> ${ ARROW_SHIFT_TARGET }u) & ${ ARROW_SHAPE_MASK }u; }     // target
   }
 }
 
 // hollow applies to the end arrows only (mids are always filled — C1)
 fn endHollowOf(pair: u32, endId: u32) -> bool {
-  if (endId == 1u) { return ((pair >> 16u) & 1u) == 1u; }
-  if (endId == 0u) { return ((pair >> 17u) & 1u) == 1u; }
+  if (endId == 1u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u; }
+  if (endId == 0u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u; }
   return false;
 }
 
@@ -2518,7 +2525,7 @@ ${ ARROW_POLY.fns }
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
 fn arrowScaleOf(pair: u32) -> f32 {
-  let q = pair >> 24u;
+  let q = pair >> ${ ARROW_SHIFT_SCALE }u;
 
   return select(f32(q) / 16.0, 1.0, q == 0u);
 }
@@ -2532,16 +2539,16 @@ fn arrowCoverage(sd: f32, hollow: bool, strokePx: f32) -> f32 {
 }
 fn endShapeOf(pair: u32, endId: u32) -> u32 {
   switch endId {
-    case 1u: { return pair & 0xffu; }
-    case 2u: { return (pair >> 21u) & 7u; }
-    case 3u: { return (pair >> 18u) & 7u; }
-    default: { return (pair >> 8u) & 0xffu; }
+    case 1u: { return (pair >> ${ ARROW_SHIFT_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; }     // source
+    case 2u: { return (pair >> ${ ARROW_SHIFT_MID_TARGET }u) & ${ ARROW_SHAPE_MASK }u; } // mid-target
+    case 3u: { return (pair >> ${ ARROW_SHIFT_MID_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; } // mid-source
+    default: { return (pair >> ${ ARROW_SHIFT_TARGET }u) & ${ ARROW_SHAPE_MASK }u; }     // target
   }
 }
 
 fn endHollowOf(pair: u32, endId: u32) -> bool {
-  if (endId == 1u) { return ((pair >> 16u) & 1u) == 1u; }
-  if (endId == 0u) { return ((pair >> 17u) & 1u) == 1u; }
+  if (endId == 1u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u; }
+  if (endId == 0u) { return ((pair >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u; }
   return false;
 }
 
@@ -3261,7 +3268,7 @@ fn fsImage(in: ImageVSOut) -> @location(0) vec4f {
   // the node SDF for clip: node (model px; radius resolves with zoomDpr 1
   // so 'auto' matches the body shader's model-space value)
   let bg = borderGeom[slot];
-  let shape = (bg.y >> 16u) & 0xfu;
+  let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
   let radius = cornerRadiusPx(bg.x, half, 1.0);
   let sd = nodeSD(shape, p, half, radius, bg.x);
   let aa = max(fwidth(sd), 1e-4);
@@ -3446,7 +3453,7 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
   // clip to the node shape at the border's inner edge (the image rule:
   // the border stays visible over the chart)
   let bg = borderGeom[slot];
-  let shape = (bg.y >> 16u) & 0xfu;
+  let shape = (bg.y >> ${ SHAPE_SHIFT }u) & ${ SHAPE_MASK }u;
   let radius = cornerRadiusPx(bg.x, half, 1.0);
   let sd = nodeSD(shape, p, half, radius, bg.x);
   let aa = max(fwidth(sd), 1e-4);

@@ -21,7 +21,8 @@ import {
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
   FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
   FLAG_DRAWN, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
-  FLAG_SELF_INVISIBLE, FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT
+  FLAG_SELF_INVISIBLE, FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT,
+  SHAPE_MASK, SHAPE_POLYGON_CUSTOM, SHAPE_SHIFT
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import { NO_PARENT } from '../gpu-types.mjs';
@@ -2202,12 +2203,21 @@ export class GraphStore implements ModelView {
     // C3: custom polygons carry their point-record ref (from
     // setPolygonPoints) in the radius word — the corner radius is
     // meaningless for polygons
-    const rad = shapeId === 14
+    const rad = shapeId === SHAPE_POLYGON_CUSTOM
       ? polyRef >>> 0
       : cornerRadius < 0 ? 0xffffffff : Math.max( 0, Math.round( cornerRadius * 256 ) );
-    // C2: the node FS reads the shape from bits 16..19 (its shapes
-    // binding went to the gradient column)
-    const posShape = ( borderPos | ( shapeId << 16 ) ) >>> 0;
+
+    if( shapeId > SHAPE_MASK ){
+      throw new Error(
+        `Node shape id ${shapeId} does not fit the ${SHAPE_MASK + 1}-shape field; ` +
+        'widen SHAPE_SHIFT/SHAPE_MASK in contract.mts rather than truncating'
+      );
+    }
+
+    // C2: the node FS reads the shape out of this word (its shapes
+    // binding went to the gradient column); 27.1 widened the field from
+    // a nibble to a byte
+    const posShape = ( borderPos | ( shapeId << SHAPE_SHIFT ) ) >>> 0;
 
     borderPos = posShape;
     const packedWO =

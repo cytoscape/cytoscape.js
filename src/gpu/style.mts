@@ -2,6 +2,10 @@ import { color2tuple } from '../util/colors.mjs';
 import {
   ARROW_CHEVRON, ARROW_CIRCLE, ARROW_DIAMOND, ARROW_NONE, ARROW_SQUARE,
   ARROW_TEE, ARROW_TRIANGLE, ARROW_VEE,
+  ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
+  ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET,
+  ARROW_SHIFT_SCALE, ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET,
+  packArrowShapes, unpackArrowShape,
   CHART_MAX_SLICES, CHART_NONE, CHART_PIE, CHART_STRIPES,
   columnSpec,
   FLAG_CHILD, FLAG_NO_EVENTS, FLAG_PARENT, FLAG_SELF_INVISIBLE, FLAG_TEXT_EVENTS,
@@ -4542,11 +4546,11 @@ export class StyleEngine {
       case 'line-style': return LINE_STYLE_NAMES[ scalar( 'edge.lineStyle' ) ];
       case 'source-arrow-shape':
         return alphaOf( 'edge.sourceArrow' ) > 0
-          ? ARROW_NAMES[ scalar( 'edge.arrowShapes' ) & 0xff ]
+          ? ARROW_NAMES[ unpackArrowShape( scalar( 'edge.arrowShapes' ), ARROW_SHIFT_SOURCE ) ]
           : 'none';
       case 'target-arrow-shape':
         return alphaOf( 'edge.targetArrow' ) > 0
-          ? ARROW_NAMES[ ( scalar( 'edge.arrowShapes' ) >>> 8 ) & 0xff ]
+          ? ARROW_NAMES[ unpackArrowShape( scalar( 'edge.arrowShapes' ), ARROW_SHIFT_TARGET ) ]
           : 'none';
       case 'line-opacity':
         return Math.round( ( store.column( 'edge.lineColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
@@ -4575,13 +4579,13 @@ export class StyleEngine {
           : `${arr[ 0 ]} ${arr[ 1 ]} ${arr[ 2 ]} ${arr[ 3 ]}`;
       }
       case 'arrow-scale': {
-        const q = ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> 24;
+        const q = ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> ARROW_SHIFT_SCALE;
 
         return q === 0 ? 1 : q / 16; // quantized ×16 (recorded)
       }
       case 'source-arrow-fill':
       case 'target-arrow-fill': {
-        const bit = prop.startsWith( 'source' ) ? 16 : 17;
+        const bit = prop.startsWith( 'source' ) ? ARROW_SHIFT_HOLLOW_SOURCE : ARROW_SHIFT_HOLLOW_TARGET;
 
         return ARROW_FILL_NAMES[
           ( ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> bit ) & 1 ];
@@ -4592,14 +4596,14 @@ export class StyleEngine {
         return ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 + 1 ];
       case 'mid-source-arrow-shape':
       case 'mid-target-arrow-shape': {
-        const shift = prop.startsWith( 'mid-source' ) ? 18 : 21;
+        const shift = prop.startsWith( 'mid-source' ) ? ARROW_SHIFT_MID_SOURCE : ARROW_SHIFT_MID_TARGET;
         const colId = prop.startsWith( 'mid-source' ) ? 'edge.midSourceArrow' : 'edge.midTargetArrow';
         const a = ( store.column( colId ) as Uint8Array )[ slot * 4 + 3 ];
 
         // stored truth: a transparent mid arrow reads 'none' (the
         // end-arrow precedent)
-        return a === 0 ? 'none' : ARROW_NAMES[
-          ( ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> shift ) & 7 ];
+        return a === 0 ? 'none' : ARROW_NAMES[ unpackArrowShape(
+          ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ], shift ) ];
       }
       case 'mid-source-arrow-color': return color( 'edge.midSourceArrow' );
       case 'mid-target-arrow-color': return color( 'edge.midTargetArrow' );
@@ -5064,12 +5068,10 @@ export class StyleEngine {
       const scaleQ = Math.max( 1, Math.min( 255, Math.round( computed.arrowScale * 16 ) ) );
 
       store.noteArrowScale( computed.arrowScale );
-      store.setScalar( 'edge.arrowShapes', slot,
-        ( ARROW_ENUM[ computed.sourceArrowShape ] | ( ARROW_ENUM[ computed.targetArrowShape ] << 8 ) |
-          ( computed.sourceArrowFill << 16 ) | ( computed.targetArrowFill << 17 ) |
-          ( ARROW_ENUM[ computed.midSourceArrowShape ] << 18 ) |
-          ( ARROW_ENUM[ computed.midTargetArrowShape ] << 21 ) |
-          ( scaleQ << 24 ) ) >>> 0 );
+      store.setScalar( 'edge.arrowShapes', slot, packArrowShapes(
+        ARROW_ENUM[ computed.sourceArrowShape ], ARROW_ENUM[ computed.targetArrowShape ],
+        ARROW_ENUM[ computed.midSourceArrowShape ], ARROW_ENUM[ computed.midTargetArrowShape ],
+        computed.sourceArrowFill, computed.targetArrowFill, scaleQ ) );
 
       // mid-arrow colors fold like the end arrows (C1)
       store.setMidArrow( 'edge.midSourceArrow', slot,

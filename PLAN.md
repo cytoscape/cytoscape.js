@@ -6266,3 +6266,161 @@ release.
   the webkit projects still cannot launch on this box, the same
   host-library environment gap recorded in round 25.7).
   **Round 26 is complete.**
+
+## Round 27 plan — the parity remnants (planned 2026-08-02)
+
+The tail the README's follow-up hooks have carried since round 13:
+compound arrow shapes, per-element numeric `text-rotation`, the
+unported shape keywords, `border-style`/`outline-style`, and v3's
+nonlinear arrow-size formula.  These are the last *visual* parity
+gaps against v3 — everything else in the ledger is either landed,
+dropped by decided design, or an open design call.  No new API is
+invented here: every item is a v3 property or keyword whose
+direction was set when its family landed.
+
+**Code investigation (2026-08-02, precedes this plan):**
+
+- **`edge.arrowShapes` is a full u32.**  Source shape at bits 0..7,
+  target at 8..15, the two hollow flags at 16/17, mid-source at
+  **18..20** and mid-target at **21..23** — three bits each, which
+  ids 0..7 fill exactly — and the ×16 arrow scale in the top byte.
+  Any new arrow id silently truncates for mid arrows.  But v3's
+  whole arrow vocabulary is 12 shapes, so **four bits each is
+  enough for all of them**: repacking to four 4-bit ids (0..15),
+  the flags at 16/17 and the scale in the top byte fits in the same
+  word with six bits spare and costs no extra memory.
+- **The node shape field has room to spare.**  `borderGeom.y` packs
+  borderPosition in bits 0..7 and the shape id in bits **16..19**
+  — four bits, 15 of 16 ids used.  Bits 8..15 and 20..31 are free,
+  so widening the shape field to a full byte (16..23) is a
+  mask-and-shift change at five shader sites plus the pack site,
+  and leaves room far beyond this round's twelve keywords.
+- **Three of the twelve shape keywords are plain polygons** in v3
+  (`right-rhomboid`, `concave-hexagon`, `cut-rectangle`): point
+  tables that the existing SDF codegen, CPU pick and depth prepass
+  pick up for free.  The seven `round-*` keywords are not — v3
+  builds explicit per-corner arc geometry, and the naive
+  "offset the polygon SDF by r" fails under anisotropic scaling,
+  which is exactly why the README recorded them as deferred.
+  `barrel` and the `triangle-backcurve` arrow both need a
+  **quadratic-bezier SDF** — one primitive, two consumers.
+- **`border-style` needs a perimeter parameter the node FS does not
+  have.**  The edge shader dashes for free because it carries `u`
+  (model px along the edge) as a varying; `nodeSD` returns a bare
+  signed distance and discards the nearest-feature information a
+  perimeter coordinate would be built from.  Closed form exists for
+  circles and rectangles; polygons need the SDF loop to also track
+  the argmin edge and its clamped projection.
+- **`text-rotation` is one bit, not a value.**  The label sidecar
+  stores `rotate: boolean`, packed as bit 31 of the glyph's owner
+  word, and the angle is derived *live on the GPU* from the edge
+  endpoints.  A numeric value needs a per-glyph `f32`, and
+  `GLYPH_WORDS` is 14 with every word used.
+
+**Design calls (round 27):**
+
+1. **Repack before adding, both times.**  27.1 lands the two
+   packing changes on their own, with no new keywords, so the
+   existing suites and goldens prove the repack is a no-op.  Adding
+   ids first would silently truncate — both packings are *lossy*,
+   not loud, which is the argument for doing this as its own pass.
+   The arrow word keeps its single-u32 footprint (four 4-bit ids);
+   the shape field widens to a byte.  Recorded cap: 16 arrow
+   shapes, which is v3's vocabulary plus four.
+2. **v3's arrow-size formula, in model space.**  v4 sizes arrows
+   `widthPx * 3 + 2` in *device* px off the LOD-floored width; v3
+   uses `max( pow( width * 13.37, 0.9 ), 29 ) * scale` in *model*
+   units.  Port the formula and evaluate it in model px before
+   scaling by zoom, because v3's 29-unit floor is a model-space
+   floor — evaluating it on the floored device width would make
+   far-zoom arrows grow instead of shrink.  The quad extents and
+   the store's `arrowScaleMax` slack meter must grow with it or
+   arrows clip.
+3. **Round corners get a real per-corner arc SDF**, not an offset
+   hack.  Generated in the codegen beside the polygon tables, with
+   the matching branch in `cpu-pick.insideShape`, so the two
+   consumers agree by construction as they already do for
+   polygons.  This is what unblocks all seven `round-*` keywords
+   plus `bottom-round-rectangle` at one line each.
+4. **One quadratic-bezier SDF, two consumers** — `barrel`'s four
+   corner regions and the `triangle-backcurve` arrow.  Built once
+   in 27.5 and consumed by 27.6, which is why the arrow pass comes
+   after the shape pass rather than with the other arrows.
+5. **Compound arrows are SDF unions**, `min( sdA, sdB )`, since
+   coverage is a smoothstep over the distance.  Recorded
+   deviation: `arrow-fill: hollow` on a compound shape falls back
+   to filled — the stroke `abs( sd )` is wrong at the seam between
+   the two parts, and v3 does not stroke compounds either.
+   `triangle-cross` shifts with the edge width, which the FS
+   already has as a varying, so its points are computed per
+   fragment rather than read from a static table.
+6. **Numeric `text-rotation` costs a glyph word.**  `GLYPH_WORDS`
+   goes 14 → 16 (15 would break the 8-byte struct alignment) and
+   the angle rides as an `f32`.  Node labels gain a rotation path
+   they have never had, which forces two twins to follow: the
+   glyph cull's rotated-rect AABB must read the stored angle
+   instead of reconstructing the autorotate frame, and
+   `cpu-pick.mts` must gain an OBB test — it currently *asserts*
+   that node labels never rotate.  Recorded: node `boundingBox`
+   label terms stay axis-aligned-conservative rather than exact.
+7. **`border-style` gets the exact perimeter parameter, gated.**
+   `u` is computed only in the dashed/dotted branch, so a solid
+   border — the overwhelming default — pays a branch, not the
+   extra work.  Closed form for circle/ellipse (angle-parameterized
+   on the ellipse, whose arc length is elliptic; recorded as a
+   deviation for eccentric ellipses) and rectangles; the polygon
+   loop tracks the argmin edge and clamped projection against a
+   per-fragment cumulative perimeter.  `double` is not a dash at
+   all — a second inner band, no parameterization needed.
+   `outline-style` reuses the same `u` at the ring radius, whose
+   perimeter is offset and therefore a different length.
+8. **Goldens are the proof.**  Every new keyword joins the existing
+   per-shape golden grid, and each family gets a live v3 parity
+   diff where v3 renders it correctly.
+
+**Pass split** (tests-first; docs in-commit; each pass its own
+commit(s)):
+
+- [x] **27.1 The two repacks** (2026-08-02) — landed as planned.
+  `edge.arrowShapes` now carries four 4-bit ids (source, target,
+  mid-source, mid-target), the two hollow flags at 16/17 and the
+  ×16 scale in the top byte, with six bits spare — the same single
+  u32, so no column grew.  The layout lives in `contract.mts`
+  behind `packArrowShapes`/`unpackArrowShape` and named shift
+  constants, which the two arrow shaders **interpolate into their
+  WGSL** rather than restating: one source of truth for a packing
+  that four readers share.  `packArrowShapes` throws on an id that
+  does not fit, so the next person to add an arrow gets an error
+  instead of the silent mid-arrow truncation this pass existed to
+  remove.  The node shape field widened from a nibble to a byte
+  (`SHAPE_SHIFT`/`SHAPE_MASK`, five shader sites plus the pack
+  site), and `setBorderGeom` throws past the field width too; its
+  hardcoded `shapeId === 14` became `SHAPE_POLYGON_CUSTOM`.
+  Tests-first: the three existing specs that pin the bit layout
+  were rewritten to the new one (red), then the code moved (green),
+  and `test/gpu-packing.mjs` adds 8 specs — every id round-trips in
+  all four arrow positions, the positions stay independent, the
+  flags and scale byte stay clear of the ids, over-wide ids throw,
+  a real mid-arrow restyle survives, and the shape field's margin
+  over the enum is asserted rather than assumed.
+  The pass changes no pixels, and that is the point: 2293 Node
+  tests, 63 module tests, typecheck, lint, 87/87 webgpu and
+  **68/68 webgpu-visual with the goldens untouched**.
+- [ ] **27.2 The three plain-polygon keywords** —
+  `right-rhomboid`, `concave-hexagon`, `cut-rectangle`.
+- [ ] **27.3 v3's nonlinear arrow-size formula** — with the quad
+  extents and the slack meter grown to match.
+- [ ] **27.4 The round-corner SDF** — the per-corner arc primitive
+  and its CPU twin, then the seven `round-*` keywords and
+  `bottom-round-rectangle`.
+- [ ] **27.5 The quadratic-bezier SDF + `barrel`.**
+- [ ] **27.6 Compound arrow shapes** — `triangle-tee`,
+  `circle-triangle`, `triangle-cross`, `triangle-backcurve`.
+- [ ] **27.7 Numeric `text-rotation`** — the glyph word, the node
+  rotation path, the cull frame and the CPU pick OBB.
+- [ ] **27.8 `border-style` / `outline-style`** — the perimeter
+  parameter and the dash/double band.
+- [ ] **27.9 Benchmarks + browser specs** — the shape and arrow
+  golden grids, the parity diffs, and a check that the added
+  shader branches do not move the steady-state frame cost.
+- [ ] **27.10 Closing docs sweep.**

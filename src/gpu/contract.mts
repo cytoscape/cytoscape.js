@@ -141,6 +141,15 @@ export const SHAPE_TAG = 13;
  * corner-radius word is meaningless for polygons. */
 export const SHAPE_POLYGON_CUSTOM = 14;
 
+/*
+The node shape id rides `borderGeom.y` alongside the border position
+(bits 0..7).  Round 27.1 widened the field from four bits to a full byte
+— 15 of the 16 ids were used, and round 27's twelve new keywords would
+not have fitted.  Bits 8..15 and 24..31 of that word remain free.
+*/
+export const SHAPE_SHIFT = 16;
+export const SHAPE_MASK = 0xff;
+
 // -- node chart kinds (round 23; stored in the chart blob record) --
 
 export const CHART_NONE = 0;
@@ -233,6 +242,93 @@ export const ARROW_CIRCLE = 4;
 export const ARROW_SQUARE = 5;
 export const ARROW_DIAMOND = 6;
 export const ARROW_TEE = 7;
+
+/*
+`edge.arrowShapes` packing (repacked in round 27.1).
+
+One u32 carries all four arrowhead ids, the two hollow flags and the
+quantized arrow scale:
+
+    bits  0..3   source shape id
+    bits  4..7   target shape id
+    bits  8..11  mid-source shape id
+    bits 12..15  mid-target shape id
+    bit  16      source arrow hollow
+    bit  17      target arrow hollow
+    bits 18..23  reserved
+    bits 24..31  arrow scale, x16
+
+Before 27.1 the end ids took a byte each and the mid ids were squeezed
+into three bits, which ids 0..7 filled exactly — so any new arrow id
+truncated silently on mid arrows.  Four bits each fits v3's whole arrow
+vocabulary (12 shapes) in the same word with six bits to spare, which is
+what let round 27.6 add the compound shapes without growing the column.
+
+Recorded cap: 16 arrow shapes.  Adding a seventeenth means finding two
+more bits (the reserved span holds one more id, or the scale byte can be
+re-quantized), not a silent truncation — `packArrowShapes` throws.
+*/
+export const ARROW_SHAPE_MASK = 0xf;
+export const ARROW_SHIFT_SOURCE = 0;
+export const ARROW_SHIFT_TARGET = 4;
+export const ARROW_SHIFT_MID_SOURCE = 8;
+export const ARROW_SHIFT_MID_TARGET = 12;
+export const ARROW_SHIFT_HOLLOW_SOURCE = 16;
+export const ARROW_SHIFT_HOLLOW_TARGET = 17;
+export const ARROW_SHIFT_SCALE = 24;
+
+/**
+ * Pack the arrowhead record for one edge.  The single place the layout
+ * above is written; every reader (the two arrow shaders and the style
+ * getters) derives from the same shift constants.
+ *
+ * @param source — source-end shape id
+ * @param target — target-end shape id
+ * @param midSource — mid-source shape id
+ * @param midTarget — mid-target shape id
+ * @param hollowSource — whether the source arrow is stroked, not filled
+ * @param hollowTarget — whether the target arrow is stroked, not filled
+ * @param scaleQ — the arrow scale, already quantized to x16 and clamped
+ *   into a byte
+ * @returns the packed u32
+ * @throws if a shape id exceeds the 4-bit field — a silent truncation
+ *   here would mis-draw mid arrows only, which is exactly the failure
+ *   that went unnoticed before 27.1
+ */
+export const packArrowShapes = (
+  source: number, target: number, midSource: number, midTarget: number,
+  hollowSource: number, hollowTarget: number, scaleQ: number
+): number => {
+  for( const id of [ source, target, midSource, midTarget ] ){
+    if( id > ARROW_SHAPE_MASK ){
+      throw new Error(
+        `Arrow shape id ${id} does not fit the ${ARROW_SHAPE_MASK + 1}-shape field; ` +
+        'widen the packing in contract.mts rather than truncating'
+      );
+    }
+  }
+
+  return (
+    ( source << ARROW_SHIFT_SOURCE ) |
+    ( target << ARROW_SHIFT_TARGET ) |
+    ( midSource << ARROW_SHIFT_MID_SOURCE ) |
+    ( midTarget << ARROW_SHIFT_MID_TARGET ) |
+    ( hollowSource << ARROW_SHIFT_HOLLOW_SOURCE ) |
+    ( hollowTarget << ARROW_SHIFT_HOLLOW_TARGET ) |
+    ( scaleQ << ARROW_SHIFT_SCALE )
+  ) >>> 0;
+};
+
+/**
+ * Read one end's shape id back out — the CPU twin of the shaders'
+ * `endShapeOf`.
+ *
+ * @param packed — the packed word
+ * @param shift — one of the `ARROW_SHIFT_*` end constants
+ * @returns the shape id
+ */
+export const unpackArrowShape = ( packed: number, shift: number ): number =>
+  ( packed >>> shift ) & ARROW_SHAPE_MASK;
 
 // -- columns --
 

@@ -16,7 +16,7 @@ describe('gpu/mid-arrows (round 13 C1)', function(){
     style: { edges: edgeStyle }
   });
 
-  it('packs mid shapes into bits 18..23 and stores folded colors', function(){
+  it('packs mid shapes into bits 8..15 and stores folded colors (27.1)', function(){
     cy = makeCy({
       'mid-target-arrow-shape': 'diamond', 'mid-target-arrow-color': '#f00',
       'mid-source-arrow-shape': 'tee', 'mid-source-arrow-color': '#00f',
@@ -26,8 +26,9 @@ describe('gpu/mid-arrows (round 13 C1)', function(){
     var slot = cy._store.lookup('e').slot;
     var word = cy._store.column('edge.arrowShapes')[ slot ];
 
-    expect( ( word >>> 18 ) & 7 ).to.equal( 7 ); // tee
-    expect( ( word >>> 21 ) & 7 ).to.equal( 6 ); // diamond
+    // 27.1: four 4-bit ids — source, target, mid-source, mid-target
+    expect( ( word >>> 8 ) & 0xf ).to.equal( 7 ); // tee
+    expect( ( word >>> 12 ) & 0xf ).to.equal( 6 ); // diamond
 
     var tgt = cy._store.column('edge.midTargetArrow');
 

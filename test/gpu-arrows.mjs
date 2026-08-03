@@ -98,8 +98,8 @@ describe('gpu/style: arrows', function(){
       const ref = cy._store.lookup( edge.id() );
       const packed = cy._store.column('edge.arrowShapes')[ ref.slot ];
 
-      expect( packed & 0xff, shape ).to.be.above( 1 ); // the shape id
-      expect( ( packed >>> 8 ) & 0xff, shape ).to.equal( 1 ); // triangle
+      expect( packed & 0xf, shape ).to.be.above( 1 ); // the shape id
+      expect( ( packed >>> 4 ) & 0xf, shape ).to.equal( 1 ); // triangle
     }
   });
 

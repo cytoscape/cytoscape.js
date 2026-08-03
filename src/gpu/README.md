@@ -60,6 +60,17 @@ CPU path — never leased, never stale (`width()`/`bb()`/pick read
 the mid-flight value) — with the per-tick invalidation cascade run
 by the store's write funnel (label re-anchor, auto-bounds, the
 ride lanes) and priced by a dedicated benchmark sweep.
+Round 27 (2026-08-02) closed the visual-parity tail rounds 13–16 had
+left: v4 now renders **v3's complete node-shape vocabulary** (the
+seven `round-*` keywords, `cut-rectangle`, `right-rhomboid`,
+`concave-hexagon`, `bottom-round-rectangle` and `barrel`) and
+**v3's complete arrowhead vocabulary** (`triangle-tee`,
+`circle-triangle`, `triangle-cross`, `triangle-backcurve`), sizes
+arrowheads by v3's own nonlinear formula, and accepts a numeric
+`text-rotation` on any label.  Each family is pinned by a live
+v3-vs-v4 parity diff rather than by a golden alone — see the
+round-27 records in PLAN.md for the measurements.  `border-style`/
+`outline-style` remain the one unported style pair.
 Round 26 (2026-08-02) changed no behaviour at all: it built the
 **authoring surface** the release documentation will be generated
 from — JSDoc on every public member of the prototype (a 46% → 100%
@@ -279,7 +290,15 @@ outer edge — exactly v3's scaled-path stroke for circles and squares
 (anisotropic shapes deviate from v3's per-axis scaling, recorded);
 ghosts carry their outline; outlines are not pickable and grow the
 bb by offset/2 + width.  `outline-style` stays out with
-`border-style` (SDF perimeter parameterization).
+`border-style`: both need a *perimeter* coordinate the node
+fragment shader does not have.  The edge shader dashes for free
+because it carries `u` (model px along the edge) as a varying,
+whereas `nodeSD` returns a bare signed distance and discards the
+nearest-feature information a perimeter parameter would be built
+from.  Closed form exists for circles and rectangles; polygons need
+the SDF loop to also track the argmin edge and its clamped
+projection against a cumulative perimeter — which is a scope call
+(which shapes earn the cost) rather than a missing technique.
 
 Border geometry (round 13 B2): `border-position` defaults to v3's
 `center` (the band straddles the boundary — v4 previously drew all
@@ -2095,7 +2114,7 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   end at the endpoints — identical to v3's default butt).  Picking
   ignores the gaps, as v3 does.  `border-style` is not ported
   (dashing an arbitrary SDF boundary needs perimeter
-  parameterization).
+  parameterization — see the border-geometry note above).
 - **Node shapes** (round 10): `ellipse`/`circle`, `rectangle`/`square`,
   `round-rectangle`, plus the polygon family — `triangle`, `pentagon`,
   `hexagon`, `heptagon`, `octagon`, `diamond`, `rhomboid`, `vee`,
@@ -2103,10 +2122,19 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   (`shape-points.mts`), rendered by generated WGSL polygon SDFs with
   vertices scaled to device space (exact distance, so AA and borders
   stay crisp under anisotropy) and picked by an exact CPU
-  point-in-polygon in normalized space.  Not ported: `round-*` polygon
-  variants (corner-rounding an anisotropically scaled polygon has no
-  clean closed form), `cut-rectangle`, `barrel`,
-  `bottom-round-rectangle`, `concave-hexagon`, and `right-rhomboid`.
+  point-in-polygon in normalized space.  **Round 27 completed the
+  vocabulary**: `right-rhomboid` and `concave-hexagon` joined as
+  point tables; `cut-rectangle` (a chamfer of *absolute* length),
+  `bottom-round-rectangle` and `barrel` (four sampled bezier
+  corners) are parameterized shapes with their own fields; and the
+  seven `round-*` keywords render as `sdPolygon( inward-offset ) − r`
+  — the identity that makes corner-rounding exact under anisotropic
+  scaling, which is what the earlier "no clean closed form" note
+  had missed.  Round-* shapes reuse their sharp counterparts' tables,
+  as v3 registers them.  One prop, `corner-radius`, carries three
+  different 'auto' rules — `min(w/4, h/4, 8)` for round-rectangle,
+  a flat 8 for cut-rectangle, `min(w/10, h/10, 8)` for the round-*
+  family — all of them v3's.
   The custom `polygon` landed in round 13 C3 with per-element points
   in a blob pool (`shape-polygon-points`, constants-only).  Arrow
   tips on
@@ -2116,7 +2144,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 - **Labels**: nodes *and edges* (round 10 — edge labels draw at the
   midpoint, following endpoint moves on-GPU; horizontal by default, or
   rotated to the edge's angle with `text-rotation: autorotate`, never
-  upside-down — see the edge-labels design decision),
+  upside-down — see the edge-labels design decision; since round 27.7
+  any label can also take a fixed rotation in radians),
   **multiline since round 16** (`text-wrap: wrap | ellipsis`,
   `text-max-width`, `line-height`, `text-overflow-wrap`,
   `text-justification`; under `text-wrap: none` newlines still
@@ -2152,6 +2181,16 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   padded background box) and `text-background-shape`
   (rectangle | round-rectangle, v3's auto radius); `text-border-style`
   stays out with the dash-a-boundary styles.
+  `text-rotation` takes a **number of radians** on any label since
+  round 27.7, alongside the `autorotate` keyword (edge labels only —
+  it resolves from an edge's slope).  The stored value *is* the
+  angle, with `NaN` as the autorotate sentinel: 'none' and 0 radians
+  are the same rendering, so collapsing them leaves the whole real
+  line free for numeric values, where an enum id would have collided
+  with 1 radian.  Recorded cost: the glyph instance grew from 56 to
+  64 bytes to carry the angle, ~14% on the heaviest stream, chosen
+  over a per-owner storage buffer because the edge label pipeline is
+  already at 7 of a base 8.
   Label visuals (round 10): `text-outline-width`/`-color`/`-opacity`
   (a second SDF distance threshold — near-free), `text-background-
   color`/`-opacity`/`-padding` (one solid quad instance preceding the
@@ -2166,16 +2205,31 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `tee` and `none` (round 10 — SDFs generated from v3's arrow point
   tables and evaluated in the fragment stage; the shape ids ride a
   fragment-only storage binding, keeping the vertex stage at its
-  8-buffer budget).  Compound shapes (`triangle-tee`,
-  `circle-triangle`, `triangle-cross`, `triangle-backcurve`) are not
-  ported.  Round 13 B7 added `arrow-scale` (quantized ×1/16 in
+  8-buffer budget).  **Round 27.6 completed the set** with v3's
+  compound heads: `triangle-tee` (a union of two generated polygons
+  — coverage is a smoothstep over the distance, so a union is just
+  `min( sdA, sdB )`), `circle-triangle` (a polygon plus an analytic
+  disc, pulled back by its radius so the *disc* meets the node
+  boundary — v3's `spacing`, and the only head v3 offsets),
+  `triangle-cross` (whose bar thickness tracks the **edge width**,
+  resolved per fragment) and `triangle-backcurve` (its quadratic
+  sampled at codegen into an ordinary point table).  Recorded
+  deviation: `arrow-fill: hollow` on a compound head falls back to
+  filled — the stroke `abs( sd )` is wrong at the seam where a
+  union's parts meet, and v3 does not stroke compounds either.
+  Round 13 B7 added `arrow-scale` (quantized ×1/16 in
   storage — readback rounds accordingly), `source/target-arrow-fill`
   (filled | hollow — a stroke ring at the per-end
   `source/target-arrow-width`, which takes px, 'match-line' or % of
-  the edge width, resolved at style-write).  v4 keeps its own linear
-  arrow sizing (recorded in round 10 B4) — v3's
-  max((13.37 w)^0.9, 29) formula with its 29-unit floor is not
-  ported, so arrow sizes deviate from v3 at every width.  Round 13
+  the edge width, resolved at style-write).  **Round 27.3 ported
+  v3's arrow sizing**: `max( (13.37 w)^0.9, 29 ) × scale`, evaluated
+  in *model* space before the zoom scale — the 29-unit floor is a
+  model floor, so applying it to the LOD-floored device width would
+  make arrows grow as you zoom out.  Note that v3's `size` is the
+  point-table *scale*, not the drawn length (its tables span 0.3),
+  and that the arrow quad sizes from a computed `ARROW_MAX_BACK`
+  rather than a fixed 0.3, since the compound heads reach 0.5 and
+  0.6.  Round 13
   C1 added `mid-source/mid-target-arrow-shape`/`-color`: mid arrows
   anchor at the curve/route midpoint on the midpoint tangent
   (mid-source pointing backward), follow drags/layouts/tweens
@@ -2500,9 +2554,13 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   font-size tween through the animation system and
   `transition-property`, CPU-canonical per tick with the
   invalidation cascade in the store's write funnel, benchmarked.
-  Still open: the small parity remnants (compound arrow shapes,
-  per-element numeric `text-rotation`, the unported shape
-  keywords, `border-style`/`outline-style`).
+  ~~The small parity remnants~~ — **mostly closed by round 27**
+  (2026-08-02): the unported shape keywords, the compound arrow
+  shapes, v3's nonlinear arrow-size formula and per-element numeric
+  `text-rotation` all landed, completing v3's node-shape and
+  arrowhead vocabularies.  Still open: **`border-style` /
+  `outline-style`**, which is waiting on a scope call rather than
+  on a technique — see the border-geometry note above.
 - **Documentation** — round 26 (2026-08-02) settled the near-term
   shape: JSDoc on the source is v4's documentation source of truth
   and the declarations ship with it (see "Documenting the source"

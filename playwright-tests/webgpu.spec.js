@@ -2885,6 +2885,122 @@ test.describe( 'WebGPU renderer', () => {
     expect( forms.base64Decodes ).toBe( true );
   } );
 
+  /*
+  Round 30.2: the export path's own guards.  Every export spec above
+  hands `png()` options it accepts, so the five throws in
+  `computeExportView`/`exportImage` had never run — measured by
+  source-mapped coverage of the Node suite, where they are unreachable
+  because there is no renderer at all.  They are public contract:
+  `bg` and `scale` come straight from the caller, and the other three
+  are the states a real app reaches (an empty graph, a hidden
+  container, a figure scaled past the device limit).
+
+  Each message is asserted, not just the rejection, because four of the
+  five live in one method and a rejection alone would not say which
+  guard fired.
+  */
+  const exportErrors = async ( page, calls ) => {
+    return await page.evaluate( async calls => {
+      const out = {};
+
+      for( const [ name, opts ] of Object.entries( calls ) ){
+        try {
+          await window.cy.png( opts );
+          out[ name ] = 'resolved';
+        } catch ( e ){
+          out[ name ] = String( e?.message ?? e );
+        }
+      }
+
+      return out;
+    }, calls );
+  };
+
+  test( 'png() rejects on bad options, naming the option at fault', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+    await waitFrames( page );
+
+    const errors = await exportErrors( page, {
+      bg: { bg: 'octarine' },
+      scale: { scale: -1 },
+      nan: { scale: 'big' },
+      huge: { full: true, scale: 100000 },
+      ok: {} // control: the same instance still exports
+    } );
+
+    expect( errors.bg ).toMatch( /not a valid colour for 'bg'/ );
+    expect( errors.scale ).toMatch( /Invalid image export scale -1/ );
+    expect( errors.nan ).toMatch( /Invalid image export scale/ );
+    expect( errors.huge ).toMatch( /exceeds?.*texture limit/ );
+    expect( errors.ok ).toBe( 'resolved' );
+  } );
+
+  test( 'png() rejects a full export of an empty graph', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, { elements: [] } );
+    await waitFrames( page );
+
+    const errors = await exportErrors( page, {
+      empty: { full: true },
+      viewport: {} // control: the viewport export of an empty graph is fine
+    } );
+
+    expect( errors.empty ).toMatch( /full-graph image of an empty graph/ );
+    expect( errors.viewport ).toBe( 'resolved' );
+  } );
+
+  test( 'png() rejects a viewport export of a zero-sized container', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+    await waitFrames( page );
+
+    // a display:none container is the state a tabbed/collapsed UI reaches
+    await page.evaluate( () => {
+      document.getElementById( 'cytoscape' ).style.display = 'none';
+    } );
+
+    const hidden = await exportErrors( page, { viewport: {}, full: { full: true } } );
+
+    expect( hidden.viewport ).toMatch( /zero-sized container/ );
+
+    // the full export measures the graph, not the container, so it is
+    // unaffected — which is what makes this guard specific to the
+    // viewport branch rather than to exporting at all
+    expect( hidden.full ).toBe( 'resolved' );
+
+    await page.evaluate( () => {
+      document.getElementById( 'cytoscape' ).style.display = '';
+    } );
+  } );
+
+  test( 'png() rejects once the renderer is destroyed', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+    await waitFrames( page );
+
+    const result = await page.evaluate( async () => {
+      const before = await window.cy.png();
+
+      window.cy.renderer().destroy(); // the core still holds the renderer
+
+      try {
+        await window.cy.png();
+
+        return { before: before.slice( 0, 22 ), after: 'resolved' };
+      } catch ( e ){
+        return { before: before.slice( 0, 22 ), after: String( e?.message ?? e ) };
+      }
+    } );
+
+    expect( result.before ).toBe( 'data:image/png;base64,' );
+    expect( result.after ).toMatch( /renderer is destroyed/ );
+  } );
+
   test( 'export WYSIWYG: a viewport export at scale 1 pixel-matches the screen', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

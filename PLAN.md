@@ -7547,9 +7547,28 @@ commit(s)):
   asserted a throw from the wrong call.
   No source changed, so the browser suites are unaffected.  2473 Node
   tests (+20), 63 module tests, typecheck, lint.
-- [ ] **30.2 The image-export guards** in the `webgpu` Playwright
-  project — with the bundle rebuilt by hand first, since a listener on
-  3333 makes a green run prove nothing.
+- [x] **30.2 The image-export guards** (2026-08-03) — landed: 4 specs
+  in the `webgpu` project covering all **six** throws of the export
+  path (the plan said five; `exportScale`'s own guard is a sixth, in a
+  module-level helper rather than in `computeExportView`).  These are
+  public contract — `bg` and `scale` come straight from the caller, and
+  the other four are states a real app reaches: an empty graph, a
+  `display: none` container, a figure scaled past the device's texture
+  limit, and a destroyed renderer.
+  Each spec asserts the **message**, not just the rejection, because
+  four of the six live in one method and a bare rejection would not say
+  which fired.  Two carry a control in the same spec that separates the
+  guard from "exporting is broken": the empty-graph case pins that the
+  *viewport* export of the same empty graph still resolves, and the
+  zero-sized-container case pins that the *full* export does — it
+  measures the graph, not the container, so the guard is specific to
+  the viewport branch.
+  Controls: each of the six neutered in `renderer.mts`, the bundle
+  rebuilt, the specs re-run — one failure apiece, six for six.
+  The bundle was rebuilt by hand before every run: an `http-server` was
+  already listening on 3333, which is the stale-bundle trap
+  `AGENTS.md` describes, and these specs are worthless against a stale
+  bundle.  91/91 webgpu (87 + 4).
 - [ ] **30.3 The untested public surface** the survey turned up beside
   the throws: `cy.stop()`, `renderedTargetEndpoint`, and the two
   clustering distance metrics.

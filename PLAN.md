@@ -8440,16 +8440,41 @@ describe and no suite prices:
   sides rather than the column.  The row writes one *new* value across
   the collection per pass, so the dictionary grows by an entry per pass
   and not per element, and it says so.
-- [ ] **33.7 Events and the animation manager**
-  (`benchmark/gpu/events.mjs`, new) — findings 10–11.  Emit cost by
-  qualifier kind and listener count, the listener-gated no-op path,
-  and **the flat-vs-phased compound emit** — the same graph with and
-  without a parent, pinning round 14.5's zero-cost claim as a number
-  instead of an assertion.  Then animation start/stop, the round-21
-  eviction compare at increasing channel counts, `delay`, the 24.3
-  controls, and the viewport path.  Tick costs stay where they are
-  (`transitions.mjs`, `geometry-tween.mjs`) and this suite cites them
-  rather than duplicating.
+- [x] **33.7 Events and the animation manager** (2026-08-03) — landed
+  as `benchmark/gpu/events.mjs`, and it produced the round's second
+  finding about a documented claim.
+  **Emits** (a position write on one node, N=2000): with **no listeners
+  26×** v3 — that is the listener-gated fast path every bulk-write
+  number in `mutators.mjs` rests on, now measured at 53 ns against
+  v3's 1.39 µs — one core listener 4.4×, one ref-qualified element
+  listener 4.4×, a delegated listener 4.9× (v3's selector string
+  against v4's predicate — the idiomatic spelling on each side), ten
+  core listeners 2.6×.  `on()` + `off()` registration is 1.17×.
+  **The finding: a compound child never gets the no-listener fast
+  path.**  Round 14.5 says the *flat* path "stays byte-identical (zero
+  cost)", which is a claim about the path bubbling does not apply to
+  and is not re-measurable without the pre-14.5 code — so this suite
+  measures the other half instead, which nothing had: what the phased
+  walk costs when it *does* apply.  With one core listener, a child two
+  ancestors deep costs **2.35×** an orphan's emit (1.29 µs vs 551 ns).
+  With **nothing listening at all** it costs **6.4×** (566 ns vs
+  89 ns) — so the phase walk runs regardless of whether any phase has
+  a listener, and a compound graph pays it on every position write.
+  That is a real optimization opportunity (hoist the whole-chain
+  listener check ahead of the walk) and is **logged, not fixed**.
+  **The animation manager**, whose *lifecycle* had never been priced —
+  only its ticks: v4 is **4.3× slower than v3 to start and stop one
+  element's animation** (5.45 µs vs 1.26 µs) and 5× slower on
+  `delay()`, but **3.7× faster** starting and stopping the same
+  animation over a 512-node collection (127 µs vs 469 µs).  So the
+  capture-into-ChannelWrites design carries a per-animation constant
+  that amortizes at scale — v3 wins the single-element case, v4 wins
+  the bulk case, and both are worth knowing since a UI does the former
+  and a layout the latter.  The round-21 **eviction compare costs
+  nothing measurable**: starting an overlapping animation reads
+  identically to starting a disjoint one (10.32 vs 10.35 µs), so
+  `touchedColumns()` across shared refs is not a cost worth avoiding.
+  The 24.3 controls are 3.4 µs (pause + resume) and 4.3 µs (reverse).
 - [ ] **33.8 Images, charts and store internals** (extend
   `compaction.mjs`'s neighbours; new rows in a `store.mjs`) —
   findings 12–13.  Registry acquire/release/dedup and the blob record

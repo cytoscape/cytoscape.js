@@ -8211,17 +8211,52 @@ describe and no suite prices:
 - [ ] **33.0 Docs-first** — this plan section, open call 7 marked
   scoped, and the README's benchmark section given the shape the round
   will fill in.  Lands before any suite.
-- [ ] **33.1 Layouts** (`benchmark/gpu/layouts.mjs`, new) — finding 1.
-  All six built-ins against their v3 namesakes at 2k/20k/200k (grid
-  and preset take v4's slot path, the other four are handle-level
-  ports, so the split in the numbers is itself the result); the
-  `force` **CPU executor** to a fixed iteration count against v3's
-  cose at a scale cose survives; `layoutPositions` plumbing
-  (spacingFactor/transform/fit) as its own row against a bare
-  `setPositions`; and the round-17 contract's overhead measured as the
-  same layout run through `{ impl }` versus the built-in path — the
-  number an external author needs.  Animated layouts are a tick cost
-  and ride the 33.7 animation rows rather than duplicating them.
+- [x] **33.1 Layouts** (2026-08-03) — landed as
+  `benchmark/gpu/layouts.mjs`, and **two of its first rows were not
+  measuring anything**, which is design call 5 earning its place on the
+  first pass that used it.
+  Rows (i9-9900K, N=2000 / 4000 edges, `fit: false` and a shared
+  explicit `boundingBox` on both sides — a headless v3 viewport is
+  1×1 px, so a viewport-sized layout would pack 2000 nodes into a
+  pixel): **grid 153×**, preset map-form 21×, preset fn-form 32×,
+  circle 9.9×, concentric 20×, breadthfirst 32×, random 6.9×, and an
+  `eles.layout()` 10% scope 5.6×.  The slot-path/handle-path split the
+  plan predicted shows up exactly: grid is the outlier because it is
+  the one layout that never materializes a handle.  At N=500 the same
+  rows read 84× / 23× / 32× / 9.1× / 20× / 36× / 7.1× / 6.0×, and the
+  `force` CPU executor runs 20 iterations in 4.81 ms (29.5 ms at 2k)
+  against v3 `cose` at 10 iterations — **48×**, the two capped
+  identically, and gated to N ≤ 500 because cose is superlinear (4.5 s
+  per iteration at 25k on the hardware-pass box).
+  **The two corrected rows.**  `preset` first read **2388×**, which is
+  not a layout result: with no `positions` v4's preset does *no work at
+  all* (positions are already in the model — its own module comment
+  says so) while v3 still walks every node.  It now passes a real
+  `positions` map, which is both the honest comparison and the real use
+  case (restoring saved positions), plus a second row for the fn form
+  since that one takes handles by contract on both sides.  And the
+  contract row first compared `{ impl: BulkLayout }` against the
+  built-in grid at 4.5× — **not a comparison**, since the two place
+  different positions by different maths, so it measured the impl's own
+  body as much as the wrapper (design call 1).  It is now an empty impl
+  against the same wrapper doing a full bulk placement.
+  **The finding that came out of that row.**  The contract's fixed cost
+  scales with the *graph*, not the run: **106 µs at 500 nodes, 391 µs
+  at 2000, for an impl that does nothing.**  `GpuLayoutContext`'s
+  constructor eagerly evaluates `cy.elements()` and `.nodes()` to
+  populate the handle-tier `ctx.eles`/`ctx.nodes`, so every run interns
+  handles for the whole graph — including for a columnar-first layout
+  that never touches them, which is the case the contract exists to
+  make obvious.  Making those two fields lazy getters would delete it.
+  **Logged, not fixed**: this is a measurement round, and `eles` is a
+  declared public field of the shipped declarations.
+  Also priced: the `layoutPositions` finisher against the bare bulk
+  write underneath it — 1.68× at 2k (804 → 478 µs), the cost of v3's
+  spacingFactor/transform/fit conveniences.
+  Control: every built-in was run against a 200-node fixture seeded at
+  one shared position and asserted to place **200 moved, 200 distinct**
+  positions, so no row is measuring a layout that silently does
+  nothing — the check `preset` failed.
 - [ ] **33.2 The algorithm tail** (extend `algorithms.mjs`) —
   finding 2.  `kMedoids`, `fuzzyCMeans`, `affinityPropagation`,
   `kargerStein`, unnormalized `degreeCentrality`, and weighted

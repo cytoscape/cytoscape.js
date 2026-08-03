@@ -8337,18 +8337,56 @@ describe and no suite prices:
   figures stay in the round record as a separate, explicitly-labelled
   run.  Retires the four historical one-offs by replacing them with
   rows, or marks them historical in place.
-- [ ] **33.5 Pick, box selection and bounds**
-  (`benchmark/gpu/spatial.mjs`, new) — findings 5–7, one suite because
-  they share fixtures and all three are columnar scans.  `pickNodeAt`
-  hit/miss against v3's renderer pick, across the shape branches
-  (ellipse, rectangle, polygon table, round-* offset polygon, barrel,
-  custom polygon blob) and at two zooms — the axis 28.1 recorded as
-  the breakable one — plus a `text-events` label-box variant.
-  `elementsInBox` at several box fractions against v3's `getAllInBox`,
-  with and without the label-containment term.  `boundingBox`/`fit`/
-  `getFitViewport`/`boundingBoxAt` against v3, with the label terms on
-  and off (the round-16.4 default is *on*, so the honest default row
-  is the expensive one).
+- [x] **33.5 Pick, box selection and bounds** (2026-08-03) — landed as
+  `benchmark/gpu/spatial.mjs`.
+  *Plan correction, measured*: picking and box selection **cannot** be
+  compared against v3, because `findNearestElement` and `getAllInBox`
+  live on v3's canvas renderer and a headless v3 instance has neither
+  (`cy.renderer()` is a bare object on which both are `undefined`).
+  They are gpu-only absolute costs; bounds is the one of the three v3
+  answers headless, and it stays comparative.
+  **Picking.**  A hit is ~20 µs and a background miss 42 µs at N=2000
+  (the full descending walk — the hover-over-background case).  The
+  shape branches are **invisible at realistic density**: the scan stops
+  at the first candidate whose box contains the point, so exactly one
+  inside-test runs per pick and all seven shapes read within 3% of each
+  other.  A row per shape would have been seven copies of the walk
+  wearing different labels — so the shape tests get their own fixture
+  (N coincident oversized nodes, the point inside every box and outside
+  every shape, so the walk runs N tests and misses all of them), and
+  there the spread is real: ellipse 88 µs, `cut-rectangle` 97 µs,
+  custom `polygon` 212 µs, `star` 242 µs, `barrel` 789 µs,
+  `round-hexagon` 823 µs — **9.6× between the cheapest and the dearest
+  inside-test**, with round 27's two computed shapes at the top.
+  `insideRoundPolygon`'s cost turns out to be zoom-*independent*
+  (1.05× between zoom 1 and 2) even though its correctness is not —
+  worth knowing, since 28.1 had to pin it at two zooms for exactly the
+  opposite reason.  `text-events: yes` costs **2.9×** on the miss walk
+  (the laid label box joins the scan per candidate).
+  **Box selection.**  `elementsInBox` is 153 / 214 / 370 µs over 10 /
+  50 / 100% of the graph, and the round-16.5 label-containment option
+  adds 15%.
+  **Bounds** (v3-comparative, labels included by default per 16.4):
+  whole-graph `boundingBox()` **6.2×**, `cy.fit()` **33×**,
+  `getFitViewport()` **35×**, one node's `boundingBox()` 1.6×.  Turning
+  the label terms off is 1.73× — so the honest default row is the
+  expensive one, which is why both are reported.  v4-only rows for
+  reference: `boundingBoxAt` 1.65 ms whole-graph, `labelBoundingBox`
+  465 ns per element.
+  **Two rows were void before they were fixed, and one of them was
+  already shipped elsewhere.**  (a) `elementsInBox` takes four numbers,
+  not a box object; passed an object it silently answers the *empty*
+  collection (0 elements against 480 for the same band spelled
+  positionally), so the first version of the box rows measured a
+  degenerate call — and `benchmark/gpu/curves.mjs` has had the same bug
+  since round 29.4, in a number `src/gpu/README.md` publishes.  Fixed
+  and re-measured in its own commit (33.5b below).  (b) the
+  custom-`polygon` row read 549 ns against 88–842 µs for every other
+  shape, because the box corner is *inside* that polygon, so the walk
+  stopped at the first node: one test, not N.  Each shape now has its
+  own miss point, and the suite **asserts the miss** at startup — a row
+  that hits prints a warning naming itself, because a shape-test row
+  that stops early is measuring nothing.
 - [ ] **33.6 The data sidecar and structured queries**
   (`benchmark/gpu/data.mjs`, new) — findings 8–9.  Writes and reads
   per column kind (numeric, dictionary string, plain-array fallback),

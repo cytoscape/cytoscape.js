@@ -1672,6 +1672,10 @@ const NORMALIZE_CACHE_MAX = 512;
  * camelCase → kebab-case ('backgroundColor' → 'background-color'),
  * memoized (34.5).
  *
+ * @param prop — a property name in either spelling; not validated here,
+ *   which is why the memo is bounded (an unknown name is normalized
+ *   before it is rejected, so a caller passing junk must not be able to
+ *   grow the cache without limit)
  * @returns the kebab-case spelling — the key every prop table is keyed
  *   by.  An already-kebab name is returned unchanged, and an *unknown*
  *   name is normalized rather than rejected, since the rejection happens

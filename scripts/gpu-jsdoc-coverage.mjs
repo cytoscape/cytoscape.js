@@ -369,7 +369,74 @@ export function auditParamTags( file ){
     else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );
   }
 
+  // Top-level exported functions are public members by this script's own
+  // definition (see the file header) and are the whole surface of
+  // wire.mts and columnar.mts — but round 32's audit walked class bodies
+  // only, so `serializeElements` and its neighbours were outside the gate
+  // that reports 221/221. Round 36 closed that: the parameters of an
+  // exported function reach docmaker exactly as a method's do.
+  for( const fn of exportedFns( lines ) ){
+    if( !fn.args.trim() ) continue;
+
+    if( /@param/.test( docAbove( lines, fn.line ) ) ) tagged++;
+    else missing.push( `${fn.name} (${rel}:${fn.line + 1})` );
+  }
+
   return { file: rel, tagged, missing };
+}
+
+/**
+ * Every top-level exported function in a file, with its argument list.
+ *
+ * The argument text comes from the joined signature rather than the
+ * declaration line, since `export const f = (\n  a: X\n): Y => {` wraps —
+ * the same reason `auditReturnTags` joins.
+ *
+ * @param {string[]} lines — the file's lines
+ * @returns {{ name: string, args: string, line: number }[]} one entry per
+ *   exported function, in source order
+ */
+function exportedFns( lines ){
+  const out = [];
+  let inComment = false;
+
+  for( let i = 0; i < lines.length; i++ ){
+    const line = lines[i];
+
+    if( inComment ){
+      if( line.includes( '*/' ) ) inComment = false;
+      continue;
+    }
+
+    const opened = line.lastIndexOf( '/*' );
+
+    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+      inComment = true;
+      continue;
+    }
+
+    const fn = line.match( EXPORTED_FN_RE );
+
+    if( !fn ) continue;
+
+    const sig = signatureOf( lines, i );
+    const open = sig.indexOf( '(' );
+    let depth = 0;
+    let close = -1;
+
+    for( let k = open; k < sig.length && open !== -1; k++ ){
+      if( sig[k] === '(' ) depth++;
+      else if( sig[k] === ')' && --depth === 0 ){ close = k; break; }
+    }
+
+    out.push( {
+      name: fn[1] ?? fn[2],
+      args: close === -1 ? '' : sig.slice( open + 1, close ),
+      line: i
+    } );
+  }
+
+  return out;
 }
 
 /**

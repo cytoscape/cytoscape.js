@@ -299,6 +299,20 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
  * machinery consumes the write exactly as it would a captured
  * animation's — one set of numbers, the same two executors.
  *
+ * @param column — the target column, or a `padding`/`fontSize` pseudo
+ *   column for the two channels that are not stored as one (round 25)
+ * @param kind — how the packed numbers are read back: a whole scalar or
+ *   colour, one `lane` of a multi-lane column, or the two pseudo kinds
+ * @param paint — whether the channel is paint-tier, which is what makes
+ *   the write eligible to offload; geometry-tier writes never are
+ * @param refs — the elements, parallel to `from`/`to`
+ * @param from — the pre-restyle values, read from stored truth
+ * @param to — the newly resolved values
+ * @param min — lower clamp for the tweened value, as v3 clamps by
+ *   property (`opacity` at 0, `border-width` at 0); bouncy easings
+ *   overshoot without it
+ * @param max — upper clamp, likewise
+ * @param lane — which lane of the column, for the `lane` kind
  * @returns a write already carrying its from/to values, so the animation
  *   it is handed to has nothing to capture at play time — which is what
  *   keeps a whole-channel transition one bulk record instead of one

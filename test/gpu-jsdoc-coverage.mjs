@@ -109,6 +109,13 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
 
   Public tier only, for the same reason: those are the files a consumer of
   `cytoscape/gpu` holds, and they are what a generator would read.
+
+  Round 36 widened it to the public tier's *exported functions*, which are
+  public members by this script's own definition and are the entire surface
+  of wire.mts and columnar.mts — but which round 32's audit never walked,
+  because it only descended class bodies.  So the 221/221 it reported was
+  221 of the members it could see; `serializeElements` and its neighbours
+  were outside the gate.  They are inside it now, at 229/229.
   */
   describe('a public member that takes arguments describes them', function(){
 
@@ -122,6 +129,16 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
 
     it('finds a non-trivial number of parameterized members to check', function(){
       expect( result.paramTags.tagged ).to.be.at.least( 150 );
+    });
+
+    it('audits exported functions, not only class members', function(){
+      // wire.mts's whole public surface is exported functions, so its
+      // count is 0 if the branch that walks them is ever dropped — which
+      // is how round 32's audit missed them for four rounds
+      const wire = result.paramTags.files.find( f => f.file === 'src/gpu/wire.mts' );
+
+      expect( wire, 'wire.mts was not audited for @param' ).to.not.equal( undefined );
+      expect( wire.tagged ).to.be.at.least( 2 );
     });
 
   });

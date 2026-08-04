@@ -8617,7 +8617,28 @@ describe and no suite prices:
   tick) and `gen-25k-invisible` (round 22's paint-only `visibility`
   and round 20.2's `events` transparency, half the nodes each,
   expressed as `case` mappers on the v4 side and selector blocks on
-  v3's).  Numbers in the round summary below.
+  v3's).  A same-session run of the whole 25k family gives them a
+  baseline (device p50, ms):
+
+  | 25k scene | fit-all | fit-all + labels | zoomed-in + labels |
+  |---|---|---|---|
+  | flat (baseline) | 3.40 | 3.67 | 4.77 |
+  | curved (bezier pairs) | 9.89 | 10.17 | 4.17 |
+  | compound (1k parents) | 2.11 | 2.34 | 4.50 |
+  | images (icon-per-type) | 3.44 | 3.71 | 4.80 |
+  | **wrapped labels** | 3.40 | **4.55** | **5.95** |
+  | **half-invisible / half-inert** | **1.66** | **1.96** | **2.57** |
+
+  Two results worth keeping.  **Wrapped labels cost +24% on the
+  labelled passes** (3.67 → 4.55 fit-all, 4.77 → 5.95 zoomed-in) — and
+  that scene's *unlabelled* row is 3.40 ms, identical to the
+  baseline's, which is the control: the delta is the labels and
+  nothing else.  And **half-invisible is 2.05× cheaper than the
+  baseline** (1.66 vs 3.40): the round-22 `FLAG_DRAWN` mask drops
+  invisible elements in the **cull**, so they cost no vertex or
+  fragment work at all rather than being discarded late — a design
+  claim from that round, unmeasured until now.  The image pass costs
+  ~1% over the flat scene at this scale (3.44 vs 3.40).
   Two notes for whoever re-runs this: the harness printed
   "build/ bundles are older than src/" throughout, which was a **false
   positive** — the only `src/` file this round touched is

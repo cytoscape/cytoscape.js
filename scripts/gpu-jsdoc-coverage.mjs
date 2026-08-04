@@ -58,6 +58,14 @@ const TOP_LEVEL_RE =
 const EXPORTED_FN_RE =
   /^export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^export\s+const\s+([A-Za-z_$][\w$]*)(?::[^=]+)?\s*=\s*(?:async\s*)?(?:function\b|(?:<[^>]*>)?\s*\()/;
 
+// MEMBER_RE narrowed to members declared with a *call* signature. A field
+// (`lastNow = 0;`) has no return annotation, and joining forward from one to
+// find its parens would swallow the next method's signature — which is what
+// the first cut of the @returns audit did to `Animation.lastNow`, reporting
+// its return type as the prose of the doc comment below it.
+const CALL_MEMBER_RE =
+  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\(/;
+
 // An overload *signature*: a call signature terminated by `;` rather than a
 // body. The implementation signature that follows a run of these is not
 // separately documentable — TypeScript hides it from callers — so it is
@@ -364,6 +372,165 @@ export function auditParamTags( file ){
   return { file: rel, tagged, missing };
 }
 
+/**
+ * The declaration text of the member at line `i`, joined forward until its
+ * argument list closes. Most signatures are one line; a few wrap their
+ * parameters, and a return annotation sits after the closing paren either
+ * way, so the extractor cannot work line-at-a-time.
+ *
+ * Bounded at 16 lines: past that the line is not a signature and the caller
+ * should get nothing rather than the next member's text.
+ *
+ * @param {string[]} lines — the file's lines
+ * @param {number} i — index of the declaration line
+ * @returns {string} the joined declaration, or '' when the parens never close
+ */
+function signatureOf( lines, i ){
+  let depth = 0;
+  let seen = false;
+  let out = '';
+
+  for( let j = i; j < lines.length && j < i + 16; j++ ){
+    out += ( j === i ? '' : ' ' ) + lines[j];
+
+    for( const ch of lines[j] ){
+      if( ch === '(' ){ depth++; seen = true; }
+      else if( ch === ')' ) depth--;
+    }
+
+    if( seen && depth <= 0 ) return out;
+  }
+
+  return '';
+}
+
+/**
+ * The return type annotation of a joined signature, or null when it carries
+ * none. Reads what follows the *matching* close paren, which is why the
+ * caller joins first: `( fn: ( a: X ) => Y ): Z` has three parens and only
+ * the outer one ends the argument list.
+ *
+ * @param {string} sig — a joined declaration from `signatureOf`
+ * @returns {string|null} the annotation text, trimmed, or null
+ */
+function returnAnnotation( sig ){
+  let depth = 0;
+  let close = -1;
+
+  for( let k = 0; k < sig.length; k++ ){
+    if( sig[k] === '(' ) depth++;
+    else if( sig[k] === ')' && --depth === 0 ){ close = k; break; }
+  }
+
+  if( close === -1 ) return null;
+
+  const rest = sig.slice( close + 1 ).trim();
+
+  if( !rest.startsWith( ':' ) ) return null;
+
+  // stop at the body, the arrow, or the `;` of an overload signature
+  const type = rest.slice( 1 ).split( /\s=>|\{|;/ )[0].trim();
+
+  return type || null;
+}
+
+// Return annotations that carry no value worth describing: a member that
+// returns nothing, and a chainable that returns its own receiver (the
+// annotation *is* the documentation there — `@returns this` restates it).
+const VOID_RETURN_RE = /^(?:void|Promise\s*<\s*void\s*>|undefined|never|this)$/;
+
+/**
+ * Audit one file for **`@returns` completeness** over its value-returning
+ * public members.
+ *
+ * Round 32 measured this tail (63 of 276 at the time) and deliberately did
+ * not build it, on the reasoning that docmaker's per-function shape carries
+ * a description per *argument* and has no return field — so a missing
+ * `@param` is a hole in the generated release documentation while a missing
+ * `@returns` is editor hover text in `dist/cytoscape-gpu.d.ts`. Round 36
+ * wrote the tags and kept that boundary exactly where round 32 drew it:
+ * this audit **reports and does not gate** (the `gpu-throw-coverage`
+ * treatment), because whether it should ratchet is a policy call of the
+ * kind PLAN.md's open call 8 already holds open for test coverage.
+ *
+ * A member counts when its signature carries a return annotation that is
+ * not `void`/`Promise<void>`/`undefined`/`never`/`this`. A member with no
+ * annotation at all is skipped rather than guessed at, so the tally is a
+ * lower bound on what could be documented — the same direction of error
+ * `auditThrowTags` errs in.
+ *
+ * @param {string} file — absolute path to a `.mts` source file
+ * @returns {{ file: string, tagged: number, missing: string[] }}
+ */
+export function auditReturnTags( file ){
+  const lines = readFileSync( file, 'utf8' ).split( '\n' );
+  const rel = relative( ROOT, file );
+  const missing = [];
+  let tagged = 0;
+  let currentClass = null;
+  let exported = false;
+  let inComment = false;
+  let overloaded = new Set();
+
+  for( let i = 0; i < lines.length; i++ ){
+    const line = lines[i];
+
+    if( inComment ){
+      if( line.includes( '*/' ) ) inComment = false;
+      continue;
+    }
+
+    const opened = line.lastIndexOf( '/*' );
+
+    if( opened !== -1 && line.indexOf( '*/', opened ) === -1 ){
+      inComment = true;
+      continue;
+    }
+
+    const fn = line.match( EXPORTED_FN_RE );
+    const cls = line.match( CLASS_RE );
+
+    if( cls ){
+      currentClass = cls[2];
+      exported = Boolean( cls[1] );
+      overloaded = new Set();
+      continue;
+    }
+
+    if( !fn && TOP_LEVEL_RE.test( line ) ){ currentClass = null; continue; }
+
+    let name = null;
+
+    if( fn ){
+      currentClass = null;
+      name = fn[1] ?? fn[2];
+    } else if( currentClass && exported ){
+      const sig = line.match( OVERLOAD_SIG_RE );
+      const m = line.match( CALL_MEMBER_RE );
+
+      if( !m ) continue;
+
+      const [ , access, , member ] = m;
+
+      if( member.startsWith( '_' ) || KEYWORDS.has( member ) ) continue;
+      if( access === 'private' || access === 'protected' ) continue;
+      if( !sig && overloaded.has( member ) ) continue;
+      if( sig ) overloaded.add( member );
+
+      name = `${currentClass}.${member}`;
+    } else continue;
+
+    const ret = returnAnnotation( signatureOf( lines, i ) );
+
+    if( ret === null || VOID_RETURN_RE.test( ret ) ) continue;
+
+    if( /@returns/.test( docAbove( lines, i ) ) ) tagged++;
+    else missing.push( `${name} (${rel}:${i + 1}) -> ${ret}` );
+  }
+
+  return { file: rel, tagged, missing };
+}
+
 /** Every `.mts` file under src/gpu, sorted, repo-relative. */
 function sources( dir = GPU_DIR, out = [] ){
   for( const entry of readdirSync( dir ).sort() ){
@@ -398,9 +565,10 @@ export function audit(){
 
   const isPublic = f => PUBLIC_API.includes( f.file );
   const throwTags = sources().map( auditThrowTags ).filter( f => f.tagged + f.missing.length > 0 );
-  const paramTags = sources()
-    .filter( f => PUBLIC_API.includes( relative( ROOT, f ) ) )
-    .map( auditParamTags );
+  const publicSources = sources()
+    .filter( f => PUBLIC_API.includes( relative( ROOT, f ) ) );
+  const paramTags = publicSources.map( auditParamTags );
+  const returnTags = publicSources.map( auditReturnTags );
 
   return {
     public: tier( files.filter( isPublic ) ),
@@ -420,6 +588,14 @@ export function audit(){
       files: paramTags,
       tagged: paramTags.reduce( ( n, f ) => n + f.tagged, 0 ),
       missing: paramTags.flatMap( f => f.missing )
+    },
+    // round 36: `@returns` over the same tier — **reported, never gated**.
+    // Round 32 drew the gate's boundary at what docmaker emits, and round 36
+    // wrote the tags without moving it; see `auditReturnTags`.
+    returnTags: {
+      files: returnTags,
+      tagged: returnTags.reduce( ( n, f ) => n + f.tagged, 0 ),
+      missing: returnTags.flatMap( f => f.missing )
     }
   };
 }
@@ -464,4 +640,13 @@ if( process.argv[1] && import.meta.url === pathToFileURL( process.argv[1] ).href
   );
 
   if( verbose ) for( const m of pt.missing ) console.log( `      NO @param   ${m}` );
+
+  const rt = result.returnTags;
+
+  console.log(
+    `  @returns on value-returning public members: ` +
+    `${rt.tagged}/${rt.tagged + rt.missing.length}  (reported, not gated)`
+  );
+
+  if( verbose ) for( const m of rt.missing ) console.log( `      NO @returns ${m}` );
 }

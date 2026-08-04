@@ -45,7 +45,7 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
   - `documentation/demos/`: Demo apps and assets used by the docs site.
   - `documentation/docmaker.mjs`: Docs build entrypoint.
 - `.github/workflows/`: CI and release workflows.
-- `benchmark/`: Performance comparisons and targeted benchmark runners.
+- `benchmark/`: Performance comparisons and targeted benchmark runners.  v3's own suites sit at the top level; **v4's are the 22 suites in `benchmark/gpu/`** (round 33), each headed by a comment saying what it prices and how its rows avoid measuring nothing.  `npm run benchmark:gpu` is the core/collection micro sweep, `benchmark:gpu:report` renders the HTML report (quick profile), `benchmark:gpu:all` adds every standalone sweep, and `benchmark:gpu:renderer` drives the browser scenes on a real adapter.  `node scripts/gpu-bench-coverage.mjs --verbose` says which public members no benchmark calls.
 - `typescript/`: TypeScript-related tests and fixtures.
 - `scripts/`: Repo tooling run by hand or by a spec — the v4 audits (`gpu-jsdoc-coverage.mjs`, `gpu-throw-coverage.mjs`, `gpu-bench-coverage.mjs`), the CSS type generator, and the benchmark downloader.
 

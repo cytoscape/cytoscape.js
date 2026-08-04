@@ -2398,7 +2398,8 @@ breadth pass over the rest of the public API and a third audit script
 reporting which members a benchmark calls.  Open call 7 closed with it.
 The round's most useful output is not the wins (they were mostly where
 earlier rounds said) but the **five places v4 is slower than v3 or
-slower than its own design implies** — the style getters at 13–21×, the
+slower than its own design implies** — the style getters at 13–21×
+(*5.8× on re-measurement through the bundle; see round 34.0*), the
 compound emit path never taking the no-listener fast path, the layout
 contract's per-run whole-graph materialization, `mutableElements()` and
 `indexOf()` — each measured, localized and logged rather than fixed,
@@ -2406,6 +2407,25 @@ because a measurement round measures.  Six rows across the round were
 **caught measuring nothing** by design call 5 and rewritten, and one of
 those (`curves.mjs`'s box-selection premium) had been published in the
 README since round 29.4.
+
+**2026-08-03, round 34.**  The fix round for what 33 measured.  All five
+paths are fixed — `indexOf` and `mutableElements()` at parity with v3,
+the emit path's new no-listener gate at 8 ns, the layout contract 420×
+cheaper per run, the style getters 5.8× → 2.3× — with no behaviour
+change and no pixels moved (168/168 browser specs, goldens byte-stable).
+Two of the five findings were **corrected while being fixed**: the style
+gap was inflated by tsx's `__name` wrapper (the benchmark suites import
+`src/`, and for a closure-heavy hot path that measures the transpiler),
+and the row round 33 cited for the emit finding never reached the emit
+path at all — it was measuring compound auto-bounds invalidation.  The
+transferable rule is now in `AGENTS.md`: **check a hot-path finding
+against the built bundle before rewriting anything**, since the planned
+`readProp` fix turned out to be a no-op in production and the real cost
+was `normalizeProp` doing a regex replace per read.
+What is left of the five is a **residual 2.3× on the style getters**,
+which is no longer a hot spot with an obvious cause — it is the
+145-case switch and the guard lookups that precede it.  Not logged as an
+open call: it needs no decision, only appetite.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

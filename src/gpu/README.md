@@ -2098,7 +2098,7 @@ shared one varies ±30%):
   cost, showing up exactly where the design predicts.
 
 `node scripts/gpu-bench-coverage.mjs [--verbose]` reports which public
-members a benchmark calls (83.3% of the callable surface; core 98.9%,
+members a benchmark calls (83% of the callable surface; core 98.9%,
 collection 97.5%).  Like `gpu-throw-coverage.mjs` it reports and never
 gates — and it is the weakest of the three audits, matching *call-shaped
 mentions*, so it over-detects (a comment counts) and under-detects (a

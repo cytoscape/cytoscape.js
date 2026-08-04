@@ -9234,3 +9234,128 @@ value (mitigated by 35.1, which is written and seen passing against the
 *old* implementation first); `this` capture inside reader bodies (each
 becomes an explicit `engine` parameter); and the megamorphic call site
 defeating inlining, which is why the round measures rather than assumes.
+
+## Round 36 plan — the completion round (planned 2026-08-04)
+
+Round 35 closed the last item anyone had logged as *worth doing and not
+done*.  What is left in this file divides cleanly in two: the twelve
+entries of "Open calls for the maintainer", which are decisions and stay
+where they are, and a short tail of work that needs **no decision at
+all** — a documentation rule that was measured and deferred on timing,
+a verification tier that was opened and half-closed, and three
+measurements this file promised and never recorded.  This round is that
+tail, and it is deliberately the *only* thing in it: no design call is
+taken, none is opened, and no public API moves.
+
+**Findings (measured 2026-08-04, before the passes below):**
+
+1. **The `@returns` tail is 58 members, not 63.**  Round 32 measured
+   "63 of 276" with the overload-aware scanner and logged it rather than
+   building it, on the reasoning that docmaker's per-function shape has
+   no return field — so a missing `@returns` is editor hover text where
+   a missing `@param` is a hole in the generated docs.  That reasoning
+   draws the **gate's** boundary, not the *writing's*: the tag is in
+   round 26's standard-tags list, the surface is 100% documented, and
+   `@throws` and `@param` are both complete.  Re-measured against the
+   value-returning public members (a member whose signature carries a
+   return annotation that is not `void` and not `this`): **206 of 264
+   tagged, 58 missing** — `collection.mts` 30, `animation.mts` 11,
+   `layout/contract.mts` 7, `core.mts` 5, `viewport.mts` 3, `style.mts`
+   2.
+2. **The browser-only throw tier was opened and half-closed.**
+   `gpu-throw-coverage` classifies 13 sites as needing a device, a
+   canvas or a pointer, and round 30.2 pinned **six** of them — the
+   `png()`/`jpg()` export guards.  The other seven have never fired in
+   any suite in either project: `gpu-context`'s two device-acquisition
+   guards, `column-mirror`'s unknown-column guard, `glyph-atlas`'s full
+   atlas, `gpu-tween`'s geometry-kind invariant, and `image-decoder`'s
+   two.  Round 30's own record says the browser tier "is pinned in the
+   `webgpu` Playwright project instead", which is true of the export
+   guards and of nothing else.
+3. **Three promised measurements were never recorded.**  (a) The
+   renderer benchmark's `--layout` mode has been run **once**, on
+   2026-08-01, before rounds 27, 34 and 35.  (b) Round 33's own risk
+   register says "the round records the wall time of each profile so
+   the cost of running it is itself a documented number" — no profile
+   wall time is recorded anywhere.  (c) Round 35 measured six
+   properties through the bundle and a whole-object `style()`, but
+   `benchmark/gpu/style.mjs` and `surface.mjs` — the suites whose rows
+   exist to notice a regression on exactly that path — have not been
+   re-run since the dispatch table landed.
+4. **The stranded doc block has happened ten times and the gate catches
+   it only by accident.**  A later insertion lands between a block
+   comment and the member it documents; the comment silently
+   re-attaches to the wrong member.  Rounds 26.1–26.4 found eight by
+   reading, and 34.4 and 34.5 found the ninth and tenth — those two
+   because the strand happened to leave a member reading as
+   *undocumented*, which is what the coverage gate tests.  When the
+   displaced comment lands on another documented member instead,
+   nothing notices: coverage stays 100% and two members carry each
+   other's prose.  That is the case round 26.1's `json()`/`serialize()`
+   pair actually was.
+
+**Design calls (round 36) — all four are about scope, and each one
+narrows it:**
+
+1. **`@returns` is written, and reported, and *not* gated.**  Round 32's
+   boundary is respected exactly as it was drawn: the gate covers what
+   docmaker emits (`@param`), and `@returns` gets the
+   `gpu-throw-coverage` treatment instead — `auditReturnTags()` prints
+   its tally under the coverage report and `--verbose` lists the
+   offenders, always exiting 0.  Whether it should ratchet is a policy
+   call of exactly the kind open call 8 already holds for test
+   coverage, and this round does not take it.
+2. **The stranded-comment check reports too, for the same reason** —
+   and because it is heuristic in a way the other three audits are not:
+   it cannot distinguish a deliberately free-standing narrative comment
+   from a displaced doc block.  A gate would need that distinction; a
+   report does not.
+3. **The seven browser-only throws get specs, which is not open call
+   8.**  That call is whether throw coverage becomes a **gate**.
+   Writing the specs that make a documented guard fire is the work
+   rounds 30.1 and 30.2 already did in both projects, and it needs no
+   decision — a guard nothing has ever triggered is not tested.
+4. **A re-measurement is a measurement, and is recorded even when it
+   moves nothing.**  This file's own history is three corrections of a
+   conclusion reached by *not* running something (18.5, 27.9, 15.7 —
+   twice the same wrong "no adapter on this box").  Every number this
+   round produces lands in the record with the machine and date, and a
+   row that reproduces its baseline is reported as reproducing it.
+
+**Pass split** (tests-first where there is code; docs in-commit; each
+pass its own commit(s)):
+
+- [ ] **36.0 Docs-first** — this plan section.
+- [ ] **36.1 `auditReturnTags()`, reporting-only** — the audit, its
+  report line and its module-level specs, before any tag is written, so
+  the tally is measured by the shipped scanner rather than by the
+  throwaway that has now produced a wrong count in four consecutive
+  plans.
+- [ ] **36.2 The 58 `@returns` tags** — by file group, in round 32's
+  commit shape: `core`/`viewport`, `collection`, then
+  `animation`/`style`/`layout/contract`.  A description, not a type
+  restatement: the type is already in the signature and in the `.d.ts`.
+- [ ] **36.3 `allAre` and `is`** — the two public collection members no
+  benchmark calls, in `surface.mjs`.  The other three the audit lists
+  are a constructor and two long-form aliases of benchmarked rows.
+- [ ] **36.4 The seven browser-only throws** — specs in the `webgpu`
+  project, each asserting the *message* (four of the seven share a
+  file) and each with its control run by neutering the guard against a
+  hand-rebuilt bundle.
+- [ ] **36.5 The three measurements** — `--layout` on the RX 580, the
+  wall time of each report profile, and the style suites re-run through
+  the bundle against round 35's recorded numbers.
+- [ ] **36.6 The stranded-comment check + the closing docs sweep.**
+
+**Risks tracked**: a `@returns` description that restates the type adds
+noise to the shipped `.d.ts` rather than information (mitigated by
+writing what the value *means* — the units, the undefined case, the
+first-element rule — which is what the missing ones are missing);
+`auditReturnTags` over-detecting on `this`-returning chainables and
+setter overloads (excluded explicitly, and the exclusions are specs);
+the browser throw specs passing against a **stale bundle**, which is
+this repo's standing trap and the reason 27.1's first verification
+proved nothing (mitigated by building by hand before every run); and
+`--layout` wedging the suite the way it did before 18.5's nested
+timeouts existed (they still exist, and `--layout-uncapped` stays
+opt-in).

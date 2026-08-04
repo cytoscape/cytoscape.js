@@ -61,10 +61,16 @@ that axis and moved it onto the *documented* contract: 31 found the
 one error message advising a form v4 rejects and took `@throws` to
 16/16 under a gate, and 32 took `@param` to 221/221 under the same
 gate, the boundary drawn by docmaker's own per-argument shape.
-**Round 33** (planned 2026-08-03, at the end of this file) takes the
-same question to the third measurement axis — *what costs what* —
-where roughly a third of the prototype has no benchmark at all and
-the report's job table runs half the suites that exist.
+**Round 33** (2026-08-03, at the end of this file) took the same
+question to the third measurement axis — *what costs what* — where
+roughly a third of the prototype had no benchmark at all and the
+report's job table ran half the suites that existed.  Fourteen suites
+became 22, the report grew an `--all` profile that runs every one of
+them (closing open call 7), and the round's most useful output is the
+**five slow paths it found and localized** — the style getters, the
+compound emit walk, the layout contract's per-run materialization,
+`mutableElements()` and `indexOf()` — each logged rather than fixed,
+because a measurement round measures.
 `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -8097,7 +8103,9 @@ describe and no suite prices:
    different zooms — and 28.1 recorded `insideRoundPolygon` as the one
    shape test that is not affine-invariant, so zoom is a real axis.
 6. **Box selection.**  `elementsInBox`/`refsInBox` appears once, as a
-   curve *premium* row in `curves.mjs` (3.29×).  Its absolute cost,
+   curve *premium* row in `curves.mjs` (3.29× — a figure 33.5 then
+   found to be measuring a degenerate call; really ~2.3×).  Its
+   absolute cost,
    and the comparison against v3's `getAllInBox`, are unmeasured — as
    are the round-16.5 label-containment term and the round-20.2
    interactive filter.
@@ -8231,9 +8239,13 @@ describe and no suite prices:
 
 ### Pass split (docs in-commit; each pass its own commit(s))
 
-- [ ] **33.0 Docs-first** — this plan section, open call 7 marked
-  scoped, and the README's benchmark section given the shape the round
-  will fill in.  Lands before any suite.
+- [x] **33.0 Docs-first** (2026-08-03) — this plan section, open call 7
+  marked scoped, and the README's Benchmarks section opened with the
+  round's two rules (a row is v3-comparative or gpu-only and says
+  which; every figure has a re-runnable source or is marked a
+  historical one-off).  Landed before any suite, and amended in the
+  same commit with the breadth pass 33.9 on the user's restatement of
+  scope.
 - [x] **33.1 Layouts** (2026-08-03) — landed as
   `benchmark/gpu/layouts.mjs`, and **two of its first rows were not
   measuring anything**, which is design call 5 earning its place on the
@@ -8646,15 +8658,31 @@ describe and no suite prices:
   distinguishing docs from code; and `--scene gen-25k` is a substring
   filter, so it selects the whole 25k family, which is how the
   same-session baseline for the two new scenes was obtained.
-- [ ] **33.12 `scripts/gpu-bench-coverage.mjs` + the closing docs
-  sweep** — design call 8, then the standing rule.  The audit ships
-  reporting-only with its limits in the header; then both documents
-  are swept end to end for the round's vocabulary and for staleness,
-  with **the three named drift sites checked by name** ("Needs a
-  call", "Suggested sequencing", "Gaps with direction already set"),
-  and the round's numbers recorded — factors first, machine stated
-  once.  The README's Benchmarks section becomes an accurate index of
-  what exists.
+- [x] **33.12 `scripts/gpu-bench-coverage.mjs` + the closing docs
+  sweep** (2026-08-03) — the audit landed first (its record is above,
+  under the surface pass it drove), then the sweep.
+  **The README's Benchmarks section is now an index**: a table of every
+  suite and what it answers (21 rows over the 22 files —
+  `core`/`collection` share `index.mjs`), the three report profiles, the
+  `finishManualRun` note, the round's five findings, and the audit with
+  its limits.  Its follow-up hooks gained a "five measured slow paths"
+  entry so the findings are reachable from the doc a reader starts in.
+  **`AGENTS.md` gained two benchmark notes**, both earned this round: a
+  row is guilty until it discriminates (with all six of the round's
+  non-measuring rows named, including the `elementsInBox` signature
+  trap that had been live in `curves.mjs` since 29.4), and a v3 side
+  needs `styleEnabled` *and* an explicit layout, because the two
+  defaults bias in opposite directions.  `scripts/` picked up the third
+  audit in the repo-structure list, and `package.json` gained
+  `benchmark:gpu:all`.
+  **The three named drift sites, checked by name**: "Suggested
+  sequencing" gained the round-33 paragraph; the "Needs a call" ledger
+  needed nothing (round 33 closed no design calls — it is measurement
+  work); "Gaps with direction already set" likewise.  Open call 7 is
+  struck through with what closed it.  The status header at the top of
+  this file was two rounds stale when the round started (it ended at
+  30) and now runs through 33.
+  **Round 33 is complete.**
 
 ### What the round found (2026-08-03)
 

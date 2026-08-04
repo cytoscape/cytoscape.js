@@ -8929,12 +8929,33 @@ edges on the i9-9900K:
   Four specs in `test/gpu-compound-events.mjs` pin the boundary from
   both sides, with two controls run: making the gate unconditional and
   gating it on the wrong type each fail 12 of the file's 13 specs.
-- [ ] **34.4 The layout contract stops materializing the graph** —
-  `eles`/`nodes` become lazy getters, and `nodeSlots()`/`edgeSlots()`
-  read slots off the store's order list (whole-graph scope) or the
-  scope collection's refs (subset scope) instead of interning a handle
-  per element.  The store gains `scanSlotsInto`, the slot-only twin of
-  `scanRefsInto`.
+- [x] **34.4 The layout contract stops materializing the graph**
+  (2026-08-03) — two changes, and the second is the one that mattered.
+  `eles`/`nodes` became **lazy getters**, so a columnar layout that
+  never asks for handles never builds them; and `nodeSlots()`/
+  `edgeSlots()` stopped walking those handles at all, reading slots
+  from the store's insertion-order list (whole-graph scope) or the
+  scope collection's refs (subset scope).  `GraphStore.scanSlotsInto`
+  is the slot-only twin of `scanRefsInto` — same walk, same
+  `(mask, want)` test, no `Ref` allocated — and the per-element filter
+  became one mask: alive, not a parent, not locked.
+  **391 µs → 1.72 µs** for an empty impl at 2000 nodes / 2000 edges
+  (~230×), and a subset scope's is 875 ns.  A columnar bulk placement
+  over the whole graph is 57.6 µs, which is now *the placement*; an
+  impl that does ask for `ctx.nodes` still pays 122 µs, unchanged and
+  by design — you pay when you ask.
+  The risk here was **order**, since grid and circle place by index, so
+  a different enumeration order is a different layout.  Five specs in
+  `test/gpu-layout-contract.mjs` pin `nodeSlots()`/`edgeSlots()` as
+  *exactly* `cy.nodes()`/`cy.edges()` order, the locked/parent
+  exclusions, subset order, and that `eles`/`nodes` still answer when
+  an impl does ask.  Control: enumerating in reversed slot order
+  instead fails 2 of the 43 specs across the contract and layout files.
+  Landed with a repeat of this codebase's most familiar bug: inserting
+  `scanSlotsInto` above `scanRefsInto` **stranded the latter's doc
+  block**, which the round-26 coverage gate caught immediately — the
+  ninth instance of the pattern, and the first one a gate found rather
+  than a reader.
 - [ ] **34.5 `readProp` stops allocating per call** — the four closures
   built before the 145-case switch become module-level helpers taking
   `(store, slot, id)`.  Mechanical and large; the existing style suites

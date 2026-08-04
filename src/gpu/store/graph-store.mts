@@ -2851,6 +2851,44 @@ export class GraphStore implements ModelView {
   }
 
   /**
+   * The slot-only twin of `scanRefsInto` (round 34.2/34.4): the same
+   * insertion-order walk with the same `(mask, want)` flag test, writing
+   * bare slot numbers instead of allocating a `Ref` each.  Callers that
+   * work in slot space — the layout contract's `nodeSlots()`/
+   * `edgeSlots()` — used to reach them through element handles, which
+   * cost a handle intern per element for information the order list
+   * already has.
+   *
+   * Same order as `scanRefsInto`, which is what keeps layouts placing
+   * elements where they placed them before.
+   *
+   * @param out — destination array, written from `at`
+   * @param at — first index to write
+   * @param group — which group to scan
+   * @param mask — flag bits to test
+   * @param want — the value those bits must have
+   * @returns the index one past the last slot written
+   */
+  scanSlotsInto( out: number[], at: number, group: GroupName, mask: number, want: number ): number {
+    const order = this.order[ group ];
+    const slots = order.slots;
+    const gens = order.gens;
+    const gen = this.table( group ).gen;
+    const flags = this.column( group === 'nodes' ? 'node.flags' : 'edge.flags' ) as Uint32Array;
+    let n = at;
+
+    for( let i = 0; i < slots.length; i++ ){
+      const slot = slots[ i ];
+
+      if( gen[ slot ] !== gens[ i ] || ( flags[ slot ] & mask ) !== want ){ continue; }
+
+      out[ n++ ] = slot;
+    }
+
+    return n;
+  }
+
+  /**
    * Scan one group's flags column, writing a ref into `out` (from index
    * `at`) for every live slot (insertion order) whose flags satisfy
    * (flags & mask) === want.  Returns the index one past the last write —

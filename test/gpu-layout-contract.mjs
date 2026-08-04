@@ -225,4 +225,69 @@ describe('gpu/layout: the extension contract (round 17.5)', function(){
     expect( () => cy.layout( { name: 'nope' } ) ).to.throw( /nope/ );
   });
 
+  // Round 34.4: nodeSlots()/edgeSlots() read the store's insertion-order
+  // list instead of walking element handles.  The order is the part that
+  // can silently break -- grid and circle place by index, so a different
+  // order is a different layout -- and `eles`/`nodes` are now lazy, so
+  // an impl that never touches them must still see the same slots.
+  describe('slot enumeration (34.4)', function(){
+
+    it('nodeSlots() is cy.nodes() order, exactly', function(){
+      const cy = mk();
+      let slots = null;
+
+      cy.layout( { impl: class { run( ctx ){ slots = ctx.nodeSlots(); } }, fit: false } ).run();
+
+      const expected = cy.nodes().map( n => n._eventRef().slot );
+
+      expect( slots ).to.deep.equal( expected );
+    });
+
+    it('nodeSlots() still excludes locked nodes and parents', function(){
+      const cy = mk();
+
+      cy.$id( 'a' ).lock();
+
+      let slots = null;
+
+      cy.layout( { impl: class { run( ctx ){ slots = ctx.nodeSlots(); } }, fit: false } ).run();
+
+      expect( slots ).to.not.include( cy.$id( 'a' )._eventRef().slot );
+      expect( slots ).to.include( cy.$id( 'b' )._eventRef().slot );
+    });
+
+    it('edgeSlots() is cy.edges() order, exactly', function(){
+      const cy = mk();
+      let slots = null;
+
+      cy.layout( { impl: class { run( ctx ){ slots = ctx.edgeSlots(); } }, fit: false } ).run();
+
+      expect( slots ).to.deep.equal( cy.edges().map( e => e._eventRef().slot ) );
+    });
+
+    it('a subset scope enumerates only its own nodes, in its order', function(){
+      const cy = mk();
+      const scope = cy.nodes().slice( 0, 2 );
+      let slots = null;
+
+      scope.layout( { impl: class { run( ctx ){ slots = ctx.nodeSlots(); } }, fit: false } ).run();
+
+      expect( slots ).to.deep.equal( scope.map( n => n._eventRef().slot ) );
+    });
+
+    it('ctx.eles and ctx.nodes still answer when an impl does ask', function(){
+      const cy = mk();
+      let elesLen = -1;
+      let nodesLen = -1;
+
+      cy.layout( { impl: class {
+        run( ctx ){ elesLen = ctx.eles.length; nodesLen = ctx.nodes.length; }
+      }, fit: false } ).run();
+
+      expect( elesLen ).to.equal( cy.elements().length );
+      expect( nodesLen ).to.equal( cy.nodes().length );
+    });
+
+  });
+
 });

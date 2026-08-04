@@ -27,7 +27,7 @@ layouts, `ctx.layoutPositions( fn )` is the full v3 finisher
 (spacingFactor / transform / animate / fit and the lifecycle).
 */
 
-import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import type { GpuCore } from '../core.mjs';
 import type { GpuCollection } from '../collection.mjs';
 import type { GpuCustomLayoutOptions, Position } from '../gpu-types.mjs';
@@ -42,10 +42,29 @@ export class GpuLayoutContext {
   readonly cy: GpuCore;
   /** the resolved layout options (custom knobs included) */
   readonly options: GpuCustomLayoutOptions;
-  /** the layout scope (handles tier); whole graph unless eles.layout */
-  readonly eles: GpuCollection;
-  /** the scope's node handles */
-  readonly nodes: GpuCollection;
+  private _eles: GpuCollection | null = null;
+  private _nodes: GpuCollection | null = null;
+
+  /**
+   * The layout scope (handles tier); the whole graph unless this run
+   * came from `eles.layout()`.
+   *
+   * **Lazy since round 34.4.**  It used to be assigned in the
+   * constructor, which meant every run of every layout materialized
+   * `cy.elements()` — a handle per element — including for the
+   * columnar-first layouts this contract exists to encourage, which
+   * never touch it.  That cost 333 µs per run at 25k elements for an
+   * impl that does nothing.  Reading it still costs what it always did;
+   * not reading it is now free.
+   */
+  get eles(): GpuCollection {
+    return ( this._eles ??= ( this.options.eles as GpuCollection | undefined ) ?? this.cy.elements() );
+  }
+
+  /** The scope's node handles (lazy — see `eles`). */
+  get nodes(): GpuCollection {
+    return ( this._nodes ??= this.eles.nodes() );
+  }
 
   /** the discrete finisher ran: its lifecycle covers the run */
   _finisherUsed = false;
@@ -67,8 +86,8 @@ export class GpuLayoutContext {
     this.cy = cy;
     this.layout = layout;
     this.options = options;
-    this.eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
-    this.nodes = this.eles.nodes();
+    // `eles`/`nodes` are lazy getters (34.4): a columnar layout never
+    // pays for handles it does not ask for
   }
 
   /**
@@ -80,17 +99,29 @@ export class GpuLayoutContext {
     if( this.slots != null ){ return this.slots; }
 
     const store = this.cy._store;
+    const scope = this.options.eles as GpuCollection | undefined;
     const out: number[] = [];
 
-    for( let i = 0; i < this.nodes.length; i++ ){
-      const ref = this.nodes[ i ]._eventRef();
+    if( scope == null ){
+      // Whole graph: walk the store's insertion-order list directly
+      // (34.4).  This is the same walk `scanRefsInto` takes — and so the
+      // same order `cy.nodes()` produces, which layouts depend on since
+      // grid and circle place by index — but in slot space, with no ref
+      // allocated and no handle interned.  The mask is the old
+      // per-element filter in one test: alive, not a parent (parents
+      // derive from their placed children), not locked.
+      store.scanSlotsInto( out, 0, 'nodes', FLAG_ALIVE | FLAG_PARENT | FLAG_LOCKED, FLAG_ALIVE );
+    } else {
+      // Subset scope: the caller already holds the collection, so its
+      // refs are the cheap path — still no handles.
+      for( const ref of scope._liveRefs() ){
+        if( ref.group !== 'nodes' ){ continue; }
 
-      if( ref == null || !this.nodes[ i ].inside() ){ continue; }
+        if( store.hasFlag( 'nodes', ref.slot, FLAG_PARENT )
+          || store.hasFlag( 'nodes', ref.slot, FLAG_LOCKED ) ){ continue; }
 
-      if( store.hasFlag( 'nodes', ref.slot, FLAG_PARENT )
-        || store.hasFlag( 'nodes', ref.slot, FLAG_LOCKED ) ){ continue; }
-
-      out.push( ref.slot );
+        out.push( ref.slot );
+      }
     }
 
     this.slots = out;
@@ -100,10 +131,16 @@ export class GpuLayoutContext {
 
   /** the scope's edge slots */
   edgeSlots(): number[] {
+    const scope = this.options.eles as GpuCollection | undefined;
     const out: number[] = [];
 
-    for( const ref of this.eles._liveRefs() ){
-      if( ref.group === 'edges' ){ out.push( ref.slot ); }
+    if( scope == null ){
+      // whole graph: the order-list walk, as in nodeSlots (34.4)
+      this.cy._store.scanSlotsInto( out, 0, 'edges', FLAG_ALIVE, FLAG_ALIVE );
+    } else {
+      for( const ref of scope._liveRefs() ){
+        if( ref.group === 'edges' ){ out.push( ref.slot ); }
+      }
     }
 
     return out;

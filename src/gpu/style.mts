@@ -765,7 +765,6 @@ const resolveCoreProps = ( props: GpuStyleProps | undefined ): CoreStyle => {
   return out;
 };
 
-/** ghost props are node-only (round 13 A1). */
 /** global-constant font props (round 13 D1): one face per glyph atlas */
 const GLOBAL_FONT_PROPS: ReadonlySet<string> = new Set( [
   'font-family', 'font-style', 'font-weight'
@@ -785,6 +784,7 @@ const NODE_ONLY_EXTRA: ReadonlySet<string> = new Set( [
   'shape-polygon-points', 'text-halign', 'text-valign', 'text-events'
 ] );
 
+/** ghost props are node-only (round 13 A1). */
 const GHOST_PROPS: ReadonlySet<string> = new Set( [
   'ghost', 'ghost-offset-x', 'ghost-offset-y', 'ghost-opacity'
 ] );
@@ -5520,7 +5520,6 @@ export class StyleEngine {
   /** warn-once flag for the multi-image cap (recorded: 4 per node) */
   private warnedImageCap = false;
 
-  /** Resolve a node's background-image records and store them (15.2). */
   /**
    * Resolve and store a node's chart record (round 23).  Values come
    * from the constant list or the `{ data: key }` passthrough (a
@@ -5598,6 +5597,7 @@ export class StyleEngine {
     } );
   }
 
+  /** Resolve a node's background-image records and store them (15.2). */
   private writeImages( slot: number, computed: NodeComputed ): void {
     let urls = computed.backgroundImage;
 

@@ -520,13 +520,6 @@ export type ColumnId =
   | 'edge.overlay'
   | 'edge.underlay'
   /**
-   * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
-   * to two on/off pairs in model px (a 2-entry pattern repeats; odd
-   * patterns double, canvas semantics; longer patterns truncate — a
-   * recorded cap).  Applies when line-style is dashed; dotted keeps
-   * [1, 1].
-   */
-  /**
    * Uint32Array(2·cap) — line-outline casing (round 13 B4), the layer
    * record layout: [rgba (folded by opacity × line-opacity; a=0 =
    * disabled), strokeWidth × 256 (edge width + line-outline-width —
@@ -535,6 +528,13 @@ export type ColumnId =
    */
   | 'edge.gradient'
   | 'edge.casing'
+  /**
+   * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
+   * to two on/off pairs in model px (a 2-entry pattern repeats; odd
+   * patterns double, canvas semantics; longer patterns truncate — a
+   * recorded cap).  Applies when line-style is dashed; dotted keeps
+   * [1, 1].
+   */
   | 'edge.dashPattern'
   /** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
    * (0 butt, 1 round, 2 square)] (round 13 B3). */
@@ -695,6 +695,10 @@ export interface StoreDelta {
 
 // -- labels --
 
+/** Label sidecar streams: main node/edge labels plus the edge
+ * source/target end-label streams (round 13 D4). */
+export type LabelStream = GroupName | 'edgeSource' | 'edgeTarget';
+
 /**
  * Per-node label state (model-only sidecar, never uploaded as a column).
  * The renderer derives SDF glyph instances from it; glyph instances
@@ -702,10 +706,6 @@ export interface StoreDelta {
  * buffer on-GPU and labels follow drags/layouts without rebuilds.  Only
  * text/style changes dirty a label.
  */
-/** Label sidecar streams: main node/edge labels plus the edge
- * source/target end-label streams (round 13 D4). */
-export type LabelStream = GroupName | 'edgeSource' | 'edgeTarget';
-
 export interface LabelEntry {
   text: string;
   /** model px */

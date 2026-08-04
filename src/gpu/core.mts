@@ -849,13 +849,6 @@ export class GpuCore {
   }
 
   /**
-   * Resolve a whole-graph query.  Structured queries compile to per-group
-   * (mask, want) flag tests answered by one columnar scan — no element
-   * handles, no per-element matching.  Predicate functions materialize
-   * the group(s) and filter per element.  `restrict` narrows the result
-   * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
-   */
-  /**
    * The unfiltered whole-graph collections (`elements()`, `nodes()`,
    * `edges()` with no query), memoized against the store's structure
    * epoch (round 34.2).
@@ -899,6 +892,13 @@ export class GpuCore {
     return fresh;
   }
 
+  /**
+   * Resolve a whole-graph query.  Structured queries compile to per-group
+   * (mask, want) flag tests answered by one columnar scan — no element
+   * handles, no per-element matching.  Predicate functions materialize
+   * the group(s) and filter per element.  `restrict` narrows the result
+   * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
+   */
   private _query( query: GpuQuery | EleFilterFn | undefined, restrict: GroupName | null ): GpuCollection {
     if( typeof query === 'function' ){
       return this._query( undefined, restrict ).filter( query );

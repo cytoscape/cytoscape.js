@@ -1212,6 +1212,15 @@ export class Animation {
   }
 }
 
+/** The renderer's GPU tween executor, seen by the manager. */
+export interface GpuTweenSink {
+  register(
+    id: number, writes: readonly ChannelWrite[],
+    start: number, duration: number, easing: EasingProgram
+  ): void;
+  unregister( id: number ): void;
+}
+
 /**
  * Per-core animation manager (round 21: no queue).  Every started
  * animation runs immediately; animations sharing an element compose when
@@ -1223,15 +1232,6 @@ export class Animation {
  * auto-driver ticks via rAF (or setTimeout when headless) while anything
  * is active; tests can drive `tick(now)` directly.
  */
-/** The renderer's GPU tween executor, seen by the manager. */
-export interface GpuTweenSink {
-  register(
-    id: number, writes: readonly ChannelWrite[],
-    start: number, duration: number, easing: EasingProgram
-  ): void;
-  unregister( id: number ): void;
-}
-
 export class AnimationManager {
   private running = new Map<number, Animation[]>(); // packed ref → running set
   private viewportRunning: Animation[] = [];

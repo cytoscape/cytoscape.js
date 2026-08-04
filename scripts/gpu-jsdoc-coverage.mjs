@@ -598,6 +598,90 @@ export function auditReturnTags( file ){
   return { file: rel, tagged, missing };
 }
 
+/**
+ * Audit one file for **stranded doc blocks** (round 36.6).
+ *
+ * This codebase's most repeated defect — eleven instances across rounds
+ * 26.1, 26.3, 26.4, 34.4, 34.5 and 36.2 — is a later insertion landing
+ * between a `/** ... *\/` block and the member it documents, after which
+ * the comment silently re-attaches to whatever now follows it.
+ *
+ * The coverage gate catches this **only by accident**: it notices when
+ * the displaced block leaves a member with no comment at all. When the
+ * block lands on another *documented* member instead, coverage stays at
+ * 100% and two members carry each other's prose — which is the case
+ * 36.2 found in `style.mts`, where `arrowBase`'s block sat above
+ * `lineOpacityConst` and both were shipping in
+ * `dist/cytoscape-gpu.d.ts`.
+ *
+ * Two shapes are detectable statically, and only two:
+ *
+ * - **Consecutive doc blocks** — a `/**` block whose next non-blank line
+ *   opens another `/**` block. Only the second one documents the
+ *   member; the first documents nothing. A narrative `/*` block above a
+ *   doc block is the normal, deliberate shape and is not flagged.
+ * - **A block documenting a closing brace** — the next non-blank line
+ *   ends a class or a block, so the comment trails off the end.
+ *
+ * The third shape — a block displaced onto a *different* member, both
+ * documented — is not statically detectable at all: the comment attaches
+ * to something, and only a reader knows it is the wrong thing. So this
+ * **reports and never gates**: it cannot distinguish a deliberately
+ * free-standing note from a displaced block, and a gate would need that
+ * distinction.
+ *
+ * @param {string} file — absolute path to a `.mts` source file
+ * @returns {{ file: string, stranded: string[] }}
+ */
+export function auditStrandedComments( file ){
+  const lines = readFileSync( file, 'utf8' ).split( '\n' );
+  const rel = relative( ROOT, file );
+  const stranded = [];
+  let openedAt = -1;
+
+  for( let i = 0; i < lines.length; i++ ){
+    const line = lines[i];
+
+    if( openedAt === -1 ){
+      // a doc block opens; a one-line `/** x */` closes on the same line
+      if( /\/\*\*/.test( line ) ){
+        openedAt = i;
+
+        if( line.includes( '*/' ) ){
+          if( isStranded( lines, i ) ) stranded.push( `${rel}:${openedAt + 1}` );
+          openedAt = -1;
+        }
+      }
+
+      continue;
+    }
+
+    if( !line.includes( '*/' ) ) continue;
+
+    if( isStranded( lines, i ) ) stranded.push( `${rel}:${openedAt + 1}` );
+
+    openedAt = -1;
+  }
+
+  return { file: rel, stranded };
+}
+
+/** Whether the doc block ending at line `i` documents nothing. */
+function isStranded( lines, i ){
+  let j = i + 1;
+
+  while( j < lines.length && lines[j].trim() === '' ) j++;
+  if( j >= lines.length ) return true;
+
+  const next = lines[j].trim();
+
+  // another doc block: this one documents nothing, the next one does
+  if( next.startsWith( '/**' ) ) return true;
+
+  // a closing brace: the comment trails off the end of a class or block
+  return /^\}/.test( next );
+}
+
 /** Every `.mts` file under src/gpu, sorted, repo-relative. */
 function sources( dir = GPU_DIR, out = [] ){
   for( const entry of readdirSync( dir ).sort() ){
@@ -636,6 +720,7 @@ export function audit(){
     .filter( f => PUBLIC_API.includes( relative( ROOT, f ) ) );
   const paramTags = publicSources.map( auditParamTags );
   const returnTags = publicSources.map( auditReturnTags );
+  const strandedFiles = sources().map( auditStrandedComments ).filter( f => f.stranded.length > 0 );
 
   return {
     public: tier( files.filter( isPublic ) ),
@@ -663,6 +748,13 @@ export function audit(){
       files: returnTags,
       tagged: returnTags.reduce( ( n, f ) => n + f.tagged, 0 ),
       missing: returnTags.flatMap( f => f.missing )
+    },
+    // round 36.6: doc blocks that document nothing — the whole tree, not
+    // just the public tier, since the pattern has struck store/ and
+    // render/ as often as core/.  Reported, never gated.
+    stranded: {
+      files: strandedFiles,
+      all: strandedFiles.flatMap( f => f.stranded )
     }
   };
 }
@@ -716,4 +808,12 @@ if( process.argv[1] && import.meta.url === pathToFileURL( process.argv[1] ).href
   );
 
   if( verbose ) for( const m of rt.missing ) console.log( `      NO @returns ${m}` );
+
+  const st = result.stranded;
+
+  console.log(
+    `  doc blocks documenting nothing: ${st.all.length}  (reported, not gated)`
+  );
+
+  if( verbose ) for( const m of st.all ) console.log( `      STRANDED    ${m}` );
 }

@@ -54,7 +54,27 @@ export const UNREACHABLE = {
   'src/gpu/wire.mts:68':
     'big-endian platform guard — every supported platform is little-endian',
   'src/gpu/store/graph-store.mts:2226':
-    'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field'
+    'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field',
+
+  // Round 36.4 classified the browser-only tier the same way 30.4
+  // classified the Node one: four of the seven unpinned sites are
+  // reachable and now have specs in the `webgpu` project; these three
+  // are not, and saying so is better than a spec that fakes its
+  // precondition.
+  'src/gpu/gpu-context.mts:38':
+    'shadowed: index.mts\'s _attachFn checks navigator.gpu and then '
+    + 'constructs the Renderer synchronously, whose ctor calls init() '
+    + 'whose first statement reads navigator.gpu again — nothing can run '
+    + 'between the two, so no caller can pass one and fail the other',
+  'src/gpu/render/column-mirror.mts:113':
+    'column spec/group mismatch — an internal invariant; every caller '
+    + 'passes a ColumnId the mirror was built from, and no public input '
+    + 'chooses the id',
+  'src/gpu/render/gpu-tween.mts:408':
+    'geometry write-kind invariant — barred one layer up by the '
+    + 'all-or-nothing eligibility rule (round 25.1), which keeps a lane/'
+    + 'padding/fontSize write off the device by refusing the whole '
+    + 'animation; the guard exists so a future eligibility bug is loud'
 };
 
 // Keys here are `file:line`, which **moves when the file above the site
@@ -190,7 +210,12 @@ export function audit( lcovText ){
     sites,
     covered: sites.filter( s => s.covered === true ).length,
     dead,
-    browser: sites.filter( s => s.covered !== true && s.browser ).length,
+    // `unreachable` wins over `browser`, matching how --verbose labels a
+    // site: a browser-only file can still hold a guard no input reaches,
+    // and round 36.4 classified three of them.  Counting a site in both
+    // tallies made them sum past the site total, which is how this was
+    // noticed.
+    browser: sites.filter( s => s.covered !== true && s.browser && s.unreachable == null ).length,
     unreachable: sites.filter( s => s.covered !== true && s.unreachable != null ).length
   };
 }

@@ -3099,6 +3099,177 @@ test.describe( 'WebGPU renderer', () => {
     expect( result.after ).toMatch( /renderer is destroyed/ );
   } );
 
+  /*
+  Round 36.4: the rest of the browser-only throw tier.
+
+  `gpu-throw-coverage` classifies 13 sites as needing a device, a canvas
+  or a pointer.  Round 30.2 pinned six of them — the export guards above
+  — and its record says the browser tier "is pinned in the webgpu
+  project instead", which was true of those six and of nothing else.
+  These are the four of the remaining seven that any input or environment
+  can actually reach.  The other three are internal invariants that
+  nothing a caller supplies can trigger, and are classified UNREACHABLE
+  in the script with their reasons rather than given specs that would
+  have to fake their preconditions.
+
+  Each asserts the *message*, since three of the four are init-path
+  failures that would otherwise be indistinguishable from "the renderer
+  did not come up".
+  */
+
+  test( 'ready rejects when no adapter can be acquired', async ( { page } ) => {
+    // the README's own headline for the headless/rendered boundary, and
+    // the state a blocklisted or software-less machine is really in — no
+    // stub can produce it on a box that has an adapter, so the adapter is
+    // taken away rather than the environment faked
+    const message = await page.evaluate( async () => {
+      const real = navigator.gpu.requestAdapter.bind( navigator.gpu );
+
+      navigator.gpu.requestAdapter = async () => null;
+
+      try {
+        const cy = window.makeCy( {} );
+
+        await cy.ready;
+
+        return 'resolved';
+      } catch ( e ){
+        return String( e?.message ?? e );
+      } finally {
+        navigator.gpu.requestAdapter = real;
+      }
+    } );
+
+    expect( message ).toMatch( /no adapter could be acquired/ );
+  } );
+
+  test( 'ready rejects when the canvas gives no webgpu context', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the guard past the adapter: a device is acquired and the *canvas*
+    // then refuses.  Only 'webgpu' is refused — the glyph atlas and the
+    // export path both want '2d', and blanking those would move the
+    // failure somewhere else and still read as a pass
+    const message = await page.evaluate( async () => {
+      const real = HTMLCanvasElement.prototype.getContext;
+
+      HTMLCanvasElement.prototype.getContext = function( type, ...rest ){
+        return type === 'webgpu' ? null : real.call( this, type, ...rest );
+      };
+
+      try {
+        const cy = window.makeCy( {} );
+
+        await cy.ready;
+
+        return 'resolved';
+      } catch ( e ){
+        return String( e?.message ?? e );
+      } finally {
+        HTMLCanvasElement.prototype.getContext = real;
+      }
+    } );
+
+    expect( message ).toMatch( /webgpu canvas context/ );
+  } );
+
+  test( 'ready rejects when glyph rasterization has no 2d context', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the label pipeline's atlas rasters glyphs through a 2d canvas and
+    // is built during renderer init, so this surfaces on ready() rather
+    // than on the first label — which is the fact the spec pins, since a
+    // lazy atlas would fail inside the frame loop with nowhere to report
+    const message = await page.evaluate( async () => {
+      const real = HTMLCanvasElement.prototype.getContext;
+
+      HTMLCanvasElement.prototype.getContext = function( type, ...rest ){
+        return type === '2d' ? null : real.call( this, type, ...rest );
+      };
+
+      try {
+        const cy = window.makeCy( {} );
+
+        await cy.ready;
+
+        return 'resolved';
+      } catch ( e ){
+        return String( e?.message ?? e );
+      } finally {
+        HTMLCanvasElement.prototype.getContext = real;
+      }
+    } );
+
+    expect( message ).toMatch( /2d canvas context for glyph rasterization/ );
+  } );
+
+  test( 'a background image that 404s warns once and renders imageless', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the decoder's HTTP guard is the one throw of the four a *caller*
+    // reaches, with nothing but a wrong url.  The registry catches it, so
+    // what the contract promises is the warning and the graph carrying on
+    // — which is why the node's own pixels are the control here
+    const result = await page.evaluate( async () => {
+      const warnings = [];
+      const realWarn = console.warn;
+
+      // both arguments: the registry passes the decoder's own error as the
+      // second, which is where `HTTP 404` appears — asserting it is what
+      // pins *this* guard rather than "an image failed somehow"
+      console.warn = ( ...args ) => { warnings.push( args.map( String ).join( ' ' ) ); };
+
+      try {
+        const cy = window.makeCy( {
+          elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+          style: {
+            nodes: {
+              'width': 80, 'height': 80,
+              'background-color': '#e74c3c',
+              'background-image': '/playwright-page/no-such-image-36-4.png'
+            }
+          }
+        } );
+
+        await cy.ready;
+
+        cy.pan( { x: window.innerWidth / 2, y: window.innerHeight / 2 } );
+
+        // the decode is async and off the frame path; wait for the warn
+        for( let i = 0; i < 200 && warnings.length === 0; i++ ){
+          await new Promise( r => setTimeout( r, 25 ) );
+        }
+
+        // a second style pass over the same failed url must not re-warn
+        cy.style( {
+          nodes: {
+            'width': 80, 'height': 80,
+            'background-color': '#e74c3c',
+            'background-image': '/playwright-page/no-such-image-36-4.png'
+          }
+        } );
+
+        await new Promise( r => setTimeout( r, 300 ) );
+
+        return { warnings, alive: cy.nodes().length };
+      } finally {
+        console.warn = realWarn;
+      }
+    } );
+
+    const failures = result.warnings.filter( w => /failed to load/.test( w ) );
+
+    expect( result.alive ).toBe( 1 );
+    expect( failures ).toHaveLength( 1 );
+    expect( failures[ 0 ] ).toMatch( /HTTP 404/ );
+
+    // the node still draws: the failure is confined to the image
+    const [ r, g ] = await pixelAt( page, 400, 300 );
+
+    expect( r ).toBeGreaterThan( 150 );
+    expect( g ).toBeLessThan( 120 );
+  } );
+
   test( 'export WYSIWYG: a viewport export at scale 1 pixel-matches the screen', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

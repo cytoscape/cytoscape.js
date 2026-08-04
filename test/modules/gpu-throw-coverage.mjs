@@ -58,6 +58,41 @@ describe('scripts/gpu-throw-coverage', function(){
     expect( result.unreachable ).to.equal( Object.keys( UNREACHABLE ).length );
   });
 
+  it('classifies a browser-file site that is also unreachable as unreachable', function(){
+    // Round 36.4: three of the browser tier's unpinned sites are guards
+    // no input reaches (a shadowed check, a column-id invariant, a
+    // write-kind invariant), so they moved to UNREACHABLE while staying
+    // in a BROWSER_ONLY directory.  The two tallies then double-counted
+    // them and summed past the site total — which is how it was noticed,
+    // and is what this pins.
+    const result = audit( lcov( {} ) );
+    const both = Object.keys( UNREACHABLE )
+      .filter( at => BROWSER_ONLY.some( prefix => at.startsWith( prefix ) ) );
+
+    expect( both.length, 'no site is in both lists; this spec is vacuous' )
+      .to.be.greaterThan( 0 );
+
+    // the tallies partition: their sum is the number of *distinct* sites
+    // in either category, so a site in both is counted once
+    const unrun = result.sites.filter( s => s.covered !== true );
+    const distinct = new Set( [
+      ...unrun.filter( s => s.browser ),
+      ...unrun.filter( s => s.unreachable != null )
+    ] );
+
+    expect( result.browser + result.unreachable ).to.equal( distinct.size );
+
+    // and --verbose labels them the same way the tally counts them
+    for( const at of both ){
+      const [ file, line ] = [ at.slice( 0, at.lastIndexOf( ':' ) ), Number( at.slice( at.lastIndexOf( ':' ) + 1 ) ) ];
+      const site = result.sites.find( s => s.file === file && s.line === line );
+
+      expect( site, `${at} is listed in UNREACHABLE but is not a throw site` )
+        .to.not.equal( undefined );
+      expect( site.unreachable ).to.be.a( 'string' );
+    }
+  });
+
   it('reports a throw the lcov says nothing about as unknown, never as dead', function(){
     // the distinction matters: "no data" means the file never loaded, which
     // is a different problem from "loaded and never reached"

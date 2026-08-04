@@ -1945,9 +1945,28 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   generate while a missing `@returns` is hover text.  That is where
   the gate stops, deliberately.  143 of the 221 public members taking
   arguments documented them when the audit was written; round 32 took
-  it to 221/221.  The `@returns` tail is measured and logged in
-  PLAN.md (63 of 276) rather than built — it is worth doing when
-  someone is generating the docs and can see what reads badly.
+  it to 221/221, and **round 36 found the audit had been walking class
+  bodies only** — so the public tier's *exported functions*, which are
+  the whole surface of `wire.mts` and `columnar.mts` and are public
+  members by the script's own definition, sat outside a gate that read
+  as complete.  They are inside it now, at **229/229**.
+- **`@returns` is written, and reported, and not gated** (round 36).
+  Round 32 measured this tail at 63 of 276 and left it, on the
+  reasoning above; round 36 wrote all 63, so the surface is
+  **276/276**, and left the *gate's* boundary exactly where round 32
+  drew it.  `auditReturnTags()` prints the tally under the coverage
+  report and `--verbose` lists any miss, always exiting 0 — the
+  `gpu-throw-coverage` treatment, because whether it should ratchet is
+  a policy call of the kind PLAN.md's open call 8 already holds.  A
+  member counts when its signature carries a return annotation that is
+  not `void`/`Promise<void>`/`undefined`/`never`/`this`; one with no
+  annotation is skipped rather than guessed at, so the tally is a lower
+  bound.  What the tags say is the contract the type cannot: the
+  first-element rule and the undefined case, where a reader answers the
+  *effective* value rather than the declared one
+  (`effectiveOpacity`, `grabbable`), and which predicates are not the
+  negations they look like (`inactive` is not `!active`;
+  `isChildless` is not `!isParent`).
 
 ## Measuring the error contract (round 30)
 
@@ -2017,12 +2036,13 @@ core/collection op against its v3 analogue in `src/`.  The suites in
 | `algorithms.mjs` | all 21 graph algorithms vs v3 (33.2) |
 | `layouts.mjs` | every built-in layout, the force executor, the round-17 contract (33.1) |
 | `style.mjs` | sheet compile/apply, the parents partition, the readback getters (33.3) |
+| `style-bundle.mjs` | the same getters **through the built bundle**, where tsx's `__name` wrapper does not exist (36.5) |
 | `load.mjs` | the three ingest forms, conversion, export, incremental add (33.4) |
 | `spatial.mjs` | CPU pick by shape, box selection, bounds/fit (33.5) |
 | `data.mjs` | the sidecar's column kinds; data + structural queries vs selectors (33.6) |
 | `events.mjs` | emits by qualifier kind, the phased compound walk, animation start/stop (33.7) |
 | `store.mjs` | id index, CSR, blob pool, dirty tracker, image registry, charts (33.8) |
-| `surface.mjs` | the breadth pass: 117 rows over the rest of the public API (33.9) |
+| `surface.mjs` | the breadth pass: 119 rows over the rest of the public API (33.9, 36.3) |
 | `mappers.mjs` | mapper data-write cost per evaluation policy |
 | `compaction.mjs` | round 19's shrink profile, repair, forwarding hot path |
 | `compound.mjs` | parent/child drags and reparenting vs v3 |
@@ -2965,10 +2985,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   input: after rounds 31–32 the public surface carries all three of
   the tags a generator reads — a doc comment on every member (26),
   `@throws` wherever a member throws (31.2), and `@param` on every
-  member that takes arguments (32) — each gated, so the generator's
-  input cannot rot before the generator exists.  `@returns` is the
-  one tag still partial (63 of 276), deliberately: docmaker's shape
-  has no return field.  Also logged from
+  member that takes arguments (32, widened in 36.2 to the exported
+  functions the audit had never walked: **229/229**) — each gated, so
+  the generator's input cannot rot before the generator exists.
+  **`@returns` is complete too since round 36** (276/276) but is
+  deliberately *not* gated, since docmaker's shape has no return
+  field and round 32's boundary is where the gate stays.  Also logged from
   26.5: `event.target` types as `unknown` on the shared v3 event
   object — a v4-specific event type is an open design call, not an
   oversight.

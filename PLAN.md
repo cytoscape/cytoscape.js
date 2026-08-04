@@ -9325,23 +9325,102 @@ narrows it:**
 **Pass split** (tests-first where there is code; docs in-commit; each
 pass its own commit(s)):
 
-- [ ] **36.0 Docs-first** — this plan section.
-- [ ] **36.1 `auditReturnTags()`, reporting-only** — the audit, its
-  report line and its module-level specs, before any tag is written, so
-  the tally is measured by the shipped scanner rather than by the
-  throwaway that has now produced a wrong count in four consecutive
-  plans.
-- [ ] **36.2 The 58 `@returns` tags** — by file group, in round 32's
-  commit shape: `core`/`viewport`, `collection`, then
-  `animation`/`style`/`layout/contract`.  A description, not a type
-  restatement: the type is already in the signature and in the `.d.ts`.
-- [ ] **36.3 `allAre` and `is`** — the two public collection members no
-  benchmark calls, in `surface.mjs`.  The other three the audit lists
-  are a constructor and two long-form aliases of benchmarked rows.
-- [ ] **36.4 The seven browser-only throws** — specs in the `webgpu`
-  project, each asserting the *message* (four of the seven share a
-  file) and each with its control run by neutering the guard against a
-  hand-rebuilt bundle.
+- [x] **36.0 Docs-first** (2026-08-04) — this plan section.
+- [x] **36.1 `auditReturnTags()`, reporting-only** (2026-08-04) —
+  landed, written before any tag so the tally came from the shipped
+  overload-aware scanner.  That mattered immediately: the throwaway scan
+  used to scope this round said 58 missing; the shipped audit says
+  **63 of 276**, which is round 32's figure *exactly*.  Fifth time a
+  hand-rolled scan has produced a wrong count here, and the first time
+  the shipped one has reproduced a prior round's number to the element.
+  Two extractor pieces were needed because a return annotation is not on
+  the same line as the member name in general — `signatureOf()` joins
+  forward until the argument list closes, and `returnAnnotation()` walks
+  paren depth to the *matching* close, since `( fn: ( a: X ) => Y ): Z`
+  has three parens and only the outer one ends the arguments.
+  **One bug found by reading the audit's own output rather than by
+  running it**: the first cut joined forward from a *field* declaration
+  looking for parens, ran into the next method's signature, and reported
+  `Animation.lastNow` as returning the prose of the doc comment below
+  it.  `CALL_MEMBER_RE` narrows the class-member branch.
+  12 fixture specs, and **one of the four controls came back BAD** —
+  making `VOID_RETURN_RE` match nothing failed nothing, because two
+  fixtures wrote members as one-liners with the comment inline
+  (`/** a */ a(): void {}`), a shape the scanner does not match and the
+  sources never use.  Vacuous specs, caught by their own control; both
+  rewritten, and the four controls now fail 1, 1, 8 and 1.
+- [x] **36.2 The 63 `@returns` tags** (2026-08-04) — landed in round
+  32's commit shape (`core`/`viewport`, `collection`,
+  `animation`/`style`/`contract`), taking the surface to **276/276**.
+  A description, not a type restatement.  What they carry that the
+  annotation cannot: the first-element rule and its undefined case
+  (`label()` answers `''` for an unlabelled element and undefined for an
+  empty collection — different facts); the readers that answer the
+  *effective* value rather than the declared one (`effectiveOpacity` is
+  what `transparent()` tests and is not `style('opacity')`; `grabbable`
+  reads false for a pannable element while `json()` reports the raw
+  field); the predicates that are **not** the negations they look like
+  (`inactive` is not `!active`, `isChildless` is not `!isParent`,
+  `isOrphan` is not `!isChild`); that `remove()` returns a collection
+  which can be *larger* than its receiver and whose refs are dead by
+  construction; and that the layout contract's `positions()`/
+  `endpoints()` hand back the store's own columns, so they shift under a
+  held reference.
+  **Two findings inside the pass.**  (a) An *eleventh* stranded doc
+  block, and the first of the invisible kind: a complete `arrowBase()`
+  block sat above `StyleEngine.lineOpacityConst` with that member's own
+  comment beneath it, so the coverage gate could not see it — the
+  displaced block landed on another *documented* member rather than
+  leaving one bare.  It was **shipping**: `dist/cytoscape-gpu.d.ts`
+  carried both blocks stacked, so a consumer hovering `lineOpacityConst`
+  read a paragraph about arrow colours first.  Round 31.1's defect class,
+  live.  (b) **The `@param` gate had never walked exported functions** —
+  `auditParamTags` descended class bodies only, while this script's own
+  header defines a public member as a class member "plus every top-level
+  exported function".  So `wire.mts` and `columnar.mts` — whose entire
+  public surface is exported functions — sat outside a gate reporting
+  221/221, and two of the three wire functions had no `@param` at all.
+  Now 229/229, gated, with a spec that pins the widening rather than the
+  count (wire.mts's tally must be non-zero, which it is only while the
+  branch exists).
+- [x] **36.3 `allAre` and `is`** (2026-08-04) — landed in `surface.mjs`,
+  119 rows.  The other three members the audit lists are a constructor
+  and two long-form aliases of benchmarked rows, so a row for them would
+  time the same function under a second name.
+  Both members short-circuit, which is the whole difficulty: the obvious
+  spelling of either measures **one** test rather than a hundred — 33.5's
+  custom-polygon pick row in a different costume.  The criteria force the
+  full walk (allAre matches every element, is matches none) and the row
+  labels say so.  Spelled idiomatically per side, which needed a
+  `pair()` helper beside `cmp()`/`only()`.  At N=2000 over a 100-element
+  band: allAre 3.75 → 2.30 µs (1.6×), is 6.01 → 2.28 µs (2.6×).
+  Collection bench coverage 97.5% → 98.5%.
+- [x] **36.4 The seven browser-only throws** (2026-08-04) — landed as
+  **four specs and three reclassifications**, which is the honest split.
+  Specced: no adapter (the README's own headline for the
+  headless/rendered boundary), no webgpu canvas context, no 2d context
+  for glyph rasterization (which surfaces on `ready()` because the atlas
+  is built during renderer init), and a 404 background image — the one a
+  *caller* reaches, whose contract is warn-once-and-render-imageless and
+  whose spec asserts `HTTP 404` inside the warning so it pins that guard
+  rather than "an image failed somehow".
+  Classified UNREACHABLE with reasons: `gpu-context:38` is **shadowed by
+  construction** (`_attachFn` checks `navigator.gpu` and then
+  synchronously constructs the Renderer, whose ctor calls `init()`, whose
+  first statement reads `navigator.gpu` again — nothing can run between
+  the two); `column-mirror:113` is a column spec/group mismatch no public
+  input chooses; `gpu-tween:408` says so in its own comment, barred one
+  layer up by the round-25.1 eligibility rule.
+  **A tool bug fell out of the classification**: `browser` and
+  `unreachable` counted the same site twice once three sites were in
+  both, so the tallies summed past the site total (191 reported as
+  176 + 13 + 5).  `unreachable` now wins, as it already did in the
+  `--verbose` labels.  Reading: **176 run, 10 browser-only, 5
+  unreachable, 0 Node-reachable and never run.**
+  Controls: each guard neutered, the bundle rebuilt by hand (an
+  http-server *was* on 3333), only that guard's spec re-run — one
+  failure apiece, four for four.  172 browser specs (97 `webgpu` + 75
+  `webgpu-visual`), goldens byte-stable.
 - [ ] **36.5 The three measurements** — `--layout` on the RX 580, the
   wall time of each report profile, and the style suites re-run through
   the bundle against round 35's recorded numbers.

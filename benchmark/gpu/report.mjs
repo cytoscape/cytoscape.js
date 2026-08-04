@@ -64,6 +64,10 @@ const SCENARIO_OPS = [ 'explore', 'select-all', 'drag', 'edit', 'refresh' ];
 const STANDALONE_JOBS = [
   { file: 'layouts.mjs',        n: 2000 },
   { file: 'style.mjs',          n: 2000 },
+  // round 36.5: the same getters through the built bundle, where the
+  // tsx `__name` wrapper does not exist.  Needs `npm run build` first
+  // and warns when the bundle is older than src/.
+  { file: 'style-bundle.mjs',   n: 2000 },
   { file: 'load.mjs',           n: 2000 },
   { file: 'spatial.mjs',        n: 2000 },
   { file: 'data.mjs',           n: 2000 },

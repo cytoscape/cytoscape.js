@@ -79,6 +79,20 @@ were **corrected while being fixed** — the style gap was inflated by
 tsx's `__name` wrapper, and the row round 33 cited for the emit finding
 never reached the emit path — which is the round's own lesson: check a
 hot-path finding against the built bundle before rewriting anything.
+**Round 35** (2026-08-03) came from the maintainer asking why the
+residual was shaped the way it was — a 150-case switch behind the style
+getters — and replaced it with a dispatch table, which *flattens* the
+per-property spread (5.1× → 2.3×) rather than uniformly lowering it.
+**Round 36** (2026-08-04) is the **completion round**: with the rest of
+this file's remainder being open calls, it took the tail that needs no
+decision — `@returns` to 276/276 (written, deliberately ungated), the
+`@param` gate's own blind spot (exported functions; 229/229), the
+browser-only throw tier closed by four specs and three
+reclassifications, the two un-benchmarked collection members, and three
+measurements promised here and never taken.  It also shipped a
+**stranded-doc-block check**, which found six more instances of this
+codebase's most repeated documentation defect on its first run — one of
+them shipping in the declarations.
 `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -194,9 +208,10 @@ appears to authorize it.
    not enforce it, because a floor is a policy call with three parts:
    whether a **new Node-reachable throw with no spec should fail the
    build** (the reading is 0 today, so a zero-tolerance gate would
-   hold as of this round); what to do about the **13 browser-only
-   sites**, which the Node measurement cannot see at all and which
-   only the `webgpu` project can pin; and whether the
+   hold as of this round); what to do about the **browser-only
+   sites** (13 when this call was written, 10 since round 36.4), which
+   the Node measurement cannot see at all and which only the `webgpu`
+   project can pin; and whether the
    `UNREACHABLE`/`MISATTRIBUTED` lists are a maintained allowlist or a
    one-off note.  The JSDoc-coverage precedent (a script plus a test
    that gates it) is right there, so this is a decision about appetite
@@ -206,6 +221,15 @@ appears to authorize it.
    reasoning that documentation completeness was already gated here by
    round 26 — so this call is specifically about **test** coverage,
    and the two decisions are meant to be readable side by side.
+   **Updated by round 36.4**: the reading is now 176 run, **10
+   browser-only, 5 unreachable**, 0 Node-reachable and never run — the
+   browser tier is finished (four specs, three reclassifications), so a
+   zero-tolerance gate would hold today with less of the tier resting on
+   "the Node measurement cannot see it".  The second part of the call is
+   correspondingly smaller.  Round 36 also declined to gate its own two
+   new audits (`@returns`, stranded doc blocks), keeping the report-only
+   family at three and the gated family at three — the same shape this
+   call is about.
 
 ### Contradictions between the code and the decided-design ledger
 
@@ -352,15 +376,21 @@ test/gpu-*.mjs           # 120+ Node-runner suites (auto-picked-up by the test:j
                          #   gpu-style-readback-all.mjs — round 35.1's characterization of all 153
                          #   readable style props on a node and an edge, the guard the readback
                          #   dispatch table was refactored behind
-benchmark/gpu/           # 22 suites + the renderer/report runners (see the Benchmarks section of the README).
+benchmark/gpu/           # 23 suites + the renderer/report runners (see the Benchmarks section of the README).
+                         #   Round 36.5 added style-bundle.mjs — the style getters measured through the
+                         #   *built bundle*, giving rounds 34-35's headline figures a re-runnable source.
                          #   Round 33 added layouts, style, load, spatial, data, events, store and
                          #   surface (the breadth pass) to the round-1..29 set, and report.mjs grew
                          #   an --all profile that runs every one of them (closing open call 7).
 scripts/gpu-bench-coverage.mjs   # round 33.12: which public members a benchmark calls (reports, never gates)
 test/modules/gpu-bench-coverage.mjs  # round 33.12: that script's matcher, and the limits it errs within
 scripts/gpu-jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss);
-                                 #   also @throws accuracy (31.2) and @param completeness (32)
+                                 #   also @throws accuracy (31.2), @param completeness (32, widened in
+                                 #   36.2 to exported functions), @returns (36.1) and stranded doc
+                                 #   blocks (36.6) — the last two report, never gate
 test/gpu-jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress), + the 31.2/32 rules
+test/modules/gpu-jsdoc-returns.mjs   # round 36.1: the @returns audit's parser, against a fixture
+test/modules/gpu-jsdoc-stranded.mjs  # round 36.6: the stranded-block check, and the limits it errs within
 scripts/gpu-throw-coverage.mjs   # round 30.4: which src/gpu throws the Node suite runs (reports, never gates)
 test/modules/gpu-throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture
 rolldown.dts.gpu.config.mjs      # round 26.5: rolls src/gpu declarations up (build/dts-gpu/)
@@ -2410,6 +2440,39 @@ because a measurement round measures.  Six rows across the round were
 **caught measuring nothing** by design call 5 and rewritten, and one of
 those (`curves.mjs`'s box-selection premium) had been published in the
 README since round 29.4.
+
+**2026-08-04, round 36.**  The completion round: after 35, what remained
+in this file was the twelve open calls plus a short tail that needed no
+decision at all, and this round is that tail and only that.  `@returns`
+went from round 32's measured-and-deferred 63-of-276 to **276/276**,
+written but deliberately **not** gated — round 32's boundary (docmaker
+emits a description per argument and has no return field) is where the
+gate stays.  Writing it turned up that the `@param` gate had never
+walked the public tier's *exported functions*, so `wire.mts` and
+`columnar.mts` sat outside an audit reporting 221/221; now 229/229.  The
+browser-only throw tier, opened by round 30 and half-closed by 30.2's
+six export guards, is finished — **four specs and three honest
+reclassifications**, since three of the seven are guards no input
+reaches (one of them shadowed by a synchronous check twenty-five lines
+above it).  Two public collection members no benchmark had ever called
+got rows, chosen so they *walk* rather than short-circuit.  And three
+measurements this file had promised and never taken were taken:
+`--layout` on the RX 580, the wall time of each report profile (quick
+7.1 min, `--all` 17.4), and a re-runnable source for rounds 34–35's
+bundle figures, which reproduced round 35's numbers and refined one —
+the post-table spread is two populations, and the upper one is colour
+*formatting* rather than dispatch.
+The round's own finding is a **stranded-doc-block check**.  The defect
+— a later insertion landing between a doc block and its member — has
+happened eleven times here, and the coverage gate catches it only when
+the displacement leaves some member bare; when it lands on another
+documented member, coverage stays 100% and two members carry each
+other's prose.  The check found **six more on its first run**, and one
+of them was shipping in `dist/cytoscape-gpu.d.ts`.  It reports rather
+than gates, because the third shape of the defect — a block displaced
+onto a different documented member — is not statically detectable at
+all, and because it cannot tell a deliberately free-standing note from
+a displaced block.
 
 **2026-08-03, round 35.**  The maintainer read round 34's residual —
 "the style getters are still 2.3× and the cause is a 145-case switch" —
@@ -9421,10 +9484,128 @@ pass its own commit(s)):
   http-server *was* on 3333), only that guard's spec re-run — one
   failure apiece, four for four.  172 browser specs (97 `webgpu` + 75
   `webgpu-visual`), goldens byte-stable.
-- [ ] **36.5 The three measurements** — `--layout` on the RX 580, the
-  wall time of each report profile, and the style suites re-run through
-  the bundle against round 35's recorded numbers.
-- [ ] **36.6 The stranded-comment check + the closing docs sweep.**
+- [x] **36.5 The three measurements** (2026-08-04) — all three taken, on
+  the RX 580 (`amd gcn-4`, dpr 2, 1280×800, render scale pinned to 1)
+  and the i9-9900K.
+  **(a) `--layout`**, run once before (2026-08-01) and not since rounds
+  27, 34 or 35.  v4's `force` converges in **866 ms** (25k×50k),
+  **1594 ms** (100k×300k), **759 ms** (ndex, 19.6k×465k), 823 ms
+  (curved), 870 ms (images) and — the two round-33.11 scenes that had
+  never been run in layout mode at all — 859 ms (wrapped labels) and
+  860 ms (half-invisible), while the compound scene settles in
+  **14.8 s** on the CPU executor (the 14.11 lease rule).  v3 `cose`
+  reports "> 60 s — bailed" on every scene, as it did in the hardware
+  pass.  Against that pass's 697 / 1472 / 952 ms and 15.5 s the rows
+  move **+24% / +8% / −20% / −5%** — in both directions, which is the
+  reading: nothing in rounds 27–35 touched the layout path, and **these
+  rows cannot resolve better than about ±25% by construction**, since
+  round 18.3 recorded that GPU trajectories are not bit-stable
+  run-to-run (atomic in-cell scatter order), so the iteration count to
+  convergence varies.  The two new scenes landing on the flat scene's
+  number is the expected result: a layout does not care about labels or
+  visibility.  Whole run 10.1 min.
+  **Method note, and it changed the numbers**: the first attempt was run
+  while this session was also running `test:js`, `tsc` and lint, which
+  is CPU contention against a wall-clock convergence measurement.  That
+  run was discarded and re-run with nothing else in flight.  A
+  benchmark is only as clean as the box it runs on, and this file's own
+  standard is that a number nobody can reproduce is a record rather
+  than a measurement.
+  **(b) The report profiles' wall times**, which round 33's risk
+  register promised ("the round records the wall time of each profile
+  so the cost of running it is itself a documented number") and no
+  round recorded: **quick 7.1 min, `--all` 17.4 min**.  The runner
+  prints its own total, so this was always one run away.  `--full` is
+  unmeasured — it adds the 2k/20k/200k matrix and is the profile nobody
+  runs casually, which is the point of keeping quick quick.
+  **(c) The style getters through the bundle.**  Rounds 34 and 35
+  published their headline figures from *throwaway* harnesses, which
+  contradicts round 33's design call 2.  `benchmark/gpu/style-bundle.mjs`
+  is now that source and joins `--all`; it imports
+  `build/cytoscape-gpu.esm.mjs` and warns when the bundle is older than
+  `src/`.  Running it under `--import tsx` was **measured** to be
+  identical rather than assumed safe (the `__name` wrapper is injected
+  when esbuild transpiles a `.mts`, and this suite is plain JS importing
+  plain-JS bundles), which is what lets it share the report's existing
+  spawn.
+  Round 35's numbers reproduce — 68 ns at the old sixth case, 53 and 50
+  in the middle, 93 and 110 at the back — **and one is refined**: the
+  post-table spread is *two populations, not one*.  A colour-valued read
+  builds an `rgb()`/`rgba()` string, which costs about as much again as
+  the whole dispatch-and-decode: `background-color` 118 ns and
+  `border-color` 116 against `border-width` 64 and `width` 61 — and
+  those two colours sat at opposite ends of the old switch, so it is not
+  residual positional cost.  `background-color` was the only colour among
+  round 35's six, which is why it topped that table and why the
+  remaining spread read larger than the dispatch actually is.
+- [x] **36.6 The stranded-comment check** (2026-08-04) — landed, and it
+  is the round's own finding rather than an item from its plan's
+  reasoning.  `auditStrandedComments()` detects the two shapes that are
+  detectable statically: a `/**` block whose next non-blank line opens
+  **another** `/**` block (only the second documents the member), and a
+  block that trails off the end of a class.  It cannot detect the third
+  — a block displaced onto a different, also-documented member — because
+  the comment attaches to *something* and only a reader knows it is the
+  wrong thing; a spec pins that limit so a clean report is not read as
+  proof.  Reporting-only for a second reason beyond round 32's boundary:
+  it cannot tell a deliberately free-standing module note from a
+  displaced block.
+  **Six on the first run**, every one a block orphaned above another:
+  `AnimationManager`'s class doc above `GpuTweenSink`'s; the
+  `edge.dashPattern` column's above the casing column's — which itself
+  sat above `edge.gradient`, so two columns wore the wrong prose and two
+  had none; `LabelEntry`'s above `LabelStream`'s; `_query`'s above
+  `_allOf`'s, displaced by round 34.2's insertion and invisible to the
+  gate because both are `_`-prefixed; the ghost-props set's above the
+  font-props set's; and `writeImages`' above `writeChart`'s.  All six
+  moved back.  The seventh hit is `curved-edge-pipeline.mts`'s top-of-
+  file block, left alone as a module header — the class it describes has
+  no doc of its own — and it stays visible in the report as the standing
+  count of 1, which is the ambiguity the check reports rather than gates
+  on.
+  7 fixture specs; three controls failing 2, 1 and 2 — the third came
+  back clean the first time and the **control** was at fault, its `sed`
+  never having matched (round 31.3's lesson, repeating).
+- [x] **36.7 The closing docs sweep** (2026-08-04) — both documents
+  swept end to end, plus `AGENTS.md`.
+  The README carries round 36 in its header, the `@returns` and widened
+  `@param` rules in the JSDoc section, the finished browser tier and the
+  corrected tallies in "Measuring the error contract", `style-bundle.mjs`
+  in the suite table with the colour-vs-numeric refinement beside round
+  35's record, the profile wall times, the re-measured force convergence
+  with its ±25% caveat, and a round-36 entry in the follow-up hooks.
+  This file gains the round-36 paragraph in "Suggested sequencing" (one
+  of the three sites the standing rule names), the pass records above,
+  the new files in the directory layout, and an update to **open call 8**
+  — the browser tier being finished makes the second part of that call
+  smaller, and round 36 declined to gate its own two new audits, which
+  keeps the report-only family at three against the gated family's
+  three.  The "Needs a call" ledger and "Gaps with direction already
+  set" needed nothing: round 36 closes no design call and opens none.
+  Two live figures were stale and are trued: the README header's
+  "221/221" (now noted as 229/229 since 36.2) and open call 8's "13
+  browser-only sites" (10).  The rest of the hits are per-round records,
+  which are history and stay as written.
+  `AGENTS.md` gains three notes, each earned: a doc block can strand
+  onto the *wrong* member and coverage will not notice (with the shipped
+  instance); an audit's scope is part of its claim, so check what it
+  enumerates before quoting its 100%; and a tool's fixture must be
+  written in the shape the tool actually parses, since round 36.1's own
+  fixtures were silently skipped and two specs passed with the behaviour
+  under test deliberately broken.
+  `dist/cytoscape-gpu.d.ts` regenerated (1097 doc blocks) — the six
+  un-stranded blocks move onto their real members there, which is the
+  point of the fix.
+
+**Verification (2026-08-04)**: typecheck, lint, **2663 Node tests**, 97
+module tests, **172 browser specs** (97 `webgpu` + 75 `webgpu-visual`)
+against a hand-rebuilt bundle with goldens byte-stable and parity scenes
+at their recorded values, `test:types:gpu` clean, JSDoc coverage
+100%/100%, `@throws` 16/16, `@param` **229/229**, `@returns`
+**276/276**, stranded blocks **1** (the module header, by judgement),
+and `gpu-throw-coverage` at **176 run / 10 browser-only / 5 unreachable
+/ 0 Node-reachable dead**.
+**Round 36 is complete.**
 
 **Risks tracked**: a `@returns` description that restates the type adds
 noise to the shipped `.d.ts` rather than information (mitigated by

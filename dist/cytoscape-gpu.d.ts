@@ -223,20 +223,21 @@ type ColumnId = 'node.position' | 'node.size' | 'node.fillColor' | 'node.borderC
  */
 'edge.overlay' | 'edge.underlay' |
 /**
- * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
- * to two on/off pairs in model px (a 2-entry pattern repeats; odd
- * patterns double, canvas semantics; longer patterns truncate — a
- * recorded cap).  Applies when line-style is dashed; dotted keeps
- * [1, 1].
- */
-/**
  * Uint32Array(2·cap) — line-outline casing (round 13 B4), the layer
  * record layout: [rgba (folded by opacity × line-opacity; a=0 =
  * disabled), strokeWidth × 256 (edge width + line-outline-width —
  * v3's context.lineWidth)].  Strokes under the edge line, over the
  * edge underlay, via the shared layer entry points.
  */
-'edge.gradient' | 'edge.casing' | 'edge.dashPattern' |
+'edge.gradient' | 'edge.casing' |
+/**
+ * Float32Array(4·cap) — line-dash-pattern (round 13 B3), normalized
+ * to two on/off pairs in model px (a 2-entry pattern repeats; odd
+ * patterns double, canvas semantics; longer patterns truncate — a
+ * recorded cap).  Applies when line-style is dashed; dotted keeps
+ * [1, 1].
+ */
+'edge.dashPattern' |
 /** Float32Array(2·cap) — [line-dash-offset (model px), line-cap
  * (0 butt, 1 round, 2 square)] (round 13 B3). */
 'edge.dashMeta' |
@@ -327,6 +328,9 @@ interface StoreDelta {
     end: number;
   };
 }
+/** Label sidecar streams: main node/edge labels plus the edge
+ * source/target end-label streams (round 13 D4). */
+type LabelStream = GroupName | 'edgeSource' | 'edgeTarget';
 /**
  * Per-node label state (model-only sidecar, never uploaded as a column).
  * The renderer derives SDF glyph instances from it; glyph instances
@@ -334,9 +338,6 @@ interface StoreDelta {
  * buffer on-GPU and labels follow drags/layouts without rebuilds.  Only
  * text/style changes dirty a label.
  */
-/** Label sidecar streams: main node/edge labels plus the edge
- * source/target end-label streams (round 13 D4). */
-type LabelStream = GroupName | 'edgeSource' | 'edgeTarget';
 interface LabelEntry {
   text: string;
   /** model px */
@@ -3273,7 +3274,6 @@ declare class StyleEngine {
   private writeChannels;
   /** warn-once flag for the multi-image cap (recorded: 4 per node) */
   private warnedImageCap;
-  /** Resolve a node's background-image records and store them (15.2). */
   /**
    * Resolve and store a node's chart record (round 23).  Values come
    * from the constant list or the `{ data: key }` passthrough (a
@@ -3285,6 +3285,7 @@ declare class StyleEngine {
    * opacity for readback).
    */
   private writeChart;
+  /** Resolve a node's background-image records and store them (15.2). */
   private writeImages;
   /** Resolve an element's label text from its computed channels and store it. */
   private writeLabel;
@@ -3878,6 +3879,11 @@ declare class Animation {
   private apply;
   private finish;
 }
+/** The renderer's GPU tween executor, seen by the manager. */
+interface GpuTweenSink {
+  register(id: number, writes: readonly ChannelWrite[], start: number, duration: number, easing: EasingProgram): void;
+  unregister(id: number): void;
+}
 /**
  * Per-core animation manager (round 21: no queue).  Every started
  * animation runs immediately; animations sharing an element compose when
@@ -3889,11 +3895,6 @@ declare class Animation {
  * auto-driver ticks via rAF (or setTimeout when headless) while anything
  * is active; tests can drive `tick(now)` directly.
  */
-/** The renderer's GPU tween executor, seen by the manager. */
-interface GpuTweenSink {
-  register(id: number, writes: readonly ChannelWrite[], start: number, duration: number, easing: EasingProgram): void;
-  unregister(id: number): void;
-}
 declare class AnimationManager {
   private running;
   private viewportRunning;
@@ -6835,13 +6836,6 @@ declare class GpuCore {
    */
   filter(query: GpuQuery | EleFilterFn): GpuCollection;
   /**
-   * Resolve a whole-graph query.  Structured queries compile to per-group
-   * (mask, want) flag tests answered by one columnar scan — no element
-   * handles, no per-element matching.  Predicate functions materialize
-   * the group(s) and filter per element.  `restrict` narrows the result
-   * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
-   */
-  /**
    * The unfiltered whole-graph collections (`elements()`, `nodes()`,
    * `edges()` with no query), memoized against the store's structure
    * epoch (round 34.2).
@@ -6864,6 +6858,13 @@ declare class GpuCore {
    * itself.
    */
   private _allOf;
+  /**
+   * Resolve a whole-graph query.  Structured queries compile to per-group
+   * (mask, want) flag tests answered by one columnar scan — no element
+   * handles, no per-element matching.  Predicate functions materialize
+   * the group(s) and filter per element.  `restrict` narrows the result
+   * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
+   */
   private _query;
   /**
    * Live, visible elements contained in the model-coordinate box (corners

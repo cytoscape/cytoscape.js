@@ -125,10 +125,11 @@ Note where that defect lived: *this file* has always described the
 bypass correctly — the stale advice was in the runtime message and the
 JSDoc, which a markdown sweep never reads.
 Round 32 (2026-08-03) finished that sentence's last clause: **every
-public member that takes arguments now documents them** (221/221, up
-from 143), gated the same way, because docmaker emits a description
-per argument and a missing one is a hole in the release docs rather
-than only in an editor.
+public member that takes arguments now documents them** (221/221 at the
+time, up from 143; **229/229** since round 36.2 widened the audit to the
+exported functions it had never walked), gated the same way, because
+docmaker emits a description per argument and a missing one is a hole in
+the release docs rather than only in an editor.
 Round 33 (2026-08-03) changed no behaviour either: it was the
 **benchmark sweep**, taking the suites from 14 to 22 so that the
 surfaces with no measurement at all — layouts, the algorithm tail, the
@@ -140,7 +141,21 @@ Its real output was **five paths slower than v3 or than v4's own design
 implies**, which round 34 (2026-08-03) then **fixed** — `indexOf`,
 `mutableElements()` and the emit path's no-listener gate to parity, the
 style getters 5.8× → 2.3×, and the layout contract 333 µs → 795 ns per
-run.  Both rounds are recorded in "Benchmarks" below.
+run.  Both rounds are recorded in "Benchmarks" below.  Round 35
+(2026-08-03) answered the maintainer's question about the residual —
+why a 150-case switch and not a lookup — by making `readProp` a
+dispatch table, **flattening** the per-property spread rather than
+uniformly lowering it.
+Round 36 (2026-08-04) is the **completion round**: the tail of work
+that needed no decision at all, now that what remains in PLAN.md is
+otherwise open calls.  `@returns` is complete (276/276) and
+deliberately ungated, the `@param` gate was found never to have walked
+the public tier's exported functions (now 229/229), the browser-only
+throw tier is closed by four specs and three honest reclassifications,
+three measurements this repo had promised and never recorded are
+recorded, and a **stranded-doc-block check** shipped — which found six
+more instances of this codebase's most repeated defect on its first
+run, one of them shipping in `dist/cytoscape-gpu.d.ts`.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -503,9 +518,16 @@ layouts" design, built:
   measured floor and a 60 s runner-side bail reporting "> 60 s",
   since a single cose iteration outgrows any in-page cap at
   benchmark scale; `--layout-uncapped` measures full runs).  On an
-  RX 580 (2026-08-01, PLAN.md "hardware validation pass"): force
-  converges in 0.7–1.5 s at 25k–100k where the cose baseline
-  exceeds the 60 s bail on every scene.
+  RX 580 (re-measured 2026-08-04, round 36.5; first run 2026-08-01,
+  PLAN.md "hardware validation pass"): force converges in **0.76–1.6 s**
+  across 25k, 100k and ndex — and in **14.8 s** on the compound scene,
+  which runs the CPU executor under the 14.11 lease rule — where the
+  cose baseline exceeds the 60 s bail on every scene.  Read these rows
+  as **±25%**: round 18.3 recorded that GPU trajectories are not
+  bit-stable run-to-run (atomic in-cell scatter order), so the iteration
+  count to convergence varies, and the 2026-08-01 and 2026-08-04 runs
+  differ by −20% to +24% *in both directions* with nothing in the layout
+  path having changed between them.
 
 ## Slot compaction (round 19)
 
@@ -1980,13 +2002,28 @@ and reports which the Node suite reaches, the same way
 - **Reporting only, deliberately.**  It always exits 0.  A coverage
   floor is a policy call (see PLAN.md's open calls), so the script
   measures and the maintainer decides.
-- **Reading at the close of round 30**: 191 sites — 176 run by the
-  Node suite, 13 browser-only, 2 unreachable by design, **0
-  Node-reachable and never run**.  The browser-only tier is pinned in
-  the `webgpu` Playwright project instead (the export guards, round
-  30.2); the unreachable pair are the big-endian platform guard and
-  the SHAPE_MASK field invariant, each listed with its reason rather
-  than silently skipped.
+- **Reading since round 36.4**: 191 sites — 176 run by the Node
+  suite, **10 browser-only, 5 unreachable by design**, **0
+  Node-reachable and never run**.  Round 30 read 13 browser-only and 2
+  unreachable, and pinned six of the browser tier (the export guards,
+  30.2); round 36.4 finished that tier by **specs for four and
+  classification for three**.  Specced in the `webgpu` project: no
+  adapter, no webgpu canvas context, no 2d context for glyph
+  rasterization, and a 404 background image (the one a caller reaches,
+  whose contract is warn-once-and-render-imageless).  Moved to
+  unreachable, each with its reason: `gpu-context`'s
+  `navigator.gpu` check is **shadowed by construction** (the factory's
+  attach path checks it and then synchronously constructs the
+  Renderer, whose ctor reads it again — nothing runs in between), the
+  column-mirror lookup is a spec/group invariant no public input
+  chooses, and the gpu-tween write-kind guard is barred one layer up
+  by the round-25.1 eligibility rule.  They join the big-endian
+  platform guard and the SHAPE_MASK field invariant, all listed with
+  reasons rather than silently skipped.  (36.4 also fixed a tally bug
+  the reclassification exposed: a site in a browser directory *and* in
+  the unreachable list was counted twice, so the tallies summed past
+  the site total.  `unreachable` wins, as it already did in the
+  `--verbose` labels.)
 - **Two measurement footguns are recorded in the script header**,
   because the round hit both.  Raw `NODE_V8_COVERAGE` offsets do not
   line up with the `.mts` sources — tsx transpiles before V8 sees the
@@ -2064,6 +2101,13 @@ manually-timed suites (`curves`, `labels`) join the table through
 `finishManualRun`, which shapes one-shot rows into the report's job
 format; without `BENCH_JSON` their terminal output is unchanged.
 
+**What a profile costs**, measured 2026-08-04 on the i9-9900K these
+rounds have used (round 33's risk register promised this number and no
+round had recorded it; the runner prints its own total, so it was
+always a run away): **quick 7.1 min, `--all` 17.4 min.**  `--full` adds
+the 2k/20k/200k matrix and is unmeasured — it is the profile nobody
+runs casually, which is the point of keeping quick quick.
+
 **What round 33 found, and round 34 fixed** — the measurements that went
 the *other* way.  Round 33 logged them; round 34 fixed all five, and the
 before/after numbers below are through the built bundle at N=2000
@@ -2140,9 +2184,24 @@ not per read, so its dispatch is a handful of comparisons against a
 27.7 µs compile.  The read path earned the change because of how often
 it runs, not because a large switch is wrong on sight.
 
+**Round 36.5 gave those figures a re-runnable source, and refined one.**
+Rounds 34 and 35 measured through the built bundle with *throwaway*
+harnesses, which contradicts round 33's rule that every published figure
+has a source; `benchmark/gpu/style-bundle.mjs` is that source, and it
+joins `--all`.  Re-measured, round 35's numbers reproduce — 68 ns at the
+old sixth case, 53 and 50 in the middle, 93 and 110 at the back — but
+the spread is **two populations, not one**.  A colour-valued read builds
+an `rgb()`/`rgba()` string, which costs about as much again as the whole
+dispatch-and-decode: `background-color` 118 ns and `border-color` 116
+against `border-width` 64 and `width` 61, and those two colours sat at
+opposite ends of the old switch, so it is not residual positional cost.
+`background-color` was the only colour among round 35's six, which is
+why it topped that table and why the remaining spread looked larger than
+the dispatch actually is.
+
 `node scripts/gpu-bench-coverage.mjs [--verbose]` reports which public
-members a benchmark calls (83% of the callable surface; core 98.9%,
-collection 97.5%).  Like `gpu-throw-coverage.mjs` it reports and never
+members a benchmark calls (84% of the callable surface; core 98.9%,
+collection 98.5% since round 36.3 added `allAre` and `is`).  Like `gpu-throw-coverage.mjs` it reports and never
 gates — and it is the weakest of the three audits, matching *call-shaped
 mentions*, so it over-detects (a comment counts) and under-detects (a
 member reached through a wrapper is missed, which is why the engine-side
@@ -2161,7 +2220,11 @@ regression signal — but the **compound scene's `fit-all` pair is bimodal
 at the ±40% level** (2.11 ms and 3.00 ms on consecutive runs of the same
 build).  Re-measure before believing a change in those two rows; the
 round-29.5 comparison first read a 30% "improvement" there that was
-nothing but the other mode.  It replays the interactions behind the
+nothing but the other mode.  The **`--layout` rows are noisier still**
+(±25%, and for a structural reason — see the force-layout section), and
+round 36.5 adds the obvious-in-hindsight caveat that applies to every
+row here: **do not run anything else on the box.**  Its first `--layout`
+run overlapped this repo's own test suite and was discarded.  It replays the interactions behind the
 recorded renderer numbers on six scenes (seeded 25k×50k and 100k×300k
 generators, ndex-x-large, a 25k×50k *curved* scene whose edges come
 in bezier parallel pairs so every edge actually curves, a 25k×50k
@@ -2965,6 +3028,21 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   the one place to read before deciding anything about v4's surface;
   contradictions are logged there rather than patched, because
   removing public API is a call to be made, not inferred.
+- ~~**The completion tail**~~ — **closed by round 36** (2026-08-04):
+  the `@returns` tail round 32 measured and deferred (63 written, so
+  276/276, reported and not gated — round 32's boundary held), the
+  `@param` gate's own blind spot (it had never walked the public
+  tier's exported functions; 229/229 now), the four reachable
+  browser-only throws and the three that are not, the two public
+  collection members no benchmark called, and the three measurements
+  this repo had promised and never taken (`--layout` on real
+  hardware, the report profiles' wall times, and a re-runnable source
+  for rounds 34–35's bundle figures).  What it *found* rather than
+  closed: a **stranded-doc-block check**, whose first run turned up
+  six more instances of the eleven-instance pattern — one of them
+  shipping in `dist/cytoscape-gpu.d.ts` — and which reports rather
+  than gates because the third shape of the defect is not statically
+  detectable at all.
 - ~~**Five measured slow paths**~~ (round 33) — **all five fixed in
   round 34** (2026-08-03): the style getters (292 → 122 ns, via
   memoizing `normalizeProp`), the emit path's missing no-listener gate

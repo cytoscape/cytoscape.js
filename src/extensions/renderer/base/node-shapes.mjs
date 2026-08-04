@@ -76,13 +76,19 @@ BRp.generateRoundPolygon = function( name, points ){
     points: points,
 
     getOrCreateCorners: function (centerX, centerY, width, height, cornerRadius, rs, field) {
-      if( rs[field] !== undefined && rs[field + '-cx'] === centerX && rs [field + '-cy'] === centerY ){
+      if( rs[field] !== undefined
+          && rs[field + '-cx'] === centerX && rs[field + '-cy'] === centerY
+          && rs[field + '-w'] === width && rs[field + '-h'] === height
+          && rs[field + '-corner-radius'] === cornerRadius ){
         return rs[field];
       }
 
       rs[field] = new Array( points.length / 2 );
       rs[field + '-cx'] = centerX;
       rs[field + '-cy'] = centerY;
+      rs[field + '-w'] = width;
+      rs[field + '-h'] = height;
+      rs[field + '-corner-radius'] = cornerRadius;
       const halfW = width / 2;
       const halfH = height / 2;
       cornerRadius = cornerRadius === 'auto' ? math.getRoundPolygonRadius( width, height ) : cornerRadius;

@@ -70,7 +70,15 @@ them (closing open call 7), and the round's most useful output is the
 **five slow paths it found and localized** — the style getters, the
 compound emit walk, the layout contract's per-run materialization,
 `mutableElements()` and `indexOf()` — each logged rather than fixed,
-because a measurement round measures.
+because a measurement round measures.  **Round 34** (2026-08-03) then
+fixed all five: three now sit at parity with v3 (`indexOf`,
+`mutableElements`, and the emit path's new no-listener gate), the style
+getters went 5.8× → 2.3× by memoizing `normalizeProp`, and the layout
+contract's per-run cost fell 333 µs → 795 ns.  Two of the five findings
+were **corrected while being fixed** — the style gap was inflated by
+tsx's `__name` wrapper, and the row round 33 cited for the emit finding
+never reached the emit path — which is the round's own lesson: check a
+hot-path finding against the built bundle before rewriting anything.
 `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -341,7 +349,12 @@ debug/webgpu/            # dev harness: network/bg/LOD/labels URL params, ?gen=N
 playwright-page/webgpu.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/webgpu.spec.js (+ webgpu-visual.spec.js + goldens/)
 test/gpu-*.mjs           # 100+ Node-runner suites (auto-picked-up by the test:js glob)
-benchmark/gpu/           # mitata suites + the renderer/report runners (see the Benchmarks section of the README)
+benchmark/gpu/           # 22 suites + the renderer/report runners (see the Benchmarks section of the README).
+                         #   Round 33 added layouts, style, load, spatial, data, events, store and
+                         #   surface (the breadth pass) to the round-1..29 set, and report.mjs grew
+                         #   an --all profile that runs every one of them (closing open call 7).
+scripts/gpu-bench-coverage.mjs   # round 33.12: which public members a benchmark calls (reports, never gates)
+test/modules/gpu-bench-coverage.mjs  # round 33.12: that script's matcher, and the limits it errs within
 scripts/gpu-jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss);
                                  #   also @throws accuracy (31.2) and @param completeness (32)
 test/gpu-jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress), + the 31.2/32 rules
@@ -9007,7 +9020,7 @@ edges on the i9-9900K:
   Three of the five are now at parity with v3 or better; the style
   getter is 2.3× (from 5.8×) and the two v4-only paths are 420× and
   42× cheaper than they were.
-  **Verification**: typecheck, lint, **2505 Node tests** and 77 module
+  **Verification**: typecheck, lint, **2508 Node tests** and 77 module
   tests, JSDoc 100% with `@throws` 16/16 and `@param` 221/221,
   `gpu-throw-coverage` at 0 Node-reachable dead sites, the regenerated
   `dist/cytoscape-gpu.d.ts` (1093 → 1097 doc blocks — the store's two

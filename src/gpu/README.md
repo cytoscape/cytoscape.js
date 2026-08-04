@@ -129,6 +129,18 @@ public member that takes arguments now documents them** (221/221, up
 from 143), gated the same way, because docmaker emits a description
 per argument and a missing one is a hole in the release docs rather
 than only in an editor.
+Round 33 (2026-08-03) changed no behaviour either: it was the
+**benchmark sweep**, taking the suites from 14 to 22 so that the
+surfaces with no measurement at all — layouts, the algorithm tail, the
+style engine, loading and the wire format, picking/box-selection/bounds,
+the data sidecar and structured queries, events and the animation
+lifecycle, store internals — have one, plus a breadth pass over the rest
+of the public API and a third audit script (`gpu-bench-coverage.mjs`).
+Its real output was **five paths slower than v3 or than v4's own design
+implies**, which round 34 (2026-08-03) then **fixed** — `indexOf`,
+`mutableElements()` and the emit path's no-listener gate to parity, the
+style getters 5.8× → 2.3×, and the layout contract 333 µs → 795 ns per
+run.  Both rounds are recorded in "Benchmarks" below.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison

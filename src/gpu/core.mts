@@ -793,6 +793,13 @@ export class GpuCore {
    * **predicate function** for anything richer.  Unknown query keys throw,
    * so a typo cannot silently match everything.
    *
+   * Called with **no query**, the result is memoized until the graph
+   * next gains or loses an element (round 34.2), so repeated calls are
+   * O(1) and two of them return *the same collection object*.  A v4
+   * collection is an immutable snapshot holding refs into the columns,
+   * so it still reads live values — a style, position or data write
+   * neither invalidates it nor goes unseen through it.
+   *
    * @param query — a query object or an `( ele ) => boolean` predicate;
    *   omit for everything
    * @returns the matching elements
@@ -803,7 +810,8 @@ export class GpuCore {
 
   /**
    * The graph's nodes, optionally filtered.  Same query forms as
-   * `elements()`, restricted to the node group.
+   * `elements()`, restricted to the node group — and, with no query,
+   * the same memo (34.2).
    *
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching nodes
@@ -814,7 +822,8 @@ export class GpuCore {
 
   /**
    * The graph's edges, optionally filtered.  Same query forms as
-   * `elements()`, restricted to the edge group.
+   * `elements()`, restricted to the edge group — and, with no query,
+   * the same memo (34.2).
    *
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching edges
@@ -1996,7 +2005,12 @@ export class GpuCore {
 
   declare $id: this['getElementById'];
 
-  /** All elements (the prototype has no immutable/"read-only" collections). */
+  /**
+   * All elements (the prototype has no immutable/"read-only"
+   * collections) — `elements()` by another name, memo included.
+   *
+   * @returns every element in the graph
+   */
   mutableElements(): GpuCollection {
     return this.elements();
   }

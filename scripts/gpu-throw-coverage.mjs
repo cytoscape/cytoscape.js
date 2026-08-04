@@ -53,9 +53,17 @@ export const BROWSER_ONLY = [ 'src/gpu/render/', 'src/gpu/interact/', 'src/gpu/g
 export const UNREACHABLE = {
   'src/gpu/wire.mts:68':
     'big-endian platform guard — every supported platform is little-endian',
-  'src/gpu/store/graph-store.mts:2211':
+  'src/gpu/store/graph-store.mts:2226':
     'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field'
 };
+
+// Keys here are `file:line`, which **moves when the file above the site
+// moves**.  Round 34 inserted two methods into graph-store.mts and the
+// SHAPE_MASK entry silently stopped matching, which surfaced as this
+// script reporting a Node-reachable dead site and as a failing spec in
+// test/modules/gpu-throw-coverage.mjs — the right way round, but worth
+// knowing: after moving code, re-run this script rather than assuming
+// the classification survived.
 
 /**
  * Sites the line-level data reads as covered but that the Node suite cannot

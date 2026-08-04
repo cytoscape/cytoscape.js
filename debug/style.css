@@ -2,12 +2,27 @@ body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin
 #cytoscape { position: absolute; left: 0; right: 18.75em; top: 0; bottom: 0; }
 #commands { padding: 0.25em; padding-bottom: 7em; width: 25em; z-index: 3; position: absolute; right: 0; top: 0; bottom: 0; overflow: auto; font-size: 0.75em; line-height: 1.4; background: rgba(200, 200, 200, 0.5); border-left: 1px solid #999; box-sizing: border-box; }
 #commands h1 { font-size: 1.5em; }
-#commands h2 { font-size: 1.1em; }
+#commands h2 { font-size: 1.1em; margin-top: 1.2em; margin-bottom: 0.4em; border-bottom: 1px solid rgba(0, 0, 0, 0.15); }
 #commands label { user-select: none; }
 #commands input[type=number] { width: 4em; }
+#commands button { margin: 1px 0; }
+#commands select, #commands textarea { max-width: 100%; }
+#commands .note { font-size: 0.95em; color: #444; margin: 0.35em 0; }
 #stats { position: absolute; left: 0.5em; bottom: 0.5em; z-index: 4; font: 11px monospace; background: rgba(255, 255, 255, 0.85); padding: 0.5em; border-radius: 4px; white-space: pre; pointer-events: none; }
 .commands-hidden #commands { display: none; }
 .commands-hidden #cytoscape { right: 0; }
 #commands-show-area { position: absolute; right: 0.5em; top: 0.5em; z-index: 2; }
 #hide-commands { position: absolute; right: 0.75em; top: 0.75em; z-index: 2; margin-top: 2px; }
 #hide-commands, #show-commands { width: 3em; }
+
+/* the rendered-bounding-box overlay, as in v3/debug/style.css */
+#bb { position: absolute; left: 0; top: 0; display: none; background: rgba(0, 255, 255, 0.25); outline: 1px solid rgba(0, 128, 128, 0.8); z-index: 2; pointer-events: none; }
+
+/* the query box */
+#query-input { display: block; width: 100%; box-sizing: border-box; font: 11px monospace; margin-bottom: 2px; }
+
+/* the event log */
+.event-filters { display: flex; flex-wrap: wrap; gap: 0 0.5em; margin-bottom: 0.25em; }
+.event-filters label { white-space: nowrap; }
+#event-log { height: 12em; overflow: auto; background: rgba(255, 255, 255, 0.8); border: 1px solid #bbb; font: 10px/1.35 monospace; padding: 0.25em; margin-top: 0.25em; white-space: pre; }
+.event-row { white-space: pre; }

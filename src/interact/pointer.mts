@@ -83,6 +83,8 @@ export class PointerHandler {
   private boxEl: HTMLDivElement | null;
   /** the active-bg indicator circle (round 13 A2; background grabs) */
   private activeEl: HTMLDivElement | null;
+  /** the *model* point the active-bg circle is anchored to (round 43) */
+  private activeModel: Position | null;
   private touches: Map<number, Position>;
   private pinch: { dist: number; mid: Position } | null;
   /** the two-finger cxt gesture (round 20.4, v3's touch cxt family) */
@@ -131,6 +133,7 @@ export class PointerHandler {
     this.down = null;
     this.boxEl = null;
     this.activeEl = null;
+    this.activeModel = null;
     this.touches = new Map();
     this.pinch = null;
     this.touchCxt = null;
@@ -477,6 +480,12 @@ export class PointerHandler {
         this.cy.panBy( { x: dx, y: dy } );
         this.cy.emit( { type: 'dragpan', position: this.cy._viewport.renderedToModel( pos ), originalEvent: this.domEvent ?? undefined } ); // 17.4
       }
+
+      // round 43: the pan just moved the graph under the anchor, so the
+      // indicator has to be re-projected or it is left behind at the press
+      // point.  With panning disabled nothing moved and this is a no-op,
+      // which is v3's behaviour too.
+      this.repositionActiveBg();
     } else if( down.mode === 'box' ){
       this.boxUpdate( down, pos );
     } else if( down.grabbed != null && down.grabbed.inside() ){
@@ -495,7 +504,17 @@ export class PointerHandler {
     }
   }
 
-  /** Show/update the active-bg circle (styled from the core sheet). */
+  /**
+   * Show the active-bg circle (styled from the core sheet) at a rendered point.
+   *
+   * The press point is remembered in **model** space, which is v3's rule
+   * (`r.data.bgActivePosistion` is a projected position, drawn inside the
+   * transformed canvas).  It matters: the graph moves under a background pan,
+   * so a model-anchored circle stays glued to the point you pressed — which
+   * reads as following the cursor — while a screen-anchored one would sit
+   * still.  Round 43 fixed exactly that: the circle was positioned once, here,
+   * and no path ever moved it again.
+   */
   private showActiveBg( x: number, y: number ): void {
     const core = this.cy._styleEngine.core();
 
@@ -517,6 +536,8 @@ export class PointerHandler {
     const [ r, g, b ] = core.activeBgColor;
     const size = core.activeBgSize;
 
+    this.activeModel = this.cy._viewport.renderedToModel( { x, y } );
+
     el.style.background = `rgba(${r}, ${g}, ${b}, ${core.activeBgOpacity})`;
     el.style.width = `${size * 2}px`;
     el.style.height = `${size * 2}px`;
@@ -525,8 +546,29 @@ export class PointerHandler {
     el.style.display = 'block';
   }
 
+  /**
+   * Re-project the circle onto the point it was pressed at.  Called per move
+   * while the press is held, so the pan that the same move performs cannot
+   * leave the indicator behind.  The radius is a constant screen size and so
+   * does not scale — v3 divides by the zoom only because it draws inside the
+   * zoomed context.
+   */
+  private repositionActiveBg(): void {
+    const el = this.activeEl;
+
+    if( el == null || this.activeModel == null || el.style.display === 'none' ){ return; }
+
+    const size = this.cy._styleEngine.core().activeBgSize;
+    const p = this.cy._viewport.modelToRendered( this.activeModel );
+
+    el.style.left = `${p.x - size}px`;
+    el.style.top = `${p.y - size}px`;
+  }
+
   private hideActiveBg(): void {
     if( this.activeEl != null ){ this.activeEl.style.display = 'none'; }
+
+    this.activeModel = null;
   }
 
   private onPointerUp( e: PointerEvent ): void {

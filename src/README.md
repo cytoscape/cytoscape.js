@@ -160,7 +160,7 @@ recorded, and a **stranded-doc-block check** shipped — which found six
 more instances of this codebase's most repeated defect on its first
 run, one of them shipping in `dist/cytoscape.d.ts`.
 The **fifth design sitting** (2026-08-04) then took every open call in
-PLAN.md's ledger at once and planned rounds 37–50 through the release:
+PLAN.md's ledger at once and planned rounds 37–51 through the release:
 `border-style`/`outline-style` at full coverage, a v4 Event and emitter,
 the packaging move that makes v4 *the* package (v3 to a self-contained
 `v3/`), the small feature tail, the docs generator and site, and the
@@ -216,6 +216,17 @@ prototype"; that is the same rule that kept `gpu-context.mts` and
 `render/gpu-*.mts` while `gpu-types.mts` became `public-types.mts`.
 v3 stays untouched inside `v3/`, so every v3 asset remains
 available for comparison benchmarks and parity work.
+Round 43 (2026-08-04) rebuilt the **debug harness** — v4's only
+manual page — which had been quietly discarding the whole style
+surface: its sanitizer kept a 14-property whitelist and dropped
+every mapper, so each fixture rendered as flat monochrome discs.
+It now carries hand-authored v4 sheets per network (including the
+real enrichmentmap.org style, whose per-element colour function
+becomes one `diverging` mapper), two genuinely compound graphs, the
+v3 page's view/layout/toggle/selection/event/add-remove sections,
+and a module spec that compiles every sheet against its own fixture.
+The round also fixed the background-grab indicator, which had never
+followed the cursor — see the core-theming notes below.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
@@ -434,6 +445,16 @@ theme the DOM selection box, and `active-bg-color`/`-opacity`/`-size`
 drive the background-grab indicator circle at the press point (a DOM
 element above the canvas, like the selection box — v3 draws it into
 the canvas, so v4 exports never include it; recorded).
+**The indicator is anchored in model space** (round 43.7, v3's rule):
+it was positioned once at pointerdown in screen space and never moved
+again, so a background pan slid the graph out from under it.  The
+press point is now stored as a model position and re-projected per
+move, which keeps it glued to the point pressed.  The two are
+observationally identical during a pan — the graph delta *is* the
+cursor delta — and differ only when a press stays in pan mode while
+nothing pans, which needs both `userPanningEnabled` and
+`boxSelectionEnabled` off (otherwise the drag becomes a box gesture
+and shows no indicator at all).
 
 The channel-opacity split (round 13 B1): `background-opacity`,
 `border-opacity`, `line-opacity` and `text-opacity` fold into the
@@ -3254,9 +3275,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   day and executed as **42.6**, so the whole public surface is
   unprefixed.  What round 42 deliberately did *not* do, each logged
   for its owning round: the dist/exports hardening and the pack spec
-  (round 43), and the three v3 release workflows, which stay in
+  (round 44), and the three v3 release workflows, which stay in
   `.github/` because GitHub reads workflows only from the repo root —
-  marked as unadapted rather than half-repointed, and round 49's job.
+  marked as unadapted rather than half-repointed, and round 50's job.
   PLAN.md's **"Open calls for the maintainer"** remains the one place
   to read before deciding anything about v4's surface: contradictions
   are logged there rather than patched, because removing public API is
@@ -3293,7 +3314,7 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   above).  What stays open, deliberately: the **generator** that
   turns those comments into docmaker input, and the release docs
   themselves.  Neither is built until v4 ships; the docs site is
-  round 45, and `v3/documentation/` belongs to v3 until then.  What *is* ready is the
+  round 46, and `v3/documentation/` belongs to v3 until then.  What *is* ready is the
   input: after rounds 31–32 the public surface carries all three of
   the tags a generator reads — a doc comment on every member (26),
   `@throws` wherever a member throws (31.2), and `@param` on every
@@ -3305,8 +3326,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   **gated since 37.1**: docmaker's shape still has no return field,
   but the tags ship as `.d.ts` hover text regardless, and a tail
   completed by hand four rounds after it was measured is what an
-  ungated rule looks like.  The generator itself is **round 44**, and
-  the site round 45 — no longer "not until v4 ships" but scheduled.
+  ungated rule looks like.  The generator itself is **round 45**, and
+  the site round 46 — no longer "not until v4 ships" but scheduled.
   Also logged from 26.5: `event.target` typed as `unknown` on the
   shared v3 event object — **closed by round 41**, which gave v4 its
   own Event and emitter.  It did *not* sever v4's last shared-module

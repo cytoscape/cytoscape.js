@@ -1,5 +1,5 @@
 /* eslint-disable no-console, no-unused-vars */
-/* global $, cytoscape, networks */
+/* global $, cytoscape, networks, styles, fixtures */
 
 var cy;
 
@@ -8,6 +8,10 @@ const paramDefs = {
     default: 'em-web',
     control: '#network-select'
   },
+  style: {
+    default: 'production',
+    control: '#style-select'
+  },
   gen: {
     default: '10000x30000',
     control: '#gen-input'
@@ -15,6 +19,19 @@ const paramDefs = {
   bgcolor: {
     default: 'white',
     control: '#bg-color-select'
+  },
+  layout: {
+    // `live` params keep their place in the URL (a control change used to wipe
+    // ?layout and ?seed, because they were read outside paramDefs) but do not
+    // reload the page — layout.js applies them to the running instance
+    default: '',
+    control: '#layout-select',
+    live: true
+  },
+  seed: {
+    default: '1',
+    control: '#seed-input',
+    live: true
   },
   edgeWidthFloor: {
     default: '1',
@@ -37,7 +54,9 @@ const paramDefs = {
     control: '#arrows-check'
   },
   labels: {
-    default: 'false',
+    // round 43.6: on by default.  A production app draws labels, and the
+    // fixtures all carry a good key for one now.
+    default: 'true',
     control: '#labels-check'
   },
   columnar: {
@@ -74,197 +93,28 @@ const paramDefs = {
   console.log('params', params);
   $('#cytoscape').style.backgroundColor = params.bgcolor;
 
-  // -- fixture conversion (v3 JSON -> gpu prototype scope) --
+  // The control sections (view.js, layout.js, …) load after this file and need
+  // the core, which only exists once the fixture has been fetched.  Anything
+  // that must bind at creation time registers here; plain button handlers can
+  // just read `window.cy` when they fire.
+  const pending = [];
 
-  const SUPPORTED_PROPS = new Set([
-    'background-color', 'width', 'height', 'shape', 'opacity',
-    'border-color', 'border-width', 'line-color',
-    'label', 'font-size', 'color',
-    'source-arrow-shape', 'source-arrow-color', 'target-arrow-shape', 'target-arrow-color'
-  ]);
-  // Round 27 completed v3's node-shape and arrowhead vocabularies, so
-  // these lists are no longer "what v4 can draw" — they are only the v3
-  // spellings v4 does not accept.  The 2026-07-29 triage dropped the
-  // no-dash legacy aliases ("one name per concept"), so a fixture using
-  // them keeps its default shape rather than throwing.
-  const UNSUPPORTED_ARROW_SHAPES = new Set();
-  const UNSUPPORTED_SHAPES = new Set([ 'cutrectangle', 'concavehexagon', 'roundrectangle' ]);
-  // best-effort conversion of a v3 block stylesheet into the v4 sheet
-  // ({ nodes, edges }): constant values of in-scope props on plain group
-  // selectors fold into the group's props (later blocks win, as in v3
-  // document order); #id/:selected/class blocks are dropped — v4 styles
-  // per element via fn styles, which a fixture stylesheet can't express
-  function sanitizeStyle(blocks) {
-    const sheet = {};
-
-    const mergeInto = (groupKey, style) => {
-      sheet[groupKey] = Object.assign(sheet[groupKey] || {}, style);
-    };
-
-    for(const block of blocks || []) {
-      const selector = (block.selector || '').trim();
-
-      if(selector !== 'node' && selector !== 'edge' && selector !== '*') { continue; }
-
-      const style = {};
-
-      for(const [prop, value] of Object.entries(block.style || block.css || {})) {
-        if(!SUPPORTED_PROPS.has(prop)) { continue; }
-        // data(key) label mappers are supported now; other mappers are not
-        if(typeof value === 'string' && /mapData\s*\(/.test(value)) { continue; }
-        if(typeof value === 'string' && /data\s*\(/.test(value) && !(prop === 'label' && /^\s*data\s*\(\s*[\w-]+\s*\)\s*$/.test(value))) { continue; }
-        if(prop === 'shape' && UNSUPPORTED_SHAPES.has(value)) { continue; }
-        if(/-arrow-shape$/.test(prop) && UNSUPPORTED_ARROW_SHAPES.has(value)) { continue; }
-
-        style[prop] = value;
-      }
-
-      if(Object.keys(style).length === 0) { continue; }
-
-      if(selector === 'node' || selector === '*') { mergeInto('nodes', style); }
-      if(selector === 'edge' || selector === '*') { mergeInto('edges', style); }
-    }
-
-    return sheet;
-  }
-
-  function toGpuElements(elements) {
-    const list = Array.isArray(elements)
-      ? elements
-      : [ ...(elements.nodes || []), ...(elements.edges || []) ];
-
-    const nodes = [];
-    const edges = [];
-
-    for(const ele of list) {
-      const data = ele.data || {};
-
-      if(data.source != null && data.target != null) {
-        edges.push({ data: {
-          ...data, // sidecar data() keys flow through
-          id: data.id != null ? String(data.id) : undefined,
-          source: String(data.source),
-          target: String(data.target)
-        } });
-      } else {
-        nodes.push({
-          data: { ...data, id: data.id != null ? String(data.id) : undefined },
-          position: ele.position
-        });
-      }
-    }
-
-    return { nodes, edges, hasPositions: nodes.some(n => n.position != null) };
-  }
-
-  function generateNetwork(spec) {
-    const match = /^(\d+)x(\d+)$/.exec(spec) || [null, '10000', '30000'];
-    const n = parseInt(match[1], 10);
-    const m = parseInt(match[2], 10);
-    const side = Math.ceil(Math.sqrt(n)) * 50;
-    const nodes = [];
-    const edges = [];
-
-    for(let i = 0; i < n; i++) {
-      nodes.push({
-        data: { id: 'n' + i },
-        position: { x: Math.random() * side, y: Math.random() * side }
-      });
-    }
-
-    for(let j = 0; j < m; j++) {
-      edges.push({ data: {
-        id: 'e' + j,
-        source: 'n' + Math.floor(Math.random() * n),
-        target: 'n' + Math.floor(Math.random() * n)
-      } });
-    }
-
-    const style = {
-      nodes: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' },
-      edges: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 }
-    };
-
-    return { nodes, edges, hasPositions: true, style };
-  }
-
-  // round 14: clustered compound generator — N leaves under ~N/20
-  // parents (every 4th parent nested under the previous one), leaves
-  // blobbed per cluster, mostly intra-cluster edges plus a sprinkle of
-  // child->parent edges to exercise the compound loops
-  function generateCompoundNetwork(spec) {
-    const match = /^(\d+)x(\d+)$/.exec(spec) || [null, '10000', '20000'];
-    const n = parseInt(match[1], 10);
-    const m = parseInt(match[2], 10);
-    const clusterSize = 20;
-    const clusters = Math.max(1, Math.floor(n / clusterSize));
-    const side = Math.ceil(Math.sqrt(clusters)) * 400;
-    const nodes = [];
-    const edges = [];
-
-    for(let c = 0; c < clusters; c++) {
-      const nested = c % 4 === 3; // every 4th parent nests under its predecessor
-      const parentDef = { data: { id: 'p' + c } };
-
-      if(nested) { parentDef.data.parent = 'p' + (c - 1); }
-
-      nodes.push(parentDef);
-    }
-
-    const cx = i => (i % Math.ceil(Math.sqrt(clusters))) * 400;
-    const cyy = i => Math.floor(i / Math.ceil(Math.sqrt(clusters))) * 400;
-
-    for(let i = 0; i < n; i++) {
-      const c = i % clusters;
-
-      nodes.push({
-        data: { id: 'n' + i, parent: 'p' + c },
-        position: {
-          x: cx(c) + Math.random() * 220,
-          y: cyy(c) + Math.random() * 220
-        }
-      });
-    }
-
-    for(let j = 0; j < m; j++) {
-      if(j % 50 === 49) { // a sprinkle of child->parent edges (compound loops)
-        const i = Math.floor(Math.random() * n);
-
-        edges.push({ data: { id: 'e' + j, source: 'n' + i, target: 'p' + (i % clusters) } });
-        continue;
-      }
-
-      const c = Math.floor(Math.random() * clusters);
-      const perCluster = Math.floor(n / clusters);
-      // leaves of cluster c are the ids i with i % clusters === c
-      const pick = () => c + Math.min(perCluster - 1, Math.floor(Math.random() * perCluster)) * clusters;
-      const intra = j % 5 !== 0; // 4 in 5 edges stay inside a cluster
-
-      edges.push({ data: {
-        id: 'e' + j,
-        source: 'n' + (intra ? pick() : Math.floor(Math.random() * n)),
-        target: 'n' + (intra ? pick() : Math.floor(Math.random() * n))
-      } });
-    }
-
-    const style = {
-      nodes: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' },
-      parents: { 'padding': 14 },
-      edges: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 }
-    };
-
-    return { nodes, edges, hasPositions: true, style };
-  }
+  window.onCy = fn => {
+    if(cy != null) { fn(cy); } else { pending.push(fn); }
+  };
 
   // -- loading --
 
-  function loadNetwork(gpuElements, style) {
+  function loadNetwork(gpuElements, networkID, def) {
     console.time('cytoscape init');
 
-    style = style || {};
+    let style = styles.sheet(params.style, networkID, gpuElements, def);
 
-    if(params.labels === 'true') {
-      style = { ...style, nodes: { ...style.nodes, 'label': 'data(id)', 'font-size': 10, 'color': '#333' } };
+    if(params.labels !== 'true') {
+      // the checkbox is a plain on/off over whatever the sheet declares — it
+      // no longer *replaces* the mapping with data(id), which is what made
+      // "labels on" show UUIDs on em-web and SUIDs on the NDEx sets
+      style = stripLabels(style);
     }
 
     if(params.arrows === 'true') {
@@ -325,23 +175,25 @@ const paramDefs = {
     console.timeEnd('cytoscape init');
     window.cy = cy;
     window.SpiralLayout = SpiralLayout;
+    window.currentStyle = style;
 
-    if(urlParams.get('layout') === 'spiral') {
+    for(const fn of pending.splice(0)) { fn(cy); }
+
+    if(params.layout === 'spiral') {
       cy.ready.then(() => cy.layout({ impl: SpiralLayout }).run());
-    }
-
-    // the round-18 force layout, live: ?layout=force (add &seed=N to vary)
-    if(urlParams.get('layout') === 'force') {
+    } else if(params.layout === 'force') {
+      // the round-18 force layout, live (add &seed=N to vary)
       cy.ready.then(() => {
         console.time('force layout');
         cy.layout({
           name: 'force',
           animate: true,
-          seed: parseInt(urlParams.get('seed') || '1', 10)
+          seed: parseInt(params.seed || '1', 10)
         }).run().promise().then(() => console.timeEnd('force layout'));
       });
+    } else if(params.layout !== '') {
+      cy.ready.then(() => cy.layout({ name: params.layout }).run());
     }
-
 
     cy.ready.then(() => {
       console.log('webgpu ready');
@@ -363,10 +215,23 @@ const paramDefs = {
       $('#zoom').innerHTML = `Zoom: ${cy.zoom().toFixed(4)}`;
     });
 
-    cy.on('mouseover', e => console.log('mouseover', e.target.id()));
-    cy.on('select', e => console.log('select', e.target.id()));
-
     startStats();
+  }
+
+  /** Remove the label channel from every group of a sheet. */
+  function stripLabels(style) {
+    const out = {};
+
+    for(const [ group, props ] of Object.entries(style)) {
+      if(group === 'core' || props == null) { out[group] = props; continue; }
+
+      const copy = { ...props };
+
+      delete copy.label;
+      out[group] = copy;
+    }
+
+    return out;
   }
 
   // -- stats overlay: fps, counts, dirty-upload bytes, pick latency --
@@ -377,7 +242,7 @@ const paramDefs = {
     let lastTime = performance.now();
 
     setInterval(() => {
-      const renderer = cy && cy._renderer;
+      const renderer = cy && cy.renderer();
 
       if(renderer == null) { return; }
 
@@ -392,58 +257,73 @@ const paramDefs = {
       lastTime = now;
 
       const gpuMs = stats.gpuFrameMs > 0 ? `${stats.gpuFrameMs.toFixed(1)} ms GPU` : 'GPU n/a';
+      const shaped = stats.labelShapeHits + stats.labelShapeMisses;
+      const hitRate = shaped > 0 ? ` (${(100 * stats.labelShapeHits / shaped).toFixed(0)}% memo hits)` : '';
 
       $('#stats').textContent =
-        `${stats.nodes} nodes, ${stats.edges} edges, ${stats.glyphs} glyphs\n` +
+        `${stats.nodes} nodes, ${stats.edges} edges, ${stats.glyphs} glyphs${hitRate}\n` +
         `${fps.toFixed(0)} fps (rendered), ${stats.cpuFrameMs.toFixed(2)} ms CPU / ${gpuMs} per frame, scale ${stats.renderScale}\n` +
         `${kbps.toFixed(1)} KiB/s uploaded (${(stats.uploadedBytes / 1024 / 1024).toFixed(1)} MiB total)\n` +
+        `mapper: ${(stats.mapperUploadedBytes / 1024).toFixed(0)} KiB in ${stats.mapperDispatches} dispatches\n` +
         `pick latency ${stats.pickLatencyMs.toFixed(1)} ms` +
         (stats.pickDeferrals > 0 ? ` (${stats.pickDeferrals} ring-deferred frames)` : '');
     }, 500);
   }
 
-  const network = networks[params.network] || networks[paramDefs.network.default];
+  // -- fetch + dispatch --
+
+  const networkID = networks[params.network] != null ? params.network : paramDefs.network.default;
+  const network = networks[networkID];
+
+  function fail(err) {
+    console.error(err);
+    $('#stats').textContent =
+      `Could not load "${networkID}":\n${err}\n\n` +
+      `Fixtures live in v3/debug/webgl/ — served from the repo root, so run\n` +
+      `\`npm run watch\` from the repo root rather than from debug/.`;
+  }
 
   if(network.generated) {
-    const generated = network.generated === 'compound'
-      ? generateCompoundNetwork(params.gen)
-      : generateNetwork(params.gen);
-
-    loadNetwork(generated, generated.style);
-  } else if(network.styleUrl) {
-    Promise.all([
-      fetch(network.url).then(res => res.json()),
-      fetch(network.styleUrl).then(res => res.json())
-    ]).then(([networkJson, styleJson]) => {
-      loadNetwork(toGpuElements(networkJson.elements), sanitizeStyle(styleJson.style));
-    });
+    loadNetwork(fixtures.generate(network.generated, params.gen), networkID, network);
   } else {
+    // a missing fixture used to reject silently and render nothing at all
     fetch(network.url)
-      .then(res => res.json())
+      .then(res => {
+        if(!res.ok) { throw new Error(`${res.status} ${res.statusText} for ${network.url}`); }
+
+        return res.json();
+      })
       .then(networkJson => {
-        loadNetwork(toGpuElements(networkJson.elements), sanitizeStyle(networkJson.style));
-      });
+        loadNetwork(fixtures.derive(network.derive, fixtures.toGpuElements(networkJson.elements)), networkID, network);
+      })
+      .catch(fail);
   }
 
   // -- controls --
 
-  for(const [networkID, def] of Object.entries(networks)) {
+  for(const [id, def] of Object.entries(networks)) {
     const option = document.createElement('option');
 
-    option.value = networkID;
+    option.value = id;
     option.innerHTML = `${def.desc} (${def.nodes} nodes, ${def.edges} edges)`;
     $('#network-select').appendChild(option);
   }
 
+  $('#network-note').textContent = network.note || '';
+
   for(const p of Object.keys(paramDefs)) {
     const control = $(paramDefs[p].control);
 
+    if(control == null) { continue; }
+
     if(control.type === 'checkbox') {
       control.checked = params[p] === 'true';
-      control.addEventListener('click', () => reloadPage());
+
+      if(!paramDefs[p].live) { control.addEventListener('click', () => reloadPage()); }
     } else {
       control.value = params[p];
-      control.addEventListener('change', () => reloadPage());
+
+      if(!paramDefs[p].live) { control.addEventListener('change', () => reloadPage()); }
     }
   }
 
@@ -460,6 +340,9 @@ const paramDefs = {
 
     for(const p of Object.keys(paramDefs)) {
       const control = $(paramDefs[p].control);
+
+      if(control == null) { continue; }
+
       const value = control.type === 'checkbox' ? control.checked : control.value;
 
       if(String(value) !== String(paramDefs[p].default)) {
@@ -470,6 +353,8 @@ const paramDefs = {
     window.location.href = origin + pathname + '?' + nextParams.toString();
   }
 
+  window.reloadPage = reloadPage;
+
   $('#hide-commands').addEventListener('click', () => {
     document.body.classList.add('commands-hidden');
   });
@@ -478,7 +363,6 @@ const paramDefs = {
     document.body.classList.remove('commands-hidden');
   });
 
-  $('#fit-button').addEventListener('click', () => cy.fit(undefined, 30));
   $('#reset-button').addEventListener('click', () => reloadPage(true));
 
 })();

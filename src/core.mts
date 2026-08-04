@@ -2651,11 +2651,16 @@ export class Core {
     return eles.boundingBox();
   }
 
+  /**
+   * A synthetic id for an element added without one.  The prefix read `gpu-`
+   * until round 43 — a leftover the 42.6 rename missed, and a user-visible one,
+   * since it is what `ele.id()` returns.
+   */
   private _newId(): string {
     let id: string;
 
     do {
-      id = 'gpu-' + this._idCounter;
+      id = 'cy-' + this._idCounter;
       this._idCounter++;
     } while( this._store.ids.has( id ) );
 

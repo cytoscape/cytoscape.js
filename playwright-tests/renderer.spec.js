@@ -4608,6 +4608,102 @@ test.describe( 'WebGPU renderer', () => {
     expect( hidden ).toBe( 'none' );
   } );
 
+  test( 'the active-bg circle follows the background drag (round 43.7)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: { 'width': 20, 'height': 20, 'background-color': '#2c3e50' },
+        core: { 'active-bg-color': '#0000ff', 'active-bg-opacity': 0.4, 'active-bg-size': 25 }
+      },
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    // The circle is anchored to the *model* point pressed (v3's rule), and a
+    // background drag pans the graph — so the anchor travels with the cursor.
+    // Before round 43 `showActiveBg` was called once, from pointerdown, and
+    // nothing ever moved the element again: it stayed at the press point while
+    // the graph slid out from under it.
+    const circlePos = () => page.evaluate( () => {
+      const el = [ ...document.querySelectorAll( 'div' ) ]
+        .find( d => d.style.borderRadius === '50%' && d.style.display === 'block' );
+
+      return el == null ? null : { left: parseFloat( el.style.left ), top: parseFloat( el.style.top ) };
+    } );
+
+    await page.mouse.move( center.x - 80, center.y - 40 );
+    await page.mouse.down();
+
+    const at0 = await circlePos();
+
+    expect( at0 ).not.toBe( null );
+
+    await page.mouse.move( center.x - 20, center.y - 10 );
+
+    const at1 = await circlePos();
+
+    await page.mouse.move( center.x + 60, center.y + 50 );
+
+    const at2 = await circlePos();
+
+    await page.mouse.up();
+
+    // it tracks the cursor: each move carries the circle by the same delta
+    expect( at1.left - at0.left ).toBeCloseTo( 60, 0 );
+    expect( at1.top - at0.top ).toBeCloseTo( 30, 0 );
+    expect( at2.left - at1.left ).toBeCloseTo( 80, 0 );
+    expect( at2.top - at1.top ).toBeCloseTo( 60, 0 );
+  } );
+
+  test( 'the active-bg circle stays put when panning is disabled (round 43.7)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // The other half of the model-anchoring rule, and the reason the fix is
+    // not simply "re-place it at the cursor": with nothing panning, the graph
+    // does not move, so neither does the point that was pressed.  v3 behaves
+    // the same way, for the same reason.
+    //
+    // Reaching this state takes *both* switches: a background drag with
+    // panning off becomes a box gesture (which shows no indicator at all), so
+    // box selection has to be off too before the press stays in 'pan' mode.
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
+      style: {
+        nodes: { 'width': 20, 'height': 20, 'background-color': '#2c3e50' },
+        core: { 'active-bg-color': '#0000ff', 'active-bg-opacity': 0.4, 'active-bg-size': 25 }
+      },
+      zoom: 1,
+      userPanningEnabled: false,
+      boxSelectionEnabled: false
+    } );
+
+    const center = await centerPan( page );
+    const circlePos = () => page.evaluate( () => {
+      const el = [ ...document.querySelectorAll( 'div' ) ]
+        .find( d => d.style.borderRadius === '50%' && d.style.display === 'block' );
+
+      return el == null ? null : { left: parseFloat( el.style.left ), top: parseFloat( el.style.top ) };
+    } );
+
+    await page.mouse.move( center.x - 80, center.y - 40 );
+    await page.mouse.down();
+
+    const at0 = await circlePos();
+
+    await page.mouse.move( center.x + 40, center.y + 40 );
+
+    const at1 = await circlePos();
+
+    await page.mouse.up();
+
+    expect( at0 ).not.toBe( null );
+    expect( at1.left ).toBeCloseTo( at0.left, 1 );
+    expect( at1.top ).toBeCloseTo( at0.top, 1 );
+  } );
+
   test( 'arrow scalars: hollow rings and scaled heads (B7)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

@@ -97,13 +97,13 @@ codebase's most repeated documentation defect on its first run — one of
 them shipping in the declarations.
 A **fifth design sitting** (2026-08-04) then took **every open call in
 the ledger** with the maintainer and scoped the **production-readiness
-roadmap**: rounds 37–50, from the governance close-out (gates, the alias
+roadmap**: rounds 37–51, from the governance close-out (gates, the alias
 split, the strictness closures) through the full `border-style` port, the
 v4 Event, the `v3/` repo restructure that makes v4 the package's default
 export, the docs generator and v4 site, the migration guide, robustness
 and cross-platform passes, to a published **4.0.0**.  The per-item
 decisions are recorded in "Open calls for the maintainer" below; the
-sitting record and the round 37–50 plans are at the end of this file.
+sitting record and the round 37–51 plans are at the end of this file.
 **Rounds 37, 39, 41 and 42 have since landed** (2026-08-04): **37** the
 governance close-out (throw coverage and `@returns` now gate, the alias
 split), **39** the decided feature tail (overlap box selection, graph data
@@ -113,7 +113,12 @@ call when the enumeration turned out not to be derivable from v3 — and
 **42** the great restructure, which changed no behaviour and made v4 *the*
 package: this source promoted from `src/gpu/` to `src/`, v3 moved whole
 into a self-contained, still-buildable `v3/`, and the root `package.json`
-became `cytoscape@4.0.0-unstable`.  **Round 38 has not started**: scoping
+became `cytoscape@4.0.0-unstable`.  **Round 43** (2026-08-04) was inserted
+ahead of the release sequence — the **debug harness**, which turned out to be
+both broken (four of its seven networks 404'd, a round-42 regression) and
+misleading (its style sanitizer was so far behind the engine that every fixture
+rendered flat and unlabelled); it also fixed the background-grab indicator,
+which had never followed the cursor.  **Round 38 has not started**: scoping
 it found three sub-calls the sitting did not reach (open call 1).
 **Round 40 is a design sitting.**
 `src/README.md` is
@@ -185,7 +190,7 @@ appears to authorize it.
 
 **2026-08-04 (fifth design sitting): every call below was taken with
 the maintainer.**  Each item now carries its decision and the round
-that executes it (rounds 37–50, planned at the end of this file).  The
+that executes it (rounds 37–51, planned at the end of this file).  The
 one question that stays genuinely open is the **error policy** inside
 item 4 — the maintainer flagged it for real design work rather than a
 quick answer — which converts into round 40's design sitting instead of
@@ -2800,7 +2805,7 @@ open call: it needs no decision, only appetite.
 roadmap.**  With round 36 done, everything left in this file was open
 calls, and the sitting took all of them (the per-item records are in
 "Open calls for the maintainer" above).  What follows from the answers
-is **rounds 37–50**, planned at the end of this file: the governance
+is **rounds 37–51**, planned at the end of this file: the governance
 close-out (37 — the two new gates, the alias split, the strictness
 closures), the full `border-style`/`outline-style` port (38), the
 decided feature tail — overlap box mode, wire graph-data, `cy.gc()` —
@@ -2905,9 +2910,21 @@ the whole public surface is unprefixed.
 Behaviour-neutrality was established by comparing blobs rather than by the
 suite alone: see the round record.
 
+**Round 43** (2026-08-04) is the odd one out, inserted at the maintainer's
+request between the restructure and the release sequence (which renumbered
+44–51): the **debug harness**, v4's only manual page and the first thing anyone
+sees.  It was broken — four fixtures 404'd after round 42 moved the v3 tree,
+silently, because a fetch had no `.catch` and nothing tested `debug/` at all —
+and it was flattering nobody: its style sanitizer kept a 14-property whitelist
+and dropped every mapper, so v4's whole style surface was being discarded before
+it reached the core.  Now hand-authored production sheets per fixture (the real
+enrichmentmap.org style among them), two real compound graphs, the v3 page's
+control sections, and a module spec that compiles every sheet against its own
+fixture.  It also fixed the active-bg indicator, and gave `debug/` its first test.
+
 **As of 2026-08-04, what remains.**  Unbuilt: round 38 (blocked on the
 three sub-calls in open call 1), round 40 (a design sitting), round 41.5
-(open call 12), and rounds 43–50.  Undecided: the **error policy**
+(open call 12), and rounds 44–51.  Undecided: the **error policy**
 (round 40) and the **preventable-gesture enumeration** (open call 12) —
 the only two genuinely open questions, both of which the ledger holds
 rather than any round record.
@@ -10073,7 +10090,7 @@ them.  The sitting's own record, briefly:
    `cytoscape@4`; the entire v3 file set moves into a self-contained,
    still-buildable **`v3/`** directory (parity and comparison
    benchmarks keep working against it), and no v3-specific file
-   remains outside it (rounds 42–43).
+   remains outside it (rounds 42–44).
 5. **Gates: throw coverage and `@returns` both gate** (round 37);
    stranded blocks and bench coverage stay report-only.
 6. **Aliases split**: `roundrectangle` drops, `autolockNodes`/
@@ -10089,7 +10106,7 @@ them.  The sitting's own record, briefly:
    on the table.  Round 40 is that sitting.
 9. **The docs site**: the generated v4 site replaces `documentation/`
    at the root at release; v3's docs stay reachable through the
-   existing versioned-docs mechanism (rounds 44–45).
+   existing versioned-docs mechanism (rounds 45–46).
 
 Process note: at the maintainer's instruction this sitting lands as a
 **PLAN.md-only** edit — decisions and plans, no implementation.  The
@@ -10270,7 +10287,7 @@ like one that is right, which is why each carries prose rather than a
 flag.  And `roundrectangle` is the round's one behaviour change — a v3
 stylesheet using it now throws where it silently worked, which is the
 intended failure but is the sort of thing a migration guide has to carry
-(round 46).
+(round 47).
 
 ## Round 38 plan — `border-style` / `outline-style`, full coverage (planned 2026-08-04)
 
@@ -10441,7 +10458,7 @@ rather than per frame — but it is a *scan*, and the fixture here is
 2000 nodes; the 200k profile is unmeasured.  The wire format's version
 bump means a v4 buffer read by an older build fails its version check
 loudly, which is the intended direction but is a compatibility edge a
-release note has to carry (round 46).  And `boxSelectionMode` is a core
+release note has to carry (round 47).  And `boxSelectionMode` is a core
 option where v3's equivalent is a per-element style prop, so an app
 wanting per-element box behaviour has no port path — logged here rather
 than in the round record, since it is the shape the sitting chose.
@@ -10697,7 +10714,7 @@ was not on the plan's list at all.
   - The **three v3 release workflows are marked unadapted**, not
     half-repointed: they deploy v3's docs site from `documentation/`, and a
     workflow that publishes the v4 package while deploying v3's docs would
-    read as adapted while being wrong.  Round 49 owns them.  They also make
+    read as adapted while being wrong.  Round 50 owns them.  They also make
     the one unavoidable exception to "nothing v3-specific outside `v3/`" —
     GitHub reads workflows only from the repo root — which is recorded
     rather than papered over.
@@ -10754,7 +10771,7 @@ was not on the plan's list at all.
   rather than patched — they described a v3 repo with a prototype in a
   subdirectory, which is now exactly backwards — and it gains two new rules
   (below).  The root `README.md` is v4's; v3's moved to `v3/README.md`.
-  The full v4 docs README rewrite stays round 43's.
+  The full v4 docs README rewrite stays round 44's.
 
 **Verification (2026-08-04)**: typecheck, lint, **1998 Node tests** and 71
 module tests at the root, **698 Node + 37 module tests** in `v3/` — 2696 and
@@ -10799,15 +10816,150 @@ and it is the argument for copying lean.
 with no automated check are the ones to watch — the `debug/` harness and the
 `watch` scripts were exercised by hand rather than by a spec, and the three
 marked release workflows will fail on their next run *by design*, which is
-only correct if round 49 actually adapts them.  `dist/` still holds nothing
+only correct if round 50 actually adapts them.  `dist/` still holds nothing
 but the declaration, so `main`/`module` resolve to files a git install does
-not have — pre-existing, unchanged, and round 43's first item.  42.6's
+not have — pre-existing, unchanged, and round 44's first item.  42.6's
 rename is the round's one **breaking** change to a name a consumer could
 already have written, and it ships without aliases on the reasoning that the
 prerelease line has no published consumers; if that reasoning is wrong the
 cost lands on whoever tracked `v4` from git.
 
-## Round 43 plan — packaging + publish hardening (planned 2026-08-04)
+## Round 43 — the debug harness (planned and landed 2026-08-04)
+
+Inserted ahead of the release sequence at the maintainer's request, which is
+why rounds 43–50 renumbered to 44–51.  `debug/` is v4's only manual harness —
+the page `npm run watch` opens, and what anyone forms a first impression from —
+and it was both broken and misleading.
+
+**What scoping found**, none of which any test could see, because `debug/` had
+no coverage of any kind:
+
+1. **Four of the seven networks 404'd.**  `debug/networks.js` pointed at
+   `../webgl/*.json`, which resolved to `debug/webgl/` until round 42 moved the
+   v3 tree to `v3/`.  The fetch rejected with no `.catch`, so the page rendered
+   *nothing* and said nothing.  This is a regression **round 42 introduced**:
+   its asset check read HTML `src`/`href` attributes, and these URLs are
+   fetched from JS.
+2. **`sanitizeStyle` threw the styling away** — a 14-property whitelist, every
+   `mapData(...)` dropped, every `[attr = …]` block dropped, and it looked for
+   `label` while all four Cytoscape-desktop exports spell it `content`.  Its
+   comment still justified the drop in terms of "fn styles", removed in round 8.
+   The visible result: every fixture rendered as flat monochrome discs, so the
+   harness read as "v4 can't style" while v4 has ~120 node props and a mapper DSL.
+3. **Labels defaulted off**, and turning them on *replaced* the sheet's mapping
+   with `data(id)` — UUIDs on em-web, numeric SUIDs on the NDEx sets.
+4. **No layout, view, toggles, selection, events or add/remove controls.**
+
+- [x] **43.1 The breakage.**  Fixtures re-pointed at `../v3/debug/webgl/…`
+  (69 MB already tracked under `v3/`; a copy would double the repo's weight, and
+  a v4 harness reading a v3 asset is what `benchmark/graph.mjs` and
+  `playwright-page/parity.html` already do).  The fetch gained a `.catch` that
+  writes the failure — and the reason — into the stats overlay.  `?layout` and
+  `?seed` joined `paramDefs` as **live** params, so a control change stops
+  silently wiping them.  The overlay reads the public `cy.renderer()` rather
+  than `cy._renderer`, and reports the three stats it was ignoring
+  (`mapperUploadedBytes`, `mapperDispatches`, the label shaping-memo hit rate).
+- [x] **43.2 `ndex-x-large`, re-slimmed.**  The previous slim kept
+  `id`/`source`/`target`/`position` only, which left the biggest fixture
+  unlabellable *and* unstylable.  Re-derived from the 250 MB original by
+  `debug/slim-ndex.mjs` (committed, so the provenance is re-runnable), now
+  carrying node `name` (gene symbols) and `Node_Type` (`'TF'` on 6052 of 19607)
+  and edge `Mechanism_of_Action` (−1..1).
+  **One edge channel, not two**, and the reason is worth recording: at 465k
+  edges the *key name* is the cost, so `Likelihood` would have added ~11 MB for
+  a width mapper — and width is a geometry channel, CPU-evaluated by design,
+  so it would have shown less for more bytes.  `Mechanism_of_Action` drives a
+  diverging **paint** mapper, which is what the GPU eval kernel actually
+  demonstrates at this scale.  Edge `id`s are dropped (v4 assigns one), which
+  pays for about half the increase: 28.6 → 34.1 MB.
+- [x] **43.3 Hand-authored styles.**  `sanitizeStyle` is deleted, not improved:
+  the maintainer's call was that the interesting thing is what a v4 sheet looks
+  like, not what survives a translation.  `debug/styles.js` carries one native
+  sheet per fixture plus a `plain` sheet (the pre-round-43 look, kept for when
+  you are debugging the *renderer* and want nothing to blame but geometry).
+  The headline is **em-web: the real enrichmentmap.org style**, ported from the
+  web app's `network-style.js` — whose v3 form is embedded in the fixture, so
+  the two can be read side by side.  Its node colour is a memoized per-element
+  function over a chroma scale there and a declarative `diverging` mapper here,
+  which is the clearest single argument for why v4 removed style functions.
+  Two of its properties **cannot** be reproduced, both by decided design, and
+  both recorded in the file: `z-index` (dropped 2026-08-01 — draw order is
+  structural) and `node:selected` restyling (no selector blocks; the accent is
+  shader-drawn).
+- [x] **43.4 Two real compound networks.**  `compound-fixture` ports v3's
+  hand-built graph (`v3/debug/compound.js`) verbatim — three levels of nesting,
+  a self-loop on a parent, parent↔descendant edges, one very long label, awkward
+  on purpose.  `em-web-clustered` materialises EnrichmentMap's own
+  `mcode_cluster_id` into compound parents: **41 clusters over 354 of 569
+  nodes**, a real compound structure sitting in real data rather than a
+  synthesised one.
+- [x] **43.5 The v3 page's controls, carried over.**  View (fit / fit-selected /
+  center-selected / reset / zoom / panBy, the animated `fit`/`center`/`panBy`
+  targets v3's page never demos, the rendered-bounding-box overlay, mount and
+  unmount), layout (all seven built-ins plus the spiral extension-contract
+  example, with v3's `layoutstart`/`layoutstop` timing readout), the core
+  toggles (v3's seven plus box selection, `selectionType`, the zoom range,
+  wheel sensitivity, and the v4-only `boxSelectionMode` and
+  `boxSelectionIncludesLabels`), v3's data-driven `button.toggler` pattern
+  (dispatch on the button's own text) extended with select/show/hide/remove,
+  add/remove with its `ms` readout plus a `compact()` button, and a **query
+  panel** where v3 has a selector box — because that is the replacement, and a
+  selector string would throw.
+  The events section is the one deliberate departure: v3 pops a 3-second toast
+  that the next event overwrites, so a *sequence* — the only interesting thing
+  about the drag or tap families — can never be seen.  This is a scrolling,
+  filterable, pausable log instead, with the per-frame families off by default
+  and one delegated listener showing the **predicate** form.
+- [x] **43.6 Production-like defaults.**  Labels on; the checkbox is now a plain
+  on/off over whatever the sheet declares rather than a replacement for it.
+- [x] **43.7 The active-bg indicator follows the drag.**  `showActiveBg` was
+  called from exactly one site — `onPointerDown` — so the circle was positioned
+  once, in screen space, and nothing moved it again.  Fixed **v3's way**: the
+  press point is stored in *model* space and re-projected per move, because the
+  graph moves under a background pan and a model-anchored circle therefore
+  stays glued to the point pressed.
+  Worth being precise about what that buys, since the two implementations are
+  observationally equivalent in the common case: during a pan the graph delta
+  equals the cursor delta, so re-placing at the cursor would look identical.
+  They differ only when the press stays in `pan` mode while nothing pans, which
+  takes **both** `userPanningEnabled: false` *and* `boxSelectionEnabled: false`
+  (with box selection on, a background drag with panning off becomes a box
+  gesture and shows no indicator at all).  A spec pins each half; the first was
+  run with the reposition removed and fails, the second passes either way,
+  which is itself the honest reading.
+- [x] **43.8 The harness gets tested.**  `test/modules/debug-harness.mjs` loads
+  the harness's browser globals as scripts and asserts the two things a headless
+  process can: every fixture a network names **exists at the path the page will
+  ask for**, and every sheet **compiles against that fixture's real data**
+  through the real entry point.  It found a bug on its first run — `range:
+  'category10'` for 30 MCL clusters throws ("scheme has only 10 entries; 30
+  needed"), because v4 will not silently recycle a categorical palette — which
+  is exactly the class of drift that made the page flat in the first place.
+- [x] **43.9 Docs.**  This record, the renumbering, and the sweep.  One
+  leftover swept up on the way: auto-generated element ids read `'gpu-' + n`
+  (`Core#_newId`), which the 42.6 rename missed and which `ele.id()` returns;
+  now `'cy-'`.  No spec asserted it.
+
+**Verification (2026-08-04)**: typecheck, lint, **1998 Node tests**, **90 module
+tests** (71 + 19 new), the throw gate at 0 Node-reachable dead, types clean, and
+the browser projects green with **goldens byte-stable** and the parity scenes at
+their recorded values — this round moves no pixel in any scene they cover.
+The new active-bg spec was run once with the fix removed and fails.
+**And the check that would have caught round 42's breakage**: every one of the
+nine networks was driven in a real browser and asserted to render — em-web at
+569 nodes labelled "PKR-mediated signaling", ndex-x-large at 19607 nodes /
+464657 edges labelled "TULP3", and so on through the list.
+
+**Risks tracked**: the harness now reads fixtures from `v3/debug/webgl/`, so the
+root module suite depends on the v3 tree being present — true in this repo by
+construction, but it is a coupling that did not exist before, and it is why the
+spec checks the *path* rather than trusting it.  The `ndex-x-large` fixture grew
+5.5 MB.  And `debug/styles.js` is hand-authored against a style surface that
+keeps growing: the module spec proves the sheets *compile*, not that they still
+look right, so a property that changes meaning rather than disappearing will not
+be caught by anything but opening the page.
+
+## Round 44 plan — packaging + publish hardening (planned 2026-08-04)
 
 The gaps the 2026-08-04 infrastructure pass found, closed for the v4
 entries.
@@ -10833,7 +10985,7 @@ entries.
   needs no GPU; a container requires WebGPU — the README rule,
   stated where installers read).
 
-## Round 44 plan — the docs generator (planned 2026-08-04)
+## Round 45 plan — the docs generator (planned 2026-08-04)
 
 Round 26's deliberately deferred half, now due: the release docs are
 *generated* from the JSDoc the gates have kept complete.
@@ -10851,7 +11003,7 @@ Round 26's deliberately deferred half, now due: the release docs are
   entries), and the stranded-block report runs before every
   generation, since a displaced block would now ship twice.
 
-## Round 45 plan — the v4 docs site (planned 2026-08-04)
+## Round 46 plan — the v4 docs site (planned 2026-08-04)
 
 - Prose sections written by hand (the generator covers members, not
   narrative): introduction, getting started, loading (columnar + the
@@ -10864,7 +11016,7 @@ Round 26's deliberately deferred half, now due: the release docs are
   (`versions.json`), so old links keep resolving; the Pages deploy in
   the release workflows re-points.
 
-## Round 46 plan — the migration guide + CHANGELOG (planned 2026-08-04)
+## Round 47 plan — the migration guide + CHANGELOG (planned 2026-08-04)
 
 - **The v3 → v4 guide**, built in part *from* the decided-design
   ledger and the README's deviations lists (which have been kept
@@ -10879,7 +11031,7 @@ Round 26's deliberately deferred half, now due: the release docs are
 - `CHANGELOG.md` started (4.0.0-alpha onward); both feed the docs
   site.
 
-## Round 47 plan — robustness + soak (planned 2026-08-04)
+## Round 48 plan — robustness + soak (planned 2026-08-04)
 
 The tier of testing a release needs and feature rounds never owed.
 
@@ -10895,7 +11047,7 @@ The tier of testing a release needs and feature rounds never owed.
 - **Multi-instance isolation** (shared page, independent stores,
   destroy order).
 
-## Round 48 plan — cross-platform validation (planned 2026-08-04)
+## Round 49 plan — cross-platform validation (planned 2026-08-04)
 
 - The matrix, run and recorded: macOS/Metal (the goldens'
   cross-platform claim re-verified), Windows/D3D12, WebKit and
@@ -10907,20 +11059,20 @@ The tier of testing a release needs and feature rounds never owed.
   without probing from a served page — the mistake this file has
   corrected twice.
 
-## Round 49 plan — release engineering (planned 2026-08-04)
+## Round 50 plan — release engineering (planned 2026-08-04)
 
 - The release workflows adapted for the 4.x line: version scripts
   (the prerelease spelling settled here), `pre_release_test.sh`
   updated for the v4 artifacts + v4 docs deploy, npm publish (+
-  provenance) verified against round 43's pack spec, the blog /
+  provenance) verified against round 44's pack spec, the blog /
   announcement draft.
 - **Cut `4.0.0-alpha.1`** — the first published v4.
 
-## Round 50 plan — the release bake → 4.0.0 (planned 2026-08-04)
+## Round 51 plan — the release bake → 4.0.0 (planned 2026-08-04)
 
 - The alpha/beta cycle: external-consumer smoke (a framework-wrapped
   app, an external layout through the round-17 contract, a real graph
-  app ported using round 46's guide — the guide is *tested* by the
+  app ported using round 47's guide — the guide is *tested* by the
   port), an issue-triage window, the final benchmark publication, and
   the final docs/ledger sweep.
 - Then **4.0.0**.

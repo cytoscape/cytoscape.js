@@ -7842,6 +7842,11 @@ declare class Core {
   _hasListeners(type: string): boolean;
   _emitViewportEvents(types: string[]): void;
   private _boundsOf;
+  /**
+   * A synthetic id for an element added without one.  The prefix read `gpu-`
+   * until round 43 — a leftover the 42.6 rename missed, and a user-visible one,
+   * since it is what `ele.id()` returns.
+   */
   private _newId;
 }
 //#endregion

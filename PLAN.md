@@ -200,6 +200,39 @@ described until their rounds ship.
    **Call taken (2026-08-04, fifth sitting): full coverage** — every
    shape, the polygon tier included, its ~2× dashed-polygon fragment
    cost accepted.  Executes as **round 38**.
+   **Three sub-calls the sitting did not reach**, found 2026-08-04 by
+   reading v3's `drawing-nodes.mts` against v4's style surface while
+   scoping the round.  They are logged rather than decided because each
+   changes what round 38 *builds*, and the round's own verification
+   (live v3 parity diffs per tier) will surface all three as pixel
+   differences if they are guessed at:
+   - **`double` does not draw a second band in v3 — it erases.**  v3
+     strokes the border solid, then re-strokes at `borderWidth / 3`
+     under `globalCompositeOperation = 'destination-out'`, which
+     removes a middle stripe from *everything already painted*: the
+     node's own fill, the edges under it, the background.  So a v3
+     `double` border shows the page through the gap, where round 38's
+     plan says "a second inner band" — which would show the *fill*
+     there.  v4 can reproduce the erase (return alpha 0 for stripe
+     fragments in the node FS, since fill and border are one draw), but
+     it interacts with the depth prepass, and it is a call, not a
+     detail.
+   - **`dashed` borders need a pattern.**  v3 reads
+     `border-dash-pattern` (default `[4, 2]`) and `border-dash-offset`
+     (default 0); v4 has neither, though it has the exact edge
+     equivalents (`line-dash-pattern`/`-offset`).  Either the two props
+     come with round 38 or `dashed` hardcodes v3's default — parity for
+     default styling, a drop for anything else.  Note `outline-style`
+     has no such question: v3 hardcodes `[4, 2]` there (and `[1, 1]`
+     for `dotted`), taking no props at all.
+   - **`border-cap` / `border-join`** are v3 props with no v4
+     counterpart, and the SDF band has no natural notion of either —
+     dash ends are perpendicular cuts (butt) by construction, which is
+     the deviation v4 already records for edge-layer strokes.  Drop
+     them explicitly or record the deviation; either way the round
+     should say so rather than leave them unmentioned.
+   `text-border-style` was already flagged for the round's docs-first
+   stage and is unaffected by these.
 2. **The overlap box-selection mode** (gap item 8) — v4 selects by
    containment only; v3 also offers overlap.  Deferred as a
    demand-gated hook, not v3-surface-critical.
@@ -10030,11 +10063,17 @@ round builds all three tiers.
   per-fragment cumulative perimeter — roughly 2× polygon fragment
   cost *where a dash is enabled*, accepted; solid borders pay a
   branch only (the `u`-computed-only-when-dashed gate).
-- **`double`** — a second inner band, no parameterization, every
-  shape; **`outline-style`** reuses the perimeter at the ring radius
-  (offset perimeter, different arc length).  `text-border-style`
-  stays out unless the same machinery makes it free (call at
-  docs-first).
+- **`double`** — described here as a second inner band, which
+  **2026-08-04's scoping found is not what v3 does**: v3 re-strokes at
+  `borderWidth / 3` under `destination-out`, erasing a middle stripe
+  from the fill and everything under the node rather than filling it.
+  See the three sub-calls added to open-call 1; this one, the missing
+  `border-dash-pattern`/`-offset` props, and `border-cap`/`-join` are
+  the round's docs-first agenda.  **`outline-style`** reuses the
+  perimeter at the ring radius (offset perimeter, different arc
+  length) and needs no props — v3 hardcodes `[4, 2]` and `[1, 1]`
+  there.  `text-border-style` stays out unless the same machinery
+  makes it free (call at docs-first).
 - Both props enum channels with the standard parse/mapper/
   stored-truth-readback plumbing; ghost bodies carry their border
   style like everything else.

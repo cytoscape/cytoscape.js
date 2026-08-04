@@ -8332,6 +8332,17 @@ describe and no suite prices:
   round-14.6 parents partition costs 1.08× against the same graph
   without the hierarchy (100 parents over 2000 leaves).
   **The finding: the style getters are 13–21× *slower* than v3.**
+  ***Corrected by round 34.0 (2026-08-03): 5.8×, not 13–21×.*** These
+  numbers come from a suite that imports `src/` through tsx, and
+  profiling `readProp` for round 34 found **23% of its samples in
+  `__name`** — esbuild's name-preserving wrapper, an
+  `Object.defineProperty` per closure *creation*, injected by tsx and
+  absent from the built bundle.  Through
+  `build/cytoscape-gpu.esm.mjs` the same getter is **292 ns** against
+  v3's 50 ns.  The gap is real and round 34 fixes it; the magnitude
+  below is inflated by the transpiler.  The rest of this record stands
+  — the *localization* (all of it inside `readProp`, against a 9 ns
+  column read) was measured the same way on both sides.*
   `ele.style( 'background-color' )` is 2.13 µs on v4 against 106 ns on
   v3; `style( 'width' )` 15×, `numericStyle` 13×, `renderedStyle` 2.0×,
   whole-object `style()` 2.2×.  Localized, not just observed: the cost
@@ -8695,9 +8706,10 @@ data structure differs.  The **useful** output is the other direction.
 measures; every one of these is a source change with its own
 verification, and three of them touch shipped declarations):
 
-1. **`StyleEngine.readProp`** — the style getters run 13–21× v3
-   (2.13 µs vs 106 ns for `style('background-color')`) with a **9 ns**
-   column read underneath.  Flat across props, so it is the per-call
+1. **`StyleEngine.readProp`** — the style getters run 13–21× v3 as
+   measured through tsx (**5.8× through the built bundle — see the
+   round-34.0 correction**; 292 ns vs 50 ns) with a **9 ns** column
+   read underneath.  Flat across props, so it is the per-call
    setup: a ~536-line method with a 145-case switch that allocates four
    closures before dispatching.  `numericStyle`, `renderedStyle`,
    `effectiveOpacity` and the `takesUpSpace`/`interactive`/
@@ -8781,3 +8793,113 @@ re-run.  The renderer benchmark ran on the RX 580 (33.11).
   mention it, and will miss one exercised through a wrapper.  It
   reports, it does not gate, and the header says which direction it
   errs in.
+
+## Round 34 plan — fixing what round 33 measured (planned 2026-08-03)
+
+Round 33 measured the prototype and found five paths slower than v3 or
+than v4's own design implies, logging each rather than fixing it because
+a measurement round measures.  This round fixes them.  It is the first
+round in a while whose commits change `src/`, so the browser suites are
+back in the verification gate.
+
+**A correction first, and it changes one of the five.**  Profiling
+`StyleEngine.readProp` before touching it showed **23% of its samples in
+`__name`** — esbuild's name-preserving wrapper, an
+`Object.defineProperty` per closure *creation*, which tsx injects and
+which does not exist in the built bundle (`grep -c __name
+build/cytoscape-gpu.esm.mjs` → 0).  Measured through the bundle instead,
+the same getter is **292 ns, not 2.0 µs**, against v3's 50 ns: the real
+gap is **5.8×**, not the 13–21× round 33 published.  The finding is real
+and worth fixing; its magnitude was inflated by the transpiler, in a
+suite that imports `src/` directly.
+
+That is the round-30 lesson ("coverage of transpiled sources needs
+source maps, or it lies") in a second guise, and it generalizes: **for
+closure-heavy hot paths, benchmarking the tsx sources measures the
+transpiler.**  Recorded in `AGENTS.md`, and the other four findings were
+re-measured through the bundle before any fix (they hold: they allocate
+little and are dominated by real work).
+
+**The five, re-measured through `build/cytoscape-gpu.esm.mjs`** — these
+are the numbers the round is judged against, at N=2000 nodes / 4000
+edges on the i9-9900K:
+
+| path | v4 before | v3 | gap |
+|---|---|---|---|
+| `ele.style( 'background-color' )` | 292 ns | 50 ns | 5.8× |
+| phased emit, no listeners | 530 ns | (flat: 112 ns) | 4.7× |
+| layout contract, empty impl | 333 µs | — | O(V+E) per run |
+| `cy.mutableElements()` | 121 µs | 18 ns | O(V+E) per call |
+| `eles.indexOf( ele )` | 3.63 µs | 45 ns | 81× |
+
+**Design calls (round 34):**
+
+1. **Behaviour is preserved exactly; these are not semantics changes.**
+   Every fix keeps the observable contract — element order, event
+   ordering and phase semantics, the values getters return.  Where a
+   fix could change something visible (the `elements()` memo returns the
+   *same object* to two callers where it used to return two), that is
+   called out and pinned by a spec.
+2. **Each fix is measured before and after, through the bundle**, and
+   the round record carries both numbers.  A fix that does not move its
+   number is reverted, not shipped with a story.
+3. **The order-list scan is the contract for "all elements in order".**
+   `nodeSlots()` currently walks handles; the replacement walks the same
+   insertion-order list `scanRefsInto` walks, so layouts see identical
+   order — which matters, since grid and circle assign positions by
+   index.
+4. **No public *semantics* change; one public *shape* change.** Making
+   `GpuLayoutContext.eles`/`.nodes` lazy turns two readonly fields into
+   getters, which is a `.d.ts` shape change (property access is
+   unaffected).  `dist/cytoscape-gpu.d.ts` is regenerated and
+   `test:types:gpu` re-run.
+
+**Pass split** (tests-first; docs in-commit; each pass its own commit):
+
+- [ ] **34.0 Docs-first** — this plan, the round-33 correction recorded
+  in its own record and in the README, and the `AGENTS.md` note about
+  benchmarking transpiled sources.
+- [ ] **34.1 `indexOf` is O(1)** — the lazily-built packed-key
+  membership `Set` becomes a `Map` from key to first index, so
+  `indexOf`/`indexOfId` answer from it while every set op keeps using
+  `.has()`.  One cache, two consumers.
+- [ ] **34.2 `elements()` memoized against a structure epoch** — the
+  store gains a monotonic counter bumped wherever an element enters or
+  leaves the order list (`allocSlot`, `freeSlot`, the bulk id path) and
+  on compaction; the core caches its `elements()` result against it, so
+  `mutableElements()` and repeated `elements()` calls are O(1) between
+  structural changes.  A counter, not a count: add-one-remove-one
+  between two calls must not read as unchanged.
+- [ ] **34.3 The phased emit takes the no-listener fast path** —
+  `_emitOnEle` returns before building the event or walking ancestors
+  when nothing is listening for the type.  Sound because v4's emitter
+  does not bubble to a parent (`bubble` defaults false and v4 never
+  overrides it), so an emit with no matching listener is observably a
+  no-op.
+- [ ] **34.4 The layout contract stops materializing the graph** —
+  `eles`/`nodes` become lazy getters, and `nodeSlots()`/`edgeSlots()`
+  read slots off the store's order list (whole-graph scope) or the
+  scope collection's refs (subset scope) instead of interning a handle
+  per element.  The store gains `scanSlotsInto`, the slot-only twin of
+  `scanRefsInto`.
+- [ ] **34.5 `readProp` stops allocating per call** — the four closures
+  built before the 145-case switch become module-level helpers taking
+  `(store, slot, id)`.  Mechanical and large; the existing style suites
+  and the stored-truth readback specs are the safety net.
+- [ ] **34.6 Verification + closing sweep** — rebuild the bundles,
+  re-measure all five through them, run the full Node suite, the
+  `webgpu` and `webgpu-visual` browser projects (source changed —
+  against a **freshly built bundle**, per the standing trap), regenerate
+  `dist/cytoscape-gpu.d.ts`, and sweep both docs plus the three named
+  drift sites.
+
+**Risks tracked**: the `elements()` memo going stale on a path that
+mutates the graph without touching the order list (mitigated by bumping
+at the order list itself, which is the one structure every add and
+remove passes through); the emit gate skipping an emit that some code
+depends on for a side effect other than its listeners (mitigated by the
+`bubble: false` argument and by the event-order specs); `nodeSlots()`
+changing layout order (mitigated by walking the same order list, and
+pinned by the layout suites' exact-position expectations); and
+`readProp`'s size making a mechanical edit error-prone (mitigated by
+typecheck plus the readback specs, which assert values per prop).

@@ -2035,14 +2035,19 @@ format; without `BENCH_JSON` their terminal output is unchanged.
 **What round 33 found** — the measurements that went the *other* way, all
 logged rather than fixed, since it was a measurement round:
 
-- **The style getters are 13–21× slower than v3.**
-  `ele.style( 'background-color' )` is 2.13 µs against v3's 106 ns, and
-  the cost is entirely inside `StyleEngine.readProp` (1.85 µs measured
-  against the ref) while the column read underneath is **9 ns**.  Flat
-  across props, so it is the per-call setup rather than the switch: a
-  ~536-line method with a 145-case switch that allocates four closures
-  before dispatching.  `effectiveOpacity`, `takesUpSpace`/`interactive`/
-  `transparent` and `numericStyle` all ride it.
+- **The style getters are 5.8× slower than v3.**
+  `ele.style( 'background-color' )` is 292 ns against v3's 50 ns
+  through the built bundle, and the cost is inside
+  `StyleEngine.readProp` while the column read underneath is **9 ns**.
+  Flat across props, so it is the per-call setup rather than the
+  switch: a ~536-line method with a 145-case switch that allocates four
+  closures before dispatching.  `effectiveOpacity`,
+  `takesUpSpace`/`interactive`/`transparent` and `numericStyle` all
+  ride it.  *(Round 33 first published this as 13–21× from a suite that
+  imports `src/` through tsx; round 34.0 traced the difference to
+  esbuild's `__name` wrapper, which tsx injects on every closure
+  creation and the bundle does not have.  For a closure-heavy hot path,
+  benchmarking the transpiled sources measures the transpiler.)*
 - **A compound child never gets the no-listener emit fast path.**  With
   nothing listening, a position write on a node two ancestors deep costs
   **6.4×** an orphan's (566 ns vs 89 ns): the phase walk runs whether or

@@ -118,7 +118,8 @@ admit they exist?  It found **one message advising a form v4 rejects**
 form, removed in round 8 and throwing since 29.3, and its doc comment
 said the same), fixed it to name the mapper replacement, and closed
 the documentation half: **every public member that throws now carries
-an `@throws` tag** (16/16, up from 7), gated beside the round-26
+an `@throws` tag** (16/16 at the time, up from 7; **18/18** today),
+gated beside the round-26
 coverage rule.  It also covered `mouseout` and `pointercancel`, the
 only two names of the round-17 event vocabulary no test mentioned.
 Note where that defect lived: *this file* has always described the
@@ -126,8 +127,9 @@ bypass correctly — the stale advice was in the runtime message and the
 JSDoc, which a markdown sweep never reads.
 Round 32 (2026-08-03) finished that sentence's last clause: **every
 public member that takes arguments now documents them** (221/221 at the
-time, up from 143; **229/229** since round 36.2 widened the audit to the
-exported functions it had never walked), gated the same way, because
+time, up from 143; **231/231** today — round 36.2 widened the audit to
+the exported functions it had never walked and 37.3 to the entry point
+itself), gated the same way, because
 docmaker emits a description per argument and a missing one is a hole in
 the release docs rather than only in an editor.
 Round 33 (2026-08-03) changed no behaviour either: it was the
@@ -148,9 +150,10 @@ dispatch table, **flattening** the per-property spread rather than
 uniformly lowering it.
 Round 36 (2026-08-04) is the **completion round**: the tail of work
 that needed no decision at all, now that what remains in PLAN.md is
-otherwise open calls.  `@returns` is complete (276/276; ungated until
-round 37.1), the `@param` gate was found never to have walked
-the public tier's exported functions (now 229/229), the browser-only
+otherwise open calls.  `@returns` is complete (276/276 at the time;
+ungated until round 37.1), the `@param` gate was found never to have
+walked the public tier's exported functions (229/229 then), the
+browser-only
 throw tier is closed by four specs and three honest reclassifications,
 three measurements this repo had promised and never recorded are
 recorded, and a **stranded-doc-block check** shipped — which found six
@@ -162,10 +165,14 @@ PLAN.md's ledger at once and planned rounds 37–50 through the release:
 the packaging move that makes v4 *the* package (v3 to a self-contained
 `v3/`), the small feature tail, the docs generator and site, and the
 release engineering — with one question deliberately left open, the
-**error policy** (round 40's own sitting).
+**error policy** (round 40's own sitting).  A second joined it later:
+round 41 found that *which* gesture defaults `preventDefault()` should
+suppress cannot be derived from v3, so that list is a v4 contract still
+to be designed.
 Round 37 (2026-08-04) is that roadmap's governance close-out, and it
 changes almost no behaviour: the two audits held back on policy calls
-now **gate** (throw coverage at zero tolerance, `@returns` at 277/277),
+now **gate** (throw coverage at zero tolerance, `@returns` at 277/277
+then, 278/278 today),
 the legacy-alias triage is finally applied as written (`roundrectangle`
 drops; `autolockNodes`/`autoungrabifyNodes` are kept as recorded
 exceptions), constructor strictness is closed at the *type* layer where
@@ -286,8 +293,9 @@ interaction gating
 `panningEnabled`/`zoomingEnabled` + `user*` variants,
 `boxSelectionEnabled`), introspection (`instanceString`, `isReady`,
 `headless`, `mutableElements`, `hasElementWithId`/`$id`, `options`),
-`destroy()`, `width()`/`height()`, and `compact()` (=`gc`, round 19 — the
-explicit form of the automatic slot-compaction trigger; see below).
+`destroy()`, `width()`/`height()`, and `compact()` (round 19 — the
+explicit form of the automatic slot-compaction trigger; see below;
+`gc` is its alias since round 39.3).
 Collections: `cy()`/`renderer()`/`element()`, events, graph
 manipulation (incl. edge `move()`), position/dimensions (model +
 rendered, `shift`, silent variants, edge `midpoint`/endpoints —
@@ -427,7 +435,7 @@ Node outlines (round 13 B5): `outline-color`/`-opacity`/`-width`/
 outer edge — exactly v3's scaled-path stroke for circles and squares
 (anisotropic shapes deviate from v3's per-axis scaling, recorded);
 ghosts carry their outline; outlines are not pickable and grow the
-bb by offset/2 + width.  `outline-style` stays out with
+bb by offset/2 + width.  `outline-style` is still unbuilt, with
 `border-style`: both need a *perimeter* coordinate the node
 fragment shader does not have.  The edge shader dashes for free
 because it carries `u` (model px along the edge) as a varying,
@@ -2018,10 +2026,11 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   (default export, the named type surface with no leaks, the
   factory's statics, and a floor on the surviving doc blocks) and
   `typescript/tests/gpu.test-d.ts` is a compile-only consumer test
-  in the `test:types` project.  Recorded: `event.target` types as
-  `unknown` because the event object is still the shared v3 type, so
-  consumers narrow it — the call was taken at the fifth design
-  sitting and **round 41 builds the v4 Event**, which resolves it.
+  in the `test:types` project.  **Closed by round 41.1**: the event
+  object is v4's own, and `event.target` types as the core or a
+  one-element collection (`GpuEventTarget`), so a handler narrows with
+  a type guard instead of casting `unknown` — the compile-only
+  consumer test lost its `as` with it.
   The round-37.3 additions to this test are the other direction: four
   `@ts-expect-error` directives pinning that the options type rejects
   unknown constructor keys, since that is where v4's constructor
@@ -2047,7 +2056,8 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   say.  `auditThrowTags()` (same script, tally printed under the
   coverage report) flags a public member whose body contains a
   `throw` and whose comment carries no `@throws` — 7 of 16 did when
-  the audit was written, and the surface is now 16/16.  It
+  the audit was written; the surface was 16/16 by the end of round 31
+  and is **18/18** today.  It
   **under-detects deliberately**: a member that throws only through a
   helper it calls is not flagged, since whether that belongs to *its*
   contract is a judgement.  Round 31.1 is why this is worth gating —
@@ -2064,7 +2074,7 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   bodies only** — so the public tier's *exported functions*, which are
   the whole surface of `wire.mts` and `columnar.mts` and are public
   members by the script's own definition, sat outside a gate that read
-  as complete.  They are inside it now, at **230/230** — the 230th
+  as complete.  They are inside it now, at **231/231** — the 230th
   arriving in round 37.3, which found the same failure a third time:
   the exported-function pattern round 36 added did not spell
   `default`, so `src/gpu/index.mts`, listed in the public tier since
@@ -2077,14 +2087,16 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
 - **`@returns` is written, and gated since round 37.1** (written in
   round 36).  Round 32 measured this tail at 63 of 276 and left it, on
   the reasoning above; round 36 wrote all 63, so the surface is
-  **277/277** (276 at the time; the 277th is the entry point round 37.3
-  brought inside the audit), and left the *gate's* boundary exactly
+  **278/278** (276 at the time; the 277th is the entry point round 37.3
+  brought inside the audit, the 278th round 41's event and emitter),
+  and left the *gate's* boundary exactly
   where round 32 drew it — a policy call of the kind PLAN.md's open call 8 held for
   test coverage.  The fifth design sitting (2026-08-04) took both
   calls, and this one ratchets: `auditReturnTags()` prints the tally
   under the coverage report, `--verbose` lists any miss, and
   `test/gpu-jsdoc-coverage.mjs` fails the build on a miss or on the
-  tally falling below 276.  The argument that moved it is that these
+  tally falling below its ratchet (276 at round 36's completion, 278
+  today).  The argument that moved it is that these
   comments ship as `.d.ts` hover text whether or not the docs
   generator reads them, and round 36's own history — a tail completed
   once, by hand, four rounds after it was measured — is what an
@@ -2125,9 +2137,11 @@ and reports which the Node suite reaches, the same way
   place — the keys are `file:line`, and round 34 moved a site out from
   under its entry by inserting two methods above it.  An unchecked
   exemption silently transfers to whatever line lands on the number.
-- **Reading since round 36.4**: 191 sites — 176 run by the Node
-  suite, **10 browser-only, 5 unreachable by design**, **0
-  Node-reachable and never run**.  Round 30 read 13 browser-only and 2
+- **Reading (2026-08-04, after round 41)**: **192 sites — 177 run by
+  the Node suite**, **10 browser-only, 5 unreachable by design**, **0
+  Node-reachable and never run**.  Round 36.4 read 191/176 with the
+  same three classifications; round 41's emitter added one Node-run
+  site.  Round 30 read 13 browser-only and 2
   unreachable, and pinned six of the browser tier (the export guards,
   30.2); round 36.4 finished that tier by **specs for four and
   classification for three**.  Specced in the `webgpu` project: no
@@ -2162,7 +2176,7 @@ and reports which the Node suite reaches, the same way
   `renderer.mts`) reads as covered in Node where no renderer exists.
   Calibrated against the browser-only tier — 2 of its 14 sites read
   as covered, one of them genuinely (a Node spec drives `GlyphBuffer`
-  with a mock device) — the known error is one site in 191, listed in
+  with a mock device) — the known error is one site in 192, listed in
   `MISATTRIBUTED`.  The tally is a **lower bound** on dead sites.
 
 ## Benchmarks
@@ -2512,7 +2526,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   listeners.  Since round 14.5, compound bubbling gives v3's cross-phase
   order (origin → ancestors → core, stopPropagation honored); the
   remaining deviation is *within* a phase, where listeners fire in plain
-  registration order.
+  registration order.  Round 41.2 added a second, and it is a fix rather
+  than a loss: v3 snapshots its listener list once per `emit()` *call*,
+  so in `emit( 'a b' )` a handler for `a` that calls `off( 'b' )` does
+  not stop `b` firing; v4's emitter snapshots per event, so the removal
+  takes effect.
 - **No z-index**: compound parent bodies draw first (round 14.9, in
   depth-asc/slot-asc order), then edges, then leaf nodes, then labels;
   within a stream draw order is slot order (≈ insertion order, but a
@@ -2764,7 +2782,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `text-border-width`/`-color`/`-opacity` (a band inward from the
   padded background box) and `text-background-shape`
   (rectangle | round-rectangle, v3's auto radius); `text-border-style`
-  stays out with the dash-a-boundary styles.
+  stays out with the dash-a-boundary styles — a **round-38** question,
+  where the scope call (full coverage, every shape) is taken but three
+  sub-calls found while scoping it are not; see PLAN.md's open call 1.
   `text-rotation` takes a **number of radians** on any label since
   round 27.7, alongside the `autorotate` keyword (edge labels only —
   it resolves from an edge's slope).  The stored value *is* the
@@ -3171,7 +3191,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   arrowhead vocabularies.  **`border-style` / `outline-style`** was
   the last one left, waiting on a scope call rather than a technique;
   the fifth design sitting took it — **full coverage, every shape** —
-  and it builds as round 38.
+  and it builds as round 38, which has not started: scoping it turned
+  up three further sub-calls the sitting did not reach (v3's `double`
+  *erases* a stripe rather than drawing a second band;
+  `dashed` borders need `border-dash-pattern`/`-offset`, which v4 has
+  for edges and not for nodes; `border-cap`/`-join` have no v4
+  counterpart), logged in PLAN.md's open call 1.
   ~~The `panBy` animation target~~ — **closed by round 28.2**
   (2026-08-03, the viewport-targets bullet above).  Round 28 also
   closed the verification gap round 27 left behind (its CPU-pick
@@ -3191,8 +3216,11 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   demand-gated deferred; unknown constructor options stay
   runtime-permissive, closed at the type layer instead (landed, round
   37.3); dropped v3 event names stay legal and silent, documented
-  (landed, round 37.4); `preventDefault()` becomes **functional** with
-  the v4 Event (round 41); and both audits gate (landed, round 37.1).
+  (landed, round 37.4); `preventDefault()` is **half wired** — its DOM
+  half landed with the v4 Event (round 41.4) while the *gesture* half
+  became a new open question, since the enumeration of preventable
+  defaults turned out not to be derivable from v3 at all; and both
+  audits gate (landed, round 37.1).
   `cytoscape.warnings()` builds too, but the **error policy** behind
   it — v3's mostly-no-throw stance against v4's fail-loudly design —
   is the one question deliberately left open, and is round 40's own
@@ -3204,9 +3232,9 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 - ~~**The completion tail**~~ — **closed by round 36** (2026-08-04):
   the `@returns` tail round 32 measured and deferred (63 written, so
   276/276 — reported and not gated at the time; **round 37.1 gates
-  it**), the `@param` gate's own blind spot (it had never walked the
-  public tier's exported functions; 229/229 then, 230/230 once round
-  37.3 found the entry point outside every audit), the four reachable
+  it**, and the surface is 278/278 today), the `@param` gate's own
+  blind spot (it had never walked the public tier's exported
+  functions; 229/229 then, 231/231 now), the four reachable
   browser-only throws and the three that are not, the two public
   collection members no benchmark called, and the three measurements
   this repo had promised and never taken (`--layout` on real
@@ -3239,15 +3267,18 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `@throws` wherever a member throws (31.2), and `@param` on every
   member that takes arguments (32, widened in 36.2 to the exported
   functions the audit had never walked, and again in 37.3 to
-  `export default function` — the entry point: **230/230**) — each
+  `export default function` — the entry point: **231/231**) — each
   gated, so the generator's input cannot rot before the generator
-  exists.  **`@returns` is complete since round 36** (277/277) and
+  exists.  **`@returns` is complete since round 36** (**278/278**) and
   **gated since 37.1**: docmaker's shape still has no return field,
   but the tags ship as `.d.ts` hover text regardless, and a tail
   completed by hand four rounds after it was measured is what an
   ungated rule looks like.  The generator itself is **round 44**, and
   the site round 45 — no longer "not until v4 ships" but scheduled.
-  Also logged from 26.5: `event.target` types as `unknown` on the
-  shared v3 event object; the fifth sitting took that too, and
-  **round 41 builds the v4 Event and emitter**, which is also what
-  severs v4's last shared-module import of v3.
+  Also logged from 26.5: `event.target` typed as `unknown` on the
+  shared v3 event object — **closed by round 41**, which gave v4 its
+  own Event and emitter.  It did *not* sever v4's last shared-module
+  import of v3, as the round-41 plan assumed: five generic utility
+  modules remain (`math`, `types`, `util/colors`, `util/position`,
+  `util/sort`), now a maintained allowlist in
+  `test/modules/gpu-import-graph.mjs` and a round-42 call.

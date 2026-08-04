@@ -22,9 +22,11 @@ Pointer/wheel interaction over the WebGPU canvas:
 - box selection: with boxSelectionEnabled, a drag while a
   multiple-select key (shift/ctrl/cmd) is held — or while panning is
   disabled — draws a selection box (a DOM overlay above the canvas) and
-  on release selects the contained elements with v3 semantics
-  (boxstart/boxend on the core, box/boxselect per element); mouse/pen
-  only for now
+  on release selects what the band caught under `cy.boxSelectionMode()`
+  — wholly-contained elements under 'contain' (the default, v3's),
+  anything the band touches under 'overlap' (round 39.1) — with v3's
+  event semantics (boxstart/boxend on the core, box/boxselect per
+  element); mouse/pen only for now
 - two touch pointers: a close pair (< 200 css px, v3's threshold)
   starts the cxt gesture — cxttapstart on the node under finger 1
   (else finger 2, else the core), cxtdrag (+ cxtdragover/out) as the

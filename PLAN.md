@@ -85,8 +85,10 @@ getters — and replaced it with a dispatch table, which *flattens* the
 per-property spread (5.1× → 2.3×) rather than uniformly lowering it.
 **Round 36** (2026-08-04) is the **completion round**: with the rest of
 this file's remainder being open calls, it took the tail that needs no
-decision — `@returns` to 276/276 (written, deliberately ungated), the
-`@param` gate's own blind spot (exported functions; 229/229), the
+decision — `@returns` to 276/276 (written, ungated at the time; round
+37.1 has since gated it, and the surface is 278/278), the
+`@param` gate's own blind spot (exported functions; 229/229 then,
+231/231 now), the
 browser-only throw tier closed by four specs and three
 reclassifications, the two un-benchmarked collection members, and three
 measurements promised here and never taken.  It also shipped a
@@ -102,6 +104,15 @@ export, the docs generator and v4 site, the migration guide, robustness
 and cross-platform passes, to a published **4.0.0**.  The per-item
 decisions are recorded in "Open calls for the maintainer" below; the
 sitting record and the round 37–50 plans are at the end of this file.
+**Rounds 37, 39 and 41 have since landed** (2026-08-04): **37** the
+governance close-out (throw coverage and `@returns` now gate, the alias
+split, the strictness closures), **39** the decided feature tail (overlap
+box selection, graph data on the wire, `cy.gc()`), and **41** the v4
+Event and emitter — complete except functional `preventDefault()` for
+gesture defaults, which became an open call when the enumeration turned
+out not to be derivable from v3.  **Round 38 has not started**: scoping
+it found three sub-calls the sitting did not reach (open call 1).
+**Round 40 is a design sitting.**
 `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -177,11 +188,21 @@ item 4 — the maintainer flagged it for real design work rather than a
 quick answer — which converts into round 40's design sitting instead of
 closing here.
 
-**Round 37 has since landed** (2026-08-04), executing the four items it
-owns: item 8 (both audits now gate), item 9 (the alias split), item 10
-(constructor strictness at the type layer) and item 11 (event names
-stay open, documented).  Each is marked below.  The rest still read as
-described until their rounds ship.
+**Rounds 37, 39 and 41 have since landed** (2026-08-04).  Round 37
+executed the four items it owns — item 8 (both audits now gate), item 9
+(the alias split), item 10 (constructor strictness at the type layer) and
+item 11 (event names stay open, documented).  Round 39 closed items 2 and
+5 and the `cy.gc()` half of 4; round 41 closed item 6 and the DOM half of
+item 12.  Each is marked below, and the rest still read as described
+until their rounds ship.
+
+**A second question is now genuinely open**, beside the error policy:
+round 41 found that item 12's remaining half — *which* gesture defaults
+`preventDefault()` suppresses — cannot be derived from v3 the way the
+round-41 plan assumed, because v3 never reads `isDefaultPrevented`
+either.  That list is a v4 contract still to be designed.  Round 38 also
+acquired three sub-calls, logged inside item 1, that the sitting did not
+reach.
 
 ### Scope calls
 
@@ -282,8 +303,8 @@ described until their rounds ship.
    implementation.  Format version 4; the section is one JSON string
    rather than a column, since graph data is a single small object
    where everything else in the format is per element.*
-6. **A v4-specific event type** (logged 26.5) — v4 emits the shared v3
-   `Event`, so `event.target` types as `unknown` in the shipped
+6. **A v4-specific event type** (logged 26.5) — v4 *emitted* the shared
+   v3 `Event`, so `event.target` typed as `unknown` in the shipped
    declarations.  A v4 event type is a design call, not an oversight.
    **Call taken (2026-08-04): build the v4 Event** — v4 gets its own
    Event class *and emitter* (severing the last shared-module import
@@ -293,6 +314,14 @@ described until their rounds ship.
    preventable gesture defaults are enumerated at the round's
    docs-first stage), and **no namespace machinery at all**.  Executes
    as **round 41**, resolving item 12 with it.
+   ***Landed as round 41 (2026-08-04)** — this item is closed: 41.1 the
+   Event (typed `target`, no namespace field), 41.2 the emitter, 41.4
+   `originalEvent`, 41.6 the exported types.  Two of the plan's premises
+   above were wrong and are corrected in the round record: severing the
+   emitter did **not** sever v4's last shared-module import (five utility
+   modules remain, now audited), and `preventDefault()`'s gesture half
+   could not be enumerated at a docs-first stage because there is no v3
+   behaviour to read — that half stays open, in item 12.*
 7. ~~**Six benchmark suites are outside the report**~~ (logged 29.6) —
    **closed by round 33.10** (2026-08-03).  `report.mjs` grew a third
    profile: `--all` runs every standalone sweep beside the quick
@@ -392,8 +421,9 @@ docs checks), and each is left in place pending the call.
     nothing.  Event *namespaces* were recorded here as the same story
     — "`cy.on('tap.ns', h)` never fires, not for `tap` and not for
     `tap.ns` either" — and **round 37.4 measured that and found it
-    wrong on the second half**.  v4 imports v3's emitter, so namespaces
-    parse and work in full v3 semantics: `on('tap.ns')` listens for
+    wrong on the second half**.  v4 *then still imported* v3's emitter,
+    so namespaces parsed and worked in full v3 semantics: `on('tap.ns')`
+    listened for
     `tap` qualified by `.ns`, `emit('tap.ns')` runs both it and any
     plain `tap` listener, `emit('tap.other')` runs only the plain one,
     and `off('tap.ns')` removes it.  The true statement is narrower:
@@ -410,8 +440,8 @@ docs checks), and each is left in place pending the call.
     inside the emitter — but the event *name* side is untouched.
     ***Landed as round 37.4 (2026-08-04)** — this item is closed, and
     the round corrected the namespace half of the evidence above: the
-    machinery is live, in full v3 semantics, and only v4's own emits
-    are unqualified.*
+    machinery was live at that point, in full v3 semantics, with only
+    v4's own emits unqualified.  **Round 41.2 has since removed it.***
     **Call taken (2026-08-04): event names stay open — no denylist.**
     v3 supports custom events (`node.emit('foo')`) and v4 keeps that,
     so names cannot be gated; dropped v3 spellings register and simply
@@ -421,13 +451,16 @@ docs checks), and each is left in place pending the call.
     never *emits* a qualified name, but a hand-emitted one behaves as
     it does in v3.  **Round 41.2 removed the machinery** while leaving
     names free, as planned.
-12. **`event.preventDefault()` exists and does nothing** (recorded in
-    the README since round 27's fact-check).  v4 emits the shared v3
-    `Event`, so the method is present on every event a handler
-    receives and sets `isDefaultPrevented`, but no v4 code reads that
-    flag — gesture defaults are gated by options instead.  Same
-    family as 10: the call is whether it throws, is removed from the
-    v4 event, or stays documented-as-inert.
+12. **`event.preventDefault()` reaches the DOM but no v4 gesture**
+    (logged as "exists and does nothing" from round 27's fact-check,
+    and half-fixed since).  It *did* nothing at all: v4 emitted the
+    shared v3 `Event`, so the method was present and set
+    `isDefaultPrevented` while no v4 code read the flag.  Since round
+    41 v4's own Event carries `originalEvent`, so the call now
+    suppresses the **browser's** default; what it still cannot do is
+    suppress a v4 *gesture* default, which stays gated by options.
+    Same family as 10: the call was whether it throws, is removed from
+    the v4 event, or stays documented-as-inert.
     **Call taken (2026-08-04): resolved by item 6's v4 Event.**
     `preventDefault()` is kept and becomes **functional** — the
     interaction layer reads `isDefaultPrevented` at the enumerated
@@ -566,13 +599,18 @@ scripts/gpu-bench-coverage.mjs   # round 33.12: which public members a benchmark
 test/modules/gpu-bench-coverage.mjs  # round 33.12: that script's matcher, and the limits it errs within
 scripts/gpu-jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss);
                                  #   also @throws accuracy (31.2), @param completeness (32, widened in
-                                 #   36.2 to exported functions), @returns (36.1) and stranded doc
-                                 #   blocks (36.6) — the last two report, never gate
+                                 #   36.2 to exported functions and again in 37.3 to `export default
+                                 #   function`), @returns (36.1, gated since 37.1) and stranded doc
+                                 #   blocks (36.6) — the last of which reports, never gates
 test/gpu-jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress), + the 31.2/32 rules
 test/modules/gpu-jsdoc-returns.mjs   # round 36.1: the @returns audit's parser, against a fixture
 test/modules/gpu-jsdoc-stranded.mjs  # round 36.6: the stranded-block check, and the limits it errs within
-scripts/gpu-throw-coverage.mjs   # round 30.4: which src/gpu throws the Node suite runs (reports, never gates)
-test/modules/gpu-throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture
+scripts/gpu-throw-coverage.mjs   # round 30.4: which src/gpu throws the Node suite runs; a zero-tolerance
+                                 #   gate since 37.1 (npm run test:throws, in the npm test chain), with
+                                 #   UNREACHABLE/MISATTRIBUTED as validated allowlists
+test/modules/gpu-throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture; + the 37.1 gate
+test/modules/gpu-import-graph.mjs    # round 41.3: what src/gpu imports from outside itself — five shared
+                                 #   utility modules as a maintained allowlist (round 42's precondition)
 rolldown.dts.gpu.config.mjs      # round 26.5: rolls src/gpu declarations up (build/dts-gpu/)
 build-dts.mjs                    #   finalizeDts (v3) + finalizeGpuDts (v4) -> dist/*.d.ts
 dist/cytoscape-gpu.d.ts          # round 26.5: the shipped declarations behind the "./gpu" types export
@@ -589,7 +627,7 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 - **Adjacency**: incremental per-node `outEdges[]`/`inEdges[]` (O(1) degree, cascade removal). CSR deferred.
 - **Element handles**: interned singleton length-1 collections per live slot; `{group, slot, gen}` refs validated on access; cached `id()`/`group()` stay readable after removal (needed for `remove` events).
 - **Events**: single core emitter (v3's `src/emitter.mts` unmodified at pass 1; v4's own since round 41.2) with per-ref listeners for collections and selector qualifiers for the core. Emitted: add, remove, position (skipped when no listeners), select, unselect, zoom, pan, viewport, fit, layoutstart/ready/stop, style, render, destroy, error, tap, mouseover/mouseout.
-  - **No event namespaces**: v4 drops namespaced events (`'tap.foo'`) — they are unused and cost a per-emit parse on the hot path. `emit()` treats an event string as bare type(s) only; the shared emitter's namespace parsing (retained for v3) is simply not exercised by v4. Listeners/emits should use plain type names.
+  - **No event namespaces**: v4 drops namespaced events (`'tap.foo'`) — they are unused and cost a per-emit parse on the hot path. This line long claimed the shared emitter's namespace parsing was "retained for v3 and simply not exercised by v4"; round 37.4 **measured** that and found it fully exercised, in v3 semantics, because v4 imported that emitter. Round 41.2 gave v4 its own, which matches a type whole — so `'tap.ns'` is one literal name now. Listeners/emits should use plain type names.
 - **Style**: constant blocks on `node|edge|*|#id` + `:selected/:unselected`; node channels background-color/width/height/shape/opacity/border-*, edge line-color/width/opacity; **plus label/font-size/color** (label sidecar, `data(id)` allowed). Applied on setBlocks, add, and select/unselect. Equal-radii ellipses compile to the exact circle SDF.
 - **Grid layout**: cell-packing math ported verbatim; bulk `store.setPositions` (one dirty span) + layout events; `cy.layout({name})` errors on anything but `grid`.
 - **Positions**: Float32 canonical; headless dims via `headlessWidth/headlessHeight` (800×600 defaults).
@@ -2335,7 +2373,9 @@ per-item history.)*
    `border-style`/`outline-style`, held for exactly the scope call
    this item's own sentence above asks for — see the round-27.8
    entry for the three cost tiers.  (Call taken 2026-08-04: **full
-   coverage** — scoped as round 38.)
+   coverage** — scoped as round 38, which has **not started**: scoping
+   it turned up three further sub-calls the sitting did not reach,
+   logged in open call 1.)
 5. **Arrow parity** — `mid-source`/`mid-target` positions,
    `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
    shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/
@@ -2391,7 +2431,13 @@ per-item history.)*
    **Scoped as round 20 (2026-08-01, plan at the end of this
    file)**: the option quartet + `events`/`text-events` + both
    touch gestures; `pixelRatio` found already landed; the overlap
-   box mode deferred as a demand-gated hook (not v3 surface).
+   box mode deferred as a demand-gated hook (not v3 surface) — and
+   **landed as round 39.1** (2026-08-04) once the fifth sitting took
+   the call, as the core option `boxSelectionMode: 'contain' |
+   'overlap'`.  Two things that entry did not say: v3 spells the same
+   choice as a *per-element style prop* (`box-selection`), and
+   `cy.elementsInBox()` deliberately stays pure containment, so the
+   mode is read by the gesture alone.
 9. **Animation surface** — `step` callback, `queue: false`,
    `renderedPosition` targets, Animation object controls
    (`pause`/`progress`/`reverse`/`apply`/`applying`/`completed` —
@@ -2418,7 +2464,9 @@ per-item history.)*
     contract** needs designing; core/collection extension points are
     a separate call.  **The layout contract landed as round 17
     (2026-08-01, below): direct objects, no registry;
-    core/collection extension points stay deferred (recorded).**
+    core/collection extension points stay deferred (recorded)** —
+    and **closed by the fifth sitting** (2026-08-04): they stay out of
+    4.0 by decision, demand-gated exactly as logged.
 11. **`display` vs `visibility`** — v3 distinguishes `display: none`
     (no space) from `visibility: hidden` (occupies space) from
     zero opacity; v4 has one `show`/`hide` flag.  Call: is one flag
@@ -2441,20 +2489,26 @@ per-item history.)*
       section).  It belongs in the decided-design ledger, not here.
     Genuinely open, each needing a call rather than an
     implementation:
-    - **`cy.gc()`** — v3's manual garbage-collect hook.  Round 19 gave
-      v4 `cy.compact()` plus an automatic trigger, so the question is
-      whether `gc` survives as anything but an alias.
+    - ~~**`cy.gc()`**~~ — v3's manual garbage-collect hook.  Round 19
+      gave v4 `cy.compact()` plus an automatic trigger, so the question
+      was whether `gc` survives as anything but an alias.  **Landed as
+      round 39.3** (2026-08-04): it survives *as* the alias, the alias
+      table's 84th row, kept because an upgrading app already types it
+      and v4 has no separate garbage-collection concept for it to name.
     - **`cytoscape.warnings()`** — the global console-warning toggle.
       v4 warns in several places (a deferred `compact()`, a full glyph
       atlas), so there is something to silence; whether a global
       mutable switch is the v4 spelling is the call.
-    - **graph-level `data` in the wire format** — narrower than it
-      reads: `cy.json()` **already exports** it (`core.mts`), and the
-      gap is the *binary* format (`serializeElements`), which carries
+    - ~~**graph-level `data` in the wire format**~~ — narrower than it
+      read: `cy.json()` **already exports** it (`core.mts`), and the
+      gap was the *binary* format (`serializeElements`), which carried
       elements only.  Since `cy.serialize()` output feeds `cy.add()`,
-      including graph data raises whether adding elements should
+      including graph data raised whether adding elements should
       overwrite the target's `data()` — a semantics call, not an
-      omission to patch.
+      omission to patch.  **Landed as round 39.2** (2026-08-04): format
+      version 4, flag `F_GRAPH_DATA`, one JSON string written last so
+      v2/v3 buffers keep loading; `options.elements` applies graph data
+      and `cy.add( buffer )` ignores it.
 
 ### Proposed-drops triage (decided 2026-07-29)
 
@@ -2783,10 +2837,19 @@ behind a green gate.  That is round 32's blind spot and round 36's
 widening arriving a **third** time, and it says something about audits
 that "an audit's scope is part of its claim" has now had to be learned
 once per round that touches one.  37.4 set out to document the event
-contract and found the namespace record wrong: v4 imports v3's emitter,
-so namespaces work in full v3 semantics — what is true is only that v4
-never emits a *qualified* name.  Both corrections land in the documents
-and in round 41's plan, which had described removing dead machinery.
+contract and found the namespace record wrong: v4 was still importing
+v3's emitter, so namespaces worked in full v3 semantics — what was true
+is only that v4 never emits a *qualified* name.  Both corrections land
+in the documents and in round 41's plan, which had described removing
+dead machinery — and round 41.2 has since removed the live machinery
+it actually was.
+
+**As of 2026-08-04, what remains.**  Unbuilt: round 38 (blocked on the
+three sub-calls in open call 1), round 40 (a design sitting), round 41.5
+(open call 12), and rounds 42–50.  Undecided: the **error policy**
+(round 40) and the **preventable-gesture enumeration** (open call 12) —
+the only two genuinely open questions, both of which the ledger holds
+rather than any round record.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -10079,8 +10142,9 @@ calls already taken (fifth sitting); nothing here needs design.
   **Namespaces do not behave as this file recorded.**  Contradiction 11
   said `cy.on('tap.ns', h)` "never fires, not for `tap` and not for
   `tap.ns` either", and the README said the shared emitter keeps
-  namespace parsing "only for v3".  Measured: v4 imports v3's emitter,
-  so namespaces parse and work in **full v3 semantics** —
+  namespace parsing "only for v3".  Measured (and true until round 41.2
+  removed the machinery): v4 imported v3's emitter,
+  so namespaces parsed and worked in **full v3 semantics** —
   `on('tap.ns')` listens for `tap` qualified by `.ns`, `emit('tap.ns')`
   runs both it and any plain `tap` listener, `emit('tap.other')` runs
   only the plain one, `off('tap.ns')` removes it.  The narrower true

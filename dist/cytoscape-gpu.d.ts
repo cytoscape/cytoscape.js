@@ -1084,8 +1084,10 @@ interface CytoscapeGpuOptions {
   userZoomingEnabled?: boolean;
   /** allow box selection (default true) */
   boxSelectionEnabled?: boolean;
-  /** box selection also requires label containment (round 16.5 — the
-   * v4 form of v3's box-select-labels; default false, as v3) */
+  /** box selection considers label boxes too (round 16.5 — the v4 form
+   * of v3's box-select-labels; default false, as v3).  Its sense follows
+   * `boxSelectionMode`: it narrows a 'contain' selection and widens an
+   * 'overlap' one (round 39.1). */
   boxSelectionIncludesLabels?: boolean;
   /** what the box-selection gesture counts as selected: 'contain'
    * (default, v3's) takes only elements wholly inside the band;
@@ -4417,7 +4419,9 @@ declare class GpuEvent {
   /**
    * Stop the event bubbling to further phases: the remaining ancestors and
    * the core do not see it (round 14.5).  Returning `false` from a handler
-   * does the same.
+   * does the same.  With `originalEvent` attached (round 41.4) this also
+   * calls the DOM event's `stopPropagation()`, so an outer DOM listener
+   * stops seeing it too.
    */
   stopPropagation(): void;
 }
@@ -6742,7 +6746,8 @@ declare class GpuCore {
   private _zoomingEnabled;
   private _userZoomingEnabled;
   private _boxSelectionEnabled;
-  /** box selection also requires label containment (16.5; default off — v3) */
+  /** box selection considers label boxes too (16.5; default off — v3).
+   * Narrows a 'contain' selection, widens an 'overlap' one (39.1). */
   private _boxSelectionIncludesLabels;
   private _boxSelectionMode;
   private _selectionType;
@@ -7065,10 +7070,11 @@ declare class GpuCore {
    *
    * **`boxSelectionMode` does not reach here** (round 39.1): this stays
    * the pure geometric containment query whatever the *gesture* is set
-   * to, so a programmatic caller's results never move under an
-   * interaction preference.  For the overlap question, `boxSelectionMode(
-   * 'overlap' )` and drag a box, or test intersection yourself against
-   * `eles.boundingBox()`.
+   * to.  For the overlap question, `boxSelectionMode( 'overlap' )` and
+   * drag a box, or test intersection yourself against
+   * `eles.boundingBox()`.  (`boxSelectionIncludesLabels` is the one
+   * interaction setting that *does* reach here: with it on, a node's
+   * label box must be contained too.)
    *
    * @param x1 — one corner's model x
    * @param y1 — that corner's model y
@@ -7457,8 +7463,10 @@ declare class GpuCore {
   private _exportImage;
   /**
    * Graph-level data — read all, read one key, or write.  This is a plain
-   * object, not a columnar sidecar (which is `ele.data()`), and it is not
-   * part of the wire format.  Writing emits `data`.
+   * object, not a columnar sidecar (which is `ele.data()`).  It **is**
+   * carried by the wire format since round 39.2: `serialize()` writes it
+   * and `options.elements` applies it, while `cy.add( buffer )`
+   * deliberately ignores it.  Writing emits `data`.
    *
    * @param args — `()` for the whole object, `( key )` to read one,
    *   `( key, value )` or `( patchObject )` to write
@@ -7556,8 +7564,11 @@ declare class GpuCore {
    */
   userZoomingEnabled(bool?: boolean): boolean | this;
   /**
-   * Box selection requires label containment too when on (round 16.5;
-   * v3's box-select-labels, reshaped as a core option — default off).
+   * Whether box selection considers label boxes as well as node bodies
+   * (round 16.5; v3's box-select-labels, reshaped as a core option —
+   * default off).  Its sense **follows `boxSelectionMode`**: under
+   * `'contain'` the label box must *also* be inside the band, under
+   * `'overlap'` a label that merely crosses the band is *enough*.
    *
    * @param bool — the setting to apply; omit to read it
    * @returns the setting, or this when setting
@@ -7573,7 +7584,7 @@ declare class GpuCore {
    * Two notes on the boundary.  This setting is read by the **gesture**
    * only: `cy.elementsInBox()` stays the pure geometric containment
    * query it has always been, so a programmatic caller's results do not
-   * change under an interaction preference.  And
+   * change under *this* setting.  And
    * `boxSelectionIncludesLabels` reverses sense with the mode, because
    * it can only mean one thing in each: under 'contain' the label box
    * must *also* be inside, under 'overlap' a label that crosses the band

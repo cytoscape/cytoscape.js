@@ -563,8 +563,10 @@ export interface CytoscapeGpuOptions {
   userZoomingEnabled?: boolean;
   /** allow box selection (default true) */
   boxSelectionEnabled?: boolean;
-  /** box selection also requires label containment (round 16.5 — the
-   * v4 form of v3's box-select-labels; default false, as v3) */
+  /** box selection considers label boxes too (round 16.5 — the v4 form
+   * of v3's box-select-labels; default false, as v3).  Its sense follows
+   * `boxSelectionMode`: it narrows a 'contain' selection and widens an
+   * 'overlap' one (round 39.1). */
   boxSelectionIncludesLabels?: boolean;
   /** what the box-selection gesture counts as selected: 'contain'
    * (default, v3's) takes only elements wholly inside the band;

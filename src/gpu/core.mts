@@ -128,7 +128,8 @@ export class GpuCore {
   private _zoomingEnabled: boolean;
   private _userZoomingEnabled: boolean;
   private _boxSelectionEnabled: boolean;
-  /** box selection also requires label containment (16.5; default off — v3) */
+  /** box selection considers label boxes too (16.5; default off — v3).
+   * Narrows a 'contain' selection, widens an 'overlap' one (39.1). */
   private _boxSelectionIncludesLabels: boolean;
   private _boxSelectionMode: BoxSelectionMode;
   private _selectionType: 'single' | 'additive';
@@ -960,10 +961,11 @@ export class GpuCore {
    *
    * **`boxSelectionMode` does not reach here** (round 39.1): this stays
    * the pure geometric containment query whatever the *gesture* is set
-   * to, so a programmatic caller's results never move under an
-   * interaction preference.  For the overlap question, `boxSelectionMode(
-   * 'overlap' )` and drag a box, or test intersection yourself against
-   * `eles.boundingBox()`.
+   * to.  For the overlap question, `boxSelectionMode( 'overlap' )` and
+   * drag a box, or test intersection yourself against
+   * `eles.boundingBox()`.  (`boxSelectionIncludesLabels` is the one
+   * interaction setting that *does* reach here: with it on, a node's
+   * label box must be contained too.)
    *
    * @param x1 — one corner's model x
    * @param y1 — that corner's model y
@@ -1696,8 +1698,10 @@ export class GpuCore {
 
   /**
    * Graph-level data — read all, read one key, or write.  This is a plain
-   * object, not a columnar sidecar (which is `ele.data()`), and it is not
-   * part of the wire format.  Writing emits `data`.
+   * object, not a columnar sidecar (which is `ele.data()`).  It **is**
+   * carried by the wire format since round 39.2: `serialize()` writes it
+   * and `options.elements` applies it, while `cy.add( buffer )`
+   * deliberately ignores it.  Writing emits `data`.
    *
    * @param args — `()` for the whole object, `( key )` to read one,
    *   `( key, value )` or `( patchObject )` to write
@@ -1887,8 +1891,11 @@ export class GpuCore {
   }
 
   /**
-   * Box selection requires label containment too when on (round 16.5;
-   * v3's box-select-labels, reshaped as a core option — default off).
+   * Whether box selection considers label boxes as well as node bodies
+   * (round 16.5; v3's box-select-labels, reshaped as a core option —
+   * default off).  Its sense **follows `boxSelectionMode`**: under
+   * `'contain'` the label box must *also* be inside the band, under
+   * `'overlap'` a label that merely crosses the band is *enough*.
    *
    * @param bool — the setting to apply; omit to read it
    * @returns the setting, or this when setting
@@ -1911,7 +1918,7 @@ export class GpuCore {
    * Two notes on the boundary.  This setting is read by the **gesture**
    * only: `cy.elementsInBox()` stays the pure geometric containment
    * query it has always been, so a programmatic caller's results do not
-   * change under an interaction preference.  And
+   * change under *this* setting.  And
    * `boxSelectionIncludesLabels` reverses sense with the mode, because
    * it can only mean one thing in each: under 'contain' the label box
    * must *also* be inside, under 'overlap' a label that crosses the band
@@ -2569,9 +2576,10 @@ export class GpuCore {
 
   _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<GpuEventProps> ): void {
     // Round 34.3: nothing listens for this type, so there is nothing to
-    // do.  Sound because v4's emitter never bubbles to a parent —
-    // `bubble` defaults false and v4 does not override it — so an emit
-    // with no matching listener is observably a no-op.
+    // do.  Sound because v4's emitter has no bubbling of its own (round
+    // 41.2 dropped v3's `bubble`/`parent`; compound bubbling is the
+    // phase walk below) — so an emit with no matching listener is
+    // observably a no-op.
     //
     // Most callers gate already; the *pointer layer's* sixteen do not
     // (mouseover/mouseout, the pointer pair, tap, tapselect, the box

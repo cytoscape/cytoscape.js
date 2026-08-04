@@ -24,12 +24,15 @@ phase order and `stopPropagation()` behave exactly as round 14.5 built them:
      inherited full v3 namespace semantics, which contradicted the design and
      nobody had noticed (measured round 37.4).
 
-`preventDefault()` is **still inert**, deliberately and temporarily: the
-fifth design sitting decided it should become functional, but the
-enumeration of *which* gesture defaults it gates could not be derived the
-way round 41's plan expected — v3 never reads `isDefaultPrevented` either,
-so there is no v3 behaviour to port.  That enumeration is logged as an open
-call; the flag is recorded here so the machinery is ready for it.
+`preventDefault()` is **inert for v4's own gesture defaults**, deliberately
+and temporarily.  Its DOM half works (41.4): with `originalEvent` attached
+it reaches the browser's default.  What it cannot do is stop a tap
+selecting or a grab starting, because nothing in v4 reads
+`isDefaultPrevented()`.  The fifth design sitting decided it should become
+functional, but the enumeration of *which* gesture defaults it gates could
+not be derived the way round 41's plan expected — v3 never reads the flag
+either, so there is no v3 behaviour to port.  That enumeration is logged as
+an open call; the flag is recorded here so the machinery is ready for it.
 */
 
 /** The DOM event a gesture came from, when there was one. */
@@ -156,7 +159,9 @@ export class GpuEvent {
   /**
    * Stop the event bubbling to further phases: the remaining ancestors and
    * the core do not see it (round 14.5).  Returning `false` from a handler
-   * does the same.
+   * does the same.  With `originalEvent` attached (round 41.4) this also
+   * calls the DOM event's `stopPropagation()`, so an outer DOM listener
+   * stops seeing it too.
    */
   stopPropagation(): void {
     this.isPropagationStopped = returnTrue;

@@ -2408,6 +2408,22 @@ because a measurement round measures.  Six rows across the round were
 those (`curves.mjs`'s box-selection premium) had been published in the
 README since round 29.4.
 
+**2026-08-03, round 35.**  The maintainer read round 34's residual —
+"the style getters are still 2.3× and the cause is a 145-case switch" —
+and asked the obvious question: why is a 145-case switch there at all,
+and why not a direct lookup?  Both halves were right.  The count is not
+accidental (one entry per readable property, median two lines each), but
+the *shape* cost something real: V8 does not hash a string switch that
+large, so a property's read cost depended on its position in the file —
+which is also why rounds 33 and 34 understated the getters, having
+measured `background-color`, the fourth case.  Round 35 turned the
+switch into a `Map` of 111 readers behind a 153-property
+characterization spec, flattening the spread from 5.1× to 2.3× and
+making a whole-object `style()` 1.27–1.48× faster.  The lesson worth
+keeping is not about switches: **the round happened because someone
+asked why a number was shaped that way, after the measurement rounds
+had accepted it.**
+
 **2026-08-03, round 34.**  The fix round for what 33 measured.  All five
 paths are fixed — `indexOf` and `mutableElements()` at parity with v3,
 the emit path's new no-listener gate at 8 ns, the layout contract 420×

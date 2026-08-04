@@ -2051,7 +2051,9 @@ before/after numbers below are through the built bundle at N=2000
 shared one varies ±30%):
 
 - **The style getters — 292 ns → 122 ns** (round 34.5), against v3's
-  52 ns: the gap went 5.8× → **2.3×**.  Profiling the *bundle* put 36%
+  52 ns: the gap went 5.8× → **2.3×**; round 35 then replaced the
+  150-case switch behind them with a dispatch table, which **flattens**
+  what remains — see below.  Profiling the *bundle* put 36%
   of `readProp` in `normalizeProp` — a regex replace and a lowercase
   allocation per read, turning `backgroundColor` into
   `background-color` before the 145-case switch it precedes — so it is
@@ -2096,6 +2098,21 @@ shared one varies ±30%):
   answer.
 - Whole-object `data()` is 6.3× v3 — the columnar rebuild-the-object
   cost, showing up exactly where the design predicts.
+
+**Round 35 — the readback dispatch table.**  `StyleEngine.readProp`
+answered all 150 readable property labels from one switch of the same
+size, which is a dispatch table written as control flow.  V8 does not
+hash a string switch that large, so a property's cost depended on where
+it sat in the file: moving `border-width`'s case (body untouched) from
+sixth to last took it from 56 ns to 90 ns.  It is now a `Map` of 111
+readers, and `readProp` is 60 lines.  The effect is a **flattening**
+rather than a uniform speedup — the spread went from **56–286 ns (5.1×)
+to 48–110 ns (2.3×)**, the worst property is 2.6× faster and the
+earliest few are ~15 ns slower — and on the aggregate a whole-object
+`style()` is **1.27× faster on a node and 1.48× on an edge**, edges
+gaining more because their properties sat at the back of the switch.
+Equivalence is pinned by `test/gpu-style-readback-all.mjs`, which reads
+every one of the 153 properties on a styled node and a styled edge.
 
 `node scripts/gpu-bench-coverage.mjs [--verbose]` reports which public
 members a benchmark calls (83% of the callable surface; core 98.9%,

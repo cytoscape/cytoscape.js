@@ -2948,6 +2948,12 @@ interface CoreStyle {
 }
 declare class StyleEngine {
   private store;
+  /**
+   * The narrow view of this engine that the module-scope property
+   * readers receive (35.2).  Built once here rather than per read, and
+   * its getters stay live across a sheet swap that replaces `defs`.
+   */
+  private readonly readCtx;
   private sheet;
   private defs;
   /** the parents-group compound style, applied per parent slot */

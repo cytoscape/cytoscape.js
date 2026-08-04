@@ -9132,14 +9132,64 @@ case) understated the getters for everything else.
 **Pass split** (tests-first; docs in-commit):
 
 - [ ] **35.0 Docs-first** — this plan.
-- [ ] **35.1 The characterization spec** — all 153 properties, both
-  groups, against current values.  Must fail if any property's read
-  changes.
-- [ ] **35.2 The dispatch table** — the switch becomes
-  `PROP_READERS`, `readProp` becomes the guards plus a lookup.
-- [ ] **35.3 Measure + sweep** — before/after through the built bundle
-  for an early, a middle and a late property; docs updated with what
-  it bought and what it did not.
+- [x] **35.1 The characterization spec** (2026-08-03) —
+  `test/gpu-style-readback-all.mjs`: 153 properties × a styled node and
+  a styled edge, 306 assertions, generated from the implementation as
+  it stood and **seen green before 35.2 touched anything**.  The 117
+  rows that read `undefined` are pinned too — they are how a node-only
+  property stays node-only.  Controls: making one property read the
+  wrong column fails 1 spec; letting a node-only property leak onto
+  edges fails 1.
+- [x] **35.2 The dispatch table** (2026-08-03) — the switch is gone.
+  `PROP_READERS` is a module-scope `Map` of 111 readers over 150
+  labels (nine readers deliberately answer several labels), and
+  `readProp` is now **60 lines**: the guards, then a `Map.get` and a
+  call.  A reader takes only the arguments it uses, in the order
+  `( store, slot, ref, engine, prop )`.
+  Encapsulation held: the readers need five engine members
+  (`defFor` ×21, `store` ×6, `defs` ×4, `labelChannels` ×2,
+  `readImageProp` ×1), all private, so rather than widen the class the
+  engine builds **one narrow `ReadContext` per instance** — arrow
+  functions capturing `this`, with `store`/`defs` as accessors because
+  a sheet swap replaces `defs` wholesale and a snapshot would hand
+  every reader the previous sheet.
+  Three parser bugs were found and fixed *before* applying anything,
+  by inspecting the generated table rather than by running it: labels
+  written several to a line (`case 'a': case 'b':`) were silently
+  dropping 12 of the 150; a nested switch inside one reader body
+  confused a depth-based split; and section comments written above a
+  case were being pulled into the *previous* reader, which is this
+  codebase's stranded-comment pattern in a new costume — they now lead
+  the group they document.
+- [x] **35.3 Measure + sweep** (2026-08-03) — **the table flattens the
+  cost; it does not lower all of it.**  Through the built bundle, by
+  the property's old position in the switch:
+
+  | property (old position) | switch | table |
+  |---|---|---|
+  | `border-width` (#6) | 56 ns | 73 ns |
+  | `background-color` (#4) | 108 ns | 110 ns |
+  | `text-wrap` (#73) | 56 ns | 52 ns |
+  | `text-max-width` (#74) | 59 ns | 48 ns |
+  | `taxi-radius` (#142) | 115 ns | 91 ns |
+  | `target-distance-from-node` (#150) | 286 ns | **108 ns** |
+
+  The spread was **56–286 ns (5.1×)** and is now **48–110 ns (2.3×)**:
+  the worst property is **2.6× faster**, the earliest few are ~15 ns
+  slower (a `Map.get` costs what the switch's first comparisons did
+  not), and cost no longer depends on where a property sits in a file.
+  The aggregate is the number that matters, since `style()` with no
+  argument reads every property of the group: **19.95 → 15.71 µs on a
+  node (1.27×) and 30.87 → 20.92 µs on an edge (1.48×)** — edges gain
+  more because edge properties sat at the back.
+  **Verification**: typecheck, lint, **2662 Node tests** (2508 + the
+  154 characterization specs), 77 module tests, JSDoc 100% with
+  `@throws` 16/16 and `@param` 221/221, throw coverage 0 dead,
+  `test:types:gpu` clean (1098 doc blocks; the `.d.ts` gained only the
+  private `readCtx` line), and **168/168 browser specs** against a
+  hand-rebuilt bundle with goldens byte-stable and parity scenes at
+  their recorded values.
+  **Round 35 is complete.**
 
 **Risks tracked**: a mis-transcribed case silently returning the wrong
 value (mitigated by 35.1, which is written and seen passing against the

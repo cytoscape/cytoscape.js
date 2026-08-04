@@ -3317,8 +3317,640 @@ const readAlpha = ( store: GraphStore, slot: number, id: ColumnIdArg ): number =
 const packedColor = ( packed: number ): string =>
   formatRgba( packed & 0xff, ( packed >>> 8 ) & 0xff, ( packed >>> 16 ) & 0xff, ( packed >>> 24 ) & 0xff );
 
+
+/*
+Round 35.2: the stored-truth readback, as a dispatch table.
+
+`readProp` used to answer all 150 readable property labels from a single
+switch of the same size — a dispatch table written as control flow.  V8
+does not hash a string switch that large: moving `border-width`'s case,
+body untouched, from the sixth position to the tail cost it 56 → 90 ns
+through the built bundle, so a property's read cost depended on where it
+happened to sit in the file.
+
+Here it is data.  One `Map.get` answers any property in the same time,
+each reader is a small function that can be read on its own, and adding
+a property is an entry rather than a position in a 524-line switch.  A
+reader takes only the arguments it uses, in the order
+`( store, slot, ref, engine, prop )` — `prop` is passed because nine
+readers deliberately answer several labels and need to know which.
+*/
+/**
+ * The slice of the engine a property reader may use.  A narrow context
+ * rather than the engine itself, so the table can live at module scope
+ * without any of `StyleEngine`'s privates becoming public: it is built
+ * once per engine, and its getters keep it live across a sheet swap.
+ */
+interface ReadContext {
+  readonly store: GraphStore;
+  readonly defs: { nodes: GroupDef; edges: GroupDef; parents: GroupDef };
+  defFor( ref: Ref ): GroupDef;
+  labelChannels( ref: Ref ): { fontSize: number; color: string };
+  readImageProp( slot: number, prop: string ): string | number;
+}
+
+type PropReader = (
+  store: GraphStore, slot: number, ref: Ref, engine: ReadContext, prop: string
+) => string | number | undefined;
+
+const PROP_READERS = new Map<string, PropReader>();
+
+/** Register one reader under every property name it answers. */
+const defineReader = ( names: string[], read: PropReader ): void => {
+  for( const name of names ){ PROP_READERS.set( name, read ); }
+};
+
+defineReader( [ 'background-color' ],
+  ( store, slot ) => readColor( store, slot, 'node.fillColor' ) );
+
+defineReader( [ 'border-color' ], ( store, slot ) => readColor( store, slot, 'node.borderColor' ) );
+
+defineReader( [ 'border-width' ],
+  ( store, slot ) => readScalar( store, slot, 'node.borderWidth' ) );
+
+defineReader( [ 'corner-radius' ], ( store, slot ) => {
+  const r = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 ];
+
+  return r === 0xffffffff ? 'auto' : r / 256;
+} );
+
+defineReader( [ 'border-position' ], ( store, slot ) => {
+  return BORDER_POSITION_NAMES[
+    ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 1 ] & 0xff ] ?? 'center';
+} );
+
+defineReader( [ 'background-fill', 'line-fill' ], ( store, slot, ref, engine, prop ) => {
+  const gid = prop === 'background-fill' ? 'node.gradient' : 'edge.gradient';
+  const meta = ( store.column( gid ) as Uint32Array )[ slot * 8 ];
+
+  return FILL_KIND_NAMES[ meta & 3 ] ?? 'solid';
+} );
+
+defineReader( [ 'background-gradient-direction' ], ( store, slot ) => {
+  const meta = ( store.column( 'node.gradient' ) as Uint32Array )[ slot * 8 ];
+
+  return GRADIENT_DIRECTION_NAMES[ ( meta >>> 2 ) & 7 ] ?? 'to-bottom';
+} );
+
+defineReader( [ 'background-gradient-stop-colors', 'line-gradient-stop-colors' ], ( store, slot, ref, engine, prop ) => {
+  const gid = prop.startsWith( 'background' ) ? 'node.gradient' : 'edge.gradient';
+  const rec = ( store.column( gid ) as Uint32Array ).subarray( slot * 8, slot * 8 + 8 );
+  const count = ( rec[ 0 ] >>> 5 ) & 7;
+  const parts: string[] = [];
+
+  for( let i = 0; i < count; i++ ){
+    const c = rec[ 1 + i ];
+
+    parts.push( formatRgba( c & 0xff, ( c >>> 8 ) & 0xff, ( c >>> 16 ) & 0xff, ( c >>> 24 ) & 0xff ) );
+  }
+
+  return parts.join( ' ' );
+} );
+
+defineReader( [ 'background-gradient-stop-positions', 'line-gradient-stop-positions' ], ( store, slot, ref, engine, prop ) => {
+  const gid = prop.startsWith( 'background' ) ? 'node.gradient' : 'edge.gradient';
+  const rec = ( store.column( gid ) as Uint32Array ).subarray( slot * 8, slot * 8 + 8 );
+  const count = ( rec[ 0 ] >>> 5 ) & 7;
+  const parts: string[] = [];
+
+  for( let i = 0; i < count; i++ ){
+    const raw = i === 4 ? rec[ 7 ] & 0xff : ( rec[ 6 ] >>> ( i * 8 ) ) & 0xff;
+
+    parts.push( `${Math.round( raw / 255 * 100 )}%` );
+  }
+
+  return parts.join( ' ' );
+} );
+
+defineReader( [ 'outline-color' ], ( store, slot ) => {
+  const rgba = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 2 ];
+
+  return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+} );
+
+defineReader( [ 'outline-opacity' ], ( store, slot ) => {
+  return Math.round(
+    ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 2 ] >>> 24 ) / 255 * 1000 ) / 1000;
+} );
+
+defineReader( [ 'outline-width' ],
+  ( store, slot ) => ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 3 ] & 0xffff ) / 256 );
+
+defineReader( [ 'outline-offset' ],
+  ( store, slot ) => ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 3 ] >>> 16 ) / 256 );
+
+// the B1 channel opacities read back *folded* (stored alpha /
+// 255 — the declared color alpha times the opacity; the
+// outline/arrow precedent)
+defineReader( [ 'background-opacity' ],
+  ( store, slot ) => Math.round( ( store.column( 'node.fillColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000 );
+
+defineReader( [ 'border-opacity' ],
+  ( store, slot ) => Math.round( ( store.column( 'node.borderColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000 );
+
+// background images (15.2): stored-truth readback off the blob
+// records; per-image lists read back space-joined (the 12b list
+// convention), single images as scalars
+defineReader( [ 'background-image', 'background-fit', 'background-image-opacity', 'background-position-x', 'background-position-y', 'background-offset-x', 'background-offset-y', 'background-width', 'background-height', 'background-repeat', 'background-clip', 'background-image-containment', 'background-image-smoothing', 'background-image-crossorigin', 'background-image-type', 'background-image-color' ],
+  ( store, slot, ref, engine, prop ) => engine.readImageProp( slot, prop ) );
+
+defineReader( [ 'events' ], ( store, slot, ref ) => {
+  // 20.2: stored truth is the flag bit
+    return store.hasFlag( ref.group, slot, FLAG_NO_EVENTS ) ? 'no' : 'yes';
+} );
+
+defineReader( [ 'text-events' ], ( store, slot ) => {
+  // 20.3
+    return store.hasFlag( 'nodes', slot, FLAG_TEXT_EVENTS ) ? 'yes' : 'no';
+} );
+
+defineReader( [ 'visibility' ], ( store, slot, ref ) => {
+  // 22: stored truth is the element's own state
+    return store.hasFlag( ref.group, slot, FLAG_SELF_INVISIBLE ) ? 'hidden' : 'visible';
+} );
+
+defineReader( [ 'chart' ], ( store, slot ) => {
+  const rec = store.chartAt( slot );
+
+  return rec == null ? 'none' : rec.kind === CHART_PIE ? 'pie' : 'stripes';
+} );
+
+defineReader( [ 'chart-values' ],
+  ( store, slot ) => store.chartAt( slot )?.values.join( ' ' ) ?? '' );
+
+defineReader( [ 'chart-colors' ],
+  ( store, slot ) => store.chartAt( slot )?.colors.map( c => formatRgba( ...c ) ).join( ' ' ) ?? '' );
+
+defineReader( [ 'chart-size' ], ( store, slot ) => store.chartAt( slot )?.size ?? 1 );
+
+defineReader( [ 'chart-hole' ], ( store, slot ) => store.chartAt( slot )?.hole ?? 0 );
+
+defineReader( [ 'chart-start-angle' ], ( store, slot ) => store.chartAt( slot )?.startAngle ?? 0 );
+
+defineReader( [ 'chart-direction' ],
+  ( store, slot ) => ( store.chartAt( slot )?.direction ?? 0 ) === 1 ? 'horizontal' : 'vertical' );
+
+defineReader( [ 'chart-opacity' ], ( store, slot ) => store.chartAt( slot )?.opacity ?? 1 );
+
+defineReader( [ 'ghost' ],
+  ( store, slot ) => ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no' );
+
+defineReader( [ 'ghost-offset-x' ],
+  ( store, slot ) => ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ] );
+
+defineReader( [ 'ghost-offset-y' ],
+  ( store, slot ) => ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 1 ] );
+
+defineReader( [ 'ghost-opacity' ],
+  ( store, slot ) => ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 2 ] );
+
+defineReader( [ 'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-shape', 'overlay-corner-radius', 'underlay-color', 'underlay-opacity', 'underlay-padding', 'underlay-shape', 'underlay-corner-radius' ], ( store, slot, ref, engine, prop ) => {
+  if( ref.group === 'edges' ){
+    // edge layers: [rgba folded, strokeWidth×256]; padding reads
+    // back as (stroke − width) / 2
+    const eid = prop.startsWith( 'overlay' ) ? 'edge.overlay' : 'edge.underlay';
+    const erec = ( store.column( eid ) as Uint32Array ).subarray( slot * 2, slot * 2 + 2 );
+
+    if( prop.endsWith( '-color' ) ){
+      const rgba = erec[ 0 ];
+
+      return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+    }
+
+    if( prop.endsWith( '-opacity' ) ){ return ( erec[ 0 ] >>> 24 ) / 255; }
+
+    const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
+
+    return Math.max( 0, erec[ 1 ] / 256 - width ) / 2;
+  }
+
+  const id = prop.startsWith( 'overlay' ) ? 'node.overlay' : 'node.underlay';
+  const rec = ( store.column( id ) as Uint32Array ).subarray( slot * 4, slot * 4 + 4 );
+  const field = prop.replace( /^(overlay|underlay)-/, '' );
+
+  // color reads back folded (alpha carries the layer opacity — the
+  // arrow-color precedent); opacity reads the folded alpha
+  switch( field ){
+    case 'color': {
+      const rgba = rec[ 0 ];
+
+      return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+    }
+    case 'opacity': return ( rec[ 0 ] >>> 24 ) / 255;
+    case 'padding': return rec[ 1 ] / 256;
+    case 'shape': return rec[ 2 ] === 1 ? 'ellipse' : 'round-rectangle';
+    default: return rec[ 3 ] === 0xffffffff ? 'auto' : rec[ 3 ] / 256;
+  }
+} );
+
+defineReader( [ 'height' ], ( store, slot ) => readPair( store, slot, 'node.size', 1 ) );
+
+defineReader( [ 'shape' ],
+  ( store, slot ) => SHAPE_NAMES[ readScalar( store, slot, 'node.shape' ) ] );
+
+defineReader( [ 'shape-polygon-points' ], ( store, slot, ref, engine ) => {
+  const points = store.polygonPointsAt( slot );
+
+  return points != null
+    ? Array.from( points ).join( ' ' )
+    : engine.defs.nodes.computed.shapePolygonPoints.join( ' ' );
+} );
+
+defineReader( [ 'label' ], ( store, slot, ref ) => store.labelAt( slot, ref.group )?.text ?? '' );
+
+defineReader( [ 'font-size' ],
+  ( store, slot, ref, engine ) => engine.labelChannels( ref ).fontSize );
+
+defineReader( [ 'font-family' ], ( store ) => store.labelFont );
+
+defineReader( [ 'font-style' ], ( store ) => store.labelFontStyle );
+
+defineReader( [ 'font-weight' ], ( store ) => store.labelFontWeight );
+
+defineReader( [ 'color' ], ( store, slot, ref, engine ) => engine.labelChannels( ref ).color );
+
+// label visual props (constants; sidecar when labelled, else the sheet
+// constants — opacities read back folded into the stored alpha, like
+// arrow colors)
+defineReader( [ 'text-outline-width' ],
+  ( store, slot, ref, engine ) => store.labelAt( slot, ref.group )?.outlineWidth ?? engine.defFor( ref ).computed.textOutlineWidth );
+
+defineReader( [ 'text-outline-color' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...engine.defFor( ref ).computed.textOutlineColor );
+} );
+
+defineReader( [ 'text-transform' ],
+  ( store, slot, ref, engine ) => TEXT_TRANSFORM_NAMES[ engine.defFor( ref ).computed.textTransform ] ?? 'none' );
+
+defineReader( [ 'text-wrap' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return TEXT_WRAP_NAMES[ entry != null ? entry.wrap : engine.defFor( ref ).computed.textWrap ] ?? 'none';
+} );
+
+defineReader( [ 'text-max-width' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null ? entry.maxWidth : engine.defFor( ref ).computed.textMaxWidth;
+} );
+
+defineReader( [ 'line-height' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null ? entry.lineHeight : engine.defFor( ref ).computed.lineHeight;
+} );
+
+defineReader( [ 'text-overflow-wrap' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return OFLOW_WRAP_NAMES[ entry != null
+    ? entry.overflowWrap
+    : engine.defFor( ref ).computed.textOverflowWrap ] ?? 'whitespace';
+} );
+
+defineReader( [ 'text-justification' ], ( store, slot, ref, engine ) => {
+  // the sidecar stores the *resolved* justification; the sheet's
+  // declared value (incl. 'auto') is what reads back, as v3
+  return JUSTIFICATION_NAMES[ engine.defFor( ref ).computed.textJustification ] ?? 'auto';
+} );
+
+defineReader( [ 'text-background-shape' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return TEXT_BG_SHAPE_NAMES[ entry != null
+    ? entry.bgShape
+    : engine.defFor( ref ).computed.textBgShape ] ?? 'rectangle';
+} );
+
+defineReader( [ 'text-border-width' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null ? entry.bgBorderWidth : engine.defFor( ref ).computed.textBorderWidth;
+} );
+
+defineReader( [ 'min-zoomed-font-size' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null ? entry.minZoomedFontSize : engine.defFor( ref ).computed.minZoomedFontSize;
+} );
+
+defineReader( [ 'text-halign' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, 'nodes' );
+
+  return HALIGN_NAMES[ entry != null
+    ? entry.halignShift * 2 + 1
+    : engine.defs.nodes.computed.textHalign ];
+} );
+
+defineReader( [ 'text-valign' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, 'nodes' );
+
+  return VALIGN_NAMES[ entry != null
+    ? entry.valignShift * 2 + 2
+    : engine.defs.nodes.computed.textValign ];
+} );
+
+defineReader( [ 'text-border-color' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null
+    ? packedColor( entry.bgBorderColor )
+    : formatRgba( ...engine.defFor( ref ).computed.textBorderColor );
+} );
+
+defineReader( [ 'text-border-opacity' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null
+    ? Math.round( ( ( entry.bgBorderColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+    : engine.defFor( ref ).computed.textBorderOpacity;
+} );
+
+defineReader( [ 'text-opacity' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null
+    ? Math.round( ( ( entry.color >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+    : engine.defFor( ref ).computed.textOpacity;
+} );
+
+defineReader( [ 'text-outline-opacity' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null
+    ? Math.round( ( ( entry.outlineColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+    : engine.defFor( ref ).computed.textOutlineOpacity;
+} );
+
+defineReader( [ 'text-background-color' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null ? packedColor( entry.bgColor ) : formatRgba( ...engine.defFor( ref ).computed.textBgColor );
+} );
+
+defineReader( [ 'text-background-opacity' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  return entry != null
+    ? Math.round( ( ( entry.bgColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
+    : engine.defFor( ref ).computed.textBgOpacity;
+} );
+
+defineReader( [ 'text-background-padding' ],
+  ( store, slot, ref, engine ) => store.labelAt( slot, ref.group )?.bgPadding ?? engine.defFor( ref ).computed.textBgPadding );
+
+defineReader( [ 'text-margin-x' ],
+  ( store, slot, ref, engine ) => store.labelAt( slot, ref.group )?.marginX ?? engine.defFor( ref ).computed.textMarginX );
+
+defineReader( [ 'text-margin-y' ],
+  ( store, slot, ref, engine ) => store.labelAt( slot, ref.group )?.marginY ?? engine.defFor( ref ).computed.textMarginY );
+
+defineReader( [ 'text-rotation' ], ( store, slot, ref, engine ) => {
+  const entry = store.labelAt( slot, ref.group );
+
+  // stored truth: the sidecar keeps the flag and the angle apart
+  return entry != null
+    ? ( entry.rotate ? 'autorotate' : textRotationName( entry.rotation ) )
+    : textRotationName( engine.defFor( ref ).computed.textRotation );
+} );
+
+defineReader( [ 'source-label', 'source-text-offset', 'source-text-margin-x', 'source-text-margin-y', 'source-text-rotation', 'target-label', 'target-text-offset', 'target-text-margin-x', 'target-text-margin-y', 'target-text-rotation' ], ( store, slot, ref, engine, prop ) => {
+  // end labels (D4): the stored stream entry, else the sheet value
+  const src = prop.startsWith( 'source' );
+  const entry = store.labelAt( slot, src ? 'edgeSource' : 'edgeTarget' );
+  const d = engine.defs.edges.computed;
+
+  if( prop.endsWith( '-label' ) ){ return entry?.text ?? ''; }
+
+  if( prop.endsWith( '-offset' ) ){
+    return entry != null ? entry.endOffset : ( src ? d.sourceTextOffset : d.targetTextOffset );
+  }
+
+  if( prop.endsWith( '-margin-x' ) ){
+    return entry != null ? entry.marginX : ( src ? d.sourceTextMarginX : d.targetTextMarginX );
+  }
+
+  if( prop.endsWith( '-margin-y' ) ){
+    return entry != null ? entry.marginY : ( src ? d.sourceTextMarginY : d.targetTextMarginY );
+  }
+
+  return entry != null
+    ? ( entry.rotate ? 'autorotate' : textRotationName( entry.rotation ) )
+    : textRotationName( src ? d.sourceTextRotation : d.targetTextRotation );
+} );
+
+// shared names, resolved per group
+defineReader( [ 'width' ],
+  ( store, slot, ref ) => ref.group === 'nodes' ? readPair( store, slot, 'node.size', 0 ) : readScalar( store, slot, 'edge.width' ) );
+
+defineReader( [ 'opacity' ], ( store, slot, ref, engine ) => {
+  // under compounds the node column stores the ancestor-folded
+  // value; the declared style reads the base (round 14.4)
+  if( ref.group === 'nodes' && engine.store.hasCompounds() ){
+    return engine.store.baseOpacityOf( ref.slot );
+  }
+
+  return readScalar( store, slot, ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
+} );
+
+// compound props (round 14.6): stored truth is the per-parent
+// record; leaves read the zero defaults (v3 leaves' padding is 0)
+defineReader( [ 'padding' ], ( store, slot, ref, engine ) => {
+  const cs = engine.store.compoundStyleOf( ref.slot );
+
+  return cs.paddingUnit === '%' ? `${cs.padding * 100}%` : cs.padding;
+} );
+
+defineReader( [ 'padding-relative-to' ],
+  ( store, slot, ref, engine ) => engine.store.compoundStyleOf( ref.slot ).relativeTo );
+
+defineReader( [ 'min-width' ],
+  ( store, slot, ref, engine ) => engine.store.compoundStyleOf( ref.slot ).minWidth );
+
+defineReader( [ 'min-height' ],
+  ( store, slot, ref, engine ) => engine.store.compoundStyleOf( ref.slot ).minHeight );
+
+defineReader( [ 'compound-sizing-wrt-labels' ], () => 'exclude' );
+
+// edge channels
+defineReader( [ 'line-color' ], ( store, slot ) => readColor( store, slot, 'edge.lineColor' ) );
+
+defineReader( [ 'line-style' ],
+  ( store, slot ) => LINE_STYLE_NAMES[ readScalar( store, slot, 'edge.lineStyle' ) ] );
+
+defineReader( [ 'source-arrow-shape' ], ( store, slot ) => {
+  return readAlpha( store, slot, 'edge.sourceArrow' ) > 0
+    ? ARROW_NAMES[ unpackArrowShape( readScalar( store, slot, 'edge.arrowShapes' ), ARROW_SHIFT_SOURCE ) ]
+    : 'none';
+} );
+
+defineReader( [ 'target-arrow-shape' ], ( store, slot ) => {
+  return readAlpha( store, slot, 'edge.targetArrow' ) > 0
+    ? ARROW_NAMES[ unpackArrowShape( readScalar( store, slot, 'edge.arrowShapes' ), ARROW_SHIFT_TARGET ) ]
+    : 'none';
+} );
+
+defineReader( [ 'line-opacity' ],
+  ( store, slot ) => Math.round( ( store.column( 'edge.lineColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000 );
+
+defineReader( [ 'line-cap' ],
+  ( store, slot ) => LINE_CAP_NAMES[ ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 + 1 ] ] ?? 'butt' );
+
+defineReader( [ 'line-outline-width' ], ( store, slot ) => {
+  // stored stroke = width + outline width (B4)
+  const rec = ( store.column( 'edge.casing' ) as Uint32Array )[ slot * 2 + 1 ];
+  const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
+
+  return rec === 0 ? 0 : Math.max( 0, rec / 256 - width );
+} );
+
+defineReader( [ 'line-outline-color' ], ( store, slot ) => {
+  const rgba = ( store.column( 'edge.casing' ) as Uint32Array )[ slot * 2 ];
+
+  return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
+} );
+
+defineReader( [ 'line-dash-offset' ],
+  ( store, slot ) => ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 ] );
+
+defineReader( [ 'line-dash-pattern' ], ( store, slot ) => {
+  const arr = ( store.column( 'edge.dashPattern' ) as Float32Array ).subarray( slot * 4, slot * 4 + 4 );
+
+  // collapse the normalized two-pair form back to one pair when repeated
+  return arr[ 0 ] === arr[ 2 ] && arr[ 1 ] === arr[ 3 ]
+    ? `${arr[ 0 ]} ${arr[ 1 ]}`
+    : `${arr[ 0 ]} ${arr[ 1 ]} ${arr[ 2 ]} ${arr[ 3 ]}`;
+} );
+
+defineReader( [ 'arrow-scale' ], ( store, slot ) => {
+  const q = ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> ARROW_SHIFT_SCALE;
+
+  return q === 0 ? 1 : q / 16; // quantized ×16 (recorded)
+} );
+
+defineReader( [ 'source-arrow-fill', 'target-arrow-fill' ], ( store, slot, ref, engine, prop ) => {
+  const bit = prop.startsWith( 'source' ) ? ARROW_SHIFT_HOLLOW_SOURCE : ARROW_SHIFT_HOLLOW_TARGET;
+
+  return ARROW_FILL_NAMES[
+    ( ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> bit ) & 1 ];
+} );
+
+defineReader( [ 'source-arrow-width' ],
+  ( store, slot ) => ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 ] );
+
+defineReader( [ 'target-arrow-width' ],
+  ( store, slot ) => ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 + 1 ] );
+
+defineReader( [ 'mid-source-arrow-shape', 'mid-target-arrow-shape' ], ( store, slot, ref, engine, prop ) => {
+  const shift = prop.startsWith( 'mid-source' ) ? ARROW_SHIFT_MID_SOURCE : ARROW_SHIFT_MID_TARGET;
+  const colId = prop.startsWith( 'mid-source' ) ? 'edge.midSourceArrow' : 'edge.midTargetArrow';
+  const a = ( store.column( colId ) as Uint8Array )[ slot * 4 + 3 ];
+
+  // stored truth: a transparent mid arrow reads 'none' (the
+  // end-arrow precedent)
+  return a === 0 ? 'none' : ARROW_NAMES[ unpackArrowShape(
+    ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ], shift ) ];
+} );
+
+defineReader( [ 'mid-source-arrow-color' ],
+  ( store, slot ) => readColor( store, slot, 'edge.midSourceArrow' ) );
+
+defineReader( [ 'mid-target-arrow-color' ],
+  ( store, slot ) => readColor( store, slot, 'edge.midTargetArrow' ) );
+
+defineReader( [ 'source-arrow-color' ],
+  ( store, slot ) => readColor( store, slot, 'edge.sourceArrow' ) );
+
+defineReader( [ 'target-arrow-color' ],
+  ( store, slot ) => readColor( store, slot, 'edge.targetArrow' ) );
+
+// curve props read the styled record (stored truth: a lone
+// 'bezier' edge reads back 'bezier' even though it renders
+// straight — v3 semantics); angles read back in radians.  Lists
+// read back as space-separated strings (v3's strValue form);
+// percent taxi turns read back as the percent string.
+defineReader( [ 'curve-style' ],
+  ( store, slot ) => CURVE_STYLE_NAMES[ store.curveStyleAt( slot ).style ] );
+
+defineReader( [ 'control-point-step-size' ],
+  ( store, slot ) => store.curveStyleAt( slot ).stepSize );
+
+defineReader( [ 'control-point-weight' ], ( store, slot ) => store.curveStyleAt( slot ).weight );
+
+defineReader( [ 'loop-direction' ], ( store, slot ) => store.curveStyleAt( slot ).loopDirection );
+
+defineReader( [ 'loop-sweep' ], ( store, slot ) => store.curveStyleAt( slot ).loopSweep );
+
+defineReader( [ 'control-point-distances' ], ( store, slot ) => {
+  const dists = curveExtrasFor( store, slot ).ctrlDists;
+
+  return dists == null ? undefined : dists.join( ' ' );
+} );
+
+defineReader( [ 'control-point-weights' ],
+  ( store, slot ) => curveExtrasFor( store, slot ).ctrlWeights.join( ' ' ) );
+
+defineReader( [ 'segment-distances' ],
+  ( store, slot ) => curveExtrasFor( store, slot ).segDists.join( ' ' ) );
+
+defineReader( [ 'segment-weights' ],
+  ( store, slot ) => curveExtrasFor( store, slot ).segWeights.join( ' ' ) );
+
+defineReader( [ 'segment-radii' ],
+  ( store, slot ) => curveExtrasFor( store, slot ).segRadii.join( ' ' ) );
+
+defineReader( [ 'radius-type' ], ( store, slot ) => {
+  return curveExtrasFor( store, slot ).radiusTypes
+    .map( id => RADIUS_TYPE_NAMES[ id ] ).join( ' ' );
+} );
+
+defineReader( [ 'edge-distances' ],
+  ( store, slot ) => EDGE_DISTANCE_NAMES[ curveExtrasFor( store, slot ).edgeDistances ] );
+
+defineReader( [ 'taxi-direction' ],
+  ( store, slot ) => TAXI_DIRECTION_NAMES[ curveExtrasFor( store, slot ).taxiDir ] );
+
+defineReader( [ 'taxi-turn' ], ( store, slot ) => {
+  const ex = curveExtrasFor( store, slot );
+
+  return ex.taxiTurnPercent ? `${ex.taxiTurn * 100}%` : ex.taxiTurn;
+} );
+
+defineReader( [ 'taxi-turn-min-distance' ],
+  ( store, slot ) => curveExtrasFor( store, slot ).taxiTurnMinDist );
+
+defineReader( [ 'taxi-radius' ], ( store, slot ) => curveExtrasFor( store, slot ).taxiRadius );
+
+defineReader( [ 'haystack-radius' ], ( store, slot ) => store.curveStyleAt( slot ).haystackRadius );
+
+defineReader( [ 'source-endpoint', 'target-endpoint' ], ( store, slot, ref, engine, prop ) => {
+  const e = store.curveStyleAt( slot ).endpoints;
+  const src = prop === 'source-endpoint';
+
+  if( e == null ){ return 'outside-to-node'; }
+
+  return endpointString( src
+    ? { mode: e.srcMode, a: e.srcA, b: e.srcB, pct: e.srcPct }
+    : { mode: e.tgtMode, a: e.tgtA, b: e.tgtB, pct: e.tgtPct } );
+} );
+
+defineReader( [ 'source-distance-from-node' ],
+  ( store, slot ) => store.curveStyleAt( slot ).endpoints?.srcDist ?? 0 );
+
+defineReader( [ 'target-distance-from-node' ],
+  ( store, slot ) => store.curveStyleAt( slot ).endpoints?.tgtDist ?? 0 );
+
+
 export class StyleEngine {
   private store: GraphStore;
+  /**
+   * The narrow view of this engine that the module-scope property
+   * readers receive (35.2).  Built once here rather than per read, and
+   * its getters stay live across a sheet swap that replaces `defs`.
+   */
+  private readonly readCtx: ReadContext;
   private sheet: GpuStylesheet;
   private defs: { nodes: GroupDef; edges: GroupDef; parents: GroupDef };
   /** the parents-group compound style, applied per parent slot */
@@ -3385,6 +4017,22 @@ export class StyleEngine {
   constructor( store: GraphStore ){
     this.store = store;
     this.sheet = {};
+
+    // The readers' view of this engine.  Arrow functions capture `this`
+    // directly (no alias); `store` and `defs` are accessors because
+    // `defs` is replaced wholesale on a sheet swap, and a snapshot would
+    // hand every reader the previous sheet's computed values.
+    const ctx = {
+      defFor: ( ref: Ref ) => this.defFor( ref ),
+      labelChannels: ( ref: Ref ) => this.labelChannels( ref ),
+      readImageProp: ( slot: number, prop: string ) => this.readImageProp( slot, prop )
+    } as ReadContext;
+
+    Object.defineProperty( ctx, 'store', { get: () => this.store } );
+    Object.defineProperty( ctx, 'defs', { get: () => this.defs } );
+
+    this.readCtx = ctx;
+
     this.defs = {
       nodes: { computed: this.resolveConst( 'nodes', {}, [] ), mappers: [], deps: null, transition: DEFAULT_TRANSITION },
       edges: { computed: this.resolveConst( 'edges', {}, [] ), mappers: [], deps: null, transition: DEFAULT_TRANSITION },
@@ -4345,476 +4993,12 @@ export class StyleEngine {
     const store = this.store;
     const slot = ref.slot;
 
-    switch( prop ){
-      // node channels
-      case 'background-color': return readColor( store, slot, 'node.fillColor' );
-      case 'border-color': return readColor( store, slot, 'node.borderColor' );
-      case 'border-width': return readScalar( store, slot, 'node.borderWidth' );
-      case 'corner-radius': {
-        const r = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 ];
+    const reader = PROP_READERS.get( prop );
 
-        return r === 0xffffffff ? 'auto' : r / 256;
-      }
-      case 'border-position':
-        return BORDER_POSITION_NAMES[
-          ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 1 ] & 0xff ] ?? 'center';
-      case 'background-fill':
-      case 'line-fill': {
-        const gid = prop === 'background-fill' ? 'node.gradient' : 'edge.gradient';
-        const meta = ( store.column( gid ) as Uint32Array )[ slot * 8 ];
-
-        return FILL_KIND_NAMES[ meta & 3 ] ?? 'solid';
-      }
-      case 'background-gradient-direction': {
-        const meta = ( store.column( 'node.gradient' ) as Uint32Array )[ slot * 8 ];
-
-        return GRADIENT_DIRECTION_NAMES[ ( meta >>> 2 ) & 7 ] ?? 'to-bottom';
-      }
-      case 'background-gradient-stop-colors':
-      case 'line-gradient-stop-colors': {
-        const gid = prop.startsWith( 'background' ) ? 'node.gradient' : 'edge.gradient';
-        const rec = ( store.column( gid ) as Uint32Array ).subarray( slot * 8, slot * 8 + 8 );
-        const count = ( rec[ 0 ] >>> 5 ) & 7;
-        const parts: string[] = [];
-
-        for( let i = 0; i < count; i++ ){
-          const c = rec[ 1 + i ];
-
-          parts.push( formatRgba( c & 0xff, ( c >>> 8 ) & 0xff, ( c >>> 16 ) & 0xff, ( c >>> 24 ) & 0xff ) );
-        }
-
-        return parts.join( ' ' );
-      }
-      case 'background-gradient-stop-positions':
-      case 'line-gradient-stop-positions': {
-        const gid = prop.startsWith( 'background' ) ? 'node.gradient' : 'edge.gradient';
-        const rec = ( store.column( gid ) as Uint32Array ).subarray( slot * 8, slot * 8 + 8 );
-        const count = ( rec[ 0 ] >>> 5 ) & 7;
-        const parts: string[] = [];
-
-        for( let i = 0; i < count; i++ ){
-          const raw = i === 4 ? rec[ 7 ] & 0xff : ( rec[ 6 ] >>> ( i * 8 ) ) & 0xff;
-
-          parts.push( `${Math.round( raw / 255 * 100 )}%` );
-        }
-
-        return parts.join( ' ' );
-      }
-      case 'outline-color': {
-        const rgba = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 2 ];
-
-        return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
-      }
-      case 'outline-opacity':
-        return Math.round(
-          ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 2 ] >>> 24 ) / 255 * 1000 ) / 1000;
-      case 'outline-width':
-        return ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 3 ] & 0xffff ) / 256;
-      case 'outline-offset':
-        return ( ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 + 3 ] >>> 16 ) / 256;
-      // the B1 channel opacities read back *folded* (stored alpha /
-      // 255 — the declared color alpha times the opacity; the
-      // outline/arrow precedent)
-      case 'background-opacity':
-        return Math.round( ( store.column( 'node.fillColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
-      case 'border-opacity':
-        return Math.round( ( store.column( 'node.borderColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
-      // background images (15.2): stored-truth readback off the blob
-      // records; per-image lists read back space-joined (the 12b list
-      // convention), single images as scalars
-      case 'background-image':
-      case 'background-fit':
-      case 'background-image-opacity':
-      case 'background-position-x':
-      case 'background-position-y':
-      case 'background-offset-x':
-      case 'background-offset-y':
-      case 'background-width':
-      case 'background-height':
-      case 'background-repeat':
-      case 'background-clip':
-      case 'background-image-containment':
-      case 'background-image-smoothing':
-      case 'background-image-crossorigin':
-      case 'background-image-type':
-      case 'background-image-color':
-        return this.readImageProp( slot, prop );
-      case 'events': // 20.2: stored truth is the flag bit
-        return store.hasFlag( ref.group, slot, FLAG_NO_EVENTS ) ? 'no' : 'yes';
-      case 'text-events': // 20.3
-        return store.hasFlag( 'nodes', slot, FLAG_TEXT_EVENTS ) ? 'yes' : 'no';
-      case 'visibility': // 22: stored truth is the element's own state
-        return store.hasFlag( ref.group, slot, FLAG_SELF_INVISIBLE ) ? 'hidden' : 'visible';
-      case 'chart': { // 23: stored truth is the record (no values = none)
-        const rec = store.chartAt( slot );
-
-        return rec == null ? 'none' : rec.kind === CHART_PIE ? 'pie' : 'stripes';
-      }
-      case 'chart-values':
-        return store.chartAt( slot )?.values.join( ' ' ) ?? '';
-      case 'chart-colors':
-        return store.chartAt( slot )?.colors.map( c => formatRgba( ...c ) ).join( ' ' ) ?? '';
-      case 'chart-size': return store.chartAt( slot )?.size ?? 1;
-      case 'chart-hole': return store.chartAt( slot )?.hole ?? 0;
-      case 'chart-start-angle': return store.chartAt( slot )?.startAngle ?? 0;
-      case 'chart-direction':
-        return ( store.chartAt( slot )?.direction ?? 0 ) === 1 ? 'horizontal' : 'vertical';
-      case 'chart-opacity': return store.chartAt( slot )?.opacity ?? 1;
-      case 'ghost':
-        return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 3 ] !== 0 ? 'yes' : 'no';
-      case 'ghost-offset-x': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 ];
-      case 'ghost-offset-y': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 1 ];
-      case 'ghost-opacity': return ( store.column( 'node.ghost' ) as Float32Array )[ slot * 4 + 2 ];
-      case 'overlay-color': case 'overlay-opacity': case 'overlay-padding':
-      case 'overlay-shape': case 'overlay-corner-radius':
-      case 'underlay-color': case 'underlay-opacity': case 'underlay-padding':
-      case 'underlay-shape': case 'underlay-corner-radius': {
-        if( ref.group === 'edges' ){
-          // edge layers: [rgba folded, strokeWidth×256]; padding reads
-          // back as (stroke − width) / 2
-          const eid = prop.startsWith( 'overlay' ) ? 'edge.overlay' : 'edge.underlay';
-          const erec = ( store.column( eid ) as Uint32Array ).subarray( slot * 2, slot * 2 + 2 );
-
-          if( prop.endsWith( '-color' ) ){
-            const rgba = erec[ 0 ];
-
-            return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
-          }
-
-          if( prop.endsWith( '-opacity' ) ){ return ( erec[ 0 ] >>> 24 ) / 255; }
-
-          const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
-
-          return Math.max( 0, erec[ 1 ] / 256 - width ) / 2;
-        }
-
-        const id = prop.startsWith( 'overlay' ) ? 'node.overlay' : 'node.underlay';
-        const rec = ( store.column( id ) as Uint32Array ).subarray( slot * 4, slot * 4 + 4 );
-        const field = prop.replace( /^(overlay|underlay)-/, '' );
-
-        // color reads back folded (alpha carries the layer opacity — the
-        // arrow-color precedent); opacity reads the folded alpha
-        switch( field ){
-          case 'color': {
-            const rgba = rec[ 0 ];
-
-            return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
-          }
-          case 'opacity': return ( rec[ 0 ] >>> 24 ) / 255;
-          case 'padding': return rec[ 1 ] / 256;
-          case 'shape': return rec[ 2 ] === 1 ? 'ellipse' : 'round-rectangle';
-          default: return rec[ 3 ] === 0xffffffff ? 'auto' : rec[ 3 ] / 256;
-        }
-      }
-      case 'height': return readPair( store, slot, 'node.size', 1 );
-      case 'shape': return SHAPE_NAMES[ readScalar( store, slot, 'node.shape' ) ];
-      case 'shape-polygon-points': {
-        const points = store.polygonPointsAt( slot );
-
-        return points != null
-          ? Array.from( points ).join( ' ' )
-          : this.defs.nodes.computed.shapePolygonPoints.join( ' ' );
-      }
-      case 'label': return store.labelAt( slot, ref.group )?.text ?? '';
-      case 'font-size': return this.labelChannels( ref ).fontSize;
-      case 'font-family': return store.labelFont;
-      case 'font-style': return store.labelFontStyle;
-      case 'font-weight': return store.labelFontWeight;
-      case 'color': return this.labelChannels( ref ).color;
-
-      // label visual props (constants; sidecar when labelled, else the sheet
-      // constants — opacities read back folded into the stored alpha, like
-      // arrow colors)
-      case 'text-outline-width':
-        return store.labelAt( slot, ref.group )?.outlineWidth ?? this.defFor( ref ).computed.textOutlineWidth;
-      case 'text-outline-color': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null ? packedColor( entry.outlineColor ) : formatRgba( ...this.defFor( ref ).computed.textOutlineColor );
-      }
-      case 'text-transform':
-        return TEXT_TRANSFORM_NAMES[ this.defFor( ref ).computed.textTransform ] ?? 'none';
-      case 'text-wrap': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return TEXT_WRAP_NAMES[ entry != null ? entry.wrap : this.defFor( ref ).computed.textWrap ] ?? 'none';
-      }
-      case 'text-max-width': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null ? entry.maxWidth : this.defFor( ref ).computed.textMaxWidth;
-      }
-      case 'line-height': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null ? entry.lineHeight : this.defFor( ref ).computed.lineHeight;
-      }
-      case 'text-overflow-wrap': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return OFLOW_WRAP_NAMES[ entry != null
-          ? entry.overflowWrap
-          : this.defFor( ref ).computed.textOverflowWrap ] ?? 'whitespace';
-      }
-      case 'text-justification':
-        // the sidecar stores the *resolved* justification; the sheet's
-        // declared value (incl. 'auto') is what reads back, as v3
-        return JUSTIFICATION_NAMES[ this.defFor( ref ).computed.textJustification ] ?? 'auto';
-      case 'text-background-shape': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return TEXT_BG_SHAPE_NAMES[ entry != null
-          ? entry.bgShape
-          : this.defFor( ref ).computed.textBgShape ] ?? 'rectangle';
-      }
-      case 'text-border-width': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null ? entry.bgBorderWidth : this.defFor( ref ).computed.textBorderWidth;
-      }
-      case 'min-zoomed-font-size': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null ? entry.minZoomedFontSize : this.defFor( ref ).computed.minZoomedFontSize;
-      }
-      case 'text-halign': {
-        const entry = store.labelAt( slot, 'nodes' );
-
-        return HALIGN_NAMES[ entry != null
-          ? entry.halignShift * 2 + 1
-          : this.defs.nodes.computed.textHalign ];
-      }
-      case 'text-valign': {
-        const entry = store.labelAt( slot, 'nodes' );
-
-        return VALIGN_NAMES[ entry != null
-          ? entry.valignShift * 2 + 2
-          : this.defs.nodes.computed.textValign ];
-      }
-      case 'text-border-color': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null
-          ? packedColor( entry.bgBorderColor )
-          : formatRgba( ...this.defFor( ref ).computed.textBorderColor );
-      }
-      case 'text-border-opacity': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null
-          ? Math.round( ( ( entry.bgBorderColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defFor( ref ).computed.textBorderOpacity;
-      }
-      case 'text-opacity': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null
-          ? Math.round( ( ( entry.color >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defFor( ref ).computed.textOpacity;
-      }
-      case 'text-outline-opacity': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null
-          ? Math.round( ( ( entry.outlineColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defFor( ref ).computed.textOutlineOpacity;
-      }
-      case 'text-background-color': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null ? packedColor( entry.bgColor ) : formatRgba( ...this.defFor( ref ).computed.textBgColor );
-      }
-      case 'text-background-opacity': {
-        const entry = store.labelAt( slot, ref.group );
-
-        return entry != null
-          ? Math.round( ( ( entry.bgColor >>> 24 ) & 0xff ) / 255 * 1000 ) / 1000
-          : this.defFor( ref ).computed.textBgOpacity;
-      }
-      case 'text-background-padding':
-        return store.labelAt( slot, ref.group )?.bgPadding ?? this.defFor( ref ).computed.textBgPadding;
-      case 'text-margin-x':
-        return store.labelAt( slot, ref.group )?.marginX ?? this.defFor( ref ).computed.textMarginX;
-      case 'text-margin-y':
-        return store.labelAt( slot, ref.group )?.marginY ?? this.defFor( ref ).computed.textMarginY;
-      case 'text-rotation': {
-        const entry = store.labelAt( slot, ref.group );
-
-        // stored truth: the sidecar keeps the flag and the angle apart
-        return entry != null
-          ? ( entry.rotate ? 'autorotate' : textRotationName( entry.rotation ) )
-          : textRotationName( this.defFor( ref ).computed.textRotation );
-      }
-      case 'source-label': case 'source-text-offset': case 'source-text-margin-x':
-      case 'source-text-margin-y': case 'source-text-rotation':
-      case 'target-label': case 'target-text-offset': case 'target-text-margin-x':
-      case 'target-text-margin-y': case 'target-text-rotation': {
-        // end labels (D4): the stored stream entry, else the sheet value
-        const src = prop.startsWith( 'source' );
-        const entry = store.labelAt( slot, src ? 'edgeSource' : 'edgeTarget' );
-        const d = this.defs.edges.computed;
-
-        if( prop.endsWith( '-label' ) ){ return entry?.text ?? ''; }
-
-        if( prop.endsWith( '-offset' ) ){
-          return entry != null ? entry.endOffset : ( src ? d.sourceTextOffset : d.targetTextOffset );
-        }
-
-        if( prop.endsWith( '-margin-x' ) ){
-          return entry != null ? entry.marginX : ( src ? d.sourceTextMarginX : d.targetTextMarginX );
-        }
-
-        if( prop.endsWith( '-margin-y' ) ){
-          return entry != null ? entry.marginY : ( src ? d.sourceTextMarginY : d.targetTextMarginY );
-        }
-
-        return entry != null
-          ? ( entry.rotate ? 'autorotate' : textRotationName( entry.rotation ) )
-          : textRotationName( src ? d.sourceTextRotation : d.targetTextRotation );
-      }
-
-      // shared names, resolved per group
-      case 'width': return ref.group === 'nodes' ? readPair( store, slot, 'node.size', 0 ) : readScalar( store, slot, 'edge.width' );
-      case 'opacity':
-        // under compounds the node column stores the ancestor-folded
-        // value; the declared style reads the base (round 14.4)
-        if( ref.group === 'nodes' && this.store.hasCompounds() ){
-          return this.store.baseOpacityOf( ref.slot );
-        }
-
-        return readScalar( store, slot, ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
-
-      // compound props (round 14.6): stored truth is the per-parent
-      // record; leaves read the zero defaults (v3 leaves' padding is 0)
-      case 'padding': {
-        const cs = this.store.compoundStyleOf( ref.slot );
-
-        return cs.paddingUnit === '%' ? `${cs.padding * 100}%` : cs.padding;
-      }
-      case 'padding-relative-to': return this.store.compoundStyleOf( ref.slot ).relativeTo;
-      case 'min-width': return this.store.compoundStyleOf( ref.slot ).minWidth;
-      case 'min-height': return this.store.compoundStyleOf( ref.slot ).minHeight;
-      case 'compound-sizing-wrt-labels': return 'exclude';
-
-      // edge channels
-      case 'line-color': return readColor( store, slot, 'edge.lineColor' );
-      case 'line-style': return LINE_STYLE_NAMES[ readScalar( store, slot, 'edge.lineStyle' ) ];
-      case 'source-arrow-shape':
-        return readAlpha( store, slot, 'edge.sourceArrow' ) > 0
-          ? ARROW_NAMES[ unpackArrowShape( readScalar( store, slot, 'edge.arrowShapes' ), ARROW_SHIFT_SOURCE ) ]
-          : 'none';
-      case 'target-arrow-shape':
-        return readAlpha( store, slot, 'edge.targetArrow' ) > 0
-          ? ARROW_NAMES[ unpackArrowShape( readScalar( store, slot, 'edge.arrowShapes' ), ARROW_SHIFT_TARGET ) ]
-          : 'none';
-      case 'line-opacity':
-        return Math.round( ( store.column( 'edge.lineColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
-      case 'line-cap':
-        return LINE_CAP_NAMES[ ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 + 1 ] ] ?? 'butt';
-      case 'line-outline-width': {
-        // stored stroke = width + outline width (B4)
-        const rec = ( store.column( 'edge.casing' ) as Uint32Array )[ slot * 2 + 1 ];
-        const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
-
-        return rec === 0 ? 0 : Math.max( 0, rec / 256 - width );
-      }
-      case 'line-outline-color': {
-        const rgba = ( store.column( 'edge.casing' ) as Uint32Array )[ slot * 2 ];
-
-        return formatRgba( rgba & 0xff, ( rgba >>> 8 ) & 0xff, ( rgba >>> 16 ) & 0xff, ( rgba >>> 24 ) & 0xff );
-      }
-      case 'line-dash-offset':
-        return ( store.column( 'edge.dashMeta' ) as Float32Array )[ slot * 2 ];
-      case 'line-dash-pattern': {
-        const arr = ( store.column( 'edge.dashPattern' ) as Float32Array ).subarray( slot * 4, slot * 4 + 4 );
-
-        // collapse the normalized two-pair form back to one pair when repeated
-        return arr[ 0 ] === arr[ 2 ] && arr[ 1 ] === arr[ 3 ]
-          ? `${arr[ 0 ]} ${arr[ 1 ]}`
-          : `${arr[ 0 ]} ${arr[ 1 ]} ${arr[ 2 ]} ${arr[ 3 ]}`;
-      }
-      case 'arrow-scale': {
-        const q = ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> ARROW_SHIFT_SCALE;
-
-        return q === 0 ? 1 : q / 16; // quantized ×16 (recorded)
-      }
-      case 'source-arrow-fill':
-      case 'target-arrow-fill': {
-        const bit = prop.startsWith( 'source' ) ? ARROW_SHIFT_HOLLOW_SOURCE : ARROW_SHIFT_HOLLOW_TARGET;
-
-        return ARROW_FILL_NAMES[
-          ( ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ] >>> bit ) & 1 ];
-      }
-      case 'source-arrow-width':
-        return ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 ];
-      case 'target-arrow-width':
-        return ( store.column( 'edge.arrowWidths' ) as Float32Array )[ slot * 2 + 1 ];
-      case 'mid-source-arrow-shape':
-      case 'mid-target-arrow-shape': {
-        const shift = prop.startsWith( 'mid-source' ) ? ARROW_SHIFT_MID_SOURCE : ARROW_SHIFT_MID_TARGET;
-        const colId = prop.startsWith( 'mid-source' ) ? 'edge.midSourceArrow' : 'edge.midTargetArrow';
-        const a = ( store.column( colId ) as Uint8Array )[ slot * 4 + 3 ];
-
-        // stored truth: a transparent mid arrow reads 'none' (the
-        // end-arrow precedent)
-        return a === 0 ? 'none' : ARROW_NAMES[ unpackArrowShape(
-          ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ], shift ) ];
-      }
-      case 'mid-source-arrow-color': return readColor( store, slot, 'edge.midSourceArrow' );
-      case 'mid-target-arrow-color': return readColor( store, slot, 'edge.midTargetArrow' );
-      case 'source-arrow-color': return readColor( store, slot, 'edge.sourceArrow' );
-      case 'target-arrow-color': return readColor( store, slot, 'edge.targetArrow' );
-
-      // curve props read the styled record (stored truth: a lone
-      // 'bezier' edge reads back 'bezier' even though it renders
-      // straight — v3 semantics); angles read back in radians.  Lists
-      // read back as space-separated strings (v3's strValue form);
-      // percent taxi turns read back as the percent string.
-      case 'curve-style': return CURVE_STYLE_NAMES[ store.curveStyleAt( slot ).style ];
-      case 'control-point-step-size': return store.curveStyleAt( slot ).stepSize;
-      case 'control-point-weight': return store.curveStyleAt( slot ).weight;
-      case 'loop-direction': return store.curveStyleAt( slot ).loopDirection;
-      case 'loop-sweep': return store.curveStyleAt( slot ).loopSweep;
-      case 'control-point-distances': {
-        const dists = curveExtrasFor( store, slot ).ctrlDists;
-
-        return dists == null ? undefined : dists.join( ' ' );
-      }
-      case 'control-point-weights': return curveExtrasFor( store, slot ).ctrlWeights.join( ' ' );
-      case 'segment-distances': return curveExtrasFor( store, slot ).segDists.join( ' ' );
-      case 'segment-weights': return curveExtrasFor( store, slot ).segWeights.join( ' ' );
-      case 'segment-radii': return curveExtrasFor( store, slot ).segRadii.join( ' ' );
-      case 'radius-type':
-        return curveExtrasFor( store, slot ).radiusTypes
-          .map( id => RADIUS_TYPE_NAMES[ id ] ).join( ' ' );
-      case 'edge-distances': return EDGE_DISTANCE_NAMES[ curveExtrasFor( store, slot ).edgeDistances ];
-      case 'taxi-direction': return TAXI_DIRECTION_NAMES[ curveExtrasFor( store, slot ).taxiDir ];
-      case 'taxi-turn': {
-        const ex = curveExtrasFor( store, slot );
-
-        return ex.taxiTurnPercent ? `${ex.taxiTurn * 100}%` : ex.taxiTurn;
-      }
-      case 'taxi-turn-min-distance': return curveExtrasFor( store, slot ).taxiTurnMinDist;
-      case 'taxi-radius': return curveExtrasFor( store, slot ).taxiRadius;
-      case 'haystack-radius': return store.curveStyleAt( slot ).haystackRadius;
-      case 'source-endpoint':
-      case 'target-endpoint': {
-        const e = store.curveStyleAt( slot ).endpoints;
-        const src = prop === 'source-endpoint';
-
-        if( e == null ){ return 'outside-to-node'; }
-
-        return endpointString( src
-          ? { mode: e.srcMode, a: e.srcA, b: e.srcB, pct: e.srcPct }
-          : { mode: e.tgtMode, a: e.tgtA, b: e.tgtB, pct: e.tgtPct } );
-      }
-      case 'source-distance-from-node':
-        return store.curveStyleAt( slot ).endpoints?.srcDist ?? 0;
-      case 'target-distance-from-node':
-        return store.curveStyleAt( slot ).endpoints?.tgtDist ?? 0;
-    }
-
-    return undefined;
+    // every readable property is one entry in PROP_READERS (35.2); a
+    // name that reaches here without one is admitted by the group
+    // guard above but stored nowhere, which reads as undefined
+    return reader === undefined ? undefined : reader( store, slot, ref, this.readCtx, prop );
   }
 
   /**

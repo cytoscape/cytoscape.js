@@ -9070,3 +9070,79 @@ changing layout order (mitigated by walking the same order list, and
 pinned by the layout suites' exact-position expectations); and
 `readProp`'s size making a mechanical edit error-prone (mitigated by
 typecheck plus the readback specs, which assert values per prop).
+
+## Round 35 plan — the style-read dispatch table (planned 2026-08-03)
+
+Round 34 left the style getters at 2.3× v3 with "no obvious cause — it
+is the 145-case switch and the guard lookups that precede it", and
+logged that as appetite rather than a decision.  The maintainer's
+reaction to that sentence is this round: **145 cases is a code smell;
+why is there not a direct lookup?**  Both halves of that turn out to be
+right, and the second is measurable.
+
+**Why there are 145 cases** — this part is not accidental complexity.
+`readProp` answers *every readable style property* from stored truth,
+and each property has its own storage: a column, a packing, a fold, a
+sidecar entry, or a derived record.  153 case labels over 97 groups,
+median **2 lines** each, 49 of them one-liners.  It is a dispatch table
+that happens to be written as control flow — the vocabulary's size, not
+repeated logic.
+
+**Why the shape costs something.**  V8 does not hash a string switch
+this large.  Measured two ways:
+
+- *Synthetically*, a generated 145-case string switch costs 48.7 ns at
+  the first case, **552.9 ns at the last**, and 336 ns rotating across
+  the range; a `Map` dispatch to the same readers is **14 ns** and
+  position-independent.
+- *In the real method*, moving `border-width`'s case — body untouched —
+  from position #6 to the tail took it from **56 ns to 90 ns** through
+  the built bundle.  (Less than the synthetic gap, because the real
+  switch has grouped labels and early-exit branches above it, so V8
+  manages some of it better; the effect is still ~1.6× on an identical
+  body.)
+
+So a property's cost depends on where it happens to sit in the file —
+which is exactly the kind of thing that should not be true, and why the
+round-33/34 measurements (which used `background-color`, the **4th**
+case) understated the getters for everything else.
+
+**Design calls:**
+
+1. **The switch becomes a `Map` from property name to a reader
+   function** — `( engine, ref, store, slot ) => value` — built once at
+   module load.  Dispatch is one `Map.get` plus a call, the same for
+   every property.  This is the structure the code already *is*; the
+   round makes it data instead of control flow.
+2. **Value-for-value equivalence is the acceptance test, not a
+   sample.**  86% of the readable props (132/153) have a spec that
+   passes them to a getter today, which is not enough to refactor 524
+   lines behind.  35.1 therefore lands a **characterization spec
+   first**: every property in the table, read on a styled node *and* a
+   styled edge, asserted against the values the current implementation
+   returns.  It is explicitly a refactor guard — it pins *what v4 does
+   today*, bugs included — and it closes the 21-prop readback gap
+   permanently.
+3. **Fall-through groups stay one reader with several keys**, so the
+   19 grouped labels do not become 19 copies.
+4. **If the transformation cannot be completed safely, it is
+   abandoned, not half-done.**  A hybrid (table plus a residual switch)
+   would be worse than either.
+
+**Pass split** (tests-first; docs in-commit):
+
+- [ ] **35.0 Docs-first** — this plan.
+- [ ] **35.1 The characterization spec** — all 153 properties, both
+  groups, against current values.  Must fail if any property's read
+  changes.
+- [ ] **35.2 The dispatch table** — the switch becomes
+  `PROP_READERS`, `readProp` becomes the guards plus a lookup.
+- [ ] **35.3 Measure + sweep** — before/after through the built bundle
+  for an early, a middle and a late property; docs updated with what
+  it bought and what it did not.
+
+**Risks tracked**: a mis-transcribed case silently returning the wrong
+value (mitigated by 35.1, which is written and seen passing against the
+*old* implementation first); `this` capture inside reader bodies (each
+becomes an explicit `engine` parameter); and the megamorphic call site
+defeating inlining, which is why the round measures rather than assumes.

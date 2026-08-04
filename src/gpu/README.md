@@ -2056,7 +2056,7 @@ shared one varies ±30%):
   what remains — see below.  Profiling the *bundle* put 36%
   of `readProp` in `normalizeProp` — a regex replace and a lowercase
   allocation per read, turning `backgroundColor` into
-  `background-color` before the 145-case switch it precedes — so it is
+  `background-color` before the dispatch it precedes — so it is
   memoized.  `numericStyle` 215 → 84 ns, `effectiveOpacity` 240 → 92
   ns.  The five per-call closures were hoisted to module scope in the
   same pass; that is worth 1848 → 255 ns *under tsx* and nothing in the
@@ -2113,6 +2113,12 @@ earliest few are ~15 ns slower — and on the aggregate a whole-object
 gaining more because their properties sat at the back of the switch.
 Equivalence is pinned by `test/gpu-style-readback-all.mjs`, which reads
 every one of the 153 properties on a styled node and a styled edge.
+The write path's `applyProp` is a 147-case switch of the same shape and
+is **deliberately unchanged**: it runs per *sheet compile* (three times
+at construction, once per group per `cy.style()`), not per element and
+not per read, so its dispatch is a handful of comparisons against a
+27.7 µs compile.  The read path earned the change because of how often
+it runs, not because a large switch is wrong on sight.
 
 `node scripts/gpu-bench-coverage.mjs [--verbose]` reports which public
 members a benchmark calls (83% of the callable surface; core 98.9%,

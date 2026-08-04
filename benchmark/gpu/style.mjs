@@ -195,6 +195,17 @@ cmpGpu( 'style: compile vs compile + apply',
 // renderer draws from — where v3 resolves through its style cache.  Ids
 // rotate over a band so nothing is hoisted out of the measured region
 // (the core.mjs methodology).
+//
+// These rows were the finding that became rounds 34.5 and 35: they read
+// 13–21× v3 here, which was mostly tsx's `__name` wrapper (this suite
+// imports `src/`), and under it a real 5.8× gap that memoizing
+// `normalizeProp` took to 2.3×.  **They also all read
+// `background-color` and `width`, which were the 4th and 6th cases of
+// readProp's switch** — the cheapest end of a dispatch whose cost then
+// depended on position, so they understated every other property.  The
+// switch is a `Map` since round 35, so position no longer matters; the
+// row to watch for the whole surface is the whole-object `style()`
+// below, which reads every property of the group.
 {
   const K = 8;
   const MASK = K - 1;

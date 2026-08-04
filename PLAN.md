@@ -348,7 +348,10 @@ src/gpu/
 debug/webgpu/            # dev harness: network/bg/LOD/labels URL params, ?gen=NxM generator, ?layout=force|spiral|... (rounds 17-18), stats overlay
 playwright-page/webgpu.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/webgpu.spec.js (+ webgpu-visual.spec.js + goldens/)
-test/gpu-*.mjs           # 100+ Node-runner suites (auto-picked-up by the test:js glob)
+test/gpu-*.mjs           # 120+ Node-runner suites (auto-picked-up by the test:js glob), incl.
+                         #   gpu-style-readback-all.mjs — round 35.1's characterization of all 153
+                         #   readable style props on a node and an edge, the guard the readback
+                         #   dispatch table was refactored behind
 benchmark/gpu/           # 22 suites + the renderer/report runners (see the Benchmarks section of the README).
                          #   Round 33 added layouts, style, load, spatial, data, events, store and
                          #   surface (the breadth pass) to the round-1..29 set, and report.mjs grew
@@ -9096,13 +9099,21 @@ reaction to that sentence is this round: **145 cases is a code smell;
 why is there not a direct lookup?**  Both halves of that turn out to be
 right, and the second is measurable.
 
-**Why there are 145 cases** — this part is not accidental complexity.
-`readProp` answers *every readable style property* from stored truth,
-and each property has its own storage: a column, a packing, a fold, a
-sidecar entry, or a derived record.  153 case labels over 97 groups,
-median **2 lines** each, 49 of them one-liners.  It is a dispatch table
-that happens to be written as control flow — the vocabulary's size, not
-repeated logic.
+**Why there are so many cases** — this part is not accidental
+complexity.  `readProp` answers *every readable style property* from
+stored truth, and each property has its own storage: a column, a
+packing, a fold, a sidecar entry, or a derived record.  **150 case
+labels over 111 groups** in the big switch (plus four in the small
+transition-config switch above it; 153 distinct readable properties in
+all), median **2 lines** each, 49 of them one-liners.  It is a dispatch
+table that happens to be written as control flow — the vocabulary's
+size, not repeated logic.
+*(This paragraph first said "153 labels over 97 groups", from a
+throwaway parse that mis-split labels written several to a line.  The
+figures here are the shipped transformer's, which 35.2's table is built
+from.  Fourth time a hand-rolled scan has produced a wrong count in a
+plan — the standing advice to reuse the audits' scanner applies to
+one-off analysis too.)*
 
 **Why the shape costs something.**  V8 does not hash a string switch
 this large.  Measured two ways:
@@ -9205,6 +9216,17 @@ case) understated the getters for everything else.
   private `readCtx` line), and **168/168 browser specs** against a
   hand-rebuilt bundle with goldens byte-stable and parity scenes at
   their recorded values.
+  **The same shape exists in the write path and is deliberately left
+  alone.**  `applyProp` — the constant-resolution half of the engine —
+  is a 147-case switch of exactly the same kind.  It is *not* hot: it
+  runs from `resolveConst`, which is called three times at construction
+  and once per group per `cy.style( sheet )`, not per element and not
+  per read.  33.3 measured a whole sheet compile at **27.7 µs**, so the
+  switch there costs a handful of dispatches per sheet swap against
+  ~6000 per whole-object read on the other side.  Recorded so the next
+  reader does not pattern-match the shape and "fix" the one that never
+  mattered — the read path earned the change because of how often it
+  runs, not because a big switch is wrong on sight.
   **Round 35 is complete.**
 
 **Risks tracked**: a mis-transcribed case silently returning the wrong

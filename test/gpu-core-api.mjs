@@ -211,4 +211,111 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function()
 
   });
 
+  // Round 34.2: elements() / nodes() / edges() with no query are memoized
+  // against the store's structure epoch.  These specs are about the
+  // *invalidation*, which is the only part that can be wrong: a cache
+  // that never dropped would pass a "returns the right elements" test on
+  // a graph nobody mutated.
+  describe('the unfiltered-collection memo (34.2)', function(){
+
+    it('returns the same object while nothing structural changes', function(){
+      expect( cy.elements() ).to.equal( cy.elements() );
+      expect( cy.nodes() ).to.equal( cy.nodes() );
+      expect( cy.edges() ).to.equal( cy.edges() );
+
+      // the three are still distinct collections from each other
+      expect( cy.nodes() ).to.not.equal( cy.elements() );
+    });
+
+    it('drops on add and on remove', function(){
+      var before = cy.elements();
+
+      var added = cy.add( { data: { id: 'n3' } } );
+
+      expect( cy.elements() ).to.not.equal( before );
+      expect( cy.elements().length ).to.equal( 4 );
+      expect( cy.nodes().map( function( n ){ return n.id(); } ) ).to.include( 'n3' );
+
+      var afterAdd = cy.elements();
+
+      added.remove();
+
+      expect( cy.elements() ).to.not.equal( afterAdd );
+      expect( cy.elements().length ).to.equal( 3 );
+      expect( cy.nodes().map( function( n ){ return n.id(); } ) ).to.not.include( 'n3' );
+    });
+
+    // the hazard the epoch exists for: a *count* would read these two
+    // calls as identical, and the second would answer with a dead ref
+    // and no 'n4'
+    it('drops when one element is added and another removed between calls', function(){
+      // an isolated node, so removing it cascades no edges and the count
+      // really is unchanged across the pair
+      cy.add( { data: { id: 'iso' } } );
+
+      var before = cy.elements();
+      var ids = before.map( function( e ){ return e.id(); } ).sort();
+
+      cy.add( { data: { id: 'n4' } } );
+      cy.$id('iso').remove();
+
+      var after = cy.elements();
+
+      expect( after ).to.not.equal( before );
+      expect( after.length ).to.equal( before.length ); // same count, different set
+      expect( after.map( function( e ){ return e.id(); } ).sort() ).to.not.eql( ids );
+      expect( after.map( function( e ){ return e.id(); } ) ).to.include( 'n4' );
+      expect( after.map( function( e ){ return e.id(); } ) ).to.not.include( 'iso' );
+    });
+
+    it('survives a slot compaction', function(){
+      cy.add( Array.from( { length: 40 }, function( _, i ){ return { data: { id: 'c' + i } }; } ) );
+
+      var before = cy.elements();
+
+      cy.nodes().slice( 3, 40 ).remove();
+      cy.compact();
+
+      var after = cy.elements();
+
+      expect( after ).to.not.equal( before );
+      expect( after.length ).to.equal( cy.nodes().length + cy.edges().length );
+
+      // and the collection actually works after the remap
+      after.forEach( function( e ){ expect( e.id() ).to.be.a( 'string' ); } );
+    });
+
+    it('is not dropped by style, position or data writes — and stays live through them', function(){
+      var before = cy.elements();
+
+      cy.$id('n1').position( { x: 42, y: 7 } );
+      cy.$id('n1').data( 'k', 1 );
+      cy.style( { nodes: { width: 33 } } );
+
+      // same object: none of those is a structural change
+      expect( cy.elements() ).to.equal( before );
+
+      // ...and it reads the new values, because a collection holds refs
+      // into the columns rather than a snapshot of them
+      expect( before.filter( function( e ){ return e.id() === 'n1'; } )[0].position() )
+        .to.eql( { x: 42, y: 7 } );
+      expect( cy.$id('n1').data( 'k' ) ).to.equal( 1 );
+      expect( cy.$id('n1').width() ).to.equal( 33 );
+    });
+
+    it('a query argument is never memoized', function(){
+      expect( cy.nodes( { selected: false } ) ).to.not.equal( cy.nodes( { selected: false } ) );
+      expect( cy.elements( function(){ return true; } ) ).to.not.equal( cy.elements( function(){ return true; } ) );
+    });
+
+    it('mutableElements() rides the same cache', function(){
+      expect( cy.mutableElements() ).to.equal( cy.elements() );
+
+      cy.add( { data: { id: 'n9' } } );
+
+      expect( cy.mutableElements().length ).to.equal( 4 );
+    });
+
+  });
+
 });

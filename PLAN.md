@@ -8878,13 +8878,32 @@ edges on the i9-9900K:
   wrong shared cache shows up as one of them answering differently),
   and that every element of a 40-element collection reports its own
   index.  2489 Node tests.
-- [ ] **34.2 `elements()` memoized against a structure epoch** — the
-  store gains a monotonic counter bumped wherever an element enters or
-  leaves the order list (`allocSlot`, `freeSlot`, the bulk id path) and
-  on compaction; the core caches its `elements()` result against it, so
-  `mutableElements()` and repeated `elements()` calls are O(1) between
-  structural changes.  A counter, not a count: add-one-remove-one
-  between two calls must not read as unchanged.
+- [x] **34.2 `elements()` memoized against a structure epoch**
+  (2026-08-03) — `GraphStore` gained `structureEpoch`, bumped at the
+  three places an element enters or leaves the insertion-order list
+  (`allocSlot`, `freeSlot`, the bulk id path) and on compaction, and
+  the core memoizes the three **unfiltered** collections against it
+  (`elements()`, `nodes()`, `edges()` with no query — a query argument
+  is never memoized).
+  **121 µs → 18 ns** for `mutableElements()` at N=2000, against v3's
+  14 ns: parity, from an O(V+E) scan plus a handle intern per element.
+  `elements()` is 16 ns and `nodes()` 19 ns on repeat.
+  *A deliberate visible consequence*: two calls with no structural
+  change between them now return **the same collection object** where
+  they returned two equal ones.  Collections are immutable snapshots,
+  so nothing can observe this except identity itself — and a spec pins
+  it rather than leaving it to be discovered.
+  Why a counter and not a count: `add` one, `remove` another between two
+  calls leaves the count identical and the *set* different, so a
+  count-keyed cache would answer the second call with a dead ref and a
+  missing element.  Six specs in `test/gpu-core-api.mjs`, and the two
+  controls that matter were run: keying the cache on element count
+  instead of the epoch fails the add-one-remove-one spec, and dropping
+  the `freeSlot` bump fails the add-and-remove spec.  Style, position
+  and data writes deliberately do *not* invalidate — pinned by a spec
+  that also reads the new values back through the cached collection,
+  since a collection holds refs into the columns rather than a copy of
+  them.
 - [ ] **34.3 The phased emit takes the no-listener fast path** —
   `_emitOnEle` returns before building the event or walking ancestors
   when nothing is listening for the type.  Sound because v4's emitter

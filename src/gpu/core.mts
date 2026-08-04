@@ -65,6 +65,14 @@ const DEFAULT_HEADLESS_HEIGHT = 600;
 /** dead slots below this never auto-compact (small graphs don't churn) */
 const COMPACT_FLOOR = 1024;
 
+/** The memoized unfiltered collections and the structure epoch they belong to (round 34.2). */
+interface AllCache {
+  epoch: number;
+  all: GpuCollection | null;
+  nodes: GpuCollection | null;
+  edges: GpuCollection | null;
+}
+
 /** Style work deferred by an open batch (flushed once at the outermost endBatch). */
 interface BatchPending {
   /** the sheet changed during the batch: one applyAll() subsumes the per-slot work */
@@ -132,6 +140,8 @@ export class GpuCore {
   private _tapholdDuration: number;
   private _batchDepth: number;
   private _batchPending: BatchPending | null;
+  /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
+  private _allCache: AllCache | null = null;
   _animations: AnimationManager;
 
   /**
@@ -788,7 +798,7 @@ export class GpuCore {
    * @returns the matching elements
    */
   elements( query?: GpuQuery | EleFilterFn ): GpuCollection {
-    return this._query( query, null );
+    return query === undefined ? this._allOf( null ) : this._query( query, null );
   }
 
   /**
@@ -799,7 +809,7 @@ export class GpuCore {
    * @returns the matching nodes
    */
   nodes( query?: GpuQuery | EleFilterFn ): GpuCollection {
-    return this._query( query, 'nodes' );
+    return query === undefined ? this._allOf( 'nodes' ) : this._query( query, 'nodes' );
   }
 
   /**
@@ -810,7 +820,7 @@ export class GpuCore {
    * @returns the matching edges
    */
   edges( query?: GpuQuery | EleFilterFn ): GpuCollection {
-    return this._query( query, 'edges' );
+    return query === undefined ? this._allOf( 'edges' ) : this._query( query, 'edges' );
   }
 
   /**
@@ -831,6 +841,50 @@ export class GpuCore {
    * the group(s) and filter per element.  `restrict` narrows the result
    * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
    */
+  /**
+   * The unfiltered whole-graph collections (`elements()`, `nodes()`,
+   * `edges()` with no query), memoized against the store's structure
+   * epoch (round 34.2).
+   *
+   * These are the calls an app makes in a loop, and each one was an
+   * O(V+E) scan plus a handle intern per element — `mutableElements()`
+   * measured 121 µs at 2000 nodes against v3's 18 ns, because v3 hands
+   * back a live internal collection and v4 built a fresh one every
+   * time.  A v4 collection is an immutable snapshot, so the only thing
+   * that can invalidate it is an element entering or leaving the graph,
+   * which is exactly what the epoch counts.  Style, flag, position and
+   * data writes do not move it, and a compaction does — refs would
+   * self-repair anyway (19.3), but the cache drops rather than relying
+   * on that.
+   *
+   * The visible consequence, deliberate: two calls with no structural
+   * change between them now return **the same collection object**
+   * where they used to return two equal ones.  Collections are
+   * immutable, so nothing can observe the difference except identity
+   * itself.
+   */
+  private _allOf( restrict: GroupName | null ): GpuCollection {
+    const epoch = this._store.structureEpoch;
+    const cached = this._allCache;
+
+    if( cached != null && cached.epoch === epoch ){
+      const hit = restrict == null ? cached.all : restrict === 'nodes' ? cached.nodes : cached.edges;
+
+      if( hit != null ){ return hit; }
+    }
+
+    const fresh = this._query( undefined, restrict );
+    const slot = cached != null && cached.epoch === epoch
+      ? cached
+      : { epoch, all: null, nodes: null, edges: null } as AllCache;
+
+    if( restrict == null ){ slot.all = fresh; } else if( restrict === 'nodes' ){ slot.nodes = fresh; } else { slot.edges = fresh; }
+
+    this._allCache = slot;
+
+    return fresh;
+  }
+
   private _query( query: GpuQuery | EleFilterFn | undefined, restrict: GroupName | null ): GpuCollection {
     if( typeof query === 'function' ){
       return this._query( undefined, restrict ).filter( query );

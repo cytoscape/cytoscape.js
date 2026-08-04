@@ -2,9 +2,11 @@ import { GpuEvent } from './event.mjs';
 import type { GpuEventProps } from './event.mjs';
 
 /*
-v4's emitter (round 41.2), replacing the shared v3 `src/emitter.mts` — the
-last module `src/gpu` imported from outside itself, and so a precondition of
-the round-42 restructure.
+v4's emitter (round 41.2), replacing the shared v3 emitter (now
+`v3/src/emitter.mts`) — the module round 41's plan believed was the last one
+v4 imported from outside itself, and a precondition of the round-42
+restructure.  It was not the last: five utility modules remained, which round
+42 duplicated rather than shared, so `src/` now imports nothing outside it.
 
 It is the same *model* the core already used: one emitter per core, holding
 every listener — core, delegated and per-element — told apart by a

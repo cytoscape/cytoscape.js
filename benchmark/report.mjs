@@ -2,14 +2,14 @@
 // (via bench-run.mjs's BENCH_JSON hook) and renders a self-contained
 // single-page HTML report.
 //
-//   npm run benchmark:gpu:report                # quick profile (~minutes)
-//   npm run benchmark:gpu:report -- --all       # + every standalone suite
-//   npm run benchmark:gpu:report -- --full      # 2k/20k/200k matrix (long)
-//   npm run benchmark:gpu:report -- --renderer  # + the browser renderer bench
+//   npm run benchmark:report                # quick profile (~minutes)
+//   npm run benchmark:report -- --all       # + every standalone suite
+//   npm run benchmark:report -- --full      # 2k/20k/200k matrix (long)
+//   npm run benchmark:report -- --renderer  # + the browser renderer bench
 //                                               #   (render-bench.mjs: built
 //                                               #   bundles + real GPU)
-//   npm run benchmark:gpu:report -- --suite traversal
-//   npm run benchmark:gpu:report -- --render-only results/results-<ts>.json
+//   npm run benchmark:report -- --suite traversal
+//   npm run benchmark:report -- --render-only results/results-<ts>.json
 //
 // Results land in benchmark/results/ (gitignored): a timestamped
 // results-*.json plus report.html rendered from it.  --render-only

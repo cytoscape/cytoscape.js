@@ -10,8 +10,11 @@
       #stage { width: 100vw; height: 100vh; background: #fff; }
     </style>
 
-    <script src="../../build/cytoscape.umd.js"></script>
-    <script src="../../build/cytoscape-gpu.umd.js"></script>
+    <!-- Both bundles export the global `cytoscape`, so v3's is captured under
+         its own name before v4's script overwrites it (round 42). -->
+    <script src="../v3/build/cytoscape.umd.js"></script>
+    <script>window.cytoscapeV3 = window.cytoscape;</script>
+    <script src="../build/cytoscape.umd.js"></script>
 
     <title>cytoscape.js renderer benchmark page</title>
   </head>
@@ -250,7 +253,7 @@
               } );
             }
 
-            cy = cytoscape( {
+            cy = cytoscapeV3( {
               container: stage,
               elements: defs,
               style,

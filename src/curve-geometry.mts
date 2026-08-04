@@ -8,7 +8,7 @@ import {
 Curved-edge geometry (round 12a: bundled bezier + self-loops).
 
 This is the CPU half of the dual-implementation discipline for expensive
-GPU geometry (see src/gpu/README.md, "Expensive GPU-computed geometry"):
+GPU geometry (see src/README.md, "Expensive GPU-computed geometry"):
 the WGSL curve shaders in render/shaders.mts mirror these functions step
 for step, both running on the same inputs (live endpoint positions +
 node geometry columns + the per-edge curve params) — neither side ever

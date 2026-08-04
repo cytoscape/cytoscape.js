@@ -285,7 +285,7 @@ if( process.argv[ 1 ] && import.meta.url === pathToFileURL( process.argv[ 1 ] ).
 
   console.log( `throw sites in src: ${result.sites.length}` );
   console.log( `  run by the Node suite: ${result.covered}` );
-  console.log( `  browser-only (pinned in the webgpu project): ${result.browser}` );
+  console.log( `  browser-only (pinned in the renderer project): ${result.browser}` );
   console.log( `  unreachable by design: ${result.unreachable}` );
   console.log( `  NODE-REACHABLE AND NEVER RUN: ${result.dead.length}` );
 

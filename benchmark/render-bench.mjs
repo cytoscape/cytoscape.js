@@ -7,12 +7,12 @@
 // pan) — for the v3 canvas renderer and the v4 WebGPU renderer on the
 // same scenes.
 //
-//   npm run benchmark:gpu:renderer                 # all scenes
-//   npm run benchmark:gpu:renderer -- --scene gen  # filter by key/label
-//   npm run benchmark:gpu:renderer -- --gpu-only   # skip the v3 side
+//   npm run benchmark:renderer                 # all scenes
+//   npm run benchmark:renderer -- --scene gen  # filter by key/label
+//   npm run benchmark:renderer -- --gpu-only   # skip the v3 side
 //                                                  # (gpu-vs-gpu scenarios
 //                                                  #  like compaction)
-//   npm run benchmark:gpu:renderer -- --layout     # live layout mode
+//   npm run benchmark:renderer -- --layout     # live layout mode
 //                                                  # (+ --layout-uncapped
 //                                                  #  for full baseline runs)
 //   node --import tsx benchmark/render-bench.mjs --json out.json
@@ -43,7 +43,7 @@ const RESULTS_DIR = join( DIR, 'results' );
 const SCENES = [
   { key: 'gen-25k', label: 'generated 25k × 50k', page: { n: 25000, m: 50000 } },
   { key: 'gen-100k', label: 'generated 100k × 300k', page: { n: 100000, m: 300000 } },
-  { key: 'ndex', label: 'ndex-x-large (19.6k × 465k)', page: { url: '/debug/webgpu/network-ndex-x-large.json' } },
+  { key: 'ndex', label: 'ndex-x-large (19.6k × 465k)', page: { url: '/debug/network-ndex-x-large.json' } },
   // round 12a: bundled-bezier pan cost — edges come in parallel pairs so
   // every edge actually curves (a lone bezier edge renders straight)
   { key: 'gen-25k-curved', label: 'generated 25k × 50k curved (bezier pairs)', page: { n: 25000, m: 50000, parallel: 2, curved: true } },
@@ -92,11 +92,11 @@ const headed = argv.includes( '--headed' );
 const GPU_ONLY = argv.includes( '--gpu-only' );
 
 // -- preflight ---------------------------------------------------------------
-const BUNDLES = [ 'build/cytoscape.umd.js', 'build/cytoscape-gpu.umd.js' ].map( p => join( ROOT, p ) );
+const BUNDLES = [ 'v3/build/cytoscape.umd.js', 'build/cytoscape.umd.js' ].map( p => join( ROOT, p ) );
 
 for( const b of BUNDLES ){
   if( !existsSync( b ) ){
-    console.error( `missing ${b} — run \`npm run build\` first` );
+    console.error( `missing ${b} — run \`npm run build\` (and \`cd v3 && npm run build:umd\`) first` );
     process.exit( 1 );
   }
 }

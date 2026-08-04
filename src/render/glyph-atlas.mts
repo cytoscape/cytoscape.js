@@ -289,7 +289,7 @@ export class GlyphAtlas {
     if( this.penY + ROW_HEIGHT > ATLAS_SIZE ){
       this.full = true;
       // eslint-disable-next-line no-console
-      console.warn( 'cytoscape-gpu: the glyph atlas is full; further new glyphs will not render' );
+      console.warn( 'cytoscape: the glyph atlas is full; further new glyphs will not render' );
 
       return null;
     }

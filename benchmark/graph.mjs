@@ -9,7 +9,7 @@ import cytoscapeV3 from '../v3/src/test.mjs';
 import cytoscape from '../src/index.mjs';
 
 // Node count is overridable so a run can be scaled up/down:
-//   BENCH_N=5000 npm run benchmark:gpu
+//   BENCH_N=5000 npm run benchmark
 export const N = Number( process.env.BENCH_N ) || 2000;
 
 /**

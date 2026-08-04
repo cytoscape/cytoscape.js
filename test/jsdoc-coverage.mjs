@@ -70,7 +70,7 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
   returns, what it throws" — and gated the comment's existence, but nothing
   checked that half of it.  Seven of the sixteen public members that throw
   said so; the other nine did not, and these comments are the hover text
-  shipped in dist/cytoscape-gpu.d.ts.
+  shipped in dist/cytoscape.d.ts.
 
   This is gated where round 30's *test*-coverage measurement deliberately is
   not, and the difference is the point: documentation completeness is already
@@ -149,7 +149,7 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
   argument and no return field at all — so round 36 completed `@returns`
   (63/276 → 276/276) and deliberately left it reporting.  The fifth design
   sitting moved the boundary: these comments ship as hover text in
-  dist/cytoscape-gpu.d.ts whether or not the docs generator reads them, and a
+  dist/cytoscape.d.ts whether or not the docs generator reads them, and a
   tail completed once with nothing holding it does not stay complete.
 
   Note the sitting did *not* gate the other two report-only audits (stranded

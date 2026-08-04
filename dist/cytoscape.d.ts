@@ -6703,7 +6703,7 @@ interface RendererLike {
 }
 /**
  * The GpuCore facade: the familiar synchronous core API over the columnar
- * store (#3486).  See src/gpu/README.md for the maintained API scope —
+ * store (#3486).  See src/README.md for the maintained API scope —
  * viewport, events, graph manipulation, compounds, style/mappers/
  * transitions, layouts, animation, algorithms, image export,
  * mount/unmount.
@@ -7110,7 +7110,7 @@ declare class GpuCore {
    * `click`, `touchstart`, …), for which `pointer*` is the one modern
    * spelling; `mouseover`/`mouseout` do still fire.  A ported v3 handler
    * does nothing at all rather than erroring, so port event names by the
-   * vocabulary in `src/gpu/README.md` rather than by trying them.
+   * vocabulary in `src/README.md` rather than by trying them.
    *
    * **Namespaces are exactly that rule, not an exception to it** (round
    * 41.2).  There is no namespace machinery: a type is matched whole, so

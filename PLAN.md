@@ -104,16 +104,19 @@ export, the docs generator and v4 site, the migration guide, robustness
 and cross-platform passes, to a published **4.0.0**.  The per-item
 decisions are recorded in "Open calls for the maintainer" below; the
 sitting record and the round 37–50 plans are at the end of this file.
-**Rounds 37, 39 and 41 have since landed** (2026-08-04): **37** the
+**Rounds 37, 39, 41 and 42 have since landed** (2026-08-04): **37** the
 governance close-out (throw coverage and `@returns` now gate, the alias
-split, the strictness closures), **39** the decided feature tail (overlap
-box selection, graph data on the wire, `cy.gc()`), and **41** the v4
-Event and emitter — complete except functional `preventDefault()` for
-gesture defaults, which became an open call when the enumeration turned
-out not to be derivable from v3.  **Round 38 has not started**: scoping
+split), **39** the decided feature tail (overlap box selection, graph data
+on the wire, `cy.gc()`), **41** the v4 Event and emitter — complete except
+functional `preventDefault()` for gesture defaults, which became an open
+call when the enumeration turned out not to be derivable from v3 — and
+**42** the great restructure, which changed no behaviour and made v4 *the*
+package: this source promoted from `src/gpu/` to `src/`, v3 moved whole
+into a self-contained, still-buildable `v3/`, and the root `package.json`
+became `cytoscape@4.0.0-unstable`.  **Round 38 has not started**: scoping
 it found three sub-calls the sitting did not reach (open call 1).
 **Round 40 is a design sitting.**
-`src/gpu/README.md` is
+`src/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
 
@@ -123,7 +126,7 @@ plan and outcome.
   commit(s) with a detailed message — never batch unrelated changes,
   and never leave a round's work sitting uncommitted.
 - **Docs travel with the code, every commit.**  Each commit updates
-  `src/gpu/README.md` (scope / deviations / design decisions) and this
+  `src/README.md` (scope / deviations / design decisions) and this
   file — including the logbook: the round records ("Landed (round N)"
   sections and their verification notes) are written or amended in the
   same commit as the work they describe, not batched at the end.
@@ -188,13 +191,19 @@ item 4 — the maintainer flagged it for real design work rather than a
 quick answer — which converts into round 40's design sitting instead of
 closing here.
 
-**Rounds 37, 39 and 41 have since landed** (2026-08-04).  Round 37
+**Rounds 37, 39, 41 and 42 have since landed** (2026-08-04).  Round 37
 executed the four items it owns — item 8 (both audits now gate), item 9
 (the alias split), item 10 (constructor strictness at the type layer) and
 item 11 (event names stay open, documented).  Round 39 closed items 2 and
 5 and the `cy.gc()` half of 4; round 41 closed item 6 and the DOM half of
-item 12.  Each is marked below, and the rest still read as described
-until their rounds ship.
+item 12.  Round 42 closed no ledger item — the packaging decision was the
+sitting's, not an open call — but it took two calls its own plan had left
+to docs-first (the `gpu-` prefixes drop; the five shared utility modules
+duplicate) and a third the plan had not foreseen (the v4 identity rename:
+factory, bundles, declaration and UMD global are all `cytoscape` now,
+while the `Gpu*` **type** names deliberately are not, being a separate
+call someone still has to take).  Each is marked below, and the rest still
+read as described until their rounds ship.
 
 **A second question is now genuinely open**, beside the error policy:
 round 41 found that item 12's remaining half — *which* gesture defaults
@@ -202,7 +211,9 @@ round 41 found that item 12's remaining half — *which* gesture defaults
 round-41 plan assumed, because v3 never reads `isDefaultPrevented`
 either.  That list is a v4 contract still to be designed.  Round 38 also
 acquired three sub-calls, logged inside item 1, that the sitting did not
-reach.
+reach, and **round 42 added a third open question** — item 13, the `Gpu*`
+exported type names, which its identity rename deliberately stopped
+short of because they are public surface.
 
 ### Scope calls
 
@@ -332,20 +343,20 @@ reach.
    as individual labelled rows.  The quick profile is deliberately
    unchanged.
 8. **Whether error-contract coverage becomes a gate** (logged 30.4) —
-   `scripts/gpu-throw-coverage.mjs` reports it and deliberately does
+   `scripts/throw-coverage.mjs` reports it and deliberately does
    not enforce it, because a floor is a policy call with three parts:
    whether a **new Node-reachable throw with no spec should fail the
    build** (the reading is 0 today, so a zero-tolerance gate would
    hold as of this round); what to do about the **browser-only
    sites** (13 when this call was written, 10 since round 36.4), which
-   the Node measurement cannot see at all and which only the `webgpu`
+   the Node measurement cannot see at all and which only the `renderer`
    project can pin; and whether the
    `UNREACHABLE`/`MISATTRIBUTED` lists are a maintained allowlist or a
    one-off note.  The JSDoc-coverage precedent (a script plus a test
    that gates it) is right there, so this is a decision about appetite
    rather than about mechanism.
    Note that rounds 31.2 and 32 *did* gate the two documentation
-   rules (`@throws`, `@param`) in `test/gpu-jsdoc-coverage.mjs`, on the
+   rules (`@throws`, `@param`) in `test/jsdoc-coverage.mjs`, on the
    reasoning that documentation completeness was already gated here by
    round 26 — so this call is specifically about **test** coverage,
    and the two decisions are meant to be readable side by side.
@@ -379,9 +390,9 @@ docs checks), and each is left in place pending the call.
    `cy.autolockNodes()` / `cy.autoungrabifyNodes()` are declared,
    wired and working — round 29.1's alias table now pins them.
    **One call over three names.**  If it goes the ledger's way, the
-   two rows in `test/gpu-aliases.mjs`, their wiring and `declare`
+   two rows in `test/aliases.mjs`, their wiring and `declare`
    lines in `core.mts`, and the `roundrectangle` line in
-   `test/gpu-decided-drops.mjs` come out together.
+   `test/decided-drops.mjs` come out together.
    ***Landed as round 37.2 (2026-08-04)** — this item is closed; the
    spelling turned out to be accepted in three enums rather than one,
    and drops from all three.*
@@ -489,6 +500,29 @@ docs checks), and each is left in place pending the call.
     Logged rather than guessed at because a wrong list is worse than
     none: an app that learns `preventDefault()` suppresses selection
     will depend on it.
+13. **The `Gpu*` exported type names** (new, round 42, 2026-08-04).  Round
+    42 renamed the package's *identity* — the factory, the bundles, the
+    declaration and the UMD global are all plainly `cytoscape` now — but
+    stopped at the exported **type** names, which still read `GpuCore`,
+    `GpuCollection`, `GpuEvent`, `GpuStylesheet`, `CytoscapeGpuOptions`
+    and 37 others.  The `Gpu` there meant "the prototype, as opposed to
+    v3" at a time when both lived in one package; now that v4 *is* the
+    package it means nothing, and a consumer writes
+    `const cy: GpuCore = cytoscape( opts )`.
+    The call is whether they rename (to `Core`, `Collection`, `Event`,
+    `Stylesheet`, `CytoscapeOptions`, …) and if so whether the old
+    spellings survive as deprecated aliases through the prerelease line,
+    the way `exports["./gpu"]` does.  It is mechanical — one pass over
+    `src/`, `dist/cytoscape.d.ts`, `test/types-surface.mjs`'s
+    `EXPECTED_EXPORTS` and the compile-only consumer test — but it is
+    **public surface**, so it is a call and not a tidy-up, which is why
+    round 42 logged it instead of doing it while it had the sed open.
+    Cheapest before 4.0.0-alpha.1 (round 49) and expensive after.
+    Note the one name that is *not* obviously in scope: `gpu-types.mts`,
+    `gpu-context.mts` and the `render/gpu-*` modules keep their prefix on
+    purpose — there it distinguishes the device half from a CPU
+    counterpart — so a rename should not sweep the file names with the
+    type names.
 
 
 ## Context
@@ -505,8 +539,8 @@ Agreed constraints (from user) — the **pass-1 agreement**, kept as the histori
 ## Directory layout (as built)
 
 ```
-src/gpu/
-  index.mts              # default factory cytoscapeGpu(options); hard-error gate; wires model↔renderer↔pointer
+src/
+  index.mts              # default factory cytoscape(options); hard-error gate; wires model↔renderer↔pointer
   gpu-types.mts          # public option/type surface (GpuRendererOptions LOD knobs, RendererStats, ...)
   core.mts               # GpuCore facade: graph manipulation, queries, events, style(), layout(), pick(),
                          #   batching, compact() (round 19), json()/serialize(), destroy(), width/height
@@ -582,41 +616,57 @@ src/gpu/
     webgpu-constants.mts # numeric usage/stage flags so render modules stay Node-importable
   interact/pointer.mts   # pointer/wheel/touch: pan, zoom, hover, taps, box select, drag, pinch, cxt
   README.md              # scope + accepted deviations (the maintained doc)
-debug/webgpu/            # dev harness: network/bg/LOD/labels URL params, ?gen=NxM generator, ?layout=force|spiral|... (rounds 17-18), stats overlay
-playwright-page/webgpu.html (+ parity.html for the live v3-vs-v4 diffs)
-playwright-tests/webgpu.spec.js (+ webgpu-visual.spec.js + goldens/)
-test/gpu-*.mjs           # 120+ Node-runner suites (auto-picked-up by the test:js glob), incl.
-                         #   gpu-style-readback-all.mjs — round 35.1's characterization of all 153
+debug/            # dev harness: network/bg/LOD/labels URL params, ?gen=NxM generator, ?layout=force|spiral|... (rounds 17-18), stats overlay
+playwright-page/index.html (+ parity.html for the live v3-vs-v4 diffs)
+playwright-tests/renderer.spec.js (+ visual.spec.js + goldens/)
+test/*.mjs               # 120+ Node-runner suites (auto-picked-up by the test:js glob), incl.
+                         #   style-readback-all.mjs — round 35.1's characterization of all 153
                          #   readable style props on a node and an edge, the guard the readback
                          #   dispatch table was refactored behind
-benchmark/gpu/           # 23 suites + the renderer/report runners (see the Benchmarks section of the README).
+benchmark/               # 22 suites + the renderer/report runners (see the Benchmarks section of the README).
                          #   Round 36.5 added style-bundle.mjs — the style getters measured through the
                          #   *built bundle*, giving rounds 34-35's headline figures a re-runnable source.
                          #   Round 33 added layouts, style, load, spatial, data, events, store and
                          #   surface (the breadth pass) to the round-1..29 set, and report.mjs grew
                          #   an --all profile that runs every one of them (closing open call 7).
-scripts/gpu-bench-coverage.mjs   # round 33.12: which public members a benchmark calls (reports, never gates)
-test/modules/gpu-bench-coverage.mjs  # round 33.12: that script's matcher, and the limits it errs within
-scripts/gpu-jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss);
+scripts/bench-coverage.mjs   # round 33.12: which public members a benchmark calls (reports, never gates)
+test/modules/bench-coverage.mjs  # round 33.12: that script's matcher, and the limits it errs within
+scripts/jsdoc-coverage.mjs   # round 26: the two-tier JSDoc audit (--verbose lists every miss);
                                  #   also @throws accuracy (31.2), @param completeness (32, widened in
                                  #   36.2 to exported functions and again in 37.3 to `export default
                                  #   function`), @returns (36.1, gated since 37.1) and stranded doc
                                  #   blocks (36.6) — the last of which reports, never gates
-test/gpu-jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress), + the 31.2/32 rules
-test/modules/gpu-jsdoc-returns.mjs   # round 36.1: the @returns audit's parser, against a fixture
-test/modules/gpu-jsdoc-stranded.mjs  # round 36.6: the stranded-block check, and the limits it errs within
-scripts/gpu-throw-coverage.mjs   # round 30.4: which src/gpu throws the Node suite runs; a zero-tolerance
+test/jsdoc-coverage.mjs      # round 26: the coverage gate (no file may regress), + the 31.2/32 rules
+test/modules/jsdoc-returns.mjs   # round 36.1: the @returns audit's parser, against a fixture
+test/modules/jsdoc-stranded.mjs  # round 36.6: the stranded-block check, and the limits it errs within
+scripts/throw-coverage.mjs   # round 30.4: which src throws the Node suite runs; a zero-tolerance
                                  #   gate since 37.1 (npm run test:throws, in the npm test chain), with
                                  #   UNREACHABLE/MISATTRIBUTED as validated allowlists
-test/modules/gpu-throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture; + the 37.1 gate
-test/modules/gpu-import-graph.mjs    # round 41.3: what src/gpu imports from outside itself — five shared
-                                 #   utility modules as a maintained allowlist (round 42's precondition)
-rolldown.dts.gpu.config.mjs      # round 26.5: rolls src/gpu declarations up (build/dts-gpu/)
-build-dts.mjs                    #   finalizeDts (v3) + finalizeGpuDts (v4) -> dist/*.d.ts
-dist/cytoscape-gpu.d.ts          # round 26.5: the shipped declarations behind the "./gpu" types export
-test/types-gpu-surface.mjs       # round 26.5: shape audit (exports, statics, surviving doc blocks)
-typescript/tests/gpu.test-d.ts   # round 26.5: compile-only consumer test in the test:types project
+test/modules/throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture; + the 37.1 gate
+test/modules/import-graph.mjs    # round 41.3: what src imports from outside itself.  Round 42
+                                 #   emptied the allowlist: the rule is now absolute (nothing under
+                                 #   src/ may import outside it, nothing may reach into v3/)
+rolldown.dts.config.mjs      # round 26.5: rolls src declarations up (build/dts/)
+build-dts.mjs                    #   finalizeDts -> dist/cytoscape.d.ts
+dist/cytoscape.d.ts          # round 26.5: the shipped declarations behind the package types export
+test/types-surface.mjs       # round 26.5: shape audit (exports, statics, surviving doc blocks)
+typescript/tests/api.test-d.ts   # round 26.5: compile-only consumer test in the test:types project
+v3/                              # round 42: the whole v3 project, self-contained and still buildable —
+                                 #   v3/src, v3/test, v3/benchmark, v3/debug, v3/documentation,
+                                 #   v3/playwright-{tests,page} (port 3334), v3/package.json and its own
+                                 #   build/tsconfig/rolldown configs.  `cd v3 && npm run build`.
 ```
+
+**Round 42 (2026-08-04) moved all of this.**  The tree above is the
+post-move layout: v4's source promoted from `src/` to `src/`, the
+`gpu-`/`webgpu-` prefixes dropped from the test, benchmark, script, debug
+and Playwright names, and v3 moved wholesale into `v3/`.  `src/math.mts`,
+`src/types.mts` and `src/util/` are new — v4's own lean copies of the five
+utility modules 41.3 measured it still importing from v3, so nothing under
+`src/` imports outside it.  Where the `gpu-` prefix survives inside `src/`
+(`gpu-context`, `gpu-types`, `render/gpu-force`, `render/gpu-tween`,
+`render/gpu-timer`) it names the *device* half against a CPU counterpart,
+which is a live distinction rather than a v3-era prefix.
 
 ## Model half — implemented as planned
 
@@ -652,15 +702,15 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 ## Integration — done
 
 - devDep `@webgpu/types`; tsconfig `"types": ["@webgpu/types"]`.
-- rolldown: `build/cytoscape-gpu.umd.js` (global `cytoscapeGpu`) + `build/cytoscape-gpu.esm.mjs`; the `FILE=umd` watch filter picks the gpu UMD up automatically (verified).
-- package.json: `exports["./gpu"]`, gpu bundles in `dist:copy`, `debug/webgpu` in `watch:sync`.
-- `debug/webgpu/`: network/bg/LOD/labels URL params, `?gen=NxM` random-graph generator, best-effort constant-prop conversion of the v3 fixture styles, FPS/counts/upload-bytes/glyphs/pick-latency overlay.
-- playwright: `webgpu` project — `channel: 'chromium'` new headless + `--enable-unsafe-webgpu --enable-unsafe-swiftshader`, loading via `http://127.0.0.1:3333`; soft-skips without an adapter; the default chromium project ignores the webgpu spec.
+- rolldown: `build/cytoscape.umd.js` (global `cytoscape`) + `build/cytoscape.esm.mjs`; the `FILE=umd` watch filter picks the gpu UMD up automatically (verified).
+- package.json: `exports["./gpu"]`, gpu bundles in `dist:copy`, `debug` in `watch:sync`.
+- `debug/`: network/bg/LOD/labels URL params, `?gen=NxM` random-graph generator, best-effort constant-prop conversion of the v3 fixture styles, FPS/counts/upload-bytes/glyphs/pick-latency overlay.
+- playwright: the `renderer` project (named `webgpu` until round 42) — `channel: 'chromium'` new headless + `--enable-unsafe-webgpu --enable-unsafe-swiftshader`, loading via `http://127.0.0.1:3333`; soft-skips without an adapter; the default chromium project ignores it.
 
 ## Verification — all green (the pass-1 record; each later round's Landed section carries its own tallies)
 
 - **Node tests** (`npm run test:js`): 16 gpu suites / ~240 gpu assertions within the 918-test suite — store, dirty contract, core graph manip, collection iteration/comparison/building-filtering/traversing, selectors, selection, events, viewport, style, grid layout, ColumnMirror (mock GPUQueue), labels model channel, label layout/EDT/GlyphBuffer.
-- **Playwright** (`webgpu.spec.js`, 10 specs on a real Metal adapter): ready; hard error with `navigator.gpu` removed; headless never requires GPU; red-node-on-white composited pixels (pins premultiplied compositing); pick() node vs background; mouse-drag moves node in model + pixels; tap select/clear; label renders below node; label follows a move with ≤64 B upload; label LOD fade-out.
+- **Playwright** (`renderer.spec.js`, 10 specs on a real Metal adapter): ready; hard error with `navigator.gpu` removed; headless never requires GPU; red-node-on-white composited pixels (pins premultiplied compositing); pick() node vs background; mouse-drag moves node in model + pixels; tap select/clear; label renders below node; label follows a move with ≤64 B upload; label LOD fade-out.
 - **Manual/scripted**: `?gen=` harness runs verified via scripted Chromium (render-on-dirty confirmed: 1 frame while idle); typecheck and lint green.
 
 ### Benchmark (Apple Silicon Metal, 1280×800, continuous-pan steady state)
@@ -675,7 +725,7 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 
 CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count in the VS). Steady-state labels are near-free at fit-all zoom (LOD collapse) and cost ≤~18% zoomed in at the 100k scale.
 
-## Known deviations (accepted; detailed in src/gpu/README.md)
+## Known deviations (accepted; detailed in src/README.md)
 
 - Element/core listener firing order is registration order *within a bubbling phase* (compound bubbling landed round 14.5 with v3's cross-phase order).
 - No z-index; compound parent bodies (round 14.9, depth order) under edges under leaf nodes under labels; within a stream, slot order (reused slots draw at the recycled position).
@@ -698,7 +748,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    the atlas; per-label work is layout + instance emission only.
 3. ~~Bulk element load~~ — **done** (the actual init bottleneck).
    Profiling the ndex-x-large load (28.6 MB JSON, 19.6k nodes / 465k
-   edges, ~960 ms end to end) showed `cytoscapeGpu` init at 662 ms —
+   edges, ~960 ms end to end) showed `cytoscape` init at 662 ms —
    dominated not by the columnar model but by eager per-element handle
    materialization (`GpuCollection` interning for 484k elements the loader
    never touches), a per-element `add` emit with no listener early-out,
@@ -709,12 +759,12 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    init 662 → 236 ms; (b) a **columnar elements form** (`{ columnar:
    true, ... }`, typed-array columns, integer-indexed edge endpoints,
    contiguous-slot memcpy ingest) with the compat converter
-   `cytoscapeGpu.toColumnarElements(json)` — init 236 → 80 ms, and ~76 ms
+   `cytoscape.toColumnarElements(json)` — init 236 → 80 ms, and ~76 ms
    with a prebuilt payload (what fetching a binary format would enable;
    `JSON.parse` itself is 90–113 ms on this fixture).  The serialized
    wire layout for the columnar form is also **done**: one little-endian
    ArrayBuffer (header + columns; ids as a UTF-8 blob + prefix offsets
-   with an ASCII fast path) via `cytoscapeGpu.serializeElements` /
+   with an ASCII fast path) via `cytoscape.serializeElements` /
    `deserializeElements`, accepted directly by
    `options.elements`/`cy.add()`.  Numeric columns deserialize as
    zero-copy views; deserialize is ~5 ms on this fixture (replacing the
@@ -832,8 +882,8 @@ Not yet ported from the small list: ~~`active`/`activate`,
 ### Collection/core API performance
 
 Benchmarked against the v3 analogue in `src/` via Mitata
-(`npm run benchmark:gpu`, `BENCH_N` scales the graph; suites in
-`benchmark/gpu/`).  The harness rotates over a pool of distinct operands
+(`npm run benchmark`, `BENCH_N` scales the graph; suites in
+`benchmark/`).  The harness rotates over a pool of distinct operands
 so V8 can't hoist pure loop-invariant calls out of the measured region —
 without that, allocation-free ops (e.g. `same()`) mis-report by 5 orders of
 magnitude.  On a 2k-node/4k-edge graph:
@@ -872,13 +922,13 @@ magnitude.  On a 2k-node/4k-edge graph:
   when no `thisArg` is given, matching v3's semantics (`this` is
   undefined, not the element) — rebinding the receiver per element via
   `fn.call()` cost ~2× at 20k.  Verified at N = 2k/20k/200k (the focused
-  `benchmark/gpu/materializers.mjs` sweep runs where the full suite
+  `benchmark/materializers.mjs` sweep runs where the full suite
   can't): `$(':selected')` ~2× slower → 16–59× faster, `$('node')` →
   9–14×, `$('node:selected')` → 46–166×, `nodes(':selected')` → 70–198×,
   `nodes()`/`edges()` → 3–9×, `elements()` ~2.6× slower → ~parity-to-2×
   faster, `filter(fn)` flipped to a win, `forEach` ~3.3× slower → ~1.8×.
 - **Columnar bulk writes (perf round 4)** — the write-side counterpart of
-  round 3, driven by a new `benchmark/gpu/mutators.mjs` sweep (whole-graph
+  round 3, driven by a new `benchmark/mutators.mjs` sweep (whole-graph
   mutation round-trips vs v3 at 2k/20k/200k; `BENCH_OP` runs one group per
   process at 200k, where eight v3 instances exceed the heap).  The sweep
   exposed `eles.select()` as the one outright loss: per-element
@@ -922,7 +972,7 @@ magnitude.  On a 2k-node/4k-edge graph:
   with its own elements instead of a `difference()` post-pass, and
   `successors/predecessors` is a raw slot BFS (no per-hop collections at
   all): 2k-node closure 92.7 ms → 352 µs (2.9× → ~725× vs v3).  Verified
-  by `benchmark/gpu/traversal.mjs` at 2k/20k: the two residual v3 wins
+  by `benchmark/traversal.mjs` at 2k/20k: the two residual v3 wins
   flipped (100-node-band `connectedEdges` 1.2–1.5× loss → 1.3–1.5× win,
   band `sources` 1.1–1.3× loss → 1.3× win), and the rest widened —
   `neighborhood` 2× → ~4×, `outgoers`/`incomers` ~3.4× → ~4.5×, band
@@ -941,7 +991,7 @@ magnitude.  On a 2k-node/4k-edge graph:
   question was whether the wins survive *composition* and the
   listener-gated emit paths the micro suites deliberately exclude (their
   emits never fire — no listeners are registered).
-  `benchmark/gpu/scenarios.mjs` replays five composed traces with core
+  `benchmark/scenarios.mjs` replays five composed traces with core
   listeners attached, at 2k/20k/200k (`BENCH_OP` one-group-per-process at
   200k; v3 instances styleEnabled + preset layout — the realistic app
   config, and required for meaningful v3 bounds headless).  Results (× vs
@@ -973,8 +1023,8 @@ magnitude.  On a 2k-node/4k-edge graph:
 ### Landed (round 6 — the needs-a-call tier)
 
 Five isolated commits (2026-07-24), each with Node tests; box selection
-also has a Playwright spec (18 webgpu specs total, all green on a real
-adapter).  `src/gpu/README.md` records the policies.
+also has a Playwright spec (18 renderer specs total, all green on a real
+adapter).  `src/README.md` records the policies.
 
 - **`active`/`pannable` states**: `FLAG_ACTIVE`/`FLAG_PANNABLE` bits;
   `activate`/`unactivate`/`active`/`inactive`, `panify`/`unpanify`/
@@ -1029,7 +1079,7 @@ adapter).  `src/gpu/README.md` records the policies.
 - ~~**Core `json()` *import*** and element `clone`/`copy`/`restore`~~ —
   **call made (round 10 planning, 2026-07-27): not in v4.**  Removed
   elements are terminally dead (see the design decision in
-  `src/gpu/README.md`): their column bytes are tombstoned and the slot
+  `src/README.md`): their column bytes are tombstoned and the slot
   free-listed, so nothing keeps a removed element readable or
   restorable.  `restore()`/`clone()` and the import form of `cy.json()`
   are permanently closed; re-adding from kept definitions is the app's
@@ -1063,7 +1113,7 @@ adapter).  `src/gpu/README.md` records the policies.
 ## Selector removal + stylesheet reshape (v4 API direction)
 
 Decided in design discussion (2026-07-24) and implemented in one pass;
-`src/gpu/README.md` ("Design decisions") is the maintained record.  The
+`src/README.md` ("Design decisions") is the maintained record.  The
 decisions, explicitly:
 
 - **v4 has no classes.**  The class system (`addClass`/class selectors)
@@ -1098,7 +1148,7 @@ decisions, explicitly:
 
 Verification: typecheck, lint, `test:js` (1221 passing, incl. the new
 `gpu-query.mjs` matcher suite and rewritten style/events/flag-scan
-suites), and all 17 Playwright webgpu specs on a real adapter.
+suites), and all 17 Playwright renderer specs on a real adapter.
 Benchmarks compare idiomatic forms per side now (`cmp(name, v3Op,
 gpuOp)` where they differ); `pointer.mts` tap-clear uses
 `elements({ selected: true })`.
@@ -1110,8 +1160,8 @@ match the group names): OKLab + scheme tables → mapper compile/IR →
 engine integration → data-write plumbing → program packing → GPU eval
 (scalars, then colors) → ordinal dict path + mixed demotion → benchmark
 → docs.  All green throughout: typecheck, lint, `test:js` (1360 tests;
-three new mapper suites), `test:modules`, 20 Playwright webgpu specs on
-a real adapter.  `src/gpu/README.md` ("Design decisions") is the
+three new mapper suites), `test:modules`, 20 Playwright renderer specs on
+a real adapter.  `src/README.md` ("Design decisions") is the
 maintained record; the shape, briefly:
 
 - **Spec**: plain serializable objects as style prop values —
@@ -1149,7 +1199,7 @@ Direction set in discussion: maximize GPU offload / minimize CPU resolve
 by making the analyzable mapper IR the *only* way to style, and removing
 the one construct that can never be offloaded — the opaque style
 function.  Isolated commits; all green (typecheck, lint, `test:js`,
-`test:modules`, 20 Playwright webgpu specs).
+`test:modules`, 20 Playwright renderer specs).
 
 - **CPU-evaluable invariant (established).**  Every mapper must be cheaply
   CPU-evaluable.  That is what keeps `ele.style()` synchronous, keeps
@@ -1186,7 +1236,7 @@ first, on the CPU-canonical path (complete + correct + Node-testable); a
 GPU tween fast path is the planned optimization underneath, transparent to
 the API.
 
-- **Animation API + CPU tweening** (`src/gpu/animation.mts`).  Tween
+- **Animation API + CPU tweening** (`src/animation.mts`).  Tween
   element style/position (and the viewport) from captured start values to
   explicit targets over a duration, easing normalized time.  Collection:
   `animate`/`animation`/`animated`/`stop`/`delay`/`delayAnimation` +
@@ -1229,7 +1279,7 @@ the API.
 Direction set in discussion after round 9, ahead of building the paint/size
 GPU tween extension.  No code yet; these are the locked calls that scope that
 work and the expensive-geometry cases (multiline labels, bundled bezier) that
-sit behind it.  `src/gpu/README.md` ("Design decisions") is the maintained
+sit behind it.  `src/README.md` ("Design decisions") is the maintained
 record.
 
 - **Paint tween is the clean next extension; size is a geometry-tier
@@ -1382,7 +1432,7 @@ geometry-seam work.
   silent no-ops, and the specs still passed on stale buffer contents.  Two
   guards now close that hole — the webgpu Playwright project fails any test
   whose console reports a WGSL/validation error, and a Node test
-  (`test/modules/gpu-wgsl-identifiers.mjs`) checks every shader's declared
+  (`test/modules/wgsl-identifiers.mjs`) checks every shader's declared
   identifiers against the reserved list, so a GPU-less CI catches it too.
 - **Verification**: 1411 Node tests + 47 module tests, typecheck and lint
   clean, and 24/24 webgpu Playwright specs on a real (SwiftShader) adapter —
@@ -1398,7 +1448,7 @@ geometry-seam work.
 Round 9 shipped eight ad-hoc easings, with the four names shared with v3 drawn
 as *different curves* (max deviation 0.33 for `ease`) and unknown names falling
 back to `ease` silently.  This round replaces that with one curve layer
-(`src/gpu/easing.mts`) that both executors run.
+(`src/easing.mts`) that both executors run.
 
 - **v3's enum, verbatim.**  `linear` plus the 25 named cubic-beziers, using v3's
   own control points, so every named curve is now identical to v3's (pinned by a
@@ -1492,7 +1542,7 @@ stale against the v3 code actually in the repo.
   pixel-matches a screenshot of the live canvas (≤ 0.1% of pixels) over a
   scene exercising all four pipelines — pins the export path to the
   screen path both ways.
-- **v4 goldens** (new `webgpu-visual` Playwright project, pinned to
+- **v4 goldens** (new `visual` Playwright project, pinned to
   SwiftShader via `--use-webgpu-adapter=swiftshader` so rasterization is
   machine-independent): four checked-in scenes — shapes/borders/opacity/
   arrows, the selection accent ring, GPU-evaluated color mappers, and
@@ -1510,7 +1560,7 @@ stale against the v3 code actually in the repo.
   passes an explicit preset layout, `fit: false`), and v3 adopts
   position objects by reference (each side deep-copies the defs).
 - **Verification**: 1452 Node tests + 47 module tests, typecheck and lint
-  clean, 32/32 `webgpu` + 6/6 `webgpu-visual` Playwright specs; goldens
+  clean, 32/32 `webgpu` + 6/6 `visual` Playwright specs; goldens
   byte-stable across repeat runs.
 
 ## Landed (round 9.7 — label testability + `font-family`, 2026-07-27)
@@ -1537,7 +1587,7 @@ API, not harness design:
   built before the font loads is cached from the fallback with no
   invalidation.  A `document.fonts.ready` re-raster hook for the library
   is logged as a follow-up, not built here.
-- **Label goldens as their own tolerance tier** in `webgpu-visual`: the
+- **Label goldens as their own tolerance tier** in `visual`: the
   fixed font pins glyph shapes/metrics and SwiftShader pins the GPU, but
   Chrome's atlas raster still goes through CoreText (macOS) vs FreeType
   (Linux), so label goldens get a looser bound (threshold ~0.25, ratio
@@ -1550,7 +1600,7 @@ API, not harness design:
   excluding labels — raster and placement differ by design.
 - **Verification**: 1461 Node tests (9 new font-family specs) + 47
   module tests, typecheck and lint clean; 33/33 `webgpu` (incl. the
-  font-swap spec) and 7/7 `webgpu-visual` specs (incl. the
+  font-swap spec) and 7/7 `visual` specs (incl. the
   `labels-open-sans` golden), the visual project stable across three
   consecutive runs.
 
@@ -1577,14 +1627,14 @@ then just adds a golden scene.
 Scope criteria set with the user: this round is composed **only of items
 whose design is already decided** (or is a mechanical v3 port) **and
 that are easily verifiable in the existing harnesses** — Node
-`test/gpu-*.mjs`, the `webgpu`/`webgpu-visual` Playwright projects,
-`benchmark/gpu/` — so the round can run autonomously as far as
+`test/*.mjs`, the `webgpu`/`visual` Playwright projects,
+`benchmark/` — so the round can run autonomously as far as
 possible.  Anything needing iterative design discussion is deferred and
 logged (see the compaction section below and the deferred list at the
 end).  Two design calls were made during planning:
 
 - **Removed elements are terminally dead in v4** (recorded in
-  `src/gpu/README.md`, "Design decisions"): only the handle's cached
+  `src/README.md`, "Design decisions"): only the handle's cached
   `id()`/`group()` survive removal.  This permanently closes
   `restore()`/`clone()`/`cy.json()` import — the needs-a-call entry
   above is closed.
@@ -1599,19 +1649,19 @@ Process (user-set):
   Goldens are regenerated/added autonomously when a visual change is
   intended (`UPDATE_GOLDENS=1`), noted in the commit message.
 - **Docs land in the same commit as the code they describe**:
-  `src/gpu/README.md` (scope / deviations / design decisions) and this
+  `src/README.md` (scope / deviations / design decisions) and this
   file's round record are updated per commit, not batched at the end.
 - **Escalation rule**: if an item turns out to need a real design call
   mid-implementation, stop that item, log the question under "Needs a
   call", and move on to the next item — API semantics are never
   improvised autonomously.
-- Perf-relevant items run the matching `benchmark/gpu/` sweep and
+- Perf-relevant items run the matching `benchmark/` sweep and
   record numbers here.
 
 **Round complete (2026-07-27): all 17 items landed**, each as isolated
 commits with docs in-commit and the full verification gate per item.
 Net across the round: 1461 → 1629 Node tests, 33 → 44 `webgpu` + 7 → 14
-`webgpu-visual` Playwright specs (51 total), 7 new golden scenes, and
+`visual` Playwright specs (51 total), 7 new golden scenes, and
 the full v3 algorithm surface, four more layouts, viewport animation
 targets, data query predicates, ten node shapes, line styles, label
 visuals, arrow shapes, edge labels, the gesture set, mount/unmount and
@@ -1626,7 +1676,7 @@ Each entry converts into a "Landed" record as it ships:
 - [x] **A1 Algorithms: search + paths** — landed 2026-07-27.
   `bfs`/`dfs` (+ `breadthFirstSearch`/`depthFirstSearch`), `dijkstra`,
   `aStar`, `bellmanFord`, `floydWarshall`, `kruskal` in
-  `src/gpu/algorithms/` (a shared `SubgraphView` — dense node index +
+  `src/algorithms/` (a shared `SubgraphView` — dense node index +
   edge membership over the calling collection — plus an indexed
   binary min-heap in `algo-shared.mts`; one file per algorithm), all
   slot-native over CSR with dense typed-array state, no per-node
@@ -1638,7 +1688,7 @@ Each entry converts into a "Landed" record as it ships:
   empty).  v4 deltas: node args are collections (strings throw),
   missing required roots/goals throw, and cycle collections dedupe
   the closing node (v4 collections are sets).  39 specs in
-  `test/gpu-algorithms.mjs` ported from the v3 fixtures (1500 Node
+  `test/algorithms.mjs` ported from the v3 fixtures (1500 Node
   tests total green).
 - [x] **A2 Algorithms: structure** — landed 2026-07-27.
   `tarjanStronglyConnected` (+`tsc`/`tscc`/long alias; converted to an
@@ -1653,7 +1703,7 @@ Each entry converts into a "Landed" record as it ships:
   does).  Tests assert order-independent graph-theoretic results
   (blocks, cut vertices, Eulerian properties) where v3 pinned
   traversal-order sequences; 12 specs in
-  `test/gpu-algorithms-structure.mjs` (1512 Node tests green).
+  `test/algorithms-structure.mjs` (1512 Node tests green).
 - [x] **A3 Algorithms: pageRank + centralities** — landed 2026-07-27.
   `pageRank` (dense power method on Float64Arrays), `degreeCentrality`
   /`degreeCentralityNormalized` (+`dc`/`dcn`/`...Normalised`; Opsahl's
@@ -1664,7 +1714,7 @@ Each entry converts into a "Landed" record as it ships:
   with first-edge weight pick as v3, but a proper decrease-key heap so
   S is truly distance-ordered).  19 specs pin v3's exact numeric
   expectations (all matched, incl. the multiple-shortest-paths case);
-  `test/gpu-algorithms-centralities.mjs` (1531 Node tests green).
+  `test/algorithms-centralities.mjs` (1531 Node tests green).
 - [x] **A4 Algorithms: clustering** — landed 2026-07-27.  `kMeans`,
   `kMedoids`, `fuzzyCMeans`/`fcm`, `hierarchicalClustering`/`hca`
   (threshold + dendrogram modes, `addDendrogram`), `markovClustering`/
@@ -1678,10 +1728,10 @@ Each entry converts into a "Landed" record as it ships:
   v3 fixtures' numeric expectations (k-means/k-medoids/fcm/markov
   cluster memberships in exact order, dendrogram levels 0–10);
   affinity gets a compact deterministic fixture instead of v3's
-  700-line one.  `test/gpu-algorithms-clustering.mjs` (1556 Node tests
+  700-line one.  `test/algorithms-clustering.mjs` (1556 Node tests
   green).
 - [x] **A5 Algorithm benchmark** — landed 2026-07-27.
-  `benchmark/gpu/algorithms.mjs` (standalone Mitata sweep; superlinear
+  `benchmark/algorithms.mjs` (standalone Mitata sweep; superlinear
   ops gate on BENCH_N).  At N=2000 (4k edges) the slot-native walks win
   every op vs v3: bfs 34×, dfs 39×, dijkstra+pathTo 33×, bellmanFord
   22×, kruskal 14×, tarjan SCC 19×, hopcroft-tarjan 20×, betweenness
@@ -1704,7 +1754,7 @@ Each entry converts into a "Landed" record as it ships:
   calls it on the unsorted one, so `sort` does nothing there), and
   breadthfirst compacts the nulls left by maximal shifts before
   sorting a depth (v3 passes them into its comparator).  28 specs in
-  `test/gpu-layouts.mjs` (1584 Node tests green).
+  `test/layouts.mjs` (1584 Node tests green).
 - [x] **A7 Viewport animation targets** — landed 2026-07-27.
   `cy.animate`/`cy.animation` (the handle form is new, mirroring
   `eles.animation`) take `fit: { eles | boundingBox, padding }` and
@@ -1720,7 +1770,7 @@ Each entry converts into a "Landed" record as it ships:
   fit-at-layoutstop compromise is gone).  Note: v3's animated
   `fit()`/`center()` *options* don't exist in v3 either — the target
   form is the parity surface.  9 specs in
-  `test/gpu-viewport-animation.mjs` (1593 Node tests green).
+  `test/viewport-animation.mjs` (1593 Node tests green).
 - [x] **A8 Data query predicates** — landed 2026-07-27.  `GpuQuery`
   gains `data: { key: value | { eq/ne/lt/lte/gt/gte/in } }` (bare
   value = `eq`; keys AND together), compiled to `CompiledCondition[]`
@@ -1731,7 +1781,7 @@ Each entry converts into a "Landed" record as it ships:
   (`scanRefsInto`) takes the tests with per-key column readers hoisted
   out of the loop (`DataStore.reader`); the collection-filter and
   `planMatchesRef` paths apply them too.  10 specs in
-  `test/gpu-query-data.mjs` (1603 Node tests green).
+  `test/query-data.mjs` (1603 Node tests green).
 - [x] **A9 Small items** — landed 2026-07-27.  (`boundingBoxAt` landed
   with A7.)  `padding()`/`paddedWidth`/`paddedHeight`: accessor-only —
   v4 has no `padding` style prop (compounds-era), so padding reads 0
@@ -1749,7 +1799,7 @@ Each entry converts into a "Landed" record as it ships:
   registers a FontFace *after* the label renders and pins the pixel
   change (an @font-face family can't test this — the atlas's own
   canvas use starts its load).  Verified: 1610 Node + 47 module tests,
-  34 webgpu + 7 webgpu-visual Playwright specs on a fresh bundle
+  34 webgpu + 7 visual Playwright specs on a fresh bundle
   (note: a stale http-server on :3333 silently serves an old bundle to
   Playwright — kill it before trusting a run).
 
@@ -1840,7 +1890,7 @@ Each entry converts into a "Landed" record as it ships:
   instances; benign over-allocation) now uses GLYPH_BYTES.  Horizontal
   only — autorotate stayed the separate follow-up (since landed
   2026-07-29; see the autorotate entry below).  7 model specs
-  (`test/gpu-edge-labels.mjs`), the follows-drag webgpu spec, and an
+  (`test/edge-labels.mjs`), the follows-drag webgpu spec, and an
   `edge-labels` golden (midpoint + background box on a diagonal edge);
   1628 Node + 47 module tests, 47 Playwright specs green (twice).
 
@@ -1906,9 +1956,9 @@ box gesture (since landed, round 20.5).
 
 The renderer's recorded numbers (fps tables, pan ms/frame, pick latency,
 init/export costs) were manual debug-harness measurements; this makes
-them a repeatable command.  `npm run benchmark:gpu:renderer` (or
-`benchmark:gpu:report -- --renderer` to fold into the combined report)
-runs `benchmark/gpu/render-bench.mjs`: a Playwright-library driver (not a
+them a repeatable command.  `npm run benchmark:renderer` (or
+`benchmark:report -- --renderer` to fold into the combined report)
+runs `benchmark/render-bench.mjs`: a Playwright-library driver (not a
 test project — no assertions, not in CI's sweep) that serves the repo on
 an ephemeral port (no stale-:3333 dependence; bundle-vs-src mtimes are
 checked and warned), launches Chromium `channel: 'chromium'` with
@@ -1938,9 +1988,9 @@ vs 457 ms at 100k; ndex pick p50 0.1 ms (the CPU fast path).
 
 ## Landed (benchmark HTML report, 2026-07-28)
 
-`npm run benchmark:gpu:report` runs the Mitata suites and renders one
+`npm run benchmark:report` runs the Mitata suites and renders one
 self-contained HTML page (plus a timestamped results JSON) into the
-gitignored `benchmark/gpu/results/`.  Pieces: `bench-run.mjs` — a shared
+gitignored `benchmark/results/`.  Pieces: `bench-run.mjs` — a shared
 `finishRun()` tail that, under `BENCH_JSON`, runs quietly and captures
 per-group/per-bench stats (mitata's `run()` returns them; sample arrays
 stripped) with terminal behaviour otherwise unchanged; `report.mjs` — the
@@ -1949,7 +1999,7 @@ the 2k/20k/200k matrix with one process per group at 200k via `BENCH_OP`,
 per the suite headers; failures logged and reported, partial reports
 still render; `--suite` filter, `--render-only` re-render); and
 `report-html.mjs` — a pure results→HTML renderer (Node-tested in
-`test/modules/gpu-benchmark-report.mjs`): times as dumbbell dots on log₁₀
+`test/modules/benchmark-report.mjs`): times as dumbbell dots on log₁₀
 axes (position, not bar length — length encodes nothing on a log axis),
 a ranked speedup overview against a 1× reference line, geo-mean/best-win
 stat tiles, per-suite table views, a cross-N scaling table on full runs,
@@ -2025,7 +2075,7 @@ as an isolated commit with Node tests.
 
 **Verification**: typecheck, lint, `test:js` (1638 → 1645) and
 `test:modules` (58) green per commit.  Write-path cost checked against
-the pre-round baseline (`benchmark/gpu/mutators.mjs` at N=2k, same
+the pre-round baseline (`benchmark/mutators.mjs` at N=2k, same
 machine, same run): remove+re-add 5.45 vs 5.32 ms/iter (noise), data
 set at parity — after re-splitting the DataStore write path so the
 numeric case stays inlinable (the first cut regressed numeric bulk
@@ -2054,7 +2104,7 @@ this machine.  See the next entry.)
 ## Landed (Linux WebGPU test environment fix, 2026-07-29)
 
 Root-caused and fixed the "adapter acquires but renders blank" failure
-that kept the `webgpu`/`webgpu-visual` Playwright projects from
+that kept the `webgpu`/`visual` Playwright projects from
 validating on Linux (round 11's open verification debt).  Probing the
 Playwright-launched Chromium (1.61.1, `channel: 'chromium'` new
 headless) with the failure split into stages showed:
@@ -2075,7 +2125,7 @@ headless) with the failure split into stages showed:
   --enable-features=Vulkan` routes Chromium's compositor through
   ANGLE-on-Vulkan, and the shared-image canvas path presents
   correctly for both the hardware and the SwiftShader-pinned WebGPU
-  adapter.  Added to the `webgpu` and `webgpu-visual` projects in
+  adapter.  Added to the `webgpu` and `visual` projects in
   `playwright.config.js`, gated on `process.platform === 'linux'` —
   `--use-angle=vulkan` does not exist on macOS (Metal), so the
   known-good macOS configuration is untouched.
@@ -2090,7 +2140,7 @@ headless) with the failure split into stages showed:
   no spec uses that path (they decode `page.screenshot()` or use
   `cy.png()` readback, both working).
 
-**Verification**: 39/39 `webgpu` + 12/12 `webgpu-visual` specs green
+**Verification**: 39/39 `webgpu` + 12/12 `visual` specs green
 on this machine (all 10 golden diffs within tolerance against the
 checked-in macOS-generated PNGs, both v3-parity diffs within their 2%
 bound) — round 11's "re-run on a machine with a working adapter"
@@ -2180,8 +2230,8 @@ registered properties + 11 aliases across 21 groups), the docmaker API
 index for core and collection (cross-checked against the prototypes),
 the v3 renderer's event/gesture emission (`load-listeners.mts`), the
 layout and extension registries, and the documented init options —
-diffed against `src/gpu/README.md` plus source spot-checks of
-`src/gpu/`.  Every gap below is classified into one of four tiers:
+diffed against `src/README.md` plus source spot-checks of
+`src/`.  Every gap below is classified into one of four tiers:
 **at parity**, **dropped by decided design** (recorded, no action),
 **gap with direction set** (build when scheduled), and **needs a
 call** (API semantics are never improvised autonomously).  A final
@@ -2203,7 +2253,7 @@ set, and `data`/`scratch`/`json()` export.  (Where v3 takes a
 selector these take collections/queries/predicates — the decided v4
 form, not a gap.)
 
-### Dropped by decided design (recorded in src/gpu/README.md; ledger only)
+### Dropped by decided design (recorded in src/README.md; ledger only)
 
 Selector strings and `cy.$()`; classes; per-element style
 bypass/setters (`style(name, value)`, `removeStyle`, `flashClass`);
@@ -2241,10 +2291,10 @@ and the fifth design sitting **split** it (executed as round 37.2):
 enums that took it; the two core aliases stay, as exceptions written
 into the ledger line above rather than left as drift.  The line the
 call had to change was the `roundrectangle` one in
-`test/gpu-decided-drops.mjs`, which now pins the drop; the alias table
-in `test/gpu-aliases.mjs` keeps its two rows, with the reason.
+`test/decided-drops.mjs`, which now pins the drop; the alias table
+in `test/aliases.mjs` keeps its two rows, with the reason.
 `content` and `padding-{left,…}` *do* throw, as does every other prop
-in this ledger — pinned since 29.3 by `test/gpu-decided-drops.mjs`.
+in this ledger — pinned since 29.3 by `test/decided-drops.mjs`.
 
 ### Gaps with direction already set (build when scheduled)
 
@@ -2596,7 +2646,7 @@ ends.
 
 **2026-08-02, rounds 26–27**: round 26 built the authoring surface —
 JSDoc across the whole prototype (46% → 100%, gated) and the first
-shipped TypeScript declarations for `cytoscape/gpu` — and round 27
+shipped TypeScript declarations for `cytoscape` — and round 27
 closed the visual-parity tail.  What is left of the whole ledger:
 **`border-style`/`outline-style`** (a scope call, 27.8), item 8's
 overlap box mode, item 10's core/collection extension points, and
@@ -2636,12 +2686,12 @@ summary has been the thing that drifted.)
 **2026-08-03, rounds 30–32.**  Continuing round 29's axis onto the part of
 the surface v4 states most and tests least — **what it throws**.
 Measured with source-mapped coverage: 34 of the 191 throw sites in
-`src/gpu` had never executed.  30.1 closed every Node-reachable one
+`src` had never executed.  30.1 closed every Node-reachable one
 (20 specs, one of whose controls came back BAD and forced a sharper
 spec), 30.2 pinned the six export guards in the browser project, 30.3
 took the untested public surface the survey turned up beside them
 (`cy.stop()`, `renderedTargetEndpoint`, two clustering metrics), and
-30.4 shipped the measurement as `scripts/gpu-throw-coverage.mjs` —
+30.4 shipped the measurement as `scripts/throw-coverage.mjs` —
 reporting only, since a coverage floor is a call, now logged as open
 call 8.  Reading at the close: 176 run, 13 browser-only, 2
 unreachable by design, **0 Node-reachable and never run**.
@@ -2708,7 +2758,7 @@ happened eleven times here, and the coverage gate catches it only when
 the displacement leaves some member bare; when it lands on another
 documented member, coverage stays 100% and two members carry each
 other's prose.  The check found **six more on its first run**, and one
-of them was shipping in `dist/cytoscape-gpu.d.ts`.  It reports rather
+of them was shipping in `dist/cytoscape.d.ts`.  It reports rather
 than gates, because the third shape of the defect — a block displaced
 onto a different documented member — is not statically detectable at
 all, and because it cannot tell a deliberately free-standing note from
@@ -2829,7 +2879,7 @@ Constructor strictness closed at the type layer (37.3) and event-name
 openness documented (37.4).
 Two of the five items **corrected this file rather than executing it**,
 which is the round's real character.  37.3 set out to write a
-compile-only test and found that `src/gpu/index.mts` — the package
+compile-only test and found that `src/index.mts` — the package
 entry point, listed in `PUBLIC_API` since round 26 — contributed *zero*
 members to every audit, because the exported-function pattern did not
 spell `export default function`; all three of its tags were missing
@@ -2844,9 +2894,22 @@ in the documents and in round 41's plan, which had described removing
 dead machinery — and round 41.2 has since removed the live machinery
 it actually was.
 
+**Round 42** (2026-08-04) executed the sitting's packaging decision and
+changed no behaviour: v4's source promoted `src/` → `src/`, the whole
+v3 file set moved into a self-contained, still-buildable `v3/`, and the
+root `package.json` became `cytoscape@4.0.0-unstable` with v4 as
+`exports["."]`.  Both calls the plan left to docs-first were taken — the
+`gpu-`/`webgpu-` prefixes drop, and the five shared utility modules
+duplicate rather than stay shared, so nothing under `src/` imports outside
+it — plus a third the plan did not anticipate: the **v4 identity rename**
+(bundles, declaration, UMD global and the default export are all
+`cytoscape` now; the `Gpu*` exported *type* names deliberately are not).
+Behaviour-neutrality was established by comparing blobs rather than by the
+suite alone: see the round record.
+
 **As of 2026-08-04, what remains.**  Unbuilt: round 38 (blocked on the
 three sub-calls in open call 1), round 40 (a design sitting), round 41.5
-(open call 12), and rounds 42–50.  Undecided: the **error policy**
+(open call 12), and rounds 43–50.  Undecided: the **error policy**
 (round 40) and the **preventable-gesture enumeration** (open call 12) —
 the only two genuinely open questions, both of which the ledger holds
 rather than any round record.
@@ -2958,7 +3021,7 @@ decimation; record the numbers in the round record).
 1. **v4's default `curve-style` is `straight`** — the perf-first
    default at v4's target scales; parity scenes and apps opt into
    `bezier` explicitly.  A deliberate divergence from v3's
-   bundled-bezier default, recorded in `src/gpu/README.md`.
+   bundled-bezier default, recorded in `src/README.md`.
 2. **`bezier` bundles multi-edges only, verbatim v3**: a lone edge
    between two nodes stays a straight line under `curve-style:
    bezier`; only parallel edges fan out (the odd-bundle middle edge
@@ -2975,7 +3038,7 @@ that landed it.  (Since superseded: pass 12b — unbundled/segments/taxi
 haystack/straight-triangle — remains in the round-12 plan above.)
 
 - [x] **Curve geometry module + contract columns.**
-  `src/gpu/curve-geometry.mts` is the CPU half of the dual-impl
+  `src/curve-geometry.mts` is the CPU half of the dual-impl
   discipline for curves: v3's math ported verbatim (bundle stagger
   `(0.5 − n/2 + i)·step`, loop rays `loopDir − π/2 ∓ sweep/2` at radius
   `1.4·step·(j/3 + 1)`, the `edge-distances: intersection` frame with
@@ -3009,7 +3072,7 @@ haystack/straight-triangle — remains in the round-12 plan above.)
   `store.boundingBox()` grows its edge term by the conservative hull
   deviation, and `store.curveSlack()` gives the frame-level bound the
   cull kernels will use (monotone maxima — never shrinks, costs only
-  cull efficiency).  24 Node specs (`test/gpu-curve-index.mjs`).
+  cull efficiency).  24 Node specs (`test/curve-index.mjs`).
 - [x] **Curve-aware accessors + the exact lazy edge bb.**
   `isBundledBezier()` (style check, v3 semantics — true for the lone
   edge that renders straight), `controlPoints()` (one point for a
@@ -3024,7 +3087,7 @@ haystack/straight-triangle — remains in the round-12 plan above.)
   and consistent with the position-tween lease).  `boundingBoxAt`
   (animated-layout fit targets) expands curved edges by the
   conservative hull deviation.  16 Node specs
-  (`test/gpu-curve-accessors.mjs`).
+  (`test/curve-accessors.mjs`).
 - [x] **Renderer: the curved-edge pipeline, cull stream and pick.**
   `CURVED_EDGE_SHADER` + `CurvedEdgePipeline`: one instance per curved
   edge drawn as a strip of CURVE_SEGS quads whose VS evaluates the
@@ -3168,7 +3231,7 @@ final tallies in the goldens/parity entry at the end.
   routes — and weight-extrapolated routes — are not chord-bounded, so
   kernels without a params binding will cull them against the endpoint
   AABB grown by slack + chord length).  33 Node specs
-  (`test/gpu-curve-routes.mjs`).
+  (`test/curve-routes.mjs`).
 - [x] **The curve param blob** (`store/curve-blob.mts`).  Blob-backed
   kinds store their variable-length records in one f32 pool the
   renderer mirrors as a storage buffer; the params column holds the
@@ -3188,7 +3251,7 @@ final tallies in the goldens/parity entry at the end.
   writes record + header + FLAG_CURVED/FLAG_CURVED_BOX, feeds the
   monotone dev/box maxima behind `curveSlack()`, and fixed-kind writes
   release any blob record the slot held.  10 Node specs
-  (`test/gpu-curve-blob.mjs`).
+  (`test/curve-blob.mjs`).
 - [x] **Style props + per-edge derivation.**  `curve-style` gains the
   five 12b keywords; the full prop surface (`control-point-distances`/
   `-weights`, `segment-distances`/`-weights`/`-radii`, `radius-type`,
@@ -3213,7 +3276,7 @@ final tallies in the goldens/parity entry at the end.
   sites (store scan + `boundingBoxAt`) use the header deviation, with
   box-bounded edges adding the node-half margin (+ chord length for
   extrapolated weights).  26 Node specs
-  (`test/gpu-curve-derivation.mjs`); one 12a spec updated (the
+  (`test/curve-derivation.mjs`); one 12a spec updated (the
   keyword-throw now pins `haystack`).
 - [x] **Route accessors + the exact lazy bb.**
   `GraphStore.curveRouteAt` is the route twin of `curveEvalAt` (which
@@ -3228,7 +3291,7 @@ final tallies in the goldens/parity entry at the end.
   `routeMidpoint` rules, `source/targetEndpoint()` as the route's
   boundary endpoints, and `curveBBAt` flattening routes at the drawn
   subdivision into the same epoch-memoized exact-bb cache.  12 Node
-  specs (`test/gpu-curve-route-accessors.mjs`) pin hand-derived
+  specs (`test/curve-route-accessors.mjs`) pin hand-derived
   geometry incl. the taxi bb and memo invalidation on moves.
 - [x] **Renderer: the route WGSL twin, blob mirror and box cull.**
   `ROUTE_WGSL` mirrors the CPU route evaluator step for step — the
@@ -3300,7 +3363,7 @@ final tallies in the goldens/parity entry at the end.
   measurable; wall clock stays vsync-bound at 16.7 ms while v3 canvas
   runs ~670 ms/frame on the same scene.  Final tallies: 1793 Node +
   60 module tests, 72/72 Playwright specs (6 new `webgpu`, 3 new
-  goldens + 1 new parity in `webgpu-visual`), typecheck + lint clean.
+  goldens + 1 new parity in `visual`), typecheck + lint clean.
 
 ## Landed (round 12c — endpoints + haystack + straight-triangle, 2026-07-30/31)
 
@@ -3338,7 +3401,7 @@ plan (12a/12b/12c) is done.
   machines — v3 uses Math.random(), so haystack scenes are only
   statistically v3-comparable; v4 also scales by outer halves where v3
   uses inner size — identical at border 0, recorded).  17 Node specs
-  (`test/gpu-curve-endpoints.mjs`) pin the block resolution, the
+  (`test/curve-endpoints.mjs`) pin the block resolution, the
   n = 0 chord, the bezier-promotion equivalence, the endpoints-frame
   rebase, taxi distances, and the haystack point/angle math.
 - [x] **Style props + derivation** (2026-07-30).  `curve-style` gains
@@ -3373,7 +3436,7 @@ plan (12a/12b/12c) is done.
   Readback: `curve-style`/`haystack-radius` off the styled record;
   endpoints as canonical strings (keywords, 'x y' with % suffixes,
   '<rad>rad' angles); distances as numbers.  21 Node specs
-  (`test/gpu-curve-12c-derivation.mjs`); two 12b-era specs updated to
+  (`test/curve-12c-derivation.mjs`); two 12b-era specs updated to
   the new surface (haystack/edge-distances no longer throw).  1831
   Node tests, typecheck + lint green.
 - [x] **Accessors + exact bb** (2026-07-30).  Haystack edges answer
@@ -3388,7 +3451,7 @@ plan (12a/12b/12c) is done.
   the chord with the usual epoch-memoized invalidation.
   `controlPoints()` returns undefined for the straight-with-endpoints
   chord (MULTI n = 0 — no controls, matching v3's straight surface).
-  11 Node specs (`test/gpu-curve-12c-accessors.mjs`); 1842 Node
+  11 Node specs (`test/curve-12c-accessors.mjs`); 1842 Node
   tests, typecheck + lint green.
 - [x] **Renderer: straight-stream kinds, endpoint WGSL twins, cull
   slack** (2026-07-31).  The straight edge shader restructured: paint
@@ -3419,7 +3482,7 @@ plan (12a/12b/12c) is done.
   4 new `webgpu` Playwright specs (haystack offset line + pick,
   triangle taper + taper-matched picking, manual endpoints off the
   chord + ≤ 64 B drag re-anchor, arrows at a shortened endpoint with
-  the gap behind them) — 54/54 `webgpu`, 22/22 `webgpu-visual`
+  the gap behind them) — 54/54 `webgpu`, 22/22 `visual`
   (goldens byte-stable through the shader restructure, parity scenes
   0 px), 1842 Node tests, typecheck + lint green.
 - [x] **Goldens, live v3 parity and the benchmark check**
@@ -3446,7 +3509,7 @@ plan (12a/12b/12c) is done.
   cost nothing measurable, and far-zoom haystack rides the straight
   stream's decimation by construction (the 12a revisit closed).
   Final tallies: 1842 Node + 60 module tests, 54/54 `webgpu` +
-  28/28 `webgpu-visual` Playwright specs (3 new goldens, 3 new
+  28/28 `visual` Playwright specs (3 new goldens, 3 new
   parity scenes), typecheck + lint clean.  **Round 12c is complete**
   — and with it the whole round-12 curved-edges plan.
 
@@ -3485,12 +3548,12 @@ The last item on the autonomous shelf, cleared while planning round 12:
   the non-rotated edge path keeps its original arithmetic —
   pre-existing goldens pass unchanged.
 - **Verification**: typecheck + lint clean; 1650 Node tests (5 new in
-  `test/gpu-edge-labels.mjs`: entry + readback, defaults +
+  `test/edge-labels.mjs`: entry + readback, defaults +
   sheet-resolution, throws for numbers/unknown keywords/nodes-group,
   case mappers, node-entries-never-rotate); 40/40 `webgpu` Playwright
   specs (new: a vertical-edge spec pinning the dark-pixel bounding box
   flipping from wide to tall under autorotate, plus the ≤ 64 B
-  re-angle on an endpoint move); 13/13 `webgpu-visual` (new
+  re-angle on an endpoint move); 13/13 `visual` (new
   `edge-label-autorotate` golden: a downhill run, a direction-flipped
   uphill run with its background box rotated along, and a vertical
   top-to-bottom run — all pre-existing goldens unchanged).
@@ -3521,13 +3584,13 @@ below were written per item, in the same commits as the work.
   the offset body when enabled.  Deviations, recorded: ghosts are not
   pickable (v3 same — decoration only), and box selection ignores
   ghost extents (v4's `refsInBox` tests the body box only).  8 Node
-  specs (`test/gpu-ghost.mjs`), a `webgpu` spec (ghost at the offset,
+  specs (`test/ghost.mjs`), a `webgpu` spec (ghost at the offset,
   not pickable, follows drags on-GPU, old spot clears), a `ghost`
   golden (three shapes with borders at one offset), and a
   `parity-ghost` live v3 scene — 0.945% mismatch (AA-classification
   seams only; for label-free nodes v3's whole-node ghost redraw *is*
   the body duplicate, so the scenes are directly comparable).  1850
-  Node tests, 55 `webgpu` + 30 `webgpu-visual` specs, typecheck + lint
+  Node tests, 55 `webgpu` + 30 `visual` specs, typecheck + lint
   green.
 
 - [x] **A2 (nodes): overlay/underlay layers** (2026-07-31).  The 10
@@ -3549,10 +3612,10 @@ below were written per item, in the same commits as the work.
   draw).  Deviations, recorded: v4 overlays draw *under* the label
   layer (v3 draws overlay over its node's label); overlays are not
   pickable and box selection ignores their pads.  8 Node specs
-  (`test/gpu-node-layers.mjs`), a `webgpu` spec (overlay wash +
+  (`test/node-layers.mjs`), a `webgpu` spec (overlay wash +
   underlay ring), a `node-layers` golden, and a
   `parity-node-layers` live v3 scene at **0 px differing**.  1858
-  Node tests, 56 `webgpu` + 32 `webgpu-visual` specs, typecheck +
+  Node tests, 56 `webgpu` + 32 `visual` specs, typecheck +
   lint green.
 
 - [x] **A2 (edges): overlay/underlay strokes** (2026-07-31).  The
@@ -3596,7 +3659,7 @@ below were written per item, in the same commits as the work.
   note: v3 draws it into the canvas, so it never appears in v4
   exports), radius = active-bg-size screen px (v3's size/zoom-in-model
   ⇒ screen-fixed rule).  A2 is now **complete** (nodes + edges +
-  core).  4 Node specs (`test/gpu-core-style.mjs` — defaults,
+  core).  4 Node specs (`test/core-style.mjs` — defaults,
   camel/kebab parsing, sheet-reset, throws) and a `webgpu` spec
   (themed box colors mid-drag; the circle appears on a background
   press at 2×size px and hides on release).  1862 Node tests, 91
@@ -3622,7 +3685,7 @@ below were written per item, in the same commits as the work.
   prepass already discards nodes whose stored fill alpha < 1.
   Readback is folded (stored alpha / 255 — the outline/arrow
   precedent), and a line-transparent edge reads its arrows as 'none'.
-  7 Node specs (`test/gpu-opacity-split.mjs` — folds, mappers, the
+  7 Node specs (`test/opacity-split.mjs` — folds, mappers, the
   kernel demotion, ranges) and a `parity-opacity-split` live v3
   scene at 0.934% mismatch (translucent AA seams).  1869 Node tests,
   92 Playwright specs, typecheck + lint green.
@@ -3650,7 +3713,7 @@ below were written per item, in the same commits as the work.
   (nodes-edges-arrows, polygon-shapes, selection-accent, ghost); a
   new `parity-border-geom` scene (three positions × explicit radii)
   measures **0 px differing**.  4 Node specs
-  (`test/gpu-border-geom.mjs`) + the CPU-pick suite pinned to the
+  (`test/border-geom.mjs`) + the CPU-pick suite pinned to the
   new auto rule.  1873 Node tests, 93 Playwright specs, typecheck +
   lint green.
 
@@ -3677,7 +3740,7 @@ below were written per item, in the same commits as the work.
   WGSL-identifier guard's runtime sibling: `meta` is a WGSL reserved
   word.  Line-end caps are dash-segment-only (quads don't extend
   past the endpoints; v3's default butt behaves identically) — a
-  recorded deviation.  6 Node specs (`test/gpu-dash-props.mjs`);
+  recorded deviation.  6 Node specs (`test/dash-props.mjs`);
   the line-styles golden regenerated for the intended phase shift.
   1879 Node tests, 94 Playwright specs, typecheck + lint green.
 
@@ -3695,7 +3758,7 @@ below were written per item, in the same commits as the work.
   path — the B1 exclusion list extended.  `parity-casing` (straight
   + bezier pair + taxi under an 8 px casing) measures **0.061%** —
   the recorded butt-vs-round stroke-end deviation only.  5 Node
-  specs (`test/gpu-edge-casing.mjs`).  1884 Node tests, 95
+  specs (`test/edge-casing.mjs`).  1884 Node tests, 95
   Playwright specs, typecheck + lint green.
 
 - [x] **B5 node outlines** (2026-07-31).  `outline-color`/
@@ -3716,7 +3779,7 @@ below were written per item, in the same commits as the work.
   new monotone `outlineSlack()` via the Frame's last pad (no
   binding left there); both bb scans grow by offset/2 + width.  All
   four props mapper-capable; readback folded/packed.  5 Node specs
-  (`test/gpu-node-outline.mjs`); the B2/CPU-pick suites re-pinned
+  (`test/node-outline.mjs`); the B2/CPU-pick suites re-pinned
   to the packed format.  1889 Node tests, 96 Playwright specs,
   typecheck + lint green.
 
@@ -3738,7 +3801,7 @@ below were written per item, in the same commits as the work.
   transform, bordered box, round bordered box in the fixed web
   font) — v3 comparison for label props is structurally excluded,
   as recorded since round 9.6.  6 Node specs
-  (`test/gpu-label-box.mjs`).  1895 Node tests, 97 Playwright
+  (`test/label-box.mjs`).  1895 Node tests, 97 Playwright
   specs, typecheck + lint green.
 
 - [x] **B7 arrow scalars** (2026-07-31).  `arrow-scale` (edge-wide,
@@ -3760,7 +3823,7 @@ below were written per item, in the same commits as the work.
   never coincide — the visual pins are the `arrow-scalars` golden
   (scale 2, hollow ends, thick hollow strokes) and a `webgpu`
   hollow-ring pixel spec.  6 Node specs
-  (`test/gpu-arrow-scalars.mjs`).  1901 Node tests, 99 Playwright
+  (`test/arrow-scalars.mjs`).  1901 Node tests, 99 Playwright
   specs, typecheck + lint green.
 
 - [x] **C1 mid-arrows** (2026-07-31).  `mid-source/mid-target-arrow-
@@ -3793,7 +3856,7 @@ below were written per item, in the same commits as the work.
   `mid-arrows` golden (straight + bezier pair + taxi + haystack) and
   a `webgpu` spec asserting purple mid-arrow ink at the CPU-computed
   `renderedMidpoint()` of both a straight and a curved edge.  3 Node
-  specs (`test/gpu-mid-arrows.mjs`).  1904 Node tests, 100 Playwright
+  specs (`test/mid-arrows.mjs`).  1904 Node tests, 100 Playwright
   specs, typecheck + lint green.
 
 - [x] **C2 gradients** (2026-07-31).  `background-fill`
@@ -3820,7 +3883,7 @@ below were written per item, in the same commits as the work.
   a gradient line vs v3) measures **0 px differing** — the sRGB lerp
   matches canvas exactly; the `gradients` golden covers directions,
   radial, ellipse and curved-line fills.  6 Node specs
-  (`test/gpu-gradients.mjs`).  1910 Node tests, 102 Playwright specs,
+  (`test/gradients.mjs`).  1910 Node tests, 102 Playwright specs,
   typecheck + lint green.
 
 ## Round 13 plan — style-prop parity (planned 2026-07-30; completed 2026-07-31 — see the round-13 Landed section above)
@@ -3864,7 +3927,7 @@ layout) is not consumed by it.
   as the space-joined list, and free their pool record on
   non-polygon restyle and node removal.  WGSL lesson repeated:
   `ref` is a reserved word (caught by the console-error guard).
-  Verification: 9 Node specs (`test/gpu-shape-polygon.mjs`: parse /
+  Verification: 9 Node specs (`test/shape-polygon.mjs`: parse /
   readback / validation / blob refs / free-on-restyle / pick
   inside-ness incl. a pool-rewrite case), a `webgpu` spec (draw +
   pick agree on the point list at pixel level), the `shape-polygon`
@@ -3890,7 +3953,7 @@ layout) is not consumed by it.
   differ) — the pins are the `labels-bold-italic` golden (label
   tolerance) and a `webgpu` spec asserting bold ink > normal ink in
   the label band plus a nonzero italic-vs-upright pixel diff.  7
-  Node specs (`test/gpu-font-props.mjs`).  1926 Node tests, 108
+  Node specs (`test/font-props.mjs`).  1926 Node tests, 108
   Playwright specs, typecheck + lint green.
 
 - [x] **D2 `min-zoomed-font-size`** (2026-07-31).  Per-element, as
@@ -3909,7 +3972,7 @@ layout) is not consumed by it.
   `webgpu` LOD spec (floored + unfloored labels: both draw at zoom
   1, only the floored one vanishes at zoom 0.7, and it returns at
   zoom 1 — a pure cull, no rebuild) plus 4 Node specs
-  (`test/gpu-min-zoomed-font-size.mjs`).  1930 Node tests, 109
+  (`test/min-zoomed-font-size.mjs`).  1930 Node tests, 109
   Playwright specs, typecheck + lint green.
 
 - [x] **D3 `text-valign`/`text-halign`** (2026-07-31).  v3's 3×3
@@ -3931,7 +3994,7 @@ layout) is not consumed by it.
   background boxes) and a `webgpu` spec asserting ink moves
   above-left for top-left and below-right after a bottom-right
   restyle, with the opposite bands empty.  6 Node specs
-  (`test/gpu-text-align.mjs`).  1936 Node tests, 111 Playwright
+  (`test/text-align.mjs`).  1936 Node tests, 111 Playwright
   specs, typecheck + lint green.
 
 - [x] **D4 `source-label`/`target-label` families** (2026-07-31).
@@ -3963,7 +4026,7 @@ layout) is not consumed by it.
   autorotate + taxi + loop, boxed labels) and a `webgpu` spec
   asserting the straight-edge anchors land at v3's exact arc
   positions (boundary + offset) and slide on restyle.  8 Node specs
-  (`test/gpu-end-labels.mjs`).  1944 Node tests, 113 Playwright
+  (`test/end-labels.mjs`).  1944 Node tests, 113 Playwright
   specs, typecheck + lint green.  **Round 13 complete.**
 
 **Sequencing**: pass 12c (the round-12 plan above) runs first, then
@@ -4369,7 +4432,7 @@ commit(s) with docs in-commit):
   is `move()`), and reads synthesize from the hierarchy like edge
   `source`/`target` (whole-object `data()` includes `parent` only
   when parented).  Tests-first: 12 specs in
-  `test/gpu-hierarchy.mjs` written red, then green — 1956 Node
+  `test/hierarchy.mjs` written red, then green — 1956 Node
   tests, typecheck + lint clean.
 - [x] **14.2 Collection API + lifecycle** — landed 2026-07-31.
   Slot-native traversal on the hierarchy: `parent` (always a proper
@@ -4394,7 +4457,7 @@ commit(s) with docs in-commit):
   orphan — v3's silent-drop case upgraded to a warning); element
   `json()` carries `parent` via the synthesized data object and
   round-trips through `add()`.  Tests-first: 17 specs in
-  `test/gpu-compounds-api.mjs` red then green — 1973 Node tests,
+  `test/compounds-api.mjs` red then green — 1973 Node tests,
   typecheck + lint clean.
 - [x] **14.3 Auto-bounds flush** — landed 2026-07-31.  Parent
   geometry is derived lazily and **materialized into the real
@@ -4431,7 +4494,7 @@ commit(s) with docs in-commit):
   `position` for shifted descendants (listener-gated, v3);
   compound-relative `relativePosition` (get + both setter forms);
   parent-flip restores the stashed style size.  Tests-first: 14
-  specs in `test/gpu-compound-bounds.mjs` red then green (two
+  specs in `test/compound-bounds.mjs` red then green (two
   real bugs caught red-green: the parent-move delta and the bulk
   shift both read pre-flush positions — both now flush first) —
   1987 Node tests, typecheck + lint clean.
@@ -4457,7 +4520,7 @@ commit(s) with docs in-commit):
   GPU-mapped node `opacity` demotes to CPU while compounds exist
   (`paintInputs` + a store→engine `onCompoundsToggled` paintVersion
   bump on the 0↔>0 transitions).  Tests-first: 11 specs in
-  `test/gpu-compound-visibility.mjs` red then green — 1998 Node
+  `test/compound-visibility.mjs` red then green — 1998 Node
   tests, typecheck + lint clean.
 - [x] **14.5 Event bubbling** — landed 2026-07-31.  Element events
   on parented nodes now run in **phases** — origin → ancestors
@@ -4476,7 +4539,7 @@ commit(s) with docs in-commit):
   exactly the old single-emit path — byte-identical behavior and
   zero cost.  Within-phase order stays registration order (the
   recorded deviation narrows to within-phase only).  Tests-first:
-  9 specs in `test/gpu-compound-events.mjs` red then green — 2007
+  9 specs in `test/compound-events.mjs` red then green — 2007
   Node tests, typecheck + lint clean.
 - [x] **14.6 Parents sheet group + compound props** — landed
   2026-07-31.  The sheet gains **`parents`**: channel props that
@@ -4508,7 +4571,7 @@ commit(s) with docs in-commit):
   slot and would repaint parents with the nodes value.  Readback:
   compound props answer from the per-parent record (leaves read
   the zero defaults).  Tests-first: 9 specs in
-  `test/gpu-parents-style.mjs` red then green; the 14.3 bounds
+  `test/parents-style.mjs` red then green; the 14.3 bounds
   suite pins raw math by zeroing the new defaults in its sheet —
   2016 Node tests, typecheck + lint clean.
 - [x] **14.7 Structural query + case keys** — landed 2026-07-31.
@@ -4527,7 +4590,7 @@ commit(s) with docs in-commit):
   verbatim.  A reparent fires a pseudo-key `refreshMapped` on the
   moved node (`store.onReparented`); parent flips already restyle
   fully via 14.6's hook.  Tests-first: 8 specs in
-  `test/gpu-structural-query.mjs` red then green — 2024 Node
+  `test/structural-query.mjs` red then green — 2024 Node
   tests, typecheck + lint clean.
 - [x] **14.8 Wire + columnar parent sections** — landed 2026-07-31.
   `GpuColumnarNodes.parent?: Uint32Array` — payload node indices,
@@ -4545,7 +4608,7 @@ commit(s) with docs in-commit):
   flushes derived geometry and exports the live hierarchy as
   payload indices (second pass — a parent may sit later in slot
   order than its children), round-tripping selection + positions +
-  parents.  Tests-first: 7 specs in `test/gpu-compound-wire.mjs`
+  parents.  Tests-first: 7 specs in `test/compound-wire.mjs`
   red then green — 2031 Node + 60 module tests, typecheck + lint
   clean.
 - [x] **14.9 Parent draw stream, cull, pick** — landed 2026-07-31.
@@ -4619,7 +4682,7 @@ commit(s) with docs in-commit):
   `CURVE_HAS_ENDPT = 8` collided with the naïve next kind id, so
   `CURVE_CMPD = 16` sits above the endpoint-flag range with a
   contract note (raw-kind tests only, before any strip).
-  Verifies: 9 Node specs (`test/gpu-compound-loop-edges.mjs`,
+  Verifies: 9 Node specs (`test/compound-loop-edges.mjs`,
   v3-formula control points, relation lifecycle, slack/flags,
   live resize), the `compound-loops` golden, and
   `parity-compound-loops` live vs v3 at **0.022%** (the
@@ -4647,15 +4710,15 @@ commit(s) with docs in-commit):
   **Interaction needed no pointer changes**: a parent drag is just
   `position()` (the 14.3 subtree shift), and drag-all-selected
   with a parent + its child rides the collection `shift()` dedupe.
-  Tests: 6 Node specs (`test/gpu-compound-layouts.mjs`) + a
+  Tests: 6 Node specs (`test/compound-layouts.mjs`) + a
   Playwright drag spec (parent-band drag moves the subtree by the
   pointer delta; a selected parent+child pair moves exactly once).
   2049 Node tests, 119/119 Playwright, typecheck + lint clean.
 - [x] **14.12 Debug scene + benchmarks + true-up** — landed
-  2026-07-31.  `debug/webgpu` gained a `?network=compound`
+  2026-07-31.  `debug` gained a `?network=compound`
   generated scene (clustered leaves under ~N/20 parents, every 4th
   parent nested, intra-cluster edges plus a sprinkle of
-  child→parent compound loops).  **`benchmark/gpu/compound.mjs`**
+  child→parent compound loops).  **`benchmark/compound.mjs`**
   (Mitata, v3 vs v4 at BENCH_N; instances torn down after the run —
   v3 compound instances leave live timers behind): at N = 2k,
   parent drag (subtree shift + bb settle) **263×** v3 (1.14 µs),
@@ -4842,7 +4905,7 @@ below signed off in the 2026-08-01 sitting.
   (`0f0ee859`): this plan section + the README pointer preceded all
   round-15 implementation.
 - [x] **15.1 ImageRegistry + loader** (2026-08-01) —
-  `src/gpu/image-registry.mts`: entries dedup by (kind, crossorigin,
+  `src/image-registry.mts`: entries dedup by (kind, crossorigin,
   url) with refcounts; freed ids recycle through a free-list and
   report to the renderer via `takeFreed()` (the layer reclaim
   channel); rgba tier assignment from the decoded longest side
@@ -4856,7 +4919,7 @@ below signed off in the 2026-08-01 sitting.
   demandPx)` re-rasters *vector* entries at the smallest covering
   tier (the 15.6 meter's primitive; raster sources and covered
   demands no-op).  Tests-first: 10 specs in
-  `test/gpu-image-registry.mjs` red then green — 2059 Node tests,
+  `test/image-registry.mjs` red then green — 2059 Node tests,
   typecheck + lint clean.
 - [x] **15.2 Props + model** (2026-08-01) — contract first:
   `node.imageRef` (offset | count << 24 into the new image-record
@@ -4879,7 +4942,7 @@ below signed off in the 2026-08-01 sitting.
   covering both icon-per-type and photo-per-node; `-image-opacity`
   and `-image-color` are plain number/color channels; every other
   image prop rejects mappers (the 12b list rule).  Tests-first: 17
-  specs in `test/gpu-background-image.mjs` red then green — 2076
+  specs in `test/background-image.mjs` red then green — 2076
   Node tests, typecheck + lint clean.
 - [x] **15.3 RGBA draw path** (2026-08-01) — the tiered-array draw,
   in its own pass + pipeline: the node FS sits at exactly 8 storage
@@ -4911,7 +4974,7 @@ below signed off in the 2026-08-01 sitting.
   recorded) attaches at init and detaches on destroy.  WGSL lesson
   re-hit and re-recorded: `ref` is reserved (the console-error
   guard caught it).  Verifies: 6 Node specs
-  (`test/gpu-image-arrays.mjs`, tests-first), the `images-basic` and
+  (`test/image-arrays.mjs`, tests-first), the `images-basic` and
   `images-cover-clip` goldens, and **`parity-images` vs v3 at
   0.000%** — fit/position/opacity math is pixel-exact.  2082 Node
   tests, 122/122 Playwright, typecheck + lint clean.
@@ -5074,7 +5137,7 @@ signed off 2026-08-01.
   with no renderer, and rendered instances upgrade them to exact
   laid dims (a recorded approximation).  Advances are injected, so
   one breaker serves both consumers by construction.  11 Node specs
-  in `test/gpu-label-wrap.mjs`.  2096 Node tests, typecheck + lint
+  in `test/label-wrap.mjs`.  2096 Node tests, typecheck + lint
   clean.  (The memo lands with the LabelLayer integration in 16.3,
   where the atlas-keyed cache lives.)
 - [x] **16.2 Props + sidecar** (2026-08-01) — the five wrap props
@@ -5097,7 +5160,7 @@ signed off 2026-08-01.
   updated: gpu-style's unsupported-prop example was `text-wrap`,
   which now exists — it pins `background-blacken` (dropped by
   decided design) instead.  Tests-first: 10 specs in
-  `test/gpu-text-wrap-props.mjs` red then green — 2106 Node tests,
+  `test/text-wrap-props.mjs` red then green — 2106 Node tests,
   typecheck + lint clean.
 - [x] **16.3 Renderer** (2026-08-01) — LabelLayer lays every stream
   through `layoutLabelBlock` behind the **shaping memo** (keyed on
@@ -5138,7 +5201,7 @@ signed off 2026-08-01.
   (recorded — 16.1's estimator); rendered instances re-fit exact.
   No golden churn (goldens pin explicit viewports) and zero
   regressions across the 2116-test suite; the fit semantics are
-  pinned headless in `test/gpu-label-bb.mjs` (10 specs, red first —
+  pinned headless in `test/label-bb.mjs` (10 specs, red first —
   incl. getFitViewport reading the label-inclusive box), which
   covers what the planned browser fit spec would have.  131/131
   Playwright, typecheck + lint clean.
@@ -5148,7 +5211,7 @@ signed off 2026-08-01.
   `refsInBox` additionally requires the node's label box inside the
   band; Node-pinned (label poking out excludes the node only when
   opted in; runtime toggle).  **Shaping cost swept**
-  (`benchmark/gpu/labels.mjs`, pure Node at 100k wrapped labels):
+  (`benchmark/labels.mjs`, pure Node at 100k wrapped labels):
   breakLines ~3.8 µs, estimateBlock ~4.6 µs, the full
   setLabel-with-estimate write ~5.1 µs/label (write-driven, never
   per frame), and the whole-graph bb scan pays ~0.1 µs/label for
@@ -5296,14 +5359,14 @@ gate ecosystem work.
   at `ctx.eles`/`ctx.nodes`.  Layout instances stay non-emitters
   (round-10 rule; events fire on the core with the wrapper as
   `event.layout`).  Tests-first: 10 specs in
-  `test/gpu-layout-contract.mjs` red then green — object + class
+  `test/layout-contract.mjs` red then green — object + class
   impls, single-lifecycle finisher, async run, scoping, the
   leaf/unlocked filter, columnar reads, stop(), malformed rejects,
   and the random builtin re-expressed through the public contract
   (the conformance shape external authors can crib).  Two
   error-message pins updated for the new layout dispatch text.
   2127 Node tests, typecheck + lint clean.
-- [x] **17.6 Example + true-up** (2026-08-01) — `debug/webgpu`
+- [x] **17.6 Example + true-up** (2026-08-01) — `debug`
   gained the worked example: `SpiralLayout`, a plain class run via
   `cy.layout({ impl: SpiralLayout })` with `?layout=spiral`
   (smoke-verified live in scripted Chromium: spiral positions, no
@@ -5398,7 +5461,7 @@ design, built.  Signed off 2026-08-01.
   chain is a legitimate local minimum (sfdp-style multilevel is
   future work).  Coincident points separate along a deterministic
   index-hash direction (no NaNs on degenerate input).  Tests-first:
-  8 specs in `test/gpu-force-sim.mjs` — seeded determinism,
+  8 specs in `test/force-sim.mjs` — seeded determinism,
   identical-run reproducibility, spring rest length, repulsion
   separation, gravity containment, cooling/convergence, pinning,
   and the path-relaxation invariants.  2135 Node tests, typecheck +
@@ -5418,7 +5481,7 @@ design, built.  Signed off 2026-08-01.
   leaves only (parents derive); **locked nodes pin** — they join
   every force pair but never move; subset scopes simulate the
   subset only (recorded).  `stop()` settles early through the
-  wrapper.  Tests-first: 7 specs in `test/gpu-force-layout.mjs` red
+  wrapper.  Tests-first: 7 specs in `test/force-layout.mjs` red
   then green — lifecycle + ring relaxation + fit, seeded
   determinism end-to-end, fn edge lengths, locked pinning, compound
   leaves-only, subset scoping, live streaming + stop.  2142 Node
@@ -5465,7 +5528,7 @@ design, built.  Signed off 2026-08-01.
   box reflects the readback coordinates).  2142 Node tests, 138/138
   Playwright, typecheck + lint clean.
 - [x] **18.5 Benchmarks + harness + true-up** (2026-08-01) —
-  `debug/webgpu/?layout=force` (+ `&seed=N`) runs the live layout
+  `debug/?layout=force` (+ `&seed=N`) runs the live layout
   in the harness (smoke-verified twice in scripted Chromium: zero
   page errors, identical settled extents run-to-run; an earlier
   error burst traced to racing a mid-write bundle on the static
@@ -5590,7 +5653,7 @@ staging-ring exhaustion — for a look.  The look found the attribution
   images) reports 4/4/5/5 background answers and **0 ring-deferred**
   on every scene at p50 16.9–18.1 ms — the same numbers the hardware
   pass recorded, now with the null counts attributed correctly.
-- Tests: `test/modules/gpu-picking.mjs` unit-tests the ring against a
+- Tests: `test/modules/picking.mjs` unit-tests the ring against a
   fake device (latest-wins coalescing; exhaustion defers — the
   request survives the full ring unresolved, acquires the next freed
   slot, and resolves with a real answer; destroy resolves null), seen
@@ -5714,7 +5777,7 @@ channels re-register their slot buffers after the settle;
   threshold (dead-ratio > 1/2 with floor, per group) at safe
   boundaries, `cy.compact()` (+ the mid-batch throw and live-run
   deferral), `stats()`/store meters for observability, a
-  `benchmark/gpu/` shrink/churn sweep (peak-then-small scan widths,
+  `benchmark/` shrink/churn sweep (peak-then-small scan widths,
   dispatch counts, memory before/after), and the README section
   (design decision + deviations note) with the "Logged — compaction"
   closure.
@@ -5789,7 +5852,7 @@ and one plan deviation is recorded below.
   past a 1024-slot floor) at the safe boundaries (completed remove;
   outermost endBatch), deferring silently while batching or under a
   force run; public `cy.compact()` (throws mid-batch, warns + defers
-  under force).  `benchmark/gpu/compaction.mjs` (200k peak → 10%,
+  under force).  `benchmark/compaction.mjs` (200k peak → 10%,
   i9-9900K), extended into a four-section sweep (wins / costs /
   forwarding hot path / honesty controls): compact() ~114 ms
   one-shot, and the auto trigger adds it to a removal whose own
@@ -5817,9 +5880,9 @@ and one plan deviation is recorded below.
 
 Verification: 28 store-level + 9 ref-level + 5 trigger Node specs
 (all seen red first), the full Node suite (2175), and the `webgpu` +
-`webgpu-visual` Playwright projects (143 specs — goldens and live v3
+`visual` Playwright projects (143 specs — goldens and live v3
 parity untouched).  With this round the "Follow-up hooks" list in
-`src/gpu/README.md` holds no open architecture items.
+`src/README.md` holds no open architecture items.
 
 ## Round 20 plan — interaction options + touch parity (planned 2026-08-01)
 
@@ -5920,7 +5983,7 @@ front (the round-17 discipline).
   resolve per event by pointer type (touch 8 / desktop 4 — v4
   previously used 4 for both), and the taphold timer takes the
   configured duration.  Tests-first: 4 Node specs
-  (`test/gpu-interaction-options.mjs`, red then green) for the
+  (`test/interaction-options.mjs`, red then green) for the
   option surface incl. the warn-once rule, and a `webgpu`
   Playwright spec pinning behavior — sensitivity 2 doubles the
   zoom log-ratio of an identical wheel tick; a 6 px desktop
@@ -5939,7 +6002,7 @@ front (the round-17 discipline).
   flag); the flags-column dirty span already invalidates the
   pick-tile cache (setFlag no-ops on unchanged bits, so restyles
   don't churn it).  Tests-first: 6 Node specs
-  (`test/gpu-events-prop.mjs`, red then green — defaults, readback,
+  (`test/events-prop.mjs`, red then green — defaults, readback,
   validation, case-mapper refresh on data writes, the
   elementsInBox-stays-geometric scope note, CPU-pick
   pass-through) and a `webgpu` Playwright spec (a blue `events: no`
@@ -5962,7 +6025,7 @@ front (the round-17 discipline).
   stay unpickable (recorded).  Also recorded: the label box picks
   even when the label is LOD-faded (labelFadePx is a readability
   threshold, not a pick predicate).  Tests-first: 5 Node specs
-  (`test/gpu-text-events.mjs`, red then green — default/readback,
+  (`test/text-events.mjs`, red then green — default/readback,
   edges-group throw, case mapper, label-box pick on/off, the
   events-wins rule) and a `webgpu` Playwright spec (a click on the
   label below the node background-taps under the default and
@@ -6027,7 +6090,7 @@ front (the round-17 discipline).
   rounds landed), trued up both file headers with rounds 19–20,
   and recorded pixelRatio + the touch-box close in their sections.
   **Round 20 is complete**: 2190 Node + 63 module tests, 147
-  Playwright specs (webgpu + webgpu-visual — goldens untouched),
+  Playwright specs (renderer + visual — goldens untouched),
   typecheck + lint clean.
 
 **Risks tracked**: Frame-uniform layout change touches every pass
@@ -6180,7 +6243,7 @@ item 3 (pie/stripe) resolved by call 3.
   filtered display-hidden elements — both now skip unshown
   elements (and edges with unshown endpoints), v3's rule, while
   deliberately including invisible ones.  7 Node specs
-  (`test/gpu-visibility-prop.mjs`, red then green) + the
+  (`test/visibility-prop.mjs`, red then green) + the
   cpu-pick hidden-node spec moved onto the real hide path.
 - [x] **22.2 Renderer** (2026-08-01) — the WGSL `SHOWN` constant
   flipped to ALIVE|DRAWN (one line — every cull kernel, the depth
@@ -6278,7 +6341,7 @@ chart types.
   total clamps at 1 (v3's percents; the remainder stays unpainted);
   invalid sidecar entries skip; a chartless write frees the record
   (as does removal).  Tests-first: 10 Node specs
-  (`test/gpu-charts.mjs`, red then green).  2214 Node tests,
+  (`test/charts.mjs`, red then green).  2214 Node tests,
   typecheck + lint clean.
 - [x] **23.2 Render** (2026-08-01) — a dedicated ChartPipeline (the
   node FS sits at its 8-buffer cap, so charts get their own pass —
@@ -6313,7 +6376,7 @@ chart types.
   `stripe-direction: horizontal` is inert — the canvas draw switch
   tests a typo'd 'righward' keyword its own style type rejects —
   and `drawStripe` swaps W/H in its centering offsets, visible on
-  non-square nodes.  The planned `debug/webgpu` toggle was dropped
+  non-square nodes.  The planned `debug` toggle was dropped
   (the golden + parity scenes cover the visual surface; recorded).
   2214 Node tests, 151/151 Playwright, typecheck + lint clean.
   **Round 23 is complete.**
@@ -6427,7 +6490,7 @@ the `pause`/`resume`/`reverse` control set.
   border-width); preset animations derive `touchedColumns`/
   `gpuEligible` from their writes (all-paint may offload — 24.2's
   hook; border-width stays CPU).  Tests-first: 23 Node specs
-  (`test/gpu-transitions.mjs`, red then green) — the full trigger
+  (`test/transitions.mjs`, red then green) — the full trigger
   matrix (sheet swap, add, case flip, scale move, auto-extent
   shift, explicit-domain confinement, batch net-change + batch-add,
   parent flip, show/hide non-trigger, zero-duration), snap tiers,
@@ -6448,13 +6511,13 @@ the `pause`/`resume`/`reverse` control set.
   compounds); transitions and mapper kernel eval are mutually
   exclusive *per channel*, while the tween itself still runs
   on-device (different kernels).  Playwright (both discriminating,
-  in the `webgpu` project): a sheet-swap transition tweens pixels
+  in the `renderer` project): a sheet-swap transition tweens pixels
   through OKLab while `style()` reads the pre-restyle value (the
   motion-staleness rule) and settles on the exact resolved end
   state; a scale-mapper transition on a data write tweens rather
   than snapping — the spec fails on the mid-flight green>red
   strictness if the demotion is removed.  Scale proof
-  (`benchmark/gpu/transitions.mjs`, headless 200k nodes): the
+  (`benchmark/transitions.mjs`, headless 200k nodes): the
   auto-extent shift's whole-channel re-derive is 326 ms off →
   594 ms with transitions (1.82× — the diff + restore + bulk spawn
   is a constant factor, not a new class); the explicit-domain
@@ -6488,7 +6551,7 @@ the `pause`/`resume`/`reverse` control set.
   re-registration uploads the swapped from/to).  A paused animation
   still owns its channels — the round-21 eviction stops it like any
   running one (pinned).  Tests-first: 11 Node specs
-  (`test/gpu-animation-controls.mjs`, red then green) — timeline
+  (`test/animation-controls.mjs`, red then green) — timeline
   shift, pending promise, stop-on-paused, eviction-of-paused,
   reverse continuity + delay edge, progress states, both mock-sink
   lease specs, and the viewport.  2248 Node tests, 63 module tests,
@@ -6651,7 +6714,7 @@ live-read vs derivation-baked:
    specs flip to "geometry tweens" — the API surface is
    unchanged.
 9. **Scale is measured, not assumed.**  A new
-   `benchmark/gpu/geometry-tween.mjs` sweep prices: the size-tween
+   `benchmark/geometry-tween.mjs` sweep prices: the size-tween
    tick at 2k/20k/200k animated nodes (labelled vs unlabelled —
    the re-anchor term), the edge-width tick with rides, the
    padding tick (auto-bounds flush per tick at compound scale),
@@ -6678,7 +6741,7 @@ commit(s)):
   (a mid-tween leaf→parent flip hands the slot to auto-bounds).
   No CMPD invalidation was added — the containment argument in
   call 3, pinned by the p2-growth spec.  Tests-first: 12 Node
-  specs (`test/gpu-geometry-tween.mjs`, red then green) — width+
+  specs (`test/geometry-tween.mjs`, red then green) — width+
   height and width-only tweens, never-stale `width()`/`bb()`
   reads, outerHalf write-through, hanging-label re-anchor
   mid-tween, child tween drives parent auto-bounds per tick, the
@@ -6771,7 +6834,7 @@ commit(s)):
   spec, and the amended wrap-dims spec.  2280 Node tests, 63
   module tests, typecheck + lint clean.
 - [x] **25.6 Benchmarks + browser specs** (2026-08-02) — landed:
-  `benchmark/gpu/geometry-tween.mjs` (standalone, the
+  `benchmark/geometry-tween.mjs` (standalone, the
   transitions.mjs pattern) prices one manager tick per geometry
   channel at `BENCH_N` scale.  At 200k elements (headless,
   avg/iter, machine-local — the factors are the story): paint
@@ -6802,7 +6865,7 @@ commit(s)):
   and the gap ledger's two live sequencing references move past
   the round.  Full verification: typecheck, 2280 Node tests, 63
   module tests, lint, and 173/173 Playwright across the
-  chromium + webgpu + webgpu-visual projects (goldens untouched;
+  chromium + renderer + visual projects (goldens untouched;
   the webkit/webgpu-webkit projects could not launch on this
   box — `browserType.launch` fails on missing host system
   libraries, an environment gap needing sudo, not a regression;
@@ -6824,7 +6887,7 @@ release.
 
 **Code investigation (2026-08-02, precedes this plan):**
 
-- Public-member JSDoc coverage across `src/gpu` is **395/852 (46%)**
+- Public-member JSDoc coverage across `src` is **395/852 (46%)**
   (audit rule: members of exported classes whose names do not start
   with `_`).  The two files that *are* the public API are the worst
   covered: `collection.mts` 66/204 (32%) and `core.mts` 33/89 (37%).
@@ -6847,9 +6910,9 @@ release.
   the grouping.
 - The `./gpu` package export maps `"import"` only — **no `types`
   key and no `.d.ts`** — and the seven `test:types:*` scripts
-  contain zero gpu references, so `import cytoscapeGpu from
-  'cytoscape/gpu'` resolves to untyped JS today.  Pointing the
-  existing `rolldown.dts.config.mjs` at `src/gpu/index.mts` emits a
+  contain zero gpu references, so `import cytoscape from
+  'cytoscape'` resolves to untyped JS today.  Pointing the
+  existing `rolldown.dts.config.mjs` at `src/index.mts` emits a
   complete 4,508-line / 191 KB declaration bundle in ~300 ms with
   no errors: the declarations are a config addition, not a project.
 
@@ -6857,7 +6920,7 @@ release.
 
 1. **JSDoc is the documentation source of truth for v4.**  Prose
    about what a member does lives next to the member, not in a
-   parallel markdown tree.  `src/gpu/README.md` keeps its role —
+   parallel markdown tree.  `src/README.md` keeps its role —
    scope, design decisions, deviations, the cross-cutting
    narrative — and PLAN.md keeps the logbook; neither duplicates
    per-member documentation.  The eventual release docs are
@@ -6877,7 +6940,7 @@ release.
    how this codebase cites its own history.  Existing comments are
    corrected where they have drifted rather than left beside new
    ones.
-4. **Declarations ship with the docs in them.**  `cytoscape/gpu`
+4. **Declarations ship with the docs in them.**  `cytoscape`
    gains a real `.d.ts` built by the existing pipeline, so the
    JSDoc written in this round reaches consumers' editors as
    hover text.  This is the payoff that makes the comment pass
@@ -6893,10 +6956,10 @@ release.
 **Pass split** (docs in-commit; each pass its own commit(s)):
 
 - [x] **26.1 The convention + the core surface** (2026-08-02) —
-  landed as planned: `scripts/gpu-jsdoc-coverage.mjs` (the two-tier
+  landed as planned: `scripts/jsdoc-coverage.mjs` (the two-tier
   audit, `--verbose` for the per-member list),
-  `test/gpu-jsdoc-coverage.mjs` (the completed-files ratchet + the
-  tier floors), the conventions recorded in `src/gpu/README.md`
+  `test/jsdoc-coverage.mjs` (the completed-files ratchet + the
+  tier floors), the conventions recorded in `src/README.md`
   ("Documenting the source"), and `core.mts` 33/89 → **89/89** plus
   `viewport.mts` 11/18 → **18/18**.  Two drift fixes found by
   writing the comments: `json()`'s doc block had become stranded
@@ -6999,22 +7062,22 @@ release.
   Coverage gate tightened from a file allowlist to "no file has an
   undocumented public member", now that there is no partial file
   left.  Typecheck, 2285 Node tests, 63 module tests, lint clean.
-- [x] **26.5 Shipped declarations for `cytoscape/gpu`**
-  (2026-08-02) — landed: `rolldown.dts.gpu.config.mjs` rolls the
+- [x] **26.5 Shipped declarations for `cytoscape`**
+  (2026-08-02) — landed: `rolldown.dts.config.mjs` rolls the
   prototype's declarations up (the existing pipeline, pointed at
-  `src/gpu/index.mts`), `build-dts.mjs` gained `finalizeGpuDts`
+  `src/index.mts`), `build-dts.mjs` gained `finalizeGpuDts`
   (the gpu entry is ESM-only — the `./gpu` export has no `require`
   condition — so no export-assignment reshaping is needed, only the
   UMD global name), `build:types` builds both entries, and the
   `./gpu` export gained its `types` key.  Two tests: the
-  `test:types:gpu` shape audit (default export, the 37-name type
+  `test:types:surface` shape audit (default export, the 37-name type
   surface with no leaks, the three factory statics — expando
   properties a declaration bundler is most likely to drop silently
   — and a floor on the JSDoc blocks reaching the shipped file) and
-  `typescript/tests/gpu.test-d.ts`, a compile-only consumer test in
+  `typescript/tests/api.test-d.ts`, a compile-only consumer test in
   the existing `test:types` project.
   **The comment pass pays off here**: 1089 JSDoc blocks reach
-  `dist/cytoscape-gpu.d.ts`, so round 26's prose is hover text in a
+  `dist/cytoscape.d.ts`, so round 26's prose is hover text in a
   consumer's editor, not just a source-tree nicety — and the shape
   audit's block-count floor keeps it that way.
   Writing the consumer test found a real type-surface defect the
@@ -7041,7 +7104,7 @@ release.
   gained the round's seven new files, which belong to no single
   commit and are exactly what this sweep exists to catch; and
   `AGENTS.md` gained the convention itself under rule 8 — a
-  contributor to `src/gpu/` now reads that v4 documents itself in
+  contributor to `src/` now reads that v4 documents itself in
   JSDoc, which tags to use, that the banners are the section
   grouping, that coverage is gated, and that the shipped
   declarations must be regenerated when the surface changes.
@@ -7053,12 +7116,12 @@ release.
   having **no depth buffer** when there is both a depth target and
   an early-z prepass, with the pass order wrong too.  A newcomer
   starting from that header would have had the frame graph wrong.
-  `dist/cytoscape-gpu.d.ts` regenerated after the final 26.4
+  `dist/cytoscape.d.ts` regenerated after the final 26.4
   comments: 6,840 lines, 1,091 JSDoc blocks.
   Full verification: typecheck, 2285 Node tests, 63 module tests,
   lint, the whole `test:types:all` chain (including the two new gpu
   audits), and 173/173 Playwright across chromium + webgpu +
-  webgpu-visual (goldens untouched — the round changes no pixels;
+  visual (goldens untouched — the round changes no pixels;
   the webkit projects still cannot launch on this box, the same
   host-library environment gap recorded in round 25.7).
   **Round 26 is complete.**
@@ -7073,7 +7136,7 @@ showed: a chai `deepStrictEqual` on an array of element ids containing
 at least `'1'` … `'8'`.  What is known:
 
 - **Not reproduced in 37 subsequent full-suite runs**, nor in 60 runs
-  of `test/gpu-algorithms-clustering.mjs` alone.
+  of `test/algorithms-clustering.mjs` alone.
 - The obvious suspect was **ruled out**.  `fuzzyCMeans` is the only
   clustering spec that passes `testMode: true` *without*
   `testCentroids`, so it falls through to `Math.random()` centroid
@@ -7241,14 +7304,14 @@ commit(s)):
   hardcoded `shapeId === 14` became `SHAPE_POLYGON_CUSTOM`.
   Tests-first: the three existing specs that pin the bit layout
   were rewritten to the new one (red), then the code moved (green),
-  and `test/gpu-packing.mjs` adds 8 specs — every id round-trips in
+  and `test/packing.mjs` adds 8 specs — every id round-trips in
   all four arrow positions, the positions stay independent, the
   flags and scale byte stay clear of the ids, over-wide ids throw,
   a real mid-arrow restyle survives, and the shape field's margin
   over the enum is asserted rather than assumed.
   The pass changes no pixels, and that is the point: 2293 Node
   tests, 63 module tests, typecheck, lint, 87/87 webgpu and
-  **68/68 webgpu-visual with the goldens untouched**.
+  **68/68 visual with the goldens untouched**.
   *Correction, made while landing 27.2*: that browser verification
   was first run against a **stale bundle** and re-run afterwards
   before it meant anything.  `playwright.config.js` sets
@@ -7289,7 +7352,7 @@ commit(s)):
   24px node is what makes the golden discriminate between the two
   auto rules, since at 60px they coincide at 8.
   2304 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu
-  and 69/69 webgpu-visual (68 unchanged goldens + the new one),
+  and 69/69 visual (68 unchanged goldens + the new one),
   all against a freshly built bundle.
 - [x] **27.3 v3's nonlinear arrow-size formula** (2026-08-02) —
   landed.  v4 sized arrows `widthPx * 3 + 2` off the LOD-floored
@@ -7326,8 +7389,8 @@ commit(s)):
   **reverted**, since their scenes contain no arrows and the drift
   predates this pass — a sub-tolerance glyph-AA wobble worth
   noticing but not this pass's to absorb.
-  2304 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu,
-  70/70 webgpu-visual.
+  2304 Node tests, 63 module tests, typecheck, lint, 87/87 renderer,
+  70/70 visual.
 - [x] **27.4 The round-corner SDF** (2026-08-02) — landed, and
   with a better primitive than the plan called for.  The plan
   proposed porting v3's per-corner arc construction; the identity
@@ -7364,7 +7427,7 @@ commit(s)):
   have made a clean result far less meaningful.  A
   `shapes-27-round` golden covers the family plus the anisotropic
   case.  17 Node specs; 2311 Node tests, 63 module tests,
-  typecheck, lint, 87/87 webgpu, 72/72 webgpu-visual.
+  typecheck, lint, 87/87 renderer, 72/72 visual.
 - [x] **27.5 `barrel`** (2026-08-02) — landed, and the plan's
   premise turned out to be wrong in a useful way.  It called for an
   exact quadratic-bezier SDF (a cubic solve) shared with
@@ -7427,8 +7490,8 @@ commit(s)):
   **This completes v3's arrow vocabulary**, and as with 27.5's
   shapes a pre-existing spec had to stop using a real keyword
   (`'triangle-backcurve'`) as its example of an unsupported one.
-  2315 Node tests, 63 module tests, typecheck, lint, 87/87 webgpu,
-  74/74 webgpu-visual.
+  2315 Node tests, 63 module tests, typecheck, lint, 87/87 renderer,
+  74/74 visual.
 - [x] **27.7 Numeric `text-rotation`** (2026-08-02) — landed.
   Rotation was one bit — `autorotate`, edge labels only, the angle
   derived live on-GPU from the edge's slope.  v3 also takes a plain
@@ -7462,7 +7525,7 @@ commit(s)):
   The floor is glyph rasterization, not placement — canvas vs SDF —
   which is why this one bound is 3% where the shape diffs sit near
   0.05%.  13 Node specs; 2328 Node tests, 63 module tests,
-  typecheck, lint, 87/87 webgpu, 75/75 webgpu-visual.
+  typecheck, lint, 87/87 renderer, 75/75 visual.
 - [ ] **27.8 `border-style` / `outline-style`** — **stopped for a
   scope call** (2026-08-02), not for a technical blocker.
   The technique is settled.  `double` is not a dash at all — a
@@ -7498,7 +7561,7 @@ commit(s)):
   feature disabled.  Five new live parity tests in total (arrow
   sizing, the round family, barrel, compound arrowheads, text
   rotation), two new goldens, and three golden grids extended.
-  Costs: `benchmark/gpu/labels.mjs` re-run at 100k — breakLines
+  Costs: `benchmark/labels.mjs` re-run at 100k — breakLines
   3.8 µs, estimateBlock 4.6 µs, setLabel build 5.1 µs, the
   whole-graph bb's label terms 0.11 µs — all matching the round-16
   baselines, so 27.7's wider glyph instance costs nothing on the
@@ -7507,7 +7570,7 @@ commit(s)):
   **Not measured here**: the device-side frame cost of the new
   shader branches.
   *Correction (2026-08-03)*: the reason given for that was **wrong**.
-  This record said `benchmark:gpu:renderer` "requires a real adapter
+  This record said `benchmark:renderer` "requires a real adapter
   and this box has only SwiftShader" — the box has an **AMD RX 580**
   (RADV POLARIS10, alongside an Intel UHD 630), which is the same
   hardware the 2026-08-01 validation pass benchmarked on, and the
@@ -7573,7 +7636,7 @@ commit(s)):
   not there; and "round 26 took both tiers from 46%" conflated a
   combined figure with per-tier ones (43% public, 55% internal).
   Two more findings from the second pass, both outside the docs
-  themselves: the **debug harness** (`debug/webgpu/init.js`) carried
+  themselves: the **debug harness** (`debug/init.js`) carried
   allowlists that silently dropped any shape outside
   ellipse/rect/round-rect and any arrowhead but triangle when
   converting a v3 fixture stylesheet — stale since round 10, and
@@ -7603,10 +7666,10 @@ do not.**
 Round 27 added three branches to `render/cpu-pick.mts`: the
 `cut-rectangle` chamfer (27.2), `insideBarrel` (27.5) and
 `insideRoundPolygon` (27.4).  None of them is exercised by any test.
-`test/gpu-cpu-pick.mjs` — the harness that actually drives the pick
+`test/cpu-pick.mjs` — the harness that actually drives the pick
 path against the store — stops at round 10's polygon family.
 
-Three specs in `test/gpu-shapes-27.mjs` are *named* for picking and
+Three specs in `test/shapes-27.mjs` are *named* for picking and
 assert something else entirely:
 
 - `'picks by its slanted outline, not its bounding box'` (right-rhomboid)
@@ -7669,7 +7732,7 @@ adding elements should overwrite the target's `data()`.  Also still
 open: the device-side frame cost of round 27's new shader branches
 (27.9).  That one was recorded as blocked on hardware, which was
 **wrong** — this box has an AMD RX 580, the same device the 2026-08-01
-hardware validation pass benchmarked on, and `benchmark:gpu:renderer`
+hardware validation pass benchmarked on, and `benchmark:renderer`
 reaches it.  It is a measurement nobody has run, not one that cannot be
 run here; see the correction in the 27.9 entry.
 
@@ -7681,7 +7744,7 @@ commit(s)):
   five new specs did not discriminate on their first version**, which
   is the same defect the pass exists to fix, caught this time because
   the control was run before the commit rather than after.
-  The specs live in two places by design.  `test/gpu-shapes-27.mjs`
+  The specs live in two places by design.  `test/shapes-27.mjs`
   gets the keyword-level ones, which run the whole public path — the
   sheet compiles, the style engine writes `borderGeom`, `pickNodeAt`
   reads the stored words — and each case is chosen to be a *hit* for
@@ -7690,7 +7753,7 @@ commit(s)):
   itself resolves null on a headless instance, so these call the pick
   path directly; that is what the three replaced specs had backed away
   from into `boundingBox()` assertions.
-  `test/gpu-cpu-pick.mjs` gets the branch-level properties, aimed at
+  `test/cpu-pick.mjs` gets the branch-level properties, aimed at
   what is *particular* to each branch rather than at re-checking that
   a shape has an inside: cut-rectangle's chamfer holding at a flat
   8 px as the node grows 100 → 400 px (a size-relative chamfer would
@@ -7732,13 +7795,13 @@ commit(s)):
   preferred `panBy`.  The two spell one channel and guessing is the
   kind of thing v4 rejects loudly elsewhere (`queue`, `step`, unknown
   query keys).
-  Tests-first: 5 specs in `test/gpu-viewport-animation.mjs` (the
+  Tests-first: 5 specs in `test/viewport-animation.mjs` (the
   delta; creation-time resolution, pinned by panning away before
   `play()`; the `panningEnabled` gate; the throw; and `fit` winning
   over `panBy`), 4 red before the change.  2340 Node tests, 63 module
   tests, typecheck, lint, JSDoc coverage 100%.  `AnimateOptions` is
-  public surface, so `dist/cytoscape-gpu.d.ts` is regenerated and
-  `npm run test:types:gpu` re-run; `dist/cytoscape.d.ts` (v3) is
+  public surface, so `dist/cytoscape.d.ts` is regenerated and
+  `npm run test:types:surface` re-run; `dist/cytoscape.d.ts` (v3) is
   untouched.
 - [x] **28.3 Ledger drift + closing docs sweep** (2026-08-03) —
   item 12 is rewritten: `cy.window()` and (now) `panBy` move to the
@@ -7755,7 +7818,7 @@ commit(s)):
   records the round-27 shapes' CPU-pick twins in the shape section,
   and its follow-up hooks now list only open design calls.
   Verification for the round as a whole: 2340 Node tests, 63 module
-  tests, typecheck, lint, JSDoc coverage 100%, `test:types:gpu` with
+  tests, typecheck, lint, JSDoc coverage 100%, `test:types:surface` with
   the regenerated declarations.  The browser suites were not re-run
   for 28.1 or 28.3 (tests and docs only); 28.2 touches the viewport
   animation path, whose coverage is the Node suite.
@@ -7765,14 +7828,14 @@ commit(s)):
 
 Round 28 closed the ledger's no-call remainder.  This round comes from
 a different question — *not* "what is unbuilt" but "what is unpinned":
-a survey of `src/gpu` (49k lines; 121 Node spec files and 14 benchmark
+a survey of `src` (49k lines; 121 Node spec files and 14 benchmark
 suites at the time — 123 and 15 after this round) for behaviour that
 exists, is documented, and is measured or asserted by nothing.
 
 **Survey method and what it ruled out**, since the negative results are
 worth as much as the findings:
 
-- **Module-level coverage is not the gap.**  Mapping every `src/gpu`
+- **Module-level coverage is not the gap.**  Mapping every `src`
   module to test files that import it shows ~50 with no direct
   importer, but almost all of those (the algorithms, the layouts,
   `core`/`collection` themselves) are exercised through the public
@@ -7838,7 +7901,7 @@ read them as the round's starting state, not its current one:
 **Pass split** (tests-first where there is code; docs in-commit):
 
 - [x] **29.1 The alias surface** (2026-08-03) — landed.  91 specs in
-  `test/gpu-aliases.mjs`: 83 identity checks (the alias exists, is a
+  `test/aliases.mjs`: 83 identity checks (the alias exists, is a
   function, and is `===` its target on the prototype), 6 that reach the
   aliases through a live instance (a class field or own property could
   in principle shadow the prototype, which the identity check alone
@@ -7904,7 +7967,7 @@ read them as the round's starting state, not its current one:
   "Unknown query key '0'" — its own character indices read as keys —
   and now says what actually went wrong.  Every message names the v4
   replacement ($id, a query object, a predicate).
-  `test/gpu-decided-drops.mjs` then pins the ledger: selector strings
+  `test/decided-drops.mjs` then pins the ledger: selector strings
   at every entry point, the absent class methods and `cy.$`, the
   sheet's rejection of `z-index` and the 2026-07-29 triage drops, the
   no-dash shape spellings (with `roundrectangle`'s survival pinned
@@ -7914,7 +7977,7 @@ read them as the round's starting state, not its current one:
   entry it pins.
   Verification: 2453 Node tests, 63 module tests, typecheck, lint,
   JSDoc 100%, and — because this pass changes source — **87/87 webgpu
-  and 75/75 webgpu-visual against a freshly built bundle** (an
+  and 75/75 visual against a freshly built bundle** (an
   http-server was already listening on 3333, which is exactly the
   stale-bundle trap, so the build was run by hand first).
   *(Original plan text below.)*
@@ -7925,7 +7988,7 @@ read them as the round's starting state, not its current one:
   the per-element bypass setter.  Each assertion cites the ledger entry
   it pins.
 - [x] **29.4 A curved-edge CPU benchmark** (2026-08-03) — landed as
-  `benchmark/gpu/curves.mjs`, standalone and gpu-only like
+  `benchmark/curves.mjs`, standalone and gpu-only like
   `labels.mjs`.  Every row runs the same operation on a straight graph
   of identical shape, so the printed number is the **curve premium**;
   the scene is 4 parallel edges per node pair, so an endpoint move
@@ -7955,7 +8018,7 @@ read them as the round's starting state, not its current one:
   design it prices.
   *(Original plan text below.)*
 
-  **29.4 A curved-edge CPU benchmark** (`benchmark/gpu/curves.mjs`),
+  **29.4 A curved-edge CPU benchmark** (`benchmark/curves.mjs`),
   standalone and gpu-only like `labels.mjs`: bundled-bezier build,
   node-drag re-derivation at bundle scale, the accessors, bounds and
   box selection over curved edges, and the re-fan triggers — each
@@ -8019,7 +8082,7 @@ nothing.  29.3 pinned the *decided-drop* subset of that policy at the
 API boundary.  Nothing has ever measured the rest.
 
 **Method, and why the first measurement was wrong.**  Every `throw new`
-in `src/gpu` was mapped against V8 coverage of the Node suite.  The
+in `src` was mapped against V8 coverage of the Node suite.  The
 first attempt read raw `NODE_V8_COVERAGE` offsets against the `.mts`
 sources and reported 47 dead sites — *including* `arrow-scale must be
 positive` and `not a valid font-family`, both of which have had throw
@@ -8031,7 +8094,7 @@ and reads source-mapped `DA:` line counts; it puts the two known-tested
 sites back in the covered column, which is the check that makes the
 rest believable.
 
-**Finding: 191 throw sites in `src/gpu`, 34 never executed** by the
+**Finding: 191 throw sites in `src`, 34 never executed** by the
 2453-test Node suite.  ~20 are Node-testable, ~14 need a browser.  The
 list repeats defect shapes rounds 28–29 already named:
 
@@ -8095,7 +8158,7 @@ commit(s)):
   covered because it sits in a module-level arrow const.  30.4's
   calibration found it and moved it into the browser tier, which is why
   30.2 pins six guards where this entry counts five.)  **Every Node-reachable
-  throw in `src/gpu` now runs in the Node suite.**
+  throw in `src` now runs in the Node suite.**
   What landed, by surface: the style parsers' five guards (the wrap
   family's shared keyword closure, gradient stop percents on both
   fills, the image enum shared by five props, the `background-width`/
@@ -8111,7 +8174,7 @@ commit(s)):
   **Controls were run for all 20** — each guard neutered in place
   (`throw` → `if( false ) throw`), the owning spec re-run, the source
   restored — and **one came back BAD**, which is the pass earning its
-  keep.  `cytoscapeGpu({ container: {} })` throws with the factory's
+  keep.  `cytoscape({ container: {} })` throws with the factory's
   own `navigator.gpu` check deleted, because the renderer attach path
   25 lines below carries an identical check with an identical message.
   The two are not redundant — the early one is a fail-fast *before*
@@ -8132,7 +8195,7 @@ commit(s)):
   No source changed, so the browser suites are unaffected.  2473 Node
   tests (+20), 63 module tests, typecheck, lint.
 - [x] **30.2 The image-export guards** (2026-08-03) — landed: 4 specs
-  in the `webgpu` project covering all **six** throws of the export
+  in the `renderer` project covering all **six** throws of the export
   path (the plan said five; `exportScale`'s own guard is a sixth, in a
   module-level helper rather than in `computeExportView`).  These are
   public contract — `bg` and `scale` come straight from the caller, and
@@ -8185,8 +8248,8 @@ commit(s)):
   end, then at model space; `squaredEuclidean` given the square root,
   `max` made a sum) — each failed the specs written for it.
   2482 Node tests (+9), typecheck, lint.  No source changed.
-- [x] **30.4 `scripts/gpu-throw-coverage.mjs`** (2026-08-03) — landed,
-  mirroring `scripts/gpu-jsdoc-coverage.mjs`: run it bare for the
+- [x] **30.4 `scripts/throw-coverage.mjs`** (2026-08-03) — landed,
+  mirroring `scripts/jsdoc-coverage.mjs`: run it bare for the
   tallies, `--verbose` for every uncovered site, `--lcov <file>` to
   re-read a report instead of re-running the suite.  It exports
   `audit()` the same way, and it **always exits 0** — a coverage floor
@@ -8197,7 +8260,7 @@ commit(s)):
   run.**
   The classification lists are the useful part and each entry carries
   its reason: `BROWSER_ONLY` (needs a device, a canvas or a pointer —
-  pinned in the `webgpu` project instead), and `UNREACHABLE` (the
+  pinned in the `renderer` project instead), and `UNREACHABLE` (the
   big-endian platform guard; the SHAPE_MASK field invariant).
   **A third list exists because the tool measured its own error.**
   Line-level lcov attributes the body of a *module-level arrow const*
@@ -8212,7 +8275,7 @@ commit(s)):
   round hit are recorded in the file header — the transpiled-offset
   trap that made the first measurement fiction, and the useless
   function-level records.
-  5 specs in `test/modules/gpu-throw-coverage.mjs` (the precedent is
+  5 specs in `test/modules/throw-coverage.mjs` (the precedent is
   `gpu-benchmark-report.mjs`: a tool's parser gets a fixture, not
   trust) against hand-written lcov naming real files and real throw
   lines.  They pin the three classifications, the misattribution
@@ -8244,7 +8307,7 @@ commit(s)):
   lies — with the specific traps (raw `NODE_V8_COVERAGE` offsets;
   function-level records on one-line arrows).
   Verification for the round as a whole: **2482 Node tests, 68 module
-  tests, 91/91 `webgpu` and 75/75 `webgpu-visual` against a freshly
+  tests, 91/91 `webgpu` and 75/75 `visual` against a freshly
   built bundle, typecheck, lint, `test:types:all`, JSDoc coverage
   100%, and `gpu-throw-coverage` at 0 Node-reachable dead sites.**
   **Round 30 is complete.**
@@ -8267,10 +8330,10 @@ stylesheet").  The function form was **removed in round 8** and, since
 round 29.3, *throws* at `setSheet` with a message naming mappers as the
 replacement.  So a caller who hits the bypass error and follows its
 instruction hits a second throw, and the doc comment that ships in
-`dist/cytoscape-gpu.d.ts` tells them to.  The replacement text already
+`dist/cytoscape.d.ts` tells them to.  The replacement text already
 exists one file over (29.3's message: a `case` mapper for conditionals,
 `data(key)` scales for per-element values).
-A scan of every other advice-giving message in `src/gpu` found no
+A scan of every other advice-giving message in `src` found no
 second instance — the other "use ..." messages name keyword sets and
 units that are all still accepted.
 
@@ -8317,14 +8380,14 @@ commit(s)):
   The spec asserts **both halves**, which is what makes it more than a
   string check: the message names a mapper and *does not* name the
   function form, and the form it names is then handed to
-  `cytoscapeGpu` and expected not to throw.  A message that advises a
+  `cytoscape` and expected not to throw.  A message that advises a
   rejected form is only detectable if the advice is executed.
   Control: the old advice restored → the spec fails.
-  `dist/cytoscape-gpu.d.ts` is regenerated and committed (the comment
+  `dist/cytoscape.d.ts` is regenerated and committed (the comment
   is shipped hover text — the whole reason the defect mattered), and
-  `test:types:gpu` re-run: 37 type exports, 3 statics, 1093 doc blocks.
+  `test:types:surface` re-run: 37 type exports, 3 statics, 1093 doc blocks.
   2483 Node tests, typecheck, lint, JSDoc 100%, and — since this pass
-  changes source — 91/91 `webgpu` and 75/75 `webgpu-visual` against a
+  changes source — 91/91 `webgpu` and 75/75 `visual` against a
   freshly built bundle.
 - [x] **31.2 `@throws` where a public member throws** (2026-08-03) —
   landed.  The plan said 13 members from a throwaway scan; the audit
@@ -8340,12 +8403,12 @@ commit(s)):
   non-*positive* where the thresholds allow 0, and `mount` names its
   three distinct failures — because "throws on bad input" in a comment
   is not worth the line.
-  `auditThrowTags()` joins `scripts/gpu-jsdoc-coverage.mjs` and its
+  `auditThrowTags()` joins `scripts/jsdoc-coverage.mjs` and its
   tally prints under the coverage report (`--verbose` lists the
   offenders).  It **under-detects deliberately**: a member that throws
   only through a helper it calls is not flagged, because whether that
   is part of *its* contract needs a human.
-  **This one is gated**, in `test/gpu-jsdoc-coverage.mjs`, where round
+  **This one is gated**, in `test/jsdoc-coverage.mjs`, where round
   30 deliberately did not gate its throw-coverage measurement — and
   the difference is the reasoning, not an inconsistency: documentation
   completeness is *already* a gated concern here (round 26 made that
@@ -8358,10 +8421,10 @@ commit(s)):
   which exists so a regex change that audits nothing cannot read as a
   pass).
   Comments only in `src/`, so the browser suites are unaffected;
-  `dist/cytoscape-gpu.d.ts` is regenerated and committed (1093 doc
+  `dist/cytoscape.d.ts` is regenerated and committed (1093 doc
   blocks).  2485 Node tests, 68 module tests, typecheck, lint.
 - [x] **31.3 `mouseout` and `pointercancel`** (2026-08-03) — landed, 2
-  specs in the `webgpu` project.
+  specs in the `renderer` project.
   `mouseout` is the plain sibling gap: hover on, assert `mouseover:a`;
   move *within* the node and assert no `mouseout` (the half that makes
   it a hover-boundary test rather than a "some event fired" test);
@@ -8403,9 +8466,9 @@ commit(s)):
   maintains an existing gate rather than adding a kind), and it is one
   `describe` block to remove if the maintainer disagrees.
   Verification for the round: **2485 Node tests, 68 module tests,
-  93/93 `webgpu` and 75/75 `webgpu-visual` against a freshly built
+  93/93 `webgpu` and 75/75 `visual` against a freshly built
   bundle, typecheck, lint, `test:types:all` with the regenerated
-  `dist/cytoscape-gpu.d.ts`, JSDoc coverage 100% and `@throws` 16/16,
+  `dist/cytoscape.d.ts`, JSDoc coverage 100% and `@throws` 16/16,
   and `gpu-throw-coverage` still at 0 Node-reachable dead sites.**
   **Round 31 is complete.**
 
@@ -8475,9 +8538,9 @@ regex.)*
   what was written.
 - [x] **32.4 The audit + gate, and the closing sweep** (2026-08-03) —
   `auditParamTags()` joins `auditThrowTags()` in
-  `scripts/gpu-jsdoc-coverage.mjs`, overload-aware through the same
+  `scripts/jsdoc-coverage.mjs`, overload-aware through the same
   regexes, public tier only, printed under the coverage report and
-  listed by `--verbose`.  Gated in `test/gpu-jsdoc-coverage.mjs` under
+  listed by `--verbose`.  Gated in `test/jsdoc-coverage.mjs` under
   31.2's reasoning: documentation completeness is already a gated
   concern here, so this maintains an existing gate.
   Controls: a `@param` line deleted → 1 failing; an undocumented
@@ -8489,7 +8552,7 @@ regex.)*
   Verification: **2487** Node tests (the gate's own two specs are the
   round's only additions — 32.1–32.3 changed comments alone), 68 module
   tests, typecheck, lint, JSDoc coverage 100%, `@throws` 16/16,
-  `@param` 221/221, and the regenerated `dist/cytoscape-gpu.d.ts`
+  `@param` 221/221, and the regenerated `dist/cytoscape.d.ts`
   (comments only in `src/`, so the browser suites are unaffected).
   *(First written as 2485: the verification run's tally was read from a
   grep that missed the line.  Caught by the docs sweep below, which is
@@ -8645,7 +8708,7 @@ describe and no suite prices:
 
 - **`benchmark/` (v3's own suites) stays untouched.**  It runs against
   `documentation/`-era fixtures and the v3 API, and v3 is frozen until
-  v4 ships.  v3 comparisons belong in `benchmark/gpu/`, where
+  v4 ships.  v3 comparisons belong in `benchmark/`, where
   `graph.mjs` already builds one element list for both factories.
 - **The anti-hoisting methodology does not need revisiting.**
   `core.mjs`/`collection.mjs` rotate operands over a pool of K = 8 so
@@ -8668,7 +8731,7 @@ describe and no suite prices:
    overview is only worth reading if every 1× line is real.
 2. **Every performance claim in the docs gets a re-runnable source.**
    The round's honesty rule, and the direct analogue of round 30's
-   throw coverage: a figure quoted in `src/gpu/README.md` or this file
+   throw coverage: a figure quoted in `src/README.md` or this file
    either becomes a row in a suite, or is marked in place as a
    **historical one-off** with the date and machine it came from.  The
    four that matter most are the init figures (finding 4), the grid
@@ -8704,7 +8767,7 @@ describe and no suite prices:
    per-element costs, the convention 25.6 and 19.5 already follow.
 8. **A benchmark-coverage audit ships, and reports only.**  The third
    tool in the `gpu-jsdoc-coverage` / `gpu-throw-coverage` family:
-   `scripts/gpu-bench-coverage.mjs` maps a maintained manifest of
+   `scripts/bench-coverage.mjs` maps a maintained manifest of
    public surfaces to the suites that price them and lists what has
    nothing.  It **always exits 0** — a benchmark floor is a policy
    call, and the mapping is a name-mention scan whose limits are
@@ -8723,7 +8786,7 @@ describe and no suite prices:
   same commit with the breadth pass 33.9 on the user's restatement of
   scope.
 - [x] **33.1 Layouts** (2026-08-03) — landed as
-  `benchmark/gpu/layouts.mjs`, and **two of its first rows were not
+  `benchmark/layouts.mjs`, and **two of its first rows were not
   measuring anything**, which is design call 5 earning its place on the
   first pass that used it.
   Rows (i9-9900K, N=2000 / 4000 edges, `fit: false` and a shared
@@ -8795,7 +8858,7 @@ describe and no suite prices:
   reading 1.4× *slower* on v4, which did not survive mitata warming
   both sides — the 29.4 lesson, reproduced.
 - [x] **33.3 The style engine** (2026-08-03) — landed as
-  `benchmark/gpu/style.mjs`, and it found **the place where v4 does not
+  `benchmark/style.mjs`, and it found **the place where v4 does not
   beat v3**, which no previous round had looked at directly.
   At N=2000 (2000 nodes / 4000 edges, constants-only sheets alternating
   so no apply can be skipped as unchanged): a whole-sheet swap is
@@ -8814,7 +8877,7 @@ describe and no suite prices:
   `__name`** — esbuild's name-preserving wrapper, an
   `Object.defineProperty` per closure *creation*, injected by tsx and
   absent from the built bundle.  Through
-  `build/cytoscape-gpu.esm.mjs` the same getter is **292 ns** against
+  `build/cytoscape.esm.mjs` the same getter is **292 ns** against
   v3's 50 ns.  The gap is real and round 34 fixes it; the magnitude
   below is inflated by the transpiler.  The rest of this record stands
   — the *localization* (all of it inside `readProp`, against a 9 ns
@@ -8849,7 +8912,7 @@ describe and no suite prices:
   was 4000 edges missing from one side rather than the partition being
   free; both sides now come from one generator.
 - [x] **33.4 Loading and the wire format** (2026-08-03) — landed as
-  `benchmark/gpu/load.mjs`.  At N=2000 (6000 elements): definition-form
+  `benchmark/load.mjs`.  At N=2000 (6000 elements): definition-form
   init is **5.47×** v3 (153 → 28 ms, construct *and* dispose on both
   sides), v4's own three ingest forms are 25.7 ms (definitions) / 17.7
   (columnar) / 17.0 (wire), and the def-clone control that the def rows
@@ -8881,7 +8944,7 @@ describe and no suite prices:
   payloads are re-used as-is, verified by reading positions and data
   back after repeated loads — and that re-use is the realistic case.
 - [x] **33.5 Pick, box selection and bounds** (2026-08-03) — landed as
-  `benchmark/gpu/spatial.mjs`.
+  `benchmark/spatial.mjs`.
   *Plan correction, measured*: picking and box selection **cannot** be
   compared against v3, because `findNearestElement` and `getAllInBox`
   live on v3's canvas renderer and a headless v3 instance has neither
@@ -8921,8 +8984,8 @@ describe and no suite prices:
   not a box object; passed an object it silently answers the *empty*
   collection (0 elements against 480 for the same band spelled
   positionally), so the first version of the box rows measured a
-  degenerate call — and `benchmark/gpu/curves.mjs` has had the same bug
-  since round 29.4, in a number `src/gpu/README.md` publishes.  Fixed
+  degenerate call — and `benchmark/curves.mjs` has had the same bug
+  since round 29.4, in a number `src/README.md` publishes.  Fixed
   and re-measured in its own commit (33.5b below).  (b) the
   custom-`polygon` row read 549 ns against 88–842 µs for every other
   shape, because the box corner is *inside* that polygon, so the walk
@@ -8931,7 +8994,7 @@ describe and no suite prices:
   that hits prints a warning naming itself, because a shape-test row
   that stops early is measuring nothing.
 - [x] **33.6 The data sidecar and structured queries** (2026-08-03) —
-  landed as `benchmark/gpu/data.mjs`.  At N=2000, bulk writes across
+  landed as `benchmark/data.mjs`.  At N=2000, bulk writes across
   the whole node set are **18–24× v3** and the storage kind barely
   moves it: numeric 24×, dictionary string (4 values) 19×, one new
   dictionary entry per pass 18×, the plain-array object fallback 23×.
@@ -8958,7 +9021,7 @@ describe and no suite prices:
   the collection per pass, so the dictionary grows by an entry per pass
   and not per element, and it says so.
 - [x] **33.7 Events and the animation manager** (2026-08-03) — landed
-  as `benchmark/gpu/events.mjs`, and it produced the round's second
+  as `benchmark/events.mjs`, and it produced the round's second
   finding about a documented claim.
   **Emits** (a position write on one node, N=2000): with **no listeners
   26×** v3 — that is the listener-gated fast path every bulk-write
@@ -8993,7 +9056,7 @@ describe and no suite prices:
   `touchedColumns()` across shared refs is not a cost worth avoiding.
   The 24.3 controls are 3.4 µs (pause + resume) and 4.3 µs (reverse).
 - [x] **33.8 Images, charts and store internals** (2026-08-03) —
-  landed as `benchmark/gpu/store.mjs`, gpu-only throughout because v3
+  landed as `benchmark/store.mjs`, gpu-only throughout because v3
   has no counterpart to any of it.  The structures are driven directly
   rather than through the public API, so a row is the structure's cost.
   At N=2000: the **id index** builds in 307 µs (2000 `set`s), and its
@@ -9022,7 +9085,7 @@ describe and no suite prices:
   up from the other side.  A data write refreshing every node's
   `chart-values` is 529 µs.
 - [x] **33.9 The remaining public surface** (2026-08-03) — landed as
-  `benchmark/gpu/surface.mjs`: **90 rows, 80 of them v3-comparative**,
+  `benchmark/surface.mjs`: **90 rows, 80 of them v3-comparative**,
   covering the members no dedicated suite touches — the viewport
   quartet and its compute-without-committing twins, introspection and
   the gating flags, batching, the iteration/comparison/set-building
@@ -9146,11 +9209,11 @@ describe and no suite prices:
   Two notes for whoever re-runs this: the harness printed
   "build/ bundles are older than src/" throughout, which was a **false
   positive** — the only `src/` file this round touched is
-  `src/gpu/README.md`, and the check compares mtimes without
+  `src/README.md`, and the check compares mtimes without
   distinguishing docs from code; and `--scene gen-25k` is a substring
   filter, so it selects the whole 25k family, which is how the
   same-session baseline for the two new scenes was obtained.
-- [x] **33.12 `scripts/gpu-bench-coverage.mjs` + the closing docs
+- [x] **33.12 `scripts/bench-coverage.mjs` + the closing docs
   sweep** (2026-08-03) — the audit landed first (its record is above,
   under the surface pass it drove), then the sweep.
   **The README's Benchmarks section is now an index**: a table of every
@@ -9166,7 +9229,7 @@ describe and no suite prices:
   needs `styleEnabled` *and* an explicit layout, because the two
   defaults bias in opposite directions.  `scripts/` picked up the third
   audit in the repo-structure list, and `package.json` gained
-  `benchmark:gpu:all`.
+  `benchmark:all`.
   **The three named drift sites, checked by name**: "Suggested
   sequencing" gained the round-33 paragraph; the "Needs a call" ledger
   needed nothing (round 33 closed no design calls — it is measurement
@@ -9239,7 +9302,7 @@ run), JSDoc coverage 100%, `@throws` 16/16, `@param` 221/221, and
 existing audits are unchanged, which matters because this round edited
 the gated one (`auditFile` now also returns the members it saw).
 No `src/` code changed: the round's only source edit is
-`src/gpu/README.md`, so the browser suites are unaffected and were not
+`src/README.md`, so the browser suites are unaffected and were not
 re-run.  The renderer benchmark ran on the RX 580 (33.11).
 
 ### Risks tracked
@@ -9288,7 +9351,7 @@ back in the verification gate.
 `__name`** — esbuild's name-preserving wrapper, an
 `Object.defineProperty` per closure *creation*, which tsx injects and
 which does not exist in the built bundle (`grep -c __name
-build/cytoscape-gpu.esm.mjs` → 0).  Measured through the bundle instead,
+build/cytoscape.esm.mjs` → 0).  Measured through the bundle instead,
 the same getter is **292 ns, not 2.0 µs**, against v3's 50 ns: the real
 gap is **5.8×**, not the 13–21× round 33 published.  The finding is real
 and worth fixing; its magnitude was inflated by the transpiler, in a
@@ -9301,7 +9364,7 @@ transpiler.**  Recorded in `AGENTS.md`, and the other four findings were
 re-measured through the bundle before any fix (they hold: they allocate
 little and are dominated by real work).
 
-**The five, re-measured through `build/cytoscape-gpu.esm.mjs`** — these
+**The five, re-measured through `build/cytoscape.esm.mjs`** — these
 are the numbers the round is judged against, at N=2000 nodes / 4000
 edges on the i9-9900K:
 
@@ -9332,8 +9395,8 @@ edges on the i9-9900K:
 4. **No public *semantics* change; one public *shape* change.** Making
    `GpuLayoutContext.eles`/`.nodes` lazy turns two readonly fields into
    getters, which is a `.d.ts` shape change (property access is
-   unaffected).  `dist/cytoscape-gpu.d.ts` is regenerated and
-   `test:types:gpu` re-run.
+   unaffected).  `dist/cytoscape.d.ts` is regenerated and
+   `test:types:surface` re-run.
    *Wrong, as it turned out (34.6): `GpuLayoutContext` is not in the
    shipped declarations at all — it appears only inside a doc comment —
    so the getters change no public shape.  What did reach the `.d.ts`
@@ -9359,7 +9422,7 @@ edges on the i9-9900K:
   handle's cached `_id`, which still resolves for a *removed* element
   held in a collection, and answering it from the store's id index
   instead would quietly change that.  It was not one of the five.
-  Tests-first: two specs in `test/gpu-collection-reference.mjs` pinning
+  Tests-first: two specs in `test/collection-reference.mjs` pinning
   that the two consumers agree whichever builds the cache first (a
   wrong shared cache shows up as one of them answering differently),
   and that every element of a 40-element collection reports its own
@@ -9382,7 +9445,7 @@ edges on the i9-9900K:
   Why a counter and not a count: `add` one, `remove` another between two
   calls leaves the count identical and the *set* different, so a
   count-keyed cache would answer the second call with a dead ref and a
-  missing element.  Six specs in `test/gpu-core-api.mjs`, and the two
+  missing element.  Six specs in `test/core-api.mjs`, and the two
   controls that matter were run: keying the cache on element count
   instead of the epoch fails the add-one-remove-one spec, and dropping
   the `freeSlot` bump fails the add-and-remove spec.  Style, position
@@ -9412,7 +9475,7 @@ edges on the i9-9900K:
   are ungated** — `mouseover`/`mouseout`, `pointerover`/`pointerout`,
   `tap`, `tapselect`/`tapunselect`, the box family — and they fire on
   hover transitions and pointer moves, which is the latency path.
-  Four specs in `test/gpu-compound-events.mjs` pin the boundary from
+  Four specs in `test/compound-events.mjs` pin the boundary from
   both sides, with two controls run: making the gate unconditional and
   gating it on the wrong type each fail 12 of the file's 13 specs.
 - [x] **34.4 The layout contract stops materializing the graph**
@@ -9432,7 +9495,7 @@ edges on the i9-9900K:
   by design — you pay when you ask.
   The risk here was **order**, since grid and circle place by index, so
   a different enumeration order is a different layout.  Five specs in
-  `test/gpu-layout-contract.mjs` pin `nodeSlots()`/`edgeSlots()` as
+  `test/layout-contract.mjs` pin `nodeSlots()`/`edgeSlots()` as
   *exactly* `cy.nodes()`/`cy.edges()` order, the locked/parent
   exclusions, subset order, and that `eles`/`nodes` still answer when
   an impl does ask.  Control: enumerating in reversed slot order
@@ -9464,7 +9527,7 @@ edges on the i9-9900K:
   `ele.style( 'background-color' )` from **292 ns → 122 ns** against
   v3's 52 ns — the gap goes **5.8× → 2.3×**.  `numericStyle` 215 → 84
   ns, `effectiveOpacity` 240 → 92 ns, `style( 'width' )` 227 → 89 ns.
-  Three specs in `test/gpu-style-getters.mjs`: both spellings answer
+  Three specs in `test/style-getters.mjs`: both spellings answer
   identically, a restyle is visible through both, and an unknown name
   still throws — twice, so a cached normalization cannot turn the
   second call into a silent success.  Control: making the memo return
@@ -9473,7 +9536,7 @@ edges on the i9-9900K:
   (my comment displaced `normalizeProp`'s JSDoc), caught by the gate
   again.
 - [x] **34.6 Verification + closing sweep** (2026-08-03).
-  **The five, before and after, through `build/cytoscape-gpu.esm.mjs`**
+  **The five, before and after, through `build/cytoscape.esm.mjs`**
   at N=2000 (the `style` row from a dedicated process — a micro-row in
   a shared one varies ±30% run to run, which is itself worth knowing):
 
@@ -9491,10 +9554,10 @@ edges on the i9-9900K:
   **Verification**: typecheck, lint, **2508 Node tests** and 77 module
   tests, JSDoc 100% with `@throws` 16/16 and `@param` 221/221,
   `gpu-throw-coverage` at 0 Node-reachable dead sites, the regenerated
-  `dist/cytoscape-gpu.d.ts` (1093 → 1097 doc blocks — the store's two
-  new members) with `test:types:gpu` clean, and — since this round
+  `dist/cytoscape.d.ts` (1093 → 1097 doc blocks — the store's two
+  new members) with `test:types:surface` clean, and — since this round
   changes `src/` — **168/168 browser specs** across `webgpu` and
-  `webgpu-visual` against a hand-rebuilt bundle (an `http-server` *was*
+  `visual` against a hand-rebuilt bundle (an `http-server` *was*
   listening on 3333, which is exactly the standing trap, so
   `test:playwright:build` was run by hand first).  Goldens are
   byte-stable and the parity scenes read their recorded values
@@ -9589,7 +9652,7 @@ case) understated the getters for everything else.
 
 - [ ] **35.0 Docs-first** — this plan.
 - [x] **35.1 The characterization spec** (2026-08-03) —
-  `test/gpu-style-readback-all.mjs`: 153 properties × a styled node and
+  `test/style-readback-all.mjs`: 153 properties × a styled node and
   a styled edge, 306 assertions, generated from the implementation as
   it stood and **seen green before 35.2 touched anything**.  The 117
   rows that read `undefined` are pinned too — they are how a node-only
@@ -9641,7 +9704,7 @@ case) understated the getters for everything else.
   **Verification**: typecheck, lint, **2662 Node tests** (2508 + the
   154 characterization specs), 77 module tests, JSDoc 100% with
   `@throws` 16/16 and `@param` 221/221, throw coverage 0 dead,
-  `test:types:gpu` clean (1098 doc blocks; the `.d.ts` gained only the
+  `test:types:surface` clean (1098 doc blocks; the `.d.ts` gained only the
   private `readCtx` line), and **168/168 browser specs** against a
   hand-rebuilt bundle with goldens byte-stable and parity scenes at
   their recorded values.
@@ -9708,7 +9771,7 @@ taken, none is opened, and no public API moves.
    the cost of running it is itself a documented number" — no profile
    wall time is recorded anywhere.  (c) Round 35 measured six
    properties through the bundle and a whole-object `style()`, but
-   `benchmark/gpu/style.mjs` and `surface.mjs` — the suites whose rows
+   `benchmark/style.mjs` and `surface.mjs` — the suites whose rows
    exist to notice a regression on exactly that path — have not been
    re-run since the dispatch table landed.
 4. **The stranded doc block has happened ten times and the gate catches
@@ -9800,7 +9863,7 @@ pass its own commit(s)):
   block sat above `StyleEngine.lineOpacityConst` with that member's own
   comment beneath it, so the coverage gate could not see it — the
   displaced block landed on another *documented* member rather than
-  leaving one bare.  It was **shipping**: `dist/cytoscape-gpu.d.ts`
+  leaving one bare.  It was **shipping**: `dist/cytoscape.d.ts`
   carried both blocks stacked, so a consumer hovering `lineOpacityConst`
   read a paragraph about arrow colours first.  Round 31.1's defect class,
   live.  (b) **The `@param` gate had never walked exported functions** —
@@ -9852,7 +9915,7 @@ pass its own commit(s)):
   Controls: each guard neutered, the bundle rebuilt by hand (an
   http-server *was* on 3333), only that guard's spec re-run — one
   failure apiece, four for four.  172 browser specs (97 `webgpu` + 75
-  `webgpu-visual`), goldens byte-stable.
+  `visual`), goldens byte-stable.
 - [x] **36.5 The three measurements** (2026-08-04) — all three taken, on
   the RX 580 (`amd gcn-4`, dpr 2, 1280×800, render scale pinned to 1)
   and the i9-9900K.
@@ -9889,9 +9952,9 @@ pass its own commit(s)):
   runs casually, which is the point of keeping quick quick.
   **(c) The style getters through the bundle.**  Rounds 34 and 35
   published their headline figures from *throwaway* harnesses, which
-  contradicts round 33's design call 2.  `benchmark/gpu/style-bundle.mjs`
+  contradicts round 33's design call 2.  `benchmark/style-bundle.mjs`
   is now that source and joins `--all`; it imports
-  `build/cytoscape-gpu.esm.mjs` and warns when the bundle is older than
+  `build/cytoscape.esm.mjs` and warns when the bundle is older than
   `src/`.  Running it under `--import tsx` was **measured** to be
   identical rather than assumed safe (the `__name` wrapper is injected
   when esbuild transpiles a `.mts`, and this suite is plain JS importing
@@ -9962,14 +10025,14 @@ pass its own commit(s)):
   written in the shape the tool actually parses, since round 36.1's own
   fixtures were silently skipped and two specs passed with the behaviour
   under test deliberately broken.
-  `dist/cytoscape-gpu.d.ts` regenerated (1097 doc blocks) — the six
+  `dist/cytoscape.d.ts` regenerated (1097 doc blocks) — the six
   un-stranded blocks move onto their real members there, which is the
   point of the fix.
 
 **Verification (2026-08-04)**: typecheck, lint, **2663 Node tests**, 97
-module tests, **172 browser specs** (97 `webgpu` + 75 `webgpu-visual`)
+module tests, **172 browser specs** (97 `webgpu` + 75 `visual`)
 against a hand-rebuilt bundle with goldens byte-stable and parity scenes
-at their recorded values, `test:types:gpu` clean, JSDoc coverage
+at their recorded values, `test:types:surface` clean, JSDoc coverage
 100%/100%, `@throws` 16/16, `@param` **229/229**, `@returns`
 **276/276**, stranded blocks **1** (the module header, by judgement),
 and `gpu-throw-coverage` at **176 run / 10 browser-only / 5 unreachable
@@ -10008,7 +10071,7 @@ them.  The sitting's own record, briefly:
    maintainer's amendment to the proposal, which had dropped it), no
    namespaces (round 41).
 4. **Packaging: v4 becomes the package.**  v4's source promotes from
-   `src/gpu/` to `src/` and becomes the default export of
+   `src/` to `src/` and becomes the default export of
    `cytoscape@4`; the entire v3 file set moves into a self-contained,
    still-buildable **`v3/`** directory (parity and comparison
    benchmarks keep working against it), and no v3-specific file
@@ -10047,7 +10110,7 @@ calls already taken (fifth sitting); nothing here needs design.
   (it re-runs the root Node suite under coverage, so it cannot live
   *inside* that suite — the one structural difference from the JSDoc
   gates).  `@returns` ratchets at 276/276 in
-  `test/gpu-jsdoc-coverage.mjs`, beside `@throws` and `@param`.
+  `test/jsdoc-coverage.mjs`, beside `@throws` and `@param`.
   **`UNREACHABLE`/`MISATTRIBUTED` are now checked, not just written.**
   The promotion to "maintained allowlist" is a real mechanism rather
   than a change of tone: an entry that no longer names a `throw new`
@@ -10069,7 +10132,7 @@ calls already taken (fifth sitting); nothing here needs design.
   lcov marking one real site dead: exit 1.
 - [x] **37.2 The alias split** (2026-08-04) — landed.
   `roundrectangle` throws, joining `cutrectangle`/`concavehexagon`, and
-  its line in `test/gpu-decided-drops.mjs` flips from
+  its line in `test/decided-drops.mjs` flips from
   pinning-the-inconsistency to pinning-the-drop.
   **It was accepted in three enums, not one**, which the call's
   wording did not say and the code did: the node `shape` table,
@@ -10080,14 +10143,14 @@ calls already taken (fifth sitting); nothing here needs design.
   consequence worth having: the `shape` error lists the accepted
   keywords from the table itself, so it stops advertising the dropped
   spelling to the v3 user who is reading it to find the replacement.
-  `debug/webgpu`'s v3-fixture sanitizer learns the new spelling too.
+  `debug`'s v3-fixture sanitizer learns the new spelling too.
   `autolockNodes`/`autoungrabifyNodes` stay wired and pinned, and the
   alias table's comment changes from "an open call, recorded beside
   the `roundrectangle` one" to the reason they are kept.  Both
   documents' legacy-alias lines now carry the two-name exception, so
   code and ledger agree for the first time since 2026-07-29.
   **One line deleted from `style.mts` broke three specs elsewhere**, and
-  fixing it properly was worth the detour: `test/modules/gpu-throw-coverage.
+  fixing it properly was worth the detour: `test/modules/throw-coverage.
   mjs`'s fixture named real throw sites by hardcoded line number
   (`874`, `1031`, `1074`), so deleting the `roundrectangle` row shifted
   every one of them by one.  The fixture now *resolves* its lines from
@@ -10099,7 +10162,7 @@ calls already taken (fifth sitting); nothing here needs design.
   (2026-08-04) — landed.  The options type needed no tightening: it
   carries no index signature, so TypeScript's excess-property check
   already rejects every case.  Four `@ts-expect-error` directives in
-  `typescript/tests/gpu.test-d.ts` pin it — `motionBlur`,
+  `typescript/tests/api.test-d.ts` pin it — `motionBlur`,
   `hideEdgesOnViewport`, a plain typo, and one through the named
   `CytoscapeGpuOptions` type — and the control ran: swapping one for a
   *valid* key (`zoom`) makes the directive unused and fails the build,
@@ -10115,8 +10178,8 @@ calls already taken (fifth sitting); nothing here needs design.
   **The item turned up a third instance of round 36's audit-scope
   failure**, and closing it was in scope because this round is the one
   that gates these audits.  Writing the factory's doc comment meant
-  reading it, which showed `cytoscapeGpu` had no `@param` — and yet
-  `@param` reported 229/229.  `src/gpu/index.mts` has been listed in
+  reading it, which showed `cytoscape` had no `@param` — and yet
+  `@param` reported 229/229.  `src/index.mts` has been listed in
   `PUBLIC_API` since round 26 and contributed **zero** members to
   *every* audit, because the exported-function pattern round 36 added
   matches `export function` and `export const f =` but not
@@ -10183,9 +10246,9 @@ calls already taken (fifth sitting); nothing here needs design.
   landed — and its audit-scope note gains round 37.3's third instance.
 
 **Verification (2026-08-04)**: typecheck, lint, **2675 Node tests**, 102
-module tests, **172 browser specs** (97 `webgpu` + 75 `webgpu-visual`)
+module tests, **172 browser specs** (97 `webgpu` + 75 `visual`)
 against a hand-rebuilt bundle with goldens byte-stable and parity scenes
-at their recorded values, `test:types` and `test:types:gpu` clean (37
+at their recorded values, `test:types` and `test:types:surface` clean (37
 type exports, 3 statics, 1097 doc blocks), JSDoc coverage 100%/100%,
 `@throws` **17/17**, `@param` **230/230**, `@returns` **277/277**,
 stranded blocks **1** (the module header, by judgement), and the
@@ -10245,7 +10308,7 @@ round builds all three tiers.
   **live v3 parity diffs per tier**, each run once with the feature
   disabled to prove it can fail; dash-phase parity checked explicitly
   (v3 launches patterns at a defined origin per shape — read v3
-  source before asserting).  A `benchmark/gpu/` row prices the
+  source before asserting).  A `benchmark/` row prices the
   dashed-polygon fragment premium on the renderer bench (device
   time, dashed vs solid on the same scene).
 
@@ -10295,7 +10358,7 @@ Three independent small builds, all decided at the fifth sitting.
   a fixture with no parallel pairs it measured straight edges and read
   identical to the row above it — `unbundled-bezier` fixes it, and the
   row now prints how many of its edges are actually curved.
-  Costs (`benchmark/gpu/spatial.mjs`, N=2000/4000 edges, a band over
+  Costs (`benchmark/spatial.mjs`, N=2000/4000 edges, a band over
   half the graph, 2900–3120 elements caught): overlap is **1.9×**
   containment on straight edges (246 → 470 µs) and **1.9×** on curved
   (968 µs → 1.80 ms), the curved pair dearer on both sides because
@@ -10337,7 +10400,7 @@ Three independent small builds, all decided at the fifth sitting.
   garbage-collection concept for it to name instead (element bytes go
   back to the slot free-list at `remove()`; the slot-stable structures
   self-compact on their own thresholds since round 11).
-  `test/gpu-decided-drops.mjs` had a spec asserting `cy.gc === undefined`
+  `test/decided-drops.mjs` had a spec asserting `cy.gc === undefined`
   alongside `warnings`/`notify`/`noNotifications`; it splits in three —
   `notify`/`noNotifications` stay absent with their reason, `gc` flips to
   pinning the alias, and `cytoscape.warnings` gets its own spec noting it
@@ -10362,9 +10425,9 @@ Three independent small builds, all decided at the fifth sitting.
   property it is named for.
 
 **Verification (2026-08-04)**: typecheck, lint, **2696 Node tests**, 102
-module tests, **173 browser specs** (98 `webgpu` + 75 `webgpu-visual`)
+module tests, **173 browser specs** (98 `webgpu` + 75 `visual`)
 against a hand-rebuilt bundle with goldens byte-stable and parity scenes
-at their recorded values, `test:types` clean and `test:types:gpu` at 38
+at their recorded values, `test:types` clean and `test:types:surface` at 38
 type exports / 3 statics / 1104 doc blocks, JSDoc coverage 100%/100%,
 `@throws` **18/18**, `@param` **231/231**, `@returns` **278/278**, and
 the throw gate green at **177 run / 10 browser-only / 5 unreachable / 0
@@ -10401,7 +10464,7 @@ proposal to react to):
    always throw) vs *recoverable runtime conditions* (a failed image
    fetch, a full glyph atlas, a deferred compact — today's warn
    sites).  Which of the 191 sites sits in which tier is the sitting's
-   real work; `scripts/gpu-throw-coverage.mjs` enumerates them, so the
+   real work; `scripts/throw-coverage.mjs` enumerates them, so the
    review is a pass over a list that already exists.
 2. **`cytoscape.warnings()`'s shape** — boolean toggle
    (`warnings(false)` silences the warn tier, v3's surface), or an
@@ -10427,13 +10490,13 @@ this plan's premises were wrong, and both were wrong in the same way —
 they stated a fact about the code that nobody had measured:
 
 - **"v4's *one* remaining shared-module dependency"** is five: after the
-  emitter and event object were severed, `src/gpu` still imports
+  emitter and event object were severed, `src` still imports
   `src/math.mjs`, `src/types.mjs`, `src/util/colors.mjs`,
   `src/util/position.mjs` and `src/util/sort.mjs`.  They are a different
   kind of dependency — generic utilities, no v3 model or renderer types
   in their signatures — so the restructure may keep them shared rather
   than duplicate them, but that is round 42's call and it now has the
-  list.  `test/modules/gpu-import-graph.mjs` is the audit, with the five
+  list.  `test/modules/import-graph.mjs` is the audit, with the five
   as a maintained allowlist on 37.1's terms: a new edge fails, and so
   does an entry nothing imports any more.
 - **`preventDefault()` could not be enumerated from v3** — see open call
@@ -10441,12 +10504,12 @@ they stated a fact about the code that nobody had measured:
   to port and the list is a v4 contract to design.  The DOM half of the
   item landed (below); the gesture half is logged.
 
-- [x] **41.1 The v4 Event** (2026-08-04) — `src/gpu/event.mts`.  Typed
+- [x] **41.1 The v4 Event** (2026-08-04) — `src/event.mts`.  Typed
   `target` (the core or a one-element collection, so a handler narrows
   with a type guard instead of a cast — 26.5's logged item closes and
   the compile-only consumer test lost its `as`), `originalEvent`,
   `layout`, the derived `renderedPosition`, and **no `namespace` field**.
-- [x] **41.2 The v4 emitter** (2026-08-04) — `src/gpu/emitter.mts`, the
+- [x] **41.2 The v4 emitter** (2026-08-04) — `src/emitter.mts`, the
   same qualified-listener model with v3's namespace parsing, `bubble`/
   `parent` recursion, `manualCallback` and function-in-qualifier-position
   shorthand all gone (v4 used none of them).  Kept deliberately, because
@@ -10487,9 +10550,9 @@ they stated a fact about the code that nobody had measured:
   move under it.
 
 **Verification (2026-08-04)**: typecheck, lint, **2696 Node tests**, 107
-module tests, **174 browser specs** (99 `webgpu` + 75 `webgpu-visual`)
+module tests, **174 browser specs** (99 `webgpu` + 75 `visual`)
 against a hand-rebuilt bundle with goldens byte-stable and parity scenes
-at their recorded values, `test:types` clean, `test:types:gpu` at 42 type
+at their recorded values, `test:types` clean, `test:types:surface` at 42 type
 exports / 3 statics / 1147 doc blocks, JSDoc 100%/100%, `@throws` 18/18,
 `@param` 231/231, `@returns` 278/278, and the throw gate green at 0
 Node-reachable dead over 192 sites.
@@ -10526,11 +10589,11 @@ remembering if an app stores events.
   hand-emitted `'tap.ns'` runs the qualified listener and the plain one
   exactly as in v3, and `off('tap.ns')` removes it.  So this is a
   behaviour removal with existing specs to update (in
-  `test/gpu-decided-drops.mjs`), not a dead-code deletion.  An
-  audit pass confirms no other `src/gpu` import reaches outside
-  `src/gpu` (the restructure's precondition, asserted by a spec that
+  `test/decided-drops.mjs`), not a dead-code deletion.  An
+  audit pass confirms no other `src` import reaches outside
+  `src` (the restructure's precondition, asserted by a spec that
   walks the import graph).
-- Ships in `dist/cytoscape-gpu.d.ts`: `event.target: unknown`
+- Ships in `dist/cytoscape.d.ts`: `event.target: unknown`
   resolved, the compile-only consumer test extended (handlers narrow
   no more).  26.5's logged item closes.
 - Bubbling, phase order, `stopPropagation`, and the round-14.5 specs
@@ -10566,18 +10629,154 @@ The packaging decision, executed: **v4 becomes the package**.
   because a restructure that changes pixels or numbers has done
   something else.
 
+**Landed 2026-08-04.**  The plan held; the three calls it left open were
+taken with the maintainer at the round's docs-first stage, and one of them
+was not on the plan's list at all.
+
+- [x] **42.1 The three calls.**
+  - **The `gpu-`/`webgpu-` prefixes drop.**  `test/gpu-*.mjs` → `test/*.mjs`,
+    `test/modules/gpu-*` → `test/modules/*`, `benchmark/gpu/` → `benchmark/`,
+    `scripts/gpu-*` → `scripts/*`, `debug/webgpu/` → `debug/`,
+    `playwright-tests/webgpu.spec.js` → `renderer.spec.js`,
+    `webgpu-visual.spec.js` → `visual.spec.js`, and the Playwright projects
+    with them (`renderer`, `renderer-webkit`, `visual`).  *Inside* `src/` the
+    `gpu-` names stay — `gpu-context`, `gpu-types`, `render/gpu-force`,
+    `render/gpu-tween`, `render/gpu-timer` — because there the prefix names
+    the **device** half against a CPU counterpart (`layout/force-sim.mts` is
+    the contrast), which is a live distinction rather than a v3-era label.
+  - **The five shared utility modules duplicate rather than stay shared** —
+    the call 41.3's allowlist was logged waiting for.  v4 owns lean copies,
+    v3 keeps its originals, and **nothing under `src/` imports outside it**.
+    `src/math.mts` carries the seven functions v4 actually calls, copied
+    verbatim, rather than v3's 1500-line file: not tidiness but scope, since
+    the audits walk everything in `src/` and the wholesale copy would have
+    added a thousand undocumented lines to the internal tier.
+    `util/colors.mts` needed one edit — `is.array` → `Array.isArray` — which
+    is what let its v3 `is.mjs` → `window.mjs`/`event.mjs` tail be dropped.
+  - **The v4 identity rename**, which the plan did not anticipate and which
+    follows from `exports["."]`: bundles are `build/cytoscape.*`, the
+    declaration is `dist/cytoscape.d.ts`, the UMD global is `cytoscape`, and
+    the default export is `cytoscape( options )`.  The two runtime error
+    messages and the JSDoc that named `cytoscapeGpu` were rewritten with it,
+    on round 31's rule that a message advising a form that no longer exists
+    is a defect a consumer sees.  The `Gpu*` **type** names (`GpuCore`,
+    `GpuCollection`, `CytoscapeGpuOptions`, …) are deliberately untouched:
+    they are exported type surface, and their rename is a separate call.
+- [x] **42.2 `v3/` as a subproject.**  `v3/src`, `v3/test`, `v3/benchmark`,
+  `v3/debug`, `v3/documentation`, `v3/playwright-{tests,page}`,
+  `v3/typescript`, `v3/scripts`, `v3/dist`, the stale hand-written
+  `v3/index.d.ts`, its rolldown/dts/tsconfig configs and its own
+  `package.json`.  `cd v3 && npm run build` works off the root
+  `node_modules` (npm puts every ancestor's `.bin` on PATH), and
+  `cd v3 && npm test` runs its 698 Node + 37 module + 18 chromium specs.
+  **v3's Playwright serves port 3334**, not 3333 — with both on 3333,
+  `reuseExistingServer` could silently attach one project's specs to the
+  other project's server, which is the stale-bundle footgun in `AGENTS.md`
+  wearing a worse hat.
+- [x] **42.3 Root `package.json` is v4's alone** — `cytoscape@4.0.0-unstable`,
+  v4 as `main`/`module`/`types` and `exports["."]`, `./gpu` retained as a
+  deprecated alias resolving to the same files, `unpkg`/`jsdelivr` at the v4
+  min bundle, and the v3-only devDependencies (handlebars, marked,
+  highlight.js, gh-pages, benchmark, lodash, heap, …) moved to
+  `v3/package.json`.  `tests.yml` gains a `ci-v3` job.
+- [x] **42.4 The pieces that needed more than a move.**
+  - `playwright-page/parity.html` loads both UMD bundles, which now **both**
+    export the global `cytoscape`, so v3's is captured under its own name
+    before v4's script overwrites it.  It reads v3's bundle from `v3/build/`.
+  - **The parity specs fail rather than skip** when that bundle is missing,
+    naming `cd v3 && npm run build:umd`.  A golden asks "did this change?"
+    and only parity asks "is this right?" (round 27), so a parity suite that
+    quietly stops running is worth less than one that is absent.  Controlled:
+    with the bundle moved away the spec fails naming the command.
+  - `test/modules/import-graph.mjs` is **rewritten, not re-pointed**.  Its
+    allowlist is empty and the invariant absolute.  That inverts its own
+    control: while outward edges were expected, "none found" was evidence the
+    scanner had broken; now it is the passing answer, so the controls count
+    *internal* edges (≥ 100) and source files (≥ 80) instead.  A new spec
+    pins that nothing reaches into `v3/`.
+  - `build-dts.mjs`, `rolldown.config.mjs`, `rolldown.dts.config.mjs`,
+    `playwright.config.js` and the tsconfigs each split in two.
+  - The **three v3 release workflows are marked unadapted**, not
+    half-repointed: they deploy v3's docs site from `documentation/`, and a
+    workflow that publishes the v4 package while deploying v3's docs would
+    read as adapted while being wrong.  Round 49 owns them.  They also make
+    the one unavoidable exception to "nothing v3-specific outside `v3/`" —
+    GitHub reads workflows only from the repo root — which is recorded
+    rather than papered over.
+- [x] **42.5 Closing docs sweep** — this file, `src/README.md` (which moved
+  with the source, from `src/gpu/README.md`) and `AGENTS.md`.  The renames
+  were applied **throughout all three**, historical round records included:
+  a path in a record is a live pointer, and the round-42 note in the
+  directory layout is what explains why the old spelling is gone.  This file
+  gains the round-42 paragraph in "Suggested sequencing" (one of the three
+  sites the standing rule names), the rewritten directory layout with the
+  `v3/` tree, and this record.  `AGENTS.md`'s "Environment & tooling",
+  "Development flow" and "Repository structure" sections were rewritten
+  rather than patched — they described a v3 repo with a prototype in a
+  subdirectory, which is now exactly backwards — and it gains two new rules
+  (below).  The root `README.md` is v4's; v3's moved to `v3/README.md`.
+  The full v4 docs README rewrite stays round 43's.
+
+**Verification (2026-08-04)**: typecheck, lint, **1998 Node tests** and 71
+module tests at the root, **698 Node + 37 module tests** in `v3/` — 2696 and
+108, the same totals round 41 recorded for the then-single suite, now split by
+project (108 vs 107 because the import-graph audit gained a spec).  **174
+browser specs** (99 `renderer` + 75 `visual`) against a hand-rebuilt bundle,
+with **goldens byte-stable** (no diff in `playwright-tests/goldens/`) and
+every parity scene at its recorded value — 0.000% across the board, the stripe
+pair at 0.005% — which is the strongest single piece of evidence here, since
+those scenes render through *both* renderers and would move if either side had
+shifted.  v3's 18 chromium specs pass.  Types clean: 42 type exports, 3
+statics, 1147 doc blocks, all three unchanged.  The five audits unmoved —
+JSDoc 100%/100%, `@throws` 18/18, `@param` 231/231, `@returns` 278/278,
+stranded blocks 1, and the throw gate at **177 run / 10 browser-only / 5
+unreachable / 0 Node-reachable dead** over 192 sites.  Benchmark smoke: the
+core/collection sweep runs and still measures v3 against v4.
+Both WebKit projects (`renderer-webkit` here, `webkit` in `v3/`) fail to
+launch on this machine for want of system libraries — `browserType.launch`,
+not a spec failure — which is pre-existing and is why round 41's record also
+counts 174 rather than 273.  Recorded rather than silent, per the standing
+rule.
+**Round 42 is complete.**
+
+**How behaviour-neutrality was actually established**, because a green suite
+proves the paths resolve and not much else on a change that moves ~1100 files:
+every file now under `v3/` was compared byte-for-byte against its pre-move
+blob (821 files, **6 differed**, all six intended and named above), and every
+file under `src/` against its `src/gpu/` original with the diff filtered to
+the only two changes the round was allowed to make — an import-depth fix or
+the factory rename.  Anything that filter printed was a bug; it printed
+nothing.  That check is now a rule in `AGENTS.md`, together with the second
+thing the round learned: **a vendored copy joins the audits.**  The JSDoc gate
+failed the moment the five utility modules landed — 19 undocumented exports,
+internal tier 96.8% — which is the gate working, since a file in `src/` is
+v4's regardless of where it came from.  The fix was to document the copies,
+and it is the argument for copying lean.
+
+**Risks tracked**: the round touched every path in the repo, and the parts
+with no automated check are the ones to watch — the `debug/` harness and the
+`watch` scripts were exercised by hand rather than by a spec, and the three
+marked release workflows will fail on their next run *by design*, which is
+only correct if round 49 actually adapts them.  `dist/` still holds nothing
+but the declaration, so `main`/`module` resolve to files a git install does
+not have — pre-existing, unchanged, and round 43's first item.  And the
+`Gpu*` type names now sit beside a factory called `cytoscape`, which is a
+visible inconsistency until someone takes that rename.
+
 ## Round 43 plan — packaging + publish hardening (planned 2026-08-04)
 
 The gaps the 2026-08-04 infrastructure pass found, closed for the v4
 entries.
 
 - The dist pipeline produces (and, per the existing release
-  convention, commits at release) the v4 **esm/umd/min** bundles —
-  today `exports["./gpu"]` points at `dist/cytoscape-gpu.esm.mjs`,
-  which is not committed, so a git/npm install resolves to a missing
-  file; and no minified v4 bundle exists at all.  The exports map
-  gains the UMD/min conditions consumers need (unpkg/jsdelivr fields
-  included).
+  convention, commits at release) the v4 **esm/umd/cjs/min** bundles.
+  *Partly overtaken by round 42*, which renamed them to `cytoscape.*`,
+  pointed `exports["."]` (and the `./gpu` alias) at them, and set the
+  `unpkg`/`jsdelivr` fields — but the underlying gap is unchanged and is
+  this round's: **nothing under `dist/` is committed except the
+  declaration**, so a git install still resolves `main`/`module` to
+  missing files.  Decide what is committed at release and make
+  `dist:copy` and the pack spec agree.
 - **A pack-contents spec**: `npm pack` is audited by a test — no
   `PLAN.md`/`AGENTS.md`/`CLAUDE.md`, no playwright dirs, no `v3/`
   internals beyond what is decided to ship, `src/` in or out decided

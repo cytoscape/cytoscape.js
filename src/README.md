@@ -1,4 +1,4 @@
-# Cytoscape.js GPU prototype (`src`)
+# Cytoscape.js v4 (`src`)
 
 First pass of the v4 performance redesign spec'd in
 [#3486](https://github.com/cytoscape/cytoscape.js/issues/3486): a separate
@@ -194,10 +194,21 @@ unmeasured claims: the emitter was not v4's *only* remaining shared
 import (five utility modules remain, now audited), and
 `preventDefault()`'s gesture half could not be enumerated from v3, which
 never reads the flag either — so that half is an open call.
-The existing v3 core, collection and renderers are untouched — and
-stay untouched, along with the whole of `documentation/`, until v4
-ships, so every v3 asset remains available for comparison
-benchmarks and parity work.
+Round 42 (2026-08-04) is the packaging move, and it changes no
+behaviour: **v4 became the package.**  This source promoted from
+`src/gpu/` to `src/`, the whole v3 file set moved into a
+self-contained `v3/` subproject that still builds and tests on its
+own (`cd v3 && npm run build`), and the root `package.json` is v4's
+alone — `cytoscape@4.0.0-unstable`, v4 as `exports["."]`, `./gpu`
+kept as a deprecated alias.  The `gpu-`/`webgpu-` prefixes dropped
+from the test, benchmark, script, debug and Playwright names; the
+five utility modules v4 had still been importing from v3 are now
+v4's own copies, so nothing under `src/` imports outside it.  The
+factory, the bundles, the declaration and the UMD global are all
+plainly `cytoscape` now — the `Gpu*` *type* names deliberately are
+not, being exported surface with their own rename to schedule.
+v3 stays untouched inside `v3/`, so every v3 asset remains
+available for comparison benchmarks and parity work.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
@@ -225,7 +236,7 @@ shader over every allocated slot.
 - `contract.mts` is the co-signed source of truth for the column/flag layout
   shared by the model (`store/`) and the renderer (`render/`) — change it
   first when the layout changes.
-- Manual testing: `npm run watch` → http://localhost:3333/webgpu/.
+- Manual testing: `npm run watch` → http://localhost:3333/.
   Browser tests: the `renderer` Playwright project, plus the
   `visual` project — golden-image diffs (pixelmatch against PNGs
   in `playwright-tests/goldens/`, pinned to the SwiftShader adapter so
@@ -560,7 +571,7 @@ layouts" design, built:
   trajectories; live streaming writes through the bulk slot path,
   which emits no per-node position events.
 - Harness: `debug/?layout=force` (+ `&seed=N`); benchmark:
-  `benchmark:gpu:renderer -- --layout` runs a live force to
+  `benchmark:renderer -- --layout` runs a live force to
   convergence per scene (v3's cose as the classic baseline, bounded
   by nested test-style timeouts — a 30 s in-page stop reporting a
   measured floor and a 60 s runner-side bail reporting "> 60 s",
@@ -1983,9 +1994,10 @@ records).  Landed so far:
 ## Documenting the source (round 26)
 
 The v3 code **and** the v3 documentation stay in the repo untouched
-until v4 ships, so every v3 asset remains available for comparison
-benchmarks and parity work.  v4 therefore has no docs site yet, and
-`documentation/` is not touched by v4 work.  Instead:
+— since round 42 inside `v3/` — so every v3 asset remains available
+for comparison benchmarks and parity work.  v4 therefore has no docs
+site yet, and `v3/documentation/` is not touched by v4 work.
+Instead:
 
 - **JSDoc on the source is v4's documentation source of truth.**
   Prose about what a member does lives next to the member.  The
@@ -2022,7 +2034,7 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   a thousand JSDoc blocks survive into `dist/cytoscape.d.ts`,
   so the comments above are hover text in a consumer's editor —
   which is what makes the pass pay off now rather than at release.
-  Two guards: `npm run test:types:gpu` audits the shipped shape
+  Two guards: `npm run test:types:surface` audits the shipped shape
   (default export, the named type surface with no leaks, the
   factory's statics, and a floor on the surviving doc blocks) and
   `typescript/tests/gpu.test-d.ts` is a compile-only consumer test
@@ -2196,7 +2208,7 @@ with the date and machine it came from.  A number nobody can re-run is
 a record, not a measurement.  `node scripts/bench-coverage.mjs`
 reports which public surfaces have a benchmark and which do not.
 
-`npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
+`npm run benchmark` (Mitata; `BENCH_N` scales the graph) compares each
 core/collection op against its v3 analogue in `src/`.  The suites in
 `benchmark/`, by what they answer:
 
@@ -2225,7 +2237,7 @@ core/collection op against its v3 analogue in `src/`.  The suites in
 | `transitions.mjs` | transitions off vs on, incl. the auto-extent worst case |
 | `geometry-tween.mjs` | one manager tick per geometry channel |
 
-`npm run benchmark:gpu:report` renders a self-contained single-page HTML
+`npm run benchmark:report` renders a self-contained single-page HTML
 report (v3-vs-gpu medians as dumbbells on log time axes, a ranked speedup
 overview, per-suite stat tables) into `benchmark/results/`
 (gitignored) next to the timestamped results JSON.  Three profiles:
@@ -2345,8 +2357,8 @@ member reached through a wrapper is missed, which is why the engine-side
 `Viewport`/`StyleEngine`/`Animation` files read low: the core calls them
 for you).  Read it differentially, not as a score.
 
-**Renderer benchmarks** (`npm run benchmark:gpu:renderer`, or
-`benchmark:gpu:report -- --renderer` to fold them into the same report):
+**Renderer benchmarks** (`npm run benchmark:renderer`, or
+`benchmark:report -- --renderer` to fold them into the same report):
 `benchmark/render-bench.mjs` drives `render-bench.html` in Chromium
 via Playwright — needs built UMD bundles and a **real GPU adapter** (the
 run aborts on none; software adapters are warned about, their numbers are
@@ -3225,6 +3237,17 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   it — v3's mostly-no-throw stance against v4's fail-loudly design —
   is the one question deliberately left open, and is round 40's own
   sitting.
+  The sitting's **packaging** decision — v4 becomes the package, v3
+  into a self-contained `v3/` — **landed as round 42** (2026-08-04),
+  with the two calls it left to docs-first taken there: the
+  `gpu-`/`webgpu-` prefixes drop, and the five shared utility modules
+  duplicate rather than stay shared, so nothing under `src/` imports
+  outside it.  What round 42 deliberately did *not* do, each logged
+  for its owning round: the dist/exports hardening and the pack spec
+  (round 43), the `Gpu*` exported *type* names, which are a rename of
+  their own, and the three v3 release workflows, which stay in
+  `.github/` because GitHub reads workflows only from the repo root —
+  marked as unadapted rather than half-repointed, and round 49's job.
   PLAN.md's **"Open calls for the maintainer"** remains the one place
   to read before deciding anything about v4's surface: contradictions
   are logged there rather than patched, because removing public API is
@@ -3260,8 +3283,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   and the declarations ship with it (see "Documenting the source"
   above).  What stays open, deliberately: the **generator** that
   turns those comments into docmaker input, and the release docs
-  themselves.  Neither is built until v4 ships, because
-  `documentation/` belongs to v3 until then.  What *is* ready is the
+  themselves.  Neither is built until v4 ships; the docs site is
+  round 45, and `v3/documentation/` belongs to v3 until then.  What *is* ready is the
   input: after rounds 31–32 the public surface carries all three of
   the tags a generator reads — a doc comment on every member (26),
   `@throws` wherever a member throws (31.2), and `@param` on every

@@ -241,7 +241,7 @@ function memberBody( lines, i ){
 /**
  * Audit one file for **`@throws` accuracy**: a public member whose body
  * throws should say so, since round 26 settled that a doc comment states
- * what a member throws and those comments ship in `dist/cytoscape-gpu.d.ts`
+ * what a member throws and those comments ship in `dist/cytoscape.d.ts`
  * as the hover text a consumer reads.
  *
  * Under-detection is deliberate: a member that throws only through a helper
@@ -524,7 +524,7 @@ const VOID_RETURN_RE = /^(?:void|Promise\s*<\s*void\s*>|undefined|never|this)$/;
  * not build it, on the reasoning that docmaker's per-function shape carries
  * a description per *argument* and has no return field — so a missing
  * `@param` is a hole in the generated release documentation while a missing
- * `@returns` is editor hover text in `dist/cytoscape-gpu.d.ts`. Round 36
+ * `@returns` is editor hover text in `dist/cytoscape.d.ts`. Round 36
  * wrote the tags and kept that boundary exactly where round 32 drew it,
  * leaving the ratchet as a policy call beside the one PLAN.md's open call 8
  * held open for test coverage. The fifth design sitting (2026-08-04) took
@@ -625,7 +625,7 @@ export function auditReturnTags( file ){
  * 100% and two members carry each other's prose — which is the case
  * 36.2 found in `style.mts`, where `arrowBase`'s block sat above
  * `lineOpacityConst` and both were shipping in
- * `dist/cytoscape-gpu.d.ts`.
+ * `dist/cytoscape.d.ts`.
  *
  * Two shapes are detectable statically, and only two:
  *

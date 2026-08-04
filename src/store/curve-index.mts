@@ -1056,7 +1056,7 @@ export class CurveIndex {
     if( !this.warnedEndptDist ){
       this.warnedEndptDist = true;
       console.warn(
-        'cytoscape-gpu: an edge has edge-distances: endpoints without manual endpoints ' +
+        'cytoscape: an edge has edge-distances: endpoints without manual endpoints ' +
         'specified via source-endpoint and target-endpoint; falling back on ' +
         'edge-distances: intersection (default)'
       );
@@ -1136,7 +1136,7 @@ export class CurveIndex {
     if( !this.warnedCap ){
       this.warnedCap = true;
       console.warn(
-        `cytoscape-gpu: a curved edge styles ${n} ${what}; the GPU prototype draws at most ` +
+        `cytoscape: a curved edge styles ${n} ${what}; the GPU prototype draws at most ` +
         `${max} per edge (the strip subdivision) — extra entries are ignored`
       );
     }

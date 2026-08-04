@@ -637,11 +637,24 @@ calls made deliberately rather than by accretion:
   2026-08-03): `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
   `cy.on('click', h)` and `cy.on('touchstart', h)` all register
   cleanly and then never fire, so a ported v3 handler silently does
-  nothing.  Event **namespaces** behave the same way — `cy.on('tap.ns',
-  h)` never fires, not for `tap` and not for `tap.ns` either.  Whether
-  those spellings should throw is an open call (custom event names
-  must stay legal, so any fix is a curated denylist rather than a
-  blanket rule): see PLAN.md's "Open calls for the maintainer".
+  nothing.  **Call taken (2026-08-04, fifth sitting): these names stay
+  open** — custom events are supported API (`node.emit('foo')`), so a
+  name cannot be validated against a list without breaking them.  No
+  denylist; the behaviour is documented on `on()`/`emit()` instead
+  (round 37.4) and pinned by specs.
+  Event **namespaces** are a narrower story than this file claimed
+  until round 37.4, which measured them: v4 imports v3's emitter, so
+  `'tap.ns'` parses and behaves in **full v3 semantics** —
+  `on('tap.ns')` listens for `tap` qualified by `.ns`,
+  `emit('tap.ns')` runs both it and any plain `tap` listener,
+  `emit('tap.other')` runs only the plain one, and `off('tap.ns')`
+  removes it.  What is true is that **v4 never emits a qualified
+  name**, so a namespaced listener fires only for events the
+  application emits itself and never for a library event.  The earlier
+  claim here — that `'tap.ns'` fires for neither `tap` nor `tap.ns` —
+  was wrong on the second half, as was the note below that the shared
+  emitter keeps namespace parsing "only for v3".  Round 41 removes the
+  machinery rather than leaving it half-live.
   Deviation: `tapdragover`/`cxtdragover` target **nodes only** (the
   synchronous CPU pick; edges would need the async GPU tile).
 - **Extensions are direct objects — no registry.**  No
@@ -1559,9 +1572,15 @@ by node slot — the label vertex shader reads the node position buffer, so
 labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
 below the `labelFadePx` LOD threshold.
 
-Events: no namespaces — v4 drops the `'tap.foo'` form (unused, and a
-per-emit parse cost). Listen/emit with plain type names; the shared
-`src/emitter.mts` keeps namespace parsing only for v3.  Delegation is
+Events: no namespaces *by design* — v4 drops the `'tap.foo'` form
+(unused, and a per-emit parse cost), so nothing v4 emits is ever
+qualified and a namespaced listener never sees a library event.  The
+machinery, though, is still **live**: v4 imports the shared
+`src/emitter.mts`, which parses namespaces for v3, so a hand-emitted
+`'tap.ns'` behaves exactly as in v3 (measured round 37.4 — this
+paragraph used to say the parsing was kept "only for v3", which was
+wrong).  **Round 41 removes it** along with the shared import, which is
+what makes the design and the code agree.  Delegation is
 predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.  **Compound

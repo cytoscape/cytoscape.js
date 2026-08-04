@@ -4851,6 +4851,13 @@ export class GpuCollection {
    * Events bubble from an element through its compound ancestors to the
    * core (round 14.5), with `stopPropagation()` honoured.
    *
+   * **Any name registers**, as on the core and for the same reason — custom
+   * events are supported API (`ele.emit( 'foo' )`), so names cannot be gated.
+   * A name v4 never emits registers cleanly and never fires: that is v3's
+   * `vmouse*` aliases and its raw mouse/touch re-emits, and it is also why a
+   * namespaced listener (`'data.ns'`) never sees a library event, since every
+   * event v4 raises is unqualified.  See `GpuCore#on` for the full contract.
+   *
    * @param events — one or more space-separated event names
    * @param callback — the handler
    * @returns this collection, for chaining

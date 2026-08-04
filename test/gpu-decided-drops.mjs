@@ -218,6 +218,102 @@ describe('gpu/decided drops (29.3)', function(){
   });
 
   /*
+  Round 37.4.  The dropped v3 *event names* are the other half of the same
+  asymmetry, and the sitting decided they stay open: custom events are
+  supported API (`ele.emit( 'foo' )`), so a name cannot be validated against a
+  list without breaking them.  No denylist, no code — but the behaviour is now
+  documented on `on()`/`emit()`, and a documented contract this repo does not
+  assert is one that comes back by accident.
+
+  What these pin is deliberately the *silent* outcome: registration succeeds
+  and the handler never runs.  That is the failure mode a v3 app hits when it
+  is ported, and it is why the JSDoc tells readers to port event names from
+  the vocabulary rather than by trying them.
+  */
+  describe('dropped v3 event names register and never fire (round 17)', function(){
+
+    it('registers the vmouse aliases and the raw mouse/touch re-emits', function(){
+      let fired = 0;
+
+      for( const name of [ 'vmousedown', 'mousedown', 'click', 'touchstart' ] ){
+        expect( () => cy.on( name, () => fired++ ), name ).to.not.throw();
+      }
+
+      cy.$id('a').emit('tap');
+      cy.emit('tap');
+
+      expect( fired, 'a dropped v3 name fired' ).to.equal( 0 );
+    });
+
+    /*
+    Namespaces, measured rather than assumed — and the measurement corrected
+    this file's own record.  PLAN.md's contradiction 11 said `cy.on( 'tap.ns',
+    h )` "never fires, not for `tap` and not for `tap.ns` either", and the
+    README said the shared emitter keeps namespace parsing "only for v3".
+    Both are wrong: v4 imports v3's emitter, so namespaces work in full v3
+    semantics.  What is true is narrower and is what these assert — v4 never
+    emits a *qualified* name, so a namespaced listener sees library events
+    never and user emits normally.  Round 41 removes the machinery.
+    */
+    it('parses namespaces in full v3 semantics, since it shares v3s emitter', function(){
+      let ns = 0;
+      let plain = 0;
+
+      cy.on( 'tap.ns', () => ns++ );
+      cy.on( 'tap', () => plain++ );
+
+      // an unqualified emit runs unqualified listeners only
+      cy.emit( 'tap' );
+      expect( [ plain, ns ] ).to.deep.equal( [ 1, 0 ] );
+
+      // a qualified emit runs the matching namespace *and* the plain listener
+      cy.emit( 'tap.ns' );
+      expect( [ plain, ns ] ).to.deep.equal( [ 2, 1 ] );
+
+      // a different namespace does not match
+      cy.emit( 'tap.other' );
+      expect( [ plain, ns ] ).to.deep.equal( [ 3, 1 ] );
+
+      // and off() takes the qualified name
+      cy.off( 'tap.ns' );
+      cy.emit( 'tap.ns' );
+      expect( [ plain, ns ] ).to.deep.equal( [ 4, 1 ] );
+    });
+
+    it('never fires a namespaced listener for an event v4 itself raises', function(){
+      // the half that is actually true, and the half a ported app feels:
+      // every event the library emits is unqualified, so `.ns` sees none of
+      // them.  A data write emits 'data'.
+      let namespaced = 0;
+      let plain = 0;
+
+      cy.$id('a').on( 'data.ns', () => namespaced++ );
+      cy.$id('a').on( 'data', () => plain++ );
+      cy.$id('a').data( 'weight', 1 );
+
+      expect( plain, 'the unqualified listener should see the library event' ).to.equal( 1 );
+      expect( namespaced, 'v4 emitted a qualified event name' ).to.equal( 0 );
+    });
+
+    it('fires a custom name, which is why none of them can be gated', function(){
+      let custom = 0;
+
+      cy.on( 'myevent', () => custom++ );
+      cy.emit( 'myevent' );
+
+      expect( custom ).to.equal( 1 );
+
+      let onEle = 0;
+
+      cy.$id('a').on( 'myeleevent', () => onEle++ );
+      cy.$id('a').emit( 'myeleevent' );
+
+      expect( onEle ).to.equal( 1 );
+    });
+
+  });
+
+  /*
   Round 37.3.  The dropped *style props* above all throw; the dropped
   constructor *options* deliberately do not, and that asymmetry is a decision
   rather than an oversight — the fifth design sitting settled that strictness

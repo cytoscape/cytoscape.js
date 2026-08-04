@@ -335,8 +335,18 @@ docs checks), and each is left in place pending the call.
     re-emits, but `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
     `cy.on('click', h)` and `cy.on('touchstart', h)` all register
     cleanly and then never fire — a v3 handler that silently does
-    nothing.  Event *namespaces* are the same story: `cy.on('tap.ns',
-    h)` never fires, not for `tap` and not for `tap.ns` either.
+    nothing.  Event *namespaces* were recorded here as the same story
+    — "`cy.on('tap.ns', h)` never fires, not for `tap` and not for
+    `tap.ns` either" — and **round 37.4 measured that and found it
+    wrong on the second half**.  v4 imports v3's emitter, so namespaces
+    parse and work in full v3 semantics: `on('tap.ns')` listens for
+    `tap` qualified by `.ns`, `emit('tap.ns')` runs both it and any
+    plain `tap` listener, `emit('tap.other')` runs only the plain one,
+    and `off('tap.ns')` removes it.  The true statement is narrower:
+    **v4 never emits a qualified name**, so a namespaced listener sees
+    application emits and never a library event.  Round 41 removes the
+    machinery, which is the only thing that makes the design ("no
+    namespaces") and the code agree.
     Note the constraint on any fix: custom event names must stay
     legal (`emit('myevent')` is supported), so the answer is a
     curated denylist of known-v3 spellings that throws or warns, not
@@ -345,10 +355,13 @@ docs checks), and each is left in place pending the call.
     inside the emitter — but the event *name* side is untouched.
     **Call taken (2026-08-04): event names stay open — no denylist.**
     v3 supports custom events (`node.emit('foo')`) and v4 keeps that,
-    so names cannot be gated; dropped v3 spellings and namespaced
-    names register and simply never fire, documented as such.  Round
-    37 records it (docs + ledger only, no code); round 41's v4 Event
-    removes the namespace *machinery* while leaving names free.
+    so names cannot be gated; dropped v3 spellings register and simply
+    never fire, documented as such.  **Closed by round 37.4** (docs +
+    specs, no runtime change), which also corrected the namespace half
+    of this item: the machinery is live, not merely unexercised — v4
+    never *emits* a qualified name, but a hand-emitted one behaves as
+    it does in v3.  Round 41's v4 emitter removes the machinery while
+    leaving names free.
 12. **`event.preventDefault()` exists and does nothing** (recorded in
     the README since round 27's fact-check).  v4 emits the shared v3
     `Event`, so the method is present on every event a handler
@@ -9879,10 +9892,34 @@ calls already taken (fifth sitting); nothing here needs design.
   Round 32 walked class bodies only; round 36 widened to exported
   functions; this widens again.  Same lesson each time — an audit's
   scope is part of its claim.
-- **37.4 Event-name openness, documented.**  `on()`/`emit()` JSDoc
-  states the contract: any name registers and custom events are
-  supported; dropped v3 spellings and namespaced names never fire.
-  No denylist, no code.
+- [x] **37.4 Event-name openness, documented** (2026-08-04) — landed,
+  and it **corrected this file**.  `GpuCore#on`, `GpuCore#emit` and
+  `GpuCollection#on` now state the contract: any name registers, custom
+  events are supported API (which is *why* no name can be gated), and a
+  name v4 never emits registers cleanly and then silently never fires —
+  so port event names from the vocabulary rather than by trying them.
+  No denylist, no runtime change.
+  Three specs pin it, because a documented contract nothing asserts is
+  one that comes back by accident, and writing them is what turned up
+  the correction.
+  **Namespaces do not behave as this file recorded.**  Contradiction 11
+  said `cy.on('tap.ns', h)` "never fires, not for `tap` and not for
+  `tap.ns` either", and the README said the shared emitter keeps
+  namespace parsing "only for v3".  Measured: v4 imports v3's emitter,
+  so namespaces parse and work in **full v3 semantics** —
+  `on('tap.ns')` listens for `tap` qualified by `.ns`, `emit('tap.ns')`
+  runs both it and any plain `tap` listener, `emit('tap.other')` runs
+  only the plain one, `off('tap.ns')` removes it.  The narrower true
+  statement is that **v4 never emits a qualified name**, so a
+  namespaced listener sees application emits and never a library event
+  (a `data` write reaches a `'data'` listener and not a `'data.ns'`
+  one).  Both documents corrected; the spec asserts each row of the
+  table above, so round 41 — which removes the machinery — will have to
+  change a test that describes what the machinery actually did.
+  The original claim was probably taken from v4's *own* events only,
+  which is the sense in which it read true; it is a good example of why
+  "measured 2026-08-03" in a record still deserves re-measuring when a
+  round leans on it.
 - **37.5 Closing docs sweep** — the round-37 sweep also carries the
   README true-up this sitting deferred (header through the fifth
   sitting, follow-up hooks, the alias and strictness closures).
@@ -9998,7 +10035,12 @@ on v3 is `src/emitter.mts` (and the shared `Event` object with it).
   both directions.
 - **A v4 emitter** replacing the `src/emitter.mts` import — the same
   ref/predicate-qualified listener model the core already uses, with
-  the namespace machinery gone rather than merely unexercised.  An
+  the namespace machinery gone.  Note what round 37.4 measured: it is
+  **live, not unexercised** — v4 emits only unqualified names, but a
+  hand-emitted `'tap.ns'` runs the qualified listener and the plain one
+  exactly as in v3, and `off('tap.ns')` removes it.  So this is a
+  behaviour removal with existing specs to update (in
+  `test/gpu-decided-drops.mjs`), not a dead-code deletion.  An
   audit pass confirms no other `src/gpu` import reaches outside
   `src/gpu` (the restructure's precondition, asserted by a spec that
   walks the import graph).

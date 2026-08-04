@@ -6221,6 +6221,13 @@ declare class GpuCollection {
    * Events bubble from an element through its compound ancestors to the
    * core (round 14.5), with `stopPropagation()` honoured.
    *
+   * **Any name registers**, as on the core and for the same reason — custom
+   * events are supported API (`ele.emit( 'foo' )`), so names cannot be gated.
+   * A name v4 never emits registers cleanly and never fires: that is v3's
+   * `vmouse*` aliases and its raw mouse/touch re-emits, and it is also why a
+   * namespaced listener (`'data.ns'`) never sees a library event, since every
+   * event v4 raises is unqualified.  See `GpuCore#on` for the full contract.
+   *
    * @param events — one or more space-separated event names
    * @param callback — the handler
    * @returns this collection, for chaining
@@ -6901,6 +6908,27 @@ declare class GpuCore {
    * With a trailing callback the middle argument is a predicate over the
    * event target: `cy.on( 'tap', ele => ele.isNode(), handler )`.
    *
+   * **Any name registers, and that is deliberate** (decided 2026-08-04,
+   * fifth design sitting).  Custom events are supported API — `emit( 'foo' )`
+   * fires handlers bound to `'foo'` — so event names cannot be validated
+   * against a list without breaking them.  The consequence is worth stating
+   * plainly, because it is a silent one: a name v4 never emits registers
+   * cleanly and then never fires.  That covers the round-17 drops — the
+   * `vmouse*` aliases and v3's raw mouse/touch re-emits (`mousedown`,
+   * `click`, `touchstart`, …), for which `pointer*` is the one modern
+   * spelling; `mouseover`/`mouseout` do still fire.  A ported v3 handler
+   * does nothing at all rather than erroring, so port event names by the
+   * vocabulary in `src/gpu/README.md` rather than by trying them.
+   *
+   * **Namespaces are a special case of that rule** (measured 2026-08-04):
+   * v4 shares v3's emitter, so `'tap.ns'` parses and behaves exactly as in
+   * v3 — `on( 'tap.ns' )` listens for `tap` qualified by `.ns`,
+   * `emit( 'tap.ns' )` runs both it and any plain `tap` listener, and
+   * `off( 'tap.ns' )` removes it.  What does not happen is v4 ever emitting
+   * a qualified name: every event the library raises is unqualified, so a
+   * namespaced listener fires only for events *you* emit.  Round 41 removes
+   * the machinery rather than leaving it half-live.
+   *
    * @param events — one or more space-separated event names
    * @param predicateOrCb — the delegation predicate when `callback` is
    *   given, otherwise the handler itself
@@ -6983,6 +7011,12 @@ declare class GpuCore {
   removeAllListeners(): this;
   /**
    * Emit an event on the core.
+   *
+   * **Custom event names are supported API**, which is why `on()` validates
+   * none: `cy.emit( 'myevent' )` runs handlers registered for `'myevent'`,
+   * and the same holds on elements.  Names v4 itself never emits are
+   * therefore legal to register and simply never fire — see `on()` for which
+   * those are, and PLAN.md's open-call record for why no denylist exists.
    *
    * @param events — one or more space-separated event names, or an event
    *   props object

@@ -667,6 +667,16 @@ interface GpuColumnarElements {
   columnar: true;
   nodes?: GpuColumnarNodes;
   edges?: GpuColumnarEdges;
+  /**
+   * Graph-level `data()` (round 39.2) — the whole-graph object, not a
+   * per-element column.  `cy.serialize()` writes it and
+   * `deserializeElements` reads it back, but the two load paths treat it
+   * differently on purpose: `options.elements` applies it at
+   * construction, while `cy.add( buffer )` **ignores** it, since adding
+   * elements to a populated graph must not overwrite that graph's own
+   * `data()`.
+   */
+  data?: Record<string, unknown>;
 }
 /**
  * Any accepted `elements` input: the definition form (v3-style JSON), a
@@ -6777,6 +6787,12 @@ declare class GpuCore {
    * of the new elements defers to the outermost `endBatch()`, so
    * style-derived reads (`width()`, `label()`) may be stale until then.
    *
+   * **Graph-level `data()` in a wire buffer is ignored here** (round
+   * 39.2), where `options.elements` applies it: adding elements to a
+   * populated graph must not overwrite that graph's own `data()`.  Apply
+   * it explicitly with `cy.data( deserializeElements( buf ).data )` if
+   * that is what you want.
+   *
    * @param input — elements in definition, columnar or wire form
    * @returns a collection of the added elements
    */
@@ -7528,8 +7544,14 @@ declare class GpuCore {
   /**
    * Export the live graph as the binary wire format (the buffer
    * `options.elements`/`add()` accept directly): the columnar counterpart
-   * of `json()`.  Carries ids, positions, selection state and the data()
-   * sidecar; style, viewport and scratch are not part of the wire.
+   * of `json()`.  Carries ids, positions, selection state, the data()
+   * sidecar and — since round 39.2 — graph-level `data()`; style,
+   * viewport and scratch are not part of the wire.
+   *
+   * Note the asymmetry in *loading* that graph data back: `options.
+   * elements` applies it, `cy.add( buffer )` ignores it.  Adding elements
+   * to a populated graph must not overwrite that graph's own `data()`,
+   * and there is no third answer that is right in both places.
    *
    * @returns a fresh little-endian buffer, self-contained (every edge
    *   endpoint indexes a node in the same payload) and directly loadable —
@@ -7660,7 +7682,9 @@ declare const toColumnarElements: (defs: GpuElementsDefinition | GpuElementDefin
  * the buffer straight to `options.elements`/`cy.add()`) reverses it.
  *
  * @param elements — the elements to serialize, in either accepted form;
- *   a definition-form payload is converted to columnar first
+ *   a definition-form payload is converted to columnar first.  A columnar
+ *   payload's optional graph-level `data` rides along (round 39.2); the
+ *   definition form has nowhere to put it, so it carries none
  * @returns one little-endian ArrayBuffer holding the whole payload —
  *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets
  * @throws if the platform is big-endian, or if a definition-form payload
@@ -7675,7 +7699,10 @@ declare const serializeElements: (elements: GpuElementsDefinition | GpuElementDe
  * @param input — a `serializeElements` buffer, or a view over one
  * @returns the columnar form, whose numeric columns are **views into the
  *   input** rather than copies — so the buffer must outlive the result,
- *   and writing into either is visible through the other
+ *   and writing into either is visible through the other.  Graph-level
+ *   `data` is the exception in two ways: it is decoded from JSON rather
+ *   than viewed, and `cy.add()` deliberately ignores it (see
+ *   `GpuColumnarElements.data`)
  * @throws if the platform is big-endian, or the buffer is too short,
  *   truncated or of an unsupported format version
  */

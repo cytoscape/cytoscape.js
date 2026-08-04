@@ -177,6 +177,115 @@ describe('gpu/wire', function(){
     });
   });
 
+  /*
+  Round 39.2: graph-level data on the wire.  `cy.json()` has always
+  exported it and the binary format never carried it, so a serialize →
+  load round trip silently lost `cy.data()`.
+
+  The load asymmetry is the round's one real decision, taken at the fifth
+  design sitting: `options.elements` applies graph data, `cy.add( buffer )`
+  ignores it.  Adding elements to a populated graph must not overwrite that
+  graph's own data(), and there is no third answer that is right in both
+  places — so both halves get a spec, and the `add` one is the more
+  important of the two because "it silently did nothing" is what it pins.
+  */
+  describe('graph-level data (round 39.2)', function(){
+
+    it('round-trips through serialize/deserialize', function(){
+      const payload = { ...toColumnarElements( FIXTURE ), data: { name: 'g', n: 7, deep: { k: [ 1, 2 ] } } };
+      const back = deserializeElements( serializeElements( payload ) );
+
+      expect( back.data ).to.deep.equal( { name: 'g', n: 7, deep: { k: [ 1, 2 ] } } );
+    });
+
+    it('costs nothing when there is none', function(){
+      // the flag is absent, so the section is absent — a graph with no
+      // data() serializes to exactly the bytes it did before this round
+      const payload = toColumnarElements( FIXTURE );
+      const withEmpty = { ...payload, data: {} };
+
+      expect( serializeElements( withEmpty ).byteLength )
+        .to.equal( serializeElements( payload ).byteLength );
+      expect( deserializeElements( serializeElements( payload ) ).data ).to.equal( undefined );
+    });
+
+    it('carries cy.data() out through cy.serialize()', function(){
+      const cy = cytoscapeGpu( { elements: FIXTURE } );
+
+      cy.data( { title: 'my graph', version: 2 } );
+
+      expect( deserializeElements( cy.serialize() ).data )
+        .to.deep.equal( { title: 'my graph', version: 2 } );
+
+      cy.destroy();
+    });
+
+    it('applies it through options.elements', function(){
+      const source = cytoscapeGpu( { elements: FIXTURE } );
+
+      source.data( 'title', 'my graph' );
+
+      const loaded = cytoscapeGpu( { elements: source.serialize() } );
+
+      expect( loaded.data( 'title' ) ).to.equal( 'my graph' );
+
+      source.destroy();
+      loaded.destroy();
+    });
+
+    it('ignores it in cy.add(), leaving the target graph data alone', function(){
+      const source = cytoscapeGpu( { elements: FIXTURE } );
+
+      source.data( 'title', 'the source graph' );
+
+      const target = cytoscapeGpu( { elements: [] } );
+
+      target.data( 'title', 'the target graph' );
+      target.add( source.serialize() );
+
+      expect( target.data( 'title' ), 'add() overwrote the target graph data' )
+        .to.equal( 'the target graph' );
+      expect( target.nodes().length ).to.equal( 3 ); // the elements did land
+
+      source.destroy();
+      target.destroy();
+    });
+
+    it('leaves it reachable for a caller who does want it after add()', function(){
+      // the documented escape hatch, so the drop is a default rather than
+      // a wall
+      const source = cytoscapeGpu( { elements: FIXTURE } );
+
+      source.data( 'title', 'the source graph' );
+
+      const buffer = source.serialize();
+      const target = cytoscapeGpu( { elements: [] } );
+
+      target.add( buffer );
+      target.data( deserializeElements( buffer ).data );
+
+      expect( target.data( 'title' ) ).to.equal( 'the source graph' );
+
+      source.destroy();
+      target.destroy();
+    });
+
+    it('reads a pre-v4 buffer, which simply has no section', function(){
+      // the 14.8 precedent: older buffers keep loading.  A v3 buffer is
+      // byte-identical to a v4 one with no graph data, so forging the
+      // version number is the whole difference.
+      const buffer = serializeElements( toColumnarElements( FIXTURE ) );
+
+      new DataView( buffer ).setUint32( 4, 3, true );
+
+      const back = deserializeElements( buffer );
+
+      expect( back.data ).to.equal( undefined );
+      expect( back.nodes.count ).to.equal( 3 );
+    });
+
+  });
+
   describe('validation', function(){
     it('rejects a buffer without the magic header', function(){
       expect( () => deserializeElements( new ArrayBuffer( 64 ) ) ).to.throw( /serialized elements/i );

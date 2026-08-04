@@ -2455,13 +2455,24 @@ JSON per present value.  Compound hierarchy rides both forms (round
 `data.parent` into it, ingest links it cycle-guarded after the batch's
 nodes exist, and the wire stores it as its own section (format version
 3; version-2 buffers still load, and `cy.serialize()` exports the live
-hierarchy).  Either way, the
+hierarchy).  **Graph-level `data()` joined the wire in round 39.2**
+(format version 4; every earlier version still loads, since the reader
+branches on the presence flags and never on the version number).  It is
+one JSON string rather than a column, deliberately — everything else in
+the format is per element and scales with the graph, while `cy.data()`
+is a single small object of arbitrary values.  Its **load is
+asymmetric**, which is the round's one decision: `options.elements`
+applies graph data, and **`cy.add( buffer )` ignores it**, because
+adding elements to a populated graph must not overwrite that graph's
+own `data()`; a caller who wants it after an `add` applies it
+explicitly (`cy.data( deserializeElements( buf ).data )`).  Either way, the
 factory's load path materializes no per-element handles and emits no
 `add` events (nobody can be listening yet); `cy.add()` keeps full
 per-element semantics and takes all three forms.  The reverse
 direction exists too (round 10): **`cy.serialize()`** exports the live
-graph as the wire buffer — ids, positions, selection state and the
-data() sidecar (style/viewport/scratch are not part of the wire) — and
+graph as the wire buffer — ids, positions, selection state, the data()
+sidecar and graph-level data (style/viewport/scratch are not part of
+the wire) — and
 the result feeds straight back into `options.elements`/`cy.add()`.
 ndex-x-large (19.6k
 nodes / 465k edges, 28.6 MB JSON): definition-form init 236 ms, columnar

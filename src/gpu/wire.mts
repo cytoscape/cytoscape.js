@@ -19,9 +19,16 @@ presence flags, total byte length (truncation check; trailing padding
 beyond it is ignored).  Sections follow in a fixed order — node
 positions, node parents (v3, round 14.8: u32 payload indices,
 0xffffffff = orphan), edge sources, edge targets, node ids (offsets +
-blob), edge ids, the u8 selection columns, then the data() blocks — each multi-byte
+blob), edge ids, the u8 selection columns, the data() blocks, then the
+graph-level data section (v4, round 39.2) — each multi-byte
 section aligned to its element width (f64 columns to 8).  Absent
 optional columns (see the flag bits) take zero bytes.
+
+The graph-data section is **one JSON string** (u32 byte length + UTF-8),
+not a column, and deliberately so: everything else here is per element
+and scales with the graph, while `cy.data()` is a single small object
+whose values are arbitrary.  Columnizing one row would cost the format
+a kind-tagged block to say nothing a JSON object does not.
 
 A data() block is: u32 keyCount, then per key — u32 name byte length,
 the UTF-8 name, u32 kind, and the column: kind 0 numeric (f64 × count,
@@ -37,10 +44,12 @@ round-trip — it becomes a generated id.
 */
 
 const MAGIC = 0x45475943; // bytes 'C','Y','G','E' read as LE u32
-// v3 added the node parent section (round 14.8); v2 added the data()
-// blocks; v1 was never released.  The reader accepts v2 buffers (a v2
-// buffer can never carry the parent flag).
-const VERSION = 3;
+// v4 added the graph-level data section (round 39.2); v3 added the node
+// parent section (round 14.8); v2 added the data() blocks; v1 was never
+// released.  The reader accepts every version from MIN_VERSION up: an
+// older buffer simply lacks the later flag bits, so nothing branches on
+// the version number itself — the presence flags carry it.
+const VERSION = 4;
 const MIN_VERSION = 2;
 const HEADER_BYTES = 24;
 
@@ -54,6 +63,7 @@ const F_EDGE_SELECTABLE = 64;
 const F_NODE_DATA = 128;
 const F_EDGE_DATA = 256;
 const F_NODE_PARENT = 512; // round 14.8 (v3 buffers only)
+const F_GRAPH_DATA = 1024; // round 39.2 (v4 buffers only)
 
 const KIND_NUMBER = 0;
 const KIND_DICT = 1;
@@ -88,7 +98,9 @@ export const isSerializedElements = ( x: unknown ): x is ArrayBuffer | ArrayBuff
  * the buffer straight to `options.elements`/`cy.add()`) reverses it.
  *
  * @param elements — the elements to serialize, in either accepted form;
- *   a definition-form payload is converted to columnar first
+ *   a definition-form payload is converted to columnar first.  A columnar
+ *   payload's optional graph-level `data` rides along (round 39.2); the
+ *   definition form has nowhere to put it, so it carries none
  * @returns one little-endian ArrayBuffer holding the whole payload —
  *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets
  * @throws if the platform is big-endian, or if a definition-form payload
@@ -164,6 +176,16 @@ export const serializeElements = (
   if( nodeData != null ){ push( F_NODE_DATA, ...nodeData ); }
   if( edgeData != null ){ push( F_EDGE_DATA, ...edgeData ); }
 
+  // graph-level data (round 39.2): one JSON string, written last so the
+  // whole element payload keeps the byte layout v2/v3 readers expect
+  const graphData = isColumnarElements( elements ) ? elements.data : undefined;
+
+  if( graphData != null && Object.keys( graphData ).length > 0 ){
+    const json = new TextEncoder().encode( JSON.stringify( graphData ) );
+
+    push( F_GRAPH_DATA, new Uint32Array( [ json.length ] ), json );
+  }
+
   let size = HEADER_BYTES;
 
   for( const s of sections ){
@@ -201,7 +223,10 @@ export const serializeElements = (
  * @param input — a `serializeElements` buffer, or a view over one
  * @returns the columnar form, whose numeric columns are **views into the
  *   input** rather than copies — so the buffer must outlive the result,
- *   and writing into either is visible through the other
+ *   and writing into either is visible through the other.  Graph-level
+ *   `data` is the exception in two ways: it is decoded from JSON rather
+ *   than viewed, and `cy.add()` deliberately ignores it (see
+ *   `GpuColumnarElements.data`)
  * @throws if the platform is big-endian, or the buffer is too short,
  *   truncated or of an unsupported format version
  */
@@ -354,6 +379,12 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
   const edgeData = ( flags & F_EDGE_DATA ) ? readDataBlock( edgeCount ) : undefined;
 
   const out: GpuColumnarElements = { columnar: true, nodes };
+
+  // graph-level data (round 39.2).  A pre-v4 buffer simply lacks the
+  // flag, so nothing here reads the version number.
+  if( flags & F_GRAPH_DATA ){
+    out.data = JSON.parse( new TextDecoder().decode( readU8( readScalar() ) ) ) as Record<string, unknown>;
+  }
 
   if( edgeCount > 0 ){
     const edges: GpuColumnarEdges = { count: edgeCount, sources: sources!, targets: targets! };

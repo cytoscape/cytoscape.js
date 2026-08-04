@@ -113,6 +113,16 @@ export interface GpuColumnarElements {
   columnar: true;
   nodes?: GpuColumnarNodes;
   edges?: GpuColumnarEdges;
+  /**
+   * Graph-level `data()` (round 39.2) — the whole-graph object, not a
+   * per-element column.  `cy.serialize()` writes it and
+   * `deserializeElements` reads it back, but the two load paths treat it
+   * differently on purpose: `options.elements` applies it at
+   * construction, while `cy.add( buffer )` **ignores** it, since adding
+   * elements to a populated graph must not overwrite that graph's own
+   * `data()`.
+   */
+  data?: Record<string, unknown>;
 }
 
 /**

@@ -10100,13 +10100,29 @@ Three independent small builds, all decided at the fifth sitting.
   Docs-first confirms the lean that the *gesture* takes the mode
   while `cy.elementsInBox()` stays the pure geometric contain query
   (or gains an options argument — one call, taken then).
-- **39.2 Graph-level data in the wire format.**  A graph-data section
-  (format version bump; older buffers keep loading, the 14.8
-  precedent), carried by `cy.serialize()` and read by
-  `deserializeElements`.  Semantics, the lean to confirm at
-  docs-first: `options.elements` applies graph data at construction;
-  `cy.add( buffer )` ignores it — adding elements must not clobber
-  the target's `data()`.
+- [x] **39.2 Graph-level data in the wire format** (2026-08-04) —
+  landed, at the recorded lean.  Format **version 4**, flag bit
+  `F_GRAPH_DATA`, section written last so the element payload keeps the
+  byte layout v2/v3 readers expect; older buffers keep loading, and
+  nothing branches on the version number — the presence flags carry it,
+  which is why they can.  `GpuColumnarElements` gains an optional `data`,
+  `cy.serialize()` fills it (copied, not held by reference — the buffer
+  is a snapshot), and `deserializeElements` reads it back.
+  **One JSON string, not a column**, and the format's own doc block says
+  why: everything else here is per element and scales with the graph,
+  while `cy.data()` is a single small object of arbitrary values, so
+  columnizing one row would buy a kind-tagged block that says nothing a
+  JSON object does not.
+  The asymmetry is the round's real decision and both halves are pinned:
+  `options.elements` applies graph data (`_bulkAdd`, where the graph's
+  own data is still empty), `cy.add( buffer )` drops it.  Each spec was
+  run against the other implementation — apply removed, and apply added
+  to `add()` — and each failed exactly one spec, so neither is passing by
+  accident.  A sixth spec pins the documented escape hatch
+  (`cy.data( deserializeElements( buf ).data )`), which is what keeps the
+  drop a default rather than a wall, and a seventh pins that a graph with
+  no `data()` serializes to **exactly** the byte count it did before this
+  round.
 - [x] **39.3 `cy.gc()`** (2026-08-04) — landed.  The explicit alias of
   `compact()`: `declare` + prototype wiring, the alias table's 84th row,
   and the doc comment saying why the name is kept rather than merely

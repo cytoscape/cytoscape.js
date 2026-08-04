@@ -637,6 +637,12 @@ export class GpuCore {
    * of the new elements defers to the outermost `endBatch()`, so
    * style-derived reads (`width()`, `label()`) may be stale until then.
    *
+   * **Graph-level `data()` in a wire buffer is ignored here** (round
+   * 39.2), where `options.elements` applies it: adding elements to a
+   * populated graph must not overwrite that graph's own `data()`.  Apply
+   * it explicitly with `cy.data( deserializeElements( buf ).data )` if
+   * that is what you want.
+   *
    * @param input — elements in definition, columnar or wire form
    * @returns a collection of the added elements
    */
@@ -667,6 +673,11 @@ export class GpuCore {
     const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
 
     if( isColumnarElements( defs ) ){
+      // graph-level data rides the wire since round 39.2, and only this
+      // path applies it: at construction the graph's data() is empty, so
+      // there is nothing to clobber.  `add()` deliberately drops it.
+      if( defs.data != null ){ Object.assign( this._graphData, defs.data ); }
+
       const { nodeSlots, edgeSlots } = this._addColumnar( defs );
 
       if( this._hasListeners( 'add' ) ){
@@ -2109,8 +2120,14 @@ export class GpuCore {
   /**
    * Export the live graph as the binary wire format (the buffer
    * `options.elements`/`add()` accept directly): the columnar counterpart
-   * of `json()`.  Carries ids, positions, selection state and the data()
-   * sidecar; style, viewport and scratch are not part of the wire.
+   * of `json()`.  Carries ids, positions, selection state, the data()
+   * sidecar and — since round 39.2 — graph-level `data()`; style,
+   * viewport and scratch are not part of the wire.
+   *
+   * Note the asymmetry in *loading* that graph data back: `options.
+   * elements` applies it, `cy.add( buffer )` ignores it.  Adding elements
+   * to a populated graph must not overwrite that graph's own `data()`,
+   * and there is no third answer that is right in both places.
    *
    * @returns a fresh little-endian buffer, self-contained (every edge
    *   endpoint indexes a node in the same payload) and directly loadable —
@@ -2195,7 +2212,14 @@ export class GpuCore {
         selected: edgeSelected,
         selectable: edgeSelectable,
         data: store.data.exportColumns( 'edges', edgeSlots )
-      }
+      },
+      // graph-level data (round 39.2), copied rather than held by
+      // reference: the buffer is a snapshot, and a later cy.data() write
+      // must not reach back into a payload the caller may still be
+      // serializing
+      ...( Object.keys( this._graphData ).length > 0
+        ? { data: { ...this._graphData } }
+        : {} )
     } );
   }
 

@@ -70,7 +70,13 @@ export class Viewport {
     return this._zoom;
   }
 
-  /** The current pan.  Live internal object (as in v3) — treat as read-only. */
+  /**
+   * The current pan.  Live internal object (as in v3) — treat as read-only.
+   *
+   * @returns the rendered-space translation applied before the zoom; the
+   *   *same* object on every call, which the setters replace rather than
+   *   mutate, so a caller that wants a stable snapshot must copy it
+   */
   pan(): Position {
     return this._pan;
   }
@@ -250,7 +256,13 @@ export class Viewport {
     return this.setPan( this.centerPan( bb ) );
   }
 
-  /** The rendered (on-screen) viewport rectangle. */
+  /**
+   * The rendered (on-screen) viewport rectangle.
+   *
+   * @returns the canvas rectangle in rendered px, always anchored at the
+   *   origin — pan and zoom move the *content*, not this box, so it
+   *   answers the container's size and nothing about the view
+   */
   renderedExtent(): Extent {
     const w = this.host.width();
     const h = this.host.height();
@@ -258,7 +270,13 @@ export class Viewport {
     return { x1: 0, y1: 0, x2: w, y2: h, w, h };
   }
 
-  /** The model-coordinate rectangle currently visible. */
+  /**
+   * The model-coordinate rectangle currently visible.
+   *
+   * @returns the container's rendered box projected back through the
+   *   current pan and zoom — so it moves as the view moves, and its `w`/`h`
+   *   shrink as the zoom rises
+   */
   extent(): Extent {
     const zoom = this._zoom;
     const pan = this._pan;

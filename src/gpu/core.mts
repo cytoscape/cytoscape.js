@@ -306,7 +306,12 @@ export class GpuCore {
   block.
   */
 
-  /** True while inside a startBatch()/endBatch() pair. */
+  /**
+   * True while inside a startBatch()/endBatch() pair.
+   *
+   * @returns whether a batch is open at *any* depth — nesting is counted,
+   *   and only the outermost `endBatch` flushes the deferred style work
+   */
   batching(): boolean {
     return this._batchDepth > 0;
   }
@@ -1299,7 +1304,13 @@ export class GpuCore {
     return opts;
   }
 
-  /** True while the viewport is animating. */
+  /**
+   * True while the viewport is animating.
+   *
+   * @returns whether a *viewport* animation (pan/zoom/fit/center) is
+   *   running; element animations do not count here — those are
+   *   `eles.animated()`
+   */
   animated(): boolean {
     return this._animations.isViewportAnimating();
   }
@@ -1339,7 +1350,14 @@ export class GpuCore {
     return this._viewport.extent();
   }
 
-  /** The rendered (on-screen) viewport rectangle. */
+  /**
+   * The rendered (on-screen) viewport rectangle.
+   *
+   * @returns the container's box in rendered px, anchored at the origin —
+   *   the rendered-space counterpart of `extent()`, which is the same box
+   *   projected into model coordinates
+   * @see GpuCore#extent for the model-coordinate form
+   */
   renderedExtent(): ReturnType<Viewport['renderedExtent']> {
     return this._viewport.renderedExtent();
   }
@@ -2025,7 +2043,13 @@ export class GpuCore {
     return typeof window !== 'undefined' ? window : null;
   }
 
-  /** The options the instance was constructed with. */
+  /**
+   * The options the instance was constructed with.
+   *
+   * @returns the caller's own options object, held by reference — not a
+   *   copy and not a defaults-resolved view, so an option the caller
+   *   omitted reads back absent rather than as the default in force
+   */
   options(): CytoscapeGpuOptions {
     return this._options;
   }
@@ -2035,6 +2059,11 @@ export class GpuCore {
    * `options.elements`/`add()` accept directly): the columnar counterpart
    * of `json()`.  Carries ids, positions, selection state and the data()
    * sidecar; style, viewport and scratch are not part of the wire.
+   *
+   * @returns a fresh little-endian buffer, self-contained (every edge
+   *   endpoint indexes a node in the same payload) and directly loadable —
+   *   derived geometry is flushed first, so parent boxes are the current
+   *   ones rather than whatever was last materialized
    */
   serialize(): ArrayBuffer {
     const store = this._store;

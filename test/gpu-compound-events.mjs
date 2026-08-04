@@ -138,4 +138,55 @@ describe('gpu/events: compound bubbling (round 14.5)', function(){
     expect( order ).to.deep.equal( [ 'core' ] ); // orphan: flat emit
   });
 
+  // Round 34.3: _emitOnEle returns before building the event or walking
+  // ancestors when nothing listens for the type.  The risk is that the
+  // gate skips an emit someone *is* listening for, so these pin the
+  // boundary from both sides -- and the bubbling specs above are the
+  // rest of the control, since they all register listeners.
+  describe('the no-listener gate (34.3)', function(){
+
+    it('still bubbles to every phase once a listener exists', function(){
+      const cy = make();
+      const seen = [];
+
+      cy.on( 'custom', function(){ seen.push( this === cy ? 'core' : this.id() ); } );
+      cy.$id( 'a' ).emit( 'custom' );
+
+      // an unqualified core listener fires once, in the core phase
+      expect( seen ).to.deep.equal( [ 'core' ] );
+    });
+
+    it('fires an ancestor-qualified listener on a deeper element', function(){
+      const cy = make();
+      let hits = 0;
+
+      cy.$id( 'p' ).on( 'custom', () => hits++ );
+      cy.$id( 'a' ).emit( 'custom' );
+
+      expect( hits ).to.equal( 1 );
+    });
+
+    it('a listener for a different type does not resurrect the skipped one', function(){
+      const cy = make();
+      let other = 0;
+
+      cy.on( 'unrelated', () => other++ );
+      cy.$id( 'a' ).emit( 'custom' );
+
+      expect( other ).to.equal( 0 );
+    });
+
+    it('a listener registered after a skipped emit still receives the next one', function(){
+      const cy = make();
+      let hits = 0;
+
+      cy.$id( 'a' ).emit( 'custom' ); // skipped: nobody is listening
+      cy.on( 'custom', () => hits++ );
+      cy.$id( 'a' ).emit( 'custom' );
+
+      expect( hits ).to.equal( 1 );
+    });
+
+  });
+
 });

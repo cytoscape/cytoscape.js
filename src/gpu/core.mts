@@ -2390,6 +2390,20 @@ export class GpuCore {
   }
 
   _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps> ): void {
+    // Round 34.3: nothing listens for this type, so there is nothing to
+    // do.  Sound because v4's emitter never bubbles to a parent —
+    // `bubble` defaults false and v4 does not override it — so an emit
+    // with no matching listener is observably a no-op.
+    //
+    // Most callers gate already; the *pointer layer's* sixteen do not
+    // (mouseover/mouseout, the pointer pair, tap, tapselect, the box
+    // family), and those fire on hover transitions and pointer moves.
+    // On a compound graph an ungated emit built an Event, interned a
+    // handle per ancestor and emitted once per phase before discovering
+    // that nobody cared: 338 ns for a node two ancestors deep against
+    // 159 ns for an orphan.
+    if( !hasListeners( this._emitter, type ) ){ return; }
+
     const store = this._store;
 
     if( store.hasCompounds() ){

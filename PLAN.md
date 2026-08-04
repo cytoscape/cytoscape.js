@@ -8904,12 +8904,31 @@ edges on the i9-9900K:
   that also reads the new values back through the cached collection,
   since a collection holds refs into the columns rather than a copy of
   them.
-- [ ] **34.3 The phased emit takes the no-listener fast path** —
-  `_emitOnEle` returns before building the event or walking ancestors
-  when nothing is listening for the type.  Sound because v4's emitter
-  does not bubble to a parent (`bubble` defaults false and v4 never
-  overrides it), so an emit with no matching listener is observably a
-  no-op.
+- [x] **34.3 The phased emit takes the no-listener fast path**
+  (2026-08-03) — landed, **and it corrected the finding on the way in**.
+  The gate itself: `_emitOnEle` returns before building the event or
+  walking ancestors when nothing listens for the type.  Sound because
+  v4's emitter never bubbles to a parent (`bubble` defaults false and
+  v4 does not override it), so an emit with no matching listener is
+  observably a no-op.  **338 ns → 8 ns** for a node two ancestors deep
+  and 159 → 6 ns for an orphan, with a listener present unchanged.
+  *Correction to round 33's finding 2, measured*: the row that finding
+  used — `child.position()` at 6.4× an orphan's with no listeners —
+  **never reached `_emitOnEle` at all**.  The position writers already
+  gate on `hasListeners( 'position' )` (as do `add`, `remove`, `data`
+  and `move`), so what that row measured is the **compound auto-bounds
+  invalidation**: a child's position write marks its ancestor chain
+  geo-stale, which is round 14.3 working as designed, not a defect.
+  What *is* true is the narrower claim this pass fixes: `_emitOnEle`
+  itself did no listener check, so it cost 338 ns on a compound child
+  before discovering nobody cared.
+  That still matters, because **the pointer layer's sixteen call sites
+  are ungated** — `mouseover`/`mouseout`, `pointerover`/`pointerout`,
+  `tap`, `tapselect`/`tapunselect`, the box family — and they fire on
+  hover transitions and pointer moves, which is the latency path.
+  Four specs in `test/gpu-compound-events.mjs` pin the boundary from
+  both sides, with two controls run: making the gate unconditional and
+  gating it on the wrong type each fail 12 of the file's 13 specs.
 - [ ] **34.4 The layout contract stops materializing the graph** —
   `eles`/`nodes` become lazy getters, and `nodeSlots()`/`edgeSlots()`
   read slots off the store's order list (whole-graph scope) or the

@@ -8956,10 +8956,36 @@ edges on the i9-9900K:
   block**, which the round-26 coverage gate caught immediately — the
   ninth instance of the pattern, and the first one a gate found rather
   than a reader.
-- [ ] **34.5 `readProp` stops allocating per call** — the four closures
-  built before the 145-case switch become module-level helpers taking
-  `(store, slot, id)`.  Mechanical and large; the existing style suites
-  and the stored-truth readback specs are the safety net.
+- [x] **34.5 `readProp`** (2026-08-03) — landed as **two** fixes,
+  because the planned one turned out to be a no-op in production and
+  design call 2 says a fix that does not move its number is not shipped
+  with a story.
+  *(a) The closures, hoisted.*  The five column readers built inside
+  `readProp` became module-level helpers taking `(store, slot, id)`.
+  Under tsx this is **1848 ns → 255 ns** — because each closure
+  creation also paid esbuild's `__name` wrapper — but **in the bundle
+  it is 292 → 288 ns, which is noise**: V8 creates closures cheaply
+  when nothing is decorating them.  So this half fixes the *harness*
+  (every Node test and benchmark runs through tsx) and not the product.
+  Kept, and reported as exactly that.
+  *(b) `normalizeProp`, memoized* — the fix that moved the production
+  number.  Profiling the **bundle** put **36.4% of `readProp` in
+  `normalizeProp`** and another 4.5% in its `([A-Z])` regex: every
+  style read was doing a regex replace and a lowercase allocation to
+  turn `backgroundColor` into `background-color`, before the 145-case
+  switch it precedes.  A `Map` cache (bounded at 512 entries, since an
+  unknown name is normalized *before* it is rejected) takes
+  `ele.style( 'background-color' )` from **292 ns → 122 ns** against
+  v3's 52 ns — the gap goes **5.8× → 2.3×**.  `numericStyle` 215 → 84
+  ns, `effectiveOpacity` 240 → 92 ns, `style( 'width' )` 227 → 89 ns.
+  Three specs in `test/gpu-style-getters.mjs`: both spellings answer
+  identically, a restyle is visible through both, and an unknown name
+  still throws — twice, so a cached normalization cannot turn the
+  second call into a silent success.  Control: making the memo return
+  the raw name fails 3 of the file's 19 specs.
+  Landed with the *tenth* instance of the stranded-doc-block pattern
+  (my comment displaced `normalizeProp`'s JSDoc), caught by the gate
+  again.
 - [ ] **34.6 Verification + closing sweep** — rebuild the bundles,
   re-measure all five through them, run the full Node suite, the
   `webgpu` and `webgpu-visual` browser projects (source changed —

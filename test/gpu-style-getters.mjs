@@ -184,4 +184,41 @@ describe('gpu/style-getters', function(){
       expect( a.interactive() ).to.be.false;
     });
   });
+  // Round 34.5: normalizeProp is memoized, so the camelCase and
+  // kebab-case spellings of a prop must keep answering identically, a
+  // second read must not be served a stale entry, and an unknown name
+  // must still throw *after* being normalized.
+  describe('the normalization cache (34.5)', function(){
+
+    it('answers both spellings of the same prop identically', function(){
+      const n = cy.$id('a');
+
+      expect( n.style( 'backgroundColor' ) ).to.equal( n.style( 'background-color' ) );
+      expect( n.style( 'borderWidth' ) ).to.equal( n.style( 'border-width' ) );
+
+      // and repeated reads (the cached path) agree with the first
+      expect( n.style( 'backgroundColor' ) ).to.equal( n.style( 'backgroundColor' ) );
+    });
+
+    it('reads the new value after a restyle, through both spellings', function(){
+      const n = cy.$id('a');
+
+      cy.style( { nodes: { 'background-color': '#010203' } } );
+
+      expect( n.style( 'background-color' ) ).to.equal( 'rgb(1,2,3)' );
+      expect( n.style( 'backgroundColor' ) ).to.equal( 'rgb(1,2,3)' );
+    });
+
+    it('still throws on an unknown property, in either spelling', function(){
+      const n = cy.$id('a');
+
+      expect( () => n.style( 'notAProp' ) ).to.throw( /unsupported/ );
+      expect( () => n.style( 'not-a-prop' ) ).to.throw( /unsupported/ );
+      // twice, so a cached normalization cannot turn the second into a
+      // silent success
+      expect( () => n.style( 'notAProp' ) ).to.throw( /unsupported/ );
+    });
+
+  });
+
 });

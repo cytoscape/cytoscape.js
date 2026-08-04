@@ -1657,9 +1657,28 @@ const parseArrowShape = ( prop: string, value: unknown ): ArrowShape => {
   return ARROW_NAMES[ id ];
 };
 
-/** camelCase → kebab-case ('backgroundColor' → 'background-color'). */
+// Round 34.5: the normalization cache.  Every style read normalizes its
+// property name first, and the regex replace plus lowercase allocation
+// was **36% of `readProp`** in the built bundle — more than the
+// 145-case switch it precedes.  The key space is the prop vocabulary (a
+// few hundred names across both spellings), so the cache is bounded by
+// the API rather than by anything a caller controls; the size guard
+// keeps a caller that passes junk from growing it without bound, since
+// an unknown name is normalized *before* it is rejected.
+const NORMALIZED = new Map<string, string>();
+const NORMALIZE_CACHE_MAX = 512;
+
+/** camelCase → kebab-case ('backgroundColor' → 'background-color'), memoized (34.5). */
 export const normalizeProp = ( prop: string ): string => {
-  return prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
+  const hit = NORMALIZED.get( prop );
+
+  if( hit !== undefined ){ return hit; }
+
+  const normalized = prop.replace( /([A-Z])/g, '-$1' ).toLowerCase();
+
+  if( NORMALIZED.size < NORMALIZE_CACHE_MAX ){ NORMALIZED.set( prop, normalized ); }
+
+  return normalized;
 };
 
 /** Apply one (normalized-name) prop onto a computed record. */
@@ -3270,6 +3289,34 @@ const splitCompoundProps = ( props: GpuStyleProps ): {
   return { channels, compound };
 };
 
+
+// Round 34.5: the column readers `readProp` dispatches through.  These
+// were five closures built *inside* `readProp`, so every style getter
+// allocated them before running one case of a 145-case switch — and
+// under tsx each allocation also paid esbuild's `__name` wrapper, an
+// Object.defineProperty per closure, which is what made the getter look
+// 13–21× v3 in round 33's suite instead of the 5.8× the bundle shows.
+// Module scope: allocated once, and the switch reads the same columns.
+type ColumnIdArg = Parameters<GraphStore['column']>[0];
+
+const readScalar = ( store: GraphStore, slot: number, id: ColumnIdArg ): number =>
+  ( store.column( id ) as Float32Array | Uint32Array )[ slot ];
+
+const readPair = ( store: GraphStore, slot: number, id: ColumnIdArg, i: 0 | 1 ): number =>
+  ( store.column( id ) as Float32Array )[ slot * 2 + i ];
+
+const readColor = ( store: GraphStore, slot: number, id: ColumnIdArg ): string => {
+  const bytes = store.column( id ) as Uint8Array;
+
+  return formatRgba( bytes[ slot * 4 ], bytes[ slot * 4 + 1 ], bytes[ slot * 4 + 2 ], bytes[ slot * 4 + 3 ] );
+};
+
+const readAlpha = ( store: GraphStore, slot: number, id: ColumnIdArg ): number =>
+  ( store.column( id ) as Uint8Array )[ slot * 4 + 3 ];
+
+const packedColor = ( packed: number ): string =>
+  formatRgba( packed & 0xff, ( packed >>> 8 ) & 0xff, ( packed >>> 16 ) & 0xff, ( packed >>> 24 ) & 0xff );
+
 export class StyleEngine {
   private store: GraphStore;
   private sheet: GpuStylesheet;
@@ -4297,25 +4344,12 @@ export class StyleEngine {
 
     const store = this.store;
     const slot = ref.slot;
-    const scalar = ( id: Parameters<GraphStore['column']>[0] ): number =>
-      ( store.column( id ) as Float32Array | Uint32Array )[ slot ];
-    const pair = ( id: Parameters<GraphStore['column']>[0], i: 0 | 1 ): number =>
-      ( store.column( id ) as Float32Array )[ slot * 2 + i ];
-    const color = ( id: Parameters<GraphStore['column']>[0] ): string => {
-      const bytes = store.column( id ) as Uint8Array;
-
-      return formatRgba( bytes[ slot * 4 ], bytes[ slot * 4 + 1 ], bytes[ slot * 4 + 2 ], bytes[ slot * 4 + 3 ] );
-    };
-    const alphaOf = ( id: Parameters<GraphStore['column']>[0] ): number =>
-      ( store.column( id ) as Uint8Array )[ slot * 4 + 3 ];
-    const packedColor = ( packed: number ): string =>
-      formatRgba( packed & 0xff, ( packed >>> 8 ) & 0xff, ( packed >>> 16 ) & 0xff, ( packed >>> 24 ) & 0xff );
 
     switch( prop ){
       // node channels
-      case 'background-color': return color( 'node.fillColor' );
-      case 'border-color': return color( 'node.borderColor' );
-      case 'border-width': return scalar( 'node.borderWidth' );
+      case 'background-color': return readColor( store, slot, 'node.fillColor' );
+      case 'border-color': return readColor( store, slot, 'node.borderColor' );
+      case 'border-width': return readScalar( store, slot, 'node.borderWidth' );
       case 'corner-radius': {
         const r = ( store.column( 'node.borderGeom' ) as Uint32Array )[ slot * 4 ];
 
@@ -4472,8 +4506,8 @@ export class StyleEngine {
           default: return rec[ 3 ] === 0xffffffff ? 'auto' : rec[ 3 ] / 256;
         }
       }
-      case 'height': return pair( 'node.size', 1 );
-      case 'shape': return SHAPE_NAMES[ scalar( 'node.shape' ) ];
+      case 'height': return readPair( store, slot, 'node.size', 1 );
+      case 'shape': return SHAPE_NAMES[ readScalar( store, slot, 'node.shape' ) ];
       case 'shape-polygon-points': {
         const points = store.polygonPointsAt( slot );
 
@@ -4640,7 +4674,7 @@ export class StyleEngine {
       }
 
       // shared names, resolved per group
-      case 'width': return ref.group === 'nodes' ? pair( 'node.size', 0 ) : scalar( 'edge.width' );
+      case 'width': return ref.group === 'nodes' ? readPair( store, slot, 'node.size', 0 ) : readScalar( store, slot, 'edge.width' );
       case 'opacity':
         // under compounds the node column stores the ancestor-folded
         // value; the declared style reads the base (round 14.4)
@@ -4648,7 +4682,7 @@ export class StyleEngine {
           return this.store.baseOpacityOf( ref.slot );
         }
 
-        return scalar( ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
+        return readScalar( store, slot, ref.group === 'nodes' ? 'node.opacity' : 'edge.opacity' );
 
       // compound props (round 14.6): stored truth is the per-parent
       // record; leaves read the zero defaults (v3 leaves' padding is 0)
@@ -4663,15 +4697,15 @@ export class StyleEngine {
       case 'compound-sizing-wrt-labels': return 'exclude';
 
       // edge channels
-      case 'line-color': return color( 'edge.lineColor' );
-      case 'line-style': return LINE_STYLE_NAMES[ scalar( 'edge.lineStyle' ) ];
+      case 'line-color': return readColor( store, slot, 'edge.lineColor' );
+      case 'line-style': return LINE_STYLE_NAMES[ readScalar( store, slot, 'edge.lineStyle' ) ];
       case 'source-arrow-shape':
-        return alphaOf( 'edge.sourceArrow' ) > 0
-          ? ARROW_NAMES[ unpackArrowShape( scalar( 'edge.arrowShapes' ), ARROW_SHIFT_SOURCE ) ]
+        return readAlpha( store, slot, 'edge.sourceArrow' ) > 0
+          ? ARROW_NAMES[ unpackArrowShape( readScalar( store, slot, 'edge.arrowShapes' ), ARROW_SHIFT_SOURCE ) ]
           : 'none';
       case 'target-arrow-shape':
-        return alphaOf( 'edge.targetArrow' ) > 0
-          ? ARROW_NAMES[ unpackArrowShape( scalar( 'edge.arrowShapes' ), ARROW_SHIFT_TARGET ) ]
+        return readAlpha( store, slot, 'edge.targetArrow' ) > 0
+          ? ARROW_NAMES[ unpackArrowShape( readScalar( store, slot, 'edge.arrowShapes' ), ARROW_SHIFT_TARGET ) ]
           : 'none';
       case 'line-opacity':
         return Math.round( ( store.column( 'edge.lineColor' ) as Uint8Array )[ slot * 4 + 3 ] / 255 * 1000 ) / 1000;
@@ -4726,10 +4760,10 @@ export class StyleEngine {
         return a === 0 ? 'none' : ARROW_NAMES[ unpackArrowShape(
           ( store.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ], shift ) ];
       }
-      case 'mid-source-arrow-color': return color( 'edge.midSourceArrow' );
-      case 'mid-target-arrow-color': return color( 'edge.midTargetArrow' );
-      case 'source-arrow-color': return color( 'edge.sourceArrow' );
-      case 'target-arrow-color': return color( 'edge.targetArrow' );
+      case 'mid-source-arrow-color': return readColor( store, slot, 'edge.midSourceArrow' );
+      case 'mid-target-arrow-color': return readColor( store, slot, 'edge.midTargetArrow' );
+      case 'source-arrow-color': return readColor( store, slot, 'edge.sourceArrow' );
+      case 'target-arrow-color': return readColor( store, slot, 'edge.targetArrow' );
 
       // curve props read the styled record (stored truth: a lone
       // 'bezier' edge reads back 'bezier' even though it renders

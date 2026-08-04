@@ -8668,11 +8668,16 @@ describe and no suite prices:
   surface, traversal, degree, the rendered-coordinate accessors, the
   curve accessors, the compound traversals, the flag families, element
   data/json/scratch.  Every op is **smoke-tested once before it is
-  benched**, and the three that could not be called are reported by
+  benched**, and the ones that could not be called are reported by
   name rather than silently dropped: `midpoint`/`renderedMidpoint` and
   the two endpoint accessors have no headless v3 side (they go through
   the renderer — the same cause as 33.5's pick), so those rows are
   gpu-only.
+  *(This record said "three"; the suite reports **four**.  The fourth is
+  `core: zoomRange get [v3]`, which throws headless in v3 independently
+  of anything v4 does — verified directly in round 36.3, which noticed
+  the discrepancy while adding rows.  An off-by-one in the record, not a
+  regression.)*
   Most of the surface is where the earlier rounds said it would be:
   set ops 4–175×, traversal 1.3–4×, `reset()` 127× and `viewport()`
   77×, `collection()` 8.9×, batching ~7×.  **Four rows go the other
@@ -9442,7 +9447,10 @@ pass its own commit(s)):
   header defines a public member as a class member "plus every top-level
   exported function".  So `wire.mts` and `columnar.mts` — whose entire
   public surface is exported functions — sat outside a gate reporting
-  221/221, and two of the three wire functions had no `@param` at all.
+  221/221, and **all three** of wire.mts's exported functions had no
+  `@param` at all.  (The 36.2d commit message says "two of the three";
+  re-checked against the pre-36.2c tree in the 36.8 verification pass,
+  it is three of three.)
   Now 229/229, gated, with a spec that pins the widening rather than the
   count (wire.mts's tally must be non-zero, which it is only while the
   branch exists).

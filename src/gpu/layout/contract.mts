@@ -56,12 +56,22 @@ export class GpuLayoutContext {
    * never touch it.  That cost 333 µs per run at 25k elements for an
    * impl that does nothing.  Reading it still costs what it always did;
    * not reading it is now free.
+   *
+   * @returns the scope's handles — `eles.layout()`'s collection, or the
+   *   whole graph's elements when the layout was started from the core.
+   *   Materialized on first read and cached for the run
    */
   get eles(): GpuCollection {
     return ( this._eles ??= ( this.options.eles as GpuCollection | undefined ) ?? this.cy.elements() );
   }
 
-  /** The scope's node handles (lazy — see `eles`). */
+  /**
+   * The scope's node handles (lazy — see `eles`).
+   *
+   * @returns the node subset of `eles`, *unfiltered* — unlike
+   *   `nodeSlots()`, this keeps locked nodes and compound parents, so a
+   *   layout iterating it must apply its own rules
+   */
   get nodes(): GpuCollection {
     return ( this._nodes ??= this.eles.nodes() );
   }
@@ -94,6 +104,11 @@ export class GpuLayoutContext {
    * The slots to lay out: the scope's nodes, pre-filtered to unlocked
    * leaves (locked nodes hold their place; parents derive from their
    * placed children — round 14.11).  Scope order.
+   *
+   * @returns the slots to place, in exactly `cy.nodes()` order — which is
+   *   load-bearing rather than incidental, since grid and circle assign
+   *   positions by index, so a different enumeration order is a different
+   *   layout
    */
   nodeSlots(): number[] {
     if( this.slots != null ){ return this.slots; }
@@ -129,7 +144,12 @@ export class GpuLayoutContext {
     return out;
   }
 
-  /** the scope's edge slots */
+  /**
+   * The scope's edge slots.
+   *
+   * @returns every live edge of the scope in `cy.edges()` order, with no
+   *   filtering — the counterpart of `nodeSlots()`, which does filter
+   */
   edgeSlots(): number[] {
     const scope = this.options.eles as GpuCollection | undefined;
     const out: number[] = [];
@@ -146,13 +166,24 @@ export class GpuLayoutContext {
     return out;
   }
 
-  /** the live position column (x,y interleaved by slot) — read it,
-   * write through setPositions */
+  /**
+   * The live position column (x,y interleaved by slot) — read it, write
+   * through `setPositions`.
+   *
+   * @returns the store's own column, not a copy: it changes underneath a
+   *   held reference as positions are written, and writing into it
+   *   directly bypasses the dirty tracking the renderer depends on
+   */
   positions(): Float32Array {
     return this.cy._store.column( 'node.position' ) as Float32Array;
   }
 
-  /** the live edge endpoint column (source,target node slots) */
+  /**
+   * The live edge endpoint column (source,target node slots).
+   *
+   * @returns the store's own column, indexed by edge slot — node *slots*,
+   *   not ids, so it pairs directly with `positions()` without a lookup
+   */
   endpoints(): Uint32Array {
     return this.cy._store.column( 'edge.endpoints' ) as Uint32Array;
   }

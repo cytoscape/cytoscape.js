@@ -1668,7 +1668,15 @@ const parseArrowShape = ( prop: string, value: unknown ): ArrowShape => {
 const NORMALIZED = new Map<string, string>();
 const NORMALIZE_CACHE_MAX = 512;
 
-/** camelCase → kebab-case ('backgroundColor' → 'background-color'), memoized (34.5). */
+/**
+ * camelCase → kebab-case ('backgroundColor' → 'background-color'),
+ * memoized (34.5).
+ *
+ * @returns the kebab-case spelling — the key every prop table is keyed
+ *   by.  An already-kebab name is returned unchanged, and an *unknown*
+ *   name is normalized rather than rejected, since the rejection happens
+ *   downstream against the normalized form
+ */
 export const normalizeProp = ( prop: string ): string => {
   const hit = NORMALIZED.get( prop );
 
@@ -4052,7 +4060,12 @@ export class StyleEngine {
 
   private coreStyle: CoreStyle = { ...CORE_DEFAULTS };
 
-  /** The resolved core theming props (round 13 A2). */
+  /**
+   * The resolved core theming props (round 13 A2).
+   *
+   * @returns the live record — `setSheet` replaces it wholesale, so a
+   *   held reference reads the *previous* sheet's theming after a swap
+   */
   core(): CoreStyle {
     return this.coreStyle;
   }
@@ -5019,15 +5032,13 @@ export class StyleEngine {
   }
 
   /**
-   * An arrow's colour *before* the edge-opacity fold — the base the stored
-   * bytes are derived from (`stored.a = base.a × opacity`).  A 'none' shape
-   * is fully transparent.  Animating edge opacity needs this: the stored
-   * alpha alone can't recover the base when the opacity it was folded with
-   * was 0.
-   */
-  /** The constant line-opacity (B1) — the arrow-fold factor animation
+   * The constant line-opacity (B1) — the arrow-fold factor animation
    * needs (a mapped line-opacity never coexists with kernel-owned
-   * arrows, so the constant is the truth). */
+   * arrows, so the constant is the truth).
+   *
+   * @returns the edges group's resolved `line-opacity`, the factor an
+   *   arrow's stored alpha was folded with
+   */
   lineOpacityConst(): number {
     return ( this.defs.edges.computed as Computed ).lineOpacity;
   }

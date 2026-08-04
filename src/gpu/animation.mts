@@ -298,6 +298,11 @@ const mixOklab = ( data: Float32Array, i: number, e: number ): RGBA => {
  * pre-restyle values, to = the newly resolved ones) and the tween
  * machinery consumes the write exactly as it would a captured
  * animation's — one set of numbers, the same two executors.
+ *
+ * @returns a write already carrying its from/to values, so the animation
+ *   it is handed to has nothing to capture at play time — which is what
+ *   keeps a whole-channel transition one bulk record instead of one
+ *   Animation per element
  */
 export const buildChannelWrite = (
   column: TweenColumn, kind: 'scalar' | 'color' | 'lane' | 'padding' | 'fontSize', paint: boolean, refs: Ref[],
@@ -385,6 +390,10 @@ export class Animation {
   /**
    * A transition animation (round 24.1): the style engine diffed stored
    * truth around a restyle into per-column writes; nothing to capture.
+   *
+   * @returns an animation whose values are already resolved — it never
+   *   reads the columns at play time, so the restyle's own diff is the
+   *   only place stored truth is consulted
    */
   static preset(
     store: GraphStore, refs: Ref[], writes: ChannelWrite[],
@@ -465,7 +474,13 @@ export class Animation {
     }
   }
 
-  /** True once the animation has completed or been stopped. */
+  /**
+   * True once the animation has completed or been stopped.
+   *
+   * @returns whether it is over, *not* whether it succeeded — a stop and
+   *   a natural completion are the same answer here, and both resolve
+   *   the promise
+   */
   get done(): boolean { return this._done; }
 
   /** Columns this animation writes (round 21: the concurrency contract —
@@ -500,9 +515,21 @@ export class Animation {
     return this._columns;
   }
 
-  /** Viewport channels (round 21): pan and zoom compose when disjoint. */
+  /**
+   * Viewport channels (round 21): pan and zoom compose when disjoint.
+   *
+   * @returns whether this animation tweens the pan — the pair are
+   *   separate channels, so a pan animation and a zoom animation run
+   *   together rather than evicting each other
+   */
   get hasPan(): boolean { return this.pan != null; }
-  /** Whether this viewport animation tweens the zoom. */
+
+  /**
+   * Whether this viewport animation tweens the zoom.
+   *
+   * @returns whether the zoom channel is claimed; see `hasPan` for why
+   *   the two are tracked apart
+   */
   get hasZoom(): boolean { return this.zoom != null; }
 
   /**
@@ -525,7 +552,13 @@ export class Animation {
     }
   }
 
-  /** True once the delay has elapsed and interpolation is under way. */
+  /**
+   * True once the delay has elapsed and interpolation is under way.
+   *
+   * @returns whether values are actually moving — false *during* the
+   *   delay, when the animation is live and owns its channels but has
+   *   not started interpolating
+   */
   get running(): boolean { return this.started && !this._done; }
 
   /** A promise that resolves when the animation completes (or is stopped). */
@@ -588,11 +621,20 @@ export class Animation {
    * Whether the animation is paused: values hold where they are and the
    * promise stays pending.  A paused animation still owns its channels,
    * so the round-21 eviction stops it like any running one.
+   *
+   * @returns whether the clock is frozen; a paused animation is not a
+   *   stopped one — it still holds its channels against everything else
    */
   get paused(): boolean { return this._paused; }
 
-  /** Elapsed fraction of the duration (0 before start, 1 when done;
-   * frozen at the pause point while paused).  Read-only — no scrubbing. */
+  /**
+   * Elapsed fraction of the duration (0 before start, 1 when done;
+   * frozen at the pause point while paused).  Read-only — no scrubbing.
+   *
+   * @returns the eased-time input in [0, 1], *before* the easing curve is
+   *   applied — so it is linear in wall time, not in the value being
+   *   tweened
+   */
   get progress(): number {
     if( this._done ){ return 1; }
     if( this.startTime == null ){ return 0; }
@@ -718,6 +760,10 @@ export class Animation {
    * geometry channels and the viewport do not — geometry is read by
    * cull, the CPU pick replica and every columnar scan, so it stays
    * CPU-canonical (round 25).
+   *
+   * @returns whether **every** write may offload — all-or-nothing per
+   *   animation, so one geometry channel among the writes keeps the whole
+   *   animation on the CPU rather than splitting it
    */
   get gpuEligible(): boolean {
     if( this._gpuBarred ){ return false; }
@@ -774,7 +820,13 @@ export class Animation {
     if( this.startTime == null ){ this.startTime = now + this.delay; }
   }
 
-  /** Start time in the shared clock (set once scheduled); ms. */
+  /**
+   * Start time in the shared clock (set once scheduled); ms.
+   *
+   * @returns the instant interpolation begins — the delay is already
+   *   added in, so this is not the moment `play()` was called; 0 before
+   *   the animation has been scheduled at all
+   */
   get startMs(): number { return this.startTime ?? 0; }
 
   /**
@@ -1356,7 +1408,13 @@ export class AnimationManager {
     }
   }
 
-  /** True while any animation is running. */
+  /**
+   * True while any animation is running.
+   *
+   * @returns whether anything at all is tweening, element or viewport —
+   *   the renderer cedes its auto-loop and drives the frame clock while
+   *   this holds
+   */
   active(): boolean {
     return this.viewportRunning.length > 0 || this.running.size > 0;
   }
@@ -1373,7 +1431,12 @@ export class AnimationManager {
     return arr != null && arr.length > 0;
   }
 
-  /** True when the viewport is animating. */
+  /**
+   * True when the viewport is animating.
+   *
+   * @returns whether a pan/zoom animation is live; element animations do
+   *   not count, which is the split `cy.animated()` exposes
+   */
   isViewportAnimating(): boolean {
     return this.viewportRunning.length > 0;
   }

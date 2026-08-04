@@ -69,7 +69,15 @@ const assertLittleEndian = (): void => {
   }
 };
 
-/** Any binary input `add()`/`options.elements` should route through `deserializeElements`. */
+/**
+ * Any binary input `add()`/`options.elements` should route through
+ * `deserializeElements`.
+ *
+ * @param x — the candidate payload
+ * @returns whether it is binary at all — a *shape* test, not a validity
+ *   one, so an arbitrary ArrayBuffer passes here and then throws in
+ *   `deserializeElements` on its header
+ */
 export const isSerializedElements = ( x: unknown ): x is ArrayBuffer | ArrayBufferView => {
   return x instanceof ArrayBuffer || ArrayBuffer.isView( x );
 };
@@ -78,6 +86,13 @@ export const isSerializedElements = ( x: unknown ): x is ArrayBuffer | ArrayBuff
  * Serialize elements (definition form or columnar form) into one
  * transferable/fetchable ArrayBuffer.  `deserializeElements` (or passing
  * the buffer straight to `options.elements`/`cy.add()`) reverses it.
+ *
+ * @param elements — the elements to serialize, in either accepted form;
+ *   a definition-form payload is converted to columnar first
+ * @returns one little-endian ArrayBuffer holding the whole payload —
+ *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets
+ * @throws if the platform is big-endian, or if a definition-form payload
+ *   names an edge endpoint that is not a node in the same payload
  */
 export const serializeElements = (
   elements: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements
@@ -182,6 +197,13 @@ export const serializeElements = (
  * Deserialize a `serializeElements` buffer (or a view over one) back into
  * the columnar elements form.  Numeric columns are zero-copy views into
  * the given buffer; a misaligned view is copied once to realign.
+ *
+ * @param input — a `serializeElements` buffer, or a view over one
+ * @returns the columnar form, whose numeric columns are **views into the
+ *   input** rather than copies — so the buffer must outlive the result,
+ *   and writing into either is visible through the other
+ * @throws if the platform is big-endian, or the buffer is too short,
+ *   truncated or of an unsupported format version
  */
 export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): GpuColumnarElements => {
   assertLittleEndian();

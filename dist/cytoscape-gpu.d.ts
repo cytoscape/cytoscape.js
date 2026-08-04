@@ -1948,6 +1948,7 @@ declare class GraphStore implements ModelView {
    * packed (slot, gen) → packed (newSlot, newGen), per group */
   private forwards;
   private _compactEpoch;
+  private _structureEpoch;
   /**
    * Build an empty store: both tables at zero capacity, empty id /
    * adjacency / data / hierarchy / curve indexes, and the sub-index
@@ -2128,6 +2129,13 @@ declare class GraphStore implements ModelView {
   /** Bumped once per slot-moving compaction; collections use it to
    * invalidate cached packed-key membership sets (19.3). */
   get compactEpoch(): number;
+  /**
+   * Monotonic counter of structural changes — every element added or
+   * removed, and every slot compaction.  A cache of "all the elements"
+   * is valid exactly while this does not move (round 34.2); style,
+   * flag, position and data writes never touch it.
+   */
+  get structureEpoch(): number;
   /**
    * Chase a stale ref through the forwarding chain (each compaction a
    * moved element survives adds one link) and, on reaching a live
@@ -2646,6 +2654,26 @@ declare class GraphStore implements ModelView {
    * remove elements in the group being walked.
    */
   forEachAlive(group: GroupName, cb: (slot: number) => void): void;
+  /**
+   * The slot-only twin of `scanRefsInto` (round 34.2/34.4): the same
+   * insertion-order walk with the same `(mask, want)` flag test, writing
+   * bare slot numbers instead of allocating a `Ref` each.  Callers that
+   * work in slot space — the layout contract's `nodeSlots()`/
+   * `edgeSlots()` — used to reach them through element handles, which
+   * cost a handle intern per element for information the order list
+   * already has.
+   *
+   * Same order as `scanRefsInto`, which is what keeps layouts placing
+   * elements where they placed them before.
+   *
+   * @param out — destination array, written from `at`
+   * @param at — first index to write
+   * @param group — which group to scan
+   * @param mask — flag bits to test
+   * @param want — the value those bits must have
+   * @returns the index one past the last slot written
+   */
+  scanSlotsInto(out: number[], at: number, group: GroupName, mask: number, want: number): number;
   /**
    * Scan one group's flags column, writing a ref into `out` (from index
    * `at`) for every live slot (insertion order) whose flags satisfy
@@ -4280,8 +4308,8 @@ declare class GpuCollection {
   _group: GroupName | undefined;
   /** per-element scratchpad, lazily created on the interned singleton handle */
   _scratch?: Record<string, unknown>;
-  /** lazily-built packed-key membership set; safe to cache since _refs is immutable */
-  _keys?: Set<number>;
+  /** lazily-built packed-key → first-index map; safe to cache since _refs is immutable */
+  _keys?: Map<number, number>;
   /**
    * The collection's refs, repaired lazily after a slot compaction
    * (19.3): on first access past a new compaction epoch, every stale-
@@ -4327,12 +4355,14 @@ declare class GpuCollection {
    */
   _spawnLive(refs: Ref[]): GpuCollection;
   /**
-   * A cached Set of this collection's packed element keys, for set membership.
+   * A cached Map of this collection's packed element keys to their first
+   * index, for set membership (`.has()`) and `indexOf` alike.
    * Sound to cache: `_refs` is fixed at construction, and a packed key encodes
    * the ref's own {group, slot, gen}, so it stays valid even as the store
-   * mutates. Built lazily — collections that never do a set op pay nothing.
+   * mutates. Built lazily — collections that never do a set op or an
+   * `indexOf` pay nothing.
    */
-  _keySet(): Set<number>;
+  _keySet(): Map<number, number>;
   /**
    * The type tag `'collection'` — the counterpart of the core's
    * `'core'`, for code that accepts either.
@@ -6317,6 +6347,8 @@ declare class GpuCore {
   private _tapholdDuration;
   private _batchDepth;
   private _batchPending;
+  /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch */
+  private _allCache;
   _animations: AnimationManager;
   /**
    * Build a core over a fresh columnar store.  Prefer the `cytoscapeGpu(
@@ -6548,6 +6580,29 @@ declare class GpuCore {
    * the group(s) and filter per element.  `restrict` narrows the result
    * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
    */
+  /**
+   * The unfiltered whole-graph collections (`elements()`, `nodes()`,
+   * `edges()` with no query), memoized against the store's structure
+   * epoch (round 34.2).
+   *
+   * These are the calls an app makes in a loop, and each one was an
+   * O(V+E) scan plus a handle intern per element — `mutableElements()`
+   * measured 121 µs at 2000 nodes against v3's 18 ns, because v3 hands
+   * back a live internal collection and v4 built a fresh one every
+   * time.  A v4 collection is an immutable snapshot, so the only thing
+   * that can invalidate it is an element entering or leaving the graph,
+   * which is exactly what the epoch counts.  Style, flag, position and
+   * data writes do not move it, and a compaction does — refs would
+   * self-repair anyway (19.3), but the cache drops rather than relying
+   * on that.
+   *
+   * The visible consequence, deliberate: two calls with no structural
+   * change between them now return **the same collection object**
+   * where they used to return two equal ones.  Collections are
+   * immutable, so nothing can observe the difference except identity
+   * itself.
+   */
+  private _allOf;
   private _query;
   /**
    * Live, visible elements contained in the model-coordinate box (corners

@@ -2032,33 +2032,56 @@ manually-timed suites (`curves`, `labels`) join the table through
 `finishManualRun`, which shapes one-shot rows into the report's job
 format; without `BENCH_JSON` their terminal output is unchanged.
 
-**What round 33 found** — the measurements that went the *other* way, all
-logged rather than fixed, since it was a measurement round:
+**What round 33 found, and round 34 fixed** — the measurements that went
+the *other* way.  Round 33 logged them; round 34 fixed all five, and the
+before/after numbers below are through the built bundle at N=2000
+(`ele.style` rows from a dedicated process, since a micro-row in a
+shared one varies ±30%):
 
-- **The style getters are 5.8× slower than v3.**
-  `ele.style( 'background-color' )` is 292 ns against v3's 50 ns
-  through the built bundle, and the cost is inside
-  `StyleEngine.readProp` while the column read underneath is **9 ns**.
-  Flat across props, so it is the per-call setup rather than the
-  switch: a ~536-line method with a 145-case switch that allocates four
-  closures before dispatching.  `effectiveOpacity`,
-  `takesUpSpace`/`interactive`/`transparent` and `numericStyle` all
-  ride it.  *(Round 33 first published this as 13–21× from a suite that
-  imports `src/` through tsx; round 34.0 traced the difference to
-  esbuild's `__name` wrapper, which tsx injects on every closure
-  creation and the bundle does not have.  For a closure-heavy hot path,
-  benchmarking the transpiled sources measures the transpiler.)*
-- **A compound child never gets the no-listener emit fast path.**  With
-  nothing listening, a position write on a node two ancestors deep costs
-  **6.4×** an orphan's (566 ns vs 89 ns): the phase walk runs whether or
-  not any phase has a listener.
-- **The layout contract's fixed cost scales with the graph** — 391 µs at
-  2000 nodes for an impl that does nothing — because
-  `GpuLayoutContext`'s constructor eagerly evaluates `cy.elements()` and
-  `.nodes()`, interning handles for the whole graph even for a
-  columnar-first layout that never touches them.
-- **`mutableElements()` materializes the whole graph** (251 µs) where
-  v3's is O(1) (120 ns), and **`indexOf()` scans** (12.5 µs vs 204 ns).
+- **The style getters — 292 ns → 122 ns** (round 34.5), against v3's
+  52 ns: the gap went 5.8× → **2.3×**.  Profiling the *bundle* put 36%
+  of `readProp` in `normalizeProp` — a regex replace and a lowercase
+  allocation per read, turning `backgroundColor` into
+  `background-color` before the 145-case switch it precedes — so it is
+  memoized.  `numericStyle` 215 → 84 ns, `effectiveOpacity` 240 → 92
+  ns.  The five per-call closures were hoisted to module scope in the
+  same pass; that is worth 1848 → 255 ns *under tsx* and nothing in the
+  bundle, and is reported as what it is: a fix to the harness, not the
+  product.
+  *(Round 33 published this as 13–21× from a suite that imports `src/`
+  through tsx; round 34.0 traced the difference to esbuild's `__name`
+  wrapper, which tsx injects on every closure creation and the bundle
+  does not have.  For a closure-heavy hot path, benchmarking the
+  transpiled sources measures the transpiler.)*
+- **The emit path's no-listener gate — 338 ns → 8 ns** for a node two
+  ancestors deep (round 34.3): `_emitOnEle` now returns before building
+  the event or walking ancestors when nothing listens for the type,
+  which is sound because v4's emitter never bubbles to a parent.  It
+  matters because the *pointer layer's* sixteen call sites are ungated
+  and fire on hover transitions and pointer moves.
+  *Round 33 stated this as "a compound child never gets the
+  no-listener fast path", citing a `child.position()` row — which
+  never reached `_emitOnEle` at all, since the position writers already
+  gate.  That row measured compound **auto-bounds invalidation**
+  (round 14.3, working as designed).  The narrower claim was the true
+  one.*
+- **The layout contract — 333 µs → 795 ns** per run for an impl that
+  does nothing (round 34.4).  `ctx.eles`/`.nodes` became lazy getters,
+  and `nodeSlots()`/`edgeSlots()` read the store's insertion-order list
+  (or the scope collection's refs) instead of interning a handle per
+  element.  Order is preserved exactly — layouts place by index — and
+  specs pin it against `cy.nodes()`/`cy.edges()`.
+- **`mutableElements()` — 121 µs → 20 ns** (round 34.2): the three
+  unfiltered collections (`elements`, `nodes`, `edges` with no query)
+  are memoized against a store *structure epoch*, bumped wherever an
+  element enters or leaves the insertion-order list.  A counter and not
+  a count, so add-one-remove-one between two calls cannot read as
+  unchanged.  Two calls with no structural change now return the same
+  object, which is the one visible consequence and is pinned by a spec.
+- **`indexOf()` — 12.5 µs → 41 ns** (round 34.1), parity with v3: the
+  lazily-built packed-key membership `Set` became a `Map` from key to
+  first index, so the cache the set ops already build now carries the
+  answer.
 - Whole-object `data()` is 6.3× v3 — the columnar rebuild-the-object
   cost, showing up exactly where the design predicts.
 
@@ -2884,17 +2907,16 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   the one place to read before deciding anything about v4's surface;
   contradictions are logged there rather than patched, because
   removing public API is a call to be made, not inferred.
-- **Five measured slow paths** (round 33, 2026-08-03) — the benchmark
-  sweep's output, each localized and none fixed, because it was a
-  measurement round.  In rough order of how much surface they sit
-  under: `StyleEngine.readProp` (the style getters, 13–21× v3, with a
-  9 ns column read underneath); the compound emit path, which runs its
-  phase walk even when nothing is listening (6.4× an orphan's emit);
-  `GpuLayoutContext`'s constructor, which materializes the whole graph
-  per layout run; `mutableElements()`, which does the same per call;
-  and `indexOf()`'s linear scan.  The numbers and the mechanism for
-  each are in the Benchmarks section above and in PLAN.md's round-33
-  record.
+- ~~**Five measured slow paths**~~ (round 33) — **all five fixed in
+  round 34** (2026-08-03): the style getters (292 → 122 ns, via
+  memoizing `normalizeProp`), the emit path's missing no-listener gate
+  (338 → 8 ns), the layout contract's per-run materialization
+  (333 µs → 795 ns), `mutableElements()` (121 µs → 20 ns, via a
+  structure-epoch memo) and `indexOf()` (12.5 µs → 41 ns, parity).  Two
+  of the five findings were **corrected while being fixed** — the style
+  gap was 5.8× rather than 13–21× (tsx's `__name` wrapper inflated it)
+  and the emit row round 33 cited never reached the emit path at all.
+  The before/after numbers are in the Benchmarks section above.
 - **Documentation** — round 26 (2026-08-02) settled the near-term
   shape: JSDoc on the source is v4's documentation source of truth
   and the declarations ship with it (see "Documenting the source"

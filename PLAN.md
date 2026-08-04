@@ -8853,6 +8853,11 @@ edges on the i9-9900K:
    getters, which is a `.d.ts` shape change (property access is
    unaffected).  `dist/cytoscape-gpu.d.ts` is regenerated and
    `test:types:gpu` re-run.
+   *Wrong, as it turned out (34.6): `GpuLayoutContext` is not in the
+   shipped declarations at all — it appears only inside a doc comment —
+   so the getters change no public shape.  What did reach the `.d.ts`
+   is the store's two new members (`structureEpoch`, `scanSlotsInto`),
+   since `cy._store` is typed; 1093 → 1097 doc blocks.*
 
 **Pass split** (tests-first; docs in-commit; each pass its own commit):
 
@@ -8986,12 +8991,41 @@ edges on the i9-9900K:
   Landed with the *tenth* instance of the stranded-doc-block pattern
   (my comment displaced `normalizeProp`'s JSDoc), caught by the gate
   again.
-- [ ] **34.6 Verification + closing sweep** — rebuild the bundles,
-  re-measure all five through them, run the full Node suite, the
-  `webgpu` and `webgpu-visual` browser projects (source changed —
-  against a **freshly built bundle**, per the standing trap), regenerate
-  `dist/cytoscape-gpu.d.ts`, and sweep both docs plus the three named
-  drift sites.
+- [x] **34.6 Verification + closing sweep** (2026-08-03).
+  **The five, before and after, through `build/cytoscape-gpu.esm.mjs`**
+  at N=2000 (the `style` row from a dedicated process — a micro-row in
+  a shared one varies ±30% run to run, which is itself worth knowing):
+
+  | path | before | after | v3 |
+  |---|---|---|---|
+  | `ele.style( 'background-color' )` | 292 ns | **122 ns** | 52 ns |
+  | `_emitOnEle`, nothing listening | 338 ns | **8 ns** | — |
+  | layout contract, empty impl | 333 µs | **795 ns** | — |
+  | `cy.mutableElements()` | 121 µs | **20 ns** | 18 ns |
+  | `eles.indexOf( ele )` | 3.63 µs | **41 ns** | 41 ns |
+
+  Three of the five are now at parity with v3 or better; the style
+  getter is 2.3× (from 5.8×) and the two v4-only paths are 420× and
+  42× cheaper than they were.
+  **Verification**: typecheck, lint, **2505 Node tests** and 77 module
+  tests, JSDoc 100% with `@throws` 16/16 and `@param` 221/221,
+  `gpu-throw-coverage` at 0 Node-reachable dead sites, the regenerated
+  `dist/cytoscape-gpu.d.ts` (1093 → 1097 doc blocks — the store's two
+  new members) with `test:types:gpu` clean, and — since this round
+  changes `src/` — **168/168 browser specs** across `webgpu` and
+  `webgpu-visual` against a hand-rebuilt bundle (an `http-server` *was*
+  listening on 3333, which is exactly the standing trap, so
+  `test:playwright:build` was run by hand first).  Goldens are
+  byte-stable and the parity scenes read their recorded values
+  (`parity-charts-pie` 0.000%, `parity-casing` 0.061%,
+  `parity-polygon` 0.005%): **the five fixes change no pixels.**
+  Docs swept: the README's Benchmarks section carries the before/after
+  for each path and its follow-up hooks strike the five through; the
+  three benchmark suites whose comments recorded the findings now
+  record the fixes and say they stay as the rows that would notice a
+  regression.  The three named drift sites need nothing — round 34
+  closes no design calls and opens none.
+  **Round 34 is complete.**
 
 **Risks tracked**: the `elements()` memo going stale on a path that
 mutates the graph without touching the order list (mitigated by bumping

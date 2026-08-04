@@ -103,10 +103,11 @@ cmp( 'core', 'instanceString + headless + styleEnabled (3 calls)', c =>
 cmp( 'core', 'hasElementWithId + hasCompoundNodes (2 calls)', c =>
   c.cy.hasElementWithId( 'n1' ) + c.cy.hasCompoundNodes() );
 cmp( 'core', 'options()', c => c.cy.options() );
-// v4's `mutableElements()` materializes the whole graph (it is
-// `elements()` — 251 µs at N=2000) where v3's is O(1) at 120 ns.  Kept
-// as a comparative row because the shape of the answer differs, and
-// that is the finding.
+// This row was the finding that became round 34.2: v4's
+// `mutableElements()` materialized the whole graph on every call (it is
+// `elements()`) where v3's is O(1).  It is now memoized against a store
+// structure epoch — 121 µs → 20 ns — and the row stays as the thing
+// that would notice a regression.
 cmp( 'core', 'mutableElements() (v4 materializes; v3 is O(1))', c => c.cy.mutableElements() );
 cmp( 'core', 'gating getters (5 calls)', c =>
   c.cy.panningEnabled() + c.cy.userPanningEnabled() + c.cy.zoomingEnabled()
@@ -165,8 +166,10 @@ cmp( 'collection', 'symmetricDifference', c => c.band.symmetricDifference( c.oth
 cmp( 'collection', 'absoluteComplement', c => c.band.absoluteComplement() );
 cmp( 'collection', 'byGroup', c => c.eles.byGroup() );
 cmp( 'collection', 'diff', c => c.band.diff( c.other ) );
-// a linear scan on v4 against v3's index — 12.5 µs vs 204 ns over 2000
-cmp( 'collection', 'indexOf (v4 scans, v3 indexes)', c => c.nodes.indexOf( c.node ) );
+// this row was the finding that became round 34.1: v4 scanned linearly
+// where v3 indexes (12.5 µs vs 204 ns over 2000).  Now O(1) off the
+// packed-key cache the set ops build, at parity with v3.
+cmp( 'collection', 'indexOf', c => c.nodes.indexOf( c.node ) );
 
 // collection: traversal --------------------------------------------------------
 cmp( 'traversal', 'openNeighborhood + closedNeighborhood (2 calls)', c =>

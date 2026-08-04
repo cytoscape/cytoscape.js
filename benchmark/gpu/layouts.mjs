@@ -202,17 +202,15 @@ cmpGpu( 'layout: plumbing (layoutPositions vs setPositions)',
 // all: the two place different positions by different maths, so it
 // measured BulkLayout's own body as much as the contract.  Design call 1,
 // caught by design call 5.
-// What that row found, recorded here beside it: the wrapper's fixed cost
-// scales with the *graph*, not with the run — 106 µs at 500 nodes and
-// 391 µs at 2000 for an impl that does nothing.  The cause is in
-// `GpuLayoutContext`'s constructor, which eagerly evaluates
-// `cy.elements()` and `.nodes()` to populate the handle-tier `ctx.eles` /
-// `ctx.nodes`, so every run interns handles for the whole graph even when
-// the impl is columnar-first and never touches them — which is the case
-// the contract exists to make the obvious one.  Making those two fields
-// lazy getters would delete the cost for columnar layouts; it is logged
-// rather than done here, because this round is a measurement round and
-// `eles` is a declared public field of the shipped declarations.
+// What that row found became round 34.4.  The wrapper's fixed cost used
+// to scale with the *graph* rather than the run — 391 µs at 2000 nodes
+// for an impl that does nothing — because `GpuLayoutContext`'s
+// constructor eagerly evaluated `cy.elements()` and `.nodes()`, interning
+// handles for the whole graph even for the columnar-first layouts the
+// contract exists to encourage.  Those two are lazy getters now, and
+// `nodeSlots()`/`edgeSlots()` read the store's order list instead of
+// walking handles: **333 µs → 795 ns** through the bundle.  The row
+// stays as the thing that would notice it coming back.
 class NoopLayout {
   run(){}
 }

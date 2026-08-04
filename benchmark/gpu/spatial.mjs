@@ -25,7 +25,6 @@
 // affine-invariant** — its corner radius is a device-px length.
 
 import { bench, group, summary, do_not_optimize } from 'mitata';
-import cytoscape from '../../src/test.mjs';
 import cytoscapeGpu from '../../src/gpu/index.mjs';
 import { pickNodeAt } from '../../src/gpu/render/cpu-pick.mjs';
 import { finishRun } from './bench-run.mjs';

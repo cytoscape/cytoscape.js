@@ -143,6 +143,38 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
 
   });
 
+  /*
+  Round 37.1: and the "what it gives back" half, gated at last.  Round 32 drew
+  the gate boundary at what docmaker emits — which has a description per
+  argument and no return field at all — so round 36 completed `@returns`
+  (63/276 → 276/276) and deliberately left it reporting.  The fifth design
+  sitting moved the boundary: these comments ship as hover text in
+  dist/cytoscape-gpu.d.ts whether or not the docs generator reads them, and a
+  tail completed once with nothing holding it does not stay complete.
+
+  Note the sitting did *not* gate the other two report-only audits (stranded
+  doc blocks, benchmark coverage).  Both are heuristic in a way the three
+  gated rules are not: a free-standing module note is indistinguishable from a
+  displaced block, and "no benchmark calls this member" is often the right
+  answer.  Gating a heuristic teaches people to work around it.
+  */
+  describe('a public member that returns a value says what', function(){
+
+    it('every value-returning public-API member carries @returns', function(){
+      expect(
+        result.returnTags.missing,
+        'public members returning a value with no @returns:\n  ' +
+        result.returnTags.missing.join( '\n  ' )
+      ).to.deep.equal( [] );
+    });
+
+    it('finds a non-trivial number of value-returning members to check', function(){
+      // the ratchet: 276 at the round-36 completion this gate pins
+      expect( result.returnTags.tagged ).to.be.at.least( 276 );
+    });
+
+  });
+
   describe('the audit itself', function(){
 
     it('classifies every listed public-API file', function(){

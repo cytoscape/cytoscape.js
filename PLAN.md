@@ -9785,14 +9785,33 @@ is round 37's docs-first commit.
 Small and first, because the gates protect every round after it.  All
 calls already taken (fifth sitting); nothing here needs design.
 
-- **37.1 The two new gates.**  Throw coverage becomes a zero-tolerance
-  gate: a Node-reachable `throw new` site the Node suite never runs
-  fails the build, with `UNREACHABLE`/`MISATTRIBUTED` promoted from
-  one-off notes to maintained allowlists (an entry needs a reason, as
-  they already carry).  `@returns` ratchets at 276/276 beside the
-  `@throws`/`@param` gates.  Controls per the 31.2 pattern: a spec
-  deleted / a new undocumented site added / the audit short-circuited
-  each fail the gate.
+- [x] **37.1 The two new gates** (2026-08-04) — landed.  Throw coverage
+  is a zero-tolerance gate: `gateFailures()` turns an `audit()` result
+  into the build's failures, the CLI exits nonzero on any, and
+  `npm run test:throws` joins the `npm test` chain after `test:modules`
+  (it re-runs the root Node suite under coverage, so it cannot live
+  *inside* that suite — the one structural difference from the JSDoc
+  gates).  `@returns` ratchets at 276/276 in
+  `test/gpu-jsdoc-coverage.mjs`, beside `@throws` and `@param`.
+  **`UNREACHABLE`/`MISATTRIBUTED` are now checked, not just written.**
+  The promotion to "maintained allowlist" is a real mechanism rather
+  than a change of tone: an entry that no longer names a `throw new`
+  line, or whose reason is empty, fails the gate on its own.  Zero
+  tolerance is only as good as its escape hatch, and this one is keyed
+  by `file:line` — round 34 already moved a site out from under its
+  entry by inserting two methods above it, and under a gate that
+  failure mode does not merely lose a site, it *grants the exemption to
+  a different throw* while reading as a pass.
+  Controls (the 31.2 pattern), each staged and asserted to fail: a
+  Node-reachable site with no spec (1 failure, naming it), an allowlist
+  entry pointing at a line with no throw on it, and an entry with a
+  blank reason.  Two more hold the gates against the real sources — the
+  allowlist validation runs in the fast module suite against a report
+  that says nothing (every site unknown, so only the exemptions can
+  fail), and the `@returns` gate was run once with a tag deleted from
+  `viewport.mts`, failing both its checks (the miss and the 276 floor).
+  The CLI's exit code was checked end to end against a hand-written
+  lcov marking one real site dead: exit 1.
 - **37.2 The alias split.**  `roundrectangle` throws (joining
   `cutrectangle`/`concavehexagon`); its line in
   `test/gpu-decided-drops.mjs` flips from pinning-the-inconsistency to

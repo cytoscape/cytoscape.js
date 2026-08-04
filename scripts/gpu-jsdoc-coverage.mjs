@@ -515,10 +515,13 @@ const VOID_RETURN_RE = /^(?:void|Promise\s*<\s*void\s*>|undefined|never|this)$/;
  * a description per *argument* and has no return field — so a missing
  * `@param` is a hole in the generated release documentation while a missing
  * `@returns` is editor hover text in `dist/cytoscape-gpu.d.ts`. Round 36
- * wrote the tags and kept that boundary exactly where round 32 drew it:
- * this audit **reports and does not gate** (the `gpu-throw-coverage`
- * treatment), because whether it should ratchet is a policy call of the
- * kind PLAN.md's open call 8 already holds open for test coverage.
+ * wrote the tags and kept that boundary exactly where round 32 drew it,
+ * leaving the ratchet as a policy call beside the one PLAN.md's open call 8
+ * held open for test coverage. The fifth design sitting (2026-08-04) took
+ * both: this audit **gates at 276/276** since round 37.1, `test/
+ * gpu-jsdoc-coverage.mjs` holding it beside the `@throws` and `@param`
+ * rules — hover text is shipped surface, and a complete tail that nothing
+ * holds in place does not stay complete.
  *
  * A member counts when its signature carries a return annotation that is
  * not `void`/`Promise<void>`/`undefined`/`never`/`this`. A member with no
@@ -741,9 +744,13 @@ export function audit(){
       tagged: paramTags.reduce( ( n, f ) => n + f.tagged, 0 ),
       missing: paramTags.flatMap( f => f.missing )
     },
-    // round 36: `@returns` over the same tier — **reported, never gated**.
-    // Round 32 drew the gate's boundary at what docmaker emits, and round 36
-    // wrote the tags without moving it; see `auditReturnTags`.
+    // round 36: `@returns` over the same tier, **gated since round 37.1** at
+    // the 276/276 round 36 reached.  Round 32 had drawn the gate's boundary at
+    // what docmaker emits (which has no return field), and round 36 wrote the
+    // tags without moving it; the fifth design sitting moved it, on the
+    // grounds that the tags ship as `.d.ts` hover text either way and a
+    // complete surface that nothing holds in place does not stay complete.
+    // See `auditReturnTags`.
     returnTags: {
       files: returnTags,
       tagged: returnTags.reduce( ( n, f ) => n + f.tagged, 0 ),
@@ -804,7 +811,7 @@ if( process.argv[1] && import.meta.url === pathToFileURL( process.argv[1] ).href
 
   console.log(
     `  @returns on value-returning public members: ` +
-    `${rt.tagged}/${rt.tagged + rt.missing.length}  (reported, not gated)`
+    `${rt.tagged}/${rt.tagged + rt.missing.length}`
   );
 
   if( verbose ) for( const m of rt.missing ) console.log( `      NO @returns ${m}` );

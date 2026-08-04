@@ -8,10 +8,20 @@
 // script finds every `throw new` in src/gpu and reports which ones the Node
 // suite reaches.
 //
-// It is a **reporting tool, not a gate**. Choosing a coverage floor (and
-// deciding what to do about the throws only a browser can reach) is a policy
-// call for the maintainer, so this script always exits 0; see PLAN.md's
-// "Open calls for the maintainer".
+// Since round 37.1 it is a **gate**, at the floor the fifth design sitting
+// chose: zero tolerance for a Node-reachable site the suite never runs. The
+// call it was waiting on (PLAN.md's "Open calls for the maintainer", item 8)
+// was taken on 2026-08-04, by which point round 36.4 had already finished the
+// browser tier, so the reading was 0 and the gate held the day it was written.
+//
+// The two classification lists below are what make a zero-tolerance gate
+// honest, so they are **maintained allowlists** rather than one-off notes:
+// every entry names a real `throw new` line and carries a reason, and the gate
+// fails when one stops doing either. That check exists because the keys are
+// `file:line` and so move when the code above them moves — round 34 inserted
+// two methods into graph-store.mts and the SHAPE_MASK entry silently stopped
+// matching. Under a gate, a stale entry is worse than noise: it would quietly
+// re-classify whatever line it now lands on.
 //
 // Two footguns are baked in, both learned the hard way in round 30:
 //
@@ -25,7 +35,7 @@
 //      functions badly enough to be useless. Nothing here reads them.
 //
 // Usage:
-//   node scripts/gpu-throw-coverage.mjs             # run the suite, report
+//   node scripts/gpu-throw-coverage.mjs             # run the suite, gate
 //   node scripts/gpu-throw-coverage.mjs --verbose   # list every dead site
 //   node scripts/gpu-throw-coverage.mjs --lcov cov.lcov   # reuse a report
 import { execFileSync } from 'node:child_process';
@@ -49,6 +59,10 @@ export const BROWSER_ONLY = [ 'src/gpu/render/', 'src/gpu/interact/', 'src/gpu/g
  * Throws that exist to make an internal invariant loud and are unreachable
  * from any input a caller can supply. Each is listed with the reason, so the
  * list stays a decision rather than a silence.
+ *
+ * A **maintained allowlist** since round 37.1: this is the gate's only escape
+ * hatch, so `gateFailures` checks that every entry still names a real throw
+ * site and still carries a reason.
  */
 export const UNREACHABLE = {
   'src/gpu/wire.mts:68':
@@ -83,7 +97,9 @@ export const UNREACHABLE = {
 // script reporting a Node-reachable dead site and as a failing spec in
 // test/modules/gpu-throw-coverage.mjs — the right way round, but worth
 // knowing: after moving code, re-run this script rather than assuming
-// the classification survived.
+// the classification survived.  Since 37.1 the gate says so directly:
+// an entry that no longer names a throw site fails the build in its own
+// right, rather than only through the site it stopped exempting.
 
 /**
  * Sites the line-level data reads as covered but that the Node suite cannot
@@ -101,6 +117,9 @@ export const UNREACHABLE = {
  * (`GlyphBuffer.set`) genuinely is — `test/gpu-label-render.mjs` drives it
  * with a mock device. The other is this. Treat the tally as a lower bound on
  * dead sites, not an exact count.
+ *
+ * Maintained on the same terms as `UNREACHABLE` since round 37.1 — an entry
+ * here suppresses a *covered* reading, which is the direction that hides work.
  */
 export const MISATTRIBUTED = {
   'src/gpu/render/renderer.mts:144':
@@ -220,6 +239,46 @@ export function audit( lcovText ){
   };
 }
 
+/**
+ * The round-37.1 gate: what would fail the build, as human-readable lines.
+ *
+ * Two kinds of failure, and the second is the reason the first can be trusted.
+ * A Node-reachable throw the suite never runs is an unchecked contract — the
+ * thing the whole measurement exists to find. A stale or reasonless allowlist
+ * entry is an unchecked *exemption*: `UNREACHABLE`/`MISATTRIBUTED` are keyed by
+ * `file:line`, so an insertion above a site silently re-points its entry at
+ * whatever line now sits there, exempting the wrong throw and (worse) reading
+ * as a pass.
+ *
+ * @param result — an {@link audit} result
+ * @param allowlists — the `[ name, entries ]` pairs to validate, defaulting to
+ *   the two this module exports; passed explicitly by the specs that check the
+ *   validation itself, since a stale entry cannot be staged any other way
+ * @returns one string per failure; an empty array means the gate passes
+ */
+export function gateFailures( result, allowlists = [
+  [ 'UNREACHABLE', UNREACHABLE ], [ 'MISATTRIBUTED', MISATTRIBUTED ]
+] ){
+  const failures = [];
+  const known = new Set( result.sites.map( s => `${s.file}:${s.line}` ) );
+
+  for( const s of result.dead ){
+    failures.push( `never run by the Node suite: ${s.file}:${s.line}  ${s.text.slice( 0, 80 )}` );
+  }
+
+  for( const [ name, list ] of allowlists ){
+    for( const [ at, reason ] of Object.entries( list ) ){
+      if( !known.has( at ) ){
+        failures.push( `${name} exempts ${at}, which is not a throw site — did the code above it move?` );
+      } else if( typeof reason !== 'string' || reason.trim() === '' ){
+        failures.push( `${name}'s entry for ${at} carries no reason` );
+      }
+    }
+  }
+
+  return failures;
+}
+
 if( process.argv[ 1 ] && import.meta.url === pathToFileURL( process.argv[ 1 ] ).href ){
   const flag = process.argv.indexOf( '--lcov' );
   const result = audit( flag < 0 ? undefined : readFileSync( process.argv[ flag + 1 ], 'utf8' ) );
@@ -238,5 +297,19 @@ if( process.argv[ 1 ] && import.meta.url === pathToFileURL( process.argv[ 1 ] ).
     }
   }
 
-  // reporting only: the floor is a policy call, not this script's to take
+  const failures = gateFailures( result );
+
+  if( failures.length > 0 ){
+    console.error( `\nthrow-coverage gate failed (${failures.length}):` );
+
+    for( const f of failures ){ console.error( `  ${f}` ); }
+
+    console.error(
+      '\nAdd a spec that fires the guard (a message assertion when several '
+      + 'guards share a method), or — if no caller can reach it — classify it '
+      + 'in UNREACHABLE with the reason.'
+    );
+
+    process.exitCode = 1;
+  }
 }

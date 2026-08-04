@@ -1,4 +1,4 @@
-import { audit, BROWSER_ONLY, MISATTRIBUTED, UNREACHABLE } from '../../scripts/gpu-throw-coverage.mjs';
+import { audit, BROWSER_ONLY, gateFailures, MISATTRIBUTED, UNREACHABLE } from '../../scripts/gpu-throw-coverage.mjs';
 import { expect } from 'chai';
 
 /*
@@ -131,6 +131,68 @@ describe('scripts/gpu-throw-coverage', function(){
     expect( under.length ).to.be.greaterThan( 0 );
     expect( under.every( s => s.browser ) ).to.equal( true );
     expect( result.sites.filter( s => s.browser ).length ).to.equal( under.length );
+  });
+
+  /*
+  Round 37.1: the measurement became a gate, at the zero-tolerance floor the
+  fifth design sitting chose.  These are the 31.2 controls — each of the three
+  ways the gate could stop meaning anything, staged and asserted to fail.
+
+  Note what a spec cannot do here: `npm run test:throws` re-runs the whole Node
+  suite under coverage, so the *live* reading is not something a unit spec can
+  take.  What it can take is everything the reading is interpreted through —
+  the failure rule and the allowlists — which is where the silent failures
+  live anyway.
+  */
+  describe('the gate (round 37.1)', function(){
+
+    it('fails when a Node-reachable throw has no spec', function(){
+      // "a spec deleted": style.mts:874 is the wrap family's keyword guard
+      const failures = gateFailures( audit( lcov( { dead: [ 874 ] } ) ) );
+
+      expect( failures ).to.have.lengthOf( 1 );
+      expect( failures[0] ).to.contain( 'src/gpu/style.mts:874' );
+      expect( failures[0] ).to.contain( 'never run' );
+    });
+
+    it('passes when the same site has one', function(){
+      expect( gateFailures( audit( lcov( { covered: [ 874 ] } ) ) ) ).to.deep.equal( [] );
+    });
+
+    it('fails when an allowlist entry no longer names a throw site', function(){
+      // the round-34 failure mode, now caught in its own right: an insertion
+      // above an exempted site moves it, and the entry silently re-points at
+      // whatever line landed there.  Under a zero-tolerance gate that is an
+      // exemption granted to the wrong throw.
+      const failures = gateFailures( audit( lcov( {} ) ), [
+        [ 'UNREACHABLE', { 'src/gpu/style.mts:2': 'a line with no throw on it' } ]
+      ] );
+
+      expect( failures ).to.have.lengthOf( 1 );
+      expect( failures[0] ).to.contain( 'src/gpu/style.mts:2' );
+      expect( failures[0] ).to.contain( 'not a throw site' );
+    });
+
+    it('fails when an allowlist entry carries no reason', function(){
+      const at = Object.keys( UNREACHABLE )[ 0 ];
+      const failures = gateFailures( audit( lcov( {} ) ), [ [ 'UNREACHABLE', { [ at ]: '  ' } ] ] );
+
+      expect( failures ).to.have.lengthOf( 1 );
+      expect( failures[0] ).to.contain( 'no reason' );
+    });
+
+    it('holds the real allowlists against the real sources', function(){
+      // the ratchet that runs in the fast suite: an empty report makes every
+      // site unknown rather than dead, so the only thing left to fail is the
+      // allowlist validation — which is exactly the half that goes stale
+      // without anyone touching it.
+      expect( gateFailures( audit( lcov( {} ) ) ) ).to.deep.equal( [] );
+
+      // and it is checking something: both lists are non-empty
+      expect( Object.keys( UNREACHABLE ).length + Object.keys( MISATTRIBUTED ).length )
+        .to.be.at.least( 4 );
+    });
+
   });
 
 });

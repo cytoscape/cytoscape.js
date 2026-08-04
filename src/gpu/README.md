@@ -1972,14 +1972,20 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   the whole surface of `wire.mts` and `columnar.mts` and are public
   members by the script's own definition, sat outside a gate that read
   as complete.  They are inside it now, at **229/229**.
-- **`@returns` is written, and reported, and not gated** (round 36).
-  Round 32 measured this tail at 63 of 276 and left it, on the
-  reasoning above; round 36 wrote all 63, so the surface is
+- **`@returns` is written, and gated since round 37.1** (written in
+  round 36).  Round 32 measured this tail at 63 of 276 and left it, on
+  the reasoning above; round 36 wrote all 63, so the surface is
   **276/276**, and left the *gate's* boundary exactly where round 32
-  drew it.  `auditReturnTags()` prints the tally under the coverage
-  report and `--verbose` lists any miss, always exiting 0 — the
-  `gpu-throw-coverage` treatment, because whether it should ratchet is
-  a policy call of the kind PLAN.md's open call 8 already holds.  A
+  drew it — a policy call of the kind PLAN.md's open call 8 held for
+  test coverage.  The fifth design sitting (2026-08-04) took both
+  calls, and this one ratchets: `auditReturnTags()` prints the tally
+  under the coverage report, `--verbose` lists any miss, and
+  `test/gpu-jsdoc-coverage.mjs` fails the build on a miss or on the
+  tally falling below 276.  The argument that moved it is that these
+  comments ship as `.d.ts` hover text whether or not the docs
+  generator reads them, and round 36's own history — a tail completed
+  once, by hand, four rounds after it was measured — is what an
+  ungated rule looks like.  A
   member counts when its signature carries a return annotation that is
   not `void`/`Promise<void>`/`undefined`/`never`/`this`; one with no
   annotation is skipped rather than guessed at, so the tally is a lower
@@ -1990,18 +1996,32 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   negations they look like (`inactive` is not `!active`;
   `isChildless` is not `!isParent`).
 
-## Measuring the error contract (round 30)
+## Measuring the error contract (round 30; gated since round 37)
 
 v4 fails loudly by decided design, which makes its throws part of the
 public contract — and until round 30 most of them were unverified.
 `scripts/gpu-throw-coverage.mjs` finds every `throw new` in `src/gpu`
 and reports which the Node suite reaches, the same way
 `gpu-jsdoc-coverage.mjs` reports documented members:
-`node scripts/gpu-throw-coverage.mjs [--verbose] [--lcov <file>]`.
+`node scripts/gpu-throw-coverage.mjs [--verbose] [--lcov <file>]`, or
+`npm run test:throws` (part of `npm test`).
 
-- **Reporting only, deliberately.**  It always exits 0.  A coverage
-  floor is a policy call (see PLAN.md's open calls), so the script
-  measures and the maintainer decides.
+- **A gate since round 37.1, at zero tolerance.**  A `throw new` in
+  `src/gpu` that the Node suite never runs fails the build unless it is
+  classified.  The floor was a policy call while it stood open (PLAN.md
+  open call 8); the fifth design sitting took it, and by then round
+  36.4 had finished the browser tier, so the reading was already 0 and
+  the gate held the day it was written.  The script exits nonzero and
+  the failure names the site.
+- **The classification lists are maintained allowlists**, which is what
+  makes zero tolerance honest.  `UNREACHABLE` (a guard no caller's
+  input can reach) and `MISATTRIBUTED` (a line the coverage data reads
+  as covered and cannot be) are the only exemptions, so the gate also
+  checks *them*: an entry that no longer names a `throw new` line, or
+  that carries no reason, fails in its own right.  That check earns its
+  place — the keys are `file:line`, and round 34 moved a site out from
+  under its entry by inserting two methods above it.  An unchecked
+  exemption silently transfers to whatever line lands on the number.
 - **Reading since round 36.4**: 191 sites — 176 run by the Node
   suite, **10 browser-only, 5 unreachable by design**, **0
   Node-reachable and never run**.  Round 30 read 13 browser-only and 2

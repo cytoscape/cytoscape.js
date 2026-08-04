@@ -2088,21 +2088,26 @@ triage (below): the canvas-era perf degradation options
 `motionBlur`/`motionBlurOpacity` — obsolete under compute culling +
 adaptive render scale); `background-blacken` (subsumed by color
 mappers); `bounds-expansion` (bounds are computed correctly instead);
-and the legacy aliases (`content`, `autolockNodes`/
-`autoungrabifyNodes`, `padding-{left,right,top,bottom}`, no-dash shape
-spellings, redundant `attr`-family duplicates — one name per concept).
+and the legacy aliases (`content`, `padding-{left,right,top,bottom}`,
+no-dash shape spellings, redundant `attr`-family duplicates — one name
+per concept), **less two recorded exceptions**: `autolockNodes` and
+`autoungrabifyNodes` are kept (fifth design sitting, 2026-08-04).
 
-**The legacy-alias line is not true of the code** (found 2026-08-03 by
+**The legacy-alias line was not true of the code** (found 2026-08-03 by
 the round-29 docs check, and left as a call rather than patched):
-`cy.autolockNodes()` and `cy.autoungrabifyNodes()` are declared, wired
-and working, and round 29.1's alias table now *pins* them; the no-dash
-shape spelling `roundrectangle` likewise still compiles, where
-`cutrectangle` and `concavehexagon` throw.  So the 2026-07-29 triage
-was applied unevenly and three names survive it.  This is one call, not
+`cy.autolockNodes()` and `cy.autoungrabifyNodes()` were declared, wired
+and working, and round 29.1's alias table *pinned* them; the no-dash
+shape spelling `roundrectangle` likewise still compiled, where
+`cutrectangle` and `concavehexagon` threw.  So the 2026-07-29 triage
+was applied unevenly and three names survived it.  It was one call, not
 three — "does the one-name-per-concept rule actually apply to these?" —
-and whichever way it goes, the alias table in
-`test/gpu-aliases.mjs` and the `roundrectangle` line in
-`test/gpu-decided-drops.mjs` are what have to change with it.
+and the fifth design sitting **split** it (executed as round 37.2):
+`roundrectangle` drops and throws with its siblings, from all three
+enums that took it; the two core aliases stay, as exceptions written
+into the ledger line above rather than left as drift.  The line the
+call had to change was the `roundrectangle` one in
+`test/gpu-decided-drops.mjs`, which now pins the drop; the alias table
+in `test/gpu-aliases.mjs` keeps its two rows, with the reason.
 `content` and `padding-{left,…}` *do* throw, as does every other prop
 in this ledger — pinned since 29.3 by `test/gpu-decided-drops.mjs`.
 
@@ -9812,12 +9817,34 @@ calls already taken (fifth sitting); nothing here needs design.
   `viewport.mts`, failing both its checks (the miss and the 276 floor).
   The CLI's exit code was checked end to end against a hand-written
   lcov marking one real site dead: exit 1.
-- **37.2 The alias split.**  `roundrectangle` throws (joining
-  `cutrectangle`/`concavehexagon`); its line in
-  `test/gpu-decided-drops.mjs` flips from pinning-the-inconsistency to
-  pinning-the-drop.  `autolockNodes`/`autoungrabifyNodes` stay wired
-  and pinned; the decided-design ledger's legacy-alias line gains the
-  two-name exception so code and ledger finally agree.
+- [x] **37.2 The alias split** (2026-08-04) — landed.
+  `roundrectangle` throws, joining `cutrectangle`/`concavehexagon`, and
+  its line in `test/gpu-decided-drops.mjs` flips from
+  pinning-the-inconsistency to pinning-the-drop.
+  **It was accepted in three enums, not one**, which the call's
+  wording did not say and the code did: the node `shape` table,
+  `parseLayerShape` (`overlay-shape`/`underlay-shape`) and
+  `TEXT_BG_SHAPES` (`text-background-shape`).  Dropping it from
+  `shape` alone would have moved the inconsistency rather than closed
+  it, so all three go, with a spec per enum.  A third spec pins a free
+  consequence worth having: the `shape` error lists the accepted
+  keywords from the table itself, so it stops advertising the dropped
+  spelling to the v3 user who is reading it to find the replacement.
+  `debug/webgpu`'s v3-fixture sanitizer learns the new spelling too.
+  `autolockNodes`/`autoungrabifyNodes` stay wired and pinned, and the
+  alias table's comment changes from "an open call, recorded beside
+  the `roundrectangle` one" to the reason they are kept.  Both
+  documents' legacy-alias lines now carry the two-name exception, so
+  code and ledger agree for the first time since 2026-07-29.
+  **One line deleted from `style.mts` broke three specs elsewhere**, and
+  fixing it properly was worth the detour: `test/modules/gpu-throw-coverage.
+  mjs`'s fixture named real throw sites by hardcoded line number
+  (`874`, `1031`, `1074`), so deleting the `roundrectangle` row shifted
+  every one of them by one.  The fixture now *resolves* its lines from
+  the sources by anchor text.  It is the round-34 lesson arriving in a
+  third place — after the `UNREACHABLE` allowlist it broke then, and the
+  gate 37.1 built to catch that — and the same fix applies: a `file:line`
+  written down is a claim that nothing above it will ever move.
 - **37.3 Constructor options, closed at the type layer.**  A
   compile-only consumer test pins that `{ motionBlur: true }` (and a
   plainly unknown key) fail typechecking against the options type;

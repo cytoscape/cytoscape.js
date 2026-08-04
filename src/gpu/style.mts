@@ -550,7 +550,6 @@ const SHAPES: Record<string, number> = {
   'rectangle': SHAPE_RECTANGLE,
   'square': SHAPE_RECTANGLE,
   'round-rectangle': SHAPE_ROUND_RECTANGLE,
-  'roundrectangle': SHAPE_ROUND_RECTANGLE,
   'triangle': SHAPE_TRIANGLE,
   'pentagon': SHAPE_PENTAGON,
   'hexagon': SHAPE_HEXAGON,
@@ -843,7 +842,7 @@ const parseZeroOne = ( prop: string, value: unknown ): number => {
 const parseLayerShape = ( prop: string, value: unknown ): number => {
   const token = String( value ).trim();
 
-  if( token === 'round-rectangle' || token === 'roundrectangle' ){ return 0; }
+  if( token === 'round-rectangle' ){ return 0; }
   if( token === 'ellipse' ){ return 1; }
 
   throw new Error(
@@ -892,7 +891,7 @@ const parseTextTransform = ( value: unknown ): number => {
 };
 
 const TEXT_BG_SHAPES: Record<string, number> = {
-  'rectangle': 0, 'round-rectangle': 1, 'roundrectangle': 1
+  'rectangle': 0, 'round-rectangle': 1
 };
 const TEXT_BG_SHAPE_NAMES: Record<number, string> = { 0: 'rectangle', 1: 'round-rectangle' };
 

@@ -1,22 +1,58 @@
 import { audit, BROWSER_ONLY, gateFailures, MISATTRIBUTED, UNREACHABLE } from '../../scripts/gpu-throw-coverage.mjs';
 import { expect } from 'chai';
+import { readFileSync } from 'node:fs';
 
 /*
 Round 30.4: the error-contract measurement tool, checked against a
 hand-written lcov report.
 
-The tool itself is a reporting script, not a gate — a coverage floor is a
-policy call, recorded in PLAN.md's open calls — but its *parser* is the thing
-every number it prints depends on, and the round it comes from exists because
-the first version of this measurement was silently wrong.  So the parser is
-pinned here rather than trusted.
+The tool was a reporting script when these specs were written (a coverage floor
+was a policy call, held in PLAN.md's open calls) and became a **gate** in round
+37.1.  Either way its *parser* is the thing every number it prints depends on,
+and the round it comes from exists because the first version of this
+measurement was silently wrong.  So the parser is pinned here rather than
+trusted — and now that a build fails on what it says, more so.
 
 `audit( lcovText )` reads real src/gpu sources and only takes the line counts
 from the report, so the fixture names real files and real throw lines.
 */
 
-// src/gpu/style.mts has hundreds of throws; two known lines stand in for
-// "covered" and "never run" without the fixture having to describe them all.
+/*
+The fixture has to name *real* throw lines in *real* files, since `audit()`
+reads the sources and takes only the counts from the report.  It resolves them
+by searching rather than writing them down, which is round 34's lesson applied
+to this spec's own fixture: a `file:line` in a comment goes stale the moment
+anything above it moves.  These three were `874`, `1031` and `1074` until round
+37.2 deleted one line from style.mts's shape table, at which point three specs
+failed for no reason of their own — the same drift the round-37.1 gate now
+catches in the allowlists, arriving here instead.
+
+`anchor` is a line unique enough to find; the line reported is the first
+`throw new` at or after it, because a multi-line throw carries its message
+below the keyword.
+*/
+const throwLine = ( file, anchor ) => {
+  const lines = readFileSync( new URL( `../../${file}`, import.meta.url ), 'utf8' ).split( '\n' );
+  const from = lines.findIndex( l => l.includes( anchor ) );
+
+  expect( from, `no line of ${file} contains ${anchor}` ).to.be.at.least( 0 );
+
+  const at = lines.findIndex( ( l, i ) => i >= from && l.includes( 'throw new' ) );
+
+  expect( at, `no throw follows ${anchor} in ${file}` ).to.be.at.least( 0 );
+
+  return at + 1; // lcov lines are 1-based
+};
+
+// two guards of style.mts's hundreds stand in for "covered" and "never run"
+const KEYWORD_GUARD = throwLine( 'src/gpu/style.mts', 'const parseKeyword =' );
+const PERCENT_GUARD = throwLine( 'src/gpu/style.mts', 'is not a valid percent for' );
+const IMAGE_ENUM_GUARD = throwLine( 'src/gpu/style.mts', 'const parseImageEnum =' );
+const EMPTY_EXPORT_GUARD = throwLine(
+  'src/gpu/render/renderer.mts', 'Cannot export a full-graph image'
+);
+const BIG_ENDIAN_GUARD = throwLine( 'src/gpu/wire.mts', 'little-endian' );
+
 const lcov = ( { covered = [], dead = [], file = 'src/gpu/style.mts' } ) => [
   'TN:',
   `SF:${file}`,
@@ -29,30 +65,29 @@ const lcov = ( { covered = [], dead = [], file = 'src/gpu/style.mts' } ) => [
 describe('scripts/gpu-throw-coverage', function(){
 
   it('reads a source-mapped lcov report and classifies each throw', function(){
-    // 874 is the wrap family's keyword guard, 1031 the gradient stop percent
-    const result = audit( lcov( { covered: [ 874 ], dead: [ 1031 ] } ) );
+    const result = audit( lcov( { covered: [ KEYWORD_GUARD ], dead: [ PERCENT_GUARD ] } ) );
     const at = ( file, line ) => result.sites.find( s => s.file === file && s.line === line );
 
-    expect( at( 'src/gpu/style.mts', 874 ).covered ).to.equal( true );
-    expect( at( 'src/gpu/style.mts', 1031 ).covered ).to.equal( false );
+    expect( at( 'src/gpu/style.mts', KEYWORD_GUARD ).covered ).to.equal( true );
+    expect( at( 'src/gpu/style.mts', PERCENT_GUARD ).covered ).to.equal( false );
 
     // and a throw the report says nothing about is unknown, not covered
-    expect( at( 'src/gpu/style.mts', 1074 ).covered ).to.equal( null );
+    expect( at( 'src/gpu/style.mts', IMAGE_ENUM_GUARD ).covered ).to.equal( null );
   });
 
   it('counts only Node-reachable sites as dead', function(){
     // three never-run throws, one per classification
     const report = [
-      lcov( { dead: [ 874 ] } ),
-      lcov( { dead: [ 740 ], file: 'src/gpu/render/renderer.mts' } ),
-      lcov( { dead: [ 68 ], file: 'src/gpu/wire.mts' } )
+      lcov( { dead: [ KEYWORD_GUARD ] } ),
+      lcov( { dead: [ EMPTY_EXPORT_GUARD ], file: 'src/gpu/render/renderer.mts' } ),
+      lcov( { dead: [ BIG_ENDIAN_GUARD ], file: 'src/gpu/wire.mts' } )
     ].join( '' );
     const result = audit( report );
     const isDead = ( file, line ) => result.dead.some( s => s.file === file && s.line === line );
 
-    expect( isDead( 'src/gpu/style.mts', 874 ) ).to.equal( true );
-    expect( isDead( 'src/gpu/render/renderer.mts', 740 ) ).to.equal( false ); // browser
-    expect( isDead( 'src/gpu/wire.mts', 68 ) ).to.equal( false ); // unreachable by design
+    expect( isDead( 'src/gpu/style.mts', KEYWORD_GUARD ) ).to.equal( true );
+    expect( isDead( 'src/gpu/render/renderer.mts', EMPTY_EXPORT_GUARD ) ).to.equal( false ); // browser
+    expect( isDead( 'src/gpu/wire.mts', BIG_ENDIAN_GUARD ) ).to.equal( false ); // unreachable
 
     expect( result.browser ).to.be.greaterThan( 0 );
     expect( result.unreachable ).to.equal( Object.keys( UNREACHABLE ).length );
@@ -147,16 +182,16 @@ describe('scripts/gpu-throw-coverage', function(){
   describe('the gate (round 37.1)', function(){
 
     it('fails when a Node-reachable throw has no spec', function(){
-      // "a spec deleted": style.mts:874 is the wrap family's keyword guard
-      const failures = gateFailures( audit( lcov( { dead: [ 874 ] } ) ) );
+      // "a spec deleted", staged on the shared keyword-enum guard
+      const failures = gateFailures( audit( lcov( { dead: [ KEYWORD_GUARD ] } ) ) );
 
       expect( failures ).to.have.lengthOf( 1 );
-      expect( failures[0] ).to.contain( 'src/gpu/style.mts:874' );
+      expect( failures[0] ).to.contain( `src/gpu/style.mts:${KEYWORD_GUARD}` );
       expect( failures[0] ).to.contain( 'never run' );
     });
 
     it('passes when the same site has one', function(){
-      expect( gateFailures( audit( lcov( { covered: [ 874 ] } ) ) ) ).to.deep.equal( [] );
+      expect( gateFailures( audit( lcov( { covered: [ KEYWORD_GUARD ] } ) ) ) ).to.deep.equal( [] );
     });
 
     it('fails when an allowlist entry no longer names a throw site', function(){

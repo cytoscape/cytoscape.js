@@ -169,21 +169,44 @@ describe('gpu/decided drops (29.3)', function(){
       }
     });
 
-    it('the no-dash shape spellings — except the recorded inconsistency', function(){
+    it('the no-dash shape spellings', function(){
       expect( sheetThrows({ shape: 'cutrectangle' }) ).to.throw( /unsupported/ );
       expect( sheetThrows({ shape: 'concavehexagon' }) ).to.throw( /unsupported/ );
 
-      // recorded in the README next to the shape vocabulary: this one
-      // survived the same triage and is still accepted.  Pinned so the
-      // inconsistency is visible rather than forgotten — when the call
-      // is taken, this line is what has to change.
+      // round 37.2: and `roundrectangle`, which survived the same 2026-07-29
+      // triage in the code for eight rounds while its two siblings threw.
+      // The inconsistency was pinned here rather than patched, because
+      // removing public API is the maintainer's call; the fifth design
+      // sitting took it, and the triage is now enforced as written.
+      expect( sheetThrows({ shape: 'roundrectangle' }) ).to.throw( /unsupported/ );
+
+      // the hyphenated spelling is the one name for the concept
       const kept = cytoscapeGpu({
         elements: [ { data: { id: 'n' }, position: { x: 0, y: 0 } } ],
-        style: { nodes: { shape: 'roundrectangle' } }
+        style: { nodes: { shape: 'round-rectangle' } }
       });
 
       expect( kept.$id('n').style('shape') ).to.equal( 'round-rectangle' );
       kept.destroy();
+    });
+
+    it('the no-dash spelling in every enum that took it, not only `shape`', function(){
+      // it was accepted in three places — the node shape, the overlay/
+      // underlay shape, and the text background shape — so dropping it from
+      // one would have moved the inconsistency rather than closed it
+      expect( sheetThrows({ 'overlay-shape': 'roundrectangle' }) ).to.throw( /invalid/ );
+      expect( sheetThrows({ 'text-background-shape': 'roundrectangle' }) ).to.throw( /invalid/ );
+
+      expect( sheetThrows({ 'overlay-shape': 'round-rectangle' }) ).to.not.throw();
+      expect( sheetThrows({ 'text-background-shape': 'round-rectangle' }) ).to.not.throw();
+    });
+
+    it('the shape error stops advertising the dropped spelling', function(){
+      // the message lists the accepted keywords from the table itself, so
+      // this follows from the drop — and is worth asserting, since a v3 user
+      // hitting the throw reads this list to find the replacement
+      expect( sheetThrows({ shape: 'nonsense' }) ).to.throw( /round-rectangle/ );
+      expect( sheetThrows({ shape: 'nonsense' }) ).to.not.throw( /[^-]roundrectangle/ );
     });
 
     it('the style function form', function(){

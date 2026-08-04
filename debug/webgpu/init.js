@@ -88,7 +88,7 @@ const paramDefs = {
   // no-dash legacy aliases ("one name per concept"), so a fixture using
   // them keeps its default shape rather than throwing.
   const UNSUPPORTED_ARROW_SHAPES = new Set();
-  const UNSUPPORTED_SHAPES = new Set([ 'cutrectangle', 'concavehexagon' ]);
+  const UNSUPPORTED_SHAPES = new Set([ 'cutrectangle', 'concavehexagon', 'roundrectangle' ]);
   // best-effort conversion of a v3 block stylesheet into the v4 sheet
   // ({ nodes, edges }): constant values of in-scope props on plain group
   // selectors fold into the group's props (later blocks win, as in v3

@@ -47,11 +47,13 @@ const CORE_ALIASES = [
   [ 'jpeg', 'jpg' ],
   [ 'attr', 'data' ],
   [ 'removeAttr', 'removeData' ],
-  // NB: PLAN.md's decided-drops ledger lists these two as dropped by
-  // the 2026-07-29 "one name per concept" triage, but they are wired
-  // and working — an open call, recorded beside the `roundrectangle`
-  // one in the README.  If it goes the ledger's way, these two rows
-  // and the wiring come out together.
+  // These two were listed as dropped by the 2026-07-29 "one name per
+  // concept" triage and were nonetheless wired and working — an open call
+  // until the fifth design sitting, which **kept them** as deliberate,
+  // recorded exceptions ("possibly useful"), where the same call dropped
+  // `roundrectangle` (round 37.2).  So these rows are now the pinned
+  // contract rather than a pinned inconsistency; the exception is written
+  // into the ledger's legacy-alias line.
   [ 'autolockNodes', 'autolock' ],
   [ 'autoungrabifyNodes', 'autoungrabify' ],
   [ '$id', 'getElementById' ]

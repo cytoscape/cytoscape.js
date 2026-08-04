@@ -1498,9 +1498,15 @@ each is deliberate, not a pass-1 deferral:
   degrading output), `background-blacken` (compute the shade in a
   color mapper's range instead), `bounds-expansion` (bounds are
   computed correctly instead), and the legacy aliases (`content`,
-  `autolockNodes`/`autoungrabifyNodes`,
   `padding-{left,right,top,bottom}`, no-dash shape spellings,
   redundant `attr`-family duplicates — one name per concept).
+  **Two recorded exceptions to that rule** (fifth design sitting,
+  2026-08-04): `cy.autolockNodes()` and `cy.autoungrabifyNodes()`
+  were listed in the original triage and are **kept** — judged
+  possibly useful, and wired and working since long before the call.
+  The same sitting went the other way on the third survivor:
+  `roundrectangle` was accepted where `cutrectangle` and
+  `concavehexagon` threw, and now throws with them (round 37.2).
   *Kept, with direction*: `curve-style: haystack` (+
   `haystack-radius`) and `straight-triangle` return as real visual
   styles — not perf modes — with the curved-edge work; ghost props
@@ -2570,17 +2576,21 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   vertices scaled to device space (exact distance, so AA and borders
   stay crisp under anisotropy) and picked by an exact CPU
   point-in-polygon in normalized space.  **Round 27 completed the
-  vocabulary** — every v3 shape keyword is accepted, with the two
-  no-dash legacy aliases (`cutrectangle`, `concavehexagon`) left out
-  by the 2026-07-29 "one name per concept" triage.  *Noted
-  inconsistency*: `roundrectangle` survived that triage and is still
-  accepted, so the alias policy is applied unevenly; resolving it
-  either way is a small API call, not an oversight to patch
-  silently.  The round-29 docs check found the same triage
-  half-applied elsewhere — `cy.autolockNodes()` and
-  `cy.autoungrabifyNodes()` are listed as dropped in PLAN.md's ledger
-  but are declared, wired and working — so it is **one call covering
-  three names**, not two unrelated warts.  `right-rhomboid` and `concave-hexagon` joined as
+  vocabulary** — every v3 shape keyword is accepted, with the
+  no-dash legacy aliases (`cutrectangle`, `concavehexagon` and, since
+  round 37.2, `roundrectangle`) left out by the 2026-07-29 "one name
+  per concept" triage.  `roundrectangle` had survived that triage in
+  the code for eight rounds while its two siblings threw — an
+  unevenly applied policy, pinned rather than patched because
+  removing public API is the maintainer's call.  The fifth design
+  sitting took it as **one call over three names** (the round-29 docs
+  check having found `cy.autolockNodes()`/`cy.autoungrabifyNodes()`
+  in the same state) and **split** it: the shape spelling drops, the
+  two core aliases stay as recorded exceptions.  It was accepted in
+  three enums — the node `shape`, `overlay`/`underlay-shape` and
+  `text-background-shape` — and drops from all three, since removing
+  it from one would have moved the inconsistency rather than closed
+  it.  `right-rhomboid` and `concave-hexagon` joined as
   point tables; `cut-rectangle` (a chamfer of *absolute* length),
   `bottom-round-rectangle` and `barrel` (four sampled bezier
   corners) are parameterized shapes with their own fields; and the

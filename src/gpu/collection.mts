@@ -310,22 +310,44 @@ export class GpuCollection {
     return 'collection';
   }
 
-  /** The core this collection belongs to. */
+  /**
+   * The core this collection belongs to.
+   *
+   * @returns the instance that owns these elements — a collection cannot
+   *   span two cores, so this is also the identity a set operation
+   *   against a foreign collection would violate
+   */
   cy(): GpuCore {
     return this._cy;
   }
 
-  /** The renderer, or null when headless. */
+  /**
+   * The renderer, or null when headless.
+   *
+   * @returns the renderer, or null on a headless instance — the model is
+   *   CPU-canonical, so a null renderer costs drawing, picking and image
+   *   export and nothing else
+   */
   renderer(): GpuCore['_renderer'] {
     return this._cy._renderer;
   }
 
-  /** The first element as a length-1 collection (empty collection when empty). */
+  /**
+   * The first element as a length-1 collection (empty collection when empty).
+   *
+   * @returns a length-1 collection, or an empty one — v4 has no separate
+   *   element type, so this narrows rather than unwraps
+   */
   element(): GpuCollection {
     return this.eq( 0 );
   }
 
-  /** An empty collection in the same core. */
+  /**
+   * An empty collection in the same core.
+   *
+   * @returns a fresh empty collection bound to this core — the seed for
+   *   building a set up by union
+   */
   collection(): GpuCollection {
     return this._cy.collection();
   }
@@ -582,7 +604,14 @@ export class GpuCollection {
     return this[0]?._group;
   }
 
-  /** Plain-object form of the first element (undefined when empty). */
+  /**
+   * Plain-object form of the first element (undefined when empty).
+   *
+   * @returns the definition-form object for the **first** element, or
+   *   undefined when the collection is empty; it round-trips through
+   *   `cy.add()`, which is the supported restore path since `cy.json()`'s
+   *   import form is not in v4
+   */
   json(): Record<string, unknown> | undefined {
     const ref = this._first();
 
@@ -610,7 +639,12 @@ export class GpuCollection {
     return json;
   }
 
-  /** Plain-object form of every element. */
+  /**
+   * Plain-object form of every element.
+   *
+   * @returns one object per element, in collection order — the plural of
+   *   `json()`, not a graph-level export
+   */
   jsons(): ( Record<string, unknown> | undefined )[] {
     const out: ( Record<string, unknown> | undefined )[] = [];
 
@@ -1013,7 +1047,13 @@ export class GpuCollection {
     return { nodes: this.nodes(), edges: this.edges() };
   }
 
-  /** All elements of the graph not in this collection. */
+  /**
+   * All elements of the graph not in this collection.
+   *
+   * @returns the complement against the **whole graph**, not against any
+   *   enclosing collection — which is what the `absolute` in the name is
+   *   distinguishing
+   */
   absoluteComplement(): GpuCollection {
     return this._cy.elements().difference( this );
   }
@@ -1282,7 +1322,12 @@ export class GpuCollection {
     return this.animation( { duration, complete } );
   }
 
-  /** True when any of these elements has a running animation. */
+  /**
+   * True when any of these elements has a running animation.
+   *
+   * @returns whether **any** element here is animating — not whether all
+   *   are, and not whether the viewport is (that is `cy.animated()`)
+   */
   animated(): boolean {
     for( const ref of this._refs ){
       if( this._cy._animations.isAnimating( ref ) ){ return true; }
@@ -1823,6 +1868,11 @@ export class GpuCollection {
    * Per-element scratchpad (plain JS, not a column): `scratch()` reads the
    * first element's whole object, `scratch(ns)` one namespace, `scratch(ns,
    * val)` / `scratch(obj)` write to every element.
+   *
+   * @returns the reader forms answer the first element — the whole
+   *   scratch object under no argument, one namespace's value under
+   *   `scratch(ns)`, undefined when the collection is empty — while the
+   *   writer forms return this collection for chaining
    */
   scratch(
     ...args: [] | [ string ] | [ string, unknown ] | [ Record<string, unknown> ]
@@ -1969,7 +2019,12 @@ export class GpuCollection {
 
   /** The rendered opacity: a node's own opacity times its ancestors'
    * (v3's product rule — the store keeps the folded value in the
-   * column, round 14.4); an edge's own opacity (edges have no parent). */
+   * column, round 14.4); an edge's own opacity (edges have no parent).
+   *
+   * @returns the opacity actually rendered, which is what `transparent()`
+   *   tests against 0 — not the declared `opacity` style value, which
+   *   `style('opacity')` reads; undefined when empty or removed
+   */
   effectiveOpacity(): number | undefined {
     const ref = this._first();
 
@@ -1994,18 +2049,32 @@ export class GpuCollection {
 
   /** The space tier (round 22): shown elements occupy space — they join
    * bb/fit and size their compound parents — even when `visibility:
-   * 'hidden'` keeps them from rendering.  display-tier hide() clears it. */
+   * 'hidden'` keeps them from rendering.  display-tier hide() clears it.
+   *
+   * @returns whether the element occupies space — since round 22 this can
+   *   differ from `visible()`, which is the paint tier
+   */
   takesUpSpace(): boolean {
     return this._hasBit( FLAG_VISIBLE );
   }
 
   /** Whether the element can be interacted with: visible and not
-   * pointer-transparent (`events: 'no'` — round 20.2). */
+   * pointer-transparent (`events: 'no'` — round 20.2).
+   *
+   * @returns whether any pointer path will resolve to this element; it
+   *   rides `visible()`, so an element hidden either way is inert
+   */
   interactive(): boolean {
     return this.visible() && !this._hasBit( FLAG_NO_EVENTS );
   }
 
-  /** The node's resolved label text ('' when none); read-only in the prototype. */
+  /**
+   * The node's resolved label text ('' when none); read-only in the prototype.
+   *
+   * @returns the resolved text of the first element's label — `''` when it
+   *   has none (a labelled-but-empty label reads the same), and undefined
+   *   when the collection is empty or the element was removed
+   */
   label(): string | undefined {
     const ref = this._first();
 
@@ -2018,6 +2087,10 @@ export class GpuCollection {
    * v3-parity accessor: node padding.  Leaves have no padding in v4
    * (no compound-free `padding` prop); parents answer the resolved
    * auto-bounds padding (round 14.3).
+   *
+   * @returns the resolved padding in model px — 0 for leaves and for any
+   *   graph with no compounds at all, the derived value for a parent;
+   *   undefined when the collection is empty
    */
   padding(): number | undefined {
     const ref = this._first();
@@ -2031,7 +2104,12 @@ export class GpuCollection {
     return this._store.paddingOf( ref.slot );
   }
 
-  /** The drawn box: core dims + 2 x padding (v3's paddedWidth). */
+  /**
+   * The drawn box: core dims + 2 x padding (v3's paddedWidth).
+   *
+   * @returns the padded width — identical to `width()` for leaves, which
+   *   have no padding; undefined when empty or removed
+   */
   paddedWidth(): number | undefined {
     return this._paddedDim( 0 );
   }
@@ -2365,7 +2443,12 @@ export class GpuCollection {
 
   /** Midpoint of the edge: the curve/route midpoint for curved edges
    * (v3's rs.mid rules per family), the endpoint-center average for
-   * straight ones. */
+   * straight ones.
+   *
+   * @returns the point a mid-label and a mid-arrow anchor at, in model
+   *   space; undefined for non-edges.  Mid-tween it inherits the position
+   *   lease's staleness, like the endpoints it derives from
+   */
   midpoint(): Position | undefined {
     const ref = this._first();
 
@@ -2413,7 +2496,13 @@ export class GpuCollection {
     return this._toRenderedPoint( this.midpoint() );
   }
 
-  /** The edge's source-side endpoint (node center approximation for straight edges). */
+  /**
+   * The edge's source-side endpoint in model space, resolved through the
+   * route evaluator — so it accounts for curve family, node boundary
+   * clipping, haystack offsets and any manual `source-endpoint`.
+   *
+   * @returns the endpoint, or undefined for non-edges
+   */
   sourceEndpoint(): Position | undefined {
     return this._endpointPoint( 0 );
   }
@@ -2449,7 +2538,13 @@ export class GpuCollection {
 
   /** Whether the edge participates in bezier bundling — v3 semantics:
    * a style check (`curve-style: bezier`), true even for the lone or
-   * odd-middle member that renders straight. */
+   * odd-middle member that renders straight.
+   *
+   * @returns whether the *styled record* says bezier — a question about
+   *   style, not about the rendered shape, which is why a lone edge under
+   *   `curve-style: bezier` answers true while drawing as a line.  False
+   *   for nodes and for removed elements
+   */
   isBundledBezier(): boolean {
     const ref = this._first();
 
@@ -2461,7 +2556,13 @@ export class GpuCollection {
   /** The edge's curve control points (model coords): one for a bundled
    * bezier, two for a self-loop, the control list for an unbundled
    * bezier, undefined otherwise — v3's getControlPoints surface
-   * (segments/taxi answer segmentPoints() instead). */
+   * (segments/taxi answer segmentPoints() instead).
+   *
+   * @returns the control points in model space, or undefined when the
+   *   edge has none — which covers straight edges, segments/taxi routes,
+   *   and a straight edge carrying manual endpoints (the 12c `n = 0`
+   *   chord)
+   */
   controlPoints(): Position[] | undefined {
     const ref = this._first();
 
@@ -2500,7 +2601,12 @@ export class GpuCollection {
 
   /** The edge's segment points (model coords) — v3's getSegmentPoints:
    * defined for segments *and* taxi edges (taxi derives its points),
-   * undefined otherwise. */
+   * undefined otherwise.
+   *
+   * @returns the interior route points in model space — *derived* ones
+   *   for taxi, which computes rather than declares them — or undefined
+   *   for every other family
+   */
   segmentPoints(): Position[] | undefined {
     const ref = this._first();
 
@@ -2650,7 +2756,14 @@ export class GpuCollection {
 
   // -- grab / lock --
 
-  /** Pannable elements are not draggable, so pannable overrides grabbable (as in v3). */
+  /**
+   * Pannable elements are not draggable, so pannable overrides grabbable
+   * (as in v3).
+   *
+   * @returns whether a drag gesture would move this element — the
+   *   *effective* answer, so a grabbable-but-pannable element reads false
+   *   here while `json()` reports the raw field
+   */
   grabbable(): boolean {
     return this._hasBit( FLAG_GRABBABLE ) && !this._hasBit( FLAG_PANNABLE );
   }
@@ -2693,6 +2806,10 @@ export class GpuCollection {
    * element that is not visible() neither draws nor picks.  For
    * space-tier state (in the bb, sizing its compound parent) see
    * `takesUpSpace()` — an invisible element keeps its space.
+   *
+   * @returns whether the element draws and picks; false for a removed
+   *   element, for an edge either of whose endpoints is hidden, and for a
+   *   node under a hidden or invisible ancestor
    */
   visible(): boolean {
     const ref = this._first();
@@ -2777,12 +2894,22 @@ export class GpuCollection {
 
   // -- active / pannable --
 
-  /** Whether the first element is in the transient pressed ("active") state. */
+  /**
+   * Whether the first element is in the transient pressed ("active") state.
+   *
+   * @returns the pressed flag the pointer layer sets while a press is
+   *   held — transient interaction state, not a persisted property
+   */
   active(): boolean {
     return this._hasBit( FLAG_ACTIVE );
   }
 
-  /** True when the first element is live and not active (v3 `inactive()`). */
+  /**
+   * True when the first element is live and not active (v3 `inactive()`).
+   *
+   * @returns not simply the negation of `active()`: a removed element is
+   *   neither active nor inactive, so both read false for it
+   */
   inactive(): boolean {
     const ref = this._first();
 
@@ -2809,7 +2936,12 @@ export class GpuCollection {
     return this._setBit( FLAG_ACTIVE, false );
   }
 
-  /** Whether dragging the first element pans the graph instead of grabbing it. */
+  /**
+   * Whether dragging the first element pans the graph instead of grabbing it.
+   *
+   * @returns the raw pannable flag; because pannable overrides grabbable,
+   *   a true here forces `grabbable()` false
+   */
   pannable(): boolean {
     return this._hasBit( FLAG_PANNABLE );
   }
@@ -2873,8 +3005,14 @@ export class GpuCollection {
 
   /**
    * Remove these elements from the graph; incident edges of removed nodes
-   * cascade.  Returns the removed elements.  Already-removed elements are
-   * skipped (no second `remove` event).
+   * cascade.  Already-removed elements are skipped (no second `remove`
+   * event).
+   *
+   * @returns the elements actually removed — the closure, so it can be
+   *   *larger* than the receiver: removing a parent brings its
+   *   descendants, and removing a node brings its incident edges.  The
+   *   returned refs are dead by construction (v4 removals are terminal),
+   *   so only their cached `id()`/`group()` still read
    */
   remove(): GpuCollection {
     const cy = this._cy;
@@ -3564,28 +3702,47 @@ export class GpuCollection {
     return criterion == null ? eles : eles.filter( criterion );
   }
 
-  /** Whether the first element is a node with at least one child. */
+  /**
+   * Whether the first element is a node with at least one child.
+   *
+   * @returns v3's `:parent` as a predicate; false for edges and for
+   *   removed elements, which are nodes of no hierarchy
+   */
   isParent(): boolean {
     const ref = this._liveNodeRef();
 
     return ref != null && this._store.childrenOf( ref.slot ).length > 0;
   }
 
-  /** Whether the first element is a node with no children. */
+  /**
+   * Whether the first element is a node with no children.
+   *
+   * @returns v3's `:childless`; false for edges, so it is not the plain
+   *   negation of `isParent()`
+   */
   isChildless(): boolean {
     const ref = this._liveNodeRef();
 
     return ref != null && this._store.childrenOf( ref.slot ).length === 0;
   }
 
-  /** Whether the first element is a node with a parent. */
+  /**
+   * Whether the first element is a node with a parent.
+   *
+   * @returns v3's `:child`; false for edges and removed elements
+   */
   isChild(): boolean {
     const ref = this._liveNodeRef();
 
     return ref != null && this._store.parentOf( ref.slot ) >= 0;
   }
 
-  /** Whether the first element is a node without a parent. */
+  /**
+   * Whether the first element is a node without a parent.
+   *
+   * @returns v3's `:orphan`; false for edges, so it is not the plain
+   *   negation of `isChild()`
+   */
   isOrphan(): boolean {
     const ref = this._liveNodeRef();
 
@@ -3920,7 +4077,13 @@ export class GpuCollection {
 
   declare componentsOf: this['components'];
 
-  /** The whole-graph connected component containing the first element. */
+  /**
+   * The whole-graph connected component containing the first element.
+   *
+   * @returns the component as nodes *and* their connecting edges, computed
+   *   over the whole graph rather than within this collection; an empty
+   *   collection when this one is empty
+   */
   component(): GpuCollection {
     if( this._first() == null ){ return this._spawn( [] ); }
 

@@ -1,15 +1,39 @@
+# v3, kept in-repo for comparison benchmarks and parity work — never shipped
 v3
+
+# development trees
 test
 debug
 benchmark
 scripts
+snippets
+typescript
 playwright-page
 playwright-tests
 tests-examples
-snippets
+test-results
 build
-node_modules
+
+# development config and tooling
+.github
+.oxlintrc.json
+.nvmrc
+mise.toml
+playwright.config.js
+rolldown.config.mjs
+rolldown.dts.config.mjs
+build-dts.mjs
+license-update.mjs
+tsconfig.json
+tsconfig.dts.json
+tsconfig.types-test.json
+*.tsbuildinfo
+
+# repo docs that are not the package's
 PLAN.md
 AGENTS.md
 CLAUDE.md
 CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+
+node_modules

@@ -254,7 +254,8 @@ export — see the design decisions below),
 `batchData`/`batching` — see below), `json()` (export-only),
 box selection (`elementsInBox` + the pointer gesture — mouse/pen,
 and the round-20.5 three-finger touch box),
-`selectionType` and `boxSelectionIncludesLabels` (round 16.5),
+`selectionType`, `boxSelectionIncludesLabels` (round 16.5) and
+`boxSelectionMode` (round 39.1),
 the round-20.1 interaction tuning quartet (`wheelSensitivity`,
 `desktopTapThreshold`/`touchTapThreshold`, `tapholdDuration` —
 ctor options + getter/setters, see the gestures notes below),
@@ -2932,7 +2933,33 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   **curved edges test their curve boundary endpoints** — exactly v3's
   on-boundary rule, via the full-family CPU evaluator (the revisit
   deferred from 12a); straight edges keep the endpoint-*center*
-  approximation (a recorded deviation).  `selectionType()`
+  approximation (a recorded deviation).
+  **`boxSelectionMode` (round 39.1)** picks the other rule v3 offers:
+  `'contain'` (the default, above) or `'overlap'`, where a node counts
+  when its box *intersects* the band and an edge when any part of its
+  drawn path crosses it — either endpoint inside, or a segment clipped
+  by Liang-Barsky, `curve-geometry.mts`'s `segmentHitsBox` being the
+  CPU twin of the test the cull pass has run per edge per frame since
+  the first cull.  Curved edges take the conservative-then-exact shape
+  the rest of the curve geometry uses: the memoized exact bb rejects the
+  common miss, and only a survivor pays for the flattened walk at the
+  drawn subdivision.  Two boundaries are deliberate.  The mode is read
+  by the **gesture** only — `cy.elementsInBox()` stays the pure
+  geometric containment query, so a programmatic caller's results never
+  move under an interaction preference — and
+  `boxSelectionIncludesLabels` **reverses sense** with it, since that is
+  all it can mean in each: under 'contain' the label box must *also* be
+  inside, under 'overlap' a label crossing the band is *enough*
+  (containment is an AND over an element's parts, overlap an OR).
+  Recorded shape difference: v3 spells this as a per-element style prop
+  (`box-selection`, whose third value `'none'` v4 covers with the
+  `events` prop); v4 makes it a whole-instance option, with the
+  interaction quartet on the core.  Cost (`benchmark/gpu/spatial.mjs`,
+  N=2000 / 4000 edges, a band over half the graph): overlap is **~1.9×**
+  containment on straight edges (246 → 470 µs) and **~1.9×** on curved
+  ones (968 µs → 1.80 ms), the curved pair being dearer on both sides
+  because containment already evaluates curve endpoints there.
+  `selectionType()`
   is 'single' (tap/box replaces the selection) or 'additive' (taps
   toggle, boxes add).  **Three-finger touch box selection** landed in
   round 20.5 (v3's gesture): with `boxSelectionEnabled`, three fingers

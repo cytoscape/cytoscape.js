@@ -307,6 +307,64 @@ export const flattenCurve = ( ev: CurveEval, segs: number = CURVE_SEGS ): Float6
 };
 
 /**
+ * Exact segment-vs-axis-aligned-rect test (Liang-Barsky) — true when any
+ * part of the segment lies inside the box, including a segment wholly
+ * inside it and one that crosses without either end being in.
+ *
+ * The **CPU twin of `segmentHitsViewport`** in `render/cull.mts`, which
+ * has run this clip per edge per frame since the first cull pass; round
+ * 39.1's overlap box selection needs the same question answered on the
+ * CPU, so it is extracted here rather than written a second time.  Keep
+ * the two in step: they differ only in that the WGSL grows the rect by a
+ * cull margin, which is a caller's job here.
+ *
+ * @param ax — the segment's first x
+ * @param ay — the segment's first y
+ * @param bx — the segment's second x
+ * @param by — the segment's second y
+ * @param lx — the box's low x
+ * @param ly — the box's low y
+ * @param hx — the box's high x
+ * @param hy — the box's high y
+ * @returns whether segment and box intersect at all
+ */
+export const segmentHitsBox = (
+  ax: number, ay: number, bx: number, by: number,
+  lx: number, ly: number, hx: number, hy: number
+): boolean => {
+  const dx = bx - ax;
+  const dy = by - ay;
+  let t0 = 0;
+  let t1 = 1;
+
+  for( let axis = 0; axis < 2; axis++ ){
+    const d = axis === 0 ? dx : dy;
+    const a = axis === 0 ? ax : ay;
+    const lo = axis === 0 ? lx : ly;
+    const hi = axis === 0 ? hx : hy;
+
+    // parallel to this axis: in or out, no clipping to do.  The epsilon
+    // is the WGSL's, so a degenerate (zero-length) segment answers the
+    // same on both sides — loops have exactly that chord.
+    if( Math.abs( d ) < 1e-6 ){
+      if( a < lo || a > hi ){ return false; }
+    } else {
+      let tNear = ( lo - a ) / d;
+      let tFar = ( hi - a ) / d;
+
+      if( tNear > tFar ){ const t = tNear; tNear = tFar; tFar = t; }
+
+      t0 = Math.max( t0, tNear );
+      t1 = Math.min( t1, tFar );
+
+      if( t0 > t1 ){ return false; }
+    }
+  }
+
+  return true;
+};
+
+/**
  * Conservative bound on how far the curve can stray from the segment
  * between its endpoint node centers, straight from the params (no
  * geometry eval): the quadratic lies in the convex hull of its

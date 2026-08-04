@@ -920,7 +920,7 @@ export class PointerHandler {
 
     cy.emit( { type: 'boxend', position } );
 
-    const eles = cy.elementsInBox( p1.x, p1.y, p2.x, p2.y )
+    const eles = cy._elementsInGestureBox( p1.x, p1.y, p2.x, p2.y )
       .filter( ( ele: GpuCollection ) => ele.interactive() ); // the 20.2 rule
 
     for( let i = 0; i < eles.length; i++ ){
@@ -950,7 +950,7 @@ export class PointerHandler {
     // 20.2: events:'no' elements are not box-selectable and get no box
     // events (v3 boxes over its interactive set); the geometric query
     // itself stays unfiltered
-    const box = cy.elementsInBox( p1.x, p1.y, p2.x, p2.y )
+    const box = cy._elementsInGestureBox( p1.x, p1.y, p2.x, p2.y )
       .filter( ( ele: GpuCollection ) => ele.interactive() );
 
     cy.emit( { type: 'boxend', position } );

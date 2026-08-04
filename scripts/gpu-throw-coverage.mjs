@@ -65,9 +65,9 @@ export const BROWSER_ONLY = [ 'src/gpu/render/', 'src/gpu/interact/', 'src/gpu/g
  * site and still carries a reason.
  */
 export const UNREACHABLE = {
-  'src/gpu/wire.mts:68':
+  'src/gpu/wire.mts:78':
     'big-endian platform guard — every supported platform is little-endian',
-  'src/gpu/store/graph-store.mts:2226':
+  'src/gpu/store/graph-store.mts:2228':
     'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field',
 
   // Round 36.4 classified the browser-only tier the same way 30.4

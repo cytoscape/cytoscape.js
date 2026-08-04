@@ -37,8 +37,9 @@ import { FLAG_SELECTABLE, FLAG_SELECTED, NO_SLOT } from './contract.mjs';
 import { NO_PARENT } from './gpu-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
-  CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition, GpuElementsDefinition,
-  GpuElementsInput, GpuExportOptions, GpuLayoutOptions, GpuStylesheet, Position, RendererStats
+  BoxSelectionMode, CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition,
+  GpuElementsDefinition, GpuElementsInput, GpuExportOptions, GpuLayoutOptions, GpuStylesheet,
+  Position, RendererStats
 } from './gpu-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
@@ -130,6 +131,7 @@ export class GpuCore {
   private _boxSelectionEnabled: boolean;
   /** box selection also requires label containment (16.5; default off — v3) */
   private _boxSelectionIncludesLabels: boolean;
+  private _boxSelectionMode: BoxSelectionMode;
   private _selectionType: 'single' | 'additive';
   private _multiClickDebounceTime: number;
   /** round 20.1: the interaction option quartet (v3 defaults) */
@@ -221,6 +223,7 @@ export class GpuCore {
     this._userZoomingEnabled = options.userZoomingEnabled ?? true;
     this._boxSelectionEnabled = options.boxSelectionEnabled ?? true;
     this._boxSelectionIncludesLabels = options.boxSelectionIncludesLabels ?? false;
+    this._boxSelectionMode = 'contain';
     this._selectionType = 'single';
     this._multiClickDebounceTime = 250; // v3's default
     this._wheelSensitivity = 1; // v3's default (a multiplier on the zoom rate)
@@ -230,6 +233,10 @@ export class GpuCore {
     this._tapholdDuration = 500; // v3's (hardcoded) press-and-hold duration
     this._batchDepth = 0;
     this._batchPending = null;
+
+    if( options.boxSelectionMode != null ){
+      this.boxSelectionMode( options.boxSelectionMode );
+    }
 
     if( options.selectionType != null ){
       this.selectionType( options.selectionType );
@@ -952,6 +959,13 @@ export class GpuCore {
    * when both endpoint node centers do (v3's default 'contain'
    * semantics, with straight-edge endpoints taken at the node centers).
    *
+   * **`boxSelectionMode` does not reach here** (round 39.1): this stays
+   * the pure geometric containment query whatever the *gesture* is set
+   * to, so a programmatic caller's results never move under an
+   * interaction preference.  For the overlap question, `boxSelectionMode(
+   * 'overlap' )` and drag a box, or test intersection yourself against
+   * `eles.boundingBox()`.
+   *
    * @param x1 — one corner's model x
    * @param y1 — that corner's model y
    * @param x2 — the opposite corner's model x
@@ -962,6 +976,21 @@ export class GpuCore {
     return new GpuCollection(
       this,
       this._store.refsInBox( x1, y1, x2, y2, this._boxSelectionIncludesLabels ),
+      { unique: true, live: true } );
+  }
+
+  /**
+   * The *gesture's* box query: `elementsInBox` with this instance's
+   * `boxSelectionMode` applied (round 39.1).  Internal because the mode
+   * is an interaction preference — the public query stays geometric, and
+   * both pointer paths (mouse/pen release and the three-finger touch box)
+   * come through here so they cannot drift apart.
+   */
+  _elementsInGestureBox( x1: number, y1: number, x2: number, y2: number ): GpuCollection {
+    return new GpuCollection(
+      this,
+      this._store.refsInBox(
+        x1, y1, x2, y2, this._boxSelectionIncludesLabels, this._boxSelectionMode ),
       { unique: true, live: true } );
   }
 
@@ -1871,6 +1900,39 @@ export class GpuCore {
     if( bool === undefined ){ return this._boxSelectionIncludesLabels; }
 
     this._boxSelectionIncludesLabels = bool;
+
+    return this;
+  }
+
+  /**
+   * What the box-selection gesture counts as caught: `'contain'`
+   * (default, v3's) selects only elements wholly inside the band;
+   * `'overlap'` selects anything the band touches — a node whose box
+   * intersects it, an edge any part of whose drawn path crosses it.
+   * Round 39.1.
+   *
+   * Two notes on the boundary.  This setting is read by the **gesture**
+   * only: `cy.elementsInBox()` stays the pure geometric containment
+   * query it has always been, so a programmatic caller's results do not
+   * change under an interaction preference.  And
+   * `boxSelectionIncludesLabels` reverses sense with the mode, because
+   * it can only mean one thing in each: under 'contain' the label box
+   * must *also* be inside, under 'overlap' a label that crosses the band
+   * is *enough*.
+   *
+   * @param mode — the mode to set; omit to read the current one
+   * @returns the mode, or this when setting
+   * @throws if `mode` is neither 'contain' nor 'overlap'
+   */
+  boxSelectionMode( mode?: BoxSelectionMode ): BoxSelectionMode | this {
+    if( mode === undefined ){ return this._boxSelectionMode; }
+
+    if( mode !== 'contain' && mode !== 'overlap' ){
+      throw new Error(
+        `Invalid box selection mode '${String( mode )}'; use 'contain' or 'overlap'` );
+    }
+
+    this._boxSelectionMode = mode;
 
     return this;
   }

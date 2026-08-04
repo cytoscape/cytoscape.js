@@ -239,7 +239,6 @@ described until their rounds ship.
    **Call taken (2026-08-04): build** —
    `boxSelectionMode: 'contain' | 'overlap'` per the logged round-20
    shape (bb-intersect for nodes, segment/route-vs-rect for edges).
-   Executes as **round 39**.
 3. **Core/collection extension points** (gap item 10) — the layout
    contract landed in round 17; the other two extension categories
    stay out on the reasoning that mappers and predicates cover the
@@ -10089,17 +10088,60 @@ round builds all three tiers.
 
 Three independent small builds, all decided at the fifth sitting.
 
-- **39.1 Overlap box selection.**  `boxSelectionMode:
-  'contain' | 'overlap'` — ctor option + validated getter/setter
-  (the round-20.1 shape).  Overlap: a node counts when its bb
-  (incl. border) *intersects* the band; an edge when its
-  segment/route intersects it — the cull pass owns exactly that math
-  (Liang-Barsky + the curved-stream tests), so the CPU twin is
-  extracted rather than invented; curved edges get the same
-  conservative-then-exact treatment box selection already uses.
-  Docs-first confirms the lean that the *gesture* takes the mode
-  while `cy.elementsInBox()` stays the pure geometric contain query
-  (or gains an options argument — one call, taken then).
+- [x] **39.1 Overlap box selection** (2026-08-04) — landed, at the
+  recorded lean.  `boxSelectionMode: 'contain' | 'overlap'` as a ctor
+  option plus a validated getter/setter in the round-20.1 shape; the
+  store's `refsInBox` takes the mode, and `GraphStore.edgeHitsBox` is
+  the new exact test.  The CPU twin was **extracted, not invented**:
+  `segmentHitsBox` in `curve-geometry.mts` is `segmentHitsViewport`
+  from `render/cull.mts` line for line, epsilon included, so the
+  question box selection asks is the one the cull pass has answered per
+  edge per frame since the first cull pass.  Curved edges take the
+  conservative-then-exact shape: the memoized exact bb rejects, and only
+  a survivor walks the flattened path at the drawn subdivision.
+  **The `elementsInBox` call, taken**: the public query stays pure
+  containment and gains no options argument.  The mode is an
+  *interaction* preference, so it should not move a programmatic
+  caller's results, and the four-numbers signature is a known footgun
+  (33.5) that a fifth parameter would deepen.  Both gesture paths —
+  pointer release and the three-finger touch box — go through one
+  internal `_elementsInGestureBox` so they cannot drift.
+  `boxSelectionIncludesLabels` **reverses sense** with the mode, and the
+  docs say why rather than treating it as a special case: containment is
+  an AND over an element's parts, overlap an OR, so under 'contain' the
+  label must also be inside and under 'overlap' a label crossing the
+  band is enough.  That is v3's rule too.
+  Not added to `cy.json()`, matching `boxSelectionIncludesLabels`: the
+  export mirrors v3's shape, and both of these are v4 inventions.
+  Recorded shape difference: **v3 spells this as a per-element style
+  prop** (`box-selection`, with a third value `'none'` that v4's
+  `events` prop already covers), not a core option.  The sitting chose
+  the core-option shape; the difference is worth knowing because the
+  ledger described v3 as merely "also offering overlap".
+  **Three specs were vacuous and the controls caught all three.**  Every
+  overlap spec passed on the first run *with the exact flattened walk
+  deliberately removed* — the conservative bb reject was doing all the
+  work, so nothing tested the walk.  Two "band inside the bb that the
+  path does not reach" specs fix it (one curved, one straight-diagonal),
+  and now removing the curved walk, replacing the straight clip with a
+  bb test, or dropping the label-widening branch each fails exactly one
+  spec.  A fourth near-miss: the benchmark's curved row used
+  `curve-style: bezier`, which **bundles multi-edges only** (12a), so on
+  a fixture with no parallel pairs it measured straight edges and read
+  identical to the row above it — `unbundled-bezier` fixes it, and the
+  row now prints how many of its edges are actually curved.
+  Costs (`benchmark/gpu/spatial.mjs`, N=2000/4000 edges, a band over
+  half the graph, 2900–3120 elements caught): overlap is **1.9×**
+  containment on straight edges (246 → 470 µs) and **1.9×** on curved
+  (968 µs → 1.80 ms), the curved pair dearer on both sides because
+  containment already evaluates curve endpoints there.  A `webgpu`
+  gesture spec runs the same shift-drag under both modes.
+  **The round-37.1 gate fired twice, correctly**: edits to
+  `graph-store.mts` and to `wire.mts`'s header comment moved two
+  `UNREACHABLE` sites out from under their `file:line` keys, and the
+  build failed naming them rather than silently re-pointing the
+  exemptions.  That is the failure mode 37.1 was built for, arriving in
+  the very next round.
 - [x] **39.2 Graph-level data in the wire format** (2026-08-04) —
   landed, at the recorded lean.  Format **version 4**, flag bit
   `F_GRAPH_DATA`, section written last so the element payload keeps the

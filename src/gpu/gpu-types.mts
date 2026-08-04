@@ -520,6 +520,19 @@ export interface RendererStats {
   labelShapeMisses: number;
 }
 
+/**
+ * How the box-selection gesture decides what the band caught (round
+ * 39.1): `'contain'` selects only elements wholly inside it — v3's
+ * default and v4's — while `'overlap'` selects anything it touches.
+ *
+ * A whole-instance setting, where v3 spells the same choice as a
+ * per-element style prop (`box-selection`, which also has a `'none'`
+ * value covered in v4 by the `events` prop).  The v4 shape was chosen at
+ * the fifth design sitting: it is an interaction preference rather than
+ * an appearance, and v4 keeps the interaction quartet on the core.
+ */
+export type BoxSelectionMode = 'contain' | 'overlap';
+
 export interface CytoscapeGpuOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
@@ -553,6 +566,10 @@ export interface CytoscapeGpuOptions {
   /** box selection also requires label containment (round 16.5 — the
    * v4 form of v3's box-select-labels; default false, as v3) */
   boxSelectionIncludesLabels?: boolean;
+  /** what the box-selection gesture counts as selected: 'contain'
+   * (default, v3's) takes only elements wholly inside the band;
+   * 'overlap' takes anything the band touches.  Round 39.1. */
+  boxSelectionMode?: BoxSelectionMode;
   /** 'single' (tap/box replaces the selection) or 'additive' (taps toggle, boxes add); default 'single' */
   selectionType?: 'single' | 'additive';
   /** the dbltap/onetap debounce window in ms (default 250, as v3) */

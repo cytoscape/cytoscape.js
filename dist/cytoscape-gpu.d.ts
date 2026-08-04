@@ -1051,6 +1051,18 @@ interface RendererStats {
   labelShapeHits: number;
   labelShapeMisses: number;
 }
+/**
+ * How the box-selection gesture decides what the band caught (round
+ * 39.1): `'contain'` selects only elements wholly inside it — v3's
+ * default and v4's — while `'overlap'` selects anything it touches.
+ *
+ * A whole-instance setting, where v3 spells the same choice as a
+ * per-element style prop (`box-selection`, which also has a `'none'`
+ * value covered in v4 by the `events` prop).  The v4 shape was chosen at
+ * the fifth design sitting: it is an interaction preference rather than
+ * an appearance, and v4 keeps the interaction quartet on the core.
+ */
+type BoxSelectionMode = 'contain' | 'overlap';
 interface CytoscapeGpuOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
@@ -1084,6 +1096,10 @@ interface CytoscapeGpuOptions {
   /** box selection also requires label containment (round 16.5 — the
    * v4 form of v3's box-select-labels; default false, as v3) */
   boxSelectionIncludesLabels?: boolean;
+  /** what the box-selection gesture counts as selected: 'contain'
+   * (default, v3's) takes only elements wholly inside the band;
+   * 'overlap' takes anything the band touches.  Round 39.1. */
+  boxSelectionMode?: BoxSelectionMode;
   /** 'single' (tap/box replaces the selection) or 'additive' (taps toggle, boxes add); default 'single' */
   selectionType?: 'single' | 'additive';
   /** the dbltap/onetap debounce window in ms (default 250, as v3) */
@@ -2699,17 +2715,48 @@ declare class GraphStore implements ModelView {
     key: string;
   }[]): number;
   /**
-   * Live, visible elements contained in the model-coordinate box — the
-   * box-selection query, answered by one columnar scan.  v3's default
-   * 'contain' semantics: a node counts when its bounding box (position ±
-   * size/2 ± border/2) lies fully inside the box; an edge counts when
-   * both of its endpoints do.  Since 12b, curved edges test their
-   * *curve* boundary endpoints (exactly v3's on-boundary rule — the
+   * Live, visible elements in the model-coordinate box — the
+   * box-selection query, answered by one columnar scan.  Corners may be
+   * given in any order.
+   *
+   * **'contain'** (the default, v3's): a node counts when its bounding
+   * box (position ± size/2 ± border/2) lies fully inside the box; an edge
+   * counts when both of its endpoints do.  Since 12b, curved edges test
+   * their *curve* boundary endpoints (exactly v3's on-boundary rule — the
    * revisit deferred from 12a); straight edges keep the endpoint-center
-   * approximation (a recorded deviation).  Corners may be given in any
-   * order.
+   * approximation (a recorded deviation).  `includeLabels` **narrows**
+   * this: the node's label box must be contained too.
+   *
+   * **'overlap'** (round 39.1): a node counts when its bounding box
+   * *intersects* the box; an edge counts when any part of its drawn path
+   * does — either endpoint inside, or a flattened segment crossing, by
+   * the Liang-Barsky clip the cull pass runs per frame (`segmentHitsBox`
+   * is its CPU twin).  `includeLabels` **widens** this instead: a node
+   * whose body misses but whose label box overlaps counts.  The
+   * asymmetry is v3's and is the only thing either mode can mean —
+   * containment is an AND over parts, overlap an OR.
    */
-  refsInBox(x1: number, y1: number, x2: number, y2: number, includeLabels?: boolean): Ref[];
+  refsInBox(x1: number, y1: number, x2: number, y2: number, includeLabels?: boolean, mode?: BoxSelectionMode): Ref[];
+  /**
+   * Does any part of an edge's drawn path lie in the model-space box?
+   * The 'overlap' box-selection test (round 39.1), and the exact one:
+   * a segment crossing the band counts even when neither endpoint is in
+   * it, which is the case containment can never express.
+   *
+   * Curved edges take the **conservative-then-exact** shape the rest of
+   * the curve geometry uses: the memoized exact bb rejects the common
+   * miss for the price of a cached box, and only a survivor pays for the
+   * flattened walk at the drawn subdivision — the same polyline the
+   * renderer strips, so what the band catches is what the band crosses.
+   *
+   * @param slot — the edge slot
+   * @param lx — the box's low x, in model coordinates
+   * @param ly — the box's low y
+   * @param hx — the box's high x
+   * @param hy — the box's high y
+   * @returns whether the drawn path meets the box
+   */
+  edgeHitsBox(slot: number, lx: number, ly: number, hx: number, hy: number): boolean;
   /** Live slots in insertion order (reused slots re-appear at their re-insertion position). */
   slotsOrdered(group: GroupName): number[];
   /**
@@ -6602,6 +6649,7 @@ declare class GpuCore {
   private _boxSelectionEnabled;
   /** box selection also requires label containment (16.5; default off — v3) */
   private _boxSelectionIncludesLabels;
+  private _boxSelectionMode;
   private _selectionType;
   private _multiClickDebounceTime;
   /** round 20.1: the interaction option quartet (v3 defaults) */
@@ -6920,6 +6968,13 @@ declare class GpuCore {
    * when both endpoint node centers do (v3's default 'contain'
    * semantics, with straight-edge endpoints taken at the node centers).
    *
+   * **`boxSelectionMode` does not reach here** (round 39.1): this stays
+   * the pure geometric containment query whatever the *gesture* is set
+   * to, so a programmatic caller's results never move under an
+   * interaction preference.  For the overlap question, `boxSelectionMode(
+   * 'overlap' )` and drag a box, or test intersection yourself against
+   * `eles.boundingBox()`.
+   *
    * @param x1 — one corner's model x
    * @param y1 — that corner's model y
    * @param x2 — the opposite corner's model x
@@ -6927,6 +6982,14 @@ declare class GpuCore {
    * @returns the contained elements
    */
   elementsInBox(x1: number, y1: number, x2: number, y2: number): GpuCollection;
+  /**
+   * The *gesture's* box query: `elementsInBox` with this instance's
+   * `boxSelectionMode` applied (round 39.1).  Internal because the mode
+   * is an interaction preference — the public query stays geometric, and
+   * both pointer paths (mouse/pen release and the three-finger touch box)
+   * come through here so they cannot drift apart.
+   */
+  _elementsInGestureBox(x1: number, y1: number, x2: number, y2: number): GpuCollection;
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
   private _scanCollection;
   /**
@@ -7408,6 +7471,27 @@ declare class GpuCore {
    */
   boxSelectionIncludesLabels(bool?: boolean): boolean | this;
   /**
+   * What the box-selection gesture counts as caught: `'contain'`
+   * (default, v3's) selects only elements wholly inside the band;
+   * `'overlap'` selects anything the band touches — a node whose box
+   * intersects it, an edge any part of whose drawn path crosses it.
+   * Round 39.1.
+   *
+   * Two notes on the boundary.  This setting is read by the **gesture**
+   * only: `cy.elementsInBox()` stays the pure geometric containment
+   * query it has always been, so a programmatic caller's results do not
+   * change under an interaction preference.  And
+   * `boxSelectionIncludesLabels` reverses sense with the mode, because
+   * it can only mean one thing in each: under 'contain' the label box
+   * must *also* be inside, under 'overlap' a label that crosses the band
+   * is *enough*.
+   *
+   * @param mode — the mode to set; omit to read the current one
+   * @returns the mode, or this when setting
+   * @throws if `mode` is neither 'contain' nor 'overlap'
+   */
+  boxSelectionMode(mode?: BoxSelectionMode): BoxSelectionMode | this;
+  /**
    * Get or set whether the box-selection gesture is available.
    *
    * @param bool — the new setting; omit to read
@@ -7744,5 +7828,5 @@ declare namespace cytoscapeGpu {
   export { deserializeElements };
 }
 //#endregion
-export { type CytoscapeGpuOptions, type GpuBoundingBoxInput, type GpuBreadthFirstLayoutOptions, type GpuCaseClause, type GpuCaseMapper, type GpuCircleLayoutOptions, type GpuCollection, type GpuColumnarEdges, type GpuColumnarElements, type GpuColumnarNodes, type GpuConcentricLayoutOptions, type GpuCondition, type GpuCore, type GpuCustomLayoutOptions, type GpuDataColumn, type GpuDictColumn, type GpuElementData, type GpuElementDefinition, type GpuElementsDefinition, type GpuElementsInput, type GpuExportOptions, type GpuForceLayoutOptions, type GpuGridLayoutOptions, type GpuLayoutBaseOptions, type GpuLayoutOptions, type GpuMapper, type GpuMapperSpec, type GpuPackedIds, type GpuPresetLayoutOptions, type GpuRandomLayoutOptions, type GpuRendererOptions, type GpuStylePropValue, type GpuStyleProps, type GpuStylesheet, type NO_PARENT, type Position, type RendererStats, cytoscapeGpu as default };
+export { type BoxSelectionMode, type CytoscapeGpuOptions, type GpuBoundingBoxInput, type GpuBreadthFirstLayoutOptions, type GpuCaseClause, type GpuCaseMapper, type GpuCircleLayoutOptions, type GpuCollection, type GpuColumnarEdges, type GpuColumnarElements, type GpuColumnarNodes, type GpuConcentricLayoutOptions, type GpuCondition, type GpuCore, type GpuCustomLayoutOptions, type GpuDataColumn, type GpuDictColumn, type GpuElementData, type GpuElementDefinition, type GpuElementsDefinition, type GpuElementsInput, type GpuExportOptions, type GpuForceLayoutOptions, type GpuGridLayoutOptions, type GpuLayoutBaseOptions, type GpuLayoutOptions, type GpuMapper, type GpuMapperSpec, type GpuPackedIds, type GpuPresetLayoutOptions, type GpuRandomLayoutOptions, type GpuRendererOptions, type GpuStylePropValue, type GpuStyleProps, type GpuStylesheet, type NO_PARENT, type Position, type RendererStats, cytoscapeGpu as default };
 export as namespace cytoscapeGpu;

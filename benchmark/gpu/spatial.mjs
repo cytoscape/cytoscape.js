@@ -251,7 +251,75 @@ if( has( 'box' ) ){
       bench( 'on', () => do_not_optimize( withLabels.elementsInBox( ...halfBox ) ) );
     } );
   } );
+
+  // Round 39.1: the overlap mode against the containment default, on the
+  // same band.  The rows go through `_elementsInGestureBox` because the
+  // mode is read by the *gesture* — `elementsInBox` stays containment
+  // whatever the option says, which is itself the point of the second
+  // row.
+  //
+  // What makes overlap cost more is not the node test (an intersect is
+  // the same arithmetic as a containment) but the **edges**: containment
+  // asks two point-in-box questions, while overlap runs a Liang-Barsky
+  // clip per segment — one for a straight edge, up to CURVE_SEGS for a
+  // curved one.  So the curved row beside it is the row that matters.
+  //
+  // Discrimination check (printed by the row builder below): the two
+  // modes answer different, non-degenerate sets — a band covering half
+  // the graph catches strictly more under overlap — and the curved
+  // fixture reports how many of its edges are *actually* curved.  Both
+  // numbers are logged because both failed once while being written.
+  // The curve style here is `unbundled-bezier` and not `bezier` for
+  // exactly that reason: `bezier` bundles **multi-edges only** (the
+  // round-12a decision — a lone edge between two nodes renders straight),
+  // and this fixture has no parallel pairs, so the first version of the
+  // curved row measured straight edges and read identical to the row
+  // above it.
+  const overlapCy = makeGpu( elements );
+
+  overlapCy.style( { nodes: { width: 30, height: 30 } } );
+  overlapCy.boxSelectionMode( 'overlap' );
+  instances.push( overlapCy );
+
+  const curvedContain = makeGpu( elements );
+  const curvedOverlap = makeGpu( elements );
+
+  for( const [ inst, mode ] of [ [ curvedContain, 'contain' ], [ curvedOverlap, 'overlap' ] ] ){
+    inst.style( {
+      nodes: { width: 30, height: 30 },
+      edges: { 'curve-style': 'unbundled-bezier', 'control-point-distances': 40 }
+    } );
+    inst.boxSelectionMode( mode );
+    instances.push( inst );
+  }
+
+  const containCount = cy._elementsInGestureBox( ...halfBox ).length;
+  const overlapCount = overlapCy._elementsInGestureBox( ...halfBox ).length;
+
+  const reallyCurved = curvedOverlap.edges()
+    .filter( e => e.controlPoints() != null ).length;
+
+  console.log(
+    `   box mode fixture: contain caught ${containCount}, overlap ${overlapCount}` +
+    ` (curved: ${curvedContain._elementsInGestureBox( ...halfBox ).length}` +
+    ` vs ${curvedOverlap._elementsInGestureBox( ...halfBox ).length});` +
+    ` ${reallyCurved}/${curvedOverlap.edges().length} edges actually curved` );
+
+  group( 'box: overlap vs contain (straight edges)', () => {
+    summary( () => {
+      bench( 'contain', () => do_not_optimize( cy._elementsInGestureBox( ...halfBox ) ) );
+      bench( 'overlap', () => do_not_optimize( overlapCy._elementsInGestureBox( ...halfBox ) ) );
+    } );
+  } );
+
+  group( 'box: overlap vs contain (curved edges — the segment walk)', () => {
+    summary( () => {
+      bench( 'contain', () => do_not_optimize( curvedContain._elementsInGestureBox( ...halfBox ) ) );
+      bench( 'overlap', () => do_not_optimize( curvedOverlap._elementsInGestureBox( ...halfBox ) ) );
+    } );
+  } );
 }
+
 
 // -- bounds -------------------------------------------------------------------
 // The one of the three v3 can answer headless.  v4's default *includes

@@ -23,6 +23,7 @@ import ts from 'typescript-compiler-api';
 
 /** The v4 public type surface, as exported from `cytoscape/gpu`. */
 const EXPECTED_EXPORTS = new Set( [
+  'BoxSelectionMode', // round 39.1
   'CytoscapeGpuOptions',
   'GpuBoundingBoxInput',
   'GpuBreadthFirstLayoutOptions',

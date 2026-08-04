@@ -10,7 +10,7 @@ import type { CompoundStyle } from './hierarchy.mjs';
 import { CurveBlob } from './curve-blob.mjs';
 import {
   CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
-  evalRoute, haystackPoint, headerDeviation, routeVertex
+  evalRoute, haystackPoint, headerDeviation, routeVertex, segmentHitsBox
 } from '../curve-geometry.mjs';
 import type { CurveEval, CurveRoute } from '../curve-geometry.mjs';
 import {
@@ -26,7 +26,9 @@ import {
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
 import { NO_PARENT } from '../gpu-types.mjs';
-import type { GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds } from '../gpu-types.mjs';
+import type {
+  BoxSelectionMode, GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds
+} from '../gpu-types.mjs';
 import { ImageRegistry, IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../image-registry.mjs';
 import { estimateBlock, WRAP_NONE } from '../label-wrap.mjs';
 
@@ -2936,21 +2938,34 @@ export class GraphStore implements ModelView {
   }
 
   /**
-   * Live, visible elements contained in the model-coordinate box — the
-   * box-selection query, answered by one columnar scan.  v3's default
-   * 'contain' semantics: a node counts when its bounding box (position ±
-   * size/2 ± border/2) lies fully inside the box; an edge counts when
-   * both of its endpoints do.  Since 12b, curved edges test their
-   * *curve* boundary endpoints (exactly v3's on-boundary rule — the
+   * Live, visible elements in the model-coordinate box — the
+   * box-selection query, answered by one columnar scan.  Corners may be
+   * given in any order.
+   *
+   * **'contain'** (the default, v3's): a node counts when its bounding
+   * box (position ± size/2 ± border/2) lies fully inside the box; an edge
+   * counts when both of its endpoints do.  Since 12b, curved edges test
+   * their *curve* boundary endpoints (exactly v3's on-boundary rule — the
    * revisit deferred from 12a); straight edges keep the endpoint-center
-   * approximation (a recorded deviation).  Corners may be given in any
-   * order.
+   * approximation (a recorded deviation).  `includeLabels` **narrows**
+   * this: the node's label box must be contained too.
+   *
+   * **'overlap'** (round 39.1): a node counts when its bounding box
+   * *intersects* the box; an edge counts when any part of its drawn path
+   * does — either endpoint inside, or a flattened segment crossing, by
+   * the Liang-Barsky clip the cull pass runs per frame (`segmentHitsBox`
+   * is its CPU twin).  `includeLabels` **widens** this instead: a node
+   * whose body misses but whose label box overlaps counts.  The
+   * asymmetry is v3's and is the only thing either mode can mean —
+   * containment is an AND over parts, overlap an OR.
    */
   refsInBox(
     x1: number, y1: number, x2: number, y2: number,
-    includeLabels: boolean = false
+    includeLabels: boolean = false,
+    mode: BoxSelectionMode = 'contain'
   ): Ref[] {
     this.flushDerived(); // curved edges read derived params below
+    const overlap = mode === 'overlap';
     const lx = Math.min( x1, x2 );
     const hx = Math.max( x1, x2 );
     const ly = Math.min( y1, y2 );
@@ -2975,6 +2990,24 @@ export class GraphStore implements ModelView {
       const hh = size[ slot * 2 + 1 ] / 2 + border[ slot ] / 2;
       const x = pos[ slot * 2 ];
       const y = pos[ slot * 2 + 1 ];
+
+      if( overlap ){
+        let hit = x + hw >= lx && x - hw <= hx && y + hh >= ly && y - hh <= hy;
+
+        // the label *widens* an overlap (39.1), where it narrows a
+        // containment: a node whose body misses the band but whose label
+        // crosses it is touched by the band
+        if( !hit && includeLabels ){
+          const lb = this.nodeLabelBox( slot );
+
+          hit = lb != null
+            && x + lb.x2 >= lx && x + lb.x1 <= hx && y + lb.y2 >= ly && y + lb.y1 <= hy;
+        }
+
+        if( hit ){ out.push( { group: 'nodes', slot, gen: g } ); }
+
+        continue;
+      }
 
       if( x - hw >= lx && x + hw <= hx && y - hh >= ly && y + hh <= hy ){
         // boxSelectionIncludesLabels (16.5, default off — v3's default):
@@ -3017,6 +3050,14 @@ export class GraphStore implements ModelView {
       if( ( nodeFlags[ endpoints[ slot * 2 ] ] & shown ) !== shown
         || ( nodeFlags[ endpoints[ slot * 2 + 1 ] ] & shown ) !== shown ){ continue; }
 
+      if( overlap ){
+        if( this.edgeHitsBox( slot, lx, ly, hx, hy ) ){
+          out.push( { group: 'edges', slot, gen: g } );
+        }
+
+        continue;
+      }
+
       let contained: boolean;
 
       if( ( edgeFlags[ slot ] & FLAG_CURVED ) !== 0 ){
@@ -3048,6 +3089,75 @@ export class GraphStore implements ModelView {
     }
 
     return out;
+  }
+
+  /**
+   * Does any part of an edge's drawn path lie in the model-space box?
+   * The 'overlap' box-selection test (round 39.1), and the exact one:
+   * a segment crossing the band counts even when neither endpoint is in
+   * it, which is the case containment can never express.
+   *
+   * Curved edges take the **conservative-then-exact** shape the rest of
+   * the curve geometry uses: the memoized exact bb rejects the common
+   * miss for the price of a cached box, and only a survivor pays for the
+   * flattened walk at the drawn subdivision — the same polyline the
+   * renderer strips, so what the band catches is what the band crosses.
+   *
+   * @param slot — the edge slot
+   * @param lx — the box's low x, in model coordinates
+   * @param ly — the box's low y
+   * @param hx — the box's high x
+   * @param hy — the box's high y
+   * @returns whether the drawn path meets the box
+   */
+  edgeHitsBox( slot: number, lx: number, ly: number, hx: number, hy: number ): boolean {
+    const endpoints = this.column( 'edge.endpoints' ) as Uint32Array;
+    const edgeFlags = this.column( 'edge.flags' ) as Uint32Array;
+
+    if( ( edgeFlags[ slot ] & FLAG_CURVED ) !== 0 ){
+      const bb = this.curveBBAt( slot );
+
+      // conservative reject on the memoized exact box
+      if( bb != null && ( bb.x2 < lx || bb.x1 > hx || bb.y2 < ly || bb.y1 > hy ) ){ return false; }
+
+      const ev = this.curveEvalAt( slot );
+      const route = ev == null ? this.curveRouteAt( slot ) : null;
+
+      if( ev == null && route == null ){ return false; }
+
+      const a = { x: 0, y: 0 };
+      const b = { x: 0, y: 0 };
+
+      for( let i = 0; i < CURVE_SEGS; i++ ){
+        if( ev != null ){
+          curvePointAt( ev, i / CURVE_SEGS, a );
+          curvePointAt( ev, ( i + 1 ) / CURVE_SEGS, b );
+        } else {
+          routeVertex( route as CurveRoute, i, a );
+          routeVertex( route as CurveRoute, i + 1, b );
+        }
+
+        if( segmentHitsBox( a.x, a.y, b.x, b.y, lx, ly, hx, hy ) ){ return true; }
+      }
+
+      return false;
+    }
+
+    const hay = this.haystackPointsAt( slot );
+
+    if( hay != null ){
+      return segmentHitsBox( hay.sx, hay.sy, hay.tx, hay.ty, lx, ly, hx, hy );
+    }
+
+    // straight edges keep the endpoint-center approximation containment
+    // uses, so the two modes agree about where the edge *is*
+    const pos = this.column( 'node.position' ) as Float32Array;
+    const s = endpoints[ slot * 2 ];
+    const t = endpoints[ slot * 2 + 1 ];
+
+    return segmentHitsBox(
+      pos[ s * 2 ], pos[ s * 2 + 1 ], pos[ t * 2 ], pos[ t * 2 + 1 ], lx, ly, hx, hy
+    );
   }
 
   /** Live slots in insertion order (reused slots re-appear at their re-insertion position). */

@@ -2030,6 +2030,50 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.cy.elements( { selected: true } ).length ) ).toBe( 0 );
   } );
 
+  test( 'boxSelectionMode overlap catches what the band touches (round 39.1)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // the same gesture, run twice against the same scene under each mode:
+    // the Node specs pin the query, and this pins that the *gesture* is
+    // what reads the option — the seam between them is where the mode
+    // could silently do nothing.
+    await makeReadyCy( page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -200, y: 0 } },
+        { data: { id: 'b' }, position: { x: 200, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'straddles' }, position: { x: -60, y: 0 } }
+      ],
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    // a tall band across the middle: it holds no node whole, cuts the
+    // 'straddles' node, and crosses the a-b edge with both ends outside
+    const drag = async () => {
+      await page.evaluate( () => window.cy.elements().unselect() );
+      await page.keyboard.down( 'Shift' );
+      await page.mouse.move( center.x - 50, center.y - 120 );
+      await page.mouse.down();
+      await page.mouse.move( center.x + 10, center.y + 120, { steps: 8 } );
+      await page.mouse.up();
+      await page.keyboard.up( 'Shift' );
+
+      return page.evaluate(
+        () => window.cy.elements( { selected: true } ).map( ele => ele.id() ).sort()
+      );
+    };
+
+    expect( await drag() ).toEqual( [] ); // 'contain' is the default
+
+    await page.evaluate( () => window.cy.boxSelectionMode( 'overlap' ) );
+
+    expect( await drag() ).toEqual( [ 'ab', 'straddles' ] );
+  } );
+
   test( "events: 'no' elements are pointer-transparent but still render (round 20.2)", async ( { page } ) => {
     await page.goto( PAGE );
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );

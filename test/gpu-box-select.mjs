@@ -160,4 +160,222 @@ describe('gpu/box-select', function(){
       expect( miss.filter( e => e.isEdge() ) ).to.have.length( 0 );
     });
   });
+  /*
+  Round 39.1: the overlap mode.  v3 offers containment *and* overlap;
+  v4 had containment only, and the fifth design sitting decided to build
+  the other half.
+
+  Two boundaries are worth stating because the specs below are shaped by
+  them.  The mode is read by the **gesture**, not by cy.elementsInBox(),
+  which stays the pure geometric containment query — an interaction
+  preference should not move a programmatic caller's results.  And
+  boxSelectionIncludesLabels reverses sense with the mode: under
+  'contain' the label box must *also* be inside, under 'overlap' a label
+  crossing the band is *enough*.  That is not a special case, it is what
+  each mode can mean — containment is an AND over an element's parts,
+  overlap an OR.
+  */
+  describe('cy.boxSelectionMode() (round 39.1)', function(){
+
+    it('defaults to contain', function(){
+      expect( cytoscapeGpu().boxSelectionMode() ).to.equal( 'contain' );
+    });
+
+    it('is settable via the option and the method', function(){
+      var cy = cytoscapeGpu({ boxSelectionMode: 'overlap' });
+
+      expect( cy.boxSelectionMode() ).to.equal( 'overlap' );
+
+      cy.boxSelectionMode( 'contain' );
+
+      expect( cy.boxSelectionMode() ).to.equal( 'contain' );
+    });
+
+    it('rejects invalid values, at the ctor and the setter', function(){
+      expect( function(){ cytoscapeGpu().boxSelectionMode( 'touching' ); } )
+        .to.throw( /box selection mode/ );
+      expect( function(){ cytoscapeGpu({ boxSelectionMode: 'touching' }); } )
+        .to.throw( /box selection mode/ );
+    });
+
+  });
+
+  describe('overlap selection (round 39.1)', function(){
+
+    // the gesture's query, which is what the mode reaches; the public
+    // elementsInBox stays contain and is asserted to below
+    var caught = ( cy, x1, y1, x2, y2 ) =>
+      cy._elementsInGestureBox( x1, y1, x2, y2 ).map( e => e.id() ).sort();
+
+    it('takes a node the band merely touches', function(){
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'straddles' }, position: { x: 100, y: 50 } }, // bb 85..115
+          { data: { id: 'inside' }, position: { x: 50, y: 50 } },
+          { data: { id: 'clear' }, position: { x: 400, y: 50 } }
+        ]
+      });
+
+      cy.boxSelectionMode( 'overlap' );
+
+      expect( caught( cy, 0, 0, 90, 100 ) ).to.deep.equal([ 'inside', 'straddles' ]);
+
+      cy.boxSelectionMode( 'contain' );
+
+      expect( caught( cy, 0, 0, 90, 100 ) ).to.deep.equal([ 'inside' ]);
+    });
+
+    it('takes an edge that crosses the band with both ends outside it', function(){
+      // the case containment can never express, and the reason the test
+      // is a segment clip rather than an endpoint check
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: -500, y: 0 } },
+          { data: { id: 'b' }, position: { x: 500, y: 0 } },
+          { data: { id: 'e', source: 'a', target: 'b' } }
+        ]
+      });
+
+      cy.boxSelectionMode( 'overlap' );
+
+      // a tall thin band across the middle: no node in it, the edge through it
+      expect( caught( cy, -20, -200, 20, 200 ) ).to.deep.equal([ 'e' ]);
+
+      cy.boxSelectionMode( 'contain' );
+
+      expect( caught( cy, -20, -200, 20, 200 ) ).to.deep.equal([]);
+    });
+
+    it('misses an edge whose line passes outside the band', function(){
+      // the control for the spec above: same band, edge moved off it, so
+      // "the clip returns true for everything" would show here
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: -500, y: 300 } },
+          { data: { id: 'b' }, position: { x: 500, y: 300 } },
+          { data: { id: 'e', source: 'a', target: 'b' } }
+        ]
+      });
+
+      cy.boxSelectionMode( 'overlap' );
+
+      expect( caught( cy, -20, -200, 20, 200 ) ).to.deep.equal([]);
+    });
+
+    it('takes a curved edge by its curve, not its chord', function(){
+      // a bezier bulging away from the straight line between its ends:
+      // a band the *curve* enters but the chord misses is caught only by
+      // walking the flattened path
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: -200, y: 0 } },
+          { data: { id: 'b' }, position: { x: 200, y: 0 } },
+          { data: { id: 'e1', source: 'a', target: 'b' } },
+          { data: { id: 'e2', source: 'a', target: 'b' } }
+        ],
+        style: { edges: { 'curve-style': 'bezier', 'control-point-step-size': 120 } }
+      });
+
+      cy.boxSelectionMode( 'overlap' );
+
+      var mid = cy.$id('e1').midpoint();
+
+      expect( Math.abs( mid.y ), 'the fixture is not curved; this spec proves nothing' )
+        .to.be.greaterThan( 20 );
+
+      // a band around the curve's apex, well clear of the chord at y = 0
+      var band = caught( cy, mid.x - 5, mid.y - 5, mid.x + 5, mid.y + 5 );
+
+      expect( band ).to.include( 'e1' );
+
+      // and the mirrored sibling curves the other way, so it is not in it
+      expect( band ).to.not.include( 'e2' );
+    });
+
+    it('misses a band inside a curved edge bb that the curve does not reach', function(){
+      // the control that made the spec above mean something.  Written
+      // first without this, all the overlap specs passed with the exact
+      // flattened walk deliberately removed — the conservative bb reject
+      // was doing every bit of the work, so nothing tested the walk.
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: -200, y: 0 } },
+          { data: { id: 'b' }, position: { x: 200, y: 0 } },
+          { data: { id: 'e1', source: 'a', target: 'b' } },
+          { data: { id: 'e2', source: 'a', target: 'b' } }
+        ],
+        style: { edges: { 'curve-style': 'bezier', 'control-point-step-size': 120 } }
+      });
+
+      cy.boxSelectionMode( 'overlap' );
+
+      var bb = cy.$id('e1').boundingBox();
+
+      // the top-left corner of the arc's box: inside the bb, ~18 model px
+      // clear of the curve, which near that x has barely left its endpoint
+      var band = [ bb.x1 + 5, bb.y1, bb.x1 + 15, bb.y1 + 7 ];
+
+      expect( caught( cy, ...band ) ).to.deep.equal([]);
+
+      // and the same band moved onto the curve does catch it, so the
+      // scene is not simply out of range
+      expect( caught( cy, bb.x1 + 5, -9, bb.x1 + 15, -5 ) ).to.include( 'e1' );
+    });
+
+    it('misses a band inside a straight edge bb that the line does not reach', function(){
+      // the same control for the straight path: a diagonal edge's bb
+      // covers two corners the line comes nowhere near
+      var cy = cytoscapeGpu({
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 400, y: 400 } },
+          { data: { id: 'e', source: 'a', target: 'b' } }
+        ]
+      });
+
+      cy.boxSelectionMode( 'overlap' );
+
+      // the off-diagonal corner: well inside the edge's bb, far off its line
+      expect( caught( cy, 300, 40, 380, 90 ) ).to.deep.equal([]);
+
+      // on the diagonal, it is caught
+      expect( caught( cy, 300, 290, 380, 340 ) ).to.deep.equal([ 'e' ]);
+    });
+
+    it('lets a label widen an overlap where it narrows a containment', function(){
+      var cy = cytoscapeGpu({
+        elements: [ { data: { id: 'n', label: 'a long label indeed' }, position: { x: 0, y: 0 } } ],
+        boxSelectionIncludesLabels: true,
+        style: { nodes: { label: { data: 'label' }, 'text-halign': 'right', 'font-size': 20 } }
+      });
+
+      var lb = cy.$id('n').labelBoundingBox();
+
+      expect( lb.w, 'the label has no width; this spec proves nothing' ).to.be.greaterThan( 30 );
+
+      // a band out to the right of the node body, over the label only
+      var band = [ 30, -20, lb.x2 - 1, 20 ];
+
+      cy.boxSelectionMode( 'overlap' );
+
+      expect( caught( cy, ...band ) ).to.deep.equal([ 'n' ]);
+
+      // under contain the same band takes nothing: the body is not in it
+      cy.boxSelectionMode( 'contain' );
+
+      expect( caught( cy, ...band ) ).to.deep.equal([]);
+    });
+
+    it('leaves cy.elementsInBox() geometric whatever the gesture is set to', function(){
+      var cy = cytoscapeGpu({
+        elements: [ { data: { id: 'straddles' }, position: { x: 100, y: 50 } } ]
+      });
+
+      cy.boxSelectionMode( 'overlap' );
+
+      expect( cy.elementsInBox( 0, 0, 90, 100 ).length ).to.equal( 0 );
+      expect( caught( cy, 0, 0, 90, 100 ) ).to.deep.equal([ 'straddles' ]);
+    });
+
+  });
 });

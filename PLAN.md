@@ -398,9 +398,10 @@ docs checks), and each is left in place pending the call.
     plain `tap` listener, `emit('tap.other')` runs only the plain one,
     and `off('tap.ns')` removes it.  The true statement is narrower:
     **v4 never emits a qualified name**, so a namespaced listener sees
-    application emits and never a library event.  Round 41 removes the
-    machinery, which is the only thing that makes the design ("no
-    namespaces") and the code agree.
+    application emits and never a library event.  **Round 41.2 removed
+    the machinery** (2026-08-04) by giving v4 its own emitter, which is
+    what finally made the design ("no namespaces") and the code agree:
+    a type is now matched whole, so `'tap.ns'` is one literal name.
     Note the constraint on any fix: custom event names must stay
     legal (`emit('myevent')` is supported), so the answer is a
     curated denylist of known-v3 spellings that throws or warns, not
@@ -418,8 +419,8 @@ docs checks), and each is left in place pending the call.
     specs, no runtime change), which also corrected the namespace half
     of this item: the machinery is live, not merely unexercised — v4
     never *emits* a qualified name, but a hand-emitted one behaves as
-    it does in v3.  Round 41's v4 emitter removes the machinery while
-    leaving names free.
+    it does in v3.  **Round 41.2 removed the machinery** while leaving
+    names free, as planned.
 12. **`event.preventDefault()` exists and does nothing** (recorded in
     the README since round 27's fact-check).  v4 emits the shared v3
     `Event`, so the method is present on every event a handler
@@ -432,6 +433,29 @@ docs checks), and each is left in place pending the call.
     interaction layer reads `isDefaultPrevented` at the enumerated
     preventable gesture defaults — landing with the v4 Event in
     **round 41**.
+    ***Half landed, and the other half needs one more call*** (round
+    41.4, 2026-08-04).  The DOM half works: `originalEvent` is
+    populated by the interaction layer, so `preventDefault()` now
+    reaches the browser's default and `isDefaultPrevented()` reports
+    truthfully.  The *gesture* half did not land, because the
+    enumeration round 41's plan called for could not be derived the way
+    it says.  The plan reads "docs-first enumerates the preventable
+    gesture defaults **from v3-source reading**" — and v3 never reads
+    `isDefaultPrevented` either (measured 2026-08-04: the only
+    references in v3's whole tree are the two that *set* it and its type
+    declaration).  So there is no v3 behaviour to port; the list is a v4
+    contract to be **designed**, and each entry is a decision about what
+    an application may take over.
+    The question, concretely: which of v4's gesture defaults does a
+    handler's `preventDefault()` suppress?  The candidates the sitting
+    named — tap-selection and tap-clear, grab initiation, box start —
+    plus the ones it did not: pan and wheel-zoom (already gated by
+    options), taphold, and whether prevention on a *bubbled* element
+    event stops the core's default too.  Each needs a spec proving both
+    directions, which is cheap once the list exists.
+    Logged rather than guessed at because a wrong list is worse than
+    none: an app that learns `preventDefault()` suppresses selection
+    will depend on it.
 
 
 ## Context
@@ -456,7 +480,9 @@ src/gpu/
   collection.mts         # GpuCollection ("element is a length-1 collection", v3-style; interned handles;
                          #   epoch-guarded _refs with post-compaction lazy repair, round 19.3)
   viewport.mts           # zoom/pan/panBy/fit/center/extent state + math (core-owned; core emits the events)
-  events.mts             # single core Emitter (reuse src/emitter.mts) with ref/predicate-qualified listeners
+  event.mts              # v4's Event object (41.1): typed target, originalEvent, no namespaces
+  emitter.mts            # v4's emitter (41.2), replacing the v3 import it had reused
+  events.mts             # the one core emitter's wiring: ref/predicate-qualified listeners, the 14.5 phase rules
   matcher.mts            # query objects compiled to per-group (mask, want) flag tests + data conditions
   style.mts              # StyleEngine: sheet blocks compiled into channel columns + label sidecar
   style-scales.mts       # mapper DSL: object specs compiled to a closure-free IR + CPU evaluator
@@ -562,7 +588,7 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 - **Dirty tracking**: one coalesced `[min,end)` span per column per frame + `resized` flag; `takeDelta()` returns-and-clears; `onInvalidate(cb)` fires ≤ once per microtask. Extended with `touch()` so non-column sidecars (labels) join the same scheduling.
 - **Adjacency**: incremental per-node `outEdges[]`/`inEdges[]` (O(1) degree, cascade removal). CSR deferred.
 - **Element handles**: interned singleton length-1 collections per live slot; `{group, slot, gen}` refs validated on access; cached `id()`/`group()` stay readable after removal (needed for `remove` events).
-- **Events**: single core `Emitter` (src/emitter.mts unmodified) with per-ref listeners for collections and selector qualifiers for the core. Emitted: add, remove, position (skipped when no listeners), select, unselect, zoom, pan, viewport, fit, layoutstart/ready/stop, style, render, destroy, error, tap, mouseover/mouseout.
+- **Events**: single core emitter (v3's `src/emitter.mts` unmodified at pass 1; v4's own since round 41.2) with per-ref listeners for collections and selector qualifiers for the core. Emitted: add, remove, position (skipped when no listeners), select, unselect, zoom, pan, viewport, fit, layoutstart/ready/stop, style, render, destroy, error, tap, mouseover/mouseout.
   - **No event namespaces**: v4 drops namespaced events (`'tap.foo'`) — they are unused and cost a per-emit parse on the hot path. `emit()` treats an event string as bare type(s) only; the shared emitter's namespace parsing (retained for v3) is simply not exercised by v4. Listeners/emits should use plain type names.
 - **Style**: constant blocks on `node|edge|*|#id` + `:selected/:unselected`; node channels background-color/width/height/shape/opacity/border-*, edge line-color/width/opacity; **plus label/font-size/color** (label sidecar, `data(id)` allowed). Applied on setBlocks, add, and select/unselect. Equal-radii ellipses compile to the exact circle SDF.
 - **Grid layout**: cell-packing math ported verbatim; bulk `store.setPositions` (one dirty span) + layout events; `cy.layout({name})` errors on anything but `grid`.
@@ -2690,6 +2716,24 @@ round 37's docs-first commit — noted so the standing docs-travel rule's
 exception is on the record rather than silent drift.  "Gaps with
 direction already set" was checked by name and needed nothing (its
 entries all closed by earlier rounds).
+
+**2026-08-04, round 41 — the v4 Event and emitter.**  Taken out of order
+(38 is waiting on the sub-calls above, 40 is a sitting), and worth it: it
+is round 42's precondition and it closed the last of the round-26.5
+logged items.  v4 now owns its event object and its emitter, `event.target`
+is typed, `originalEvent` is populated, and the namespace parsing v4 had
+been *inheriting while its design disclaimed it* is gone.
+Two of the round's own premises were wrong, both stated as facts about
+code nobody had re-measured — see the round record.  The emitter was not
+v4's only outward import (five utility modules remain, now audited by a
+spec instead of asserted by a sentence), and `preventDefault()`'s gesture
+half could not be enumerated "from v3-source reading" because v3 never
+reads the flag either.  The DOM half landed; the enumeration is open call
+12.  That is three rounds in a row — 37.3, 37.4, 41 — that tripped on a
+stale claim in this file, which is now a standing note in `AGENTS.md`.
+The emitter swap itself is behaviour-neutral by measurement rather than
+by intent: the whole Node suite passed unchanged except the one spec
+round 37.4 had written to pin the behaviour this round removes.
 
 **2026-08-04, round 39 — the decided feature tail.**  Three independent
 small builds, all decided at the fifth sitting and none needing a new
@@ -6984,6 +7028,25 @@ piece.  Nothing here is a reason to distrust the round-27 results:
 the same suite passed 37/37 afterwards, and every round-27 claim is
 additionally pinned by browser specs and live parity diffs.
 
+**It recurred once during round 41's verification (2026-08-04), and the
+name was lost again — this time avoidably.**  One `npm run test:js`
+reported `fail 1`; the diagnostic re-ran the suite instead of preserving
+the failing run's output, and the re-run passed, so the spec name went
+with it.  That is the second time this flake has been seen and the second
+time nothing was learned from it, which makes the *method* the finding:
+when a suite fails once, **keep that run's output** before doing anything
+else.  A hunt of 20 consecutive full runs immediately afterwards
+(captured to files, precisely so a hit would be readable) produced 0
+failures, and ~28 clean runs surround the single failure.
+The timing invites an obvious suspicion — it landed in the round that
+replaced the emitter — and **it is not ruled out**, because without the
+spec name nothing can be.  What can be said: the emitter swap was already
+in the tree, 20 consecutive runs of that same tree passed, and the
+phenomenon predates the swap by two days and one identical symptom
+(`fail 1`, unreproducible).  That is evidence for "same flake", not
+proof.  If a third sighting comes, the name settles it either way — which
+is the whole reason to keep the output.
+
 ## Round 27 plan — the parity remnants (planned 2026-08-02)
 
 The tail the README's follow-up hooks have carried since round 13:
@@ -10294,6 +10357,94 @@ every site whose behaviour changes keeps a spec for both policies.
 
 Prerequisite for round 42: v4's one remaining shared-module dependency
 on v3 is `src/emitter.mts` (and the shared `Event` object with it).
+
+**Landed 2026-08-04, except one item that turned into a call.**  Two of
+this plan's premises were wrong, and both were wrong in the same way —
+they stated a fact about the code that nobody had measured:
+
+- **"v4's *one* remaining shared-module dependency"** is five: after the
+  emitter and event object were severed, `src/gpu` still imports
+  `src/math.mjs`, `src/types.mjs`, `src/util/colors.mjs`,
+  `src/util/position.mjs` and `src/util/sort.mjs`.  They are a different
+  kind of dependency — generic utilities, no v3 model or renderer types
+  in their signatures — so the restructure may keep them shared rather
+  than duplicate them, but that is round 42's call and it now has the
+  list.  `test/modules/gpu-import-graph.mjs` is the audit, with the five
+  as a maintained allowlist on 37.1's terms: a new edge fails, and so
+  does an entry nothing imports any more.
+- **`preventDefault()` could not be enumerated from v3** — see open call
+  12.  v3 never reads `isDefaultPrevented` either, so there is nothing
+  to port and the list is a v4 contract to design.  The DOM half of the
+  item landed (below); the gesture half is logged.
+
+- [x] **41.1 The v4 Event** (2026-08-04) — `src/gpu/event.mts`.  Typed
+  `target` (the core or a one-element collection, so a handler narrows
+  with a type guard instead of a cast — 26.5's logged item closes and
+  the compile-only consumer test lost its `as`), `originalEvent`,
+  `layout`, the derived `renderedPosition`, and **no `namespace` field**.
+- [x] **41.2 The v4 emitter** (2026-08-04) — `src/gpu/emitter.mts`, the
+  same qualified-listener model with v3's namespace parsing, `bubble`/
+  `parent` recursion, `manualCallback` and function-in-qualifier-position
+  shorthand all gone (v4 used none of them).  Kept deliberately, because
+  behaviour depends on each: the listener snapshot at emit time, the
+  copy-on-`off`-during-emit, `one` removing before the callback runs, and
+  a handler returning `false` meaning `stopPropagation()`.
+  One recorded difference from v3, and it is a fix: v3 snapshots the
+  listener list once per `emit()` *call*, so in `emit( 'a b' )` a handler
+  for `a` that calls `off( 'b' )` does not stop `b` firing.  v4 snapshots
+  per event.
+  **The swap is behaviour-neutral by measurement**: the whole Node suite
+  passed unchanged except one spec — the namespace one round 37.4 had
+  just written to pin v3's semantics, which is the single behaviour this
+  round intends to change.  It is rewritten to assert the new contract
+  (a dotted name is one literal type), so the removal is pinned rather
+  than merely done.
+- [x] **41.3 The import-graph audit** (2026-08-04) — above; five specs,
+  controlled by adding an outward import and watching it fail.
+- [x] **41.4 `originalEvent`, populated** (2026-08-04) — the pointer
+  layer attaches the DOM event it is handling to everything it emits.
+  Set in the one `listen()` wrapper rather than at ~25 emit sites, so
+  the two cannot drift; cleared in a `finally`, which is what keeps it
+  honest — an emit from a *timer* (taphold, onetap) has no DOM event
+  behind it and reports none rather than the last one seen.  A `webgpu`
+  spec asserts the DOM event's own coordinates reach the handler (so it
+  is *this* event, not a retained earlier one) and that
+  `preventDefault()` sets `defaultPrevented` on it; the control pins
+  `domEvent` to null and the spec fails.
+- [ ] **41.5 Functional `preventDefault()` for gesture defaults** — not
+  built; the enumeration is open call 12.
+- [x] **41.6 Docs + declarations** (2026-08-04) — `GpuEvent`,
+  `GpuEventProps`, `GpuEventTarget` and `EventHandler` are exported from
+  the entry point, so a consumer can type a handler; `dist/
+  cytoscape-gpu.d.ts` regenerated (42 type exports, 1147 doc blocks).
+  Both documents carry the removal, including the two JSDoc paragraphs
+  round 37.4 had *just* written to describe the old behaviour — a
+  reminder that a docs fix has a shelf life when the code is about to
+  move under it.
+
+**Verification (2026-08-04)**: typecheck, lint, **2696 Node tests**, 107
+module tests, **174 browser specs** (99 `webgpu` + 75 `webgpu-visual`)
+against a hand-rebuilt bundle with goldens byte-stable and parity scenes
+at their recorded values, `test:types` clean, `test:types:gpu` at 42 type
+exports / 3 statics / 1147 doc blocks, JSDoc 100%/100%, `@throws` 18/18,
+`@param` 231/231, `@returns` 278/278, and the throw gate green at 0
+Node-reachable dead over 192 sites.
+Controls: the import audit run with an outward import added (fails), the
+`originalEvent` spec run with `domEvent` pinned to null (fails), and the
+emitter swap itself measured against the whole suite — which is the
+strongest of the three, since a behaviour-neutral claim is exactly what a
+2696-test suite can check.
+**Round 41 is complete except 41.5**, which is open call 12.
+
+**Risks tracked**: the emitter is new code on the hottest shared path in
+the library, and "the suite passes" is evidence rather than proof — the
+snapshot/`one`/`off`-during-emit semantics are the fiddly part and are
+carried by existing specs rather than new ones written for them.  The
+per-event listener snapshot is a deliberate divergence from v3 in an
+edge case nobody has asked about, so it could equally be a surprise.  And
+`originalEvent` now retains a DOM event for the life of any event object a
+handler keeps — harmless for the pointer events it comes from, but worth
+remembering if an app stores events.
 
 - **A v4 Event class**: typed `target` (core/collection), `cy`,
   positions; **no namespace fields or parsing anywhere**;

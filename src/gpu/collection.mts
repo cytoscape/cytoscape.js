@@ -42,8 +42,8 @@ import type {
   MarkovClusteringOptions, AffinityPropagationOptions
 } from './algorithms/index.mjs';
 import type { GpuCore } from './core.mjs';
-import type { EventHandler } from '../emitter.mjs';
-import type Event from '../event.mjs';
+import type { EventHandler } from './emitter.mjs';
+import type { GpuEvent } from './event.mjs';
 
 export type EleFilterFn = ( ele: GpuCollection, i: number, eles: GpuCollection ) => boolean;
 export type ElePositionFn = ( ele: GpuCollection, i: number ) => Position | false | undefined;
@@ -4854,9 +4854,9 @@ export class GpuCollection {
    * **Any name registers**, as on the core and for the same reason — custom
    * events are supported API (`ele.emit( 'foo' )`), so names cannot be gated.
    * A name v4 never emits registers cleanly and never fires: that is v3's
-   * `vmouse*` aliases and its raw mouse/touch re-emits, and it is also why a
-   * namespaced listener (`'data.ns'`) never sees a library event, since every
-   * event v4 raises is unqualified.  See `GpuCore#on` for the full contract.
+   * `vmouse*` aliases and its raw mouse/touch re-emits — and, since round
+   * 41.2, any name containing a dot: there is no namespace machinery, so
+   * `'data.ns'` is a literal type v4 never raises.  See `GpuCore#on`.
    *
    * @param events — one or more space-separated event names
    * @param callback — the handler
@@ -4881,7 +4881,7 @@ export class GpuCollection {
    */
   one( events: string, callback?: EventHandler ): this {
     for( const ref of this._refs ){
-      this._cy._emitter.on( events, refQualifier( ref ), callback, { one: true } );
+      this._cy._emitter.one( events, refQualifier( ref ), callback );
     }
 
     return this;
@@ -4942,7 +4942,7 @@ export class GpuCollection {
    * @param events — one or more space-separated event names
    * @returns a promise for the event object
    */
-  promiseOn( events: string ): Promise<Event> {
+  promiseOn( events: string ): Promise<GpuEvent> {
     return new Promise( resolve => {
       this.one( events, event => resolve( event ) );
     } );

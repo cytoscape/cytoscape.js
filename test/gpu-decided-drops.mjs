@@ -246,38 +246,43 @@ describe('gpu/decided drops (29.3)', function(){
     });
 
     /*
-    Namespaces, measured rather than assumed — and the measurement corrected
-    this file's own record.  PLAN.md's contradiction 11 said `cy.on( 'tap.ns',
-    h )` "never fires, not for `tap` and not for `tap.ns` either", and the
-    README said the shared emitter keeps namespace parsing "only for v3".
-    Both are wrong: v4 imports v3's emitter, so namespaces work in full v3
-    semantics.  What is true is narrower and is what these assert — v4 never
-    emits a *qualified* name, so a namespaced listener sees library events
-    never and user emits normally.  Round 41 removes the machinery.
+    Namespaces, round 41.2: the machinery is **gone**, and this spec is the
+    one round 41 had to rewrite.
+
+    Round 37.4 measured what was actually happening and found the design and
+    the code disagreed: v4 imported v3's emitter, so `'tap.ns'` parsed and
+    behaved in full v3 semantics — `on('tap.ns')` listened for `tap`
+    qualified by `.ns`, `emit('tap.ns')` ran both it and any plain `tap`
+    listener.  "No namespaces" had been the design since round 9 and was
+    true of nothing but the intent.  v4's own emitter matches a type
+    *whole*, so a dot is now an ordinary character in a name.
     */
-    it('parses namespaces in full v3 semantics, since it shares v3s emitter', function(){
+    it('treats a dotted name as one literal type, with no namespace parsing', function(){
       let ns = 0;
       let plain = 0;
 
       cy.on( 'tap.ns', () => ns++ );
       cy.on( 'tap', () => plain++ );
 
-      // an unqualified emit runs unqualified listeners only
+      // emitting the plain name reaches only the plain listener — as before
       cy.emit( 'tap' );
       expect( [ plain, ns ] ).to.deep.equal( [ 1, 0 ] );
 
-      // a qualified emit runs the matching namespace *and* the plain listener
+      // and emitting the dotted name now reaches only the *dotted* one,
+      // where v3's parser would have run the plain listener too
       cy.emit( 'tap.ns' );
-      expect( [ plain, ns ] ).to.deep.equal( [ 2, 1 ] );
+      expect( [ plain, ns ] ).to.deep.equal( [ 1, 1 ] );
 
-      // a different namespace does not match
+      // a different suffix is simply a different name, not a non-matching
+      // namespace on a matching type
       cy.emit( 'tap.other' );
-      expect( [ plain, ns ] ).to.deep.equal( [ 3, 1 ] );
+      expect( [ plain, ns ] ).to.deep.equal( [ 1, 1 ] );
 
-      // and off() takes the qualified name
+      // off() takes the whole name, and does not remove the plain listener
       cy.off( 'tap.ns' );
       cy.emit( 'tap.ns' );
-      expect( [ plain, ns ] ).to.deep.equal( [ 4, 1 ] );
+      cy.emit( 'tap' );
+      expect( [ plain, ns ] ).to.deep.equal( [ 2, 1 ] );
     });
 
     it('never fires a namespaced listener for an event v4 itself raises', function(){

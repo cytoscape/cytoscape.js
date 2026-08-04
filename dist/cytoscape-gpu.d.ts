@@ -557,15 +557,6 @@ interface Position {
   x: number;
   y: number;
 }
-/**
- * Minimal structural view of the Core instance, used by low-level modules
- * that are converted before src/core. Replaced by `import type Core` from
- * the real core module once it is converted.
- */
-interface CoreShim {
-  zoom(): number;
-  pan(): Position;
-}
 //#endregion
 //#region src/gpu/gpu-types.d.mts
 interface GpuElementData {
@@ -4339,91 +4330,195 @@ interface AffinityPropagationOptions {
   attributes?: AffinityAttributeFn[];
 }
 //#endregion
-//#region src/event.d.mts
+//#region src/gpu/event.d.mts
+/** The DOM event a gesture came from, when there was one. */
 type NativeEvent = globalThis.Event;
-interface EventProps {
-  originalEvent?: NativeEvent;
+/**
+ * What an event can target: the core for core-level events (viewport
+ * gestures, `layoutstart`, graph `data`), or a one-element collection for
+ * element events.
+ */
+type GpuEventTarget = GpuCore | GpuCollection;
+/** The fields an emit may carry. */
+interface GpuEventProps {
   type?: string;
-  cy?: CoreShim;
-  target?: unknown;
+  target?: GpuEventTarget;
+  cy?: GpuCore;
+  /** model-space position, for pointer-derived events */
   position?: Position;
+  /** rendered-space position; derived from `position` when omitted */
   renderedPosition?: Position;
-  namespace?: string | null;
+  /** the DOM event behind a gesture (round 41.4) */
+  originalEvent?: NativeEvent;
+  /** the layout instance, on `layoutstart`/`layoutready`/`layoutstop` */
   layout?: unknown;
   timeStamp?: number;
 }
-type EventSrc = string | NativeEvent | EventProps | null | undefined;
-declare class Event {
+/**
+ * A v4 event (round 41.1).  Handlers receive one of these; `cy.emit()` and
+ * `eles.emit()` accept either a type string or a props object, and build it.
+ *
+ * @see GpuCore#on for what a name may be, and which names never fire
+ */
+declare class GpuEvent {
+  /** the event type, e.g. `'tap'` — never namespaced (round 41.1) */
   type: string;
-  originalEvent?: NativeEvent;
-  cy?: CoreShim;
-  target?: unknown;
+  /** the core for core-level events, the element for element events */
+  target?: GpuEventTarget;
+  /** the core the event was raised on */
+  cy?: GpuCore;
+  /** model-space position, on pointer-derived events */
   position?: Position;
+  /** rendered-space position; derived from `position` and the viewport */
   renderedPosition?: Position;
-  namespace?: string | null;
+  /** the DOM event behind a gesture, when there was one (round 41.4) */
+  originalEvent?: NativeEvent;
+  /** the layout instance, on the layout lifecycle events */
   layout?: unknown;
+  /** when the event was built, `Date.now()` unless the caller supplied one */
   timeStamp: number;
+  /**
+   * Whether `preventDefault()` has been called.
+   *
+   * **Recorded**: nothing in v4 reads this yet, so calling `preventDefault()`
+   * suppresses no gesture default — it only forwards to the DOM event when
+   * one is attached.  Making it functional is decided but not yet built; see
+   * the module comment and PLAN.md's open calls.
+   */
   isDefaultPrevented: () => boolean;
+  /** Whether `stopPropagation()` has been called — read by the compound
+   * bubbling walk (round 14.5), where it halts the phase sequence. */
   isPropagationStopped: () => boolean;
-  isImmediatePropagationStopped: () => boolean;
-  constructor(src: EventSrc, props?: EventProps);
+  /**
+   * Build an event.
+   *
+   * @param props — the fields to carry; `type` is required in practice and
+   *   defaults to the empty string so a malformed emit is inert rather than
+   *   throwing inside a handler loop
+   */
+  constructor(props?: GpuEventProps);
+  /**
+   * v3's type tag, kept because `is.event()`-style checks and user code read
+   * it.
+   *
+   * @returns the string `'event'`
+   */
   instanceString(): string;
-  recycle(src: EventSrc, props?: EventProps): void;
+  /**
+   * Mark the event's default as prevented, and prevent the DOM event's
+   * default when one is attached.
+   *
+   * **Inert for v4's own gesture defaults today** — no v4 code reads
+   * `isDefaultPrevented()`, so this cannot stop a tap from selecting or a
+   * grab from starting.  The DOM half does work: with `originalEvent`
+   * populated (round 41.4) this reaches the browser's default.
+   */
   preventDefault(): void;
+  /**
+   * Stop the event bubbling to further phases: the remaining ancestors and
+   * the core do not see it (round 14.5).  Returning `false` from a handler
+   * does the same.
+   */
   stopPropagation(): void;
-  stopImmediatePropagation(): void;
 }
 //#endregion
-//#region src/emitter.d.mts
-type EventHandler = (this: any, event: Event, ...extraParams: any[]) => unknown;
+//#region src/gpu/emitter.d.mts
+/** An event handler.  `this` is the callback context the emitter's options
+ * choose — the core, or the phase element during compound bubbling. */
+type EventHandler = (this: unknown, event: GpuEvent, ...extraParams: unknown[]) => unknown;
+/** A registered listener. */
 interface Listener<TQualifier = unknown> {
-  event: string | undefined;
-  callback: EventHandler;
+  /** the event type, matched whole (no namespace splitting) */
   type: string;
-  namespace: string | null | undefined;
+  callback: EventHandler;
+  /** what restricts this listener — an element ref or a predicate */
   qualifier?: TQualifier | null;
-  conf?: ListenerConf | null;
-}
-interface ListenerConf {
+  /** remove after the first matching emit */
   one?: boolean;
 }
-/** Something an event can bubble up to: it can emit further. */
-interface ParentEmitTarget {
-  emit(events: Event, extraParams?: unknown[]): unknown;
-}
-interface EmitterOptions<TContext, TQualifier = unknown> {
-  qualifierCompare?(q1: TQualifier | null | undefined, q2: TQualifier | null | undefined): boolean;
-  eventMatches?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): boolean;
-  addEventFields?(context: TContext, evt: EventProps): void;
-  callbackContext?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): unknown;
-  beforeEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
-  afterEmit?(context: TContext, listener: Listener<TQualifier>, eventObj: Event): void;
-  bubble?(context: TContext): boolean;
-  parent?(context: TContext): ParentEmitTarget | null;
-  context?: TContext;
-}
-type EmitInput = string | string[] | Event | EventProps;
-declare class Emitter<TContext = unknown, TQualifier = unknown> {
-  qualifierCompare: (q1: TQualifier | null | undefined, q2: TQualifier | null | undefined) => boolean;
-  eventMatches: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => boolean;
-  addEventFields: (context: TContext, evt: EventProps) => void;
-  callbackContext: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => unknown;
-  beforeEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
-  afterEmit: (context: TContext, listener: Listener<TQualifier>, eventObj: Event) => void;
-  bubble: (context: TContext) => boolean;
-  parent: (context: TContext) => ParentEmitTarget | null;
+/** The hooks that make one emitter behave as v4's qualified-listener model;
+ * `events.mts` supplies all four. */
+interface GpuEmitterOptions<TContext, TQualifier> {
+  /** the emitter context — the core */
   context: TContext;
+  /** whether two qualifiers denote the same restriction, for `off()` */
+  qualifierCompare(q1: TQualifier | null | undefined, q2: TQualifier | null | undefined): boolean;
+  /** whether this listener should fire for this event (the phase rules) */
+  eventMatches(context: TContext, listener: Listener<TQualifier>, event: GpuEvent): boolean;
+  /** fill in fields every event carries (`cy`, a default `target`) */
+  addEventFields(context: TContext, props: GpuEventProps): void;
+  /** what `this` is inside the callback (v3's currentTarget semantics) */
+  callbackContext(context: TContext, listener: Listener<TQualifier>, event: GpuEvent): unknown;
+}
+/** Anything `emit()` accepts: one or more space-separated type names, a
+ * props object, or an already-built event (the bubbling walk re-emits one). */
+type EmitInput = string | GpuEventProps | GpuEvent;
+/**
+ * The one emitter a v4 core owns (round 41.2).
+ *
+ * @see makeCoreEmitter in `events.mts`, which is the only place one is built
+ */
+declare class GpuEmitter<TContext = unknown, TQualifier = unknown> {
+  /** every listener on this core, in registration order */
   listeners: Listener<TQualifier>[];
+  /** emit depth, so `off()` during an emit copies rather than mutates */
   emitting: number;
-  constructor(opts?: EmitterOptions<TContext, TQualifier>, context?: TContext);
-  on(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null, confOverrides?: ListenerConf): this;
-  addListener: this['on'];
-  one(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
-  off(events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null): this;
-  removeListener: this['off'];
+  private opts;
+  /**
+   * @param opts — the context and the four matching hooks
+   */
+  constructor(opts: GpuEmitterOptions<TContext, TQualifier>);
+  /**
+   * Register a listener for one or more space-separated event names.
+   *
+   * @param events — the name(s); any name is legal, and one v4 never emits
+   *   simply never fires
+   * @param qualifier — the restriction, or null for an unqualified listener
+   * @param callback — the handler; a non-function is ignored, so
+   *   `cy.on( 'tap' )` registers nothing rather than throwing
+   * @param one — remove the listener after its first matching emit
+   * @returns this emitter
+   */
+  on(events: string, qualifier?: TQualifier | null, callback?: EventHandler, one?: boolean): this;
+  /**
+   * Register a listener that fires at most once.
+   *
+   * @param events — the name(s)
+   * @param qualifier — the restriction, or null
+   * @param callback — the handler
+   * @returns this emitter
+   */
+  one(events: string, qualifier?: TQualifier | null, callback?: EventHandler): this;
+  /**
+   * Remove listeners.  A listener matches when its type matches (or `events`
+   * is `'*'`), its qualifier compares equal (when one is given), and its
+   * callback is identical (when one is given).
+   *
+   * @param events — the name(s), or `'*'` for every type
+   * @param qualifier — restrict the removal to this qualifier
+   * @param callback — restrict the removal to this handler
+   * @returns this emitter
+   */
+  off(events: string, qualifier?: TQualifier | null, callback?: EventHandler): this;
+  /**
+   * Remove every listener on this core.
+   *
+   * @returns this emitter
+   */
   removeAllListeners(): this;
-  emit(events: EmitInput, extraParams?: unknown, manualCallback?: EventHandler): this;
-  trigger: this['emit'];
+  /**
+   * Emit one or more events.
+   *
+   * @param events — space-separated names, a props object, or a built event
+   * @param extraParams — extra arguments passed to each handler after the
+   *   event; a non-array is wrapped
+   * @returns this emitter
+   */
+  emit(events: EmitInput, extraParams?: unknown): this;
+  /** Build an event from props, letting the options fill in `cy`/`target`. */
+  private build;
+  /** Run one event past the listener list as it stood when the emit began. */
+  private emitOne;
 }
 //#endregion
 //#region src/gpu/collection.d.mts
@@ -6281,9 +6376,9 @@ declare class GpuCollection {
    * **Any name registers**, as on the core and for the same reason — custom
    * events are supported API (`ele.emit( 'foo' )`), so names cannot be gated.
    * A name v4 never emits registers cleanly and never fires: that is v3's
-   * `vmouse*` aliases and its raw mouse/touch re-emits, and it is also why a
-   * namespaced listener (`'data.ns'`) never sees a library event, since every
-   * event v4 raises is unqualified.  See `GpuCore#on` for the full contract.
+   * `vmouse*` aliases and its raw mouse/touch re-emits — and, since round
+   * 41.2, any name containing a dot: there is no namespace machinery, so
+   * `'data.ns'` is a literal type v4 never raises.  See `GpuCore#on`.
    *
    * @param events — one or more space-separated event names
    * @param callback — the handler
@@ -6332,7 +6427,7 @@ declare class GpuCollection {
    * @param events — one or more space-separated event names
    * @returns a promise for the event object
    */
-  promiseOn(events: string): Promise<Event>;
+  promiseOn(events: string): Promise<GpuEvent>;
   pon: this['promiseOn'];
 }
 //#endregion
@@ -6611,7 +6706,7 @@ interface RendererLike {
  */
 declare class GpuCore {
   _store: GraphStore;
-  _emitter: Emitter<GpuCore, GpuQualifier>;
+  _emitter: GpuEmitter<GpuCore, GpuQualifier>;
   _styleEngine: StyleEngine;
   _renderer: RendererLike | null;
   /** the pointer handler paired with the renderer (torn down on unmount) */
@@ -7011,14 +7106,12 @@ declare class GpuCore {
    * does nothing at all rather than erroring, so port event names by the
    * vocabulary in `src/gpu/README.md` rather than by trying them.
    *
-   * **Namespaces are a special case of that rule** (measured 2026-08-04):
-   * v4 shares v3's emitter, so `'tap.ns'` parses and behaves exactly as in
-   * v3 — `on( 'tap.ns' )` listens for `tap` qualified by `.ns`,
-   * `emit( 'tap.ns' )` runs both it and any plain `tap` listener, and
-   * `off( 'tap.ns' )` removes it.  What does not happen is v4 ever emitting
-   * a qualified name: every event the library raises is unqualified, so a
-   * namespaced listener fires only for events *you* emit.  Round 41 removes
-   * the machinery rather than leaving it half-live.
+   * **Namespaces are exactly that rule, not an exception to it** (round
+   * 41.2).  There is no namespace machinery: a type is matched whole, so
+   * `'tap.ns'` is one literal name that `emit( 'tap' )` does not reach and
+   * `off( 'tap.ns' )` removes on its own.  Until round 41 v4 imported v3's
+   * emitter and so inherited v3's namespace semantics in full, against its
+   * own design — measured in 37.4 and closed in 41.2.
    *
    * @param events — one or more space-separated event names
    * @param predicateOrCb — the delegation predicate when `callback` is
@@ -7115,7 +7208,7 @@ declare class GpuCore {
    *   event object
    * @returns this core, for chaining
    */
-  emit(events: string | EventProps, extraParams?: unknown[]): this;
+  emit(events: string | GpuEventProps, extraParams?: unknown[]): this;
   trigger: this['emit'];
   /**
    * Resolve once the next matching event fires — the promise form of
@@ -7125,7 +7218,7 @@ declare class GpuCore {
    * @param predicate — an optional delegation predicate over the target
    * @returns a promise for the event object
    */
-  promiseOn(events: string, predicate?: ElePredicate): Promise<Event>;
+  promiseOn(events: string, predicate?: ElePredicate): Promise<GpuEvent>;
   pon: this['promiseOn'];
   /**
    * Get the zoom level, or set it.  Setting is a no-op while
@@ -7734,7 +7827,7 @@ declare class GpuCore {
   _refreshMappedStyles(group: GroupName, slots: number[], keys: string[]): void;
   /** First style apply for freshly-added slots, deferred while batching. */
   private _applyStyle;
-  _emitOnEle(type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps>): void;
+  _emitOnEle(type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<GpuEventProps>): void;
   _hasListeners(type: string): boolean;
   _emitViewportEvents(types: string[]): void;
   private _boundsOf;
@@ -7828,5 +7921,5 @@ declare namespace cytoscapeGpu {
   export { deserializeElements };
 }
 //#endregion
-export { type BoxSelectionMode, type CytoscapeGpuOptions, type GpuBoundingBoxInput, type GpuBreadthFirstLayoutOptions, type GpuCaseClause, type GpuCaseMapper, type GpuCircleLayoutOptions, type GpuCollection, type GpuColumnarEdges, type GpuColumnarElements, type GpuColumnarNodes, type GpuConcentricLayoutOptions, type GpuCondition, type GpuCore, type GpuCustomLayoutOptions, type GpuDataColumn, type GpuDictColumn, type GpuElementData, type GpuElementDefinition, type GpuElementsDefinition, type GpuElementsInput, type GpuExportOptions, type GpuForceLayoutOptions, type GpuGridLayoutOptions, type GpuLayoutBaseOptions, type GpuLayoutOptions, type GpuMapper, type GpuMapperSpec, type GpuPackedIds, type GpuPresetLayoutOptions, type GpuRandomLayoutOptions, type GpuRendererOptions, type GpuStylePropValue, type GpuStyleProps, type GpuStylesheet, type NO_PARENT, type Position, type RendererStats, cytoscapeGpu as default };
+export { type BoxSelectionMode, type CytoscapeGpuOptions, type EventHandler, type GpuBoundingBoxInput, type GpuBreadthFirstLayoutOptions, type GpuCaseClause, type GpuCaseMapper, type GpuCircleLayoutOptions, type GpuCollection, type GpuColumnarEdges, type GpuColumnarElements, type GpuColumnarNodes, type GpuConcentricLayoutOptions, type GpuCondition, type GpuCore, type GpuCustomLayoutOptions, type GpuDataColumn, type GpuDictColumn, type GpuElementData, type GpuElementDefinition, type GpuElementsDefinition, type GpuElementsInput, type GpuEvent, type GpuEventProps, type GpuEventTarget, type GpuExportOptions, type GpuForceLayoutOptions, type GpuGridLayoutOptions, type GpuLayoutBaseOptions, type GpuLayoutOptions, type GpuMapper, type GpuMapperSpec, type GpuPackedIds, type GpuPresetLayoutOptions, type GpuRandomLayoutOptions, type GpuRendererOptions, type GpuStylePropValue, type GpuStyleProps, type GpuStylesheet, type NO_PARENT, type Position, type RendererStats, cytoscapeGpu as default };
 export as namespace cytoscapeGpu;

@@ -1,14 +1,16 @@
-import Emitter from '../emitter.mjs';
-import type Event from '../event.mjs';
-import type { Listener } from '../emitter.mjs';
+import { GpuEmitter } from './emitter.mjs';
+import type { GpuEvent } from './event.mjs';
+import type { Listener } from './emitter.mjs';
+import type { GpuEventProps, GpuEventTarget } from './event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
 import type { GpuCollection } from './collection.mjs';
-import type { CoreShim } from '../types.mjs';
+import type { GpuCore } from './core.mjs';
 
 /*
-A single core Emitter (reusing src/emitter.mts unmodified) with
-slot/predicate-qualified listeners instead of per-element emitters.
+A single core emitter (v4's own since round 41.2 — it reused v3's
+src/emitter.mts until then) with slot/predicate-qualified listeners
+instead of per-element emitters.
 
 - `cy.on(events, cb)`                → unqualified listener
 - `cy.on(events, predicate, cb)`    → predicate qualifier (delegation)
@@ -40,6 +42,11 @@ exactly the old single-emit path.
 Known deviation from v3: listener firing order *within a phase* is
 plain registration order on the single emitter; cross-phase order is
 v3's bubble order.
+
+Round 41.2 changed the emitter underneath all of this and nothing
+above it: the phase rules below are the same functions, injected into
+v4's emitter instead of v3's.  What went with v3's emitter is its
+namespace parsing — see `emitter.mts`.
 */
 
 /** A delegation predicate over an element event target. */
@@ -99,7 +106,7 @@ const sameRef = ( a: Ref, b: Ref ): boolean => {
 /** The bubbling-phase fields _emitOnEle stamps onto the shared Event
  * (round 14.5): a ref during element phases, null during the core
  * phase, absent entirely on flat emits. */
-export interface PhasedEvent extends Event {
+export interface PhasedEvent extends GpuEvent {
   _gpuPhaseRef?: Ref | null;
   _gpuPhaseEle?: unknown;
 }
@@ -121,8 +128,8 @@ export interface GpuCoreLike {
  *   `event.target`
  * @returns the emitter, to be stored on the core
  */
-export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy, GpuQualifier> => {
-  return new Emitter<TCy, GpuQualifier>( {
+export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): GpuEmitter<TCy, GpuQualifier> => {
+  return new GpuEmitter<TCy, GpuQualifier>( {
     context: cy,
 
     qualifierCompare: ( q1, q2 ) => {
@@ -137,7 +144,7 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy
       return q1.key === q2.key;
     },
 
-    eventMatches: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: Event ): boolean => {
+    eventMatches: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: GpuEvent ): boolean => {
       const qualifier = listener.qualifier;
       const phaseRef = ( eventObj as PhasedEvent )._gpuPhaseRef;
 
@@ -174,15 +181,15 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): Emitter<TCy
       return false;
     },
 
-    addEventFields: ( ctx: TCy, evt ) => {
-      evt.cy = ctx as unknown as CoreShim;
+    addEventFields: ( ctx: TCy, evt: GpuEventProps ) => {
+      evt.cy = ctx as unknown as GpuCore;
 
       if( evt.target == null ){
-        evt.target = ctx;
+        evt.target = ctx as unknown as GpuEventTarget;
       }
     },
 
-    callbackContext: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: Event ) => {
+    callbackContext: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: GpuEvent ) => {
       if( listener.qualifier != null ){
         // during an ancestor phase the context is the phase element
         // (v3's currentTarget); event.target stays the originator

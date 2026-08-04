@@ -178,6 +178,15 @@ independent small things: **overlap box selection**
 (format version 4, applied by `options.elements` and deliberately
 ignored by `cy.add`), and **`cy.gc()`** as the explicit alias of
 `compact()`.
+Round 41 (2026-08-04) gave v4 **its own Event object and emitter**,
+severing the last import v4 made of v3's event machinery: `event.target`
+is typed, `originalEvent` is populated by the interaction layer at last,
+and the namespace parsing v4 had been inheriting — and contradicting its
+own design with — is gone.  Two of that round's premises turned out to be
+unmeasured claims: the emitter was not v4's *only* remaining shared
+import (five utility modules remain, now audited), and
+`preventDefault()`'s gesture half could not be enumerated from v3, which
+never reads the flag either — so that half is an open call.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -199,6 +208,13 @@ shader over every allocated slot.
   With a `container`, WebGPU is mandatory — the factory throws synchronously
   when `navigator.gpu` is missing, and `.ready` rejects when no adapter can
   be acquired.
+- Events: v4 owns its own `event.mts` and `emitter.mts` since round 41
+  — one emitter per core holding every listener (core, delegated and
+  per-element) told apart by a qualifier, and an Event object with a
+  typed `target`, a populated `originalEvent` and no namespace field.
+  Before that round both came from v3's shared modules, which is how
+  v4 spent thirty rounds running namespace semantics its own design
+  had dropped.
 - `contract.mts` is the co-signed source of truth for the column/flag layout
   shared by the model (`store/`) and the renderer (`render/`) — change it
   first when the layout changes.
@@ -652,14 +668,18 @@ calls made deliberately rather than by accretion:
   normalized vocabulary) and v3's raw mouse/touch re-emits
   (`mousedown`/`click`/`touchstart`/... — `pointer*` is their one
   modern spelling; the existing `mouseover`/`mouseout` stay);
-  `event.preventDefault()` has **no effect**: gesture defaults are
-  gated by options instead.  Note the shape of that — v4 emits the
-  shared v3 `Event` object, so the method is present on the event a
-  handler receives and sets `isDefaultPrevented`, but nothing in
-  `src/gpu` reads that flag, so the call silently does nothing.
-  `originalEvent` is never populated either (the interaction layer
-  emits `{ position }` only), so the underlying DOM event is not
-  reachable through it.
+  `event.preventDefault()` is **half wired** (round 41.4).  The DOM
+  half works: `originalEvent` is populated by the interaction layer
+  since 41.4 — the DOM event a gesture came from is reachable from the
+  handler, and `preventDefault()` reaches the browser's default through
+  it.  The *gesture* half does not: nothing in `src/gpu` reads
+  `isDefaultPrevented()`, so the call cannot stop a tap selecting or a
+  grab starting, and those defaults stay gated by options.  The fifth
+  sitting decided that half should be built; round 41 found the
+  enumeration it planned to derive **cannot be derived** — v3 never
+  reads the flag either, so the list of preventable defaults is a v4
+  contract to design rather than a v3 behaviour to port.  It is open
+  call 12 in PLAN.md.
   **"Dropped" here means "never emitted", not "rejected"** (measured
   2026-08-03): `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
   `cy.on('click', h)` and `cy.on('touchstart', h)` all register
@@ -669,19 +689,17 @@ calls made deliberately rather than by accretion:
   name cannot be validated against a list without breaking them.  No
   denylist; the behaviour is documented on `on()`/`emit()` instead
   (round 37.4) and pinned by specs.
-  Event **namespaces** are a narrower story than this file claimed
-  until round 37.4, which measured them: v4 imports v3's emitter, so
-  `'tap.ns'` parses and behaves in **full v3 semantics** —
-  `on('tap.ns')` listens for `tap` qualified by `.ns`,
-  `emit('tap.ns')` runs both it and any plain `tap` listener,
-  `emit('tap.other')` runs only the plain one, and `off('tap.ns')`
-  removes it.  What is true is that **v4 never emits a qualified
-  name**, so a namespaced listener fires only for events the
-  application emits itself and never for a library event.  The earlier
-  claim here — that `'tap.ns'` fires for neither `tap` nor `tap.ns` —
-  was wrong on the second half, as was the note below that the shared
-  emitter keeps namespace parsing "only for v3".  Round 41 removes the
-  machinery rather than leaving it half-live.
+  Event **namespaces** were a longer story than this file told.  It
+  claimed for several rounds that `'tap.ns'` fired for neither `tap`
+  nor `tap.ns`, and that the shared emitter kept its namespace parsing
+  "only for v3"; round 37.4 measured both and found them wrong — v4
+  imported v3's emitter, so namespaces worked in **full v3 semantics**,
+  and the only true part was that v4 never *emits* a qualified name.
+  **Round 41.2 closed it properly** by giving v4 its own emitter: a
+  type is matched whole, so `'tap.ns'` is one literal name that
+  `emit('tap')` does not reach and `emit('tap.ns')` reaches alone.  The
+  design and the code finally agree, and a spec pins the new rule row
+  by row.
   Deviation: `tapdragover`/`cxtdragover` target **nodes only** (the
   synchronous CPU pick; edges would need the async GPU tile).
 - **Extensions are direct objects — no registry.**  No
@@ -1599,15 +1617,16 @@ by node slot — the label vertex shader reads the node position buffer, so
 labels follow drags and layouts on-GPU with zero rebuild.  Labels fade out
 below the `labelFadePx` LOD threshold.
 
-Events: no namespaces *by design* — v4 drops the `'tap.foo'` form
-(unused, and a per-emit parse cost), so nothing v4 emits is ever
-qualified and a namespaced listener never sees a library event.  The
-machinery, though, is still **live**: v4 imports the shared
-`src/emitter.mts`, which parses namespaces for v3, so a hand-emitted
-`'tap.ns'` behaves exactly as in v3 (measured round 37.4 — this
-paragraph used to say the parsing was kept "only for v3", which was
-wrong).  **Round 41 removes it** along with the shared import, which is
-what makes the design and the code agree.  Delegation is
+Events: **no namespaces**, in the design and — since round 41.2 — in the
+code.  v4 dropped the `'tap.foo'` form (unused, and a per-emit parse
+cost), but until round 41 it imported v3's emitter and so inherited v3's
+namespace parsing wholesale: a hand-emitted `'tap.ns'` behaved exactly as
+in v3, which round 37.4 measured after this paragraph had claimed for
+several rounds that the parsing was kept "only for v3".  v4's own emitter
+matches a type **whole**, so a dot is an ordinary character in a name:
+`on( 'tap.ns' )` registers a listener for the literal type `'tap.ns'`,
+which v4 never emits and which a plain `emit( 'tap' )` does not reach.
+Delegation is
 predicate-based (`cy.on('tap', ele => ele.isNode(), cb)`); on `remove`
 events the target handle's cached `id()`/`group()` stay readable inside
 the predicate, while live state reads report false.  **Compound

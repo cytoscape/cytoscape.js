@@ -5,7 +5,7 @@ import { deserializeElements, isSerializedElements, serializeElements } from './
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, predicateQualifier, refKey } from './events.mjs';
 import type { ElePredicate, GpuQualifier, PhasedEvent } from './events.mjs';
-import CyEvent from '../event.mjs';
+import { GpuEvent } from './event.mjs';
 import { compileQuery } from './matcher.mjs';
 import type { FlagTest, GpuQuery } from './matcher.mjs';
 import { testCondition } from './style-scales.mjs';
@@ -29,10 +29,9 @@ import { RandomLayout } from './layout/random.mjs';
 export type GpuLayout =
   CustomLayout |
   GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
-import type Emitter from '../emitter.mjs';
-import type { EventHandler } from '../emitter.mjs';
-import type Event from '../event.mjs';
-import type { EventProps } from '../event.mjs';
+import type { GpuEmitter } from './emitter.mjs';
+import type { EventHandler } from './emitter.mjs';
+import type { GpuEventProps } from './event.mjs';
 import { FLAG_SELECTABLE, FLAG_SELECTED, NO_SLOT } from './contract.mjs';
 import { NO_PARENT } from './gpu-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
@@ -95,7 +94,7 @@ interface BatchPending {
  */
 export class GpuCore {
   _store: GraphStore;
-  _emitter: Emitter<GpuCore, GpuQualifier>;
+  _emitter: GpuEmitter<GpuCore, GpuQualifier>;
   _styleEngine: StyleEngine;
   _renderer: RendererLike | null;
   /** the pointer handler paired with the renderer (torn down on unmount) */
@@ -1037,14 +1036,12 @@ export class GpuCore {
    * does nothing at all rather than erroring, so port event names by the
    * vocabulary in `src/gpu/README.md` rather than by trying them.
    *
-   * **Namespaces are a special case of that rule** (measured 2026-08-04):
-   * v4 shares v3's emitter, so `'tap.ns'` parses and behaves exactly as in
-   * v3 — `on( 'tap.ns' )` listens for `tap` qualified by `.ns`,
-   * `emit( 'tap.ns' )` runs both it and any plain `tap` listener, and
-   * `off( 'tap.ns' )` removes it.  What does not happen is v4 ever emitting
-   * a qualified name: every event the library raises is unqualified, so a
-   * namespaced listener fires only for events *you* emit.  Round 41 removes
-   * the machinery rather than leaving it half-live.
+   * **Namespaces are exactly that rule, not an exception to it** (round
+   * 41.2).  There is no namespace machinery: a type is matched whole, so
+   * `'tap.ns'` is one literal name that `emit( 'tap' )` does not reach and
+   * `off( 'tap.ns' )` removes on its own.  Until round 41 v4 imported v3's
+   * emitter and so inherited v3's namespace semantics in full, against its
+   * own design — measured in 37.4 and closed in 41.2.
    *
    * @param events — one or more space-separated event names
    * @param predicateOrCb — the delegation predicate when `callback` is
@@ -1180,7 +1177,7 @@ export class GpuCore {
    *   event object
    * @returns this core, for chaining
    */
-  emit( events: string | EventProps, extraParams?: unknown[] ): this {
+  emit( events: string | GpuEventProps, extraParams?: unknown[] ): this {
     this._emitter.emit( events, extraParams );
 
     return this;
@@ -1196,12 +1193,12 @@ export class GpuCore {
    * @param predicate — an optional delegation predicate over the target
    * @returns a promise for the event object
    */
-  promiseOn( events: string, predicate?: ElePredicate ): Promise<Event> {
+  promiseOn( events: string, predicate?: ElePredicate ): Promise<GpuEvent> {
     return new Promise( resolve => {
       if( predicate != null ){
         this.one( events, predicate, event => resolve( event ) );
       } else {
-        this.one( events, ( event: Event ) => resolve( event ) );
+        this.one( events, ( event: GpuEvent ) => resolve( event ) );
       }
     } );
   }
@@ -2570,7 +2567,7 @@ export class GpuCore {
     this._styleEngine.applyBulk( group, slots );
   }
 
-  _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<EventProps> ): void {
+  _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<GpuEventProps> ): void {
     // Round 34.3: nothing listens for this type, so there is nothing to
     // do.  Sound because v4's emitter never bubbles to a parent —
     // `bubble` defaults false and v4 does not override it — so an emit
@@ -2595,7 +2592,7 @@ export class GpuCore {
         // phases on one shared Event, so stopPropagation carries between
         // them.  event.target stays the originator; each phase's element
         // rides _gpuPhaseRef/_gpuPhaseEle (see events.mts).
-        const eventObj = new CyEvent( { type, target: ele, ...props } ) as PhasedEvent;
+        const eventObj = new GpuEvent( { type, target: ele, ...props } ) as PhasedEvent;
 
         eventObj._gpuPhaseRef = ref;
         eventObj._gpuPhaseEle = ele;

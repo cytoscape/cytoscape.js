@@ -25,6 +25,10 @@ import ts from 'typescript-compiler-api';
 const EXPECTED_EXPORTS = new Set( [
   'BoxSelectionMode', // round 39.1
   'CytoscapeGpuOptions',
+  'EventHandler', // round 41
+  'GpuEvent', // round 41
+  'GpuEventProps', // round 41
+  'GpuEventTarget', // round 41
   'GpuBoundingBoxInput',
   'GpuBreadthFirstLayoutOptions',
   'GpuCaseClause',

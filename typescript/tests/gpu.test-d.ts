@@ -8,7 +8,7 @@
 
 import cytoscapeGpu from '../../build/dts-gpu/index.js';
 import type {
-  CytoscapeGpuOptions, GpuCollection, GpuColumnarElements, GpuCore,
+  CytoscapeGpuOptions, GpuCollection, GpuColumnarElements, GpuCore, GpuEvent,
   GpuElementsDefinition, GpuExportOptions, GpuGridLayoutOptions,
   GpuLayoutOptions, GpuMapper, GpuStylesheet, Position, RendererStats,
 } from '../../build/dts-gpu/index.js';
@@ -121,10 +121,23 @@ const extent = cy.extent();
 
 // -- events: predicate delegation, no selector strings --
 
-// `event.target` is `unknown` on the shared event type, so a consumer
-// narrows it — the predicate's parameter, by contrast, is contextually
-// typed by the delegation overload (round 26.5).
-const onTap = ( event: { target?: unknown } ) => void ( event.target as GpuCollection ).id();
+// Round 41: `event.target` is typed.  It used to be `unknown` on the shared
+// v3 event object, so every handler began with a cast; a v4 event's target is
+// the core or a one-element collection, and narrowing between them is a real
+// type guard rather than an assertion.
+const onTap = ( event: GpuEvent ) => {
+  const target = event.target;
+
+  if( target != null && 'isNode' in target ){
+    void target.id();      // narrowed to GpuCollection — no cast
+  }
+
+  // the event's own fields are typed too
+  const at: number = event.timeStamp;
+  const dom: string | undefined = event.originalEvent?.type;
+
+  void [ at, dom ];
+};
 const isNode = ( ele: GpuCollection ) => ele.isNode();
 
 cy.on( 'tap', isNode, onTap );

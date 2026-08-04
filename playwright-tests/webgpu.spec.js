@@ -2030,6 +2030,72 @@ test.describe( 'WebGPU renderer', () => {
     expect( await page.evaluate( () => window.cy.elements( { selected: true } ).length ) ).toBe( 0 );
   } );
 
+  test( 'events carry the DOM event as originalEvent (round 41.4)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // v4 emitted `{ position }` only, so `originalEvent` was on the type and
+    // never on an object — recorded since round 27's fact-check.  The pointer
+    // layer now attaches the DOM event it is handling.
+    await makeReadyCy( page, {
+      elements: [ { data: { id: 'a' }, position: { x: 0, y: 0 } } ],
+      zoom: 1
+    } );
+
+    const center = await centerPan( page );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__orig = [];
+
+      const record = name => e => window.__orig.push( {
+        name,
+        has: e.originalEvent != null,
+        domType: e.originalEvent?.type ?? null,
+        // the DOM event's own coordinates, to prove it is *this* event and
+        // not some retained earlier one
+        clientX: e.originalEvent?.clientX ?? null
+      } );
+
+      window.cy.on( 'tap', record( 'tap' ) );
+      window.cy.on( 'pointerdown', record( 'pointerdown' ) );
+      window.cy.$id( 'a' ).on( 'tap', record( 'ele-tap' ) );
+    } );
+
+    await page.mouse.click( center.x, center.y );
+
+    const seen = await page.evaluate( () => window.__orig );
+
+    expect( seen.length ).toBeGreaterThan( 0 );
+
+    for( const rec of seen ){
+      expect( rec.has, `${rec.name} carried no originalEvent` ).toBe( true );
+      expect( rec.clientX, `${rec.name}'s originalEvent has no coordinates` )
+        .toBeCloseTo( center.x, 0 );
+    }
+
+    // pointerdown carries a pointerdown, not whatever came last
+    const down = seen.find( r => r.name === 'pointerdown' );
+
+    expect( down.domType ).toBe( 'pointerdown' );
+
+    // and preventDefault() reaches the DOM event, which is the half of it
+    // that works today — the gesture-default half is an open call, so this
+    // asserts exactly what is built and no more
+    await page.evaluate( () => {
+      window.__prevented = null;
+
+      window.cy.one( 'pointerdown', e => {
+        e.preventDefault();
+        window.__prevented = [ e.isDefaultPrevented(), e.originalEvent.defaultPrevented ];
+      } );
+    } );
+
+    await page.mouse.click( center.x, center.y );
+
+    expect( await page.evaluate( () => window.__prevented ) ).toEqual( [ true, true ] );
+  } );
+
   test( 'boxSelectionMode overlap catches what the band touches (round 39.1)', async ( { page } ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

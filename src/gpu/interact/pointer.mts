@@ -104,6 +104,10 @@ export class PointerHandler {
   private onetapTimer: ReturnType<typeof setTimeout> | null;
   private lastTap: { target: GpuCollection | null; at: number } | null;
   private cleanups: ( () => void )[];
+  /** The DOM event being handled right now, or null between them — the
+   * source of `event.originalEvent` on everything this layer emits
+   * (round 41.4). */
+  private domEvent: Event | null = null;
 
   /**
    * Attach the whole gesture stack to the renderer's canvas.  Constructing
@@ -217,7 +221,7 @@ export class PointerHandler {
     } );
 
     // the viewport-gesture vocabulary (17.4)
-    this.cy.emit( { type: 'scrollzoom', position: this.cy._viewport.renderedToModel( pos ) } );
+    this.cy.emit( { type: 'scrollzoom', position: this.cy._viewport.renderedToModel( pos ), originalEvent: this.domEvent ?? undefined } );
   }
 
   private onPointerDown( e: PointerEvent ): void {
@@ -469,7 +473,7 @@ export class PointerHandler {
     if( down.mode === 'pan' ){
       if( this.cy.userPanningEnabled() === true ){
         this.cy.panBy( { x: dx, y: dy } );
-        this.cy.emit( { type: 'dragpan', position: this.cy._viewport.renderedToModel( pos ) } ); // 17.4
+        this.cy.emit( { type: 'dragpan', position: this.cy._viewport.renderedToModel( pos ), originalEvent: this.domEvent ?? undefined } ); // 17.4
       }
     } else if( down.mode === 'box' ){
       this.boxUpdate( down, pos );
@@ -733,7 +737,7 @@ export class PointerHandler {
         level: ( this.cy.zoom() as number ) * dist / pinch.dist,
         renderedPosition: mid
       } );
-      this.cy.emit( { type: 'pinchzoom', position: this.cy._viewport.renderedToModel( mid ) } ); // 17.4
+      this.cy.emit( { type: 'pinchzoom', position: this.cy._viewport.renderedToModel( mid ), originalEvent: this.domEvent ?? undefined } ); // 17.4
     }
 
     if( this.cy.userPanningEnabled() === true ){
@@ -837,7 +841,8 @@ export class PointerHandler {
       down.boxStarted = true;
       cy.emit( {
         type: 'boxstart',
-        position: cy._viewport.renderedToModel( { x: down.startX, y: down.startY } )
+        position: cy._viewport.renderedToModel( { x: down.startX, y: down.startY } ),
+        originalEvent: this.domEvent ?? undefined
       } );
     }
 
@@ -892,7 +897,8 @@ export class PointerHandler {
       this.touchBox = { x1: cx, y1: cyPx, x2: cx + 1, y2: cyPx + 1 }; // v3's +1 seed
       this.cy.emit( {
         type: 'boxstart',
-        position: this.cy._viewport.renderedToModel( { x: cx, y: cyPx } )
+        position: this.cy._viewport.renderedToModel( { x: cx, y: cyPx } ),
+        originalEvent: this.domEvent ?? undefined
       } );
     } else {
       this.touchBox.x2 = cx;
@@ -918,13 +924,13 @@ export class PointerHandler {
     const p2 = cy._viewport.renderedToModel( { x: box.x2, y: box.y2 } );
     const position = p2;
 
-    cy.emit( { type: 'boxend', position } );
+    cy.emit( { type: 'boxend', position, originalEvent: this.domEvent ?? undefined } );
 
     const eles = cy._elementsInGestureBox( p1.x, p1.y, p2.x, p2.y )
       .filter( ( ele: GpuCollection ) => ele.interactive() ); // the 20.2 rule
 
     for( let i = 0; i < eles.length; i++ ){
-      cy._emitOnEle( 'box', eles[ i ], undefined, { position } );
+      cy._emitOnEle( 'box', eles[ i ], undefined, { position, originalEvent: this.domEvent ?? undefined } );
     }
 
     if( cy.autounselectify() === true ){ return; }
@@ -934,7 +940,7 @@ export class PointerHandler {
     toSelect.select();
 
     for( let i = 0; i < toSelect.length; i++ ){
-      cy._emitOnEle( 'boxselect', toSelect[ i ], undefined, { position } );
+      cy._emitOnEle( 'boxselect', toSelect[ i ], undefined, { position, originalEvent: this.domEvent ?? undefined } );
     }
   }
 
@@ -953,10 +959,10 @@ export class PointerHandler {
     const box = cy._elementsInGestureBox( p1.x, p1.y, p2.x, p2.y )
       .filter( ( ele: GpuCollection ) => ele.interactive() );
 
-    cy.emit( { type: 'boxend', position } );
+    cy.emit( { type: 'boxend', position, originalEvent: this.domEvent ?? undefined } );
 
     for( let i = 0; i < box.length; i++ ){
-      cy._emitOnEle( 'box', box[ i ], undefined, { position } );
+      cy._emitOnEle( 'box', box[ i ], undefined, { position, originalEvent: this.domEvent ?? undefined } );
     }
 
     if( cy.autounselectify() === true ){ return; }
@@ -972,7 +978,7 @@ export class PointerHandler {
     toSelect.select();
 
     for( let i = 0; i < toSelect.length; i++ ){
-      cy._emitOnEle( 'boxselect', toSelect[ i ], undefined, { position } );
+      cy._emitOnEle( 'boxselect', toSelect[ i ], undefined, { position, originalEvent: this.domEvent ?? undefined } );
     }
   }
 
@@ -986,9 +992,9 @@ export class PointerHandler {
     const additive = isMultSelKeyDown( e ) || cy.selectionType() === 'additive';
 
     if( target == null ){ // background tap
-      cy.emit( { type: 'tap', position } );
+      cy.emit( { type: 'tap', position, originalEvent: this.domEvent ?? undefined } );
     } else {
-      cy._emitOnEle( 'tap', target, undefined, { position } );
+      cy._emitOnEle( 'tap', target, undefined, { position, originalEvent: this.domEvent ?? undefined } );
     }
 
     this.multiClick( target, position );
@@ -1005,14 +1011,14 @@ export class PointerHandler {
 
     if( target.selected() ){
       target.unselect(); // toggle off
-      cy._emitOnEle( 'tapunselect', target, undefined, { position } ); // 17.3
+      cy._emitOnEle( 'tapunselect', target, undefined, { position, originalEvent: this.domEvent ?? undefined } ); // 17.3
     } else {
       if( !additive ){
         cy.elements( { selected: true } ).difference( target ).unselect();
       }
 
       target.select();
-      cy._emitOnEle( 'tapselect', target, undefined, { position } ); // 17.3
+      cy._emitOnEle( 'tapselect', target, undefined, { position, originalEvent: this.domEvent ?? undefined } ); // 17.3
     }
   }
 
@@ -1065,13 +1071,13 @@ export class PointerHandler {
     const position = this.cy._viewport.renderedToModel( pos );
 
     if( prev != null && prev.inside() ){
-      this.cy._emitOnEle( prefix + 'out', prev, undefined, { position } );
+      this.cy._emitOnEle( prefix + 'out', prev, undefined, { position, originalEvent: this.domEvent ?? undefined } );
     }
 
     this.dragHover = ele;
 
     if( ele != null && ele.inside() ){
-      this.cy._emitOnEle( prefix + 'over', ele, undefined, { position } );
+      this.cy._emitOnEle( prefix + 'over', ele, undefined, { position, originalEvent: this.domEvent ?? undefined } );
     }
   }
 
@@ -1089,13 +1095,13 @@ export class PointerHandler {
       for( let i = 0; i < companions.length; i++ ){
         const ele = companions[ i ];
 
-        if( ele.inside() ){ this.cy._emitOnEle( type, ele, undefined, { position } ); }
+        if( ele.inside() ){ this.cy._emitOnEle( type, ele, undefined, { position, originalEvent: this.domEvent ?? undefined } ); }
       }
 
       return; // the drag set includes the direct element
     }
 
-    if( direct.inside() ){ this.cy._emitOnEle( type, direct, undefined, { position } ); }
+    if( direct.inside() ){ this.cy._emitOnEle( type, direct, undefined, { position, originalEvent: this.domEvent ?? undefined } ); }
   }
 
   /** Emit a gesture on the element (or the core) at a rendered position. */
@@ -1105,9 +1111,9 @@ export class PointerHandler {
 
   private emitModelGesture( type: string, target: GpuCollection | null, position: Position ): void {
     if( target != null && target.inside() ){
-      this.cy._emitOnEle( type, target, undefined, { position } );
+      this.cy._emitOnEle( type, target, undefined, { position, originalEvent: this.domEvent ?? undefined } );
     } else {
-      this.cy.emit( { type, position } );
+      this.cy.emit( { type, position, originalEvent: this.domEvent ?? undefined } );
     }
   }
 
@@ -1161,16 +1167,16 @@ export class PointerHandler {
 
     if( prev != null && prev.inside() ){
       this.setFlagOn( prev, FLAG_HOVERED, false );
-      this.cy._emitOnEle( 'mouseout', prev, undefined, { position } );
-      this.cy._emitOnEle( 'pointerout', prev, undefined, { position } ); // 17.1
+      this.cy._emitOnEle( 'mouseout', prev, undefined, { position, originalEvent: this.domEvent ?? undefined } );
+      this.cy._emitOnEle( 'pointerout', prev, undefined, { position, originalEvent: this.domEvent ?? undefined } ); // 17.1
     }
 
     this.hovered = ele;
 
     if( ele != null && ele.inside() ){
       this.setFlagOn( ele, FLAG_HOVERED, true );
-      this.cy._emitOnEle( 'mouseover', ele, undefined, { position } );
-      this.cy._emitOnEle( 'pointerover', ele, undefined, { position } ); // 17.1
+      this.cy._emitOnEle( 'mouseover', ele, undefined, { position, originalEvent: this.domEvent ?? undefined } );
+      this.cy._emitOnEle( 'pointerover', ele, undefined, { position, originalEvent: this.domEvent ?? undefined } ); // 17.1
     }
   }
 
@@ -1197,7 +1203,23 @@ export class PointerHandler {
   }
 
   private listen( type: string, handler: ( e: Event ) => void, opts?: AddEventListenerOptions ): void {
-    this.canvas.addEventListener( type, handler, opts );
-    this.cleanups.push( () => this.canvas.removeEventListener( type, handler ) );
+    // round 41.4: every cytoscape event this layer raises while a DOM event
+    // is being handled carries that DOM event as `originalEvent`.  Setting
+    // it here rather than at ~25 emit sites keeps the two impossible to get
+    // out of step; clearing it in `finally` is what keeps the field honest,
+    // since an emit from a *timer* (taphold, onetap) has no DOM event behind
+    // it and must report none rather than the last one seen.
+    const wrapped = ( e: Event ): void => {
+      this.domEvent = e;
+
+      try {
+        handler( e );
+      } finally {
+        this.domEvent = null;
+      }
+    };
+
+    this.canvas.addEventListener( type, wrapped, opts );
+    this.cleanups.push( () => this.canvas.removeEventListener( type, wrapped ) );
   }
 }

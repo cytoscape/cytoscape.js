@@ -8,6 +8,10 @@ import type { CytoscapeGpuOptions } from './gpu-types.mjs';
 export type * from './gpu-types.mjs';
 export type { GpuCore } from './core.mjs';
 export type { GpuCollection } from './collection.mjs';
+// round 41: v4's own event object, so a handler's parameter has a real type
+// and `event.target` is no longer `unknown`
+export type { GpuEvent, GpuEventProps, GpuEventTarget } from './event.mjs';
+export type { EventHandler } from './emitter.mjs';
 
 /**
  * Create a GPU-prototype cytoscape instance (issue #3486, pass 1): a

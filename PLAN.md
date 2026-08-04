@@ -8859,10 +8859,25 @@ edges on the i9-9900K:
 - [ ] **34.0 Docs-first** — this plan, the round-33 correction recorded
   in its own record and in the README, and the `AGENTS.md` note about
   benchmarking transpiled sources.
-- [ ] **34.1 `indexOf` is O(1)** — the lazily-built packed-key
-  membership `Set` becomes a `Map` from key to first index, so
-  `indexOf`/`indexOfId` answer from it while every set op keeps using
-  `.has()`.  One cache, two consumers.
+- [x] **34.1 `indexOf` is O(1)** (2026-08-03) — the lazily-built
+  packed-key membership `Set` became a `Map` from key to *first index*.
+  Set membership only ever asks `.has()`, which a Map answers
+  identically, so the ten set-op call sites are untouched; `indexOf`
+  now reads the index straight out of the same cache instead of
+  re-packing every ref in a linear scan.
+  **12.5 µs → 42 ns** at N=2000 (measured through the sources on both
+  sides), which is **parity with v3's 42 ns** — the 81× gap is gone
+  rather than narrowed, because the cache the set ops already build was
+  carrying the answer all along.
+  `indexOfId` is deliberately **not** changed: it compares each
+  handle's cached `_id`, which still resolves for a *removed* element
+  held in a collection, and answering it from the store's id index
+  instead would quietly change that.  It was not one of the five.
+  Tests-first: two specs in `test/gpu-collection-reference.mjs` pinning
+  that the two consumers agree whichever builds the cache first (a
+  wrong shared cache shows up as one of them answering differently),
+  and that every element of a 40-element collection reports its own
+  index.  2489 Node tests.
 - [ ] **34.2 `elements()` memoized against a structure epoch** — the
   store gains a monotonic counter bumped wherever an element enters or
   leaves the order list (`allocSlot`, `freeSlot`, the bulk id path) and

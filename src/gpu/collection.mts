@@ -83,12 +83,24 @@ const assertCollection = ( other: unknown, method: string ): void => {
   }
 };
 
-const refSet = ( refs: Ref[] ): Set<number> => {
-  const set = new Set<number>();
+// Round 34.1: a Map from packed key to *first index*, not a Set.  Set
+// membership only ever asks `.has()`, which a Map answers identically,
+// and carrying the index makes `indexOf` O(1) off the same cache
+// instead of a linear scan that re-packs every ref (3.63 µs over a
+// 2000-element collection, against v3's 45 ns).  One cache, two
+// consumers — the shape this codebase reaches for elsewhere.
+const refIndex = ( refs: Ref[] ): Map<number, number> => {
+  const index = new Map<number, number>();
 
-  for( let i = 0; i < refs.length; i++ ){ set.add( packRef( refs[ i ] ) ); }
+  for( let i = 0; i < refs.length; i++ ){
+    const key = packRef( refs[ i ] );
 
-  return set;
+    // first index wins: collections are unique by construction, so this
+    // only matters if one ever is not
+    if( !index.has( key ) ){ index.set( key, i ); }
+  }
+
+  return index;
 };
 
 /**
@@ -112,8 +124,8 @@ export class GpuCollection {
   _group: GroupName | undefined;
   /** per-element scratchpad, lazily created on the interned singleton handle */
   _scratch?: Record<string, unknown>;
-  /** lazily-built packed-key membership set; safe to cache since _refs is immutable */
-  _keys?: Set<number>;
+  /** lazily-built packed-key → first-index map; safe to cache since _refs is immutable */
+  _keys?: Map<number, number>;
 
   /**
    * The collection's refs, repaired lazily after a slot compaction
@@ -275,13 +287,15 @@ export class GpuCollection {
   }
 
   /**
-   * A cached Set of this collection's packed element keys, for set membership.
+   * A cached Map of this collection's packed element keys to their first
+   * index, for set membership (`.has()`) and `indexOf` alike.
    * Sound to cache: `_refs` is fixed at construction, and a packed key encodes
    * the ref's own {group, slot, gen}, so it stays valid even as the store
-   * mutates. Built lazily — collections that never do a set op pay nothing.
+   * mutates. Built lazily — collections that never do a set op or an
+   * `indexOf` pay nothing.
    */
-  _keySet(): Set<number> {
-    return ( this._keys ??= refSet( this._refs ) );
+  _keySet(): Map<number, number> {
+    return ( this._keys ??= refIndex( this._refs ) );
   }
 
   // -- core reference & identity --
@@ -339,13 +353,9 @@ export class GpuCollection {
 
     if( ref == null ){ return -1; }
 
-    const key = packRef( ref );
-
-    for( let i = 0; i < this._refs.length; i++ ){
-      if( packRef( this._refs[ i ] ) === key ){ return i; }
-    }
-
-    return -1;
+    // O(1) off the shared packed-key cache (34.1), which set membership
+    // builds anyway; a linear re-packing scan was 81× v3 here
+    return this._keySet().get( packRef( ref ) ) ?? -1;
   }
 
   /**

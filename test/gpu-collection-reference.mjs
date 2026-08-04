@@ -60,6 +60,43 @@ describe('gpu/collection: core reference & identity', function(){
     expect( nodes.indexOf( cy.$id('e1') ) ).to.equal( -1 );
   });
 
+  // round 34.1: indexOf answers from the same lazily-built packed-key
+  // cache the set ops use, which is now a Map from key to first index
+  // rather than a Set.  These pin that the two consumers agree in both
+  // orders — the cache built by a set op first, and built by indexOf
+  // first — since a wrong shared cache would show up as one of the two
+  // answering differently.
+  it('indexOf() agrees with the membership cache, whichever builds it', function(){
+    var a = cy.nodes();
+    var b = cy.nodes();
+
+    // (a) membership first, then indexOf off the same cache
+    expect( a.contains( cy.$id('n2') ) ).to.equal( true );
+    expect( a.indexOf( cy.$id('n2') ) ).to.equal( 1 );
+
+    // (b) indexOf first, then membership
+    expect( b.indexOf( cy.$id('n2') ) ).to.equal( 1 );
+    expect( b.contains( cy.$id('n2') ) ).to.equal( true );
+    expect( b.contains( cy.$id('e1') ) ).to.equal( false );
+    expect( b.indexOf( cy.$id('e1') ) ).to.equal( -1 );
+  });
+
+  it('indexOf() finds every element of a larger collection', function(){
+    var many = cy.add( Array.from( { length: 40 }, function( _, i ){
+      return { data: { id: 'ix' + i } };
+    } ) );
+
+    // every element reports its own position, and the last one is not
+    // found by luck: a stale or partial cache would fail here first
+    many.forEach( function( ele, i ){
+      expect( many.indexOf( ele ) ).to.equal( i );
+    } );
+
+    expect( many.indexOf( many.last() ) ).to.equal( 39 );
+
+    many.remove();
+  });
+
   it('indexOfId()', function(){
     var nodes = cy.nodes();
 

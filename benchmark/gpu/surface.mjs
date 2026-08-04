@@ -79,6 +79,11 @@ const ctx = {
 const ROWS = [];
 const cmp = ( section, label, op ) => ROWS.push( { section, label, v3: op, gpu: op } );
 const only = ( section, label, op ) => ROWS.push( { section, label, v3: null, gpu: op } );
+// a comparative row whose *spelling* differs per side — the idiomatic form
+// on each, per round 33's design call 1 (a v3 selector string against the
+// v4 query object that replaced it)
+const pair = ( section, label, v3op, gpuop ) =>
+  ROWS.push( { section, label, v3: v3op, gpu: gpuop } );
 
 // viewport -------------------------------------------------------------------
 cmp( 'viewport', 'zoom() get', c => c.cy.zoom() );
@@ -159,6 +164,18 @@ cmp( 'collection', 'some + every (2 calls)', c =>
 // collection: comparison + set building ---------------------------------------
 cmp( 'collection', 'same + anySame + contains (3 calls)', c =>
   c.band.same( c.band ) + c.band.anySame( c.other ) + c.band.contains( c.band ) );
+// round 36.3: the two members gpu-bench-coverage reported with no
+// benchmark at all.  Both short-circuit, so the criteria are chosen to
+// make them *walk* — allAre matches every element (so `every` runs to the
+// end) and `is` matches none (so `some` does too).  A row where allAre
+// fails on the first element, or is matches it, measures one test rather
+// than a hundred: 33.5's custom-polygon pick row, in a different costume.
+pair( 'collection', 'allAre (all match: the full walk)',
+  c => c.band.allAre( 'node' ),
+  c => c.band.allAre( { group: 'nodes' } ) );
+pair( 'collection', 'is (none match: the full walk)',
+  c => c.band.is( ':selected' ),
+  c => c.band.is( { selected: true } ) );
 cmp( 'collection', 'union', c => c.band.union( c.other ) );
 cmp( 'collection', 'intersection', c => c.band.intersection( c.other ) );
 cmp( 'collection', 'difference', c => c.band.difference( c.other ) );

@@ -15,7 +15,27 @@ export type { GpuCollection } from './collection.mjs';
  *
  * With a `container`, WebGPU is required — this throws synchronously when
  * `navigator.gpu` is unavailable.  Without a container the instance is
- * headless (Node-friendly, never throws for a missing GPU).
+ * headless (Node-friendly, never throws for a missing GPU).  Adapter
+ * acquisition is asynchronous and reported separately: `cy.ready` rejects
+ * when no adapter can be had, which this function cannot know yet.
+ *
+ * Beyond the constructor's work, the factory ingests `options.elements`
+ * through the bulk path (no per-element handles, no `add` events — nothing
+ * can be listening yet), runs `options.layout`, and attaches the renderer and
+ * pointer handler when a container is given.
+ *
+ * **Unknown options are ignored, deliberately** (decided 2026-08-04, fifth
+ * design sitting): unlike an unknown sheet key, style property or query key,
+ * a misspelled option does not throw, because strictness here resolves at the
+ * type layer — TypeScript's excess-property check rejects `{ motionBlur:
+ * true }` against {@link CytoscapeGpuOptions}, and v4 does not replicate at
+ * runtime what the build already checks.
+ *
+ * @param options — the instance options; every field is optional, and an
+ *   omitted `container` is what selects headless mode
+ * @returns the new core, usable synchronously — reads and writes do not wait
+ *   on the device, and a rendered instance additionally resolves `cy.ready`
+ * @throws when `container` is given and `navigator.gpu` is missing
  */
 export default function cytoscapeGpu( options: CytoscapeGpuOptions = {} ): GpuCore {
   if( options.container != null ){

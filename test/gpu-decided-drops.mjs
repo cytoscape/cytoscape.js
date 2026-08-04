@@ -217,6 +217,48 @@ describe('gpu/decided drops (29.3)', function(){
 
   });
 
+  /*
+  Round 37.3.  The dropped *style props* above all throw; the dropped
+  constructor *options* deliberately do not, and that asymmetry is a decision
+  rather than an oversight — the fifth design sitting settled that strictness
+  at the constructor resolves at the type layer, since tsc's excess-property
+  check already rejects `{ motionBlur: true }` and v4 should not re-implement
+  at runtime what the build checks.  It was found as a contradiction (round 29)
+  and logged rather than patched, so what pins it now is a spec for each half:
+  this one for the runtime, and `typescript/tests/gpu.test-d.ts` for the build,
+  where four @ts-expect-error directives fail the typecheck if the options type
+  ever stops rejecting excess keys.
+  */
+  describe('the constructor is permissive on purpose', function(){
+
+    it('ignores the dropped canvas-era options rather than throwing', function(){
+      for( const opt of [ 'motionBlur', 'hideEdgesOnViewport', 'textureOnViewport' ] ){
+        const permissive = cytoscapeGpu({ elements: [], [ opt ]: true });
+
+        expect( permissive.instanceString(), opt ).to.be.a( 'string' );
+        permissive.destroy();
+      }
+    });
+
+    it('ignores a plain typo, and round-trips it through options()', function(){
+      const permissive = cytoscapeGpu({ elements: [], totallyUnknownOption: 1 });
+
+      // kept as given: options() is a record of what was passed, not a
+      // validated subset — the boundary this decision draws
+      expect( permissive.options().totallyUnknownOption ).to.equal( 1 );
+      permissive.destroy();
+    });
+
+    it('still throws on the unknown names that are v4 contract', function(){
+      // the contrast the decision rests on: keys v4 *interprets* fail loudly
+      expect( () => cytoscapeGpu({ elements: [], style: { nodes: { notAProp: 1 } } }) )
+        .to.throw( /unsupported/ );
+      expect( () => cytoscapeGpu({ elements: [], style: { notAGroup: {} } }) ).to.throw();
+      expect( () => cy.nodes({ notAQueryKey: true }) ).to.throw();
+    });
+
+  });
+
   describe('the other decided removals', function(){
 
     it('per-element style bypass (the setter form throws)', function(){

@@ -708,6 +708,23 @@ each is deliberate, not a pass-1 deferral:
   columns, structural terms) extend the IR with more test kinds; any
   future frontend (chained builder, serialized JSON query) compiles to
   it rather than growing its own matching.
+- **Strictness resolves at the type layer at the constructor, and at
+  runtime everywhere else** (decided 2026-08-04, fifth design sitting;
+  pinned by round 37.3).  v4 fails loudly on an unknown sheet key,
+  style property, query key or `boundingBox()` option, on the
+  reasoning that a typo must not silently do nothing.  The
+  **constructor is the deliberate exception**: `{ motionBlur: true }`
+  and `{ totallyUnknownOption: 1 }` construct happily and round-trip
+  through `cy.options()`.  The reason is that the typo guard already
+  exists one layer up — TypeScript's excess-property check rejects
+  both against `CytoscapeGpuOptions` — and v4 does not replicate at
+  runtime what the build checks.  The boundary is TypeScript's, and
+  worth knowing: excess-property checking applies to object
+  *literals*, so options assembled into a variable first are widened
+  and pass.  Both halves are pinned — a Node spec for the
+  permissiveness, and four `@ts-expect-error` directives in
+  `typescript/tests/gpu.test-d.ts` that fail the typecheck if the
+  options type ever stops rejecting excess keys.
 - **No classes in v4** (`addClass`/`removeClass`/class selectors).  The
   role classes played in v3 — user-defined state driving filtering and
   styling — belongs to the columnar `data()` sidecar (for state) plus
@@ -1977,12 +1994,22 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   bodies only** — so the public tier's *exported functions*, which are
   the whole surface of `wire.mts` and `columnar.mts` and are public
   members by the script's own definition, sat outside a gate that read
-  as complete.  They are inside it now, at **229/229**.
+  as complete.  They are inside it now, at **230/230** — the 230th
+  arriving in round 37.3, which found the same failure a third time:
+  the exported-function pattern round 36 added did not spell
+  `default`, so `src/gpu/index.mts`, listed in the public tier since
+  round 26, contributed **zero** members to *every* audit while
+  reading as audited and complete.  Its whole surface is
+  `export default function cytoscapeGpu` — the package's entry point —
+  and all three of its tags were in fact missing.  The standing lesson
+  is the one round 36 wrote into `AGENTS.md`: an audit's scope is part
+  of its claim, so check what it enumerates before quoting its 100%.
 - **`@returns` is written, and gated since round 37.1** (written in
   round 36).  Round 32 measured this tail at 63 of 276 and left it, on
   the reasoning above; round 36 wrote all 63, so the surface is
-  **276/276**, and left the *gate's* boundary exactly where round 32
-  drew it — a policy call of the kind PLAN.md's open call 8 held for
+  **277/277** (276 at the time; the 277th is the entry point round 37.3
+  brought inside the audit), and left the *gate's* boundary exactly
+  where round 32 drew it — a policy call of the kind PLAN.md's open call 8 held for
   test coverage.  The fifth design sitting (2026-08-04) took both
   calls, and this one ratchets: `auditReturnTags()` prints the tally
   under the coverage report, `--verbose` lists any miss, and

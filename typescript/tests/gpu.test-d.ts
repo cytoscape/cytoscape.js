@@ -48,6 +48,36 @@ const options: CytoscapeGpuOptions = {
 
 const cy: GpuCore = cytoscapeGpu( options );
 
+// -- unknown constructor options are a build-time error (round 37.3) --
+//
+// v4 throws on an unknown sheet key, an unknown style property and an unknown
+// query key, on the stated reasoning that a typo must fail loudly.  The
+// constructor deliberately does not: the fifth design sitting decided that
+// strictness here resolves at the type layer, since v4 should not replicate at
+// runtime what the build already checks.  So this is where that decision is
+// enforced, and these directives fail the typecheck if the options type ever
+// stops rejecting excess keys.
+//
+// The four canvas-era options the 2026-07-29 triage dropped are the concrete
+// case — `{ motionBlur: true }` constructs happily at runtime and round-trips
+// through `cy.options()`:
+
+// @ts-expect-error motionBlur was dropped by the 2026-07-29 triage
+cytoscapeGpu( { motionBlur: true } );
+// @ts-expect-error hideEdgesOnViewport likewise
+cytoscapeGpu( { elements, hideEdgesOnViewport: true } );
+// @ts-expect-error and a plain typo, the case the whole rule is for
+cytoscapeGpu( { totallyUnknownOption: 1 } );
+// @ts-expect-error the same check through the named options type
+const badOptions: CytoscapeGpuOptions = { textureOnViewport: true };
+
+void badOptions;
+
+// Note the boundary, which is TypeScript's and not v4's: excess-property
+// checking applies to object *literals*.  Options assembled into a variable
+// first are widened and pass, which is why the runtime stays permissive rather
+// than pretending this is airtight — see the constructor's own doc comment.
+
 // -- statics on the factory --
 
 const columnar: GpuColumnarElements = cytoscapeGpu.toColumnarElements( elements );

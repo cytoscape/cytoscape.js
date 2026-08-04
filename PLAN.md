@@ -9845,13 +9845,40 @@ calls already taken (fifth sitting); nothing here needs design.
   third place — after the `UNREACHABLE` allowlist it broke then, and the
   gate 37.1 built to catch that — and the same fix applies: a `file:line`
   written down is a claim that nothing above it will ever move.
-- **37.3 Constructor options, closed at the type layer.**  A
-  compile-only consumer test pins that `{ motionBlur: true }` (and a
-  plainly unknown key) fail typechecking against the options type;
-  the ctor's JSDoc records that the runtime is deliberately
-  permissive.  If the current options type does not reject excess
-  keys in the consumer-test configuration, tightening it *is* this
-  item.
+- [x] **37.3 Constructor options, closed at the type layer**
+  (2026-08-04) — landed.  The options type needed no tightening: it
+  carries no index signature, so TypeScript's excess-property check
+  already rejects every case.  Four `@ts-expect-error` directives in
+  `typescript/tests/gpu.test-d.ts` pin it — `motionBlur`,
+  `hideEdgesOnViewport`, a plain typo, and one through the named
+  `CytoscapeGpuOptions` type — and the control ran: swapping one for a
+  *valid* key (`zoom`) makes the directive unused and fails the build,
+  so the check discriminates rather than passing vacuously.
+  The runtime half is pinned too, which the plan did not ask for and
+  the decision needs: three Node specs assert that the dropped
+  canvas-era options are ignored, that a typo round-trips through
+  `options()`, and — the contrast the whole decision rests on — that
+  the names v4 *interprets* still throw.  The ctor's and the factory's
+  JSDoc record the asymmetry, including its boundary: excess-property
+  checking applies to object literals, so options assembled into a
+  variable first widen and pass.
+  **The item turned up a third instance of round 36's audit-scope
+  failure**, and closing it was in scope because this round is the one
+  that gates these audits.  Writing the factory's doc comment meant
+  reading it, which showed `cytoscapeGpu` had no `@param` — and yet
+  `@param` reported 229/229.  `src/gpu/index.mts` has been listed in
+  `PUBLIC_API` since round 26 and contributed **zero** members to
+  *every* audit, because the exported-function pattern round 36 added
+  matches `export function` and `export const f =` but not
+  `export default function`.  So the package's entry point — the most
+  public member in the tree — sat outside coverage, `@param`,
+  `@returns` and `@throws` while its file read as audited and
+  complete, and all three of its tags were in fact missing.  Widened,
+  written, and pinned by a spec that fails if the file ever again
+  contributes nothing: **17/17, 230/230, 277/277**.
+  Round 32 walked class bodies only; round 36 widened to exported
+  functions; this widens again.  Same lesson each time — an audit's
+  scope is part of its claim.
 - **37.4 Event-name openness, documented.**  `on()`/`emit()` JSDoc
   states the contract: any name registers and custom events are
   supported; dropped v3 spellings and namespaced names never fire.

@@ -6605,9 +6605,21 @@ declare class GpuCore {
    * renderer when a `container` is given.  Constructing directly yields a
    * headless, empty instance regardless of those options.
    *
+   * **Unknown options are ignored, deliberately** (decided 2026-08-04, fifth
+   * design sitting).  This is the one v4 entry point that does not fail loudly
+   * on a name it does not know — an unknown sheet key, style property or query
+   * key all throw — because strictness here resolves at the *type* layer:
+   * TypeScript's excess-property check rejects `{ motionBlur: true }` and any
+   * other typo against `CytoscapeGpuOptions`, and v4 does not replicate at
+   * runtime what the build already checks.  The boundary is TypeScript's:
+   * excess-property checking applies to object literals, so options assembled
+   * into a variable first are widened and pass.  Pinned by the compile-only
+   * consumer test in `typescript/tests/gpu.test-d.ts`.
+   *
    * @param options — the instance options (see `CytoscapeGpuOptions`);
    *   viewport, interaction-gating and interaction-tuning options are
-   *   applied here, and `style` compiles immediately.
+   *   applied here, and `style` compiles immediately.  Unrecognized keys are
+   *   kept as given and returned by `options()`, never validated.
    */
   constructor(options?: CytoscapeGpuOptions);
   /**
@@ -7630,7 +7642,27 @@ declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => Gpu
  *
  * With a `container`, WebGPU is required — this throws synchronously when
  * `navigator.gpu` is unavailable.  Without a container the instance is
- * headless (Node-friendly, never throws for a missing GPU).
+ * headless (Node-friendly, never throws for a missing GPU).  Adapter
+ * acquisition is asynchronous and reported separately: `cy.ready` rejects
+ * when no adapter can be had, which this function cannot know yet.
+ *
+ * Beyond the constructor's work, the factory ingests `options.elements`
+ * through the bulk path (no per-element handles, no `add` events — nothing
+ * can be listening yet), runs `options.layout`, and attaches the renderer and
+ * pointer handler when a container is given.
+ *
+ * **Unknown options are ignored, deliberately** (decided 2026-08-04, fifth
+ * design sitting): unlike an unknown sheet key, style property or query key,
+ * a misspelled option does not throw, because strictness here resolves at the
+ * type layer — TypeScript's excess-property check rejects `{ motionBlur:
+ * true }` against {@link CytoscapeGpuOptions}, and v4 does not replicate at
+ * runtime what the build already checks.
+ *
+ * @param options — the instance options; every field is optional, and an
+ *   omitted `container` is what selects headless mode
+ * @returns the new core, usable synchronously — reads and writes do not wait
+ *   on the device, and a rendered instance additionally resolves `cy.ready`
+ * @throws when `container` is given and `navigator.gpu` is missing
  */
 declare function cytoscapeGpu(options?: CytoscapeGpuOptions): GpuCore;
 declare namespace cytoscapeGpu {

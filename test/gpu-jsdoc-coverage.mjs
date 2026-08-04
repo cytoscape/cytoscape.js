@@ -169,8 +169,38 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
     });
 
     it('finds a non-trivial number of value-returning members to check', function(){
-      // the ratchet: 276 at the round-36 completion this gate pins
-      expect( result.returnTags.tagged ).to.be.at.least( 276 );
+      // the ratchet: 276 at the round-36 completion this gate pins, 277 once
+      // round 37.3 brought the entry point inside the audit
+      expect( result.returnTags.tagged ).to.be.at.least( 277 );
+    });
+
+  });
+
+  /*
+  Round 37.3.  `src/gpu/index.mts` has been listed in PUBLIC_API since round
+  26 and contributed **nothing** to any of these audits until now: its whole
+  surface is `export default function cytoscapeGpu`, and the exported-function
+  pattern round 36 added did not spell `default`.  So the package's entry point
+  — the most public member in the tree — sat outside coverage, @param, @returns
+  and @throws while its file read as audited and complete, and all three of its
+  tags were in fact missing.
+
+  This is the third instance of one failure: round 32's audit walked class
+  bodies only, round 36 widened it to exported functions, and this widens it
+  again.  The lesson each time is that an audit's scope is part of its claim.
+  */
+  describe('the entry point is inside the audit', function(){
+
+    it('src/gpu/index.mts contributes members to every tier of it', function(){
+      const inFile = ( files, file ) => files.find( f => f.file === file );
+
+      expect(
+        inFile( result.files, 'src/gpu/index.mts' ).documented,
+        'index.mts contributes no documented members; is `export default function` matched?'
+      ).to.be.at.least( 1 );
+
+      expect( inFile( result.paramTags.files, 'src/gpu/index.mts' ).tagged ).to.be.at.least( 1 );
+      expect( inFile( result.returnTags.files, 'src/gpu/index.mts' ).tagged ).to.be.at.least( 1 );
     });
 
   });

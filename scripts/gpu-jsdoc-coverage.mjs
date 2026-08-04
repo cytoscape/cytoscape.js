@@ -52,11 +52,21 @@ const PARAMS_RE =
 const TOP_LEVEL_RE =
   /^(?:export\s+)?(?:declare\s+)?(?:default\s+)?(?:interface|type|function|const|let|var|enum|namespace|module)\b/;
 
-// A top-level exported function, in either spelling: `export function f(` and
-// `export const f = (` / `= async (` / `= function`. Exported consts that are
-// not functions are data, not API surface, and are left out.
+// A top-level exported function, in any of its spellings: `export function f(`,
+// `export default function f(`, and `export const f = (` / `= async (` /
+// `= function`. Exported consts that are not functions are data, not API
+// surface, and are left out.
+//
+// `default` was missing until round 37.3, and it cost the audit the single
+// most public member in the tree: `src/gpu/index.mts` is listed in PUBLIC_API,
+// and its whole surface is `export default function cytoscapeGpu` — the
+// package entry point — so the file contributed **zero** members to coverage,
+// @param, @returns and @throws alike, while reading as audited and complete.
+// This is round 36's widening (class bodies only → plus exported functions)
+// finding its third case, and the standing lesson with it: an audit's scope is
+// part of its claim, so check what it enumerates before quoting its 100%.
 const EXPORTED_FN_RE =
-  /^export\s+(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^export\s+const\s+([A-Za-z_$][\w$]*)(?::[^=]+)?\s*=\s*(?:async\s*)?(?:function\b|(?:<[^>]*>)?\s*\()/;
+  /^export\s+(?:default\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)|^export\s+const\s+([A-Za-z_$][\w$]*)(?::[^=]+)?\s*=\s*(?:async\s*)?(?:function\b|(?:<[^>]*>)?\s*\()/;
 
 // MEMBER_RE narrowed to members declared with a *call* signature. A field
 // (`lastNow = 0;`) has no return annotation, and joining forward from one to

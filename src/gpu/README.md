@@ -2145,9 +2145,12 @@ v4 pulls ahead:
 `degree`/`totalDegree` are O(1) off the adjacency index (~100–200× v3),
 `components`/`add`+`remove` ~25–35×, set operations up to ~25×.  Collection
 identity keys on a packed `{group, slot, gen}` integer (not a string) and
-each collection lazily caches its membership Set (sound because `_refs` is
+each collection lazily caches its packed keys (sound because `_refs` is
 immutable), so `same`/`contains`/`intersection`/`difference` beat v3 once a
-collection is reused.  `$id` resolves through the O(1) id index rather
+collection is reused.  Since round 34.1 that cache is a **Map from key to
+first index** rather than a Set, so `indexOf` answers from it too — one
+cache, two consumers, and `indexOf` went from a linear re-packing scan
+(81× v3) to parity.  `$id` resolves through the O(1) id index rather
 than materializing and scanning the graph; structured queries are
 (group, flag-mask) predicates, so they compile through the matcher IR to
 per-group `(mask, want)` tests answered by one preallocated scan over

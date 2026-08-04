@@ -28,22 +28,22 @@ layouts, `ctx.layoutPositions( fn )` is the full v3 finisher
 */
 
 import { FLAG_ALIVE, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
-import type { GpuCore } from '../core.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuCustomLayoutOptions, Position } from '../gpu-types.mjs';
+import type { Core } from '../core.mjs';
+import type { Collection } from '../collection.mjs';
+import type { CustomLayoutOptions, Position } from '../public-types.mjs';
 
-export interface GpuLayoutImpl {
-  run( ctx: GpuLayoutContext ): void | Promise<void>;
+export interface LayoutImpl {
+  run( ctx: LayoutContext ): void | Promise<void>;
   stop?(): void;
 }
 
-export class GpuLayoutContext {
+export class LayoutContext {
   /** the core being laid out */
-  readonly cy: GpuCore;
+  readonly cy: Core;
   /** the resolved layout options (custom knobs included) */
-  readonly options: GpuCustomLayoutOptions;
-  private _eles: GpuCollection | null = null;
-  private _nodes: GpuCollection | null = null;
+  readonly options: CustomLayoutOptions;
+  private _eles: Collection | null = null;
+  private _nodes: Collection | null = null;
 
   /**
    * The layout scope (handles tier); the whole graph unless this run
@@ -61,8 +61,8 @@ export class GpuLayoutContext {
    *   whole graph's elements when the layout was started from the core.
    *   Materialized on first read and cached for the run
    */
-  get eles(): GpuCollection {
-    return ( this._eles ??= ( this.options.eles as GpuCollection | undefined ) ?? this.cy.elements() );
+  get eles(): Collection {
+    return ( this._eles ??= ( this.options.eles as Collection | undefined ) ?? this.cy.elements() );
   }
 
   /**
@@ -72,7 +72,7 @@ export class GpuLayoutContext {
    *   `nodeSlots()`, this keeps locked nodes and compound parents, so a
    *   layout iterating it must apply its own rules
    */
-  get nodes(): GpuCollection {
+  get nodes(): Collection {
     return ( this._nodes ??= this.eles.nodes() );
   }
 
@@ -92,7 +92,7 @@ export class GpuLayoutContext {
    * @param options — the resolved layout options; `eles` narrows the
    *   scope (from `eles.layout()`), defaulting to the whole graph
    */
-  constructor( cy: GpuCore, layout: object, options: GpuCustomLayoutOptions ){
+  constructor( cy: Core, layout: object, options: CustomLayoutOptions ){
     this.cy = cy;
     this.layout = layout;
     this.options = options;
@@ -114,7 +114,7 @@ export class GpuLayoutContext {
     if( this.slots != null ){ return this.slots; }
 
     const store = this.cy._store;
-    const scope = this.options.eles as GpuCollection | undefined;
+    const scope = this.options.eles as Collection | undefined;
     const out: number[] = [];
 
     if( scope == null ){
@@ -151,7 +151,7 @@ export class GpuLayoutContext {
    *   filtering — the counterpart of `nodeSlots()`, which does filter
    */
   edgeSlots(): number[] {
-    const scope = this.options.eles as GpuCollection | undefined;
+    const scope = this.options.eles as Collection | undefined;
     const out: number[] = [];
 
     if( scope == null ){
@@ -205,7 +205,7 @@ export class GpuLayoutContext {
    *
    * @returns `{ x1, y1, x2, y2, w, h }` in model coordinates
    */
-  boundingBox(): ReturnType<GpuCollection['boundingBox']> {
+  boundingBox(): ReturnType<Collection['boundingBox']> {
     return this.eles.boundingBox();
   }
 
@@ -252,13 +252,13 @@ export class GpuLayoutContext {
    * @param fn — called per scoped node with the node and its index,
    *   returning the model position to place it at
    */
-  layoutPositions( fn: ( node: GpuCollection, i: number ) => Position ): void {
+  layoutPositions( fn: ( node: Collection, i: number ) => Position ): void {
     this._finisherUsed = true;
     this.eles.layoutPositions( this.layout, {
       ...this.options,
       eles: this.eles,
       _startEmitted: true
-    } as GpuCustomLayoutOptions, fn );
+    } as CustomLayoutOptions, fn );
   }
 }
 
@@ -266,10 +266,10 @@ export class GpuLayoutContext {
  * promise() (resolves at this run's layoutstop). */
 export class CustomLayout {
   /** the resolved options this run was created with */
-  options: GpuCustomLayoutOptions;
+  options: CustomLayoutOptions;
 
-  private cy: GpuCore;
-  private impl: GpuLayoutImpl;
+  private cy: Core;
+  private impl: LayoutImpl;
   private donePromise: Promise<void> = Promise.resolve();
 
   /**
@@ -281,14 +281,14 @@ export class CustomLayout {
    *   arguments or a plain object, implementing `{ run( ctx ), stop?() }`
    * @throws if `impl` is missing, or does not implement `run( ctx )`
    */
-  constructor( cy: GpuCore, options: GpuCustomLayoutOptions ){
+  constructor( cy: Core, options: CustomLayoutOptions ){
     const provided = options.impl;
-    let impl: GpuLayoutImpl;
+    let impl: LayoutImpl;
 
     if( typeof provided === 'function' ){
-      impl = new ( provided as new () => GpuLayoutImpl )();
+      impl = new ( provided as new () => LayoutImpl )();
     } else if( provided != null && typeof provided === 'object' ){
-      impl = provided as GpuLayoutImpl;
+      impl = provided as LayoutImpl;
     } else {
       throw new Error( `A custom layout needs an impl class or object` );
     }
@@ -321,7 +321,7 @@ export class CustomLayout {
 
     this.donePromise = new Promise<void>( r => { resolve = r; } );
 
-    const ctx = new GpuLayoutContext( cy, this, {
+    const ctx = new LayoutContext( cy, this, {
       ...this.options,
       // the finisher resolves the run promise at its stop callback
       stop: () => {

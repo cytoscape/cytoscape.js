@@ -2,8 +2,8 @@ import { expect } from 'chai';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import cytoscape from '../src/index.mjs';
-import { GpuCore } from '../src/core.mjs';
-import { GpuCollection } from '../src/collection.mjs';
+import { Core } from '../src/core.mjs';
+import { Collection } from '../src/collection.mjs';
 
 /*
 Round 29.1: the alias surface.
@@ -16,7 +16,7 @@ a *type* declaration in the class body —
 
 — and a *runtime* assignment far below it —
 
-    GpuCollection.prototype.each = GpuCollection.prototype.forEach;
+    Collection.prototype.each = Collection.prototype.forEach;
 
 Deleting the second line leaves `npm run typecheck` green, because the
 `declare` goes on asserting the method exists, and breaks `eles.each()`
@@ -29,7 +29,7 @@ tabled, and every tabled alias must be declared — so adding an alias
 without listing it here fails, and so does removing one silently.
 */
 
-/** [ alias, target ] for every alias declared on GpuCore. */
+/** [ alias, target ] for every alias declared on Core. */
 const CORE_ALIASES = [
   [ 'makeLayout', 'layout' ],
   [ 'createLayout', 'layout' ],
@@ -63,7 +63,7 @@ const CORE_ALIASES = [
   [ 'gc', 'compact' ]
 ];
 
-/** [ alias, target ] for every alias declared on GpuCollection. */
+/** [ alias, target ] for every alias declared on Collection. */
 const COLLECTION_ALIASES = [
   [ 'each', 'forEach' ],
   [ 'has', 'contains' ],
@@ -147,24 +147,24 @@ const key = pairs => pairs.map( ( [ a, b ] ) => `${a} -> ${b}` ).sort();
 
 describe('gpu/aliases: the alias surface (29.1)', function(){
 
-  describe('GpuCore', function(){
+  describe('Core', function(){
 
     for( const [ alias, target ] of CORE_ALIASES ){
       it(`cy.${alias} is wired to ${target}`, function(){
-        expect( typeof GpuCore.prototype[ alias ], alias ).to.equal( 'function' );
-        expect( GpuCore.prototype[ alias ], alias ).to.equal( GpuCore.prototype[ target ] );
+        expect( typeof Core.prototype[ alias ], alias ).to.equal( 'function' );
+        expect( Core.prototype[ alias ], alias ).to.equal( Core.prototype[ target ] );
       });
     }
 
   });
 
-  describe('GpuCollection', function(){
+  describe('Collection', function(){
 
     for( const [ alias, target ] of COLLECTION_ALIASES ){
       it(`eles.${alias} is wired to ${target}`, function(){
-        expect( typeof GpuCollection.prototype[ alias ], alias ).to.equal( 'function' );
-        expect( GpuCollection.prototype[ alias ], alias )
-          .to.equal( GpuCollection.prototype[ target ] );
+        expect( typeof Collection.prototype[ alias ], alias ).to.equal( 'function' );
+        expect( Collection.prototype[ alias ], alias )
+          .to.equal( Collection.prototype[ target ] );
       });
     }
 
@@ -237,12 +237,12 @@ describe('gpu/aliases: the alias surface (29.1)', function(){
 
   describe('the table and the sources agree', function(){
 
-    it('every alias declared on GpuCore is tabled here', function(){
+    it('every alias declared on Core is tabled here', function(){
       expect( declaredIn( '../src/core.mts' ).sort() )
         .to.deep.equal( key( CORE_ALIASES ) );
     });
 
-    it('every alias declared on GpuCollection is tabled here', function(){
+    it('every alias declared on Collection is tabled here', function(){
       expect( declaredIn( '../src/collection.mts' ).sort() )
         .to.deep.equal( key( COLLECTION_ALIASES ) );
     });

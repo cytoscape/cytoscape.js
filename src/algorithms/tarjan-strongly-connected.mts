@@ -1,11 +1,11 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph } from './algo-shared.mjs';
 
 export interface TarjanStronglyConnectedResult {
   /** the elements not inside any component: the edges between components */
-  cut: GpuCollection;
-  components: GpuCollection[];
+  cut: Collection;
+  components: Collection[];
 }
 
 /**
@@ -14,7 +14,7 @@ export interface TarjanStronglyConnectedResult {
  * Iterative — unlike v3's recursive form — so deep graphs cannot overflow
  * the JS stack; the component sets are identical.
  */
-export const tarjanStronglyConnected = ( coll: GpuCollection ): TarjanStronglyConnectedResult => {
+export const tarjanStronglyConnected = ( coll: Collection ): TarjanStronglyConnectedResult => {
   const view = subgraph( coll );
   const { store, endpoints, index, nodeSlots, edgeIn } = view;
   const n = nodeSlots.length;

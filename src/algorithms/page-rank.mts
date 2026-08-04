@@ -1,4 +1,4 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 
@@ -10,11 +10,11 @@ export interface PageRankOptions {
 }
 
 export interface PageRankResult {
-  rank( node: GpuCollection ): number | undefined;
+  rank( node: Collection ): number | undefined;
 }
 
 /** PageRank over the calling collection (power method on the dense matrix). */
-export const pageRank = ( coll: GpuCollection, options: PageRankOptions = {} ): PageRankResult => {
+export const pageRank = ( coll: Collection, options: PageRankOptions = {} ): PageRankResult => {
   const dampingFactor = options.dampingFactor ?? 0.8;
   const precision = options.precision ?? 0.000001;
   const iterations = options.iterations ?? 200;
@@ -97,7 +97,7 @@ export const pageRank = ( coll: GpuCollection, options: PageRankOptions = {} ): 
   }
 
   return {
-    rank( node: GpuCollection ): number | undefined {
+    rank( node: Collection ): number | undefined {
       const slot = firstNodeSlot( view, node, 'node' );
       const i = slot == null ? undefined : index.get( slot );
 

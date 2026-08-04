@@ -761,7 +761,7 @@ export class Animation {
 
   /** set when a slot compaction demoted this animation mid-flight: the
    * rest of its run stays on the CPU (its GPU buffers held old slots) */
-  private _gpuBarred = false;
+  private _barred = false;
 
   /**
    * Whether the GPU tween runtime can drive this animation outright.
@@ -780,7 +780,7 @@ export class Animation {
    *   animation on the CPU rather than splitting it
    */
   get gpuEligible(): boolean {
-    if( this._gpuBarred ){ return false; }
+    if( this._barred ){ return false; }
     if( this.isViewport ){ return false; }
 
     // a preset transition's tier is per write: all-paint may offload
@@ -874,7 +874,7 @@ export class Animation {
    * @param now — the clock whose value is written to the CPU columns
    */
   demoteGpu( now: number ): void {
-    this._gpuBarred = true;
+    this._barred = true;
 
     if( this._done || this.gpuId == null ){ return; }
 

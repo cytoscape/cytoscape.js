@@ -1,24 +1,24 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 
 export interface BellmanFordOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
   findNegativeWeightCycles?: boolean;
 }
 
 export interface BellmanFordResult {
-  distanceTo( node: GpuCollection ): number | undefined;
-  pathTo( node: GpuCollection, thisStart?: GpuCollection ): GpuCollection;
+  distanceTo( node: Collection ): number | undefined;
+  pathTo( node: Collection, thisStart?: Collection ): Collection;
   hasNegativeWeightCycle: boolean;
-  negativeWeightCycles: GpuCollection[];
+  negativeWeightCycles: Collection[];
 }
 
 /** Single-source shortest paths allowing negative weights, with cycle detection. */
-export const bellmanFord = ( coll: GpuCollection, options: BellmanFordOptions = {} ): BellmanFordResult => {
+export const bellmanFord = ( coll: Collection, options: BellmanFordOptions = {} ): BellmanFordResult => {
   const view = subgraph( coll );
   const { store, endpoints, index, nodeSlots } = view;
   const rootSlot = firstNodeSlot( view, options.root, 'root' );
@@ -86,7 +86,7 @@ export const bellmanFord = ( coll: GpuCollection, options: BellmanFordOptions = 
   }
 
   let hasNegativeWeightCycle = false;
-  const negativeWeightCycles: GpuCollection[] = [];
+  const negativeWeightCycles: Collection[] = [];
 
   if( replacedEdge ){
     const cycleIds: string[] = [];
@@ -167,20 +167,20 @@ export const bellmanFord = ( coll: GpuCollection, options: BellmanFordOptions = 
     }
   }
 
-  const denseOf = ( node: GpuCollection | undefined, name: string ): number | undefined => {
+  const denseOf = ( node: Collection | undefined, name: string ): number | undefined => {
     const slot = firstNodeSlot( view, node, name );
 
     return slot == null ? undefined : index.get( slot );
   };
 
   return {
-    distanceTo( node: GpuCollection ): number | undefined {
+    distanceTo( node: Collection ): number | undefined {
       const i = denseOf( node, 'node' );
 
       return i == null ? undefined : dist[ i ];
     },
 
-    pathTo( node: GpuCollection, thisStart?: GpuCollection ): GpuCollection {
+    pathTo( node: Collection, thisStart?: Collection ): Collection {
       const end = denseOf( node, 'node' );
       const start = thisStart == null ? ( index.get( rootSlot ) as number ) : denseOf( thisStart, 'thisStart' );
       const refs: Ref[] = [];

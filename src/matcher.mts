@@ -23,7 +23,7 @@ own matching.
 */
 
 /** One data comparison; exactly one op per condition object. */
-export interface GpuDataCondition {
+export interface DataCondition {
   eq?: unknown;
   ne?: unknown;
   lt?: number;
@@ -34,7 +34,7 @@ export interface GpuDataCondition {
 }
 
 /** A structured element query; every present key must hold. */
-export interface GpuQuery {
+export interface Query {
   /** restrict to one group */
   group?: GroupName;
   /** require the element (not) to be selected */
@@ -46,7 +46,7 @@ export interface GpuQuery {
    * `child: false` is v3's `:orphan` */
   child?: boolean;
   /** data-sidecar conditions per key; a bare value means equality */
-  data?: Record<string, GpuDataCondition | string | number | boolean | null>;
+  data?: Record<string, DataCondition | string | number | boolean | null>;
 }
 
 /** A flags-column test: a slot matches when (flags & mask) === want. */
@@ -73,12 +73,12 @@ const isBareValue = ( v: unknown ): boolean =>
   v == null || typeof v !== 'object';
 
 /** Compile one query data entry into a condition (case-mapper rules). */
-const compileDataCondition = ( key: string, spec: GpuDataCondition | string | number | boolean | null ): CompiledCondition => {
+const compileDataCondition = ( key: string, spec: DataCondition | string | number | boolean | null ): CompiledCondition => {
   if( isBareValue( spec ) ){
     return { key, op: 'eq', value: spec as string | number };
   }
 
-  const cond = spec as GpuDataCondition;
+  const cond = spec as DataCondition;
   const ops = Object.keys( cond );
 
   for( const op of ops ){
@@ -94,7 +94,7 @@ const compileDataCondition = ( key: string, spec: GpuDataCondition | string | nu
   }
 
   const op = ops[ 0 ] as CompiledCondition['op'];
-  const raw = cond[ op as keyof GpuDataCondition ];
+  const raw = cond[ op as keyof DataCondition ];
 
   if( op === 'in' ){
     if( !Array.isArray( raw ) || raw.length === 0 ){
@@ -118,7 +118,7 @@ const compileDataCondition = ( key: string, spec: GpuDataCondition | string | nu
  * with no string language left, a typo'd key must fail loudly rather than
  * silently match everything.
  */
-export const compileQuery = ( query: GpuQuery, restrict: GroupName | null = null ): FlagPlan => {
+export const compileQuery = ( query: Query, restrict: GroupName | null = null ): FlagPlan => {
   // 29.3: a v3 selector string used to reach the key loop, where its
   // character indices read as keys and the error came back as
   // "Unknown query key '0'" — true, but not the thing that went wrong

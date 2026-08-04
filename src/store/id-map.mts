@@ -1,6 +1,6 @@
 import type { GroupName } from '../contract.mjs';
 import { NO_SLOT } from '../contract.mjs';
-import type { GpuPackedIds } from '../gpu-types.mjs';
+import type { PackedIds } from '../public-types.mjs';
 import { isPackedIds } from '../columnar.mjs';
 
 export interface IdEntry {
@@ -179,7 +179,7 @@ export class IdMap {
    */
   setBulk(
     group: GroupName, slots: Uint32Array,
-    ids: ( string | undefined )[] | GpuPackedIds | undefined,
+    ids: ( string | undefined )[] | PackedIds | undefined,
     newId: () => string
   ): void {
     this.ensure( this._size + slots.length );

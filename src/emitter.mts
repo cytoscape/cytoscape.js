@@ -1,5 +1,5 @@
-import { GpuEvent } from './event.mjs';
-import type { GpuEventProps } from './event.mjs';
+import { Event } from './event.mjs';
+import type { EventProps } from './event.mjs';
 
 /*
 v4's emitter (round 41.2), replacing the shared v3 emitter (now
@@ -36,7 +36,7 @@ removing before the callback runs, and a handler returning `false` meaning
 
 /** An event handler.  `this` is the callback context the emitter's options
  * choose — the core, or the phase element during compound bubbling. */
-export type EventHandler = ( this: unknown, event: GpuEvent, ...extraParams: unknown[] ) => unknown;
+export type EventHandler = ( this: unknown, event: Event, ...extraParams: unknown[] ) => unknown;
 
 /** A registered listener. */
 export interface Listener<TQualifier = unknown> {
@@ -51,22 +51,22 @@ export interface Listener<TQualifier = unknown> {
 
 /** The hooks that make one emitter behave as v4's qualified-listener model;
  * `events.mts` supplies all four. */
-export interface GpuEmitterOptions<TContext, TQualifier> {
+export interface EmitterOptions<TContext, TQualifier> {
   /** the emitter context — the core */
   context: TContext;
   /** whether two qualifiers denote the same restriction, for `off()` */
   qualifierCompare( q1: TQualifier | null | undefined, q2: TQualifier | null | undefined ): boolean;
   /** whether this listener should fire for this event (the phase rules) */
-  eventMatches( context: TContext, listener: Listener<TQualifier>, event: GpuEvent ): boolean;
+  eventMatches( context: TContext, listener: Listener<TQualifier>, event: Event ): boolean;
   /** fill in fields every event carries (`cy`, a default `target`) */
-  addEventFields( context: TContext, props: GpuEventProps ): void;
+  addEventFields( context: TContext, props: EventProps ): void;
   /** what `this` is inside the callback (v3's currentTarget semantics) */
-  callbackContext( context: TContext, listener: Listener<TQualifier>, event: GpuEvent ): unknown;
+  callbackContext( context: TContext, listener: Listener<TQualifier>, event: Event ): unknown;
 }
 
 /** Anything `emit()` accepts: one or more space-separated type names, a
  * props object, or an already-built event (the bubbling walk re-emits one). */
-export type EmitInput = string | GpuEventProps | GpuEvent;
+export type EmitInput = string | EventProps | Event;
 
 /** Split a `'tap drag'` list into names, ignoring empty entries. */
 const typesOf = ( events: string ): string[] => {
@@ -78,18 +78,18 @@ const typesOf = ( events: string ): string[] => {
  *
  * @see makeCoreEmitter in `events.mts`, which is the only place one is built
  */
-export class GpuEmitter<TContext = unknown, TQualifier = unknown> {
+export class Emitter<TContext = unknown, TQualifier = unknown> {
   /** every listener on this core, in registration order */
   listeners: Listener<TQualifier>[] = [];
   /** emit depth, so `off()` during an emit copies rather than mutates */
   emitting = 0;
 
-  private opts: GpuEmitterOptions<TContext, TQualifier>;
+  private opts: EmitterOptions<TContext, TQualifier>;
 
   /**
    * @param opts — the context and the four matching hooks
    */
-  constructor( opts: GpuEmitterOptions<TContext, TQualifier> ){
+  constructor( opts: EmitterOptions<TContext, TQualifier> ){
     this.opts = opts;
   }
 
@@ -185,7 +185,7 @@ export class GpuEmitter<TContext = unknown, TQualifier = unknown> {
     this.emitting++;
 
     try {
-      if( events instanceof GpuEvent ){
+      if( events instanceof Event ){
         this.emitOne( events, extra );
       } else if( typeof events === 'object' && events !== null ){
         this.emitOne( this.build( events ), extra );
@@ -202,14 +202,14 @@ export class GpuEmitter<TContext = unknown, TQualifier = unknown> {
   }
 
   /** Build an event from props, letting the options fill in `cy`/`target`. */
-  private build( props: GpuEventProps ): GpuEvent {
+  private build( props: EventProps ): Event {
     this.opts.addEventFields( this.opts.context, props );
 
-    return new GpuEvent( props );
+    return new Event( props );
   }
 
   /** Run one event past the listener list as it stood when the emit began. */
-  private emitOne( event: GpuEvent, extra: unknown[] ): void {
+  private emitOne( event: Event, extra: unknown[] ): void {
     const listeners = this.listeners;
     // the snapshot: a handler registering another listener for the same type
     // does not have it fire for *this* event (v3's semantics, and what keeps
@@ -236,4 +236,4 @@ export class GpuEmitter<TContext = unknown, TQualifier = unknown> {
   }
 }
 
-export default GpuEmitter;
+export default Emitter;

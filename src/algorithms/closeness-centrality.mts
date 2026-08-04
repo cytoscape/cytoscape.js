@@ -1,11 +1,11 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { dijkstra } from './dijkstra.mjs';
 import { floydWarshall } from './floyd-warshall.mjs';
 import { subgraph, firstNodeSlot } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 
 export interface ClosenessCentralityOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
   /** sum 1/d (default, tolerates disconnection) instead of 1/sum d */
@@ -13,11 +13,11 @@ export interface ClosenessCentralityOptions {
 }
 
 export interface ClosenessCentralityNormalizedResult {
-  closeness( node: GpuCollection ): number;
+  closeness( node: Collection ): number;
 }
 
 /** Closeness centrality of `root` within the calling collection. */
-export const closenessCentrality = ( coll: GpuCollection, options: ClosenessCentralityOptions = {} ): number => {
+export const closenessCentrality = ( coll: Collection, options: ClosenessCentralityOptions = {} ): number => {
   const harmonic = options.harmonic !== false;
   const view = subgraph( coll );
   const rootSlot = firstNodeSlot( view, options.root, 'root' );
@@ -27,7 +27,7 @@ export const closenessCentrality = ( coll: GpuCollection, options: ClosenessCent
   }
 
   const di = dijkstra( coll, [ {
-    root: options.root as GpuCollection, weight: options.weight, directed: options.directed
+    root: options.root as Collection, weight: options.weight, directed: options.directed
   } ] );
   let totalDistance = 0;
 
@@ -43,7 +43,7 @@ export const closenessCentrality = ( coll: GpuCollection, options: ClosenessCent
 };
 
 /** Closeness centrality of every collection node, normalized by the maximum. */
-export const closenessCentralityNormalized = ( coll: GpuCollection, options: ClosenessCentralityOptions = {} ): ClosenessCentralityNormalizedResult => {
+export const closenessCentralityNormalized = ( coll: Collection, options: ClosenessCentralityOptions = {} ): ClosenessCentralityNormalizedResult => {
   const harmonic = options.harmonic !== false;
   const view = subgraph( coll );
   const { cy, index, nodeSlots } = view;
@@ -72,7 +72,7 @@ export const closenessCentralityNormalized = ( coll: GpuCollection, options: Clo
   }
 
   return {
-    closeness( node: GpuCollection ): number {
+    closeness( node: Collection ): number {
       if( maxCloseness === 0 ){ return 0; }
 
       const slot = firstNodeSlot( view, node, 'node' );

@@ -1,6 +1,6 @@
 import type { GroupName } from '../contract.mjs';
 import { NO_SLOT } from '../contract.mjs';
-import type { GpuDataColumn, GpuDictColumn } from '../gpu-types.mjs';
+import type { DataColumn, DictColumn } from '../public-types.mjs';
 
 /*
 The data() sidecar: per-(group, key) columns instead of a per-element
@@ -142,12 +142,12 @@ export class DataStore {
    * dictionary column, mixed as a plain array — the shapes `ingestColumn`
    * and the wire already accept.  Undefined when there are no columns.
    */
-  exportColumns( group: GroupName, slots: ArrayLike<number> ): Record<string, GpuDataColumn> | undefined {
+  exportColumns( group: GroupName, slots: ArrayLike<number> ): Record<string, DataColumn> | undefined {
     const cols = this.cols[ group ];
 
     if( cols.size === 0 ){ return undefined; }
 
-    const out: Record<string, GpuDataColumn> = {};
+    const out: Record<string, DataColumn> = {};
 
     for( const [ key, col ] of cols ){
       switch( col.kind ){
@@ -220,7 +220,7 @@ export class DataStore {
    */
   ingestColumn(
     group: GroupName, slots: Uint32Array,
-    key: string, column: ArrayLike<unknown> | GpuDictColumn
+    key: string, column: ArrayLike<unknown> | DictColumn
   ): void {
     const cols = this.cols[ group ];
     const existing = cols.get( key );
@@ -512,9 +512,9 @@ export class DataStore {
  *
  * @param column — the candidate column
  */
-export const isDictColumn = ( column: ArrayLike<unknown> | GpuDictColumn ): column is GpuDictColumn => {
+export const isDictColumn = ( column: ArrayLike<unknown> | DictColumn ): column is DictColumn => {
   return !Array.isArray( column ) && !ArrayBuffer.isView( column )
-    && ( column as GpuDictColumn ).dict != null && ( column as GpuDictColumn ).indices != null;
+    && ( column as DictColumn ).dict != null && ( column as DictColumn ).indices != null;
 };
 
 const growF64 = ( old: Float64Array, slot: number ): Float64Array => {

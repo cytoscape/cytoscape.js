@@ -200,10 +200,11 @@ item 12.  Round 42 closed no ledger item — the packaging decision was the
 sitting's, not an open call — but it took two calls its own plan had left
 to docs-first (the `gpu-` prefixes drop; the five shared utility modules
 duplicate) and a third the plan had not foreseen (the v4 identity rename:
-factory, bundles, declaration and UMD global are all `cytoscape` now,
-while the `Gpu*` **type** names deliberately are not, being a separate
-call someone still has to take).  Each is marked below, and the rest still
-read as described until their rounds ship.
+factory, bundles, declaration and UMD global are all `cytoscape` now).
+That rename **left the `Gpu*` exported type names behind** — logged as item
+13 rather than done, because they are public surface — and the maintainer
+took the call the same day, so 42.6 finished it.  Each is marked below, and
+the rest still read as described until their rounds ship.
 
 **A second question is now genuinely open**, beside the error policy:
 round 41 found that item 12's remaining half — *which* gesture defaults
@@ -211,9 +212,9 @@ round 41 found that item 12's remaining half — *which* gesture defaults
 round-41 plan assumed, because v3 never reads `isDefaultPrevented`
 either.  That list is a v4 contract still to be designed.  Round 38 also
 acquired three sub-calls, logged inside item 1, that the sitting did not
-reach, and **round 42 added a third open question** — item 13, the `Gpu*`
-exported type names, which its identity rename deliberately stopped
-short of because they are public surface.
+reach.  Round 42 raised and closed a third (item 13, the `Gpu*` exported
+type names) inside the same day, so the count of genuinely open questions
+is unchanged at two.
 
 ### Scope calls
 
@@ -500,30 +501,26 @@ docs checks), and each is left in place pending the call.
     Logged rather than guessed at because a wrong list is worse than
     none: an app that learns `preventDefault()` suppresses selection
     will depend on it.
-13. **The `Gpu*` exported type names** (new, round 42, 2026-08-04).  Round
-    42 renamed the package's *identity* — the factory, the bundles, the
-    declaration and the UMD global are all plainly `cytoscape` now — but
-    stopped at the exported **type** names, which still read `GpuCore`,
-    `GpuCollection`, `GpuEvent`, `GpuStylesheet`, `CytoscapeGpuOptions`
-    and 37 others.  The `Gpu` there meant "the prototype, as opposed to
-    v3" at a time when both lived in one package; now that v4 *is* the
-    package it means nothing, and a consumer writes
-    `const cy: GpuCore = cytoscape( opts )`.
-    The call is whether they rename (to `Core`, `Collection`, `Event`,
-    `Stylesheet`, `CytoscapeOptions`, …) and if so whether the old
-    spellings survive as deprecated aliases through the prerelease line,
-    the way `exports["./gpu"]` does.  It is mechanical — one pass over
-    `src/`, `dist/cytoscape.d.ts`, `test/types-surface.mjs`'s
-    `EXPECTED_EXPORTS` and the compile-only consumer test — but it is
-    **public surface**, so it is a call and not a tidy-up, which is why
-    round 42 logged it instead of doing it while it had the sed open.
-    Cheapest before 4.0.0-alpha.1 (round 49) and expensive after.
-    Note the one name that is *not* obviously in scope: `gpu-types.mts`,
-    `gpu-context.mts` and the `render/gpu-*` modules keep their prefix on
-    purpose — there it distinguishes the device half from a CPU
-    counterpart — so a rename should not sweep the file names with the
-    type names.
-
+13. ~~**The `Gpu*` exported type names**~~ — **closed by round 42.6**
+    (2026-08-04).  Round 42 renamed the package's *identity* — factory,
+    bundles, declaration, UMD global — but stopped at the exported **type**
+    names, which still read `GpuCore`, `GpuCollection`, `GpuEvent`,
+    `GpuStylesheet`, `CytoscapeGpuOptions` and 37 others.  The `Gpu` there
+    meant "the prototype, as opposed to v3" at a time when both lived in one
+    package; once v4 *was* the package it meant nothing, and a consumer was
+    writing `const cy: GpuCore = cytoscape( opts )`.  Logged rather than
+    swept because it is public surface.
+    **Call taken (2026-08-04): remove the prefixes, no deprecated aliases.**
+    The prerelease line has no published consumers to break — `./gpu` is
+    aliased because *v3's* users type it, which is a different situation —
+    so carrying both spellings would only preserve a name nobody has yet
+    written.  `Core`, `Collection`, `Event`, `Stylesheet`,
+    `CytoscapeOptions`, and so on through all 42 exports.
+    **Six names keep the prefix, deliberately**: `GpuContext`, `GpuTimer`,
+    `GpuForceRuntime`, `GpuTweenRuntime`, `GpuTweenSink` and `GpuWriteKind`
+    — every one of them internal, and every one naming the *device* half
+    against a CPU counterpart, which is the same rule that kept the
+    `gpu-*.mts` file names in round 42.1.  None is exported.
 
 ## Context
 
@@ -541,10 +538,10 @@ Agreed constraints (from user) — the **pass-1 agreement**, kept as the histori
 ```
 src/
   index.mts              # default factory cytoscape(options); hard-error gate; wires model↔renderer↔pointer
-  gpu-types.mts          # public option/type surface (GpuRendererOptions LOD knobs, RendererStats, ...)
-  core.mts               # GpuCore facade: graph manipulation, queries, events, style(), layout(), pick(),
+  public-types.mts          # public option/type surface (RendererOptions LOD knobs, RendererStats, ...)
+  core.mts               # Core facade: graph manipulation, queries, events, style(), layout(), pick(),
                          #   batching, compact() (round 19), json()/serialize(), destroy(), width/height
-  collection.mts         # GpuCollection ("element is a length-1 collection", v3-style; interned handles;
+  collection.mts         # Collection ("element is a length-1 collection", v3-style; interned handles;
                          #   epoch-guarded _refs with post-compaction lazy repair, round 19.3)
   viewport.mts           # zoom/pan/panBy/fit/center/extent state + math (core-owned; core emits the events)
   event.mts              # v4's Event object (41.1): typed target, originalEvent, no namespaces
@@ -697,7 +694,7 @@ Columns, flag bits and shape ids are exactly as originally specced; `contract.mt
 - **Frame timing**: `stats()` reports `cpuFrameMs` (encode/submit cost, ~0.1 ms by design) separately from `gpuFrameMs` (real frame GPU time via the optional `timestamp-query` feature — the span across the cull/render/upscale passes, which is robust to backends that emulate pass-boundary timestamps at command-buffer granularity) — CPU-side timers cannot see GPU execution, which is what bounds fps on large graphs.
 - **Adaptive render scale (added)**: `renderScaleMin`/`renderScaleMax` band (defaults 0.5/1), quarter steps driven by median `gpuFrameMs` over ~400 ms windows (drop > 14 ms; raise only when the projected cost at the higher step fits under 10 ms — no pumping; backpressure stalls as the no-timestamp fallback; pure `ScaleController`, unit-tested). Idle settles back to max after ~250 ms so stills are always native — chosen over a static scale because far zoom is maximally resolution-sensitive (floors are render-px-defined, sub-pixel statistics change, decimation engages earlier) yet nearly free at native after decimation+culling. Scaled frames render offscreen + Catmull-Rom bicubic upscale (9 bilinear taps). Verified: fit-all pan at dpr 2 steps 1 → 0.75 → 0.5 within ~0.8 s (25 → 76 fps, 8.3 ms GPU); idle returns to 1; far-zoom pan holds 1. Picking stays native; `labelMinPx` option hard-culls unreadably small labels in the glyph cull predicate.
 
-- **Whole-graph fit fast path (added)**: no-arg `fit()`/`center()` compute bounds via `GraphStore.boundingBox()` — a direct columnar scan (nodes: position ± size/2 + border/2; edges as a first-class extent term, today the endpoint centers) instead of materializing ~500k element handles through `cy.elements()`. ndex-x-large: 235 → 15 ms, identical zoom/pan. Future edge geometry (bezier, arrows) extends the edge term in the store scan and `GpuCollection.boundingBox` together.  (Since superseded: round 12a extended the store scan's edge term with the conservative curve-hull bound and gave `GpuCollection.boundingBox` the exact lazy curve tier.)
+- **Whole-graph fit fast path (added)**: no-arg `fit()`/`center()` compute bounds via `GraphStore.boundingBox()` — a direct columnar scan (nodes: position ± size/2 + border/2; edges as a first-class extent term, today the endpoint centers) instead of materializing ~500k element handles through `cy.elements()`. ndex-x-large: 235 → 15 ms, identical zoom/pan. Future edge geometry (bezier, arrows) extends the edge term in the store scan and `Collection.boundingBox` together.  (Since superseded: round 12a extended the store scan's edge term with the conservative curve-hull bound and gave `Collection.boundingBox` the exact lazy curve tier.)
 
 ## Integration — done
 
@@ -750,7 +747,7 @@ CPU stays ~0.1 ms/frame throughout — the renderer is GPU-bound (instance count
    Profiling the ndex-x-large load (28.6 MB JSON, 19.6k nodes / 465k
    edges, ~960 ms end to end) showed `cytoscape` init at 662 ms —
    dominated not by the columnar model but by eager per-element handle
-   materialization (`GpuCollection` interning for 484k elements the loader
+   materialization (`Collection` interning for 484k elements the loader
    never touches), a per-element `add` emit with no listener early-out,
    def-clone churn and the ~110 ms GC echo.  Landed as two pieces: (a) a
    bulk add path — no handles or emits on the factory load, clone-free def
@@ -1771,7 +1768,7 @@ Each entry converts into a "Landed" record as it ships:
   `fit()`/`center()` *options* don't exist in v3 either — the target
   form is the parity surface.  9 specs in
   `test/viewport-animation.mjs` (1593 Node tests green).
-- [x] **A8 Data query predicates** — landed 2026-07-27.  `GpuQuery`
+- [x] **A8 Data query predicates** — landed 2026-07-27.  `Query`
   gains `data: { key: value | { eq/ne/lt/lte/gt/gte/in } }` (bare
   value = `eq`; keys AND together), compiled to `CompiledCondition[]`
   on the plan and evaluated with the *same* `testCondition` the `case`
@@ -2895,15 +2892,16 @@ dead machinery — and round 41.2 has since removed the live machinery
 it actually was.
 
 **Round 42** (2026-08-04) executed the sitting's packaging decision and
-changed no behaviour: v4's source promoted `src/` → `src/`, the whole
-v3 file set moved into a self-contained, still-buildable `v3/`, and the
-root `package.json` became `cytoscape@4.0.0-unstable` with v4 as
-`exports["."]`.  Both calls the plan left to docs-first were taken — the
-`gpu-`/`webgpu-` prefixes drop, and the five shared utility modules
+changed no behaviour: v4's source promoted from the old `src/gpu/` to
+`src/`, the whole v3 file set moved into a self-contained, still-buildable
+`v3/`, and the root `package.json` became `cytoscape@4.0.0-unstable` with
+v4 as `exports["."]`.  Both calls the plan left to docs-first were taken —
+the `gpu-`/`webgpu-` prefixes drop, and the five shared utility modules
 duplicate rather than stay shared, so nothing under `src/` imports outside
 it — plus a third the plan did not anticipate: the **v4 identity rename**
 (bundles, declaration, UMD global and the default export are all
-`cytoscape` now; the `Gpu*` exported *type* names deliberately are not).
+`cytoscape`), which 42.6 then carried into the exported **type** names, so
+the whole public surface is unprefixed.
 Behaviour-neutrality was established by comparing blobs rather than by the
 suite alone: see the round record.
 
@@ -4396,7 +4394,7 @@ the item's isolated commit so every commit on `v4` stays green.
   pass after the batch's nodes exist (forward refs OK; unknown
   parent ⇒ warn + orphan, v3).  Wire format: version bump +
   optional nodes parent section (u32 index, sentinel);
-  `GpuColumnarNodes.parent?`.  Collection: the full traversal
+  `ColumnarNodes.parent?`.  Collection: the full traversal
   surface (slot-native), `remove()` cascade over descendants,
   identity-preserving `move({ parent })` with `moveout`/`move`,
   compound-relative `relativePosition`, real `padding()`, and
@@ -4593,7 +4591,7 @@ commit(s) with docs in-commit):
   `test/structural-query.mjs` red then green — 2024 Node
   tests, typecheck + lint clean.
 - [x] **14.8 Wire + columnar parent sections** — landed 2026-07-31.
-  `GpuColumnarNodes.parent?: Uint32Array` — payload node indices,
+  `ColumnarNodes.parent?: Uint32Array` — payload node indices,
   `NO_PARENT` (0xffffffff) sentinel — with `toColumnarElements`
   lifting def parents into it (unknown in-payload parents warn +
   orphan; the parent key never lands in the data columns), bulk
@@ -5828,7 +5826,7 @@ and one plan deviation is recorded below.
   chains (packed (slot, gen) → (newSlot, newGen)) that persist and
   compose; `isCurrent()` repairs a forwarded ref **in place** before
   answering (one gen compare on the fast path; removed elements stay
-  dead).  `GpuCollection._refs` became an epoch-guarded accessor —
+  dead).  `Collection._refs` became an epoch-guarded accessor —
   one chokepoint syncs all ~115 consumers and drops the packed
   membership cache (materializer sweep unchanged).  `cy._compact()`
   permutes the interned handle pool (handle identity + scratch
@@ -6894,7 +6892,7 @@ release.
   `animation.mts` is 33/48 (69%), `viewport.mts` 11/18, and the
   built-in layouts are 0/3 each.
 - The comments that exist already **drift**:
-  `GpuCollection.animate()` still advertises the pre-round-25
+  `Collection.animate()` still advertises the pre-round-25
   animatable set (no width/height, edge width, padding or
   font-size).  A JSDoc pass is also a true-up pass.
 - The docmaker target shape (`documentation/docmaker.json`) is
@@ -6947,7 +6945,7 @@ release.
    immediately useful instead of only useful at release.
 5. **Coverage is enforced, not aspirational.**  The audit becomes
    a checked-in script plus a Node test: the *public API tier*
-   (the entry point, `GpuCore`, `GpuCollection`, the animation
+   (the entry point, `Core`, `Collection`, the animation
    handle, the layout contract and the public style/option types)
    is gated at 100%, and the internal tier is reported with a
    floor that ratchets up as passes land.  Without a gate a
@@ -7861,7 +7859,7 @@ read them as the round's starting state, not its current one:
 1. **The alias surface is 83 methods wide and 29 of them are never
    called by any test.**  `declare each: this['forEach']` is a *type*
    declaration; the runtime wiring is a separate
-   `GpuCollection.prototype.each = GpuCollection.prototype.forEach`
+   `Collection.prototype.each = Collection.prototype.forEach`
    line.  Deleting a wiring line leaves the typecheck green — the
    `declare` keeps asserting the method exists — and breaks the alias
    at runtime with nothing to catch it.  All 83 are consistent today
@@ -8178,7 +8176,7 @@ commit(s)):
   own `navigator.gpu` check deleted, because the renderer attach path
   25 lines below carries an identical check with an identical message.
   The two are not redundant — the early one is a fail-fast *before*
-  `new GpuCore`, element ingest and the ctor `layout` run — so the
+  `new Core`, element ingest and the ctor `layout` run — so the
   spec now pins that ordering: it constructs with a container **and** a
   payload that would itself throw during ingest, and asserts the
   container problem is the one reported.  With the guard restored it
@@ -8816,7 +8814,7 @@ describe and no suite prices:
   against the same wrapper doing a full bulk placement.
   **The finding that came out of that row.**  The contract's fixed cost
   scales with the *graph*, not the run: **106 µs at 500 nodes, 391 µs
-  at 2000, for an impl that does nothing.**  `GpuLayoutContext`'s
+  at 2000, for an impl that does nothing.**  `LayoutContext`'s
   constructor eagerly evaluates `cy.elements()` and `.nodes()` to
   populate the handle-tier `ctx.eles`/`ctx.nodes`, so every run interns
   handles for the whole graph — including for a columnar-first layout
@@ -9263,7 +9261,7 @@ verification, and three of them touch shipped declarations):
    orphan's *with nothing listening* (566 ns vs 89 ns), because the
    phase walk runs before anything checks whether a phase has a
    listener.
-3. **`GpuLayoutContext` materializes the whole graph per run** — the
+3. **`LayoutContext` materializes the whole graph per run** — the
    layout contract's fixed cost is 391 µs at 2000 nodes for an impl
    that does nothing, because the constructor eagerly evaluates
    `cy.elements()` and `.nodes()` for the handle tier, including for
@@ -9393,11 +9391,11 @@ edges on the i9-9900K:
    order — which matters, since grid and circle assign positions by
    index.
 4. **No public *semantics* change; one public *shape* change.** Making
-   `GpuLayoutContext.eles`/`.nodes` lazy turns two readonly fields into
+   `LayoutContext.eles`/`.nodes` lazy turns two readonly fields into
    getters, which is a `.d.ts` shape change (property access is
    unaffected).  `dist/cytoscape.d.ts` is regenerated and
    `test:types:surface` re-run.
-   *Wrong, as it turned out (34.6): `GpuLayoutContext` is not in the
+   *Wrong, as it turned out (34.6): `LayoutContext` is not in the
    shipped declarations at all — it appears only inside a doc comment —
    so the getters change no public shape.  What did reach the `.d.ts`
    is the store's two new members (`structureEpoch`, `scanSlotsInto`),
@@ -10164,7 +10162,7 @@ calls already taken (fifth sitting); nothing here needs design.
   already rejects every case.  Four `@ts-expect-error` directives in
   `typescript/tests/api.test-d.ts` pin it — `motionBlur`,
   `hideEdgesOnViewport`, a plain typo, and one through the named
-  `CytoscapeGpuOptions` type — and the control ran: swapping one for a
+  `CytoscapeOptions` type — and the control ran: swapping one for a
   *valid* key (`zoom`) makes the directive unused and fails the build,
   so the check discriminates rather than passing vacuously.
   The runtime half is pinned too, which the plan did not ask for and
@@ -10193,8 +10191,8 @@ calls already taken (fifth sitting); nothing here needs design.
   functions; this widens again.  Same lesson each time — an audit's
   scope is part of its claim.
 - [x] **37.4 Event-name openness, documented** (2026-08-04) — landed,
-  and it **corrected this file**.  `GpuCore#on`, `GpuCore#emit` and
-  `GpuCollection#on` now state the contract: any name registers, custom
+  and it **corrected this file**.  `Core#on`, `Core#emit` and
+  `Collection#on` now state the contract: any name registers, custom
   events are supported API (which is *why* no name can be gated), and a
   name v4 never emits registers cleanly and then silently never fires —
   so port event names from the vocabulary rather than by trying them.
@@ -10375,7 +10373,7 @@ Three independent small builds, all decided at the fifth sitting.
   `F_GRAPH_DATA`, section written last so the element payload keeps the
   byte layout v2/v3 readers expect; older buffers keep loading, and
   nothing branches on the version number — the presence flags carry it,
-  which is why they can.  `GpuColumnarElements` gains an optional `data`,
+  which is why they can.  `ColumnarElements` gains an optional `data`,
   `cy.serialize()` fills it (copied, not held by reference — the buffer
   is a snapshot), and `deserializeElements` reads it back.
   **One JSON string, not a column**, and the format's own doc block says
@@ -10540,8 +10538,8 @@ they stated a fact about the code that nobody had measured:
   `domEvent` to null and the spec fails.
 - [ ] **41.5 Functional `preventDefault()` for gesture defaults** — not
   built; the enumeration is open call 12.
-- [x] **41.6 Docs + declarations** (2026-08-04) — `GpuEvent`,
-  `GpuEventProps`, `GpuEventTarget` and `EventHandler` are exported from
+- [x] **41.6 Docs + declarations** (2026-08-04) — `Event`,
+  `EventProps`, `EventTarget` and `EventHandler` are exported from
   the entry point, so a consumer can type a handler; `dist/
   cytoscape-gpu.d.ts` regenerated (42 type exports, 1147 doc blocks).
   Both documents carry the removal, including the two JSDoc paragraphs
@@ -10659,9 +10657,9 @@ was not on the plan's list at all.
     the default export is `cytoscape( options )`.  The two runtime error
     messages and the JSDoc that named `cytoscapeGpu` were rewritten with it,
     on round 31's rule that a message advising a form that no longer exists
-    is a defect a consumer sees.  The `Gpu*` **type** names (`GpuCore`,
-    `GpuCollection`, `CytoscapeGpuOptions`, …) are deliberately untouched:
-    they are exported type surface, and their rename is a separate call.
+    is a defect a consumer sees.  The `Gpu*` **type** names were left for
+    a separate call, being exported surface — logged as open call 13, taken
+    the same day, and executed as 42.6 below.
 - [x] **42.2 `v3/` as a subproject.**  `v3/src`, `v3/test`, `v3/benchmark`,
   `v3/debug`, `v3/documentation`, `v3/playwright-{tests,page}`,
   `v3/typescript`, `v3/scripts`, `v3/dist`, the stale hand-written
@@ -10703,6 +10701,47 @@ was not on the plan's list at all.
     the one unavoidable exception to "nothing v3-specific outside `v3/`" —
     GitHub reads workflows only from the repo root — which is recorded
     rather than papered over.
+- [x] **42.6 The `Gpu*` type names** (2026-08-04) — open call 13, raised by
+  this round and closed by it once the maintainer took the call.  Every
+  exported type drops the prefix: `GpuCore` → `Core`, `GpuCollection` →
+  `Collection`, `GpuEvent` → `Event`, `GpuStylesheet` → `Stylesheet`,
+  `CytoscapeGpuOptions` → `CytoscapeOptions`, and so on through all 42
+  exports.  **No deprecated aliases**, unlike `exports["./gpu"]`: that alias
+  exists because *v3's* users already type the name, while nobody has yet
+  written `GpuCore` against a published build.
+  **Six names keep the prefix** — `GpuContext`, `GpuTimer`,
+  `GpuForceRuntime`, `GpuTweenRuntime`, `GpuTweenSink`, `GpuWriteKind` — on
+  42.1's rule: each names the *device* half against a CPU counterpart
+  (`GpuWriteKind` is literally `Exclude<WriteKind, 'lane' | 'padding' |
+  'fontSize'>`, the write kinds the kernels support), and none is exported.
+  Three things the rename turned up that a blind sed would have got wrong:
+  - **Two collisions with names v4 already had.**  `GpuForceLayoutOptions`
+    (the public option shape) and `ForceLayoutOptions` (a module-local
+    interface in `layout/force.mts`) would have become the same name; the
+    internal one is now `ForceRunOptions`.  `GpuWriteKind` would have
+    collided with `animation.mts`'s `WriteKind`, which is what identified it
+    as a device-half name rather than a prefixed one — the collision was the
+    evidence, not the obstacle.
+  - **Two collisions with the DOM.**  `Event` and `EventTarget` are globals.
+    Taken anyway, because they are the right names for cytoscape's own event
+    object and its `target` type, and v3 spells its own event class `Event`
+    too.  It costs nothing inside `src/`: `event.mts` already isolated the
+    DOM type behind `type NativeEvent = globalThis.Event`, and the only
+    module using the bare DOM `Event` (`interact/pointer.mts`) does not
+    import ours.  A consumer who imports `Event` from `cytoscape` shadows
+    the global in that file, which is their choice to make.
+  - **`gpu-types.mts` was not a device module** and should never have kept
+    its prefix in 42.1: it holds the *public* option and type surface, not
+    anything about the GPU.  Renamed `public-types.mts`, which is what v3
+    calls the same role — and which is available precisely because the
+    vendored geometry types took `types.mts`.
+  Three internal fields went with them (`_gpuPhaseRef`, `_gpuPhaseEle`,
+  `_gpuBarred` → `_phaseRef`, `_phaseEle`, `_barred`), and the rename was
+  applied to PLAN.md, `src/README.md` and `AGENTS.md` on 42.5's reasoning: a
+  symbol name in a record is a live pointer.  One historical name is
+  deliberately left: `GpuStyleFn`, the style-function type round 8 deleted,
+  which never had another name to be renamed to.
+
 - [x] **42.5 Closing docs sweep** — this file, `src/README.md` (which moved
   with the source, from `src/gpu/README.md`) and `AGENTS.md`.  The renames
   were applied **throughout all three**, historical round records included:
@@ -10727,7 +10766,10 @@ every parity scene at its recorded value — 0.000% across the board, the stripe
 pair at 0.005% — which is the strongest single piece of evidence here, since
 those scenes render through *both* renderers and would move if either side had
 shifted.  v3's 18 chromium specs pass.  Types clean: 42 type exports, 3
-statics, 1147 doc blocks, all three unchanged.  The five audits unmoved —
+statics, 1147 doc blocks — the counts unchanged across 42.6's rename, which
+is the point of checking them: 42 exports before and after means the sweep
+renamed the surface rather than dropping or duplicating part of it.  The
+five audits unmoved —
 JSDoc 100%/100%, `@throws` 18/18, `@param` 231/231, `@returns` 278/278,
 stranded blocks 1, and the throw gate at **177 run / 10 browser-only / 5
 unreachable / 0 Node-reachable dead** over 192 sites.  Benchmark smoke: the
@@ -10759,9 +10801,11 @@ with no automated check are the ones to watch — the `debug/` harness and the
 marked release workflows will fail on their next run *by design*, which is
 only correct if round 49 actually adapts them.  `dist/` still holds nothing
 but the declaration, so `main`/`module` resolve to files a git install does
-not have — pre-existing, unchanged, and round 43's first item.  And the
-`Gpu*` type names now sit beside a factory called `cytoscape`, which is a
-visible inconsistency until someone takes that rename.
+not have — pre-existing, unchanged, and round 43's first item.  42.6's
+rename is the round's one **breaking** change to a name a consumer could
+already have written, and it ships without aliases on the reasoning that the
+prerelease line has no published consumers; if that reasoning is wrong the
+cost lands on whoever tracked `v4` from git.
 
 ## Round 43 plan — packaging + publish hardening (planned 2026-08-04)
 

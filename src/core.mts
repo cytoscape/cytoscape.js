@@ -1,13 +1,13 @@
 import { GraphStore } from './store/graph-store.mjs';
-import { GpuCollection } from './collection.mjs';
+import { Collection } from './collection.mjs';
 import { isColumnarElements } from './columnar.mjs';
 import { deserializeElements, isSerializedElements, serializeElements } from './wire.mjs';
 import { partitionDefs } from './element-defs.mjs';
 import { hasListeners, makeCoreEmitter, predicateQualifier, refKey } from './events.mjs';
-import type { ElePredicate, GpuQualifier, PhasedEvent } from './events.mjs';
-import { GpuEvent } from './event.mjs';
+import type { ElePredicate, Qualifier, PhasedEvent } from './events.mjs';
+import { Event } from './event.mjs';
 import { compileQuery } from './matcher.mjs';
-import type { FlagTest, GpuQuery } from './matcher.mjs';
+import type { FlagTest, Query } from './matcher.mjs';
 import { testCondition } from './style-scales.mjs';
 import type { CompiledCondition } from './style-scales.mjs';
 import { Viewport } from './viewport.mjs';
@@ -18,7 +18,7 @@ import * as math from './math.mjs';
 import type { BoundsLike } from './viewport.mjs';
 import { CustomLayout } from './layout/contract.mjs';
 import { ForceLayoutImpl } from './layout/force.mjs';
-import type { GpuCustomLayoutOptions } from './gpu-types.mjs';
+import type { CustomLayoutOptions } from './public-types.mjs';
 import { GridLayout } from './layout/grid.mjs';
 import { PresetLayout } from './layout/preset.mjs';
 import { CircleLayout } from './layout/circle.mjs';
@@ -26,33 +26,33 @@ import { ConcentricLayout } from './layout/concentric.mjs';
 import { BreadthFirstLayout } from './layout/breadthfirst.mjs';
 import { RandomLayout } from './layout/random.mjs';
 
-export type GpuLayout =
+export type Layout =
   CustomLayout |
   GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
-import type { GpuEmitter } from './emitter.mjs';
+import type { Emitter } from './emitter.mjs';
 import type { EventHandler } from './emitter.mjs';
-import type { GpuEventProps } from './event.mjs';
+import type { EventProps } from './event.mjs';
 import { FLAG_SELECTABLE, FLAG_SELECTED, NO_SLOT } from './contract.mjs';
-import { NO_PARENT } from './gpu-types.mjs';
+import { NO_PARENT } from './public-types.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type {
-  BoxSelectionMode, CytoscapeGpuOptions, GpuColumnarElements, GpuElementDefinition,
-  GpuElementsDefinition, GpuElementsInput, GpuExportOptions, GpuLayoutOptions, GpuStylesheet,
+  BoxSelectionMode, CytoscapeOptions, ColumnarElements, ElementDefinition,
+  ElementsDefinition, ElementsInput, ExportOptions, LayoutOptions, Stylesheet,
   Position, RendererStats
-} from './gpu-types.mjs';
+} from './public-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
 
 /** What the core needs from the renderer (wired by the factory), plus the
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 export interface RendererLike {
   destroy(): void;
-  pick( x: number, y: number ): Promise<GpuCollection | null>;
+  pick( x: number, y: number ): Promise<Collection | null>;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
   /** true while a GPU force-layout run owns the position column (18.3) */
   forceActive(): boolean;
-  exportImage( options: GpuExportOptions ): Promise<{ data: Uint8ClampedArray<ArrayBuffer>; width: number; height: number }>;
+  exportImage( options: ExportOptions ): Promise<{ data: Uint8ClampedArray<ArrayBuffer>; width: number; height: number }>;
 }
 
 export interface LayoutLike {
@@ -68,9 +68,9 @@ const COMPACT_FLOOR = 1024;
 /** The memoized unfiltered collections and the structure epoch they belong to (round 34.2). */
 interface AllCache {
   epoch: number;
-  all: GpuCollection | null;
-  nodes: GpuCollection | null;
-  edges: GpuCollection | null;
+  all: Collection | null;
+  nodes: Collection | null;
+  edges: Collection | null;
 }
 
 /** Style work deferred by an open batch (flushed once at the outermost endBatch). */
@@ -86,15 +86,15 @@ interface BatchPending {
 }
 
 /**
- * The GpuCore facade: the familiar synchronous core API over the columnar
+ * The Core facade: the familiar synchronous core API over the columnar
  * store (#3486).  See src/README.md for the maintained API scope —
  * viewport, events, graph manipulation, compounds, style/mappers/
  * transitions, layouts, animation, algorithms, image export,
  * mount/unmount.
  */
-export class GpuCore {
+export class Core {
   _store: GraphStore;
-  _emitter: GpuEmitter<GpuCore, GpuQualifier>;
+  _emitter: Emitter<Core, Qualifier>;
   _styleEngine: StyleEngine;
   _renderer: RendererLike | null;
   /** the pointer handler paired with the renderer (torn down on unmount) */
@@ -105,15 +105,15 @@ export class GpuCore {
   _viewport: Viewport;
 
   /** resolves once the render pipeline is usable (immediately when headless) */
-  ready: Promise<GpuCore>;
+  ready: Promise<Core>;
 
   /** true once the render pipeline is usable (immediately when headless) */
   _readyResolved: boolean;
 
   /** interned singleton handles, dense by slot (slots are dense, so an array beats a Map) */
-  _pool: { nodes: ( GpuCollection | undefined )[]; edges: ( GpuCollection | undefined )[] };
+  _pool: { nodes: ( Collection | undefined )[]; edges: ( Collection | undefined )[] };
   private _container: HTMLElement | null;
-  private _options: CytoscapeGpuOptions;
+  private _options: CytoscapeOptions;
   private _headlessWidth: number;
   private _headlessHeight: number;
   private _destroyed: boolean;
@@ -158,20 +158,20 @@ export class GpuCore {
    * on a name it does not know — an unknown sheet key, style property or query
    * key all throw — because strictness here resolves at the *type* layer:
    * TypeScript's excess-property check rejects `{ motionBlur: true }` and any
-   * other typo against `CytoscapeGpuOptions`, and v4 does not replicate at
+   * other typo against `CytoscapeOptions`, and v4 does not replicate at
    * runtime what the build already checks.  The boundary is TypeScript's:
    * excess-property checking applies to object literals, so options assembled
    * into a variable first are widened and pass.  Pinned by the compile-only
    * consumer test in `typescript/tests/gpu.test-d.ts`.
    *
-   * @param options — the instance options (see `CytoscapeGpuOptions`);
+   * @param options — the instance options (see `CytoscapeOptions`);
    *   viewport, interaction-gating and interaction-tuning options are
    *   applied here, and `style` compiles immediately.  Unrecognized keys are
    *   kept as given and returned by `options()`, never validated.
    */
-  constructor( options: CytoscapeGpuOptions = {} ){
+  constructor( options: CytoscapeOptions = {} ){
     this._store = new GraphStore();
-    this._emitter = makeCoreEmitter<GpuCore>( this );
+    this._emitter = makeCoreEmitter<Core>( this );
     this._styleEngine = new StyleEngine( this._store );
 
     // the compounds 0 <-> >0 transitions change paint eval config (the
@@ -296,7 +296,7 @@ export class GpuCore {
    * @throws if the sheet references an unknown property or an invalid
    *   value
    */
-  style( sheet?: GpuStylesheet ): StyleEngine {
+  style( sheet?: Stylesheet ): StyleEngine {
     if( sheet != null ){
       if( this._batchPending != null ){
         // compile (and validate) now; apply once at the outermost endBatch
@@ -361,7 +361,7 @@ export class GpuCore {
    * reclaimed by the slot free-list at `remove()`, and the slot-stable
    * structures self-compact on their own waste thresholds (round 11).
    *
-   * @see GpuCore#compact — the documented form, and where the semantics live
+   * @see Core#compact — the documented form, and where the semantics live
    */
   declare gc: this['compact'];
 
@@ -593,12 +593,12 @@ export class GpuCore {
    *   `fit`, `padding`, …)
    * @returns the layout instance, unstarted
    * @throws if neither a known `name` nor an `impl` is given
-   * @see GpuCollection#layout to lay out a subset
+   * @see Collection#layout to lay out a subset
    */
-  layout( options: GpuLayoutOptions ): GpuLayout {
+  layout( options: LayoutOptions ): Layout {
     // the extension contract (round 17.5): direct objects, no registry
     if( ( options as { impl?: unknown } )?.impl != null ){
-      return new CustomLayout( this, options as GpuCustomLayoutOptions );
+      return new CustomLayout( this, options as CustomLayoutOptions );
     }
 
     if( options?.name === 'grid' ){ return new GridLayout( this, options ); }
@@ -613,7 +613,7 @@ export class GpuCore {
     if( ( options as { name?: string } )?.name === 'force' ){
       return new CustomLayout( this, {
         ...( options as object ), impl: ForceLayoutImpl
-      } as GpuCustomLayoutOptions );
+      } as CustomLayoutOptions );
     }
 
     const got = ( options as { name?: string } | null )?.name;
@@ -653,12 +653,12 @@ export class GpuCore {
    * @param input — elements in definition, columnar or wire form
    * @returns a collection of the added elements
    */
-  add( input: GpuElementsInput ): GpuCollection {
+  add( input: ElementsInput ): Collection {
     const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
     const refs = isColumnarElements( defs )
       ? this._columnarRefs( this._addColumnar( defs ) )
       : this._addDefs( defs );
-    const added = new GpuCollection( this, refs, { unique: true } );
+    const added = new Collection( this, refs, { unique: true } );
 
     if( this._hasListeners( 'add' ) ){
       for( let i = 0; i < added.length; i++ ){
@@ -676,7 +676,7 @@ export class GpuCore {
    * and the caller uses none of it.  `add` events still fire per element
    * when anyone is listening (never the case at construction time).
    */
-  _bulkAdd( input: GpuElementsInput ): void {
+  _bulkAdd( input: ElementsInput ): void {
     const defs = isSerializedElements( input ) ? deserializeElements( input ) : input;
 
     if( isColumnarElements( defs ) ){
@@ -705,7 +705,7 @@ export class GpuCore {
   }
 
   /** Columnar ingest: store-level bulk adds + one bulk style pass. */
-  private _addColumnar( elements: GpuColumnarElements ): { nodeSlots: Uint32Array; edgeSlots: Uint32Array } {
+  private _addColumnar( elements: ColumnarElements ): { nodeSlots: Uint32Array; edgeSlots: Uint32Array } {
     const newId = (): string => this._newId();
     const nodeSlots = elements.nodes != null && elements.nodes.count > 0
       ? this._store.addNodesColumnar( elements.nodes, newId )
@@ -730,7 +730,7 @@ export class GpuCore {
   }
 
   /** Shared add loop: nodes first so edges can reference same-call nodes. */
-  private _addDefs( defs: GpuElementsDefinition | GpuElementDefinition ): Ref[] {
+  private _addDefs( defs: ElementsDefinition | ElementDefinition ): Ref[] {
     const { nodes: nodeDefs, edges: edgeDefs } = partitionDefs( defs );
 
     this._store.reserve( nodeDefs.length, edgeDefs.length );
@@ -802,7 +802,7 @@ export class GpuCore {
    * @param eles — the elements to remove
    * @returns the removed elements
    */
-  remove( eles: GpuCollection ): GpuCollection {
+  remove( eles: Collection ): Collection {
     return eles.remove();
   }
 
@@ -814,8 +814,8 @@ export class GpuCore {
    *
    * @returns a collection of zero elements
    */
-  collection(): GpuCollection {
-    return new GpuCollection( this, [] );
+  collection(): Collection {
+    return new Collection( this, [] );
   }
 
   /**
@@ -825,7 +825,7 @@ export class GpuCore {
    * @returns a collection of one element, or an empty collection when no
    *   element has that id
    */
-  getElementById( id: string ): GpuCollection {
+  getElementById( id: string ): Collection {
     const ref = this._store.lookup( id );
 
     return ref == null ? this.collection() : this._ele( ref.group, ref.slot );
@@ -852,7 +852,7 @@ export class GpuCore {
    *   omit for everything
    * @returns the matching elements
    */
-  elements( query?: GpuQuery | EleFilterFn ): GpuCollection {
+  elements( query?: Query | EleFilterFn ): Collection {
     return query === undefined ? this._allOf( null ) : this._query( query, null );
   }
 
@@ -864,7 +864,7 @@ export class GpuCore {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching nodes
    */
-  nodes( query?: GpuQuery | EleFilterFn ): GpuCollection {
+  nodes( query?: Query | EleFilterFn ): Collection {
     return query === undefined ? this._allOf( 'nodes' ) : this._query( query, 'nodes' );
   }
 
@@ -876,7 +876,7 @@ export class GpuCore {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching edges
    */
-  edges( query?: GpuQuery | EleFilterFn ): GpuCollection {
+  edges( query?: Query | EleFilterFn ): Collection {
     return query === undefined ? this._allOf( 'edges' ) : this._query( query, 'edges' );
   }
 
@@ -887,7 +887,7 @@ export class GpuCore {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching elements
    */
-  filter( query: GpuQuery | EleFilterFn ): GpuCollection {
+  filter( query: Query | EleFilterFn ): Collection {
     return this._query( query, null );
   }
 
@@ -913,7 +913,7 @@ export class GpuCore {
    * immutable, so nothing can observe the difference except identity
    * itself.
    */
-  private _allOf( restrict: GroupName | null ): GpuCollection {
+  private _allOf( restrict: GroupName | null ): Collection {
     const epoch = this._store.structureEpoch;
     const cached = this._allCache;
 
@@ -942,7 +942,7 @@ export class GpuCore {
    * the group(s) and filter per element.  `restrict` narrows the result
    * to one group (for `cy.nodes(q)` / `cy.edges(q)`).
    */
-  private _query( query: GpuQuery | EleFilterFn | undefined, restrict: GroupName | null ): GpuCollection {
+  private _query( query: Query | EleFilterFn | undefined, restrict: GroupName | null ): Collection {
     if( typeof query === 'function' ){
       return this._query( undefined, restrict ).filter( query );
     }
@@ -973,8 +973,8 @@ export class GpuCore {
    * @param y2 — that corner's model y
    * @returns the contained elements
    */
-  elementsInBox( x1: number, y1: number, x2: number, y2: number ): GpuCollection {
-    return new GpuCollection(
+  elementsInBox( x1: number, y1: number, x2: number, y2: number ): Collection {
+    return new Collection(
       this,
       this._store.refsInBox( x1, y1, x2, y2, this._boxSelectionIncludesLabels ),
       { unique: true, live: true } );
@@ -987,8 +987,8 @@ export class GpuCore {
    * both pointer paths (mouse/pen release and the three-finger touch box)
    * come through here so they cannot drift apart.
    */
-  _elementsInGestureBox( x1: number, y1: number, x2: number, y2: number ): GpuCollection {
-    return new GpuCollection(
+  _elementsInGestureBox( x1: number, y1: number, x2: number, y2: number ): Collection {
+    return new Collection(
       this,
       this._store.refsInBox(
         x1, y1, x2, y2, this._boxSelectionIncludesLabels, this._boxSelectionMode ),
@@ -999,7 +999,7 @@ export class GpuCore {
   private _scanCollection(
     nodeTest: FlagTest | null, edgeTest: FlagTest | null,
     dataConds: CompiledCondition[] | null = null
-  ): GpuCollection {
+  ): Collection {
     const store = this._store;
     const cap = ( nodeTest == null ? 0 : store.count( 'nodes' ) )
       + ( edgeTest == null ? 0 : store.count( 'edges' ) );
@@ -1014,7 +1014,7 @@ export class GpuCore {
 
     if( n !== refs.length ){ refs.length = n; }
 
-    return new GpuCollection( this, refs, { unique: true, live: true } );
+    return new Collection( this, refs, { unique: true, live: true } );
   }
 
   // -- events --
@@ -1050,7 +1050,7 @@ export class GpuCore {
    *   given, otherwise the handler itself
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
-   * @see GpuCore#off — removing a delegated handler takes the same
+   * @see Core#off — removing a delegated handler takes the same
    *   `( events, predicate, handler )` triple, since predicates compare
    *   by function identity
    */
@@ -1179,7 +1179,7 @@ export class GpuCore {
    *   event object
    * @returns this core, for chaining
    */
-  emit( events: string | GpuEventProps, extraParams?: unknown[] ): this {
+  emit( events: string | EventProps, extraParams?: unknown[] ): this {
     this._emitter.emit( events, extraParams );
 
     return this;
@@ -1195,12 +1195,12 @@ export class GpuCore {
    * @param predicate — an optional delegation predicate over the target
    * @returns a promise for the event object
    */
-  promiseOn( events: string, predicate?: ElePredicate ): Promise<GpuEvent> {
+  promiseOn( events: string, predicate?: ElePredicate ): Promise<Event> {
     return new Promise( resolve => {
       if( predicate != null ){
         this.one( events, predicate, event => resolve( event ) );
       } else {
-        this.one( events, ( event: GpuEvent ) => resolve( event ) );
+        this.one( events, ( event: Event ) => resolve( event ) );
       }
     } );
   }
@@ -1274,7 +1274,7 @@ export class GpuCore {
    * @param padding — rendered-space padding around the box
    * @returns this core, for chaining
    */
-  fit( eles?: GpuCollection, padding: number = 0 ): this {
+  fit( eles?: Collection, padding: number = 0 ): this {
     const bb = this._boundsOf( eles );
 
     if( bb == null ){ return this; }
@@ -1292,7 +1292,7 @@ export class GpuCore {
    * @param eles — the elements to centre on; omit for the whole graph
    * @returns this core, for chaining
    */
-  center( eles?: GpuCollection ): this {
+  center( eles?: Collection ): this {
     const bb = this._boundsOf( eles );
 
     if( bb == null ){ return this; }
@@ -1379,11 +1379,11 @@ export class GpuCore {
       const padding = fit.padding ?? 0;
       const fv = fit.boundingBox != null
         ? this._viewport.fitViewport( math.makeBoundingBox( fit.boundingBox ) as BoundsLike, padding )
-        : this.getFitViewport( fit.eles as GpuCollection | undefined, padding );
+        : this.getFitViewport( fit.eles as Collection | undefined, padding );
 
       if( fv != null ){ return { ...opts, pan: fv.pan, zoom: fv.zoom }; }
     } else if( opts.center != null ){
-      const pan = this.getCenterPan( opts.center.eles as GpuCollection | undefined );
+      const pan = this.getCenterPan( opts.center.eles as Collection | undefined );
 
       if( pan != null ){ return { ...opts, pan }; }
     } else if( opts.panBy != null ){
@@ -1435,7 +1435,7 @@ export class GpuCore {
    * applied to the viewport box.
    *
    * @returns the visible extent in model coordinates
-   * @see GpuCore#renderedExtent for the same box in rendered coordinates
+   * @see Core#renderedExtent for the same box in rendered coordinates
    */
   extent(): ReturnType<Viewport['extent']> {
     return this._viewport.extent();
@@ -1447,7 +1447,7 @@ export class GpuCore {
    * @returns the container's box in rendered px, anchored at the origin —
    *   the rendered-space counterpart of `extent()`, which is the same box
    *   projected into model coordinates
-   * @see GpuCore#extent for the model-coordinate form
+   * @see Core#extent for the model-coordinate form
    */
   renderedExtent(): ReturnType<Viewport['renderedExtent']> {
     return this._viewport.renderedExtent();
@@ -1537,7 +1537,7 @@ export class GpuCore {
    * @param padding — rendered px of margin to leave on every side
    * @returns the viewport, or null when there is nothing to fit
    */
-  getFitViewport( eles?: GpuCollection, padding: number = 0 ): { zoom: number; pan: Position } | null {
+  getFitViewport( eles?: Collection, padding: number = 0 ): { zoom: number; pan: Position } | null {
     const bb = this._boundsOf( eles );
 
     return bb == null ? null : this._viewport.fitViewport( bb, padding );
@@ -1550,7 +1550,7 @@ export class GpuCore {
    * @param zoom — the zoom to center at; defaults to the current one
    * @returns the pan, or null when there is nothing to center
    */
-  getCenterPan( eles?: GpuCollection, zoom?: number ): Position | null {
+  getCenterPan( eles?: Collection, zoom?: number ): Position | null {
     const bb = this._boundsOf( eles );
 
     return bb == null ? null : this._viewport.centerPan( bb, zoom );
@@ -1564,7 +1564,7 @@ export class GpuCore {
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null
    */
-  pick( x: number, y: number ): Promise<GpuCollection | null> {
+  pick( x: number, y: number ): Promise<Collection | null> {
     return this._renderer != null ? this._renderer.pick( x, y ) : Promise.resolve( null );
   }
 
@@ -1635,7 +1635,7 @@ export class GpuCore {
    * @param options — the v3 export options named above
    * @returns the encoded image in the requested output form
    */
-  png( options: GpuExportOptions = {} ): Promise<string | Blob> {
+  png( options: ExportOptions = {} ): Promise<string | Blob> {
     return this._exportImage( 'image/png', options );
   }
 
@@ -1646,13 +1646,13 @@ export class GpuCore {
    * @param options — as {@link png}, plus `quality`
    * @returns the encoded image in the requested output form
    */
-  jpg( options: GpuExportOptions = {} ): Promise<string | Blob> {
+  jpg( options: ExportOptions = {} ): Promise<string | Blob> {
     return this._exportImage( 'image/jpeg', { bg: '#fff', ...options } );
   }
 
   declare jpeg: this['jpg'];
 
-  private async _exportImage( mime: string, options: GpuExportOptions ): Promise<string | Blob> {
+  private async _exportImage( mime: string, options: ExportOptions ): Promise<string | Blob> {
     const output = options.output ?? 'base64uri';
 
     if( output !== 'base64uri' && output !== 'base64' && output !== 'blob' && output !== 'blob-promise' ){
@@ -2158,7 +2158,7 @@ export class GpuCore {
    *
    * @returns every element in the graph
    */
-  mutableElements(): GpuCollection {
+  mutableElements(): Collection {
     return this.elements();
   }
 
@@ -2179,7 +2179,7 @@ export class GpuCore {
    *   copy and not a defaults-resolved view, so an option the caller
    *   omitted reads back absent rather than as the default in force
    */
-  options(): CytoscapeGpuOptions {
+  options(): CytoscapeOptions {
     return this._options;
   }
 
@@ -2511,13 +2511,13 @@ export class GpuCore {
   // -- internals --
 
   /** Interned singleton handle for a live slot. */
-  _ele( group: GroupName, slot: number ): GpuCollection {
+  _ele( group: GroupName, slot: number ): Collection {
     const pool = this._pool[ group ];
     const gen = this._store.table( group ).gen[ slot ];
     let ele = pool[ slot ];
 
     if( ele == null || ele._refs[0].gen !== gen ){
-      ele = new GpuCollection( this, [ this._store.ref( group, slot ) ], { singleton: true } );
+      ele = new Collection( this, [ this._store.ref( group, slot ) ], { singleton: true } );
       pool[ slot ] = ele;
     }
 
@@ -2525,7 +2525,7 @@ export class GpuCore {
   }
 
   /** Handle for a ref that may be stale (prefers the interned pre-removal handle). */
-  _eleFromRef( ref: Ref ): GpuCollection {
+  _eleFromRef( ref: Ref ): Collection {
     if( this._store.isCurrent( ref ) ){
       return this._ele( ref.group, ref.slot );
     }
@@ -2536,7 +2536,7 @@ export class GpuCore {
       return pooled;
     }
 
-    return new GpuCollection( this, [ ref ], { singleton: true } );
+    return new Collection( this, [ ref ], { singleton: true } );
   }
 
   /** True when writing any of these data() keys can change the group's computed style. */
@@ -2574,7 +2574,7 @@ export class GpuCore {
     this._styleEngine.applyBulk( group, slots );
   }
 
-  _emitOnEle( type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<GpuEventProps> ): void {
+  _emitOnEle( type: string, ele: Collection, extraParams?: unknown[], props?: Partial<EventProps> ): void {
     // Round 34.3: nothing listens for this type, so there is nothing to
     // do.  Sound because v4's emitter has no bubbling of its own (round
     // 41.2 dropped v3's `bubble`/`parent`; compound bubbling is the
@@ -2599,11 +2599,11 @@ export class GpuCore {
         // compound bubbling (round 14.5): origin -> ancestors -> core in
         // phases on one shared Event, so stopPropagation carries between
         // them.  event.target stays the originator; each phase's element
-        // rides _gpuPhaseRef/_gpuPhaseEle (see events.mts).
-        const eventObj = new GpuEvent( { type, target: ele, ...props } ) as PhasedEvent;
+        // rides _phaseRef/_phaseEle (see events.mts).
+        const eventObj = new Event( { type, target: ele, ...props } ) as PhasedEvent;
 
-        eventObj._gpuPhaseRef = ref;
-        eventObj._gpuPhaseEle = ele;
+        eventObj._phaseRef = ref;
+        eventObj._phaseEle = ele;
         this._emitter.emit( eventObj, extraParams );
 
         for( let p = store.parentOf( ref.slot ); p >= 0; p = store.parentOf( p ) ){
@@ -2611,15 +2611,15 @@ export class GpuCore {
 
           const phaseEle = this._ele( 'nodes', p );
 
-          eventObj._gpuPhaseRef = phaseEle._eventRef();
-          eventObj._gpuPhaseEle = phaseEle;
+          eventObj._phaseRef = phaseEle._eventRef();
+          eventObj._phaseEle = phaseEle;
           this._emitter.emit( eventObj, extraParams );
         }
 
         if( eventObj.isPropagationStopped() ){ return; }
 
-        eventObj._gpuPhaseRef = null;
-        eventObj._gpuPhaseEle = null;
+        eventObj._phaseRef = null;
+        eventObj._phaseEle = null;
         this._emitter.emit( eventObj, extraParams );
 
         return;
@@ -2639,7 +2639,7 @@ export class GpuCore {
     }
   }
 
-  private _boundsOf( eles?: GpuCollection ): ReturnType<GpuCollection['boundingBox']> | null {
+  private _boundsOf( eles?: Collection ): ReturnType<Collection['boundingBox']> | null {
     if( eles == null ){
       // whole-graph fast path: columnar scan in the store, skipping the
       // per-element handle layer entirely
@@ -2663,24 +2663,24 @@ export class GpuCore {
   }
 }
 
-GpuCore.prototype.centre = GpuCore.prototype.center;
-GpuCore.prototype.addListener = GpuCore.prototype.on;
-GpuCore.prototype.listen = GpuCore.prototype.on;
-GpuCore.prototype.bind = GpuCore.prototype.on;
-GpuCore.prototype.removeListener = GpuCore.prototype.off;
-GpuCore.prototype.unlisten = GpuCore.prototype.off;
-GpuCore.prototype.unbind = GpuCore.prototype.off;
-GpuCore.prototype.once = GpuCore.prototype.one;
-GpuCore.prototype.pon = GpuCore.prototype.promiseOn;
-GpuCore.prototype.trigger = GpuCore.prototype.emit;
-GpuCore.prototype.$id = GpuCore.prototype.getElementById;
-GpuCore.prototype.makeLayout = GpuCore.prototype.layout;
-GpuCore.prototype.createLayout = GpuCore.prototype.layout;
-GpuCore.prototype.invalidateSize = GpuCore.prototype.resize;
-GpuCore.prototype.attr = GpuCore.prototype.data;
-GpuCore.prototype.removeAttr = GpuCore.prototype.removeData;
-GpuCore.prototype.autolockNodes = GpuCore.prototype.autolock;
-GpuCore.prototype.autoungrabifyNodes = GpuCore.prototype.autoungrabify;
-GpuCore.prototype.jpeg = GpuCore.prototype.jpg;
-GpuCore.prototype.gc = GpuCore.prototype.compact;
+Core.prototype.centre = Core.prototype.center;
+Core.prototype.addListener = Core.prototype.on;
+Core.prototype.listen = Core.prototype.on;
+Core.prototype.bind = Core.prototype.on;
+Core.prototype.removeListener = Core.prototype.off;
+Core.prototype.unlisten = Core.prototype.off;
+Core.prototype.unbind = Core.prototype.off;
+Core.prototype.once = Core.prototype.one;
+Core.prototype.pon = Core.prototype.promiseOn;
+Core.prototype.trigger = Core.prototype.emit;
+Core.prototype.$id = Core.prototype.getElementById;
+Core.prototype.makeLayout = Core.prototype.layout;
+Core.prototype.createLayout = Core.prototype.layout;
+Core.prototype.invalidateSize = Core.prototype.resize;
+Core.prototype.attr = Core.prototype.data;
+Core.prototype.removeAttr = Core.prototype.removeData;
+Core.prototype.autolockNodes = Core.prototype.autolock;
+Core.prototype.autoungrabifyNodes = Core.prototype.autoungrabify;
+Core.prototype.jpeg = Core.prototype.jpg;
+Core.prototype.gc = Core.prototype.compact;
 

@@ -6,7 +6,7 @@ import type { Position } from './types.mjs';
 
 export type { Position };
 
-export interface GpuElementData {
+export interface ElementData {
   id?: string;
   /** edges only; required for edges */
   source?: string;
@@ -19,10 +19,10 @@ export interface GpuElementData {
   [key: string]: unknown;
 }
 
-export interface GpuElementDefinition {
+export interface ElementDefinition {
   /** inferred from `data.source`/`data.target` when omitted */
   group?: 'nodes' | 'edges';
-  data?: GpuElementData;
+  data?: ElementData;
   /** nodes only */
   position?: Position;
   selected?: boolean;
@@ -33,9 +33,9 @@ export interface GpuElementDefinition {
   pannable?: boolean;
 }
 
-export type GpuElementsDefinition =
-  | GpuElementDefinition[]
-  | { nodes?: GpuElementDefinition[]; edges?: GpuElementDefinition[] };
+export type ElementsDefinition =
+  | ElementDefinition[]
+  | { nodes?: ElementDefinition[]; edges?: ElementDefinition[] };
 
 /**
  * Ids as bytes: one UTF-8 blob + prefix byte offsets (length count + 1).
@@ -43,7 +43,7 @@ export type GpuElementsDefinition =
  * representation, and the store ingests it without materializing any JS
  * strings — id strings are decoded lazily, per element touched.
  */
-export interface GpuPackedIds {
+export interface PackedIds {
   offsets: Uint32Array;
   blob: Uint8Array;
 }
@@ -53,7 +53,7 @@ export interface GpuPackedIds {
  * index into `dict` (0 = absent).  Data values repeat heavily, so this
  * is both the compact in-memory shape and the wire shape.
  */
-export interface GpuDictColumn {
+export interface DictColumn {
   dict: string[];
   indices: Uint32Array;
 }
@@ -63,13 +63,13 @@ export interface GpuDictColumn {
  * (holes/undefined = absent), a Float64Array (NaN = absent), or a
  * dictionary-encoded string column.
  */
-export type GpuDataColumn = ArrayLike<unknown> | Float64Array | GpuDictColumn;
+export type DataColumn = ArrayLike<unknown> | Float64Array | DictColumn;
 
 /** Columnar node payload; all arrays are index-aligned with `count`. */
-export interface GpuColumnarNodes {
+export interface ColumnarNodes {
   count: number;
   /** unique ids; missing entries (or the whole array) are auto-generated */
-  ids?: ( string | undefined )[] | GpuPackedIds;
+  ids?: ( string | undefined )[] | PackedIds;
   /** interleaved x,y pairs, length 2 × count; omitted = all (0, 0) */
   positions?: Float32Array;
   /** 1 = selected; omitted = all unselected */
@@ -81,16 +81,16 @@ export interface GpuColumnarNodes {
    * all orphans. */
   parent?: Uint32Array;
   /** data() sidecar columns by key */
-  data?: Record<string, GpuDataColumn>;
+  data?: Record<string, DataColumn>;
 }
 
 /** The columnar/wire parent-column sentinel for orphan nodes. */
 export const NO_PARENT = 0xffffffff;
 
 /** Columnar edge payload; endpoints are indices into the payload's nodes. */
-export interface GpuColumnarEdges {
+export interface ColumnarEdges {
   count: number;
-  ids?: ( string | undefined )[] | GpuPackedIds;
+  ids?: ( string | undefined )[] | PackedIds;
   /** source node index per edge (into the payload's nodes), length count */
   sources: Uint32Array;
   /** target node index per edge (into the payload's nodes), length count */
@@ -98,7 +98,7 @@ export interface GpuColumnarEdges {
   selected?: Uint8Array;
   selectable?: Uint8Array;
   /** data() sidecar columns by key */
-  data?: Record<string, GpuDataColumn>;
+  data?: Record<string, DataColumn>;
 }
 
 /**
@@ -108,11 +108,11 @@ export interface GpuColumnarEdges {
  * every edge endpoint must index a node in the same payload.  Convert
  * definition-form JSON with `cytoscape.toColumnarElements(json)`.
  */
-export interface GpuColumnarElements {
+export interface ColumnarElements {
   /** discriminant so the loader can tell the forms apart */
   columnar: true;
-  nodes?: GpuColumnarNodes;
-  edges?: GpuColumnarEdges;
+  nodes?: ColumnarNodes;
+  edges?: ColumnarEdges;
   /**
    * Graph-level `data()` (round 39.2) — the whole-graph object, not a
    * per-element column.  `cy.serialize()` writes it and
@@ -131,10 +131,10 @@ export interface GpuColumnarElements {
  * `cytoscape.serializeElements` (one little-endian ArrayBuffer +
  * header — fetch it as binary and pass it straight in; no JSON parse).
  */
-export type GpuElementsInput =
-  | GpuElementsDefinition
-  | GpuElementDefinition
-  | GpuColumnarElements
+export type ElementsInput =
+  | ElementsDefinition
+  | ElementDefinition
+  | ColumnarElements
   | ArrayBuffer
   | ArrayBufferView;
 
@@ -154,7 +154,7 @@ export type GpuElementsInput =
  * `interpolate: 'srgb'`.  Missing or unmappable data resolves to
  * `fallback`, else the channel default.
  */
-export interface GpuMapper {
+export interface Mapper {
   /** data() sidecar key to read */
   data: string;
   scale?: 'linear' | 'log' | 'sqrt' | 'pow' | 'symlog'
@@ -184,7 +184,7 @@ export interface GpuMapper {
  * data supports `eq`/`ne`/`in`; numeric data supports all.  Missing data
  * fails every comparison (so an unset key never matches).
  */
-export interface GpuCondition {
+export interface Condition {
   /** the data key to compare ('id' reads the first-class id); omitted
    * for the structural forms below */
   data?: string;
@@ -204,8 +204,8 @@ export interface GpuCondition {
 }
 
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */
-export interface GpuCaseClause {
-  when: GpuCondition | GpuCondition[];
+export interface CaseClause {
+  when: Condition | Condition[];
   then: string | number;
 }
 
@@ -216,23 +216,23 @@ export interface GpuCaseClause {
  * replacement for `(ele) => cond ? a : b` style functions, and the
  * natural form for typed edges (`type == 'activation' → ...`).
  */
-export interface GpuCaseMapper {
-  case: GpuCaseClause[];
+export interface CaseMapper {
+  case: CaseClause[];
   else?: string | number;
   /** value for missing/unmappable data (defaults to `else` then the channel default) */
   fallback?: string | number;
 }
 
 /** Any data-driven style value: a scale mapper or a conditional. */
-export type GpuMapperSpec = GpuMapper | GpuCaseMapper;
+export type MapperSpec = Mapper | CaseMapper;
 
 /** A style prop value: a constant, or a mapper object. */
-export type GpuStylePropValue = string | number | GpuMapperSpec;
+export type StylePropValue = string | number | MapperSpec;
 
 /**
  * Style props for one element or group; names are kebab-case or
- * camelCase.  Values are constants, scale mappers ({@link GpuMapper}), or
- * conditionals ({@link GpuCaseMapper}); `label` also takes the
+ * camelCase.  Values are constants, scale mappers ({@link Mapper}), or
+ * conditionals ({@link CaseMapper}); `label` also takes the
  * `data(key)` mapper string ('id' reads the first-class id).
  * Node props: background-color, width, height, shape, opacity,
  * border-color, border-width, label, font-size, font-family (constant
@@ -240,20 +240,20 @@ export type GpuStylePropValue = string | number | GpuMapperSpec;
  * props: line-color, width, opacity, source/target-arrow-shape and
  * -color.
  */
-export type GpuStyleProps = Record<string, GpuStylePropValue>;
+export type StyleProps = Record<string, StylePropValue>;
 
 /**
  * The v4 stylesheet — no selectors, no style functions.  Each group key
  * is a props object whose values are constants or mapper objects; all
  * per-element variation is expressed declaratively through mappers
- * ({@link GpuMapper} scales, {@link GpuCaseMapper} conditionals), which
+ * ({@link Mapper} scales, {@link CaseMapper} conditionals), which
  * are analyzable, serializable, and evaluated on the GPU where possible.
  * Everything stays fresh automatically: a data write re-derives the
  * mapped channels of the affected elements (gated on the mapped keys).
  */
-export interface GpuStylesheet {
-  nodes?: GpuStyleProps;
-  edges?: GpuStyleProps;
+export interface Stylesheet {
+  nodes?: StyleProps;
+  edges?: StyleProps;
   /**
    * Compound-parent overlay (round 14.6): node props that apply to
    * parent nodes on top of the nodes group and v3's `:parent` defaults
@@ -265,14 +265,14 @@ export interface GpuStylesheet {
    * their labels — public bb/fit include labels since round 16.4,
    * the auto-bounds derivation deliberately does not).
    */
-  parents?: GpuStyleProps;
+  parents?: StyleProps;
   /**
    * Core (viewport-level) theming props (round 13 A2), constants only:
    * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
    * (the DOM selection box) and `active-bg-color`/`-opacity`/`-size`
    * (the background-grab indicator circle).  v3's core-selector props.
    */
-  core?: GpuStyleProps;
+  core?: StyleProps;
 }
 
 /**
@@ -280,7 +280,7 @@ export interface GpuStylesheet {
  * pixels are rendered on and read back from the GPU) and only available
  * on rendered instances — headless instances reject.
  */
-export interface GpuExportOptions {
+export interface ExportOptions {
   /** result form: a data-URI string (default), the raw base64 payload,
    * or a Blob ('blob-promise' is accepted as an alias of 'blob' — every
    * output form resolves through the returned promise) */
@@ -302,15 +302,15 @@ export interface GpuExportOptions {
   quality?: number;
 }
 
-export type GpuBoundingBoxInput = { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
+export type BoundingBoxInput = { x1: number; y1: number; x2?: number; y2?: number; w?: number; h?: number };
 
 /** Options shared by the discrete layouts (scope, fit, spacing, animation). */
-export interface GpuLayoutBaseOptions {
+export interface LayoutBaseOptions {
   /** the elements to lay out (set automatically by `eles.layout()`); defaults to the whole graph */
   eles?: unknown;
   fit?: boolean;
   padding?: number;
-  boundingBox?: GpuBoundingBoxInput;
+  boundingBox?: BoundingBoxInput;
   /** include labels in node dimensions (v4 note: since round 16.4
    * `boundingBox()`/fit include labels by default; this layout option
    * remains accepted for v3 compatibility but the discrete layouts
@@ -335,7 +335,7 @@ export interface GpuLayoutBaseOptions {
   pan?: Position;
 }
 
-export interface GpuGridLayoutOptions extends GpuLayoutBaseOptions {
+export interface GridLayoutOptions extends LayoutBaseOptions {
   name: 'grid';
   avoidOverlap?: boolean;
   avoidOverlapPadding?: number;
@@ -348,13 +348,13 @@ export interface GpuGridLayoutOptions extends GpuLayoutBaseOptions {
   sort?: ( a: unknown, b: unknown ) => number;
 }
 
-export interface GpuPresetLayoutOptions extends GpuLayoutBaseOptions {
+export interface PresetLayoutOptions extends LayoutBaseOptions {
   name: 'preset';
   /** node id → position map, or a function of a node handle; absent nodes keep their position */
   positions?: Record<string, Position> | ( ( node: unknown ) => Position | null | undefined );
 }
 
-export interface GpuCircleLayoutOptions extends GpuLayoutBaseOptions {
+export interface CircleLayoutOptions extends LayoutBaseOptions {
   name: 'circle';
   avoidOverlap?: boolean;
   /** the circle's radius (computed when omitted) */
@@ -369,7 +369,7 @@ export interface GpuCircleLayoutOptions extends GpuLayoutBaseOptions {
   sort?: ( a: unknown, b: unknown ) => number;
 }
 
-export interface GpuConcentricLayoutOptions extends GpuLayoutBaseOptions {
+export interface ConcentricLayoutOptions extends LayoutBaseOptions {
   name: 'concentric';
   startAngle?: number;
   sweep?: number;
@@ -389,7 +389,7 @@ export interface GpuConcentricLayoutOptions extends GpuLayoutBaseOptions {
   levelWidth?: ( nodes: unknown ) => number;
 }
 
-export interface GpuBreadthFirstLayoutOptions extends GpuLayoutBaseOptions {
+export interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
   name: 'breadthfirst';
   /** whether the tree is directed downwards (default false) */
   directed?: boolean;
@@ -410,14 +410,14 @@ export interface GpuBreadthFirstLayoutOptions extends GpuLayoutBaseOptions {
   acyclic?: boolean;
 }
 
-export interface GpuRandomLayoutOptions extends GpuLayoutBaseOptions {
+export interface RandomLayoutOptions extends LayoutBaseOptions {
   name: 'random';
 }
 
 /** The built-in force layout (round 18): spring–electric with
  * uniform-grid cutoff repulsion, seeded and deterministic; runs
  * through the extension contract. */
-export interface GpuForceLayoutOptions extends GpuLayoutBaseOptions {
+export interface ForceLayoutOptions extends LayoutBaseOptions {
   name: 'force';
   /** ideal edge length: number, or a plain fn of the edge handle
    * (resolved once at start) */
@@ -442,7 +442,7 @@ export interface GpuForceLayoutOptions extends GpuLayoutBaseOptions {
 /** The extension contract (round 17.5): a direct impl object/class —
  * no name, no registry — plus any custom knobs the impl reads off
  * ctx.options. */
-export interface GpuCustomLayoutOptions extends GpuLayoutBaseOptions {
+export interface CustomLayoutOptions extends LayoutBaseOptions {
   impl: unknown;
   name?: undefined;
   /** internal (round 17.5): the wrapper already emitted layoutstart */
@@ -450,13 +450,13 @@ export interface GpuCustomLayoutOptions extends GpuLayoutBaseOptions {
   [ key: string ]: unknown;
 }
 
-export type GpuLayoutOptions =
-  GpuGridLayoutOptions | GpuPresetLayoutOptions | GpuCircleLayoutOptions |
-  GpuConcentricLayoutOptions | GpuBreadthFirstLayoutOptions | GpuRandomLayoutOptions |
-  GpuForceLayoutOptions | GpuCustomLayoutOptions;
+export type LayoutOptions =
+  GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions |
+  ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions |
+  ForceLayoutOptions | CustomLayoutOptions;
 
 /** Renderer tuning knobs (all LOD values in device px). */
-export interface GpuRendererOptions {
+export interface RendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
   edgeWidthFloor?: number;
   /** below this node size, nodes draw as plain AA discs without decorations (default 3) */
@@ -533,16 +533,16 @@ export interface RendererStats {
  */
 export type BoxSelectionMode = 'contain' | 'overlap';
 
-export interface CytoscapeGpuOptions {
+export interface CytoscapeOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
    * synchronously if `navigator.gpu` is missing.  When omitted, the instance
    * is headless (works in Node, never throws for missing GPU).
    */
   container?: HTMLElement | null;
-  elements?: GpuElementsInput;
-  style?: GpuStylesheet;
-  layout?: GpuLayoutOptions;
+  elements?: ElementsInput;
+  style?: Stylesheet;
+  layout?: LayoutOptions;
   zoom?: number;
   pan?: Position;
   minZoom?: number;
@@ -594,5 +594,5 @@ export interface CytoscapeGpuOptions {
   headlessHeight?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
-  renderer?: GpuRendererOptions;
+  renderer?: RendererOptions;
 }

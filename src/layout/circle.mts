@@ -1,8 +1,8 @@
 import * as math from '../math.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
-import type { GpuCircleLayoutOptions } from '../gpu-types.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuCore } from '../core.mjs';
+import type { CircleLayoutOptions } from '../public-types.mjs';
+import type { Collection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
 
 /*
 Circle layout: v3's math verbatim over the collection scope.  One
@@ -11,7 +11,7 @@ on the *sorted* node collection (as upstream v3 does), so the `sort`
 option actually orders nodes around the circle.
 */
 
-const defaults: Omit<GpuCircleLayoutOptions, 'name'> = {
+const defaults: Omit<CircleLayoutOptions, 'name'> = {
   fit: true,
   padding: 30,
   boundingBox: undefined,
@@ -38,9 +38,9 @@ const defaults: Omit<GpuCircleLayoutOptions, 'name'> = {
  */
 export class CircleLayout {
   /** the resolved options this layout was created with */
-  options: GpuCircleLayoutOptions;
+  options: CircleLayoutOptions;
 
-  private cy: GpuCore;
+  private cy: Core;
 
   /**
    * Reached through `cy.layout( { name: 'circle' } )` /
@@ -51,7 +51,7 @@ export class CircleLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: GpuCore, options: GpuCircleLayoutOptions ){
+  constructor( cy: Core, options: CircleLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -67,13 +67,13 @@ export class CircleLayout {
   run(): this {
     const cy = this.cy;
     const options = this.options;
-    const eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
+    const eles = ( options.eles as Collection | undefined ) ?? cy.elements();
     const clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
 
-    let nodes = eles.nodes().filter( ( n: GpuCollection ) => !n.isParent() );
+    let nodes = eles.nodes().filter( ( n: Collection ) => !n.isParent() );
 
     if( options.sort != null ){
-      nodes = nodes.sort( options.sort as ( a: GpuCollection, b: GpuCollection ) => number );
+      nodes = nodes.sort( options.sort as ( a: Collection, b: Collection ) => number );
     }
 
     const bb = math.makeBoundingBox( options.boundingBox ?? {
@@ -118,7 +118,7 @@ export class CircleLayout {
       r = Math.max( rMin, r );
     }
 
-    const getPos = ( _ele: GpuCollection, i: number ): Position => {
+    const getPos = ( _ele: Collection, i: number ): Position => {
       const theta = ( options.startAngle as number ) + i * dTheta * ( clockwise ? 1 : -1 );
 
       return {

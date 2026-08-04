@@ -558,8 +558,8 @@ interface Position {
   y: number;
 }
 //#endregion
-//#region src/gpu-types.d.mts
-interface GpuElementData {
+//#region src/public-types.d.mts
+interface ElementData {
   id?: string;
   /** edges only; required for edges */
   source?: string;
@@ -571,10 +571,10 @@ interface GpuElementData {
   /** anything else lands in the data() sidecar */
   [key: string]: unknown;
 }
-interface GpuElementDefinition {
+interface ElementDefinition {
   /** inferred from `data.source`/`data.target` when omitted */
   group?: 'nodes' | 'edges';
-  data?: GpuElementData;
+  data?: ElementData;
   /** nodes only */
   position?: Position;
   selected?: boolean;
@@ -584,9 +584,9 @@ interface GpuElementDefinition {
   /** dragging this element pans the graph instead (default: true for edges, false for nodes) */
   pannable?: boolean;
 }
-type GpuElementsDefinition = GpuElementDefinition[] | {
-  nodes?: GpuElementDefinition[];
-  edges?: GpuElementDefinition[];
+type ElementsDefinition = ElementDefinition[] | {
+  nodes?: ElementDefinition[];
+  edges?: ElementDefinition[];
 };
 /**
  * Ids as bytes: one UTF-8 blob + prefix byte offsets (length count + 1).
@@ -594,7 +594,7 @@ type GpuElementsDefinition = GpuElementDefinition[] | {
  * representation, and the store ingests it without materializing any JS
  * strings — id strings are decoded lazily, per element touched.
  */
-interface GpuPackedIds {
+interface PackedIds {
   offsets: Uint32Array;
   blob: Uint8Array;
 }
@@ -603,7 +603,7 @@ interface GpuPackedIds {
  * index into `dict` (0 = absent).  Data values repeat heavily, so this
  * is both the compact in-memory shape and the wire shape.
  */
-interface GpuDictColumn {
+interface DictColumn {
   dict: string[];
   indices: Uint32Array;
 }
@@ -612,12 +612,12 @@ interface GpuDictColumn {
  * (holes/undefined = absent), a Float64Array (NaN = absent), or a
  * dictionary-encoded string column.
  */
-type GpuDataColumn = ArrayLike<unknown> | Float64Array | GpuDictColumn;
+type DataColumn = ArrayLike<unknown> | Float64Array | DictColumn;
 /** Columnar node payload; all arrays are index-aligned with `count`. */
-interface GpuColumnarNodes {
+interface ColumnarNodes {
   count: number;
   /** unique ids; missing entries (or the whole array) are auto-generated */
-  ids?: (string | undefined)[] | GpuPackedIds;
+  ids?: (string | undefined)[] | PackedIds;
   /** interleaved x,y pairs, length 2 × count; omitted = all (0, 0) */
   positions?: Float32Array;
   /** 1 = selected; omitted = all unselected */
@@ -629,14 +629,14 @@ interface GpuColumnarNodes {
    * all orphans. */
   parent?: Uint32Array;
   /** data() sidecar columns by key */
-  data?: Record<string, GpuDataColumn>;
+  data?: Record<string, DataColumn>;
 }
 /** The columnar/wire parent-column sentinel for orphan nodes. */
 declare const NO_PARENT = 4294967295;
 /** Columnar edge payload; endpoints are indices into the payload's nodes. */
-interface GpuColumnarEdges {
+interface ColumnarEdges {
   count: number;
-  ids?: (string | undefined)[] | GpuPackedIds;
+  ids?: (string | undefined)[] | PackedIds;
   /** source node index per edge (into the payload's nodes), length count */
   sources: Uint32Array;
   /** target node index per edge (into the payload's nodes), length count */
@@ -644,7 +644,7 @@ interface GpuColumnarEdges {
   selected?: Uint8Array;
   selectable?: Uint8Array;
   /** data() sidecar columns by key */
-  data?: Record<string, GpuDataColumn>;
+  data?: Record<string, DataColumn>;
 }
 /**
  * Columnar bulk-load form of `elements`: typed-array columns ingest
@@ -653,11 +653,11 @@ interface GpuColumnarEdges {
  * every edge endpoint must index a node in the same payload.  Convert
  * definition-form JSON with `cytoscape.toColumnarElements(json)`.
  */
-interface GpuColumnarElements {
+interface ColumnarElements {
   /** discriminant so the loader can tell the forms apart */
   columnar: true;
-  nodes?: GpuColumnarNodes;
-  edges?: GpuColumnarEdges;
+  nodes?: ColumnarNodes;
+  edges?: ColumnarEdges;
   /**
    * Graph-level `data()` (round 39.2) — the whole-graph object, not a
    * per-element column.  `cy.serialize()` writes it and
@@ -675,7 +675,7 @@ interface GpuColumnarElements {
  * `cytoscape.serializeElements` (one little-endian ArrayBuffer +
  * header — fetch it as binary and pass it straight in; no JSON parse).
  */
-type GpuElementsInput = GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements | ArrayBuffer | ArrayBufferView;
+type ElementsInput = ElementsDefinition | ElementDefinition | ColumnarElements | ArrayBuffer | ArrayBufferView;
 /**
  * A data-driven style mapping: a plain serializable object appearing as a
  * prop value in the sheet.  `{ data: key }` alone is a passthrough (the
@@ -692,7 +692,7 @@ type GpuElementsInput = GpuElementsDefinition | GpuElementDefinition | GpuColumn
  * `interpolate: 'srgb'`.  Missing or unmappable data resolves to
  * `fallback`, else the channel default.
  */
-interface GpuMapper {
+interface Mapper {
   /** data() sidecar key to read */
   data: string;
   scale?: 'linear' | 'log' | 'sqrt' | 'pow' | 'symlog' | 'diverging' | 'ordinal' | 'threshold' | 'quantize';
@@ -720,7 +720,7 @@ interface GpuMapper {
  * data supports `eq`/`ne`/`in`; numeric data supports all.  Missing data
  * fails every comparison (so an unset key never matches).
  */
-interface GpuCondition {
+interface Condition {
   /** the data key to compare ('id' reads the first-class id); omitted
    * for the structural forms below */
   data?: string;
@@ -739,8 +739,8 @@ interface GpuCondition {
   child?: boolean;
 }
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */
-interface GpuCaseClause {
-  when: GpuCondition | GpuCondition[];
+interface CaseClause {
+  when: Condition | Condition[];
   then: string | number;
 }
 /**
@@ -750,20 +750,20 @@ interface GpuCaseClause {
  * replacement for `(ele) => cond ? a : b` style functions, and the
  * natural form for typed edges (`type == 'activation' → ...`).
  */
-interface GpuCaseMapper {
-  case: GpuCaseClause[];
+interface CaseMapper {
+  case: CaseClause[];
   else?: string | number;
   /** value for missing/unmappable data (defaults to `else` then the channel default) */
   fallback?: string | number;
 }
 /** Any data-driven style value: a scale mapper or a conditional. */
-type GpuMapperSpec = GpuMapper | GpuCaseMapper;
+type MapperSpec = Mapper | CaseMapper;
 /** A style prop value: a constant, or a mapper object. */
-type GpuStylePropValue = string | number | GpuMapperSpec;
+type StylePropValue = string | number | MapperSpec;
 /**
  * Style props for one element or group; names are kebab-case or
- * camelCase.  Values are constants, scale mappers ({@link GpuMapper}), or
- * conditionals ({@link GpuCaseMapper}); `label` also takes the
+ * camelCase.  Values are constants, scale mappers ({@link Mapper}), or
+ * conditionals ({@link CaseMapper}); `label` also takes the
  * `data(key)` mapper string ('id' reads the first-class id).
  * Node props: background-color, width, height, shape, opacity,
  * border-color, border-width, label, font-size, font-family (constant
@@ -771,19 +771,19 @@ type GpuStylePropValue = string | number | GpuMapperSpec;
  * props: line-color, width, opacity, source/target-arrow-shape and
  * -color.
  */
-type GpuStyleProps = Record<string, GpuStylePropValue>;
+type StyleProps = Record<string, StylePropValue>;
 /**
  * The v4 stylesheet — no selectors, no style functions.  Each group key
  * is a props object whose values are constants or mapper objects; all
  * per-element variation is expressed declaratively through mappers
- * ({@link GpuMapper} scales, {@link GpuCaseMapper} conditionals), which
+ * ({@link Mapper} scales, {@link CaseMapper} conditionals), which
  * are analyzable, serializable, and evaluated on the GPU where possible.
  * Everything stays fresh automatically: a data write re-derives the
  * mapped channels of the affected elements (gated on the mapped keys).
  */
-interface GpuStylesheet {
-  nodes?: GpuStyleProps;
-  edges?: GpuStyleProps;
+interface Stylesheet {
+  nodes?: StyleProps;
+  edges?: StyleProps;
   /**
    * Compound-parent overlay (round 14.6): node props that apply to
    * parent nodes on top of the nodes group and v3's `:parent` defaults
@@ -795,21 +795,21 @@ interface GpuStylesheet {
    * their labels — public bb/fit include labels since round 16.4,
    * the auto-bounds derivation deliberately does not).
    */
-  parents?: GpuStyleProps;
+  parents?: StyleProps;
   /**
    * Core (viewport-level) theming props (round 13 A2), constants only:
    * `selection-box-color`/`-opacity`/`-border-color`/`-border-width`
    * (the DOM selection box) and `active-bg-color`/`-opacity`/`-size`
    * (the background-grab indicator circle).  v3's core-selector props.
    */
-  core?: GpuStyleProps;
+  core?: StyleProps;
 }
 /**
  * Options for `cy.png()`/`cy.jpg()` image export.  Export is async (the
  * pixels are rendered on and read back from the GPU) and only available
  * on rendered instances — headless instances reject.
  */
-interface GpuExportOptions {
+interface ExportOptions {
   /** result form: a data-URI string (default), the raw base64 payload,
    * or a Blob ('blob-promise' is accepted as an alias of 'blob' — every
    * output form resolves through the returned promise) */
@@ -830,7 +830,7 @@ interface GpuExportOptions {
   /** jpg only: encode quality in [0, 1] (default: the browser's) */
   quality?: number;
 }
-type GpuBoundingBoxInput = {
+type BoundingBoxInput = {
   x1: number;
   y1: number;
   x2?: number;
@@ -839,12 +839,12 @@ type GpuBoundingBoxInput = {
   h?: number;
 };
 /** Options shared by the discrete layouts (scope, fit, spacing, animation). */
-interface GpuLayoutBaseOptions {
+interface LayoutBaseOptions {
   /** the elements to lay out (set automatically by `eles.layout()`); defaults to the whole graph */
   eles?: unknown;
   fit?: boolean;
   padding?: number;
-  boundingBox?: GpuBoundingBoxInput;
+  boundingBox?: BoundingBoxInput;
   /** include labels in node dimensions (v4 note: since round 16.4
    * `boundingBox()`/fit include labels by default; this layout option
    * remains accepted for v3 compatibility but the discrete layouts
@@ -868,7 +868,7 @@ interface GpuLayoutBaseOptions {
   /** pan to set when fit is false */
   pan?: Position;
 }
-interface GpuGridLayoutOptions extends GpuLayoutBaseOptions {
+interface GridLayoutOptions extends LayoutBaseOptions {
   name: 'grid';
   avoidOverlap?: boolean;
   avoidOverlapPadding?: number;
@@ -883,12 +883,12 @@ interface GpuGridLayoutOptions extends GpuLayoutBaseOptions {
   /** comparator over node handles */
   sort?: (a: unknown, b: unknown) => number;
 }
-interface GpuPresetLayoutOptions extends GpuLayoutBaseOptions {
+interface PresetLayoutOptions extends LayoutBaseOptions {
   name: 'preset';
   /** node id → position map, or a function of a node handle; absent nodes keep their position */
   positions?: Record<string, Position> | ((node: unknown) => Position | null | undefined);
 }
-interface GpuCircleLayoutOptions extends GpuLayoutBaseOptions {
+interface CircleLayoutOptions extends LayoutBaseOptions {
   name: 'circle';
   avoidOverlap?: boolean;
   /** the circle's radius (computed when omitted) */
@@ -902,7 +902,7 @@ interface GpuCircleLayoutOptions extends GpuLayoutBaseOptions {
   /** comparator over node handles ordering the nodes around the circle */
   sort?: (a: unknown, b: unknown) => number;
 }
-interface GpuConcentricLayoutOptions extends GpuLayoutBaseOptions {
+interface ConcentricLayoutOptions extends LayoutBaseOptions {
   name: 'concentric';
   startAngle?: number;
   sweep?: number;
@@ -921,7 +921,7 @@ interface GpuConcentricLayoutOptions extends GpuLayoutBaseOptions {
   /** the variation of concentric values per level (default: maxDegree / 4) */
   levelWidth?: (nodes: unknown) => number;
 }
-interface GpuBreadthFirstLayoutOptions extends GpuLayoutBaseOptions {
+interface BreadthFirstLayoutOptions extends LayoutBaseOptions {
   name: 'breadthfirst';
   /** whether the tree is directed downwards (default false) */
   directed?: boolean;
@@ -941,13 +941,13 @@ interface GpuBreadthFirstLayoutOptions extends GpuLayoutBaseOptions {
   /** with maximal: the graph is known acyclic (no cycle bail-out) */
   acyclic?: boolean;
 }
-interface GpuRandomLayoutOptions extends GpuLayoutBaseOptions {
+interface RandomLayoutOptions extends LayoutBaseOptions {
   name: 'random';
 }
 /** The built-in force layout (round 18): spring–electric with
  * uniform-grid cutoff repulsion, seeded and deterministic; runs
  * through the extension contract. */
-interface GpuForceLayoutOptions extends GpuLayoutBaseOptions {
+interface ForceLayoutOptions extends LayoutBaseOptions {
   name: 'force';
   /** ideal edge length: number, or a plain fn of the edge handle
    * (resolved once at start) */
@@ -971,16 +971,16 @@ interface GpuForceLayoutOptions extends GpuLayoutBaseOptions {
 /** The extension contract (round 17.5): a direct impl object/class —
  * no name, no registry — plus any custom knobs the impl reads off
  * ctx.options. */
-interface GpuCustomLayoutOptions extends GpuLayoutBaseOptions {
+interface CustomLayoutOptions extends LayoutBaseOptions {
   impl: unknown;
   name?: undefined;
   /** internal (round 17.5): the wrapper already emitted layoutstart */
   _startEmitted?: boolean;
   [key: string]: unknown;
 }
-type GpuLayoutOptions = GpuGridLayoutOptions | GpuPresetLayoutOptions | GpuCircleLayoutOptions | GpuConcentricLayoutOptions | GpuBreadthFirstLayoutOptions | GpuRandomLayoutOptions | GpuForceLayoutOptions | GpuCustomLayoutOptions;
+type LayoutOptions = GridLayoutOptions | PresetLayoutOptions | CircleLayoutOptions | ConcentricLayoutOptions | BreadthFirstLayoutOptions | RandomLayoutOptions | ForceLayoutOptions | CustomLayoutOptions;
 /** Renderer tuning knobs (all LOD values in device px). */
-interface GpuRendererOptions {
+interface RendererOptions {
   /** minimum edge width; thinner edges are floored and alpha-compensated (default 1) */
   edgeWidthFloor?: number;
   /** below this node size, nodes draw as plain AA discs without decorations (default 3) */
@@ -1054,16 +1054,16 @@ interface RendererStats {
  * an appearance, and v4 keeps the interaction quartet on the core.
  */
 type BoxSelectionMode = 'contain' | 'overlap';
-interface CytoscapeGpuOptions {
+interface CytoscapeOptions {
   /**
    * Where to render.  When given, WebGPU is required: the factory throws
    * synchronously if `navigator.gpu` is missing.  When omitted, the instance
    * is headless (works in Node, never throws for missing GPU).
    */
   container?: HTMLElement | null;
-  elements?: GpuElementsInput;
-  style?: GpuStylesheet;
-  layout?: GpuLayoutOptions;
+  elements?: ElementsInput;
+  style?: Stylesheet;
+  layout?: LayoutOptions;
   zoom?: number;
   pan?: Position;
   minZoom?: number;
@@ -1115,7 +1115,7 @@ interface CytoscapeGpuOptions {
   headlessHeight?: number;
   /** device pixel ratio override; defaults to the window's */
   pixelRatio?: number | 'auto';
-  renderer?: GpuRendererOptions;
+  renderer?: RendererOptions;
 }
 //#endregion
 //#region src/store/id-map.d.mts
@@ -1185,7 +1185,7 @@ declare class IdMap {
    * format's id section) is one blob memcpy + per-id hash/probe — no JS
    * strings.  Holes (zero-length / undefined ids) get `newId()`.
    */
-  setBulk(group: GroupName, slots: Uint32Array, ids: (string | undefined)[] | GpuPackedIds | undefined, newId: () => string): void;
+  setBulk(group: GroupName, slots: Uint32Array, ids: (string | undefined)[] | PackedIds | undefined, newId: () => string): void;
   /**
    * Unbind an id; a no-op when it is not registered.  The probe entry
    * becomes a tombstone and the id's blob bytes are stranded, so removal
@@ -1383,7 +1383,7 @@ declare class DataStore {
    * dictionary column, mixed as a plain array — the shapes `ingestColumn`
    * and the wire already accept.  Undefined when there are no columns.
    */
-  exportColumns(group: GroupName, slots: ArrayLike<number>): Record<string, GpuDataColumn> | undefined;
+  exportColumns(group: GroupName, slots: ArrayLike<number>): Record<string, DataColumn> | undefined;
   /**
    * Write one element's value for one data key.  The column adopts the
    * kind of its first value and promotes to `mixed` — irreversibly, and
@@ -1403,7 +1403,7 @@ declare class DataStore {
    * (all-number → numeric, all-string → dictionary, else mixed) unless it
    * is already a dictionary column, which is adopted index-for-index.
    */
-  ingestColumn(group: GroupName, slots: Uint32Array, key: string, column: ArrayLike<unknown> | GpuDictColumn): void;
+  ingestColumn(group: GroupName, slots: Uint32Array, key: string, column: ArrayLike<unknown> | DictColumn): void;
   /**
    * Slot compaction (19.2): move every column's per-slot payload through
    * the monotone remap **in place** — bound mapper evaluators close over
@@ -2214,12 +2214,12 @@ declare class GraphStore implements ModelView {
    * payload arrays.  On error the graph may be partially mutated (as with
    * a mid-list throw in the def path).
    */
-  addNodesColumnar(cols: GpuColumnarNodes, newId: () => string): Uint32Array;
+  addNodesColumnar(cols: ColumnarNodes, newId: () => string): Uint32Array;
   /**
    * Columnar bulk edge add: endpoints are indices into `nodeSlots` (the
    * same payload's nodes) — no id lookups per edge.
    */
-  addEdgesColumnar(cols: GpuColumnarEdges, nodeSlots: Uint32Array, newId: () => string): Uint32Array;
+  addEdgesColumnar(cols: ColumnarEdges, nodeSlots: Uint32Array, newId: () => string): Uint32Array;
   /**
    * Remove one edge: unlinks it from the adjacency index and its curve
    * bundle (siblings re-fan), then tombstones the slot for reuse.  The
@@ -2784,7 +2784,7 @@ declare class GraphStore implements ModelView {
    * edges — the hull bound for chord-bounded kinds, plus the node-half
    * margin (+ chord length for extrapolated weights) for box-bounded
    * ones (rounds 12a/12b; the exact lazy curve bb is
-   * GpuCollection.boundingBox's tier).  Future edge geometry (arrow
+   * Collection.boundingBox's tier).  Future edge geometry (arrow
    * heads, 12c endpoints) extends the edge term here and there
    * together.  Only the space tier counts (round 22): display-hidden
    * elements are excluded, `visibility: 'hidden'` ones still take
@@ -2932,14 +2932,14 @@ interface CompiledMapper {
   fallback: number | RGBA$1 | null;
   parseEnum: ((value: unknown) => number | null) | null;
   /** the original spec object, never mutated (json() fidelity) */
-  spec: GpuMapperSpec;
+  spec: MapperSpec;
 }
 /** Output of a bound evaluator: the channel value for one slot. */
 type Evaluated = number | RGBA$1;
 //#endregion
 //#region src/matcher.d.mts
 /** One data comparison; exactly one op per condition object. */
-interface GpuDataCondition {
+interface DataCondition {
   eq?: unknown;
   ne?: unknown;
   lt?: number;
@@ -2949,7 +2949,7 @@ interface GpuDataCondition {
   in?: (string | number)[];
 }
 /** A structured element query; every present key must hold. */
-interface GpuQuery {
+interface Query {
   /** restrict to one group */
   group?: GroupName;
   /** require the element (not) to be selected */
@@ -2961,7 +2961,7 @@ interface GpuQuery {
    * `child: false` is v3's `:orphan` */
   child?: boolean;
   /** data-sidecar conditions per key; a bare value means equality */
-  data?: Record<string, GpuDataCondition | string | number | boolean | null>;
+  data?: Record<string, DataCondition | string | number | boolean | null>;
 }
 //#endregion
 //#region src/easing.d.mts
@@ -3073,7 +3073,7 @@ declare class StyleEngine {
    * @throws on an unknown sheet key, an unknown property, or an invalid
    *   value
    */
-  setSheet(sheet: GpuStylesheet, apply?: boolean): void;
+  setSheet(sheet: Stylesheet, apply?: boolean): void;
   /**
    * Paint-channel mappers with resolved fallbacks (the runtime's pack
    * input).  A mapped arrow *shape* demotes all edge paint to the CPU:
@@ -3145,7 +3145,7 @@ declare class StyleEngine {
    *
    * @returns the sheet object (live, not a copy — treat as read-only)
    */
-  json(): GpuStylesheet;
+  json(): Stylesheet;
   /** Re-apply the current sheet (e.g. to re-snapshot live auto-domain extents). */
   update(): void;
   /**
@@ -3829,7 +3829,7 @@ declare class Animation {
   private swapEnds;
   /** set when a slot compaction demoted this animation mid-flight: the
    * rest of its run stays on the CPU (its GPU buffers held old slots) */
-  private _gpuBarred;
+  private _barred;
   /**
    * Whether the GPU tween runtime can drive this animation outright.
    *
@@ -4103,40 +4103,40 @@ declare class AnimationManager {
  * depth from the nearest root.  Return `true` to stop and record `v` as
  * found; `false` to stop without.
  */
-type SearchVisitFn = (v: GpuCollection, e: GpuCollection | undefined, u: GpuCollection | undefined, i: number, depth: number) => boolean | void;
+type SearchVisitFn = (v: Collection, e: Collection | undefined, u: Collection | undefined, i: number, depth: number) => boolean | void;
 interface SearchOptions {
-  roots?: GpuCollection;
-  root?: GpuCollection;
+  roots?: Collection;
+  root?: Collection;
   visit?: SearchVisitFn;
   directed?: boolean;
 }
 interface SearchResult {
-  path: GpuCollection;
-  found: GpuCollection;
+  path: Collection;
+  found: Collection;
 }
-type SearchArgs = [(SearchOptions | GpuCollection)?, (SearchVisitFn | boolean)?, boolean?];
+type SearchArgs = [(SearchOptions | Collection)?, (SearchVisitFn | boolean)?, boolean?];
 //#endregion
 //#region src/algorithms/algo-shared.d.mts
 /** Edge weighting function: receives the edge handle, returns its weight. */
-type WeightFn = (edge: GpuCollection) => number;
+type WeightFn = (edge: Collection) => number;
 //#endregion
 //#region src/algorithms/dijkstra.d.mts
 interface DijkstraOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
 }
 interface DijkstraResult {
-  distanceTo(node: GpuCollection): number | undefined;
-  pathTo(node: GpuCollection): GpuCollection;
+  distanceTo(node: Collection): number | undefined;
+  pathTo(node: Collection): Collection;
 }
-type DijkstraArgs = [(DijkstraOptions | GpuCollection)?, WeightFn?, boolean?];
+type DijkstraArgs = [(DijkstraOptions | Collection)?, WeightFn?, boolean?];
 //#endregion
 //#region src/algorithms/a-star.d.mts
-type AStarHeuristicFn = (node: GpuCollection) => number;
+type AStarHeuristicFn = (node: Collection) => number;
 interface AStarOptions {
-  root?: GpuCollection | null;
-  goal?: GpuCollection | null;
+  root?: Collection | null;
+  goal?: Collection | null;
   weight?: WeightFn;
   heuristic?: AStarHeuristicFn;
   directed?: boolean;
@@ -4144,22 +4144,22 @@ interface AStarOptions {
 interface AStarResult {
   found: boolean;
   distance: number | undefined;
-  path: GpuCollection | undefined;
+  path: Collection | undefined;
   steps: number;
 }
 //#endregion
 //#region src/algorithms/bellman-ford.d.mts
 interface BellmanFordOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
   findNegativeWeightCycles?: boolean;
 }
 interface BellmanFordResult {
-  distanceTo(node: GpuCollection): number | undefined;
-  pathTo(node: GpuCollection, thisStart?: GpuCollection): GpuCollection;
+  distanceTo(node: Collection): number | undefined;
+  pathTo(node: Collection, thisStart?: Collection): Collection;
   hasNegativeWeightCycle: boolean;
-  negativeWeightCycles: GpuCollection[];
+  negativeWeightCycles: Collection[];
 }
 //#endregion
 //#region src/algorithms/floyd-warshall.d.mts
@@ -4168,27 +4168,27 @@ interface FloydWarshallOptions {
   directed?: boolean;
 }
 interface FloydWarshallResult {
-  distance(from: GpuCollection, to: GpuCollection): number | undefined;
-  path(from: GpuCollection, to: GpuCollection): GpuCollection;
+  distance(from: Collection, to: Collection): number | undefined;
+  path(from: Collection, to: Collection): Collection;
 }
 //#endregion
 //#region src/algorithms/tarjan-strongly-connected.d.mts
 interface TarjanStronglyConnectedResult {
   /** the elements not inside any component: the edges between components */
-  cut: GpuCollection;
-  components: GpuCollection[];
+  cut: Collection;
+  components: Collection[];
 }
 //#endregion
 //#region src/algorithms/hopcroft-tarjan-biconnected.d.mts
 interface HopcroftTarjanBiconnectedResult {
   /** the cut vertices (articulation points), in discovery order */
-  cut: GpuCollection;
-  components: GpuCollection[];
+  cut: Collection;
+  components: Collection[];
 }
 //#endregion
 //#region src/algorithms/hierholzer.d.mts
 interface HierholzerOptions {
-  root?: GpuCollection;
+  root?: Collection;
   directed?: boolean;
 }
 interface HierholzerResult {
@@ -4197,16 +4197,16 @@ interface HierholzerResult {
    * the trail's elements in first-traversal order (a collection is a set, so
    * revisited nodes appear once — v3's trail dedupes the same way)
    */
-  trail: GpuCollection | undefined;
+  trail: Collection | undefined;
 }
-type HierholzerArgs = [(HierholzerOptions | GpuCollection)?, boolean?];
+type HierholzerArgs = [(HierholzerOptions | Collection)?, boolean?];
 //#endregion
 //#region src/algorithms/karger-stein.d.mts
 interface KargerSteinResult {
-  cut: GpuCollection;
-  components: GpuCollection[];
-  partition1: GpuCollection;
-  partition2: GpuCollection;
+  cut: Collection;
+  components: Collection[];
+  partition1: Collection;
+  partition2: Collection;
 }
 //#endregion
 //#region src/algorithms/page-rank.d.mts
@@ -4217,12 +4217,12 @@ interface PageRankOptions {
   weight?: WeightFn;
 }
 interface PageRankResult {
-  rank(node: GpuCollection): number | undefined;
+  rank(node: Collection): number | undefined;
 }
 //#endregion
 //#region src/algorithms/degree-centrality.d.mts
 interface DegreeCentralityOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
   /** 0 = count degree, 1 = weight sum (Opsahl's generalized degree) */
@@ -4237,24 +4237,24 @@ interface DirectedDegreeCentrality {
 }
 type DegreeCentralityResult = UndirectedDegreeCentrality | DirectedDegreeCentrality;
 interface UndirectedDegreeCentralityNormalized {
-  degree(node: GpuCollection): number;
+  degree(node: Collection): number;
 }
 interface DirectedDegreeCentralityNormalized {
-  indegree(node: GpuCollection): number;
-  outdegree(node: GpuCollection): number;
+  indegree(node: Collection): number;
+  outdegree(node: Collection): number;
 }
 type DegreeCentralityNormalizedResult = UndirectedDegreeCentralityNormalized | DirectedDegreeCentralityNormalized;
 //#endregion
 //#region src/algorithms/closeness-centrality.d.mts
 interface ClosenessCentralityOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
   /** sum 1/d (default, tolerates disconnection) instead of 1/sum d */
   harmonic?: boolean;
 }
 interface ClosenessCentralityNormalizedResult {
-  closeness(node: GpuCollection): number;
+  closeness(node: Collection): number;
 }
 //#endregion
 //#region src/algorithms/betweenness-centrality.d.mts
@@ -4263,9 +4263,9 @@ interface BetweennessCentralityOptions {
   directed?: boolean;
 }
 interface BetweennessCentralityResult {
-  betweenness(node: GpuCollection): number | undefined;
-  betweennessNormalized(node: GpuCollection): number;
-  betweennessNormalised(node: GpuCollection): number;
+  betweenness(node: Collection): number | undefined;
+  betweennessNormalized(node: Collection): number;
+  betweennessNormalised(node: Collection): number;
 }
 //#endregion
 //#region src/algorithms/clustering-distances.d.mts
@@ -4279,7 +4279,7 @@ type DistanceMetric = DistanceMetricName | CustomDistanceFn;
 //#endregion
 //#region src/algorithms/k-clustering.d.mts
 /** A node attribute accessor used as a clustering feature. */
-type KAttributeFn = (node: GpuCollection) => number;
+type KAttributeFn = (node: Collection) => number;
 type FeatureCentroid = number[];
 interface KClusteringOptions {
   k?: number;
@@ -4289,15 +4289,15 @@ interface KClusteringOptions {
   maxIterations?: number;
   attributes?: KAttributeFn[];
   testMode?: boolean;
-  testCentroids?: number | FeatureCentroid[] | GpuCollection[] | null;
+  testCentroids?: number | FeatureCentroid[] | Collection[] | null;
 }
 interface FuzzyCMeansResult {
-  clusters: GpuCollection[];
+  clusters: Collection[];
   degreeOfMembership: number[][];
 }
 //#endregion
 //#region src/algorithms/hierarchical-clustering.d.mts
-type HierarchicalAttributeFn = (node: GpuCollection) => number;
+type HierarchicalAttributeFn = (node: Collection) => number;
 interface HierarchicalClusteringOptions {
   distance?: DistanceMetric;
   /** linkage criterion: 'min' (single), 'max' (complete), 'mean', or per-pair */
@@ -4311,7 +4311,7 @@ interface HierarchicalClusteringOptions {
 //#endregion
 //#region src/algorithms/markov-clustering.d.mts
 /** A similarity function: maps an edge to a numeric contribution. */
-type MarkovAttributeFn = (edge: GpuCollection) => number;
+type MarkovAttributeFn = (edge: Collection) => number;
 interface MarkovClusteringOptions {
   expandFactor?: number;
   inflateFactor?: number;
@@ -4321,7 +4321,7 @@ interface MarkovClusteringOptions {
 }
 //#endregion
 //#region src/algorithms/affinity-propagation.d.mts
-type AffinityAttributeFn = (node: GpuCollection) => number;
+type AffinityAttributeFn = (node: Collection) => number;
 type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
 interface AffinityPropagationOptions {
   distance?: DistanceMetric;
@@ -4340,12 +4340,12 @@ type NativeEvent = globalThis.Event;
  * gestures, `layoutstart`, graph `data`), or a one-element collection for
  * element events.
  */
-type GpuEventTarget = GpuCore | GpuCollection;
+type EventTarget = Core | Collection;
 /** The fields an emit may carry. */
-interface GpuEventProps {
+interface EventProps {
   type?: string;
-  target?: GpuEventTarget;
-  cy?: GpuCore;
+  target?: EventTarget;
+  cy?: Core;
   /** model-space position, for pointer-derived events */
   position?: Position;
   /** rendered-space position; derived from `position` when omitted */
@@ -4360,15 +4360,15 @@ interface GpuEventProps {
  * A v4 event (round 41.1).  Handlers receive one of these; `cy.emit()` and
  * `eles.emit()` accept either a type string or a props object, and build it.
  *
- * @see GpuCore#on for what a name may be, and which names never fire
+ * @see Core#on for what a name may be, and which names never fire
  */
-declare class GpuEvent {
+declare class Event {
   /** the event type, e.g. `'tap'` — never namespaced (round 41.1) */
   type: string;
   /** the core for core-level events, the element for element events */
-  target?: GpuEventTarget;
+  target?: EventTarget;
   /** the core the event was raised on */
-  cy?: GpuCore;
+  cy?: Core;
   /** model-space position, on pointer-derived events */
   position?: Position;
   /** rendered-space position; derived from `position` and the viewport */
@@ -4398,7 +4398,7 @@ declare class GpuEvent {
    *   defaults to the empty string so a malformed emit is inert rather than
    *   throwing inside a handler loop
    */
-  constructor(props?: GpuEventProps);
+  constructor(props?: EventProps);
   /**
    * v3's type tag, kept because `is.event()`-style checks and user code read
    * it.
@@ -4429,7 +4429,7 @@ declare class GpuEvent {
 //#region src/emitter.d.mts
 /** An event handler.  `this` is the callback context the emitter's options
  * choose — the core, or the phase element during compound bubbling. */
-type EventHandler = (this: unknown, event: GpuEvent, ...extraParams: unknown[]) => unknown;
+type EventHandler = (this: unknown, event: Event, ...extraParams: unknown[]) => unknown;
 /** A registered listener. */
 interface Listener<TQualifier = unknown> {
   /** the event type, matched whole (no namespace splitting) */
@@ -4442,27 +4442,27 @@ interface Listener<TQualifier = unknown> {
 }
 /** The hooks that make one emitter behave as v4's qualified-listener model;
  * `events.mts` supplies all four. */
-interface GpuEmitterOptions<TContext, TQualifier> {
+interface EmitterOptions<TContext, TQualifier> {
   /** the emitter context — the core */
   context: TContext;
   /** whether two qualifiers denote the same restriction, for `off()` */
   qualifierCompare(q1: TQualifier | null | undefined, q2: TQualifier | null | undefined): boolean;
   /** whether this listener should fire for this event (the phase rules) */
-  eventMatches(context: TContext, listener: Listener<TQualifier>, event: GpuEvent): boolean;
+  eventMatches(context: TContext, listener: Listener<TQualifier>, event: Event): boolean;
   /** fill in fields every event carries (`cy`, a default `target`) */
-  addEventFields(context: TContext, props: GpuEventProps): void;
+  addEventFields(context: TContext, props: EventProps): void;
   /** what `this` is inside the callback (v3's currentTarget semantics) */
-  callbackContext(context: TContext, listener: Listener<TQualifier>, event: GpuEvent): unknown;
+  callbackContext(context: TContext, listener: Listener<TQualifier>, event: Event): unknown;
 }
 /** Anything `emit()` accepts: one or more space-separated type names, a
  * props object, or an already-built event (the bubbling walk re-emits one). */
-type EmitInput = string | GpuEventProps | GpuEvent;
+type EmitInput = string | EventProps | Event;
 /**
  * The one emitter a v4 core owns (round 41.2).
  *
  * @see makeCoreEmitter in `events.mts`, which is the only place one is built
  */
-declare class GpuEmitter<TContext = unknown, TQualifier = unknown> {
+declare class Emitter<TContext = unknown, TQualifier = unknown> {
   /** every listener on this core, in registration order */
   listeners: Listener<TQualifier>[];
   /** emit depth, so `off()` during an emit copies rather than mutates */
@@ -4471,7 +4471,7 @@ declare class GpuEmitter<TContext = unknown, TQualifier = unknown> {
   /**
    * @param opts — the context and the four matching hooks
    */
-  constructor(opts: GpuEmitterOptions<TContext, TQualifier>);
+  constructor(opts: EmitterOptions<TContext, TQualifier>);
   /**
    * Register a listener for one or more space-separated event names.
    *
@@ -4526,10 +4526,10 @@ declare class GpuEmitter<TContext = unknown, TQualifier = unknown> {
 }
 //#endregion
 //#region src/collection.d.mts
-type EleFilterFn = (ele: GpuCollection, i: number, eles: GpuCollection) => boolean;
-type ElePositionFn = (ele: GpuCollection, i: number) => Position | false | undefined;
+type EleFilterFn = (ele: Collection, i: number, eles: Collection) => boolean;
+type ElePositionFn = (ele: Collection, i: number) => Position | false | undefined;
 /** A subset criterion: a structured query or a per-element predicate. */
-type FilterLike = GpuQuery | EleFilterFn;
+type FilterLike = Query | EleFilterFn;
 /**
  * A v3-style collection over the columnar store: an element is a length-1
  * collection, interned per live slot so `eles[0]`, `forEach` args and
@@ -4537,11 +4537,11 @@ type FilterLike = GpuQuery | EleFilterFn;
  * validated on access; stale refs (removed elements) read as no-ops or
  * `undefined`, though cached `id()`/`group()` stay readable.
  */
-declare class GpuCollection {
-  [index: number]: GpuCollection;
+declare class Collection {
+  [index: number]: Collection;
   /** How many elements this collection holds. */
   length: number;
-  _cy: GpuCore;
+  _cy: Core;
   private __refs;
   /** the store's compactEpoch this collection last synced against (19.3) */
   private _syncEpoch;
@@ -4573,7 +4573,7 @@ declare class GpuCollection {
    *   when the refs are already deduped, `live` when they are also known
    *   current (both skip work on the hot path)
    */
-  constructor(cy: GpuCore, refs: Ref[], opts?: {
+  constructor(cy: Core, refs: Ref[], opts?: {
     singleton?: boolean;
     unique?: boolean;
     live?: boolean;
@@ -4583,18 +4583,18 @@ declare class GpuCollection {
   /** the event system's view of this collection (see events.mts) */
   _eventRef(): Ref | null;
   _liveRefs(): Ref[];
-  _spawn(refs: Ref[]): GpuCollection;
+  _spawn(refs: Ref[]): Collection;
   /**
    * Like `_spawn`, but for refs already known to be distinct (a subset of this
    * collection's deduped refs). Skips the dedupe Set build.
    */
-  _spawnUnique(refs: Ref[]): GpuCollection;
+  _spawnUnique(refs: Ref[]): Collection;
   /**
    * Like `_spawnUnique`, but for refs also known to be current (freshly
    * read off the store, e.g. traversal output): interning skips the
    * per-element gen re-validation of `_eleFromRef`.
    */
-  _spawnLive(refs: Ref[]): GpuCollection;
+  _spawnLive(refs: Ref[]): Collection;
   /**
    * A cached Map of this collection's packed element keys to their first
    * index, for set membership (`.has()`) and `indexOf` alike.
@@ -4618,7 +4618,7 @@ declare class GpuCollection {
    *   span two cores, so this is also the identity a set operation
    *   against a foreign collection would violate
    */
-  cy(): GpuCore;
+  cy(): Core;
   /**
    * The renderer, or null when headless.
    *
@@ -4626,21 +4626,21 @@ declare class GpuCollection {
    *   CPU-canonical, so a null renderer costs drawing, picking and image
    *   export and nothing else
    */
-  renderer(): GpuCore['_renderer'];
+  renderer(): Core['_renderer'];
   /**
    * The first element as a length-1 collection (empty collection when empty).
    *
    * @returns a length-1 collection, or an empty one — v4 has no separate
    *   element type, so this narrows rather than unwraps
    */
-  element(): GpuCollection;
+  element(): Collection;
   /**
    * An empty collection in the same core.
    *
    * @returns a fresh empty collection bound to this core — the seed for
    *   building a set up by union
    */
-  collection(): GpuCollection;
+  collection(): Collection;
   /**
    * Whether this collection contains an element with the given id.
    *
@@ -4654,7 +4654,7 @@ declare class GpuCollection {
    * @param ele — the element to find; only its first element is used
    * @returns the index, or -1 when it is not in this collection
    */
-  indexOf(ele: GpuCollection): number;
+  indexOf(ele: Collection): number;
   /**
    * Position of the element with this id within the collection.
    *
@@ -4692,14 +4692,14 @@ declare class GpuCollection {
    * @param thisArg — optional receiver for the callback
    * @returns this collection, for chaining
    */
-  forEach(fn: (ele: GpuCollection, i: number, eles: GpuCollection) => void | false, thisArg?: unknown): this;
+  forEach(fn: (ele: Collection, i: number, eles: Collection) => void | false, thisArg?: unknown): this;
   each: this['forEach'];
   /**
    * The elements as a plain array of length-1 collections.
    *
    * @returns a new array of the members
    */
-  toArray(): GpuCollection[];
+  toArray(): Collection[];
   /**
    * A sub-range of the collection, with `Array#slice` semantics
    * (negative indices count from the end).
@@ -4708,7 +4708,7 @@ declare class GpuCollection {
    * @param end — last index, exclusive
    * @returns the sub-range as a new collection
    */
-  slice(start?: number, end?: number): GpuCollection;
+  slice(start?: number, end?: number): Collection;
   /**
    * A copy sorted by a comparator.  Note that sort order is a property
    * of the *collection*, not of drawing: v4 draw order is structural and
@@ -4718,26 +4718,26 @@ declare class GpuCollection {
    *   non-function is ignored and returns this collection unchanged
    * @returns a new, sorted collection
    */
-  sort(sortFn: (a: GpuCollection, b: GpuCollection) => number): GpuCollection;
+  sort(sortFn: (a: Collection, b: Collection) => number): Collection;
   /**
    * The element at an index, as a length-1 collection.
    *
    * @param i — the index
    * @returns that element, or an empty collection when out of range
    */
-  eq(i: number): GpuCollection;
+  eq(i: number): Collection;
   /**
    * The first element, as a length-1 collection.
    *
    * @returns the first element, or an empty collection
    */
-  first(): GpuCollection;
+  first(): Collection;
   /**
    * The last element, as a length-1 collection.
    *
    * @returns the last element, or an empty collection
    */
-  last(): GpuCollection;
+  last(): Collection;
   /**
    * Map each element through `fn` into a plain array.
    *
@@ -4745,7 +4745,7 @@ declare class GpuCollection {
    * @param thisArg — optional receiver for the callback
    * @returns an array of the results
    */
-  map<T>(fn: (ele: GpuCollection, i: number, eles: GpuCollection) => T, thisArg?: unknown): T[];
+  map<T>(fn: (ele: Collection, i: number, eles: Collection) => T, thisArg?: unknown): T[];
   /**
    * Whether any element satisfies the predicate.  Short-circuits.
    *
@@ -4841,21 +4841,21 @@ declare class GpuCollection {
    * @param other — the collection to compare against
    * @returns true when the element sets are equal
    */
-  same(other: GpuCollection): boolean;
+  same(other: Collection): boolean;
   /**
    * Whether the two collections share at least one element.
    *
    * @param other — the collection to compare against
    * @returns true when the sets intersect
    */
-  anySame(other: GpuCollection): boolean;
+  anySame(other: Collection): boolean;
   /**
    * Whether every element of `other` is also in this collection.
    *
    * @param other — the candidate subset
    * @returns true when `other` is contained
    */
-  contains(other: GpuCollection): boolean;
+  contains(other: Collection): boolean;
   has: this['contains'];
   equal: this['same'];
   equals: this['same'];
@@ -4865,7 +4865,7 @@ declare class GpuCollection {
    * @param other — the elements to test
    * @returns true when all of them are neighbors
    */
-  allAreNeighbors(other: GpuCollection): boolean;
+  allAreNeighbors(other: Collection): boolean;
   allAreNeighbours: this['allAreNeighbors'];
   /**
    * Whether every element matches the criterion.
@@ -4889,7 +4889,7 @@ declare class GpuCollection {
    * @param other — the collection to add
    * @returns a new collection holding both sets
    */
-  union(other: GpuCollection): GpuCollection;
+  union(other: Collection): Collection;
   u: this['union'];
   or: this['union'];
   add: this['union'];
@@ -4900,7 +4900,7 @@ declare class GpuCollection {
    * @param other — the collection to subtract
    * @returns a new collection
    */
-  difference(other: GpuCollection): GpuCollection;
+  difference(other: Collection): Collection;
   not: this['difference'];
   subtract: this['difference'];
   unmerge: this['difference'];
@@ -4911,7 +4911,7 @@ declare class GpuCollection {
    * @param other — the collection to intersect with
    * @returns a new collection
    */
-  intersection(other: GpuCollection): GpuCollection;
+  intersection(other: Collection): Collection;
   intersect: this['intersection'];
   and: this['intersection'];
   /**
@@ -4920,7 +4920,7 @@ declare class GpuCollection {
    * @param other — the other collection
    * @returns a new collection
    */
-  symmetricDifference(other: GpuCollection): GpuCollection;
+  symmetricDifference(other: Collection): Collection;
   symdiff: this['symmetricDifference'];
   xor: this['symmetricDifference'];
   /**
@@ -4939,21 +4939,21 @@ declare class GpuCollection {
    * @throws if a query object carries an unknown key — a typo must not
    *   silently match everything
    */
-  filter(criterion: FilterLike, thisArg?: unknown): GpuCollection;
+  filter(criterion: FilterLike, thisArg?: unknown): Collection;
   /**
    * The nodes in this collection, optionally filtered.
    *
    * @param criterion — a query object or predicate; omit for all nodes
    * @returns a new collection of nodes
    */
-  nodes(criterion?: FilterLike): GpuCollection;
+  nodes(criterion?: FilterLike): Collection;
   /**
    * The edges in this collection, optionally filtered.
    *
    * @param criterion — a query object or predicate; omit for all edges
    * @returns a new collection of edges
    */
-  edges(criterion?: FilterLike): GpuCollection;
+  edges(criterion?: FilterLike): Collection;
   /**
    * Find a member by id.  This is a linear scan of the collection; use
    * `cy.$id( id )` for the O(1) whole-graph index.
@@ -4961,11 +4961,11 @@ declare class GpuCollection {
    * @param id — the element id
    * @returns a collection of one element, or an empty collection
    */
-  getElementById(id: string): GpuCollection;
+  getElementById(id: string): Collection;
   /** Split into { nodes, edges }. */
   byGroup(): {
-    nodes: GpuCollection;
-    edges: GpuCollection;
+    nodes: Collection;
+    edges: Collection;
   };
   /**
    * All elements of the graph not in this collection.
@@ -4974,7 +4974,7 @@ declare class GpuCollection {
    *   enclosing collection — which is what the `absolute` in the name is
    *   distinguishing
    */
-  absoluteComplement(): GpuCollection;
+  absoluteComplement(): Collection;
   complement: this['absoluteComplement'];
   abscomp: this['absoluteComplement'];
   /**
@@ -4983,10 +4983,10 @@ declare class GpuCollection {
    * @param other — the collection to compare with
    * @returns `{ left: only in this, right: only in other, both: in both }`
    */
-  diff(other: GpuCollection): {
-    left: GpuCollection;
-    right: GpuCollection;
-    both: GpuCollection;
+  diff(other: Collection): {
+    left: Collection;
+    right: Collection;
+    both: Collection;
   };
   /**
    * Fold the collection into a single value.
@@ -4996,11 +4996,11 @@ declare class GpuCollection {
    *   `Array#reduce`)
    * @returns the final accumulator
    */
-  reduce<T>(fn: (acc: T, ele: GpuCollection, i: number, eles: GpuCollection) => T, initial: T): T;
+  reduce<T>(fn: (acc: T, ele: Collection, i: number, eles: Collection) => T, initial: T): T;
   /** The element maximizing `valFn`, with its value ({ value: -Infinity, ele: undefined } when empty). */
-  max(valFn: (ele: GpuCollection, i: number, eles: GpuCollection) => number, thisArg?: unknown): {
+  max(valFn: (ele: Collection, i: number, eles: Collection) => number, thisArg?: unknown): {
     value: number;
-    ele: GpuCollection | undefined;
+    ele: Collection | undefined;
   };
   /**
    * The element minimizing `valFn`, with its value.
@@ -5010,9 +5010,9 @@ declare class GpuCollection {
    * @returns `{ value, ele }`, or `{ value: Infinity, ele: undefined }`
    *   when the collection is empty
    */
-  min(valFn: (ele: GpuCollection, i: number, eles: GpuCollection) => number, thisArg?: unknown): {
+  min(valFn: (ele: Collection, i: number, eles: Collection) => number, thisArg?: unknown): {
     value: number;
-    ele: GpuCollection | undefined;
+    ele: Collection | undefined;
   };
   private _extremum;
   /**
@@ -5090,7 +5090,7 @@ declare class GpuCollection {
    *   on `cy.animate`), `duration`, `easing`, `delay`, `complete`
    * @returns this collection, for chaining; use `animation()` when you
    *   want the handle
-   * @see GpuCollection#animation for the handle form with
+   * @see Collection#animation for the handle form with
    *   `promise`/`pause`/`resume`/`reverse`
    */
   animate(opts: AnimateOptions): this;
@@ -5199,7 +5199,7 @@ declare class GpuCollection {
    * unlike a position tween there is no staleness window.
    *
    * @returns the width, or undefined when empty or removed
-   * @see GpuCollection#outerWidth to include the border
+   * @see Collection#outerWidth to include the border
    */
   width(): number | undefined;
   /**
@@ -5393,7 +5393,7 @@ declare class GpuCollection {
    * @returns `{ x1, y1, x2, y2, w, h }` in model coordinates
    * @throws on an unknown option key — a typo must not silently change
    *   fit semantics
-   * @see GpuCollection#labelBoundingBox for the label box alone
+   * @see Collection#labelBoundingBox for the label box alone
    */
   boundingBox(options?: {
     includeLabels?: boolean;
@@ -5752,7 +5752,7 @@ declare class GpuCollection {
    *   returned refs are dead by construction (v4 removals are terminal),
    *   so only their cached `id()`/`group()` still read
    */
-  remove(): GpuCollection;
+  remove(): Collection;
   /**
    * Move elements in place, keeping slot, id and data: `{ parent }`
    * re-parents nodes (null orphans them; the compound move, round 14.2 —
@@ -5778,25 +5778,25 @@ declare class GpuCollection {
    *
    * @returns the source node, or an empty collection for a non-edge
    */
-  source(): GpuCollection;
+  source(): Collection;
   /**
    * The target node of the first edge.
    *
    * @returns the target node, or an empty collection for a non-edge
    */
-  target(): GpuCollection;
+  target(): Collection;
   /**
    * The source nodes of every edge in the collection, deduped.
    *
    * @returns the source nodes
    */
-  sources(): GpuCollection;
+  sources(): Collection;
   /**
    * The target nodes of every edge in the collection, deduped.
    *
    * @returns the target nodes
    */
-  targets(): GpuCollection;
+  targets(): Collection;
   private _endpoint;
   private _endpoints;
   /**
@@ -5808,7 +5808,7 @@ declare class GpuCollection {
    *   the result
    * @returns the incident edges
    */
-  connectedEdges(criterion?: FilterLike): GpuCollection;
+  connectedEdges(criterion?: FilterLike): Collection;
   /**
    * The endpoint nodes of every edge in this collection, deduped.
    *
@@ -5816,7 +5816,7 @@ declare class GpuCollection {
    *   the result
    * @returns the endpoint nodes
    */
-  connectedNodes(criterion?: FilterLike): GpuCollection;
+  connectedNodes(criterion?: FilterLike): Collection;
   /**
    * The immediate outgoing neighbourhood: the edges leaving these nodes
    * plus the nodes they point at.  One hop only — use `successors()` for
@@ -5826,7 +5826,7 @@ declare class GpuCollection {
    *   the result
    * @returns the outgoing edges and their target nodes
    */
-  outgoers(criterion?: FilterLike): GpuCollection;
+  outgoers(criterion?: FilterLike): Collection;
   /**
    * The immediate incoming neighbourhood: the edges arriving at these
    * nodes plus the nodes they come from.  One hop only — use
@@ -5836,7 +5836,7 @@ declare class GpuCollection {
    *   the result
    * @returns the incoming edges and their source nodes
    */
-  incomers(criterion?: FilterLike): GpuCollection;
+  incomers(criterion?: FilterLike): Collection;
   private _goers;
   /**
    * The *open* neighbourhood: the incident edges and the nodes on their
@@ -5846,9 +5846,9 @@ declare class GpuCollection {
    * @param criterion — an optional query object or predicate to filter
    *   the result
    * @returns the neighbouring edges and nodes
-   * @see GpuCollection#closedNeighborhood to include these nodes
+   * @see Collection#closedNeighborhood to include these nodes
    */
-  neighborhood(criterion?: FilterLike): GpuCollection;
+  neighborhood(criterion?: FilterLike): Collection;
   openNeighborhood: this['neighborhood'];
   /**
    * The open neighbourhood plus this collection's own nodes.
@@ -5857,7 +5857,7 @@ declare class GpuCollection {
    *   the result
    * @returns the closed neighbourhood
    */
-  closedNeighborhood(criterion?: FilterLike): GpuCollection;
+  closedNeighborhood(criterion?: FilterLike): Collection;
   /** Immediate parents of every node in the collection (unique).  v4
    * always returns a proper collection — v3's single-element raw-ref
    * shortcut (which also ignored the selector argument) is not ported.   *
@@ -5865,7 +5865,7 @@ declare class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the immediate parents
    */
-  parent(criterion?: FilterLike): GpuCollection;
+  parent(criterion?: FilterLike): Collection;
   /**
    * All ancestors, level by level: every nearest parent first, then the
    * grandparents, and so on (v3's iterated-parent() order).   *
@@ -5873,7 +5873,7 @@ declare class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the ancestors, nearest first
    */
-  parents(criterion?: FilterLike): GpuCollection;
+  parents(criterion?: FilterLike): Collection;
   ancestors: this['parents'];
   /**
    * Direct children of every node, in link order per parent.   *
@@ -5881,7 +5881,7 @@ declare class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the children
    */
-  children(criterion?: FilterLike): GpuCollection;
+  children(criterion?: FilterLike): Collection;
   /**
    * The subtree below every node in pre-order, excluding the nodes
    * themselves.   *
@@ -5889,7 +5889,7 @@ declare class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the descendants
    */
-  descendants(criterion?: FilterLike): GpuCollection;
+  descendants(criterion?: FilterLike): Collection;
   /**
    * Nodes sharing a parent with the collection's nodes, excluding them;
    * orphans are nobody's siblings (v3).   *
@@ -5897,21 +5897,21 @@ declare class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the siblings
    */
-  siblings(criterion?: FilterLike): GpuCollection;
+  siblings(criterion?: FilterLike): Collection;
   /**
    * The collection's nodes without a parent.   *
    * @param criterion — an optional query object or predicate applied to
    *   the result, exactly as `filter()` takes it
    * @returns the parentless nodes
    */
-  orphans(criterion?: FilterLike): GpuCollection;
+  orphans(criterion?: FilterLike): Collection;
   /**
    * The collection's nodes that have a parent.   *
    * @param criterion — an optional query object or predicate applied to
    *   the result, exactly as `filter()` takes it
    * @returns the parented nodes
    */
-  nonorphans(criterion?: FilterLike): GpuCollection;
+  nonorphans(criterion?: FilterLike): Collection;
   private _byParentedness;
   /**
    * Ancestors common to every element, closest first (an edge in the
@@ -5920,7 +5920,7 @@ declare class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the shared ancestors, closest first
    */
-  commonAncestors(criterion?: FilterLike): GpuCollection;
+  commonAncestors(criterion?: FilterLike): Collection;
   /**
    * Whether the first element is a node with at least one child.
    *
@@ -5956,14 +5956,14 @@ declare class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the source nodes
    */
-  roots(criterion?: FilterLike): GpuCollection;
+  roots(criterion?: FilterLike): Collection;
   /**
    * Collection nodes with no non-loop outgoing edge.   *
    * @param criterion — an optional query object or predicate applied to
    *   the result, exactly as `filter()` takes it
    * @returns the sink nodes
    */
-  leaves(criterion?: FilterLike): GpuCollection;
+  leaves(criterion?: FilterLike): Collection;
   private _dagExtremity;
   /**
    * Everything reachable by following outgoing edges, transitively — the
@@ -5974,7 +5974,7 @@ declare class GpuCollection {
    *   the result
    * @returns the reachable edges and nodes
    */
-  successors(criterion?: FilterLike): GpuCollection;
+  successors(criterion?: FilterLike): Collection;
   /**
    * Everything that reaches these nodes by following incoming edges,
    * transitively.
@@ -5983,7 +5983,7 @@ declare class GpuCollection {
    *   the result
    * @returns the edges and nodes of the backward closure
    */
-  predecessors(criterion?: FilterLike): GpuCollection;
+  predecessors(criterion?: FilterLike): Collection;
   private _dagAllHops;
   /**
    * The edges connecting this collection's nodes with `others`, in
@@ -5993,7 +5993,7 @@ declare class GpuCollection {
    *   selector string)
    * @returns the connecting edges
    */
-  edgesWith(others: GpuCollection): GpuCollection;
+  edgesWith(others: Collection): Collection;
   /**
    * The edges running *from* this collection's nodes *to* `others` —
    * `edgesWith()` restricted by direction.
@@ -6001,7 +6001,7 @@ declare class GpuCollection {
    * @param others — the target-side nodes
    * @returns the directed connecting edges
    */
-  edgesTo(others: GpuCollection): GpuCollection;
+  edgesTo(others: Collection): Collection;
   private _edgesWith;
   /**
    * The edges sharing endpoints with these edges, in either direction —
@@ -6012,7 +6012,7 @@ declare class GpuCollection {
    *   the result
    * @returns the parallel edges
    */
-  parallelEdges(criterion?: FilterLike): GpuCollection;
+  parallelEdges(criterion?: FilterLike): Collection;
   /**
    * The parallel edges pointing the same way — same source and same
    * target — including each edge itself.
@@ -6021,7 +6021,7 @@ declare class GpuCollection {
    *   the result
    * @returns the codirected edges
    */
-  codirectedEdges(criterion?: FilterLike): GpuCollection;
+  codirectedEdges(criterion?: FilterLike): Collection;
   private _parallelEdges;
   /**
    * Connected components within this collection (undirected), each as a
@@ -6031,7 +6031,7 @@ declare class GpuCollection {
    * @param root — restricts the seed nodes; omit to seed from every node
    * @returns one collection per component
    */
-  components(root?: GpuCollection | null): GpuCollection[];
+  components(root?: Collection | null): Collection[];
   componentsOf: this['components'];
   /**
    * The whole-graph connected component containing the first element.
@@ -6040,7 +6040,7 @@ declare class GpuCollection {
    *   over the whole graph rather than within this collection; an empty
    *   collection when this one is empty
    */
-  component(): GpuCollection;
+  component(): Collection;
   private _nodeSlotSet;
   /**
    * The bounding box this collection would have if its nodes sat at the
@@ -6049,7 +6049,7 @@ declare class GpuCollection {
    * span their endpoints' hypothetical (or, outside the collection,
    * current) positions.
    */
-  boundingBoxAt(fn: Position | ((node: GpuCollection, i: number) => Position)): {
+  boundingBoxAt(fn: Position | ((node: Collection, i: number) => Position)): {
     x1: number;
     y1: number;
     x2: number;
@@ -6077,7 +6077,7 @@ declare class GpuCollection {
    * With `animate: true` the viewport animates concurrently (a fit targets
    * the bounding box at the *final* positions, as v3 does).
    */
-  layoutPositions(layout: object, options: GpuLayoutBaseOptions, fn: (node: GpuCollection, i: number) => Position): this;
+  layoutPositions(layout: object, options: LayoutBaseOptions, fn: (node: Collection, i: number) => Position): this;
   /**
    * A layout scoped to this collection.
    *
@@ -6085,7 +6085,7 @@ declare class GpuCollection {
    *   to this collection
    * @returns the layout instance; nothing runs until `run()`
    */
-  layout(options: GpuLayoutOptions): ReturnType<GpuCore['layout']>;
+  layout(options: LayoutOptions): ReturnType<Core['layout']>;
   makeLayout: this['layout'];
   createLayout: this['layout'];
   /**
@@ -6146,7 +6146,7 @@ declare class GpuCollection {
    * @param weight — `( edge ) => number`; defaults to unit weights
    * @returns the spanning forest's nodes and edges
    */
-  kruskal(weight?: WeightFn): GpuCollection;
+  kruskal(weight?: WeightFn): Collection;
   /**
    * Tarjan's strongly connected components.  Implemented iteratively, so
    * deep graphs cannot overflow the JS stack.
@@ -6241,7 +6241,7 @@ declare class GpuCollection {
    *   sensitivityThreshold }`, with `attributes` as plain functions
    * @returns one collection per cluster
    */
-  kMeans(options?: KClusteringOptions): GpuCollection[];
+  kMeans(options?: KClusteringOptions): Collection[];
   /**
    * k-medoids clustering — like k-means, but cluster centres are actual
    * elements, which makes it robust to outliers.
@@ -6249,7 +6249,7 @@ declare class GpuCollection {
    * @param options — as `kMeans`
    * @returns one collection per cluster
    */
-  kMedoids(options?: KClusteringOptions): GpuCollection[];
+  kMedoids(options?: KClusteringOptions): Collection[];
   /**
    * Fuzzy c-means clustering: each element gets a degree of membership
    * in every cluster rather than one hard assignment.
@@ -6266,7 +6266,7 @@ declare class GpuCollection {
    *   dendrogramDepth }`
    * @returns one collection per cluster
    */
-  hierarchicalClustering(options?: HierarchicalClusteringOptions): GpuCollection[];
+  hierarchicalClustering(options?: HierarchicalClusteringOptions): Collection[];
   hca: this['hierarchicalClustering'];
   /**
    * Markov clustering (MCL) — flow simulation over the graph, so unlike
@@ -6276,7 +6276,7 @@ declare class GpuCollection {
    *   multFactor, maxIterations }`
    * @returns one collection per cluster
    */
-  markovClustering(options?: MarkovClusteringOptions): GpuCollection[];
+  markovClustering(options?: MarkovClusteringOptions): Collection[];
   mcl: this['markovClustering'];
   /**
    * Affinity propagation, which picks exemplars by message passing and
@@ -6286,7 +6286,7 @@ declare class GpuCollection {
    *   minIterations, maxIterations }`
    * @returns one collection per cluster
    */
-  affinityPropagation(options?: AffinityPropagationOptions): GpuCollection[];
+  affinityPropagation(options?: AffinityPropagationOptions): Collection[];
   ap: this['affinityPropagation'];
   /**
    * The **first** element's total degree, in + out, answered in O(1) off
@@ -6382,7 +6382,7 @@ declare class GpuCollection {
    * A name v4 never emits registers cleanly and never fires: that is v3's
    * `vmouse*` aliases and its raw mouse/touch re-emits — and, since round
    * 41.2, any name containing a dot: there is no namespace machinery, so
-   * `'data.ns'` is a literal type v4 never raises.  See `GpuCore#on`.
+   * `'data.ns'` is a literal type v4 never raises.  See `Core#on`.
    *
    * @param events — one or more space-separated event names
    * @param callback — the handler
@@ -6431,15 +6431,15 @@ declare class GpuCollection {
    * @param events — one or more space-separated event names
    * @returns a promise for the event object
    */
-  promiseOn(events: string): Promise<GpuEvent>;
+  promiseOn(events: string): Promise<Event>;
   pon: this['promiseOn'];
 }
 //#endregion
 //#region src/events.d.mts
 /** A delegation predicate over an element event target. */
-type ElePredicate = (ele: GpuCollection) => boolean;
+type ElePredicate = (ele: Collection) => boolean;
 /** What a listener is restricted to: a single element ref, or a predicate. */
-interface GpuQualifier {
+interface Qualifier {
   key?: string;
   ref?: Ref;
   fn?: ElePredicate;
@@ -6450,7 +6450,7 @@ interface GpuQualifier {
  * promise() (resolves at this run's layoutstop). */
 declare class CustomLayout {
   /** the resolved options this run was created with */
-  options: GpuCustomLayoutOptions;
+  options: CustomLayoutOptions;
   private cy;
   private impl;
   private donePromise;
@@ -6463,7 +6463,7 @@ declare class CustomLayout {
    *   arguments or a plain object, implementing `{ run( ctx ), stop?() }`
    * @throws if `impl` is missing, or does not implement `run( ctx )`
    */
-  constructor(cy: GpuCore, options: GpuCustomLayoutOptions);
+  constructor(cy: Core, options: CustomLayoutOptions);
   /**
    * Start the layout.  Emits `layoutstart` on the core, calls
    * `impl.run( ctx )` and awaits it if it returns a promise (the shape a
@@ -6497,7 +6497,7 @@ declare class CustomLayout {
  */
 declare class GridLayout {
   /** the resolved options this layout was created with */
-  options: GpuGridLayoutOptions;
+  options: GridLayoutOptions;
   private cy;
   /**
    * Reached through `cy.layout( { name: 'grid' } )` /
@@ -6508,7 +6508,7 @@ declare class GridLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor(cy: GpuCore, options: GpuGridLayoutOptions);
+  constructor(cy: Core, options: GridLayoutOptions);
   /**
    * Run the layout: emits `layoutstart`, writes the positions, then
    * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
@@ -6536,7 +6536,7 @@ declare class GridLayout {
  */
 declare class PresetLayout {
   /** the resolved options this layout was created with */
-  options: GpuPresetLayoutOptions;
+  options: PresetLayoutOptions;
   private cy;
   /**
    * Reached through `cy.layout( { name: 'preset' } )` /
@@ -6547,7 +6547,7 @@ declare class PresetLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor(cy: GpuCore, options: GpuPresetLayoutOptions);
+  constructor(cy: Core, options: PresetLayoutOptions);
   /**
    * Run the layout: emits `layoutstart`, writes the positions, then
    * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
@@ -6567,7 +6567,7 @@ declare class PresetLayout {
  */
 declare class CircleLayout {
   /** the resolved options this layout was created with */
-  options: GpuCircleLayoutOptions;
+  options: CircleLayoutOptions;
   private cy;
   /**
    * Reached through `cy.layout( { name: 'circle' } )` /
@@ -6578,7 +6578,7 @@ declare class CircleLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor(cy: GpuCore, options: GpuCircleLayoutOptions);
+  constructor(cy: Core, options: CircleLayoutOptions);
   /**
    * Run the layout: emits `layoutstart`, writes the positions, then
    * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
@@ -6598,7 +6598,7 @@ declare class CircleLayout {
  */
 declare class ConcentricLayout {
   /** the resolved options this layout was created with */
-  options: GpuConcentricLayoutOptions;
+  options: ConcentricLayoutOptions;
   private cy;
   /**
    * Reached through `cy.layout( { name: 'concentric' } )` /
@@ -6609,7 +6609,7 @@ declare class ConcentricLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor(cy: GpuCore, options: GpuConcentricLayoutOptions);
+  constructor(cy: Core, options: ConcentricLayoutOptions);
   /**
    * Run the layout: emits `layoutstart`, writes the positions, then
    * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
@@ -6629,7 +6629,7 @@ declare class ConcentricLayout {
  */
 declare class BreadthFirstLayout {
   /** the resolved options this layout was created with */
-  options: GpuBreadthFirstLayoutOptions;
+  options: BreadthFirstLayoutOptions;
   private cy;
   /**
    * Reached through `cy.layout( { name: 'breadthfirst' } )` /
@@ -6640,7 +6640,7 @@ declare class BreadthFirstLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor(cy: GpuCore, options: GpuBreadthFirstLayoutOptions);
+  constructor(cy: Core, options: BreadthFirstLayoutOptions);
   /**
    * Run the layout: emits `layoutstart`, writes the positions, then
    * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
@@ -6660,7 +6660,7 @@ declare class BreadthFirstLayout {
  */
 declare class RandomLayout {
   /** the resolved options this layout was created with */
-  options: GpuRandomLayoutOptions;
+  options: RandomLayoutOptions;
   private cy;
   /**
    * Reached through `cy.layout( { name: 'random' } )` /
@@ -6671,7 +6671,7 @@ declare class RandomLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor(cy: GpuCore, options: GpuRandomLayoutOptions);
+  constructor(cy: Core, options: RandomLayoutOptions);
   /**
    * Run the layout: emits `layoutstart`, writes the positions, then
    * emits `layoutready`/`layoutstop`.  Under `animate: true` the nodes
@@ -6684,33 +6684,33 @@ declare class RandomLayout {
 }
 //#endregion
 //#region src/core.d.mts
-type GpuLayout = CustomLayout | GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
+type Layout = CustomLayout | GridLayout | PresetLayout | CircleLayout | ConcentricLayout | BreadthFirstLayout | RandomLayout;
 /** What the core needs from the renderer (wired by the factory), plus the
  * documented public surface reachable via `cy.renderer()` (e.g. `stats()`). */
 interface RendererLike {
   destroy(): void;
-  pick(x: number, y: number): Promise<GpuCollection | null>;
+  pick(x: number, y: number): Promise<Collection | null>;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
   /** true while a GPU force-layout run owns the position column (18.3) */
   forceActive(): boolean;
-  exportImage(options: GpuExportOptions): Promise<{
+  exportImage(options: ExportOptions): Promise<{
     data: Uint8ClampedArray<ArrayBuffer>;
     width: number;
     height: number;
   }>;
 }
 /**
- * The GpuCore facade: the familiar synchronous core API over the columnar
+ * The Core facade: the familiar synchronous core API over the columnar
  * store (#3486).  See src/README.md for the maintained API scope —
  * viewport, events, graph manipulation, compounds, style/mappers/
  * transitions, layouts, animation, algorithms, image export,
  * mount/unmount.
  */
-declare class GpuCore {
+declare class Core {
   _store: GraphStore;
-  _emitter: GpuEmitter<GpuCore, GpuQualifier>;
+  _emitter: Emitter<Core, Qualifier>;
   _styleEngine: StyleEngine;
   _renderer: RendererLike | null;
   /** the pointer handler paired with the renderer (torn down on unmount) */
@@ -6722,13 +6722,13 @@ declare class GpuCore {
   private _recoveringDevice;
   _viewport: Viewport;
   /** resolves once the render pipeline is usable (immediately when headless) */
-  ready: Promise<GpuCore>;
+  ready: Promise<Core>;
   /** true once the render pipeline is usable (immediately when headless) */
   _readyResolved: boolean;
   /** interned singleton handles, dense by slot (slots are dense, so an array beats a Map) */
   _pool: {
-    nodes: (GpuCollection | undefined)[];
-    edges: (GpuCollection | undefined)[];
+    nodes: (Collection | undefined)[];
+    edges: (Collection | undefined)[];
   };
   private _container;
   private _options;
@@ -6775,18 +6775,18 @@ declare class GpuCore {
    * on a name it does not know — an unknown sheet key, style property or query
    * key all throw — because strictness here resolves at the *type* layer:
    * TypeScript's excess-property check rejects `{ motionBlur: true }` and any
-   * other typo against `CytoscapeGpuOptions`, and v4 does not replicate at
+   * other typo against `CytoscapeOptions`, and v4 does not replicate at
    * runtime what the build already checks.  The boundary is TypeScript's:
    * excess-property checking applies to object literals, so options assembled
    * into a variable first are widened and pass.  Pinned by the compile-only
    * consumer test in `typescript/tests/gpu.test-d.ts`.
    *
-   * @param options — the instance options (see `CytoscapeGpuOptions`);
+   * @param options — the instance options (see `CytoscapeOptions`);
    *   viewport, interaction-gating and interaction-tuning options are
    *   applied here, and `style` compiles immediately.  Unrecognized keys are
    *   kept as given and returned by `options()`, never validated.
    */
-  constructor(options?: CytoscapeGpuOptions);
+  constructor(options?: CytoscapeOptions);
   /**
    * Get the style engine, or set the stylesheet and return it.
    *
@@ -6806,7 +6806,7 @@ declare class GpuCore {
    * @throws if the sheet references an unknown property or an invalid
    *   value
    */
-  style(sheet?: GpuStylesheet): StyleEngine;
+  style(sheet?: Stylesheet): StyleEngine;
   /**
    * True while inside a startBatch()/endBatch() pair.
    *
@@ -6835,7 +6835,7 @@ declare class GpuCore {
    * reclaimed by the slot free-list at `remove()`, and the slot-stable
    * structures self-compact on their own waste thresholds (round 11).
    *
-   * @see GpuCore#compact — the documented form, and where the semantics live
+   * @see Core#compact — the documented form, and where the semantics live
    */
   gc: this['compact'];
   /**
@@ -6916,9 +6916,9 @@ declare class GpuCore {
    *   `fit`, `padding`, …)
    * @returns the layout instance, unstarted
    * @throws if neither a known `name` nor an `impl` is given
-   * @see GpuCollection#layout to lay out a subset
+   * @see Collection#layout to lay out a subset
    */
-  layout(options: GpuLayoutOptions): GpuLayout;
+  layout(options: LayoutOptions): Layout;
   makeLayout: this['layout'];
   createLayout: this['layout'];
   /**
@@ -6944,7 +6944,7 @@ declare class GpuCore {
    * @param input — elements in definition, columnar or wire form
    * @returns a collection of the added elements
    */
-  add(input: GpuElementsInput): GpuCollection;
+  add(input: ElementsInput): Collection;
   /**
    * Bulk load path (the factory's `options.elements`): adds without
    * materializing per-element handles or a return collection — on a
@@ -6952,7 +6952,7 @@ declare class GpuCore {
    * and the caller uses none of it.  `add` events still fire per element
    * when anyone is listening (never the case at construction time).
    */
-  _bulkAdd(input: GpuElementsInput): void;
+  _bulkAdd(input: ElementsInput): void;
   /** Columnar ingest: store-level bulk adds + one bulk style pass. */
   private _addColumnar;
   private _columnarRefs;
@@ -6966,14 +6966,14 @@ declare class GpuCore {
    * @param eles — the elements to remove
    * @returns the removed elements
    */
-  remove(eles: GpuCollection): GpuCollection;
+  remove(eles: Collection): Collection;
   /**
    * An empty collection bound to this core — the accumulator for
    * `union`/`add` chains.
    *
    * @returns a collection of zero elements
    */
-  collection(): GpuCollection;
+  collection(): Collection;
   /**
    * Look up one element by id through the O(1) id index.
    *
@@ -6981,7 +6981,7 @@ declare class GpuCore {
    * @returns a collection of one element, or an empty collection when no
    *   element has that id
    */
-  getElementById(id: string): GpuCollection;
+  getElementById(id: string): Collection;
   /**
    * All elements, optionally filtered — nodes (in insertion order) then
    * edges.
@@ -7003,7 +7003,7 @@ declare class GpuCore {
    *   omit for everything
    * @returns the matching elements
    */
-  elements(query?: GpuQuery | EleFilterFn): GpuCollection;
+  elements(query?: Query | EleFilterFn): Collection;
   /**
    * The graph's nodes, optionally filtered.  Same query forms as
    * `elements()`, restricted to the node group — and, with no query,
@@ -7012,7 +7012,7 @@ declare class GpuCore {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching nodes
    */
-  nodes(query?: GpuQuery | EleFilterFn): GpuCollection;
+  nodes(query?: Query | EleFilterFn): Collection;
   /**
    * The graph's edges, optionally filtered.  Same query forms as
    * `elements()`, restricted to the edge group — and, with no query,
@@ -7021,7 +7021,7 @@ declare class GpuCore {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching edges
    */
-  edges(query?: GpuQuery | EleFilterFn): GpuCollection;
+  edges(query?: Query | EleFilterFn): Collection;
   /**
    * Filter the whole graph.  Identical to `elements( query )`, kept for
    * symmetry with `eles.filter()`.
@@ -7029,7 +7029,7 @@ declare class GpuCore {
    * @param query — a query object or an `( ele ) => boolean` predicate
    * @returns the matching elements
    */
-  filter(query: GpuQuery | EleFilterFn): GpuCollection;
+  filter(query: Query | EleFilterFn): Collection;
   /**
    * The unfiltered whole-graph collections (`elements()`, `nodes()`,
    * `edges()` with no query), memoized against the store's structure
@@ -7082,7 +7082,7 @@ declare class GpuCore {
    * @param y2 — that corner's model y
    * @returns the contained elements
    */
-  elementsInBox(x1: number, y1: number, x2: number, y2: number): GpuCollection;
+  elementsInBox(x1: number, y1: number, x2: number, y2: number): Collection;
   /**
    * The *gesture's* box query: `elementsInBox` with this instance's
    * `boxSelectionMode` applied (round 39.1).  Internal because the mode
@@ -7090,7 +7090,7 @@ declare class GpuCore {
    * both pointer paths (mouse/pen release and the three-finger touch box)
    * come through here so they cannot drift apart.
    */
-  _elementsInGestureBox(x1: number, y1: number, x2: number, y2: number): GpuCollection;
+  _elementsInGestureBox(x1: number, y1: number, x2: number, y2: number): Collection;
   /** Collection of the live slots matching per-group flag tests (null matches nothing). */
   private _scanCollection;
   /**
@@ -7124,7 +7124,7 @@ declare class GpuCore {
    *   given, otherwise the handler itself
    * @param callback — the handler, when delegating
    * @returns this core, for chaining
-   * @see GpuCore#off — removing a delegated handler takes the same
+   * @see Core#off — removing a delegated handler takes the same
    *   `( events, predicate, handler )` triple, since predicates compare
    *   by function identity
    */
@@ -7214,7 +7214,7 @@ declare class GpuCore {
    *   event object
    * @returns this core, for chaining
    */
-  emit(events: string | GpuEventProps, extraParams?: unknown[]): this;
+  emit(events: string | EventProps, extraParams?: unknown[]): this;
   trigger: this['emit'];
   /**
    * Resolve once the next matching event fires — the promise form of
@@ -7224,7 +7224,7 @@ declare class GpuCore {
    * @param predicate — an optional delegation predicate over the target
    * @returns a promise for the event object
    */
-  promiseOn(events: string, predicate?: ElePredicate): Promise<GpuEvent>;
+  promiseOn(events: string, predicate?: ElePredicate): Promise<Event>;
   pon: this['promiseOn'];
   /**
    * Get the zoom level, or set it.  Setting is a no-op while
@@ -7262,7 +7262,7 @@ declare class GpuCore {
    * @param padding — rendered-space padding around the box
    * @returns this core, for chaining
    */
-  fit(eles?: GpuCollection, padding?: number): this;
+  fit(eles?: Collection, padding?: number): this;
   /**
    * Pan so the given elements are centred, leaving the zoom alone.
    * Bounds include labels, as in `fit()`.
@@ -7270,7 +7270,7 @@ declare class GpuCore {
    * @param eles — the elements to centre on; omit for the whole graph
    * @returns this core, for chaining
    */
-  center(eles?: GpuCollection): this;
+  center(eles?: Collection): this;
   centre: this['center'];
   /**
    * Animate the viewport (`pan`/`zoom`) over `duration` ms.  Element
@@ -7324,7 +7324,7 @@ declare class GpuCore {
    * applied to the viewport box.
    *
    * @returns the visible extent in model coordinates
-   * @see GpuCore#renderedExtent for the same box in rendered coordinates
+   * @see Core#renderedExtent for the same box in rendered coordinates
    */
   extent(): ReturnType<Viewport['extent']>;
   /**
@@ -7333,7 +7333,7 @@ declare class GpuCore {
    * @returns the container's box in rendered px, anchored at the origin —
    *   the rendered-space counterpart of `extent()`, which is the same box
    *   projected into model coordinates
-   * @see GpuCore#extent for the model-coordinate form
+   * @see Core#extent for the model-coordinate form
    */
   renderedExtent(): ReturnType<Viewport['renderedExtent']>;
   /** Rendered dimensions as { width, height }. */
@@ -7387,7 +7387,7 @@ declare class GpuCore {
    * @param padding — rendered px of margin to leave on every side
    * @returns the viewport, or null when there is nothing to fit
    */
-  getFitViewport(eles?: GpuCollection, padding?: number): {
+  getFitViewport(eles?: Collection, padding?: number): {
     zoom: number;
     pan: Position;
   } | null;
@@ -7398,7 +7398,7 @@ declare class GpuCore {
    * @param zoom — the zoom to center at; defaults to the current one
    * @returns the pan, or null when there is nothing to center
    */
-  getCenterPan(eles?: GpuCollection, zoom?: number): Position | null;
+  getCenterPan(eles?: Collection, zoom?: number): Position | null;
   /**
    * Async GPU pick at a rendered (CSS px) position; resolves with the
    * element under the point or null (always null when headless).
@@ -7407,7 +7407,7 @@ declare class GpuCore {
    * @param y — rendered (CSS px) y
    * @returns the element under the point, or null
    */
-  pick(x: number, y: number): Promise<GpuCollection | null>;
+  pick(x: number, y: number): Promise<Collection | null>;
   /**
    * The renderer, or null when headless.  Its `stats()` carry the frame
    * timings, cache hit rates and pass counters — note that `cpuFrameMs`
@@ -7450,7 +7450,7 @@ declare class GpuCore {
    * @param options — the v3 export options named above
    * @returns the encoded image in the requested output form
    */
-  png(options?: GpuExportOptions): Promise<string | Blob>;
+  png(options?: ExportOptions): Promise<string | Blob>;
   /**
    * Export as JPEG: as {@link png}, plus `quality` (0..1) and a white
    * default `bg` (JPEG has no alpha channel).
@@ -7458,7 +7458,7 @@ declare class GpuCore {
    * @param options — as {@link png}, plus `quality`
    * @returns the encoded image in the requested output form
    */
-  jpg(options?: GpuExportOptions): Promise<string | Blob>;
+  jpg(options?: ExportOptions): Promise<string | Blob>;
   jpeg: this['jpg'];
   private _exportImage;
   /**
@@ -7713,7 +7713,7 @@ declare class GpuCore {
    *
    * @returns every element in the graph
    */
-  mutableElements(): GpuCollection;
+  mutableElements(): Collection;
   /**
    * The `window` this instance renders into, or null when there is no DOM
    * (Node).  v3 parity, for extensions that need the hosting realm.
@@ -7728,7 +7728,7 @@ declare class GpuCore {
    *   copy and not a defaults-resolved view, so an option the caller
    *   omitted reads back absent rather than as the default in force
    */
-  options(): CytoscapeGpuOptions;
+  options(): CytoscapeOptions;
   /**
    * Export the live graph as the binary wire format (the buffer
    * `options.elements`/`add()` accept directly): the columnar counterpart
@@ -7829,16 +7829,16 @@ declare class GpuCore {
    */
   destroyed(): boolean;
   /** Interned singleton handle for a live slot. */
-  _ele(group: GroupName, slot: number): GpuCollection;
+  _ele(group: GroupName, slot: number): Collection;
   /** Handle for a ref that may be stale (prefers the interned pre-removal handle). */
-  _eleFromRef(ref: Ref): GpuCollection;
+  _eleFromRef(ref: Ref): Collection;
   /** True when writing any of these data() keys can change the group's computed style. */
   _stylesDependOnData(group: GroupName, keys: string[]): boolean;
   /** Refresh style channels computed from data() (mapped channels + labels), deferred while batching. */
   _refreshMappedStyles(group: GroupName, slots: number[], keys: string[]): void;
   /** First style apply for freshly-added slots, deferred while batching. */
   private _applyStyle;
-  _emitOnEle(type: string, ele: GpuCollection, extraParams?: unknown[], props?: Partial<GpuEventProps>): void;
+  _emitOnEle(type: string, ele: Collection, extraParams?: unknown[], props?: Partial<EventProps>): void;
   _hasListeners(type: string): boolean;
   _emitViewportEvents(types: string[]): void;
   private _boundsOf;
@@ -7861,7 +7861,7 @@ declare class GpuCore {
  * @throws if an edge names a source or target that is not a node in the
  *   same payload — columnar payloads must be self-contained
  */
-declare const toColumnarElements: (defs: GpuElementsDefinition | GpuElementDefinition) => GpuColumnarElements;
+declare const toColumnarElements: (defs: ElementsDefinition | ElementDefinition) => ColumnarElements;
 //#endregion
 //#region src/wire.d.mts
 /**
@@ -7878,7 +7878,7 @@ declare const toColumnarElements: (defs: GpuElementsDefinition | GpuElementDefin
  * @throws if the platform is big-endian, or if a definition-form payload
  *   names an edge endpoint that is not a node in the same payload
  */
-declare const serializeElements: (elements: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements) => ArrayBuffer;
+declare const serializeElements: (elements: ElementsDefinition | ElementDefinition | ColumnarElements) => ArrayBuffer;
 /**
  * Deserialize a `serializeElements` buffer (or a view over one) back into
  * the columnar elements form.  Numeric columns are zero-copy views into
@@ -7890,11 +7890,11 @@ declare const serializeElements: (elements: GpuElementsDefinition | GpuElementDe
  *   and writing into either is visible through the other.  Graph-level
  *   `data` is the exception in two ways: it is decoded from JSON rather
  *   than viewed, and `cy.add()` deliberately ignores it (see
- *   `GpuColumnarElements.data`)
+ *   `ColumnarElements.data`)
  * @throws if the platform is big-endian, or the buffer is too short,
  *   truncated or of an unsupported format version
  */
-declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => GpuColumnarElements;
+declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => ColumnarElements;
 //#endregion
 //#region src/index.d.mts
 /**
@@ -7916,7 +7916,7 @@ declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => Gpu
  * design sitting): unlike an unknown sheet key, style property or query key,
  * a misspelled option does not throw, because strictness here resolves at the
  * type layer — TypeScript's excess-property check rejects `{ motionBlur:
- * true }` against {@link CytoscapeGpuOptions}, and v4 does not replicate at
+ * true }` against {@link CytoscapeOptions}, and v4 does not replicate at
  * runtime what the build already checks.
  *
  * @param options — the instance options; every field is optional, and an
@@ -7925,12 +7925,12 @@ declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => Gpu
  *   on the device, and a rendered instance additionally resolves `cy.ready`
  * @throws when `container` is given and `navigator.gpu` is missing
  */
-declare function cytoscape(options?: CytoscapeGpuOptions): GpuCore;
+declare function cytoscape(options?: CytoscapeOptions): Core;
 declare namespace cytoscape {
   export { toColumnarElements };
   export { serializeElements };
   export { deserializeElements };
 }
 //#endregion
-export { type BoxSelectionMode, type CytoscapeGpuOptions, type EventHandler, type GpuBoundingBoxInput, type GpuBreadthFirstLayoutOptions, type GpuCaseClause, type GpuCaseMapper, type GpuCircleLayoutOptions, type GpuCollection, type GpuColumnarEdges, type GpuColumnarElements, type GpuColumnarNodes, type GpuConcentricLayoutOptions, type GpuCondition, type GpuCore, type GpuCustomLayoutOptions, type GpuDataColumn, type GpuDictColumn, type GpuElementData, type GpuElementDefinition, type GpuElementsDefinition, type GpuElementsInput, type GpuEvent, type GpuEventProps, type GpuEventTarget, type GpuExportOptions, type GpuForceLayoutOptions, type GpuGridLayoutOptions, type GpuLayoutBaseOptions, type GpuLayoutOptions, type GpuMapper, type GpuMapperSpec, type GpuPackedIds, type GpuPresetLayoutOptions, type GpuRandomLayoutOptions, type GpuRendererOptions, type GpuStylePropValue, type GpuStyleProps, type GpuStylesheet, type NO_PARENT, type Position, type RendererStats, cytoscape as default };
+export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

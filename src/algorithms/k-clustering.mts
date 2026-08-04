@@ -2,12 +2,12 @@
 // handle-level port of v3's k-clustering (the algorithms are feature-space,
 // not adjacency-walks, so handles are the natural representation).
 
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 
 /** A node attribute accessor used as a clustering feature. */
-export type KAttributeFn = ( node: GpuCollection ) => number;
+export type KAttributeFn = ( node: Collection ) => number;
 
 export type FeatureCentroid = number[];
 
@@ -19,11 +19,11 @@ export interface KClusteringOptions {
   maxIterations?: number;
   attributes?: KAttributeFn[];
   testMode?: boolean;
-  testCentroids?: number | FeatureCentroid[] | GpuCollection[] | null;
+  testCentroids?: number | FeatureCentroid[] | Collection[] | null;
 }
 
 export interface FuzzyCMeansResult {
-  clusters: GpuCollection[];
+  clusters: Collection[];
   degreeOfMembership: number[][];
 }
 
@@ -37,7 +37,7 @@ interface ResolvedKOptions {
   maxIterations: number;
   attributes: KAttributeFn[];
   testMode: boolean;
-  testCentroids: number | FeatureCentroid[] | GpuCollection[] | null;
+  testCentroids: number | FeatureCentroid[] | Collection[] | null;
 }
 
 const setOptions = ( options: KClusteringOptions = {} ): ResolvedKOptions => ( {
@@ -51,23 +51,23 @@ const setOptions = ( options: KClusteringOptions = {} ): ResolvedKOptions => ( {
   testCentroids: options.testCentroids ?? null
 } );
 
-const spawnHandles = ( coll: GpuCollection, eles: GpuCollection[] ): GpuCollection =>
+const spawnHandles = ( coll: Collection, eles: Collection[] ): Collection =>
   coll._spawn( eles.map( ele => ele._refs[ 0 ] ) );
 
 const getDist = (
-  type: DistanceMetric, node: GpuCollection, centroid: FeatureCentroid | GpuCollection,
+  type: DistanceMetric, node: Collection, centroid: FeatureCentroid | Collection,
   attributes: KAttributeFn[], mode: KMode
 ): number => {
   const noNodeP = mode !== 'kMedoids';
   const getP = noNodeP
     ? ( i: number ) => ( centroid as FeatureCentroid )[ i ]
-    : ( i: number ) => attributes[ i ]( centroid as GpuCollection );
+    : ( i: number ) => attributes[ i ]( centroid as Collection );
   const getQ = ( i: number ) => attributes[ i ]( node );
 
   return clusteringDistance( type, attributes.length, getP, getQ, centroid, node );
 };
 
-const randomCentroids = ( nodes: GpuCollection, k: number, attributes: KAttributeFn[] ): FeatureCentroid[] => {
+const randomCentroids = ( nodes: Collection, k: number, attributes: KAttributeFn[] ): FeatureCentroid[] => {
   const ndim = attributes.length;
   const min = new Array<number>( ndim );
   const max = new Array<number>( ndim );
@@ -92,7 +92,7 @@ const randomCentroids = ( nodes: GpuCollection, k: number, attributes: KAttribut
 };
 
 const classify = (
-  node: GpuCollection, centroids: FeatureCentroid[] | GpuCollection[],
+  node: Collection, centroids: FeatureCentroid[] | Collection[],
   distance: DistanceMetric, attributes: KAttributeFn[], type: KMode
 ): number => {
   let min = Infinity;
@@ -110,8 +110,8 @@ const classify = (
   return index;
 };
 
-const buildCluster = ( centroid: number, nodes: GpuCollection, assignment: Record<string, number> ): GpuCollection[] => {
-  const cluster: GpuCollection[] = [];
+const buildCluster = ( centroid: number, nodes: Collection, assignment: Record<string, number> ): Collection[] => {
+  const cluster: Collection[] = [];
 
   for( let n = 0; n < nodes.length; n++ ){
     if( assignment[ nodes[ n ].id() as string ] === centroid ){
@@ -135,7 +135,7 @@ const haveMatricesConverged = ( v1: number[][], v2: number[][], sensitivityThres
   return true;
 };
 
-const seenBefore = ( node: GpuCollection, medoids: GpuCollection[], n: number ): boolean => {
+const seenBefore = ( node: Collection, medoids: Collection[], n: number ): boolean => {
   for( let i = 0; i < n; i++ ){
     if( node === medoids[ i ] ){ return true; } // handles are interned singletons
   }
@@ -143,8 +143,8 @@ const seenBefore = ( node: GpuCollection, medoids: GpuCollection[], n: number ):
   return false;
 };
 
-const randomMedoids = ( nodes: GpuCollection, k: number ): GpuCollection[] => {
-  const medoids: GpuCollection[] = new Array( k );
+const randomMedoids = ( nodes: Collection, k: number ): Collection[] => {
+  const medoids: Collection[] = new Array( k );
 
   if( nodes.length < 50 ){
     // small sets: medoid conflicts are likely, so re-roll duplicates
@@ -166,7 +166,7 @@ const randomMedoids = ( nodes: GpuCollection, k: number ): GpuCollection[] => {
   return medoids;
 };
 
-const findCost = ( potentialNewMedoid: GpuCollection, cluster: GpuCollection[], attributes: KAttributeFn[] ): number => {
+const findCost = ( potentialNewMedoid: Collection, cluster: Collection[], attributes: KAttributeFn[] ): number => {
   let cost = 0;
 
   for( let n = 0; n < cluster.length; n++ ){
@@ -191,11 +191,11 @@ const findCost = ( potentialNewMedoid: GpuCollection, cluster: GpuCollection[], 
  * @returns `k` collections; entries stay empty (`undefined`) for centroids
  *   that attracted no node, as in v3
  */
-export const kMeans = ( coll: GpuCollection, options?: KClusteringOptions ): GpuCollection[] => {
+export const kMeans = ( coll: Collection, options?: KClusteringOptions ): Collection[] => {
   const nodes = coll.nodes();
   const opts = setOptions( options );
 
-  const clusters: GpuCollection[] = new Array( opts.k );
+  const clusters: Collection[] = new Array( opts.k );
   const assignment: Record<string, number> = {};
   let centroids: FeatureCentroid[];
 
@@ -261,7 +261,7 @@ export const kMeans = ( coll: GpuCollection, options?: KClusteringOptions ): Gpu
  * @returns `k` collections, empty entries left `undefined` as in v3
  * @throws if `k` exceeds the node count — distinct medoids are required
  */
-export const kMedoids = ( coll: GpuCollection, options?: KClusteringOptions ): GpuCollection[] => {
+export const kMedoids = ( coll: Collection, options?: KClusteringOptions ): Collection[] => {
   const nodes = coll.nodes();
   const opts = setOptions( options );
 
@@ -270,13 +270,13 @@ export const kMedoids = ( coll: GpuCollection, options?: KClusteringOptions ): G
     throw new Error( `kMedoids: k (${ opts.k }) cannot exceed the number of nodes (${ nodes.length }).` );
   }
 
-  const clusters: GpuCollection[] = new Array( opts.k );
+  const clusters: Collection[] = new Array( opts.k );
   const assignment: Record<string, number> = {};
   const minCosts: number[] = new Array( opts.k );
-  let medoids: GpuCollection[];
+  let medoids: Collection[];
 
   if( opts.testMode && typeof opts.testCentroids === 'object' && opts.testCentroids != null ){
-    medoids = opts.testCentroids as GpuCollection[];
+    medoids = opts.testCentroids as Collection[];
   } else {
     medoids = randomMedoids( nodes, opts.k );
   }
@@ -319,7 +319,7 @@ export const kMedoids = ( coll: GpuCollection, options?: KClusteringOptions ): G
 };
 
 const updateCentroids = (
-  centroids: FeatureCentroid[], nodes: GpuCollection, U: number[][], weight: number[][], opts: ResolvedKOptions
+  centroids: FeatureCentroid[], nodes: Collection, U: number[][], weight: number[][], opts: ResolvedKOptions
 ): void => {
   for( let n = 0; n < nodes.length; n++ ){
     for( let c = 0; c < centroids.length; c++ ){
@@ -343,7 +343,7 @@ const updateCentroids = (
 };
 
 const updateMembership = (
-  U: number[][], _U: number[][], centroids: FeatureCentroid[], nodes: GpuCollection, opts: ResolvedKOptions
+  U: number[][], _U: number[][], centroids: FeatureCentroid[], nodes: Collection, opts: ResolvedKOptions
 ): void => {
   for( let i = 0; i < U.length; i++ ){
     _U[ i ] = U[ i ].slice();
@@ -367,8 +367,8 @@ const updateMembership = (
   }
 };
 
-const assign = ( coll: GpuCollection, nodes: GpuCollection, U: number[][], opts: ResolvedKOptions ): GpuCollection[] => {
-  const clustersArr: GpuCollection[][] = new Array( opts.k );
+const assign = ( coll: Collection, nodes: Collection, U: number[][], opts: ResolvedKOptions ): Collection[] => {
+  const clustersArr: Collection[][] = new Array( opts.k );
 
   for( let c = 0; c < clustersArr.length; c++ ){ clustersArr[ c ] = []; }
 
@@ -403,7 +403,7 @@ const assign = ( coll: GpuCollection, nodes: GpuCollection, U: number[][], opts:
  * @returns the `k` crisp clusters plus `degreeOfMembership`, an
  *   N-by-`k` matrix in node order whose rows sum to 1
  */
-export const fuzzyCMeans = ( coll: GpuCollection, options?: KClusteringOptions ): FuzzyCMeansResult => {
+export const fuzzyCMeans = ( coll: Collection, options?: KClusteringOptions ): FuzzyCMeansResult => {
   const nodes = coll.nodes();
   const opts = setOptions( options );
 

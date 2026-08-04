@@ -249,7 +249,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 }`
 };
 
-export interface GpuForceInputs {
+export interface ForceInputs {
   n: number;
   edges: Uint32Array;
   edgeLength: Float32Array;
@@ -274,7 +274,7 @@ export class GpuForceRuntime {
   lastMaxDisp = Infinity;
 
   private device: GPUDevice;
-  private inputs: GpuForceInputs;
+  private inputs: ForceInputs;
   private pipelines: Record<string, GPUComputePipeline> = {};
   private groups: Record<string, GPUBindGroup> = {};
   private buffersByName = new Map<string, GPUBuffer>();
@@ -304,7 +304,7 @@ export class GpuForceRuntime {
    * @param inputs — the compacted simulation: participating leaves, edge
    * list, initial positions, pins, publish map, params and grid frame
    */
-  constructor( device: GPUDevice, inputs: GpuForceInputs ){
+  constructor( device: GPUDevice, inputs: ForceInputs ){
     this.device = device;
     this.inputs = inputs;
 

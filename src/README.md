@@ -204,9 +204,16 @@ kept as a deprecated alias.  The `gpu-`/`webgpu-` prefixes dropped
 from the test, benchmark, script, debug and Playwright names; the
 five utility modules v4 had still been importing from v3 are now
 v4's own copies, so nothing under `src/` imports outside it.  The
-factory, the bundles, the declaration and the UMD global are all
-plainly `cytoscape` now — the `Gpu*` *type* names deliberately are
-not, being exported surface with their own rename to schedule.
+factory, the bundles, the declaration, the UMD global **and the
+exported type names** are all plainly `cytoscape`'s now: `Core`,
+`Collection`, `Event`, `Stylesheet`, `CytoscapeOptions` and the rest
+lost the `Gpu` prefix in 42.6, with no deprecated aliases — the
+prerelease line has no published consumers to break.  Six internal
+names keep it (`GpuContext`, `GpuTimer`, `GpuForceRuntime`,
+`GpuTweenRuntime`, `GpuTweenSink`, `GpuWriteKind`), where it means
+the *device* half against a CPU counterpart rather than "the
+prototype"; that is the same rule that kept `gpu-context.mts` and
+`render/gpu-*.mts` while `gpu-types.mts` became `public-types.mts`.
 v3 stays untouched inside `v3/`, so every v3 asset remains
 available for comparison benchmarks and parity work.
 
@@ -794,7 +801,7 @@ each is deliberate, not a pass-1 deferral:
   and `{ totallyUnknownOption: 1 }` construct happily and round-trip
   through `cy.options()`.  The reason is that the typo guard already
   exists one layer up — TypeScript's excess-property check rejects
-  both against `CytoscapeGpuOptions` — and v4 does not replicate at
+  both against `CytoscapeOptions` — and v4 does not replicate at
   runtime what the build checks.  The boundary is TypeScript's, and
   worth knowing: excess-property checking applies to object
   *literals*, so options assembled into a variable first are widened
@@ -2040,7 +2047,7 @@ Instead:
   `typescript/tests/gpu.test-d.ts` is a compile-only consumer test
   in the `test:types` project.  **Closed by round 41.1**: the event
   object is v4's own, and `event.target` types as the core or a
-  one-element collection (`GpuEventTarget`), so a handler narrows with
+  one-element collection (`EventTarget`), so a handler narrows with
   a type guard instead of casting `unknown` — the compile-only
   consumer test lost its `as` with it.
   The round-37.3 additions to this test are the other direction: four
@@ -2051,7 +2058,7 @@ Instead:
   `scripts/jsdoc-coverage.mjs` audits every member of an
   exported class whose name does not start with `_`, plus every
   top-level exported function, split into a public-API tier (the
-  entry point, `GpuCore`, `GpuCollection`, `Viewport`, the
+  entry point, `Core`, `Collection`, `Viewport`, the
   animation handle, the layout contract, the public
   style/wire/columnar surface) and an internal tier.  Round 26 took
   the surface from **46% overall** (43% public, 55% internal) to
@@ -3242,10 +3249,12 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   with the two calls it left to docs-first taken there: the
   `gpu-`/`webgpu-` prefixes drop, and the five shared utility modules
   duplicate rather than stay shared, so nothing under `src/` imports
-  outside it.  What round 42 deliberately did *not* do, each logged
+  outside it.  A third call the plan had not foreseen — the `Gpu*`
+  exported *type* names, logged as open call 13 — was taken the same
+  day and executed as **42.6**, so the whole public surface is
+  unprefixed.  What round 42 deliberately did *not* do, each logged
   for its owning round: the dist/exports hardening and the pack spec
-  (round 43), the `Gpu*` exported *type* names, which are a rename of
-  their own, and the three v3 release workflows, which stay in
+  (round 43), and the three v3 release workflows, which stay in
   `.github/` because GitHub reads workflows only from the repo root —
   marked as unadapted rather than half-repointed, and round 49's job.
   PLAN.md's **"Open calls for the maintainer"** remains the one place

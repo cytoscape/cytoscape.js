@@ -1,8 +1,8 @@
 import * as math from '../math.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
-import type { GpuConcentricLayoutOptions } from '../gpu-types.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuCore } from '../core.mjs';
+import type { ConcentricLayoutOptions } from '../public-types.mjs';
+import type { Collection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
 
 /*
 Concentric layout: v3's level-binning and radius math verbatim over the
@@ -11,7 +11,7 @@ collection scope.  The concentric value is recorded in each node's scratch
 updateStyle() pass.
 */
 
-const defaults: Omit<GpuConcentricLayoutOptions, 'name'> = {
+const defaults: Omit<ConcentricLayoutOptions, 'name'> = {
   fit: true,
   padding: 30,
   startAngle: 3 / 2 * Math.PI,
@@ -24,8 +24,8 @@ const defaults: Omit<GpuConcentricLayoutOptions, 'name'> = {
   height: undefined,
   width: undefined,
   spacingFactor: undefined,
-  concentric: node => ( node as GpuCollection ).degree() ?? 0,
-  levelWidth: nodes => ( ( nodes as GpuCollection ).maxDegree() ?? 0 ) / 4,
+  concentric: node => ( node as Collection ).degree() ?? 0,
+  levelWidth: nodes => ( ( nodes as Collection ).maxDegree() ?? 0 ) / 4,
   animate: false,
   animationDuration: 500,
   animationEasing: undefined,
@@ -35,7 +35,7 @@ const defaults: Omit<GpuConcentricLayoutOptions, 'name'> = {
   transform: undefined
 };
 
-type Level = { value: number; node: GpuCollection }[] & { dTheta?: number; r?: number };
+type Level = { value: number; node: Collection }[] & { dTheta?: number; r?: number };
 
 /**
  * Place nodes on concentric rings, most important innermost.
@@ -44,9 +44,9 @@ type Level = { value: number; node: GpuCollection }[] & { dTheta?: number; r?: n
  */
 export class ConcentricLayout {
   /** the resolved options this layout was created with */
-  options: GpuConcentricLayoutOptions;
+  options: ConcentricLayoutOptions;
 
-  private cy: GpuCore;
+  private cy: Core;
 
   /**
    * Reached through `cy.layout( { name: 'concentric' } )` /
@@ -57,7 +57,7 @@ export class ConcentricLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: GpuCore, options: GpuConcentricLayoutOptions ){
+  constructor( cy: Core, options: ConcentricLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -73,9 +73,9 @@ export class ConcentricLayout {
   run(): this {
     const cy = this.cy;
     const options = this.options;
-    const eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
+    const eles = ( options.eles as Collection | undefined ) ?? cy.elements();
     const clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
-    const nodes = eles.nodes().filter( ( n: GpuCollection ) => !n.isParent() );
+    const nodes = eles.nodes().filter( ( n: Collection ) => !n.isParent() );
 
     const bb = math.makeBoundingBox( options.boundingBox ?? {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
@@ -86,12 +86,12 @@ export class ConcentricLayout {
       y: bb.y1 + bb.h / 2
     };
 
-    const nodeValues: { value: number; node: GpuCollection }[] = [];
+    const nodeValues: { value: number; node: Collection }[] = [];
     let maxNodeSize = 0;
 
     for( let i = 0; i < nodes.length; i++ ){
       const node = nodes[ i ];
-      const value = ( options.concentric as ( node: GpuCollection ) => number )( node );
+      const value = ( options.concentric as ( node: Collection ) => number )( node );
 
       nodeValues.push( { value, node } );
       node.scratch( 'concentric', value );
@@ -106,7 +106,7 @@ export class ConcentricLayout {
     // decreasing order
     nodeValues.sort( ( a, b ) => b.value - a.value );
 
-    const levelWidth = ( options.levelWidth as ( nodes: GpuCollection ) => number )( nodes );
+    const levelWidth = ( options.levelWidth as ( nodes: Collection ) => number )( nodes );
 
     // bin the values into levels
     const levels: Level[] = [ [] ];
@@ -178,7 +178,7 @@ export class ConcentricLayout {
     }
 
     // positions per node handle
-    const pos = new Map<GpuCollection, Position>();
+    const pos = new Map<Collection, Position>();
 
     for( const level of levels ){
       const dTheta = level.dTheta as number;

@@ -1,9 +1,9 @@
 import { FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import type { Position } from '../types.mjs';
-import type { GpuPresetLayoutOptions } from '../gpu-types.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuCore } from '../core.mjs';
+import type { PresetLayoutOptions } from '../public-types.mjs';
+import type { Collection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
 
 /*
 Preset layout: applies `options.positions` (id-keyed map or per-node
@@ -15,7 +15,7 @@ model (set at add time), so only the viewport options apply.  Animation
 is out of scope, as everywhere in the prototype.
 */
 
-const defaults: Omit<GpuPresetLayoutOptions, 'name'> = {
+const defaults: Omit<PresetLayoutOptions, 'name'> = {
   positions: undefined, // map of (node id) => position, or function(node) => position
   zoom: undefined, // the zoom level to set (prob want fit = false if set)
   pan: undefined, // the pan level to set (prob want fit = false if set)
@@ -30,9 +30,9 @@ const defaults: Omit<GpuPresetLayoutOptions, 'name'> = {
  */
 export class PresetLayout {
   /** the resolved options this layout was created with */
-  options: GpuPresetLayoutOptions;
+  options: PresetLayoutOptions;
 
-  private cy: GpuCore;
+  private cy: Core;
 
   /**
    * Reached through `cy.layout( { name: 'preset' } )` /
@@ -43,7 +43,7 @@ export class PresetLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: GpuCore, options: GpuPresetLayoutOptions ){
+  constructor( cy: Core, options: PresetLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -63,14 +63,14 @@ export class PresetLayout {
 
     cy.emit( { type: 'layoutstart', layout: this } );
 
-    const scope = ( options.eles as GpuCollection | undefined ) ?? cy;
+    const scope = ( options.eles as Collection | undefined ) ?? cy;
 
     if( typeof positions === 'function' ){
       // function form takes handles by contract
-      scope.nodes().positions( ( ele: GpuCollection ) => {
+      scope.nodes().positions( ( ele: Collection ) => {
         if( ele.isParent() ){ return false; } // parents derive (14.11)
 
-        return ( positions as ( node: GpuCollection ) => Position | null | undefined )( ele ) ?? false;
+        return ( positions as ( node: Collection ) => Position | null | undefined )( ele ) ?? false;
       } );
     } else if( positions != null ){
       // map form: resolve ids to slots directly; absent ids keep their position
@@ -99,7 +99,7 @@ export class PresetLayout {
     }
 
     if( options.fit !== false ){
-      cy.fit( options.eles as GpuCollection | undefined, options.padding ?? 30 );
+      cy.fit( options.eles as Collection | undefined, options.padding ?? 30 );
     } else {
       if( options.zoom != null ){ cy.zoom( options.zoom ); }
       if( options.pan != null ){ cy.pan( options.pan ); }

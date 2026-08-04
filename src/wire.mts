@@ -1,9 +1,9 @@
 import { isColumnarElements, isPackedIds, toColumnarElements } from './columnar.mjs';
 import { isDictColumn } from './store/data-store.mjs';
 import type {
-  GpuColumnarEdges, GpuColumnarElements, GpuColumnarNodes, GpuDataColumn,
-  GpuElementDefinition, GpuElementsDefinition, GpuPackedIds
-} from './gpu-types.mjs';
+  ColumnarEdges, ColumnarElements, ColumnarNodes, DataColumn,
+  ElementDefinition, ElementsDefinition, PackedIds
+} from './public-types.mjs';
 
 /*
 Binary wire format for the columnar elements form: one little-endian
@@ -107,7 +107,7 @@ export const isSerializedElements = ( x: unknown ): x is ArrayBuffer | ArrayBuff
  *   names an edge endpoint that is not a node in the same payload
  */
 export const serializeElements = (
-  elements: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements
+  elements: ElementsDefinition | ElementDefinition | ColumnarElements
 ): ArrayBuffer => {
   assertLittleEndian();
 
@@ -226,11 +226,11 @@ export const serializeElements = (
  *   and writing into either is visible through the other.  Graph-level
  *   `data` is the exception in two ways: it is decoded from JSON rather
  *   than viewed, and `cy.add()` deliberately ignores it (see
- *   `GpuColumnarElements.data`)
+ *   `ColumnarElements.data`)
  * @throws if the platform is big-endian, or the buffer is too short,
  *   truncated or of an unsupported format version
  */
-export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): GpuColumnarElements => {
+export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): ColumnarElements => {
   assertLittleEndian();
 
   let buffer: ArrayBuffer;
@@ -302,7 +302,7 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
   };
   const readScalar = (): number => read4( Uint32Array, 1 )[ 0 ];
 
-  const nodes: GpuColumnarNodes = { count: nodeCount };
+  const nodes: ColumnarNodes = { count: nodeCount };
   let sources: Uint32Array | null = null;
   let targets: Uint32Array | null = null;
 
@@ -316,7 +316,7 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
 
   // ids stay packed (blob + offsets): the store ingests the bytes
   // directly and decodes id strings lazily, per element touched
-  const readPacked = ( count: number ): GpuPackedIds => {
+  const readPacked = ( count: number ): PackedIds => {
     const offsets = read4( Uint32Array, count + 1 );
 
     return { offsets, blob: readU8( offsets[ count ] ) };
@@ -332,9 +332,9 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
   const edgeSelected = ( flags & F_EDGE_SELECTED ) ? readU8( edgeCount ) : undefined;
   const edgeSelectable = ( flags & F_EDGE_SELECTABLE ) ? readU8( edgeCount ) : undefined;
 
-  const readDataBlock = ( count: number ): Record<string, GpuDataColumn> => {
+  const readDataBlock = ( count: number ): Record<string, DataColumn> => {
     const keyCount = readScalar();
-    const data: Record<string, GpuDataColumn> = {};
+    const data: Record<string, DataColumn> = {};
     const decoder = new TextDecoder();
 
     for( let k = 0; k < keyCount; k++ ){
@@ -378,7 +378,7 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
 
   const edgeData = ( flags & F_EDGE_DATA ) ? readDataBlock( edgeCount ) : undefined;
 
-  const out: GpuColumnarElements = { columnar: true, nodes };
+  const out: ColumnarElements = { columnar: true, nodes };
 
   // graph-level data (round 39.2).  A pre-v4 buffer simply lacks the
   // flag, so nothing here reads the version number.
@@ -387,7 +387,7 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
   }
 
   if( edgeCount > 0 ){
-    const edges: GpuColumnarEdges = { count: edgeCount, sources: sources!, targets: targets! };
+    const edges: ColumnarEdges = { count: edgeCount, sources: sources!, targets: targets! };
 
     if( edgeIds != null ){ edges.ids = edgeIds; }
     if( edgeSelected != null ){ edges.selected = edgeSelected; }
@@ -402,7 +402,7 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Gpu
 
 /** UTF-8 blob + prefix byte offsets; holes (and empty strings) get zero length. */
 const encodeIds = (
-  ids: ( string | undefined )[] | GpuPackedIds | undefined,
+  ids: ( string | undefined )[] | PackedIds | undefined,
   count: number
 ): { offsets: Uint32Array; blob: Uint8Array } | null => {
   if( ids == null || count === 0 ){ return null; }
@@ -448,7 +448,7 @@ const encodeIds = (
 
 /** One data() block: keyCount, then (name, kind, column) per key. */
 const encodeDataBlock = (
-  data: Record<string, GpuDataColumn> | undefined,
+  data: Record<string, DataColumn> | undefined,
   count: number
 ): Section[] | null => {
   if( data == null || count === 0 ){ return null; }

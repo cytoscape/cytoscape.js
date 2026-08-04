@@ -2,9 +2,9 @@ import * as math from '../math.mjs';
 import { FLAG_PARENT } from '../contract.mjs';
 import { hasListeners } from '../events.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
-import type { GpuGridLayoutOptions } from '../gpu-types.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuCore } from '../core.mjs';
+import type { GridLayoutOptions } from '../public-types.mjs';
+import type { Collection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
 
 /*
 Grid layout for the GPU prototype: the cell-packing math is ported verbatim
@@ -19,7 +19,7 @@ from the size/border columns by slot and written back with one
 which take handles by contract — fall back to the per-element path.
 */
 
-const defaults: Omit<GpuGridLayoutOptions, 'name'> = {
+const defaults: Omit<GridLayoutOptions, 'name'> = {
   fit: true, // whether to fit the viewport to the graph
   padding: 30, // padding used on fit
   boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
@@ -42,9 +42,9 @@ type RowCol = { row?: number; col?: number };
  */
 export class GridLayout {
   /** the resolved options this layout was created with */
-  options: GpuGridLayoutOptions;
+  options: GridLayoutOptions;
 
-  private cy: GpuCore;
+  private cy: Core;
 
   /**
    * Reached through `cy.layout( { name: 'grid' } )` /
@@ -55,7 +55,7 @@ export class GridLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: GpuCore, options: GpuGridLayoutOptions ){
+  constructor( cy: Core, options: GridLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -86,7 +86,7 @@ export class GridLayout {
     }
 
     if( options.fit !== false ){
-      cy.fit( options.eles as GpuCollection | undefined, options.padding ?? 30 );
+      cy.fit( options.eles as Collection | undefined, options.padding ?? 30 );
     }
 
     cy.emit( { type: 'layoutready', layout: this } );
@@ -135,12 +135,12 @@ export class GridLayout {
   private runWithHandles( bb: BoundingBox ): void {
     const cy = this.cy;
     const options = this.options;
-    const scope = ( options.eles as GpuCollection | undefined ) ?? cy;
+    const scope = ( options.eles as Collection | undefined ) ?? cy;
 
     let nodeList = scope.nodes().toArray().filter( node => !node.isParent() );
 
     if( options.sort != null ){
-      nodeList = nodeList.sort( options.sort as ( a: GpuCollection, b: GpuCollection ) => number );
+      nodeList = nodeList.sort( options.sort as ( a: Collection, b: Collection ) => number );
     }
 
     const manRaw = options.position != null
@@ -154,9 +154,9 @@ export class GridLayout {
       manRaw
     );
 
-    const indexOf = new Map<GpuCollection, number>( nodeList.map( ( node, i ) => [ node, i ] ) );
+    const indexOf = new Map<Collection, number>( nodeList.map( ( node, i ) => [ node, i ] ) );
 
-    cy.nodes().positions( ( ele: GpuCollection ) => {
+    cy.nodes().positions( ( ele: Collection ) => {
       const index = indexOf.get( ele );
 
       return index == null ? false : positions[ index ];

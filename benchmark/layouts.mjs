@@ -204,7 +204,7 @@ cmpGpu( 'layout: plumbing (layoutPositions vs setPositions)',
 // caught by design call 5.
 // What that row found became round 34.4.  The wrapper's fixed cost used
 // to scale with the *graph* rather than the run — 391 µs at 2000 nodes
-// for an impl that does nothing — because `GpuLayoutContext`'s
+// for an impl that does nothing — because `LayoutContext`'s
 // constructor eagerly evaluated `cy.elements()` and `.nodes()`, interning
 // handles for the whole graph even for the columnar-first layouts the
 // contract exists to encourage.  Those two are lazy getters now, and

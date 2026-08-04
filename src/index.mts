@@ -1,16 +1,16 @@
-import { GpuCore } from './core.mjs';
+import { Core } from './core.mjs';
 import { Renderer } from './render/renderer.mjs';
 import { PointerHandler } from './interact/pointer.mjs';
 import { toColumnarElements } from './columnar.mjs';
 import { deserializeElements, serializeElements } from './wire.mjs';
-import type { CytoscapeGpuOptions } from './gpu-types.mjs';
+import type { CytoscapeOptions } from './public-types.mjs';
 
-export type * from './gpu-types.mjs';
-export type { GpuCore } from './core.mjs';
-export type { GpuCollection } from './collection.mjs';
+export type * from './public-types.mjs';
+export type { Core } from './core.mjs';
+export type { Collection } from './collection.mjs';
 // round 41: v4's own event object, so a handler's parameter has a real type
 // and `event.target` is no longer `unknown`
-export type { GpuEvent, GpuEventProps, GpuEventTarget } from './event.mjs';
+export type { Event, EventProps, EventTarget } from './event.mjs';
 export type { EventHandler } from './emitter.mjs';
 
 /**
@@ -32,7 +32,7 @@ export type { EventHandler } from './emitter.mjs';
  * design sitting): unlike an unknown sheet key, style property or query key,
  * a misspelled option does not throw, because strictness here resolves at the
  * type layer — TypeScript's excess-property check rejects `{ motionBlur:
- * true }` against {@link CytoscapeGpuOptions}, and v4 does not replicate at
+ * true }` against {@link CytoscapeOptions}, and v4 does not replicate at
  * runtime what the build already checks.
  *
  * @param options — the instance options; every field is optional, and an
@@ -41,7 +41,7 @@ export type { EventHandler } from './emitter.mjs';
  *   on the device, and a rendered instance additionally resolves `cy.ready`
  * @throws when `container` is given and `navigator.gpu` is missing
  */
-export default function cytoscape( options: CytoscapeGpuOptions = {} ): GpuCore {
+export default function cytoscape( options: CytoscapeOptions = {} ): Core {
   if( options.container != null ){
     const nav = ( globalThis as { navigator?: { gpu?: unknown } } ).navigator;
 
@@ -53,7 +53,7 @@ export default function cytoscape( options: CytoscapeGpuOptions = {} ): GpuCore 
     }
   }
 
-  const cy = new GpuCore( options );
+  const cy = new Core( options );
 
   if( options.elements != null ){
     // bulk path: no per-element handles, no add events (nobody can be

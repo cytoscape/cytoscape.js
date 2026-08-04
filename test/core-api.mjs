@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
-import { GpuCore } from '../src/core.mjs';
+import { Core } from '../src/core.mjs';
 
 describe('gpu/core: introspection, data, scratch, renderer, aliases', function(){
 
@@ -196,10 +196,10 @@ describe('gpu/core: introspection, data, scratch, renderer, aliases', function()
     });
 
     it('mount() refuses on a core built without the factory', function(){
-      // the factory installs _attachFn; `new GpuCore()` has no renderer
+      // the factory installs _attachFn; `new Core()` has no renderer
       // attach path at all, and the guard says so instead of failing
       // later with a null dereference
-      expect( () => new GpuCore({}).mount( {} ) )
+      expect( () => new Core({}).mount( {} ) )
         .to.throw( /cannot mount \(it was not created via the cytoscape factory\)/ );
     });
 

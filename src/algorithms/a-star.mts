@@ -1,13 +1,13 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, eachIncident, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 
-export type AStarHeuristicFn = ( node: GpuCollection ) => number;
+export type AStarHeuristicFn = ( node: Collection ) => number;
 
 export interface AStarOptions {
-  root?: GpuCollection | null;
-  goal?: GpuCollection | null;
+  root?: Collection | null;
+  goal?: Collection | null;
   weight?: WeightFn;
   heuristic?: AStarHeuristicFn;
   directed?: boolean;
@@ -16,12 +16,12 @@ export interface AStarOptions {
 export interface AStarResult {
   found: boolean;
   distance: number | undefined;
-  path: GpuCollection | undefined;
+  path: Collection | undefined;
   steps: number;
 }
 
 /** A* shortest path from `root` to `goal` over the calling collection. */
-export const aStar = ( coll: GpuCollection, options: AStarOptions = {} ): AStarResult => {
+export const aStar = ( coll: Collection, options: AStarOptions = {} ): AStarResult => {
   const view = subgraph( coll );
   const { cy, store, index, nodeSlots } = view;
   const rootSlot = firstNodeSlot( view, options.root, 'root' );

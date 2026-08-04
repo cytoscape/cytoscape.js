@@ -61,8 +61,12 @@ const cy = cytoscape( {
 } );
 ```
 
-`import cytoscapeGpu from 'cytoscape/gpu'` also resolves, as a deprecated
-alias of the same entry point through the prerelease line.
+`import cytoscape from 'cytoscape/gpu'` also resolves, as a deprecated alias
+of the same entry point through the prerelease line.
+
+The public type names carry no prefix: `Core`, `Collection`, `Event`,
+`Stylesheet`, `CytoscapeOptions` and the rest are all importable as types
+from the same entry point.
 
 ### Requirements
 

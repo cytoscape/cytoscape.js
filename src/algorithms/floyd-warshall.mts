@@ -1,4 +1,4 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
@@ -9,12 +9,12 @@ export interface FloydWarshallOptions {
 }
 
 export interface FloydWarshallResult {
-  distance( from: GpuCollection, to: GpuCollection ): number | undefined;
-  path( from: GpuCollection, to: GpuCollection ): GpuCollection;
+  distance( from: Collection, to: Collection ): number | undefined;
+  path( from: Collection, to: Collection ): Collection;
 }
 
 /** All-pairs shortest paths over the calling collection (dense N² matrices). */
-export const floydWarshall = ( coll: GpuCollection, options: FloydWarshallOptions = {} ): FloydWarshallResult => {
+export const floydWarshall = ( coll: Collection, options: FloydWarshallOptions = {} ): FloydWarshallResult => {
   const view = subgraph( coll );
   const { cy, store, endpoints, index, nodeSlots } = view;
   const directed = options.directed === true;
@@ -75,21 +75,21 @@ export const floydWarshall = ( coll: GpuCollection, options: FloydWarshallOption
     }
   }
 
-  const denseOf = ( node: GpuCollection, name: string ): number | undefined => {
+  const denseOf = ( node: Collection, name: string ): number | undefined => {
     const slot = firstNodeSlot( view, node, name );
 
     return slot == null ? undefined : index.get( slot );
   };
 
   return {
-    distance( from: GpuCollection, to: GpuCollection ): number | undefined {
+    distance( from: Collection, to: Collection ): number | undefined {
       const i = denseOf( from, 'from' );
       const j = denseOf( to, 'to' );
 
       return i == null || j == null ? undefined : dist[ i * n + j ];
     },
 
-    path( from: GpuCollection, to: GpuCollection ): GpuCollection {
+    path( from: Collection, to: Collection ): Collection {
       let i = denseOf( from, 'from' );
       const j = denseOf( to, 'to' );
 

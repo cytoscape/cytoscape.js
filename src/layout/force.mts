@@ -18,15 +18,15 @@ non-members ignored entirely (recorded).
 
 import { FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { ForceSim, defaultForceParams, seedPositions } from './force-sim.mjs';
-import type { GpuLayoutContext, GpuLayoutImpl } from './contract.mjs';
-import type { GpuCollection } from '../collection.mjs';
+import type { LayoutContext, LayoutImpl } from './contract.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
 import type { GpuForceRuntime } from '../render/gpu-force.mjs';
 
-export interface ForceLayoutOptions {
+export interface ForceRunOptions {
   /** ideal edge length: a number, or a plain function of the edge
    * handle, resolved once at start (the algorithms-round rule) */
-  edgeLength?: number | ( ( edge: GpuCollection ) => number );
+  edgeLength?: number | ( ( edge: Collection ) => number );
   repulsion?: number;
   stiffness?: number;
   gravity?: number;
@@ -64,7 +64,7 @@ const DEFAULT_EDGE_LENGTH = 60;
  * guarantee, and the two executors agree on invariants, not
  * trajectories.
  */
-export class ForceLayoutImpl implements GpuLayoutImpl {
+export class ForceLayoutImpl implements LayoutImpl {
   private stopped = false;
 
   /**
@@ -84,10 +84,10 @@ export class ForceLayoutImpl implements GpuLayoutImpl {
    *   views, O(1) CSR degrees and the bulk `setPositions` write
    * @returns a promise that resolves at convergence when animating
    */
-  run( ctx: GpuLayoutContext ): void | Promise<void> {
+  run( ctx: LayoutContext ): void | Promise<void> {
     const cy = ctx.cy;
     const store = cy._store;
-    const options = ctx.options as ForceLayoutOptions;
+    const options = ctx.options as ForceRunOptions;
     const params = { ...defaultForceParams() };
 
     if( options.repulsion != null ){ params.repulsion = options.repulsion; }
@@ -285,7 +285,7 @@ export class ForceLayoutImpl implements GpuLayoutImpl {
 
   /** Poll the device sim to convergence, then the one settle readback. */
   private runGpu(
-    runtime: GpuForceRuntime, ctx: GpuLayoutContext, renderer: Renderer,
+    runtime: GpuForceRuntime, ctx: LayoutContext, renderer: Renderer,
     movableSlots: number[], movable: number[], applyViewport: () => void
   ): Promise<void> {
     return new Promise<void>( resolve => {

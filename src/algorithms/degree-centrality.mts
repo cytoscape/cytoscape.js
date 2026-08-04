@@ -1,9 +1,9 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { subgraph, incidentEdgesInView, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 
 export interface DegreeCentralityOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
   /** 0 = count degree, 1 = weight sum (Opsahl's generalized degree) */
@@ -15,11 +15,11 @@ export interface DirectedDegreeCentrality { indegree: number; outdegree: number;
 export type DegreeCentralityResult = UndirectedDegreeCentrality | DirectedDegreeCentrality;
 
 export interface UndirectedDegreeCentralityNormalized {
-  degree( node: GpuCollection ): number;
+  degree( node: Collection ): number;
 }
 export interface DirectedDegreeCentralityNormalized {
-  indegree( node: GpuCollection ): number;
-  outdegree( node: GpuCollection ): number;
+  indegree( node: Collection ): number;
+  outdegree( node: Collection ): number;
 }
 export type DegreeCentralityNormalizedResult =
   UndirectedDegreeCentralityNormalized | DirectedDegreeCentralityNormalized;
@@ -58,7 +58,7 @@ const degreeOf = (
 };
 
 /** Opsahl's generalized degree centrality of `root` within the calling collection. */
-export const degreeCentrality = ( coll: GpuCollection, options: DegreeCentralityOptions = {} ): DegreeCentralityResult => {
+export const degreeCentrality = ( coll: Collection, options: DegreeCentralityOptions = {} ): DegreeCentralityResult => {
   const view = subgraph( coll );
   const rootSlot = firstNodeSlot( view, options.root, 'root' );
 
@@ -75,7 +75,7 @@ export const degreeCentrality = ( coll: GpuCollection, options: DegreeCentrality
 };
 
 /** Degree centrality of every collection node, normalized by the maximum. */
-export const degreeCentralityNormalized = ( coll: GpuCollection, options: DegreeCentralityOptions = {} ): DegreeCentralityNormalizedResult => {
+export const degreeCentralityNormalized = ( coll: Collection, options: DegreeCentralityOptions = {} ): DegreeCentralityNormalizedResult => {
   const view = subgraph( coll );
   const { index, nodeSlots } = view;
   const directed = options.directed === true;
@@ -83,7 +83,7 @@ export const degreeCentralityNormalized = ( coll: GpuCollection, options: Degree
   const alpha = options.alpha ?? 0;
   const n = nodeSlots.length;
 
-  const denseOf = ( node: GpuCollection ): number | undefined => {
+  const denseOf = ( node: Collection ): number | undefined => {
     const slot = firstNodeSlot( view, node, 'node' );
 
     return slot == null ? undefined : index.get( slot );
@@ -99,7 +99,7 @@ export const degreeCentralityNormalized = ( coll: GpuCollection, options: Degree
     }
 
     return {
-      degree( node: GpuCollection ): number {
+      degree( node: Collection ): number {
         if( maxDegree === 0 ){ return 0; }
 
         const i = denseOf( node );
@@ -124,7 +124,7 @@ export const degreeCentralityNormalized = ( coll: GpuCollection, options: Degree
   }
 
   return {
-    indegree( node: GpuCollection ): number {
+    indegree( node: Collection ): number {
       if( maxIndegree === 0 ){ return 0; }
 
       const i = denseOf( node );
@@ -132,7 +132,7 @@ export const degreeCentralityNormalized = ( coll: GpuCollection, options: Degree
       return i == null ? 0 : indegrees[ i ] / maxIndegree;
     },
 
-    outdegree( node: GpuCollection ): number {
+    outdegree( node: Collection ): number {
       if( maxOutdegree === 0 ){ return 0; }
 
       const i = denseOf( node );

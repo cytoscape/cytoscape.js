@@ -3,12 +3,12 @@ import { resolveScheme, hexToRgb, srgbToOklab, oklabToSrgb } from './style-schem
 import type { SchemeDef } from './style-schemes.mjs';
 import type { GroupName } from './contract.mjs';
 import type { DataStore } from './store/data-store.mjs';
-import type { GpuMapper, GpuCaseMapper, GpuMapperSpec, GpuCondition } from './gpu-types.mjs';
+import type { Mapper, CaseMapper, MapperSpec, Condition } from './public-types.mjs';
 
 /*
 The mapper DSL's compiled form and CPU evaluator.  A mapper spec is a
 plain serializable object (`{ data, scale?, domain?, range?, ... }`, see
-gpu-types.mts); `compileMapper` validates it against the target channel
+public-types.mts); `compileMapper` validates it against the target channel
 and lowers it to a data-only Program — numeric params and stop tables,
 no closures — so the same IR later serializes to the GPU eval kernel.
 
@@ -117,22 +117,22 @@ export interface CompiledMapper {
   fallback: number | RGBA | null;
   parseEnum: ( ( value: unknown ) => number | null ) | null;
   /** the original spec object, never mutated (json() fidelity) */
-  spec: GpuMapperSpec;
+  spec: MapperSpec;
 }
 
 /** Output of a bound evaluator: the channel value for one slot. */
 export type Evaluated = number | RGBA;
 
 /** Mapper specs are plain objects with a string `data` field or a `case` array. */
-export const isMapperSpec = ( value: unknown ): value is GpuMapperSpec => {
+export const isMapperSpec = ( value: unknown ): value is MapperSpec => {
   if( value == null || typeof value !== 'object' || Array.isArray( value ) ){ return false; }
 
-  return typeof ( value as GpuMapper ).data === 'string'
-    || Array.isArray( ( value as GpuCaseMapper ).case );
+  return typeof ( value as Mapper ).data === 'string'
+    || Array.isArray( ( value as CaseMapper ).case );
 };
 
-const isCaseSpec = ( spec: GpuMapperSpec ): spec is GpuCaseMapper => {
-  return Array.isArray( ( spec as GpuCaseMapper ).case );
+const isCaseSpec = ( spec: MapperSpec ): spec is CaseMapper => {
+  return Array.isArray( ( spec as CaseMapper ).case );
 };
 
 const CONDITION_OPS: ReadonlySet<string> = new Set( [ 'eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in' ] );
@@ -192,7 +192,7 @@ const fwd = ( t: Transform, x: number ): number => {
   }
 };
 
-const transformOf = ( spec: GpuMapper, prop: string ): Transform => {
+const transformOf = ( spec: Mapper, prop: string ): Transform => {
   switch( spec.scale ?? 'linear' ){
     case 'log': {
       const base = spec.base ?? 10;
@@ -221,7 +221,7 @@ interface ResolvedRange {
   scheme: SchemeDef | null;
 }
 
-const resolveRange = ( opts: CompileOpts, spec: GpuMapper, count: number | null ): ResolvedRange => {
+const resolveRange = ( opts: CompileOpts, spec: Mapper, count: number | null ): ResolvedRange => {
   const range = spec.range;
 
   if( typeof range === 'string' ){
@@ -258,7 +258,7 @@ const resolveRange = ( opts: CompileOpts, spec: GpuMapper, count: number | null 
   return { outputs: range.map( v => parseOutput( opts, v ) ), scheme: null };
 };
 
-const toOutputStops = ( opts: CompileOpts, spec: GpuMapper, outputs: ( number | RGBA )[] ): OutputStops => {
+const toOutputStops = ( opts: CompileOpts, spec: Mapper, outputs: ( number | RGBA )[] ): OutputStops => {
   if( opts.kind === 'number' ){
     return { kind: 'number', values: Float64Array.from( outputs as number[] ) };
   }
@@ -283,7 +283,7 @@ const toOutputStops = ( opts: CompileOpts, spec: GpuMapper, outputs: ( number | 
 
 // -- compile --
 
-const numericDomain = ( opts: CompileOpts, spec: GpuMapper ): number[] | null => {
+const numericDomain = ( opts: CompileOpts, spec: Mapper ): number[] | null => {
   const domain = spec.domain;
 
   if( domain == null || domain === 'auto' ){ return null; }
@@ -312,7 +312,7 @@ const evenStops = ( t0: number, t1: number, n: number ): Float64Array => {
   return stops;
 };
 
-const compileContinuous = ( opts: CompileOpts, spec: GpuMapper ): Program => {
+const compileContinuous = ( opts: CompileOpts, spec: Mapper ): Program => {
   if( opts.kind === 'enum' ){
     throw err( opts.prop, `'${opts.prop}' cannot be continuously interpolated; ` +
       `use scale 'ordinal', 'threshold' or 'quantize', or a passthrough mapper` );
@@ -389,7 +389,7 @@ const compileContinuous = ( opts: CompileOpts, spec: GpuMapper ): Program => {
   };
 };
 
-const compileDiscrete = ( opts: CompileOpts, spec: GpuMapper ): Program => {
+const compileDiscrete = ( opts: CompileOpts, spec: Mapper ): Program => {
   if( spec.scale === 'threshold' ){
     const cuts = numericDomain( opts, spec );
 
@@ -440,7 +440,7 @@ const quantizeCuts = ( cuts: Float64Array, lo: number, hi: number ): void => {
   }
 };
 
-const compileOrdinal = ( opts: CompileOpts, spec: GpuMapper ): Program => {
+const compileOrdinal = ( opts: CompileOpts, spec: Mapper ): Program => {
   const domain = spec.domain;
 
   if( !Array.isArray( domain ) || domain.length === 0
@@ -465,7 +465,7 @@ const compileOrdinal = ( opts: CompileOpts, spec: GpuMapper ): Program => {
   return { kind: 'ordinal', map };
 };
 
-const compileCondition = ( opts: CompileOpts, cond: GpuCondition ): CompiledCondition => {
+const compileCondition = ( opts: CompileOpts, cond: Condition ): CompiledCondition => {
   // structural conditions (round 14.7): { parent: bool } / { child: bool }
   // stand alone and compile to the reserved '::parent'/'::child' keys the
   // engine's value reader answers from the hierarchy flags — so deps,
@@ -495,7 +495,7 @@ const compileCondition = ( opts: CompileOpts, cond: GpuCondition ): CompiledCond
     throw err( opts.prop, `each case condition needs a non-empty 'data' key` );
   }
 
-  const ops = ( Object.keys( cond ) as ( keyof GpuCondition )[] ).filter( k => CONDITION_OPS.has( k ) );
+  const ops = ( Object.keys( cond ) as ( keyof Condition )[] ).filter( k => CONDITION_OPS.has( k ) );
 
   if( ops.length !== 1 ){
     throw err( opts.prop, `each case condition needs exactly one comparison ` +
@@ -520,7 +520,7 @@ const compileCondition = ( opts: CompileOpts, cond: GpuCondition ): CompiledCond
   return { key: cond.data, op, value: raw as string | number };
 };
 
-const compileCase = ( opts: CompileOpts, spec: GpuCaseMapper ): { program: Program; keys: string[] } => {
+const compileCase = ( opts: CompileOpts, spec: CaseMapper ): { program: Program; keys: string[] } => {
   if( spec.case.length === 0 ){
     throw err( opts.prop, `a case mapper needs at least one clause` );
   }
@@ -574,7 +574,7 @@ const channelDefaultOf = ( opts: CompileOpts ): number | RGBA => {
  *   an empty data key, an unknown scale, a scaled mapper with no range,
  *   or a case clause missing 'when'/'then'
  */
-export const compileMapper = ( spec: GpuMapperSpec, opts: CompileOpts ): CompiledMapper => {
+export const compileMapper = ( spec: MapperSpec, opts: CompileOpts ): CompiledMapper => {
   if( isCaseSpec( spec ) ){
     const { program, keys } = compileCase( opts, spec );
 

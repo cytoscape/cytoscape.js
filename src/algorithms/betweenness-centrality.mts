@@ -1,4 +1,4 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { subgraph, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 
@@ -8,9 +8,9 @@ export interface BetweennessCentralityOptions {
 }
 
 export interface BetweennessCentralityResult {
-  betweenness( node: GpuCollection ): number | undefined;
-  betweennessNormalized( node: GpuCollection ): number;
-  betweennessNormalised( node: GpuCollection ): number;
+  betweenness( node: Collection ): number | undefined;
+  betweennessNormalized( node: Collection ): number;
+  betweennessNormalised( node: Collection ): number;
 }
 
 /**
@@ -18,7 +18,7 @@ export interface BetweennessCentralityResult {
  * sets dedupe parallel edges; when weighted, the first subgraph edge between
  * the pair (v→w, else w→v) supplies the weight, as in v3.
  */
-export const betweennessCentrality = ( coll: GpuCollection, options: BetweennessCentralityOptions = {} ): BetweennessCentralityResult => {
+export const betweennessCentrality = ( coll: Collection, options: BetweennessCentralityOptions = {} ): BetweennessCentralityResult => {
   const view = subgraph( coll );
   const { store, endpoints, index, nodeSlots, edgeIn } = view;
   const directed = options.directed === true;
@@ -147,20 +147,20 @@ export const betweennessCentrality = ( coll: GpuCollection, options: Betweenness
     }
   }
 
-  const denseOf = ( node: GpuCollection ): number | undefined => {
+  const denseOf = ( node: Collection ): number | undefined => {
     const slot = firstNodeSlot( view, node, 'node' );
 
     return slot == null ? undefined : index.get( slot );
   };
 
   const ret: BetweennessCentralityResult = {
-    betweenness( node: GpuCollection ): number | undefined {
+    betweenness( node: Collection ): number | undefined {
       const i = denseOf( node );
 
       return i == null ? undefined : C[ i ];
     },
 
-    betweennessNormalized( node: GpuCollection ): number {
+    betweennessNormalized( node: Collection ): number {
       if( max === 0 ){ return 0; }
 
       const i = denseOf( node );
@@ -168,7 +168,7 @@ export const betweennessCentrality = ( coll: GpuCollection, options: Betweenness
       return i == null ? 0 : C[ i ] / max;
     },
 
-    betweennessNormalised( node: GpuCollection ): number {
+    betweennessNormalised( node: Collection ): number {
       return ret.betweennessNormalized( node );
     }
   };

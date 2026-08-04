@@ -45,7 +45,7 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
   - `src/style.mts`, `src/style-scales.mts`, `src/style-schemes.mts`: the sheet compiler and the mapper DSL.
   - `src/contract.mts`: the co-signed model↔renderer column/flag layout — change it first when the layout changes.
   - `src/math.mts`, `src/types.mts`, `src/util/`: v4's own copies of the generic helpers it used to import from v3 (round 42).  `src/math.mts` is deliberately *lean* — the functions v4 calls, not v3's 1500-line geometry module.
-  - The `gpu-` prefix survives only where it names the *device* half against a CPU counterpart: `gpu-context.mts`, `gpu-types.mts`, `render/gpu-force.mts`, `render/gpu-tween.mts`, `render/gpu-timer.mts`.
+  - The `gpu-` prefix survives only where it names the *device* half against a CPU counterpart: `gpu-context.mts`, `public-types.mts`, `render/gpu-force.mts`, `render/gpu-tween.mts`, `render/gpu-timer.mts`.
 - `test/`: `node:test` suites (Mocha-shaped, see above). Add regression coverage here for API and logic changes; `test/modules/` holds internal-only and tooling coverage.
 - `debug/`: The manual dev harness (`npm run watch` → http://localhost:3333/): network/bg/LOD/label URL params, a `?gen=NxM` generator, `?layout=force|spiral|...`, stats overlay.  Use it for renderer, interaction and gesture changes that are hard to verify in unit tests alone.
 - `playwright-tests/` and `playwright.config.js`: Browser-level regression coverage — the `renderer` project (and `renderer-webkit`), and `visual` (goldens + live v3-vs-v4 parity diffs).

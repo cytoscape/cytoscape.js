@@ -8,14 +8,14 @@ import { headerDeviation, routeMidpoint } from './curve-geometry.mjs';
 import type { CurveRoute } from './curve-geometry.mjs';
 import { CURVE_STYLE_BEZIER } from './store/curve-index.mjs';
 import { compileQuery, planMatchesRef } from './matcher.mjs';
-import type { GpuQuery } from './matcher.mjs';
+import type { Query } from './matcher.mjs';
 import { testCondition } from './style-scales.mjs';
 import { hasListeners, refQualifier } from './events.mjs';
 import { normalizeProp as normalizeCss } from './style.mjs';
 import { Animation } from './animation.mjs';
 import type { AnimateOptions, AnimationHandle } from './animation.mjs';
 import type { Position } from './types.mjs';
-import type { GpuLayoutBaseOptions, GpuLayoutOptions } from './gpu-types.mjs';
+import type { LayoutBaseOptions, LayoutOptions } from './public-types.mjs';
 import {
   search as searchImpl, dijkstra as dijkstraImpl, aStar as aStarImpl,
   bellmanFord as bellmanFordImpl, floydWarshall as floydWarshallImpl, kruskal as kruskalImpl,
@@ -41,15 +41,15 @@ import type {
   KClusteringOptions, FuzzyCMeansResult, HierarchicalClusteringOptions,
   MarkovClusteringOptions, AffinityPropagationOptions
 } from './algorithms/index.mjs';
-import type { GpuCore } from './core.mjs';
+import type { Core } from './core.mjs';
 import type { EventHandler } from './emitter.mjs';
-import type { GpuEvent } from './event.mjs';
+import type { Event } from './event.mjs';
 
-export type EleFilterFn = ( ele: GpuCollection, i: number, eles: GpuCollection ) => boolean;
-export type ElePositionFn = ( ele: GpuCollection, i: number ) => Position | false | undefined;
+export type EleFilterFn = ( ele: Collection, i: number, eles: Collection ) => boolean;
+export type ElePositionFn = ( ele: Collection, i: number ) => Position | false | undefined;
 
 /** A subset criterion: a structured query or a per-element predicate. */
-type FilterLike = GpuQuery | EleFilterFn;
+type FilterLike = Query | EleFilterFn;
 
 // Pack a ref into a single safe integer (group in bit 52, slot in bits 24..51,
 // gen in bits 0..23) for set membership. Avoids the per-element string
@@ -74,7 +74,7 @@ const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set( [ 'width', 'height',
  * @throws when `other` is not a collection
  */
 const assertCollection = ( other: unknown, method: string ): void => {
-  if( other == null || !Array.isArray( ( other as GpuCollection )._refs ) ){
+  if( other == null || !Array.isArray( ( other as Collection )._refs ) ){
     throw new Error(
       `${method}() takes a collection, not ${typeof other === 'string'
         ? `the selector string '${other}'` : `a ${other === null ? 'null' : typeof other}`} — ` +
@@ -110,13 +110,13 @@ const refIndex = ( refs: Ref[] ): Map<number, number> => {
  * validated on access; stale refs (removed elements) read as no-ops or
  * `undefined`, though cached `id()`/`group()` stay readable.
  */
-export class GpuCollection {
-  [index: number]: GpuCollection;
+export class Collection {
+  [index: number]: Collection;
 
   /** How many elements this collection holds. */
   length: number;
 
-  _cy: GpuCore;
+  _cy: Core;
   private __refs!: Ref[];
   /** the store's compactEpoch this collection last synced against (19.3) */
   private _syncEpoch = -1;
@@ -168,7 +168,7 @@ export class GpuCollection {
    *   when the refs are already deduped, `live` when they are also known
    *   current (both skip work on the hot path)
    */
-  constructor( cy: GpuCore, refs: Ref[], opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {} ){
+  constructor( cy: Core, refs: Ref[], opts: { singleton?: boolean; unique?: boolean; live?: boolean } = {} ){
     this._cy = cy;
 
     if( opts.singleton ){
@@ -203,7 +203,7 @@ export class GpuCollection {
           let ele = pool[ ref.slot ];
 
           if( ele == null || ele._refs[0].gen !== ref.gen ){
-            ele = new GpuCollection( cy, [ ref ], { singleton: true } );
+            ele = new Collection( cy, [ ref ], { singleton: true } );
             pool[ ref.slot ] = ele;
           }
 
@@ -265,16 +265,16 @@ export class GpuCollection {
     return this._refs.filter( ref => this._store.isCurrent( ref ) );
   }
 
-  _spawn( refs: Ref[] ): GpuCollection {
-    return new GpuCollection( this._cy, refs );
+  _spawn( refs: Ref[] ): Collection {
+    return new Collection( this._cy, refs );
   }
 
   /**
    * Like `_spawn`, but for refs already known to be distinct (a subset of this
    * collection's deduped refs). Skips the dedupe Set build.
    */
-  _spawnUnique( refs: Ref[] ): GpuCollection {
-    return new GpuCollection( this._cy, refs, { unique: true } );
+  _spawnUnique( refs: Ref[] ): Collection {
+    return new Collection( this._cy, refs, { unique: true } );
   }
 
   /**
@@ -282,8 +282,8 @@ export class GpuCollection {
    * read off the store, e.g. traversal output): interning skips the
    * per-element gen re-validation of `_eleFromRef`.
    */
-  _spawnLive( refs: Ref[] ): GpuCollection {
-    return new GpuCollection( this._cy, refs, { unique: true, live: true } );
+  _spawnLive( refs: Ref[] ): Collection {
+    return new Collection( this._cy, refs, { unique: true, live: true } );
   }
 
   /**
@@ -317,7 +317,7 @@ export class GpuCollection {
    *   span two cores, so this is also the identity a set operation
    *   against a foreign collection would violate
    */
-  cy(): GpuCore {
+  cy(): Core {
     return this._cy;
   }
 
@@ -328,7 +328,7 @@ export class GpuCollection {
    *   CPU-canonical, so a null renderer costs drawing, picking and image
    *   export and nothing else
    */
-  renderer(): GpuCore['_renderer'] {
+  renderer(): Core['_renderer'] {
     return this._cy._renderer;
   }
 
@@ -338,7 +338,7 @@ export class GpuCollection {
    * @returns a length-1 collection, or an empty one — v4 has no separate
    *   element type, so this narrows rather than unwraps
    */
-  element(): GpuCollection {
+  element(): Collection {
     return this.eq( 0 );
   }
 
@@ -348,7 +348,7 @@ export class GpuCollection {
    * @returns a fresh empty collection bound to this core — the seed for
    *   building a set up by union
    */
-  collection(): GpuCollection {
+  collection(): Collection {
     return this._cy.collection();
   }
 
@@ -368,7 +368,7 @@ export class GpuCollection {
    * @param ele — the element to find; only its first element is used
    * @returns the index, or -1 when it is not in this collection
    */
-  indexOf( ele: GpuCollection ): number {
+  indexOf( ele: Collection ): number {
     assertCollection( ele, 'indexOf' );
 
     const ref = ele._first();
@@ -435,7 +435,7 @@ export class GpuCollection {
    * @param thisArg — optional receiver for the callback
    * @returns this collection, for chaining
    */
-  forEach( fn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => void | false, thisArg?: unknown ): this {
+  forEach( fn: ( ele: Collection, i: number, eles: Collection ) => void | false, thisArg?: unknown ): this {
     const n = this.length;
 
     // exit early like v3 when the callback returns false; a plain call when
@@ -457,8 +457,8 @@ export class GpuCollection {
    *
    * @returns a new array of the members
    */
-  toArray(): GpuCollection[] {
-    const array: GpuCollection[] = [];
+  toArray(): Collection[] {
+    const array: Collection[] = [];
 
     for( let i = 0; i < this.length; i++ ){
       array.push( this[ i ] );
@@ -475,7 +475,7 @@ export class GpuCollection {
    * @param end — last index, exclusive
    * @returns the sub-range as a new collection
    */
-  slice( start: number = 0, end: number = this.length ): GpuCollection {
+  slice( start: number = 0, end: number = this.length ): Collection {
     if( start < 0 ){ start = this.length + start; }
     if( end < 0 ){ end = this.length + end; }
 
@@ -491,7 +491,7 @@ export class GpuCollection {
    *   non-function is ignored and returns this collection unchanged
    * @returns a new, sorted collection
    */
-  sort( sortFn: ( a: GpuCollection, b: GpuCollection ) => number ): GpuCollection {
+  sort( sortFn: ( a: Collection, b: Collection ) => number ): Collection {
     if( typeof sortFn !== 'function' ){ return this; }
 
     const sorted = this.toArray().sort( sortFn );
@@ -505,7 +505,7 @@ export class GpuCollection {
    * @param i — the index
    * @returns that element, or an empty collection when out of range
    */
-  eq( i: number ): GpuCollection {
+  eq( i: number ): Collection {
     return this[ i ] ?? this._spawn( [] );
   }
 
@@ -514,7 +514,7 @@ export class GpuCollection {
    *
    * @returns the first element, or an empty collection
    */
-  first(): GpuCollection {
+  first(): Collection {
     return this.eq( 0 );
   }
 
@@ -523,7 +523,7 @@ export class GpuCollection {
    *
    * @returns the last element, or an empty collection
    */
-  last(): GpuCollection {
+  last(): Collection {
     return this.eq( this.length - 1 );
   }
 
@@ -534,7 +534,7 @@ export class GpuCollection {
    * @param thisArg — optional receiver for the callback
    * @returns an array of the results
    */
-  map<T>( fn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => T, thisArg?: unknown ): T[] {
+  map<T>( fn: ( ele: Collection, i: number, eles: Collection ) => T, thisArg?: unknown ): T[] {
     const n = this.length;
     const array: T[] = new Array( n );
 
@@ -737,7 +737,7 @@ export class GpuCollection {
    * @param other — the collection to compare against
    * @returns true when the element sets are equal
    */
-  same( other: GpuCollection ): boolean {
+  same( other: Collection ): boolean {
     assertCollection( other, 'same' );
 
     if( this === other ){ return true; }
@@ -759,7 +759,7 @@ export class GpuCollection {
    * @param other — the collection to compare against
    * @returns true when the sets intersect
    */
-  anySame( other: GpuCollection ): boolean {
+  anySame( other: Collection ): boolean {
     assertCollection( other, 'anySame' );
 
     if( this === other ){ return this.length > 0; }
@@ -780,7 +780,7 @@ export class GpuCollection {
    * @param other — the candidate subset
    * @returns true when `other` is contained
    */
-  contains( other: GpuCollection ): boolean {
+  contains( other: Collection ): boolean {
     assertCollection( other, 'contains' );
 
     if( this === other ){ return true; }
@@ -806,7 +806,7 @@ export class GpuCollection {
    * @param other — the elements to test
    * @returns true when all of them are neighbors
    */
-  allAreNeighbors( other: GpuCollection ): boolean {
+  allAreNeighbors( other: Collection ): boolean {
     assertCollection( other, 'allAreNeighbors' );
 
     const nhood = this.neighborhood();
@@ -858,7 +858,7 @@ export class GpuCollection {
    * @param other — the collection to add
    * @returns a new collection holding both sets
    */
-  union( other: GpuCollection ): GpuCollection {
+  union( other: Collection ): Collection {
     assertCollection( other, 'union' );
 
     return this._spawn( [ ...this._refs, ...other._refs ] );
@@ -875,7 +875,7 @@ export class GpuCollection {
    * @param other — the collection to subtract
    * @returns a new collection
    */
-  difference( other: GpuCollection ): GpuCollection {
+  difference( other: Collection ): Collection {
     assertCollection( other, 'difference' );
 
     const keys = other._keySet();
@@ -894,7 +894,7 @@ export class GpuCollection {
    * @param other — the collection to intersect with
    * @returns a new collection
    */
-  intersection( other: GpuCollection ): GpuCollection {
+  intersection( other: Collection ): Collection {
     assertCollection( other, 'intersection' );
 
     const keys = other._keySet();
@@ -911,7 +911,7 @@ export class GpuCollection {
    * @param other — the other collection
    * @returns a new collection
    */
-  symmetricDifference( other: GpuCollection ): GpuCollection {
+  symmetricDifference( other: Collection ): Collection {
     assertCollection( other, 'symmetricDifference' );
 
     const otherEles = other;
@@ -944,7 +944,7 @@ export class GpuCollection {
    * @throws if a query object carries an unknown key — a typo must not
    *   silently match everything
    */
-  filter( criterion: FilterLike, thisArg?: unknown ): GpuCollection {
+  filter( criterion: FilterLike, thisArg?: unknown ): Collection {
     // the result is a subset of this collection's (already unique) refs
     if( typeof criterion === 'function' ){
       const refs: Ref[] = [];
@@ -1009,7 +1009,7 @@ export class GpuCollection {
    * @param criterion — a query object or predicate; omit for all nodes
    * @returns a new collection of nodes
    */
-  nodes( criterion?: FilterLike ): GpuCollection {
+  nodes( criterion?: FilterLike ): Collection {
     const nodes = this._spawnUnique( this._refs.filter( ref => ref.group === 'nodes' ) );
 
     return criterion == null ? nodes : nodes.filter( criterion );
@@ -1021,7 +1021,7 @@ export class GpuCollection {
    * @param criterion — a query object or predicate; omit for all edges
    * @returns a new collection of edges
    */
-  edges( criterion?: FilterLike ): GpuCollection {
+  edges( criterion?: FilterLike ): Collection {
     const edges = this._spawnUnique( this._refs.filter( ref => ref.group === 'edges' ) );
 
     return criterion == null ? edges : edges.filter( criterion );
@@ -1034,7 +1034,7 @@ export class GpuCollection {
    * @param id — the element id
    * @returns a collection of one element, or an empty collection
    */
-  getElementById( id: string ): GpuCollection {
+  getElementById( id: string ): Collection {
     for( let i = 0; i < this.length; i++ ){
       if( this[ i ]._id === id ){ return this[ i ]; }
     }
@@ -1043,7 +1043,7 @@ export class GpuCollection {
   }
 
   /** Split into { nodes, edges }. */
-  byGroup(): { nodes: GpuCollection; edges: GpuCollection } {
+  byGroup(): { nodes: Collection; edges: Collection } {
     return { nodes: this.nodes(), edges: this.edges() };
   }
 
@@ -1054,7 +1054,7 @@ export class GpuCollection {
    *   enclosing collection — which is what the `absolute` in the name is
    *   distinguishing
    */
-  absoluteComplement(): GpuCollection {
+  absoluteComplement(): Collection {
     return this._cy.elements().difference( this );
   }
 
@@ -1067,8 +1067,8 @@ export class GpuCollection {
    * @param other — the collection to compare with
    * @returns `{ left: only in this, right: only in other, both: in both }`
    */
-  diff( other: GpuCollection ): {
-    left: GpuCollection; right: GpuCollection; both: GpuCollection;
+  diff( other: Collection ): {
+    left: Collection; right: Collection; both: Collection;
   } {
     assertCollection( other, 'diff' );
 
@@ -1091,7 +1091,7 @@ export class GpuCollection {
    *   `Array#reduce`)
    * @returns the final accumulator
    */
-  reduce<T>( fn: ( acc: T, ele: GpuCollection, i: number, eles: GpuCollection ) => T, initial: T ): T {
+  reduce<T>( fn: ( acc: T, ele: Collection, i: number, eles: Collection ) => T, initial: T ): T {
     let val = initial;
 
     for( let i = 0; i < this.length; i++ ){
@@ -1103,8 +1103,8 @@ export class GpuCollection {
 
   /** The element maximizing `valFn`, with its value ({ value: -Infinity, ele: undefined } when empty). */
   max(
-    valFn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => number, thisArg?: unknown
-  ): { value: number; ele: GpuCollection | undefined } {
+    valFn: ( ele: Collection, i: number, eles: Collection ) => number, thisArg?: unknown
+  ): { value: number; ele: Collection | undefined } {
     return this._extremum( valFn, thisArg, 1 );
   }
 
@@ -1117,17 +1117,17 @@ export class GpuCollection {
    *   when the collection is empty
    */
   min(
-    valFn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => number, thisArg?: unknown
-  ): { value: number; ele: GpuCollection | undefined } {
+    valFn: ( ele: Collection, i: number, eles: Collection ) => number, thisArg?: unknown
+  ): { value: number; ele: Collection | undefined } {
     return this._extremum( valFn, thisArg, -1 );
   }
 
   private _extremum(
-    valFn: ( ele: GpuCollection, i: number, eles: GpuCollection ) => number,
+    valFn: ( ele: Collection, i: number, eles: Collection ) => number,
     thisArg: unknown, sign: 1 | -1
-  ): { value: number; ele: GpuCollection | undefined } {
+  ): { value: number; ele: Collection | undefined } {
     let best = sign * -Infinity;
-    let bestEle: GpuCollection | undefined;
+    let bestEle: Collection | undefined;
 
     for( let i = 0; i < this.length; i++ ){
       const val = thisArg == null ? valFn( this[ i ], i, this ) : valFn.call( thisArg, this[ i ], i, this );
@@ -1262,7 +1262,7 @@ export class GpuCollection {
    *   on `cy.animate`), `duration`, `easing`, `delay`, `complete`
    * @returns this collection, for chaining; use `animation()` when you
    *   want the handle
-   * @see GpuCollection#animation for the handle form with
+   * @see Collection#animation for the handle form with
    *   `promise`/`pause`/`resume`/`reverse`
    */
   animate( opts: AnimateOptions ): this {
@@ -1661,7 +1661,7 @@ export class GpuCollection {
    * unlike a position tween there is no staleness window.
    *
    * @returns the width, or undefined when empty or removed
-   * @see GpuCollection#outerWidth to include the border
+   * @see Collection#outerWidth to include the border
    */
   width(): number | undefined {
     const ref = this._first();
@@ -2186,7 +2186,7 @@ export class GpuCollection {
    * @returns `{ x1, y1, x2, y2, w, h }` in model coordinates
    * @throws on an unknown option key — a typo must not silently change
    *   fit semantics
-   * @see GpuCollection#labelBoundingBox for the label box alone
+   * @see Collection#labelBoundingBox for the label box alone
    */
   boundingBox( options?: { includeLabels?: boolean } ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
     // labels join the box by default (round 16.4); unknown keys throw —
@@ -3014,17 +3014,17 @@ export class GpuCollection {
    *   returned refs are dead by construction (v4 removals are terminal),
    *   so only their cached `id()`/`group()` still read
    */
-  remove(): GpuCollection {
+  remove(): Collection {
     const cy = this._cy;
     const store = this._store;
 
     // build the closure: requested live elements + their descendants
     // (compound removal cascades, v3) + incident edges of removed nodes
-    const edgeHandles: GpuCollection[] = [];
-    const nodeHandles: GpuCollection[] = [];
+    const edgeHandles: Collection[] = [];
+    const nodeHandles: Collection[] = [];
     const seen = new Set<number>();
 
-    const addEdge = ( ele: GpuCollection ): void => {
+    const addEdge = ( ele: Collection ): void => {
       const key = packRef( ele._refs[0] );
 
       if( !seen.has( key ) ){
@@ -3033,7 +3033,7 @@ export class GpuCollection {
       }
     };
 
-    const addNode = ( ele: GpuCollection ): void => {
+    const addNode = ( ele: Collection ): void => {
       const key = packRef( ele._refs[0] );
 
       if( seen.has( key ) ){ return; }
@@ -3181,7 +3181,7 @@ export class GpuCollection {
    *
    * @returns the source node, or an empty collection for a non-edge
    */
-  source(): GpuCollection {
+  source(): Collection {
     return this._endpoint( 0 );
   }
 
@@ -3190,7 +3190,7 @@ export class GpuCollection {
    *
    * @returns the target node, or an empty collection for a non-edge
    */
-  target(): GpuCollection {
+  target(): Collection {
     return this._endpoint( 1 );
   }
 
@@ -3199,7 +3199,7 @@ export class GpuCollection {
    *
    * @returns the source nodes
    */
-  sources(): GpuCollection {
+  sources(): Collection {
     return this._endpoints( 0 );
   }
 
@@ -3208,11 +3208,11 @@ export class GpuCollection {
    *
    * @returns the target nodes
    */
-  targets(): GpuCollection {
+  targets(): Collection {
     return this._endpoints( 1 );
   }
 
-  private _endpoint( which: 0 | 1 ): GpuCollection {
+  private _endpoint( which: 0 | 1 ): Collection {
     const ref = this._first();
 
     if( ref == null || ref.group !== 'edges' ){ return this._spawn( [] ); }
@@ -3222,7 +3222,7 @@ export class GpuCollection {
     return this._cy._ele( 'nodes', endpoints[ ref.slot * 2 + which ] );
   }
 
-  private _endpoints( which: 0 | 1 ): GpuCollection {
+  private _endpoints( which: 0 | 1 ): Collection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
@@ -3253,7 +3253,7 @@ export class GpuCollection {
    *   the result
    * @returns the incident edges
    */
-  connectedEdges( criterion?: FilterLike ): GpuCollection {
+  connectedEdges( criterion?: FilterLike ): Collection {
     const store = this._store;
     const adj = store.adj;
     const refs: Ref[] = [];
@@ -3298,7 +3298,7 @@ export class GpuCollection {
    *   the result
    * @returns the endpoint nodes
    */
-  connectedNodes( criterion?: FilterLike ): GpuCollection {
+  connectedNodes( criterion?: FilterLike ): Collection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
@@ -3337,7 +3337,7 @@ export class GpuCollection {
    *   the result
    * @returns the outgoing edges and their target nodes
    */
-  outgoers( criterion?: FilterLike ): GpuCollection {
+  outgoers( criterion?: FilterLike ): Collection {
     return this._goers( 'out', criterion );
   }
 
@@ -3350,11 +3350,11 @@ export class GpuCollection {
    *   the result
    * @returns the incoming edges and their source nodes
    */
-  incomers( criterion?: FilterLike ): GpuCollection {
+  incomers( criterion?: FilterLike ): Collection {
     return this._goers( 'in', criterion );
   }
 
-  private _goers( direction: 'out' | 'in', criterion?: FilterLike ): GpuCollection {
+  private _goers( direction: 'out' | 'in', criterion?: FilterLike ): Collection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -3398,9 +3398,9 @@ export class GpuCollection {
    * @param criterion — an optional query object or predicate to filter
    *   the result
    * @returns the neighbouring edges and nodes
-   * @see GpuCollection#closedNeighborhood to include these nodes
+   * @see Collection#closedNeighborhood to include these nodes
    */
-  neighborhood( criterion?: FilterLike ): GpuCollection {
+  neighborhood( criterion?: FilterLike ): Collection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -3461,7 +3461,7 @@ export class GpuCollection {
    *   the result
    * @returns the closed neighbourhood
    */
-  closedNeighborhood( criterion?: FilterLike ): GpuCollection {
+  closedNeighborhood( criterion?: FilterLike ): Collection {
     const eles = this.neighborhood().union( this.nodes() );
 
     return criterion == null ? eles : eles.filter( criterion );
@@ -3476,7 +3476,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the immediate parents
    */
-  parent( criterion?: FilterLike ): GpuCollection {
+  parent( criterion?: FilterLike ): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
@@ -3506,7 +3506,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the ancestors, nearest first
    */
-  parents( criterion?: FilterLike ): GpuCollection {
+  parents( criterion?: FilterLike ): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
@@ -3547,7 +3547,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the children
    */
-  children( criterion?: FilterLike ): GpuCollection {
+  children( criterion?: FilterLike ): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
@@ -3577,7 +3577,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the descendants
    */
-  descendants( criterion?: FilterLike ): GpuCollection {
+  descendants( criterion?: FilterLike ): Collection {
     const store = this._store;
     const refs: Ref[] = [];
     const seen = new Set<number>();
@@ -3619,7 +3619,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the siblings
    */
-  siblings( criterion?: FilterLike ): GpuCollection {
+  siblings( criterion?: FilterLike ): Collection {
     const eles = this.parent().children().difference( this );
 
     return criterion == null ? eles : eles.filter( criterion );
@@ -3631,7 +3631,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the parentless nodes
    */
-  orphans( criterion?: FilterLike ): GpuCollection {
+  orphans( criterion?: FilterLike ): Collection {
     return this._byParentedness( false, criterion );
   }
 
@@ -3641,11 +3641,11 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the parented nodes
    */
-  nonorphans( criterion?: FilterLike ): GpuCollection {
+  nonorphans( criterion?: FilterLike ): Collection {
     return this._byParentedness( true, criterion );
   }
 
-  private _byParentedness( wantChild: boolean, criterion?: FilterLike ): GpuCollection {
+  private _byParentedness( wantChild: boolean, criterion?: FilterLike ): Collection {
     const store = this._store;
     const refs: Ref[] = [];
 
@@ -3671,7 +3671,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the shared ancestors, closest first
    */
-  commonAncestors( criterion?: FilterLike ): GpuCollection {
+  commonAncestors( criterion?: FilterLike ): Collection {
     const store = this._store;
     let chain: number[] | null = null;
 
@@ -3764,7 +3764,7 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the source nodes
    */
-  roots( criterion?: FilterLike ): GpuCollection {
+  roots( criterion?: FilterLike ): Collection {
     return this._dagExtremity( 'in', criterion );
   }
 
@@ -3774,11 +3774,11 @@ export class GpuCollection {
    *   the result, exactly as `filter()` takes it
    * @returns the sink nodes
    */
-  leaves( criterion?: FilterLike ): GpuCollection {
+  leaves( criterion?: FilterLike ): Collection {
     return this._dagExtremity( 'out', criterion );
   }
 
-  private _dagExtremity( direction: 'in' | 'out', criterion?: FilterLike ): GpuCollection {
+  private _dagExtremity( direction: 'in' | 'out', criterion?: FilterLike ): Collection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -3816,7 +3816,7 @@ export class GpuCollection {
    *   the result
    * @returns the reachable edges and nodes
    */
-  successors( criterion?: FilterLike ): GpuCollection {
+  successors( criterion?: FilterLike ): Collection {
     return this._dagAllHops( 'out', criterion );
   }
 
@@ -3828,11 +3828,11 @@ export class GpuCollection {
    *   the result
    * @returns the edges and nodes of the backward closure
    */
-  predecessors( criterion?: FilterLike ): GpuCollection {
+  predecessors( criterion?: FilterLike ): Collection {
     return this._dagAllHops( 'in', criterion );
   }
 
-  private _dagAllHops( direction: 'out' | 'in', criterion?: FilterLike ): GpuCollection {
+  private _dagAllHops( direction: 'out' | 'in', criterion?: FilterLike ): Collection {
     const store = this._store;
     const adj = store.adj;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -3890,7 +3890,7 @@ export class GpuCollection {
    *   selector string)
    * @returns the connecting edges
    */
-  edgesWith( others: GpuCollection ): GpuCollection {
+  edgesWith( others: Collection ): Collection {
     assertCollection( others, 'edgesWith' );
 
     return this._edgesWith( others, false );
@@ -3903,13 +3903,13 @@ export class GpuCollection {
    * @param others — the target-side nodes
    * @returns the directed connecting edges
    */
-  edgesTo( others: GpuCollection ): GpuCollection {
+  edgesTo( others: Collection ): Collection {
     assertCollection( others, 'edgesTo' );
 
     return this._edgesWith( others, true );
   }
 
-  private _edgesWith( others: GpuCollection, thisIsSrc: boolean ): GpuCollection {
+  private _edgesWith( others: Collection, thisIsSrc: boolean ): Collection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const otherColl = others;
@@ -3946,7 +3946,7 @@ export class GpuCollection {
    *   the result
    * @returns the parallel edges
    */
-  parallelEdges( criterion?: FilterLike ): GpuCollection {
+  parallelEdges( criterion?: FilterLike ): Collection {
     return this._parallelEdges( false, criterion );
   }
 
@@ -3958,11 +3958,11 @@ export class GpuCollection {
    *   the result
    * @returns the codirected edges
    */
-  codirectedEdges( criterion?: FilterLike ): GpuCollection {
+  codirectedEdges( criterion?: FilterLike ): Collection {
     return this._parallelEdges( true, criterion );
   }
 
-  private _parallelEdges( codirectedOnly: boolean, criterion?: FilterLike ): GpuCollection {
+  private _parallelEdges( codirectedOnly: boolean, criterion?: FilterLike ): Collection {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const refs: Ref[] = [];
@@ -4001,7 +4001,7 @@ export class GpuCollection {
    * @param root — restricts the seed nodes; omit to seed from every node
    * @returns one collection per component
    */
-  components( root?: GpuCollection | null ): GpuCollection[] {
+  components( root?: Collection | null ): Collection[] {
     const store = this._store;
     const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
     const nodeSlots = this._nodeSlotSet();
@@ -4030,7 +4030,7 @@ export class GpuCollection {
     }
 
     const visited = new Set<number>();
-    const comps: GpuCollection[] = [];
+    const comps: Collection[] = [];
 
     for( const seed of seeds ){
       if( visited.has( seed ) ){ continue; }
@@ -4084,7 +4084,7 @@ export class GpuCollection {
    *   over the whole graph rather than within this collection; an empty
    *   collection when this one is empty
    */
-  component(): GpuCollection {
+  component(): Collection {
     if( this._first() == null ){ return this._spawn( [] ); }
 
     return this._cy.elements().components( this )[ 0 ] ?? this._spawn( [] );
@@ -4108,11 +4108,11 @@ export class GpuCollection {
    * current) positions.
    */
   boundingBoxAt(
-    fn: Position | ( ( node: GpuCollection, i: number ) => Position )
+    fn: Position | ( ( node: Collection, i: number ) => Position )
   ): { x1: number; y1: number; x2: number; y2: number; w: number; h: number } {
     const nodes = this.nodes();
     const posFn = typeof fn === 'function' ? fn : () => fn;
-    const posMap = new Map<GpuCollection, Position>();
+    const posMap = new Map<Collection, Position>();
 
     let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
 
@@ -4231,16 +4231,16 @@ export class GpuCollection {
    */
   layoutPositions(
     layout: object,
-    options: GpuLayoutBaseOptions,
-    fn: ( node: GpuCollection, i: number ) => Position
+    options: LayoutBaseOptions,
+    fn: ( node: Collection, i: number ) => Position
   ): this {
     const cy = this._cy;
     // v3: parents are excluded from layout positioning (auto-bounds
     // derive them from their placed leaves, round 14.11)
     const nodes = cy._store.hasCompounds()
-      ? this.nodes().filter( ( n: GpuCollection ) => !n.isParent() )
+      ? this.nodes().filter( ( n: Collection ) => !n.isParent() )
       : this.nodes();
-    const eles = ( options.eles as GpuCollection | undefined ) ?? this;
+    const eles = ( options.eles as Collection | undefined ) ?? this;
 
     // the extension wrapper emits its own layoutstart before run()
     // (round 17.5); the finisher folds into that lifecycle
@@ -4249,9 +4249,9 @@ export class GpuCollection {
     }
 
     // memoize by handle: handles are interned singletons
-    const rawMemo = new Map<GpuCollection, Position>();
+    const rawMemo = new Map<Collection, Position>();
 
-    const rawPos = ( node: GpuCollection, i: number ): Position => {
+    const rawPos = ( node: Collection, i: number ): Position => {
       let p = rawMemo.get( node );
 
       if( p == null ){
@@ -4279,9 +4279,9 @@ export class GpuCollection {
       center = { x: ( x1 + x2 ) / 2, y: ( y1 + y2 ) / 2 };
     }
 
-    const finalMemo = new Map<GpuCollection, Position>();
+    const finalMemo = new Map<Collection, Position>();
 
-    const getFinalPos = ( node: GpuCollection, i: number ): Position => {
+    const getFinalPos = ( node: Collection, i: number ): Position => {
       let p = finalMemo.get( node );
 
       if( p != null ){ return p; }
@@ -4381,7 +4381,7 @@ export class GpuCollection {
    *   to this collection
    * @returns the layout instance; nothing runs until `run()`
    */
-  layout( options: GpuLayoutOptions ): ReturnType<GpuCore['layout']> {
+  layout( options: LayoutOptions ): ReturnType<Core['layout']> {
     return this._cy.layout( { ...options, eles: this } );
   }
 
@@ -4467,7 +4467,7 @@ export class GpuCollection {
    * @param weight — `( edge ) => number`; defaults to unit weights
    * @returns the spanning forest's nodes and edges
    */
-  kruskal( weight?: WeightFn ): GpuCollection {
+  kruskal( weight?: WeightFn ): Collection {
     return kruskalImpl( this, weight );
   }
 
@@ -4602,7 +4602,7 @@ export class GpuCollection {
    *   sensitivityThreshold }`, with `attributes` as plain functions
    * @returns one collection per cluster
    */
-  kMeans( options?: KClusteringOptions ): GpuCollection[] {
+  kMeans( options?: KClusteringOptions ): Collection[] {
     return kMeansImpl( this, options );
   }
 
@@ -4613,7 +4613,7 @@ export class GpuCollection {
    * @param options — as `kMeans`
    * @returns one collection per cluster
    */
-  kMedoids( options?: KClusteringOptions ): GpuCollection[] {
+  kMedoids( options?: KClusteringOptions ): Collection[] {
     return kMedoidsImpl( this, options );
   }
 
@@ -4637,7 +4637,7 @@ export class GpuCollection {
    *   dendrogramDepth }`
    * @returns one collection per cluster
    */
-  hierarchicalClustering( options?: HierarchicalClusteringOptions ): GpuCollection[] {
+  hierarchicalClustering( options?: HierarchicalClusteringOptions ): Collection[] {
     return hierarchicalClusteringImpl( this, options );
   }
 
@@ -4651,7 +4651,7 @@ export class GpuCollection {
    *   multFactor, maxIterations }`
    * @returns one collection per cluster
    */
-  markovClustering( options?: MarkovClusteringOptions ): GpuCollection[] {
+  markovClustering( options?: MarkovClusteringOptions ): Collection[] {
     return markovClusteringImpl( this, options );
   }
 
@@ -4665,7 +4665,7 @@ export class GpuCollection {
    *   minIterations, maxIterations }`
    * @returns one collection per cluster
    */
-  affinityPropagation( options?: AffinityPropagationOptions ): GpuCollection[] {
+  affinityPropagation( options?: AffinityPropagationOptions ): Collection[] {
     return affinityPropagationImpl( this, options );
   }
 
@@ -4816,7 +4816,7 @@ export class GpuCollection {
 
   private _degree(
     includeLoops: boolean,
-    count: ( store: GpuCore['_store'], slot: number ) => number,
+    count: ( store: Core['_store'], slot: number ) => number,
     direction?: 'out' | 'in'
   ): number | undefined {
     const store = this._store;
@@ -4856,7 +4856,7 @@ export class GpuCollection {
    * A name v4 never emits registers cleanly and never fires: that is v3's
    * `vmouse*` aliases and its raw mouse/touch re-emits — and, since round
    * 41.2, any name containing a dot: there is no namespace machinery, so
-   * `'data.ns'` is a literal type v4 never raises.  See `GpuCore#on`.
+   * `'data.ns'` is a literal type v4 never raises.  See `Core#on`.
    *
    * @param events — one or more space-separated event names
    * @param callback — the handler
@@ -4942,7 +4942,7 @@ export class GpuCollection {
    * @param events — one or more space-separated event names
    * @returns a promise for the event object
    */
-  promiseOn( events: string ): Promise<GpuEvent> {
+  promiseOn( events: string ): Promise<Event> {
     return new Promise( resolve => {
       this.one( events, event => resolve( event ) );
     } );
@@ -4951,67 +4951,67 @@ export class GpuCollection {
   declare pon: this['promiseOn'];
 }
 
-GpuCollection.prototype.each = GpuCollection.prototype.forEach;
-GpuCollection.prototype.has = GpuCollection.prototype.contains;
-GpuCollection.prototype.u = GpuCollection.prototype.union;
-GpuCollection.prototype.or = GpuCollection.prototype.union;
-GpuCollection.prototype.add = GpuCollection.prototype.union;
-GpuCollection.prototype.merge = GpuCollection.prototype.union;
-GpuCollection.prototype.not = GpuCollection.prototype.difference;
-GpuCollection.prototype.subtract = GpuCollection.prototype.difference;
-GpuCollection.prototype.unmerge = GpuCollection.prototype.difference;
-GpuCollection.prototype.relativeComplement = GpuCollection.prototype.difference;
-GpuCollection.prototype.complement = GpuCollection.prototype.absoluteComplement;
-GpuCollection.prototype.abscomp = GpuCollection.prototype.absoluteComplement;
-GpuCollection.prototype.equal = GpuCollection.prototype.same;
-GpuCollection.prototype.equals = GpuCollection.prototype.same;
-GpuCollection.prototype.allAreNeighbours = GpuCollection.prototype.allAreNeighbors;
-GpuCollection.prototype.modelPosition = GpuCollection.prototype.position;
-GpuCollection.prototype.point = GpuCollection.prototype.position;
-GpuCollection.prototype.modelPositions = GpuCollection.prototype.positions;
-GpuCollection.prototype.points = GpuCollection.prototype.positions;
-GpuCollection.prototype.relativePoint = GpuCollection.prototype.relativePosition;
-GpuCollection.prototype.renderedPoint = GpuCollection.prototype.renderedPosition;
-GpuCollection.prototype.renderedBoundingbox = GpuCollection.prototype.renderedBoundingBox;
-GpuCollection.prototype.intersect = GpuCollection.prototype.intersection;
-GpuCollection.prototype.and = GpuCollection.prototype.intersection;
-GpuCollection.prototype.symdiff = GpuCollection.prototype.symmetricDifference;
-GpuCollection.prototype.xor = GpuCollection.prototype.symmetricDifference;
-GpuCollection.prototype.deselect = GpuCollection.prototype.unselect;
-GpuCollection.prototype.openNeighborhood = GpuCollection.prototype.neighborhood;
-GpuCollection.prototype.ancestors = GpuCollection.prototype.parents;
-GpuCollection.prototype.componentsOf = GpuCollection.prototype.components;
-GpuCollection.prototype.makeLayout = GpuCollection.prototype.layout;
-GpuCollection.prototype.createLayout = GpuCollection.prototype.layout;
-GpuCollection.prototype.bfs = GpuCollection.prototype.breadthFirstSearch;
-GpuCollection.prototype.dfs = GpuCollection.prototype.depthFirstSearch;
-GpuCollection.prototype.tsc = GpuCollection.prototype.tarjanStronglyConnected;
-GpuCollection.prototype.tscc = GpuCollection.prototype.tarjanStronglyConnected;
-GpuCollection.prototype.tarjanStronglyConnectedComponents = GpuCollection.prototype.tarjanStronglyConnected;
-GpuCollection.prototype.htbc = GpuCollection.prototype.hopcroftTarjanBiconnected;
-GpuCollection.prototype.htb = GpuCollection.prototype.hopcroftTarjanBiconnected;
-GpuCollection.prototype.hopcroftTarjanBiconnectedComponents = GpuCollection.prototype.hopcroftTarjanBiconnected;
-GpuCollection.prototype.dc = GpuCollection.prototype.degreeCentrality;
-GpuCollection.prototype.dcn = GpuCollection.prototype.degreeCentralityNormalized;
-GpuCollection.prototype.degreeCentralityNormalised = GpuCollection.prototype.degreeCentralityNormalized;
-GpuCollection.prototype.cc = GpuCollection.prototype.closenessCentrality;
-GpuCollection.prototype.ccn = GpuCollection.prototype.closenessCentralityNormalized;
-GpuCollection.prototype.closenessCentralityNormalised = GpuCollection.prototype.closenessCentralityNormalized;
-GpuCollection.prototype.bc = GpuCollection.prototype.betweennessCentrality;
-GpuCollection.prototype.fcm = GpuCollection.prototype.fuzzyCMeans;
-GpuCollection.prototype.hca = GpuCollection.prototype.hierarchicalClustering;
-GpuCollection.prototype.mcl = GpuCollection.prototype.markovClustering;
-GpuCollection.prototype.ap = GpuCollection.prototype.affinityPropagation;
-GpuCollection.prototype.addListener = GpuCollection.prototype.on;
-GpuCollection.prototype.removeListener = GpuCollection.prototype.off;
-GpuCollection.prototype.trigger = GpuCollection.prototype.emit;
-GpuCollection.prototype.once = GpuCollection.prototype.one;
-GpuCollection.prototype.listen = GpuCollection.prototype.on;
-GpuCollection.prototype.bind = GpuCollection.prototype.on;
-GpuCollection.prototype.unlisten = GpuCollection.prototype.off;
-GpuCollection.prototype.unbind = GpuCollection.prototype.off;
-GpuCollection.prototype.pon = GpuCollection.prototype.promiseOn;
-GpuCollection.prototype.attr = GpuCollection.prototype.data;
-GpuCollection.prototype.removeAttr = GpuCollection.prototype.removeData;
-GpuCollection.prototype.css = GpuCollection.prototype.style;
-GpuCollection.prototype.renderedCss = GpuCollection.prototype.renderedStyle;
+Collection.prototype.each = Collection.prototype.forEach;
+Collection.prototype.has = Collection.prototype.contains;
+Collection.prototype.u = Collection.prototype.union;
+Collection.prototype.or = Collection.prototype.union;
+Collection.prototype.add = Collection.prototype.union;
+Collection.prototype.merge = Collection.prototype.union;
+Collection.prototype.not = Collection.prototype.difference;
+Collection.prototype.subtract = Collection.prototype.difference;
+Collection.prototype.unmerge = Collection.prototype.difference;
+Collection.prototype.relativeComplement = Collection.prototype.difference;
+Collection.prototype.complement = Collection.prototype.absoluteComplement;
+Collection.prototype.abscomp = Collection.prototype.absoluteComplement;
+Collection.prototype.equal = Collection.prototype.same;
+Collection.prototype.equals = Collection.prototype.same;
+Collection.prototype.allAreNeighbours = Collection.prototype.allAreNeighbors;
+Collection.prototype.modelPosition = Collection.prototype.position;
+Collection.prototype.point = Collection.prototype.position;
+Collection.prototype.modelPositions = Collection.prototype.positions;
+Collection.prototype.points = Collection.prototype.positions;
+Collection.prototype.relativePoint = Collection.prototype.relativePosition;
+Collection.prototype.renderedPoint = Collection.prototype.renderedPosition;
+Collection.prototype.renderedBoundingbox = Collection.prototype.renderedBoundingBox;
+Collection.prototype.intersect = Collection.prototype.intersection;
+Collection.prototype.and = Collection.prototype.intersection;
+Collection.prototype.symdiff = Collection.prototype.symmetricDifference;
+Collection.prototype.xor = Collection.prototype.symmetricDifference;
+Collection.prototype.deselect = Collection.prototype.unselect;
+Collection.prototype.openNeighborhood = Collection.prototype.neighborhood;
+Collection.prototype.ancestors = Collection.prototype.parents;
+Collection.prototype.componentsOf = Collection.prototype.components;
+Collection.prototype.makeLayout = Collection.prototype.layout;
+Collection.prototype.createLayout = Collection.prototype.layout;
+Collection.prototype.bfs = Collection.prototype.breadthFirstSearch;
+Collection.prototype.dfs = Collection.prototype.depthFirstSearch;
+Collection.prototype.tsc = Collection.prototype.tarjanStronglyConnected;
+Collection.prototype.tscc = Collection.prototype.tarjanStronglyConnected;
+Collection.prototype.tarjanStronglyConnectedComponents = Collection.prototype.tarjanStronglyConnected;
+Collection.prototype.htbc = Collection.prototype.hopcroftTarjanBiconnected;
+Collection.prototype.htb = Collection.prototype.hopcroftTarjanBiconnected;
+Collection.prototype.hopcroftTarjanBiconnectedComponents = Collection.prototype.hopcroftTarjanBiconnected;
+Collection.prototype.dc = Collection.prototype.degreeCentrality;
+Collection.prototype.dcn = Collection.prototype.degreeCentralityNormalized;
+Collection.prototype.degreeCentralityNormalised = Collection.prototype.degreeCentralityNormalized;
+Collection.prototype.cc = Collection.prototype.closenessCentrality;
+Collection.prototype.ccn = Collection.prototype.closenessCentralityNormalized;
+Collection.prototype.closenessCentralityNormalised = Collection.prototype.closenessCentralityNormalized;
+Collection.prototype.bc = Collection.prototype.betweennessCentrality;
+Collection.prototype.fcm = Collection.prototype.fuzzyCMeans;
+Collection.prototype.hca = Collection.prototype.hierarchicalClustering;
+Collection.prototype.mcl = Collection.prototype.markovClustering;
+Collection.prototype.ap = Collection.prototype.affinityPropagation;
+Collection.prototype.addListener = Collection.prototype.on;
+Collection.prototype.removeListener = Collection.prototype.off;
+Collection.prototype.trigger = Collection.prototype.emit;
+Collection.prototype.once = Collection.prototype.one;
+Collection.prototype.listen = Collection.prototype.on;
+Collection.prototype.bind = Collection.prototype.on;
+Collection.prototype.unlisten = Collection.prototype.off;
+Collection.prototype.unbind = Collection.prototype.off;
+Collection.prototype.pon = Collection.prototype.promiseOn;
+Collection.prototype.attr = Collection.prototype.data;
+Collection.prototype.removeAttr = Collection.prototype.removeData;
+Collection.prototype.css = Collection.prototype.style;
+Collection.prototype.renderedCss = Collection.prototype.renderedStyle;

@@ -1,10 +1,10 @@
 import type { Ref } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
-import type { GpuCore } from '../core.mjs';
-import type { GpuCollection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
+import type { Collection } from '../collection.mjs';
 
 /** Edge weighting function: receives the edge handle, returns its weight. */
-export type WeightFn = ( edge: GpuCollection ) => number;
+export type WeightFn = ( edge: Collection ) => number;
 
 /**
  * A slot-native view of the calling collection as a subgraph: the live node
@@ -14,9 +14,9 @@ export type WeightFn = ( edge: GpuCollection ) => number;
  * v3's "the algorithm runs on the calling collection" semantics.
  */
 export interface SubgraphView {
-  cy: GpuCore;
+  cy: Core;
   store: GraphStore;
-  coll: GpuCollection;
+  coll: Collection;
   endpoints: Uint32Array;
   /** live node slots, collection order */
   nodeSlots: number[];
@@ -39,7 +39,7 @@ export interface SubgraphView {
  * @returns the snapshot the `eachIncident` / `incidentEdgesInView` helpers
  *   traverse
  */
-export const subgraph = ( coll: GpuCollection ): SubgraphView => {
+export const subgraph = ( coll: Collection ): SubgraphView => {
   const cy = coll.cy();
   const store = cy._store;
   const endpoints = store.column( 'edge.endpoints' ) as Uint32Array;
@@ -133,7 +133,7 @@ export const firstNodeSlot = ( view: SubgraphView, arg: unknown, name: string ):
     throw new TypeError( `\`${ name }\` must be a collection — v4 has no selector strings` );
   }
 
-  const coll = arg as GpuCollection | null | undefined;
+  const coll = arg as Collection | null | undefined;
 
   if( coll == null || coll._liveRefs == null ){ return undefined; }
 

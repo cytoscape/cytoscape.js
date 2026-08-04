@@ -1,11 +1,11 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, incidentEdgesInView as incidentEdges } from './algo-shared.mjs';
 
 export interface HopcroftTarjanBiconnectedResult {
   /** the cut vertices (articulation points), in discovery order */
-  cut: GpuCollection;
-  components: GpuCollection[];
+  cut: Collection;
+  components: Collection[];
 }
 
 /**
@@ -14,7 +14,7 @@ export interface HopcroftTarjanBiconnectedResult {
  * edges back to the DFS parent are skipped (parallel edges included), and a
  * component absorbs every subgraph edge of its non-cut vertices.
  */
-export const hopcroftTarjanBiconnected = ( coll: GpuCollection ): HopcroftTarjanBiconnectedResult => {
+export const hopcroftTarjanBiconnected = ( coll: Collection ): HopcroftTarjanBiconnectedResult => {
   const view = subgraph( coll );
   const { store, endpoints, index, nodeSlots } = view;
   const n = nodeSlots.length;
@@ -24,7 +24,7 @@ export const hopcroftTarjanBiconnected = ( coll: GpuCollection ): HopcroftTarjan
   const cutVertex = new Uint8Array( n );
   const visitedEdges = new Set<number>();
   const stack: { x: number; y: number; edge: number }[] = []; // dense x/y, edge slot
-  const components: GpuCollection[] = [];
+  const components: Collection[] = [];
   let nextId = 0;
   let edgeCount = 0;
 

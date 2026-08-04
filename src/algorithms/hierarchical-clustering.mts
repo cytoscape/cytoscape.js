@@ -1,11 +1,11 @@
 // Agglomerative hierarchical clustering — a handle-level port of v3's pass
 // (threshold and dendrogram modes, min/max/mean/other linkage).
 
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 
-export type HierarchicalAttributeFn = ( node: GpuCollection ) => number;
+export type HierarchicalAttributeFn = ( node: Collection ) => number;
 
 export interface HierarchicalClusteringOptions {
   distance?: DistanceMetric;
@@ -19,7 +19,7 @@ export interface HierarchicalClusteringOptions {
 }
 
 interface ClusterNode {
-  value?: GpuCollection | GpuCollection[];
+  value?: Collection | Collection[];
   key: number | null;
   index: number | null;
   size?: number;
@@ -53,7 +53,7 @@ const setOptions = ( options: HierarchicalClusteringOptions = {} ): ResolvedOpti
   };
 };
 
-const spawnHandles = ( coll: GpuCollection, eles: GpuCollection[] ): GpuCollection =>
+const spawnHandles = ( coll: Collection, eles: Collection[] ): Collection =>
   coll._spawn( eles.map( ele => ele._refs[ 0 ] ) );
 
 const mergeClosest = (
@@ -63,7 +63,7 @@ const mergeClosest = (
   let min = Infinity;
   const attrs = opts.attributes;
 
-  const getDist = ( n1: GpuCollection, n2: GpuCollection ): number => clusteringDistance(
+  const getDist = ( n1: Collection, n2: Collection ): number => clusteringDistance(
     opts.distance, attrs.length, i => attrs[ i ]( n1 ), i => attrs[ i ]( n2 ), n1, n2 );
 
   for( let i = 0; i < clusters.length; i++ ){
@@ -89,7 +89,7 @@ const mergeClosest = (
     merged = { left: c1, right: c2, key: c1.key, index: null };
   } else {
     merged = {
-      value: ( c1.value as GpuCollection[] ).concat( c2.value as GpuCollection[] ),
+      value: ( c1.value as Collection[] ).concat( c2.value as Collection[] ),
       key: c1.key,
       index: null
     };
@@ -114,9 +114,9 @@ const mergeClosest = (
                dists[ c2.key as number ][ cur.key as number ] * ( c2.size as number ) ) /
              ( ( c1.size as number ) + ( c2.size as number ) );
     } else if( opts.mode === 'dendrogram' ){
-      dist = getDist( cur.value as GpuCollection, c1.value as GpuCollection );
+      dist = getDist( cur.value as Collection, c1.value as Collection );
     } else {
-      dist = getDist( ( cur.value as GpuCollection[] )[ 0 ], ( c1.value as GpuCollection[] )[ 0 ] );
+      dist = getDist( ( cur.value as Collection[] )[ 0 ], ( c1.value as Collection[] )[ 0 ] );
     }
 
     dists[ c1.key as number ][ cur.key as number ] = dist;
@@ -146,18 +146,18 @@ const mergeClosest = (
   return true;
 };
 
-const getAllChildren = ( root: ClusterNode | undefined, arr: GpuCollection[] ): void => {
+const getAllChildren = ( root: ClusterNode | undefined, arr: Collection[] ): void => {
   if( !root ){ return; }
 
   if( root.value ){
-    arr.push( root.value as GpuCollection );
+    arr.push( root.value as Collection );
   } else {
     getAllChildren( root.left, arr );
     getAllChildren( root.right, arr );
   }
 };
 
-const buildDendrogram = ( root: ClusterNode | undefined, coll: GpuCollection ): string => {
+const buildDendrogram = ( root: ClusterNode | undefined, coll: Collection ): string => {
   if( !root ){ return ''; }
 
   if( root.left && root.right ){
@@ -173,17 +173,17 @@ const buildDendrogram = ( root: ClusterNode | undefined, coll: GpuCollection ): 
   }
 
   if( root.value ){
-    return ( root.value as GpuCollection ).id() as string;
+    return ( root.value as Collection ).id() as string;
   }
 
   return '';
 };
 
-const buildClustersFromTree = ( root: ClusterNode | undefined, k: number, coll: GpuCollection ): GpuCollection[] => {
+const buildClustersFromTree = ( root: ClusterNode | undefined, k: number, coll: Collection ): Collection[] => {
   if( !root ){ return []; }
 
-  const left: GpuCollection[] = [];
-  const right: GpuCollection[] = [];
+  const left: Collection[] = [];
+  const right: Collection[] = [];
 
   if( k === 0 ){ // don't cut: all nodes as one cluster
     getAllChildren( root.left, left );
@@ -193,7 +193,7 @@ const buildClustersFromTree = ( root: ClusterNode | undefined, k: number, coll: 
   }
 
   if( k === 1 ){ // cut at the root
-    if( root.value ){ return [ spawnHandles( coll, [ root.value as GpuCollection ] ) ]; }
+    if( root.value ){ return [ spawnHandles( coll, [ root.value as Collection ] ) ]; }
 
     getAllChildren( root.left, left );
     getAllChildren( root.right, right );
@@ -201,7 +201,7 @@ const buildClustersFromTree = ( root: ClusterNode | undefined, k: number, coll: 
     return [ spawnHandles( coll, left ), spawnHandles( coll, right ) ];
   }
 
-  if( root.value ){ return [ spawnHandles( coll, [ root.value as GpuCollection ] ) ]; }
+  if( root.value ){ return [ spawnHandles( coll, [ root.value as Collection ] ) ]; }
 
   const leftC = root.left ? buildClustersFromTree( root.left, k - 1, coll ) : [];
   const rightC = root.right ? buildClustersFromTree( root.right, k - 1, coll ) : [];
@@ -230,7 +230,7 @@ const buildClustersFromTree = ( root: ClusterNode | undefined, k: number, coll: 
  * dendrogram node plus two edges joining it to its children, so it is not
  * a read-only query.
  */
-export const hierarchicalClustering = ( coll: GpuCollection, options?: HierarchicalClusteringOptions ): GpuCollection[] => {
+export const hierarchicalClustering = ( coll: Collection, options?: HierarchicalClusteringOptions ): Collection[] => {
   const nodes = coll.nodes();
 
   if( nodes.length === 0 ){ return []; }
@@ -238,7 +238,7 @@ export const hierarchicalClustering = ( coll: GpuCollection, options?: Hierarchi
   const opts = setOptions( options );
   const attrs = opts.attributes;
 
-  const getDist = ( n1: GpuCollection, n2: GpuCollection ): number => clusteringDistance(
+  const getDist = ( n1: Collection, n2: Collection ): number => clusteringDistance(
     opts.distance, attrs.length, i => attrs[ i ]( n1 ), i => attrs[ i ]( n2 ), n1, n2 );
 
   const clusters: ClusterNode[] = [];
@@ -264,8 +264,8 @@ export const hierarchicalClustering = ( coll: GpuCollection, options?: Hierarchi
       const dist = i === j
         ? Infinity
         : opts.mode === 'dendrogram'
-          ? getDist( clusters[ i ].value as GpuCollection, clusters[ j ].value as GpuCollection )
-          : getDist( ( clusters[ i ].value as GpuCollection[] )[ 0 ], ( clusters[ j ].value as GpuCollection[] )[ 0 ] );
+          ? getDist( clusters[ i ].value as Collection, clusters[ j ].value as Collection )
+          : getDist( ( clusters[ i ].value as Collection[] )[ 0 ], ( clusters[ j ].value as Collection[] )[ 0 ] );
 
       dists[ i ][ j ] = dist;
       dists[ j ][ i ] = dist;
@@ -287,6 +287,6 @@ export const hierarchicalClustering = ( coll: GpuCollection, options?: Hierarchi
   return clusters.map( cluster => {
     cluster.key = cluster.index = null;
 
-    return spawnHandles( coll, cluster.value as GpuCollection[] );
+    return spawnHandles( coll, cluster.value as Collection[] );
   } );
 };

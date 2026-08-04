@@ -1,8 +1,8 @@
 import { FLAG_GRABBABLE, FLAG_GRABBED, FLAG_HOVERED, FLAG_LOCKED, FLAG_PANNABLE } from '../contract.mjs';
-import type { GpuCore } from '../core.mjs';
-import type { GpuCollection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Renderer } from '../render/renderer.mjs';
-import type { Position } from '../gpu-types.mjs';
+import type { Position } from '../public-types.mjs';
 
 /*
 Pointer/wheel interaction over the WebGPU canvas:
@@ -53,9 +53,9 @@ interface DownState {
   pointerId: number;
   mode: 'pan' | 'grab' | 'box';
   /** the node under the press: the drag subject in 'grab' mode, the tap target otherwise */
-  grabbed: GpuCollection | null;
+  grabbed: Collection | null;
   /** when the grabbed node is selected: every draggable selected node moves together (v3) */
-  dragSet: GpuCollection | null;
+  dragSet: Collection | null;
   startX: number;
   startY: number;
   lastX: number;
@@ -72,11 +72,11 @@ const isMultSelKeyDown = ( e: PointerEvent ): boolean => {
 };
 
 export class PointerHandler {
-  private cy: GpuCore;
+  private cy: Core;
   private renderer: Renderer;
   private canvas: HTMLCanvasElement;
-  private hovered: GpuCollection | null;
-  private lastPick: GpuCollection | null;
+  private hovered: Collection | null;
+  private lastPick: Collection | null;
   private pickInFlight: boolean;
   private lastHoverAt: number;
   private down: DownState | null;
@@ -87,7 +87,7 @@ export class PointerHandler {
   private pinch: { dist: number; mid: Position } | null;
   /** the two-finger cxt gesture (round 20.4, v3's touch cxt family) */
   private touchCxt: {
-    target: GpuCollection | null; dragged: boolean; baseDist: number;
+    target: Collection | null; dragged: boolean; baseDist: number;
     startX: number; startY: number;
   } | null;
   /** the three-finger box gesture (round 20.5): start + current centroid */
@@ -98,13 +98,13 @@ export class PointerHandler {
   private deadTouch: number | null;
   private wheelingUntil: number;
   private wheelSettleTimer: ReturnType<typeof setTimeout> | null;
-  private cxtDown: { pointerId: number; target: GpuCollection | null; startX: number; startY: number; moved: boolean } | null;
+  private cxtDown: { pointerId: number; target: Collection | null; startX: number; startY: number; moved: boolean } | null;
   /** the node under the cursor during an active press (17.3) */
-  private dragHover: GpuCollection | null = null;
+  private dragHover: Collection | null = null;
   private lastDragHoverAt = 0;
   private tapholdTimer: ReturnType<typeof setTimeout> | null;
   private onetapTimer: ReturnType<typeof setTimeout> | null;
-  private lastTap: { target: GpuCollection | null; at: number } | null;
+  private lastTap: { target: Collection | null; at: number } | null;
   private cleanups: ( () => void )[];
   /** The DOM event being handled right now, or null between them — the
    * source of `event.originalEvent` on everything this layer emits
@@ -120,7 +120,7 @@ export class PointerHandler {
    *   the usual events fire and the usual dirty spans upload
    * @param renderer — supplies the canvas to listen on and the async pick
    */
-  constructor( cy: GpuCore, renderer: Renderer ){
+  constructor( cy: Core, renderer: Renderer ){
     this.cy = cy;
     this.renderer = renderer;
     this.canvas = renderer.canvas;
@@ -303,11 +303,11 @@ export class PointerHandler {
     const canDrag = !boxing && picked != null && this.canDrag( picked );
 
     // dragging a selected node drags every draggable selected node (v3)
-    let dragSet: GpuCollection | null = null;
+    let dragSet: Collection | null = null;
 
     if( canDrag && picked != null && picked.selected() ){
       const draggable = this.cy.nodes( { selected: true } )
-        .filter( ( n: GpuCollection ) => n === picked || this.canDrag( n ) );
+        .filter( ( n: Collection ) => n === picked || this.canDrag( n ) );
 
       if( draggable.length > 1 ){ dragSet = draggable; }
     }
@@ -366,7 +366,7 @@ export class PointerHandler {
   }
 
   /** Whether a picked node may be dragged: grabbable, unlocked, not globally gated. */
-  private canDrag( ele: GpuCollection ): boolean {
+  private canDrag( ele: Collection ): boolean {
     if( this.cy.autolock() === true || this.cy.autoungrabify() === true ){ return false; }
 
     const ref = ele._eventRef();
@@ -929,7 +929,7 @@ export class PointerHandler {
     cy.emit( { type: 'boxend', position, originalEvent: this.domEvent ?? undefined } );
 
     const eles = cy._elementsInGestureBox( p1.x, p1.y, p2.x, p2.y )
-      .filter( ( ele: GpuCollection ) => ele.interactive() ); // the 20.2 rule
+      .filter( ( ele: Collection ) => ele.interactive() ); // the 20.2 rule
 
     for( let i = 0; i < eles.length; i++ ){
       cy._emitOnEle( 'box', eles[ i ], undefined, { position, originalEvent: this.domEvent ?? undefined } );
@@ -937,7 +937,7 @@ export class PointerHandler {
 
     if( cy.autounselectify() === true ){ return; }
 
-    const toSelect = eles.filter( ( ele: GpuCollection ) => ele.selectable() && !ele.selected() );
+    const toSelect = eles.filter( ( ele: Collection ) => ele.selectable() && !ele.selected() );
 
     toSelect.select();
 
@@ -959,7 +959,7 @@ export class PointerHandler {
     // events (v3 boxes over its interactive set); the geometric query
     // itself stays unfiltered
     const box = cy._elementsInGestureBox( p1.x, p1.y, p2.x, p2.y )
-      .filter( ( ele: GpuCollection ) => ele.interactive() );
+      .filter( ( ele: Collection ) => ele.interactive() );
 
     cy.emit( { type: 'boxend', position, originalEvent: this.domEvent ?? undefined } );
 
@@ -986,7 +986,7 @@ export class PointerHandler {
 
   // -- helpers --
 
-  private tap( target: GpuCollection | null, e: PointerEvent ): void {
+  private tap( target: Collection | null, e: PointerEvent ): void {
     const cy = this.cy;
     const position = cy._viewport.renderedToModel( this.eventPos( e ) );
 
@@ -1030,7 +1030,7 @@ export class PointerHandler {
    * inside the window fires the debounced 'onetap'.  ('tap' itself always
    * fires immediately.)
    */
-  private multiClick( target: GpuCollection | null, position: Position ): void {
+  private multiClick( target: Collection | null, position: Position ): void {
     const now = performance.now();
     const debounce = this.cy.multiClickDebounceTime() as number;
     const prev = this.lastTap;
@@ -1089,7 +1089,7 @@ export class PointerHandler {
    * every companion in the drag set.
    */
   private emitDragState(
-    type: string, direct: GpuCollection, companions: GpuCollection | null, renderedPos: Position
+    type: string, direct: Collection, companions: Collection | null, renderedPos: Position
   ): void {
     const position = this.cy._viewport.renderedToModel( renderedPos );
 
@@ -1107,11 +1107,11 @@ export class PointerHandler {
   }
 
   /** Emit a gesture on the element (or the core) at a rendered position. */
-  private emitGesture( type: string, target: GpuCollection | null, renderedPos: Position ): void {
+  private emitGesture( type: string, target: Collection | null, renderedPos: Position ): void {
     this.emitModelGesture( type, target, this.cy._viewport.renderedToModel( renderedPos ) );
   }
 
-  private emitModelGesture( type: string, target: GpuCollection | null, position: Position ): void {
+  private emitModelGesture( type: string, target: Collection | null, position: Position ): void {
     if( target != null && target.inside() ){
       this.cy._emitOnEle( type, target, undefined, { position, originalEvent: this.domEvent ?? undefined } );
     } else {
@@ -1160,7 +1160,7 @@ export class PointerHandler {
     } );
   }
 
-  private updateHover( ele: GpuCollection | null, pos?: Position ): void {
+  private updateHover( ele: Collection | null, pos?: Position ): void {
     const prev = this.hovered;
 
     if( prev === ele ){ return; } // interned handles ⇒ identity comparison works
@@ -1182,7 +1182,7 @@ export class PointerHandler {
     }
   }
 
-  private setFlagOn( ele: GpuCollection, bit: number, on: boolean ): void {
+  private setFlagOn( ele: Collection, bit: number, on: boolean ): void {
     const ref = ele._eventRef();
 
     if( ref != null && ele.inside() ){

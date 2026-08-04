@@ -1,10 +1,10 @@
 // Markov clustering (MCL) — a port of v3's pass on dense Float64 matrices.
 
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { subgraph } from './algo-shared.mjs';
 
 /** A similarity function: maps an edge to a numeric contribution. */
-export type MarkovAttributeFn = ( edge: GpuCollection ) => number;
+export type MarkovAttributeFn = ( edge: Collection ) => number;
 
 export interface MarkovClusteringOptions {
   expandFactor?: number;
@@ -91,7 +91,7 @@ const hasConverged = ( M: Float64Array, _M: Float64Array, n2: number, roundFacto
  *   `attributes`, summed per edge for the similarity (default: 1 each)
  * @returns one collection per attractor row, de-duplicated by member set
  */
-export const markovClustering = ( coll: GpuCollection, options: MarkovClusteringOptions = {} ): GpuCollection[] => {
+export const markovClustering = ( coll: Collection, options: MarkovClusteringOptions = {} ): Collection[] => {
   const expandFactor = options.expandFactor ?? 2;
   const inflateFactor = options.inflateFactor ?? 2;
   const multFactor = options.multFactor ?? 1;
@@ -144,7 +144,7 @@ export const markovClustering = ( coll: GpuCollection, options: MarkovClustering
   }
 
   // row-wise attractors and their attracted nodes form the clusters
-  const clusters: GpuCollection[] = [];
+  const clusters: Collection[] = [];
   const seen = new Set<string>(); // dedupe symmetric duplicates by member key
 
   for( let i = 0; i < n; i++ ){

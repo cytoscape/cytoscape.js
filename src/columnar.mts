@@ -1,9 +1,9 @@
 import { partitionDefs } from './element-defs.mjs';
-import { NO_PARENT } from './gpu-types.mjs';
+import { NO_PARENT } from './public-types.mjs';
 import type {
-  GpuColumnarEdges, GpuColumnarElements, GpuColumnarNodes,
-  GpuElementDefinition, GpuElementsDefinition, GpuPackedIds
-} from './gpu-types.mjs';
+  ColumnarEdges, ColumnarElements, ColumnarNodes,
+  ElementDefinition, ElementsDefinition, PackedIds
+} from './public-types.mjs';
 
 /*
 Definition-form (v3-style JSON) → columnar bulk-load form.  The columnar
@@ -21,8 +21,8 @@ every edge endpoint must name a node in the same payload.
  * @returns true for the `{ offsets, blob }` packed form
  */
 export const isPackedIds = (
-  ids: ( string | undefined )[] | GpuPackedIds
-): ids is GpuPackedIds => {
+  ids: ( string | undefined )[] | PackedIds
+): ids is PackedIds => {
   return !Array.isArray( ids );
 };
 
@@ -33,9 +33,9 @@ export const isPackedIds = (
  * @returns true when it carries `columnar: true`
  */
 export const isColumnarElements = (
-  elements: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements
-): elements is GpuColumnarElements => {
-  return ( elements as GpuColumnarElements ).columnar === true;
+  elements: ElementsDefinition | ElementDefinition | ColumnarElements
+): elements is ColumnarElements => {
+  return ( elements as ColumnarElements ).columnar === true;
 };
 
 /**
@@ -54,13 +54,13 @@ export const isColumnarElements = (
  *   same payload — columnar payloads must be self-contained
  */
 export const toColumnarElements = (
-  defs: GpuElementsDefinition | GpuElementDefinition
-): GpuColumnarElements => {
+  defs: ElementsDefinition | ElementDefinition
+): ColumnarElements => {
   const { nodes, edges } = partitionDefs( defs );
   const index = new Map<string, number>();
 
   const nodeIds = new Array<string | undefined>( nodes.length );
-  const nodesOut: GpuColumnarNodes = {
+  const nodesOut: ColumnarNodes = {
     count: nodes.length,
     ids: nodeIds,
     positions: new Float32Array( nodes.length * 2 )
@@ -115,7 +115,7 @@ export const toColumnarElements = (
   if( nodeData != null ){ nodesOut.data = nodeData; }
 
   const edgeIds = new Array<string | undefined>( edges.length );
-  const edgesOut: GpuColumnarEdges = {
+  const edgesOut: ColumnarEdges = {
     count: edges.length,
     ids: edgeIds,
     sources: new Uint32Array( edges.length ),
@@ -161,7 +161,7 @@ export const toColumnarElements = (
 /** Sidecar data() keys → sparse index-aligned columns (id/source/target
  * stay first-class; a node's parent is hierarchy, never sidecar). */
 const collectDataColumns = (
-  defs: GpuElementDefinition[], skipParent: boolean = false
+  defs: ElementDefinition[], skipParent: boolean = false
 ): Record<string, unknown[]> | undefined => {
   let cols: Record<string, unknown[]> | undefined;
 
@@ -184,7 +184,7 @@ const collectDataColumns = (
 /** Build selected/selectable arrays only when some def deviates from the defaults. */
 const applySelectionColumns = (
   out: { count: number; selected?: Uint8Array; selectable?: Uint8Array },
-  defs: GpuElementDefinition[]
+  defs: ElementDefinition[]
 ): void => {
   for( let i = 0; i < defs.length; i++ ){
     if( defs[ i ].selected === true ){

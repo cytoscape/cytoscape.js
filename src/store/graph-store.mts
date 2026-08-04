@@ -25,10 +25,10 @@ import {
   SHAPE_MASK, SHAPE_POLYGON_CUSTOM, SHAPE_SHIFT
 } from '../contract.mjs';
 import type { LabelStream, ColumnArray, ColumnId, GroupName, LabelEntry, ModelView, Ref, StoreDelta } from '../contract.mjs';
-import { NO_PARENT } from '../gpu-types.mjs';
+import { NO_PARENT } from '../public-types.mjs';
 import type {
-  BoxSelectionMode, GpuColumnarEdges, GpuColumnarNodes, GpuDataColumn, GpuPackedIds
-} from '../gpu-types.mjs';
+  BoxSelectionMode, ColumnarEdges, ColumnarNodes, DataColumn, PackedIds
+} from '../public-types.mjs';
 import { ImageRegistry, IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../image-registry.mjs';
 import { estimateBlock, WRAP_NONE } from '../label-wrap.mjs';
 
@@ -1022,7 +1022,7 @@ export class GraphStore implements ModelView {
    * payload arrays.  On error the graph may be partially mutated (as with
    * a mid-list throw in the def path).
    */
-  addNodesColumnar( cols: GpuColumnarNodes, newId: () => string ): Uint32Array {
+  addNodesColumnar( cols: ColumnarNodes, newId: () => string ): Uint32Array {
     const count = cols.count;
     const { slots, resized, contiguousFrom } = this.nodes.allocBulk( count );
 
@@ -1086,7 +1086,7 @@ export class GraphStore implements ModelView {
    * Columnar bulk edge add: endpoints are indices into `nodeSlots` (the
    * same payload's nodes) — no id lookups per edge.
    */
-  addEdgesColumnar( cols: GpuColumnarEdges, nodeSlots: Uint32Array, newId: () => string ): Uint32Array {
+  addEdgesColumnar( cols: ColumnarEdges, nodeSlots: Uint32Array, newId: () => string ): Uint32Array {
     const count = cols.count;
 
     if( cols.sources == null || cols.targets == null || cols.sources.length < count || cols.targets.length < count ){
@@ -3238,7 +3238,7 @@ export class GraphStore implements ModelView {
    * edges — the hull bound for chord-bounded kinds, plus the node-half
    * margin (+ chord length for extrapolated weights) for box-bounded
    * ones (rounds 12a/12b; the exact lazy curve bb is
-   * GpuCollection.boundingBox's tier).  Future edge geometry (arrow
+   * Collection.boundingBox's tier).  Future edge geometry (arrow
    * heads, 12c endpoints) extends the edge term here and there
    * together.  Only the space tier counts (round 22): display-hidden
    * elements are excluded, `visibility: 'hidden'` ones still take
@@ -3410,7 +3410,7 @@ export class GraphStore implements ModelView {
 
   private ingestDataColumns(
     group: GroupName, slots: Uint32Array,
-    data: Record<string, GpuDataColumn> | undefined
+    data: Record<string, DataColumn> | undefined
   ): void {
     if( data == null ){ return; }
 
@@ -3434,7 +3434,7 @@ export class GraphStore implements ModelView {
   /** Register bulk-allocated slots: ids (auto-generated on holes) + insertion order. */
   private registerBulk(
     group: GroupName, slots: Uint32Array,
-    ids: ( string | undefined )[] | GpuPackedIds | undefined, newId: () => string
+    ids: ( string | undefined )[] | PackedIds | undefined, newId: () => string
   ): void {
     this.ids.setBulk( group, slots, ids, newId ); // throws on a duplicate id
 

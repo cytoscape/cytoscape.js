@@ -1,4 +1,4 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, incidentEdgesInView } from './algo-shared.mjs';
 
@@ -6,10 +6,10 @@ import { subgraph, incidentEdgesInView } from './algo-shared.mjs';
 type EdgeIndex = [ number, number, number ];
 
 export interface KargerSteinResult {
-  cut: GpuCollection;
-  components: GpuCollection[];
-  partition1: GpuCollection;
-  partition2: GpuCollection;
+  cut: Collection;
+  components: Collection[];
+  partition1: Collection;
+  partition2: Collection;
 }
 
 const sqrt2 = Math.sqrt( 2 );
@@ -72,7 +72,7 @@ const contractUntil = (
  * Karger-Stein randomized minimum cut of the calling collection (undirected;
  * correct with high probability).
  */
-export const kargerStein = ( coll: GpuCollection ): KargerSteinResult => {
+export const kargerStein = ( coll: Collection ): KargerSteinResult => {
   const view = subgraph( coll );
   const { store, endpoints, index, nodeSlots } = view;
   const numNodes = nodeSlots.length;
@@ -145,7 +145,7 @@ export const kargerStein = ( coll: GpuCollection ): KargerSteinResult => {
   }
 
   // each component: the partition's nodes plus their subgraph edges not in the cut
-  const constructComponent = ( wantPartition1: boolean ): GpuCollection => {
+  const constructComponent = ( wantPartition1: boolean ): Collection => {
     const refs: Ref[] = [];
     const seenEdges = new Set<number>();
 

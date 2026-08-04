@@ -1,11 +1,11 @@
-import { GpuEmitter } from './emitter.mjs';
-import type { GpuEvent } from './event.mjs';
+import { Emitter } from './emitter.mjs';
+import type { Event } from './event.mjs';
 import type { Listener } from './emitter.mjs';
-import type { GpuEventProps, GpuEventTarget } from './event.mjs';
+import type { EventProps, EventTarget } from './event.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
-import type { GpuCollection } from './collection.mjs';
-import type { GpuCore } from './core.mjs';
+import type { Collection } from './collection.mjs';
+import type { Core } from './core.mjs';
 
 /*
 A single core emitter (v4's own since round 41.2 — it reused v3's
@@ -25,7 +25,7 @@ handle's cached `id()`/`group()` stay readable, while live state reads
 Compound bubbling (round 14.5): an element event on a node with
 ancestors runs in *phases* — the origin element, each ancestor in
 child->parent order, then the core — driven by `_emitOnEle` re-emitting
-one Event object with a moving `_gpuPhaseRef`.  Per phase:
+one Event object with a moving `_phaseRef`.  Per phase:
 
 - element (ref-qualified) listeners fire in their own element's phase,
   with the callback context set to that element (v3's currentTarget)
@@ -36,7 +36,7 @@ one Event object with a moving `_gpuPhaseRef`.  Per phase:
 
 `stopPropagation()` (or a callback returning false) between phases
 halts the walk — the shared Event object carries the flag.  Flat emits
-(no compounds, orphan/edge targets) never set `_gpuPhaseRef` and take
+(no compounds, orphan/edge targets) never set `_phaseRef` and take
 exactly the old single-emit path.
 
 Known deviation from v3: listener firing order *within a phase* is
@@ -50,10 +50,10 @@ namespace parsing — see `emitter.mts`.
 */
 
 /** A delegation predicate over an element event target. */
-export type ElePredicate = ( ele: GpuCollection ) => boolean;
+export type ElePredicate = ( ele: Collection ) => boolean;
 
 /** What a listener is restricted to: a single element ref, or a predicate. */
-export interface GpuQualifier {
+export interface Qualifier {
   key?: string;
   ref?: Ref;
   fn?: ElePredicate;
@@ -73,7 +73,7 @@ export const refKey = ( ref: Ref ): string => `${ref.group}:${ref.slot}:${ref.ge
 /** Element qualifier for `eles.on()`.  Ref qualifiers compare by `key`,
  * so `off()` matches a listener registered through a different handle
  * for the same element. */
-export const refQualifier = ( ref: Ref ): GpuQualifier => ( { key: 'ref:' + refKey( ref ), ref } );
+export const refQualifier = ( ref: Ref ): Qualifier => ( { key: 'ref:' + refKey( ref ), ref } );
 
 /**
  * Predicate qualifiers compare by function identity (for off()).
@@ -84,7 +84,7 @@ export const refQualifier = ( ref: Ref ): GpuQualifier => ( { key: 'ref:' + refK
  *   and then throw a TypeError inside the emitter on the *next* event of
  *   that type, which is both late and somewhere else (29.3)
  */
-export const predicateQualifier = ( fn: ElePredicate ): GpuQualifier => {
+export const predicateQualifier = ( fn: ElePredicate ): Qualifier => {
   if( typeof fn !== 'function' ){
     throw new Error(
       `Event delegation takes a predicate function, not ${typeof fn === 'string'
@@ -106,13 +106,13 @@ const sameRef = ( a: Ref, b: Ref ): boolean => {
 /** The bubbling-phase fields _emitOnEle stamps onto the shared Event
  * (round 14.5): a ref during element phases, null during the core
  * phase, absent entirely on flat emits. */
-export interface PhasedEvent extends GpuEvent {
-  _gpuPhaseRef?: Ref | null;
-  _gpuPhaseEle?: unknown;
+export interface PhasedEvent extends Event {
+  _phaseRef?: Ref | null;
+  _phaseEle?: unknown;
 }
 
 /** The face the core shows the event system (the emitter context and default target). */
-export interface GpuCoreLike {
+export interface CoreLike {
   _store: GraphStore;
 }
 
@@ -128,8 +128,8 @@ export interface GpuCoreLike {
  *   `event.target`
  * @returns the emitter, to be stored on the core
  */
-export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): GpuEmitter<TCy, GpuQualifier> => {
-  return new GpuEmitter<TCy, GpuQualifier>( {
+export const makeCoreEmitter = <TCy extends CoreLike>( cy: TCy ): Emitter<TCy, Qualifier> => {
+  return new Emitter<TCy, Qualifier>( {
     context: cy,
 
     qualifierCompare: ( q1, q2 ) => {
@@ -144,9 +144,9 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): GpuEmitter<
       return q1.key === q2.key;
     },
 
-    eventMatches: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: GpuEvent ): boolean => {
+    eventMatches: ( ctx: TCy, listener: Listener<Qualifier>, eventObj: Event ): boolean => {
       const qualifier = listener.qualifier;
-      const phaseRef = ( eventObj as PhasedEvent )._gpuPhaseRef;
+      const phaseRef = ( eventObj as PhasedEvent )._phaseRef;
 
       if( qualifier == null ){
         // unqualified listeners fire once: in the core phase (or flat mode)
@@ -175,25 +175,25 @@ export const makeCoreEmitter = <TCy extends GpuCoreLike>( cy: TCy ): GpuEmitter<
         // when the event reaches the core
         if( phaseRef !== undefined && phaseRef !== null ){ return false; }
 
-        return qualifier.fn( target as unknown as GpuCollection );
+        return qualifier.fn( target as unknown as Collection );
       }
 
       return false;
     },
 
-    addEventFields: ( ctx: TCy, evt: GpuEventProps ) => {
-      evt.cy = ctx as unknown as GpuCore;
+    addEventFields: ( ctx: TCy, evt: EventProps ) => {
+      evt.cy = ctx as unknown as Core;
 
       if( evt.target == null ){
-        evt.target = ctx as unknown as GpuEventTarget;
+        evt.target = ctx as unknown as EventTarget;
       }
     },
 
-    callbackContext: ( ctx: TCy, listener: Listener<GpuQualifier>, eventObj: GpuEvent ) => {
+    callbackContext: ( ctx: TCy, listener: Listener<Qualifier>, eventObj: Event ) => {
       if( listener.qualifier != null ){
         // during an ancestor phase the context is the phase element
         // (v3's currentTarget); event.target stays the originator
-        return ( eventObj as PhasedEvent )._gpuPhaseEle ?? eventObj.target;
+        return ( eventObj as PhasedEvent )._phaseEle ?? eventObj.target;
       }
 
       return ctx;

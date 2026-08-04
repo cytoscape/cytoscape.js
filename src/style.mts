@@ -64,7 +64,7 @@ import type { ChannelWrite, TweenColumn } from './animation.mjs';
 import type { CompiledMapper, ChannelKind, Evaluated, ValueReader } from './style-scales.mjs';
 import type { ColumnId, GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
-import type { GpuStyleProps, GpuStylesheet, GpuMapper, GpuMapperSpec } from './gpu-types.mjs';
+import type { StyleProps, Stylesheet, Mapper, MapperSpec } from './public-types.mjs';
 
 /*
 StyleEngine: the v4 stylesheet is `{ nodes, edges }` — no selectors, no
@@ -721,7 +721,7 @@ const CORE_DEFAULTS: CoreStyle = {
   activeBgSize: 30
 };
 
-const resolveCoreProps = ( props: GpuStyleProps | undefined ): CoreStyle => {
+const resolveCoreProps = ( props: StyleProps | undefined ): CoreStyle => {
   const out: CoreStyle = { ...CORE_DEFAULTS };
 
   if( props == null ){ return out; }
@@ -2947,7 +2947,7 @@ const PAINT_PROPS: Record<GroupName, ReadonlySet<string>> = {
   ] )
 };
 
-const compileChannel = ( group: GroupName, prop: string, spec: GpuMapperSpec ): BoundMapper => {
+const compileChannel = ( group: GroupName, prop: string, spec: MapperSpec ): BoundMapper => {
   const channel = MAPPABLE[ prop ];
 
   if( channel == null || !channel.groups.includes( group ) ){
@@ -3082,7 +3082,7 @@ const TRANSITION_CHANNELS: Record<GroupName, Record<string, TransitionChannel>> 
 };
 
 /** Split the transition config props out of a sheet block. */
-const splitTransitionProps = ( props: GpuStyleProps ): { channels: GpuStyleProps; config: Record<string, unknown> } => {
+const splitTransitionProps = ( props: StyleProps ): { channels: StyleProps; config: Record<string, unknown> } => {
   let any = false;
 
   for( const raw of Object.keys( props ) ){
@@ -3091,7 +3091,7 @@ const splitTransitionProps = ( props: GpuStyleProps ): { channels: GpuStyleProps
 
   if( !any ){ return { channels: props, config: {} }; }
 
-  const channels: GpuStyleProps = {};
+  const channels: StyleProps = {};
   const config: Record<string, unknown> = {};
 
   for( const raw of Object.keys( props ) ){
@@ -3205,7 +3205,7 @@ const SHEET_KEYS: ReadonlySet<string> = new Set( [ 'nodes', 'edges', 'parents', 
 /** v3's default `:parent` block (round 14.6): the channel overlay parent
  * nodes get on top of the nodes group.  Padding 10 rides the compound
  * defaults instead (it is not a channel). */
-const PARENT_CHANNEL_OVERLAY: GpuStyleProps = {
+const PARENT_CHANNEL_OVERLAY: StyleProps = {
   'shape': 'rectangle',
   'background-color': '#eee',
   'border-width': 1,
@@ -3221,10 +3221,10 @@ const PADDING_RELATIVE_TO = new Set( [ 'width', 'height', 'average', 'min', 'max
 
 /** Split a parents-block props object into channel props and the parsed
  * compound style (round 14.6).  Compound props take constants only. */
-const splitCompoundProps = ( props: GpuStyleProps ): {
-  channels: GpuStyleProps; compound: Partial<CompoundStyle>;
+const splitCompoundProps = ( props: StyleProps ): {
+  channels: StyleProps; compound: Partial<CompoundStyle>;
 } => {
-  const channels: GpuStyleProps = {};
+  const channels: StyleProps = {};
   const compound: Partial<CompoundStyle> = {};
 
   for( const prop of Object.keys( props ) ){
@@ -3962,7 +3962,7 @@ export class StyleEngine {
    * its getters stay live across a sheet swap that replaces `defs`.
    */
   private readonly readCtx: ReadContext;
-  private sheet: GpuStylesheet;
+  private sheet: Stylesheet;
   private defs: { nodes: GroupDef; edges: GroupDef; parents: GroupDef };
   /** the parents-group compound style, applied per parent slot */
   private parentCompound: Partial<CompoundStyle> = { padding: 10 };
@@ -4089,7 +4089,7 @@ export class StyleEngine {
    * @throws on an unknown sheet key, an unknown property, or an invalid
    *   value
    */
-  setSheet( sheet: GpuStylesheet, apply: boolean = true ): void {
+  setSheet( sheet: Stylesheet, apply: boolean = true ): void {
     for( const key of Object.keys( sheet ) ){
       if( !SHEET_KEYS.has( key ) ){
         throw new Error( `Unknown stylesheet key '${key}'; supported keys: nodes, edges, parents, core` );
@@ -4113,7 +4113,7 @@ export class StyleEngine {
     // (they are per-parent auto-bounds inputs, not channels)
     const parentsSplit = splitCompoundProps( sheet.parents ?? {} );
 
-    const compile = ( group: GroupName, def: GpuStylesheet['nodes'] ): GroupDef => {
+    const compile = ( group: GroupName, def: Stylesheet['nodes'] ): GroupDef => {
       // the transition config props are engine config, not channels
       // (round 24.1) — split them out before channel resolution
       const { channels, config } = splitTransitionProps( def ?? {} );
@@ -4381,7 +4381,7 @@ export class StyleEngine {
    *
    * @returns the sheet object (live, not a copy — treat as read-only)
    */
-  json(): GpuStylesheet {
+  json(): Stylesheet {
     return this.sheet;
   }
 
@@ -5148,7 +5148,7 @@ export class StyleEngine {
    * default wins).  Mapper specs compile into `mappersOut`; the label
    * passthrough rides the labelKey channel instead.
    */
-  private resolveConst( group: GroupName, props: GpuStyleProps, mappersOut: BoundMapper[] ): Computed {
+  private resolveConst( group: GroupName, props: StyleProps, mappersOut: BoundMapper[] ): Computed {
     const computed: Computed = {
       ...NODE_DEFAULTS,
       ...EDGE_DEFAULTS,
@@ -5207,7 +5207,7 @@ export class StyleEngine {
         // chart-values (round 23): the data passthrough reads a
         // per-element *array* — only { data: key } is supported
         if( norm === 'chart-values' ){
-          const asScale = value as GpuMapper;
+          const asScale = value as Mapper;
           const passthrough = !( 'case' in value ) && typeof asScale.data === 'string'
             && asScale.scale == null && asScale.domain == null && asScale.range == null;
 
@@ -5222,7 +5222,7 @@ export class StyleEngine {
 
         if( norm === 'label' || norm === 'source-label' || norm === 'target-label' ){
           // the label passthrough rides the per-stream key channel
-          const asScale = value as GpuMapper;
+          const asScale = value as Mapper;
           const passthrough = !( 'case' in value ) && typeof asScale.data === 'string'
             && asScale.scale == null && asScale.domain == null && asScale.range == null;
 

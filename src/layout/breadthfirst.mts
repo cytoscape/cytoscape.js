@@ -2,9 +2,9 @@ import * as math from '../math.mjs';
 import { rotatePosAndSkewByBox } from '../util/position.mjs';
 import { ascending } from '../util/sort.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
-import type { GpuBreadthFirstLayoutOptions } from '../gpu-types.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuCore } from '../core.mjs';
+import type { BreadthFirstLayoutOptions } from '../public-types.mjs';
+import type { Collection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
 
 /*
 Breadthfirst (tree/hierarchy) layout: v3's pass over the collection scope,
@@ -13,7 +13,7 @@ in v4, so every node is childless.  `roots` takes a collection or an array
 of node ids (no selector strings).
 */
 
-const defaults: Omit<GpuBreadthFirstLayoutOptions, 'name'> = {
+const defaults: Omit<BreadthFirstLayoutOptions, 'name'> = {
   fit: true,
   directed: false,
   direction: 'downward',
@@ -41,8 +41,8 @@ interface BfInfo {
   index: number;
 }
 
-const getInfo = ( ele: GpuCollection ): BfInfo => ele.scratch( 'breadthfirst' ) as BfInfo;
-const setInfo = ( ele: GpuCollection, obj: BfInfo ): void => { ele.scratch( 'breadthfirst', obj ); };
+const getInfo = ( ele: Collection ): BfInfo => ele.scratch( 'breadthfirst' ) as BfInfo;
+const setInfo = ( ele: Collection, obj: BfInfo ): void => { ele.scratch( 'breadthfirst', obj ); };
 
 const rotateDegrees: Record<string, number> = {
   downward: 0,
@@ -58,9 +58,9 @@ const rotateDegrees: Record<string, number> = {
  */
 export class BreadthFirstLayout {
   /** the resolved options this layout was created with */
-  options: GpuBreadthFirstLayoutOptions;
+  options: BreadthFirstLayoutOptions;
 
-  private cy: GpuCore;
+  private cy: Core;
 
   /**
    * Reached through `cy.layout( { name: 'breadthfirst' } )` /
@@ -71,7 +71,7 @@ export class BreadthFirstLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: GpuCore, options: GpuBreadthFirstLayoutOptions ){
+  constructor( cy: Core, options: BreadthFirstLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -87,8 +87,8 @@ export class BreadthFirstLayout {
   run(): this {
     const cy = this.cy;
     const options = this.options;
-    const eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
-    const nodes = eles.nodes().filter( ( n: GpuCollection ) => !n.isParent() );
+    const eles = ( options.eles as Collection | undefined ) ?? cy.elements();
+    const nodes = eles.nodes().filter( ( n: Collection ) => !n.isParent() );
     const directed = options.directed === true;
     const maximal = options.acyclic === true || options.maximal === true;
 
@@ -101,7 +101,7 @@ export class BreadthFirstLayout {
     const bb = math.makeBoundingBox( hasBoundingBox ? options.boundingBox : cy.extent() ) as BoundingBox;
 
     // resolve the roots: collection, id array, or derived
-    let roots: GpuCollection;
+    let roots: Collection;
     const optRoots = options.roots;
 
     if( typeof optRoots === 'string' ){
@@ -111,7 +111,7 @@ export class BreadthFirstLayout {
         .map( id => cy.$id( id ) )
         .reduce( ( acc, ele ) => acc.union( ele ), cy.collection() );
     } else if( optRoots != null ){
-      roots = optRoots as GpuCollection;
+      roots = optRoots as Collection;
     } else if( directed ){
       roots = nodes.roots();
     } else {
@@ -121,17 +121,17 @@ export class BreadthFirstLayout {
 
       for( const comp of components ){
         const maxDegree = comp.maxDegree( false ) as number;
-        const compRoots = comp.filter( ( ele: GpuCollection ) =>
+        const compRoots = comp.filter( ( ele: Collection ) =>
           ele.isNode() && ele.degree( false ) === maxDegree );
 
         roots = roots.union( compRoots );
       }
     }
 
-    const depths: ( GpuCollection | null )[][] = [];
-    const foundByBfs = new Set<GpuCollection>();
+    const depths: ( Collection | null )[][] = [];
+    const foundByBfs = new Set<Collection>();
 
-    const addToDepth = ( ele: GpuCollection, d: number ): void => {
+    const addToDepth = ( ele: Collection, d: number ): void => {
       if( depths[ d ] == null ){ depths[ d ] = []; }
 
       const i = depths[ d ].length;
@@ -140,7 +140,7 @@ export class BreadthFirstLayout {
       setInfo( ele, { index: i, depth: d } );
     };
 
-    const changeDepth = ( ele: GpuCollection, newDepth: number ): void => {
+    const changeDepth = ( ele: Collection, newDepth: number ): void => {
       const { depth, index } = getInfo( ele );
 
       depths[ depth ][ index ] = null;
@@ -157,7 +157,7 @@ export class BreadthFirstLayout {
     } );
 
     // nodes the bfs never reached
-    const orphanNodes: GpuCollection[] = [];
+    const orphanNodes: Collection[] = [];
 
     for( let i = 0; i < nodes.length; i++ ){
       if( !foundByBfs.has( nodes[ i ] ) ){ orphanNodes.push( nodes[ i ] ); }
@@ -181,12 +181,12 @@ export class BreadthFirstLayout {
 
     // shift nodes down to their maximal depths (directed DAGs)
     if( directed && maximal ){
-      const Q: GpuCollection[] = [];
-      const shifted = new Map<GpuCollection, number>();
+      const Q: Collection[] = [];
+      const shifted = new Map<Collection, number>();
 
-      const adjustMaximally = ( ele: GpuCollection ): boolean | null => {
+      const adjustMaximally = ( ele: Collection ): boolean | null => {
         const eInfo = getInfo( ele );
-        const incomers = ele.incomers().filter( ( el: GpuCollection ) => el.isNode() && eles.contains( el ) );
+        const incomers = ele.incomers().filter( ( el: Collection ) => el.isNode() && eles.contains( el ) );
         let maxDepth = -1;
 
         for( let k = 0; k < incomers.length; k++ ){
@@ -207,16 +207,16 @@ export class BreadthFirstLayout {
         return false;
       };
 
-      nodes.forEach( ( n: GpuCollection ) => { Q.push( n ); } );
+      nodes.forEach( ( n: Collection ) => { Q.push( n ); } );
 
       while( Q.length > 0 ){
-        const ele = Q.shift() as GpuCollection;
+        const ele = Q.shift() as Collection;
         const didShift = adjustMaximally( ele );
 
         if( didShift ){
           ele.outgoers()
-            .filter( ( el: GpuCollection ) => el.isNode() && eles.contains( el ) )
-            .forEach( ( el: GpuCollection ) => { Q.push( el ); } );
+            .filter( ( el: Collection ) => el.isNode() && eles.contains( el ) )
+            .forEach( ( el: Collection ) => { Q.push( el ); } );
         } else if( didShift === null ){
           console.warn( 'Detected double maximal shift for node `' + ele.id() +
             '`.  Bailing maximal adjustment due to cycle.  Use `options.maximal: true` only on DAGs.' );
@@ -238,9 +238,9 @@ export class BreadthFirstLayout {
     }
 
     // weighted percent per node from connectivity to higher levels
-    const cachedWeightedPercent = new Map<GpuCollection, number>();
+    const cachedWeightedPercent = new Map<Collection, number>();
 
-    const getWeightedPercent = ( ele: GpuCollection ): number => {
+    const getWeightedPercent = ( ele: Collection ): number => {
       const cached = cachedWeightedPercent.get( ele );
 
       if( cached != null ){ return cached; }
@@ -272,7 +272,7 @@ export class BreadthFirstLayout {
       return percent;
     };
 
-    let sortFn = ( a: GpuCollection, b: GpuCollection ): number => {
+    let sortFn = ( a: Collection, b: Collection ): number => {
       const diff = getWeightedPercent( a ) - getWeightedPercent( b );
 
       return diff === 0 ? ascending( a.id() as string, b.id() as string ) : diff;
@@ -288,7 +288,7 @@ export class BreadthFirstLayout {
       // compact the nulls left by maximal shifts before sorting (v3 passes
       // them into its comparator, which cannot handle them)
       depths[ i ] = depths[ i ].filter( ele => ele != null );
-      ( depths[ i ] as GpuCollection[] ).sort( sortFn );
+      ( depths[ i ] as Collection[] ).sort( sortFn );
       assignDepthsAt( i );
     }
 
@@ -324,7 +324,7 @@ export class BreadthFirstLayout {
 
     const maxDepthSize = depths.reduce( ( max, level ) => Math.max( max, level.length ), 0 );
 
-    const getPositionTopBottom = ( ele: GpuCollection ): Position => {
+    const getPositionTopBottom = ( ele: Collection ): Position => {
       const { depth, index } = getInfo( ele );
 
       if( options.circle ){
@@ -357,7 +357,7 @@ export class BreadthFirstLayout {
       };
     };
 
-    const getPos = ( ele: GpuCollection ): Position =>
+    const getPos = ( ele: Collection ): Position =>
       rotatePosAndSkewByBox( getPositionTopBottom( ele ), bb, rotateDegrees[ options.direction as string ] );
 
     eles.nodes().layoutPositions( this, { ...options, eles }, getPos );

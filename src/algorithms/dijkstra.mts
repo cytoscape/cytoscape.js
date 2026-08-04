@@ -1,32 +1,32 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, eachIncident, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 
 export interface DijkstraOptions {
-  root?: GpuCollection | null;
+  root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
 }
 
 export interface DijkstraResult {
-  distanceTo( node: GpuCollection ): number | undefined;
-  pathTo( node: GpuCollection ): GpuCollection;
+  distanceTo( node: Collection ): number | undefined;
+  pathTo( node: Collection ): Collection;
 }
 
-export type DijkstraArgs = [ ( DijkstraOptions | GpuCollection )?, WeightFn?, boolean? ];
+export type DijkstraArgs = [ ( DijkstraOptions | Collection )?, WeightFn?, boolean? ];
 
-const isCollection = ( value: unknown ): value is GpuCollection =>
-  value != null && typeof value === 'object' && ( value as GpuCollection )._refs != null;
+const isCollection = ( value: unknown ): value is Collection =>
+  value != null && typeof value === 'object' && ( value as Collection )._refs != null;
 
 /** Single-source shortest paths (non-negative weights) over the calling collection. */
-export const dijkstra = ( coll: GpuCollection, args: DijkstraArgs ): DijkstraResult => {
+export const dijkstra = ( coll: Collection, args: DijkstraArgs ): DijkstraResult => {
   let options: DijkstraOptions;
 
   if( args[0] != null && !isCollection( args[0] ) && typeof args[0] === 'object' ){
     options = args[0];
   } else {
-    options = { root: args[0] as GpuCollection | undefined, weight: args[1], directed: args[2] };
+    options = { root: args[0] as Collection | undefined, weight: args[1], directed: args[2] };
   }
 
   const view = subgraph( coll );
@@ -71,20 +71,20 @@ export const dijkstra = ( coll: GpuCollection, args: DijkstraArgs ): DijkstraRes
     } );
   }
 
-  const denseOf = ( node: GpuCollection ): number | undefined => {
+  const denseOf = ( node: Collection ): number | undefined => {
     const slot = firstNodeSlot( view, node, 'node' );
 
     return slot == null ? undefined : index.get( slot );
   };
 
   return {
-    distanceTo( node: GpuCollection ): number | undefined {
+    distanceTo( node: Collection ): number | undefined {
       const i = denseOf( node );
 
       return i == null ? undefined : dist[ i ];
     },
 
-    pathTo( node: GpuCollection ): GpuCollection {
+    pathTo( node: Collection ): Collection {
       const target = denseOf( node );
       const refs: Ref[] = [];
 

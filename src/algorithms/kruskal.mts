@@ -1,4 +1,4 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, weightAt } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
@@ -8,7 +8,7 @@ import type { WeightFn } from './algo-shared.mjs';
  * treated as undirected.  Returns the collection's nodes plus the accepted
  * edges, in acceptance order — v3's result shape.
  */
-export const kruskal = ( coll: GpuCollection, weight?: WeightFn ): GpuCollection => {
+export const kruskal = ( coll: Collection, weight?: WeightFn ): Collection => {
   const view = subgraph( coll );
   const { store, endpoints, index, nodeSlots } = view;
   const weightOf = weightAt( view, weight );

@@ -1,6 +1,6 @@
-import type { Position } from './gpu-types.mjs';
-import type { GpuCore } from './core.mjs';
-import type { GpuCollection } from './collection.mjs';
+import type { Position } from './public-types.mjs';
+import type { Core } from './core.mjs';
+import type { Collection } from './collection.mjs';
 
 /*
 v4's own event object (round 41.1), replacing the shared v3 `src/event.mts`.
@@ -20,7 +20,7 @@ phase order and `stopPropagation()` behave exactly as round 14.5 built them:
      one.  A name containing a dot is just a name: `on( 'tap.ns' )` registers
      a listener for the literal type `'tap.ns'`, which v4 never emits, so it
      never fires — the same rule as any other name v4 does not raise (see
-     `GpuCore#on`).  Until this round v4 imported v3's emitter and so
+     `Core#on`).  Until this round v4 imported v3's emitter and so
      inherited full v3 namespace semantics, which contradicted the design and
      nobody had noticed (measured round 37.4).
 
@@ -43,13 +43,13 @@ type NativeEvent = globalThis.Event;
  * gestures, `layoutstart`, graph `data`), or a one-element collection for
  * element events.
  */
-export type GpuEventTarget = GpuCore | GpuCollection;
+export type EventTarget = Core | Collection;
 
 /** The fields an emit may carry. */
-export interface GpuEventProps {
+export interface EventProps {
   type?: string;
-  target?: GpuEventTarget;
-  cy?: GpuCore;
+  target?: EventTarget;
+  cy?: Core;
   /** model-space position, for pointer-derived events */
   position?: Position;
   /** rendered-space position; derived from `position` when omitted */
@@ -68,15 +68,15 @@ const returnTrue = (): boolean => true;
  * A v4 event (round 41.1).  Handlers receive one of these; `cy.emit()` and
  * `eles.emit()` accept either a type string or a props object, and build it.
  *
- * @see GpuCore#on for what a name may be, and which names never fire
+ * @see Core#on for what a name may be, and which names never fire
  */
-export class GpuEvent {
+export class Event {
   /** the event type, e.g. `'tap'` — never namespaced (round 41.1) */
   type: string;
   /** the core for core-level events, the element for element events */
-  target?: GpuEventTarget;
+  target?: EventTarget;
   /** the core the event was raised on */
-  cy?: GpuCore;
+  cy?: Core;
   /** model-space position, on pointer-derived events */
   position?: Position;
   /** rendered-space position; derived from `position` and the viewport */
@@ -108,7 +108,7 @@ export class GpuEvent {
    *   defaults to the empty string so a malformed emit is inert rather than
    *   throwing inside a handler loop
    */
-  constructor( props: GpuEventProps = {} ){
+  constructor( props: EventProps = {} ){
     this.type = props.type ?? '';
     this.target = props.target;
     this.cy = props.cy;
@@ -169,4 +169,4 @@ export class GpuEvent {
   }
 }
 
-export default GpuEvent;
+export default Event;

@@ -1,4 +1,4 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, eachIncident } from './algo-shared.mjs';
 
@@ -9,39 +9,39 @@ import { subgraph, eachIncident } from './algo-shared.mjs';
  * found; `false` to stop without.
  */
 export type SearchVisitFn = (
-  v: GpuCollection,
-  e: GpuCollection | undefined,
-  u: GpuCollection | undefined,
+  v: Collection,
+  e: Collection | undefined,
+  u: Collection | undefined,
   i: number,
   depth: number
 ) => boolean | void;
 
 export interface SearchOptions {
-  roots?: GpuCollection;
-  root?: GpuCollection;
+  roots?: Collection;
+  root?: Collection;
   visit?: SearchVisitFn;
   directed?: boolean;
 }
 
 export interface SearchResult {
-  path: GpuCollection;
-  found: GpuCollection;
+  path: Collection;
+  found: Collection;
 }
 
-export type SearchArgs = [ ( SearchOptions | GpuCollection )?, ( SearchVisitFn | boolean )?, boolean? ];
+export type SearchArgs = [ ( SearchOptions | Collection )?, ( SearchVisitFn | boolean )?, boolean? ];
 
-const isCollection = ( value: unknown ): value is GpuCollection =>
-  value != null && typeof value === 'object' && ( value as GpuCollection )._refs != null;
+const isCollection = ( value: unknown ): value is Collection =>
+  value != null && typeof value === 'object' && ( value as Collection )._refs != null;
 
 /**
  * Breadth/depth-first search over the calling collection's subgraph, with
  * v3's exact queue mechanics (visit order, multi-root behaviour, path
  * construction) transplanted onto slot-native iteration.
  */
-export const search = ( coll: GpuCollection, bfs: boolean, args: SearchArgs ): SearchResult => {
+export const search = ( coll: Collection, bfs: boolean, args: SearchArgs ): SearchResult => {
   const [ rootsArg ] = args;
   let [ , fn, directed ] = args;
-  let roots: GpuCollection | undefined;
+  let roots: Collection | undefined;
 
   if( isCollection( rootsArg ) ){
     roots = rootsArg;
@@ -111,8 +111,8 @@ export const search = ( coll: GpuCollection, bfs: boolean, args: SearchArgs ): S
 
     const vSlot = nodeSlots[ v ];
     const prevEdgeSlot = connectedBy[ v ];
-    let prevEdge: GpuCollection | undefined;
-    let prevNode: GpuCollection | undefined;
+    let prevEdge: Collection | undefined;
+    let prevNode: Collection | undefined;
 
     if( prevEdgeSlot >= 0 ){
       const s = endpoints[ prevEdgeSlot * 2 ];

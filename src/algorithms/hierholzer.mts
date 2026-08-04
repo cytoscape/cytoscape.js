@@ -1,9 +1,9 @@
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import type { Ref } from '../contract.mjs';
 import { subgraph, incidentEdgesInView, firstNodeSlot } from './algo-shared.mjs';
 
 export interface HierholzerOptions {
-  root?: GpuCollection;
+  root?: Collection;
   directed?: boolean;
 }
 
@@ -13,26 +13,26 @@ export interface HierholzerResult {
    * the trail's elements in first-traversal order (a collection is a set, so
    * revisited nodes appear once — v3's trail dedupes the same way)
    */
-  trail: GpuCollection | undefined;
+  trail: Collection | undefined;
 }
 
-export type HierholzerArgs = [ ( HierholzerOptions | GpuCollection )?, boolean? ];
+export type HierholzerArgs = [ ( HierholzerOptions | Collection )?, boolean? ];
 
-const isCollection = ( value: unknown ): value is GpuCollection =>
-  value != null && typeof value === 'object' && ( value as GpuCollection )._refs != null;
+const isCollection = ( value: unknown ): value is Collection =>
+  value != null && typeof value === 'object' && ( value as Collection )._refs != null;
 
 /**
  * Hierholzer's algorithm: an Eulerian trail/circuit over the calling
  * collection, if one exists.  A faithful port of the v3 pass, on slot-keyed
  * adjacency.
  */
-export const hierholzer = ( coll: GpuCollection, args: HierholzerArgs ): HierholzerResult => {
+export const hierholzer = ( coll: Collection, args: HierholzerArgs ): HierholzerResult => {
   let options: HierholzerOptions;
 
   if( args[0] != null && !isCollection( args[0] ) && typeof args[0] === 'object' ){
     options = args[0];
   } else {
-    options = { root: args[0] as GpuCollection | undefined, directed: args[1] };
+    options = { root: args[0] as Collection | undefined, directed: args[1] };
   }
 
   const view = subgraph( coll );

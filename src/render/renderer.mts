@@ -22,15 +22,15 @@ import { ChartPipeline } from './chart-pipeline.mjs';
 import { createBrowserImageDecoder } from './image-decoder.mjs';
 import { GpuTweenRuntime } from './gpu-tween.mjs';
 import { GpuForceRuntime } from './gpu-force.mjs';
-import type { GpuForceInputs } from './gpu-force.mjs';
+import type { ForceInputs } from './gpu-force.mjs';
 import { ScaleController } from './scale-controller.mjs';
 import { Upscaler } from './upscale.mjs';
 import { BUFFER_USAGE, MAP_MODE, TEXTURE_USAGE } from './webgpu-constants.mjs';
 import { FLAG_ALIVE } from '../contract.mjs';
 import { color2tuple } from '../util/colors.mjs';
-import type { GpuCore } from '../core.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuExportOptions, GpuRendererOptions, RendererStats } from '../gpu-types.mjs';
+import type { Core } from '../core.mjs';
+import type { Collection } from '../collection.mjs';
+import type { ExportOptions, RendererOptions, RendererStats } from '../public-types.mjs';
 
 /*
 The frame graph: a render-on-dirty rAF loop.
@@ -129,7 +129,7 @@ const PICK_NEUTRAL_COLUMNS = new Set( [
 const MAX_IN_FLIGHT_FRAMES = 2;
 
 /** v3 semantics: maxWidth/maxHeight override scale; else scale (default 1). */
-const exportScale = ( w: number, h: number, opts: GpuExportOptions ): number => {
+const exportScale = ( w: number, h: number, opts: ExportOptions ): number => {
   const { maxWidth, maxHeight } = opts;
   let scale = opts.scale ?? 1;
 
@@ -154,14 +154,14 @@ export class Renderer {
    * is removed from the DOM by destroy() */
   canvas: HTMLCanvasElement;
 
-  protected cy: GpuCore;
+  protected cy: Core;
   protected device: GPUDevice | null;
   protected mirror: ColumnMirror | null;
   protected dpr: number;
   protected destroyed: boolean;
 
   private container: HTMLElement;
-  private opts: GpuRendererOptions;
+  private opts: RendererOptions;
   private context: GPUCanvasContext | null;
   private nodePipeline: NodePipeline | null;
   private imagePipeline: ImagePipeline | null = null;
@@ -237,7 +237,7 @@ export class Renderer {
    * fixes the device-px scale, and renderScaleMin/Max bound the adaptive
    * render scale
    */
-  constructor( cy: GpuCore, container: HTMLElement, opts: GpuRendererOptions & { pixelRatio?: number | 'auto' } = {} ){
+  constructor( cy: Core, container: HTMLElement, opts: RendererOptions & { pixelRatio?: number | 'auto' } = {} ){
     this.cy = cy;
     this.container = container;
     this.opts = opts;
@@ -490,7 +490,7 @@ export class Renderer {
    *    (latest-wins coalescing; requests never queue up — a saturated
    *    staging ring defers the coalesced request a frame, never drops it).
    */
-  async pick( x: number, y: number ): Promise<GpuCollection | null> {
+  async pick( x: number, y: number ): Promise<Collection | null> {
     if( this.destroyed || !this.isReady || this.picking == null ){ return null; }
 
     const xPx = x * this.dpr;
@@ -516,7 +516,7 @@ export class Renderer {
    * current (no in-flight staleness).  Edges are not considered; they
    * resolve through the async `pick()`.
    */
-  pickNodeSync( x: number, y: number ): GpuCollection | null {
+  pickNodeSync( x: number, y: number ): Collection | null {
     if( this.destroyed || !this.isReady ){ return null; }
 
     const slot = this.cpuPickNode( x * this.dpr, y * this.dpr );
@@ -541,7 +541,7 @@ export class Renderer {
     }, xPx, yPx );
   }
 
-  private decodePick( id: number | null ): GpuCollection | null {
+  private decodePick( id: number | null ): Collection | null {
     if( id == null || id === 0 ){ return null; }
 
     const isEdge = ( id & EDGE_PICK_BIT ) !== 0;
@@ -576,7 +576,7 @@ export class Renderer {
    * export is a self-consistent figure rather than a copy of the screen's
    * label culling.
    */
-  async exportImage( opts: GpuExportOptions = {} ): Promise<ExportedImage> {
+  async exportImage( opts: ExportOptions = {} ): Promise<ExportedImage> {
     await this.ready;
 
     if( this.destroyed || this.device == null ){
@@ -619,7 +619,7 @@ export class Renderer {
    * attached, node.position is GPU-owned (the tween lease machinery) and
    * the frame loop encodes the sim ahead of the cull pass.
    */
-  startForce( inputs: GpuForceInputs, stepsPerFrame: number ): GpuForceRuntime | null {
+  startForce( inputs: ForceInputs, stepsPerFrame: number ): GpuForceRuntime | null {
     if( this.destroyed || !this.isReady || this.device == null || this.forceRuntime != null ){
       return null;
     }
@@ -717,7 +717,7 @@ export class Renderer {
   }
 
   /** Resolve the export options to output dimensions + Frame transform. */
-  private computeExportView( opts: GpuExportOptions ): ExportView {
+  private computeExportView( opts: ExportOptions ): ExportView {
     const device = this.device as GPUDevice;
     let bg: ExportView['bg'] = null;
 

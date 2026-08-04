@@ -8,14 +8,14 @@
 
 import cytoscape from '../../build/dts/index.js';
 import type {
-  CytoscapeGpuOptions, GpuCollection, GpuColumnarElements, GpuCore, GpuEvent,
-  GpuElementsDefinition, GpuExportOptions, GpuGridLayoutOptions,
-  GpuLayoutOptions, GpuMapper, GpuStylesheet, Position, RendererStats,
+  CytoscapeOptions, Collection, ColumnarElements, Core, Event,
+  ElementsDefinition, ExportOptions, GridLayoutOptions,
+  LayoutOptions, Mapper, Stylesheet, Position, RendererStats,
 } from '../../build/dts/index.js';
 
 // -- the factory --
 
-const elements: GpuElementsDefinition = {
+const elements: ElementsDefinition = {
   nodes: [
     { data: { id: 'a', weight: 1 }, position: { x: 0, y: 0 } },
     { data: { id: 'b', weight: 5 }, position: { x: 100, y: 0 } },
@@ -24,9 +24,9 @@ const elements: GpuElementsDefinition = {
 };
 
 // the mapper DSL: a plain serializable object, no strings to parse
-const sizeMapper: GpuMapper = { data: 'weight', scale: 'sqrt', range: [ 10, 60 ] };
+const sizeMapper: Mapper = { data: 'weight', scale: 'sqrt', range: [ 10, 60 ] };
 
-const style: GpuStylesheet = {
+const style: Stylesheet = {
   nodes: {
     width: sizeMapper,
     height: sizeMapper,
@@ -39,14 +39,14 @@ const style: GpuStylesheet = {
   core: { 'selection-box-color': '#ccf' },
 };
 
-const options: CytoscapeGpuOptions = {
+const options: CytoscapeOptions = {
   elements,
   style,
   wheelSensitivity: 1,
   boxSelectionIncludesLabels: false,
 };
 
-const cy: GpuCore = cytoscape( options );
+const cy: Core = cytoscape( options );
 
 // -- unknown constructor options are a build-time error (round 37.3) --
 //
@@ -69,7 +69,7 @@ cytoscape( { elements, hideEdgesOnViewport: true } );
 // @ts-expect-error and a plain typo, the case the whole rule is for
 cytoscape( { totallyUnknownOption: 1 } );
 // @ts-expect-error the same check through the named options type
-const badOptions: CytoscapeGpuOptions = { textureOnViewport: true };
+const badOptions: CytoscapeOptions = { textureOnViewport: true };
 
 void badOptions;
 
@@ -80,7 +80,7 @@ void badOptions;
 
 // -- statics on the factory --
 
-const columnar: GpuColumnarElements = cytoscape.toColumnarElements( elements );
+const columnar: ColumnarElements = cytoscape.toColumnarElements( elements );
 const wire: ArrayBuffer = cytoscape.serializeElements( columnar );
 
 cytoscape.deserializeElements( wire );
@@ -88,11 +88,11 @@ cy.add( wire );
 
 // -- queries: structured objects and predicates, never selector strings --
 
-const selected: GpuCollection = cy.nodes( { selected: true } );
-const heavy: GpuCollection = cy.nodes( { data: { weight: { gt: 2 } } } );
-const parents: GpuCollection = cy.nodes( { parent: true } );
-const byFn: GpuCollection = cy.filter( ele => ele.isEdge() );
-const one: GpuCollection = cy.$id( 'a' );
+const selected: Collection = cy.nodes( { selected: true } );
+const heavy: Collection = cy.nodes( { data: { weight: { gt: 2 } } } );
+const parents: Collection = cy.nodes( { parent: true } );
+const byFn: Collection = cy.filter( ele => ele.isEdge() );
+const one: Collection = cy.$id( 'a' );
 
 // -- collection reads --
 
@@ -102,15 +102,15 @@ const w: number | undefined = one.width();
 const bb = one.boundingBox( { includeLabels: true } );
 const deg: number | undefined = one.degree( false );
 const total: number = cy.elements().totalDegree();
-const nhood: GpuCollection = one.neighborhood();
-const edges: GpuCollection = one.connectedEdges();
+const nhood: Collection = one.neighborhood();
+const edges: Collection = one.connectedEdges();
 
 // -- traversal and algorithms --
 
 const dijkstra = cy.elements().dijkstra( { root: one, weight: () => 1 } );
-const path: GpuCollection = dijkstra.pathTo( cy.$id( 'b' ) );
-const components: GpuCollection[] = cy.elements().components();
-const clusters: GpuCollection[] = cy.nodes().kMeans( { k: 2, attributes: [ n => n.degree() ?? 0 ] } );
+const path: Collection = dijkstra.pathTo( cy.$id( 'b' ) );
+const components: Collection[] = cy.elements().components();
+const clusters: Collection[] = cy.nodes().kMeans( { k: 2, attributes: [ n => n.degree() ?? 0 ] } );
 
 // -- viewport --
 
@@ -125,11 +125,11 @@ const extent = cy.extent();
 // v3 event object, so every handler began with a cast; a v4 event's target is
 // the core or a one-element collection, and narrowing between them is a real
 // type guard rather than an assertion.
-const onTap = ( event: GpuEvent ) => {
+const onTap = ( event: Event ) => {
   const target = event.target;
 
   if( target != null && 'isNode' in target ){
-    void target.id();      // narrowed to GpuCollection — no cast
+    void target.id();      // narrowed to Collection — no cast
   }
 
   // the event's own fields are typed too
@@ -138,7 +138,7 @@ const onTap = ( event: GpuEvent ) => {
 
   void [ at, dom ];
 };
-const isNode = ( ele: GpuCollection ) => ele.isNode();
+const isNode = ( ele: Collection ) => ele.isNode();
 
 cy.on( 'tap', isNode, onTap );
 cy.off( 'tap', isNode, onTap );
@@ -165,10 +165,10 @@ const done: Promise<void> = ani.promise();
 
 // -- layouts: built-in by name, extension by direct object --
 
-const gridOpts: GpuGridLayoutOptions = { name: 'grid', fit: true, padding: 30 };
+const gridOpts: GridLayoutOptions = { name: 'grid', fit: true, padding: 30 };
 
 cy.layout( gridOpts ).run();
-cy.layout( { name: 'force', animate: true } as GpuLayoutOptions ).run();
+cy.layout( { name: 'force', animate: true } as LayoutOptions ).run();
 
 class SpiralLayout {
   run( ctx: { nodeSlots(): number[]; setPositions( slots: number[], xy: number[] ): void } ){
@@ -191,7 +191,7 @@ heavy.layout( { impl: new SpiralLayout() } ).run();
 cy.batch( () => { cy.$id( 'a' ).data( 'weight', 9 ); } );
 cy.compact();
 
-const exportOpts: GpuExportOptions = { full: true, scale: 2, output: 'blob' };
+const exportOpts: ExportOptions = { full: true, scale: 2, output: 'blob' };
 const png: Promise<string | Blob> = cy.png( exportOpts );
 
 const stats: RendererStats | undefined = cy.renderer()?.stats();

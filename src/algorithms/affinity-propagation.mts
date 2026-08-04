@@ -1,11 +1,11 @@
 // Affinity propagation clustering — a port of v3's pass on dense matrices.
 
-import type { GpuCollection } from '../collection.mjs';
+import type { Collection } from '../collection.mjs';
 import { median, mean, min, max } from '../math.mjs';
 import { clusteringDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
 
-export type AffinityAttributeFn = ( node: GpuCollection ) => number;
+export type AffinityAttributeFn = ( node: Collection ) => number;
 export type AffinityPreference = 'median' | 'mean' | 'min' | 'max' | number;
 
 export interface AffinityPropagationOptions {
@@ -115,7 +115,7 @@ const assign = ( n: number, S: number[], exemplars: number[] ): number[] => {
  * @throws if `damping` is outside [0.5, 1), or `preference` is neither a
  *   number nor one of 'median' / 'mean' / 'min' / 'max'
  */
-export const affinityPropagation = ( coll: GpuCollection, options: AffinityPropagationOptions = {} ): GpuCollection[] => {
+export const affinityPropagation = ( coll: Collection, options: AffinityPropagationOptions = {} ): Collection[] => {
   const damping = options.damping;
   const preference = options.preference;
 
@@ -140,7 +140,7 @@ export const affinityPropagation = ( coll: GpuCollection, options: AffinityPropa
   const n = nodes.length;
   const n2 = n * n;
 
-  const getSimilarity = ( n1: GpuCollection, n2ele: GpuCollection ): number => {
+  const getSimilarity = ( n1: Collection, n2ele: Collection ): number => {
     // negative: similarity is inverse to distance
     return -clusteringDistance(
       distance, attributes.length,
@@ -248,7 +248,7 @@ export const affinityPropagation = ( coll: GpuCollection, options: AffinityPropa
   const exemplarsIndices = findExemplars( n, R, A );
   const clusterIndices = assign( n, S, exemplarsIndices );
 
-  const clusters: Record<number, GpuCollection[]> = {};
+  const clusters: Record<number, Collection[]> = {};
 
   for( let c = 0; c < exemplarsIndices.length; c++ ){
     clusters[ exemplarsIndices[ c ] ] = [];

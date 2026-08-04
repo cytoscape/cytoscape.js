@@ -1,12 +1,12 @@
 import * as math from '../math.mjs';
 import type { BoundingBox } from '../types.mjs';
-import type { GpuRandomLayoutOptions } from '../gpu-types.mjs';
-import type { GpuCollection } from '../collection.mjs';
-import type { GpuCore } from '../core.mjs';
+import type { RandomLayoutOptions } from '../public-types.mjs';
+import type { Collection } from '../collection.mjs';
+import type { Core } from '../core.mjs';
 
 /** Random layout: v3's, over the collection scope via layoutPositions. */
 
-const defaults: Omit<GpuRandomLayoutOptions, 'name'> = {
+const defaults: Omit<RandomLayoutOptions, 'name'> = {
   fit: true,
   padding: 30,
   boundingBox: undefined,
@@ -26,9 +26,9 @@ const defaults: Omit<GpuRandomLayoutOptions, 'name'> = {
  */
 export class RandomLayout {
   /** the resolved options this layout was created with */
-  options: GpuRandomLayoutOptions;
+  options: RandomLayoutOptions;
 
-  private cy: GpuCore;
+  private cy: Core;
 
   /**
    * Reached through `cy.layout( { name: 'random' } )` /
@@ -39,7 +39,7 @@ export class RandomLayout {
    *   plus the shared plumbing (`fit`, `padding`, `spacingFactor`,
    *   `transform`, `animate`, the lifecycle callbacks)
    */
-  constructor( cy: GpuCore, options: GpuRandomLayoutOptions ){
+  constructor( cy: Core, options: RandomLayoutOptions ){
     this.cy = cy;
     this.options = { ...defaults, ...options };
   }
@@ -55,7 +55,7 @@ export class RandomLayout {
   run(): this {
     const cy = this.cy;
     const options = this.options;
-    const eles = ( options.eles as GpuCollection | undefined ) ?? cy.elements();
+    const eles = ( options.eles as Collection | undefined ) ?? cy.elements();
 
     const bb = math.makeBoundingBox( options.boundingBox ?? {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()

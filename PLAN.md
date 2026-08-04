@@ -93,6 +93,15 @@ measurements promised here and never taken.  It also shipped a
 **stranded-doc-block check**, which found six more instances of this
 codebase's most repeated documentation defect on its first run — one of
 them shipping in the declarations.
+A **fifth design sitting** (2026-08-04) then took **every open call in
+the ledger** with the maintainer and scoped the **production-readiness
+roadmap**: rounds 37–50, from the governance close-out (gates, the alias
+split, the strictness closures) through the full `border-style` port, the
+v4 Event, the `v3/` repo restructure that makes v4 the package's default
+export, the docs generator and v4 site, the migration guide, robustness
+and cross-platform passes, to a published **4.0.0**.  The per-item
+decisions are recorded in "Open calls for the maintainer" below; the
+sitting record and the round 37–50 plans are at the end of this file.
 `src/gpu/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -160,6 +169,16 @@ was dropped.  Contradictions are logged, never silently patched:
 removing public API is the maintainer's call even when a ledger entry
 appears to authorize it.
 
+**2026-08-04 (fifth design sitting): every call below was taken with
+the maintainer.**  Each item now carries its decision and the round
+that executes it (rounds 37–50, planned at the end of this file).  The
+one question that stays genuinely open is the **error policy** inside
+item 4 — the maintainer flagged it for real design work rather than a
+quick answer — which converts into round 40's design sitting instead of
+closing here.  Decisions are made; none of the executing rounds has
+landed yet, so the code still reads as the items describe until each
+round ships.
+
 ### Scope calls
 
 1. **`border-style` / `outline-style`** (27.8, 2026-08-02) — the last
@@ -174,26 +193,59 @@ appears to authorize it.
    call: ship the cheap subset (a genuine v3 deviation — v3 dashes
    any shape) or cover everything.  `double` is not a dash at all and
    works on every shape either way.
+   **Call taken (2026-08-04, fifth sitting): full coverage** — every
+   shape, the polygon tier included, its ~2× dashed-polygon fragment
+   cost accepted.  Executes as **round 38**.
 2. **The overlap box-selection mode** (gap item 8) — v4 selects by
    containment only; v3 also offers overlap.  Deferred as a
    demand-gated hook, not v3-surface-critical.
+   **Call taken (2026-08-04): build** —
+   `boxSelectionMode: 'contain' | 'overlap'` per the logged round-20
+   shape (bb-intersect for nodes, segment/route-vs-rect for edges).
+   Executes as **round 39**.
 3. **Core/collection extension points** (gap item 10) — the layout
    contract landed in round 17; the other two extension categories
    stay out on the reasoning that mappers and predicates cover the
    common cases.  Revisit on demand.
+   **Call taken (2026-08-04): stays out** — deferred by decision,
+   demand-gated exactly as logged.  Closed; not in the 4.0 scope.
 4. **`cy.gc()` and `cytoscape.warnings()`** (gap item 12) — round 19's
    `compact()` answers what `gc` was for, and v4 does warn in several
    places (a deferred `compact()`, a full glyph atlas), so there is
    something for `warnings()` to silence.  The call is whether either
    name survives.
+   **Call taken in part (2026-08-04): both names return.**  `cy.gc()`
+   lands as the explicit alias of `compact()` (**round 39**);
+   `cytoscape.warnings()` builds, but its *shape* is deliberately
+   still open — the maintainer flagged the **error policy** itself for
+   real design work: v3 mostly avoided throwing because a throw can
+   crash an app where ignoring is recoverable, and `warnings()` could
+   take options (disable all warnings; demote thrown errors to
+   warnings — "the demotion option could be useful... needs more
+   discussion and thought").  That question is **round 40's design
+   sitting**; this is the one part of the ledger that stays open.
 5. **Graph-level `data` in the binary wire format** (gap item 12) —
    `cy.json()` already exports it; `serializeElements` is
    elements-only.  Since `cy.serialize()` output feeds `cy.add()`,
    including graph data raises whether adding elements should
    overwrite the target's `data()`.
+   **Call taken (2026-08-04): build** — the wire gains a graph-data
+   section (format version bump; older buffers keep loading).  The
+   add-semantics half is decided at **round 39's** docs-first stage,
+   with the lean recorded there: `options.elements` applies graph
+   data, `cy.add( buffer )` ignores it (adding elements must not
+   clobber the target's `data()`).
 6. **A v4-specific event type** (logged 26.5) — v4 emits the shared v3
    `Event`, so `event.target` types as `unknown` in the shipped
    declarations.  A v4 event type is a design call, not an oversight.
+   **Call taken (2026-08-04): build the v4 Event** — v4 gets its own
+   Event class *and emitter* (severing the last shared-module import
+   of v3's `src/emitter.mts`, a prerequisite of the round-42
+   restructure): typed `target`, `originalEvent` populated by the
+   pointer layer, **`preventDefault()` supported and functional** (the
+   preventable gesture defaults are enumerated at the round's
+   docs-first stage), and **no namespace machinery at all**.  Executes
+   as **round 41**, resolving item 12 with it.
 7. ~~**Six benchmark suites are outside the report**~~ (logged 29.6) —
    **closed by round 33.10** (2026-08-03).  `report.mjs` grew a third
    profile: `--all` runs every standalone sweep beside the quick
@@ -230,6 +282,12 @@ appears to authorize it.
    new audits (`@returns`, stranded doc blocks), keeping the report-only
    family at three and the gated family at three — the same shape this
    call is about.
+   **Call taken (2026-08-04): gate throw coverage *and* `@returns`.**
+   Throw coverage becomes a zero-tolerance gate on Node-reachable
+   never-run sites, with `UNREACHABLE`/`MISATTRIBUTED` as maintained
+   allowlists; `@returns` ratchets at 276/276.  Stranded doc blocks
+   and bench coverage stay report-only — each is heuristic in a way
+   the gated audits are not.  Executes as **round 37**.
 
 ### Contradictions between the code and the decided-design ledger
 
@@ -247,6 +305,13 @@ docs checks), and each is left in place pending the call.
    two rows in `test/gpu-aliases.mjs`, their wiring and `declare`
    lines in `core.mts`, and the `roundrectangle` line in
    `test/gpu-decided-drops.mjs` come out together.
+   **Call taken (2026-08-04): split.**  `roundrectangle` is
+   **dropped** — it throws like `cutrectangle` and `concavehexagon`,
+   the triage enforced as written — while `autolockNodes` /
+   `autoungrabifyNodes` are **kept** as deliberate, recorded
+   exceptions to one-name-per-concept ("possibly useful").  Executes
+   as **round 37**; the decided-design ledger's legacy-alias line
+   gains the two-name exception in the same pass.
 10. **Unknown constructor options are silently ignored** (found
     2026-08-03), including the four canvas-era options the triage
     explicitly dropped: `{ motionBlur: true }` constructs happily and
@@ -258,6 +323,13 @@ docs checks), and each is left in place pending the call.
     the rest of the surface (and with what allowance for
     forward-compatible options?), or record the constructor as
     deliberately permissive.
+    **Call taken (2026-08-04): the constructor stays
+    runtime-permissive by design.**  Excess options are a build-time
+    concern — tsc's excess-property checking on the typed options
+    object already flags `{ motionBlur: true }` — and v4 does not
+    replicate at runtime what the types check at build time.  Round 37
+    pins that the type actually rejects it (a compile-only consumer
+    test) and records the decision in the ledger and the ctor's JSDoc.
 11. **Dropped event names register silently** (found 2026-08-03).
     Round 17 dropped the `vmouse*` aliases and v3's raw mouse/touch
     re-emits, but `cy.on('vmousedown', h)`, `cy.on('mousedown', h)`,
@@ -271,6 +343,12 @@ docs checks), and each is left in place pending the call.
     a blanket rule.  29.3 fixed the neighbouring case — a *selector
     string* as an event qualifier now throws instead of detonating
     inside the emitter — but the event *name* side is untouched.
+    **Call taken (2026-08-04): event names stay open — no denylist.**
+    v3 supports custom events (`node.emit('foo')`) and v4 keeps that,
+    so names cannot be gated; dropped v3 spellings and namespaced
+    names register and simply never fire, documented as such.  Round
+    37 records it (docs + ledger only, no code); round 41's v4 Event
+    removes the namespace *machinery* while leaving names free.
 12. **`event.preventDefault()` exists and does nothing** (recorded in
     the README since round 27's fact-check).  v4 emits the shared v3
     `Event`, so the method is present on every event a handler
@@ -278,6 +356,11 @@ docs checks), and each is left in place pending the call.
     flag — gesture defaults are gated by options instead.  Same
     family as 10: the call is whether it throws, is removed from the
     v4 event, or stays documented-as-inert.
+    **Call taken (2026-08-04): resolved by item 6's v4 Event.**
+    `preventDefault()` is kept and becomes **functional** — the
+    interaction layer reads `isDefaultPrevented` at the enumerated
+    preventable gesture defaults — landing with the v4 Event in
+    **round 41**.
 
 
 ## Context
@@ -2149,7 +2232,8 @@ per-item history.)*
    node-shape vocabulary is complete.**  Still open:
    `border-style`/`outline-style`, held for exactly the scope call
    this item's own sentence above asks for — see the round-27.8
-   entry for the three cost tiers.
+   entry for the three cost tiers.  (Call taken 2026-08-04: **full
+   coverage** — scoped as round 38.)
 5. **Arrow parity** — `mid-source`/`mid-target` positions,
    `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
    shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/
@@ -2508,6 +2592,28 @@ What is left of the five is a **residual 2.3× on the style getters**,
 which is no longer a hot spot with an obvious cause — it is the
 145-case switch and the guard lookups that precede it.  Not logged as an
 open call: it needs no decision, only appetite.
+
+**2026-08-04, the fifth design sitting — the production-readiness
+roadmap.**  With round 36 done, everything left in this file was open
+calls, and the sitting took all of them (the per-item records are in
+"Open calls for the maintainer" above).  What follows from the answers
+is **rounds 37–50**, planned at the end of this file: the governance
+close-out (37 — the two new gates, the alias split, the strictness
+closures), the full `border-style`/`outline-style` port (38), the
+decided feature tail — overlap box mode, wire graph-data, `cy.gc()` —
+(39), the error-policy sitting + `cytoscape.warnings()` (40 — the one
+question the sitting deliberately left open), the v4 Event + emitter
+(41), the **`v3/` restructure** that makes v4 the package's default
+export (42), packaging/publish hardening (43), the JSDoc→docmaker
+generator (44), the v4 docs site (45), the migration guide + CHANGELOG
+(46), robustness/soak (47), cross-platform validation (48), release
+engineering + `4.0.0-alpha.1` (49), and the release bake to **4.0.0**
+(50).  This sitting's edit touches PLAN.md only, at the maintainer's
+instruction; the README true-up (header, follow-up hooks) lands with
+round 37's docs-first commit — noted so the standing docs-travel rule's
+exception is on the record rather than silent drift.  "Gaps with
+direction already set" was checked by name and needed nothing (its
+entries all closed by earlier rounds).
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -9627,3 +9733,350 @@ proved nothing (mitigated by building by hand before every run); and
 `--layout` wedging the suite the way it did before 18.5's nested
 timeouts existed (they still exist, and `--layout-uncapped` stays
 opt-in).
+
+## Design sitting (2026-08-04, fifth) — the production-readiness roadmap
+
+Every open call in the ledger, taken with the maintainer in one
+sitting; the per-item decisions are recorded in "Open calls for the
+maintainer" near the top of this file, and the rounds below execute
+them.  The sitting's own record, briefly:
+
+1. **`border-style`/`outline-style`: full coverage** — every shape,
+   the polygon perimeter tier included (round 38).
+2. **Strictness resolves at the type layer, not the runtime.**  The
+   constructor stays runtime-permissive (tsc's excess-property check
+   is the typo guard — v4 does not replicate at runtime what the
+   build checks); event names stay open because custom events
+   (`node.emit('foo')`) are supported API and cannot be gated.
+3. **The v4 Event is built** — typed `target`, populated
+   `originalEvent`, **functional `preventDefault()`** (the
+   maintainer's amendment to the proposal, which had dropped it), no
+   namespaces (round 41).
+4. **Packaging: v4 becomes the package.**  v4's source promotes from
+   `src/gpu/` to `src/` and becomes the default export of
+   `cytoscape@4`; the entire v3 file set moves into a self-contained,
+   still-buildable **`v3/`** directory (parity and comparison
+   benchmarks keep working against it), and no v3-specific file
+   remains outside it (rounds 42–43).
+5. **Gates: throw coverage and `@returns` both gate** (round 37);
+   stranded blocks and bench coverage stay report-only.
+6. **Aliases split**: `roundrectangle` drops, `autolockNodes`/
+   `autoungrabifyNodes` are kept as recorded exceptions (round 37).
+7. **The small feature calls**: overlap box mode, graph-level data in
+   the wire format, and `cy.gc()` all build (round 39);
+   core/collection extension points stay demand-gated deferred.
+8. **The error policy is the one question deliberately left open.**
+   `cytoscape.warnings()` builds, but v3's mostly-no-throw stance
+   (a throw can crash an app where ignoring is recoverable) against
+   v4's fail-loudly design needs real thought — options like
+   disable-all-warnings and demote-recoverable-errors-to-warnings are
+   on the table.  Round 40 is that sitting.
+9. **The docs site**: the generated v4 site replaces `documentation/`
+   at the root at release; v3's docs stay reachable through the
+   existing versioned-docs mechanism (rounds 44–45).
+
+Process note: at the maintainer's instruction this sitting lands as a
+**PLAN.md-only** edit — decisions and plans, no implementation.  The
+README true-up that the docs-travel rule would normally pair with it
+is round 37's docs-first commit.
+
+## Round 37 plan — governance close-out (planned 2026-08-04)
+
+Small and first, because the gates protect every round after it.  All
+calls already taken (fifth sitting); nothing here needs design.
+
+- **37.1 The two new gates.**  Throw coverage becomes a zero-tolerance
+  gate: a Node-reachable `throw new` site the Node suite never runs
+  fails the build, with `UNREACHABLE`/`MISATTRIBUTED` promoted from
+  one-off notes to maintained allowlists (an entry needs a reason, as
+  they already carry).  `@returns` ratchets at 276/276 beside the
+  `@throws`/`@param` gates.  Controls per the 31.2 pattern: a spec
+  deleted / a new undocumented site added / the audit short-circuited
+  each fail the gate.
+- **37.2 The alias split.**  `roundrectangle` throws (joining
+  `cutrectangle`/`concavehexagon`); its line in
+  `test/gpu-decided-drops.mjs` flips from pinning-the-inconsistency to
+  pinning-the-drop.  `autolockNodes`/`autoungrabifyNodes` stay wired
+  and pinned; the decided-design ledger's legacy-alias line gains the
+  two-name exception so code and ledger finally agree.
+- **37.3 Constructor options, closed at the type layer.**  A
+  compile-only consumer test pins that `{ motionBlur: true }` (and a
+  plainly unknown key) fail typechecking against the options type;
+  the ctor's JSDoc records that the runtime is deliberately
+  permissive.  If the current options type does not reject excess
+  keys in the consumer-test configuration, tightening it *is* this
+  item.
+- **37.4 Event-name openness, documented.**  `on()`/`emit()` JSDoc
+  states the contract: any name registers and custom events are
+  supported; dropped v3 spellings and namespaced names never fire.
+  No denylist, no code.
+- **37.5 Closing docs sweep** — the round-37 sweep also carries the
+  README true-up this sitting deferred (header through the fifth
+  sitting, follow-up hooks, the alias and strictness closures).
+
+Verification: the full standing gate (Node, module, types, lint,
+JSDoc audits now five-strong with two new gates), browser suites
+re-run because 37.2 changes source, goldens untouched.
+
+## Round 38 plan — `border-style` / `outline-style`, full coverage (planned 2026-08-04)
+
+The last unported v3 style pair, at the scope the sitting chose:
+**every shape**.  The technique has been settled since 27.8; this
+round builds all three tiers.
+
+- **The perimeter coordinate**, per tier: closed-form for
+  circle/rectangle/round-rectangle (walk the sides + corner arcs);
+  angle-parameterized ellipse — arc length is elliptic, so dashes
+  space unevenly on eccentric ellipses (recorded deviation);
+  the polygon family (sharp polygons, the round-* family, `barrel`,
+  `cut-rectangle`, the custom `polygon`) via the SDF loop also
+  tracking the argmin edge and its clamped projection against a
+  per-fragment cumulative perimeter — roughly 2× polygon fragment
+  cost *where a dash is enabled*, accepted; solid borders pay a
+  branch only (the `u`-computed-only-when-dashed gate).
+- **`double`** — a second inner band, no parameterization, every
+  shape; **`outline-style`** reuses the perimeter at the ring radius
+  (offset perimeter, different arc length).  `text-border-style`
+  stays out unless the same machinery makes it free (call at
+  docs-first).
+- Both props enum channels with the standard parse/mapper/
+  stored-truth-readback plumbing; ghost bodies carry their border
+  style like everything else.
+- **Verification is the round-27 discipline**: goldens per tier plus
+  **live v3 parity diffs per tier**, each run once with the feature
+  disabled to prove it can fail; dash-phase parity checked explicitly
+  (v3 launches patterns at a defined origin per shape — read v3
+  source before asserting).  A `benchmark/gpu/` row prices the
+  dashed-polygon fragment premium on the renderer bench (device
+  time, dashed vs solid on the same scene).
+
+## Round 39 plan — the decided feature tail (planned 2026-08-04)
+
+Three independent small builds, all decided at the fifth sitting.
+
+- **39.1 Overlap box selection.**  `boxSelectionMode:
+  'contain' | 'overlap'` — ctor option + validated getter/setter
+  (the round-20.1 shape).  Overlap: a node counts when its bb
+  (incl. border) *intersects* the band; an edge when its
+  segment/route intersects it — the cull pass owns exactly that math
+  (Liang-Barsky + the curved-stream tests), so the CPU twin is
+  extracted rather than invented; curved edges get the same
+  conservative-then-exact treatment box selection already uses.
+  Docs-first confirms the lean that the *gesture* takes the mode
+  while `cy.elementsInBox()` stays the pure geometric contain query
+  (or gains an options argument — one call, taken then).
+- **39.2 Graph-level data in the wire format.**  A graph-data section
+  (format version bump; older buffers keep loading, the 14.8
+  precedent), carried by `cy.serialize()` and read by
+  `deserializeElements`.  Semantics, the lean to confirm at
+  docs-first: `options.elements` applies graph data at construction;
+  `cy.add( buffer )` ignores it — adding elements must not clobber
+  the target's `data()`.
+- **39.3 `cy.gc()`.**  The explicit alias of `compact()` — alias
+  table row, `declare` + wiring, spec.
+- Each lands tests-first with docs in-commit; 39.1 adds a `webgpu`
+  gesture spec and a spatial-benchmark row (overlap vs contain cost).
+
+## Round 40 plan — the error policy + `cytoscape.warnings()` (planned 2026-08-04; sitting required)
+
+The one question the fifth sitting deliberately kept open.  v4 fails
+loudly by decided design — 191 throw sites are public contract, gated
+since round 37 — while v3 mostly avoided throwing because an exception
+can crash an app in a case that is recoverable by ignoring it.  The
+maintainer wants real design here, not a quick answer.
+
+**Questions the sitting takes** (docs-first carries them with a
+proposal to react to):
+
+1. **A two-tier taxonomy** — *contract errors* (programmer mistakes:
+   unknown props/keys/options, invalid arguments, malformed payloads —
+   always throw) vs *recoverable runtime conditions* (a failed image
+   fetch, a full glyph atlas, a deferred compact — today's warn
+   sites).  Which of the 191 sites sits in which tier is the sitting's
+   real work; `scripts/gpu-throw-coverage.mjs` enumerates them, so the
+   review is a pass over a list that already exists.
+2. **`cytoscape.warnings()`'s shape** — boolean toggle
+   (`warnings(false)` silences the warn tier, v3's surface), or an
+   options form (`warnings({ demoteErrors: true })` / an
+   `errorPolicy` ctor option) that demotes *recoverable-tier* throws
+   to warnings — never the contract tier, or the fail-loudly design
+   dissolves.  Global vs per-instance is part of the same call.
+3. **What a demoted error does** — return value conventions for a
+   call that would have thrown (no-op + warn?  the v3 behaviour per
+   site?), and whether the `error` event carries them.
+
+Implementation follows the sitting inside the same round; the
+throw-coverage gate's classification lists absorb any re-tiering, and
+every site whose behaviour changes keeps a spec for both policies.
+
+## Round 41 plan — the v4 Event + emitter (planned 2026-08-04)
+
+Prerequisite for round 42: v4's one remaining shared-module dependency
+on v3 is `src/emitter.mts` (and the shared `Event` object with it).
+
+- **A v4 Event class**: typed `target` (core/collection), `cy`,
+  positions; **no namespace fields or parsing anywhere**;
+  `originalEvent` populated by the pointer layer (the DOM event
+  reaches handlers at last); **`preventDefault()` functional** —
+  docs-first enumerates the preventable gesture defaults from
+  v3-source reading (candidates: tap-selection/-clear, grab
+  initiation, box start, cxt menu suppression is already
+  unconditional) and each preventable default gains a spec proving
+  both directions.
+- **A v4 emitter** replacing the `src/emitter.mts` import — the same
+  ref/predicate-qualified listener model the core already uses, with
+  the namespace machinery gone rather than merely unexercised.  An
+  audit pass confirms no other `src/gpu` import reaches outside
+  `src/gpu` (the restructure's precondition, asserted by a spec that
+  walks the import graph).
+- Ships in `dist/cytoscape-gpu.d.ts`: `event.target: unknown`
+  resolved, the compile-only consumer test extended (handlers narrow
+  no more).  26.5's logged item closes.
+- Bubbling, phase order, `stopPropagation`, and the round-14.5 specs
+  carry over byte-for-byte — the event *semantics* do not change,
+  only the object and its module.
+
+## Round 42 plan — the great restructure (planned 2026-08-04)
+
+The packaging decision, executed: **v4 becomes the package**.
+
+- **`v3/` is created as a self-contained subproject**: v3's `src/`,
+  its tests, `documentation/`, the top-level v3 benchmark suites, the
+  v3 debug pages, the v3 rolldown/dts configs, and the stale
+  hand-written root `index.d.ts` — everything v3-specific — with its
+  own scripts so it builds and tests like a separate project.  The
+  parity harness (`playwright-page/parity.html`) and comparison
+  benchmarks build v3's UMD bundle from `v3/`; nothing v3-specific
+  remains outside the directory.
+- **`src/gpu/*` promotes to `src/`** (the `.mjs`-specifier convention
+  keeps import edits mechanical); `test/gpu-*`, `test/modules/*`,
+  `benchmark/gpu/`, `playwright-*`, `scripts/gpu-*`, `debug/webgpu/`,
+  the rolldown/tsconfig/audit configs all re-point.  Whether the
+  `gpu-` file-name prefixes stay (history) or drop (tidiness) is a
+  docs-first call — the audits' file lists change either way.
+- **Root `package.json` becomes `cytoscape@4.0.0-unstable`** (round
+  49 settles the prerelease spelling): v4 is `main`/`module`/`types`
+  and `exports["."]`; the `./gpu` subpath stays as a deprecated alias
+  through the prerelease line and is removed at 4.0 (confirm at
+  docs-first).  CI workflows re-point.
+- **Behaviour-neutral by assertion**: the full verification gate runs
+  green before and after — Node, module, all browser projects with
+  **goldens byte-stable**, types, the five audits, a benchmark smoke —
+  because a restructure that changes pixels or numbers has done
+  something else.
+
+## Round 43 plan — packaging + publish hardening (planned 2026-08-04)
+
+The gaps the 2026-08-04 infrastructure pass found, closed for the v4
+entries.
+
+- The dist pipeline produces (and, per the existing release
+  convention, commits at release) the v4 **esm/umd/min** bundles —
+  today `exports["./gpu"]` points at `dist/cytoscape-gpu.esm.mjs`,
+  which is not committed, so a git/npm install resolves to a missing
+  file; and no minified v4 bundle exists at all.  The exports map
+  gains the UMD/min conditions consumers need (unpkg/jsdelivr fields
+  included).
+- **A pack-contents spec**: `npm pack` is audited by a test — no
+  `PLAN.md`/`AGENTS.md`/`CLAUDE.md`, no playwright dirs, no `v3/`
+  internals beyond what is decided to ship, `src/` in or out decided
+  deliberately; `.npmignore` → `files` migration if that is cleaner
+  to keep honest.
+- An **exports-resolution test covering every subpath** (the current
+  `test:types:exports` checks only the v3 d.ts and never validates
+  the map itself); the root `README.md` rewritten for v4; an explicit
+  engines / browserslist / WebGPU-requirements statement (headless
+  needs no GPU; a container requires WebGPU — the README rule,
+  stated where installers read).
+
+## Round 44 plan — the docs generator (planned 2026-08-04)
+
+Round 26's deliberately deferred half, now due: the release docs are
+*generated* from the JSDoc the gates have kept complete.
+
+- The generator reads the source doc blocks and the
+  `// -- <group> --` banners (kept accurate since round 26 for
+  exactly this) and emits docmaker's `fns` shape —
+  `{ name, descr, formats: [ { descr, args: [ { name, descr } ] } ] }`
+  — grouped into the banner sections, for the v4 docmaker config.
+  `@param` order and overload blocks map to `formats`; `@throws`
+  and deviations prose ride the descriptions.
+- **Validated, not trusted**: a gate cross-checks generator output
+  against the shipped d.ts surface (the `test:types:docs`
+  precedent — every public member appears exactly once, no phantom
+  entries), and the stranded-block report runs before every
+  generation, since a displaced block would now ship twice.
+
+## Round 45 plan — the v4 docs site (planned 2026-08-04)
+
+- Prose sections written by hand (the generator covers members, not
+  narrative): introduction, getting started, loading (columnar + the
+  wire format), styling with mappers and the sheet, events + the
+  interaction surface, layouts + the extension contract, animations +
+  transitions, performance.  Demos ported to v4.
+- The docmaker template updated for the v4 config; the generated site
+  lands at root `documentation/`; v3's site (now `v3/documentation/`)
+  is archived through the existing versioned-docs mechanism
+  (`versions.json`), so old links keep resolving; the Pages deploy in
+  the release workflows re-points.
+
+## Round 46 plan — the migration guide + CHANGELOG (planned 2026-08-04)
+
+- **The v3 → v4 guide**, built in part *from* the decided-design
+  ledger and the README's deviations lists (which have been kept
+  current for exactly this): selector strings → query objects +
+  predicates (a recipe table per selector form), classes → `data()` +
+  mappers, style functions → `case`/scale mappers, the animation
+  queue → promises, the event vocabulary (what fires, what never
+  will), removed patterns (`restore`/`clone`/json-import), dropped
+  props with their replacements, and the behavioural deviations an
+  upgrading app might trip on (draw order, `elements()` order,
+  Float32 positions).
+- `CHANGELOG.md` started (4.0.0-alpha onward); both feed the docs
+  site.
+
+## Round 47 plan — robustness + soak (planned 2026-08-04)
+
+The tier of testing a release needs and feature rounds never owed.
+
+- **Leak gates**: create/destroy and mount/unmount cycles with
+  bounded heap deltas; image-registry, glyph-atlas and listener leak
+  specs; the round-11 sliding-window churn scenario promoted from a
+  measurement to a pass/fail soak spec.
+- **Failure injection**: device loss under load (mid-animation,
+  mid-export, mid-force-run); wire-format fuzzing — a malformed
+  buffer never crashes, it throws the contract error; limit edges
+  (the 256-layer cap, a full atlas, the export texture cap) each
+  behave as documented.
+- **Multi-instance isolation** (shared page, independent stores,
+  destroy order).
+
+## Round 48 plan — cross-platform validation (planned 2026-08-04)
+
+- The matrix, run and recorded: macOS/Metal (the goldens'
+  cross-platform claim re-verified), Windows/D3D12, WebKit and
+  Firefox WebGPU status with a soft-skip audit (a skip is recorded,
+  never silent), real-device touch (Android Chrome — the round-20
+  gestures on actual fingers).  Per-platform goldens remain the
+  reserve escape hatch if CI disagrees.
+- Standing rule applied: no "blocked, no adapter here" conclusion
+  without probing from a served page — the mistake this file has
+  corrected twice.
+
+## Round 49 plan — release engineering (planned 2026-08-04)
+
+- The release workflows adapted for the 4.x line: version scripts
+  (the prerelease spelling settled here), `pre_release_test.sh`
+  updated for the v4 artifacts + v4 docs deploy, npm publish (+
+  provenance) verified against round 43's pack spec, the blog /
+  announcement draft.
+- **Cut `4.0.0-alpha.1`** — the first published v4.
+
+## Round 50 plan — the release bake → 4.0.0 (planned 2026-08-04)
+
+- The alpha/beta cycle: external-consumer smoke (a framework-wrapped
+  app, an external layout through the round-17 contract, a real graph
+  app ported using round 46's guide — the guide is *tested* by the
+  port), an issue-triage window, the final benchmark publication, and
+  the final docs/ledger sweep.
+- Then **4.0.0**.

@@ -2999,7 +2999,12 @@ declare class StyleEngine {
    */
   constructor(store: GraphStore);
   private coreStyle;
-  /** The resolved core theming props (round 13 A2). */
+  /**
+   * The resolved core theming props (round 13 A2).
+   *
+   * @returns the live record — `setSheet` replaces it wholesale, so a
+   *   held reference reads the *previous* sheet's theming after a swap
+   */
   core(): CoreStyle;
   /**
    * Replace the stylesheet and re-apply it to every live element,
@@ -3203,15 +3208,13 @@ declare class StyleEngine {
    */
   readProps(ref: Ref): Record<string, string | number>;
   /**
-   * An arrow's colour *before* the edge-opacity fold — the base the stored
-   * bytes are derived from (`stored.a = base.a × opacity`).  A 'none' shape
-   * is fully transparent.  Animating edge opacity needs this: the stored
-   * alpha alone can't recover the base when the opacity it was folded with
-   * was 0.
-   */
-  /** The constant line-opacity (B1) — the arrow-fold factor animation
+   * The constant line-opacity (B1) — the arrow-fold factor animation
    * needs (a mapped line-opacity never coexists with kernel-owned
-   * arrows, so the constant is the truth). */
+   * arrows, so the constant is the truth).
+   *
+   * @returns the edges group's resolved `line-opacity`, the factor an
+   *   arrow's stored alpha was folded with
+   */
   lineOpacityConst(): number;
   /** The sheet's arrow-width modes (constants-only props) — an
    * edge-width tween needs these to carry the style-write-resolved
@@ -3346,7 +3349,13 @@ declare class Viewport {
    * @returns model-to-rendered scale
    */
   zoom(): number;
-  /** The current pan.  Live internal object (as in v3) — treat as read-only. */
+  /**
+   * The current pan.  Live internal object (as in v3) — treat as read-only.
+   *
+   * @returns the rendered-space translation applied before the zoom; the
+   *   *same* object on every call, which the setters replace rather than
+   *   mutate, so a caller that wants a stable snapshot must copy it
+   */
   pan(): Position;
   /**
    * Set the zoom, optionally about a fixed point.
@@ -3421,9 +3430,21 @@ declare class Viewport {
    * @returns true when the state changed
    */
   centerOn(bb: BoundsLike): boolean;
-  /** The rendered (on-screen) viewport rectangle. */
+  /**
+   * The rendered (on-screen) viewport rectangle.
+   *
+   * @returns the canvas rectangle in rendered px, always anchored at the
+   *   origin — pan and zoom move the *content*, not this box, so it
+   *   answers the container's size and nothing about the view
+   */
   renderedExtent(): Extent;
-  /** The model-coordinate rectangle currently visible. */
+  /**
+   * The model-coordinate rectangle currently visible.
+   *
+   * @returns the container's rendered box projected back through the
+   *   current pan and zoom — so it moves as the view moves, and its `w`/`h`
+   *   shrink as the zoom rises
+   */
   extent(): Extent;
   /**
    * Project a model-space point into rendered (CSS px) space.
@@ -3611,6 +3632,10 @@ declare class Animation {
   /**
    * A transition animation (round 24.1): the style engine diffed stored
    * truth around a restyle into per-column writes; nothing to capture.
+   *
+   * @returns an animation whose values are already resolved — it never
+   *   reads the columns at play time, so the restyle's own diff is the
+   *   only place stored truth is consulted
    */
   static preset(store: GraphStore, refs: Ref[], writes: ChannelWrite[], opts: {
     duration: number;
@@ -3634,7 +3659,13 @@ declare class Animation {
    *   the animation got offloaded
    */
   constructor(store: GraphStore, viewport: Viewport | null, refs: Ref[], isViewport: boolean, opts: AnimateOptions, styleEngine?: StyleEngine | null);
-  /** True once the animation has completed or been stopped. */
+  /**
+   * True once the animation has completed or been stopped.
+   *
+   * @returns whether it is over, *not* whether it succeeded — a stop and
+   *   a natural completion are the same answer here, and both resolve
+   *   the promise
+   */
   get done(): boolean;
   /** Columns this animation writes (round 21: the concurrency contract —
    * animations sharing an element may run together iff these are
@@ -3649,9 +3680,20 @@ declare class Animation {
    * @returns the set of column ids, computed once and cached
    */
   touchedColumns(): ReadonlySet<string>;
-  /** Viewport channels (round 21): pan and zoom compose when disjoint. */
+  /**
+   * Viewport channels (round 21): pan and zoom compose when disjoint.
+   *
+   * @returns whether this animation tweens the pan — the pair are
+   *   separate channels, so a pan animation and a zoom animation run
+   *   together rather than evicting each other
+   */
   get hasPan(): boolean;
-  /** Whether this viewport animation tweens the zoom. */
+  /**
+   * Whether this viewport animation tweens the zoom.
+   *
+   * @returns whether the zoom channel is claimed; see `hasPan` for why
+   *   the two are tracked apart
+   */
   get hasZoom(): boolean;
   /**
    * Slot compaction (19.3): repair the target and channel-write refs
@@ -3663,7 +3705,13 @@ declare class Animation {
    *   resolves the pre-move refs
    */
   repairRefs(store: GraphStore): void;
-  /** True once the delay has elapsed and interpolation is under way. */
+  /**
+   * True once the delay has elapsed and interpolation is under way.
+   *
+   * @returns whether values are actually moving — false *during* the
+   *   delay, when the animation is live and owns its channels but has
+   *   not started interpolating
+   */
   get running(): boolean;
   /** A promise that resolves when the animation completes (or is stopped). */
   promise(): Promise<void>;
@@ -3685,10 +3733,19 @@ declare class Animation {
    * Whether the animation is paused: values hold where they are and the
    * promise stays pending.  A paused animation still owns its channels,
    * so the round-21 eviction stops it like any running one.
+   *
+   * @returns whether the clock is frozen; a paused animation is not a
+   *   stopped one — it still holds its channels against everything else
    */
   get paused(): boolean;
-  /** Elapsed fraction of the duration (0 before start, 1 when done;
-   * frozen at the pause point while paused).  Read-only — no scrubbing. */
+  /**
+   * Elapsed fraction of the duration (0 before start, 1 when done;
+   * frozen at the pause point while paused).  Read-only — no scrubbing.
+   *
+   * @returns the eased-time input in [0, 1], *before* the easing curve is
+   *   applied — so it is linear in wall time, not in the value being
+   *   tweened
+   */
   get progress(): number;
   /**
    * Freeze in place.
@@ -3733,6 +3790,10 @@ declare class Animation {
    * geometry channels and the viewport do not — geometry is read by
    * cull, the CPU pick replica and every columnar scan, so it stays
    * CPU-canonical (round 25).
+   *
+   * @returns whether **every** write may offload — all-or-nothing per
+   *   animation, so one geometry channel among the writes keeps the whole
+   *   animation on the CPU rather than splitting it
    */
   get gpuEligible(): boolean;
   /**
@@ -3751,7 +3812,13 @@ declare class Animation {
    * @param now — the clock of that first tick
    */
   schedule(now: number): void;
-  /** Start time in the shared clock (set once scheduled); ms. */
+  /**
+   * Start time in the shared clock (set once scheduled); ms.
+   *
+   * @returns the instant interpolation begins — the delay is already
+   *   added in, so this is not the moment `play()` was called; 0 before
+   *   the animation has been scheduled at all
+   */
   get startMs(): number;
   /**
    * Settle a GPU-driven animation onto the CPU columns at `now` and finish
@@ -3893,7 +3960,13 @@ declare class AnimationManager {
   start(ani: Animation): void;
   /** Drop an animation from every ref's running set. */
   private remove;
-  /** True while any animation is running. */
+  /**
+   * True while any animation is running.
+   *
+   * @returns whether anything at all is tweening, element or viewport —
+   *   the renderer cedes its auto-loop and drives the frame clock while
+   *   this holds
+   */
   active(): boolean;
   /**
    * True when a specific element has a running animation.
@@ -3902,7 +3975,12 @@ declare class AnimationManager {
    * @returns whether anything is tweening it
    */
   isAnimating(ref: Ref): boolean;
-  /** True when the viewport is animating. */
+  /**
+   * True when the viewport is animating.
+   *
+   * @returns whether a pan/zoom animation is live; element animations do
+   *   not count, which is the split `cy.animated()` exposes
+   */
   isViewportAnimating(): boolean;
   /**
    * Stop every running animation on the given refs (round 21: there is
@@ -4376,13 +4454,35 @@ declare class GpuCollection {
    * @returns `'collection'`
    */
   instanceString(): string;
-  /** The core this collection belongs to. */
+  /**
+   * The core this collection belongs to.
+   *
+   * @returns the instance that owns these elements — a collection cannot
+   *   span two cores, so this is also the identity a set operation
+   *   against a foreign collection would violate
+   */
   cy(): GpuCore;
-  /** The renderer, or null when headless. */
+  /**
+   * The renderer, or null when headless.
+   *
+   * @returns the renderer, or null on a headless instance — the model is
+   *   CPU-canonical, so a null renderer costs drawing, picking and image
+   *   export and nothing else
+   */
   renderer(): GpuCore['_renderer'];
-  /** The first element as a length-1 collection (empty collection when empty). */
+  /**
+   * The first element as a length-1 collection (empty collection when empty).
+   *
+   * @returns a length-1 collection, or an empty one — v4 has no separate
+   *   element type, so this narrows rather than unwraps
+   */
   element(): GpuCollection;
-  /** An empty collection in the same core. */
+  /**
+   * An empty collection in the same core.
+   *
+   * @returns a fresh empty collection bound to this core — the seed for
+   *   building a set up by union
+   */
   collection(): GpuCollection;
   /**
    * Whether this collection contains an element with the given id.
@@ -4520,9 +4620,21 @@ declare class GpuCollection {
    * @returns `'nodes'` or `'edges'`, or undefined when empty
    */
   group(): GroupName | undefined;
-  /** Plain-object form of the first element (undefined when empty). */
+  /**
+   * Plain-object form of the first element (undefined when empty).
+   *
+   * @returns the definition-form object for the **first** element, or
+   *   undefined when the collection is empty; it round-trips through
+   *   `cy.add()`, which is the supported restore path since `cy.json()`'s
+   *   import form is not in v4
+   */
   json(): Record<string, unknown> | undefined;
-  /** Plain-object form of every element. */
+  /**
+   * Plain-object form of every element.
+   *
+   * @returns one object per element, in collection order — the plural of
+   *   `json()`, not a graph-level export
+   */
   jsons(): (Record<string, unknown> | undefined)[];
   /**
    * Whether the first element is a node.
@@ -4698,7 +4810,13 @@ declare class GpuCollection {
     nodes: GpuCollection;
     edges: GpuCollection;
   };
-  /** All elements of the graph not in this collection. */
+  /**
+   * All elements of the graph not in this collection.
+   *
+   * @returns the complement against the **whole graph**, not against any
+   *   enclosing collection — which is what the `absolute` in the name is
+   *   distinguishing
+   */
   absoluteComplement(): GpuCollection;
   complement: this['absoluteComplement'];
   abscomp: this['absoluteComplement'];
@@ -4845,7 +4963,12 @@ declare class GpuCollection {
    * @returns the handle; nothing runs until `play()`
    */
   delayAnimation(duration: number, complete?: () => void): AnimationHandle;
-  /** True when any of these elements has a running animation. */
+  /**
+   * True when any of these elements has a running animation.
+   *
+   * @returns whether **any** element here is animating — not whether all
+   *   are, and not whether the viewport is (that is `cy.animated()`)
+   */
   animated(): boolean;
   /**
    * Stop every running animation on these elements (round 21: no queue —
@@ -4965,6 +5088,11 @@ declare class GpuCollection {
    * Per-element scratchpad (plain JS, not a column): `scratch()` reads the
    * first element's whole object, `scratch(ns)` one namespace, `scratch(ns,
    * val)` / `scratch(obj)` write to every element.
+   *
+   * @returns the reader forms answer the first element — the whole
+   *   scratch object under no argument, one namespace's value under
+   *   `scratch(ns)`, undefined when the collection is empty — while the
+   *   writer forms return this collection for chaining
    */
   scratch(...args: [] | [string] | [string, unknown] | [Record<string, unknown>]): unknown;
   /**
@@ -5017,7 +5145,12 @@ declare class GpuCollection {
   numericStyle(name: string): number | undefined;
   /** The rendered opacity: a node's own opacity times its ancestors'
    * (v3's product rule — the store keeps the folded value in the
-   * column, round 14.4); an edge's own opacity (edges have no parent). */
+   * column, round 14.4); an edge's own opacity (edges have no parent).
+   *
+   * @returns the opacity actually rendered, which is what `transparent()`
+   *   tests against 0 — not the declared `opacity` style value, which
+   *   `style('opacity')` reads; undefined when empty or removed
+   */
   effectiveOpacity(): number | undefined;
   /**
    * Whether the first element is fully transparent — its effective
@@ -5028,20 +5161,43 @@ declare class GpuCollection {
   transparent(): boolean;
   /** The space tier (round 22): shown elements occupy space — they join
    * bb/fit and size their compound parents — even when `visibility:
-   * 'hidden'` keeps them from rendering.  display-tier hide() clears it. */
+   * 'hidden'` keeps them from rendering.  display-tier hide() clears it.
+   *
+   * @returns whether the element occupies space — since round 22 this can
+   *   differ from `visible()`, which is the paint tier
+   */
   takesUpSpace(): boolean;
   /** Whether the element can be interacted with: visible and not
-   * pointer-transparent (`events: 'no'` — round 20.2). */
+   * pointer-transparent (`events: 'no'` — round 20.2).
+   *
+   * @returns whether any pointer path will resolve to this element; it
+   *   rides `visible()`, so an element hidden either way is inert
+   */
   interactive(): boolean;
-  /** The node's resolved label text ('' when none); read-only in the prototype. */
+  /**
+   * The node's resolved label text ('' when none); read-only in the prototype.
+   *
+   * @returns the resolved text of the first element's label — `''` when it
+   *   has none (a labelled-but-empty label reads the same), and undefined
+   *   when the collection is empty or the element was removed
+   */
   label(): string | undefined;
   /**
    * v3-parity accessor: node padding.  Leaves have no padding in v4
    * (no compound-free `padding` prop); parents answer the resolved
    * auto-bounds padding (round 14.3).
+   *
+   * @returns the resolved padding in model px — 0 for leaves and for any
+   *   graph with no compounds at all, the derived value for a parent;
+   *   undefined when the collection is empty
    */
   padding(): number | undefined;
-  /** The drawn box: core dims + 2 x padding (v3's paddedWidth). */
+  /**
+   * The drawn box: core dims + 2 x padding (v3's paddedWidth).
+   *
+   * @returns the padded width — identical to `width()` for leaves, which
+   *   have no padding; undefined when empty or removed
+   */
   paddedWidth(): number | undefined;
   /**
    * The drawn box height: content height plus twice the padding (v3's
@@ -5154,7 +5310,12 @@ declare class GpuCollection {
   private _rendered;
   /** Midpoint of the edge: the curve/route midpoint for curved edges
    * (v3's rs.mid rules per family), the endpoint-center average for
-   * straight ones. */
+   * straight ones.
+   *
+   * @returns the point a mid-label and a mid-arrow anchor at, in model
+   *   space; undefined for non-edges.  Mid-tween it inherits the position
+   *   lease's staleness, like the endpoints it derives from
+   */
   midpoint(): Position | undefined;
   /**
    * `midpoint()` in rendered (CSS px) space.
@@ -5162,7 +5323,13 @@ declare class GpuCollection {
    * @returns the rendered midpoint, or undefined for non-edges
    */
   renderedMidpoint(): Position | undefined;
-  /** The edge's source-side endpoint (node center approximation for straight edges). */
+  /**
+   * The edge's source-side endpoint in model space, resolved through the
+   * route evaluator — so it accounts for curve family, node boundary
+   * clipping, haystack offsets and any manual `source-endpoint`.
+   *
+   * @returns the endpoint, or undefined for non-edges
+   */
   sourceEndpoint(): Position | undefined;
   /**
    * The edge's target-side endpoint in model space, resolved through the
@@ -5186,12 +5353,24 @@ declare class GpuCollection {
   renderedTargetEndpoint(): Position | undefined;
   /** Whether the edge participates in bezier bundling — v3 semantics:
    * a style check (`curve-style: bezier`), true even for the lone or
-   * odd-middle member that renders straight. */
+   * odd-middle member that renders straight.
+   *
+   * @returns whether the *styled record* says bezier — a question about
+   *   style, not about the rendered shape, which is why a lone edge under
+   *   `curve-style: bezier` answers true while drawing as a line.  False
+   *   for nodes and for removed elements
+   */
   isBundledBezier(): boolean;
   /** The edge's curve control points (model coords): one for a bundled
    * bezier, two for a self-loop, the control list for an unbundled
    * bezier, undefined otherwise — v3's getControlPoints surface
-   * (segments/taxi answer segmentPoints() instead). */
+   * (segments/taxi answer segmentPoints() instead).
+   *
+   * @returns the control points in model space, or undefined when the
+   *   edge has none — which covers straight edges, segments/taxi routes,
+   *   and a straight edge carrying manual endpoints (the 12c `n = 0`
+   *   chord)
+   */
   controlPoints(): Position[] | undefined;
   /**
    * `controlPoints()` in rendered (CSS px) space.
@@ -5202,7 +5381,12 @@ declare class GpuCollection {
   renderedControlPoints(): Position[] | undefined;
   /** The edge's segment points (model coords) — v3's getSegmentPoints:
    * defined for segments *and* taxi edges (taxi derives its points),
-   * undefined otherwise. */
+   * undefined otherwise.
+   *
+   * @returns the interior route points in model space — *derived* ones
+   *   for taxi, which computes rather than declares them — or undefined
+   *   for every other family
+   */
   segmentPoints(): Position[] | undefined;
   /**
    * `segmentPoints()` in rendered (CSS px) space.
@@ -5255,7 +5439,14 @@ declare class GpuCollection {
    * @returns this collection, for chaining
    */
   unselectify(): this;
-  /** Pannable elements are not draggable, so pannable overrides grabbable (as in v3). */
+  /**
+   * Pannable elements are not draggable, so pannable overrides grabbable
+   * (as in v3).
+   *
+   * @returns whether a drag gesture would move this element — the
+   *   *effective* answer, so a grabbable-but-pannable element reads false
+   *   here while `json()` reports the raw field
+   */
   grabbable(): boolean;
   /**
    * Whether the first element is currently held by a drag gesture.
@@ -5284,6 +5475,10 @@ declare class GpuCollection {
    * element that is not visible() neither draws nor picks.  For
    * space-tier state (in the bb, sizing its compound parent) see
    * `takesUpSpace()` — an invisible element keeps its space.
+   *
+   * @returns whether the element draws and picks; false for a removed
+   *   element, for an edge either of whose endpoints is hidden, and for a
+   *   node under a hidden or invisible ancestor
    */
   visible(): boolean;
   /**
@@ -5338,9 +5533,19 @@ declare class GpuCollection {
    * @returns this collection, for chaining
    */
   unlock(): this;
-  /** Whether the first element is in the transient pressed ("active") state. */
+  /**
+   * Whether the first element is in the transient pressed ("active") state.
+   *
+   * @returns the pressed flag the pointer layer sets while a press is
+   *   held — transient interaction state, not a persisted property
+   */
   active(): boolean;
-  /** True when the first element is live and not active (v3 `inactive()`). */
+  /**
+   * True when the first element is live and not active (v3 `inactive()`).
+   *
+   * @returns not simply the negation of `active()`: a removed element is
+   *   neither active nor inactive, so both read false for it
+   */
   inactive(): boolean;
   /**
    * Put these elements into the transient pressed ("active") state, the
@@ -5355,7 +5560,12 @@ declare class GpuCollection {
    * @returns this collection, for chaining
    */
   unactivate(): this;
-  /** Whether dragging the first element pans the graph instead of grabbing it. */
+  /**
+   * Whether dragging the first element pans the graph instead of grabbing it.
+   *
+   * @returns the raw pannable flag; because pannable overrides grabbable,
+   *   a true here forces `grabbable()` false
+   */
   pannable(): boolean;
   /**
    * Make dragging these elements pan the viewport instead of moving
@@ -5376,8 +5586,14 @@ declare class GpuCollection {
   private _setSelected;
   /**
    * Remove these elements from the graph; incident edges of removed nodes
-   * cascade.  Returns the removed elements.  Already-removed elements are
-   * skipped (no second `remove` event).
+   * cascade.  Already-removed elements are skipped (no second `remove`
+   * event).
+   *
+   * @returns the elements actually removed — the closure, so it can be
+   *   *larger* than the receiver: removing a parent brings its
+   *   descendants, and removing a node brings its incident edges.  The
+   *   returned refs are dead by construction (v4 removals are terminal),
+   *   so only their cached `id()`/`group()` still read
    */
   remove(): GpuCollection;
   /**
@@ -5548,13 +5764,32 @@ declare class GpuCollection {
    * @returns the shared ancestors, closest first
    */
   commonAncestors(criterion?: FilterLike): GpuCollection;
-  /** Whether the first element is a node with at least one child. */
+  /**
+   * Whether the first element is a node with at least one child.
+   *
+   * @returns v3's `:parent` as a predicate; false for edges and for
+   *   removed elements, which are nodes of no hierarchy
+   */
   isParent(): boolean;
-  /** Whether the first element is a node with no children. */
+  /**
+   * Whether the first element is a node with no children.
+   *
+   * @returns v3's `:childless`; false for edges, so it is not the plain
+   *   negation of `isParent()`
+   */
   isChildless(): boolean;
-  /** Whether the first element is a node with a parent. */
+  /**
+   * Whether the first element is a node with a parent.
+   *
+   * @returns v3's `:child`; false for edges and removed elements
+   */
   isChild(): boolean;
-  /** Whether the first element is a node without a parent. */
+  /**
+   * Whether the first element is a node without a parent.
+   *
+   * @returns v3's `:orphan`; false for edges, so it is not the plain
+   *   negation of `isChild()`
+   */
   isOrphan(): boolean;
   private _liveNodeRef;
   /**
@@ -5641,7 +5876,13 @@ declare class GpuCollection {
    */
   components(root?: GpuCollection | null): GpuCollection[];
   componentsOf: this['components'];
-  /** The whole-graph connected component containing the first element. */
+  /**
+   * The whole-graph connected component containing the first element.
+   *
+   * @returns the component as nodes *and* their connecting edges, computed
+   *   over the whole graph rather than within this collection; an empty
+   *   collection when this one is empty
+   */
   component(): GpuCollection;
   private _nodeSlotSet;
   /**
@@ -6388,7 +6629,12 @@ declare class GpuCore {
    *   value
    */
   style(sheet?: GpuStylesheet): StyleEngine;
-  /** True while inside a startBatch()/endBatch() pair. */
+  /**
+   * True while inside a startBatch()/endBatch() pair.
+   *
+   * @returns whether a batch is open at *any* depth — nesting is counted,
+   *   and only the outermost `endBatch` flushes the deferred style work
+   */
   batching(): boolean;
   /**
    * Slot-moving compaction, explicit form (round 19.5): move live
@@ -6816,7 +7062,13 @@ declare class GpuCore {
    * `fit` beats `center` beats `panBy` beats an explicit `pan`.
    */
   private _resolveViewportTargets;
-  /** True while the viewport is animating. */
+  /**
+   * True while the viewport is animating.
+   *
+   * @returns whether a *viewport* animation (pan/zoom/fit/center) is
+   *   running; element animations do not count here — those are
+   *   `eles.animated()`
+   */
   animated(): boolean;
   /**
    * Stop every running viewport animation (round 21: no queue — the v3
@@ -6838,7 +7090,14 @@ declare class GpuCore {
    * @see GpuCore#renderedExtent for the same box in rendered coordinates
    */
   extent(): ReturnType<Viewport['extent']>;
-  /** The rendered (on-screen) viewport rectangle. */
+  /**
+   * The rendered (on-screen) viewport rectangle.
+   *
+   * @returns the container's box in rendered px, anchored at the origin —
+   *   the rendered-space counterpart of `extent()`, which is the same box
+   *   projected into model coordinates
+   * @see GpuCore#extent for the model-coordinate form
+   */
   renderedExtent(): ReturnType<Viewport['renderedExtent']>;
   /** Rendered dimensions as { width, height }. */
   size(): {
@@ -7199,13 +7458,24 @@ declare class GpuCore {
    * @returns the global window, or null outside a browser
    */
   window(): (Window & typeof globalThis) | null;
-  /** The options the instance was constructed with. */
+  /**
+   * The options the instance was constructed with.
+   *
+   * @returns the caller's own options object, held by reference — not a
+   *   copy and not a defaults-resolved view, so an option the caller
+   *   omitted reads back absent rather than as the default in force
+   */
   options(): CytoscapeGpuOptions;
   /**
    * Export the live graph as the binary wire format (the buffer
    * `options.elements`/`add()` accept directly): the columnar counterpart
    * of `json()`.  Carries ids, positions, selection state and the data()
    * sidecar; style, viewport and scratch are not part of the wire.
+   *
+   * @returns a fresh little-endian buffer, self-contained (every edge
+   *   endpoint indexes a node in the same payload) and directly loadable —
+   *   derived geometry is flushed first, so parent boxes are the current
+   *   ones rather than whatever was last materialized
    */
   serialize(): ArrayBuffer;
   /**
@@ -7329,12 +7599,26 @@ declare const toColumnarElements: (defs: GpuElementsDefinition | GpuElementDefin
  * Serialize elements (definition form or columnar form) into one
  * transferable/fetchable ArrayBuffer.  `deserializeElements` (or passing
  * the buffer straight to `options.elements`/`cy.add()`) reverses it.
+ *
+ * @param elements — the elements to serialize, in either accepted form;
+ *   a definition-form payload is converted to columnar first
+ * @returns one little-endian ArrayBuffer holding the whole payload —
+ *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets
+ * @throws if the platform is big-endian, or if a definition-form payload
+ *   names an edge endpoint that is not a node in the same payload
  */
 declare const serializeElements: (elements: GpuElementsDefinition | GpuElementDefinition | GpuColumnarElements) => ArrayBuffer;
 /**
  * Deserialize a `serializeElements` buffer (or a view over one) back into
  * the columnar elements form.  Numeric columns are zero-copy views into
  * the given buffer; a misaligned view is copied once to realign.
+ *
+ * @param input — a `serializeElements` buffer, or a view over one
+ * @returns the columnar form, whose numeric columns are **views into the
+ *   input** rather than copies — so the buffer must outlive the result,
+ *   and writing into either is visible through the other
+ * @throws if the platform is big-endian, or the buffer is too short,
+ *   truncated or of an unsupported format version
  */
 declare const deserializeElements: (input: ArrayBuffer | ArrayBufferView) => GpuColumnarElements;
 //#endregion

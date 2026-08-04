@@ -175,9 +175,13 @@ that executes it (rounds 37–50, planned at the end of this file).  The
 one question that stays genuinely open is the **error policy** inside
 item 4 — the maintainer flagged it for real design work rather than a
 quick answer — which converts into round 40's design sitting instead of
-closing here.  Decisions are made; none of the executing rounds has
-landed yet, so the code still reads as the items describe until each
-round ships.
+closing here.
+
+**Round 37 has since landed** (2026-08-04), executing the four items it
+owns: item 8 (both audits now gate), item 9 (the alias split), item 10
+(constructor strictness at the type layer) and item 11 (event names
+stay open, documented).  Each is marked below.  The rest still read as
+described until their rounds ship.
 
 ### Scope calls
 
@@ -283,6 +287,7 @@ round ships.
    family at three and the gated family at three — the same shape this
    call is about.
    **Call taken (2026-08-04): gate throw coverage *and* `@returns`.**
+   ***Landed as round 37.1 (2026-08-04)** — this item is closed.*
    Throw coverage becomes a zero-tolerance gate on Node-reachable
    never-run sites, with `UNREACHABLE`/`MISATTRIBUTED` as maintained
    allowlists; `@returns` ratchets at 276/276.  Stranded doc blocks
@@ -305,6 +310,9 @@ docs checks), and each is left in place pending the call.
    two rows in `test/gpu-aliases.mjs`, their wiring and `declare`
    lines in `core.mts`, and the `roundrectangle` line in
    `test/gpu-decided-drops.mjs` come out together.
+   ***Landed as round 37.2 (2026-08-04)** — this item is closed; the
+   spelling turned out to be accepted in three enums rather than one,
+   and drops from all three.*
    **Call taken (2026-08-04): split.**  `roundrectangle` is
    **dropped** — it throws like `cutrectangle` and `concavehexagon`,
    the triage enforced as written — while `autolockNodes` /
@@ -323,6 +331,9 @@ docs checks), and each is left in place pending the call.
     the rest of the surface (and with what allowance for
     forward-compatible options?), or record the constructor as
     deliberately permissive.
+    ***Landed as round 37.3 (2026-08-04)** — this item is closed; the
+    options type needed no tightening, and the round found the entry
+    point sitting outside every JSDoc audit while writing the test.*
     **Call taken (2026-08-04): the constructor stays
     runtime-permissive by design.**  Excess options are a build-time
     concern — tsc's excess-property checking on the typed options
@@ -353,6 +364,10 @@ docs checks), and each is left in place pending the call.
     a blanket rule.  29.3 fixed the neighbouring case — a *selector
     string* as an event qualifier now throws instead of detonating
     inside the emitter — but the event *name* side is untouched.
+    ***Landed as round 37.4 (2026-08-04)** — this item is closed, and
+    the round corrected the namespace half of the evidence above: the
+    machinery is live, in full v3 semantics, and only v4's own emits
+    are unqualified.*
     **Call taken (2026-08-04): event names stay open — no denylist.**
     v3 supports custom events (`node.emit('foo')`) and v4 keeps that,
     so names cannot be gated; dropped v3 spellings register and simply
@@ -2632,6 +2647,32 @@ round 37's docs-first commit — noted so the standing docs-travel rule's
 exception is on the record rather than silent drift.  "Gaps with
 direction already set" was checked by name and needed nothing (its
 entries all closed by earlier rounds).
+
+**2026-08-04, round 37 — the governance close-out.**  The first of the
+sitting's rounds, and deliberately the smallest, because its gates
+protect every round after it.  Throw coverage and `@returns` now gate
+(37.1), with the classification allowlists checked rather than merely
+written — a zero-tolerance gate is only as good as its escape hatch,
+and this one is keyed by `file:line`.  The 2026-07-29 alias triage is
+finally applied as decided (37.2): `roundrectangle` drops from all
+three enums that took it, `autolockNodes`/`autoungrabifyNodes` stay as
+recorded exceptions, and both documents' ledger lines say so.
+Constructor strictness closed at the type layer (37.3) and event-name
+openness documented (37.4).
+Two of the five items **corrected this file rather than executing it**,
+which is the round's real character.  37.3 set out to write a
+compile-only test and found that `src/gpu/index.mts` — the package
+entry point, listed in `PUBLIC_API` since round 26 — contributed *zero*
+members to every audit, because the exported-function pattern did not
+spell `export default function`; all three of its tags were missing
+behind a green gate.  That is round 32's blind spot and round 36's
+widening arriving a **third** time, and it says something about audits
+that "an audit's scope is part of its claim" has now had to be learned
+once per round that touches one.  37.4 set out to document the event
+contract and found the namespace record wrong: v4 imports v3's emitter,
+so namespaces work in full v3 semantics — what is true is only that v4
+never emits a *qualified* name.  Both corrections land in the documents
+and in round 41's plan, which had described removing dead machinery.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -9920,13 +9961,58 @@ calls already taken (fifth sitting); nothing here needs design.
   which is the sense in which it read true; it is a good example of why
   "measured 2026-08-03" in a record still deserves re-measuring when a
   round leans on it.
-- **37.5 Closing docs sweep** — the round-37 sweep also carries the
-  README true-up this sitting deferred (header through the fifth
-  sitting, follow-up hooks, the alias and strictness closures).
+- [x] **37.5 Closing docs sweep** (2026-08-04) — landed, carrying the
+  README true-up the fifth sitting deferred.
+  The README gains a round-37 paragraph and the sitting's own summary
+  in its header; the follow-up hooks' round-28 entry, which listed
+  every open call as open, now records each decision and the round that
+  executes it; the JSDoc section carries the two new gates, the widened
+  audit and the corrected tallies; the events section and the
+  `Events: no namespaces` paragraph carry the namespace correction; a
+  new decided-design bullet states the type-layer-versus-runtime
+  strictness split; and the legacy-alias line carries its two-name
+  exception.
+  This file gains the round-37 paragraph in "Suggested sequencing" (one
+  of the three sites the standing rule names), the pass records above,
+  the four closed items in "Open calls for the maintainer", the
+  namespace correction in contradiction 11 **and** in round 41's plan,
+  and the alias closure in the decided-drops ledger.  "Needs a call"
+  and "Gaps with direction already set" were checked by name: the
+  sitting had already annotated the one live entry
+  (`border-style`/`outline-style` → round 38) and the rest are history.
+  `AGENTS.md` gains the two gates in the places that asserted the
+  opposite — "it reports, it does not gate" and "`@returns` …
+  **reported rather than gated**" were both false the moment 37.1
+  landed — and its audit-scope note gains round 37.3's third instance.
 
-Verification: the full standing gate (Node, module, types, lint,
-JSDoc audits now five-strong with two new gates), browser suites
-re-run because 37.2 changes source, goldens untouched.
+**Verification (2026-08-04)**: typecheck, lint, **2675 Node tests**, 102
+module tests, **172 browser specs** (97 `webgpu` + 75 `webgpu-visual`)
+against a hand-rebuilt bundle with goldens byte-stable and parity scenes
+at their recorded values, `test:types` and `test:types:gpu` clean (37
+type exports, 3 statics, 1097 doc blocks), JSDoc coverage 100%/100%,
+`@throws` **17/17**, `@param` **230/230**, `@returns` **277/277**,
+stranded blocks **1** (the module header, by judgement), and the
+now-gating `gpu-throw-coverage` green at **176 run / 10 browser-only /
+5 unreachable / 0 Node-reachable dead**.
+The two new gates were each run once in the failing direction, which is
+the only way to know a gate is a gate: a deleted `@returns` fails both
+of its checks, a staged dead throw site exits 1, a stale allowlist entry
+and a reasonless one each fail, and a valid key in place of an
+`@ts-expect-error` fails the typecheck as an unused directive.
+**Round 37 is complete.**
+
+**Risks tracked**: `npm test` now runs the root Node suite twice (once
+plainly, once under coverage for the throw gate), which is the cost of
+measuring a suite's coverage from outside it — worth watching if CI wall
+time becomes a complaint, and cheap to split into a separate job.  The
+throw gate's zero tolerance sits on top of allowlists whose staleness the
+gate now checks but whose *judgement* it cannot: an entry that is
+honestly wrong ("no caller can reach this" when one can) reads exactly
+like one that is right, which is why each carries prose rather than a
+flag.  And `roundrectangle` is the round's one behaviour change — a v3
+stylesheet using it now throws where it silently worked, which is the
+intended failure but is the sort of thing a migration guide has to carry
+(round 46).
 
 ## Round 38 plan — `border-style` / `outline-style`, full coverage (planned 2026-08-04)
 

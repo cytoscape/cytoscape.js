@@ -148,14 +148,30 @@ dispatch table, **flattening** the per-property spread rather than
 uniformly lowering it.
 Round 36 (2026-08-04) is the **completion round**: the tail of work
 that needed no decision at all, now that what remains in PLAN.md is
-otherwise open calls.  `@returns` is complete (276/276) and
-deliberately ungated, the `@param` gate was found never to have walked
+otherwise open calls.  `@returns` is complete (276/276; ungated until
+round 37.1), the `@param` gate was found never to have walked
 the public tier's exported functions (now 229/229), the browser-only
 throw tier is closed by four specs and three honest reclassifications,
 three measurements this repo had promised and never recorded are
 recorded, and a **stranded-doc-block check** shipped — which found six
 more instances of this codebase's most repeated defect on its first
 run, one of them shipping in `dist/cytoscape-gpu.d.ts`.
+The **fifth design sitting** (2026-08-04) then took every open call in
+PLAN.md's ledger at once and planned rounds 37–50 through the release:
+`border-style`/`outline-style` at full coverage, a v4 Event and emitter,
+the packaging move that makes v4 *the* package (v3 to a self-contained
+`v3/`), the small feature tail, the docs generator and site, and the
+release engineering — with one question deliberately left open, the
+**error policy** (round 40's own sitting).
+Round 37 (2026-08-04) is that roadmap's governance close-out, and it
+changes almost no behaviour: the two audits held back on policy calls
+now **gate** (throw coverage at zero tolerance, `@returns` at 277/277),
+the legacy-alias triage is finally applied as written (`roundrectangle`
+drops; `autolockNodes`/`autoungrabifyNodes` are kept as recorded
+exceptions), constructor strictness is closed at the *type* layer where
+the runtime stays deliberately permissive, and the event-name contract
+is documented — a round that also corrected two things this file said
+that were not true of the code (see the events and JSDoc sections).
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -1973,8 +1989,13 @@ benchmarks and parity work.  v4 therefore has no docs site yet, and
   factory's statics, and a floor on the surviving doc blocks) and
   `typescript/tests/gpu.test-d.ts` is a compile-only consumer test
   in the `test:types` project.  Recorded: `event.target` types as
-  `unknown` because the event object is still the shared v3 type;
-  a v4-specific event type is an open call, so consumers narrow it.
+  `unknown` because the event object is still the shared v3 type, so
+  consumers narrow it — the call was taken at the fifth design
+  sitting and **round 41 builds the v4 Event**, which resolves it.
+  The round-37.3 additions to this test are the other direction: four
+  `@ts-expect-error` directives pinning that the options type rejects
+  unknown constructor keys, since that is where v4's constructor
+  strictness deliberately lives.
 - **Coverage is enforced, and it is at 100%.**
   `scripts/gpu-jsdoc-coverage.mjs` audits every member of an
   exported class whose name does not start with `_`, plus every
@@ -3080,35 +3101,44 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   (2026-08-02): the unported shape keywords, the compound arrow
   shapes, v3's nonlinear arrow-size formula and per-element numeric
   `text-rotation` all landed, completing v3's node-shape and
-  arrowhead vocabularies.  Still open: **`border-style` /
-  `outline-style`**, which is waiting on a scope call rather than
-  on a technique — see the border-geometry note above.
+  arrowhead vocabularies.  **`border-style` / `outline-style`** was
+  the last one left, waiting on a scope call rather than a technique;
+  the fifth design sitting took it — **full coverage, every shape** —
+  and it builds as round 38.
   ~~The `panBy` animation target~~ — **closed by round 28.2**
   (2026-08-03, the viewport-targets bullet above).  Round 28 also
   closed the verification gap round 27 left behind (its CPU-pick
-  branches were untested) and trued up the gap ledger, which now
-  holds only open design calls: `border-style`/`outline-style`, the
-  **legacy-alias policy** (`roundrectangle`, `autolockNodes` and
-  `autoungrabifyNodes` all survived the triage that lists them as
-  dropped — one call, three names), the overlap box-selection
-  mode, core/collection extension points, `cy.gc()`,
-  `cytoscape.warnings()`, and graph-level `data` in the *binary*
-  wire format (`cy.json()` already exports it).
-  **All of them, plus the contradictions rounds 28–29 turned up
-  between the code and the decided-design ledger — unknown
-  constructor options ignored silently, dropped v3 event names
-  registering silently, an inert `preventDefault()` — and round 30's
-  question of whether error-contract coverage should become a gate,
-  are collected
-  in PLAN.md's "Open calls for the maintainer".**  That section is
-  the one place to read before deciding anything about v4's surface;
-  contradictions are logged there rather than patched, because
-  removing public API is a call to be made, not inferred.
+  branches were untested) and trued up the gap ledger, which then
+  held only open design calls.
+  **Every one of them was taken at the fifth design sitting**
+  (2026-08-04), together with the contradictions rounds 28–29 turned
+  up between the code and the decided-design ledger and round 30's
+  question of whether error-contract coverage should gate.  The
+  outcomes, and where each lands: `border-style`/`outline-style` at
+  full coverage (round 38); the **legacy-alias policy** split —
+  `roundrectangle` dropped, `autolockNodes`/`autoungrabifyNodes` kept
+  as recorded exceptions (landed, round 37.2); overlap box selection,
+  `cy.gc()` and graph-level `data` in the *binary* wire format all
+  build (round 39); core/collection extension points stay
+  demand-gated deferred; unknown constructor options stay
+  runtime-permissive, closed at the type layer instead (landed, round
+  37.3); dropped v3 event names stay legal and silent, documented
+  (landed, round 37.4); `preventDefault()` becomes **functional** with
+  the v4 Event (round 41); and both audits gate (landed, round 37.1).
+  `cytoscape.warnings()` builds too, but the **error policy** behind
+  it — v3's mostly-no-throw stance against v4's fail-loudly design —
+  is the one question deliberately left open, and is round 40's own
+  sitting.
+  PLAN.md's **"Open calls for the maintainer"** remains the one place
+  to read before deciding anything about v4's surface: contradictions
+  are logged there rather than patched, because removing public API is
+  a call to be made, not inferred.
 - ~~**The completion tail**~~ — **closed by round 36** (2026-08-04):
   the `@returns` tail round 32 measured and deferred (63 written, so
-  276/276, reported and not gated — round 32's boundary held), the
-  `@param` gate's own blind spot (it had never walked the public
-  tier's exported functions; 229/229 now), the four reachable
+  276/276 — reported and not gated at the time; **round 37.1 gates
+  it**), the `@param` gate's own blind spot (it had never walked the
+  public tier's exported functions; 229/229 then, 230/230 once round
+  37.3 found the entry point outside every audit), the four reachable
   browser-only throws and the three that are not, the two public
   collection members no benchmark called, and the three measurements
   this repo had promised and never taken (`--layout` on real
@@ -3140,11 +3170,16 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   the tags a generator reads — a doc comment on every member (26),
   `@throws` wherever a member throws (31.2), and `@param` on every
   member that takes arguments (32, widened in 36.2 to the exported
-  functions the audit had never walked: **229/229**) — each gated, so
-  the generator's input cannot rot before the generator exists.
-  **`@returns` is complete too since round 36** (276/276) but is
-  deliberately *not* gated, since docmaker's shape has no return
-  field and round 32's boundary is where the gate stays.  Also logged from
-  26.5: `event.target` types as `unknown` on the shared v3 event
-  object — a v4-specific event type is an open design call, not an
-  oversight.
+  functions the audit had never walked, and again in 37.3 to
+  `export default function` — the entry point: **230/230**) — each
+  gated, so the generator's input cannot rot before the generator
+  exists.  **`@returns` is complete since round 36** (277/277) and
+  **gated since 37.1**: docmaker's shape still has no return field,
+  but the tags ship as `.d.ts` hover text regardless, and a tail
+  completed by hand four rounds after it was measured is what an
+  ungated rule looks like.  The generator itself is **round 44**, and
+  the site round 45 — no longer "not until v4 ships" but scheduled.
+  Also logged from 26.5: `event.target` types as `unknown` on the
+  shared v3 event object; the fifth sitting took that too, and
+  **round 41 builds the v4 Event and emitter**, which is also what
+  severs v4's last shared-module import of v3.

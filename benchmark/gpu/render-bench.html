@@ -59,15 +59,38 @@
         };
         const V4_LABELS = { 'label': 'data(id)', 'font-size': 10, 'color': '#333' };
 
-        function v3Style( labels ){
+        // round 33.11: the wrapped-label scene's text, long enough to
+        // break over several lines at the max width below
+        const WRAP_LABEL = 'node label long enough to wrap';
+        const WRAP_MAX_WIDTH = 40;
+
+        function v3Style( labels, spec = {} ){
           const node = { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' };
 
           if( labels ){ Object.assign( node, { 'label': 'data(id)', 'font-size': 10, 'color': '#333' } ); }
 
-          return [
+          // round 25.6 recorded wrapped labels as the expensive label
+          // configuration (they re-break per tick under a font-size
+          // tween); this scene is its device-side counterpart
+          if( spec.wrap === true && labels ){
+            Object.assign( node, {
+              'label': WRAP_LABEL, 'text-wrap': 'wrap', 'text-max-width': WRAP_MAX_WIDTH
+            } );
+          }
+
+          const blocks = [
             { selector: 'node', style: node },
             { selector: 'edge', style: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 } }
           ];
+
+          // round 22's paint-only invisibility + round 20.2's pointer
+          // transparency, on half the nodes each
+          if( spec.invisible === true ){
+            blocks.push( { selector: 'node[hidden = 1]', style: { 'visibility': 'hidden' } } );
+            blocks.push( { selector: 'node[inert = 1]', style: { 'events': 'no' } } );
+          }
+
+          return blocks;
         }
 
         // four 32px icon data-uris built once at runtime (round 15.7)
@@ -136,6 +159,14 @@
                 : { id: 'n' + i };
 
               if( images ){ data.itype = i & 3; }
+
+              // round 33.11: half invisible, half pointer-transparent —
+              // the two flags cull and pick differently, so they are
+              // independent
+              if( spec.invisible === true ){
+                data.hidden = i & 1;
+                data.inert = ( i >> 1 ) & 1;
+              }
 
               nodes.push( {
                 data,
@@ -206,7 +237,7 @@
           const curved = scene.spec.curved === true;
 
           if( which === 'v3' ){
-            const style = v3Style( labels );
+            const style = v3Style( labels, scene.spec );
 
             // both sides opt into bundled bezier explicitly on curved scenes
             style[ 1 ].style[ 'curve-style' ] = curved ? 'bezier' : 'straight';
@@ -243,6 +274,21 @@
               nodesStyle = Object.assign( {}, nodesStyle, {
                 'background-image': { data: 'itype', scale: 'ordinal', domain: [ 0, 1, 2, 3 ], range: icons() },
                 'background-fit': 'contain'
+              } );
+            }
+
+            if( scene.spec.wrap === true && labels ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                'label': WRAP_LABEL, 'text-wrap': 'wrap', 'text-max-width': WRAP_MAX_WIDTH
+              } );
+            }
+
+            // v4 has no selectors: the same per-element variation is a
+            // `case` mapper, which is the decided replacement
+            if( scene.spec.invisible === true ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                'visibility': { case: [ { when: { data: 'hidden', eq: 1 }, then: 'hidden' } ], else: 'visible' },
+                'events': { case: [ { when: { data: 'inert', eq: 1 }, then: 'no' } ], else: 'yes' }
               } );
             }
 

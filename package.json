@@ -131,6 +131,7 @@
     "benchmark:single": "run-s benchmark:download benchmark:single:exec",
     "benchmark:gpu": "node --import tsx benchmark/gpu/index.mjs",
     "benchmark:gpu:report": "node --import tsx benchmark/gpu/report.mjs",
+    "benchmark:gpu:all": "node --import tsx benchmark/gpu/report.mjs --all",
     "benchmark:gpu:renderer": "node --import tsx benchmark/gpu/render-bench.mjs"
   },
   "devDependencies": {

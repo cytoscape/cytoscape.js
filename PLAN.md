@@ -166,17 +166,15 @@ appears to authorize it.
 6. **A v4-specific event type** (logged 26.5) — v4 emits the shared v3
    `Event`, so `event.target` types as `unknown` in the shipped
    declarations.  A v4 event type is a design call, not an oversight.
-7. **Six benchmark suites are outside the report** (logged 29.6) —
-   `compaction`, `labels`, `transitions`, `geometry-tween`,
-   `compound` and `curves` are standalone and absent from
-   `report.mjs`'s job table, so they only ever run by hand.  That
-   matches how their rounds used them, but the HTML report
-   understates what exists.  *(30.0 re-ran all six at
-   `BENCH_N=2000`: every one still works, so this is a reporting
-   question and not bit-rot.)*  **Scoped as round 33.10**
-   (2026-08-03), which folds them in behind a `gpuOnly` job marker —
-   the call this item asks for is taken there, so the entry closes
-   when that pass lands.
+7. ~~**Six benchmark suites are outside the report**~~ (logged 29.6) —
+   **closed by round 33.10** (2026-08-03).  `report.mjs` grew a third
+   profile: `--all` runs every standalone sweep beside the quick
+   v3-vs-v4 tier, and the two manually-timed suites (`curves`,
+   `labels`) join the job table through `finishManualRun`, which shapes
+   their one-shot rows into the report's format.  No `gpuOnly` marker
+   was needed — the renderer already drew groups without a v3/gpu pair
+   as individual labelled rows.  The quick profile is deliberately
+   unchanged.
 8. **Whether error-contract coverage becomes a gate** (logged 30.4) —
    `scripts/gpu-throw-coverage.mjs` reports it and deliberately does
    not enforce it, because a floor is a policy call with three parts:
@@ -2369,6 +2367,26 @@ along, and the wrong text was in a runtime string and a JSDoc block.
 arguments carry a description the generator emits, returns do not, so
 the `@returns` tail (63 of 276) is measured and logged rather than
 built.
+
+**2026-08-03, round 33.**  The benchmark sweep, on the user's scope
+call: benchmark everything possible, core through renderer.  Fourteen
+suites became twenty-two; the surfaces that had *no* measurement at all
+— layouts, four algorithms, the style engine's apply and readback paths,
+loading and the wire format, picking/box-selection/bounds, the data
+sidecar and structured queries, events and the animation lifecycle,
+store internals, images and charts — now have one, plus a 117-row
+breadth pass over the rest of the public API and a third audit script
+reporting which members a benchmark calls.  Open call 7 closed with it.
+The round's most useful output is not the wins (they were mostly where
+earlier rounds said) but the **five places v4 is slower than v3 or
+slower than its own design implies** — the style getters at 13–21×, the
+compound emit path never taking the no-listener fast path, the layout
+contract's per-run whole-graph materialization, `mutableElements()` and
+`indexOf()` — each measured, localized and logged rather than fixed,
+because a measurement round measures.  Six rows across the round were
+**caught measuring nothing** by design call 5 and rewritten, and one of
+those (`curves.mjs`'s box-selection premium) had been published in the
+README since round 29.4.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -8571,15 +8589,42 @@ describe and no suite prices:
   the no-`BENCH_JSON` no-op, and a single-bench section rendering) —
   14 module tests, with the control run: breaking `finishManualRun`'s
   group mapping fails the spec written for it.
-- [ ] **33.11 The renderer bench gaps** — finding 14.  Measure the
-  `gen-25k-images` scene on the RX 580 (never measured, and its
-  "software adapter" note was wrong three times over); re-run the 100k
-  and ndex scenes against the round-27 baseline the way 29.5 did for
-  the 25k set; re-run `--layout`; and add the two scenes the round
-  found missing — a wrapped-label configuration (25.6's expensive
-  case) and a `visibility`/`events` scene.  The compound `fit-all`
-  rows are bimodal at ±40% (29.5, recorded): re-measure before
-  reporting anything about them, and say so in the record.
+- [x] **33.11 The renderer bench gaps** (2026-08-03) — run on the
+  RX 580 (`amd gcn-4`, dpr 2, 1280×800, render scale pinned to 1).
+  **The images scene is measured at last** — round 15.7 recorded
+  "software adapter on this box", which was wrong for the third time
+  in this file's history, and 29.5 scoped its comparison to four
+  scenes without it.  It holds the **vsync floor (16.7 ms wall) in
+  every pan scenario**, labels on and off, where v3 canvas runs
+  333–760 ms/frame; device time is 3.44 ms fit-all, 4.46 zoomed-in,
+  1.42 far-zoom, with labels adding ~0.3 ms.  Init 294 ms against
+  v3's 3510 (12×); `png()` full export 290 ms against 4666 (16×).
+  **The 100k and ndex scenes are re-measured post-round-27**, closing
+  the scope limit 29.5 left deliberately: 100k device 9.29 ms fit-all
+  / 18.68 zoomed-in / 1.63 far-zoom, and 20.06 ms for the
+  zoomed-in-with-labels pass — against the 2026-08-01 hardware pass's
+  19.6 ms for that same worst-case row, i.e. **+2.3%**, inside the
+  +0.3–3.6% band 29.5 measured for round 27's shader branches on the
+  25k set.  ndex fit-all device 36.96 ms (the pass recorded ~37 ms)
+  at 33.4 ms wall — two vsync frames, still the one scene above the
+  floor — with pick p50 **0.3 ms** off the CPU fast path, init 1648 ms
+  against v3's 17070 (10×), and a full png export 213 ms against 6125
+  (29×).  Both scenes' compaction rows reproduce round 19.5b:
+  100k device **2.21 → 0.53 ms** (4.2×; 19.5b recorded 2.2 → 0.5).
+  **Two scenes added**, the configurations nothing exercised:
+  `gen-25k-wrap` (round 25.6's expensive label case — wrapped
+  multi-line labels — measured on the device rather than on the CPU
+  tick) and `gen-25k-invisible` (round 22's paint-only `visibility`
+  and round 20.2's `events` transparency, half the nodes each,
+  expressed as `case` mappers on the v4 side and selector blocks on
+  v3's).  Numbers in the round summary below.
+  Two notes for whoever re-runs this: the harness printed
+  "build/ bundles are older than src/" throughout, which was a **false
+  positive** — the only `src/` file this round touched is
+  `src/gpu/README.md`, and the check compares mtimes without
+  distinguishing docs from code; and `--scene gen-25k` is a substring
+  filter, so it selects the whole 25k family, which is how the
+  same-session baseline for the two new scenes was obtained.
 - [ ] **33.12 `scripts/gpu-bench-coverage.mjs` + the closing docs
   sweep** — design call 8, then the standing rule.  The audit ships
   reporting-only with its limits in the header; then both documents
@@ -8589,6 +8634,71 @@ describe and no suite prices:
   and the round's numbers recorded — factors first, machine stated
   once.  The README's Benchmarks section becomes an accurate index of
   what exists.
+
+### What the round found (2026-08-03)
+
+The wins were mostly where earlier rounds said they would be — bulk
+writes 18–24×, structural queries 16–50×, layouts 7–153×, fit 33×,
+algorithms unchanged where the maths is identical and 8.9× where the
+data structure differs.  The **useful** output is the other direction.
+
+**Five slow paths, each localized, none fixed** (a measurement round
+measures; every one of these is a source change with its own
+verification, and three of them touch shipped declarations):
+
+1. **`StyleEngine.readProp`** — the style getters run 13–21× v3
+   (2.13 µs vs 106 ns for `style('background-color')`) with a **9 ns**
+   column read underneath.  Flat across props, so it is the per-call
+   setup: a ~536-line method with a 145-case switch that allocates four
+   closures before dispatching.  `numericStyle`, `renderedStyle`,
+   `effectiveOpacity` and the `takesUpSpace`/`interactive`/
+   `transparent` trio all ride it.  Biggest surface of the five.
+2. **The compound emit path never takes the no-listener fast path** —
+   a position write on a node two ancestors deep costs 6.4× an
+   orphan's *with nothing listening* (566 ns vs 89 ns), because the
+   phase walk runs before anything checks whether a phase has a
+   listener.
+3. **`GpuLayoutContext` materializes the whole graph per run** — the
+   layout contract's fixed cost is 391 µs at 2000 nodes for an impl
+   that does nothing, because the constructor eagerly evaluates
+   `cy.elements()` and `.nodes()` for the handle tier, including for
+   the columnar-first layouts the contract exists to encourage.
+4. **`mutableElements()`** does the same per *call* — 251 µs against
+   v3's 120 ns.
+5. **`indexOf()`** scans where v3 indexes — 12.5 µs against 204 ns
+   over a 2000-element collection.
+
+**Six rows were caught measuring nothing**, by design call 5, and
+rewritten: `preset` (2388×, because v4's preset does no work without a
+`positions` map while v3 walks every node), the compound style row
+(3.55× "faster", because one side was built without edges), the
+layout-contract row (comparing two different placements), the
+custom-polygon pick row (1500× faster, because the pick point was
+*inside* the shape so the walk stopped at the first node), and two
+box-selection rows — which turned up the round's one **defect in
+shipped documentation**: `cy.elementsInBox` takes four numbers and
+silently answers the empty collection when handed a box object, so
+`curves.mjs`'s box-selection premium had been measuring a degenerate
+call since round 29.4, and the README published it as 3.29× (really
+~2.3×).
+
+**Two methodology traps, both now in `AGENTS.md`:** a v3 side needs
+`styleEnabled: true` *and* an explicit layout (unstyled v3 does less
+work than v4; v3's default layout is grid and runs inside the measured
+region — fixing both moved 33.4's init comparison from 1.89× to
+5.47×), and a benchmark row is guilty until shown to discriminate.
+
+### Verification (2026-08-03)
+
+Typecheck, lint, **2487 Node tests** and **77 module tests** (68 → 77:
+three report specs and six for the new audit, each with its control
+run), JSDoc coverage 100%, `@throws` 16/16, `@param` 221/221, and
+`gpu-throw-coverage` still at 0 Node-reachable dead sites — the three
+existing audits are unchanged, which matters because this round edited
+the gated one (`auditFile` now also returns the members it saw).
+No `src/` code changed: the round's only source edit is
+`src/gpu/README.md`, so the browser suites are unaffected and were not
+re-run.  The renderer benchmark ran on the RX 580 (33.11).
 
 ### Risks tracked
 

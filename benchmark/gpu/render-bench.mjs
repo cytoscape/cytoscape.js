@@ -49,7 +49,15 @@ const SCENES = [
   { key: 'gen-25k-curved', label: 'generated 25k × 50k curved (bezier pairs)', page: { n: 25000, m: 50000, parallel: 2, curved: true } },
   { key: 'gen-25k-compound', label: 'generated 25k × 50k compound (1k parents)', page: { n: 25000, m: 50000, compound: 1000 } },
   // round 15.7: icon-per-type background images through the url mapper
-  { key: 'gen-25k-images', label: 'generated 25k × 50k images (icon-per-type)', page: { n: 25000, m: 50000, images: true } }
+  { key: 'gen-25k-images', label: 'generated 25k × 50k images (icon-per-type)', page: { n: 25000, m: 50000, images: true } },
+  // round 33.11: the two configurations no scene exercised.  Wrapped
+  // labels are round 25.6's recorded expensive label case, measured
+  // here on the device rather than on the CPU tick; the invisible/inert
+  // scene drives round 22's paint-only visibility (a cull mask) and
+  // round 20.2's `events` pointer transparency (a pick-mode mask) over
+  // half the nodes each.
+  { key: 'gen-25k-wrap', label: 'generated 25k × 50k wrapped labels', page: { n: 25000, m: 50000, wrap: true } },
+  { key: 'gen-25k-invisible', label: 'generated 25k × 50k half-invisible / half-inert', page: { n: 25000, m: 50000, invisible: true } }
 ];
 
 // --layout: instead of the pan scenarios, run the round-18 force layout

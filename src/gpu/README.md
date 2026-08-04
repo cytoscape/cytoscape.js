@@ -1992,25 +1992,79 @@ a record, not a measurement.  `node scripts/gpu-bench-coverage.mjs`
 reports which public surfaces have a benchmark and which do not.
 
 `npm run benchmark:gpu` (Mitata; `BENCH_N` scales the graph) compares each
-core/collection op against its v3 analogue in `src/`. See
-`benchmark/gpu/` (`materializers.mjs` is a focused standalone sweep that
-stays runnable at `BENCH_N=200000`; `compaction.mjs` is the round-19
-slot-compaction sweep — the shrink profile measured before/after
-`compact()`, the trigger and repair one-shots, the forwarding hot-path
-parity checks, and honesty controls for the order-list scans compaction
-does not change; `transitions.mjs` is the round-24 transitions-off-vs-on
-sweep — the auto-extent whole-channel case, the explicit-domain
-O(changed) write, the bulk tween tick, and the whole-sheet swap;
-`curves.mjs` is the round-29.4 curved-edge CPU sweep — every row run
-against the straight graph of the same shape, so what it prints is the
-**curve premium** rather than the ambient cost).
-`npm run benchmark:gpu:report` runs every suite and renders a
-self-contained single-page HTML report (v3-vs-gpu medians as dumbbells on
-log time axes, a ranked speedup overview, per-suite stat tables) into
-`benchmark/gpu/results/` (gitignored) next to the timestamped results
-JSON — quick profile by default, `-- --full` for the 2k/20k/200k matrix
-(one process per group at 200k, as the suite headers require),
-`-- --render-only <results.json>` to re-render without re-running.
+core/collection op against its v3 analogue in `src/`.  The suites in
+`benchmark/gpu/`, by what they answer:
+
+| suite | what it prices |
+|---|---|
+| `index.mjs` (`core` + `collection`) | the core/collection micro surface vs v3 |
+| `materializers.mjs` | whole-graph query materializers (runnable at 200k) |
+| `mutators.mjs` | bulk flag/position/data writes vs v3 |
+| `traversal.mjs` | the slot-native walks |
+| `scenarios.mjs` | five composed traces **with listeners attached** |
+| `algorithms.mjs` | all 21 graph algorithms vs v3 (33.2) |
+| `layouts.mjs` | every built-in layout, the force executor, the round-17 contract (33.1) |
+| `style.mjs` | sheet compile/apply, the parents partition, the readback getters (33.3) |
+| `load.mjs` | the three ingest forms, conversion, export, incremental add (33.4) |
+| `spatial.mjs` | CPU pick by shape, box selection, bounds/fit (33.5) |
+| `data.mjs` | the sidecar's column kinds; data + structural queries vs selectors (33.6) |
+| `events.mjs` | emits by qualifier kind, the phased compound walk, animation start/stop (33.7) |
+| `store.mjs` | id index, CSR, blob pool, dirty tracker, image registry, charts (33.8) |
+| `surface.mjs` | the breadth pass: 117 rows over the rest of the public API (33.9) |
+| `mappers.mjs` | mapper data-write cost per evaluation policy |
+| `compaction.mjs` | round 19's shrink profile, repair, forwarding hot path |
+| `compound.mjs` | parent/child drags and reparenting vs v3 |
+| `curves.mjs` | the **curve premium** — every row against the straight graph |
+| `labels.mjs` | shaping, the store label write, the bb label terms |
+| `transitions.mjs` | transitions off vs on, incl. the auto-extent worst case |
+| `geometry-tween.mjs` | one manager tick per geometry channel |
+
+`npm run benchmark:gpu:report` renders a self-contained single-page HTML
+report (v3-vs-gpu medians as dumbbells on log time axes, a ranked speedup
+overview, per-suite stat tables) into `benchmark/gpu/results/`
+(gitignored) next to the timestamped results JSON.  Three profiles:
+**quick** by default (the v3-vs-v4 micro and scenario suites — kept quick
+deliberately), `-- --all` for every standalone sweep as well, and
+`-- --full` for the 2k/20k/200k matrix (one process per group at 200k, as
+the suite headers require).  `-- --suite <substr>` filters any of them and
+`-- --render-only <results.json>` re-renders without re-running.  The two
+manually-timed suites (`curves`, `labels`) join the table through
+`finishManualRun`, which shapes one-shot rows into the report's job
+format; without `BENCH_JSON` their terminal output is unchanged.
+
+**What round 33 found** — the measurements that went the *other* way, all
+logged rather than fixed, since it was a measurement round:
+
+- **The style getters are 13–21× slower than v3.**
+  `ele.style( 'background-color' )` is 2.13 µs against v3's 106 ns, and
+  the cost is entirely inside `StyleEngine.readProp` (1.85 µs measured
+  against the ref) while the column read underneath is **9 ns**.  Flat
+  across props, so it is the per-call setup rather than the switch: a
+  ~536-line method with a 145-case switch that allocates four closures
+  before dispatching.  `effectiveOpacity`, `takesUpSpace`/`interactive`/
+  `transparent` and `numericStyle` all ride it.
+- **A compound child never gets the no-listener emit fast path.**  With
+  nothing listening, a position write on a node two ancestors deep costs
+  **6.4×** an orphan's (566 ns vs 89 ns): the phase walk runs whether or
+  not any phase has a listener.
+- **The layout contract's fixed cost scales with the graph** — 391 µs at
+  2000 nodes for an impl that does nothing — because
+  `GpuLayoutContext`'s constructor eagerly evaluates `cy.elements()` and
+  `.nodes()`, interning handles for the whole graph even for a
+  columnar-first layout that never touches them.
+- **`mutableElements()` materializes the whole graph** (251 µs) where
+  v3's is O(1) (120 ns), and **`indexOf()` scans** (12.5 µs vs 204 ns).
+- Whole-object `data()` is 6.3× v3 — the columnar rebuild-the-object
+  cost, showing up exactly where the design predicts.
+
+`node scripts/gpu-bench-coverage.mjs [--verbose]` reports which public
+members a benchmark calls (83.3% of the callable surface; core 98.9%,
+collection 97.5%).  Like `gpu-throw-coverage.mjs` it reports and never
+gates — and it is the weakest of the three audits, matching *call-shaped
+mentions*, so it over-detects (a comment counts) and under-detects (a
+member reached through a wrapper is missed, which is why the engine-side
+`Viewport`/`StyleEngine`/`Animation` files read low: the core calls them
+for you).  Read it differentially, not as a score.
 
 **Renderer benchmarks** (`npm run benchmark:gpu:renderer`, or
 `benchmark:gpu:report -- --renderer` to fold them into the same report):
@@ -2825,6 +2879,17 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   the one place to read before deciding anything about v4's surface;
   contradictions are logged there rather than patched, because
   removing public API is a call to be made, not inferred.
+- **Five measured slow paths** (round 33, 2026-08-03) — the benchmark
+  sweep's output, each localized and none fixed, because it was a
+  measurement round.  In rough order of how much surface they sit
+  under: `StyleEngine.readProp` (the style getters, 13–21× v3, with a
+  9 ns column read underneath); the compound emit path, which runs its
+  phase walk even when nothing is listening (6.4× an orphan's emit);
+  `GpuLayoutContext`'s constructor, which materializes the whole graph
+  per layout run; `mutableElements()`, which does the same per call;
+  and `indexOf()`'s linear scan.  The numbers and the mechanism for
+  each are in the Benchmarks section above and in PLAN.md's round-33
+  record.
 - **Documentation** — round 26 (2026-08-02) settled the near-term
   shape: JSDoc on the source is v4's documentation source of truth
   and the declarations ship with it (see "Documenting the source"

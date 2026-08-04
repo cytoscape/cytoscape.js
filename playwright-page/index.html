@@ -6,8 +6,28 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
     <style>
+      /* fixed test font (OFL, via the @fontsource/open-sans devDependency):
+         label specs pre-load it with document.fonts.load before creating
+         the instance, so the atlas never rasters from a fallback font */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: normal;
+        font-weight: 400;
+        src: url('../node_modules/@fontsource/open-sans/files/open-sans-latin-400-normal.woff2') format('woff2');
+      }
+
+      /* the bold-italic face for the D1 font-style/-weight golden, so
+         the atlas rasters a real face rather than browser synthesis */
+      @font-face {
+        font-family: 'Open Sans';
+        font-style: italic;
+        font-weight: 700;
+        src: url('../node_modules/@fontsource/open-sans/files/open-sans-latin-700-italic.woff2') format('woff2');
+      }
+
       body {
         font-family: helvetica, arial, sans-serif;
+        margin: 0;
       }
 
       #cytoscape {
@@ -16,21 +36,28 @@
         position: absolute;
         top: 0;
         left: 0;
+        background: white;
       }
     </style>
 
     <script src="../build/cytoscape.umd.js"></script>
 
-    <title>cytoscape.js playwright page</title>
+    <title>cytoscape.js webgpu playwright page</title>
   </head>
 
   <body>
       <div id="cytoscape"></div>
 
       <script>
-        window.cy = cytoscape({
-          container: document.getElementById('cytoscape')
-        });
+        // Tests create the instance themselves (some first delete
+        // navigator.gpu to assert the hard-error gate).
+        window.makeCy = function( options ){
+          window.cy = cytoscape( Object.assign( {
+            container: document.getElementById( 'cytoscape' )
+          }, options ) );
+
+          return window.cy;
+        };
       </script>
   </body>
 

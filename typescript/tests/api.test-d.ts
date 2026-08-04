@@ -1,210 +1,202 @@
-// Compile-only test that the GENERATED d.ts (build/dts/index.d.ts, emitted
-// from the TypeScript source) is usable as a public API surface. Run via
-// `npm run test:types` (tsc --noEmit against tsconfig.types-test.json).
+// Compile-only test that the GENERATED gpu d.ts (build/dts-gpu/index.d.ts,
+// emitted from the v4 prototype source) is usable as a public API surface.
+// Run via `npm run test:types` (tsc --noEmit against tsconfig.types-test.json).
 //
-// This is the proof that the type definitions can be generated from source
-// and consumed the way the hand-written index.d.ts was.
+// Round 26.5: `cytoscape/gpu` ships declarations for the first time, so this
+// is the proof that a consumer can actually import and use them — the shape
+// audit lives in test/types-gpu-surface.mjs.
 
 import cytoscape from '../../build/dts/index.js';
 import type {
-  AbstractEventObject, BoundingBox,
-  Collection, Core, Css, CytoscapeExtension, CytoscapeFactory, CytoscapeOptions,
-  EdgeCollection, EdgeSingular, Element, ElementDefinition, ElementJson,
-  EventHandler, EventObject, EventObjectCore, EventObjectEdge, EventObjectNode,
-  InputEventObject, LayoutEventObject, LayoutInstance,
-  NodeCollection, NodeSingular, Position, RendererInstance,
-  Singular, StyleJson, StyleJsonBlock,
+  CytoscapeGpuOptions, GpuCollection, GpuColumnarElements, GpuCore, GpuEvent,
+  GpuElementsDefinition, GpuExportOptions, GpuGridLayoutOptions,
+  GpuLayoutOptions, GpuMapper, GpuStylesheet, Position, RendererStats,
 } from '../../build/dts/index.js';
 
-// factory: create an instance
-const opts: CytoscapeOptions = {
-  headless: true,
-  styleEnabled: true,
-  style: [
-    {
-      selector: 'node',
-      style: {
-        'background-color': 'red',
-        width: ( ele ) => ele.data('w') as number,
-        shape: 'ellipse'
-      }
+// -- the factory --
+
+const elements: GpuElementsDefinition = {
+  nodes: [
+    { data: { id: 'a', weight: 1 }, position: { x: 0, y: 0 } },
+    { data: { id: 'b', weight: 5 }, position: { x: 100, y: 0 } },
+  ],
+  edges: [ { data: { id: 'ab', source: 'a', target: 'b' } } ],
+};
+
+// the mapper DSL: a plain serializable object, no strings to parse
+const sizeMapper: GpuMapper = { data: 'weight', scale: 'sqrt', range: [ 10, 60 ] };
+
+const style: GpuStylesheet = {
+  nodes: {
+    width: sizeMapper,
+    height: sizeMapper,
+    'background-color': { data: 'weight', range: [ '#eee', '#333' ] },
+    'transition-property': 'background-color',
+    'transition-duration': 250,
+  },
+  edges: { width: 2, 'line-color': '#999' },
+  parents: { padding: 12 },
+  core: { 'selection-box-color': '#ccf' },
+};
+
+const options: CytoscapeGpuOptions = {
+  elements,
+  style,
+  wheelSensitivity: 1,
+  boxSelectionIncludesLabels: false,
+};
+
+const cy: GpuCore = cytoscape( options );
+
+// -- unknown constructor options are a build-time error (round 37.3) --
+//
+// v4 throws on an unknown sheet key, an unknown style property and an unknown
+// query key, on the stated reasoning that a typo must fail loudly.  The
+// constructor deliberately does not: the fifth design sitting decided that
+// strictness here resolves at the type layer, since v4 should not replicate at
+// runtime what the build already checks.  So this is where that decision is
+// enforced, and these directives fail the typecheck if the options type ever
+// stops rejecting excess keys.
+//
+// The four canvas-era options the 2026-07-29 triage dropped are the concrete
+// case — `{ motionBlur: true }` constructs happily at runtime and round-trips
+// through `cy.options()`:
+
+// @ts-expect-error motionBlur was dropped by the 2026-07-29 triage
+cytoscape( { motionBlur: true } );
+// @ts-expect-error hideEdgesOnViewport likewise
+cytoscape( { elements, hideEdgesOnViewport: true } );
+// @ts-expect-error and a plain typo, the case the whole rule is for
+cytoscape( { totallyUnknownOption: 1 } );
+// @ts-expect-error the same check through the named options type
+const badOptions: CytoscapeGpuOptions = { textureOnViewport: true };
+
+void badOptions;
+
+// Note the boundary, which is TypeScript's and not v4's: excess-property
+// checking applies to object *literals*.  Options assembled into a variable
+// first are widened and pass, which is why the runtime stays permissive rather
+// than pretending this is airtight — see the constructor's own doc comment.
+
+// -- statics on the factory --
+
+const columnar: GpuColumnarElements = cytoscape.toColumnarElements( elements );
+const wire: ArrayBuffer = cytoscape.serializeElements( columnar );
+
+cytoscape.deserializeElements( wire );
+cy.add( wire );
+
+// -- queries: structured objects and predicates, never selector strings --
+
+const selected: GpuCollection = cy.nodes( { selected: true } );
+const heavy: GpuCollection = cy.nodes( { data: { weight: { gt: 2 } } } );
+const parents: GpuCollection = cy.nodes( { parent: true } );
+const byFn: GpuCollection = cy.filter( ele => ele.isEdge() );
+const one: GpuCollection = cy.$id( 'a' );
+
+// -- collection reads --
+
+const id: string | undefined = one.id();
+const pos = one.position() as Position;
+const w: number | undefined = one.width();
+const bb = one.boundingBox( { includeLabels: true } );
+const deg: number | undefined = one.degree( false );
+const total: number = cy.elements().totalDegree();
+const nhood: GpuCollection = one.neighborhood();
+const edges: GpuCollection = one.connectedEdges();
+
+// -- traversal and algorithms --
+
+const dijkstra = cy.elements().dijkstra( { root: one, weight: () => 1 } );
+const path: GpuCollection = dijkstra.pathTo( cy.$id( 'b' ) );
+const components: GpuCollection[] = cy.elements().components();
+const clusters: GpuCollection[] = cy.nodes().kMeans( { k: 2, attributes: [ n => n.degree() ?? 0 ] } );
+
+// -- viewport --
+
+cy.zoom( 2 );
+cy.pan( { x: 10, y: 10 } );
+cy.fit( heavy, 30 );
+const extent = cy.extent();
+
+// -- events: predicate delegation, no selector strings --
+
+// Round 41: `event.target` is typed.  It used to be `unknown` on the shared
+// v3 event object, so every handler began with a cast; a v4 event's target is
+// the core or a one-element collection, and narrowing between them is a real
+// type guard rather than an assertion.
+const onTap = ( event: GpuEvent ) => {
+  const target = event.target;
+
+  if( target != null && 'isNode' in target ){
+    void target.id();      // narrowed to GpuCollection — no cast
+  }
+
+  // the event's own fields are typed too
+  const at: number = event.timeStamp;
+  const dom: string | undefined = event.originalEvent?.type;
+
+  void [ at, dom ];
+};
+const isNode = ( ele: GpuCollection ) => ele.isNode();
+
+cy.on( 'tap', isNode, onTap );
+cy.off( 'tap', isNode, onTap );
+cy.on( 'tap', ele => ele.isEdge(), onTap );   // no annotation needed
+one.on( 'position', () => undefined );
+
+// -- animation, with the round-24 controls and round-25 geometry channels --
+
+const ani = one.animation( {
+  position: { x: 50, y: 50 },
+  style: { width: 80, 'background-color': '#f00' },
+  duration: 400,
+  easing: 'spring(0.3)',
+} );
+
+ani.play();
+ani.pause();
+ani.resume();
+ani.reverse();
+
+const progress: number = ani.progress();
+const paused: boolean = ani.paused();
+const done: Promise<void> = ani.promise();
+
+// -- layouts: built-in by name, extension by direct object --
+
+const gridOpts: GpuGridLayoutOptions = { name: 'grid', fit: true, padding: 30 };
+
+cy.layout( gridOpts ).run();
+cy.layout( { name: 'force', animate: true } as GpuLayoutOptions ).run();
+
+class SpiralLayout {
+  run( ctx: { nodeSlots(): number[]; setPositions( slots: number[], xy: number[] ): void } ){
+    const slots = ctx.nodeSlots();
+    const xy: number[] = [];
+
+    for( let i = 0; i < slots.length; i++ ){
+      xy.push( Math.cos( i ) * i, Math.sin( i ) * i );
     }
-  ],
-  elements: [
-    { data: { id: 'a' } },
-    { data: { id: 'b' } },
-    { data: { id: 'ab', source: 'a', target: 'b' } }
-  ],
-  layout: { name: 'grid' }
-};
-const cy: Core = cytoscape(opts);
 
-// core methods
-const all: Collection = cy.elements();
-const byId: Collection = cy.getElementById('a');
-cy.add({ data: { id: 'c' } });
-const removed: Collection = cy.remove(byId);
-cy.zoom(2);
-const z: number = cy.zoom();
-cy.fit();
-cy.json();
+    ctx.setPositions( slots, xy );
+  }
+}
 
-// events: the EventObject hierarchy is surfaced on the public binding API
-cy.on('tap', ( e: EventObject ) => {
-  const t: Element | Core = e.target;
-  const pos = e.position; // input-event field
-  const ts: number = e.timeStamp;
-  void [t, pos, ts];
-});
-cy.on('tap', 'node', ( e: EventObjectNode ) => {
-  const n: NodeSingular = e.target; // target narrowed to a node
-  void n;
-});
-cy.on('tap', 'edge', ( e: EventObjectEdge ) => {
-  const ed: EdgeSingular = e.target; // target narrowed to an edge
-  void ed;
-});
-cy.on('tap', ( e: EventObjectCore ) => {
-  const c: Core = e.target; // target narrowed to Core
-  void c;
-});
-cy.on('layoutstart', ( e: LayoutEventObject ) => {
-  const l: unknown = e.layout; // LayoutEventObject carries the layout reference
-  void l;
-});
-const tapped: Promise<EventObject> = cy.pon('tap'); // promiseOn resolves to an EventObject
-cy.elements().on('mouseover', ( e: EventObject ) => void e.cy); // collection binding
-cy.emit('custom');
-void tapped;
+cy.layout( { impl: SpiralLayout } ).run();
+heavy.layout( { impl: new SpiralLayout() } ).run();
 
-// collection methods, traversal, data
-const nodes: NodeCollection = cy.nodes();
-const edges: EdgeCollection = cy.edges();
-const ele: Element = nodes.first();
-const id: string | undefined = nodes.id();
-const deg: number | undefined = nodes.degree();
-nodes.forEach((n) => n.data('weight', 1));
-const filtered: Collection = nodes.filter(':selected');
-const nhood: Collection = nodes.neighborhood();
-const conn: EdgeCollection = nodes.connectedEdges();
-const src: NodeSingular = edges.source();
+// -- batching, compaction, export --
 
-// Return-type precision: the declared return type must be exactly right,
-// not merely assignable. An overly-wide return (e.g. Collection instead of
-// NodeCollection) would still satisfy the assignment above, so we also assert
-// that the result is NOT assignable to a clearly-wrong type.
-cy.nodes() satisfies NodeCollection;
-cy.edges() satisfies EdgeCollection;
-cy.elements() satisfies Collection;
-cy.getElementById('a') satisfies Collection;
-edges.source() satisfies NodeSingular;
-edges.target() satisfies NodeSingular;
-nodes.connectedEdges() satisfies EdgeCollection;
-nodes.neighborhood() satisfies Collection;
-// @ts-expect-error cy.nodes() must not be typed as EdgeCollection
-const _wrongNodes: EdgeCollection = cy.nodes();
-// @ts-expect-error cy.edges() must not be typed as NodeCollection
-const _wrongEdges: NodeCollection = cy.edges();
-// @ts-expect-error edges.source() must not be typed as EdgeSingular
-const _wrongSrc: EdgeSingular = edges.source();
-void [_wrongNodes, _wrongEdges, _wrongSrc];
+cy.batch( () => { cy.$id( 'a' ).data( 'weight', 9 ); } );
+cy.compact();
 
-// node/edge public projections: each kind exposes only its own methods
-nodes.degree();              // node-only, OK on nodes
-edges.source();              // edge-only, OK on edges
-// @ts-expect-error edge-only method is not on the node type
-nodes.source();
-// @ts-expect-error edge-only method is not on the node type
-nodes.parallelEdges();
-// @ts-expect-error node-only method is not on the edge type
-edges.degree();
-// @ts-expect-error node-only method is not on the edge type
-edges.parent();
-// shared methods remain available on both
-nodes.boundingBox();
-edges.boundingBox();
+const exportOpts: GpuExportOptions = { full: true, scale: 2, output: 'blob' };
+const png: Promise<string | Blob> = cy.png( exportOpts );
 
-// algorithms
-const dijkstra = cy.elements().dijkstra({ root: '#a', directed: false });
-const dist: number = dijkstra.distanceTo(cy.getElementById('b'));
-const bfs = cy.elements().bfs({ roots: '#a' });
-const path: Collection = bfs.path;
+const stats: RendererStats | undefined = cy.renderer()?.stats();
 
-// layout + extension registration
-const layout = cy.layout({ name: 'grid' });
-layout.run();
-cytoscape.use(() => {});
-const v: string = cytoscape.version;
-
-// Css.* surface: node/edge/core property maps, mapper functions, and the
-// narrowed value families generated from the runtime style inventory.
-const nodeCss: Css.Node = {
-  'background-color': 'blue',
-  'background-opacity': ( ele: NodeSingular ) => ele.data( 'o' ) as number, // node mapper
-  'transition-timing-function': 'ease-in-out', // common property + enum
-  shape: 'round-rectangle', // node-specific NodeShape enum
-  'pie-1-background-color': 'green' // generated numbered property
-};
-
-const edgeCss: Css.Edge = {
-  'line-color': 'black',
-  'curve-style': 'bezier', // edge-specific CurveStyle enum
-  'target-arrow-shape': 'triangle', // ArrowShape enum
-  'line-opacity': ( ele ) => ele.data( 'o' ) as number, // edge mapper (ele inferred as EdgeSingular)
-  width: 3 // shared property accepted via the index signature
-};
-
-const coreCss: Css.Core = {
-  'active-bg-color': 'black',
-  'selection-box-opacity': 0.5
-};
-
-const nodeShape: Css.NodeShape = 'hexagon'; // exported enum alias
-
-// Css enum values are narrowed — invalid literals must be rejected.
-// @ts-expect-error invalid NodeShape value
-const _badShape: Css.Node = { shape: 'not-a-shape' };
-// @ts-expect-error invalid CurveStyle value
-const _badCurve: Css.Edge = { 'curve-style': 'not-a-curve' };
-// @ts-expect-error invalid ArrowShape value
-const _badArrow: Css.Edge = { 'target-arrow-shape': 'not-an-arrow' };
-void [_badShape, _badCurve, _badArrow];
-
-const styleJsonBlock: StyleJsonBlock = {
-  selector: 'core',
-  style: coreCss
-};
-
-// public style entry points reference the Css surface
-cytoscape.stylesheet()
-  .selector('node')
-  .style(nodeCss)
-  .selector('edge')
-  .css(edgeCss);
-
-// element JSON style/css fields accept Css maps
-cy.add({ group: 'nodes', data: { id: 'd' }, style: { 'border-width': 2 } });
-
-// Verify every named export is importable and structurally usable.
-// If any type disappears from the export list, the import above fails to compile.
-const _pos: Position = { x: 0, y: 0 };
-const _bb: BoundingBox = { x1: 0, y1: 0, x2: 1, y2: 1, w: 1, h: 1 };
-const _eleDef: ElementDefinition = { data: {} };
-const _eleJson: ElementJson = { group: 'nodes', data: {}, position: { x: 0, y: 0 }, removed: false, selected: false, selectable: true, locked: false, grabbable: true, pannable: true, classes: null };
-const _styleJson: StyleJson = [{ selector: 'node', style: {} }];
-const _handler: EventHandler = ( _e ) => {};
-const _layoutInst: LayoutInstance = cy.layout({ name: 'grid' });
-const _singular: Singular = nodes.first();
-// Type-level checks: these cast through `any` just to reference the type name.
-const _abstract: AbstractEventObject = {} as any;
-const _input: InputEventObject = {} as any;
-const _layout: LayoutEventObject = {} as any;
-const _renderer: RendererInstance = {} as any;
-const _factory: CytoscapeFactory = cytoscape;
-const _ext: CytoscapeExtension = () => {};
-
-// silence unused-locals
-void [all, byId, removed, z, edges, ele, id, deg, filtered, nhood, conn, src, dist, path, v,
-  styleJsonBlock, edgeCss, nodeShape,
-  _pos, _bb, _eleDef, _eleJson, _styleJson, _handler, _layoutInst, _singular,
-  _abstract, _input, _layout, _renderer, _factory, _ext];
+void [
+  cy, selected, heavy, parents, byFn, id, pos, w, bb, deg, total, nhood, edges,
+  path, components, clusters, extent, progress, paused, done, png, stats, style,
+];

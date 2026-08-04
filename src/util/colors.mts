@@ -1,4 +1,3 @@
-import * as is from '../is.mjs';
 import * as regex from './regex.mjs';
 
 export type RGBTuple = [ number, number, number ];
@@ -7,6 +6,12 @@ export type RGBATuple = [ number, number, number, number ];
 export type RGBAOptionalTuple = [ number, number, number, number | undefined ];
 
   // get [r, g, b] from #abc or #aabbcc
+/**
+ * Parse a `#abc` or `#aabbcc` hex colour.
+ *
+ * @param hex — the hex string, `#` included
+ * @returns `[r, g, b]` in 0–255, or `undefined` if it is not a hex colour
+ */
 export const hex2tuple = ( hex: string ): RGBTuple | undefined => {
   if( !(hex.length === 4 || hex.length === 7) || hex[0] !== '#' ){ return; }
 
@@ -28,6 +33,13 @@ export const hex2tuple = ( hex: string ): RGBTuple | undefined => {
 };
 
   // get [r, g, b, a] from hsl(0, 0, 0) or hsla(0, 0, 0, 0)
+/**
+ * Parse an `hsl()`/`hsla()` colour, converting to RGB.
+ *
+ * @param hsl — the colour string
+ * @returns `[r, g, b, a]` with `a` undefined when no alpha was given, or
+ *   `undefined` if the string does not parse or a channel is out of range
+ */
 export const hsl2tuple = ( hsl: string ): RGBAOptionalTuple | undefined => {
   let ret: RGBAOptionalTuple | undefined;
   let h, s, l, a, r, g, b;
@@ -86,6 +98,13 @@ export const hsl2tuple = ( hsl: string ): RGBAOptionalTuple | undefined => {
 };
 
 // get [r, g, b, a] from rgb(0, 0, 0) or rgba(0, 0, 0, 0)
+/**
+ * Parse an `rgb()`/`rgba()` colour, in absolute or all-percent channels.
+ *
+ * @param rgb — the colour string
+ * @returns `[r, g, b]` or `[r, g, b, a]`, or `undefined` if the string does
+ *   not parse, mixes percent and absolute channels, or is out of range
+ */
 export const rgb2tuple = ( rgb: string ): number[] | undefined => {
   let ret;
 
@@ -128,12 +147,25 @@ export const rgb2tuple = ( rgb: string ): number[] | undefined => {
   return ret;
 };
 
+/**
+ * Look up a CSS colour keyword (case-insensitive).
+ *
+ * @param color — the keyword, e.g. `'tomato'`
+ * @returns its tuple, or `undefined` if the name is not a known colour
+ */
 export const colorname2tuple = ( color: string ): RGBTuple | RGBATuple | undefined => {
   return colors[ color.toLowerCase() ];
 };
 
+/**
+ * Parse any accepted colour form — an already-parsed tuple, a CSS keyword,
+ * hex, `rgb()`/`rgba()` or `hsl()`/`hsla()`.
+ *
+ * @param color — the colour value
+ * @returns the channel tuple, or a nullish value if nothing parsed it
+ */
 export const color2tuple = ( color: string | number[] ): number[] | RGBAOptionalTuple | null | undefined => {
-  return ( is.array( color ) ? color : null )
+  return ( Array.isArray( color ) ? color : null )
     || colorname2tuple( color as string )
     || hex2tuple( color as string )
     || rgb2tuple( color as string )

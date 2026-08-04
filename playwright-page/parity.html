@@ -28,8 +28,12 @@
       }
     </style>
 
+    <!-- Both UMD bundles export the global `cytoscape`, so v3's is captured
+         under its own name before v4's script overwrites it (round 42: v4
+         became the package, and v3's bundle now builds from v3/). -->
+    <script src="../v3/build/cytoscape.umd.js"></script>
+    <script>window.cytoscapeV3 = window.cytoscape;</script>
     <script src="../build/cytoscape.umd.js"></script>
-    <script src="../build/cytoscape-gpu.umd.js"></script>
 
     <title>cytoscape.js v3-vs-v4 parity page</title>
   </head>
@@ -43,7 +47,7 @@
         // canvas renderer and the GPU prototype side by side, then diff
         // the two exports.
         window.makeV3 = function( options ){
-          window.cy3 = cytoscape( Object.assign( {
+          window.cy3 = cytoscapeV3( Object.assign( {
             container: document.getElementById( 'v3' )
           }, options ) );
 
@@ -51,7 +55,7 @@
         };
 
         window.makeV4 = function( options ){
-          window.cy4 = cytoscapeGpu( Object.assign( {
+          window.cy4 = cytoscape( Object.assign( {
             container: document.getElementById( 'v4' )
           }, options ) );
 

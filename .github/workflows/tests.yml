@@ -3,9 +3,10 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  # v4 — the package, at the repo root
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-node@v6
@@ -13,6 +14,35 @@ jobs:
         node-version-file: .nvmrc
     - name: Install dependencies
       run: npm ci
+    # The v3-vs-v4 parity diffs in the `visual` project render both renderers
+    # in one page, so they need v3's UMD bundle from the v3/ subproject.  The
+    # specs fail with this instruction rather than skipping (round 42), so a
+    # missing baseline cannot read as a pass.
+    - name: Build the v3 comparison baseline
+      run: npm install && npm run build:umd
+      working-directory: v3
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: Run tests
+      run: npm test
+    - name: Verify type definitions
+      run: npm run test:types:all
+
+  # v3 — kept self-contained in v3/ for comparison benchmarks and parity work
+  # (round 42).  It builds and tests as its own project.
+  ci-v3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: v3
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+    - name: Install dependencies
+      run: npm install
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run tests

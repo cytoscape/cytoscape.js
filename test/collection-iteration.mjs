@@ -1,122 +1,120 @@
 import { expect } from 'chai';
-import cytoscape from '../src/test.mjs';
+import cytoscape from '../src/index.mjs';
 
-var is = {
-  elementOrCollection: function(o){
-    return o != null && o.instanceString && o.instanceString() === 'collection';
-  },
-
-  number: function(o){ return typeof o === 'number'; }
-};
-
-describe('Collection iteration', function(){
+describe('gpu/collection: iteration', function(){
 
   var cy;
 
-  // test setup
-  beforeEach(function(done){
-    cytoscape({
-      elements: {
-        nodes: [
-            { data: { id: 'n1' } },
-            { data: { id: 'n2' } },
-            { data: { id: 'n3' } }
-        ],
-
-        edges: [
-            { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
-            { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
-        ]
-      },
-      ready: function(){
-        cy = this;
-
-        done();
-      }
+  beforeEach(function(){
+    cy = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ]
     });
   });
 
-  it('eles.size()', function(){
-    expect( cy.$('node').size() ).to.equal(3);
-    expect( cy.$('node').length ).to.equal(3);
-    expect( cy.$('#n1, #n2').size() ).to.equal(2);
-    expect( cy.$('#n1, #n2').length ).to.equal(2);
+  it('reports size and emptiness', function(){
+    expect( cy.elements().size() ).to.equal(4);
+    expect( cy.elements().empty() ).to.be.false;
+    expect( cy.elements().nonempty() ).to.be.true;
+    expect( cy.collection().empty() ).to.be.true;
+    expect( cy.collection() ).to.have.length(0);
   });
 
-  it('eles.empty() etc', function(){
-    expect( cy.$('node[foo]').empty() ).to.be.true;
-    expect( cy.$('node[foo]').nonempty() ).to.be.false;
-    expect( cy.$('node').empty() ).to.be.false;
-    expect( cy.$('node').nonempty() ).to.be.true;
+  it('supports numeric indexing where eles[0] is a length-1 collection', function(){
+    var nodes = cy.nodes();
+
+    expect( nodes[0] ).to.have.length(1);
+    expect( nodes[0].id() ).to.equal('a');
+    expect( nodes[0][0] ).to.equal( nodes[0] ); // element is its own first element
   });
 
-  it('eles.forEach()', function(){
-    var count = 0;
-    var that = {};
+  it('interns element handles (same slot ⇒ same object)', function(){
+    expect( cy.$id('a')[0] ).to.equal( cy.nodes()[0] );
+  });
+
+  it('iterates with forEach in insertion order', function(){
+    var ids = [];
+    var indexes = [];
 
     cy.nodes().forEach(function( ele, i, eles ){
-      expect( is.elementOrCollection(ele) ).to.be.true;
-      expect( is.elementOrCollection(eles) ).to.be.true;
-      expect( i ).to.equal( count );
-      expect( this ).to.equal( that );
-
-      count++;
-    }, that);
-
-    expect( count ).to.equal(3);
-  });
-
-  it('eles.reduce()', function(){
-    var eles = cy.$('#n1, #n2, #n3');
-    var index = 0;
-    var vals =  [1, 2, 3];
-    var prevs = [0, 1, 3];
-    var end = 1 + 2 + 3;
-    var sum = function( a, b ){ return a + b; }
-
-    eles.forEach(function( ele, i ){
-      ele.data( 'foo', vals[i] );
+      ids.push( ele.id() );
+      indexes.push( i );
+      expect( eles ).to.have.length(3);
+      expect( this ).to.be.undefined; // plain call without thisArg, like v3
     });
 
-    var callback = function( prev, ele, i, eles ){
-      expect( index++, 'i' ).to.equal( i );
-
-      expect( eles[0].same( cy.$('#n1') ), 'n1' ).to.be.true;
-      expect( eles[1].same( cy.$('#n2') ), 'n2' ).to.be.true;
-      expect( eles[2].same( cy.$('#n3') ), 'n3' ).to.be.true;
-
-      expect( ele.same( eles[i] ), 'ele' ).to.be.true;
-
-      expect( prev, 'prev' ).to.equal( prevs[i] );
-
-      return prev + ele.data('foo');
-    };
-
-    expect( eles.reduce( callback, 0 ), 'ret' ).to.equal( end );
+    expect( ids ).to.deep.equal(['a', 'b', 'c']);
+    expect( indexes ).to.deep.equal([0, 1, 2]);
   });
 
-  it('eles.eq()', function(){
-    expect( cy.$('#n1, #n2').eq(0).id() ).to.equal('n1');
-    expect( cy.$('#n1, #n2').eq(1).id() ).to.equal('n2');
+  it('exits forEach early on false', function(){
+    var count = 0;
+
+    cy.nodes().each(function(){
+      count++;
+      return false;
+    });
+
+    expect( count ).to.equal(1);
   });
 
-  it('eles.slice()', function(){
-    expect( cy.nodes().slice().same( cy.nodes() ) ).to.be.true;
-    expect( cy.nodes().slice(1).same( cy.$('#n2, #n3') ) ).to.be.true;
-    expect( cy.nodes().slice(1, 2).same( cy.$('#n2') ) ).to.be.true;
-    expect( cy.nodes().slice(1, -1).same( cy.$('#n2') ) ).to.be.true;
+  it('supports eq/first/last', function(){
+    var nodes = cy.nodes();
+
+    expect( nodes.eq(1).id() ).to.equal('b');
+    expect( nodes.first().id() ).to.equal('a');
+    expect( nodes.last().id() ).to.equal('c');
+    expect( nodes.eq(99) ).to.have.length(0);
   });
 
-  it('eles [Symbol.iterator]', function() {
-    expect( [ ...cy.collection() ] ).to.deep.equal( [] );
-    expect( [ ...cy.elements() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1", "n2", "n3", "n1n2", "n2n3" ] );
-    expect( [ ...cy.nodes() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1", "n2", "n3" ] );
-    expect( [ ...cy.edges() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1n2", "n2n3" ] );
+  it('runs forEach bound to an explicit thisArg', function(){
+    var ctx = { tag: 'ctx' };
+    var seen = [];
 
-    const it = cy.elements()[Symbol.iterator]();
-    for (let entry of it) if (entry.id() === "n3") break;
-    expect( [ ...it ].map( ele => ele.id() ) ).to.deep.equal( [ "n1n2", "n2n3" ] );
-    expect( [ ...it ] ).to.deep.equal( [] );
+    cy.nodes().forEach(function( ele ){
+      seen.push( this.tag );
+      expect( this ).to.equal( ctx );
+    }, ctx);
+
+    expect( seen ).to.deep.equal(['ctx', 'ctx', 'ctx']);
+  });
+
+  it('supports slice', function(){
+    var nodes = cy.nodes();
+
+    expect( nodes.slice(1).map( n => n.id() ) ).to.deep.equal(['b', 'c']);
+    expect( nodes.slice(0, 2).map( n => n.id() ) ).to.deep.equal(['a', 'b']);
+    expect( nodes.slice(-1).map( n => n.id() ) ).to.deep.equal(['c']);
+    expect( nodes.slice().map( n => n.id() ) ).to.deep.equal(['a', 'b', 'c']); // no-arg copies
+    expect( nodes.slice(1, -1).map( n => n.id() ) ).to.deep.equal(['b']); // negative end
+  });
+
+  it('supports toArray', function(){
+    var array = cy.nodes().toArray();
+
+    expect( array ).to.be.an('array');
+    expect( array ).to.have.length(3);
+    expect( array[2].id() ).to.equal('c');
+  });
+
+  it('supports map/some/every', function(){
+    var nodes = cy.nodes();
+
+    expect( nodes.map( n => n.id() ) ).to.deep.equal(['a', 'b', 'c']);
+    expect( nodes.some( n => n.id() === 'b' ) ).to.be.true;
+    expect( nodes.some( n => n.id() === 'z' ) ).to.be.false;
+    expect( nodes.every( n => n.isNode() ) ).to.be.true;
+    expect( cy.elements().every( n => n.isNode() ) ).to.be.false;
+  });
+
+  it('dedupes elements in collections', function(){
+    var doubled = cy.$id('a').union( cy.$id('a') );
+
+    expect( doubled ).to.have.length(1);
   });
 
 });

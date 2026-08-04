@@ -1,5 +1,9 @@
-// Shared public types. This module grows as the TypeScript migration
-// progresses; it must remain type-only (no runtime exports).
+// Shared structural types. Type-only (no runtime exports).
+//
+// Round 42 copied this from v3's `src/types.mts` when v4 became the package
+// and v3 moved to `v3/`. Only the geometry types travelled: v3's `CoreShim`,
+// `CollectionShim` and `ElementShim` were migration scaffolding for its own
+// conversion order and mean nothing here.
 
 export interface Position {
   x: number;
@@ -19,27 +23,3 @@ export interface BoundingBoxWH {
 }
 
 export type BoundingBox = BoundingBox12 & BoundingBoxWH;
-
-/**
- * Minimal structural view of the Core instance, used by low-level modules
- * that are converted before src/core. Replaced by `import type Core` from
- * the real core module once it is converted.
- */
-export interface CoreShim {
-  zoom(): number;
-  pan(): Position;
-}
-
-/**
- * Minimal structural view of a Collection, used by low-level modules that
- * are converted before src/collection. Replaced by the real Collection
- * type once it is converted.
- */
-export interface CollectionShim {
-  instanceString(): string;
-  _private: { single: boolean };
-}
-
-/** A Collection holding exactly one element. */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- distinct name documents intent; gains members as the migration progresses
-export interface ElementShim extends CollectionShim {}

@@ -8,7 +8,7 @@ const parallelism = typeof os.availableParallelism === 'function'
   ? os.availableParallelism()
   : os.cpus().length;
 
-/* See the webgpu project comment: Linux needs ANGLE-on-Vulkan compositing
+/* See the renderer project comment: Linux needs ANGLE-on-Vulkan compositing
  * for WebGPU canvases to present; macOS (Metal) must not get these flags. */
 const linuxVulkanCompositingArgs = process.platform === 'linux'
   ? ['--use-gl=angle', '--use-angle=vulkan', '--enable-features=Vulkan']
@@ -26,7 +26,7 @@ const gpuDebugArgs = process.env.GPU_DEBUG
  * GPU process outright on some image versions.  Pin the Vulkan loader to
  * the SwiftShader ICD bundled with Chrome for Testing instead: rendering,
  * presentation and readback all work on it, and it is the same software
- * rasterizer the webgpu-visual goldens are pinned to — deterministic and
+ * rasterizer the visual goldens are pinned to — deterministic and
  * independent of runner-image Mesa churn.  CI-gated so local runs keep
  * using the real GPU.
  */
@@ -44,14 +44,6 @@ if( process.platform === 'linux' && process.env.CI ){
 }
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
@@ -66,28 +58,17 @@ export default defineConfig({
   workers: parallelism,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'list',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    // baseURL: 'http://127.0.0.1:3000/playwright-page',
-
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
 
-  /* Configure projects for major browsers */
   projects: [
-    {
-      name: 'chromium',
-      testIgnore: /webgpu.*\.spec\.js/,
-      use: { ...devices['Desktop Chrome'] },
-    },
-
     /*
-     * WebGPU prototype (src/gpu).  channel 'chromium' is the new headless
-     * mode with real GPU adapters (Metal on macOS); the swiftshader flag
-     * gives a deterministic software fallback on CI.  Specs soft-skip when
-     * no adapter is available.  Pages must load via http://127.0.0.1:3333 —
+     * The v4 renderer.  channel 'chromium' is the new headless mode with
+     * real GPU adapters (Metal on macOS); the swiftshader flag gives a
+     * deterministic software fallback on CI.  Specs soft-skip when no
+     * adapter is available.  Pages must load via http://127.0.0.1:3333 —
      * navigator.gpu is unavailable on about:blank.
      *
      * On Linux, WebGPU canvas *presentation* only composites when the GL
@@ -98,8 +79,8 @@ export default defineConfig({
      * macOS (Metal) and would break the known-good default there.
      */
     {
-      name: 'webgpu',
-      testMatch: /webgpu\.spec\.js/,
+      name: 'renderer',
+      testMatch: /renderer\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chromium',
@@ -111,33 +92,31 @@ export default defineConfig({
     },
 
     /*
-     * The same WebGPU specs on WebKit (Safari's engine, WebGPU on Metal).
-     * Specs soft-skip when the build exposes no adapter, so this project
-     * is safe wherever WebKit lacks WebGPU.
+     * The same specs on WebKit (Safari's engine, WebGPU on Metal).  Specs
+     * soft-skip when the build exposes no adapter, so this project is safe
+     * wherever WebKit lacks WebGPU.
      */
     {
-      name: 'webgpu-webkit',
-      testMatch: /webgpu\.spec\.js/,
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* The classic (canvas) renderer specs on WebKit. */
-    {
-      name: 'webkit',
-      testIgnore: /webgpu.*\.spec\.js/,
+      name: 'renderer-webkit',
+      testMatch: /renderer\.spec\.js/,
       use: { ...devices['Desktop Safari'] },
     },
 
     /*
-     * Visual regression specs (golden diffs + v3-vs-v4 parity) for the
-     * WebGPU prototype.  Pinned to the SwiftShader software adapter so the
+     * Visual regression specs: golden diffs plus the live v3-vs-v4 parity
+     * diffs.  Pinned to the SwiftShader software adapter so the
      * rasterization — and therefore the checked-in goldens — is
      * deterministic across machines (a hardware adapter would produce
      * per-GPU AA differences).  Regenerate goldens with UPDATE_GOLDENS=1.
+     *
+     * The parity half additionally needs v3's UMD bundle, built from the
+     * v3/ subproject: `cd v3 && npm install && npm run build:umd`.  The
+     * specs fail with that instruction rather than skipping, so a missing
+     * baseline cannot read as a pass.
      */
     {
-      name: 'webgpu-visual',
-      testMatch: /webgpu-visual\.spec\.js/,
+      name: 'visual',
+      testMatch: /visual\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chromium',
@@ -151,31 +130,6 @@ export default defineConfig({
         },
       },
     },
-
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
   ],
 
   /* Run your local dev server before starting the tests */
@@ -185,4 +139,3 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
   },
 });
-

@@ -1,172 +1,108 @@
-<img style="width: 200px; height: 200px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/cytoscape-logo.png" width="200" height="200">
+<img style="width: 200px; height: 200px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/v3/documentation/img/cytoscape-logo.png" width="200" height="200">
 
 [![GitHub repo](https://img.shields.io/badge/Repo-GitHub-yellow.svg)](https://github.com/cytoscape/cytoscape.js)
 [![News and tutorials](https://img.shields.io/badge/News%20%26%20tutorials-Blog-yellow.svg)](https://blog.js.cytoscape.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE)
 [![npm](https://img.shields.io/npm/v/cytoscape.svg)](https://www.npmjs.com/package/cytoscape)
-[![DOI](https://zenodo.org/badge/2255947.svg)](https://zenodo.org/badge/latestdoi/2255947)
-[![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
 [![Automated tests](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg)](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml)
-[![Extensions](https://img.shields.io/badge/Extensions-70-brightgreen.svg)](https://js.cytoscape.org/#extensions)
-[![Cloudflare](https://img.shields.io/badge/Powered%20by-Cloudflare-orange.svg)](https://cloudflare.com)
 
+# Cytoscape.js 4 (in development)
 
-Created at the [University of Toronto](https://utoronto.ca) and published in [Oxford Bioinformatics](https://js.cytoscape.org/#introduction/citation) ([2016](https://academic.oup.com/bioinformatics/article/32/2/309/1744007), [2023](https://academic.oup.com/bioinformatics/article/39/1/btad031/6988031)). <br />
-Authored by: [Max Franz](https://github.com/maxkfranz), [Christian Lopes](https://github.com/chrtannus), [Dylan Fong](https://github.com/d2fong), [Mike Kucera](https://github.com/mikekucera), ..., [Gary Bader](https://baderlab.org)
+Graph theory (network) library for visualisation and analysis.
 
-# Cytoscape.js
+**This branch is v4** — the performance redesign specified in
+[#3486](https://github.com/cytoscape/cytoscape.js/issues/3486): a
+CPU-canonical columnar model (typed-array columns, stable slots, coalesced
+dirty spans) written through to persistent GPU buffers, rendered by a WebGPU
+pipeline with SDF node shapes, GPU-evaluated style mappers, compute culling
+and GPU picking.
 
-Graph theory (network) library for visualisation and analysis : [https://js.cytoscape.org](https://js.cytoscape.org)
+v4 is not released yet. **For the released library, use
+[cytoscape@3](https://www.npmjs.com/package/cytoscape) and
+[js.cytoscape.org](https://js.cytoscape.org).**
 
-## Description
+## Repository layout
 
-Cytoscape.js is a fully featured [graph theory](https://en.wikipedia.org/wiki/Graph_theory) library.  Do you need to model and/or visualise relational data, like biological data or social networks?  If so, Cytoscape.js is just what you need.
+Round 42 made v4 *the* package: v4's source is `src/` at the repo root, and
+the entire v3 file set moved into a self-contained `v3/` subproject that still
+builds and tests on its own, so comparison benchmarks and the v3-vs-v4 pixel
+parity harness keep working against it.
 
-Cytoscape.js contains a graph theory model and an optional renderer to display interactive graphs.  This library was designed to make it as easy as possible for programmers and scientists to use graph theory in their apps, whether it's for server-side analysis in a Node.js app or for a rich user interface.
+| Path | What it is |
+| --- | --- |
+| `src/` | v4's source — the columnar core, the WebGPU renderer, layouts, algorithms |
+| `src/README.md` | the maintained scope / deviations / design-decisions doc |
+| `test/`, `test/modules/` | v4's `node:test` suites |
+| `playwright-tests/` | v4's browser coverage: the `renderer` project, and `visual` (goldens + live v3-vs-v4 parity diffs) |
+| `benchmark/` | v4's benchmark suites, most of them measured against v3 |
+| `debug/` | the manual dev harness |
+| `scripts/` | the audits (JSDoc coverage, throw coverage, benchmark coverage) |
+| `v3/` | Cytoscape.js v3, self-contained — its own `package.json`, build, tests and documentation site |
+| `PLAN.md` | the development record: every round's plan and outcome |
+| `AGENTS.md` | contributor guidelines |
 
-You can get started with Cytoscape.js with one line:
+## Usage
 
 ```js
-var cy = cytoscape({ elements: myElements, container: myDiv });
+import cytoscape from 'cytoscape';
+
+const cy = cytoscape( {
+  container: document.getElementById( 'cy' ),
+  elements: [
+    { data: { id: 'a' } },
+    { data: { id: 'b' } },
+    { data: { id: 'ab', source: 'a', target: 'b' } }
+  ],
+  style: {
+    nodes: { 'background-color': '#c0392b', width: 30, height: 30 },
+    edges: { width: 3, 'line-color': '#7f8c8d' }
+  },
+  layout: { name: 'grid' }
+} );
 ```
 
-Learn more about the features of Cytoscape.js by reading [its documentation](https://js.cytoscape.org).
+`import cytoscapeGpu from 'cytoscape/gpu'` also resolves, as a deprecated
+alias of the same entry point through the prerelease line.
 
+### Requirements
 
-## Example
+- **Headless needs no GPU.** Omit `container` and the whole model, style
+  engine, layouts and algorithms run in Node.
+- **A rendered instance requires WebGPU.** With a `container`, the factory
+  throws synchronously when `navigator.gpu` is missing, and `cy.ready` rejects
+  when no adapter can be acquired.
 
-The Tokyo railway stations network can be visualised with Cytoscape:
+v4 is a deliberate break from v3 — no selector strings (structured query
+objects and predicates instead), no classes, no z-index, a different
+stylesheet shape. `src/README.md` records every decision and every accepted
+deviation; the migration guide is round 46.
 
-<img style="width: 300px; height: 126px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big.png" width="300" height="126">
+## Development
 
-<img style="width: 300px; height: 126px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big-zoomed-in.png" width="300" height="126">
+```sh
+npm install
+npm run build        # bundles into build/
+npm test             # typecheck, Node suites, throw gate, browser specs, lint
+npm run watch        # dev server + auto-rebuild -> http://localhost:3333
+npm run benchmark    # the v3-vs-v4 micro sweep
+```
 
-A [live demo](https://js.cytoscape.org/demos/tokyo-railways/) and [source code](https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/tokyo-railways) are available for the Tokyo railway stations graph.  More demos are available in the [documentation](https://js.cytoscape.org/#demos).
+v3 builds and tests as its own project:
 
+```sh
+cd v3
+npm install
+npm run build
+npm test
+```
 
-## Documentation
+The v3-vs-v4 parity diffs in the `visual` Playwright project need v3's UMD
+bundle, so run `cd v3 && npm run build:umd` before them; the specs fail with
+that instruction rather than skipping.
 
-You can find the documentation and downloads on the [project website](https://js.cytoscape.org).
+See `AGENTS.md` for the full contributor guide and `PLAN.md` for the
+development record.
 
+## License
 
-
-## Roadmap
-
-Future versions of Cytoscape.js are planned in the [milestones of the Github issue tracker](https://github.com/cytoscape/cytoscape.js/milestones).  You can use the milestones to see what's currently planned for future releases.
-
-
-
-
-## Contributing to Cytoscape.js
-
-Would you like to become a Cytoscape.js contributor?  You can contribute in technical roles (e.g. features, testing) or non-technical roles (e.g. documentation, outreach), depending on your interests.  [Get in touch with us by posting a GitHub discussion](https://github.com/cytoscape/cytoscape.js/discussions).
-
-For the mechanics of contributing a pull request, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Feature releases are made monthly, while patch releases are made weekly.  This allows for rapid releases of first- and third-party contributions.
-
-
-
-## Citation
-
-To cite Cytoscape.js in a paper, please cite the Oxford Bioinformatics issue:
-
-*Cytoscape.js: a graph theory library for visualisation and analysis*
-
-Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
-
-[Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557](https://bioinformatics.oxfordjournals.org/content/32/2/309) [(PDF)](http://bioinformatics.oxfordjournals.org/content/32/2/309.full.pdf)
-
-- [PubMed abstract for the original 2016 article](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
-- [PubMed abstract for the 2023 update article](https://pubmed.ncbi.nlm.nih.gov/36645249)
-
-
-
-
-
-## Build dependencies
-
-Install `node` and `npm`.  Run `npm install` before using `npm run`.
-
-
-
-
-## Build instructions
-
-Run `npm run <target>` in the console.  The main targets are:
-
-**Building:**
-
- * `build`: do all builds of the library (umd, min, cjs, esm)
- * `build:min` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
- * `build:umd` : do the umd (cjs/amd/globals) build
- * `build:esm` : do the esm (ES 2015 modules) build
- * `clean` : clean the `build` directory
- * `docs` : build the docs into `documentation`
- * `release` : build all release artifacts
- * `watch` or `dev` : automatically build lib for debugging (with sourcemap, no babel, very quick)
-   * good for general testing on `debug/index.html`
-   * served on `http://localhost:8080` or the first available port thereafter, with livereload on `debug/index.html`
- * `watch:babel` : automatically build lib for debugging (with sourcemap, with babel, a bit slower)
-   * good for testing performance or for testing out of date browsers
-   * served on `http://localhost:8080` or the first available port thereafter, with livereload on `debug/index.html`
- * `watch:umd` : automatically build prod umd bundle (no sourcemap, with babel)
-   * good for testing cytoscape in another project (with a `"cytoscape": "file:./path/to/cytoscape"` reference in your project's `package.json`)
-   * no http server
- * `dist` : update the distribution js for npm etc.
-
-**Testing:**
-
-The default test scripts run directly against the source code.  Tests can alternatively be run on a built bundle.  The library can be built on `node>=6`, but the library's bundle can be tested on `node>=0.10`.
-
- * `test` : run all testing & linting
- * `test:js` : run the mocha tests on the public API of the lib (directly on source files)
-   * `npm run test:js -- -g "my test name"` runs tests on only the matching test cases
- * `test:build` : run the mocha tests on the public API of the lib (on a built bundle) 
-   * `npm run build` should be run beforehand on a recent version of node
-   * `npm run test:build -- -g "my test name"` runs build tests on only the matching test cases
- * `test:modules` : run unit tests on private, internal API
-   * `npm run test:modules -- -g "my test name"` runs modules tests on only the matching test cases
- * `lint` : lint the js sources via eslint
- * `benchmark` : run all benchmarks
- * `benchmark:single` : run benchmarks only for the suite specified in `benchmark/single`
-
-
-
-## Release instructions
-
-### Background
-
-- Ensure that a milestone exists for the release you want to make, with all the issues for that release assigned in the milestone.
-- Bug fixes should be applied to both the `master` and `unstable` branches.  PRs can go on either branch, with the patch applied to the other branch after merging.
-- When a patch release is made concurrently with a feature release, the patch release should be made first.  Wait 5 minutes after the patch release completes before starting the feature release -- otherwise Zenodo doesn't pick up releases properly.
-
-### Patch version
-
-1. Go to [Actions > Patch release](https://github.com/cytoscape/cytoscape.js/actions/workflows/patch-release.yml)
-1. Go to the 'Run workflow' dropdown
-1. [Optional] The 'master' branch should be preselected for you
-1. Press the green 'Run workflow' button
-1. Close the milestone for the release
-
-<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-patch.png" width="300">
-
-### Feature version
-
-1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/feature-release.yml)
-1. Go to the 'Run workflow' dropdown
-1. [Optional] The 'unstable' branch should be preselected for you
-1. Press the green 'Run workflow' button
-1. Close the milestone for the release
-1. Make the release announcement [on the blog](https://github.com/cytoscape/cytoscape.js-blog)
-
-<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-feature.png" width="300">
-
-### Notes on GitHub Actions UI
-
-- 'Use workflow from' in the GitHub UI selects the branch from which the workflow YML file is selected.  Since the workflow files should usually be the same on the master and unstable branches, it shouldn't matter what's selected.
-- 'Branch to run the action on' in the GitHub UI is preselected for you.  You don't need to change it.
-
-## Tests
-
-Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`npm run test:js`).
+MIT

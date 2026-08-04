@@ -1,119 +1,88 @@
 import { expect } from 'chai';
-import cytoscape from '../src/test.mjs';
+import cytoscape from '../src/index.mjs';
 
-var $$ = cytoscape;
-
-var is = {
-  elementOrCollection: function(o){
-    return o != null && o.instanceString && o.instanceString() === 'collection';
-  },
-
-  number: function(o){ return typeof o === 'number'; }
-};
-
-describe('Collection comparison', function(){
+describe('gpu/collection: comparison', function(){
 
   var cy;
 
-  // test setup
-  beforeEach(function(done){
-    cytoscape({
-      elements: {
-        nodes: [
-            { data: { id: 'n1' } },
-            { data: { id: 'n2' } },
-            { data: { id: 'n3' } }
-        ],
-
-        edges: [
-            { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
-            { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
-        ]
-      },
-      ready: function(){
-        cy = this;
-
-        done();
-      }
+  beforeEach(function(){
+    cy = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' }, selected: true },
+        { data: { id: 'ab', source: 'a', target: 'b' } }
+      ]
     });
   });
 
+  describe('eles.same()', function(){
+    it('is true for equal sets regardless of order', function(){
+      expect( cy.$id('a').union( cy.$id('b') ).same( cy.$id('b').union( cy.$id('a') ) ) ).to.be.true;
+    });
 
-  it('eles.same()', function(){
-    expect( cy.$('#n1').same( cy.$('#n1') ) ).to.be.true;
-    expect( cy.$('#n1, #n2').same( cy.$('#n1, #n2') ) ).to.be.true;
-    expect( cy.$('#n1').same( cy.$('#n1, #n2') ) ).to.be.false;
+    it('is false for different sets', function(){
+      expect( cy.$id('a').same( cy.$id('b') ) ).to.be.false;
+      expect( cy.$id('a').union( cy.$id('b') ).same( cy.$id('a') ) ).to.be.false;
+    });
   });
 
-  it('eles.anySame()', function(){
-    expect( cy.$('#n1').anySame( cy.$('#n1') ) ).to.be.true;
-    expect( cy.$('#n1, #n2').anySame( cy.$('#n1, #n2') ) ).to.be.true;
-    expect( cy.$('#n1').anySame( cy.$('#n1, #n2') ) ).to.be.true;
-    expect( cy.$('#n3').anySame( cy.$('#n1, #n3') ) ).to.be.true;
-    expect( cy.$('#n1n2, #n3').anySame( cy.$('#n1, #n3') ) ).to.be.true;
+  describe('eles.anySame()', function(){
+    it('is true on overlap', function(){
+      expect( cy.$id('a').union( cy.$id('b') ).anySame( cy.$id('b').union( cy.$id('c') ) ) ).to.be.true;
+    });
+
+    it('is false on disjoint sets', function(){
+      expect( cy.$id('a').anySame( cy.$id('b').union( cy.$id('c') ) ) ).to.be.false;
+    });
   });
 
-  it('eles.allAreNeighbors()', function(){
-    expect( cy.$('#n2').allAreNeighbors( cy.$('#n1, #n3') ) ).to.be.true;
-    expect( cy.$('#n1').allAreNeighbors( cy.$('#n2, #n3') ) ).to.be.false;
-    expect( cy.$('#n1').allAreNeighbors( cy.$('#n1n2, #n2') ) ).to.be.true;
+  describe('eles.contains()', function(){
+    it('is true for subsets', function(){
+      expect( cy.nodes().contains( cy.$id('a') ) ).to.be.true;
+      expect( cy.elements().has( cy.nodes() ) ).to.be.true;
+    });
+
+    it('is false otherwise', function(){
+      expect( cy.$id('a').contains( cy.nodes() ) ).to.be.false;
+    });
   });
 
-  it('eles.is()', function(){
-    expect( cy.$('#n1').is('node') ).to.be.true;
-    expect( cy.$('#n1n2').is('edge') ).to.be.true;
-    expect( cy.$('#n1n2, #n1').is('edge') ).to.be.true;
-    expect( cy.$('#n1n2, #n1').is('node') ).to.be.true;
+  describe('eles.allAre()', function(){
+    it('checks every element against a selector', function(){
+      expect( cy.nodes().allAre({ group: 'nodes' }) ).to.be.true;
+      expect( cy.elements().allAre({ group: 'nodes' }) ).to.be.false;
+      expect( cy.collection().allAre({ group: 'nodes' }) ).to.be.true; // vacuously true, as in v3
+    });
   });
 
-  it('eles.allAre()', function(){
-    expect( cy.$('#n1, #n2').allAre('node') ).to.be.true;
-    expect( cy.$('#n1, #n1n2').allAre('node') ).to.be.false;
+  describe('eles.some() / eles.every()', function(){
+    it('pass (ele, i, eles) to the callback', function(){
+      var nodes = cy.nodes();
+
+      nodes.some(function( ele, i, eles ){
+        expect( ele.isNode() ).to.be.true;
+        expect( i ).to.be.a('number');
+        expect( eles.same( nodes ) ).to.be.true;
+
+        return false; // visit them all
+      });
+
+      nodes.every(function( ele, i, eles ){
+        expect( ele.length ).to.equal(1);
+        expect( eles.length ).to.equal( nodes.length );
+
+        return true;
+      });
+    });
   });
 
-  it('eles.some()', function(){
-    expect( cy.edges().some(function( ele, i, eles ){
-      expect( is.elementOrCollection(ele) ).to.be.true;
-      expect( is.elementOrCollection(eles) ).to.be.true;
-      expect( is.number(i) ).to.be.true;
-
-      return ele.data('source') === 'n1';
-    }) ).to.be.true;
-
-    expect( cy.edges().some(function( ele, i, eles ){
-      expect( is.elementOrCollection(ele) ).to.be.true;
-      expect( is.elementOrCollection(eles) ).to.be.true;
-      expect( is.number(i) ).to.be.true;
-
-      return ele.data('source') === 'no-way-this-id-exists';
-    }) ).to.be.false;
-  });
-
-  it('eles.every()', function(){
-    expect( cy.edges().every(function( ele, i, eles ){
-      expect( is.elementOrCollection(ele) ).to.be.true;
-      expect( is.elementOrCollection(eles) ).to.be.true;
-      expect( is.number(i) ).to.be.true;
-
-      return ele.data('source') === 'n1';
-    }) ).to.be.false;
-
-    expect( cy.edges().every(function( ele, i, eles ){
-      expect( is.elementOrCollection(ele) ).to.be.true;
-      expect( is.elementOrCollection(eles) ).to.be.true;
-      expect( is.number(i) ).to.be.true;
-
-      return ele.isEdge();
-    }) ).to.be.true;
-  });
-
-  it('eles.contains()', function(){
-    expect( cy.$('#n1, #n2').contains('#n1') ).to.be.true;
-    expect( cy.$('#n1, #n2').contains( cy.$('#n1') ) ).to.be.true;
-    expect( cy.$('#n1, #n2').contains('#n2') ).to.be.true;
-    expect( cy.$('#n1, #n2').contains( cy.$('#n2') ) ).to.be.true;
-    expect( cy.$('#n1, #n2').contains('#n3') ).to.be.false;
-    expect( cy.$('#n1, #n2').contains( cy.$('#n3') ) ).to.be.false;
+  describe('eles.is()', function(){
+    it('checks whether any element matches', function(){
+      expect( cy.elements().is({ group: 'edges' }) ).to.be.true;
+      expect( cy.nodes().is({ group: 'edges' }) ).to.be.false;
+      expect( cy.nodes().is({ selected: true }) ).to.be.true;
+    });
   });
 
 });

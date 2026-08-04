@@ -1,3 +1,14 @@
+# NOT YET ADAPTED FOR v4 (round 42).
+#
+# This workflow is v3's release engineering: it deploys the docs site from
+# `documentation/` and builds the artifacts `npm run release` used to produce
+# at the repo root.  Round 42 moved both under `v3/`, so the paths below no
+# longer resolve — deliberately left failing rather than half-repointed,
+# because a workflow that publishes the v4 package while deploying v3's docs
+# would read as adapted while being wrong.
+#
+# Round 49 ("release engineering") adapts these for the 4.x line: version
+# scripts, `pre_release_test.sh`, the v4 artifacts and the v4 docs deploy.
 name: Patch Release
 
 on:

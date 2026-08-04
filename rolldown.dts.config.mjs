@@ -1,5 +1,7 @@
 // Bundles the per-module declarations emitted from source into a single
-// dist .d.ts, mirroring the old hand-written index.d.ts shape.
+// dist .d.ts for the package entry point.  v4 is ESM-first, so the generated
+// ESM shape is what ships; `build-dts.mjs` only adds the UMD global name for
+// script-tag consumers.
 import { dts } from 'rolldown-plugin-dts';
 
 const resolve = {

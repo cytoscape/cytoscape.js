@@ -1,321 +1,237 @@
-import * as util from './util/index.mjs';
-import * as is from './is.mjs';
-import Event, { type EventProps } from './event.mjs';
+import { GpuEvent } from './event.mjs';
+import type { GpuEventProps } from './event.mjs';
 
-const eventRegex = /^([^.]+)(\.(?:[^.]+))?$/; // regex for matching event strings (e.g. "click.namespace")
-const universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
+/*
+v4's emitter (round 41.2), replacing the shared v3 `src/emitter.mts` — the
+last module `src/gpu` imported from outside itself, and so a precondition of
+the round-42 restructure.
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- handlers accept arbitrary extra emit params
-export type EventHandler = ( this: any, event: Event, ...extraParams: any[] ) => unknown;
+It is the same *model* the core already used: one emitter per core, holding
+every listener — core, delegated and per-element — told apart by a
+qualifier, with the matching rules injected by `events.mts`.  What is gone:
 
+  - **namespaces**, machinery and all.  v3 splits every registered and every
+    emitted name on `.` and matches type and namespace separately.  v4's
+    design has said "no namespaces" since round 9, but importing v3's
+    emitter meant importing its parser, so a hand-emitted `'tap.ns'` behaved
+    exactly as in v3 until this round (measured 37.4).  Here a name is a
+    name: `'tap.ns'` is a type, matched whole.
+  - **`bubble`/`parent`**, which v4 never used — compound bubbling is a phase
+    walk driven by the core (round 14.5), not emitter recursion.
+  - **the `manualCallback` emit argument**, unused by v4.
+  - **the function-in-qualifier-position shorthand**: every v4 call site
+    passes the qualifier explicitly (`null` when there is none), so the
+    argument shifting v3 does for `on( 'tap', cb )` is unnecessary here — and
+    ambiguity is what let a v3-style selector string reach the emitter and
+    detonate one event later, before 29.3 closed it.
+
+What is deliberately kept, because behaviour depends on it: the listener
+snapshot at emit time (a handler that registers another listener does not
+see it fire for the same event), the copy-on-`off`-during-emit, `one`
+removing before the callback runs, and a handler returning `false` meaning
+`stopPropagation()`.
+*/
+
+/** An event handler.  `this` is the callback context the emitter's options
+ * choose — the core, or the phase element during compound bubbling. */
+export type EventHandler = ( this: unknown, event: GpuEvent, ...extraParams: unknown[] ) => unknown;
+
+/** A registered listener. */
 export interface Listener<TQualifier = unknown> {
-  event: string | undefined; // full event string
-  callback: EventHandler; // callback to run
-  type: string; // the event type (e.g. 'click')
-  namespace: string | null | undefined; // the event namespace (e.g. ".foo")
-  qualifier?: TQualifier | null; // a restriction on whether to match this emitter
-  conf?: ListenerConf | null; // additional configuration
-}
-
-export interface ListenerConf {
+  /** the event type, matched whole (no namespace splitting) */
+  type: string;
+  callback: EventHandler;
+  /** what restricts this listener — an element ref or a predicate */
+  qualifier?: TQualifier | null;
+  /** remove after the first matching emit */
   one?: boolean;
 }
 
-/** Something an event can bubble up to: it can emit further. */
-interface ParentEmitTarget {
-  emit( events: Event, extraParams?: unknown[] ): unknown;
+/** The hooks that make one emitter behave as v4's qualified-listener model;
+ * `events.mts` supplies all four. */
+export interface GpuEmitterOptions<TContext, TQualifier> {
+  /** the emitter context — the core */
+  context: TContext;
+  /** whether two qualifiers denote the same restriction, for `off()` */
+  qualifierCompare( q1: TQualifier | null | undefined, q2: TQualifier | null | undefined ): boolean;
+  /** whether this listener should fire for this event (the phase rules) */
+  eventMatches( context: TContext, listener: Listener<TQualifier>, event: GpuEvent ): boolean;
+  /** fill in fields every event carries (`cy`, a default `target`) */
+  addEventFields( context: TContext, props: GpuEventProps ): void;
+  /** what `this` is inside the callback (v3's currentTarget semantics) */
+  callbackContext( context: TContext, listener: Listener<TQualifier>, event: GpuEvent ): unknown;
 }
 
-export interface EmitterOptions<TContext, TQualifier = unknown> {
-  qualifierCompare?( q1: TQualifier | null | undefined, q2: TQualifier | null | undefined ): boolean;
-  eventMatches?( context: TContext, listener: Listener<TQualifier>, eventObj: Event ): boolean;
-  addEventFields?( context: TContext, evt: EventProps ): void;
-  callbackContext?( context: TContext, listener: Listener<TQualifier>, eventObj: Event ): unknown;
-  beforeEmit?( context: TContext, listener: Listener<TQualifier>, eventObj: Event ): void;
-  afterEmit?( context: TContext, listener: Listener<TQualifier>, eventObj: Event ): void;
-  bubble?( context: TContext ): boolean;
-  parent?( context: TContext ): ParentEmitTarget | null;
-  context?: TContext;
-}
+/** Anything `emit()` accepts: one or more space-separated type names, a
+ * props object, or an already-built event (the bubbling walk re-emits one). */
+export type EmitInput = string | GpuEventProps | GpuEvent;
 
-const defaults = {
-  qualifierCompare: function( q1: unknown, q2: unknown ){
-    return q1 === q2;
-  },
-  eventMatches: function( /*context, listener, eventObj*/ ){
-    return true;
-  },
-  addEventFields: function( /*context, evt*/ ){
-  },
-  callbackContext: function( context: unknown/*, listener, eventObj*/ ){
-    return context;
-  },
-  beforeEmit: function(/* context, listener, eventObj */){
-  },
-  afterEmit: function(/* context, listener, eventObj */){
-  },
-  bubble: function( /*context*/ ){
-    return false;
-  },
-  parent: function( /*context*/ ){
-    return null;
-  },
-  context: null
+/** Split a `'tap drag'` list into names, ignoring empty entries. */
+const typesOf = ( events: string ): string[] => {
+  return events.split( /\s+/ ).filter( s => s.length > 0 );
 };
 
-let defaultsKeys = Object.keys( defaults ) as ( keyof typeof defaults )[];
-let emptyOpts = {};
+/**
+ * The one emitter a v4 core owns (round 41.2).
+ *
+ * @see makeCoreEmitter in `events.mts`, which is the only place one is built
+ */
+export class GpuEmitter<TContext = unknown, TQualifier = unknown> {
+  /** every listener on this core, in registration order */
+  listeners: Listener<TQualifier>[] = [];
+  /** emit depth, so `off()` during an emit copies rather than mutates */
+  emitting = 0;
 
-export type EmitInput = string | string[] | Event | EventProps;
+  private opts: GpuEmitterOptions<TContext, TQualifier>;
 
-class Emitter<TContext = unknown, TQualifier = unknown> {
-  declare qualifierCompare: ( q1: TQualifier | null | undefined, q2: TQualifier | null | undefined ) => boolean;
-  declare eventMatches: ( context: TContext, listener: Listener<TQualifier>, eventObj: Event ) => boolean;
-  declare addEventFields: ( context: TContext, evt: EventProps ) => void;
-  declare callbackContext: ( context: TContext, listener: Listener<TQualifier>, eventObj: Event ) => unknown;
-  declare beforeEmit: ( context: TContext, listener: Listener<TQualifier>, eventObj: Event ) => void;
-  declare afterEmit: ( context: TContext, listener: Listener<TQualifier>, eventObj: Event ) => void;
-  declare bubble: ( context: TContext ) => boolean;
-  declare parent: ( context: TContext ) => ParentEmitTarget | null;
-  declare context: TContext;
-
-  listeners: Listener<TQualifier>[];
-  emitting: number;
-
-  constructor( opts: EmitterOptions<TContext, TQualifier> = emptyOpts, context?: TContext ){
-    // micro-optimisation vs Object.assign() -- reduces Element instantiation time
-    for( let i = 0; i < defaultsKeys.length; i++ ){
-      let key = defaultsKeys[i];
-
-      // dynamic per-key merge of opts over defaults; precisely typed per-field above
-      ( this as Record<string, unknown> )[key] = ( opts as Record<string, unknown> )[key] || defaults[key];
-    }
-
-    this.context = context || this.context;
-    this.listeners = [];
-    this.emitting = 0;
+  /**
+   * @param opts — the context and the four matching hooks
+   */
+  constructor( opts: GpuEmitterOptions<TContext, TQualifier> ){
+    this.opts = opts;
   }
 
-  on( events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null, confOverrides?: ListenerConf ): this {
-    forEachEvent( this, function( self, event, type, namespace, qualifier, callback, conf ){
-      if( is.fn( callback ) ){
-        self.listeners.push( {
-          event: event, // full event string
-          callback: callback, // callback to run
-          type: type, // the event type (e.g. 'click')
-          namespace: namespace, // the event namespace (e.g. ".foo")
-          qualifier: qualifier, // a restriction on whether to match this emitter
-          conf: conf // additional configuration
-        } );
+  /**
+   * Register a listener for one or more space-separated event names.
+   *
+   * @param events — the name(s); any name is legal, and one v4 never emits
+   *   simply never fires
+   * @param qualifier — the restriction, or null for an unqualified listener
+   * @param callback — the handler; a non-function is ignored, so
+   *   `cy.on( 'tap' )` registers nothing rather than throwing
+   * @param one — remove the listener after its first matching emit
+   * @returns this emitter
+   */
+  on(
+    events: string, qualifier?: TQualifier | null, callback?: EventHandler, one?: boolean
+  ): this {
+    if( typeof callback !== 'function' ){ return this; }
+
+    for( const type of typesOf( events ) ){
+      this.listeners.push( { type, callback, qualifier, one } );
+    }
+
+    return this;
+  }
+
+  /**
+   * Register a listener that fires at most once.
+   *
+   * @param events — the name(s)
+   * @param qualifier — the restriction, or null
+   * @param callback — the handler
+   * @returns this emitter
+   */
+  one( events: string, qualifier?: TQualifier | null, callback?: EventHandler ): this {
+    return this.on( events, qualifier, callback, true );
+  }
+
+  /**
+   * Remove listeners.  A listener matches when its type matches (or `events`
+   * is `'*'`), its qualifier compares equal (when one is given), and its
+   * callback is identical (when one is given).
+   *
+   * @param events — the name(s), or `'*'` for every type
+   * @param qualifier — restrict the removal to this qualifier
+   * @param callback — restrict the removal to this handler
+   * @returns this emitter
+   */
+  off( events: string, qualifier?: TQualifier | null, callback?: EventHandler ): this {
+    // a handler removing listeners mid-emit must not shrink the array the
+    // emit loop is walking
+    if( this.emitting !== 0 ){ this.listeners = this.listeners.slice(); }
+
+    const all = events === '*';
+    const types = all ? [] : typesOf( events );
+
+    this.listeners = this.listeners.filter( listener => {
+      const typeMatches = all || types.includes( listener.type );
+
+      if( !typeMatches ){ return true; }
+      if( qualifier != null && !this.opts.qualifierCompare( listener.qualifier, qualifier ) ){
+        return true;
       }
-    }, events, qualifier, callback, conf, confOverrides );
+      if( callback != null && listener.callback !== callback ){ return true; }
+
+      return false; // matched: drop it
+    } );
 
     return this;
   }
 
-  declare addListener: this['on'];
-
-  one( events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null ): this {
-    return this.on( events, qualifier, callback, conf, { one: true } );
-  }
-
-  off( events: string | string[], qualifier?: TQualifier | EventHandler | null, callback?: EventHandler, conf?: ListenerConf | null ): this {
-    if( this.emitting !== 0 ){
-      this.listeners = util.copyArray( this.listeners );
-    }
-
-    let listeners = this.listeners;
-
-    for( let i = listeners.length - 1; i >= 0; i-- ){
-      let listener = listeners[i];
-
-      forEachEvent( this, function( self, event, type, namespace, qualifier, callback/*, conf*/ ){
-        if(
-          ( listener.type === type || events === '*' ) &&
-          ( (!namespace && listener.namespace !== '.*') || listener.namespace === namespace ) &&
-          ( !qualifier || self.qualifierCompare( listener.qualifier, qualifier ) ) &&
-          ( !callback || listener.callback === callback )
-        ){
-          listeners.splice( i, 1 );
-
-          return false;
-        }
-      }, events, qualifier, callback, conf );
-    }
-
-    return this;
-  }
-
-  declare removeListener: this['off'];
-
+  /**
+   * Remove every listener on this core.
+   *
+   * @returns this emitter
+   */
   removeAllListeners(): this {
-    return this.off('*'); // removeListener === off (alias)
+    return this.off( '*' );
   }
 
-  emit( events: EmitInput, extraParams?: unknown, manualCallback?: EventHandler ): this {
-    let listeners = this.listeners;
-    let numListenersBeforeEmit = listeners.length;
+  /**
+   * Emit one or more events.
+   *
+   * @param events — space-separated names, a props object, or a built event
+   * @param extraParams — extra arguments passed to each handler after the
+   *   event; a non-array is wrapped
+   * @returns this emitter
+   */
+  emit( events: EmitInput, extraParams?: unknown ): this {
+    const extra = Array.isArray( extraParams ) ? extraParams
+      : extraParams === undefined ? [] : [ extraParams ];
 
     this.emitting++;
 
-    if( !is.array( extraParams ) ){
-      extraParams = [ extraParams ];
+    try {
+      if( events instanceof GpuEvent ){
+        this.emitOne( events, extra );
+      } else if( typeof events === 'object' && events !== null ){
+        this.emitOne( this.build( events ), extra );
+      } else {
+        for( const type of typesOf( events ) ){
+          this.emitOne( this.build( { type } ), extra );
+        }
+      }
+    } finally {
+      this.emitting--;
     }
-
-    forEachEventObj( this, function( self, eventObj ){
-      if( manualCallback != null ){
-        listeners = [{
-          event: ( eventObj as Event & { event?: string } ).event,
-          type: eventObj.type,
-          namespace: eventObj.namespace,
-          callback: manualCallback
-        }];
-
-        numListenersBeforeEmit = listeners.length;
-      }
-
-      for( let i = 0; i < numListenersBeforeEmit; i++ ){
-        let listener = listeners[i];
-
-        if(
-          ( listener.type === eventObj.type ) &&
-          ( !listener.namespace || listener.namespace === eventObj.namespace || listener.namespace === universalNamespace ) &&
-          ( self.eventMatches( self.context, listener, eventObj ) )
-        ){
-          let args: unknown[] = [ eventObj ];
-
-          if( extraParams != null ){
-            util.push( args, extraParams as unknown[] );
-          }
-
-          self.beforeEmit( self.context, listener, eventObj );
-
-          if( listener.conf && listener.conf.one ){
-            self.listeners = self.listeners.filter( l => l !== listener );
-          }
-
-          let context = self.callbackContext( self.context, listener, eventObj );
-          let ret = listener.callback.apply( context, args as [ Event, ...unknown[] ] );
-
-          self.afterEmit( self.context, listener, eventObj );
-
-          if( ret === false ){
-            eventObj.stopPropagation();
-            eventObj.preventDefault();
-          }
-        } // if listener matches
-      } // for listener
-
-      if( self.bubble( self.context ) && !eventObj.isPropagationStopped() ){
-        self.parent( self.context )!.emit( eventObj, extraParams as unknown[] );
-      }
-    }, events );
-
-    this.emitting--;
 
     return this;
   }
 
-  declare trigger: this['emit'];
+  /** Build an event from props, letting the options fill in `cy`/`target`. */
+  private build( props: GpuEventProps ): GpuEvent {
+    this.opts.addEventFields( this.opts.context, props );
+
+    return new GpuEvent( props );
+  }
+
+  /** Run one event past the listener list as it stood when the emit began. */
+  private emitOne( event: GpuEvent, extra: unknown[] ): void {
+    const listeners = this.listeners;
+    // the snapshot: a handler registering another listener for the same type
+    // does not have it fire for *this* event (v3's semantics, and what keeps
+    // an `on` inside a handler from looping)
+    const count = listeners.length;
+
+    for( let i = 0; i < count; i++ ){
+      const listener = listeners[ i ];
+
+      if( listener.type !== event.type ){ continue; }
+      if( !this.opts.eventMatches( this.opts.context, listener, event ) ){ continue; }
+
+      // `one` removes before the call, so a handler that re-registers works
+      if( listener.one ){ this.listeners = this.listeners.filter( l => l !== listener ); }
+
+      const context = this.opts.callbackContext( this.opts.context, listener, event );
+      const ret = listener.callback.apply( context, [ event, ...extra ] );
+
+      if( ret === false ){
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    }
+  }
 }
 
-Emitter.prototype.addListener = Emitter.prototype.on;
-Emitter.prototype.removeListener = Emitter.prototype.off;
-Emitter.prototype.trigger = Emitter.prototype.emit;
-
-type ForEachEventHandler<TContext, TQualifier> = (
-  self: Emitter<TContext, TQualifier>,
-  event: string,
-  type: string,
-  namespace: string | null,
-  qualifier: TQualifier | null | undefined,
-  callback: EventHandler | undefined,
-  conf: ListenerConf | null | undefined
-) => boolean | void;
-
-let forEachEvent = function<TContext, TQualifier>(
-  self: Emitter<TContext, TQualifier>,
-  handler: ForEachEventHandler<TContext, TQualifier>,
-  events: string | string[],
-  qualifier: TQualifier | EventHandler | null | undefined,
-  callback: EventHandler | undefined,
-  conf: ListenerConf | null | undefined,
-  confOverrides?: ListenerConf
-): void {
-  if( is.fn( qualifier ) ){
-    callback = qualifier as EventHandler;
-    qualifier = null;
-  }
-
-  if( confOverrides ){
-    if( conf == null ){
-      conf = confOverrides;
-    } else {
-      conf = util.assign( {}, conf, confOverrides );
-    }
-  }
-
-  let eventList = is.array(events) ? events : events.split(/\s+/);
-
-  for( let i = 0; i < eventList.length; i++ ){
-    let evt = eventList[i];
-
-    if( is.emptyString( evt ) ){ continue; }
-
-    let match = evt.match( eventRegex ); // type[.namespace]
-
-    if( match ){
-      let type = match[1];
-      let namespace = match[2] ? match[2] : null;
-      let ret = handler( self, evt, type, namespace, qualifier as TQualifier | null | undefined, callback, conf );
-
-      if( ret === false ){ break; } // allow exiting early
-    }
-  }
-};
-
-let makeEventObj = function<TContext, TQualifier>( self: Emitter<TContext, TQualifier>, obj: EventProps ): Event {
-  self.addEventFields( self.context, obj );
-
-  return new Event( obj.type, obj );
-};
-
-let forEachEventObj = function<TContext, TQualifier>(
-  self: Emitter<TContext, TQualifier>,
-  handler: ( self: Emitter<TContext, TQualifier>, eventObj: Event ) => void,
-  events: EmitInput
-): void {
-  if( is.event( events ) ){
-    handler( self, events );
-
-    return;
-  } else if( is.plainObject( events ) ){
-    handler( self, makeEventObj( self, events ) );
-
-    return;
-  }
-
-  let eventList = is.array(events) ? events : ( events as string ).split(/\s+/);
-
-  for( let i = 0; i < eventList.length; i++ ){
-    let evt = eventList[i] as string;
-
-    if( is.emptyString( evt ) ){ continue; }
-
-    let match = evt.match( eventRegex ); // type[.namespace]
-
-    if( match ){
-      let type = match[1];
-      let namespace = match[2] ? match[2] : null;
-      let eventObj = makeEventObj( self, {
-        type: type,
-        namespace: namespace,
-        target: self.context
-      } );
-
-      handler( self, eventObj );
-    }
-  }
-};
-
-export default Emitter;
+export default GpuEmitter;

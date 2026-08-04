@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# NOT YET ADAPTED FOR v4 (round 42): the documentation/ and dist/ paths below
+# are v3's, now under v3/.  Round 49 adapts this for the 4.x line.
+
 # Make script exit on first failure
 set -e
 

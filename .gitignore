@@ -7,15 +7,19 @@ npm-debug.log
 build
 build/*
 build/**
-documentation/slimerjs-*/**
-documentation/api/**
-documentation/download/*.zip
-benchmark/suite/cytoscape.js
-benchmark/gpu/results/
+v3/build
+v3/build/*
+v3/build/**
+v3/node_modules
+v3/documentation/slimerjs-*/**
+v3/documentation/api/**
+v3/documentation/download/*.zip
+v3/benchmark/suite/cytoscape.js
+benchmark/results/
 *.tsbuildinfo
 
-# Playwright
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
+# Playwright (both projects)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

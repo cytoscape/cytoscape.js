@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; }
+      #stage { width: 100vw; height: 100vh; background: #fff; }
+    </style>
+
+    <script src="../../build/cytoscape.umd.js"></script>
+    <script src="../../build/cytoscape-gpu.umd.js"></script>
+
+    <title>cytoscape.js renderer benchmark page</title>
+  </head>
+
+  <body>
+    <div id="stage"></div>
+
+    <script>
+      // In-page half of the renderer benchmark (driven by render-bench.mjs
+      // over Playwright).  One instance lives at a time on #stage; the
+      // runner calls loadScene → createInstance → pan/pick/export steps →
+      // destroyInstance per (scene, side, labels) combination.
+      //
+      // Frame sampling: the drive loop calls cy.panBy() every rAF (the
+      // model behind the "continuous-pan steady state" numbers in
+      // PLAN.md).  Wall frame time is the rAF-to-rAF delta per *rendered*
+      // frame — on the gpu side rendered frames come from
+      // renderer.stats().frames (backpressure may skip rAF ticks), on the
+      // v3 side the synchronous canvas draw runs inside the tick, so the
+      // tick delta is the frame time.  gpu 'device' samples read
+      // stats().gpuFrameMs (timestamp-query; 0 when unsupported),
+      // deduped on change since readback lags a frame or two.
+      ( function(){
+        'use strict';
+
+        const stage = document.getElementById( 'stage' );
+
+        // deterministic PRNG so generated scenes are identical across runs
+        function mulberry32( seed ){
+          let a = seed >>> 0;
+
+          return function(){
+            a |= 0; a = ( a + 0x6d2b79f5 ) | 0;
+            let t = Math.imul( a ^ ( a >>> 15 ), 1 | a );
+
+            t = ( t + Math.imul( t ^ ( t >>> 7 ), 61 | t ) ) ^ t;
+
+            return ( ( t ^ ( t >>> 14 ) ) >>> 0 ) / 4294967296;
+          };
+        }
+
+        const V4_BASE_STYLE = {
+          nodes: { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' },
+          edges: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 }
+        };
+        const V4_LABELS = { 'label': 'data(id)', 'font-size': 10, 'color': '#333' };
+
+        // round 33.11: the wrapped-label scene's text, long enough to
+        // break over several lines at the max width below
+        const WRAP_LABEL = 'node label long enough to wrap';
+        const WRAP_MAX_WIDTH = 40;
+
+        function v3Style( labels, spec = {} ){
+          const node = { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' };
+
+          if( labels ){ Object.assign( node, { 'label': 'data(id)', 'font-size': 10, 'color': '#333' } ); }
+
+          // round 25.6 recorded wrapped labels as the expensive label
+          // configuration (they re-break per tick under a font-size
+          // tween); this scene is its device-side counterpart
+          if( spec.wrap === true && labels ){
+            Object.assign( node, {
+              'label': WRAP_LABEL, 'text-wrap': 'wrap', 'text-max-width': WRAP_MAX_WIDTH
+            } );
+          }
+
+          const blocks = [
+            { selector: 'node', style: node },
+            { selector: 'edge', style: { 'width': 1, 'line-color': '#bbb', 'opacity': 0.6 } }
+          ];
+
+          // round 22's paint-only invisibility + round 20.2's pointer
+          // transparency, on half the nodes each
+          if( spec.invisible === true ){
+            blocks.push( { selector: 'node[hidden = 1]', style: { 'visibility': 'hidden' } } );
+            blocks.push( { selector: 'node[inert = 1]', style: { 'events': 'no' } } );
+          }
+
+          return blocks;
+        }
+
+        // four 32px icon data-uris built once at runtime (round 15.7)
+        let iconUris = null;
+
+        function icons(){
+          if( iconUris != null ){ return iconUris; }
+
+          const colors = [ '#e74c3c', '#27ae60', '#2980b9', '#f39c12' ];
+
+          iconUris = colors.map( ( color, i ) => {
+            const canvas = document.createElement( 'canvas' );
+
+            canvas.width = canvas.height = 32;
+
+            const ctx = canvas.getContext( '2d' );
+
+            ctx.fillStyle = color;
+
+            if( i % 2 === 0 ){ ctx.beginPath(); ctx.arc( 16, 16, 13, 0, Math.PI * 2 ); ctx.fill(); }
+            else { ctx.fillRect( 4, 4, 24, 24 ); }
+
+            return canvas.toDataURL();
+          } );
+
+          return iconUris;
+        }
+
+        let scene = null; // { spec, make() -> fresh { nodes, edges } defs }
+        let cy = null;
+        let side = null; // 'v3' | 'gpu'
+
+        function genScene( spec ){
+          return function(){
+            const rand = mulberry32( 42 );
+            const side_ = Math.ceil( Math.sqrt( spec.n ) ) * 50;
+            const nodes = [];
+            const edges = [];
+            // parallel > 1: edges come in parallel bundles of that size —
+            // the curved scenes need real bundles, since a lone bezier
+            // edge renders straight (the v3 rule both sides implement)
+            const parallel = spec.parallel ?? 1;
+            // compound > 0: that many parents, leaves assigned round-robin
+            // (round 14.12 — both sides run their default parent styling
+            // and auto-bounds over identical hierarchies)
+            const parents = spec.compound ?? 0;
+            // images: icon-per-type via a data key (round 15.7) — four
+            // types, styled through the url mapper on the gpu side and
+            // type selectors on the v3 side
+            const images = spec.images === true;
+
+            for( let p = 0; p < parents; p++ ){
+              nodes.push( { data: { id: 'p' + p } } );
+            }
+
+            // compound scenes cluster leaves per parent so parent boxes
+            // stay local (scattered members would make every parent span
+            // the whole graph — overdraw, not a representative scene)
+            const cols = parents > 0 ? Math.ceil( Math.sqrt( parents ) ) : 0;
+
+            for( let i = 0; i < spec.n; i++ ){
+              const c = parents > 0 ? i % parents : 0;
+
+              const data = parents > 0
+                ? { id: 'n' + i, parent: 'p' + c }
+                : { id: 'n' + i };
+
+              if( images ){ data.itype = i & 3; }
+
+              // round 33.11: half invisible, half pointer-transparent —
+              // the two flags cull and pick differently, so they are
+              // independent
+              if( spec.invisible === true ){
+                data.hidden = i & 1;
+                data.inert = ( i >> 1 ) & 1;
+              }
+
+              nodes.push( {
+                data,
+                position: parents > 0
+                  ? { x: ( c % cols ) * 420 + rand() * 320, y: Math.floor( c / cols ) * 420 + rand() * 320 }
+                  : { x: rand() * side_, y: rand() * side_ }
+              } );
+            }
+
+            for( let j = 0; j < spec.m; j += parallel ){
+              const source = 'n' + Math.floor( rand() * spec.n );
+              const target = 'n' + Math.floor( rand() * spec.n );
+
+              for( let k = 0; k < parallel && j + k < spec.m; k++ ){
+                edges.push( { data: { id: 'e' + ( j + k ), source, target } } );
+              }
+            }
+
+            return { nodes, edges };
+          };
+        }
+
+        function ndexScene( spec, json ){
+          // strip to id/source/target + position so both sides load the
+          // same lean defs (the fixture's data sidecar and stylesheet are
+          // not part of what this benchmark measures)
+          const nodes = json.elements.nodes.map( n => ( {
+            data: { id: String( n.data.id ) },
+            position: { x: n.position.x, y: n.position.y }
+          } ) );
+          const edges = json.elements.edges.map( e => ( { data: {
+            id: String( e.data.id ),
+            source: String( e.data.source ),
+            target: String( e.data.target )
+          } } ) );
+
+          return function(){
+            return {
+              nodes: nodes.map( n => ( { data: { id: n.data.id }, position: { x: n.position.x, y: n.position.y } } ) ),
+              edges: edges.map( e => ( { data: { id: e.data.id, source: e.data.source, target: e.data.target } } ) )
+            };
+          };
+        }
+
+        async function loadScene( spec ){
+          if( spec.url != null ){
+            const json = await ( await fetch( spec.url ) ).json();
+
+            scene = { spec, make: ndexScene( spec, json ) };
+          } else {
+            scene = { spec, make: genScene( spec ) };
+          }
+
+          const counts = scene.make();
+
+          return { nodes: counts.nodes.length, edges: counts.edges.length };
+        }
+
+        const raf = () => new Promise( res => requestAnimationFrame( res ) );
+
+        async function createInstance( which, labels, form ){
+          side = which;
+
+          const defs = scene.make(); // fresh defs; both factories mutate/adopt
+          let convertMs = 0;
+          const t0 = performance.now();
+
+          const curved = scene.spec.curved === true;
+
+          if( which === 'v3' ){
+            const style = v3Style( labels, scene.spec );
+
+            // both sides opt into bundled bezier explicitly on curved scenes
+            style[ 1 ].style[ 'curve-style' ] = curved ? 'bezier' : 'straight';
+
+            if( scene.spec.images === true ){
+              icons().forEach( ( uri, k ) => {
+                style.push( { selector: 'node[itype = ' + k + ']', style: {
+                  'background-image': uri, 'background-fit': 'contain'
+                } } );
+              } );
+            }
+
+            cy = cytoscape( {
+              container: stage,
+              elements: defs,
+              style,
+              layout: { name: 'preset' }
+            } );
+
+            await new Promise( res => cy.ready( res ) );
+          } else {
+            let elements = defs;
+
+            if( form === 'columnar' ){
+              const c0 = performance.now();
+
+              elements = cytoscape.toColumnarElements( defs );
+              convertMs = performance.now() - c0;
+            }
+
+            let nodesStyle = labels ? Object.assign( {}, V4_BASE_STYLE.nodes, V4_LABELS ) : V4_BASE_STYLE.nodes;
+
+            if( scene.spec.images === true ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                'background-image': { data: 'itype', scale: 'ordinal', domain: [ 0, 1, 2, 3 ], range: icons() },
+                'background-fit': 'contain'
+              } );
+            }
+
+            if( scene.spec.wrap === true && labels ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                'label': WRAP_LABEL, 'text-wrap': 'wrap', 'text-max-width': WRAP_MAX_WIDTH
+              } );
+            }
+
+            // v4 has no selectors: the same per-element variation is a
+            // `case` mapper, which is the decided replacement
+            if( scene.spec.invisible === true ){
+              nodesStyle = Object.assign( {}, nodesStyle, {
+                'visibility': { case: [ { when: { data: 'hidden', eq: 1 }, then: 'hidden' } ], else: 'visible' },
+                'events': { case: [ { when: { data: 'inert', eq: 1 }, then: 'no' } ], else: 'yes' }
+              } );
+            }
+
+            const edgesStyle = curved
+              ? Object.assign( {}, V4_BASE_STYLE.edges, { 'curve-style': 'bezier' } )
+              : V4_BASE_STYLE.edges;
+
+            cy = cytoscape( {
+              container: stage,
+              elements,
+              style: { nodes: nodesStyle, edges: edgesStyle },
+              // pin the adaptive render scale: this benchmark measures raw
+              // scene cost at native resolution
+              renderer: { renderScaleMin: 1, renderScaleMax: 1 }
+            } );
+
+            await cy.ready;
+          }
+
+          const initMs = performance.now() - t0;
+
+          window.cy = cy;
+          await raf(); await raf(); // settle the first paint
+
+          return { initMs, convertMs };
+        }
+
+        function destroyInstance(){
+          if( cy != null ){ cy.destroy(); cy = null; }
+        }
+
+        function applyView( view ){
+          cy.fit( undefined, 30 );
+
+          if( view === 'fit-all' ){ return; }
+
+          const z0 = cy.zoom();
+          const z = view === 'zoomed-in' ? z0 * 20 : z0 / 8;
+          const bb = cy.elements().boundingBox();
+          const cx = ( bb.x1 + bb.x2 ) / 2;
+          const cyy = ( bb.y1 + bb.y2 ) / 2;
+
+          cy.viewport( {
+            zoom: z,
+            pan: { x: cy.width() / 2 - z * cx, y: cy.height() / 2 - z * cyy }
+          } );
+        }
+
+        // continuous-pan steady state: warm up, then sample wall time per
+        // rendered frame (and gpu device time on the gpu side) until the
+        // window and a minimum frame count are both met
+        async function panScenario( view, opts ){
+          opts = opts || {};
+
+          const warmupMs = opts.warmupMs ?? 700;
+          const windowMs = opts.windowMs ?? 2000;
+          const maxMs = opts.maxMs ?? 8000;
+          const minFrames = opts.minFrames ?? 12;
+          const step = opts.step ?? 3;
+
+          applyView( view );
+
+          const isGpu = side === 'gpu';
+          const stats = isGpu ? () => cy.renderer().stats() : null;
+          const wallMs = [];
+          const gpuMs = [];
+          let dir = 1;
+          let tick = 0;
+          let lastGpu = -1;
+
+          await raf();
+
+          const start = performance.now();
+          let lastFrameT = start;
+          let lastFrames = isGpu ? stats().frames : 0;
+
+          for( ;; ){
+            cy.panBy( { x: dir * step, y: 0 } );
+
+            if( ( ++tick % 90 ) === 0 ){ dir = -dir; } // stay bounded
+
+            await raf();
+
+            const now = performance.now();
+            const elapsed = now - start;
+            const frames = isGpu ? stats().frames : tick;
+            const k = frames - lastFrames;
+
+            if( k > 0 ){
+              if( elapsed > warmupMs ){
+                const per = ( now - lastFrameT ) / k;
+
+                for( let i = 0; i < k; i++ ){ wallMs.push( per ); }
+              }
+
+              lastFrames = frames;
+              lastFrameT = now;
+            }
+
+            if( isGpu && elapsed > warmupMs ){
+              const g = stats().gpuFrameMs;
+
+              if( g > 0 && g !== lastGpu ){ gpuMs.push( g ); lastGpu = g; }
+            }
+
+            if( elapsed >= maxMs ){ break; }
+            if( elapsed >= warmupMs + windowMs && wallMs.length >= minFrames ){ break; }
+          }
+
+          return {
+            wallMs, gpuMs,
+            frames: wallMs.length,
+            elapsedMs: performance.now() - start,
+            renderScale: isGpu ? stats().renderScale : 1
+          };
+        }
+
+        // hover-while-panning pick latency (gpu only): keep the pan drive
+        // running and issue cy.pick() round-trips at rotating positions
+        async function pickScenario( opts ){
+          opts = opts || {};
+
+          const picks = opts.picks ?? 25;
+          const gapMs = opts.gapMs ?? 120;
+          const maxMs = opts.maxMs ?? 10000;
+
+          applyView( 'fit-all' );
+
+          const w = cy.width();
+          const h = cy.height();
+          const points = [ 0.3, 0.4, 0.5, 0.6, 0.7 ].map( f => ( { x: w * f, y: h * f } ) );
+          const latencies = [];
+          // nulls are *background* answers (probe points over empty space /
+          // decimated far-zoom edges): a saturated staging ring defers a
+          // request to a later frame — counted in stats().pickDeferrals —
+          // and never resolves it null
+          let nulls = 0;
+          const deferrals0 = cy.renderer().stats().pickDeferrals ?? 0;
+          let dir = 1;
+          let tick = 0;
+          let lastPick = 0;
+          let pending = null;
+
+          const start = performance.now();
+
+          while( latencies.length < picks && performance.now() - start < maxMs ){
+            cy.panBy( { x: dir * 3, y: 0 } );
+
+            if( ( ++tick % 90 ) === 0 ){ dir = -dir; }
+
+            const now = performance.now();
+
+            if( pending == null && now - lastPick >= gapMs ){
+              const p = points[ latencies.length % points.length ];
+              const t0 = performance.now();
+
+              lastPick = now;
+              pending = cy.pick( p.x, p.y ).then( hit => {
+                if( hit === null ){ nulls++; }
+
+                latencies.push( performance.now() - t0 );
+                pending = null;
+              } );
+            }
+
+            await raf();
+          }
+
+          if( pending != null ){ await pending; }
+
+          return {
+            latenciesMs: latencies,
+            nulls,
+            deferrals: ( cy.renderer().stats().pickDeferrals ?? 0 ) - deferrals0
+          };
+        }
+
+        // slot-compaction scenario (round 19.5, gpu only): cut the scene
+        // to ~10% of its nodes *through the store* — eles.remove() would
+        // auto-compact the peak state this exists to measure — then pan
+        // at peak slot widths, cy.compact(), and pan again.  The delta is
+        // what dispatch-width + mirror shrink buy on a real device.
+        // Mutates the graph irreversibly; the runner gives it a fresh
+        // instance and destroys it after.
+        async function compactionScenario( opts ){
+          const store = cy._store;
+          const nodes = cy.nodes();
+          const doomed = [];
+
+          for( let i = 0; i < nodes.length; i++ ){
+            if( i % 10 === 0 ){ continue; }
+
+            const slot = nodes[ i ]._refs[ 0 ].slot;
+
+            // leaves only: store-level removal refuses parents (compound scenes)
+            if( store.childrenOf( slot ).length > 0 ){ continue; }
+
+            doomed.push( slot );
+          }
+
+          for( const slot of doomed ){
+            for( const edgeSlot of store.adj.connectedEdges( slot ) ){
+              store.removeEdge( edgeSlot );
+            }
+
+            store.removeNode( slot );
+          }
+
+          await raf(); await raf();
+
+          const peakHighWater = {
+            nodes: store.highWater( 'nodes' ), edges: store.highWater( 'edges' )
+          };
+          const peak = await panScenario( 'fit-all', opts );
+
+          const t0 = performance.now();
+
+          cy.compact();
+
+          const compactMs = performance.now() - t0;
+
+          await raf(); await raf();
+
+          const compacted = await panScenario( 'fit-all', opts );
+
+          return {
+            peakWallMs: peak.wallMs, peakGpuMs: peak.gpuMs,
+            compactedWallMs: compacted.wallMs, compactedGpuMs: compacted.gpuMs,
+            compactMs,
+            live: { nodes: store.count( 'nodes' ), edges: store.count( 'edges' ) },
+            peakHighWater,
+            highWater: { nodes: store.highWater( 'nodes' ), edges: store.highWater( 'edges' ) }
+          };
+        }
+
+        async function exportPng(){
+          const t0 = performance.now();
+          const opts = { full: true, maxWidth: 2048, maxHeight: 2048 };
+
+          if( side === 'gpu' ){
+            await cy.png( Object.assign( { output: 'blob' }, opts ) );
+          } else {
+            await cy.png( Object.assign( { output: 'blob-promise' }, opts ) );
+          }
+
+          return { exportMs: performance.now() - t0 };
+        }
+
+        // round 18.5 (--layout): a live force layout run to convergence —
+        // fps + wall time on the gpu side, v3's cose as the classic
+        // baseline.  Layout quality differs by design; the numbers
+        // compare the interactive experience of a live layout at scale.
+        // Both sides stop at the runner-supplied wall-clock cap (0 =
+        // uncapped): cose's per-iteration cost is superlinear in n, so a
+        // full numIter run at benchmark scale is hours — a capped run
+        // reports its elapsed time as a floor (timedOut: true), which
+        // already answers the interactive-experience question.  The cap
+        // is a requestAnimationFrame watchdog, not a setTimeout: cose's
+        // animate loop runs its iterations in synchronous blocks and
+        // Chromium starves timers under that jank (measured minutes late
+        // at 25k), while a rAF callback competes fairly with the
+        // layout's own frame loop.  The baseline also runs refresh: 1 so
+        // cose yields (and the watchdog checks) every iteration;
+        // overshoot is ≤ 1 iteration — the runner's bail covers
+        // iterations too long for even that (see render-bench.mjs).
+        function stopAtCap( l, t0, capMs ){
+          const state = { timedOut: false, rafId: 0, cancel: () => cancelAnimationFrame( state.rafId ) };
+
+          if( capMs > 0 ){
+            const watchdog = () => {
+              if( performance.now() - t0 >= capMs ){
+                state.timedOut = true;
+                l.stop();
+              } else {
+                state.rafId = requestAnimationFrame( watchdog );
+              }
+            };
+
+            state.rafId = requestAnimationFrame( watchdog );
+          }
+
+          return state;
+        }
+
+        async function forceLayoutScenario( capMs ){
+          if( side === 'gpu' ){
+            const framesBefore = cy.renderer().stats().frames;
+            const t0 = performance.now();
+            const l = cy.layout( {
+              name: 'force', animate: true, seed: 1, iterations: 300, fit: false
+            } );
+            const cap = stopAtCap( l, t0, capMs );
+
+            await l.run().promise();
+            cap.cancel();
+
+            const wallMs = performance.now() - t0;
+            const frames = cy.renderer().stats().frames - framesBefore;
+
+            return { wallMs, frames, fps: frames / ( wallMs / 1000 ), timedOut: cap.timedOut };
+          }
+
+          const t0 = performance.now();
+          let cap;
+
+          await new Promise( res => {
+            const l = cy.layout( { name: 'cose', animate: true, numIter: 300, refresh: 1, fit: false } );
+
+            cap = stopAtCap( l, t0, capMs );
+            l.on( 'layoutstop', () => { cap.cancel(); res(); } );
+            l.run();
+          } );
+
+          return { wallMs: performance.now() - t0, frames: null, fps: null, timedOut: cap.timedOut };
+        }
+
+        window.bench = {
+          loadScene, createInstance, destroyInstance,
+          panScenario, pickScenario, compactionScenario, exportPng, forceLayoutScenario,
+          hasGpu: () => typeof navigator !== 'undefined' && navigator.gpu != null
+        };
+      } )();
+    </script>
+  </body>
+
+</html>

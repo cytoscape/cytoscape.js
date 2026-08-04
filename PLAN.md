@@ -239,6 +239,11 @@ described until their rounds ship.
    **Call taken (2026-08-04): build** —
    `boxSelectionMode: 'contain' | 'overlap'` per the logged round-20
    shape (bb-intersect for nodes, segment/route-vs-rect for edges).
+   ***Landed as round 39.1 (2026-08-04)** — this item is closed.  Two
+   things the item did not say, now recorded: v3 spells the same choice
+   as a **per-element style prop** (`box-selection`) rather than a core
+   option, and `cy.elementsInBox()` deliberately stays pure containment,
+   so the mode is read by the gesture alone.*
 3. **Core/collection extension points** (gap item 10) — the layout
    contract landed in round 17; the other two extension categories
    stay out on the reasoning that mappers and predicates cover the
@@ -251,7 +256,8 @@ described until their rounds ship.
    something for `warnings()` to silence.  The call is whether either
    name survives.
    **Call taken in part (2026-08-04): both names return.**  `cy.gc()`
-   lands as the explicit alias of `compact()` (**round 39**);
+   lands as the explicit alias of `compact()` (**round 39** —
+   ***landed as 39.3, 2026-08-04***);
    `cytoscape.warnings()` builds, but its *shape* is deliberately
    still open — the maintainer flagged the **error policy** itself for
    real design work: v3 mostly avoided throwing because a throw can
@@ -271,6 +277,11 @@ described until their rounds ship.
    with the lean recorded there: `options.elements` applies graph
    data, `cy.add( buffer )` ignores it (adding elements must not
    clobber the target's `data()`).
+   ***Landed as round 39.2 (2026-08-04)** — this item is closed, at that
+   lean, with a spec for each half run against the other
+   implementation.  Format version 4; the section is one JSON string
+   rather than a column, since graph data is a single small object
+   where everything else in the format is per element.*
 6. **A v4-specific event type** (logged 26.5) — v4 emits the shared v3
    `Event`, so `event.target` types as `unknown` in the shipped
    declarations.  A v4 event type is a design call, not an oversight.
@@ -2679,6 +2690,33 @@ round 37's docs-first commit — noted so the standing docs-travel rule's
 exception is on the record rather than silent drift.  "Gaps with
 direction already set" was checked by name and needed nothing (its
 entries all closed by earlier rounds).
+
+**2026-08-04, round 39 — the decided feature tail.**  Three independent
+small builds, all decided at the fifth sitting and none needing a new
+call: overlap box selection (39.1), graph-level data on the binary wire
+(39.2), and `cy.gc()` (39.3).  Round 38 is deliberately **not** what
+followed 37: scoping it found three sub-calls the sitting had not
+reached (v3's `double` *erases* a stripe rather than drawing a second
+band; `dashed` borders need `border-dash-pattern`/`-offset`, which v4
+has for edges and not for nodes; `border-cap`/`-join` have no v4
+counterpart), which are logged in open-call 1 as that round's
+docs-first agenda rather than guessed at inside it.
+What 39 is worth remembering for is its **verification**, not its code.
+Every overlap spec passed on the first run with the exact flattened walk
+deliberately removed — the conservative bb reject was answering every
+one of them — so three of them were measuring nothing until two
+"band inside the bb that the path does not reach" specs were added.  The
+benchmark had the same disease one layer along: its curved row used
+`curve-style: bezier`, which bundles multi-edges only, so a fixture with
+no parallel pairs priced straight edges under a curved label.  Both are
+`AGENTS.md`'s standing rule arriving in a round that had already read
+it, which is the argument for running the control rather than trusting
+the reading.
+And the round-37.1 gate fired **twice, correctly**: edits to
+`graph-store.mts` and to `wire.mts`'s header comment moved two
+`UNREACHABLE` entries out from under their `file:line` keys, and the
+build failed naming them.  That is exactly the failure 37.1 was built
+for, arriving in the very next round.
 
 **2026-08-04, round 37 — the governance close-out.**  The first of the
 sitting's rounds, and deliberately the smallest, because its gates
@@ -10184,6 +10222,41 @@ Three independent small builds, all decided at the fifth sitting.
   naming the count rather than the graph failing at runtime later.
 - Each lands tests-first with docs in-commit; 39.1 adds a `webgpu`
   gesture spec and a spatial-benchmark row (overlap vs contain cost).
+- [x] **39.4 Closing docs sweep** (2026-08-04) — both documents plus
+  `AGENTS.md`.  The README gains a round-39 line in its header and the
+  three closures in the follow-up hooks' round-28 entry; the box-
+  selection, wire-format and compaction sections carry the features
+  themselves.  This file gains the round-39 paragraph in "Suggested
+  sequencing", the pass records, and the three items marked closed in
+  "Open calls for the maintainer" (2, the `cy.gc()` half of 4, and 5) —
+  each with what the item did not say and the round found out.
+  `AGENTS.md`'s benchmark rule gains 39.1's variant: **a fixture can be
+  styled into a mode it never enters**, so have a row assert the
+  property it is named for.
+
+**Verification (2026-08-04)**: typecheck, lint, **2696 Node tests**, 102
+module tests, **173 browser specs** (98 `webgpu` + 75 `webgpu-visual`)
+against a hand-rebuilt bundle with goldens byte-stable and parity scenes
+at their recorded values, `test:types` clean and `test:types:gpu` at 38
+type exports / 3 statics / 1104 doc blocks, JSDoc coverage 100%/100%,
+`@throws` **18/18**, `@param` **231/231**, `@returns` **278/278**, and
+the throw gate green at **177 run / 10 browser-only / 5 unreachable / 0
+Node-reachable dead** over 192 sites.
+Every new behaviour was run once in the failing direction: three Node
+controls on the overlap query, one browser control on the gesture, and
+two on the wire format's load asymmetry (each half broken in turn).
+**Round 39 is complete.**
+
+**Risks tracked**: overlap box selection is ~1.9× containment and runs
+on pointer release, so a very large graph pays it once per gesture
+rather than per frame — but it is a *scan*, and the fixture here is
+2000 nodes; the 200k profile is unmeasured.  The wire format's version
+bump means a v4 buffer read by an older build fails its version check
+loudly, which is the intended direction but is a compatibility edge a
+release note has to carry (round 46).  And `boxSelectionMode` is a core
+option where v3's equivalent is a per-element style prop, so an app
+wanting per-element box behaviour has no port path — logged here rather
+than in the round record, since it is the shape the sitting chose.
 
 ## Round 40 plan — the error policy + `cytoscape.warnings()` (planned 2026-08-04; sitting required)
 

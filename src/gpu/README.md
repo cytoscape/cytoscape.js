@@ -172,6 +172,12 @@ exceptions), constructor strictness is closed at the *type* layer where
 the runtime stays deliberately permissive, and the event-name contract
 is documented — a round that also corrected two things this file said
 that were not true of the code (see the events and JSDoc sections).
+Round 39 (2026-08-04) built the sitting's **decided feature tail**, three
+independent small things: **overlap box selection**
+(`boxSelectionMode`), **graph-level `data()` on the binary wire**
+(format version 4, applied by `options.elements` and deliberately
+ignored by `cy.add`), and **`cy.gc()`** as the explicit alias of
+`compact()`.
 The existing v3 core, collection and renderers are untouched — and
 stay untouched, along with the whole of `documentation/`, until v4
 ships, so every v3 asset remains available for comparison
@@ -3161,7 +3167,8 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   `roundrectangle` dropped, `autolockNodes`/`autoungrabifyNodes` kept
   as recorded exceptions (landed, round 37.2); overlap box selection,
   `cy.gc()` and graph-level `data` in the *binary* wire format all
-  build (round 39); core/collection extension points stay
+  build — **all three landed in round 39** (2026-08-04);
+  core/collection extension points stay
   demand-gated deferred; unknown constructor options stay
   runtime-permissive, closed at the type layer instead (landed, round
   37.3); dropped v3 event names stay legal and silent, documented

@@ -226,7 +226,8 @@ shader over every allocated slot.
 
 v3's method **aliases** are kept throughout (`each`/`forEach`,
 `centre`/`center`, `bc`/`betweennessCentrality`, the set-op spellings,
-…): 83 of them across the core and collection, each a `declare` in the
+…): 84 of them across the core and collection (83 through round 29;
+`gc` joined in 39.3), each a `declare` in the
 class body plus a separate prototype assignment.  Since round 29.1 the
 whole surface is pinned by a table in `test/gpu-aliases.mjs` that
 asserts alias-target identity and cross-checks itself against the
@@ -262,7 +263,7 @@ interaction gating
 `panningEnabled`/`zoomingEnabled` + `user*` variants,
 `boxSelectionEnabled`), introspection (`instanceString`, `isReady`,
 `headless`, `mutableElements`, `hasElementWithId`/`$id`, `options`),
-`destroy()`, `width()`/`height()`, and `compact()` (round 19 — the
+`destroy()`, `width()`/`height()`, and `compact()` (=`gc`, round 19 — the
 explicit form of the automatic slot-compaction trigger; see below).
 Collections: `cy()`/`renderer()`/`element()`, events, graph
 manipulation (incl. edge `move()`), position/dimensions (model +
@@ -579,7 +580,10 @@ the element slots themselves):
   round-11 waste-over-half policy to slots — dead slots exceeding the
   live count, past a 1024-slot floor — at safe boundaries (a
   completed `remove()`, the outermost `endBatch`).  `cy.compact()` is
-  the explicit form for deterministic timing; it throws mid-batch and
+  the explicit form for deterministic timing — **`cy.gc()` is its alias**
+  (round 39.3), v3's name for the same idea, kept because an upgrading
+  app already types it and v4 has no separate garbage-collection concept
+  for it to name instead; it throws mid-batch and
   defers (with a warning) while a GPU force run owns the position
   column.  Mid-flight GPU tweens **demote** to the CPU path (they
   write the value reached, leave the device, and finish on repaired

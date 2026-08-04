@@ -6669,6 +6669,18 @@ declare class GpuCore {
    */
   compact(): this;
   /**
+   * v3's `cy.gc()`, kept as the spelling an upgrading app already has
+   * (round 39.3).  It is an exact alias of `compact()` — the same
+   * slot-moving compaction, the same triggers and the same refusals —
+   * because what `gc` meant in v3 is what round 19 built.  v4 has no
+   * separate garbage-collection concept for it to name: element bytes are
+   * reclaimed by the slot free-list at `remove()`, and the slot-stable
+   * structures self-compact on their own waste thresholds (round 11).
+   *
+   * @see GpuCore#compact — the documented form, and where the semantics live
+   */
+  gc: this['compact'];
+  /**
    * The automatic trigger (19.5), checked at safe boundaries — a
    * completed removal, the outermost endBatch: compact when a group's
    * dead slots exceed its live count (the round-11 waste-over-half

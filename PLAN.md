@@ -10107,8 +10107,23 @@ Three independent small builds, all decided at the fifth sitting.
   docs-first: `options.elements` applies graph data at construction;
   `cy.add( buffer )` ignores it — adding elements must not clobber
   the target's `data()`.
-- **39.3 `cy.gc()`.**  The explicit alias of `compact()` — alias
-  table row, `declare` + wiring, spec.
+- [x] **39.3 `cy.gc()`** (2026-08-04) — landed.  The explicit alias of
+  `compact()`: `declare` + prototype wiring, the alias table's 84th row,
+  and the doc comment saying why the name is kept rather than merely
+  accepted — an upgrading app already types it, and v4 has no separate
+  garbage-collection concept for it to name instead (element bytes go
+  back to the slot free-list at `remove()`; the slot-stable structures
+  self-compact on their own thresholds since round 11).
+  `test/gpu-decided-drops.mjs` had a spec asserting `cy.gc === undefined`
+  alongside `warnings`/`notify`/`noNotifications`; it splits in three —
+  `notify`/`noNotifications` stay absent with their reason, `gc` flips to
+  pinning the alias, and `cytoscape.warnings` gets its own spec noting it
+  is absent *pending round 40*, which is a different kind of absence and
+  was previously filed under the same one.
+  The alias table's own cross-check earned its keep on the way: the
+  `declare` was first written `this[ 'compact' ]` with spaced brackets,
+  which the sources-vs-table regex does not match, and the spec failed
+  naming the count rather than the graph failing at runtime later.
 - Each lands tests-first with docs in-commit; 39.1 adds a `webgpu`
   gesture spec and a spatial-benchmark row (overlap vs contain cost).
 

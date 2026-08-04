@@ -403,14 +403,31 @@ describe('gpu/decided drops (29.3)', function(){
         .to.throw( /step/ );
     });
 
-    it('cy.gc / cytoscape.warnings / notify have no v4 counterpart', function(){
-      // gc is answered by compact() (round 19); notify/noNotifications by
-      // the dirty tracker's per-microtask coalescing (the batching note)
-      for( const name of [ 'gc', 'warnings', 'notify', 'noNotifications' ] ){
+    it('notify / noNotifications have no v4 counterpart', function(){
+      // the dirty tracker coalesces per microtask, which fires after a
+      // batch's synchronous block anyway — so there is nothing for
+      // notify()/noNotifications() to suspend (the batching note)
+      for( const name of [ 'notify', 'noNotifications' ] ){
         expect( cy[ name ], `cy.${name}` ).to.equal( undefined );
       }
+    });
 
-      expect( typeof cy.compact ).to.equal( 'function' );
+    it('cy.gc is back as the alias of compact (round 39.3)', function(){
+      // it was listed here as having no counterpart, on the reasoning that
+      // compact() answers what gc meant.  The fifth design sitting kept the
+      // *name* on top of that reasoning rather than against it: an upgrading
+      // app already types `gc`, and v4 has no separate garbage-collection
+      // concept for it to mean instead.
+      expect( cy.gc ).to.equal( cy.compact );
+      expect( cy.gc() ).to.equal( cy );
+    });
+
+    it('cytoscape.warnings is still absent, pending the error policy', function(){
+      // the one part of the ledger the fifth sitting left open: it builds
+      // in round 40, whose sitting decides its shape (a boolean silencer,
+      // or an options form that can demote recoverable throws)
+      expect( cytoscapeGpu.warnings ).to.equal( undefined );
+      expect( cy.warnings ).to.equal( undefined );
     });
 
   });

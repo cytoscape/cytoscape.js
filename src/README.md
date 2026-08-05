@@ -2570,6 +2570,40 @@ init 80 ms — down from 662 ms before the bulk path.  The wire form of the
 same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 90–113 ms parse + 27–48 ms convert.
 
+## Packaging (round 44)
+
+What ships, and what keeps the manifest honest.  The package is
+`cytoscape@4`: `exports["."]` (plus `./gpu`, the deprecated alias v3's
+users already type) resolves `types` → `dist/cytoscape.d.ts`, `import`
+→ `dist/cytoscape.esm.mjs`, `require` → `dist/cytoscape.cjs.js`, with
+the legacy `main`/`module`/`types` fields carrying the same three and
+`unpkg`/`jsdelivr` the minified UMD.  The tarball is those bundles, the
+declaration, `src/` (source-map resolution, as v3 ships it), the README
+and the licence — 104 files today, before a release build populates
+`dist/`.
+
+`dist/` holds only the committed declaration in a checkout, and that is
+the inherited convention rather than a gap: v3 tracks all six of its
+`dist/` artifacts and refreshes them at release, so v4's appear when
+its first release build runs (round 50).  Nothing under `dist/` is
+gitignored.
+
+`test/modules/packaging.mjs` gates the chain
+**rolldown outputs → `dist:copy` → the manifest → the tarball**, which
+is hand-maintained at every link.  It asks npm for the real file list
+rather than re-implementing `.npmignore` — a denylist, so every new
+directory ships by default and the failure mode is additive and silent
+— and it imports `rolldown.config.mjs` rather than parsing it.  What it
+checks: no development tree or repo document ships; every path the
+manifest names is produced by a build script; `dist:copy` copies
+exactly rolldown's five outputs, both directions; `types` is the first
+condition wherever it appears (TypeScript takes the first match, so a
+later one is silently dead); `import`/`require`/`types` point at
+`.mjs`/`.js`/`.d.ts`; the legacy fields agree with the `.` conditions;
+and `./gpu` resolves to identical files.  It deliberately does not
+check that the bundles *exist* — they do not until a release build
+runs, and whether one ran is release-workflow business.
+
 ## Known deviations from v3 (accepted for pass 1)
 
 - **Listener firing order**: one core emitter with ref/predicate-qualified

@@ -1,0 +1,36 @@
+{
+  "runs": [
+    {
+      "file": "results-render-2026-08-05T18-38-42-377Z.json",
+      "date": "2026-08-05T18:38:42.377Z",
+      "commit": "365d4d5a",
+      "commitSubject": "refactor(status): drop the unused `now` from indexPage",
+      "branch": "v4",
+      "profile": "renderer",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 841134,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": "amd gcn-4",
+      "jobs": 8,
+      "note": "round 46.5 baseline: all 8 renderer scenes, incl. the ndex scene recovered this round"
+    },
+    {
+      "file": "results-2026-08-05T18-11-31-747Z.json",
+      "date": "2026-08-05T18:11:31.747Z",
+      "commit": "dc6d3505",
+      "commitSubject": "refactor(status): drop an unused parameter from the benchmark trend table",
+      "branch": "v4",
+      "profile": "quick",
+      "suiteFilter": null,
+      "dirty": false,
+      "totalMs": 425007,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": null,
+      "jobs": 8,
+      "note": "round 46.5 baseline: CPU/collection quick profile"
+    }
+  ]
+}

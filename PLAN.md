@@ -11157,9 +11157,13 @@ build and the tarball agreed — and that is what landed.
   what was missing was a check that the chain
   **rolldown outputs → `dist:copy` → the manifest → the tarball** is
   consistent, since every link in it is hand-maintained.
-  Measured while checking: `npm pack --dry-run` today ships 104 files /
+  Measured while checking: `npm pack --dry-run` shipped 104 files /
   2.4 MB — `src/` (100), `package.json`, `README.md`, `LICENSE` and
-  `dist/cytoscape.d.ts`.  `src/` shipping is deliberate and matches v3
+  `dist/cytoscape.d.ts`.  (**106 / 2.5 MB since round 47** added
+  `MIGRATING.md` and `CHANGELOG.md`, which ship deliberately.  Worth
+  leaving visible rather than silently restating: this figure was true
+  when it was written and false two rounds later, in the same sitting,
+  which is the drift the closing sweep exists for.)  `src/` shipping is deliberate and matches v3
   (source-map resolution), so that half of the plan's "decided
   deliberately" is also already decided.
 - [x] **44.1 The pack-contents spec** (2026-08-04) —

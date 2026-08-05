@@ -2657,8 +2657,8 @@ users already type) resolves `types` → `dist/cytoscape.d.ts`, `import`
 the legacy `main`/`module`/`types` fields carrying the same three and
 `unpkg`/`jsdelivr` the minified UMD.  The tarball is those bundles, the
 declaration, `src/` (source-map resolution, as v3 ships it), the README
-and the licence — 104 files today, before a release build populates
-`dist/`.
+and the licence, plus `MIGRATING.md` and `CHANGELOG.md` — 106 files
+today, before a release build populates `dist/`.
 
 `dist/` holds only the committed declaration in a checkout, and that is
 the inherited convention rather than a gap: v3 tracks all six of its

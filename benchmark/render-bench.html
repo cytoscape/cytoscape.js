@@ -200,16 +200,25 @@
             data: { id: String( n.data.id ) },
             position: { x: n.position.x, y: n.position.y }
           } ) );
-          const edges = json.elements.edges.map( e => ( { data: {
-            id: String( e.data.id ),
-            source: String( e.data.source ),
-            target: String( e.data.target )
-          } } ) );
+          // Edge ids are optional and this fixture has none: round 43.2's
+          // re-slim keeps `source`/`target` (+ one numeric channel) and drops
+          // `id`, because at 465k edges the key name alone costs ~10 MB.
+          // Spelling it `String( e.data.id )` unconditionally produced the
+          // string "undefined" for all 464,657 of them, so the second edge hit
+          // the duplicate-id guard and this scene has not run since round 43.2.
+          // Both libraries generate an id when none is given.
+          const edges = json.elements.edges.map( e => {
+            const data = { source: String( e.data.source ), target: String( e.data.target ) };
+
+            if( e.data.id != null ){ data.id = String( e.data.id ); }
+
+            return { data };
+          } );
 
           return function(){
             return {
               nodes: nodes.map( n => ( { data: { id: n.data.id }, position: { x: n.position.x, y: n.position.y } } ) ),
-              edges: edges.map( e => ( { data: { id: e.data.id, source: e.data.source, target: e.data.target } } ) )
+              edges: edges.map( e => ( { data: { ...e.data } } ) )
             };
           };
         }

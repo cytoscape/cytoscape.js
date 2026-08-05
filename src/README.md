@@ -227,6 +227,22 @@ v3 page's view/layout/toggle/selection/event/add-remove sections,
 and a module spec that compiles every sheet against its own fixture.
 The round also fixed the background-grab indicator, which had never
 followed the cursor — see the core-theming notes below.
+Rounds 44, 45, 47 and 48 (2026-08-04/05) are the release sequence's
+decision-free part: **44** gates the packaging chain (rolldown
+outputs → `dist:copy` → the manifest → the tarball, every link
+hand-maintained and none of its failures loud); **45** is the
+**docs generator**, turning nineteen rounds of gated JSDoc into 362
+documented members validated against the shipped declaration —
+and it found `event.mts` outside the audit's public tier, optional
+class members invisible to every audit, and a layout-extension
+contract that shipped no types at all; **47** is the **migration
+guide** (`MIGRATING.md`) and `CHANGELOG.md`, whose property table is
+measured against both libraries rather than remembered; and **48**
+is the **soak tier**, which found four defects — a corrupt wire
+buffer that made a load never return, two more costing 25.9 s and
+5.7 s, and element identity comparing equal across two instances,
+so `union()` silently dropped the other graph's elements.  Each has
+its own section below.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a

@@ -118,7 +118,22 @@ ahead of the release sequence — the **debug harness**, which turned out to be
 both broken (four of its seven networks 404'd, a round-42 regression) and
 misleading (its style sanitizer was so far behind the engine that every fixture
 rendered flat and unlabelled); it also fixed the background-grab indicator,
-which had never followed the cursor.  **Round 38 has not started**: scoping
+which had never followed the cursor.  **Rounds 44, 45, 47 and 48 then
+landed** (2026-08-04/05), taken in that order because they are the release
+sequence's decision-free part: **44** the packaging gates, whose finding was
+that two of its own three items were never open questions at all (v3's
+tracked `dist/` answers what ships at release) and that what was missing was
+a check that the manifest, the build and the tarball agree; **45** the docs
+generator, which turns nineteen rounds of gated JSDoc into 362 documented
+members and found four things on the way — including that `event.mts` sat
+outside the audit's public tier and that the layout-extension contract
+shipped no types at all; **47** the migration guide and CHANGELOG, whose
+property table is *measured* against both libraries rather than remembered
+(v4 accepts 153 of v3's 291 style property names); and **48** the soak tier,
+which found **four defects** — a corrupt wire buffer that made a load never
+return, two more that cost 25.9 s and 5.7 s, and identity comparing equal
+across two instances, so that `union()` silently dropped the other graph's
+elements.  **Round 38 has not started**: scoping
 it found three sub-calls the sitting did not reach (open call 1).
 **Round 40 is a design sitting.**
 `src/README.md` is
@@ -526,6 +541,49 @@ docs checks), and each is left in place pending the call.
     — every one of them internal, and every one naming the *device* half
     against a CPU counterpart, which is the same rule that kept the
     `gpu-*.mts` file names in round 42.1.  None is exported.
+
+### Public-surface changes made without a call, logged rather than buried
+
+Neither of these needed a decision to *make* — one is a missing export,
+the other a wrong answer — so neither was held.  Both are visible to a
+consumer, which is why they are here and not only in a round record: the
+standing rule is that the maintainer reads this section before deciding
+anything about v4's surface, and "we changed it because it was obviously
+broken" is exactly the sentence that should be reviewable.
+
+14. **The layout contract's types now ship** (round 45, 2026-08-04).
+    Round 17 made `cy.layout({ impl })` the whole extension story — an
+    import passed straight in, no registry — and round 34.6 noticed in
+    passing that `LayoutContext` "is not in the shipped declarations at
+    all; it appears only inside a doc comment", but nobody drew the
+    consequence: `CustomLayoutOptions` shipped while the two types an
+    external author actually writes against did not, so `run( ctx )`
+    typed its parameter `any` in the one surface the contract exists to
+    make obvious.  `LayoutContext`, `LayoutImpl` and `CustomLayout` are
+    now exported from the entry point, on the precedent of round 41.6
+    exporting the event types for the identical reason.  The type-surface
+    audit caught it as an unexpected export, which is that audit working;
+    42 → 45 type exports.  **To reverse**: drop the re-export line in
+    `src/index.mts` and the three names from `EXPECTED_EXPORTS`.
+15. **Comparing elements across two instances now throws** (round 48.4,
+    2026-08-04).  A ref is `{ group, slot, gen }` and identity packs
+    those three, all of which are per instance — so the first node of one
+    graph and the first node of another packed identically, and all
+    twelve methods round 29.3 guarded answered accordingly: `same()`
+    **true**, `contains()` true, `indexOf()` 0, `intersection()`
+    everything, `difference()` nothing, and `union()` silently dropping
+    the other graph's elements (two graphs of two nodes united to two,
+    reading back the first graph's data twice).  They now reject a
+    collection from another instance, through the same
+    `assertCollection` guard round 29.3 added to those exact twelve for
+    the same stated reason.
+    Recorded because it *is* a behaviour change a consumer can see, and
+    because v3 is inconsistent here rather than right — measured: v3's
+    `same()` answers false, but its `union()` of 2 + 2 gives 2 and its
+    `difference()` gives 0 — so "match v3" is not available as an answer.
+    The alternative to throwing would be a cross-instance identity, which
+    v4 cannot represent: a `_refs` slot is meaningless outside its store.
+    **To reverse**: drop the `cy` argument from `assertCollection`.
 
 ## Context
 
@@ -2948,12 +3006,48 @@ enrichmentmap.org style among them), two real compound graphs, the v3 page's
 control sections, and a module spec that compiles every sheet against its own
 fixture.  It also fixed the active-bg indicator, and gave `debug/` its first test.
 
-**As of 2026-08-04, what remains.**  Unbuilt: round 38 (blocked on the
+**2026-08-04/05, rounds 44, 45, 47 and 48 — the release sequence's
+decision-free part**, taken in that order and skipping 46 (which needed 45
+first) and 49–51 (which need hardware, or are a publish).  What they have in
+common is worth naming, because it is the same shape four times: **each
+round's most useful output was a thing its own plan was wrong about.**
+Round 44 was written as three decisions and two of them were never open —
+v3's tracked `dist/` already answers what ships at release, and `src/`
+already ships as v3's does — so what the round actually delivered was the
+missing *check* that the manifest, the build and the tarball agree.  Round
+45's plan cited a `test:types:docs` precedent that is **v3's**, and runs the
+other way round; building the generator then turned up `event.mts` outside
+the audit's public tier (the fourth instance of "an audit's scope is part of
+its claim"), optional class members invisible to every audit's member
+pattern, and a layout-extension contract that shipped no types at all.
+Round 47's property table would have been wrong in at least four entries had
+it been written from the ledger instead of measured against both libraries.
+And round 48 found four defects, three of them in a format nine rounds had
+called finished.
+The transferable part is round 33's rule arriving in a fifth costume: **a
+plan's statements about the code are claims to re-measure.**  Every one of
+these rounds spent its first hour measuring what it had been told, and every
+one of them found the telling wrong somewhere.
+
+**As of 2026-08-05, what remains.**  Unbuilt: round 38 (blocked on the
 three sub-calls in open call 1), round 40 (a design sitting), round 41.5
-(open call 12), and rounds 44–51.  Undecided: the **error policy**
-(round 40) and the **preventable-gesture enumeration** (open call 12) —
-the only two genuinely open questions, both of which the ledger holds
-rather than any round record.
+(open call 12), **round 46** (the docs site — no longer blocked, since
+round 45 built its input), **rounds 49–51** (cross-platform validation,
+release engineering, the release bake), and two tails: round 48's
+documented limit edges (the 256-layer image cap, a full glyph atlas, the
+export texture cap) and round 44's one release-time act — the first
+release build must actually commit the five `dist/` bundles, which is
+round 50's.
+Undecided: the **error policy** (round 40) and the
+**preventable-gesture enumeration** (open call 12) — still the only two
+genuinely open questions, both of which the ledger holds rather than any
+round record.  Rounds 44, 45, 47 and 48 opened no new ones, but **two of
+them changed public surface** and both are logged in "Open calls for the
+maintainer" as items 14 and 15: 45 exported the layout contract's types,
+and 48 made twelve collection methods throw where they had been
+answering wrongly across instances.  Neither needed a decision to *make*
+— one is a missing export, the other a wrong answer — but both are
+visible to a consumer, so neither is left to be discovered in a diff.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

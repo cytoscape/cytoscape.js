@@ -140,7 +140,7 @@ describe( 'packaging: the tarball', () => {
     const dev = [
       'test/', 'test/modules/', 'debug/', 'benchmark/', 'scripts/',
       'playwright-tests/', 'playwright-page/', 'typescript/', 'v3/',
-      '.github/', 'tests-examples/', 'build/'
+      '.github/', 'tests-examples/', 'build/', 'status/'
     ];
 
     for( const prefix of dev ){

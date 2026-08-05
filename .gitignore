@@ -23,3 +23,5 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+# the status site build output (root only — `scripts/status/` is source)
+/status

@@ -13,6 +13,7 @@ playwright-tests
 tests-examples
 test-results
 build
+/status
 
 # development config and tooling
 .github

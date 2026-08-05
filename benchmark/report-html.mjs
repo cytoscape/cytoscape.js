@@ -7,11 +7,10 @@
 // dark modes are both styled; values also live in plain text/tables so
 // nothing is gated on color or hover.
 
+import { THEME_CSS, esc, fmtBytes } from '../scripts/theme.mjs';
+
 // -- formatting ---------------------------------------------------------------
 
-const esc = s => String( s )
-  .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' ).replace( />/g, '&gt;' )
-  .replace( /"/g, '&quot;' );
 
 const sig3 = v => v >= 100 ? Math.round( v ).toString() : v.toPrecision( 3 );
 
@@ -283,22 +282,7 @@ function scaling( sections ){
 // -- page -----------------------------------------------------------------------
 
 const CSS = `
-:root { color-scheme: light dark; }
-body {
-  margin: 0; padding: 24px 32px 48px;
-  font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: var(--page); color: var(--ink);
-  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e;
-  --muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7;
-  --border: rgba(11,11,11,0.10); --gpu: #2a78d6; --v3: #eb6834;
-}
-@media (prefers-color-scheme: dark) {
-  body {
-    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7;
-    --muted: #898781; --grid: #2c2c2a; --baseline: #383835;
-    --border: rgba(255,255,255,0.10); --gpu: #3987e5; --v3: #d95926;
-  }
-}
+${THEME_CSS}
 h1 { font-size: 20px; margin: 0 0 4px; }
 h2 { font-size: 15px; margin: 0 0 12px; }
 h2 small, .meta { font-weight: 400; color: var(--ink-2); font-size: 13px; }
@@ -439,19 +423,6 @@ function machineBlock( meta ){
   return `<details class="machine"><summary>Machine and provenance</summary>
     <table>${rows.map( ( [ k, v ] ) => `<tr><th>${esc( k )}</th><td>${v}</td></tr>` ).join( '' )}</table>
   </details>`;
-}
-
-/** Bytes as the nearest binary unit; `null` for anything not a positive size. */
-function fmtBytes( n ){
-  if( !Number.isFinite( n ) || n <= 0 ){ return null; }
-
-  const units = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB' ];
-  let i = 0;
-  let v = n;
-
-  while( v >= 1024 && i < units.length - 1 ){ v /= 1024; i++; }
-
-  return `${v >= 100 || i === 0 ? Math.round( v ) : v.toFixed( 1 )} ${units[ i ]}`;
 }
 
 export function renderReport( results ){

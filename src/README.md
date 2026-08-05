@@ -2700,10 +2700,19 @@ cannot force a collection is a flake generator.
   `assertCollection` guard and for the same stated reason.  **A
   behaviour change to public API**, carried in `CHANGELOG.md`.
 
-Not yet covered, and the remainder of the round: device loss *under
-load* (round 10's spec covers the idle case) and the documented limit
+- **Device loss under load** is covered in the `renderer` project (48.5).
+  Round 10's spec loses the device on an idle instance; these lose it
+  mid-animation (a GPU-leased tween), mid-export (the one readback in the
+  architecture) and mid-force-run (the stronger lease — the sim owns the
+  position column for its whole run), and require the promise to settle,
+  the lease to release, and every position to come back finite and
+  writable.  Running the control is what earned the third one: with the
+  loss hook neutered the export spec still passed, since it accepts a
+  resolved *or* rejected export, so it now asserts the loss as well.
+
+Not yet covered, and the remainder of the round: the documented limit
 edges — the 256-layer image cap, a full glyph atlas, the export texture
-cap.  Those need the browser project rather than Node.
+cap.  Each needs a fixture large enough to reach the limit.
 
 ## Porting from v3 (round 47)
 

@@ -11407,12 +11407,32 @@ none was reachable from any test the suite already had.
   change to public API**, recorded as such — these calls returned wrong
   answers and now throw — and carried in `CHANGELOG.md`.
 
-**Still to do, and deliberately not claimed**: the browser half of the
-failure-injection tier — device loss *under load* (mid-animation,
-mid-export, mid-force-run, where round 10's spec covers only the idle
-case) and the documented limit edges (the 256-layer image cap, a full
-glyph atlas, the export texture cap).  Those need the `renderer`
-project rather than Node, and they are what remains of round 48.
+- [x] **48.5 Device loss under load** (2026-08-04, the `renderer`
+  project, 3 specs) — round 10's spec loses the device on an *idle*
+  instance, which is the easy case: nothing owns a column, nothing is
+  mid-readback, and the rebuild has only the model to replay.  These
+  lose it while something is in flight, which is where a lease that is
+  never released or a promise that is never settled shows up as a hang
+  rather than an error: **mid-animation** (a GPU-leased position tween —
+  the promise must settle, the lease must release, and the column must
+  be CPU-owned and writable afterwards), **mid-export** (the one
+  readback in the architecture, encoded in the frame loop and mapped
+  after — the promise must settle either way), and **mid-force-run** (the
+  stronger lease: the sim owns the position column for its whole run,
+  and every position must come back finite and writable).
+  **The control is the point here**, and it caught a weak spec: with
+  `_debugLoseDevice` neutered, the export spec still passed, because it
+  accepts a resolved *or* a rejected export and with no loss the export
+  simply resolves.  It now asserts the loss happened as well as the
+  settling — round 27.7's lesson, in a third costume.  With the hook
+  no-opped and the bundle rebuilt, all three fail; restored, all three
+  pass.
+
+**Still to do, and deliberately not claimed**: the documented limit
+edges — the 256-layer image cap, a full glyph atlas, the export texture
+cap (the last already half-covered by round 30.2's export guards).  Each
+needs a fixture big enough to reach the limit, which is the reason they
+are not here rather than any difficulty of principle.
 
 ## Round 49 plan — cross-platform validation (planned 2026-08-04)
 

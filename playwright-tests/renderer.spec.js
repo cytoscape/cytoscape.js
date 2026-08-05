@@ -5231,4 +5231,188 @@ test.describe( 'WebGPU renderer', () => {
     expect( after.p.y ).toBeCloseTo( dragged.p.y + 100, 0 );
   } );
 
+
+  /*
+  Round 48.5: device loss **under load**.
+
+  Round 10's spec loses the device on an idle instance, which is the easy
+  case: nothing owns a column, nothing is mid-readback, and the rebuild has
+  only the model to replay.  The cases below lose it while something is
+  actually in flight — a GPU-leased tween, a pending export readback, a live
+  force run — which is where a lease that is never released, or a promise
+  that is never settled, would show up as a hang rather than an error.
+  */
+
+  const loseDevice = async page => {
+    await page.evaluate( () => {
+      window.__lost = false;
+      window.__restored = false;
+      window.cy.on( 'devicelost', () => { window.__lost = true; } );
+      window.cy.on( 'devicerestored', () => { window.__restored = true; } );
+      window.cy.renderer()._debugLoseDevice();
+    } );
+
+    await expect.poll( () => page.evaluate( () => window.__lost ), { timeout: 5000 } ).toBe( true );
+  };
+
+  test( 'device loss mid-animation settles the lease and completes (round 48.5)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+    await centerPan( page );
+    await waitFrames( page );
+
+    // a position animation is the GPU-leased case: node.position is
+    // device-owned for the run, and the CPU reads stale until it settles
+    await page.evaluate( () => {
+      window.__done = false;
+      window.__ani = window.cy.$id( 'a' ).animation( {
+        position: { x: 120, y: 0 }, duration: 3000
+      } );
+      // play() resolves when the animation finishes (or is stopped)
+      window.__ani.play().then( () => { window.__done = true; } );
+    } );
+
+    await waitFrames( page );
+    await loseDevice( page );
+
+    // the promise must settle rather than hang on a device that is gone
+    await expect.poll( () => page.evaluate( () => window.__done ), { timeout: 15000 } ).toBe( true );
+    await expect.poll( () => page.evaluate( () => window.__restored ), { timeout: 15000 } ).toBe( true );
+
+    // and the model must be readable and sane afterwards — the lease
+    // released, not stranded
+    const after = await page.evaluate( () => window.cy.$id( 'a' ).position() );
+
+    expect( Number.isFinite( after.x ) ).toBe( true );
+    expect( Number.isFinite( after.y ) ).toBe( true );
+    expect( after.x ).toBeGreaterThan( -1 );
+    expect( after.x ).toBeLessThanOrEqual( 120 );
+
+    // the recovered renderer still draws, and still responds to writes
+    await page.evaluate( () => window.cy.$id( 'a' ).position( { x: 0, y: 0 } ) );
+    await waitFrames( page );
+    await waitFrames( page );
+
+    const center = await page.evaluate( () => (
+      { x: window.innerWidth / 2, y: window.innerHeight / 2 } ) );
+    const px = await pixelAt( page, center.x, center.y );
+
+    expect( px[0] ).toBeGreaterThan( 150 );
+    expect( px[1] ).toBeLessThan( 100 );
+  } );
+
+  test( 'device loss mid-export rejects rather than hanging (round 48.5)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    await makeReadyCy( page, RED_NODE_GRAPH );
+    await centerPan( page );
+    await waitFrames( page );
+
+    // an export is the one readback in the architecture: it encodes in the
+    // frame loop and maps a staging buffer afterwards, so losing the device
+    // between those two points is the case with a promise in mid-air.
+    //
+    // The spec accepts *either* outcome — a resolved export or a rejected
+    // one — because both are correct and which one you get depends on how
+    // far the readback had progressed. That makes the settling assertion
+    // alone non-discriminating: with no loss at all the export simply
+    // resolves and the spec passes. So the loss itself is asserted, which
+    // is what a control on `_debugLoseDevice` then fails.
+    await page.evaluate( () => {
+      window.__lost = false;
+      window.__restored = false;
+      window.cy.on( 'devicelost', () => { window.__lost = true; } );
+      window.cy.on( 'devicerestored', () => { window.__restored = true; } );
+
+      window.__export = window.cy.png( { output: 'blob' } ).then(
+        blob => ( { settled: 'resolved', size: blob?.size ?? -1 } ),
+        e => ( { settled: 'rejected', error: e instanceof Error, message: String( e.message ).slice( 0, 80 ) } )
+      );
+
+      window.cy.renderer()._debugLoseDevice();
+    } );
+
+    // the loss really happened, mid-export
+    await expect.poll( () => page.evaluate( () => window.__lost ), { timeout: 5000 } ).toBe( true );
+
+    // and the promise settled rather than being stranded on a dead device
+    const outcome = await page.evaluate( () => window.__export );
+
+    expect( [ 'resolved', 'rejected' ] ).toContain( outcome.settled );
+
+    if( outcome.settled === 'rejected' ){
+      expect( outcome.error, `export rejected with a non-Error: ${outcome.message}` ).toBe( true );
+    }
+
+    // and the instance recovers regardless of which way the export went
+    await expect.poll( () => page.evaluate( () => window.cy.renderer() != null ), { timeout: 15000 } )
+      .toBe( true );
+
+    await page.evaluate( () => window.cy.$id( 'a' ).position( { x: 40, y: 0 } ) );
+    await waitFrames( page );
+    await waitFrames( page );
+
+    const later = await page.evaluate( () => window.cy.$id( 'a' ).position() );
+
+    expect( later.x ).toBe( 40 );
+  } );
+
+  test( 'device loss mid-force-run leaves readable positions (round 48.5)', async ( { page } ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // a force run is the other lease, and the stronger one: the sim owns the
+    // position column for its whole run and settles it with the one readback
+    // in the architecture, so losing the device mid-run is the case where a
+    // column could be left owned by a device that no longer exists
+    await makeReadyCy( page, {
+      elements: ( () => {
+        const elements = [];
+
+        for( let i = 0; i < 60; i++ ){
+          elements.push( { data: { id: 'n' + i }, position: { x: ( i % 10 ) * 20, y: ( ( i / 10 ) | 0 ) * 20 } } );
+        }
+
+        for( let i = 1; i < 60; i++ ){
+          elements.push( { data: { id: 'e' + i, source: 'n' + ( i - 1 ), target: 'n' + i } } );
+        }
+
+        return elements;
+      } )(),
+      style: { nodes: { 'background-color': 'red', width: 10, height: 10 } },
+      zoom: 1
+    } );
+
+    await waitFrames( page );
+
+    await page.evaluate( () => {
+      window.__layoutStopped = false;
+      window.cy.on( 'layoutstop', () => { window.__layoutStopped = true; } );
+      window.cy.layout( { name: 'force', animate: true, iterations: 100000, randomize: true } ).run();
+    } );
+
+    await waitFrames( page );
+    await loseDevice( page );
+
+    await expect.poll( () => page.evaluate( () => window.__restored ), { timeout: 20000 } ).toBe( true );
+
+    // whatever the run did, the model must be readable and finite — never
+    // NaN, never stuck behind a lease held by a dead device
+    const positions = await page.evaluate( () => {
+      window.cy.$id( 'n0' ).position( { x: 7, y: 7 } );
+
+      return window.cy.nodes().map( n => n.position() );
+    } );
+
+    expect( positions.length ).toBe( 60 );
+    expect( positions.every( p => Number.isFinite( p.x ) && Number.isFinite( p.y ) ) ).toBe( true );
+
+    // the write after recovery took, which is what proves the column is
+    // CPU-owned again
+    const n0 = await page.evaluate( () => window.cy.$id( 'n0' ).position() );
+
+    expect( n0.x ).toBe( 7 );
+    expect( n0.y ).toBe( 7 );
+  } );
+
 } );

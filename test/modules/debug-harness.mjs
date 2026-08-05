@@ -304,4 +304,22 @@ describe( 'debug harness (round 43)', function(){
 
   } );
 
+  describe( 'the dev server the page expects', function(){
+
+    it( 'binds livereload on every interface', function(){
+      // `livereload-setup.js` builds the client URL from `location.hostname`,
+      // and `http-server -o` opens the page at 127.0.0.1 — while livereload's
+      // own default (`localhost`) resolves to `::1` here and binds only that.
+      // The two never met: every reload 404'd with nothing but a console line
+      // to say so.  An explicit bind is the fix, and it is one word to lose.
+      const pkg = JSON.parse( readFileSync( join( ROOT, 'package.json' ), 'utf8' ) );
+      const sync = pkg.scripts[ 'watch:sync' ];
+
+      expect( sync, 'watch:sync no longer runs livereload' ).to.match( /^livereload\b/ );
+      expect( sync, 'livereload must not take its localhost-only default bind' )
+        .to.match( /(^|\s)(-b|--bind)\s+0\.0\.0\.0(\s|$)/ );
+    } );
+
+  } );
+
 } );

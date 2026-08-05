@@ -92,7 +92,7 @@
     "release": "run-s copyright dist",
     "watch": "run-s watch:fast",
     "dev": "run-s watch",
-    "watch:sync": "livereload \"build, debug\" -w 500 --extraExts 'json'",
+    "watch:sync": "livereload \"build, debug\" -w 500 -b 0.0.0.0 --extraExts 'json'",
     "watch:http": "http-server -p 3333 -s -c -1 -o debug",
     "watch:fast": "run-p watch:sync watch:http watch:build:fast",
     "watch:umd": "run-p watch:sync watch:http watch:build:umd",

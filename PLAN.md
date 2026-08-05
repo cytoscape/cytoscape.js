@@ -11946,8 +11946,13 @@ EnrichmentMap/white-matter fixtures ship at 27.4 MiB instead of 37.
    (sha256 `0af71493…c817bd74`, verified).  Until the upload, the build omits
    that one network with the reason on the card and does **not** fall back to
    the 250 MB original.
-3. **Create the Pages project**: branch `v4`, build command `npm run status`,
-   output directory `status`, Node from `.nvmrc`.
+3. **Create the Pages project**: branch `v4`, build command
+   **`npm run status:all`** (`build` -> `docs:api` -> `status`; plain
+   `npm run status` assembles only and would publish against whatever bundle
+   happened to be lying around), output directory `status`, Node from
+   `.nvmrc`.  The root `npm ci` is all it needs — a spec pins that the status
+   build imports nothing from `v3/` or `src/`, so the builder never needs v3
+   installed.
 
 ### Risks tracked
 

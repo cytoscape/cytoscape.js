@@ -41,6 +41,7 @@ Controls run while writing.  Each failed the spec named:
   5. `fixturePolicy` returning 'copy' for an oversized file -> 'omits an
      oversized fixture with no remote'
   6. the `jsonmin` branch removed -> 'minifies a pretty-printed fixture'
+  7. a `src/` import added to a status module -> 'reaches neither v3/ nor src/'
 
 Control 6 is worth recording because of what it did *not* fail.  It was aimed
 at 'nothing in the plan exceeds the Pages per-file cap', and that spec stayed
@@ -48,6 +49,12 @@ green — because both oversized fixtures load from their bucket, so no planned
 file is anywhere near the cap and the loop had nothing to discriminate on.
 The measured on-disk spec was added in response, and control 6 fails it.  The
 cap loop is kept as a forward guard, labelled as one.
+
+Control 7 did the same thing on its first run, and for the same class of
+reason: the import walker matched `import x from './y.mjs'` but not the
+side-effect form `import './y.mjs'`, so the deliberately-added dependency was
+walked straight past.  The walker handles both now.  *Read the enumerator, not
+the percentage.*
 */
 
 describe( 'status site: the plan', function(){
@@ -379,6 +386,50 @@ describe( 'status site: internal links', function(){
       expect( op.text, `${op.to} loads an external script` ).to.not.match( /<script[^>]+src="https?:/ );
       expect( op.text, `${op.to} loads an external stylesheet` ).to.not.match( /<link[^>]+rel="stylesheet"/ );
     }
+  } );
+} );
+
+describe( 'status site: what the builder needs', function(){
+  it( 'reaches neither v3/ nor src/, so a Cloudflare build needs only the root install', function(){
+    // The site is built from a git checkout by Cloudflare, which runs `npm ci`
+    // at the root and nothing else.  `cd v3 && npm install` is a requirement of
+    // the *test* suite (benchmark/graph.mjs -> v3/src/test.mjs -> heap), and if
+    // the status build ever acquired that dependency the deploy would fail with
+    // a module-not-found nobody would connect to this.  Measured, not asserted:
+    // the precedent is `test/modules/import-graph.mjs`.
+    const seen = new Set();
+
+    const walk = file => {
+      if( seen.has( file ) ){ return; }
+
+      seen.add( file );
+
+      let source;
+
+      try {
+        source = readFileSync( file, 'utf8' );
+      } catch{
+        return;
+      }
+
+      // two forms, and the second is the blind spot the control found: a
+      // side-effect import (`import './x.mjs';`) has no `from`, so a pattern
+      // built only around `from` walks straight past it
+      for( const m of source.matchAll( /^import\s[^;]*?from\s+'(\.[^']+)'/gm ) ){
+        walk( resolve( dirname( file ), m[ 1 ] ) );
+      }
+
+      for( const m of source.matchAll( /^import\s+'(\.[^']+)'/gm ) ){
+        walk( resolve( dirname( file ), m[ 1 ] ) );
+      }
+    };
+
+    walk( join( ROOT, 'scripts', 'status-build.mjs' ) );
+
+    const outside = [ ...seen ].filter( f => /[/\\](v3|src)[/\\]/.test( f ) );
+
+    expect( seen.size, 'the walker stopped finding modules' ).to.be.at.least( 10 );
+    expect( outside, `the status build now imports:\n  ${outside.join( '\n  ' )}` ).to.eql( [] );
   } );
 } );
 

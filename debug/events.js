@@ -44,20 +44,57 @@
   let paused = false;
   let count = 0;
 
+  // Rows are buffered and written once per frame, which is not a
+  // micro-optimisation: `append` used to add a row and then read
+  // `el.scrollHeight` to stick the view to the bottom, and a write followed by
+  // a layout read is a *forced* reflow — once per event.
+  //
+  // One box selection over em-web emits `box` + `boxselect` + `select` per
+  // element, so 7468 selected elements meant 22406 forced layouts inside the
+  // single pointerup task: measured 5659 ms of forced layout in a 6055 ms
+  // handler, against 40 ms for the same gesture with this section's filter
+  // off.  None of that was the library — it was the log.  Batched, the frame
+  // does one read; and since only the last MAX_ROWS can ever be visible, the
+  // buffer drops the rest before any DOM node is built for them.
+  const pending = [];
+  let flushQueued = false;
+
   function append( type, target ) {
     if(paused) { return; }
 
-    const el = log();
-    const row = document.createElement('div');
     const id = target != null && typeof target.id === 'function' ? target.id() : 'core';
 
-    row.className = 'event-row';
-    row.textContent = `${String(++count).padStart(4, ' ')}  ${type}  ${id}`;
-    el.appendChild(row);
+    pending.push(`${String(++count).padStart(4, ' ')}  ${type}  ${id}`);
+
+    if(pending.length > MAX_ROWS) { pending.splice(0, pending.length - MAX_ROWS); }
+
+    if(!flushQueued) {
+      flushQueued = true;
+      requestAnimationFrame(flush);
+    }
+  }
+
+  function flush() {
+    flushQueued = false;
+
+    if(pending.length === 0) { return; }
+
+    const el = log();
+    const frag = document.createDocumentFragment();
+
+    for(const text of pending.splice(0)) {
+      const row = document.createElement('div');
+
+      row.className = 'event-row';
+      row.textContent = text;
+      frag.appendChild(row);
+    }
+
+    el.appendChild(frag);
 
     while(el.childElementCount > MAX_ROWS) { el.removeChild(el.firstChild); }
 
-    el.scrollTop = el.scrollHeight;
+    el.scrollTop = el.scrollHeight; // the one forced layout per frame
   }
 
   window.onCy(cy => {
@@ -94,6 +131,7 @@
   }
 
   $('#event-clear-button').addEventListener('click', () => {
+    pending.length = 0; // else the next frame writes what you just cleared
     log().textContent = '';
     count = 0;
   });

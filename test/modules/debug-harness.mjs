@@ -224,4 +224,84 @@ describe( 'debug harness (round 43)', function(){
 
   } );
 
+  describe( 'the event log', function(){
+
+    /* The maintainer's second report: box selection raised Chrome's
+       "[Violation] Forced reflow while executing JavaScript took 40ms".
+       It was this section, not the library.  `append` used to write a row and
+       then read `el.scrollHeight` to keep the view pinned to the bottom, and a
+       DOM write followed by a layout read forces a synchronous layout.  Box
+       selection emits `box` + `boxselect` + `select` per element, so on em-web
+       one gesture cost 22406 forced layouts — measured 5659 ms of layout in a
+       6055 ms pointerup handler, against 40 ms with this section's filter off.
+
+       So the property to hold is "the log reads layout once per frame, not
+       once per event", which is checkable here with a DOM stub: the real
+       failure is a *ratio*, and a ratio does not need a browser. */
+    const runEventLog = ( { events, frames } ) => {
+      const reads = { scrollHeight: 0 };
+      const rows = [];
+      const raf = [];
+      const el = {
+        get scrollHeight(){ reads.scrollHeight++; return rows.length * 10; },
+        set scrollTop( _v ){},
+        get childElementCount(){ return rows.length; },
+        get firstChild(){ return rows[ 0 ]; },
+        appendChild( n ){ rows.push( ...( n.__frag ?? [ n ] ) ); },
+        removeChild( n ){ rows.splice( rows.indexOf( n ), 1 ); },
+        set textContent( _v ){ rows.length = 0; },
+        addEventListener(){},
+        checked: false
+      };
+      const node = () => ( { className: '', textContent: '' } );
+      const handlers = [];
+      const ctx = createContext( {
+        console,
+        $: () => el,
+        $$: () => [],
+        document: {
+          createElement: node,
+          createDocumentFragment: () => {
+            const frag = [];
+
+            return { __frag: frag, appendChild: n => frag.push( n ) };
+          }
+        },
+        requestAnimationFrame: fn => raf.push( fn ),
+        window: { onCy: fn => fn( { on: ( type, a, b ) => handlers.push( { type, fn: b ?? a } ) } ) }
+      } );
+
+      runInContext( readFileSync( join( DEBUG, 'events.js' ), 'utf8' ), ctx );
+
+      const target = { id: () => 'n1' };
+      // an enabled family and not one of the NOISY names, so nothing gates it
+      const handler = handlers.find( h => h.type === 'tapstart' );
+
+      expect( handler, 'events.js stopped registering tapstart' ).to.not.equal( undefined );
+
+      const fire = () => handler.fn( { target } );
+
+      for( let f = 0; f < frames; f++ ){
+        for( let i = 0; i < events; i++ ){ fire(); }
+
+        for( const fn of raf.splice( 0 ) ){ fn(); }
+      }
+
+      return { reads, rowCount: rows.length };
+    };
+
+    it( 'reads layout once per frame, not once per event', function(){
+      const many = runEventLog( { events: 5000, frames: 1 } );
+
+      expect( many.reads.scrollHeight, '5000 events must not force 5000 layouts' ).to.equal( 1 );
+      expect( many.rowCount, 'the visible window is still capped' ).to.equal( 400 );
+
+      // the control for the control: the count really does track frames
+      const spread = runEventLog( { events: 10, frames: 7 } );
+
+      expect( spread.reads.scrollHeight ).to.equal( 7 );
+    } );
+
+  } );
+
 } );

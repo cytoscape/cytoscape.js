@@ -79,7 +79,7 @@ from the same entry point.
 v4 is a deliberate break from v3 — no selector strings (structured query
 objects and predicates instead), no classes, no z-index, a different
 stylesheet shape. `src/README.md` records every decision and every accepted
-deviation; the migration guide is round 46.
+deviation; the migration guide is round 47.
 
 ## Development
 

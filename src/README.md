@@ -138,7 +138,7 @@ surfaces with no measurement at all — layouts, the algorithm tail, the
 style engine, loading and the wire format, picking/box-selection/bounds,
 the data sidecar and structured queries, events and the animation
 lifecycle, store internals — have one, plus a breadth pass over the rest
-of the public API and a third audit script (`gpu-bench-coverage.mjs`).
+of the public API and a third audit script (`scripts/bench-coverage.mjs`).
 Its real output was **five paths slower than v3 or than v4's own design
 implies**, which round 34 (2026-08-03) then **fixed** — `indexOf`,
 `mutableElements()` and the emit path's no-listener gate to parity, the
@@ -2166,7 +2166,7 @@ v4 fails loudly by decided design, which makes its throws part of the
 public contract — and until round 30 most of them were unverified.
 `scripts/throw-coverage.mjs` finds every `throw new` in `src`
 and reports which the Node suite reaches, the same way
-`gpu-jsdoc-coverage.mjs` reports documented members:
+`scripts/jsdoc-coverage.mjs` reports documented members:
 `node scripts/throw-coverage.mjs [--verbose] [--lcov <file>]`, or
 `npm run test:throws` (part of `npm test`).
 
@@ -2246,7 +2246,7 @@ a record, not a measurement.  `node scripts/bench-coverage.mjs`
 reports which public surfaces have a benchmark and which do not.
 
 `npm run benchmark` (Mitata; `BENCH_N` scales the graph) compares each
-core/collection op against its v3 analogue in `src/`.  The suites in
+core/collection op against its v3 analogue in `v3/src/`.  The suites in
 `benchmark/`, by what they answer:
 
 | suite | what it prices |
@@ -2387,8 +2387,9 @@ the dispatch actually is.
 
 `node scripts/bench-coverage.mjs [--verbose]` reports which public
 members a benchmark calls (84% of the callable surface; core 98.9%,
-collection 98.5% since round 36.3 added `allAre` and `is`).  Like `gpu-throw-coverage.mjs` it reports and never
-gates — and it is the weakest of the three audits, matching *call-shaped
+collection 98.5% since round 36.3 added `allAre` and `is`).  Like the stranded-doc-block check it reports and never
+gates (throw coverage, its other sibling, has *gated* since round 37.1) —
+and it is the weakest of the three audits, matching *call-shaped
 mentions*, so it over-detects (a comment counts) and under-detects (a
 member reached through a wrapper is missed, which is why the engine-side
 `Viewport`/`StyleEngine`/`Animation` files read low: the core calls them

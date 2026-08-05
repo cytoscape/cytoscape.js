@@ -582,6 +582,9 @@ src/
     curve-blob.mts       # variable-length record pools (curve params, polygons, images) + waste reclaim
     data-store.mts       # the data() sidecar: per-(group, key) adaptive columns, dict reclaim
     dirty.mts            # DirtyTracker: per-column coalesced [min,end) span, resized flag, touch() for sidecars
+  math.mts               # round 42: the seven generic helpers v4 uses (copied from v3, not shared)
+  types.mts              # round 42: Position/BoundingBox — structural types, no runtime exports
+  util/                  # round 42: colors.mts, regex.mts, position.mts, sort.mts (v4's own copies)
   contract.mts           # model↔renderer contract: ColumnId specs, flag bits, ModelView, StoreDelta, LabelEntry;
                          #   also the shared field packings (round 27.1: arrow ids, the node shape byte)
   gpu-context.mts        # adapter/device/canvas configure, device-lost handling
@@ -619,16 +622,21 @@ src/
   interact/pointer.mts   # pointer/wheel/touch: pan, zoom, hover, taps, box select, drag, pinch, cxt
   README.md              # scope + accepted deviations (the maintained doc)
 debug/                   # the manual harness, rebuilt in round 43:
-                         #   networks.js   the nine networks (five fixtures shared with v3's WebGL
-                         #                 harness under v3/debug/webgl/, two compound, two generated)
+                         #   networks.js   the nine networks: six from real exports (four fixtures
+                         #                 shared with v3's WebGL harness under v3/debug/webgl/, the
+                         #                 465k-edge ndex-x-large local here, and a clustered variant
+                         #                 derived from em-web in-page) + three built in-page
                          #   styles.js     a hand-authored v4 sheet per network + a 'plain' one
                          #   fixtures.js   fixture conversion + the generators (shared with the spec)
                          #   init.js       params, loading, the instance, the stats overlay
                          #   view/layout/toggles/query/events/add-remove.js   the control sections
                          #   slim-ndex.mjs how the 34 MB ndex-x-large fixture was derived
+                         #   index.html / style.css / livereload-setup.js   the page itself
+                         #   network-ndex-x-large.json   the one fixture that lives here, not in v3/
 playwright-page/index.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/renderer.spec.js (+ visual.spec.js + goldens/)
-test/*.mjs               # 126 Node-runner suites (auto-picked-up by the test:js glob), incl.
+test/*.mjs               # 124 suites picked up by the test:js glob (126 files, less the
+                         #   two the glob excludes: types-* and node-test-setup), incl.
                          #   style-readback-all.mjs — round 35.1's characterization of all 153
                          #   readable style props on a node and an edge, the guard the readback
                          #   dispatch table was refactored behind
@@ -652,6 +660,9 @@ scripts/throw-coverage.mjs   # round 30.4: which src throws the Node suite runs;
                                  #   gate since 37.1 (npm run test:throws, in the npm test chain), with
                                  #   UNREACHABLE/MISATTRIBUTED as validated allowlists
 test/modules/throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture; + the 37.1 gate
+test/modules/picking.mjs         # the pick tile's packing/unpacking, Node-side
+test/modules/wgsl-identifiers.mjs # the shader sources parse as WGSL identifiers (no stale bindings)
+test/modules/benchmark-report.mjs # round 33: the HTML report's renderer + stat shaping
 test/modules/debug-harness.mjs   # round 43: debug/'s only coverage — every fixture exists at the
                                  #   path the page fetches, and every sheet compiles against it
 test/modules/import-graph.mjs    # round 41.3: what src imports from outside itself.  Round 42
@@ -669,7 +680,7 @@ v3/                              # round 42: the whole v3 project, self-containe
 ```
 
 **Round 42 (2026-08-04) moved all of this.**  The tree above is the
-post-move layout: v4's source promoted from `src/` to `src/`, the
+post-move layout: v4's source promoted from `src/gpu/` to `src/`, the
 `gpu-`/`webgpu-` prefixes dropped from the test, benchmark, script, debug
 and Playwright names, and v3 moved wholesale into `v3/`.  `src/math.mts`,
 `src/types.mts` and `src/util/` are new — v4's own lean copies of the five
@@ -893,7 +904,7 @@ Not yet ported from the small list: ~~`active`/`activate`,
 
 ### Collection/core API performance
 
-Benchmarked against the v3 analogue in `src/` via Mitata
+Benchmarked against the v3 analogue in `v3/src/` via Mitata
 (`npm run benchmark`, `BENCH_N` scales the graph; suites in
 `benchmark/`).  The harness rotates over a pool of distinct operands
 so V8 can't hoist pure loop-invariant calls out of the measured region —
@@ -1159,7 +1170,7 @@ decisions, explicitly:
   and removed the fn form.
 
 Verification: typecheck, lint, `test:js` (1221 passing, incl. the new
-`gpu-query.mjs` matcher suite and rewritten style/events/flag-scan
+`test/query.mjs` matcher suite and rewritten style/events/flag-scan
 suites), and all 17 Playwright renderer specs on a real adapter.
 Benchmarks compare idiomatic forms per side now (`cmp(name, v3Op,
 gpuOp)` where they differ); `pointer.mts` tap-clear uses
@@ -2652,9 +2663,13 @@ round 25, 2026-08-02), ~~the small parity remnants noted inline in
 items 4–6~~ (**closed by round 27, 2026-08-02** — v3's node-shape and
 arrowhead vocabularies are complete and numeric `text-rotation`
 landed; the one remainder is `border-style`/`outline-style`, held for
-the scope call item 4 itself asks for), and items 8's deferred overlap
+the scope call item 4 itself asks for).  ~~Items 8's deferred overlap
 box mode, 10's core/collection extension points and 12's odds and
-ends.
+ends~~ — **all closed at the fifth sitting and after**: overlap box mode
+landed as 39.1, extension points stay out by decision, and 12 split into
+`cy.gc()` (39.3), graph data on the wire (39.2) and `cytoscape.warnings()`,
+which is round 40's.  (Dated for clarity: this paragraph is 2026-08-02's
+reading, superseded by "As of 2026-08-04, what remains" below.)
 
 **2026-08-02, rounds 26–27**: round 26 built the authoring surface —
 JSDoc across the whole prototype (46% → 100%, gated) and the first
@@ -2822,11 +2837,12 @@ decided feature tail — overlap box mode, wire graph-data, `cy.gc()` —
 (39), the error-policy sitting + `cytoscape.warnings()` (40 — the one
 question the sitting deliberately left open), the v4 Event + emitter
 (41), the **`v3/` restructure** that makes v4 the package's default
-export (42), packaging/publish hardening (43), the JSDoc→docmaker
-generator (44), the v4 docs site (45), the migration guide + CHANGELOG
-(46), robustness/soak (47), cross-platform validation (48), release
-engineering + `4.0.0-alpha.1` (49), and the release bake to **4.0.0**
-(50).  This sitting's edit touches PLAN.md only, at the maintainer's
+export (42), packaging/publish hardening (44), the JSDoc→docmaker
+generator (45), the v4 docs site (46), the migration guide + CHANGELOG
+(47), robustness/soak (48), cross-platform validation (49), release
+engineering + `4.0.0-alpha.1` (50), and the release bake to **4.0.0**
+(51).  (The numbers from 44 on are one higher than this sitting wrote
+them: round 43 was inserted later for the debug harness.)  This sitting's edit touches PLAN.md only, at the maintainer's
 instruction; the README true-up (header, follow-up hooks) lands with
 round 37's docs-first commit — noted so the standing docs-travel rule's
 exception is on the record rather than silent drift.  "Gaps with
@@ -7870,8 +7886,8 @@ worth as much as the findings:
   121 gpu spec files for specs that assert nothing, or whose name
   promises a behaviour their body never invokes, produced 64 hits and
   **no new real ones** — the `NO EXPECT` hits are helper-wrapped
-  assertions (`close()` in `gpu-curve-geometry.mjs`, the `throws()`
-  helpers in `gpu-mappers.mjs`) and the rest are false matches on
+  assertions (`close()` in `test/curve-geometry.mjs`, the `throws()`
+  helpers in `test/mappers.mjs`) and the rest are false matches on
   substrings (`betweennessCentrality` contains "tween").  The three
   specs 28.1 fixed remain the only known instances.
 - **The binary wire format is already priced** (deserialize ~5 ms,
@@ -7900,7 +7916,7 @@ read them as the round's starting state, not its current one:
    `silentPositions`, `silentShift`, `delayAnimation` and
    `renderedOuterHeight` — the last a plain sibling gap, since
    `renderedOuterWidth` is tested one line away in
-   `gpu-collection-dimensions.mjs`.
+   `test/collection-dimensions.mjs`.
 3. **The decided-design drops are barely pinned.**  "No selector
    strings, anywhere" is v4's most load-bearing API decision, and the
    only specs asserting it are three in the algorithms files
@@ -7948,8 +7964,8 @@ read them as the round's starting state, not its current one:
 - [x] **29.2 The four unmentioned public methods** (2026-08-03) —
   landed, extending the files that already own the surface rather than
   adding a parallel one: `silentPositions`, `silentShift` (both forms)
-  and `renderedOuterHeight` in `gpu-collection-dimensions.mjs`,
-  `delayAnimation` in `gpu-animation.mjs`.  The silent specs assert the
+  and `renderedOuterHeight` in `test/collection-dimensions.mjs`,
+  `delayAnimation` in `test/animation.mjs`.  The silent specs assert the
   *silence* — a `position` listener counts zero — and then fire the
   loud sibling in the same spec, so the zero is the method's doing and
   not a listener that was never wired.
@@ -8243,7 +8259,7 @@ commit(s)):
   bundle.  91/91 webgpu (87 + 4).
 - [x] **30.3 The untested public surface** (2026-08-03) — landed, 9
   specs in the three files that own the surfaces.
-  **`cy.stop()`** (3 specs, `gpu-viewport-animation.mjs`): `ani.stop()`
+  **`cy.stop()`** (3 specs, `test/viewport-animation.mjs`): `ani.stop()`
   and `ele.stop()` were tested and the core sibling was called by
   nothing.  Both arms are pinned, since the difference between them is
   the whole point of the argument — the default freezes the viewport
@@ -8252,12 +8268,12 @@ commit(s)):
   no-op.  One drafting note: the first `viewport` emit can land at
   t = 0, so the specs wait for actual movement rather than for the
   event.
-  **`renderedTargetEndpoint`** (1 spec, `gpu-curve-12c-accessors.mjs`):
+  **`renderedTargetEndpoint`** (1 spec, `test/curve-12c-accessors.mjs`):
   29.2's `renderedOuterHeight` shape exactly — the source twin has been
   tested since 12c.  The spec asserts the transform *and* that the
   answer is the target end, which is what a copy-paste from the
   sibling would break.
-  **The clustering metrics** (5 specs, `gpu-algorithms-clustering.mjs`):
+  **The clustering metrics** (5 specs, `test/algorithms-clustering.mjs`):
   every existing clustering spec passes `euclidean`, `manhattan` or a
   custom function, so `squaredEuclidean` and `max` — public option
   values — ran nowhere.  The specs assert the arithmetic through the
@@ -8301,7 +8317,7 @@ commit(s)):
   trap that made the first measurement fiction, and the useless
   function-level records.
   5 specs in `test/modules/throw-coverage.mjs` (the precedent is
-  `gpu-benchmark-report.mjs`: a tool's parser gets a fixture, not
+  `test/modules/benchmark-report.mjs`: a tool's parser gets a fixture, not
   trust) against hand-written lcov naming real files and real throw
   lines.  They pin the three classifications, the misattribution
   override, and that a *silent* report reads as unknown rather than as
@@ -10096,7 +10112,7 @@ them.  The sitting's own record, briefly:
    maintainer's amendment to the proposal, which had dropped it), no
    namespaces (round 41).
 4. **Packaging: v4 becomes the package.**  v4's source promotes from
-   `src/` to `src/` and becomes the default export of
+   `src/gpu/` to `src/` and becomes the default export of
    `cytoscape@4`; the entire v3 file set moves into a self-contained,
    still-buildable **`v3/`** directory (parity and comparison
    benchmarks keep working against it), and no v3-specific file

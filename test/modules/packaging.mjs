@@ -126,6 +126,16 @@ describe( 'packaging: the tarball', () => {
     expect( src.length ).to.be.greaterThan( 50 );
   } );
 
+  it( 'ships the two documents an upgrading consumer needs (round 47)', () => {
+    // These are the other side of the exclusion below: `PLAN.md` and
+    // `AGENTS.md` are the repo's record and must not ship, while the
+    // migration guide and the changelog are exactly what someone who just
+    // ran `npm install cytoscape@4` and found their selectors throwing needs
+    // to have locally.
+    expect( files ).to.include( 'MIGRATING.md' );
+    expect( files ).to.include( 'CHANGELOG.md' );
+  } );
+
   it( 'ships no development tree', () => {
     const dev = [
       'test/', 'test/modules/', 'debug/', 'benchmark/', 'scripts/',

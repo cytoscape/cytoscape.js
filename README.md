@@ -38,6 +38,8 @@ parity harness keep working against it.
 | `debug/` | the manual dev harness — nine networks, each with a production-grade v4 stylesheet |
 | `scripts/` | the audits (JSDoc coverage, throw coverage, benchmark coverage) |
 | `v3/` | Cytoscape.js v3, self-contained — its own `package.json`, build, tests and documentation site |
+| `MIGRATING.md` | the v3 → v4 porting guide (ships in the package) |
+| `CHANGELOG.md` | the 4.0 changelog (ships in the package) |
 | `PLAN.md` | the development record: every round's plan and outcome |
 | `AGENTS.md` | contributor guidelines |
 
@@ -78,8 +80,12 @@ from the same entry point.
 
 v4 is a deliberate break from v3 — no selector strings (structured query
 objects and predicates instead), no classes, no z-index, a different
-stylesheet shape. `src/README.md` records every decision and every accepted
-deviation; the migration guide is round 47.
+stylesheet shape. **[`MIGRATING.md`](MIGRATING.md) is the porting guide**:
+recipe tables per v3 selector form, a measured property-by-property diff
+(v4 accepts 153 of v3's 291 style property names), the event names that
+register and then silently never fire, and the behaviours that compile and
+then differ. [`CHANGELOG.md`](CHANGELOG.md) is the summary.
+`src/README.md` records every decision and every accepted deviation.
 
 ## Development
 

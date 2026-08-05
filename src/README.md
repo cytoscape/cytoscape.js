@@ -2659,6 +2659,32 @@ and `./gpu` resolves to identical files.  It deliberately does not
 check that the bundles *exist* — they do not until a release build
 runs, and whether one ran is release-workflow business.
 
+## Porting from v3 (round 47)
+
+`MIGRATING.md` at the repo root is the porting guide, and it ships in the
+package — someone who has just installed v4 and found their selectors
+throwing should have it locally.  It carries a recipe table per v3
+selector form, the style-property diff, the event names that register and
+then silently never fire, and a "behaviour to re-check" table for the
+things that compile and then differ (the `straight` curve-style default,
+`bottom` text-valign, nodes-then-edges `elements()` order, Float32
+positions, OKLab colour tweens, `spring( bounce )`).  `CHANGELOG.md` is
+the summary; this file stays the reasoning.
+
+**The property table is measured, not transcribed.**  v3's registry was
+enumerated from a live v3 instance — 291 names, properties plus aliases —
+and each offered to v4's sheet in all four groups: **153 accepted** (7
+only in `core`), **138 rejected**, of which 96 are the numbered
+`pie-N-*`/`stripe-N-*` families that became the round-23 `chart` family.
+The classification keys on the *property-name* rejection message
+specifically, because v4 also says "unsupported" for an invalid keyword —
+a first pass matching the word alone reported `shape` and
+`source-arrow-fill` as dropped.
+`test/modules/migration-guide.mjs` keeps the table honest: every property
+it names as dropped must still be rejected, every replacement it offers
+must still compile, and the defaults it tells readers to re-check must
+still be what it says.
+
 ## Known deviations from v3 (accepted for pass 1)
 
 - **Listener firing order**: one core emitter with ref/predicate-qualified

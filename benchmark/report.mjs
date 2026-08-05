@@ -20,6 +20,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node
 import { dirname, join, resolve, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderReport } from './report-html.mjs';
+import { buildMeta } from './run-meta.mjs';
 
 const DIR = dirname( fileURLToPath( import.meta.url ) );
 const RESULTS_DIR = join( DIR, 'results' );
@@ -111,12 +112,6 @@ const suiteFilter = flagValue( '--suite' );
 const sceneFilter = flagValue( '--scene' ); // forwarded to the renderer bench
 const renderOnly = flagValue( '--render-only' );
 
-function git( ...args ){
-  const r = spawnSync( 'git', args, { cwd: DIR, encoding: 'utf8' } );
-
-  return r.status === 0 ? r.stdout.trim() : null;
-}
-
 function render( results, resultsPath ){
   const htmlPath = join( RESULTS_DIR, 'report.html' );
 
@@ -154,6 +149,7 @@ if( jobs.length === 0 ){
 const startedAt = Date.now();
 const results = { meta: null, jobs: [] };
 const failures = [];
+let rendererAdapter = null;
 
 for( const [ i, job ] of jobs.entries() ){
   const label = job.browser ? `${job.file} (browser)` : `${job.file} @ N=${job.n}${job.op ? ` op=${job.op}` : ''}`;
@@ -192,6 +188,9 @@ for( const [ i, job ] of jobs.entries() ){
     // a jobs bundle: one job per scene, durations set scene-side
     results.jobs.push( ...data.jobs );
     failures.push( ...( data.failures ?? [] ) );
+    // which GPU actually rendered — captured browser-side, and until round
+    // 46.5 discarded at this boundary
+    rendererAdapter = data.adapter ?? rendererAdapter;
   } else {
     results.jobs.push( { ...data, durationMs } );
   }
@@ -199,19 +198,16 @@ for( const [ i, job ] of jobs.entries() ){
 
 const context = results.jobs[ 0 ]?.context ?? {};
 
-results.meta = {
-  date: new Date( startedAt ).toISOString(),
-  commit: git( 'rev-parse', '--short', 'HEAD' ),
-  branch: git( 'rev-parse', '--abbrev-ref', 'HEAD' ),
-  nodeVersion: process.version,
-  cpu: context.cpu ?? null,
-  arch: context.arch ?? null,
-  runtime: context.runtime ?? null,
+results.meta = buildMeta( {
+  startedAt,
   profile: full ? 'full' : all ? 'all' : 'quick',
   suiteFilter,
-  totalMs: Date.now() - startedAt,
-  failures
-};
+  failures,
+  context,
+  // a --renderer run carries the adapter through the browser job's bundle;
+  // a pure CPU run has none, and null is the honest answer
+  adapter: rendererAdapter
+} );
 
 const stamp = results.meta.date.replace( /[:.]/g, '-' );
 const resultsPath = join( RESULTS_DIR, `results-${stamp}.json` );

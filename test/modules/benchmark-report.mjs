@@ -237,4 +237,121 @@ describe( 'gpu benchmark report', function(){
     } );
   } );
 
+  /*
+  Round 46.5: the machine and provenance block.
+
+  Controls run while writing (each failed the spec named):
+    - `machineBlock` made to return its table unconditionally rather than `''`
+      for an absent `meta.machine` — fails 'renders exactly as before'.
+    - the physical/logical row collapsed to a single core count — fails
+      'distinguishes physical cores from logical'.
+    - the `esc` calls dropped from the row values — fails 'escapes what other
+      programs produced'.
+    - `meta.dirty` ignored — fails 'says so when the tree was dirty'.
+  */
+  describe( 'machine and provenance block', function(){
+    const machine = () => ( {
+      cpu: {
+        model: 'Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz',
+        physicalCores: 8, logicalCores: 16, baseGHz: 3.6, maxGHz: 5
+      },
+      memory: { totalBytes: 65686240 * 1024 },
+      os: { platform: 'linux', distro: 'Fedora Linux 43', kernel: '6.19.14', arch: 'x64' },
+      node: { version: 'v24.18.0', v8: '13.6.233.17-node.50' },
+      gpus: [
+        { vendor: 'Intel Corporation', model: 'UHD Graphics 630', driver: 'i915', vramBytes: null },
+        { vendor: 'AMD', model: 'Ellesmere [Radeon RX 580]', driver: 'amdgpu', vramBytes: 8589934592 }
+      ],
+      probe: { errors: [] },
+      fingerprint: '2d2ea233'
+    } );
+
+    const withMachine = extra => {
+      const f = fixture();
+
+      f.meta = { ...f.meta, machine: machine(), ...extra };
+
+      return renderReport( f );
+    };
+
+    it( 'renders exactly as before for a results file with no machine block', function(){
+      // the backward-compatibility contract, and the reason it is a spec: the
+      // status site re-renders every published run it finds, including every
+      // one written before round 46.5
+      const html = renderReport( fixture() );
+
+      expect( html ).to.not.match( /Machine and provenance/ );
+      expect( html ).to.not.match( /physical \/ / );
+    } );
+
+    it( 'distinguishes physical cores from logical', function(){
+      // 8 and 16 are different numbers here; a block reporting one core count
+      // would satisfy any assertion that only looked for a digit
+      expect( withMachine() ).to.match( /8 physical \/ 16 logical/ );
+    } );
+
+    it( 'reports the clocks, the memory and every GPU with its VRAM', function(){
+      const html = withMachine();
+
+      expect( html ).to.match( /3\.6 GHz base/ );
+      expect( html ).to.match( /5 GHz max/ );
+      expect( html ).to.match( /62\.6 GiB/ );          // 65686240 KiB
+      expect( html ).to.match( /UHD Graphics 630/ );   // the integrated card too
+      expect( html ).to.match( /Radeon RX 580/ );
+      expect( html ).to.match( /8\.0 GiB/ );           // only the discrete one has VRAM
+    } );
+
+    it( 'names the adapter that actually rendered, separately from the inventory', function(){
+      // the GPU row is what is installed; the adapter row is what WebGPU chose,
+      // and on a two-card box those are different questions
+      const html = withMachine( { adapter: { vendor: 'amd', architecture: 'gcn-4', description: '' } } );
+
+      expect( html ).to.match( /amd gcn-4/ );
+    } );
+
+    it( 'says so when the tree was dirty', function(){
+      // a measurement from a dirty tree is not attributable to its sha
+      expect( withMachine( { dirty: true } ) ).to.match( /uncommitted changes/ );
+      expect( withMachine( { dirty: false } ) ).to.not.match( /uncommitted changes/ );
+    } );
+
+    it( 'escapes what other programs produced', function(){
+      // every value in this block is lspci output, a git subject or a WebGPU
+      // description — none of it is ours
+      const f = fixture();
+
+      f.meta = {
+        ...f.meta,
+        machine: { ...machine(), cpu: { ...machine().cpu, model: 'Evil <script>alert(1)</script> CPU' } },
+        commitSubject: 'fix: <b>bold</b> & "quoted"'
+      };
+
+      const html = renderReport( f );
+
+      expect( html ).to.not.match( /<script>alert/ );
+      expect( html ).to.match( /&lt;script&gt;alert/ );
+      expect( html ).to.match( /&lt;b&gt;bold&lt;\/b&gt; &amp; &quot;quoted&quot;/ );
+    } );
+
+    it( 'omits a row it has no value for, rather than printing null', function(){
+      const f = fixture();
+
+      f.meta = { ...f.meta, machine: { ...machine(), memory: { totalBytes: null }, fingerprint: null } };
+
+      const html = renderReport( f );
+
+      expect( html ).to.not.match( />null</ );
+      expect( html ).to.not.match( /Machine id/ );
+      expect( html ).to.match( /Machine and provenance/ ); // the rest still renders
+    } );
+
+    it( 'stays self-contained', function(){
+      // the property the whole report is built on, re-checked with the new block
+      const html = withMachine( { adapter: { vendor: 'amd', architecture: 'gcn-4' } } );
+
+      expect( html ).to.not.match( /src="http/ );
+      expect( html ).to.not.match( /href="http/ );
+    } );
+  } );
+
 } );

@@ -30,11 +30,12 @@ import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import { chromium } from '@playwright/test';
 import { toStats, oneShotStats } from './render-stats.mjs';
 import { renderReport } from './report-html.mjs';
+import { buildMeta } from './run-meta.mjs';
+import { describeMachine } from '../scripts/machine-info.mjs';
 
 const DIR = dirname( fileURLToPath( import.meta.url ) );
 const ROOT = resolve( DIR, '..' );
@@ -140,11 +141,6 @@ function serve( root ){
 
 // -- run ----------------------------------------------------------------------
 const startedAt = Date.now();
-const git = ( ...args ) => {
-  const r = spawnSync( 'git', args, { cwd: DIR, encoding: 'utf8' } );
-
-  return r.status === 0 ? r.stdout.trim() : null;
-};
 
 let scenes = SCENES;
 
@@ -172,6 +168,8 @@ const browser = await chromium.launch( {
       : [] )
   ]
 } );
+// read before the close below, since the meta block is built after it
+const browserVersion = browser.version();
 const context = await browser.newContext( { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 2 } );
 
 let page;
@@ -404,27 +402,27 @@ function median( arr ){
 
 // -- output --------------------------------------------------------------------
 if( jsonOut != null ){
-  // bundle for report.mjs --renderer: jobs (+ failures for its meta)
-  writeFileSync( resolve( jsonOut ), JSON.stringify( { jobs, failures } ) );
+  // bundle for report.mjs --renderer: jobs (+ failures for its meta, + the
+  // adapter, which was captured above and discarded at this boundary until
+  // round 46.5 — so a --renderer report could not say which GPU it measured)
+  writeFileSync( resolve( jsonOut ), JSON.stringify( { jobs, failures, adapter } ) );
   process.exit( failures.length > 0 && jobs.length === 0 ? 1 : 0 );
 }
 
 mkdirSync( RESULTS_DIR, { recursive: true } );
 
 const results = {
-  meta: {
-    date: new Date( startedAt ).toISOString(),
-    commit: git( 'rev-parse', '--short', 'HEAD' ),
-    branch: git( 'rev-parse', '--abbrev-ref', 'HEAD' ),
-    nodeVersion: process.version,
-    cpu: jobs[ 0 ]?.context.cpu ?? null,
-    arch: jobs[ 0 ]?.context.arch ?? null,
-    runtime: 'chromium',
+  meta: buildMeta( {
+    startedAt,
     profile: 'renderer',
     suiteFilter: sceneFilter,
-    totalMs: Date.now() - startedAt,
-    failures
-  },
+    failures,
+    context: { ...jobs[ 0 ]?.context, runtime: 'chromium' },
+    adapter,
+    // the browser is part of the measurement here in a way it never is for a
+    // Node suite, so it rides along with the machine
+    machine: { ...describeMachine(), browser: { name: 'chromium', version: browserVersion } }
+  } ),
   jobs
 };
 

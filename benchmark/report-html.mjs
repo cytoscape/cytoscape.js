@@ -347,6 +347,12 @@ th, td { text-align: left; padding: 3px 14px 3px 0; border-bottom: 1px solid var
 th { color: var(--ink-2); font-weight: 500; }
 td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
 .fail { color: #d03b3b; }
+/* the machine table is prose, not figures: the generic right-align +
+   tabular-nums above is for stats columns and reads badly on device strings */
+.machine td { text-align: left; font-variant-numeric: normal; }
+.machine th { white-space: nowrap; padding-right: 20px; vertical-align: top; }
+.machine table { max-width: 78ch; }
+.muted { color: var(--muted); }
 #tip {
   position: fixed; display: none; max-width: 420px; padding: 6px 10px; font-size: 12px;
   background: var(--surface); color: var(--ink); border: 1px solid var(--border);
@@ -374,6 +380,79 @@ addEventListener('focusin', e => {
 });
 addEventListener('focusout', () => { tip.style.display = 'none'; });
 `;
+
+/**
+ * The provenance block: which box, which GPU, which commit.
+ *
+ * Returns `''` when `meta.machine` is absent, which is the backward
+ * compatibility contract — every results file written before round 46.5 lacks
+ * it, and the status site re-renders every published run it can find.  So this
+ * is additive by construction rather than by care.
+ */
+function machineBlock( meta ){
+  const m = meta.machine;
+
+  if( m == null ){ return ''; }
+
+  const cores = m.cpu?.physicalCores != null && m.cpu?.logicalCores != null
+    ? `${m.cpu.physicalCores} physical / ${m.cpu.logicalCores} logical` : null;
+  const clocks = [
+    m.cpu?.baseGHz != null ? `${m.cpu.baseGHz} GHz base` : null,
+    m.cpu?.maxGHz != null ? `${m.cpu.maxGHz} GHz max` : null
+  ].filter( v => v != null ).join( ' · ' );
+
+  const gpuRows = ( m.gpus ?? [] ).map( g => {
+    const vram = fmtBytes( g.vramBytes );
+
+    return [ g.model, vram != null ? `(${vram})` : null, g.driver ]
+      .filter( v => v != null ).join( ' ' );
+  } );
+
+  // every value here is other programs' output — `lspci`'s device strings, a
+  // git subject line, a WebGPU adapter description — so each is escaped as it
+  // is placed.  The two rows that carry markup build it from escaped parts.
+  // `esc` stringifies, so a null would render the word "null": hence `e`.
+  const e = v => v == null || v === '' ? null : esc( v );
+  const rows = [
+    [ 'CPU', e( m.cpu?.model ) ],
+    [ 'Cores', e( [ cores, clocks ].filter( v => v != null && v !== '' ).join( ' · ' ) ) ],
+    [ 'Memory', e( fmtBytes( m.memory?.totalBytes ) ) ],
+    [ 'GPU', gpuRows.length > 0 ? gpuRows.map( esc ).join( '<br>' ) : null ],
+    // which adapter actually rendered — only a browser run knows, and only it
+    // sets this; the GPU row above is the machine's inventory, not the choice
+    [ 'Adapter', meta.adapter != null
+      ? e( [ meta.adapter.vendor, meta.adapter.architecture || meta.adapter.description ]
+        .filter( v => v != null && v !== '' ).join( ' ' ) ) : null ],
+    [ 'Browser', m.browser != null ? e( `${m.browser.name} ${m.browser.version}` ) : null ],
+    [ 'OS', e( [ m.os?.distro ?? m.os?.platform, m.os?.kernel, m.os?.arch ].filter( v => v != null ).join( ' · ' ) ) ],
+    [ 'Node', m.node?.version != null ? e( `${m.node.version}${m.node.v8 ? ` (v8 ${m.node.v8})` : ''}` ) : null ],
+    [ 'Commit', meta.commit != null
+      ? esc( meta.commit )
+        + ( meta.dirty === true ? ' <span class="fail">+ uncommitted changes</span>' : '' )
+        + ( meta.commitSubject != null ? `<br><span class="muted">${esc( meta.commitSubject )}</span>` : '' )
+      : null ],
+    [ 'Machine id', e( m.fingerprint ) ]
+  ].filter( ( [ , v ] ) => v != null && v !== '' );
+
+  if( rows.length === 0 ){ return ''; }
+
+  return `<details class="machine"><summary>Machine and provenance</summary>
+    <table>${rows.map( ( [ k, v ] ) => `<tr><th>${esc( k )}</th><td>${v}</td></tr>` ).join( '' )}</table>
+  </details>`;
+}
+
+/** Bytes as the nearest binary unit; `null` for anything not a positive size. */
+function fmtBytes( n ){
+  if( !Number.isFinite( n ) || n <= 0 ){ return null; }
+
+  const units = [ 'B', 'KiB', 'MiB', 'GiB', 'TiB' ];
+  let i = 0;
+  let v = n;
+
+  while( v >= 1024 && i < units.length - 1 ){ v /= 1024; i++; }
+
+  return `${v >= 100 || i === 0 ? Math.round( v ) : v.toFixed( 1 )} ${units[ i ]}`;
+}
 
 export function renderReport( results ){
   const meta = results.meta ?? {};
@@ -404,6 +483,7 @@ export function renderReport( results ){
 <body>
 <h1>Cytoscape.js GPU benchmarks</h1>
 <p class="meta">v4 (src/) vs v3 (v3/src/) · Mitata · times are per-iteration p50${metaLine ? ` · ${metaLine}` : ''}</p>
+${machineBlock( meta )}
 ${failures}
 ${tiles( pairs, meta )}
 ${overview( pairs )}

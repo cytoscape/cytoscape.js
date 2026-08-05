@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import { buildPlan, readNetworks, DOCUMENTS } from '../../scripts/status-build.mjs';
 import { fixturePolicy, patchDebugHtml, networksPatch, PAGES_MAX_BYTES, minifiedSize } from '../../scripts/status/plan.mjs';
+import { wireSize } from '../../scripts/status/wire-fixtures.mjs';
 import { enumerateRefs, markupRefs, networkRefs } from '../../scripts/status/refs.mjs';
 import { goldenTitles } from '../../scripts/status/goldens-page.mjs';
 import { newestMtime, SOURCE_EXT } from '../../scripts/status/repo-state.mjs';
@@ -116,23 +117,48 @@ describe( 'status site: the plan', function(){
 } );
 
 describe( 'status site: the Cloudflare Pages per-file cap', function(){
-  it( 'sends anything with a remote source to that source, whatever its size', function(){
-    // the maintainer's call (2026-08-05): the two NDEx fixtures load from the
-    // bucket they came from rather than being carried
-    expect( fixturePolicy( { bytes: 40e6, minifiedBytes: 40e6, remoteUrl: 'https://x/y.json' } ) )
-      .to.equal( 'remote' );
+  it( 'prefers the binary wire form whenever it fits', function(){
+    // the maintainer's call (2026-08-05), taken after the sizes were measured:
+    // binary is the smaller file at rest and it removes the off-site bucket
+    expect( fixturePolicy( { bytes: 35_804_679, minifiedBytes: 35_804_679, wireBytes: 9_961_472 } ) )
+      .to.equal( 'wire' );
   } );
 
-  it( 'minifies a pretty-printed fixture, which is what puts ndex-large under the cap', function(){
+  it( 'falls back to minifying when the encoding does not fit either', function(){
+    expect( fixturePolicy( { bytes: 33_173_439, minifiedBytes: 21_500_000, wireBytes: 30e6 } ) )
+      .to.equal( 'jsonmin' );
     expect( fixturePolicy( { bytes: 33_173_439, minifiedBytes: 21_500_000 } ) ).to.equal( 'jsonmin' );
   } );
 
-  it( 'omits an oversized fixture with no remote rather than shipping a broken deploy', function(){
-    expect( fixturePolicy( { bytes: 35_804_679, minifiedBytes: 35_804_679 } ) ).to.equal( 'omit' );
+  it( 'omits a fixture no encoding brings under the cap, rather than shipping a broken deploy', function(){
+    expect( fixturePolicy( { bytes: 35_804_679, minifiedBytes: 35_804_679, wireBytes: 30e6 } ) )
+      .to.equal( 'omit' );
   } );
 
   it( 'copies a small already-compact fixture', function(){
     expect( fixturePolicy( { bytes: 1000, minifiedBytes: 1000 } ) ).to.equal( 'copy' );
+  } );
+
+  it( 'the binary encoding really does take the largest fixture under the cap, measured', function(){
+    // The load-bearing measurement of this change: `ndex-x-large` is 34.1 MiB
+    // of already-compact JSON — minifying gains nothing — and the wire form
+    // takes it to ~9.5 MiB.  That single number is why the deploy needs no
+    // off-site bucket.
+    this.timeout?.( 180000 );
+
+    const path = join( ROOT, 'debug', 'network-ndex-x-large.json' );
+
+    if( !existsSync( path ) || !existsSync( join( ROOT, 'build', 'cytoscape.cjs.js' ) ) ){ return; }
+
+    const onDisk = statSync( path ).size;
+    const encoded = wireSize( ROOT, path );
+
+    expect( onDisk, 'the fixture no longer exceeds the cap; this spec has nothing to prove' )
+      .to.be.greaterThan( PAGES_MAX_BYTES );
+    expect( encoded, 'the fixture could not be encoded at all' ).to.be.a( 'number' );
+    expect( encoded ).to.be.at.most( PAGES_MAX_BYTES );
+    // and it must be a real reduction, not a rounding win
+    expect( encoded ).to.be.lessThan( onDisk / 2 );
   } );
 
   it( 'minifying really does take ndex-large under the cap, measured on disk', function(){
@@ -168,7 +194,8 @@ describe( 'status site: the Cloudflare Pages per-file cap', function(){
 
       const bytes = op.kind === 'write' ? Buffer.byteLength( op.text )
         : op.kind === 'jsonmin' ? minifiedSize( op.from )
-          : statSync( op.from ).size;
+          : op.kind === 'wire' ? wireSize( ROOT, op.from )
+            : statSync( op.from ).size;
 
       expect( bytes, `${op.to} is ${( bytes / 1048576 ).toFixed( 1 )} MiB, over the 25 MiB cap` )
         .to.be.at.most( PAGES_MAX_BYTES );
@@ -219,11 +246,20 @@ describe( 'status site: what the runtime asks for', function(){
 
     for( const url of external ){
       expect( url, `${url} is an off-site resource this site has not declared` )
-        .to.match( /^https:\/\/(pub-[a-z0-9]+\.r2\.dev|img\.shields\.io|github\.com|raw\.githubusercontent\.com)\// );
+        .to.match( /^https:\/\/(img\.shields\.io|github\.com|raw\.githubusercontent\.com)\// );
     }
   } );
 
-  it( 'loads no external resource beyond the fixture bucket and the readme badges', function(){
+  it( 'fetches no fixture from off-site — the whole point of the binary form', function(){
+    // Until the fixtures were re-encoded, the two oversized NDEx networks
+    // loaded from an R2 bucket, which meant a CORS rule and an upload someone
+    // had to remember.  The binary form put every fixture under the cap, so the
+    // deploy is self-contained; this asserts it stays that way.
+    expect( refs.filter( r => r.external && r.source.startsWith( 'runtime:' ) ).map( r => r.url ) )
+      .to.eql( [] );
+  } );
+
+  it( 'loads no external resource beyond the readme badges', function(){
     // the count matters as much as the hosts: this is the whole list, and it
     // should stay short.  If it grows, someone added a CDN.
     const external = [ ...new Set(
@@ -231,10 +267,9 @@ describe( 'status site: what the runtime asks for', function(){
     ) ].sort();
 
     expect( external ).to.eql( [
-      'github.com',                                  // the CI status badge
-      'img.shields.io',                              // the rest of README.md's badges
-      'pub-835fc16db602427ba8b9a874e4754257.r2.dev', // the oversized NDEx fixtures
-      'raw.githubusercontent.com'                    // the logo
+      'github.com',               // the CI status badge
+      'img.shields.io',           // the rest of README.md's badges
+      'raw.githubusercontent.com' // the logo
     ] );
   } );
 
@@ -307,21 +342,29 @@ describe( 'status site: the harness mirror', function(){
     expect( stub.text, 'the stub still names the livereload port' ).to.not.match( /35729/ );
   } );
 
-  it( 'tells the page to prefer remote fixtures, which local development never does', function(){
+  it( 'names every encoded fixture in a manifest the source harness does not have', function(){
     const plan = buildPlan( { root: ROOT, gzip: false } );
     const config = plan.ops.find( op => op.to === 'debug/status-config.js' );
+    const wired = plan.ops.filter( op => op.kind === 'wire' );
 
-    expect( config.text ).to.match( /DEBUG_FIXTURE_SOURCE\s*=\s*'remote'/ );
-    // and the source harness must not set it, or `npm run watch` reaches the network
-    // Comments are stripped first.  init.js *reads* the flag with `===` and
-    // its comment quotes the assignment the status build makes — a naive
-    // regex over the raw source matches the comment and fails a correct file.
+    expect( config.text ).to.match( /DEBUG_FIXTURE_WIRE\s*=/ );
+
+    for( const op of wired ){
+      const base = op.to.split( '/' ).pop();
+
+      expect( config.text, `${base} was encoded but is not in the manifest` ).to.include( base );
+    }
+
+    // `npm run watch` has no manifest, so it reads the JSON unchanged.  The
+    // comment in init.js quotes the assignment, so comments come out first — a
+    // naive regex over the raw source matches the comment and fails a correct
+    // file.
     const init = readFileSync( join( ROOT, 'debug', 'init.js' ), 'utf8' )
       .split( '\n' ).filter( l => !l.trim().startsWith( '//' ) ).join( '\n' );
 
-    expect( init, 'debug/init.js assigns the flag; `npm run watch` would reach the network' )
-      .to.not.match( /DEBUG_FIXTURE_SOURCE\s*=[^=]/ );
-    expect( init, 'debug/init.js no longer reads the flag' ).to.match( /DEBUG_FIXTURE_SOURCE\s*===/ );
+    expect( init, 'debug/init.js assigns the manifest; local dev would read the wire form' )
+      .to.not.match( /DEBUG_FIXTURE_WIRE\s*=[^=]/ );
+    expect( init, 'debug/init.js no longer reads the manifest' ).to.match( /DEBUG_FIXTURE_WIRE/ );
   } );
 
   it( 'appends to networks.js rather than rewriting it', function(){
@@ -339,8 +382,8 @@ describe( 'status site: the harness mirror', function(){
     expect( networksPatch( [] ) ).to.not.match( /delete networks/ );
   } );
 
-  it( 'every network the source declares is either mirrored, remote or omitted', function(){
-    // no third state: a network that is none of these renders nothing and says
+  it( 'every network the source declares is either copied, encoded or omitted', function(){
+    // no fourth state: a network that is none of these renders nothing and says
     // nothing, which is exactly round 42's failure
     const plan = buildPlan( { root: ROOT, gzip: false } );
     const networks = readNetworks( ROOT );
@@ -349,10 +392,11 @@ describe( 'status site: the harness mirror', function(){
     for( const [ id, def ] of Object.entries( networks ) ){
       if( def.generated || def.url == null ){ continue; }
 
-      const to = def.url.startsWith( '../' ) ? def.url.replace( /^\.\.\//, '' ) : `debug/${def.url}`;
-      const accountedFor = written.has( to ) || def.remoteUrl != null;
+      const json = def.url.startsWith( '../' ) ? def.url.replace( /^\.\.\//, '' ) : `debug/${def.url}`;
+      const encoded = `${json.replace( /\.json$/, '' )}.cyge`;
 
-      expect( accountedFor, `${id} is neither mirrored nor remote nor omitted` ).to.equal( true );
+      expect( written.has( json ) || written.has( encoded ),
+        `${id} is neither copied, encoded nor omitted` ).to.equal( true );
     }
   } );
 } );

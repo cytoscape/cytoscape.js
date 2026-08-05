@@ -11833,7 +11833,9 @@ that record the design are markdown in a branch nobody has checked out.
    `benchmark/published/`.  Nothing measures on the builder: no GPU, and the
    quick profile alone is seven minutes.
 4. **The oversized fixtures load from their existing NDEx/R2 source** rather
-   than being carried or dropped.
+   than being carried or dropped — *superseded the same day by 46.5.7 below,
+   which encodes every fixture into v4's binary wire format instead and so
+   needs no off-site source at all.*
 
 ### What the round measured before designing
 
@@ -11934,25 +11936,70 @@ EnrichmentMap/white-matter fixtures ship at 27.4 MiB instead of 37.
   references in this file, and spellings AGENTS.md quotes as *examples* of the
   round-42 failure.
 
-### Prerequisites the maintainer owns
+### 46.5.7 The fixtures went binary, and the prerequisites went away
 
-1. **CORS on the R2 bucket.**  Verified 2026-08-05: a `GET` with an `Origin`
-   header returns no `Access-Control-Allow-Origin` and the `OPTIONS` preflight
-   returns **403**, so a browser on `*.pages.dev` cannot fetch either fixture.
-   Confirmed live against the built site — the harness reports it correctly.
-2. **Upload the slim x-large fixture** as `network-ndex-x-large-slim.json`
-   (ideally pre-gzipped with `Content-Encoding: gzip`, ~6 MB on the wire).
-   `ndex-large` needs nothing: the bucket copy is byte-identical to the repo's
-   (sha256 `0af71493…c817bd74`, verified).  Until the upload, the build omits
-   that one network with the reason on the card and does **not** fall back to
-   the 250 MB original.
-3. **Create the Pages project**: branch `v4`, build command
-   **`npm run status:all`** (`build` -> `docs:api` -> `status`; plain
-   `npm run status` assembles only and would publish against whatever bundle
-   happened to be lying around), output directory `status`, Node from
-   `.nvmrc`.  The root `npm ci` is all it needs — a spec pins that the status
-   build imports nothing from `v3/` or `src/`, so the builder never needs v3
-   installed.
+The round shipped first with the two oversized NDEx fixtures pointed at an R2
+bucket, which left the maintainer two manual steps: enable CORS, and upload a
+slim copy under a new key.  The maintainer then asked the obvious question —
+*what about v4's own binary wire format?* — and the measurement answered it:
+
+| fixture | on disk | minified | **binary** |
+|---|---|---|---|
+| em-web | 6.1 | 3.4 | **1.2** |
+| em-desktop | 23.4 | 19.3 | **15.3** |
+| white-matter | 7.2 | 4.7 | **2.1** |
+| ndex-large | 31.6 | 20.5 | **9.4** |
+| ndex-x-large | 34.1 | 34.1 | **9.5** |
+| total | 102.5 | 82.1 | **37.5** |
+
+Every fixture lands under the 25 MiB cap, so **both prerequisites disappeared**
+— no bucket, no CORS rule, no off-site dependency, and all nine networks live
+in the deploy.  `remoteUrl` and its `DEBUG_FIXTURE_SOURCE` flag were removed
+rather than left as dead config pointing at a key that does not exist.
+
+**The number that would have been guessed wrong.**  Gzipped, binary and
+minified JSON are within **1%** of each other (7.6 vs 7.7 MiB), and on
+`white-matter` binary is *worse*.  Cloudflare compresses on the wire regardless,
+so this is a **file-at-rest** win — which is exactly what the cap measures —
+plus a parse win, and *not* a transfer win.  "Binary is smaller" is true of the
+metric that governs the cap and false of the one that governs load time.
+
+Three implementation calls, each recorded in `scripts/status/wire-fixtures.mjs`:
+
+- **Encode through the built CJS bundle, not `src/`.**  The page decodes with
+  exactly the code that encoded it, the build needs no tsx, and the import
+  boundary a spec pins stays intact.
+- **Encode the output of `toGpuElements`**, the harness's own converter, loaded
+  through `node:vm` the way its spec loads it.  Both page paths then converge on
+  one shape, and there is no second copy of that transform to drift.
+- **A manifest, not a rewrite.**  the generated `status-config.js` maps network id to
+  encoded fixture; `init.js` prefers it and falls back to JSON when absent,
+  which is what `npm run watch` sees.  A network that fell back is simply not
+  in the manifest.
+
+**What building it found, and it is the round's sharpest lesson.**  The first
+`fromColumnar` read a *dictionary* column — `{ dict, indices }`, 1-based, 0
+meaning absent — as if it were a plain array, so **every string column in every
+fixture came back `undefined`**.  The graph still rendered: correct node count,
+correct edges, correct positions, and no labels or categorical colours at all.
+Nothing throws on that, and no size or count check would have seen it.  The
+fidelity spec now asserts that each column still carries values after the round
+trip, and its control — read the dict as an array — fails on all five fixtures.
+
+Verified in a browser against the served site: all five encoded networks load,
+with exact counts (em-web 569/6899, white-matter 1499/18288, ndex-large
+3238/68641, **ndex-x-large 19607/464657**, em-web-clustered 610/6899 — the
+`derive` transform still runs on the binary path), and em-web reports **18,600
+glyphs, identical to the JSON run**, which is what proves the dictionary
+columns survived.
+
+### What the maintainer still owns
+
+Only one step now: **create the Pages project** — branch `v4`, build command
+**`npm run status:all`** (`build` -> `docs:api` -> `status`; plain
+`npm run status` assembles against whatever bundle is lying around), output
+directory `status`, Node from `.nvmrc`.  The root `npm ci` is all the builder
+needs; a spec pins that the status build imports nothing from `v3/` or `src/`.
 
 ### Risks tracked
 

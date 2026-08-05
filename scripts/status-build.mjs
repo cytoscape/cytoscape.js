@@ -16,7 +16,7 @@
 //   --out <dir>           output root                              [status]
 //   --skip <a,b,...>      parts to skip: debug, benchmark, docs, api, goldens
 //   --no-gzip             skip bundle gzip measurement (the only slow step)
-//   --no-remote-check     do not HEAD-check remote fixture urls
+//   --no-wire             ship fixtures as JSON instead of the binary wire form
 //   --strict              exit 1 if any part is unavailable
 //   --dry-run             print the plan, write nothing
 //   --json                print the plan as JSON
@@ -35,6 +35,7 @@ import { page, NAV } from './status/shell.mjs';
 import { renderMarkdown, tocHtml } from './status/markdown.mjs';
 import { repoState } from './status/repo-state.mjs';
 import { planDebug, write, copy, PAGES_MAX_BYTES } from './status/plan.mjs';
+import { encodeFixture } from './status/wire-fixtures.mjs';
 import { apiPage, API_CSS } from './status/api-page.mjs';
 import { planGoldens, GOLDENS_CSS } from './status/goldens-page.mjs';
 import { planBenchmarks } from './status/bench-pages.mjs';
@@ -72,26 +73,12 @@ export function readNetworks( root ){
   return ctx.networks;
 }
 
-/** HEAD a remote fixture url; `true` unless it is definitively absent. */
-async function remoteReachable( url, timeoutMs = 8000 ){
-  try {
-    const res = await fetch( url, { method: 'HEAD', signal: AbortSignal.timeout( timeoutMs ) } );
-
-    // only a definitive 4xx removes a network.  A timeout, a DNS failure or an
-    // offline builder must not silently delete content — that would make the
-    // site's contents depend on the weather.
-    return !( res.status >= 400 && res.status < 500 );
-  } catch{
-    return true;
-  }
-}
-
 /**
  * Decide the whole site.  Pure apart from `stat`/`readFile`.
  *
  * @returns `{ ops, parts, warnings, state }`
  */
-export function buildPlan( { root = ROOT, skip = new Set(), gzip = true, remoteOk = () => true, now = Date.now() } = {} ){
+export function buildPlan( { root = ROOT, skip = new Set(), gzip = true, wireEnabled = true, now = Date.now() } = {} ){
   const ops = [];
   const warnings = [];
   const parts = [];
@@ -139,7 +126,7 @@ export function buildPlan( { root = ROOT, skip = new Set(), gzip = true, remoteO
   // -- the harness --
   if( !skip.has( 'debug' ) ){
     const networks = readNetworks( root );
-    const debug = planDebug( { root, networks, remoteOk } );
+    const debug = planDebug( { root, networks, wireEnabled } );
 
     ops.push( ...debug.ops );
     warnings.push( ...debug.warnings );
@@ -258,6 +245,8 @@ export function executePlan( ops, out ){
       writeFileSync( dest, op.text );
     } else if( op.kind === 'jsonmin' ){
       writeFileSync( dest, JSON.stringify( JSON.parse( readFileSync( op.from, 'utf8' ) ) ) );
+    } else if( op.kind === 'wire' ){
+      writeFileSync( dest, encodeFixture( ROOT, op.from ) );
     } else {
       copyFileSync( op.from, dest );
     }
@@ -284,26 +273,7 @@ async function main( argv ){
   const asJson = argv.includes( '--json' );
   const gzip = !argv.includes( '--no-gzip' );
 
-  // resolve the remote fixtures once, before planning, so the plan stays pure
-  let remoteOk = () => true;
-
-  if( !argv.includes( '--no-remote-check' ) && !skip.has( 'debug' ) ){
-    const networks = readNetworks( ROOT );
-    const urls = [ ...new Set( Object.values( networks ).map( n => n.remoteUrl ).filter( u => u != null ) ) ];
-    const reachable = new Map();
-
-    for( const url of urls ){
-      const ok = await remoteReachable( url );
-
-      reachable.set( url, ok );
-
-      if( !ok ){ console.warn( `remote fixture unreachable (404): ${url}` ); }
-    }
-
-    remoteOk = url => reachable.get( url ) !== false;
-  }
-
-  const { ops, parts, warnings, state } = buildPlan( { root: ROOT, skip, gzip, remoteOk } );
+  const { ops, parts, warnings, state } = buildPlan( { root: ROOT, skip, gzip, wireEnabled: !argv.includes( '--no-wire' ) } );
 
   if( asJson ){
     console.log( JSON.stringify( { ops: ops.map( o => ( { kind: o.kind, to: o.to, from: o.from ?? null } ) ), parts, warnings }, null, 2 ) );

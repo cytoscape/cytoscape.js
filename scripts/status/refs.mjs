@@ -52,14 +52,20 @@ export function markupRefs( html ){
  * `networks.js` — so the generated patch is what is exercised, not the source
  * file.  Same technique as `test/modules/debug-harness.mjs`.
  */
-export function networkRefs( networksSource ){
-  const ctx = createContext( { module: undefined } );
+export function networkRefs( networksSource, wireManifestSource = null ){
+  const ctx = createContext( { module: undefined, window: {} } );
 
   runInContext( networksSource, ctx );
 
+  // the status build ships a manifest naming each network's binary fixture;
+  // `init.js` prefers it, so it is what the deployed page actually requests
+  if( wireManifestSource != null ){ runInContext( wireManifestSource, ctx ); }
+
+  const wire = ctx.window?.DEBUG_FIXTURE_WIRE ?? {};
+
   return Object.entries( ctx.networks )
     .filter( ( [ , def ] ) => !def.generated && def.url != null )
-    .map( ( [ id, def ] ) => ( { id, url: def.url, remoteUrl: def.remoteUrl ?? null } ) );
+    .map( ( [ id, def ] ) => ( { id, url: wire[ id ] ?? def.url, wire: wire[ id ] != null } ) );
 }
 
 /**
@@ -96,16 +102,13 @@ export function enumerateRefs( ops ){
     }
 
     if( to === 'debug/networks.js' ){
-      for( const net of networkRefs( text ) ){
-        // *One* url per network, and it must be the one the deployed page will
-        // actually request.  The status build sets `DEBUG_FIXTURE_SOURCE =
-        // 'remote'`, so `debug/init.js` prefers `remoteUrl` wherever there is
-        // one — enumerating the local url as well would demand a file the
-        // hosted page never asks for, and enumerating only the local one would
-        // miss the request it does make.
-        net.remoteUrl != null
-          ? add( 'debug/networks.js', net.remoteUrl, `runtime:${net.id}:remote` )
-          : add( 'debug/networks.js', net.url, `runtime:${net.id}` );
+      // *One* url per network, and it must be the one the deployed page will
+      // actually request: `init.js` prefers the wire manifest's entry where
+      // there is one, so enumerating `network.url` as well would demand a JSON
+      // file the hosted page never asks for, and enumerating only `network.url`
+      // would miss the request it does make.
+      for( const net of networkRefs( text, written.get( 'debug/status-config.js' ) ) ){
+        add( 'debug/networks.js', net.url, `runtime:${net.id}${net.wire ? ':wire' : ''}` );
       }
     }
   }

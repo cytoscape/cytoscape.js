@@ -226,6 +226,114 @@ var fixtures = ( function(){
     return generateNetwork( spec );
   }
 
+  // -- the binary wire form (round 46.5) --
+  //
+  // The status build ships each fetched fixture as v4's own binary wire format
+  // rather than JSON: 102.5 MiB of JSON becomes 37.5 MiB, which is what puts
+  // every fixture under Cloudflare Pages' 25 MiB per-file cap and so removes
+  // the off-site bucket entirely.  (Gzipped the two are within 1% of each
+  // other, so this is a *file at rest* win, not a transfer one.)
+  //
+  // The buffer is produced from the output of `toGpuElements` above, so what
+  // comes back here is already normalised and the rest of the harness — the
+  // sheet builders, which read `elements.nodes` for their mapper domains, and
+  // the `derive` transforms below — is unchanged.
+
+  /** Decode a PackedIds `{ offsets, blob }` into a plain string array. */
+  function unpackIds( ids, count ){
+    var out = new Array( count );
+    var dec = new TextDecoder();
+    var i, a, b;
+
+    if( ids == null ){ return out; }
+
+    for( i = 0; i < count; i++ ){
+      a = ids.offsets[ i ];
+      b = ids.offsets[ i + 1 ];
+      // a zero-length id is a hole: the store generates one on ingest
+      out[ i ] = b > a ? dec.decode( ids.blob.subarray( a, b ) ) : undefined;
+    }
+
+    return out;
+  }
+
+  // Three column kinds come off the wire and only one is indexable directly.
+  // A dictionary column is `{ dict, indices }` with **1-based** indices and 0
+  // meaning absent; reading it as an array yields `undefined` for every
+  // element, which is what a first version of this did to every string column
+  // in every fixture — silently, since the labels simply vanished.
+  function valueAt( col, i ){
+    var idx;
+
+    if( col == null ){ return undefined; }
+
+    if( col.dict != null && col.indices != null ){
+      idx = col.indices[ i ];
+
+      return idx === 0 ? undefined : col.dict[ idx - 1 ];
+    }
+
+    return col[ i ];
+  }
+
+  function readData( data, i ){
+    var out = {};
+    var keys = Object.keys( data || {} );
+    var k, v;
+
+    for( k = 0; k < keys.length; k++ ){
+      v = valueAt( data[ keys[ k ] ], i );
+
+      if( v === undefined || v === null ){ continue; }
+      if( typeof v === 'number' && isNaN( v ) ){ continue; }
+
+      out[ keys[ k ] ] = v;
+    }
+
+    return out;
+  }
+
+  /**
+   * Columnar elements (from `cytoscape.deserializeElements`) back into the
+   * `{ nodes, edges, hasPositions }` shape `toGpuElements` produces.
+   */
+  function fromColumnar( columnar ){
+    var n = columnar.nodes || { count: 0 };
+    var e = columnar.edges || { count: 0 };
+    var nIds = unpackIds( n.ids, n.count );
+    var eIds = unpackIds( e.ids, e.count );
+    var nodes = [];
+    var edges = [];
+    var i, data;
+
+    for( i = 0; i < n.count; i++ ){
+      data = readData( n.data, i );
+
+      if( nIds[ i ] !== undefined ){ data.id = nIds[ i ]; }
+
+      nodes.push( n.positions != null
+        ? { data: data, position: { x: n.positions[ i * 2 ], y: n.positions[ i * 2 + 1 ] } }
+        : { data: data } );
+    }
+
+    for( i = 0; i < e.count; i++ ){
+      data = readData( e.data, i );
+
+      if( eIds[ i ] !== undefined ){ data.id = eIds[ i ]; }
+
+      // sources/targets are node *indices* on the wire, not ids
+      data.source = nIds[ e.sources[ i ] ];
+      data.target = nIds[ e.targets[ i ] ];
+      edges.push( { data: data } );
+    }
+
+    return {
+      nodes: nodes,
+      edges: edges,
+      hasPositions: nodes.some( function( x ){ return x.position != null; } )
+    };
+  }
+
   /** Apply a network's `derive`, if it declares one. */
   function derive( name, gpuElements ){
     var fn = name != null ? derivations[ name ] : null;
@@ -235,6 +343,7 @@ var fixtures = ( function(){
 
   return {
     toGpuElements: toGpuElements,
+    fromColumnar: fromColumnar,
     deriveLabel: deriveLabel,
     derive: derive,
     generate: generate

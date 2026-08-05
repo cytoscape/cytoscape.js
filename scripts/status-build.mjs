@@ -221,7 +221,7 @@ export function buildPlan( { root = ROOT, skip = new Set(), gzip = true, remoteO
   // -- the landing page, last: it reports on every part above --
   ops.push( write( 'index.html', page( {
     title: 'cytoscape.js v4 — status',
-    body: indexPage( { state, parts, now } ),
+    body: indexPage( { state, parts } ),
     active: 'index', state, prose: false
   } ).replace( '</style>', `${INDEX_CSS}</style>` ) ) );
 

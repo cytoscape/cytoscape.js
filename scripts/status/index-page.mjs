@@ -32,7 +32,7 @@ function card( { title, href, blurb, available, reason, badges = [] } ){
  * @param state — from `repoState()`
  * @param parts — `[ { id, title, href, blurb, available, reason, badges } ]`
  */
-export function indexPage( { state, parts, now = Date.now() } ){
+export function indexPage( { state, parts } ){
   const stale = state.staleness.staleByMs;
   const bundles = state.bundles.filter( b => /min|umd/.test( b.file ) );
 

@@ -2382,6 +2382,24 @@ manually-timed suites (`curves`, `labels`) join the table through
 `finishManualRun`, which shapes one-shot rows into the report's job
 format; without `BENCH_JSON` their terminal output is unchanged.
 
+**Provenance, and publishing a run** (round 46.5).  A results file now
+carries a structured `meta.machine` beside the old `meta.cpu` string —
+CPU with the physical/logical split and both clocks, RAM, OS, and a GPU
+*inventory* with VRAM — plus the commit's date and subject and a
+**`dirty` flag**, because a measurement taken on a dirty tree is not
+attributable to the sha it prints, and the report renders that in the
+failure colour.  A `--renderer` run additionally records the WebGPU
+adapter that actually rendered, which had been captured and discarded
+at the `--json` boundary since the renderer benchmarks landed.
+`benchmark/results/` stays gitignored and machine-local; **`npm run
+benchmark:publish` promotes a run into the tracked
+`benchmark/published/`**, which is what the status site renders.  Runs
+are grouped by a machine fingerprint and never compared across
+machines — see `benchmark/published/README.md`.  The report renders
+every published run through the same `renderReport()`, and a results
+file written before round 46.5 still renders, which is a spec rather
+than a courtesy.
+
 **What a profile costs**, measured 2026-08-04 on the i9-9900K these
 rounds have used (round 33's risk register promised this number and no
 round had recorded it; the runner prints its own total, so it was

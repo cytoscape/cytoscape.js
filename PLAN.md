@@ -141,7 +141,15 @@ property table is *measured* against both libraries rather than remembered
 which found **four defects** — a corrupt wire buffer that made a load never
 return, two more that cost 25.9 s and 5.7 s, and identity comparing equal
 across two instances, so that `union()` silently dropped the other graph's
-elements.  **Round 38 has not started**: scoping
+elements.  **Round 46.5** (2026-08-05) was then inserted at the
+maintainer's request, outside the release sequence: the **status site**,
+a deployable preview of the branch — the harness, the benchmark archive,
+the API reference and the repository documents compiled into a gitignored
+`status/` and served from Cloudflare Pages.  It also gave the benchmark
+report the machine provenance a published premium needs, and found four
+things by building it, one of which (a code span in *this file* holding
+`<script>`) broke every page on the site until a browser was pointed at
+it.  **Round 38 has not started**: scoping
 it found three sub-calls the sitting did not reach (open call 1).
 **Round 40 is a design sitting.**
 `src/README.md` is
@@ -11798,3 +11806,158 @@ are not here rather than any difficulty of principle.
   port), an issue-triage window, the final benchmark publication, and
   the final docs/ledger sweep.
 - Then **4.0.0**.
+
+## Round 46.5 — the status site (planned and landed 2026-08-05)
+
+Inserted at the maintainer's request, ahead of round 46 and outside the
+release sequence.  The ask: **a deployable preview of the branch's current
+state** — the debug page, the benchmark report, the markdown documents —
+compiled into a gitignored directory and served from Cloudflare Pages, with
+the benchmark report carrying real provenance about the machine that produced
+it.
+
+The premise is worth stating because it explains the shape: v4 has been built
+over fifty rounds with no way to *look* at it.  Every artifact that says what
+v4 is needs a local checkout, a build and often a GPU, and the three documents
+that record the design are markdown in a branch nobody has checked out.
+
+### The four calls taken with the maintainer
+
+1. **Cloudflare builds from git** on every push, rather than a local
+   `wrangler` upload.  Everything the site needs must therefore be in the repo
+   or buildable there — which is what forces item 3.
+2. **Contents**: the harness, the benchmarks and the documents, plus the
+   golden gallery and an API-reference *preview*.  Audit reports and a test
+   summary were offered and declined.
+3. **Benchmarks keep a history**, published deliberately into a tracked
+   `benchmark/published/`.  Nothing measures on the builder: no GPU, and the
+   quick profile alone is seven minutes.
+4. **The oversized fixtures load from their existing NDEx/R2 source** rather
+   than being carried or dropped.
+
+### What the round measured before designing
+
+Cloudflare Pages caps a file at **25 MiB**, and two fixtures are over it.  The
+first plan proposed gzipping them.  Measuring first killed that: the v3
+fixtures are *pretty-printed*, the page only ever calls `res.json()`, and
+re-serializing gives
+
+| fixture | on disk | minified |
+|---|---|---|
+| `network-ndex-large.json` | 31.6 MiB | **20.5 MiB** |
+| `network-em-desktop.json` | 23.4 MiB | 19.3 MiB — it was at **93.6%** of the cap |
+| `network-ndex-x-large.json` | 34.1 MiB | 34.1 MiB, already compact |
+
+So minifying alone takes one of the two under the cap and gives `em-desktop`
+headroom nobody had noticed it needed.  With call 4 both NDEx fixtures go
+remote anyway, but the measurement stayed: it is why the three
+EnrichmentMap/white-matter fixtures ship at 27.4 MiB instead of 37.
+
+### Landed
+
+- [x] **46.5.1 The lockfile** — the root `package-lock.json` still described
+  the *pre-split v3 package* (`3.35.0-unstable`, with `handlebars`,
+  `gh-pages`, `lodash`, `heap`, `gl-matrix`).  Refreshed: 484 deletions, and
+  the only two added lines are the corrected version.  `marked` and
+  `highlight.js` — installed by accident through that stale lock — are now
+  declared at v3's exact specifiers.  **What it exposed**: the root suite
+  genuinely needs `cd v3 && npm install`, because
+  `test/modules/benchmark-report.mjs` reaches `v3/src/test.mjs` and so `heap`.
+  That had been satisfied by root hoisting.  AGENTS.md now says so.
+- [x] **46.5.2 `scripts/machine-info.mjs`** (29 specs) — CPU with the
+  physical/logical split and both clocks, RAM, OS, and a GPU **inventory**
+  with VRAM.  Three things a first attempt gets wrong and this does not:
+  physical cores are `cpu cores` × sockets and not the record count (8 vs 16
+  here); `gpus` is a *list*, because this box has two and a single-GPU return
+  type looks right on every single-GPU machine; and VRAM joins to a card by
+  PCI slot, which `lspci` and `PCI_SLOT_NAME` spell differently.  Deliberately
+  absent: a `primary` flag — only WebGPU can say which adapter rendered.
+- [x] **46.5.3 Provenance into the report** — `benchmark/run-meta.mjs`, because
+  the `meta` block was being built **twice** and this is exactly the round
+  that would have updated one of them.  The merge exposed that
+  `render-bench.mjs` **captured the WebGPU adapter and threw it away** at the
+  `--json` boundary, so a `--renderer` report could not say which GPU it
+  measured.  `meta.dirty` is new and renders in the failure colour: a
+  measurement from a dirty tree is not attributable to the sha it prints.
+  `machineBlock()` returns `''` when `meta.machine` is absent, pinned by a
+  spec, because the site re-renders every published run and half of them
+  predate this round.
+- [x] **46.5.4 `benchmark/published/`** (20 specs) — the tracked archive and
+  `npm run benchmark:publish`.  Runs group by **machine fingerprint** and are
+  never plotted across machines; `--prune n` is explicit and prints what it
+  removes, because silently capping an archive is the invisible truncation
+  this file's benchmark rules exist to prevent.  Publishing **refuses a dirty
+  tree** without `--allow-dirty`.
+- [x] **46.5.5 The harness's remote fixtures** (28 specs) — a network may
+  declare `remoteUrl`; `debug/init.js` prefers it only under
+  `window.DEBUG_FIXTURE_SOURCE = 'remote'`, which the status build sets and
+  `npm run watch` does not.  The invariant is *a remote is a mirror, never the
+  only copy*.  The x-large key is `…-slim.json` deliberately: the bucket's
+  `network-ndex-x-large.json` is the **250 MB original** this fixture was
+  slimmed from — same filename, different file — and a spec pins the suffix.
+  The failure message names **CORS**, because that is the failure this hits and
+  a browser reports it as an opaque `TypeError`.
+- [x] **46.5.6 The site** (52 specs) — `npm run status`, nine generated pages
+  plus the harness mirror.  Two structural decisions carry it: **plan then
+  execute**, so the specs check the intended output without copying 30 MiB;
+  and the **mirror invariant** — every mirrored asset sits at its repo path
+  inside the site, so `../build/cytoscape.umd.js` resolves by construction and
+  no source file is edited.  Exactly two edits are made to the copied harness
+  page and a diff spec closes that list.
+
+### What building it found
+
+- **marked does not escape a code span's `token.text`.**  Overriding the
+  `codespan` renderer takes its escaping with it, and `PLAN.md` contains a code
+  span holding `<script>` at line 11222 — so it opened a real script element
+  and every page after that point stopped working.  **Found by driving a
+  browser**, not by reading; the smoke test written minutes earlier had no `<`
+  in a code span and passed.  This is the round's clearest vindication of the
+  standing "something has to open the page" rule.
+- **`@throws` and `@see` are arrays in the docs model while `@returns` is a
+  string.**  The API page failed to generate entirely (`e.replace is not a
+  function`).
+- **A bare `.gitignore` pattern matches at every depth.**  `status` also
+  matched `scripts/status/` — the ten modules that *are* the build — so
+  `git add -A` staged none of them.  Caught by reading `git status --short`
+  before committing, which is the only reason it did not ship a commit that
+  could not run.
+- **Two controls failed to fail, and both were findings.**  One showed an
+  `existsSync` guard was dead code beneath its own `catch`.  The other showed
+  a "nothing exceeds the cap" loop was **not discriminating** — with both
+  oversized fixtures remote, nothing planned is near the cap — so a spec that
+  *measures* the minified size on disk was written in its place and the loop
+  kept as a labelled forward guard.
+- **The documented-path audit is now continuous.**  A rooted path in a code
+  span is checked against the tree, linked to its blob when it resolves and
+  marked when it does not.  Eight hits remain, all legitimate: historical
+  references in this file, and spellings AGENTS.md quotes as *examples* of the
+  round-42 failure.
+
+### Prerequisites the maintainer owns
+
+1. **CORS on the R2 bucket.**  Verified 2026-08-05: a `GET` with an `Origin`
+   header returns no `Access-Control-Allow-Origin` and the `OPTIONS` preflight
+   returns **403**, so a browser on `*.pages.dev` cannot fetch either fixture.
+   Confirmed live against the built site — the harness reports it correctly.
+2. **Upload the slim x-large fixture** as `network-ndex-x-large-slim.json`
+   (ideally pre-gzipped with `Content-Encoding: gzip`, ~6 MB on the wire).
+   `ndex-large` needs nothing: the bucket copy is byte-identical to the repo's
+   (sha256 `0af71493…c817bd74`, verified).  Until the upload, the build omits
+   that one network with the reason on the card and does **not** fall back to
+   the 250 MB original.
+3. **Create the Pages project**: branch `v4`, build command `npm run status`,
+   output directory `status`, Node from `.nvmrc`.
+
+### Risks tracked
+
+- **The site is only as live as its inputs.**  Documents and the harness are
+  live from git; benchmarks are as fresh as the last `benchmark:publish`.  The
+  landing page therefore prints the run's *age*, not just its date.
+- **The API page treads on round 46.**  It is labelled a preview and lives at
+  `status/api.html`, not `documentation/`.  When round 46 ships, this page
+  should become a link to it rather than a second renderer to maintain.
+- **CI's job timeout was removed, not raised** (maintainer request, same day).
+  GitHub has no "no timeout", so both jobs fall back to the 360-minute default
+  — a runaway backstop rather than a budget.  A real cap should return once the
+  suite's wall-clock on a runner is known.

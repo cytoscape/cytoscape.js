@@ -173,31 +173,41 @@ var fixtures = ( function(){
     return { nodes: nodes, edges: edges, hasPositions: true };
   }
 
-  // round 43.4: v3's hand-built compound graph (v3/debug/compound.js), ported
-  // verbatim.  It is awkward on purpose — three levels of nesting, a self-loop
-  // on a parent, edges crossing parent boundaries, one very long id — which is
-  // exactly what makes it worth eyeballing next to the pretty fixtures.
+  // round 43.4: v3's hand-built compound graph (v3/debug/compound.js).  It is
+  // awkward on purpose — three levels of nesting, a self-loop on a parent,
+  // edges crossing parent boundaries, one very long id — which is exactly what
+  // makes it worth eyeballing next to the pretty fixtures.
+  //
+  // **The declaration order is load-bearing, which is why this is now a real
+  // verbatim port and round 43's was not.**  Grid places leaves in declaration
+  // order and parents derive their boxes from where their children land, so
+  // reordering the node list reorders the grid and therefore reshapes every
+  // parent.  Round 43 sorted the ids (n1, n2, n3, … ) and changed four edges
+  // while claiming a verbatim port; the result put n5 and n8/n9 in different
+  // grid rows, so n1's auto-box swallowed n2's and the graph was unreadable.
+  // v3's order interleaves the ids deliberately — n8, n9, n4, n5, n1, … — so
+  // that each parent's children land adjacent.  Keep it.
   function compoundFixture(){
     return {
       nodes: [
-        { data: { id: 'n1' } },
-        { data: { id: 'n2' } },
-        { data: { id: 'n3', parent: 'non-auto' } },
-        { data: { id: 'n4', parent: 'n1' } },
-        { data: { id: 'n5', parent: 'n1' } },
-        { data: { id: 'node-really-long-name-6', parent: 'n2' } },
-        { data: { id: 'n7', parent: 'n2' } },
         { data: { id: 'n8', parent: 'n4' } },
         { data: { id: 'n9', parent: 'n4' } },
+        { data: { id: 'n4', parent: 'n1' } },
+        { data: { id: 'n5', parent: 'n1', shape: 'triangle' } },
+        { data: { id: 'n1' } },
+        { data: { id: 'n2' } },
+        { data: { id: 'node-really-long-name-6', parent: 'n2' } },
+        { data: { id: 'n7', parent: 'n2', shape: 'square' } },
+        { data: { id: 'n3', parent: 'non-auto', shape: 'rectangle' } },
         { data: { id: 'non-auto' } }
       ],
       edges: [
-        { data: { id: 'e1', source: 'n1', target: 'n2' } },
-        { data: { id: 'e2', source: 'n1', target: 'n3' } },
-        { data: { id: 'e3', source: 'n4', target: 'n5' } },
-        { data: { id: 'e4', source: 'node-really-long-name-6', target: 'n7' } },
+        { data: { id: 'e1', source: 'n1', target: 'n3' } },
+        { data: { id: 'e2', source: 'n3', target: 'n7' } },
+        { data: { id: 'e3', source: 'node-really-long-name-6', target: 'n7' } },
+        { data: { id: 'e4', source: 'node-really-long-name-6', target: 'n9' } },
         { data: { id: 'e5', source: 'n8', target: 'n9' } },
-        { data: { id: 'e6', source: 'n3', target: 'n7' } },
+        { data: { id: 'e6', source: 'n5', target: 'n8' } },
         { data: { id: 'e7', source: 'n2', target: 'n4' } },
         { data: { id: 'e8', source: 'n8', target: 'n8' } }, // self-loop
         { data: { id: 'e9', source: 'n1', target: 'n1' } }, // self-loop on a parent

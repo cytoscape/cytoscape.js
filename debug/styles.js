@@ -287,6 +287,15 @@ var styles = ( function(){
     return {
       nodes: Object.assign( {
         width: 40, height: 40,
+        // v3's fixture carries a `shape` on three of its nodes and its debug
+        // page never reads it, so they all draw as discs there.  A `case`
+        // mapper is what v4 spells that with, and it makes the port's data
+        // visible rather than inert.
+        shape: { case: [
+          { when: { data: 'shape', eq: 'triangle' }, then: 'triangle' },
+          { when: { data: 'shape', eq: 'square' }, then: 'square' },
+          { when: { data: 'shape', eq: 'rectangle' }, then: 'rectangle' }
+        ], else: 'ellipse' },
         'background-color': '#e07a5f',
         'border-width': 2, 'border-color': '#3d405b',
         'font-size': 11, color: '#3d405b',
@@ -300,6 +309,12 @@ var styles = ( function(){
       },
       parents: {
         padding: 16,
+        // the parents block *overlays* the nodes block (round 14.6), so the
+        // shape mapper above reaches parents too and resolves 'ellipse' for
+        // them — they carry no `shape` data.  v3's `:parent` default is
+        // rectangle, and a round parent box round a rectangular child reads
+        // as a mistake, so say so here rather than leave it to the overlay.
+        shape: 'rectangle',
         'background-color': '#81b29a', 'background-opacity': 0.18,
         'border-width': 2, 'border-color': '#81b29a',
         label: { data: 'id' },

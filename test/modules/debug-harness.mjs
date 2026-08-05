@@ -156,6 +156,58 @@ describe( 'debug harness (round 43)', function(){
       cy.destroy();
     } );
 
+    it( 'the compound fixture lays out into disjoint parent boxes', function(){
+      // The maintainer's report: the compound fixture "is not laid out like it
+      // is in the debug page in v3, making it hard to read".  Two causes, both
+      // in this directory — round 43 re-sorted the node list while claiming a
+      // verbatim port of `v3/debug/compound.js`, and dropped that page's
+      // `cols: 3`.  Grid places leaves in declaration order and parents derive
+      // their boxes from where their children land, so between them the
+      // families interleaved and n1's auto-box swallowed n2's.
+      //
+      // The property worth pinning is the readable one rather than the
+      // transcription: two parents that are not ancestor and descendant must
+      // not overlap.  It fails on either cause alone.
+      const def = networks[ 'compound-fixture' ];
+      const elements = elementsFor( 'compound-fixture', def );
+      const cy = cytoscape( {
+        elements: { nodes: elements.nodes, edges: elements.edges },
+        style: styles.sheet( 'production', 'compound-fixture', elements, def ),
+        layout: def.layout,
+        // grid picks its column count from the container's aspect ratio when
+        // the layout does not say, so a *headless* default (800 x 600) picks 3
+        // and the spec passes with `cols` removed — measured, and it is the
+        // vacuous-spec trap this repo keeps re-learning.  These are the debug
+        // page's real dimensions, where the default is 2.
+        headlessWidth: 930, headlessHeight: 900
+      } );
+      const parents = cy.nodes( { parent: true } );
+
+      expect( parents.length, 'the fixture stopped being compound' ).to.equal( 4 );
+
+      for( let i = 0; i < parents.length; i++ ){
+        for( let j = i + 1; j < parents.length; j++ ){
+          const a = parents[ i ];
+          const b = parents[ j ];
+
+          if( a.isAncestorOf?.( b ) || b.isAncestorOf?.( a )
+            || a.ancestors().contains( b ) || b.ancestors().contains( a ) ){ continue; }
+
+          const ba = a.boundingBox();
+          const bb = b.boundingBox();
+          const overlaps = ba.x1 < bb.x2 && bb.x1 < ba.x2 && ba.y1 < bb.y2 && bb.y1 < ba.y2;
+
+          expect( overlaps, `${a.id()} and ${b.id()} overlap: unrelated parents must not` ).to.equal( false );
+        }
+      }
+
+      // the parents block overlays the nodes block, so a `shape` mapper on the
+      // nodes group reaches parents; v3's `:parent` default is a rectangle and
+      // the sheet has to say so
+      expect( parents[ 0 ].style( 'shape' ) ).to.equal( 'rectangle' );
+      cy.destroy();
+    } );
+
     it( 'the clustered variant really is compound', function(){
       const def = networks[ 'em-web-clustered' ];
       const elements = elementsFor( 'em-web-clustered', def );

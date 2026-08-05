@@ -15,6 +15,8 @@
 //   derive     an in-page transform applied after load (see init.js)
 //   generated  build it in-page instead ('fixture' | true | 'compound')
 //   labelKey   the data key `debug/styles.js` maps the label from
+//   layout     the layout run at load for a network with no positions
+//              (default `{ name: 'grid' }`)
 //   note       a one-line "what is this fixture for", shown under the dropdown
 
 var networks = {
@@ -77,6 +79,13 @@ var networks = {
     edges: 11,
     generated: 'fixture',
     labelKey: 'id',
+    // v3's page runs `cy.layout({ name: 'grid', cols: 3 })` on this graph, and
+    // the 3 is not decoration: six leaves over three columns is the one
+    // arrangement in which each parent's children stay adjacent, so the four
+    // auto-sized parent boxes come out disjoint.  At the default column count
+    // grid picks 2, which interleaves the families and nests every box inside
+    // n1's — the graph the maintainer could not read.
+    layout: { name: 'grid', cols: 3 },
     note: 'Ported from v3/debug/compound.js: three levels of nesting, a self-loop on a parent, parent-to-descendant edges, one very long label. Awkward on purpose.'
   },
   'gen': {

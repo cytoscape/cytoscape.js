@@ -160,7 +160,9 @@ const paramDefs = {
       container: $('#cytoscape'),
       elements: elements,
       style: style,
-      layout: gpuElements.hasPositions ? undefined : { name: 'grid' },
+      // a network with no positions is laid out at load; `def.layout` lets one
+      // say how (the compound fixture needs v3's `cols: 3` to be readable)
+      layout: gpuElements.hasPositions ? undefined : ( def.layout || { name: 'grid' } ),
       renderer: {
         edgeWidthFloor: parseFloat(params.edgeWidthFloor),
         nodeLodPx: parseFloat(params.nodeLodPx),

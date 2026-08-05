@@ -85,6 +85,65 @@ describe('gpu/curves: compound loop edges (round 14.10)', function(){
     expect( bb.y1 ).to.be.lessThan( -16 );
   });
 
+  // The conservative fit box: the endpoint AABB grown by the header
+  // deviation plus the node-half margin — and *not* by the chord, which
+  // belongs to the weight-extrapolated blob routes that share
+  // FLAG_CURVED_BOX.  A compound loop's controls hang off the union of
+  // the two node boxes, at most p2 / 2 past its top-left corner, so the
+  // grown AABB already contains the curve; the chord was making `fit()`
+  // draw every compound graph at a fraction of its size.
+  it('does not grow a compound loop’s conservative box by the chord', function(){
+    const cy = make( [ { data: { id: 'ap', source: 'a', target: 'p' } } ] );
+    const store = cy._store;
+
+    store.flushDerived();
+
+    const slot = cy.$id( 'ap' )._first().slot;
+    const p2 = Math.abs( ( store.column( 'edge.curveParams' ) )[ slot * 4 + 2 ] );
+    const margin = store.curveBoxMargin();
+    const chord = 50; // a at (0, 0) to p's derived centre at (50, 0)
+    const box = store.boundingBox();
+
+    expect( p2 ).to.be.greaterThan( 1 ); // the bound is doing something
+    expect( box.x1 ).to.be.closeTo( -( p2 + margin ), 0.01 );
+    expect( box.y1 ).to.be.closeTo( -( p2 + margin ), 0.01 );
+    // the discriminating half: with the chord back in, x1 sits a whole
+    // chord further out and the graph fits into a third of the viewport
+    expect( box.x1 ).to.be.greaterThan( -( p2 + margin + chord ) + 1 );
+
+    // `boundingBoxAt` carries the same formula for animated-layout fit
+    // targets, so it is pinned here rather than left to drift apart
+    const at = cy.elements().boundingBoxAt( node => node.position() );
+
+    expect( at.x1 ).to.be.closeTo( -( p2 + margin ), 0.01 );
+  });
+
+  it('keeps the conservative box containing the exact one', function(){
+    // soundness is the half that must not regress: fit may over-fit,
+    // never under.  Three arrangements, because the bound is a max over
+    // node halves and the excursion scales with the step size.
+    const cases = [
+      [ [ { data: { id: 'ap', source: 'a', target: 'p' } } ], {} ],
+      [ [ { data: { id: 'ap', source: 'a', target: 'p' } } ],
+        { edges: { 'control-point-step-size': 300 } } ],
+      [ [ { data: { id: 'pp', source: 'p', target: 'p' } },
+        { data: { id: 'ap', source: 'a', target: 'p' } } ],
+      { nodes: { width: 200, height: 120 } } ]
+    ];
+
+    for( const [ edges, style ] of cases ){
+      const cy = make( edges, style );
+      const conservative = cy._store.boundingBox();
+      const exact = cy.elements().boundingBox();
+
+      expect( conservative.x1, 'x1' ).to.be.at.most( exact.x1 + 1e-6 );
+      expect( conservative.y1, 'y1' ).to.be.at.most( exact.y1 + 1e-6 );
+      expect( conservative.x2, 'x2' ).to.be.at.least( exact.x2 - 1e-6 );
+      expect( conservative.y2, 'y2' ).to.be.at.least( exact.y2 - 1e-6 );
+      cy.destroy();
+    }
+  });
+
   it('routes ancestor edges across multiple levels', function(){
     const cy = make( [ { data: { id: 'aq', source: 'a', target: 'q' } } ] );
 

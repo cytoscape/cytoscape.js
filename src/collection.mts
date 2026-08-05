@@ -1,5 +1,5 @@
 import {
-  CURVE_MULTI, CURVE_STRAIGHT, CURVE_TAXI,
+  CURVE_CMPD, CURVE_MULTI, CURVE_STRAIGHT, CURVE_TAXI,
   FLAG_ACTIVE, FLAG_ALIVE, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_GRABBED, FLAG_LOCKED,
   FLAG_NO_EVENTS, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_VISIBLE
 } from './contract.mjs';
@@ -4187,8 +4187,10 @@ export class Collection {
 
       // curved edges expand by the conservative hull deviation — exact
       // eval at hypothetical positions isn't needed for a fit target.
-      // Box-bounded routes (taxi, extrapolated weights) add the
-      // node-half margin (+ chord length for extrapolation).
+      // Box-bounded routes add the node-half margin, plus the chord
+      // length for weight extrapolation only — taxi and compound loops
+      // are already contained by the grown endpoint AABB (see the twin
+      // of this comment in `GraphStore.boundingBox`).
       const at = ref.slot * 4;
       const kind = curveParams[ at + 3 ];
       let dev = kind === CURVE_STRAIGHT
@@ -4202,7 +4204,7 @@ export class Collection {
       if( ( edgeFlags[ ref.slot ] & FLAG_CURVED_BOX ) !== 0 ){
         dev += this._store.curveBoxMargin();
 
-        if( kind !== CURVE_TAXI ){
+        if( kind !== CURVE_TAXI && kind !== CURVE_CMPD ){
           dev += Math.hypot( tPos.x - sPos.x, tPos.y - sPos.y );
         }
       }

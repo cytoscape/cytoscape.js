@@ -3347,9 +3347,20 @@ export class GraphStore implements ModelView {
       // within the endpoint/control hull, whose controls sit at most
       // the header deviation from the center segment (exact lazy bb is
       // the collection's job; fit may slightly over-fit, never under).
-      // Box-bounded routes (taxi, extrapolated weights) get the
-      // node-half margin — taxi legs launch a body offset past the
-      // centers — plus the chord length for weight extrapolation.
+      // Box-bounded routes get the node-half margin — taxi legs launch
+      // a body offset past the centers — plus, for the *weight
+      // extrapolated* blob routes only, the chord length: a
+      // `control-point-weight` outside [0, 1] puts the control that far
+      // beyond an endpoint along the chord, which is the one geometry
+      // here that a bound around the endpoint AABB does not already
+      // cover.  Taxi never had it, and a compound loop must not: its
+      // controls hang off the *union of the two node boxes* (v3's
+      // findCompoundLoopPoints), at most `p2 / 2` past the top-left
+      // corner, so the AABB grown by header + node-half already
+      // contains it — adding a chord over-fit `fit()` on every compound
+      // graph with a related edge (measured on debug/'s compound
+      // fixture: box 1718x1572 against an exact 802x637, so the graph
+      // drew at half its size in a third of the viewport).
       const at = slot * 4;
       const kind = curveParams[ at + 3 ];
       let dev = kind === CURVE_STRAIGHT
@@ -3359,7 +3370,7 @@ export class GraphStore implements ModelView {
       if( ( edgeFlags[ slot ] & FLAG_CURVED_BOX ) !== 0 ){
         dev += this.curveBoxMargin();
 
-        if( kind !== CURVE_TAXI ){
+        if( kind !== CURVE_TAXI && kind !== CURVE_CMPD ){
           const s = endpoints[ slot * 2 ];
           const t = endpoints[ slot * 2 + 1 ];
 

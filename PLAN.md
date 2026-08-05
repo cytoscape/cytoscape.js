@@ -618,10 +618,17 @@ src/
     webgpu-constants.mts # numeric usage/stage flags so render modules stay Node-importable
   interact/pointer.mts   # pointer/wheel/touch: pan, zoom, hover, taps, box select, drag, pinch, cxt
   README.md              # scope + accepted deviations (the maintained doc)
-debug/            # dev harness: network/bg/LOD/labels URL params, ?gen=NxM generator, ?layout=force|spiral|... (rounds 17-18), stats overlay
+debug/                   # the manual harness, rebuilt in round 43:
+                         #   networks.js   the nine networks (five fixtures shared with v3's WebGL
+                         #                 harness under v3/debug/webgl/, two compound, two generated)
+                         #   styles.js     a hand-authored v4 sheet per network + a 'plain' one
+                         #   fixtures.js   fixture conversion + the generators (shared with the spec)
+                         #   init.js       params, loading, the instance, the stats overlay
+                         #   view/layout/toggles/query/events/add-remove.js   the control sections
+                         #   slim-ndex.mjs how the 34 MB ndex-x-large fixture was derived
 playwright-page/index.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/renderer.spec.js (+ visual.spec.js + goldens/)
-test/*.mjs               # 120+ Node-runner suites (auto-picked-up by the test:js glob), incl.
+test/*.mjs               # 126 Node-runner suites (auto-picked-up by the test:js glob), incl.
                          #   style-readback-all.mjs — round 35.1's characterization of all 153
                          #   readable style props on a node and an edge, the guard the readback
                          #   dispatch table was refactored behind
@@ -645,6 +652,8 @@ scripts/throw-coverage.mjs   # round 30.4: which src throws the Node suite runs;
                                  #   gate since 37.1 (npm run test:throws, in the npm test chain), with
                                  #   UNREACHABLE/MISATTRIBUTED as validated allowlists
 test/modules/throw-coverage.mjs  # round 30.4: that script's lcov parser, against a fixture; + the 37.1 gate
+test/modules/debug-harness.mjs   # round 43: debug/'s only coverage — every fixture exists at the
+                                 #   path the page fetches, and every sheet compiles against it
 test/modules/import-graph.mjs    # round 41.3: what src imports from outside itself.  Round 42
                                  #   emptied the allowlist: the rule is now absolute (nothing under
                                  #   src/ may import outside it, nothing may reach into v3/)
@@ -666,9 +675,10 @@ and Playwright names, and v3 moved wholesale into `v3/`.  `src/math.mts`,
 `src/types.mts` and `src/util/` are new — v4's own lean copies of the five
 utility modules 41.3 measured it still importing from v3, so nothing under
 `src/` imports outside it.  Where the `gpu-` prefix survives inside `src/`
-(`gpu-context`, `gpu-types`, `render/gpu-force`, `render/gpu-tween`,
-`render/gpu-timer`) it names the *device* half against a CPU counterpart,
-which is a live distinction rather than a v3-era prefix.
+(`gpu-context.mts` and the `render/gpu-*.mts` trio) it names the *device*
+half against a CPU counterpart, which is a live distinction rather than a
+v3-era prefix.  `gpu-types.mts` was **not** such a case — it holds the public
+option surface — and became `public-types.mts` in round 42.6.
 
 ## Model half — implemented as planned
 
@@ -2227,7 +2237,7 @@ forwarding entry and its generation is already stale, and the cached
 ## v3 → v4 parity gap analysis (2026-07-28)
 
 A systematic sweep of the **entire v3 public surface**, diffed against
-v4.  Sources: the v3 style registry (`src/style/properties.mts` — 280
+v4.  Sources: the v3 style registry (`v3/src/style/properties.mts` — 280
 registered properties + 11 aliases across 21 groups), the docmaker API
 index for core and collection (cross-checked against the prototypes),
 the v3 renderer's event/gesture emission (`load-listeners.mts`), the
@@ -2308,7 +2318,7 @@ in this ledger — pinned since 29.3 by `test/decided-drops.mjs`.
   `straight-triangle` plus manual endpoints (the 12c pass).~~ —
   **12c landed 2026-07-30/31**, completing the family.
   Brings with it: **self-loops** (`loop-direction`/`loop-sweep` — a
-  loop currently degenerates to a point in v4), `control-point-*`,
+  loop degenerated to a point in v4 when this was written), `control-point-*`,
   `segment-*`, `taxi-*`, `radius-type`, `edge-distances`,
   `source/target-endpoint`, `source/target-distance-from-node`, and
   the accessors `controlPoints`/`segmentPoints`/
@@ -3228,7 +3238,7 @@ final tallies in the goldens/parity entry at the end.
   and L-shape fallbacks, node-body offsets, the forced-direction
   growth case) — plus boundary endpoints toward the first/last route
   point.  `computeCorner` is v3's `getRoundCorner` as a pure function
-  (spec-pinned *directly against* `src/round.mts` output across
+  (spec-pinned *directly against* `v3/src/round.mts` output across
   windings, arc- vs influence-radius, limit clamps and collinear
   corners).  The drawn strip stays one indirect draw of CURVE_SEGS
   quads for every family: `quadPiece` maps subdivision indices onto
@@ -3904,7 +3914,7 @@ below were written per item, in the same commits as the work.
 ## Round 13 plan — style-prop parity (planned 2026-07-30; completed 2026-07-31 — see the round-13 Landed section above)
 
 A prop-level sweep of the v3 style registry
-(`src/style/properties.mts`: 280 registered props + 11 aliases)
+(`v3/src/style/properties.mts`: 280 registered props + 11 aliases)
 against the v4 engine, asking one question per prop: is it
 implementable **entirely under existing design decisions** — a new
 channel column plus parse/mapper/stored-truth-readback plumbing plus
@@ -10558,7 +10568,7 @@ they stated a fact about the code that nobody had measured:
 - [x] **41.6 Docs + declarations** (2026-08-04) — `Event`,
   `EventProps`, `EventTarget` and `EventHandler` are exported from
   the entry point, so a consumer can type a handler; `dist/
-  cytoscape-gpu.d.ts` regenerated (42 type exports, 1147 doc blocks).
+  cytoscape.d.ts` regenerated (42 type exports, 1147 doc blocks).
   Both documents carry the removal, including the two JSDoc paragraphs
   round 37.4 had *just* written to describe the old behaviour — a
   reminder that a docs fix has a shelf life when the code is about to
@@ -10659,6 +10669,9 @@ was not on the plan's list at all.
     `render/gpu-tween`, `render/gpu-timer` — because there the prefix names
     the **device** half against a CPU counterpart (`layout/force-sim.mts` is
     the contrast), which is a live distinction rather than a v3-era label.
+    *(42.6 found one of those five wrong: `gpu-types.mts` holds the public
+    option surface and is not a device module at all — it is `public-types.mts`
+    now.  See 42.6 below.)*
   - **The five shared utility modules duplicate rather than stay shared** —
     the call 41.3's allowlist was logged waiting for.  v4 owns lean copies,
     v3 keeps its originals, and **nothing under `src/` imports outside it**.
@@ -10935,15 +10948,37 @@ no coverage of any kind:
   'category10'` for 30 MCL clusters throws ("scheme has only 10 entries; 30
   needed"), because v4 will not silently recycle a categorical palette — which
   is exactly the class of drift that made the page flat in the first place.
-- [x] **43.9 Docs.**  This record, the renumbering, and the sweep.  One
-  leftover swept up on the way: auto-generated element ids read `'gpu-' + n`
-  (`Core#_newId`), which the 42.6 rename missed and which `ele.id()` returns;
-  now `'cy-'`.  No spec asserted it.
+- [x] **43.9 Docs, and a sweep that found round 42's leftovers.**  This
+  record, the renumbering, and a pass over all four documents.
+  Two leftovers of the 42.6 rename: auto-generated element ids read
+  `'gpu-' + n` (`Core#_newId`), which `ele.id()` returns — now `'cy-'`, and no
+  spec asserted it — and the round-42 note under the directory layout still
+  listed `gpu-types` among the names that deliberately keep the prefix, which
+  42.6 had renamed to `public-types.mts` for exactly the opposite reason.
+  One leftover of the *round-42 split*: the root's `test:build` script was
+  copied across whole, but `TEST_BUILD` is read by `v3/src/test.mjs` and by
+  nothing in v4 — so the script silently re-ran the ordinary Node suite while
+  `AGENTS.md` claimed it "exercises the built bundle".  Removed, and the claim
+  replaced with what actually does (the Playwright projects and
+  `benchmark/style-bundle.mjs`).
+  **And a method worth keeping**: round 42's sweep worked from a hand-written
+  substitution list, so it fixed every spelling it thought of and missed the
+  ones it did not — `typescript/tests/gpu.test-d.ts` and
+  `test/modules/gpu-import-graph.mjs` in `src/README.md`, three pointers at v3
+  sources that had moved under `v3/`, and a line-wrapped `dist/cytoscape-gpu.d.ts`.
+  Extracting every rooted path from the markdown and testing it with
+  `existsSync` found all of them at once.  That check is now a rule in
+  `AGENTS.md`; it is the only one that catches a spelling nobody anticipated.
 
 **Verification (2026-08-04)**: typecheck, lint, **1998 Node tests**, **90 module
-tests** (71 + 19 new), the throw gate at 0 Node-reachable dead, types clean, and
-the browser projects green with **goldens byte-stable** and the parity scenes at
-their recorded values — this round moves no pixel in any scene they cover.
+tests** (71 + 19 new), the throw gate at **177 run / 10 browser-only / 5
+unreachable / 0 Node-reachable dead** over 192 sites, JSDoc 100%/100% with
+`@throws` 18/18, `@param` 231/231 and `@returns` 278/278, the declaration at 42
+type exports / 3 statics / **1148** doc blocks (one more than round 42: the new
+`Core#_newId` comment, which ships because TypeScript emits private members into
+the declaration), and **176 browser specs** (101 `renderer` + 75 `visual`) with
+**goldens byte-stable** and the parity scenes at their recorded values — this
+round moves no pixel in any scene they cover.
 The new active-bg spec was run once with the fix removed and fails.
 **And the check that would have caught round 42's breakage**: every one of the
 nine networks was driven in a real browser and asserted to render — em-web at

@@ -35,7 +35,7 @@ parity harness keep working against it.
 | `test/`, `test/modules/` | v4's `node:test` suites |
 | `playwright-tests/` | v4's browser coverage: the `renderer` project, and `visual` (goldens + live v3-vs-v4 parity diffs) |
 | `benchmark/` | v4's benchmark suites, most of them measured against v3 |
-| `debug/` | the manual dev harness |
+| `debug/` | the manual dev harness — nine networks, each with a production-grade v4 stylesheet |
 | `scripts/` | the audits (JSDoc coverage, throw coverage, benchmark coverage) |
 | `v3/` | Cytoscape.js v3, self-contained — its own `package.json`, build, tests and documentation site |
 | `PLAN.md` | the development record: every round's plan and outcome |
@@ -87,9 +87,14 @@ deviation; the migration guide is round 46.
 npm install
 npm run build        # bundles into build/
 npm test             # typecheck, Node suites, throw gate, browser specs, lint
-npm run watch        # dev server + auto-rebuild -> http://localhost:3333
+npm run watch        # the debug harness -> http://localhost:3333
 npm run benchmark    # the v3-vs-v4 micro sweep
 ```
+
+`npm run watch` is the fastest way to see v4 working: pick a network from the
+dropdown and it loads with a hand-authored stylesheet, labels and layout, plus
+panels for the viewport, layouts, core options, query-object selection and a
+live event log.
 
 v3 builds and tests as its own project:
 

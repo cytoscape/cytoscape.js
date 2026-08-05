@@ -254,7 +254,16 @@ shader over every allocated slot.
 - `contract.mts` is the co-signed source of truth for the column/flag layout
   shared by the model (`store/`) and the renderer (`render/`) — change it
   first when the layout changes.
-- Manual testing: `npm run watch` → http://localhost:3333/.
+- Manual testing: `npm run watch` → http://localhost:3333/.  The harness
+  (round 43) offers nine networks — six from real exports (four fixtures
+  shared with v3's WebGL harness under `v3/debug/webgl/`, the 465k-edge
+  `ndex-x-large` local to `debug/`, and a clustered variant derived from
+  em-web in-page) and three built in-page — each with a hand-authored v4
+  stylesheet, plus sections for
+  the viewport, layouts, the core toggles, query-object selection, an
+  event log and add/remove.  `test/modules/debug-harness.mjs` is its only
+  automated coverage: every fixture exists at the path the page fetches,
+  and every sheet compiles against that fixture's real data.
   Browser tests: the `renderer` Playwright project, plus the
   `visual` project — golden-image diffs (pixelmatch against PNGs
   in `playwright-tests/goldens/`, pinned to the SwiftShader adapter so
@@ -828,7 +837,7 @@ each is deliberate, not a pass-1 deferral:
   *literals*, so options assembled into a variable first are widened
   and pass.  Both halves are pinned — a Node spec for the
   permissiveness, and four `@ts-expect-error` directives in
-  `typescript/tests/gpu.test-d.ts` that fail the typecheck if the
+  `typescript/tests/api.test-d.ts` that fail the typecheck if the
   options type ever stops rejecting excess keys.
 - **No classes in v4** (`addClass`/`removeClass`/class selectors).  The
   role classes played in v3 — user-defined state driving filtering and
@@ -2065,7 +2074,7 @@ Instead:
   Two guards: `npm run test:types:surface` audits the shipped shape
   (default export, the named type surface with no leaks, the
   factory's statics, and a floor on the surviving doc blocks) and
-  `typescript/tests/gpu.test-d.ts` is a compile-only consumer test
+  `typescript/tests/api.test-d.ts` is a compile-only consumer test
   in the `test:types` project.  **Closed by round 41.1**: the event
   object is v4's own, and `event.target` types as the core or a
   one-element collection (`EventTarget`), so a handler narrows with
@@ -3282,6 +3291,18 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   to read before deciding anything about v4's surface: contradictions
   are logged there rather than patched, because removing public API is
   a call to be made, not inferred.
+- ~~**The debug harness**~~ — **rebuilt by round 43** (2026-08-04), which
+  was inserted ahead of the release sequence (and renumbered the old
+  43–50 to 44–51).  It found the harness both broken and misleading:
+  four of its seven networks had 404'd since round 42 moved the v3 tree,
+  silently, and its style sanitizer kept a 14-property whitelist that
+  dropped every mapper — so v4's whole style surface was being discarded
+  before it reached the core, and the page read as "v4 can't style".
+  Now hand-authored sheets per fixture (the real enrichmentmap.org style
+  among them), two genuinely compound graphs, the v3 page's control
+  sections, and `test/modules/debug-harness.mjs` — `debug/`'s first test.
+  The round also fixed the background-grab indicator, which had never
+  followed the cursor (see the core-theming notes above).
 - ~~**The completion tail**~~ — **closed by round 36** (2026-08-04):
   the `@returns` tail round 32 measured and deferred (63 written, so
   276/276 — reported and not gated at the time; **round 37.1 gates
@@ -3334,4 +3355,4 @@ same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
   import of v3, as the round-41 plan assumed: five generic utility
   modules remain (`math`, `types`, `util/colors`, `util/position`,
   `util/sort`), now a maintained allowlist in
-  `test/modules/gpu-import-graph.mjs` and a round-42 call.
+  `test/modules/import-graph.mjs` and a round-42 call.

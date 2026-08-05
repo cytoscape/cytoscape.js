@@ -279,7 +279,12 @@ shader over every allocated slot.
   the viewport, layouts, the core toggles, query-object selection, an
   event log and add/remove.  `test/modules/debug-harness.mjs` is its only
   automated coverage: every fixture exists at the path the page fetches,
-  and every sheet compiles against that fixture's real data.
+  every sheet compiles against that fixture's real data, the compound
+  fixture lays out into disjoint parent boxes, the event log reads
+  layout once per frame rather than once per event, and `watch:sync`
+  binds livereload on every interface (the 2026-08-05 review pass —
+  three defects the harness's first real user found, recorded under
+  round 43 in PLAN.md).
   Browser tests: the `renderer` Playwright project, plus the
   `visual` project — golden-image diffs (pixelmatch against PNGs
   in `playwright-tests/goldens/`, pinned to the SwiftShader adapter so
@@ -1899,7 +1904,21 @@ leaf↔parent flip re-routes its self-loops.  Compound loops are
 box-bounded for culling (`FLAG_CURVED_BOX`) with a derivation-time
 excursion bound feeding `curveSlack()` (a 2× stretch margin —
 stretch grows only logarithmically with node size, and parent
-resizes refresh the bound; recorded).  Deviation: v4 anchors the
+resizes refresh the bound; recorded).  **The conservative fit box
+does not add the chord length** for this kind (corrected
+2026-08-05): the chord belongs to the *weight-extrapolated* blob
+routes that share `FLAG_CURVED_BOX`, where a
+`control-point-weight` outside [0, 1] puts a control that far past
+an endpoint.  A compound loop's controls hang off the union of the
+two node boxes, at most half the excursion bound past its top-left
+corner, so the endpoint AABB grown by header + node-half already
+contains the curve — and the bb scan visits *both* endpoints, so
+whichever node owns that corner covers it.  Adding a chord made
+`fit()` draw every compound graph with a related edge at a
+fraction of its size (measured on `debug/`'s compound fixture:
+1718 × 1572 against an exact 802 × 637).  The **cull** kernel
+keeps the chord term deliberately: over-inclusion there costs
+efficiency, never correctness.  Deviation: v4 anchors the
 curve endpoints outside-to-node (toward the near control) where
 v3's `edge:compound` block defaults them outside-to-line — a small
 angular difference at the boundary, measured at 0.022% in the live
@@ -3520,6 +3539,18 @@ still be what it says.
   sections, and `test/modules/debug-harness.mjs` — `debug/`'s first test.
   The round also fixed the background-grab indicator, which had never
   followed the cursor (see the core-theming notes above).
+  **A maintainer review pass on 2026-08-05 found three more**, all of
+  which only a person opening the page could have: livereload had
+  never connected (it binds `localhost`, which resolves to `::1`
+  here, while `http-server -o` opens the page at `127.0.0.1`); box
+  selection cost seconds of forced layout, because the event log read
+  `scrollHeight` after every appended row and box selection emits
+  three events per element; and the compound fixture was not the
+  verbatim port of `v3/debug/compound.js` its record claimed — the
+  node order had been sorted and v3's `cols: 3` dropped, which is
+  what made its parent boxes overlap.  Fixing the third is what
+  turned up the `fit()` over-estimate corrected in the
+  compound-loop-edge notes above.
 - ~~**The completion tail**~~ — **closed by round 36** (2026-08-04):
   the `@returns` tail round 32 measured and deferred (63 written, so
   276/276 — reported and not gated at the time; **round 37.1 gates

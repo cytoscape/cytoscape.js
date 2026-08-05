@@ -116,7 +116,8 @@
     "benchmark": "node --import tsx benchmark/index.mjs",
     "benchmark:report": "node --import tsx benchmark/report.mjs",
     "benchmark:all": "node --import tsx benchmark/report.mjs --all",
-    "benchmark:renderer": "node --import tsx benchmark/render-bench.mjs"
+    "benchmark:renderer": "node --import tsx benchmark/render-bench.mjs",
+    "machine": "node scripts/machine-info.mjs"
   },
   "devDependencies": {
     "@fontsource/open-sans": "^5.3.0",

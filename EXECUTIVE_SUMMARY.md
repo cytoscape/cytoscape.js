@@ -12,7 +12,7 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-05, covering work through round 46.5.
+- **Last updated**: 2026-08-05, covering work through round 46.5, with round 52 scoped.
 
 ---
 
@@ -30,6 +30,7 @@ by decision rather than reimplemented, each recorded with its rationale.
 | Visual regression | 43 golden images + live v3-vs-v4 pixel-parity scenes |
 | Benchmarks | 31 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
+| Bundle | 660 KiB minified, 179 KiB gzipped — 1.4× v3 on the wire, of which **24% is WebGPU shader source** v3 has no equivalent of |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
@@ -153,6 +154,7 @@ than unbuilt — contracts, documentation, packaging and robustness.
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, WebKit, real-device touch |
 | Release engineering (round 50) | the release workflows are still v3's and are marked as not yet adapted |
 | Release bake (round 51) | alpha/beta cycle, external-consumer smoke, then **4.0.0** |
+| *Optional:* WGSL minification (round 52) | scoped and measured, not scheduled — worth **10% of the download**, best landed before the alpha |
 
 ---
 

@@ -2086,7 +2086,7 @@ Instead:
 - **The declarations ship, with the docs in them** (26.5).
   `cytoscape` has a real `.d.ts`: `rolldown.dts.config.mjs`
   rolls the prototype's declarations up through the same pipeline
-  the v3 entry uses, `build-dts.mjs` finalizes it (the gpu entry is
+  the v3 entry uses, `scripts/build-dts.mjs` finalizes it (the gpu entry is
   ESM-only — the `./gpu` export has no `require` condition — so it
   keeps the generated ESM shape and only gains the UMD global
   name), and the `./gpu` export carries a `types` condition.  Over

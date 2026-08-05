@@ -22,8 +22,6 @@ mise.toml
 playwright.config.js
 rolldown.config.mjs
 rolldown.dts.config.mjs
-build-dts.mjs
-license-update.mjs
 tsconfig.json
 tsconfig.dts.json
 tsconfig.types-test.json

@@ -186,7 +186,7 @@ describe( 'packaging: the manifest resolves to build output', () => {
 
   it( 'names only files the build chain produces', async () => {
     const produced = new Set( [
-      // build:types -> rolldown.dts.config.mjs -> build-dts.mjs
+      // build:types -> rolldown.dts.config.mjs -> scripts/build-dts.mjs
       'cytoscape.d.ts',
       // dist:copy, out of build/
       ...distCopyFiles()

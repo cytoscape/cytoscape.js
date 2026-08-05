@@ -751,7 +751,7 @@ test/modules/migration-guide.mjs # round 47: MIGRATING.md's property table check
 MIGRATING.md                 # round 47: the v3 -> v4 porting guide (ships in the package)
 CHANGELOG.md                 # round 47: the 4.0 changelog (ships in the package)
 rolldown.dts.config.mjs      # round 26.5: rolls src declarations up (build/dts/)
-build-dts.mjs                    #   finalizeDts -> dist/cytoscape.d.ts
+scripts/build-dts.mjs            #   finalizeDts -> dist/cytoscape.d.ts
 dist/cytoscape.d.ts          # round 26.5: the shipped declarations behind the package types export
 test/types-surface.mjs       # round 26.5: shape audit (exports, statics, surviving doc blocks)
 typescript/tests/api.test-d.ts   # round 26.5: compile-only consumer test in the test:types project

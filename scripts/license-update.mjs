@@ -29,4 +29,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.`;
 
-fs.writeFileSync(path.join(__dirname, 'LICENSE'), license);
+// __dirname is scripts/; the LICENSE this generates is the repo-root one
+// shared by both packages (v3/package.json's `copyright` script invokes
+// this same file via `node ../scripts/license-update.mjs`), so the target
+// stays pinned one level up rather than following either caller's cwd.
+fs.writeFileSync(path.join(__dirname, '..', 'LICENSE'), license);

@@ -59,7 +59,7 @@ export function byMachine( runs ){
   return [ ...groups.values() ];
 }
 
-function trendTable( group, now ){
+function trendTable( group ){
   const rows = group.runs.map( run => {
     const geo = geoSpeedup( run.results );
 
@@ -111,7 +111,7 @@ npm run benchmark:publish</code></pre>`
   ${age != null ? `<strong>${esc( age )}</strong>` : 'undated'} — benchmarks do not run on this site's
   builder (no GPU, and the quick profile alone is seven minutes), so these are as fresh as the last
   <code>npm run benchmark:publish</code>.</p>
-  ${byMachine( runs ).map( g => trendTable( g, now ) ).join( '' )}`;
+  ${byMachine( runs ).map( g => trendTable( g ) ).join( '' )}`;
 
   return { ops, html, count: runs.length, available: true, reason: null, newest, age };
 }

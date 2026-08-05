@@ -11890,15 +11890,18 @@ EnrichmentMap/white-matter fixtures ship at 27.4 MiB instead of 37.
   removes, because silently capping an archive is the invisible truncation
   this file's benchmark rules exist to prevent.  Publishing **refuses a dirty
   tree** without `--allow-dirty`.
-- [x] **46.5.5 The harness's remote fixtures** (28 specs) — a network may
-  declare `remoteUrl`; `debug/init.js` prefers it only under
-  `window.DEBUG_FIXTURE_SOURCE = 'remote'`, which the status build sets and
-  `npm run watch` does not.  The invariant is *a remote is a mirror, never the
-  only copy*.  The x-large key is `…-slim.json` deliberately: the bucket's
-  `network-ndex-x-large.json` is the **250 MB original** this fixture was
-  slimmed from — same filename, different file — and a spec pins the suffix.
-  The failure message names **CORS**, because that is the failure this hits and
-  a browser reports it as an opaque `TypeError`.
+- [~] **46.5.5 The harness's remote fixtures** — **built, then removed the same
+  day by 46.5.7 below.**  A network could declare a `remoteUrl` which
+  `debug/init.js` preferred under `window.DEBUG_FIXTURE_SOURCE = 'remote'`, so
+  the two oversized NDEx fixtures loaded from the bucket they came from.  It
+  worked, and the live failure it produced was legible (it names **CORS**,
+  which is what a browser reports as an opaque `TypeError`) — but the binary
+  encoding put every fixture under the cap, and a remote mechanism nothing uses
+  is dead config pointing at a key that does not exist.  Removed with its flag
+  and its specs.  One thing from it is worth keeping in mind if a fixture ever
+  does outgrow the cap: the bucket's `network-ndex-x-large.json` is the
+  **250 MB original** this fixture was slimmed from — same filename, different
+  file — so a naive mirror URL would hand a browser a quarter-gigabyte.
 - [x] **46.5.6 The site** (52 specs) — `npm run status`, nine generated pages
   plus the harness mirror.  Two structural decisions carry it: **plan then
   execute**, so the specs check the intended output without copying 30 MiB;

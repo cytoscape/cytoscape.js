@@ -21,7 +21,7 @@ Guidelines for agents contributing to the Cytoscape.js graph theory and visualis
 - v4 has no documentation site yet (round 46 builds it); **v4 documents itself in JSDoc on the source** — see "Documentation notes" below.  v3's site is still readable at `v3/documentation/`: grep `v3/documentation/docmaker.json` for the v3 API in JSON form (search e.g. "cy.on"), and `v3/documentation/md/**/*.md` for its prose.  Useful for parity questions — *what did v3 do here?* — but remember it describes v3, and v4 deviates deliberately in many places.
 
 ## Development flow
-- Make sure dependencies are installed when you first start: `npm install`.
+- Make sure dependencies are installed when you first start: `npm install` **at the root and `cd v3 && npm install`**.  Both are needed even for a v4-only change: `test/modules/benchmark-report.mjs` imports `benchmark/bench-run.mjs`, which reaches `benchmark/graph.mjs` and so `v3/src/test.mjs`, which imports `heap`.  Until round 46.5 the root `package-lock.json` was still the pre-round-42 v3 one and hoisted v3's runtime deps to the root, so a root-only install happened to work; refreshing that lock made the real requirement visible.  CI has always installed both (`tests.yml`).
 - Install Playwright browsers before running browser coverage or the full test suite on a fresh environment: `npx playwright install --with-deps`.
 - Make your changes.
 - Lint source files: `npm run lint`.

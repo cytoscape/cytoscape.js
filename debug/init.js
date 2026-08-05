@@ -277,21 +277,37 @@ const paramDefs = {
   const networkID = networks[params.network] != null ? params.network : paramDefs.network.default;
   const network = networks[networkID];
 
+  // Round 46.5: where a fixture is fetched from.
+  //
+  // The hosted status site cannot serve the two NDEx fixtures — Cloudflare
+  // Pages caps a file at 25 MiB and they are 34.1 and 31.6 MiB — so it sets
+  // `window.DEBUG_FIXTURE_SOURCE = 'remote'` and those entries load from the
+  // bucket they came from.  Locally the flag is unset and nothing changes.
+  const useRemote = window.DEBUG_FIXTURE_SOURCE === 'remote' && network.remoteUrl != null;
+  const fixtureUrl = useRemote ? network.remoteUrl : network.url;
+
   function fail(err) {
     console.error(err);
-    $('#stats').textContent =
-      `Could not load "${networkID}":\n${err}\n\n` +
-      `Fixtures live in v3/debug/webgl/ — served from the repo root, so run\n` +
-      `\`npm run watch\` from the repo root rather than from debug/.`;
+    $('#stats').textContent = useRemote
+      // the failure a remote fixture actually hits is CORS, and the browser
+      // reports it as an opaque TypeError — so name it rather than repeat the
+      // local advice, which is not the problem here
+      ? `Could not load "${networkID}" from ${fixtureUrl}:\n${err}\n\n` +
+        `A remote fixture needs CORS on the bucket (Access-Control-Allow-Origin\n` +
+        `for this origin). Check the network panel: a request that never got a\n` +
+        `response header is a CORS rejection, not a missing file.`
+      : `Could not load "${networkID}":\n${err}\n\n` +
+        `Fixtures live in v3/debug/webgl/ — served from the repo root, so run\n` +
+        `\`npm run watch\` from the repo root rather than from debug/.`;
   }
 
   if(network.generated) {
     loadNetwork(fixtures.generate(network.generated, params.gen), networkID, network);
   } else {
     // a missing fixture used to reject silently and render nothing at all
-    fetch(network.url)
+    fetch(fixtureUrl)
       .then(res => {
-        if(!res.ok) { throw new Error(`${res.status} ${res.statusText} for ${network.url}`); }
+        if(!res.ok) { throw new Error(`${res.status} ${res.statusText} for ${fixtureUrl}`); }
 
         return res.json();
       })
@@ -311,7 +327,11 @@ const paramDefs = {
     $('#network-select').appendChild(option);
   }
 
-  $('#network-note').textContent = network.note || '';
+  // Say which source served this fixture.  A hosted page silently reading a
+  // local file — or a local page silently reaching the network — is exactly
+  // the invisible pass this harness keeps being caught by.
+  $('#network-note').textContent = (network.note || '')
+    + (useRemote ? `\nFetched remotely from ${new URL(fixtureUrl).host}.` : '');
 
   for(const p of Object.keys(paramDefs)) {
     const control = $(paramDefs[p].control);

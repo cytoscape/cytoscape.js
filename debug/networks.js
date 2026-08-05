@@ -12,6 +12,12 @@
 //
 // Each entry may declare:
 //   url        the elements JSON (a v3 `{ elements: { nodes, edges } }` export)
+//   remoteUrl  the same bytes at their origin, for a deployment that cannot
+//              serve the local copy.  `debug/init.js` prefers it only when
+//              `window.DEBUG_FIXTURE_SOURCE === 'remote'`, which the status
+//              build sets and `npm run watch` does not — so local development
+//              never reaches the network.  The local `url` stays
+//              authoritative; a remote is a mirror, never the only copy.
 //   derive     an in-page transform applied after load (see init.js)
 //   generated  build it in-page instead ('fixture' | true | 'compound')
 //   labelKey   the data key `debug/styles.js` maps the label from
@@ -58,6 +64,10 @@ var networks = {
     nodes: 3238,
     edges: 68641,
     url: '../v3/debug/webgl/network-ndex-large.json',
+    // 31.6 MiB, over Cloudflare Pages' 25 MiB per-file cap.  The R2 object is
+    // byte-identical to the local file (sha256 0af71493…c817bd74, verified
+    // 2026-08-05), so the hosted harness can point straight at it.
+    remoteUrl: 'https://pub-835fc16db602427ba8b9a874e4754257.r2.dev/network-ndex-large.json',
     labelKey: 'name',
     note: 'MCL cluster ids (1..30) through an ordinal colour scheme; edge correlation drives width and opacity.'
   },
@@ -70,6 +80,14 @@ var networks = {
     nodes: 19607,
     edges: 464657,
     url: 'network-ndex-x-large.json',
+    // 34.1 MiB, over Cloudflare Pages' cap.  NOTE the key is *-slim*: the
+    // bucket's `network-ndex-x-large.json` is the 250 MB **original** this
+    // fixture was derived from (see slim-ndex.mjs), and pointing a browser at
+    // that would be a quarter-gigabyte download.  Same filename, different
+    // file.  Until the slim is uploaded under this key the status build omits
+    // the network with the reason on the page — it does not fall back to the
+    // original.
+    remoteUrl: 'https://pub-835fc16db602427ba8b9a874e4754257.r2.dev/network-ndex-x-large-slim.json',
     labelKey: 'name',
     note: 'The scale fixture, and now the mapper-at-scale one: a diverging colour mapper evaluated on the GPU across 465k edges.'
   },

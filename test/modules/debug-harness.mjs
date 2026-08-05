@@ -95,6 +95,45 @@ describe( 'debug harness (round 43)', function(){
 
   } );
 
+  describe( 'a remote fixture is a mirror, never the only copy', function(){
+    // Round 46.5.  Two fixtures exceed Cloudflare Pages' 25 MiB per-file cap
+    // and load from their origin bucket on the hosted site.  The invariant
+    // that keeps that from becoming a dependency: the local file stays
+    // authoritative, so `npm run watch` and the whole suite above never touch
+    // the network, and a bucket that disappears costs a deployment rather than
+    // the harness.
+
+    const remotes = entries.filter( ( [ , def ] ) => def.remoteUrl != null );
+
+    it( 'declares at least one, so this suite is not vacuous', function(){
+      expect( remotes.length ).to.be.at.least( 1 );
+    } );
+
+    for( const [ id, def ] of remotes ){
+      it( `${id} keeps a local url beside its remoteUrl`, function(){
+        expect( def.url, `${id} has a remoteUrl but no local url` ).to.be.a( 'string' );
+        expect( def.generated, `${id} cannot be both generated and fetched` ).to.equal( undefined );
+        expect( existsSync( fixturePath( def.url ) ) ).to.equal( true );
+      } );
+
+      it( `${id} points at an absolute https url`, function(){
+        // a relative remoteUrl would resolve against the page and silently
+        // become a second local path
+        expect( def.remoteUrl ).to.match( /^https:\/\// );
+      } );
+    }
+
+    it( 'never points the x-large fixture at the full-fat original', function(){
+      // the bucket's `network-ndex-x-large.json` is the 250 MB original this
+      // fixture was slimmed from (debug/slim-ndex.mjs).  Same filename,
+      // different file — and handing a browser a quarter-gigabyte is the exact
+      // mistake the key name exists to prevent
+      const xl = networks[ 'ndex-x-large' ];
+
+      expect( xl.remoteUrl ).to.match( /network-ndex-x-large-slim\.json$/ );
+    } );
+  } );
+
   describe( 'every sheet compiles against its own fixture', function(){
 
     for( const [ id, def ] of entries ){

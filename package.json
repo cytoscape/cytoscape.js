@@ -117,6 +117,7 @@
     "benchmark:report": "node --import tsx benchmark/report.mjs",
     "benchmark:all": "node --import tsx benchmark/report.mjs --all",
     "benchmark:renderer": "node --import tsx benchmark/render-bench.mjs",
+    "benchmark:publish": "node scripts/benchmark-publish.mjs",
     "machine": "node scripts/machine-info.mjs"
   },
   "devDependencies": {

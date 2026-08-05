@@ -21,8 +21,20 @@ export function git( root, ...args ){
   }
 }
 
+/**
+ * Extensions that end up in a bundle.
+ *
+ * The staleness comparison is only meaningful over these.  Walking *every*
+ * file under `src/` counts `src/README.md`, which this repo's process rules
+ * require updating on essentially every commit — so the "bundle is stale"
+ * tile would light up after a docs edit, when nothing about the code had
+ * moved.  `benchmark/render-bench.mjs` had the identical bug and this module
+ * inherited it by writing the same walk from scratch.
+ */
+export const SOURCE_EXT = /\.(m?[jt]s|wgsl|json)$/;
+
 /** The newest mtime under a directory, recursively. `0` if unreadable. */
-export function newestMtime( dir, skip = new Set( [ 'node_modules', '.git' ] ) ){
+export function newestMtime( dir, skip = new Set( [ 'node_modules', '.git' ] ), match = SOURCE_EXT ){
   let newest = 0;
 
   const walk = path => {
@@ -41,7 +53,7 @@ export function newestMtime( dir, skip = new Set( [ 'node_modules', '.git' ] ) )
 
       if( entry.isDirectory() ){
         walk( child );
-      } else {
+      } else if( match.test( entry.name ) ){
         try {
           newest = Math.max( newest, statSync( child ).mtimeMs );
         } catch{ /* raced with a write; the next file is as good */ }

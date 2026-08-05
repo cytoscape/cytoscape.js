@@ -7,6 +7,9 @@ import { buildPlan, readNetworks, DOCUMENTS } from '../../scripts/status-build.m
 import { fixturePolicy, patchDebugHtml, networksPatch, PAGES_MAX_BYTES, minifiedSize } from '../../scripts/status/plan.mjs';
 import { enumerateRefs, markupRefs, networkRefs } from '../../scripts/status/refs.mjs';
 import { goldenTitles } from '../../scripts/status/goldens-page.mjs';
+import { newestMtime, SOURCE_EXT } from '../../scripts/status/repo-state.mjs';
+import { mkdtempSync, writeFileSync, utimesSync, mkdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 
 const ROOT = resolve( dirname( fileURLToPath( import.meta.url ) ), '..', '..' );
 
@@ -385,6 +388,41 @@ describe( 'status site: internal links', function(){
 
       expect( op.text, `${op.to} loads an external script` ).to.not.match( /<script[^>]+src="https?:/ );
       expect( op.text, `${op.to} loads an external stylesheet` ).to.not.match( /<link[^>]+rel="stylesheet"/ );
+    }
+  } );
+} );
+
+describe( 'status site: the stale-bundle check', function(){
+  it( 'counts only files that compile into the bundle', function(){
+    // Found by a real false alarm: `benchmark:renderer` warned that the bundle
+    // was stale when the newest thing under src/ was `src/README.md`, a docs
+    // file this repo's process rules require touching on nearly every commit.
+    // A staleness warning that fires on every docs edit is one nobody reads —
+    // and this module had inherited the same bug by writing the same walk.
+    const dir = mkdtempSync( join( tmpdir(), 'cy-stale-' ) );
+
+    mkdirSync( join( dir, 'nested' ) );
+    writeFileSync( join( dir, 'code.mts' ), 'x' );
+    writeFileSync( join( dir, 'nested', 'shader.wgsl' ), 'x' );
+    writeFileSync( join( dir, 'README.md' ), 'x' );
+
+    utimesSync( join( dir, 'code.mts' ), new Date( 1000 ), new Date( 1000 ) );
+    utimesSync( join( dir, 'nested', 'shader.wgsl' ), new Date( 2000 ), new Date( 2000 ) );
+    // the doc is the newest thing by far, and must not count
+    utimesSync( join( dir, 'README.md' ), new Date( 9000 ), new Date( 9000 ) );
+
+    expect( newestMtime( dir ) ).to.equal( 2000 ); // new Date( 2000 ) is 2000 ms since epoch
+
+    rmSync( dir, { recursive: true, force: true } );
+  } );
+
+  it( 'recognises the extensions that actually build', function(){
+    for( const name of [ 'a.mts', 'a.ts', 'a.mjs', 'a.js', 'shader.wgsl', 'data.json' ] ){
+      expect( SOURCE_EXT.test( name ), `${name} should count as source` ).to.equal( true );
+    }
+
+    for( const name of [ 'README.md', 'notes.txt', 'image.png' ] ){
+      expect( SOURCE_EXT.test( name ), `${name} should not count as source` ).to.equal( false );
     }
   } );
 } );

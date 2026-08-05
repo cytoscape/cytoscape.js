@@ -93,6 +93,9 @@ const headed = argv.includes( '--headed' );
 const GPU_ONLY = argv.includes( '--gpu-only' );
 
 // -- preflight ---------------------------------------------------------------
+/** Extensions that end up in a bundle; `.md` and friends deliberately do not. */
+const SOURCE_EXT = /\.(m?[jt]s|wgsl|json)$/;
+
 const BUNDLES = [ 'v3/build/cytoscape.umd.js', 'build/cytoscape.umd.js' ].map( p => join( ROOT, p ) );
 
 for( const b of BUNDLES ){
@@ -103,7 +106,13 @@ for( const b of BUNDLES ){
 }
 
 { // stale-bundle warning (the PLAN-documented footgun, in mtime form)
+  // Only files that *compile into* the bundle count.  Walking everything under
+  // src/ meant `src/README.md` — which this repo's process rules require
+  // updating on essentially every commit — made the next benchmark run warn
+  // that its bundle was stale when nothing about the code had moved.  A
+  // warning that cries wolf on every docs commit is a warning nobody reads.
   const newestSrc = readdirSync( join( ROOT, 'src' ), { recursive: true } )
+    .filter( f => SOURCE_EXT.test( String( f ) ) )
     .map( f => { try { return statSync( join( ROOT, 'src', f ) ).mtimeMs; } catch { return 0; } } )
     .reduce( ( a, b ) => Math.max( a, b ), 0 );
 

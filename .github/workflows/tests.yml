@@ -6,7 +6,9 @@ jobs:
   # v4 — the package, at the repo root
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # No `timeout-minutes`: the 15-minute cap was killing runs (2026-08-05).
+    # Falls back to GitHub's 360-minute job default, which is a backstop rather
+    # than a budget.  Re-impose a cap once the suite's real wall-clock is known.
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-node@v6
@@ -32,7 +34,7 @@ jobs:
   # (round 42).  It builds and tests as its own project.
   ci-v3:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # see the note on `ci` above
     defaults:
       run:
         working-directory: v3

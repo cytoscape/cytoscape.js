@@ -127,7 +127,7 @@ bypass correctly — the stale advice was in the runtime message and the
 JSDoc, which a markdown sweep never reads.
 Round 32 (2026-08-03) finished that sentence's last clause: **every
 public member that takes arguments now documents them** (221/221 at the
-time, up from 143; **231/231** today — round 36.2 widened the audit to
+time, up from 143; **232/232** today — round 36.2 widened the audit to
 the exported functions it had never walked and 37.3 to the entry point
 itself), gated the same way, because
 docmaker emits a description per argument and a missing one is a hole in
@@ -172,7 +172,7 @@ to be designed.
 Round 37 (2026-08-04) is that roadmap's governance close-out, and it
 changes almost no behaviour: the two audits held back on policy calls
 now **gate** (throw coverage at zero tolerance, `@returns` at 277/277
-then, 278/278 today),
+then, 279/279 today),
 the legacy-alias triage is finally applied as written (`roundrectangle`
 drops; `autolockNodes`/`autoungrabifyNodes` are kept as recorded
 exceptions), constructor strictness is closed at the *type* layer where
@@ -2145,7 +2145,7 @@ Instead:
   bodies only** — so the public tier's *exported functions*, which are
   the whole surface of `wire.mts` and `columnar.mts` and are public
   members by the script's own definition, sat outside a gate that read
-  as complete.  They are inside it now, at **231/231** — the 230th
+  as complete.  They are inside it now, at **232/232** — the 230th
   arriving in round 37.3, which found the same failure a third time:
   the exported-function pattern round 36 added did not spell
   `default`, so `src/index.mts`, listed in the public tier since
@@ -2158,15 +2158,16 @@ Instead:
 - **`@returns` is written, and gated since round 37.1** (written in
   round 36).  Round 32 measured this tail at 63 of 276 and left it, on
   the reasoning above; round 36 wrote all 63, so the surface is
-  **278/278** (276 at the time; the 277th is the entry point round 37.3
-  brought inside the audit, the 278th round 41's event and emitter),
+  **279/279** (276 at the time; the 277th is the entry point round 37.3
+  brought inside the audit, the 278th round 41's event and emitter, the
+  279th round 45's widening to `src/event.mts` itself),
   and left the *gate's* boundary exactly
   where round 32 drew it — a policy call of the kind PLAN.md's open call 8 held for
   test coverage.  The fifth design sitting (2026-08-04) took both
   calls, and this one ratchets: `auditReturnTags()` prints the tally
   under the coverage report, `--verbose` lists any miss, and
   `test/jsdoc-coverage.mjs` fails the build on a miss or on the
-  tally falling below its ratchet (276 at round 36's completion, 278
+  tally falling below its ratchet (276 at round 36's completion, 279
   today).  The argument that moved it is that these
   comments ship as `.d.ts` hover text whether or not the docs
   generator reads them, and round 36's own history — a tail completed
@@ -2257,11 +2258,15 @@ and reports which the Node suite reaches, the same way
   place — the keys are `file:line`, and round 34 moved a site out from
   under its entry by inserting two methods above it.  An unchecked
   exemption silently transfers to whatever line lands on the number.
-- **Reading (2026-08-04, after round 41)**: **192 sites — 177 run by
+- **Reading (2026-08-05, after round 48)**: **197 sites — 182 run by
   the Node suite**, **10 browser-only, 5 unreachable by design**, **0
   Node-reachable and never run**.  Round 36.4 read 191/176 with the
   same three classifications; round 41's emitter added one Node-run
-  site.  Round 30 read 13 browser-only and 2
+  site, and round 48.3's fuzzing added five more — the guards it
+  needed for corrupt dictionary indices, packed-id blob lengths and
+  data-key counts, each specced deterministically in `test/wire.mjs`
+  because this gate measures `test/*.mjs` and cannot see a guard
+  reachable only from `test/soak/`.  Round 30 read 13 browser-only and 2
   unreachable, and pinned six of the browser tier (the export guards,
   30.2); round 36.4 finished that tier by **specs for four and
   classification for three**.  Specced in the `renderer` project: no
@@ -2457,8 +2462,10 @@ why it topped that table and why the remaining spread looked larger than
 the dispatch actually is.
 
 `node scripts/bench-coverage.mjs [--verbose]` reports which public
-members a benchmark calls (84% of the callable surface; core 98.9%,
-collection 98.5% since round 36.3 added `allAre` and `is`).  Like the stranded-doc-block check it reports and never
+members a benchmark calls (83.7% of the callable surface; core 98.9%,
+collection 98.5% since round 36.3 added `allAre` and `is`; the total
+dipped from 84% when round 45 brought `src/event.mts` into the public
+tier, which is the audit widening rather than coverage falling).  Like the stranded-doc-block check it reports and never
 gates (throw coverage, its other sibling, has *gated* since round 37.1) —
 and it is the weakest of the three audits, matching *call-shaped
 mentions*, so it over-detects (a comment counts) and under-detects (a
@@ -3400,6 +3407,29 @@ still be what it says.
 
 ## Follow-up hooks
 
+- **The release sequence** (rounds 44–51), and what is left of the four
+  that have landed.  **44** (packaging) is complete as a source
+  concern; its one remaining act is release-time and belongs to round
+  50 — the first release build must actually commit the five `dist/`
+  bundles, and `pre_release_test.sh` should run
+  `test/modules/packaging.mjs` after `npm run dist`, where the
+  "do these files exist" half is meaningful.  **45** (the docs
+  generator) is complete, and it unblocks **46**, the docs site, which
+  now has its input rather than a plan for one.  **47** (the migration
+  guide and CHANGELOG) is complete; both ship in the package, so they
+  are documents to keep true rather than to write once.  **48** (soak)
+  landed its Node tier and its device-loss-under-load specs; what
+  remains of it is the documented **limit edges** — the 256-layer image
+  cap, a full glyph atlas, the export texture cap — each of which needs
+  a fixture big enough to reach the limit rather than any new
+  technique.  **49–51** (cross-platform validation, release
+  engineering, the release bake) are untouched; 49 needs hardware this
+  box does not have.
+  Two public-surface changes were made in these rounds without a call,
+  and both are logged in PLAN.md's "Open calls for the maintainer" as
+  items 14 and 15 rather than left in a diff: round 45 exported the
+  layout contract's types, and round 48.4 made twelve collection
+  methods throw across instances where they had been answering wrongly.
 - ~~Slot compaction~~ — **closed by round 19** (2026-08-01, the
   section above): live slots compact with a monotone remap, forwarded
   lazy ref repair, and the auto + explicit trigger pair.  The
@@ -3493,9 +3523,9 @@ still be what it says.
 - ~~**The completion tail**~~ — **closed by round 36** (2026-08-04):
   the `@returns` tail round 32 measured and deferred (63 written, so
   276/276 — reported and not gated at the time; **round 37.1 gates
-  it**, and the surface is 278/278 today), the `@param` gate's own
+  it**, and the surface is 279/279 today), the `@param` gate's own
   blind spot (it had never walked the public tier's exported
-  functions; 229/229 then, 231/231 now), the four reachable
+  functions; 229/229 then, 232/232 now), the four reachable
   browser-only throws and the three that are not, the two public
   collection members no benchmark called, and the three measurements
   this repo had promised and never taken (`--layout` on real
@@ -3519,18 +3549,20 @@ still be what it says.
 - **Documentation** — round 26 (2026-08-02) settled the near-term
   shape: JSDoc on the source is v4's documentation source of truth
   and the declarations ship with it (see "Documenting the source"
-  above).  What stays open, deliberately: the **generator** that
-  turns those comments into docmaker input, and the release docs
-  themselves.  Neither is built until v4 ships; the docs site is
-  round 46, and `v3/documentation/` belongs to v3 until then.  What *is* ready is the
+  above).  The **generator** that turns those comments into docmaker
+  input was the half left open there, and **round 45 built it**
+  (2026-08-04; `npm run docs:api`, and "The generator" above).  What
+  stays open is the release docs themselves: the site is round 46, and
+  `v3/documentation/` belongs to v3 until then.  What *is* ready is the
   input: after rounds 31–32 the public surface carries all three of
   the tags a generator reads — a doc comment on every member (26),
   `@throws` wherever a member throws (31.2), and `@param` on every
   member that takes arguments (32, widened in 36.2 to the exported
   functions the audit had never walked, and again in 37.3 to
-  `export default function` — the entry point: **231/231**) — each
+  `export default function` — the entry point, and again in round 45 to
+  `src/event.mts`, a whole file the tier had never listed: **232/232**) — each
   gated, so the generator's input cannot rot before the generator
-  exists.  **`@returns` is complete since round 36** (**278/278**) and
+  exists.  **`@returns` is complete since round 36** (**279/279**) and
   **gated since 37.1**: docmaker's shape still has no return field,
   but the tags ship as `.d.ts` hover text regardless, and a tail
   completed by hand four rounds after it was measured is what an

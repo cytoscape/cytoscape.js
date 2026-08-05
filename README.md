@@ -33,10 +33,11 @@ parity harness keep working against it.
 | `src/` | v4's source — the columnar core, the WebGPU renderer, layouts, algorithms |
 | `src/README.md` | the maintained scope / deviations / design-decisions doc |
 | `test/`, `test/modules/` | v4's `node:test` suites |
+| `test/soak/` | the robustness tier — leaks, sustained churn, wire-format fuzzing, multi-instance isolation |
 | `playwright-tests/` | v4's browser coverage: the `renderer` project, and `visual` (goldens + live v3-vs-v4 parity diffs) |
 | `benchmark/` | v4's benchmark suites, most of them measured against v3 |
 | `debug/` | the manual dev harness — nine networks, each with a production-grade v4 stylesheet |
-| `scripts/` | the audits (JSDoc coverage, throw coverage, benchmark coverage) |
+| `scripts/` | the audits (JSDoc coverage, throw coverage, benchmark coverage) and the docs generator |
 | `v3/` | Cytoscape.js v3, self-contained — its own `package.json`, build, tests and documentation site |
 | `MIGRATING.md` | the v3 → v4 porting guide (ships in the package) |
 | `CHANGELOG.md` | the 4.0 changelog (ships in the package) |
@@ -92,7 +93,9 @@ then differ. [`CHANGELOG.md`](CHANGELOG.md) is the summary.
 ```sh
 npm install
 npm run build        # bundles into build/
-npm test             # typecheck, Node suites, throw gate, browser specs, lint
+npm test             # typecheck, Node suites, soak tier, throw gate, browser specs, lint
+npm run test:soak    # leaks, churn, wire fuzzing, isolation (needs --expose-gc)
+npm run docs:api     # generate the API reference from the source JSDoc
 npm run watch        # the debug harness -> http://localhost:3333
 npm run benchmark    # the v3-vs-v4 micro sweep
 ```

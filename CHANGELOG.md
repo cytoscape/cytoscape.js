@@ -49,7 +49,9 @@ that compile and then behave differently.
 - **The `force` layout** — GPU-native spring–electric, animating live at 100k
   nodes, with a CPU reference executor for headless and compound graphs.
 - **A registry-free extension contract**: `cy.layout( { impl } )` runs an
-  imported class or object; `LayoutContext` is columnar-first.
+  imported class or object; `LayoutContext` is columnar-first, and it,
+  `LayoutImpl` and `CustomLayout` are exported types, so an external layout
+  author writes against real types rather than `any`.
 - **`chart`** — v3's 101 numbered pie/stripe properties as one list-valued
   family with data-driven values, scheme palettes and donut holes.
 - **`visibility`** as a paint-only style property beside the structural

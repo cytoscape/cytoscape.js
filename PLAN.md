@@ -86,9 +86,10 @@ per-property spread (5.1× → 2.3×) rather than uniformly lowering it.
 **Round 36** (2026-08-04) is the **completion round**: with the rest of
 this file's remainder being open calls, it took the tail that needs no
 decision — `@returns` to 276/276 (written, ungated at the time; round
-37.1 has since gated it, and the surface is 278/278), the
+37.1 has since gated it, and the surface is 279/279), the
 `@param` gate's own blind spot (exported functions; 229/229 then,
-231/231 now), the
+232/232 now — round 37.3 added the entry point and round 45 a whole
+file the tier had never listed), the
 browser-only throw tier closed by four specs and three
 reclassifications, the two un-benchmarked collection members, and three
 measurements promised here and never taken.  It also shipped a
@@ -693,11 +694,18 @@ debug/                   # the manual harness, rebuilt in round 43:
                          #   network-ndex-x-large.json   the one fixture that lives here, not in v3/
 playwright-page/index.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/renderer.spec.js (+ visual.spec.js + goldens/)
-test/*.mjs               # 124 suites picked up by the test:js glob (126 files, less the
+test/*.mjs               # 125 suites picked up by the test:js glob (127 files, less the
                          #   two the glob excludes: types-* and node-test-setup), incl.
                          #   style-readback-all.mjs — round 35.1's characterization of all 153
                          #   readable style props on a node and an edge, the guard the readback
                          #   dispatch table was refactored behind
+test/soak/*.mjs          # round 48: the robustness tier, run by `npm run test:soak` under
+                         #   --expose-gc (its own script: a leak spec that cannot force a
+                         #   collection is a flake generator).  lifecycle.mjs (reachability,
+                         #   listeners, the heap backstop), churn.mjs (round 11's sliding
+                         #   window, promoted from measurement to gate), wire-fuzz.mjs
+                         #   (seeded byte mutations; found three defects on its first run)
+                         #   and isolation.mjs (multi-instance; found the fourth)
 benchmark/               # 22 suites + the renderer/report runners (see the Benchmarks section of the README).
                          #   Round 36.5 added style-bundle.mjs — the style getters measured through the
                          #   *built bundle*, giving rounds 34-35's headline figures a re-runnable source.
@@ -726,6 +734,22 @@ test/modules/debug-harness.mjs   # round 43: debug/'s only coverage — every fi
 test/modules/import-graph.mjs    # round 41.3: what src imports from outside itself.  Round 42
                                  #   emptied the allowlist: the rule is now absolute (nothing under
                                  #   src/ may import outside it, nothing may reach into v3/)
+scripts/docs-generate.mjs    # round 45: the docs generator — source doc blocks + the
+                                 #   `// -- section --` banners -> docmaker's fns shape
+                                 #   (`npm run docs:api`; 362 members over 48 sections)
+test/docs-generate.mjs           # round 45: the gate — the model cross-checked against the
+                                 #   *shipped* dist/cytoscape.d.ts, both directions, plus the
+                                 #   stranded-block precondition (gated at zero for published files)
+test/modules/docs-generate.mjs   # round 45: that generator's doc-comment parser, against fixtures
+test/modules/packaging.mjs   # round 44: the packaging chain — rolldown outputs -> dist:copy ->
+                                 #   the manifest -> `npm pack`'s real file list, plus the
+                                 #   exports map's conditions (types first, import/require pairing,
+                                 #   the legacy fields agreeing, ./gpu resolving to identical files)
+test/modules/migration-guide.mjs # round 47: MIGRATING.md's property table checked against the
+                                 #   running library — every prop it calls dropped must be
+                                 #   rejected, every replacement it offers must compile
+MIGRATING.md                 # round 47: the v3 -> v4 porting guide (ships in the package)
+CHANGELOG.md                 # round 47: the 4.0 changelog (ships in the package)
 rolldown.dts.config.mjs      # round 26.5: rolls src declarations up (build/dts/)
 build-dts.mjs                    #   finalizeDts -> dist/cytoscape.d.ts
 dist/cytoscape.d.ts          # round 26.5: the shipped declarations behind the package types export
@@ -2598,6 +2622,11 @@ per-item history.)*
     core/collection extension points stay deferred (recorded)** —
     and **closed by the fifth sitting** (2026-08-04): they stay out of
     4.0 by decision, demand-gated exactly as logged.
+    *One thing the closure did not cover, found by round 45 and fixed
+    there*: the layout contract shipped **no types**, so the external
+    authors this item exists for typed `run( ctx )` as `any`.
+    `LayoutContext`, `LayoutImpl` and `CustomLayout` export now — see
+    open call 14.
 11. **`display` vs `visibility`** — v3 distinguishes `display: none`
     (no space) from `visibility: hidden` (occupies space) from
     zero opacity; v4 has one `show`/`hide` flag.  Call: is one flag

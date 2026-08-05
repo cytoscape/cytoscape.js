@@ -2659,6 +2659,52 @@ and `./gpu` resolves to identical files.  It deliberately does not
 check that the bundles *exist* — they do not until a release build
 runs, and whether one ran is release-workflow business.
 
+## Robustness + soak (round 48)
+
+`npm run test:soak` (`test/soak/`, 24 specs, in the `npm test` chain) is
+the tier a release needs and feature rounds never owed: leaks, sustained
+churn, malformed input, and more than one instance on a page.  It has its
+own script because the leak specs need `--expose-gc` — a leak spec that
+cannot force a collection is a flake generator.
+
+- **Leaks are gated on reachability, not on bytes**, and that is the
+  round's method note.  1000 create/destroy cycles of a 400-element graph
+  grow `heapUsed` by a steady ~2.2 KB per cycle, linear across five
+  blocks — which reads exactly like a leak and is not one: a `WeakRef` to
+  each destroyed core shows every one collected, and what grows is V8's
+  bookkeeping.  A byte bound would have encoded the engine's behaviour as
+  v4's contract.  The byte check survives as a wide backstop.
+- **The round-11 churn profile is a pass/fail gate**, not a recorded
+  measurement: 40 rounds of a 400-element band over a 4000-node graph
+  with fresh ids and fresh strings each round (re-adding the same ids
+  would refill the same blob bytes and pass with every reclaim removed).
+  The id blob holds ~42 KiB at round 0 and at round 40; capacity and
+  `highWater` never move.
+- **The wire format is fuzzed**, and three defects came out of the first
+  run — all one shape, a count or index read out of the payload and
+  driving allocation unchecked.  A dictionary index of 2,566,914,049
+  against a 3-entry dictionary made `cytoscape( { elements: buffer } )`
+  never return; a corrupt flags word made the packed-id offsets a float
+  bit pattern and the load took 25.9 s.  Each guard sits at the cheapest
+  honest place: the dictionary check is fused into `ingestColumn`'s
+  existing walk (free, where the same check in `deserializeElements`
+  measured 4× on a reader whose point is being O(1) per column), and the
+  other two are O(1).
+- **Elements from different instances no longer compare** (48.4).  A ref
+  is `{ group, slot, gen }` and identity packs those three, all of which
+  are per instance — so the first node of one graph and the first node of
+  another packed identically, and all twelve of round 29.3's guarded
+  methods answered accordingly: `same()` true, `intersection()`
+  everything, `difference()` nothing, `union()` silently dropping the
+  other graph's elements.  They now throw, through the same
+  `assertCollection` guard and for the same stated reason.  **A
+  behaviour change to public API**, carried in `CHANGELOG.md`.
+
+Not yet covered, and the remainder of the round: device loss *under
+load* (round 10's spec covers the idle case) and the documented limit
+edges — the 256-layer image cap, a full glyph atlas, the export texture
+cap.  Those need the browser project rather than Node.
+
 ## Porting from v3 (round 47)
 
 `MIGRATING.md` at the repo root is the porting guide, and it ships in the

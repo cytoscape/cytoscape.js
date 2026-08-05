@@ -302,6 +302,36 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Col
   };
   const readScalar = (): number => read4( Uint32Array, 1 )[ 0 ];
 
+  /**
+   * Round 48.3: bound a count read *out of the payload* against the bytes
+   * that are actually left.
+   *
+   * Found by fuzzing. Section lengths are self-describing here, so a single
+   * corrupt byte in the flags word or a data block turns a count into an
+   * arbitrary u32 — and the reader would then allocate for it
+   * (`new Array( dictCount )`) or loop over it before running off the end
+   * and throwing. Two cases took 5.7 and 25.4 seconds to fail; one
+   * (a dictionary index, guarded in `DataStore.ingestColumn`) never
+   * finished at all.
+   *
+   * Every count has a floor on what one item costs in bytes — a data key is
+   * at least its `u32 nameLen` plus its `u32 kind`, a dictionary entry at
+   * least its `u32` offset — so `count * floor > remaining` is a payload
+   * that cannot be describing this buffer. That check is O(1) per count and
+   * turns "allocate two billion and find out" into an immediate error.
+   */
+  const bounded = ( count: number, bytesPerItem: number, what: string ): number => {
+    const remaining = byteLength - off;
+
+    if( count * bytesPerItem > remaining ){
+      throw new Error(
+        `Serialized elements buffer declares ${count} ${what} but has only ` +
+        `${remaining} bytes left — the payload is corrupt` );
+    }
+
+    return count;
+  };
+
   const nodes: ColumnarNodes = { count: nodeCount };
   let sources: Uint32Array | null = null;
   let targets: Uint32Array | null = null;
@@ -333,18 +363,20 @@ export const deserializeElements = ( input: ArrayBuffer | ArrayBufferView ): Col
   const edgeSelectable = ( flags & F_EDGE_SELECTABLE ) ? readU8( edgeCount ) : undefined;
 
   const readDataBlock = ( count: number ): Record<string, DataColumn> => {
-    const keyCount = readScalar();
+    // a key costs at least its u32 name length and its u32 kind
+    const keyCount = bounded( readScalar(), 8, 'data keys' );
     const data: Record<string, DataColumn> = {};
     const decoder = new TextDecoder();
 
     for( let k = 0; k < keyCount; k++ ){
-      const name = decoder.decode( readU8( readScalar() ) );
+      const name = decoder.decode( readU8( bounded( readScalar(), 1, 'key name bytes' ) ) );
       const kind = readScalar();
 
       if( kind === KIND_NUMBER ){
         data[ name ] = read4( Float64Array, count ); // zero-copy; NaN = absent
       } else if( kind === KIND_DICT ){
-        const dictCount = readScalar();
+        // a dictionary entry costs at least its u32 offset
+        const dictCount = bounded( readScalar(), 4, `entries in dictionary '${name}'` );
         const dictOffsets = read4( Uint32Array, dictCount + 1 );
         const dictBlob = readU8( dictOffsets[ dictCount ] );
         const dict = new Array<string>( dictCount );

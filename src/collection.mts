@@ -73,13 +73,37 @@ const RENDERED_LENGTH_PROPS: ReadonlySet<string> = new Set( [ 'width', 'height',
  * @param method — the method name, for the message
  * @throws when `other` is not a collection
  */
-const assertCollection = ( other: unknown, method: string ): void => {
+const assertCollection = ( other: unknown, method: string, cy?: Core ): void => {
   if( other == null || !Array.isArray( ( other as Collection )._refs ) ){
     throw new Error(
       `${method}() takes a collection, not ${typeof other === 'string'
         ? `the selector string '${other}'` : `a ${other === null ? 'null' : typeof other}`} — ` +
       `v4 has no selector strings; use cy.$id( id ), a query object like ` +
       `cy.nodes({ selected: true }), or a predicate` );
+  }
+
+  // Round 48.4, found by the multi-instance soak. A ref is
+  // `{ group, slot, gen }` and identity keys on those three packed into an
+  // integer — all of which are *per instance*, so the first node of one
+  // graph and the first node of another pack identically. Every method
+  // below then answered as though they were one element: `same()` was true,
+  // `intersection()` returned everything, `difference()` returned nothing,
+  // and `union()` silently dropped the other graph's elements entirely
+  // (two graphs of two nodes united to two).
+  //
+  // A collection belongs to one core — mixing two is not a thing v4 can
+  // represent, since `_refs` are meaningless outside their store — so the
+  // answer is to refuse rather than to invent a cross-instance identity.
+  // That is this repo's rule for the same shape of defect one round over:
+  // round 29.3 added this guard because these twelve methods crashed on a
+  // non-collection *or, in `same()`'s case, quietly returned false, which
+  // reads as working code*. This is that sentence again with a different
+  // wrong answer.
+  if( cy != null && ( other as Collection )._cy !== cy ){
+    throw new Error(
+      `${method}() takes a collection from the same instance — element ` +
+      'identity is per instance in v4 (a ref is a slot in *this* store), so ' +
+      'comparing across two cytoscape instances has no meaning' );
   }
 };
 
@@ -371,7 +395,7 @@ export class Collection {
    * @returns the index, or -1 when it is not in this collection
    */
   indexOf( ele: Collection ): number {
-    assertCollection( ele, 'indexOf' );
+    assertCollection( ele, 'indexOf', this._cy );
 
     const ref = ele._first();
 
@@ -740,7 +764,7 @@ export class Collection {
    * @returns true when the element sets are equal
    */
   same( other: Collection ): boolean {
-    assertCollection( other, 'same' );
+    assertCollection( other, 'same', this._cy );
 
     if( this === other ){ return true; }
     if( this.length !== other.length ){ return false; }
@@ -762,7 +786,7 @@ export class Collection {
    * @returns true when the sets intersect
    */
   anySame( other: Collection ): boolean {
-    assertCollection( other, 'anySame' );
+    assertCollection( other, 'anySame', this._cy );
 
     if( this === other ){ return this.length > 0; }
 
@@ -783,7 +807,7 @@ export class Collection {
    * @returns true when `other` is contained
    */
   contains( other: Collection ): boolean {
-    assertCollection( other, 'contains' );
+    assertCollection( other, 'contains', this._cy );
 
     if( this === other ){ return true; }
     if( other.length > this.length ){ return false; }
@@ -809,7 +833,7 @@ export class Collection {
    * @returns true when all of them are neighbors
    */
   allAreNeighbors( other: Collection ): boolean {
-    assertCollection( other, 'allAreNeighbors' );
+    assertCollection( other, 'allAreNeighbors', this._cy );
 
     const nhood = this.neighborhood();
 
@@ -861,7 +885,7 @@ export class Collection {
    * @returns a new collection holding both sets
    */
   union( other: Collection ): Collection {
-    assertCollection( other, 'union' );
+    assertCollection( other, 'union', this._cy );
 
     return this._spawn( [ ...this._refs, ...other._refs ] );
   }
@@ -878,7 +902,7 @@ export class Collection {
    * @returns a new collection
    */
   difference( other: Collection ): Collection {
-    assertCollection( other, 'difference' );
+    assertCollection( other, 'difference', this._cy );
 
     const keys = other._keySet();
 
@@ -897,7 +921,7 @@ export class Collection {
    * @returns a new collection
    */
   intersection( other: Collection ): Collection {
-    assertCollection( other, 'intersection' );
+    assertCollection( other, 'intersection', this._cy );
 
     const keys = other._keySet();
 
@@ -914,7 +938,7 @@ export class Collection {
    * @returns a new collection
    */
   symmetricDifference( other: Collection ): Collection {
-    assertCollection( other, 'symmetricDifference' );
+    assertCollection( other, 'symmetricDifference', this._cy );
 
     const otherEles = other;
     const mine = this._keySet();
@@ -1072,7 +1096,7 @@ export class Collection {
   diff( other: Collection ): {
     left: Collection; right: Collection; both: Collection;
   } {
-    assertCollection( other, 'diff' );
+    assertCollection( other, 'diff', this._cy );
 
     const otherColl = other;
     const mine = this._keySet();
@@ -3893,7 +3917,7 @@ export class Collection {
    * @returns the connecting edges
    */
   edgesWith( others: Collection ): Collection {
-    assertCollection( others, 'edgesWith' );
+    assertCollection( others, 'edgesWith', this._cy );
 
     return this._edgesWith( others, false );
   }
@@ -3906,7 +3930,7 @@ export class Collection {
    * @returns the directed connecting edges
    */
   edgesTo( others: Collection ): Collection {
-    assertCollection( others, 'edgesTo' );
+    assertCollection( others, 'edgesTo', this._cy );
 
     return this._edgesWith( others, true );
   }

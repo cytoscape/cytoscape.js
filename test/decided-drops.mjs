@@ -84,6 +84,31 @@ describe('gpu/decided drops (29.3)', function(){
       expect( () => cy.$id('a').same('#a') ).to.throw( /takes a collection/ );
     });
 
+    it('the same twelve reject a collection from another instance (round 48.4)', function(){
+      // The same guard, and the same argument, for the wrong answer the
+      // multi-instance soak found. Identity keys on a packed
+      // `{ group, slot, gen }` — all per instance — so the first node of one
+      // graph and the first node of another packed identically: `same()`
+      // answered *true*, `intersection()` returned everything,
+      // `difference()` returned nothing, and `union()` silently dropped the
+      // other graph's elements. `test/soak/isolation.mjs` covers the whole
+      // surface; this pins the throw where the coverage gate can see it.
+      const other = graph();
+      const a = cy.$id('a');
+
+      try {
+        expect( () => a.same( other.$id('a') ) ).to.throw( /from the same instance/ );
+        expect( () => a.union( other.nodes() ) ).to.throw( /from the same instance/ );
+        expect( () => a.intersection( other.nodes() ) ).to.throw( /from the same instance/ );
+
+        // control: the same calls inside one instance still answer
+        expect( a.same( cy.$id('a') ) ).to.equal( true );
+        expect( a.union( cy.$id('b') ).length ).to.equal( 2 );
+      } finally {
+        other.destroy();
+      }
+    });
+
     it('event delegation rejects one at registration, not at emit', function(){
       expect( () => cy.on( 'tap', 'node', () => {} ) ).to.throw( /predicate function/ );
       expect( () => cy.one( 'tap', 'node', () => {} ) ).to.throw( /predicate function/ );

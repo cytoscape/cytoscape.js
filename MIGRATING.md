@@ -339,6 +339,7 @@ app trips on after everything else works.
 | `outerWidth()` with a border | includes the miter overshoot | plain border-inclusive `outerHalf`, so parent boxes can sit sub-pixel smaller |
 | Compound auto-sizing | can include labels | reads child **body** extents only (`compound-sizing-wrt-labels: 'include'` throws) |
 | `:parent:selected` | tints parents | **not ported** — v4 never restyles on selection; the accent ring is drawn by the shader |
+| Comparing elements from two instances | answered, inconsistently — `same()` was false but `union()` of 2 + 2 gave 2 and `difference()` gave 0 | **throws.** Element identity is a slot in one store, so v4 refuses rather than inventing a cross-instance identity |
 
 **Selection never restyles.** v3's `:selected` blocks are gone; the selection
 affordance is a shader-drawn accent ring. If your app coloured selected

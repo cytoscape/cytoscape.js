@@ -404,5 +404,102 @@ describe('gpu/wire', function(){
 
       expect( serializeElements( short ) ).to.be.an.instanceOf( ArrayBuffer );
     });
+
+    it('rejects a data block that declares more keys than could fit (round 48.3)', function(){
+      // Hand-built rather than corrupted, so the failing field is the one
+      // named: header (magic, version, nodeCount, edgeCount, flags, total)
+      // then the node data block, whose first word is the key count.
+      const buffer = new ArrayBuffer( 28 );
+      const words = new Uint32Array( buffer );
+
+      words[ 0 ] = 0x45475943;  // 'CYGE'
+      words[ 1 ] = 4;           // version
+      words[ 2 ] = 1;           // nodeCount
+      words[ 3 ] = 0;           // edgeCount
+      words[ 4 ] = 128;         // flags: F_NODE_DATA
+      words[ 5 ] = 28;          // total bytes
+      words[ 6 ] = 0xffffffff;  // keyCount — four billion keys in four bytes
+
+      expect( () => deserializeElements( buffer ) )
+        .to.throw( /declares 4294967295 data keys but has only 0 bytes left/ );
+
+      // control: the same buffer with an honest key count reads clean
+      words[ 6 ] = 0;
+
+      const parsed = deserializeElements( buffer );
+
+      expect( parsed.nodes.count ).to.equal( 1 );
+      expect( parsed.nodes.data ).to.deep.equal( {} );
+    });
+
+    it('rejects packed ids whose blob is shorter than they declare (round 48.3)', function(){
+      // Found by fuzzing: `setBulk` grew its blob to the declared total
+      // before looking at it, so a corrupt last offset — a float bit pattern
+      // read as a length — allocated gigabytes. One flipped byte took a 2 KB
+      // payload to 25.9 seconds before it reached the error it should have
+      // raised at once.
+      const payload = ( offsets, blob ) => ( {
+        columnar: true,
+        nodes: { count: offsets.length - 1, ids: { offsets: new Uint32Array( offsets ), blob: new Uint8Array( blob ) } },
+        edges: { count: 0, sources: new Uint32Array( 0 ), targets: new Uint32Array( 0 ) }
+      } );
+
+      // two ids declared to span 3000 bytes; the blob carries 2
+      expect( () => cytoscape( { elements: payload( [ 0, 1, 3000 ], [ 97, 98 ] ) } ) )
+        .to.throw( /Packed ids declare 3000 bytes but the blob holds 2/ );
+
+      // and a per-id offset past the end, with an honest total
+      expect( () => cytoscape( { elements: payload( [ 0, 9, 2 ], [ 97, 98 ] ) } ) )
+        .to.throw( /Packed id 0 ends at 9, past the 2-byte blob/ );
+
+      // control: honest offsets over the same blob load two nodes
+      const cy = cytoscape( { elements: payload( [ 0, 1, 2 ], [ 97, 98 ] ) } );
+
+      expect( cy.nodes().map( n => n.id() ).sort() ).to.deep.equal( [ 'a', 'b' ] );
+      cy.destroy();
+    });
+
+    it('rejects a dictionary index past the end of its dictionary (round 48.3)', function(){
+      // Found by fuzzing, and the only field in this format where a corrupt
+      // byte cost an unbounded amount of work instead of an error: dictionary
+      // indices are 1-based into `dict`, arrive **zero-copy**, and were
+      // adopted straight into `refs[ at - 1 ]++` — which on an arbitrary u32
+      // inflates a plain array to that length and then reduces over it. One
+      // flipped byte took `cytoscape( { elements: buffer } )` from 0.6 ms to
+      // never returning, with no error raised anywhere.
+      const make = () => serializeElements( {
+        nodes: [
+          { data: { id: 'a', tag: 'x' } },
+          { data: { id: 'b', tag: 'y' } }
+        ],
+        edges: []
+      } );
+
+      // control: the payload loads, and the dictionary really is small
+      const good = deserializeElements( make() );
+
+      expect( good.nodes.data.tag.dict ).to.have.lengthOf( 2 );
+      expect( Math.max( ...good.nodes.data.tag.indices ) ).to.equal( 2 );
+
+      const corrupt = deserializeElements( make() );
+
+      corrupt.nodes.data.tag.indices[ 0 ] = 2566914049;
+
+      expect( () => cytoscape( { elements: corrupt } ) )
+        .to.throw( /dictionary index 2566914049 at element 0, beyond its 2-entry dictionary/ );
+
+      // the other ingest branch — adding into a graph that already has the
+      // column — took `dict[ at - 1 ]` and silently stored undefined
+      const cy = cytoscape( { elements: make() } );
+      const second = deserializeElements( make() );
+
+      second.nodes.ids = [ 'c', 'd' ];
+      second.nodes.data.tag.indices[ 1 ] = 99;
+
+      expect( () => cy.add( second ) )
+        .to.throw( /dictionary index 99 at element 1, beyond its 2-entry dictionary/ );
+
+      cy.destroy();
+    });
   });
 });

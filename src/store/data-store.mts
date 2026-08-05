@@ -47,6 +47,39 @@ type Col = NumberCol | StringCol | MixedCol;
 /** dicts smaller than this never compact */
 const DICT_COMPACT_FLOOR = 8;
 
+/**
+ * Guard a dictionary index adopted from an outside payload (round 48.3).
+ *
+ * Dictionary indices are 1-based into the column's `dict`, with 0 meaning
+ * absent, and they arrive from the binary wire format **zero-copy** — the
+ * whole point of that format — so nothing between the bytes and this loop
+ * has looked at them.  A single corrupt byte makes one an arbitrary u32,
+ * and the unguarded `refs[ at - 1 ]++` below then inflates a plain array to
+ * that length, after which the `reduce` that counts dead entries walks it.
+ * Found by fuzzing (`test/soak/wire-fuzz.mjs`): one flipped byte took
+ * `cytoscape( { elements: buffer } )` from 0.6 ms to never returning, with
+ * no error raised anywhere.
+ *
+ * The check lives here rather than in `deserializeElements` because both
+ * ingest branches already walk every index, so fused it costs nothing —
+ * where a validating pass at deserialize time measured **4×** on that
+ * function (0.106 → 0.46 ms per 200k indices), against a reader whose
+ * headline property is that it is O(1) per column.
+ *
+ * @param key — the data key, for the message
+ * @param i — the payload element index, for the message
+ * @param at — the 1-based dictionary index being adopted
+ * @param dictLength — how many entries the dictionary actually has
+ * @throws when the index is past the end of its dictionary
+ */
+const assertDictIndex = ( key: string, i: number, at: number, dictLength: number ): void => {
+  if( at > dictLength ){
+    throw new Error(
+      `Data column '${key}' has dictionary index ${at} at element ${i}, ` +
+      `beyond its ${dictLength}-entry dictionary — the payload is corrupt` );
+  }
+};
+
 export class DataStore {
   private cols: Record<GroupName, Map<string, Col>> = {
     nodes: new Map(), edges: new Map()
@@ -244,6 +277,8 @@ export class DataStore {
 
           if( at === 0 ){ continue; }
 
+          assertDictIndex( key, i, at, column.dict.length );
+
           const slot = slots[ i ];
 
           if( slot >= col.indices.length ){ col.indices = growU32( col.indices, slot ); }
@@ -259,7 +294,10 @@ export class DataStore {
         for( let i = 0; i < slots.length; i++ ){
           const at = column.indices[ i ];
 
-          if( at !== 0 ){ this.set( group, slots[ i ], key, column.dict[ at - 1 ] ); }
+          if( at !== 0 ){
+            assertDictIndex( key, i, at, column.dict.length );
+            this.set( group, slots[ i ], key, column.dict[ at - 1 ] );
+          }
         }
       }
 

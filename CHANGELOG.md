@@ -87,6 +87,21 @@ that compile and then behave differently.
   face per glyph atlas.
 - **Rendering requires WebGPU**; headless requires nothing.
 
+- **Comparing elements across two instances throws** instead of answering
+  wrongly. Element identity is a slot in *one* store, so the first node of
+  one graph and the first node of another used to compare as the same
+  element: `same()` returned true, `intersection()` returned everything,
+  `difference()` returned nothing, and `union()` silently dropped the other
+  graph's elements. The twelve affected methods (`same`, `anySame`,
+  `contains`, `indexOf`, `union`, `difference`, `intersection`,
+  `symmetricDifference`, `diff`, `allAreNeighbors`, `edgesWith`, `edgesTo`)
+  now reject a collection from another instance.
+- **A corrupt binary payload fails fast** rather than allocating for what it
+  declares. Three cases found by fuzzing — an out-of-range dictionary index,
+  an over-long packed-id blob length, and an impossible data-key count —
+  could hang a load or take tens of seconds before erroring; each now throws
+  a contract error naming the field.
+
 ### Removed
 
 - **Selector strings**, everywhere — and `cy.$()` with them (`cy.$id()` is

@@ -185,7 +185,26 @@ export class IdMap {
     this.ensure( this._size + slots.length );
 
     if( ids != null && isPackedIds( ids ) ){
-      const base = this.append( ids.blob, 0, ids.offsets[ slots.length ] );
+      const total = ids.offsets[ slots.length ];
+
+      // Round 48.3, found by fuzzing: the offsets are prefix sums into
+      // `blob`, and they arrive from the wire format zero-copy, so nothing
+      // has looked at them. A corrupt flags word makes the reader consume
+      // *position* bytes as this array, and the last entry — the declared
+      // total id length — then becomes a float bit pattern in the billions.
+      // `append` grew the blob to it: one flipped byte turned a 2 KB payload
+      // into a multi-gigabyte allocation, and the load took 25.9 seconds to
+      // reach the duplicate-id error it should have raised at once.
+      //
+      // The declared total cannot exceed the blob that is supposed to carry
+      // it. That is O(1), and it is the whole fix.
+      if( total > ids.blob.length ){
+        throw new Error(
+          `Packed ids declare ${total} bytes but the blob holds ` +
+          `${ids.blob.length} — the payload is corrupt` );
+      }
+
+      const base = this.append( ids.blob, 0, total );
 
       for( let i = 0; i < slots.length; i++ ){
         const lo = base + ids.offsets[ i ];
@@ -194,6 +213,14 @@ export class IdMap {
         if( hi <= lo ){
           this.set( newId(), group, slots[ i ] );
           continue;
+        }
+
+        // and no id may run past the blob: offsets are only prefix sums if
+        // the payload says so
+        if( hi > base + total ){
+          throw new Error(
+            `Packed id ${i} ends at ${hi - base}, past the ${total}-byte blob ` +
+            '— the payload is corrupt' );
         }
 
         const h = fnv( this.blob, lo, hi );

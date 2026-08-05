@@ -113,6 +113,8 @@ const refIndex = ( refs: Ref[] ): Map<number, number> => {
 export class Collection {
   [index: number]: Collection;
 
+  // -- basics --
+
   /** How many elements this collection holds. */
   length: number;
 
@@ -4388,7 +4390,8 @@ export class Collection {
   declare makeLayout: this['layout'];
   declare createLayout: this['layout'];
 
-  // -- graph algorithms (slot-native implementations in ./algorithms/) --
+  // the implementations are slot-native, in ./algorithms/
+  // -- graph algorithms --
 
   /**
    * Breadth-first search from one or more roots over this collection's

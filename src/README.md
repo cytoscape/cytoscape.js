@@ -775,6 +775,12 @@ calls made deliberately rather than by accretion:
   `debug` (`?layout=spiral`), and the contract-conformance
   specs in `test/layout-contract.mjs` are the template external
   authors can crib.
+  **The contract's types ship since round 45**: `LayoutContext`,
+  `LayoutImpl` and `CustomLayout` are exported from the entry point, so
+  `run( ctx )` has a real parameter type.  Until then only
+  `CustomLayoutOptions` reached the declaration and `LayoutContext` was
+  in none at all, so the one surface the contract exists to make obvious
+  was the one an external author had to type by hand.
 
 ## Design decisions (v4 API direction)
 
@@ -2160,6 +2166,55 @@ Instead:
   negations they look like (`inactive` is not `!active`;
   `isChildless` is not `!isParent`).
 
+### The generator (round 45)
+
+`npm run docs:api` (`scripts/docs-generate.mjs`) turns those comments into
+the API reference, in docmaker's shape —
+`{ name, descr, formats: [ { descr, args: [ { name, descr } ] } ] }` —
+grouped into the `// -- section --` banners, which is what round 26 chose
+them over a bespoke `@section` tag *for*.  Reading: **362 documented
+members over 48 sections in 7 namespaces** (`cytoscape`, `cy`, `eles`,
+`ani`, `layout`, `ctx`, `event` — v3's prefixes where v4 has the same
+thing, so an upgrading reader lands where they expect).  Nineteen rounds
+of gating are what made it a small script: there was no content to write,
+because the tags have been complete and enforced since rounds 31.2, 32
+and 37.1.
+
+- It **extends the coverage audit's scanner** rather than adding a second
+  one — `auditFile` returns each member's doc block and banner beside its
+  name — so the generator and the gates cannot disagree about what a
+  public member is.
+- **Overloads become formats.**  `descr` is the first paragraph (docmaker's
+  field is a summary sentence); each format keeps its own block's full
+  prose, so an overload's contract is never flattened into its sibling's.
+  `pureAliases` carries the 84 `declare x: this['y']` aliases, as v3's
+  docmaker does.  `@returns`, `@throws` and `@see` are emitted as their
+  own fields: docmaker has no field for them, but folding them into prose
+  is lossy in a way a template cannot undo.
+- **What is published is derived, not listed**: an exported function is
+  documented iff `index.mts` hangs it on the factory, which is what
+  separates `serializeElements` from the type predicates beside it.  The
+  classes deliberately *not* published — `Viewport`, `StyleEngine`,
+  `AnimationManager`, `Emitter` — are a checked table with a reason each:
+  being documented for the next maintainer and being published in the API
+  reference are different questions.
+- **Validated against the shipped declaration, not against the sources it
+  was generated from.**  `test/docs-generate.mjs` checks the model against
+  `dist/cytoscape.d.ts` — a different artifact, from a different tool, and
+  the thing a consumer actually holds — in both directions: a phantom
+  entry sends a reader to a method that does not ship, and a dropped one
+  silently reintroduces what round 26's gate exists to prevent.  The
+  stranded-block check is a precondition here and **gated at zero for
+  published files**, where a displaced block would ship twice under the
+  wrong name; it stays report-only elsewhere, for round 36's reason.
+
+Two things this round changed beyond the generator, both recorded in
+PLAN.md: `src/event.mts` joined the audit's public tier (`Event` is a named
+type export and the object every handler receives — the fourth time an
+audit's *scope* has been the thing that was wrong), and optional class
+members (`target?: EventTarget`) turned out to match no audit's member
+pattern at all.  Neither was undocumented; both were uncounted.
+
 ## Measuring the error contract (round 30; gated since round 37)
 
 v4 fails loudly by decided design, which makes its throws part of the
@@ -3382,8 +3437,12 @@ runs, and whether one ran is release-workflow business.
   **gated since 37.1**: docmaker's shape still has no return field,
   but the tags ship as `.d.ts` hover text regardless, and a tail
   completed by hand four rounds after it was measured is what an
-  ungated rule looks like.  The generator itself is **round 45**, and
-  the site round 46 — no longer "not until v4 ships" but scheduled.
+  ungated rule looks like.  **The generator landed as round 45**
+  (2026-08-04; see "The generator" above) — `npm run docs:api`, 362
+  documented members over 48 sections, validated against the shipped
+  declaration rather than against the sources it reads.  The site is
+  round 46 — no longer "not until v4 ships" but scheduled, and now with
+  its input built.
   Also logged from 26.5: `event.target` typed as `unknown` on the
   shared v3 event object — **closed by round 41**, which gave v4 its
   own Event and emitter.  It did *not* sever v4's last shared-module

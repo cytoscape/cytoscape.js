@@ -6446,6 +6446,140 @@ interface Qualifier {
 }
 //#endregion
 //#region src/layout/contract.d.mts
+interface LayoutImpl {
+  run(ctx: LayoutContext): void | Promise<void>;
+  stop?(): void;
+}
+declare class LayoutContext {
+  /** the core being laid out */
+  readonly cy: Core;
+  /** the resolved layout options (custom knobs included) */
+  readonly options: CustomLayoutOptions;
+  private _eles;
+  private _nodes;
+  /**
+   * The layout scope (handles tier); the whole graph unless this run
+   * came from `eles.layout()`.
+   *
+   * **Lazy since round 34.4.**  It used to be assigned in the
+   * constructor, which meant every run of every layout materialized
+   * `cy.elements()` — a handle per element — including for the
+   * columnar-first layouts this contract exists to encourage, which
+   * never touch it.  That cost 333 µs per run at 25k elements for an
+   * impl that does nothing.  Reading it still costs what it always did;
+   * not reading it is now free.
+   *
+   * @returns the scope's handles — `eles.layout()`'s collection, or the
+   *   whole graph's elements when the layout was started from the core.
+   *   Materialized on first read and cached for the run
+   */
+  get eles(): Collection;
+  /**
+   * The scope's node handles (lazy — see `eles`).
+   *
+   * @returns the node subset of `eles`, *unfiltered* — unlike
+   *   `nodeSlots()`, this keeps locked nodes and compound parents, so a
+   *   layout iterating it must apply its own rules
+   */
+  get nodes(): Collection;
+  /** the discrete finisher ran: its lifecycle covers the run */
+  _finisherUsed: boolean;
+  private layout;
+  private slots;
+  /**
+   * Built by the wrapper, once per run — a layout impl receives one of
+   * these and never constructs it.
+   *
+   * @param cy — the core being laid out
+   * @param layout — the wrapper, passed through as `event.layout` on the
+   *   lifecycle events
+   * @param options — the resolved layout options; `eles` narrows the
+   *   scope (from `eles.layout()`), defaulting to the whole graph
+   */
+  constructor(cy: Core, layout: object, options: CustomLayoutOptions);
+  /**
+   * The slots to lay out: the scope's nodes, pre-filtered to unlocked
+   * leaves (locked nodes hold their place; parents derive from their
+   * placed children — round 14.11).  Scope order.
+   *
+   * @returns the slots to place, in exactly `cy.nodes()` order — which is
+   *   load-bearing rather than incidental, since grid and circle assign
+   *   positions by index, so a different enumeration order is a different
+   *   layout
+   */
+  nodeSlots(): number[];
+  /**
+   * The scope's edge slots.
+   *
+   * @returns every live edge of the scope in `cy.edges()` order, with no
+   *   filtering — the counterpart of `nodeSlots()`, which does filter
+   */
+  edgeSlots(): number[];
+  /**
+   * The live position column (x,y interleaved by slot) — read it, write
+   * through `setPositions`.
+   *
+   * @returns the store's own column, not a copy: it changes underneath a
+   *   held reference as positions are written, and writing into it
+   *   directly bypasses the dirty tracking the renderer depends on
+   */
+  positions(): Float32Array;
+  /**
+   * The live edge endpoint column (source,target node slots).
+   *
+   * @returns the store's own column, indexed by edge slot — node *slots*,
+   *   not ids, so it pairs directly with `positions()` without a lookup
+   */
+  endpoints(): Uint32Array;
+  /**
+   * O(1) degree off the CSR adjacency.
+   *
+   * @param slot — a node slot, as handed out by `nodeSlots()`
+   * @returns its whole-graph degree, loops counted as v3 counts them
+   */
+  degreeOf(slot: number): number;
+  /**
+   * The scope's current bounding box, labels included.
+   *
+   * @returns `{ x1, y1, x2, y2, w, h }` in model coordinates
+   */
+  boundingBox(): ReturnType<Collection['boundingBox']>;
+  /**
+   * The viewport width in CSS px — what a layout sizing itself to the
+   * screen should use.  Headless instances report the configured
+   * headless width, so a layout still works without a DOM.
+   *
+   * @returns the viewport width
+   */
+  width(): number;
+  /**
+   * The viewport height in CSS px.
+   *
+   * @returns the viewport height
+   */
+  height(): number;
+  /**
+   * The bulk write: xy[i*2], xy[i*2+1] land on slots[i] — one dirty
+   * span, no handles (the round-5 slot path; under compounds it takes
+   * the per-slot sequential path so auto-bounds stay exact).
+   *
+   * @param slots — the node slots to move
+   * @param xy — the packed positions: `xy[i*2]`, `xy[i*2+1]` land on
+   *   `slots[i]`
+   */
+  setPositions(slots: number[], xy: number[] | Float32Array): void;
+  /**
+   * The discrete finisher: v3's layoutPositions plumbing over the
+   * scope — spacingFactor, transform, animate (with the
+   * fit-at-final-positions viewport animation), fit/zoom/pan, and the
+   * layoutready/layoutstop events.  The wrapper's layoutstart covers
+   * the start (no double emit).
+   *
+   * @param fn — called per scoped node with the node and its index,
+   *   returning the model position to place it at
+   */
+  layoutPositions(fn: (node: Collection, i: number) => Position): void;
+}
 /** The wrapper cy.layout({ impl }) returns: the builtins' shape plus
  * promise() (resolves at this run's layoutstop). */
 declare class CustomLayout {
@@ -7937,5 +8071,5 @@ declare namespace cytoscape {
   export { deserializeElements };
 }
 //#endregion
-export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ConcentricLayoutOptions, type Condition, type Core, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type ForceLayoutOptions, type GridLayoutOptions, type LayoutBaseOptions, type LayoutContext, type LayoutImpl, type LayoutOptions, type Mapper, type MapperSpec, type NO_PARENT, type PackedIds, type Position, type PresetLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
 export as namespace cytoscape;

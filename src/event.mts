@@ -71,6 +71,8 @@ const returnTrue = (): boolean => true;
  * @see Core#on for what a name may be, and which names never fire
  */
 export class Event {
+  // -- what happened --
+
   /** the event type, e.g. `'tap'` — never namespaced (round 41.1) */
   type: string;
   /** the core for core-level events, the element for element events */
@@ -141,6 +143,8 @@ export class Event {
   instanceString(): string {
     return 'event';
   }
+
+  // -- controlling propagation --
 
   /**
    * Mark the event's default as prevented, and prevent the DOM event's

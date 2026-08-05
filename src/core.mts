@@ -104,6 +104,8 @@ export class Core {
   private _recoveringDevice: boolean;
   _viewport: Viewport;
 
+  // -- lifecycle --
+
   /** resolves once the render pipeline is usable (immediately when headless) */
   ready: Promise<Core>;
 

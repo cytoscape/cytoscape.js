@@ -38,6 +38,8 @@ export interface LayoutImpl {
 }
 
 export class LayoutContext {
+  // -- scope --
+
   /** the core being laid out */
   readonly cy: Core;
   /** the resolved layout options (custom knobs included) */
@@ -99,6 +101,8 @@ export class LayoutContext {
     // `eles`/`nodes` are lazy getters (34.4): a columnar layout never
     // pays for handles it does not ask for
   }
+
+  // -- columnar reads --
 
   /**
    * The slots to lay out: the scope's nodes, pre-filtered to unlocked
@@ -200,6 +204,8 @@ export class LayoutContext {
     return adj.outDegree( slot ) + adj.inDegree( slot );
   }
 
+  // -- bounds --
+
   /**
    * The scope's current bounding box, labels included.
    *
@@ -228,6 +234,8 @@ export class LayoutContext {
   height(): number {
     return this.cy.height() as number;
   }
+
+  // -- writing positions --
 
   /**
    * The bulk write: xy[i*2], xy[i*2+1] land on slots[i] — one dirty
@@ -265,6 +273,8 @@ export class LayoutContext {
 /** The wrapper cy.layout({ impl }) returns: the builtins' shape plus
  * promise() (resolves at this run's layoutstop). */
 export class CustomLayout {
+  // -- running a layout --
+
   /** the resolved options this run was created with */
   options: CustomLayoutOptions;
 

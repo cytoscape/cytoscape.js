@@ -347,6 +347,8 @@ export const buildChannelWrite = (
  * whatever ran before them.
  */
 export class Animation {
+  // -- state --
+
   /** the elements being animated (empty for a viewport animation) */
   readonly refs: Ref[];
 
@@ -565,6 +567,8 @@ export class Animation {
       }
     }
   }
+
+  // -- playback --
 
   /**
    * True once the delay has elapsed and interpolation is under way.

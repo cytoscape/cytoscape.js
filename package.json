@@ -104,6 +104,7 @@
     "test:js:debug": "node --import tsx --import ./test/node-test-setup.mjs --inspect-brk --test --test-concurrency=1 \"test/!(types-*|node-test-setup).mjs\"",
     "test:modules": "node --import tsx --import ./test/node-test-setup.mjs --test \"test/modules/*.mjs\"",
     "test:throws": "node scripts/throw-coverage.mjs",
+    "docs:api": "node scripts/docs-generate.mjs --out build/docs/api.json",
     "test:modules:debug": "node --import tsx --import ./test/node-test-setup.mjs --inspect-brk --test --test-concurrency=1 \"test/modules/*.mjs\"",
     "test:playwright:http": "http-server -p 3333 -s -c -1",
     "test:playwright:build": "cross-env FILE=umd SOURCEMAPS=true NODE_ENV=development rolldown -c",

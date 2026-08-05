@@ -172,7 +172,7 @@ describe('gpu/docs: JSDoc coverage of the v4 surface (round 26)', function(){
       // the ratchet, moved with the surface: 276 at round 36's completion,
       // 277 once 37.3 brought the entry point inside the audit, 278 with
       // round 41's event and emitter
-      expect( result.returnTags.tagged ).to.be.at.least( 278 );
+      expect( result.returnTags.tagged ).to.be.at.least( 279 );
     });
 
   });

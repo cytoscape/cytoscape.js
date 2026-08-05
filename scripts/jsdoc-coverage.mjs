@@ -32,14 +32,33 @@ export const PUBLIC_API = [
   'src/style.mts',
   'src/columnar.mts',
   'src/wire.mts',
-  'src/layout/contract.mts'
+  'src/layout/contract.mts',
+  // Round 45: `Event` ships as a named type export and is handed to every
+  // handler a consumer writes, so it is public by this file's own definition
+  // ("the files whose exported classes a consumer actually holds") and had
+  // been sitting in the internal tier since round 41 created it. Found by
+  // the docs generator, which could not place a namespace the tier did not
+  // enumerate. Fourth instance of the same failure — round 32 walked class
+  // bodies only, round 36 missed exported functions, round 37.3 missed
+  // `export default function`, and this one missed a file. An audit's scope
+  // is part of its claim.
+  //
+  // `src/emitter.mts` is deliberately *not* here: `EventHandler` is exported
+  // from it as a type, but `Emitter` itself is not a named export and a
+  // consumer never holds one.
+  'src/event.mts'
 ];
 
 // A member declaration at class-body indentation: an optional modifier run,
 // then the name, then `(`, `:` or `=`. Deliberately anchored at two spaces so
 // nested function bodies inside a method never match.
+//
+// The `\??` matters more than it looks: without it an *optional* field
+// (`target?: EventTarget`) does not match, so every optional member of an
+// exported class was invisible to every audit. Round 45 found six of them on
+// `Event` alone — the object handed to every handler a consumer writes.
 const MEMBER_RE =
-  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*(?:\(|[:=])/;
+  /^ {2}(?:(public|private|protected)\s+)?(?:static\s+)?(?:readonly\s+)?(?:(get|set)\s+)?(?:async\s+)?(?:\*\s*)?([A-Za-z_$][\w$]*)\??\s*(?:<[^>=]*>)?\s*(?:\(|[:=])/;
 const CLASS_RE = /^(export\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)/;
 
 // MEMBER_RE with the argument list captured, for the @param audit. Members
@@ -82,6 +101,19 @@ const CALL_MEMBER_RE =
 // skipped rather than counted as a miss.
 const OVERLOAD_SIG_RE = /^ {2}(?:(?:public|private|protected|static|readonly|async)\s+)*([A-Za-z_$][\w$]*)\s*(?:<[^>=]*>)?\s*\([^;]*\)\s*:[^;]*;\s*$/;
 
+// The section banner that groups a class body, e.g. `// -- viewport --`.
+// Round 26 chose these over a bespoke `@section` tag precisely because they
+// already existed and already mirrored the docs' subsections; round 45's
+// generator reads them for placement, which is what makes keeping them
+// accurate a documented rule rather than a courtesy.
+export const BANNER_RE = /^\s*\/\/ -- (.+?) --\s*$/;
+
+// A pure alias: `declare gc: this['compact'];`. Invisible to MEMBER_RE (the
+// name it would capture is `declare`), which is exactly why the alias surface
+// needed its own table in test/aliases.mjs — and why the docs generator needs
+// them from here rather than re-deriving them.
+const ALIAS_RE = /^ {2}declare\s+([A-Za-z_$][\w$]*)\s*:\s*this\[\s*'([^']+)'\s*\]/;
+
 // Statement keywords that can appear at two-space indentation inside a class
 // body's methods and would otherwise read as member names.
 const KEYWORDS = new Set( [
@@ -102,8 +134,17 @@ function hasDocAbove( lines, i ){
 /**
  * Audit one file's public members.
  *
+ * Each member record carries the surface (`name`, `owner`, `line`,
+ * `isMethod`) *and* the two things a documentation generator needs and must
+ * not re-derive with a second regex: its doc block (`doc`) and the
+ * `// -- section --` banner it sits under (`banner`).  Round 45's generator
+ * reads both from here, so there is one scanner rather than one per consumer
+ * — this repo has had five plan figures come from throwaway scans that
+ * re-derived what an audit already knew.
+ *
  * @param {string} file — absolute path to a `.mts` source file
- * @returns {{ file: string, documented: number, missing: string[] }}
+ * @returns {{ file: string, documented: number, missing: string[],
+ *   members: object[], aliases: object[] }}
  */
 export function auditFile( file ){
   const lines = readFileSync( file, 'utf8' ).split( '\n' );
@@ -114,10 +155,13 @@ export function auditFile( file ){
   // benchmark-coverage audit, which must not re-invent these regexes —
   // three plan figures have been wrong from throwaway scans that did)
   const members = [];
+  // `declare x: this['y']` pure aliases, which MEMBER_RE cannot see
+  const aliases = [];
   let documented = 0;
   let currentClass = null;
   let exported = false;
   let inComment = false;
+  let banner = null;
   let overloaded = new Set();
 
   for( let i = 0; i < lines.length; i++ ){
@@ -137,6 +181,13 @@ export function auditFile( file ){
       continue;
     }
 
+    const bannerMatch = line.match( BANNER_RE );
+
+    if( bannerMatch ){
+      banner = bannerMatch[1];
+      continue;
+    }
+
     const fn = line.match( EXPORTED_FN_RE );
 
     if( fn ){
@@ -144,7 +195,10 @@ export function auditFile( file ){
 
       const name = fn[1] ?? fn[2];
 
-      members.push( { name, owner: null, line: i + 1, isMethod: true } );
+      members.push( {
+        name, owner: null, line: i + 1, isMethod: true,
+        banner: null, doc: docAbove( lines, i )
+      } );
 
       if( hasDocAbove( lines, i ) ) documented++;
       else missing.push( `${name}() (${rel}:${i + 1})` );
@@ -157,7 +211,15 @@ export function auditFile( file ){
     if( cls ){
       currentClass = cls[2];
       exported = Boolean( cls[1] );
+      banner = null;
       overloaded = new Set();
+      continue;
+    }
+
+    const alias = line.match( ALIAS_RE );
+
+    if( alias && currentClass && exported ){
+      aliases.push( { name: alias[1], target: alias[2], owner: currentClass, line: i + 1 } );
       continue;
     }
 
@@ -189,14 +251,15 @@ export function auditFile( file ){
     // something a benchmark can call
     members.push( {
       name, owner: currentClass, line: i + 1,
-      isMethod: /\(\s*$|\(/.test( line.slice( line.indexOf( name ) + name.length ).trimStart().charAt( 0 ) )
+      isMethod: /\(\s*$|\(/.test( line.slice( line.indexOf( name ) + name.length ).trimStart().charAt( 0 ) ),
+      banner, doc: docAbove( lines, i )
     } );
 
     if( hasDocAbove( lines, i ) ) documented++;
     else missing.push( `${currentClass}.${name} (${rel}:${i + 1})` );
   }
 
-  return { file: rel, documented, missing, members };
+  return { file: rel, documented, missing, members, aliases };
 }
 
 /** The doc block immediately above line `i`, or '' when there is none. */

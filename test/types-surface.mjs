@@ -41,7 +41,16 @@ const EXPECTED_EXPORTS = new Set( [
   'ConcentricLayoutOptions',
   'Condition',
   'Core',
+  // round 45: the layout-extension contract's own types.  `CustomLayoutOptions`
+  // shipped from the start while the two types an external author actually
+  // writes against did not — `LayoutContext` was in no declaration at all
+  // (round 34.6) — so `cy.layout({ impl })`, the whole of v4's extension
+  // story, typed its `run( ctx )` parameter as `any`.  Same fix and same
+  // reason as round 41's event types.
+  'CustomLayout',
   'CustomLayoutOptions',
+  'LayoutContext',
+  'LayoutImpl',
   'DataColumn',
   'DictColumn',
   'ElementData',

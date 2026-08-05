@@ -12,6 +12,14 @@ export type { Collection } from './collection.mjs';
 // and `event.target` is no longer `unknown`
 export type { Event, EventProps, EventTarget } from './event.mjs';
 export type { EventHandler } from './emitter.mjs';
+// round 45: the layout-extension contract, for the same reason.  Round 17
+// made `cy.layout({ impl })` the whole extension story — no registry, an
+// import passed straight in — but only `CustomLayoutOptions` reached the
+// declaration, so an external author writing `run( ctx )` got `ctx: any` and
+// the one surface the contract exists to make obvious was the one with no
+// types.  `LayoutContext` was in no declaration at all (round 34.6 recorded
+// it appearing only inside a doc comment).
+export type { LayoutContext, LayoutImpl, CustomLayout } from './layout/contract.mjs';
 
 /**
  * Create a GPU-prototype cytoscape instance (issue #3486, pass 1): a

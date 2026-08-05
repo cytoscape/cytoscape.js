@@ -45,6 +45,10 @@ const ROOT = resolve( dirname( fileURLToPath( import.meta.url ) ), '..' );
 
 /** The documents the site publishes, in the order the index lists them. */
 export const DOCUMENTS = [
+  // first, and in the nav: it is the page a reader who has never seen this
+  // project should open, and the only one written for them
+  { file: 'EXECUTIVE_SUMMARY.md', to: 'summary.html', nav: 'summary', title: 'Executive summary',
+    blurb: 'Where v4 stands, week by week — the five-minute version of the development record.' },
   { file: 'PLAN.md', to: 'plan.html', nav: 'plan', title: 'Development record',
     blurb: 'Every round, its plan, what it found and the controls that proved it.' },
   { file: 'src/README.md', to: 'design.html', nav: 'design', title: 'Scope and design decisions',
@@ -204,6 +208,14 @@ export function buildPlan( { root = ROOT, skip = new Set(), gzip = true, wireEna
       badges: goldens.available ? [ `${goldens.count} images` ] : []
     } );
   }
+
+  // The executive summary leads: it is the only page written for a reader who
+  // has not seen this project, so it should be the first card as well as the
+  // first document.  The harness follows, being the one that shows rather than
+  // tells.
+  const summaryAt = parts.findIndex( p => p.id === 'summary.html' );
+
+  if( summaryAt > 0 ){ parts.unshift( ...parts.splice( summaryAt, 1 ) ); }
 
   // -- the landing page, last: it reports on every part above --
   ops.push( write( 'index.html', page( {

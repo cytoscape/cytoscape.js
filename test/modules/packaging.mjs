@@ -151,11 +151,25 @@ describe( 'packaging: the tarball', () => {
     }
   } );
 
-  it( 'ships no repo document that is not the package\'s', () => {
-    // These are the record and the contributor guide, not consumer docs.
-    for( const doc of [ 'PLAN.md', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md' ] ){
-      expect( files, `${doc} must not ship` ).to.not.include( doc );
-    }
+  it( 'ships exactly the markdown a consumer needs, and nothing else', () => {
+    // An **allowlist**, deliberately, and the reason is round 46.5: this spec
+    // used to name the documents that must *not* ship, so
+    // `EXECUTIVE_SUMMARY.md` — a project record in the same category as
+    // `PLAN.md` — shipped to npm the moment it was written, and this spec
+    // stayed green because the new file was not on a list nobody thought to
+    // extend.  `.npmignore` is a denylist too, so the default for any new
+    // top-level document is to ship.
+    //
+    // Inverted: a document added at the root now fails here until someone
+    // decides it belongs in the package.  That is the decision worth forcing.
+    const shipped = files.filter( f => f.endsWith( '.md' ) ).sort();
+
+    expect( shipped ).to.eql( [
+      'CHANGELOG.md',  // what changed in 4.0
+      'MIGRATING.md',  // how to port a v3 app
+      'README.md',     // the package front page
+      'src/README.md'  // v4's scope and design decisions
+    ] );
   } );
 
   it( 'does not exclude dist/, so a release build\'s bundles ship', () => {

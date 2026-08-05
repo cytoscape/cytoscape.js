@@ -166,6 +166,22 @@ plan and outcome.
   file — including the logbook: the round records ("Landed (round N)"
   sections and their verification notes) are written or amended in the
   same commit as the work they describe, not batched at the end.
+- **`EXECUTIVE_SUMMARY.md` is rewritten from this file when a round closes**
+  (rule added 2026-08-05, round 46.5).  That file is the five-minute version
+  for a reader who will never open this one — organised by calendar week, in
+  outcomes and decisions rather than rounds and file names.  It is **derived**:
+  this file stays the source of truth, and nothing is recorded there that is
+  not recorded here first.
+  Three things make the rewrite honest rather than mechanical.  **Restate, do
+  not append** — a new week is not the only thing that changes, because later
+  rounds routinely reveal what an earlier decision actually meant, and the
+  z-index and animation-queue entries were both re-described after the fact.
+  **Re-measure every number** rather than copying one forward; test tallies,
+  member counts and benchmark figures are the first things to go stale, and
+  this file has a documented history of sentences that were true when written.
+  And **an open question leaves the summary's table when it is decided, not
+  when it is scheduled** — the distinction this file's "Open calls for the
+  maintainer" section exists to keep.
 - **A closing docs sweep ends every round** (rule added 2026-08-01,
   after the post-round-19 sweep caught drift the per-commit rule had
   missed).  Per-commit doc updates track the sections a change

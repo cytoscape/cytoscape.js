@@ -132,6 +132,7 @@ const SITE_JS = `
 /** The destinations in the top bar, in the order they are worth visiting. */
 export const NAV = [
   { id: 'index', href: '/index.html', label: 'Status' },
+  { id: 'summary', href: '/summary.html', label: 'Summary' },
   { id: 'debug', href: '/debug/index.html', label: 'Harness' },
   { id: 'benchmark', href: '/benchmark/index.html', label: 'Benchmarks' },
   { id: 'api', href: '/api.html', label: 'API' },

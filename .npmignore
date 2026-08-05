@@ -30,6 +30,7 @@ tsconfig.types-test.json
 
 # repo docs that are not the package's
 PLAN.md
+EXECUTIVE_SUMMARY.md
 AGENTS.md
 CLAUDE.md
 CONTRIBUTING.md

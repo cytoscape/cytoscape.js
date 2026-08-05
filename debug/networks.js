@@ -73,6 +73,17 @@ var networks = {
     labelKey: 'name',
     note: 'The scale fixture, and now the mapper-at-scale one: a diverging colour mapper evaluated on the GPU across 465k edges.'
   },
+  'v3-default': {
+    desc: 'v3 default debug graph',
+    nodes: 10,
+    edges: 23,
+    generated: 'v3-default',
+    labelKey: 'label',
+    // v3's own page runs grid at cols 3, and the order in fixtures.js is v3's
+    // declaration order, so this reproduces its arrangement
+    layout: { name: 'grid', cols: 3 },
+    note: 'The graph v3\'s debug page opens on: three self-loops, two multi-edge fans, a compound parent, and a different curve-style on almost every edge. The one to open for arrows and edge routing.'
+  },
   'compound-fixture': {
     desc: 'Compound fixture (v3 debug graph)',
     nodes: 10,

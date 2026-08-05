@@ -12,7 +12,7 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-05, covering work through round 46.5, with round 52 scoped.
+- **Last updated**: 2026-08-05, covering work through round 46.6, with round 52 scoped.
 
 ---
 

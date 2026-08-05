@@ -324,6 +324,126 @@ var styles = ( function(){
     };
   }
 
+  // v3's default debug graph, ported to a v4 sheet.
+  //
+  // v3 styles this graph with **eighteen id selectors** (`#ab`, `node#c`,
+  // `[source = "c"][target = "e"]`, …).  v4 has neither selectors nor a
+  // per-element bypass, so each of those becomes a `case` mapper over
+  // `data( 'id' )` — which is the shape v4 intends per-element styling to
+  // take, and it keeps the whole sheet serializable.
+  //
+  // **One deviation, and it is a real limit rather than a shortcut.**  The
+  // list-valued curve parameters — `control-point-distances`/`-weights`,
+  // `segment-distances`/`-weights`/`-radii` — and the arrow *widths* accept
+  // constants only; they reject mappers outright.  v3 gives `ab`, `bc`, `eh`
+  // and `ed` each their own arrays.  v4 cannot, so each family gets one
+  // parameterisation here.  It costs nothing visually, because a family's
+  // parameters are only read by edges *of* that family: `control-point-*`
+  // reaches only the unbundled bezier, `segment-*` only the segment kinds.
+  // What is genuinely lost is v3's *three different* segment arrays.
+  function v3Default( elements, def ){
+    var byId = function( map, fallback ){
+      var cases = Object.keys( map ).map( function( id ){
+        return { when: { data: 'id', eq: id }, then: map[ id ] };
+      } );
+
+      return { case: cases, else: fallback };
+    };
+
+    var RING = [ 'b', 'c', 'f', 'i' ]; // v3's `#b, #c, #f, #i` outline group
+    var ringed = function( on, off ){
+      var m = {};
+
+      RING.forEach( function( id ){ m[ id ] = on; } );
+
+      return byId( m, off );
+    };
+
+    return {
+      nodes: Object.assign( {
+        width: byId( { c: 220, b: 60, f: 50 }, 40 ),
+        height: byId( { c: 60, b: 60 }, 40 ),
+        shape: byId( { c: 'round-rectangle', b: 'round-hexagon', f: 'cut-rectangle' }, 'ellipse' ),
+        'corner-radius': byId( { c: 30, b: 10, f: 10 }, 5 ),
+        'background-color': '#dfe6ee',
+        // the outline group: v3 also sets `outline-style: solid`, which v4 has
+        // not ported (round 38) — solid is the default, so the ring still draws
+        'outline-width': ringed( 10, 0 ),
+        'outline-color': 'red',
+        'outline-opacity': 0.125,
+        'outline-offset': 5,
+        'border-width': ringed( 5, 1 ),
+        'border-color': ringed( 'cyan', '#8a94a6' ),
+        'border-opacity': ringed( 0.25, 1 ),
+        'border-position': 'inside',
+        // v3 rotates b by 38deg and d by 45deg; v4 takes radians, not a
+        // '38deg' string, so the conversion is explicit here
+        'text-rotation': byId( { b: 38 * Math.PI / 180, d: 45 * Math.PI / 180 }, 0 ),
+        'text-wrap': 'wrap',
+        'text-max-width': byId( { b: 100, c: 100, d: 100 }, 60 ),
+        'text-valign': 'center',
+        'font-size': 12,
+        color: '#1d2433',
+        'text-events': 'yes'
+      }, label( def ) ),
+      edges: {
+        width: byId( { fi: 6 }, 2 ),
+        'line-color': '#5b6472',
+        label: { data: 'id' },
+        'font-size': 10,
+        color: '#5b6472',
+        'text-outline-width': 2,
+        'text-outline-color': '#fff',
+        // v3's edge defaults: a back-curved source arrow, a plain target
+        // arrow, and both mid arrows — `fi` turns all four off
+        'source-arrow-shape': byId( { fi: 'none' }, 'triangle-backcurve' ),
+        'target-arrow-shape': byId( { fi: 'none' }, 'triangle' ),
+        'mid-source-arrow-shape': byId( { fi: 'none' }, 'triangle-backcurve' ),
+        'mid-target-arrow-shape': byId( { fi: 'none' }, 'triangle' ),
+        'source-arrow-color': '#5b6472',
+        'target-arrow-color': '#5b6472',
+        'mid-source-arrow-color': '#5b6472',
+        'mid-target-arrow-color': '#5b6472',
+        'source-arrow-fill': 'hollow',
+        'target-arrow-fill': 'hollow',
+        // the one v3 line this sheet cannot vary per edge (see above)
+        'curve-style': byId( {
+          ab: 'unbundled-bezier',
+          bc: 'segments',
+          ed: 'segments',
+          eh: 'round-segments',
+          bf: 'taxi',
+          eg: 'round-taxi', ei: 'round-taxi', ep: 'round-taxi', gh: 'round-taxi',
+          ce: 'haystack', ce2: 'haystack',
+          fi: 'straight-triangle',
+          ae: 'bezier', be: 'bezier', cf: 'bezier', de: 'bezier'
+        }, 'bezier' ),
+        'control-point-distances': [ 20, -100, 20 ],
+        'control-point-weights': [ 0.25, 0.5, 0.75 ],
+        'segment-distances': [ 20, -80 ],
+        'segment-weights': [ 0.25, 0.5 ],
+        'segment-radii': [ 20, 20 ],
+        'haystack-radius': 0.5,
+        'taxi-direction': 'downward',
+        'taxi-turn-min-distance': 50,
+        'taxi-radius': 50
+      },
+      parents: {
+        shape: 'rectangle',
+        padding: 20,
+        'background-color': '#81b29a',
+        'background-opacity': 0.15,
+        'border-width': 2,
+        'border-color': '#81b29a',
+        label: { data: 'id' },
+        'text-valign': 'top',
+        'text-margin-y': -4,
+        'font-size': 12,
+        color: '#2f4f42'
+      }
+    };
+  }
+
   var production = {
     'em-web': emWeb,
     'em-web-clustered': emWebClustered,
@@ -331,6 +451,7 @@ var styles = ( function(){
     'white-matter': whiteMatter,
     'ndex-large': ndexLarge,
     'ndex-x-large': ndexXLarge,
+    'v3-default': v3Default,
     'compound-fixture': compoundFixture,
     'gen': generated,
     'compound': generated

@@ -219,7 +219,72 @@ var fixtures = ( function(){
   }
 
   /** Build a generated network by its `networks` entry. */
+  // Round 46.6: v3's *default* debug graph — the one `v3/debug/init.js` builds
+  // inline and the v3 page opens on.  It is small and deliberately loud: three
+  // self-loops on `a`, two multi-edge fans (c->e, d->e x4), a compound parent
+  // `p` with an edge into it, and a stylesheet that gives almost every edge a
+  // different `curve-style`.  That is what makes it the fixture to open when
+  // you want to see arrows and edge routing rather than scale.
+  //
+  // **Node order and `cols: 3` are load-bearing**, for the reason round 43.4
+  // recorded about the other v3 port: grid places nodes in declaration order,
+  // so reordering this list reshapes the whole graph and moves every edge.
+  // This is v3's order, verbatim.
+  //
+  // Labels live in the data rather than the sheet because v4's `label` takes
+  // only the passthrough mapper (`{ data: key }`) — there are no style
+  // functions and no per-element bypass, so v3's per-id label overrides have
+  // to be data.  The zero-width spaces (\u200b) are v3's, and they are the
+  // point of those three labels: they mark where wrapping is allowed.
+  function v3DefaultFixture(){
+    var LONG_C = 'c has a long label over-\u200bflowing its max    width,\n but spa\u200bces are ke\u200bpt';
+    var LONG_D = 'd has a long label over-\u200bflowing and its rotated by 45deg';
+    var LONG_B = 'b has a long label over-\u200bflowing and its rotated by 38deg';
+
+    return {
+      nodes: [
+        { data: { id: 'a', weight: 50, label: 'a' } },
+        { data: { id: 'b', weight: 30, label: LONG_B } },
+        { data: { id: 'c', weight: 20, label: LONG_C } },
+        { data: { id: 'd', weight: 10, label: LONG_D } },
+        { data: { id: 'e', weight: 75, label: 'e' } },
+        { data: { id: 'f', weight: 100, label: 'f' } },
+        { data: { id: 'g', weight: 40, label: 'g' } },
+        { data: { id: 'h', weight: 16, parent: 'p', label: 'h' } },
+        { data: { id: 'i', weight: 16, parent: 'p', label: 'i' } },
+        { data: { id: 'p', label: 'p' } }
+      ],
+      edges: [
+        { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
+        { data: { id: 'aa', weight: 2, source: 'a', target: 'a' } },
+        { data: { id: 'aa2', weight: 2, source: 'a', target: 'a' } },
+        { data: { id: 'aa3', weight: 2, source: 'a', target: 'a' } },
+        { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
+        { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
+        { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
+        { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
+        { data: { id: 'ce2', weight: 6, source: 'c', target: 'e' } },
+        { data: { id: 'cf', weight: 2, source: 'c', target: 'f' } },
+        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'ed', weight: 7, source: 'e', target: 'd' } },
+        { data: { id: 'de2', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de3', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'bf', weight: 3, source: 'b', target: 'f' } },
+        { data: { id: 'eg', weight: 3, source: 'e', target: 'g' } },
+        { data: { id: 'eh', weight: 3, source: 'e', target: 'h' } },
+        { data: { id: 'ei', weight: 3, source: 'e', target: 'i' } },
+        { data: { id: 'ep', weight: 3, source: 'e', target: 'p' } },
+        { data: { id: 'fi', weight: 3, source: 'f', target: 'i' } },
+        { data: { id: 'gh', weight: 3, source: 'g', target: 'h' } }
+      ],
+      hasPositions: false
+    };
+  }
+
   function generate( kind, spec ){
+    if( kind === 'v3-default' ){ return v3DefaultFixture(); }
     if( kind === 'compound' ){ return generateCompoundNetwork( spec ); }
     if( kind === 'fixture' ){ return compoundFixture(); }
 

@@ -55,31 +55,35 @@ const centerPan = async page => {
   } );
 };
 
-/** Composited screen pixel at CSS coords, via a screenshot decoded in-page. */
+/**
+ * Composited screen pixel at CSS coords.
+ *
+ * A clipped screenshot decoded here, rather than a full-page one shipped
+ * into the page as base64 and decoded through an Image + 2D canvas: on the
+ * software rasterizer CI pins, the old path measured 67 ms for the
+ * screenshot and 68 ms for the in-page decode against 6 ms for a 1 px clip
+ * (round 52), and this file calls it ~94 times.  Both projects run at
+ * deviceScaleFactor 1, so one CSS px is one device px and the clip lands
+ * on the same pixel the scaled getImageData read.
+ *
+ * Out-of-frame coordinates answer transparent black, which is what
+ * getImageData gave for a read past the edge.
+ */
 const pixelAt = async ( page, x, y ) => {
-  const b64 = ( await page.screenshot() ).toString( 'base64' );
+  const data = await clipPixels( page, Math.round( x ), Math.round( y ), 1 );
 
-  return await page.evaluate( async ( { b64, x, y } ) => {
-    const img = new Image();
+  return data == null ? [ 0, 0, 0, 0 ] : [ data[ 0 ], data[ 1 ], data[ 2 ], data[ 3 ] ];
+};
 
-    img.src = 'data:image/png;base64,' + b64;
-    await img.decode();
+/** One row of RGBA from the composited page, or null when fully out of frame. */
+const clipPixels = async ( page, x, y, width ) => {
+  const view = page.viewportSize() ?? { width: Infinity, height: Infinity };
+  const x0 = Math.max( 0, x );
+  const w = Math.min( width - ( x0 - x ), view.width - x0 );
 
-    const canvas = document.createElement( 'canvas' );
+  if( y < 0 || y >= view.height || w <= 0 ){ return null; }
 
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    const ctx = canvas.getContext( '2d' );
-
-    ctx.drawImage( img, 0, 0 );
-
-    const scale = img.width / window.innerWidth; // device scale factor of the screenshot
-
-    const d = ctx.getImageData( Math.round( x * scale ), Math.round( y * scale ), 1, 1 ).data;
-
-    return [ d[0], d[1], d[2], d[3] ];
-  }, { b64, x, y } );
+  return decodePng( await page.screenshot( { clip: { x: x0, y, width: w, height: 1 } } ) ).data;
 };
 
 const waitFrames = async ( page, n = 3 ) => {
@@ -90,39 +94,20 @@ const waitFrames = async ( page, n = 3 ) => {
   }, n );
 };
 
-/** Count dark (text-ish) pixels in a horizontal band of the composited page. */
+/** Count dark (text-ish) pixels in a horizontal band of the composited page.
+ * Clipped to the band rather than screenshotting the page — see pixelAt. */
 const darkPixelsInBand = async ( page, x0, width, y ) => {
-  const b64 = ( await page.screenshot() ).toString( 'base64' );
+  const data = await clipPixels( page, Math.round( x0 ), Math.round( y ), Math.round( width ) );
 
-  return await page.evaluate( async ( { b64, x0, width, y } ) => {
-    const img = new Image();
+  if( data == null ){ return 0; }
 
-    img.src = 'data:image/png;base64,' + b64;
-    await img.decode();
+  let dark = 0;
 
-    const canvas = document.createElement( 'canvas' );
+  for( let i = 0; i < data.length; i += 4 ){
+    if( data[ i ] < 100 && data[ i + 1 ] < 100 && data[ i + 2 ] < 100 ){ dark++; }
+  }
 
-    canvas.width = img.width;
-    canvas.height = img.height;
-
-    const ctx = canvas.getContext( '2d' );
-
-    ctx.drawImage( img, 0, 0 );
-
-    const scale = img.width / window.innerWidth;
-    const data = ctx.getImageData(
-      Math.round( x0 * scale ), Math.round( y * scale ),
-      Math.round( width * scale ), 1
-    ).data;
-
-    let dark = 0;
-
-    for( let i = 0; i < data.length; i += 4 ){
-      if( data[ i ] < 100 && data[ i + 1 ] < 100 && data[ i + 2 ] < 100 ){ dark++; }
-    }
-
-    return dark;
-  }, { b64, x0, width, y } );
+  return dark;
 };
 
 test.describe( 'WebGPU renderer', () => {

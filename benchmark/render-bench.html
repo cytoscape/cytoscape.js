@@ -67,6 +67,22 @@
         const WRAP_LABEL = 'node label long enough to wrap';
         const WRAP_MAX_WIDTH = 40;
 
+        // round 55: the arrow scenes.  v3's own debug default puts a
+        // back-curved head on the source and a plain triangle on the
+        // target, which is also the pair that exercises two different
+        // gap constants (1.6x and 2x the standard), so it is the shape
+        // choice with the most to say.  `arrow-scale` is above 1 because
+        // the head's cost is quadratic in its size and a scale-1 head on
+        // a 1px edge is a handful of fragments.
+        const ARROW_STYLE_V3 = {
+          'source-arrow-shape': 'triangle-backcurve',
+          'target-arrow-shape': 'triangle',
+          'source-arrow-color': '#5b6472',
+          'target-arrow-color': '#5b6472',
+          'arrow-scale': 2
+        };
+        const ARROW_STYLE_V4 = Object.assign( {}, ARROW_STYLE_V3 );
+
         function v3Style( labels, spec = {} ){
           const node = { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' };
 
@@ -184,7 +200,16 @@
               const target = 'n' + Math.floor( rand() * spec.n );
 
               for( let k = 0; k < parallel && j + k < spec.m; k++ ){
-                edges.push( { data: { id: 'e' + ( j + k ), source, target } } );
+                const data = { id: 'e' + ( j + k ), source, target };
+
+                // round 55: half the edges hollow in the `mixed` arrow
+                // scene, so the overlap the round removes is actually
+                // drawn — an opaque filled head covers its own overlap
+                // and would price the geometry while hiding the
+                // compositing
+                if( spec.arrows === 'mixed' ){ data.hollow = ( j + k ) & 1; }
+
+                edges.push( { data } );
               }
             }
 
@@ -254,6 +279,23 @@
             // both sides opt into bundled bezier explicitly on curved scenes
             style[ 1 ].style[ 'curve-style' ] = curved ? 'bezier' : 'straight';
 
+            // round 55: the arrow tier.  `arrows: 'solid'` puts a filled
+            // head on both ends of every edge; `arrows: 'mixed'` makes
+            // half of them hollow.  Both sides' base edge style is
+            // already `opacity: 0.6`, so the mixed scene is the one where
+            // the line/arrow overlap is visible — a filled head covers
+            // its own overlap, so a solid-only scene would price the
+            // geometry and miss the compositing.
+            if( scene.spec.arrows ){
+              Object.assign( style[ 1 ].style, ARROW_STYLE_V3 );
+
+              if( scene.spec.arrows === 'mixed' ){
+                style.push( { selector: 'edge[hollow = 1]', style: {
+                  'source-arrow-fill': 'hollow', 'target-arrow-fill': 'hollow'
+                } } );
+              }
+            }
+
             if( scene.spec.images === true ){
               icons().forEach( ( uri, k ) => {
                 style.push( { selector: 'node[itype = ' + k + ']', style: {
@@ -304,9 +346,24 @@
               } );
             }
 
-            const edgesStyle = curved
+            let edgesStyle = curved
               ? Object.assign( {}, V4_BASE_STYLE.edges, { 'curve-style': 'bezier' } )
               : V4_BASE_STYLE.edges;
+
+            // round 55: the arrow tier.  v4 has no selectors, so the
+            // per-edge hollow variation is a `case` mapper — the decided
+            // replacement — against the same `hollow` data the v3 sheet
+            // selects on, so both sides draw the same picture.
+            if( scene.spec.arrows ){
+              edgesStyle = Object.assign( {}, edgesStyle, ARROW_STYLE_V4 );
+
+              if( scene.spec.arrows === 'mixed' ){
+                edgesStyle = Object.assign( {}, edgesStyle, {
+                  'source-arrow-fill': { case: [ { when: { data: 'hollow', eq: 1 }, then: 'hollow' } ], else: 'filled' },
+                  'target-arrow-fill': { case: [ { when: { data: 'hollow', eq: 1 }, then: 'hollow' } ], else: 'filled' }
+                } );
+              }
+            }
 
             cy = cytoscape( {
               container: stage,

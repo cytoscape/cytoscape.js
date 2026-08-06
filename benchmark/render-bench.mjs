@@ -58,7 +58,15 @@ const SCENES = [
   // round 20.2's `events` pointer transparency (a pick-mode mask) over
   // half the nodes each.
   { key: 'gen-25k-wrap', label: 'generated 25k × 50k wrapped labels', page: { n: 25000, m: 50000, wrap: true } },
-  { key: 'gen-25k-invisible', label: 'generated 25k × 50k half-invisible / half-inert', page: { n: 25000, m: 50000, invisible: true } }
+  { key: 'gen-25k-invisible', label: 'generated 25k × 50k half-invisible / half-inert', page: { n: 25000, m: 50000, invisible: true } },
+  // round 55: the arrow tier, which no scene exercised — every scene
+  // above draws `arrow-shape: none`, so the arrow pipelines contributed
+  // nothing to any published number.  The pair is deliberate: `solid`
+  // prices the head geometry, and `mixed` (half the heads hollow, over
+  // the base 0.6 edge opacity) is the one where the line/arrow overlap
+  // is actually visible and therefore the one the gap/trim work moves.
+  { key: 'gen-25k-arrows', label: 'generated 25k × 50k arrows (filled)', page: { n: 25000, m: 50000, arrows: 'solid' } },
+  { key: 'gen-25k-arrows-mixed', label: 'generated 25k × 50k arrows (half hollow, 0.6 alpha)', page: { n: 25000, m: 50000, arrows: 'mixed' } }
 ];
 
 // --layout: instead of the pan scenarios, run the round-18 force layout

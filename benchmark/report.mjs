@@ -78,6 +78,7 @@ const STANDALONE_JOBS = [
   { file: 'compaction.mjs',     n: 20000 },
   { file: 'compound.mjs',       n: 2000 },
   { file: 'curves.mjs',         n: 2000 },
+  { file: 'arrows.mjs',         n: 2000 },
   { file: 'labels.mjs',         n: 20000 },
   { file: 'transitions.mjs',    n: 2000 },
   { file: 'geometry-tween.mjs', n: 2000 },

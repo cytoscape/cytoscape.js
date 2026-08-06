@@ -22,6 +22,16 @@ jobs:
         node-version-file: .nvmrc
     - name: Install dependencies
       run: npm ci
+    # v3's dependencies, for a job that runs none of v3's tests: this is the
+    # requirement AGENTS.md records under "Development flow".
+    # `test/modules/benchmark-report.mjs` imports `benchmark/bench-run.mjs`,
+    # which reaches `benchmark/graph.mjs` and so `v3/src/test.mjs`, which
+    # imports `heap`.  Without this the spec file fails to load and takes its
+    # 21 tests with it — the suite reports 229 rather than 250 and one
+    # failure.  No v3 *build* is needed here; only the deps.
+    - name: Install the v3 dependencies the benchmark specs reach
+      run: npm ci
+      working-directory: v3
     # `test:modules` builds for itself now (the status-site specs read
     # build/cytoscape.umd.js and encode through build/cytoscape.cjs.js), so
     # this step is not what makes the suite pass.  It is kept because it is

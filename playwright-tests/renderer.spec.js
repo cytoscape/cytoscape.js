@@ -3013,7 +3013,16 @@ test.describe( 'WebGPU renderer', () => {
     expect( Math.abs( after[ 1 ] - before[ 1 ] ) ).toBeGreaterThan( 40 );
   } );
 
-  /** Export a png in-page, decode it, and sample pixels at output coords. */
+  /**
+   * Export a png in-page, decode it, and sample pixels at output coords.
+   *
+   * `willReadFrequently` because this reads one pixel per sample from the
+   * same canvas, and Chrome warns about exactly that shape ("Multiple
+   * readback operations using getImageData are faster with the
+   * willReadFrequently attribute set to true") — it keeps the canvas in
+   * software memory instead of syncing back from the GPU on every read.
+   * The two readback sites in `src/` set it for the same reason.
+   */
   const pngAndSample = async ( page, opts, samples ) => {
     return await page.evaluate( async ( { opts, samples } ) => {
       const uri = await window.cy.png( opts );
@@ -3027,7 +3036,7 @@ test.describe( 'WebGPU renderer', () => {
       canvas.width = img.width;
       canvas.height = img.height;
 
-      const ctx = canvas.getContext( '2d' );
+      const ctx = canvas.getContext( '2d', { willReadFrequently: true } );
 
       ctx.drawImage( img, 0, 0 );
 
@@ -3133,7 +3142,7 @@ test.describe( 'WebGPU renderer', () => {
       canvas.width = img.width;
       canvas.height = img.height;
 
-      const ctx = canvas.getContext( '2d' );
+      const ctx = canvas.getContext( '2d', { willReadFrequently: true } );
 
       ctx.drawImage( img, 0, 0 );
 
@@ -4231,7 +4240,7 @@ test.describe( 'WebGPU renderer', () => {
       canvas.width = img.width;
       canvas.height = img.height;
 
-      const ctx = canvas.getContext( '2d' );
+      const ctx = canvas.getContext( '2d', { willReadFrequently: true } );
 
       ctx.drawImage( img, 0, 0 );
 
@@ -4995,7 +5004,7 @@ test.describe( 'WebGPU renderer', () => {
         canvas.width = img.width;
         canvas.height = img.height;
 
-        const ctx = canvas.getContext( '2d' );
+        const ctx = canvas.getContext( '2d', { willReadFrequently: true } );
 
         ctx.drawImage( img, 0, 0 );
 

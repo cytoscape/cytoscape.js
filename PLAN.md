@@ -13233,3 +13233,36 @@ bind `edge.width` and `edge.arrowShapes`.  True for `spacing`, and
 `circle-triangle` SDFs already bake their offset in.  So the arrow-side
 half of this fix is genuinely one constant; all the difficulty is on the
 line side.
+
+### Fix 2, verified on the page — and two corrections to its own record
+
+The standing rule is that something has to open the page, so the debug
+harness was driven before and after with a scripted browser, at the exact
+network the maintainer reported (`debug/?network=v3-default`).  The
+before/after is unambiguous:
+
+- **before**: one edge — `gh`, `round-taxi`, between `g` and a child of
+  the compound parent — answered
+  `boundingBox() = {x1: null, y1: null, x2: null, y2: null}`;
+- **after**: zero of the 23 edges answer a non-finite box.
+
+Two corrections to what this round first wrote about that defect, both
+found by checking rather than by reasoning:
+
+1. **The consequence is worse than recorded.**  The first write-up said
+   the edge was unpickable and "poisoned any bound that contained it".
+   Measured: `cy.elements().boundingBox()` — the *whole graph's* bound —
+   also came back all-null.  `cy.fit()` reads that, so **a single
+   degenerate edge broke framing for the entire graph**.  A spec now pins
+   the graph bound as well as the edge's.
+2. **One claim was overstated and is withdrawn.**  The record said the
+   edge was "invisible on the GPU (a NaN clip position is dropped)".
+   That was inferred, not observed: the before/after screenshots of the
+   page show the edge drawn in both.  The NaN reaches the corner arc, and
+   the strip evidently still renders something.  What is *demonstrated*
+   is the public geometry — the edge's box and the graph's — so that is
+   what the record should claim.
+
+The second correction is the more useful one to carry forward.  Both
+statements were plausible, both came from the same reading of the code,
+and only one survived being looked at.

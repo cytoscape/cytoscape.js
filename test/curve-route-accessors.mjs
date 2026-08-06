@@ -254,6 +254,19 @@ describe('gpu/curve-route-accessors (12b)', function(){
         }
       });
 
+      it(`${label}: the WHOLE GRAPH's bounding box stays finite`, function(){
+        cy = aligned( style, dx, dy );
+
+        var bb = cy.elements().boundingBox();
+
+        // The severe half of this defect, and the one measured last:
+        // a single degenerate edge poisoned the *graph* bound, not just
+        // its own, because the min/max fold never took a comparable
+        // value.  `cy.fit()` reads this, so one round-taxi edge between
+        // two nodes sharing a row broke framing for the entire graph.
+        expect( finiteBox( bb ), `graph bb was ${JSON.stringify( bb )}` ).to.equal( true );
+      });
+
       it(`${label}: it is still hit-testable`, function(){
         cy = aligned( style, dx, dy );
 

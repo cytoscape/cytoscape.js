@@ -12448,3 +12448,96 @@ of the renderer project are 104/104, and `visual` is 75/75.
   slow; that is a judgement call, not a bug fix, and it is left open.
 - **The libjpeg fix lives in Playwright's browser cache**, outside the repo,
   and `playwright install` will undo it.  AGENTS.md carries the command.
+
+### Round 53.2 — what running it actually found (2026-08-06)
+
+Three more defects, all of the same kind as 53's and 53.1's: things that had
+never been executed in the configuration CI uses.  Plus a merge of the
+**test/fix-v4** branch, which had been fixing one of them from the other
+direction.  (Not in backticks: a code span holding only a rooted path is a
+link candidate to the status build, and a branch name is not a file.)
+
+**The merge.**  That branch makes the npm scripts self-sufficient —
+`test:modules` and `test:playwright` build the bundles they read instead of
+assuming someone did — and adds a stale-bundle diagnostic to the status wire
+encoder, a tracked `v3/package-lock.json`, and the same `navigator.gpu` skip
+53.1 had landed independently.  `package.json` merged cleanly and kept both
+sides: `test` is still `run-s test:node test:playwright` from the CI split,
+while `test:modules` is now `run-s build test:modules:run`.  Verified from
+`rm -rf build v3/build`: **`npm test` exits 0 in 2m42s**, having built v4's
+five bundles and v3's UMD baseline itself along the way.
+
+The tracked lockfile also let both jobs that install v3 move to `npm ci`.
+`ci-v3` had been running `npm install` against caret ranges, so it resolved a
+different dependency set on every push — which is why an upstream release
+could turn that job red with no commit touching this repo.
+
+**`heap`, and a spec that needed one integer.**  Splitting the workflow lost
+v3's install from the Node job, and `test/modules/benchmark-report.mjs` —
+a spec about rendering an HTML report — failed with
+`Cannot find package 'heap'`.  The first fix was to reinstate the install.
+That was treating a symptom, and the maintainer's question ("why do we need
+the heap package in the v4 tests?") was the right one.  Tracing it:
+
+    benchmark-report.mjs  -> bench-run.mjs   (finishManualRun)
+    bench-run.mjs         -> graph.mjs       (N)
+    graph.mjs             -> v3/src/test.mjs (makeV3)  -> heap
+
+`N` is `Number( process.env.BENCH_N ) || 2000`.  One integer.  It lived in
+`graph.mjs`, which imports **both** libraries to build its `makeV3` /
+`makeGpu` factories — and an ESM import evaluates the whole module, so
+reading that number loaded all of v3 and all of v4.  `bench-run.mjs` is the
+only one of graph.mjs's twenty importers that wants a constant rather than a
+factory.  The run size moved to `benchmark/bench-size.mjs`, which imports
+nothing; `graph.mjs` re-exports it, so the other nineteen suites are
+untouched.  `test:modules` is now **250/250 with no v3 install at all**, the
+CI step came back out, and AGENTS.md's "install both" rule — which named this
+exact spec as its reason — was corrected to what is now true.
+
+Worth noting how the failure *reads* on a runner, because it is misleading:
+the spec file fails to **load**, so its 21 tests never register.  The suite
+reports 229 rather than 250 and one failure named after the module rather
+than the cause.  It looks like a broken spec and is a missing install.
+
+**A console warning nobody had seen**, because the renderer project had never
+run to completion on CI: `Canvas2D: Multiple readback operations using
+getImageData are faster with the willReadFrequently attribute set to true`.
+`pngAndSample` decodes an export into a 2D canvas and reads one pixel per
+sample point, which is exactly the shape being named.  All four in-page
+decodes in `renderer.spec.js` set the attribute now, as the two readback
+sites in `src/` always have.  The two remaining unflagged 2D contexts in
+`src/` are deliberately left alone: they are write-only (`putImageData` +
+`toBlob`; `drawImage` + `createImageBitmap`), and forcing a canvas that never
+reads back into software memory is a pessimization, not a fix.
+
+### Is every suite in CI?
+
+Asked, and audited rather than assumed.  Every test script is: v4's
+`typecheck` / `test:js` / `test:modules` / `test:soak` / `test:throws` /
+`lint` and its three Playwright projects; v3's whole `npm test` and its six
+type suites.  There are also no spec files that no glob picks up — all 128
+`test/*.mjs` are matched, and the only two excluded are the setup shim and
+`types-surface.mjs`, which has its own script.
+
+Three things run only by proxy.  Two are deliberate: **benchmarks** do not
+run in CI because they are machine-dependent and reach the site only through
+`benchmark:publish` from the machine that measured (their *tooling* is
+gated by specs), and **`npm run dist`** is never executed —
+`test/modules/packaging.mjs` proves a release *would* produce every file by
+parsing `dist:copy` and `.npmignore`, which its own header states.
+
+The third is worth recording as a known gap rather than closing:
+`test/modules/status-site.mjs` imports `buildPlan` and nothing else, so
+**`executePlan()` — the half that writes the deployable site — has no
+coverage**, and `npm run status` runs nowhere.  The pure/writing split exists
+so the spec need not copy 30 MiB of fixtures, and the consequence had not been
+drawn.  It is 6.3 s to run; the decision was that CI is for tests, so if the
+site build breaks it will surface on a deploy.
+
+### Standing lesson from 53, 53.1 and 53.2 together
+
+Every defect this round found was in something that had never been executed
+in the configuration that matters — a fresh checkout, a runner without a
+hoisted dependency, a browser project nobody could launch locally.  None of
+them were regressions in the library.  A green suite says the paths that ran
+are fine; it says nothing about the ones that never did.

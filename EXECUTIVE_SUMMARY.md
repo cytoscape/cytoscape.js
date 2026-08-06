@@ -12,7 +12,7 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-05, covering work through round 46.6, with round 52 scoped.
+- **Last updated**: 2026-08-06, covering work through round 53.2, with round 52 scoped.
 
 ---
 
@@ -23,14 +23,17 @@ public API keeps v3's *shape* — `cy.add()`, `eles.filter()`, `node.position()`
 the traversal and algorithm surfaces — while several v3 mechanisms were removed
 by decision rather than reimplemented, each recorded with its rationale.
 
+Continuous integration is green again as of 2026-08-06, having been red on
+every push for several weeks; `npm test` passes from a clean checkout.
+
 | | |
 |---|---|
-| Automated tests | 2,013 unit · 247 module · 24 soak · 283 browser |
+| Automated tests | 2,021 unit · 250 module · 24 soak · 283 browser |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 43 golden images + live v3-vs-v4 pixel-parity scenes |
-| Benchmarks | 31 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means) |
+| Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 660 KiB minified, 179 KiB gzipped — 1.4× v3 on the wire, of which **24% is WebGPU shader source** v3 has no equivalent of |
+| Bundle | 661 KiB minified, 179 KiB gzipped — 1.4× v3 (411 / 126 KiB) on the wire, of which **24% is WebGPU shader source** v3 has no equivalent of |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
@@ -70,7 +73,7 @@ what a synchronous read is allowed to observe while the device is mid-frame.
 
 ## Week 2 — 27 July – 2 August: parity
 
-*201 commits — the densest week of the project. Rounds 9.4–27, plus four design
+*208 commits — the densest week of the project. Rounds 9.4–27, plus four design
 sittings.*
 
 The work turned from architecture to matching v3's visible behaviour, and the
@@ -103,9 +106,9 @@ it.
 
 ---
 
-## Week 3 — 3–5 August: hardening and release preparation
+## Week 3 — 3–6 August: hardening, release preparation, and a CI reckoning
 
-*129 commits. Rounds 28–48, plus the round-46.5 status site.*
+*139 commits. Rounds 28–53.2.*
 
 With the feature ledger closed, the work moved to what was *unpinned* rather
 than unbuilt — contracts, documentation, packaging and robustness.
@@ -142,6 +145,46 @@ than unbuilt — contracts, documentation, packaging and robustness.
   reference and the project documents. Its fixtures ship in v4's own binary wire
   format, which is what makes them small enough to host.
 
+**The build that was never green** (rounds 53–53.2)
+
+Continuous integration had been failing on *every* push for weeks, and no one
+had read a log — GitHub refuses Actions logs to anyone without repository
+admin, so the two failures were diagnosed by reproducing each job in a clean
+checkout and confirmed against the real logs afterwards. Both causes were one
+line each: a stray type-package reference in v3's TypeScript config that only
+resolved because a developer machine has a dependency a runner does not, and a
+suite that needed a bundle nothing had built yet.
+
+That is the pattern the whole reckoning turned on. **Every defect found in
+these rounds was in something that had never been executed in the
+configuration that matters** — a fresh checkout, a runner without a hoisted
+dependency, a browser project that could not be launched locally at all. None
+were regressions in the library. Among them: a spec suite that had never run
+on WebKit and would have failed on its first green run; a spec about rendering
+an HTML report that loaded the whole of v3 to read one integer; and a console
+warning nobody had seen because that project had never reached the end.
+
+Making it fast then turned up something that is not a CI matter at all.
+**v4 compiles its GPU pipelines on first use, not when they are created** —
+Dawn returns from pipeline creation immediately and does the work when the
+pipeline is first drawn with. Building the whole set at start-up therefore
+does not pay for itself; it moves that compilation onto the first frame,
+including for every feature the graph does not use. Deferring the eight
+feature pipelines until something draws them cut the first frame from **4.6 s
+to 2.7 s** on the software renderer, and the same shape holds an order of
+magnitude smaller on real hardware. This is first-frame latency for every
+consumer, not a test artefact. A companion measurement — that a tween's
+pipelines compile on the *first* `animate()`, delaying it by up to a second on
+software — is recorded and deliberately not yet acted on.
+
+The browser suite was also made honest rather than merely quieter: nine specs
+that asserted something about a running animation by sleeping to a fixed
+offset now wait for the state they are named for, which is both stronger and
+faster, and the worker count was cut to half the cores after measuring that
+one browser per core is the setting that fails. CI now runs as four parallel
+jobs — the Node tier plus one per browser project — and `npm test` passes from
+a completely clean checkout.
+
 ---
 
 ## What remains before 4.0
@@ -151,14 +194,14 @@ than unbuilt — contracts, documentation, packaging and robustness.
 | `border-style` / `outline-style` (round 38) | a scope decision on three sub-questions |
 | Error / warning policy (round 40) | a design sitting |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
-| Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, WebKit, real-device touch |
+| Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |
 | Release engineering (round 50) | the release workflows are still v3's and are marked as not yet adapted |
 | Release bake (round 51) | alpha/beta cycle, external-consumer smoke, then **4.0.0** |
 | *Optional:* WGSL minification (round 52) | scoped and measured, not scheduled — worth **10% of the download**, best landed before the alpha |
 
 ---
 
-## How this project works, in three habits
+## How this project works, in four habits
 
 These explain most of what the record contains, and are worth knowing before
 reading it.
@@ -172,6 +215,11 @@ reading it.
    that had quietly stopped being true.
 3. **Decisions are written down when taken**, with their rationale, which is why
    the migration guide could be compiled rather than reconstructed.
+4. **Run it where it will actually run.** A suite that passes on the machine
+   that wrote it has proved less than it appears: every defect found in the
+   final CI rounds was in something never executed on a fresh checkout, on a
+   runner, or in a browser nobody could launch locally. The habit that follows
+   is to reproduce the environment rather than reason about it.
 
 ---
 

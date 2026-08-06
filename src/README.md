@@ -2800,6 +2800,20 @@ A real adapter shows the same shape an order of magnitude smaller
 to **2.72 s** software / proportionally on hardware, and leaves a graph
 that uses every feature exactly where it was.
 
+The same property bites once more at *animation* time, and it is worth
+knowing about because it is visible to users rather than only to CI: a
+tween's compute pipelines also compile on first use, so the **first**
+`animate()` on a page stalls.  Measured on the software adapter under load,
+a 1500 ms linear position tween had run *zero* frames 800 ms after
+`animate()` returned and had not moved a pixel until ~1.2 s; on a real
+adapter the same tween clears its start position at 187 ms.  Nothing in the
+renderer defers those pipelines — they are built in `GpuTweenRuntime`'s
+constructor at init — which is exactly the point: creating a pipeline is
+not what costs, using it first is.  Warming them with a throwaway dispatch
+during startup would move the cost to where the device is already being set
+up; that is a trade against an already-slow first frame, and it has not been
+made.
+
 Two notes for anyone changing this.
 
 - **`createRenderPipelineAsync` is not the answer.**  Awaited, it is ~15%

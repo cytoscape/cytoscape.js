@@ -1923,6 +1923,9 @@ declare class GraphStore implements ModelView {
    * extrapolated weights), so curveSlack() must stay engaged even when
    * curveDevMax is 0 */
   private hasBoxCurves;
+  /** monotone: some edge has entered the curved *stream* — see
+   * hasCurvedEdges(), which gates the renderer's curved pipelines */
+  private curvedEver;
   /** monotone (12c): the largest pct-endpoint magnitude in node-half
    * units — offsets past 1 exceed the slack's node-half term, so the
    * excess joins curveSlack() (see that doc) */
@@ -2590,6 +2593,21 @@ declare class GraphStore implements ModelView {
    * efficiency, never correctness; 0 while nothing is curved.
    */
   curveSlack(): number;
+  /**
+   * Whether any edge has ever entered the curved draw stream (FLAG_CURVED
+   * — every kind but straight, haystack and triangle, which draw in the
+   * straight pipeline).  The renderer gates its curved edge and curved
+   * arrow pipelines on this, so a graph that never curves an edge never
+   * compiles their shaders.
+   *
+   * Monotone on purpose: it never goes back to false when the last curved
+   * edge is removed or restyled straight.  A pipeline that has been needed
+   * once is far cheaper to keep than to compile again, and the flag is
+   * read once per frame.
+   *
+   * @returns true once any edge has carried a curved-stream curve-style
+   */
+  hasCurvedEdges(): boolean;
   /**
    * The conservative model-px bound on how far a haystack endpoint can
    * sit from its node center (12c): radius × the largest outer half.

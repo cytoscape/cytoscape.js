@@ -44,6 +44,9 @@ let lib = null;
  * graph out of `src/`, which a spec pins.
  *
  * @returns the factory, or `null` when the bundle has not been built
+ * @throws when the bundle exists but predates the wire helpers — a stale
+ * build otherwise surfaces as `cy.toColumnarElements is not a function`
+ * deep in the encoder, which reads as a defect rather than as "rebuild"
  */
 export function wireLib( root ){
   if( lib !== null ){ return lib; }
@@ -53,10 +56,24 @@ export function wireLib( root ){
   if( !existsSync( path ) ){ return null; }
 
   const mod = require( path );
+  const cy = mod.default ?? mod;
 
-  lib = mod.default ?? mod;
+  if( typeof cy.toColumnarElements !== 'function' || typeof cy.serializeElements !== 'function' ){
+    throw new Error( 'build/cytoscape.cjs.js is stale — it lacks the wire helpers; run `npm run build`' );
+  }
+
+  lib = cy;
 
   return lib;
+}
+
+/** `wireLib`, but a missing bundle is an error with its one fix in the message. */
+function requireWireLib( root ){
+  const cy = wireLib( root );
+
+  if( cy == null ){ throw new Error( 'build/cytoscape.cjs.js is missing — run `npm run build`' ); }
+
+  return cy;
 }
 
 /**
@@ -87,9 +104,7 @@ export function harnessFixtures( root ){
  * @returns a `Uint8Array` of the wire buffer
  */
 export function encodeFixture( root, path ){
-  const cy = wireLib( root );
-
-  if( cy == null ){ throw new Error( 'build/cytoscape.cjs.js is missing — run `npm run build`' ); }
+  const cy = requireWireLib( root );
 
   const json = JSON.parse( readFileSync( path, 'utf8' ) );
   const elements = harnessFixtures( root ).toGpuElements( json.elements );
@@ -97,8 +112,17 @@ export function encodeFixture( root, path ){
   return new Uint8Array( cy.serializeElements( cy.toColumnarElements( elements ) ) );
 }
 
-/** The encoded size, or `null` when the fixture cannot be encoded at all. */
+/**
+ * The encoded size, or `null` when the fixture itself cannot be encoded.
+ *
+ * A missing or stale bundle **throws** instead of answering `null`: that is an
+ * environment problem with one fix (`npm run build`), and swallowing it here
+ * once turned a stale bundle into "the fixture could not be encoded at all"
+ * two layers up (2026-08-06).
+ */
 export function wireSize( root, path ){
+  requireWireLib( root ); // throws with the rebuild instruction before the try can eat it
+
   try {
     return encodeFixture( root, path ).byteLength;
   } catch{

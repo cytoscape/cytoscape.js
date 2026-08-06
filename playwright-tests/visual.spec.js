@@ -2210,19 +2210,61 @@ test.describe( 'v3-vs-v4 render parity', () => {
     }, { elements: PARITY_ELEMENTS, v3Style: V3_STYLE, v4Style: V4_STYLE, viewport } );
   };
 
-  const expectParity = ( v3uri, v4uri, name, testInfo ) => {
+  /** Non-white pixels — the ink floor's measure of "something rendered". */
+  const inked = png => {
+    let n = 0;
+
+    for( let i = 0; i < png.data.length; i += 4 ){
+      if( png.data[ i ] < 250 || png.data[ i + 1 ] < 250 || png.data[ i + 2 ] < 250 ){ n++; }
+    }
+
+    return n;
+  };
+
+  /**
+   * The one place a v3-vs-v4 diff is asserted (round 55).
+   *
+   * Before this there were three: `expectParity` (8 scenes), `runParity`
+   * (15) and four scenes that inline-copied the diff body.  Only
+   * `runParity`'s copy had an **ink floor**, so twelve of the 29 parity
+   * scenes would have passed on two blank canvases — the failure mode
+   * AGENTS.md names for a benchmark row, in a pixel test.  Both bounds
+   * are parameters rather than constants because the two families
+   * genuinely differ: solid-shape scenes hold 0.02, curve scenes 0.03
+   * (v4 clamps miter joins where v3 rounds them).
+   *
+   * The ink counts are logged on every run, not only on failure, so a
+   * scene drifting toward its floor is visible before it crosses it.
+   */
+  const expectParityImages = ( v3uri, v4uri, name, testInfo, opts = {} ) => {
     const actual = decodePng( v4uri );
     const expected = decodePng( v3uri );
-    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
+    const bound = opts.bound ?? MAX_PARITY_RATIO;
+    const minInk = opts.minInk ?? 2000;
+    // pixelmatch's per-pixel threshold, not the ratio bound: the
+    // rotated-label scene raises it to 0.3 because glyph rasterization
+    // differs by design (canvas vs SDF)
+    const threshold = opts.threshold ?? 0.2;
 
-    console.log( `[parity] ${name}: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
+    const inkV4 = inked( actual );
+    const inkV3 = inked( expected );
+    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold } );
 
-    if( ratio > MAX_PARITY_RATIO ){
+    console.log( `[parity] ${name}: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` +
+      `  ink v4 ${inkV4} / v3 ${inkV3}  bound ${( bound * 100 ).toFixed( 1 )}%` );
+
+    expect( inkV4, `v4 rendered ink for ${name}` ).toBeGreaterThan( minInk );
+    expect( inkV3, `v3 rendered ink for ${name}` ).toBeGreaterThan( minInk );
+
+    if( ratio > bound ){
       writeDiffArtifacts( testInfo.outputPath( '' ), name, actual, expected, diff );
     }
 
-    expect( ratio, `v3-vs-v4 mismatch ratio for ${name}` ).toBeLessThanOrEqual( MAX_PARITY_RATIO );
+    expect( ratio, `v3-vs-v4 mismatch ratio for ${name}` ).toBeLessThanOrEqual( bound );
   };
+
+  const expectParity = ( v3uri, v4uri, name, testInfo, opts = {} ) =>
+    expectParityImages( v3uri, v4uri, name, testInfo, opts );
 
   test( 'parity: nodes, borders, opacity and straight edges', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
@@ -2656,12 +2698,8 @@ test.describe( 'v3-vs-v4 render parity', () => {
     // What makes it meaningful is the control: with v4 ignoring rotation
     // the same scene measures 5.8% and fails, against 2.3% when it
     // honours it.
-    const actual = decodePng( v4uri );
-    const expected = decodePng( v3uri );
-    const { ratio } = diffPngs( actual, expected, { threshold: 0.3 } );
-
-    console.log( `[parity] parity-text-rotation: ${( ratio * 100 ).toFixed( 3 )}%` );
-    expect( ratio, 'rotated label placement vs v3' ).toBeLessThanOrEqual( 0.03 );
+    expectParityImages( v3uri, v4uri, 'parity-text-rotation', testInfo,
+      { bound: 0.03, threshold: 0.3, minInk: 1500 } );
   } );
 
   test( 'parity: compound parents — auto-bounds, padding, draw order (round 14.9)', async ( { page }, testInfo ) => {
@@ -2722,17 +2760,7 @@ test.describe( 'v3-vs-v4 render parity', () => {
     // outerHalf.  Sub-pixel per level (~0.4-0.6 px here), but the AA
     // classifier flags whole perimeter rings, so the bound is looser
     // than the solid-shape scenes (the parity-curves precedent).
-    const actual = decodePng( v4uri );
-    const expected = decodePng( v3uri );
-    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
-
-    console.log( `[parity] parity-compounds: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
-
-    if( ratio > 0.03 ){
-      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-compounds', actual, expected, diff );
-    }
-
-    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-compounds' ).toBeLessThanOrEqual( 0.03 );
+    expectParityImages( v3uri, v4uri, 'parity-compounds', testInfo, { bound: 0.03 } );
   } );
 
   test( 'parity: compound loop edges (round 14.10)', async ( { page }, testInfo ) => {
@@ -2784,17 +2812,7 @@ test.describe( 'v3-vs-v4 render parity', () => {
       };
     }, { elements, v3Style, v4Style } );
 
-    const actual = decodePng( v4uri );
-    const expected = decodePng( v3uri );
-    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
-
-    console.log( `[parity] parity-compound-loops: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
-
-    if( ratio > 0.03 ){
-      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-compound-loops', actual, expected, diff );
-    }
-
-    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-compound-loops' ).toBeLessThanOrEqual( 0.03 );
+    expectParityImages( v3uri, v4uri, 'parity-compound-loops', testInfo, { bound: 0.03 } );
   } );
 
   test( 'parity: bezier bundles + self-loops (round 12a)', async ( { page }, testInfo ) => {
@@ -2853,31 +2871,7 @@ test.describe( 'v3-vs-v4 render parity', () => {
     // curves are nearly all AA fringe (the highest perimeter-to-area of
     // any parity scene), so the bound is looser than the solid-shape
     // scenes' 2% — placement agreement is what this pins
-    const actual = decodePng( v4uri );
-    const expected = decodePng( v3uri );
-
-    // a 0% diff must mean matching ink, not two blank images
-    const inked = png => {
-      let n = 0;
-
-      for( let i = 0; i < png.data.length; i += 4 ){
-        if( png.data[ i ] < 250 || png.data[ i + 1 ] < 250 || png.data[ i + 2 ] < 250 ){ n++; }
-      }
-
-      return n;
-    };
-
-    expect( inked( actual ), 'v4 rendered ink' ).toBeGreaterThan( 2000 );
-    expect( inked( expected ), 'v3 rendered ink' ).toBeGreaterThan( 2000 );
-    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
-
-    console.log( `[parity] parity-curves: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
-
-    if( ratio > 0.03 ){
-      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-curves', actual, expected, diff );
-    }
-
-    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-curves' ).toBeLessThanOrEqual( 0.03 );
+    expectParityImages( v3uri, v4uri, 'parity-curves', testInfo, { bound: 0.03 } );
   } );
 
   test( 'parity: unbundled bezier, segments and taxi (round 12b)', async ( { page }, testInfo ) => {
@@ -2947,38 +2941,20 @@ test.describe( 'v3-vs-v4 render parity', () => {
       };
     }, { elements, v3Style, v4Style } );
 
-    const actual = decodePng( v4uri );
-    const expected = decodePng( v3uri );
-
-    const inked = png => {
-      let n = 0;
-
-      for( let i = 0; i < png.data.length; i += 4 ){
-        if( png.data[ i ] < 250 || png.data[ i + 1 ] < 250 || png.data[ i + 2 ] < 250 ){ n++; }
-      }
-
-      return n;
-    };
-
-    expect( inked( actual ), 'v4 rendered ink' ).toBeGreaterThan( 2000 );
-    expect( inked( expected ), 'v3 rendered ink' ).toBeGreaterThan( 2000 );
-
-    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
-
-    console.log( `[parity] parity-routes: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
-
-    if( ratio > 0.03 ){
-      writeDiffArtifacts( testInfo.outputPath( '' ), 'parity-routes', actual, expected, diff );
-    }
-
-    expect( ratio, 'v3-vs-v4 mismatch ratio for parity-routes' ).toBeLessThanOrEqual( 0.03 );
+    expectParityImages( v3uri, v4uri, 'parity-routes', testInfo, { bound: 0.03 } );
   } );
 
-  /** Shared 12c parity runner: render the same defs both sides, diff. */
+  /**
+   * Shared 12c parity runner: render the same defs both sides, diff.
+   *
+   * `opts.zoom` (round 55) scales the shared viewport.  The arrow scenes
+   * need it: an arrow gap is a handful of model px, and at zoom 1 on a
+   * 400x300 canvas it sits three orders of magnitude under the bound.
+   */
   const runParity = async ( page, testInfo, name, elements, v3Style, v4Style, opts = {} ) => {
-    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style } ) => {
+    const { v3uri, v4uri } = await page.evaluate( async ( { elements, v3Style, v4Style, zoom } ) => {
       const cloneEles = () => JSON.parse( JSON.stringify( elements ) );
-      const viewport = { zoom: 1, pan: { x: 200, y: 150 } };
+      const viewport = { zoom, pan: { x: 200, y: 150 } };
       const cy3 = window.makeV3( {
         elements: cloneEles(), style: v3Style, layout: { name: 'preset', fit: false }, ...viewport
       } );
@@ -2992,34 +2968,13 @@ test.describe( 'v3-vs-v4 render parity', () => {
         v3uri: cy3.png( { bg: '#fff' } ),
         v4uri: await cy4.png( { bg: '#fff' } )
       };
-    }, { elements, v3Style, v4Style } );
+    }, { elements, v3Style, v4Style, zoom: opts.zoom ?? 1 } );
 
-    const actual = decodePng( v4uri );
-    const expected = decodePng( v3uri );
-
-    const inked = png => {
-      let n = 0;
-
-      for( let i = 0; i < png.data.length; i += 4 ){
-        if( png.data[ i ] < 250 || png.data[ i + 1 ] < 250 || png.data[ i + 2 ] < 250 ){ n++; }
-      }
-
-      return n;
-    };
-
-    expect( inked( actual ), 'v4 rendered ink' ).toBeGreaterThan( opts.minInk ?? 2000 );
-    expect( inked( expected ), 'v3 rendered ink' ).toBeGreaterThan( opts.minInk ?? 2000 );
-
-    const { mismatched, ratio, diff } = diffPngs( actual, expected, { threshold: 0.2 } );
-    const bound = opts.bound ?? 0.03;
-
-    console.log( `[parity] ${name}: ${mismatched} px differ (${( ratio * 100 ).toFixed( 3 )}%)` );
-
-    if( ratio > bound ){
-      writeDiffArtifacts( testInfo.outputPath( '' ), name, actual, expected, diff );
-    }
-
-    expect( ratio, `v3-vs-v4 mismatch ratio for ${name}` ).toBeLessThanOrEqual( bound );
+    // the spread goes first: `{ bound: …, ...opts }` would let an opts
+    // object without a `bound` key overwrite the default with undefined,
+    // which the helper then reads as its own 0.02 default — tightening
+    // every curve scene by a third, silently
+    expectParityImages( v3uri, v4uri, name, testInfo, { ...opts, bound: opts.bound ?? 0.03 } );
   };
 
   test( 'parity: manual endpoints + distances (round 12c)', async ( { page }, testInfo ) => {

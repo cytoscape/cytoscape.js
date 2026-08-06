@@ -3,12 +3,53 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
-  # v4 — the package, at the repo root
-  ci:
+  # v4's Node tier — everything that does not need a browser.  Split from the
+  # browser tier (round 52) because the two share no work and the Playwright
+  # projects dominate the wall clock: run serially they add up, run as
+  # separate jobs the suite finishes in the time of its slowest part.
+  # `npm run test:node` is the same chain a developer gets from `npm test`
+  # minus the Playwright half, so there is one definition of it, in
+  # package.json rather than here.
+  ci-node:
     runs-on: ubuntu-latest
     # No `timeout-minutes`: the 15-minute cap was killing runs (2026-08-05).
     # Falls back to GitHub's 360-minute job default, which is a backstop rather
     # than a budget.  Re-impose a cap once the suite's real wall-clock is known.
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+    - name: Install dependencies
+      run: npm ci
+    # `build/` is gitignored, so a fresh checkout has no bundle — and
+    # `test/modules/status-site.mjs` plans the status site's mirror of the
+    # debug harness, which loads `../build/cytoscape.umd.js`.  Without this
+    # step three specs fail on the runner and pass on any machine that has
+    # ever built.
+    - name: Build the bundles
+      run: npm run build
+    - name: Run the Node suite
+      run: npm run test:node
+    - name: Verify type definitions
+      run: npm run test:types:all
+
+  # v4's browser tier, one job per Playwright project.  Each installs only
+  # the browser it drives; only `visual` needs v3's bundle.
+  ci-browser:
+    runs-on: ubuntu-latest
+    # see the note on `ci-node` above
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - project: renderer
+          browser: chromium
+        - project: renderer-webkit
+          browser: webkit
+        - project: visual
+          browser: chromium
+    name: ci-browser (${{ matrix.project }})
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-node@v6
@@ -21,28 +62,31 @@ jobs:
     # specs fail with this instruction rather than skipping (round 42), so a
     # missing baseline cannot read as a pass.
     - name: Build the v3 comparison baseline
+      if: matrix.project == 'visual'
       run: npm install && npm run build:umd
       working-directory: v3
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    # `build/` is gitignored, so a fresh checkout has no bundle — and
-    # `test/modules/status-site.mjs` plans the status site's mirror of the
-    # debug harness, which loads `../build/cytoscape.umd.js`.  Playwright's
-    # webServer does build one, but that runs later in the `run-s` chain than
-    # `test:modules`, so without this step three specs fail on the runner and
-    # pass on any machine that has ever built.
+      run: npx playwright install --with-deps ${{ matrix.browser }}
+    # Playwright's webServer builds the UMD bundle itself, but only after the
+    # server command runs; building here keeps the two jobs' setup identical
+    # and makes a build failure read as one.
     - name: Build the bundles
       run: npm run build
-    - name: Run tests
-      run: npm test
-    - name: Verify type definitions
-      run: npm run test:types:all
+    - name: Run the ${{ matrix.project }} project
+      run: npx playwright test --project=${{ matrix.project }}
+    - name: Upload failure artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-${{ matrix.project }}
+        path: test-results/
+        retention-days: 7
 
   # v3 — kept self-contained in v3/ for comparison benchmarks and parity work
   # (round 42).  It builds and tests as its own project.
   ci-v3:
     runs-on: ubuntu-latest
-    # see the note on `ci` above
+    # see the note on `ci-node` above
     defaults:
       run:
         working-directory: v3

@@ -13152,3 +13152,59 @@ supporting detail.
 
 All three carry `test.fail()` naming fix 3, so they are green-and-honest
 until the fix earns their removal.
+
+### Phase 2, fix 3 — the arrow gap: designed and measured, NOT landed
+
+This is the round's honest shortfall, recorded rather than glossed.
+
+**What landed**: the data, verified against v3's own functions rather
+than read off its source.  `src/shape-points.mts` gains `ARROW_GAP_K`,
+`ARROW_GAP_K_DEFAULT`, `ARROW_GAP_CONST`, `ARROW_SPACING_CONST` and a
+per-shape `ARROW_BACK` (the existing `ARROW_MAX_BACK` is a single max
+over all shapes, which is right for sizing the arrow quad and wrong for
+deciding where a line stops).  v3's `registerArrowShapes` only touches
+`this.arrowShapes` and `this.arrowShapeWidth`, so calling it on a bare
+object with a `getArrowWidth` stub yields the real table; every constant
+was read from it at `width: 5, arrow-scale: 1.5`, and the numbers are in
+the table's doc comment.  `circle`'s spacing of 9.8804 has two
+independent confirmations — that probe, and the routing harness measuring
+v3's rendered endpoint from the other direction.
+
+**What did not land**: the plumbing.  The chosen carrier — widen
+`edge.width` from one component to two and bitcast the existing
+`edge.arrowShapes` u32 into `.y`, so the edge vertex shaders can derive
+the trim from data they already bind — is correct and still the
+recommendation, but its blast radius is wider than the plan's estimate.
+Widening that column reaches:
+
+- every `[ slot ]` index into it becoming `[ slot * 2 ]` — `collection.mts`
+  (2 sites), `style.mts` (4), `animation.mts` (2);
+- the **tween machinery**, since `'width'` is a `kind: 'scalar'` channel
+  on `edge.width` and `captureEdgeWidthRides` reads the column directly;
+- the **cull kernel**, which is handed `edge.width`'s buffer in
+  `renderer.mts`;
+- four render pipelines' WGSL, where `widths[slot]` becomes
+  `widths[slot].x`.
+
+That is the `endpoints[ at / 2 ]` stride hazard the plan flagged, spread
+over five subsystems, and it is the kind of change that renders plausibly
+when it is wrong.  Starting it without room to verify it properly would
+have been the worse call.
+
+**What the next round starts from**, which is more than this round
+started with: three failing pixel scenes with measured controls, a
+numeric harness that will show the gap as exact per-shape magnitudes the
+moment the trim exists, the constants verified, and a baseline
+(`benchmark/arrows.mjs` plus two renderer scenes) to measure the change
+against.  The design note stands as written above — including the
+decision that **trimming to the head's back extent replaces v3's
+`destination-out` erase**, which is what keeps this a geometry change
+rather than a new render pass.
+
+One correction to the plan's own estimate, worth carrying forward: the
+plan said the arrow shaders "need nothing at all" because they already
+bind `edge.width` and `edge.arrowShapes`.  True for `spacing`, and
+`spacing` is only non-zero for `tee` (1 model px) — v4's `circle` and
+`circle-triangle` SDFs already bake their offset in.  So the arrow-side
+half of this fix is genuinely one constant; all the difficulty is on the
+line side.

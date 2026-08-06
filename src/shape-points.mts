@@ -2,8 +2,8 @@ import {
   fitPolygonToSquare, generateUnitNgonPoints, generateUnitNgonPointsFitToSquare
 } from './math.mjs';
 import {
-  ARROW_BACKCURVE_SEGMENTS, ARROW_CHEVRON, ARROW_CIRCLE_TRIANGLE,
-  ARROW_CIRCLE_TRIANGLE_RADIUS, ARROW_DIAMOND,
+  ARROW_BACKCURVE_SEGMENTS, ARROW_CHEVRON, ARROW_CIRCLE, ARROW_CIRCLE_TRIANGLE,
+  ARROW_CIRCLE_TRIANGLE_RADIUS, ARROW_DIAMOND, ARROW_NONE,
   ARROW_SQUARE, ARROW_TEE, ARROW_TRIANGLE, ARROW_TRIANGLE_BACKCURVE,
   ARROW_TRIANGLE_CROSS, ARROW_TRIANGLE_TEE, ARROW_VEE,
   SHAPE_CONCAVE_HEXAGON, SHAPE_DIAMOND, SHAPE_HEPTAGON, SHAPE_HEXAGON,
@@ -187,6 +187,129 @@ export const ARROW_MAX_BACK: number = ( () => {
   // the analytic circle reaches 2 x its radius behind the tip
   return Math.max( max, 2 * ARROW_CIRCLE_TRIANGLE_RADIUS );
 } )();
+
+/**
+ * How far behind the tip **each** arrowhead reaches, in arrow-frame
+ * units — `ARROW_MAX_BACK` per shape rather than the max over all of
+ * them (round 55).
+ *
+ * The global max sizes the arrow quad, where over-sizing costs a few
+ * transparent fragments.  This one decides where the *edge line* stops,
+ * where over-shortening would leave a visible gap between the line and
+ * the head, so it has to be per shape.
+ */
+export const ARROW_BACK: ReadonlyMap<number, number> = ( () => {
+  const back = new Map<number, number>();
+
+  const scan = ( pts: readonly number[] ): number => {
+    let max = 0;
+
+    for( let i = 1; i < pts.length; i += 2 ){ max = Math.max( max, -pts[ i ] ); }
+
+    return max;
+  };
+
+  for( const [ id, pts ] of ARROW_POINTS ){ back.set( id, scan( pts ) ); }
+
+  for( const [ id, parts ] of ARROW_COMPOUND_POINTS ){
+    let max = 0;
+
+    for( const pts of parts ){ max = Math.max( max, scan( pts ) ); }
+
+    back.set( id, max );
+  }
+
+  back.set( ARROW_NONE, 0 );
+  // analytic, so it has no point table: the disc is centred a radius
+  // behind the tip and reaches a radius further again
+  back.set( ARROW_CIRCLE, 2 * ARROW_CIRCLE_TRIANGLE_RADIUS );
+
+  return back;
+} )();
+
+/**
+ * v3's `arrowShapes[shape].gap(edge)` as a multiple of
+ * `width x arrow-scale` (round 55).
+ *
+ * **Not yet wired to anything.**  These three tables are the verified
+ * data half of round 55's fix 3; the plumbing that would consume them —
+ * widening `edge.width` to carry the arrow record so the edge vertex
+ * shaders can derive a trim — is the half that did not land.  See
+ * PLAN.md's round-55 record.  Until then v4 draws no gap at all, and the
+ * `parity-arrow-*` scenes are marked `test.fail()` for exactly that.
+ *
+ * v3 keeps two shortened endpoints per edge end: the arrow tip at
+ * `spacing(edge)` behind the node boundary, and the *drawn line's* end at
+ * `gap(edge)` behind it.  v4 had neither, which is why its line ran to
+ * the node centre and spilled around the tip.
+ *
+ * Transcribed from `v3/src/extensions/renderer/base/arrow-shapes.mts`,
+ * where the default is `standardGap = width x arrow-scale x 2` and only
+ * these five shapes override it.  `tee` is the one shape whose gap is not
+ * a multiple of anything — a constant 1 px — so it lives in
+ * `ARROW_GAP_CONST` instead.
+ *
+ * **Verified against v3's own functions**, not just read off the source.
+ * v3's `registerArrowShapes` only touches `this.arrowShapes` and
+ * `this.arrowShapeWidth`, so calling it on a bare object with a
+ * `getArrowWidth` stub yields the real table.  At `width: 5`,
+ * `arrow-scale: 1.5` (2026-08-06):
+ *
+ *     shape                 gap   spacing   gap / (w x s)
+ *     none               0.0000    0.0000          0.0000
+ *     triangle          15.0000    0.0000          2.0000
+ *     triangle-backcurve 12.0000   0.0000          1.6000
+ *     triangle-tee      15.0000    0.0000          2.0000
+ *     circle-triangle   15.0000    9.8804          2.0000
+ *     triangle-cross    15.0000    0.0000          2.0000
+ *     vee                7.8750    0.0000          1.0500
+ *     circle            15.0000    9.8804          2.0000
+ *     tee                1.0000    1.0000          (constant)
+ *     square            15.0000    0.0000          2.0000
+ *     diamond            7.5000    0.0000          1.0000
+ *     chevron            7.1250    0.0000          0.9500
+ *
+ * The routing harness reaches the same 9.8804 for `circle` from the
+ * other direction — it measures v3's rendered endpoint — so the spacing
+ * column has two independent confirmations.
+ *
+ * The twin is not a spec, deliberately: importing v3's arrow-shapes pulls
+ * `v3/src/util/index.mjs`, which imports `lodash/debounce`, and the Node
+ * tier is required to run from a root-only install (AGENTS.md; it is what
+ * round 53's `ci-node` split protects).  The behavioural gate is the
+ * `parity-arrow-*` scenes: a wrong constant here moves their ratios.
+ */
+export const ARROW_GAP_K: ReadonlyMap<number, number> = new Map( [
+  [ ARROW_NONE, 0 ],
+  [ ARROW_VEE, 1.05 ],                 // v3: standardGap x 0.525
+  [ ARROW_TRIANGLE_BACKCURVE, 1.6 ],   // v3: standardGap x 0.8
+  [ ARROW_DIAMOND, 1 ],                // v3: width x scale, not doubled
+  [ ARROW_CHEVRON, 0.95 ]
+] );
+
+/** v3's default gap: `width x arrow-scale x 2`. */
+export const ARROW_GAP_K_DEFAULT = 2;
+
+/** Shapes whose gap is a constant in model px rather than width-scaled. */
+export const ARROW_GAP_CONST: ReadonlyMap<number, number> = new Map( [
+  [ ARROW_TEE, 1 ]
+] );
+
+/**
+ * v3's `arrowShapes[shape].spacing(edge)` — how far behind the node
+ * boundary the arrow *tip* sits, in model px.
+ *
+ * Only `tee` needs an entry.  v3 also gives `circle` and
+ * `circle-triangle` a spacing of `getArrowWidth x 0.15`, but v4's SDFs
+ * for both are authored with the disc already shifted a radius behind
+ * the tip (`ARROW_CIRCLE_TRIANGLE_RADIUS`), so applying the spacing again
+ * would double it.  A comment in this file used to claim circle-triangle
+ * was the only head v3 offsets at all; it is not, and `tee` being missed
+ * was a real 1 model px placement error.
+ */
+export const ARROW_SPACING_CONST: ReadonlyMap<number, number> = new Map( [
+  [ ARROW_TEE, 1 ]
+] );
 
 
 /**

@@ -263,6 +263,109 @@
     }
   });
 
+  test({
+    name: "alphaAndGradientOverlays",
+    displayName: "Alpha colors & gradient overlays/underlays",
+    description: "Showcase alpha-aware colors (solid, text bg/border, bypass) plus linear/radial gradient overlays & underlays on nodes and edges",
+    setup: function(){
+
+    cy.scratch('prevEles', cy.elements().jsons());
+    cy.scratch('prevStyle', cy.style().json());
+    cy.style().resetToDefault();
+
+    cy.$('#a').css({
+      'background-color': 'rgba(255,0,0,0.3)',
+      'border-width': 8,
+      'border-opacity': 1,
+      'border-color': 'hsla(210,100%,50%,0.5)',
+      'label': 'rgba/hsla alpha'
+    });
+
+    cy.$('#b').css({
+      'text-background-color': 'rgba(0,0,255,0.35)',
+      'text-background-opacity': 1,
+      'text-background-shape': 'round-rectangle',
+      'text-background-padding': 8,
+      'text-border-width': 3,
+      'text-border-opacity': 1,
+      'text-border-color': 'rgba(255,0,0,0.6)',
+      'label': 'text bg/border alpha'
+    });
+
+    cy.$('#c').css({
+      'width': 80,
+      'height': 80,
+      'background-fill': 'linear-gradient',
+      'background-gradient-stop-colors': 'rgba(123,232,100,0.3) rgba(100,120,232,1)',
+      'label': 'rgba gradient fill'
+    });
+
+    cy.$('#d').css({
+      'background-color': 'orange',
+      'underlay-fill': 'linear-gradient',
+      'underlay-opacity': 1,
+      'underlay-padding': 15,
+      'underlay-shape': 'ellipse',
+      'underlay-gradient-direction': 'to-bottom',
+      'underlay-gradient-stop-colors': 'transparent rgba(255,140,0,0.9)',
+      'underlay-gradient-stop-positions': '0% 100%',
+      'label': 'linear underlay w/ transparent'
+    });
+
+    cy.$('#e').css({
+      'overlay-fill': 'radial-gradient',
+      'overlay-opacity': 1,
+      'overlay-padding': 12,
+      'overlay-shape': 'ellipse',
+      'overlay-gradient-stop-colors': 'rgba(255,255,0,0.8) rgba(255,0,255,0.1)',
+      'label': 'radial overlay alpha'
+    });
+
+    cy.$('#ab').css({
+      'underlay-fill': 'linear-gradient',
+      'underlay-opacity': 1,
+      'underlay-padding': 6,
+      'underlay-gradient-direction': 'to-right',
+      'underlay-gradient-stop-colors': 'transparent transparent rgba(100,120,232,0.9) rgba(100,120,232,0.9)',
+      'underlay-gradient-stop-positions': '0% 50% 50% 100%',
+      'label': 'linear underlay alpha',
+      'text-rotation': 'autorotate',
+      'text-margin-y': -10
+    });
+
+    cy.$('#bc').css({
+      'overlay-fill': 'radial-gradient',
+      'overlay-opacity': .8,
+      'overlay-padding': 6,
+      'overlay-gradient-stop-colors': 'rgba(100,232,142,.8) rgba(100,120,232,.2)',
+      'label': 'radial overlay alpha',
+      'text-rotation': 'autorotate',
+      'text-margin-y': -10
+    });
+
+    cy.$('#ce').css({
+      'width': 6,
+      'line-color': 'rgba(0,150,0,0.4)',
+      'target-arrow-shape': 'triangle',
+      'target-arrow-color': 'rgba(0,150,0,0.4)',
+      'label': 'rgba line/arrow',
+      'text-rotation': 'autorotate',
+      'text-margin-y': -10
+    });
+
+    cy.style().update();
+    },
+    teardown: function(){
+      cy.style().resetToDefault();
+      const prevEles = cy.scratch('prevEles');
+      const prevStyle = cy.scratch('prevStyle');
+      cy.add(prevEles);
+      cy.style(prevStyle);
+      cy.removeScratch('prevEles');
+      cy.removeScratch('prevStyle');
+    }
+  });
+
 
   test({
     name: "labelOnClick",

@@ -6,8 +6,15 @@ import {
 } from '../src/curve-geometry.mjs';
 import {
   CURVE_BEZIER, CURVE_LOOP, CURVE_STRAIGHT,
-  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE
+  SHAPE_CIRCLE, SHAPE_ELLIPSE, SHAPE_RECTANGLE, SHAPE_ROUND_RECTANGLE, SHAPE_TRIANGLE
 } from '../src/contract.mjs';
+// v3's leaf geometry, for the twin block below.  `v3/src/math.mts` has no
+// runtime imports, so this stays safe for a root-only install — see the
+// note on the twin describe().
+import {
+  generateUnitNgonPoints, generateUnitNgonPointsFitToSquare,
+  intersectLineEllipse, polygonIntersectLine, roundRectangleIntersectLine
+} from '../v3/src/math.mjs';
 
 // the expectations below are hand-derived from v3's formulas in
 // src/extensions/renderer/base/coord-ele-math/edge-control-points.mts
@@ -72,6 +79,132 @@ describe('gpu/curve-geometry', function(){
       const d = Math.SQRT1_2;
 
       close( boundaryOffset(SHAPE_RECTANGLE, 20, 10, d, d), 10 / d, 1e-4 );
+    });
+  });
+
+  // -- the v3 twin (round 55) -------------------------------------------------
+  //
+  // The block above pins v4's boundary offsets against numbers derived by
+  // hand from v3's formulas.  This one pins them against v3's *code*, the
+  // way `computeCorner` is already pinned against `getRoundCorner` below —
+  // and it exists because `src/curve-geometry.mts`'s header describes an
+  // approximation tier ("round-rectangles as their box, polygons as their
+  // inscribed ellipse — a recorded deviation") in prose, with no number
+  // anywhere saying how big the deviation is.  Here it is measured, so it
+  // fails when it changes in either direction.
+  //
+  // v3's leaf math is import-safe from a root-only install: `v3/src/math.mts`
+  // imports nothing at runtime (its one import is type-only), which is what
+  // keeps `ci-node`'s no-v3-install invariant intact.  Do not reach for
+  // v3's node-shapes registry here — that one is a renderer mixin and would
+  // drag the whole browser renderer in.
+  describe('boundaryOffset (v3 intersectLine twin)', function(){
+    // v3's leaves answer with a *point* on the boundary of a shape centred
+    // at (cx, cy), given an outside point to aim from.  v4 answers with the
+    // distance along a unit direction.  This converts: walk far out along
+    // the direction, ask v3 where the boundary is, and measure back.
+    const FAR = 1e4;
+
+    const v3Offset = ( fn, dx, dy ) => {
+      const p = fn( FAR * dx, FAR * dy );
+
+      if( p == null || p.length < 2 ){ return null; }
+
+      return Math.sqrt( p[ 0 ] * p[ 0 ] + p[ 1 ] * p[ 1 ] );
+    };
+
+    // twelve directions, so a shape's corners and axes are both covered
+    const DIRS = Array.from( { length: 12 }, ( unused, i ) => {
+      const a = i * Math.PI / 6;
+
+      return { a, dx: Math.cos( a ), dy: Math.sin( a ) };
+    } );
+
+    const W = 40;
+    const H = 24;
+
+    it('matches v3 exactly for ellipses', function(){
+      for( const { a, dx, dy } of DIRS ){
+        const v3 = v3Offset( ( x, y ) => intersectLineEllipse( x, y, 0, 0, W / 2, H / 2 ), dx, dy );
+
+        expect( boundaryOffset( SHAPE_ELLIPSE, W / 2, H / 2, dx, dy ),
+          `ellipse at ${( a * 180 / Math.PI ).toFixed( 0 )}deg` ).to.be.closeTo( v3, 1e-9 );
+      }
+    });
+
+    it('matches v3 exactly for circles', function(){
+      for( const { a, dx, dy } of DIRS ){
+        const v3 = v3Offset( ( x, y ) => intersectLineEllipse( x, y, 0, 0, H / 2, H / 2 ), dx, dy );
+
+        expect( boundaryOffset( SHAPE_CIRCLE, H / 2, H / 2, dx, dy ),
+          `circle at ${( a * 180 / Math.PI ).toFixed( 0 )}deg` ).to.be.closeTo( v3, 1e-9 );
+      }
+    });
+
+    it('matches v3 exactly for rectangles', function(){
+      // v3 builds `rectangle` as a generated polygon (node-shapes.mts:549,
+      // a unit 4-gon fit to the square), so its leaf is polygonIntersectLine.
+      // Note the call convention: v3 passes *half* extents (node-shapes.mts:36
+      // — `width / 2, height / 2`), because polygonIntersectLine scales unit
+      // base points by them.  Passing the full extents reads as a shape twice
+      // the size, which is a silent 2x rather than an error.
+      const square = generateUnitNgonPointsFitToSquare( 4, 0 );
+
+      for( const { a, dx, dy } of DIRS ){
+        const v3 = v3Offset(
+          ( x, y ) => polygonIntersectLine( x, y, square, 0, 0, W / 2, H / 2, 0 ), dx, dy );
+
+        expect( boundaryOffset( SHAPE_RECTANGLE, W / 2, H / 2, dx, dy ),
+          `rectangle at ${( a * 180 / Math.PI ).toFixed( 0 )}deg` ).to.be.closeTo( v3, 1e-9 );
+      }
+    });
+
+    // The two approximation rows.  These assert a *band*, not a match: the
+    // point is that the deviation is bounded and known, so shrinking it (a
+    // fix) fails the spec just as loudly as growing it (a regression).
+    it('approximates round-rectangles by their box, within a measured band', function(){
+      let worst = 0;
+
+      for( const { dx, dy } of DIRS ){
+        const v3 = v3Offset(
+          ( x, y ) => roundRectangleIntersectLine( x, y, 0, 0, W, H, 0, 'auto' ), dx, dy );
+
+        if( v3 == null ){ continue; }
+
+        worst = Math.max( worst, Math.abs( boundaryOffset( SHAPE_ROUND_RECTANGLE, W / 2, H / 2, dx, dy ) - v3 ) );
+      }
+
+      // measured 2026-08-06 on a 40x24 round-rectangle: **2.247 model px**
+      // at the corners, where v4's box stands outside v3's rounded outline
+      expect( worst, 'round-rectangle box-vs-outline deviation (model px)' )
+        .to.be.greaterThan( 0.5 ).and.to.be.lessThan( 3 );
+    });
+
+    it('approximates polygons by their inscribed ellipse, within a measured band', function(){
+      const tri = generateUnitNgonPoints( 3, 0 );
+      let worst = 0;
+
+      for( const { dx, dy } of DIRS ){
+        const v3 = v3Offset( ( x, y ) => polygonIntersectLine( x, y, tri, 0, 0, W / 2, H / 2, 0 ), dx, dy );
+
+        if( v3 == null ){ continue; }
+
+        worst = Math.max( worst, Math.abs( boundaryOffset( SHAPE_TRIANGLE, W / 2, H / 2, dx, dy ) - v3 ) );
+      }
+
+      // a triangle is the worst case in v4's polygon tier: its inscribed
+      // ellipse misses the apex and the two base corners by a wide margin —
+      // measured **8.453 model px** on 40x24 — which is exactly why this is
+      // recorded as a deviation rather than called a port.
+      //
+      // Control, run 2026-08-06: applying the *wrong* tier (the ellipse
+      // formula against v3's rectangle, and the box formula against v3's
+      // ellipse) reads 6.45 px on this fixture, against the 2e-13 the exact
+      // rows above measure.  So those rows discriminate by ten orders of
+      // magnitude, and these two bands sit well inside their bounds rather
+      // than hugging one edge.
+      expect( worst, 'triangle inscribed-ellipse deviation (model px)' )
+        .to.be.greaterThan( 2 ).and.to.be.lessThan( 15 );
     });
   });
 

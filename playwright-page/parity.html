@@ -63,6 +63,10 @@
         };
       </script>
 
+      <!-- round 55: the numeric routing probe.  It reads public accessors
+           off both instances above, so it must load after them. -->
+      <script src="route-probe.js"></script>
+
       <!-- keeps rAF prompt; see the file for why the specs need it -->
       <script src="frame-driver.js"></script>
   </body>

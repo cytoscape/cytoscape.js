@@ -12758,3 +12758,226 @@ randomly-shaped compound graphs, every conservative box must contain its
 exact box), specs pinning the tightened box both directions with controls,
 a `benchmark/spatial.mjs` row for the scan cost, and the compound fixture's
 fit driven in the page — the standing rule that something has to open it.
+
+## Round 55 — edge routing and arrow parity, measured (2026-08-06)
+
+Inserted ahead of round 38 at the maintainer's request, and for a reason
+that makes it a prerequisite rather than a queue-jump: **38's verification
+plan is per-tier live parity diffs, and this round is what makes such a
+diff able to fail.**
+
+### Where it came from
+
+A maintainer opened `debug/?network=v3-default` and reported five things
+as impressions — segment edges looking wrong, the taxi edge "breaking in
+the middle", arrows "not on par", hollow arrows showing the line
+underneath, filled arrows leaking a sliver of line past the triangle's
+point, and semitransparent edges reading as two overlapping shapes rather
+than one.  None of them were visible to any test in this repository, and
+the reason is structural:
+
+- The 44 goldens are **v4-vs-v4**.  They answer "did this change?", never
+  "is this right?", and they had happily locked in every one of these
+  defects.
+- The 29 live v3-vs-v4 parity scenes do ask the right question, but at
+  400x300 with `MAX_PARITY_RATIO = 0.02` they carry **2400 px of slack**.
+  A missing arrow gap at `width: 3` is about 6 px of line per end —
+  0.005% of the canvas, 400x under the bound.
+- Worse, the curve parity scenes deliberately set `arrow-shape: none`,
+  justified in a comment as "gap 0 is where v3 and v4 agree".  True, and
+  precisely the configuration in which the defect cannot appear.
+- **Twelve of the 29 parity scenes had no ink floor at all**, so
+  blank-vs-blank would have passed.
+
+### Decisions taken with the maintainer (2026-08-06)
+
+1. **Hollow and translucent heads are fixed by trimming the line, not by
+   porting v3's erase.**  v3 makes them read as one shape by erasing the
+   arrow footprint from the canvas (`destination-out`).  But between the
+   gap point and the head's back edge the line is always strictly *inside*
+   the head — the triangle's half-width at distance `k` behind the tip is
+   `k/2`, and v3's `gap = 2w` starts the line where the head is already
+   wider than it — so trimming the line to the head's back extent produces
+   the same visible pixels.  That deletes an entire pipeline, a second
+   draw per end, ~0.1-0.2 s of first-frame shader compile, and a forced
+   change to `cy.png`'s background compositing.  Recorded deviations: v3's
+   erase also punches through whatever is under the head (compound parent
+   bodies, other edges) and this does not, and **mid arrows are not
+   covered** — they sit mid-line where a trim cannot reach.  Logged as the
+   round's follow-up.
+2. **Carrier: widen `edge.width` to two components** and bitcast the
+   existing `edge.arrowShapes` u32 into `.y`, deriving the trim in-shader.
+   +4 B/edge (1.86 MB at the 465k-edge fixture), no new bind-group entry,
+   no CPU per-edge work.  The two rejected carriers are logged here for
+   the record, in case measurement ever says the vertex stage minds:
+   **CPU-computed trims** in the same widened column (+8-12 B/edge, no
+   vertex ALU) and **widening `edge.curveParams` 4 -> 8** (+16 B/edge,
+   7.4 MB — the heaviest, but the one column already bound in all four
+   relevant vertex stages, with room for mid-arrow windows).
+   The arrow *shaders* need nothing at all: they already bind
+   `edge.width` and `edge.arrowShapes`, so v3's `spacing` derives in
+   place.
+3. **Order: baselines -> harness -> mechanical fixes**, so every fix lands
+   with a before/after number.
+4. **Harness: browser tier for composition, Node twins for v3's leaf
+   math.**  v3 computes routing only inside its renderer, and importing
+   v3's entry from `test/` would make the Node tier depend on a v3
+   install, which `ci-node` deliberately does not do.
+
+### Phase 0 — the baselines (landed)
+
+`benchmark/arrows.mjs` (new) and two renderer scenes.  Nothing priced
+arrows before: `curves.mjs` measures an arrow-free graph and
+`render-bench.mjs`'s eight scenes all drew `arrow-shape: none`, so the
+arrow pipelines contributed to no published number.
+
+Two corrections the suite needed before its numbers meant anything, both
+general:
+
+- **Measurement order biased every row by ~20%.**  Timing the arrowed
+  side then the plain side read 1.21x on a node drag and 1.19x on build —
+  operations that touch no arrow data.  Timing each side twice as
+  **A B B A** and keeping the faster of each pair collapses both to
+  1.00x.  `A B A B` would preserve the bias.
+- **Rows sized by the graph rather than by the work** put the accessor
+  rows under a millisecond, where the two sides differed by more than the
+  thing being measured.  They now do a fixed 200k operations, on an
+  edge-heavy graph (four edges per node pair) because a per-edge property
+  cannot be seen past two thirds of the elements being nodes.
+
+Baseline (i9-9900K, amd gcn-4, 20k nodes / 40k edges): every CPU row
+reads 0.98-1.06x — the honest answer, since v4 does almost nothing with
+arrows on the CPU, which *is* the defect.  Because a suite whose rows all
+read 1.00x cannot show that it can move, it carries its own
+discrimination control: the same accessor on a bezier edge, which already
+resolves a real boundary point, reads **326 ns/edge against the straight
+path's 260 (1.25x)** — so the rows do see endpoint work, and that is
+roughly where they should land once the gap fix is in.
+
+Device time, 25k x 50k, fit-all p50: **3.400 ms with no arrows, 3.550 ms
+filled (+4.4%), 3.556 ms half-hollow**, against run-to-run noise of 0.2%.
+Filled and hollow costing the same is itself worth recording: it is
+exactly what a second `destination-out` pass would have changed.
+
+### Phase 1a — one parity assertion, with the ink floor (landed)
+
+There were three diff implementations: `expectParity` (8 scenes),
+`runParity` (15) and four scenes that inline-copied the body.  **Only
+`runParity`'s had an ink floor.**  All 29 now go through one
+`expectParityImages`, which asserts the floor, prints the ink counts on
+every run (so a scene drifting toward its floor is visible before it
+crosses), and takes both the ratio bound and pixelmatch's threshold as
+parameters — the two families genuinely differ, and the rotated-label
+scene genuinely needs 0.3.
+
+Proven behaviour-neutral the way round 42's restructure should have been:
+**all 28 logged scenes' mismatch counts compared before and after,
+byte-identical** (text-rotation reads 2.328% both sides; its old log line
+simply had a different format).  Not "the suite is green".
+
+One defect found while writing it, in the new code: spreading `opts`
+*after* the default bound would let a caller without a `bound` key
+overwrite it with `undefined`, which the helper then reads as its own
+0.02 — silently tightening every curve scene by a third.
+
+### Phase 1b — numeric routing parity (landed)
+
+`playwright-tests/routing.spec.js` + `lib/route-compare.mjs`,
+`lib/routing-scenes.mjs`, `lib/routing-ledger.mjs`, and
+`playwright-page/route-probe.js`.  Nine scenes, ~90 edges, ~440 compared
+fields.  A pixel diff says "3% of the canvas"; this says "edge
+`parent-parent` disagrees on `tgt.y` by 16.23 model px".
+
+Three properties, each deliberate:
+
+- **No adapter, no frames, no screenshots.**  Routing is model-space and
+  both libraries resolve it on read, so the suite carries no `hasAdapter`
+  skip and runs in ~11 s where the pixel half cannot run at all.
+- **The probe is symmetric** — one function asks both libraries the same
+  public question.  A per-side fixup is where a finding goes to die.
+- **Non-finite is structural, never numeric.**  `NaN > tol` is `false`,
+  so the obvious comparator passes a NaN silently.
+
+**What it found on its first run** — and the headline is not what the
+round expected:
+
+| scene | result |
+|---|---|
+| `taxi` (8 edges, 4 orientations) | **0 diverged, 80 fields exact** |
+| `segments`, `round-segments` | **0 diverged** |
+| `loops` (3-loop stagger) | **0 diverged** |
+| `bundles` | exact to 8.9e-15 — except the odd bundle's straight middle member |
+| `families` | every curve family exact; only the two *straight* families diverge |
+| `shapes` | ellipse and rectangle exact; the polygon tier measured |
+| `compound` | **46 of 62 fields diverge** |
+| `arrows` | 14 fields diverge, by v3's spacing formula exactly |
+
+So **v4's curve routing is correct** — segments and taxi, the two the
+maintainer suspected, match v3 to the last bit including the
+axis-aligned degenerates.  Whatever is wrong on that page is downstream
+of routing, in the strip or the arrows.  That is worth as much as a
+defect: it removes a whole subsystem from the search.
+
+The real findings:
+
+1. **The straight-edge endpoint defect is everywhere.**  Every straight
+   family diverges by exactly the node's boundary offset — v4's
+   `sourceEndpoint()` answers the node *centre* where v3 answers the
+   boundary.  It is a public-API defect independent of arrows, and
+   `test/collection-dimensions.mjs` currently pins v4's answer as correct.
+2. **The compound tier, with the controls clean.**  `sibling` and `cross`
+   — the two arrangements that must route normally — match exactly, which
+   is what makes the rest trustworthy.  Against that: `p-child`,
+   `p-grandchild` and `child-p` diverge on **every field by exactly
+   1.000000 model px**, and `parent-parent` (16.23) and `leaf-parent`
+   (8.21) diverge by much more, clipping against a derived parent box.
+   This is the maintainer's "edge routing is a bit buggy when compounds
+   are involved", now localized to three arrangements and one constant.
+3. **v3's arrow spacing, measured to four decimals.**  `tee` diverges by
+   16 = radius 15 + v3's constant 1 px spacing; `circle` by 24.8804 =
+   radius 15 + `getArrowWidth(5, 1.5) * 0.15` = 9.8804.  The harness
+   reproduces v3's formula without being told it.
+
+Two ledger mechanisms, both of which earned their place immediately:
+
+- **Edge-level entries** (`<scene>/<edge>/*`) record the deliberate
+  boundary-approximation tier as three readable entries instead of
+  eighteen per-field ones, with a two-sided band — a deviation that
+  *shrank* is a decision that changed, and the entry describing it is
+  then wrong.
+- **The staleness check caught the round's own first mistake.**  The
+  initial ledger pinned the axis-aligned `round-taxi` NaN on `mid.x` /
+  `mid.y`; on that configuration v4's midpoint is finite and only
+  `boundingBox()` collapses.  The entries named fields that never
+  diverged and were reported stale on the first run.  The defect now
+  belongs to a separate finiteness spec, because a bounding box is not
+  comparable between the libraries in the first place — a parity check
+  would have called two broken values a match.
+
+Five scenes carry `test.fail()` naming the fix that will flip them, so
+the suite is green and honest rather than permanently red; a fix that
+earns one removes it.  The `finite geometry: <scene>` specs are the
+guard against a `test.fail()` swallowing a crash — they build the same
+scenes, are never marked failing, and assert the record count.
+
+### Phase 1c — Node twins for v3's leaf math (landed)
+
+`test/curve-geometry.mjs` gains five twins against `v3/src/math.mjs`,
+which imports nothing at runtime and so keeps `ci-node`'s
+no-v3-install invariant intact.  Ellipses, circles and rectangles match
+v3 **exactly (2e-13)**; round-rectangles and polygons carry measured
+bands, so the tier that has been described in prose since it was written
+finally has numbers: **2.247 model px** for a 40x24 round-rectangle at
+its corner, **8.453** for a triangle.
+
+The control: applying the *wrong* tier reads 6.45 px on the same fixture,
+against 2e-13 for the exact rows — ten orders of magnitude, so those rows
+discriminate.  And the browser scene independently measures 8.462 for the
+same triangle at the end of a real edge, against the leaf's 8.453; two
+tiers built from different code agreeing to a hundredth of a pixel is the
+reason to trust either.
+
+One bug found by the twins failing: v3 passes **half** extents to
+`polygonIntersectLine` (it scales unit base points by them), so the
+obvious call reads as a shape twice the size — a silent 2x rather than an
+error.

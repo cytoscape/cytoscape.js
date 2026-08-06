@@ -155,10 +155,17 @@ export default defineConfig({
      * v3/ subproject: `cd v3 && npm install && npm run build:umd`.  The
      * specs fail with that instruction rather than skipping, so a missing
      * baseline cannot read as a pass.
+     *
+     * `routing.spec.js` (round 55) joins this project because it needs the
+     * same page and the same two bundles — but note it needs **no adapter
+     * and draws no frame**: it compares both libraries' routed geometry
+     * numerically through their public accessors.  It carries no
+     * `hasAdapter` skip, deliberately, so it keeps running on machines
+     * where the golden and parity halves cannot.
      */
     {
       name: 'visual',
-      testMatch: /visual\.spec\.js/,
+      testMatch: /(visual|routing)\.spec\.js/,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chromium',

@@ -1460,6 +1460,18 @@ each is deliberate, not a pass-1 deferral:
     (ellipse/rect exact, round-rect as its box, polygon as its
     inscribed ellipse) rather than v3's exact per-shape intersections
     — a recorded deviation, exact for the default ellipse nodes.
+    **Round 55 measured it** rather than leaving it as prose, in two
+    independent places that agree: `test/curve-geometry.mjs` twins the
+    offsets directly against v3's `intersectLineEllipse`,
+    `polygonIntersectLine` and `roundRectangleIntersectLine`, and the
+    `shapes` scene in `playwright-tests/routing.spec.js` measures the
+    same tier at the end of a real edge.  On a 40x24 node: ellipse,
+    circle and rectangle **exact to 2e-13**; round-rectangle **2.247
+    model px** at a corner (0.008 on a typical chord); triangle
+    **8.453** at the leaf and 8.462 through an edge — the polygon
+    tier's worst case.  Those numbers are now assertions with
+    two-sided bands, so the deviation fails the build if it grows *or*
+    shrinks without the record being updated.
   - *Props + derivation (12a)*: `curve-style` (`straight` | `bezier`),
     `control-point-step-size`, `control-point-weight`,
     `loop-direction`, `loop-sweep` — edge-only, v3 defaults, constants

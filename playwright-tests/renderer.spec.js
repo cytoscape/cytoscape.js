@@ -27,6 +27,13 @@ const hasAdapter = async page => {
   } );
 };
 
+/** Whether the build exposes the WebGPU API at all, adapter or not.  Linux
+ * WebKit does not, which is a different state from "an adapter could not be
+ * acquired" and reaches a different guard. */
+const hasGpuApi = async page => {
+  return await page.evaluate( () => navigator.gpu != null );
+};
+
 /** Make the instance, await readiness and one presented frame. */
 const makeReadyCy = async ( page, options ) => {
   await page.evaluate( async options => {
@@ -3213,6 +3220,13 @@ test.describe( 'WebGPU renderer', () => {
   */
 
   test( 'ready rejects when no adapter can be acquired', async ( { page } ) => {
+    // This takes the adapter away rather than faking the environment, so it
+    // needs an environment to take it away *from*: on a build with no
+    // navigator.gpu at all — Linux WebKit, which the renderer-webkit project
+    // drives — there is nothing to stub, and the graph is in the other
+    // failure state, the one 'hard error when WebGPU is unavailable' covers.
+    test.skip( !( await hasGpuApi( page ) ), 'no navigator.gpu to take an adapter away from' );
+
     // the README's own headline for the headless/rendered boundary, and
     // the state a blocklisted or software-less machine is really in — no
     // stub can produce it on a box that has an adapter, so the adapter is

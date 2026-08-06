@@ -156,6 +156,20 @@ whole open backlog (items 14–16 ratified, round 52's build-step call
 taken, item 12 given its direction, the round-54 bounds round
 scheduled), so round 38 is unblocked.  **Round 40 is a design
 sitting**, its taxonomy-first prep approved at the same sitting.
+**Round 55** (2026-08-06) was then inserted ahead of 38, after a
+maintainer opened `debug/?network=v3-default` and reported five things no
+test could see — because every golden is v4-vs-v4 and the parity scenes
+that could have caught them deliberately drew no arrows.  It built the
+missing measurement: a **numeric v3-vs-v4 routing harness** comparing
+both libraries' routed geometry field by field, an ink floor on all 29
+parity scenes (twelve had none), three arrow parity scenes, and Node
+twins pinning the boundary-approximation tier to v3's own math.  Its
+headline finding was a negative one — **v4's curve routing is correct**,
+taxi and segments matching v3 exactly including the axis-aligned
+degenerates — which moved the search downstream to the strip and the
+arrows.  It fixed the `round-taxi` NaN that made `boundingBox()` answer
+all-null, logged two public-API calls (items 19–20), and left **its arrow
+gap port unlanded**, with failing tests and verified constants in place.
 `src/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -12765,6 +12779,17 @@ ledger, and this is the sitting's own record.
 unblocked — may be pulled forward) → 52 (before 50) → 54 + round 48's limit
 edges → 49 → 50 (`4.0.0-alpha.1`) → 51 (**4.0.0**).
 
+**Amended 2026-08-06, after the sitting**: round 55 was inserted ahead of
+38 at the maintainer's request — the edge-routing and arrow parity round,
+prompted by opening `debug/?network=v3-default`.  It is a prerequisite
+rather than a queue-jump: 38's verification plan is per-tier live parity
+diffs, and 55 is what makes such a diff able to fail (twelve of the 29
+parity scenes had no ink floor, and the curve scenes deliberately drew no
+arrows).  55 landed its harness and one fix; **its fix 3 — the arrow gap
+port — is unlanded and carries into the next round**, with failing tests
+and verified constants in place.  So the sequencing now reads:
+55's remainder → 38 → 40 → 46 → 52 → 54 → 49 → 50 → 51.
+
 Process note, on the fifth sitting's precedent: this sitting lands as a
 PLAN.md edit plus the derived `EXECUTIVE_SUMMARY.md` open-questions update
 (an item leaves that table when it is *decided*, which several did today);
@@ -12920,8 +12945,8 @@ overwrite it with `undefined`, which the helper then reads as its own
 
 ### Phase 1b — numeric routing parity (landed)
 
-`playwright-tests/routing.spec.js` + `lib/route-compare.mjs`,
-`lib/routing-scenes.mjs`, `lib/routing-ledger.mjs`, and
+`playwright-tests/routing.spec.js` + `playwright-tests/lib/route-compare.mjs`,
+`playwright-tests/lib/routing-scenes.mjs`, `playwright-tests/lib/routing-ledger.mjs`, and
 `playwright-page/route-probe.js`.  Nine scenes, ~90 edges, ~440 compared
 fields.  A pixel diff says "3% of the canvas"; this says "edge
 `parent-parent` disagrees on `tgt.y` by 16.23 model px".

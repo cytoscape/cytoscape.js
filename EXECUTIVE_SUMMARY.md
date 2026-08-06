@@ -12,9 +12,9 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-06, covering work through round 53.2 and the
-  sixth design sitting (the open-decision backlog swept; see the table at
-  the end).
+- **Last updated**: 2026-08-06, covering work through round 55 — the
+  edge-routing and arrow parity round, inserted after a maintainer opened
+  the debug page and found five things no test could see.
 
 ---
 
@@ -30,23 +30,26 @@ every push for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,021 unit · 250 module · 24 soak · 283 browser |
+| Automated tests | 2,038 unit · 250 module · 24 soak · 308 browser |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 43 golden images + live v3-vs-v4 pixel-parity scenes |
-| Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
+| Visual regression | 43 golden images · 31 live v3-vs-v4 pixel-parity scenes · **9 numeric routing-parity scenes** comparing geometry rather than pixels |
+| Benchmarks | 25 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 661 KiB minified, 179 KiB gzipped — 1.4× v3 (411 / 126 KiB) on the wire, of which **24% is WebGPU shader source** v3 has no equivalent of |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
 
-**Two questions remain genuinely open before 4.0** — the error/warning
-policy (round 40, with its preparatory classification of every error site
-approved), and which gesture defaults an event handler may veto (direction
-set: explicit toggles come first).  The remaining unbuilt work —
-`border-style` porting, the documentation site, shader minification, a
-tighter compound fit bound, and release engineering — is decided and
-scheduled.
+**Four questions remain genuinely open before 4.0.** Two are long-standing:
+the error/warning policy (round 40, with its preparatory classification of
+every error site approved), and which gesture defaults an event handler may
+veto (direction set: explicit toggles come first). Round 55 added two more,
+both narrow and both about public geometry: whether an edge endpoint
+accessor should answer the node boundary as v3 does rather than the node
+centre, and whether v4's compound parent box should inflate by a pixel per
+side to match v3's. The remaining unbuilt work — the arrow gap port,
+`border-style`, the documentation site, shader minification, a tighter
+compound fit bound, and release engineering — is decided and scheduled.
 
 ---
 
@@ -191,6 +194,48 @@ one browser per core is the setting that fails. CI now runs as four parallel
 jobs — the Node tier plus one per browser project — and `npm test` passes from
 a completely clean checkout.
 
+Late in the week a maintainer opened the debug page and reported five
+things that looked wrong — segment edges, a taxi edge "breaking in the
+middle", arrows not matching v3, hollow arrowheads showing the line
+underneath, and semitransparent edges reading as two overlapping shapes.
+**None of them were visible to any test**, and the reason was structural
+rather than accidental. Every golden image compares v4 against v4's own
+previous output, so it can only answer "did this change?". The scenes that
+do compare against v3 were too small for the differences in question — a
+missing arrowhead gap is about six pixels of line, four hundred times
+under the tolerance — and, worse, they deliberately drew *no arrows*, on
+the reasoning that arrows were where the two renderers were known to
+differ.
+
+The round that followed built the missing instrument: a comparison that
+reads both libraries' **routed geometry as numbers** rather than
+photographing it, reporting which coordinate on which edge disagrees and
+by how much. It also put a floor under the existing pixel scenes — twelve
+of them would have passed on two blank images.
+
+Its headline finding is a negative one, and it was worth the round on its
+own: **v4's curve routing is correct.** Taxi and segment edges, the two
+the maintainer suspected, match v3 exactly — every field, including the
+degenerate cases a grid layout produces — as do self-loops, edge bundles
+and the bezier families. That removed a whole subsystem from the search
+and pointed it at the arrows instead, where the measurements are stark: a
+translucent edge diverges from v3 over **27% of the canvas**, and v4 draws
+more than twice as much ink as v3 in the hollow-arrowhead scene, because
+the line really is visible through every head.
+
+Three defects came out of it. One was fixed: a rounded taxi edge between
+two nodes that share a row or column — which is what a grid layout
+produces, and what the maintainer had been looking at — collapsed to
+"not a number" internally, so the edge vanished from the display, could
+not be clicked, and corrupted any measurement of the graph's extent. Two
+were logged as decisions for the maintainer rather than taken, because
+both change a published answer: an edge endpoint accessor reports the
+centre of a node where v3 reports its boundary, and v4's box around a
+compound group is a pixel tighter per side than v3's. The arrowhead work
+itself — teaching the renderer to stop the line short of the head, which
+is what makes hollow and translucent heads look right — is designed,
+measured and covered by failing tests, but not yet built.
+
 ---
 
 ## What remains before 4.0
@@ -204,6 +249,9 @@ optional to scheduled.
 
 | | needs |
 |---|---|
+| Arrow gap / spacing (round 55's remainder) | decided in full — build only. The constants are verified against v3's own functions and three parity scenes fail until it lands; what remains is plumbing the value to the shaders that draw the line |
+| Edge endpoint accessors | **a call**: report the node boundary as v3 does, or keep the node centre and record the deviation? A published answer either way |
+| Compound parent box | **a call**: inflate v4's box by a pixel per side to match v3, or keep the tighter box and record it? Note round 54 is already scheduled to tighten these bounds further |
 | `border-style` / `outline-style` (round 38) | decided in full — build only |
 | Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
 | Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |

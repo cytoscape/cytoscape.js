@@ -8,6 +8,30 @@ const parallelism = typeof os.availableParallelism === 'function'
   ? os.availableParallelism()
   : os.cpus().length;
 
+/*
+ * Half the cores, not one worker per core.
+ *
+ * Every project here drives a browser rendering WebGPU, and where there is no
+ * hardware adapter that means SwiftShader — which is itself multi-threaded, so
+ * one browser per core oversubscribes the machine and starves the renderers'
+ * frame loops.  It does not merely run slower; specs start failing.  Measured
+ * on a 16-core box against the software adapter, three retry-free runs of the
+ * renderer project each:
+ *
+ *     workers  wall     result
+ *          16  1.5 min  3 failed / 1 failed / clean
+ *           8  1.6 min  clean / clean / clean
+ *           4  2.1 min  clean / clean / clean
+ *           2  3.5 min  1 failed
+ *           1  >10 min  —
+ *
+ * One-per-core is the ratio a GitHub runner was using (4 workers, 4 vCPU), and
+ * it is the one that fails.  Half is as fast and does not.  Running serially is
+ * not the answer either: it is 6× the wall clock and the long tail brings its
+ * own timeouts.
+ */
+const workers = Math.max( 1, Math.floor( parallelism / 2 ) );
+
 /* See the renderer project comment: Linux needs ANGLE-on-Vulkan compositing
  * for WebGPU canvases to present; macOS (Metal) must not get these flags. */
 const linuxVulkanCompositingArgs = process.platform === 'linux'
@@ -43,6 +67,24 @@ if( process.platform === 'linux' && process.env.CI ){
   }
 }
 
+/*
+ * Playwright's host-requirements check is Debian-specific: it maps the
+ * browsers' shared-library needs onto *apt* package names and reports what
+ * is missing in those terms.  On a non-Debian distro that is a false
+ * negative rather than a diagnosis — it names packages that either do not
+ * exist under that name or are not needed (on Fedora it blocks WebKit over
+ * gstreamer1.0-libav, which only matters for media playback, and this suite
+ * decodes no video).  Skip it there, and only there: CI is ubuntu-latest,
+ * where the check is meaningful and installs run with --with-deps.
+ *
+ * WebKit on Fedora additionally wants libjpeg.so.8, the jpeg8 ABI that
+ * Fedora's libjpeg-turbo does not build (it ships libjpeg.so.62).  No config
+ * can supply that; see AGENTS.md for the one-line local fix.
+ */
+if( process.platform === 'linux' && !process.env.CI && !fs.existsSync( '/etc/debian_version' ) ){
+  process.env.PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = '1';
+}
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -54,8 +96,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Use all available system threads locally and on CI. */
-  workers: parallelism,
+  /* Half the system threads — see the `workers` note above. */
+  workers,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'list',
   use: {

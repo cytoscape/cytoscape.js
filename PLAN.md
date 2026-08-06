@@ -13111,3 +13111,44 @@ two is very likely the intended behaviour and the right answer is to
 record a deviation, not to inflate v4's box by a pixel to match v3.  But
 that is the maintainer's call on public geometry, so it is logged rather
 than taken; see the ledger entry below.
+
+### Phase 1d — the arrow pixel scenes (landed)
+
+Three scenes, all doing the opposite of what every existing curve parity
+scene does: arrows and translucency deliberately included.  Measured
+2026-08-06, with each scene's control run and recorded:
+
+| scene | mismatch | control | drop |
+|---|---|---|---|
+| `parity-arrow-hollow` | **11.775%** | filled heads: 0.563% | 21x |
+| `parity-arrow-alpha` | **26.707%** | `line-opacity: 1`: 0.777% | 34x |
+| `parity-arrow-gap` (the tip spill) | **3.537%** | no heads: 0.333% | 10.6x |
+
+`parity-arrow-alpha` is now the largest divergence anywhere in the parity
+suite, and `parity-arrow-hollow` carries the round's clearest single
+number: **v4 inks 36380 px where v3 inks 17484**, more than double,
+because the line is visible through every hollow head.
+
+**The gap scene had to be rebuilt, and why is the useful part.**  The
+first version reasoned that width 20 at `arrow-scale: 3` puts v3's gap at
+120 model px against a 300 px chord, so the two renderers would disagree
+about most of the edge.  It read **0.495% and passed**.  An opaque filled
+head *covers its own overlap*: v3's line stops 120 px behind the tip and
+v4's runs on to the node centre, but the head spans 137 px back and is
+opaque, so both renderers paint the same pixels over nearly all of the
+difference.  What survives is only the wedge near the tip where the head
+is narrower than the line — the head's half-width grows as `k/2`, so the
+line pokes out sideways for roughly the first `width` px, contributing
+about `width²/2` per end.  That wedge *is* what the maintainer described
+as "a bit of the line peeking out by the triangle point".
+
+So the scene is tuned the opposite way from the first draft — a thick
+line and a *small* head, over eight ends rather than four, since the
+count of ends is what accumulates.  And the general lesson is worth
+keeping: **v3's gap exists mostly so that hollow and translucent heads
+work**, not to hide a filled head's overlap, which is why the two scenes
+that read 11.8% and 26.7% are the ones that matter and this one is a
+supporting detail.
+
+All three carry `test.fail()` naming fix 3, so they are green-and-honest
+until the fix earns their removal.

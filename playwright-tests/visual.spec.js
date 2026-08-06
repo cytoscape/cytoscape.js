@@ -3542,4 +3542,165 @@ test.describe( 'v3-vs-v4 render parity', () => {
     } );
   } );
 
+  /*
+   * Round 55: the arrow tier, which no parity scene had ever exercised.
+   *
+   * Every curve scene above deliberately sets `arrow-shape: none`,
+   * justified as "gap 0 is where v3 and v4 agree" — true, and exactly the
+   * configuration in which this round's defects cannot appear.  These
+   * three scenes do the opposite.
+   *
+   * Scale is the whole design.  v3 shortens its drawn line by
+   * `arrowShapes[shape].gap(edge)` = 2 x width x arrow-scale for a
+   * triangle; at the suite's usual width 3 that is 6 model px, which on a
+   * 400x300 canvas is 0.005% — four hundred times under the bound, i.e.
+   * invisible.  So these scenes use few elements, thick lines and large
+   * heads, and put the affected geometry across the frame.
+   */
+
+  /**
+   * The three scenes share a graph: four long horizontal edges, i.e.
+   * eight arrow ends.  Two rows were not enough for the spill scene —
+   * the wedge each end contributes is only ~width^2/2 px, so the count
+   * of *ends* is what puts the difference over a bound rather than the
+   * size of any one of them.
+   */
+  const ARROW_ELEMENTS = [
+    { data: { id: 'a' }, position: { x: -150, y: -114 } },
+    { data: { id: 'b' }, position: { x: 150, y: -114 } },
+    { data: { id: 'c' }, position: { x: -150, y: -38 } },
+    { data: { id: 'd' }, position: { x: 150, y: -38 } },
+    { data: { id: 'f' }, position: { x: -150, y: 38 } },
+    { data: { id: 'g' }, position: { x: 150, y: 38 } },
+    { data: { id: 'h' }, position: { x: -150, y: 114 } },
+    { data: { id: 'i' }, position: { x: 150, y: 114 } },
+    { data: { id: 'e1', source: 'a', target: 'b' } },
+    { data: { id: 'e2', source: 'c', target: 'd' } },
+    { data: { id: 'e3', source: 'f', target: 'g' } },
+    { data: { id: 'e4', source: 'h', target: 'i' } }
+  ];
+
+  const arrowSheets = ( edgeStyle ) => ( {
+    v3Style: [
+      { selector: 'node', style: {
+        'width': 46, 'height': 46, 'shape': 'ellipse', 'background-color': '#c0392b'
+      } },
+      { selector: 'edge', style: { 'curve-style': 'straight', ...edgeStyle } }
+    ],
+    v4Style: {
+      nodes: { 'width': 46, 'height': 46, 'background-color': '#c0392b' },
+      edges: { 'curve-style': 'straight', ...edgeStyle }
+    }
+  } );
+
+  test( 'parity: the line spills past a narrow arrowhead (round 55)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // Expected to fail until round 55's gap/trim port lands; Playwright
+    // fails the run if it starts passing, so the fix removes the marker.
+    // The scenes above it are the guard against this swallowing a crash:
+    // a broken page would also fail the ink floor, which is asserted
+    // before the ratio.
+    test.fail( true, 'round 55, fix 3 — v4 implements no arrow gap' );
+
+    /*
+     * This scene is named for what it can actually see, which is not what
+     * the first draft assumed.
+     *
+     * The first version used width 20 with `arrow-scale: 3` — a huge head
+     * — reasoning that a 120 px gap against a 300 px chord would dominate
+     * the frame.  It read **0.495% and passed**, and the reason is worth
+     * recording: an opaque filled head *covers its own overlap*.  v3's
+     * line stops 120 px behind the tip and v4's runs on to the node
+     * centre, but the head spans 137 px back and is opaque, so the two
+     * renderers paint the same pixels over almost all of the difference.
+     *
+     * What remains visible is the wedge near the tip where the head is
+     * narrower than the line: the head's half-width grows as k/2 with
+     * distance behind the tip, so v4's line pokes out sideways for
+     * roughly the first `width` px.  That wedge is ~width^2/2 per end and
+     * is what the maintainer described as "a bit of the line peeking out
+     * by the triangle point".
+     *
+     * So the scene is tuned the opposite way from the first draft — a
+     * *thick line and a small head*, over four ends — and it is the
+     * hollow and translucent scenes below, not this one, that carry the
+     * gap's real consequences.
+     *
+     * Measured 2026-08-06.  First draft, width 20 / scale 3: **0.495%**
+     * — passing, i.e. measuring nothing.  Tuned (width 34, scale 1, four
+     * edges): **3.537%**.  Control, the same tuned scene with
+     * `arrow-shape: none` on both sides: **0.333%**, a 10.6x drop, so
+     * what this scene measures is the heads and the line around them
+     * rather than ambient node or AA difference.
+     */
+    const { v3Style, v4Style } = arrowSheets( {
+      'width': 34, 'arrow-scale': 1, 'line-color': '#2c3e50',
+      'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+      'source-arrow-color': '#2c3e50', 'target-arrow-color': '#2c3e50'
+    } );
+
+    await runParity( page, testInfo, 'parity-arrow-gap', ARROW_ELEMENTS, v3Style, v4Style,
+      { minInk: 4000 } );
+  } );
+
+  test( 'parity: hollow arrowheads show the background, not the line (round 55)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // Expected to fail until round 55's gap/trim port lands; Playwright
+    // fails the run if it starts passing, so the fix removes the marker.
+    // The scenes above it are the guard against this swallowing a crash:
+    // a broken page would also fail the ink floor, which is asserted
+    // before the ratio.
+    test.fail( true, 'round 55, fix 3 — v4 implements no arrow gap' );
+
+    // v3 erases the arrow footprint (`destination-out`) before painting a
+    // hollow head, so its interior shows the page background.  v4 draws a
+    // ring over an unshortened line, so its interior shows the line.
+    //
+    // Measured 2026-08-06: **11.775%**, and the ink counts are the
+    // clearest single number in this round — v4 inks 36380 px against
+    // v3's 17484, more than double, because the line is visible through
+    // every hollow head.
+    //
+    // Control: `arrow-fill: filled` on both sides reads **0.563%**, a 21x
+    // drop, which isolates the fill from the gap.
+    const { v3Style, v4Style } = arrowSheets( {
+      'width': 16, 'arrow-scale': 4, 'line-color': '#2c3e50',
+      'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+      'source-arrow-color': '#2c3e50', 'target-arrow-color': '#2c3e50',
+      'source-arrow-fill': 'hollow', 'target-arrow-fill': 'hollow'
+    } );
+
+    await runParity( page, testInfo, 'parity-arrow-hollow', ARROW_ELEMENTS, v3Style, v4Style,
+      { minInk: 3000 } );
+  } );
+
+  test( 'parity: a translucent edge is one shape, not a line plus an arrow (round 55)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // Expected to fail until round 55's gap/trim port lands; Playwright
+    // fails the run if it starts passing, so the fix removes the marker.
+    // The scenes above it are the guard against this swallowing a crash:
+    // a broken page would also fail the ink floor, which is asserted
+    // before the ratio.
+    test.fail( true, 'round 55, fix 3 — v4 implements no arrow gap' );
+
+    // The first scene in the suite to combine `opacity < 1` with an arrow
+    // at all.  Where v4's line and head overlap, each contributes its own
+    // alpha: 0.5 over 0.5 reads 0.75 against v3's 0.5.
+    //
+    // Measured 2026-08-06: **26.707%**, the largest divergence anywhere
+    // in the parity suite.
+    //
+    // Control: `line-opacity: 1` reads **0.777%**, a 34x drop, so this
+    // scene measures the compositing rather than the geometry.
+    const { v3Style, v4Style } = arrowSheets( {
+      'width': 18, 'arrow-scale': 4, 'line-color': '#000',
+      'line-opacity': 0.5,
+      'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+      'source-arrow-color': '#000', 'target-arrow-color': '#000'
+    } );
+
+    await runParity( page, testInfo, 'parity-arrow-alpha', ARROW_ELEMENTS, v3Style, v4Style,
+      { minInk: 3000 } );
+  } );
+
 } );

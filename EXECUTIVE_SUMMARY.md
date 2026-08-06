@@ -12,7 +12,9 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-06, covering work through round 53.2, with round 52 scoped.
+- **Last updated**: 2026-08-06, covering work through round 53.2 and the
+  sixth design sitting (the open-decision backlog swept; see the table at
+  the end).
 
 ---
 
@@ -38,9 +40,13 @@ every push for several weeks; `npm test` passes from a clean checkout.
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
 
-**Three things are deliberately unbuilt** and need a decision before 4.0:
-`border-style`/`outline-style` porting (round 38), the error/warning policy
-(round 40), and the documentation site (round 46).
+**Two questions remain genuinely open before 4.0** — the error/warning
+policy (round 40, with its preparatory classification of every error site
+approved), and which gesture defaults an event handler may veto (direction
+set: explicit toggles come first).  The remaining unbuilt work —
+`border-style` porting, the documentation site, shader minification, a
+tighter compound fit bound, and release engineering — is decided and
+scheduled.
 
 ---
 
@@ -189,15 +195,24 @@ a completely clean checkout.
 
 ## What remains before 4.0
 
+A design sitting on 2026-08-06 swept the accumulated open decisions: the
+`border-style` scope questions were settled (full v3 parity, including the
+erase behaviour of double borders; two dash properties port; cap/join are
+dropped with the deviation recorded), three surface changes made without a
+call were reviewed and ratified, and shader minification moved from
+optional to scheduled.
+
 | | needs |
 |---|---|
-| `border-style` / `outline-style` (round 38) | a scope decision on three sub-questions |
-| Error / warning policy (round 40) | a design sitting |
+| `border-style` / `outline-style` (round 38) | decided in full — build only |
+| Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
+| Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |
 | Documentation site (round 46) | prose written by hand; the generated model is ready |
+| WGSL minification (round 52) | decided — the comment-strip build step lands **before the alpha**, worth 10% of the download, gated by pixel-identical output |
+| Compound fit bound (round 54) | scheduled — `fit()` still over-frames compound graphs ~1.8×; a directional, per-edge bound replaces the disc-around-centres formulation |
 | Cross-platform validation (round 49) | macOS/Metal, Windows/D3D12, real-device touch. WebKit now runs in CI, where it correctly skips: that build exposes no WebGPU |
 | Release engineering (round 50) | the release workflows are still v3's and are marked as not yet adapted |
 | Release bake (round 51) | alpha/beta cycle, external-consumer smoke, then **4.0.0** |
-| *Optional:* WGSL minification (round 52) | scoped and measured, not scheduled — worth **10% of the download**, best landed before the alpha |
 
 ---
 

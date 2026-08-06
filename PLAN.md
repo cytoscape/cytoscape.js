@@ -150,8 +150,12 @@ report the machine provenance a published premium needs, and found four
 things by building it, one of which (a code span in *this file* holding
 `<script>`) broke every page on the site until a browser was pointed at
 it.  **Round 38 has not started**: scoping
-it found three sub-calls the sitting did not reach (open call 1).
-**Round 40 is a design sitting.**
+it found three sub-calls the sitting did not reach (open call 1) —
+**taken at the sixth design sitting (2026-08-06)**, which swept the
+whole open backlog (items 14–16 ratified, round 52's build-step call
+taken, item 12 given its direction, the round-54 bounds round
+scheduled), so round 38 is unblocked.  **Round 40 is a design
+sitting**, its taxonomy-first prep approved at the same sitting.
 `src/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -268,6 +272,20 @@ reach.  Round 42 raised and closed a third (item 13, the `Gpu*` exported
 type names) inside the same day, so the count of genuinely open questions
 is unchanged at two.
 
+**2026-08-06 (sixth design sitting): the accumulated backlog was swept
+with the maintainer.**  Round 38's three sub-calls are taken (item 1 —
+the round is unblocked), items 14–16 are ratified as decided design
+(item 16's follow-up bounds round is **scheduled as round 54**, before
+round 49), round 52's build-step call is taken and its miniray call
+logged as item 17, the round-53.1 tween warm-up question joins the
+ledger as item 18, and item 12 gains its direction — **explicit gesture
+toggles first**; the enumeration holds for 41.5's docs-first.  The
+genuinely open questions are now: the **error policy** (round 40, whose
+taxonomy-first prep the sitting approved) and the **preventDefault
+enumeration** (item 12, direction set), plus the two conditional
+entries in items 17–18.  The sitting's record is at the end of this
+file.
+
 ### Scope calls
 
 1. **`border-style` / `outline-style`** (27.8, 2026-08-02) — the last
@@ -318,6 +336,22 @@ is unchanged at two.
      should say so rather than leave them unmentioned.
    `text-border-style` was already flagged for the round's docs-first
    stage and is unaffected by these.
+   **All three sub-calls taken (2026-08-06, sixth sitting) — round 38
+   is unblocked:**
+   - **`double` ports v3's erase** (alpha-0 stripe fragments — fill and
+     border are one draw), with double-bordered nodes excluded from the
+     opaque depth prepass on the gradient-fill precedent (they are few,
+     and the tier's live parity diff is the gate; the fall-back to an
+     inner band exists if the prepass interaction turns out worse than
+     expected, in which case the round records the deviation instead).
+   - **`border-dash-pattern` / `border-dash-offset` both port** — the
+     standard parse/mapper/stored-truth plumbing v4 already has for the
+     edge twins, so `dashed` borders are full v3 parity rather than
+     default-pattern-only.
+   - **`border-cap` / `border-join` drop**, recorded as a deviation
+     beside the existing edge-layer butt-cut note (dash ends are
+     perpendicular cuts by construction), with rows in the migration
+     guide.
 2. **The overlap box-selection mode** (gap item 8) — v4 selects by
    containment only; v3 also offers overlap.  Deferred as a
    demand-gated hook, not v3-surface-critical.
@@ -553,6 +587,24 @@ docs checks), and each is left in place pending the call.
     Logged rather than guessed at because a wrong list is worse than
     none: an app that learns `preventDefault()` suppresses selection
     will depend on it.
+    **Direction set (2026-08-06, sixth sitting); the enumeration holds
+    for 41.5's docs-first.**  The maintainer's rule: gestures get
+    **explicit toggles first** — the `panningEnabled()` pattern exists
+    precisely to make gesture control easy and explicit — and no
+    gesture default may be controllable *only* through
+    `preventDefault()`.  Supporting both is on the table, with the
+    toggle primary and `preventDefault()` a per-event complement.  So
+    41.5's docs-first must map each candidate default to its explicit
+    toggle (existing — `autoungrabify`, `autounselectify`,
+    `boxSelectionEnabled`, `userPanningEnabled`/`userZoomingEnabled` —
+    or to be added) before proposing any preventDefault rows.  A
+    four-row table was tabled at the sitting for that stage to react
+    to: `tapstart` on an element → grab initiation; `tap` on an
+    element → the selection toggle; `tap` on the core → the background
+    clear; `boxend` → applying the box's selection — with pan/wheel
+    (option-gated, high-frequency), taphold (no default) and the cxt
+    menu (already unconditional) excluded, and bubbled prevention
+    stopping the core default via 14.5's shared-Event machinery.
 13. ~~**The `Gpu*` exported type names**~~ — **closed by round 42.6**
     (2026-08-04).  Round 42 renamed the package's *identity* — factory,
     bundles, declaration, UMD global — but stopped at the exported **type**
@@ -583,6 +635,13 @@ record: the standing rule is that the maintainer reads this section
 before deciding anything about v4's surface, and "we changed it because
 it was obviously broken" is exactly the sentence that should be
 reviewable.
+
+**All three were reviewed individually and ratified at the sixth
+sitting (2026-08-06)** — the type exports stay, the cross-instance
+throw stays, the tighter compound fit stays — so this section's review
+debt is cleared.  Item 16's logged follow-up is no longer merely
+logged: the **bounds round is scheduled as round 54**, before round 49
+(the plan stub is at the end of this file).
 
 14. **The layout contract's types now ship** (round 45, 2026-08-04).
     Round 17 made `cy.layout({ impl })` the whole extension story — an
@@ -636,6 +695,34 @@ reviewable.
     **To reverse**: drop `&& kind !== CURVE_CMPD` from the two
     `FLAG_CURVED_BOX` branches (`GraphStore.boundingBox`,
     `Collection.boundingBoxAt`).
+
+### New open calls (sixth sitting, 2026-08-06)
+
+Two questions that had been living only in round records — against the
+standing rule that every open question surfaces here — plus the
+conditional halves of calls the sitting took.
+
+17. **miniray as a devDependency** (round 52's call 2, conditional).
+    The sitting took call 1 — the 52.1 comment-strip build step
+    **builds**, before round 50 cuts the alpha — and left this one on
+    the plan's own terms: 52.3 (generate static WGSL from
+    `contract.mts` + identifier renaming via miniray, 4.35 MiB of
+    Go-compiled WASM for an estimated single-digit-KiB gzipped gain)
+    is reached **only if 52.1's measured number disappoints**, and the
+    estimate must be measured on one shader before any machinery is
+    built.  Expected outcome: never taken.
+18. **Warm the tween pipelines at init?** (round 53.1's left-open
+    judgement.)  A user's *first* `animate()` on a software adapter
+    stalls up to ~1.8 s because Dawn compiles the tween compute
+    pipelines on first use; warming them at init moves that cost into
+    startup, which round 53 just spent effort reducing, and real
+    hardware shows the same shape an order of magnitude smaller.
+    **Call taken (2026-08-06): logged, revisit with data** — the case
+    for warming rests on software-adapter users, so measure who those
+    are before paying startup for them.  The maintainer also noted a
+    larger future direction to keep beside it: **a WebGL fallback
+    renderer** may be worth considering for users whose platforms
+    cannot support WebGPU at all — logged as a direction, not scoped.
 
 ## Context
 
@@ -2581,7 +2668,8 @@ per-item history.)*
    entry for the three cost tiers.  (Call taken 2026-08-04: **full
    coverage** — scoped as round 38, which has **not started**: scoping
    it turned up three further sub-calls the sitting did not reach,
-   logged in open call 1.)
+   logged in open call 1 — all three since taken at the sixth sitting,
+   2026-08-06, so the round is unblocked.)
 5. **Arrow parity** — `mid-source`/`mid-target` positions,
    `arrow-fill: hollow`, `arrow-width`, `arrow-scale`, compound
    shapes (`triangle-tee`/`circle-triangle`/`triangle-cross`/
@@ -3129,7 +3217,8 @@ plan's statements about the code are claims to re-measure.**  Every one of
 these rounds spent its first hour measuring what it had been told, and every
 one of them found the telling wrong somewhere.
 
-**As of 2026-08-05, what remains.**  Unbuilt: round 38 (blocked on the
+**As of 2026-08-05, what remains.**  (Superseded by the 2026-08-06
+paragraph below.)  Unbuilt: round 38 (blocked on the
 three sub-calls in open call 1), round 40 (a design sitting), round 41.5
 (open call 12), **round 46** (the docs site — no longer blocked, since
 round 45 built its input), **rounds 49–51** (cross-platform validation,
@@ -3156,6 +3245,24 @@ unbuilt — a **bounds round** for the conservative fit box, which grows a
 disc around each endpoint *centre* by a *global* node-half maximum where
 several kinds' geometry is directional and per-edge; the compound
 fixture still fits at ~1.8× its exact box after 43.13.
+
+**As of 2026-08-06, what remains** (supersedes the paragraph above,
+after rounds 46.6, 52's scoping, 53–53.2 and the sixth design sitting).
+Unbuilt: **round 38** (unblocked — its three sub-calls are taken),
+**round 40** (the error-policy sitting, taxonomy-first prep approved),
+**41.5** (direction set — explicit toggles first; the enumeration lands
+at its docs-first), **round 46** (the docs site), **round 52** (the
+WGSL comment-strip — decided to build, and it must land before round 50
+cuts the alpha), **round 54** (the bounds round, newly scheduled before
+round 49), **rounds 49–51** (cross-platform, release engineering, the
+bake), round 48's documented limit edges, and round 44's release-time
+act.  Undecided: the **error policy** (round 40) and the
+**preventDefault enumeration** (item 12) — still the two genuinely open
+questions — plus two conditional ledger entries, **miniray** (item 17,
+measure-first, expected never taken) and the **tween warm-up** (item
+18, revisit with data).  Items 14–16 are ratified and closed; the
+`executePlan()` coverage gap and CI's removed job timeout stay recorded
+decisions rather than open ones.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -10537,9 +10644,13 @@ round builds all three tiers.
   **2026-08-04's scoping found is not what v3 does**: v3 re-strokes at
   `borderWidth / 3` under `destination-out`, erasing a middle stripe
   from the fill and everything under the node rather than filling it.
-  See the three sub-calls added to open-call 1; this one, the missing
-  `border-dash-pattern`/`-offset` props, and `border-cap`/`-join` are
-  the round's docs-first agenda.  **`outline-style`** reuses the
+  See the three sub-calls added to open-call 1 — **all three taken at
+  the sixth sitting (2026-08-06)**: the erase ports (with
+  double-bordered nodes excluded from the opaque depth prepass, the
+  gradient-fill precedent), `border-dash-pattern`/`-offset` port, and
+  `border-cap`/`-join` drop with the deviation recorded.  What remains
+  for docs-first is `text-border-style` and the write-up.
+  **`outline-style`** reuses the
   perimeter at the ring radius (offset perimeter, different arc
   length) and needs no props — v3 hardcodes `[4, 2]` and `[1, 1]`
   there.  `text-border-style` stays out unless the same machinery
@@ -10782,7 +10893,10 @@ they stated a fact about the code that nobody had measured:
   `preventDefault()` sets `defaultPrevented` on it; the control pins
   `domEvent` to null and the spec fails.
 - [ ] **41.5 Functional `preventDefault()` for gesture defaults** — not
-  built; the enumeration is open call 12.
+  built; the enumeration is open call 12.  *Direction set at the sixth
+  sitting (2026-08-06): explicit gesture toggles come first and no
+  default may be preventDefault-only — see item 12; the enumeration
+  lands at this item's own docs-first stage.*
 - [x] **41.6 Docs + declarations** (2026-08-04) — `Event`,
   `EventProps`, `EventTarget` and `EventHandler` are exported from
   the entry point, so a consumer can type a handler; `dist/
@@ -12215,9 +12329,16 @@ every variant (larger) or dropping the feature.  It stays dynamic.
 1. **Is 10% of the download worth a build step at all?**  52.1 is ~30 lines and
    no dependency, so the bar is low, but it is still a transform between the
    source and what ships.
+   **Call taken (2026-08-06, sixth sitting): yes — 52.1 builds**, with its
+   fixture (interpolation sites next to punctuation) and its control (a
+   transform that does *not* treat `${}` as opaque must fail), gated by 52.2's
+   pixel diff, and it lands **before round 50 cuts the alpha**.  The round is
+   now scheduled, not merely scoped.
 2. **Does miniray become a devDependency?** (52.3 only.)  It is 4.35 MiB of
    Go-compiled WASM in the toolchain for a single-digit-KiB gain, and it should
    not be added on the strength of the tool's quality alone — measure first.
+   **Held open as ledger item 17** (2026-08-06): reached only if 52.1's number
+   disappoints, and only after the single-shader estimate is measured.
 
 ### Risks tracked
 
@@ -12446,6 +12567,9 @@ of the renderer project are 104/104, and `visual` is 75/75.
   animation on a software adapter is late by up to a second.  Warming the
   tween pipelines at init would move the cost into startup, which is already
   slow; that is a judgement call, not a bug fix, and it is left open.
+  *(Logged as open call 18 at the sixth sitting, 2026-08-06 — revisit with
+  data, alongside a noted future direction: a possible WebGL fallback
+  renderer for platforms without WebGPU.)*
 - **The libjpeg fix lives in Playwright's browser cache**, outside the repo,
   and `playwright install` will undo it.  AGENTS.md carries the command.
 
@@ -12541,3 +12665,96 @@ in the configuration that matters — a fresh checkout, a runner without a
 hoisted dependency, a browser project nobody could launch locally.  None of
 them were regressions in the library.  A green suite says the paths that ran
 are fine; it says nothing about the ones that never did.
+
+## Design sitting (2026-08-06, sixth) — the backlog sweep
+
+Prompted by a full read of this file: the ledger's numbered items were all
+closed, but decisions had accumulated in round records against the standing
+rule that every open question surfaces in "Open calls for the maintainer" —
+round 52's two calls, 53.1's warm-up judgement — and the three logged
+public-surface changes (items 14–16) had never been ratified.  Every call
+below was taken with the maintainer; the per-item annotations are in the
+ledger, and this is the sitting's own record.
+
+1. **Round 38's three sub-calls, taken** (open call 1 — the round is
+   unblocked):
+   - **`double` ports v3's erase.**  Alpha-0 stripe fragments (fill and
+     border are one draw); double-bordered nodes are excluded from the
+     opaque depth prepass on the gradient-fill precedent.  The tier's live
+     parity diff is the gate; if the prepass interaction turns out worse
+     than expected, the fall-back is the inner band with the deviation
+     recorded — but the erase is the intent.
+   - **`border-dash-pattern` / `border-dash-offset` both port** — full v3
+     parity for dashed borders, on the plumbing v4 already has for the edge
+     twins, rather than a hardcoded `[4, 2]` and a recorded drop.
+   - **`border-cap` / `border-join` drop**, recorded as a deviation beside
+     the existing edge-layer butt-cut note, with migration-guide rows.
+2. **Items 14–16 reviewed individually and ratified**: the layout-contract
+   type exports stay (14), the cross-instance comparison throw stays (15),
+   and the tighter compound `fit()` stays (16).  With 16's ratification the
+   logged bounds round is **scheduled as round 54**, before round 49 — the
+   residual ~1.8× over-fit is visible in every compound app, and the
+   43.13 soundness-sweep method is already the round's gate.
+3. **Open call 12 gains its direction; the enumeration holds for 41.5's
+   docs-first.**  The maintainer's rule: gestures get **explicit toggles
+   first** (the `panningEnabled()` pattern exists precisely to make gesture
+   control easy and explicit), and no gesture default may be controllable
+   *only* through `preventDefault()`.  Both mechanisms may coexist, toggle
+   primary.  41.5's docs-first therefore maps each candidate default to its
+   explicit toggle — existing or to be added — before proposing any
+   preventDefault rows; the sitting tabled a four-row candidate table
+   (recorded in item 12) for that stage to react to.
+4. **Round 40 proceeds taxonomy-first.**  Before the sitting proper, an
+   autonomous classification pass sorts all 197 throw sites (the
+   throw-coverage script already enumerates them) into *contract errors*
+   (always throw) vs *recoverable runtime conditions* (today's warn tier),
+   producing the candidate list demotion would actually touch.  The sitting
+   then reacts to a concrete proposal — `cytoscape.warnings( boolean )` as
+   the global toggle plus a per-instance ctor override, with the demotion
+   option (`errorPolicy` demoting recoverable-tier throws only, never
+   contract-tier) decided on the measured size of that list.
+5. **Round 52's call 1 taken: the 52.1 comment-strip build step builds**,
+   before round 50 cuts the alpha (17.8 KiB gzipped — 10% of the download —
+   for ~30 lines and no dependency, gated by 52.2's pixel diff).  Call 2
+   (miniray) is held as ledger item 17, measure-first, expected never
+   taken.
+6. **53.1's warm-up judgement joins the ledger as item 18**: logged,
+   revisit with data — and the maintainer noted the larger future direction
+   to keep beside it, a possible **WebGL fallback renderer** for platforms
+   that cannot support WebGPU.  Logged as a direction, not scoped.
+
+**Sequencing after the sitting**: 38 → 40 → 46 (decision-free and
+unblocked — may be pulled forward) → 52 (before 50) → 54 + round 48's limit
+edges → 49 → 50 (`4.0.0-alpha.1`) → 51 (**4.0.0**).
+
+Process note, on the fifth sitting's precedent: this sitting lands as a
+PLAN.md edit plus the derived `EXECUTIVE_SUMMARY.md` open-questions update
+(an item leaves that table when it is *decided*, which several did today);
+the `src/README.md` true-up rides round 38's docs-first commit.
+
+## Round 54 plan — the bounds round (scheduled 2026-08-06, before round 49)
+
+Item 16's follow-up, promoted from logged to scheduled at the sixth
+sitting.  The conservative whole-graph fit scan still over-frames the
+compound fixture at ~1.8× its exact box after 43.13, and the residual is
+the *formulation*, not the constant:
+
+- The scan grows a **disc** of `p2 + nodeHalfMax` around each endpoint
+  **centre**, where a compound loop's geometry is **directional** — its
+  controls only ever go up and left of the union of the two node boxes —
+  so a box-based, one-directional term is far tighter.
+- `nodeHalfMax` is a **global** maximum: one big parent inflates the bound
+  for every box-bounded edge in the graph.  The term should be per-edge.
+
+Scope: the two CPU call sites only (`GraphStore.boundingBox`,
+`Collection.boundingBoxAt`) — the cull kernel keeps its conservative terms
+deliberately, exactly as 43.13 recorded (over-inclusion in a cull costs
+efficiency, never correctness, and touching WGSL would put goldens and
+parity scenes in scope for a pure efficiency gain).
+
+Verification is 43.13's own method, promoted to the round's gate: the
+randomized soundness sweep (hundreds of compound-loop edges over dozens of
+randomly-shaped compound graphs, every conservative box must contain its
+exact box), specs pinning the tightened box both directions with controls,
+a `benchmark/spatial.mjs` row for the scan cost, and the compound fixture's
+fit driven in the page — the standing rule that something has to open it.

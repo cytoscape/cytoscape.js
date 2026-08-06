@@ -12363,3 +12363,88 @@ their sum.
   it hides is documented above and in the file, and it is a property of the
   *software adapter*, not of the library — but if v4 ever ships a
   frame-scheduling change, this is the file to read first.
+
+### Round 53.1 — the browser suite made honest (2026-08-06)
+
+The maintainer's read of the first pass: *"the tests should not be inherently
+flakey, so address that"*, and *"run the webkit tests here locally anyway"*.
+Both turned out to be the same kind of finding — a check nobody had ever run.
+
+**WebKit had never run on this machine, and the job it now has would have been
+red.**  Playwright refuses to launch a browser whose host requirements it
+cannot verify, and it verifies them by mapping shared-library needs onto *apt*
+package names — a false negative on any non-Debian distro.  Skipping that
+check (and supplying WebKit's `libjpeg.so.8`, the jpeg8 ABI Fedora does not
+build) took the project from "cannot start" to **102 skipped, 2 passed, 1
+failed**.  The failure is real and predates everything this round did:
+`ready rejects when no adapter can be acquired` stubs `navigator.gpu` — which
+Linux WebKit does not have — so it threw instead of asserting.  It skips now;
+the sibling that covers *that* state, `hard error when WebGPU is unavailable`,
+is one of the two specs that do run there, and passes.
+
+That is the second time in two rounds that the answer to "is this green?" was
+"nothing has ever run it".
+
+**The flakiness was structural, and its cause is a real product characteristic.**
+Nine specs asserted something about a running tween by sleeping to a fixed
+offset and reading one pixel.  Rewritten to poll for the state they are named
+for, they are both more honest and **faster: 29.5 s -> 12.7 s** for the ten
+animation specs, because a poll returns when the state arrives rather than
+sleeping a fixed remainder.
+
+The bound on those polls is where the round learned something.  A first
+attempt used tight timeouts, reasoning that a bound below the tween's duration
+was what proved a sample was mid-flight — and it failed **5 runs in 10**.
+Tracing it with four concurrent browsers: a screenshot taken **1779 ms** after
+`animate()` returned still showed the node at its start with `animated()`
+true.  A tween's compute pipelines compile on the *first* `animate()` of a
+page — Dawn defers compilation to first use, the same property behind this
+round's deferred draw pipelines — and on the software adapter under load that
+stalls the first animation by up to ~1.8 s.  The tween's clock starts after
+the stall.
+
+So the timeout is not what keeps such a spec honest; **the state being
+unobservable at rest is**.  For most of the nine the predicate itself carries
+that (a settled node does not sit 35 px past its target).  For the four paint
+specs the end colour satisfies the predicate, and the assertion after the poll
+is the discriminator — a stale CPU column, or green leading red on the OKLab
+path, which yellow fails with them equal.  `untilMidFlight`'s doc comment says
+so, because that pairing is what an editor could break without noticing.  Five
+controls, each breaking one behaviour deliberately, all fail.
+
+**One worker per core is the setting that fails.**  Every project drives a
+browser rendering WebGPU, and without hardware that is SwiftShader, which is
+itself multi-threaded.  Three retry-free runs of the renderer project at each
+setting, 16-core box, software adapter:
+
+| workers | wall | result |
+|---|---|---|
+| 16 | 1.5 min | 3 failed / 1 failed / clean |
+| 8 | 1.6 min | clean / clean / clean |
+| 4 | 2.1 min | clean / clean / clean |
+| 2 | 3.5 min | 1 failed |
+| 1 | >10 min | — |
+
+One-per-core is exactly what the runner was using (4 workers, 4 vCPU).  Half
+is as fast and does not fail.  Serial — which was the maintainer's first
+instinct — is 6× the wall clock, and its long tail brings its own timeouts.
+
+### Where it ended up
+
+`npm test` runs clean on this machine end to end, **2m41s, exit 0**: 2021 +
+248 + 24 Node tests, the throw gate, lint, and all three Playwright projects
+(181 passed, 102 skipped).  Under the CI configuration, three retry-free runs
+of the renderer project are 104/104, and `visual` is 75/75.
+
+### Risks tracked
+
+- **Generous poll timeouts trade failure latency for reliability.**  A broken
+  tween now takes 6 s per spec to fail instead of 1.2.  That is the right
+  trade while the first-`animate()` compile stall exists, and it is the number
+  to revisit if that stall is ever fixed.
+- **The first-animation stall is not a test problem.**  A user's first
+  animation on a software adapter is late by up to a second.  Warming the
+  tween pipelines at init would move the cost into startup, which is already
+  slow; that is a judgement call, not a bug fix, and it is left open.
+- **The libjpeg fix lives in Playwright's browser cache**, outside the repo,
+  and `playwright install` will undo it.  AGENTS.md carries the command.

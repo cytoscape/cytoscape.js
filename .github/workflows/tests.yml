@@ -22,11 +22,11 @@ jobs:
         node-version-file: .nvmrc
     - name: Install dependencies
       run: npm ci
-    # `build/` is gitignored, so a fresh checkout has no bundle — and
-    # `test/modules/status-site.mjs` plans the status site's mirror of the
-    # debug harness, which loads `../build/cytoscape.umd.js`.  Without this
-    # step three specs fail on the runner and pass on any machine that has
-    # ever built.
+    # `test:modules` builds for itself now (the status-site specs read
+    # build/cytoscape.umd.js and encode through build/cytoscape.cjs.js), so
+    # this step is not what makes the suite pass.  It is kept because it is
+    # sub-second and it makes a broken build read as a broken build, here,
+    # rather than as a test failure two minutes later.
     - name: Build the bundles
       run: npm run build
     - name: Run the Node suite
@@ -63,13 +63,14 @@ jobs:
     # missing baseline cannot read as a pass.
     - name: Build the v3 comparison baseline
       if: matrix.project == 'visual'
-      run: npm install && npm run build:umd
+      run: npm ci && npm run build:umd
       working-directory: v3
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps ${{ matrix.browser }}
-    # Playwright's webServer builds the UMD bundle itself, but only after the
-    # server command runs; building here keeps the two jobs' setup identical
-    # and makes a build failure read as one.
+    # This job drives `npx playwright test --project=...` rather than
+    # `npm run test:playwright`, so it does not get that script's own build
+    # steps — and Playwright's webServer only builds the UMD after the server
+    # command runs.  Build here, where a failure reads as a build failure.
     - name: Build the bundles
       run: npm run build
     - name: Run the ${{ matrix.project }} project
@@ -95,8 +96,11 @@ jobs:
     - uses: actions/setup-node@v6
       with:
         node-version-file: .nvmrc
+    # `npm ci` since v3's lockfile is tracked (2026-08-06).  It used to float
+    # on caret ranges, so the job resolved a different dependency set on every
+    # push and nothing here was reproducible.
     - name: Install dependencies
-      run: npm install
+      run: npm ci
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
     - name: Run tests

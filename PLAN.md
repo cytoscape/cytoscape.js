@@ -12230,3 +12230,136 @@ every variant (larger) or dropping the feature.  It stays dynamic.
   the win (15 KiB of 17.8 gzipped).  A future round tempted to skip
   comment-stripping "because gzip handles repetition" would be reasoning from
   the wrong model — and losing almost all of the benefit.
+
+## Round 53 — CI, green then fast (2026-08-06)
+
+CI had been red on **every push since round 42** on one job and **since round
+46.5** on the other, and nobody had read a log: the Actions log API answers 403
+without repository admin, so the failures were diagnosed by reproducing both
+jobs in a clean `git worktree` and confirmed against the real logs afterwards.
+Both reproductions matched the runner exactly.
+
+### The two failures
+
+**`ci-v3` died in 0.4 s, before a single test.**  `v3/tsconfig.json` carried
+`"types": ["@webgpu/types"]` — v4 tsconfig that came along in the round-42
+split — while `@webgpu/types` is a devDependency of the *root* package.  Every
+developer machine and the `ci` job resolve it by walking up into the root
+`node_modules`; the `ci-v3` job installs only in `v3/`, so there is nothing to
+walk up into.  v3 references no WebGPU type at all.  `"types": []` keeps the
+"no ambient `@types`" restriction the config always had.
+
+**`ci` died 40 s in, at `test:modules`**, on the three `status-site.mjs` specs
+that plan the mirror of the debug harness — which loads
+`../build/cytoscape.umd.js`, and `build/` is gitignored.  Playwright's
+webServer does build one, but that runs *later in the `run-s` chain* than
+`test:modules`.  On any machine that has ever built, the specs pass.  A `npm
+run build` step before the suite fixes it and costs 0.7 s under rolldown.
+
+Both are the same shape, and it is worth naming: **a fresh checkout is a
+configuration nothing here tests.**  Every developer machine carries state —
+a hoisted dependency, a stale `build/` — that CI does not.
+
+### Then: why the suite was slow
+
+With the failures fixed, the Playwright projects dominate, and the timeouts
+that had been blamed for it were a symptom.  Instrumenting every helper in
+`renderer.spec.js` (CI flags, 4 workers, the runner's parallelism):
+
+| helper | calls | total |
+|---|---|---|
+| `waitFrames` | 156 | **570 s** |
+| `makeReadyCy` | 98 | 19 s |
+| `pixelAt` | 143 | 14 s |
+| everything else | — | 5 s |
+
+`waitFrames` waits for three animation frames and averaged **3.65 s**.  The
+in-page gaps read `[7 ms, 5934 ms, 16 ms]` — one stall, then 60 fps.
+
+**What it was not.**  Not contention: identical at `--workers=1`.  Not idle
+rAF throttling: forcing damage every tick changed nothing, and
+`--disable-gpu-vsync --disable-frame-rate-limit` fixed idle rAF (171 → 17 ms)
+only to move the stall onto `page.screenshot()` (4.6 s) and cost 13 failures.
+Not a timeout: it burns **105% of one core for 4.45 s**.  Not cacheable: a
+persistent Chrome profile makes no difference.  Not the browser's: a bare
+WebGPU triangle — new device, new canvas, same flags, same page-per-test
+pattern — costs 20–244 ms to set up and 30–50 ms for its first frames.
+
+**It is v4's own shaders**, compiled by SwiftShader on the first frame of every
+instance.  Dawn returns from `createRenderPipeline` in 0 ms and compiles when
+the pipeline is first *used*, so building the set at init does not pay for
+itself — it moves the compile onto the first frame, for every feature the graph
+does not use.  Priced by stubbing each out, on a one-node graph:
+
+| | first frame |
+|---|---|
+| all 12 draw pipelines (as shipped) | 4.60 s |
+| node pipeline only | 2.65 s |
+| no draw pipelines at all | 1.06 s |
+| — of which: node 1.58, curved edge 0.68, curved arrow 0.28, edge label 0.22, image 0.17, chart 0.13, arrow 0.12, ghost 0.20 | |
+
+A real adapter shows the same shape an order of magnitude smaller (0.53 s), so
+this is first-frame latency for every consumer, not only a CI cost.
+
+**`createRenderPipelineAsync` does not help**, which is worth recording so the
+next round does not try it: awaited, it is ~15% better and scales *perfectly
+linearly* (1/4/8 pipelines → 621/2409/4756 ms sync, 613/2013/4053 ms async).
+Dawn compiles them serially on one thread either way.  The lever is not
+compiling what you do not draw.
+
+### What landed
+
+1. **Deferred pipelines** (`src/render/renderer.mts`).  Image, chart, overlay,
+   underlay, curved edge, curved arrow and both label pipelines build on the
+   first frame that draws them; `NodePipeline`'s ghost pipeline likewise.  Four
+   already sat behind a store count.  The curved pair needed a new one —
+   `GraphStore.hasCurvedEdges()`, monotone, set where `FLAG_CURVED` is written
+   — because recompiling costs more than holding a pipeline.  **4.60 s → 2.72 s**
+   on a one-node scene, and unchanged for a graph that uses everything.
+2. **A frame driver on the harness page** (`playwright-page/frame-driver.js`).
+   This one fixed *correctness*, not only speed.  The renderer schedules
+   through rAF, and an animation started while the page is idle does not begin
+   for ~1 s on the software adapter: a 1500 ms linear tween had run **zero**
+   frames 800 ms after `animate()` returned and had not moved a pixel until
+   ~1.2 s, so two specs sampling mid-flight failed *deterministically* at
+   `--workers=1` (verified against the unmodified tree — they were failing
+   before this round touched anything) and several more were intermittent.  A
+   1 px element at `z-index: -1`, behind the opaque full-viewport container,
+   ticking its opacity every frame, keeps BeginFrames coming.  It cannot change
+   a pixel any spec samples, and it does not make Cytoscape redraw.
+3. **`pixelAt` reads a clipped screenshot** decoded in Node rather than a
+   full-page one shipped into the page as base64 and decoded through an Image
+   and a 2D canvas: 67 ms + 68 ms → 6 ms, over ~94 calls.
+4. **The workflow splits** into `ci-node` and one `ci-browser` job per
+   Playwright project, each installing only the browser it drives and only
+   `visual` building v3's baseline.  `npm test` is now
+   `run-s test:node test:playwright`, so the chain a developer runs and the one
+   CI runs still have a single definition.
+
+### Measured, on this machine, CI flags, 4 workers
+
+| | before | after |
+|---|---|---|
+| `renderer` project | 3.1 min, 100 passed / 4 flaky | **2.1 min, 104 passed** |
+| `visual` project | — | 2.3 min, 75 passed |
+| both in one run | 3.6 min, 2 failed / 1 flaky | 3.6 min, **179 passed** |
+| node tier (`test:node`) | — | 64 s |
+
+Sharded, the browser tier's wall clock becomes its slowest project rather than
+their sum.
+
+### Risks tracked
+
+- **The deferred pipelines move a failure from init to first draw.**  A broken
+  pipeline used to throw while mounting; now it throws inside the frame that
+  first needs it.  The `visual` project draws every gated feature, which is
+  what makes the change checkable at all — and it is why the curved gate has
+  its own spec (`test/curve-stream-gate.mjs`, controlled both ways).
+- **`hasCurvedEdges()` is monotone**, so a graph that curves an edge once holds
+  two pipelines for its lifetime.  That is the intended trade; a counter that
+  falls back to zero would recompile on the next curve.
+- **The frame driver makes the harness page unlike a real page**, which is a
+  real cost: a stall a user would see is now invisible to the suite.  The stall
+  it hides is documented above and in the file, and it is a property of the
+  *software adapter*, not of the library — but if v4 ever ships a
+  frame-scheduling change, this is the file to read first.

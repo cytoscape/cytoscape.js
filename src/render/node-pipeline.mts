@@ -51,7 +51,11 @@ export const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
 export class NodePipeline {
   private pipeline: GPURenderPipeline;
   private depthPipeline: GPURenderPipeline;
-  private ghostPipeline: GPURenderPipeline;
+  /** built on the first ghost draw, not at construction — see makeGhostPipeline */
+  private ghostPipeline: GPURenderPipeline | null = null;
+  /** the three inputs makeGhostPipeline needs, kept for that deferred build */
+  private ghostBuild: { device: GPUDevice; format: GPUTextureFormat; module: GPUShaderModule;
+    layout: GPUPipelineLayout } | null = null;
   private bindLayout: GPUBindGroupLayout;
   private ghostBindLayout!: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
@@ -59,9 +63,10 @@ export class NodePipeline {
   private bindGroups: Map<GPUBuffer, Map<string, { group: GPUBindGroup; version: number }>>;
 
   /**
-   * Compiles the node shader once and builds all three pipelines (main,
-   * depth prepass, ghost) plus the two bind group layouts the C3
-   * storage-buffer budget forces.  The @group(1) visible-list layout is
+   * Compiles the node shader once and builds the main and depth-prepass
+   * pipelines plus the two bind group layouts the C3 storage-buffer budget
+   * forces.  The ghost pipeline waits for its first draw (round 52).  The
+   * @group(1) visible-list layout is
    * supplied by the culler rather than created here, so every pipeline in
    * the scene pass shares one layout and one culled list.
    *
@@ -132,18 +137,11 @@ export class NodePipeline {
     } );
 
     // ghost pass (round 13 A1): the node body duplicated at the ghost
-    // offset, drawn after edges/arrows and under the nodes.  Depth-tested
-    // 'less' at NODE_Z, so ghost fragments under opaque node interiors
-    // (typically the ghost's own node) are killed before blending —
-    // exactly v3's node-over-ghost layering.
-    this.ghostPipeline = device.createRenderPipeline( {
-      label: 'cy-gpu:node-ghost-pipeline',
-      layout: ghostLayout,
-      vertex: { module, entryPoint: 'vsGhost' },
-      fragment: { module, entryPoint: 'fsGhost', targets: [ { format, blend: PREMULTIPLIED_BLEND } ] },
-      primitive: { topology: 'triangle-list' },
-      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'less' }
-    } );
+    // offset, drawn after edges/arrows and under the nodes.  Built on the
+    // first ghost draw rather than here: most graphs style no ghost at
+    // all, and on a software adapter this one pipeline is ~0.2 s of shader
+    // compilation that lands on the first frame (round 52).
+    this.ghostBuild = { device, format, module, layout: ghostLayout };
 
     this.bindGroups = new Map();
   }
@@ -216,6 +214,30 @@ export class NodePipeline {
     pass.drawIndexedIndirect( cull.indirect, 0 );
   }
 
+  /**
+   * Build the ghost pipeline on first use.  Its depth state ('less' at
+   * NODE_Z) kills ghost fragments under opaque node interiors — typically
+   * the ghost's own node — which is exactly v3's node-over-ghost layering.
+   */
+  private makeGhostPipeline(): GPURenderPipeline {
+    const build = this.ghostBuild as { device: GPUDevice; format: GPUTextureFormat;
+      module: GPUShaderModule; layout: GPUPipelineLayout };
+
+    this.ghostPipeline = build.device.createRenderPipeline( {
+      label: 'cy-gpu:node-ghost-pipeline',
+      layout: build.layout,
+      vertex: { module: build.module, entryPoint: 'vsGhost' },
+      fragment: {
+        module: build.module, entryPoint: 'fsGhost',
+        targets: [ { format: build.format, blend: PREMULTIPLIED_BLEND } ]
+      },
+      primitive: { topology: 'triangle-list' },
+      depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: false, depthCompare: 'less' }
+    } );
+
+    return this.ghostPipeline;
+  }
+
   /** The ghost draw (round 13 A1): after edges/arrows, before the nodes. */
   drawGhost(
     pass: GPURenderPassEncoder, device: GPUDevice, uniform: GPUBuffer,
@@ -223,7 +245,7 @@ export class NodePipeline {
   ): void {
     if( instances === 0 ){ return; }
 
-    pass.setPipeline( this.ghostPipeline );
+    pass.setPipeline( this.ghostPipeline ?? this.makeGhostPipeline() );
     pass.setBindGroup( 0, this.ensureBindGroup( device, uniform, mirror, true ) );
     pass.setBindGroup( 1, cull.visibleBindGroup() );
     pass.setIndexBuffer( this.quadIndex, 'uint16' );

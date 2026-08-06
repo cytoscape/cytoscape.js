@@ -170,8 +170,8 @@ export class Renderer {
   private overlayPipeline: NodeLayerPipeline | null = null;
   private underlayPipeline: NodeLayerPipeline | null = null;
   private edgePipeline: EdgePipeline | null;
-  private curvedEdgePipeline: CurvedEdgePipeline | null;
-  private curvedArrowPipeline: CurvedArrowPipeline | null;
+  private curvedEdgePipeline: CurvedEdgePipeline | null = null;
+  private curvedArrowPipeline: CurvedArrowPipeline | null = null;
   private arrowPipeline: ArrowPipeline | null;
   private uniform: GPUBuffer | null;
   private frameData: Float32Array;
@@ -194,8 +194,8 @@ export class Renderer {
   private onFontsLoadingDone: ( () => void ) | null = null;
   /** wired by the factory: an external device loss hands recovery to the core */
   onDeviceLost: ( ( message: string ) => void ) | null = null;
-  private labelPipeline: LabelPipeline | null;
-  private edgeLabelPipeline: LabelPipeline | null;
+  private labelPipeline: LabelPipeline | null = null;
+  private edgeLabelPipeline: LabelPipeline | null = null;
   private cullKernels: CullKernels | null;
   private mapperRuntime: MapperRuntime | null;
   private tweenRuntime: GpuTweenRuntime | null;
@@ -1030,23 +1030,18 @@ export class Renderer {
       curved: new CulledGroup( kernels, 'curvedEdge', 'pick-curved-edge', 6 * CURVE_SEGS )
     };
 
+    this.format = format;
+    // Every graph draws nodes and straight edges, so those pipelines are
+    // built here.  The feature pipelines are not — see the "deferred
+    // pipelines" section: each is built the first time its own draw runs.
     this.nodePipeline = new NodePipeline( device, format, kernels.visibleLayout );
-    this.imagePipeline = new ImagePipeline( device, format, kernels.visibleLayout );
-    this.chartPipeline = new ChartPipeline( device, format, kernels.visibleLayout );
     this.imageArrays = new ImageArrays( device );
     // the browser rasterizer: entries acquired while headless kick now
     this.cy._store.images.setDecoder( createBrowserImageDecoder() );
-    this.overlayPipeline = new NodeLayerPipeline( device, format, kernels.visibleLayout, 'node.overlay' );
-    this.underlayPipeline = new NodeLayerPipeline( device, format, kernels.visibleLayout, 'node.underlay' );
     this.edgePipeline = new EdgePipeline( device, format, kernels.visibleLayout );
-    this.curvedEdgePipeline = new CurvedEdgePipeline( device, format, kernels.visibleLayout );
-    this.curvedArrowPipeline = new CurvedArrowPipeline( device, format, kernels.visibleLayout );
     this.arrowPipeline = new ArrowPipeline( device, format, kernels.visibleLayout );
     this.labelLayer = new LabelLayer( device, this.cy._store );
-    this.labelPipeline = new LabelPipeline( device, format, kernels.visibleLayout );
-    this.edgeLabelPipeline = new LabelPipeline( device, format, kernels.visibleLayout, 'edge' );
     this.picking = new Picking( device );
-    this.format = format;
     this.upscaler = this.scaleCtl.min < 1 ? new Upscaler( device, format ) : null;
     this.gpuTimer = GpuTimer.isSupported( device ) ? new GpuTimer( device ) : null;
 
@@ -1294,6 +1289,146 @@ export class Renderer {
     }
   }
 
+  // -- deferred pipelines --
+
+  /*
+   * A GPURenderPipeline costs nothing to *create* — Dawn returns from
+   * createRenderPipeline immediately and compiles the shader when the
+   * pipeline is first used — so building the whole set at init does not
+   * pay for itself: it moves that compilation onto the first frame,
+   * including for every feature the graph does not use.
+   *
+   * Measured on the SwiftShader adapter CI pins, with a one-node graph,
+   * as the wall time of the first presented frame: 4.6 s for the full set
+   * against 1.06 s with no draw pipelines at all.  The feature pipelines
+   * below are 1.8 s of that — curved edges 0.68, curved arrows 0.28, edge
+   * labels 0.22, images 0.17, charts 0.13, node labels/overlay/underlay
+   * the rest — and a graph with no curved edge, no label and no image
+   * never draws one of them.  A real adapter shows the same shape an
+   * order of magnitude smaller (0.53 s), so this is first-frame latency
+   * for every consumer, not only a CI cost.
+   *
+   * Each accessor below is called from inside the guard that decides
+   * whether its draw runs at all, so the pipeline is built on the frame
+   * that first needs it and never before.  They are not cleared when the
+   * feature goes away again: compiling twice costs more than holding one.
+   */
+
+  /** The three inputs every deferred pipeline needs, or null before ready. */
+  private pipelineInputs(): [ GPUDevice, GPUTextureFormat, GPUBindGroupLayout ] | null {
+    const device = this.device;
+    const format = this.format;
+    const kernels = this.cullKernels;
+
+    if( device == null || format == null || kernels == null ){ return null; }
+
+    return [ device, format, kernels.visibleLayout ];
+  }
+
+  /** Node background images (15.3), built on the first image draw. */
+  private images(): ImagePipeline | null {
+    if( this.imagePipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.imagePipeline = new ImagePipeline( ...inputs );
+    }
+
+    return this.imagePipeline;
+  }
+
+  /** Pie / donut charts (round 23), built on the first chart draw. */
+  private charts(): ChartPipeline | null {
+    if( this.chartPipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.chartPipeline = new ChartPipeline( ...inputs );
+    }
+
+    return this.chartPipeline;
+  }
+
+  /** Node overlay (13 A2), built on the first overlay draw. */
+  private overlays(): NodeLayerPipeline | null {
+    if( this.overlayPipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.overlayPipeline = new NodeLayerPipeline( ...inputs, 'node.overlay' );
+    }
+
+    return this.overlayPipeline;
+  }
+
+  /** Node underlay (13 A2), built on the first underlay draw. */
+  private underlays(): NodeLayerPipeline | null {
+    if( this.underlayPipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.underlayPipeline = new NodeLayerPipeline( ...inputs, 'node.underlay' );
+    }
+
+    return this.underlayPipeline;
+  }
+
+  /** The curved-edge stream, built once the store has ever curved an edge. */
+  private curvedEdges(): CurvedEdgePipeline | null {
+    if( this.curvedEdgePipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.curvedEdgePipeline = new CurvedEdgePipeline( ...inputs );
+    }
+
+    return this.curvedEdgePipeline;
+  }
+
+  /** Arrows on the curved stream, built alongside the curved edges. */
+  private curvedArrows(): CurvedArrowPipeline | null {
+    if( this.curvedArrowPipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.curvedArrowPipeline = new CurvedArrowPipeline( ...inputs );
+    }
+
+    return this.curvedArrowPipeline;
+  }
+
+  /** Node labels, built on the first frame with a node glyph to draw. */
+  private labels(): LabelPipeline | null {
+    if( this.labelPipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.labelPipeline = new LabelPipeline( ...inputs );
+    }
+
+    return this.labelPipeline;
+  }
+
+  /** Edge labels — the mid, source and end streams share this one. */
+  private edgeLabels(): LabelPipeline | null {
+    if( this.edgeLabelPipeline == null ){
+      const inputs = this.pipelineInputs();
+
+      if( inputs == null ){ return null; }
+
+      this.edgeLabelPipeline = new LabelPipeline( ...inputs, 'edge' );
+    }
+
+    return this.edgeLabelPipeline;
+  }
+
   /**
    * The scene draw sequence against a Frame uniform + culled groups —
    * shared by the on-screen frame and image export.  Z-order: edges under
@@ -1309,6 +1444,11 @@ export class Renderer {
     const device = this.device as GPUDevice;
     const mirror = this.mirror as ColumnMirror;
     const store = this.cy._store;
+    // the curved stream draws nothing until some edge has curved, so its
+    // two pipelines stay uncompiled until then (see "deferred pipelines")
+    const curved = store.hasCurvedEdges();
+    const curvedEdges = curved ? this.curvedEdges() : null;
+    const curvedArrows = curved ? this.curvedArrows() : null;
 
     this.nodePipeline?.drawDepthPrepass( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
 
@@ -1320,39 +1460,39 @@ export class Renderer {
 
       // parent background images ride their bodies' tier (v3's layering)
       if( store.imageCount() > 0 && this.imageArrays != null ){
-        this.imagePipeline?.draw(
+        this.images()?.draw(
           pass, device, uniform, mirror, this.imageArrays, store.highWater( 'nodes' ), cull.parent );
       }
 
       // parent charts over their images (round 23; v3's pie order)
       if( store.chartCount() > 0 ){
-        this.chartPipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.parent );
+        this.charts()?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.parent );
       }
     }
 
     if( store.edgeUnderlayCount() > 0 ){
       this.edgePipeline?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.underlay' );
-      this.curvedEdgePipeline?.drawLayer(
+      curvedEdges?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved, 'edge.underlay' );
     }
 
     if( store.casingCount() > 0 ){
       this.edgePipeline?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.casing' );
-      this.curvedEdgePipeline?.drawLayer(
+      curvedEdges?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved, 'edge.casing' );
     }
 
     this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge );
     // curved edges draw after straight ones (two streams; within each,
     // slot order — a recorded z-order deviation)
-    this.curvedEdgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved );
+    curvedEdges?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved );
     this.arrowPipeline?.draw(
       pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge,
       this.cy._styleEngine.arrowEnds
     );
-    this.curvedArrowPipeline?.draw(
+    curvedArrows?.draw(
       pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved,
       this.cy._styleEngine.arrowEnds
     );
@@ -1362,7 +1502,7 @@ export class Renderer {
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge,
         this.cy._styleEngine.midArrowEnds
       );
-      this.curvedArrowPipeline?.drawMid(
+      curvedArrows?.drawMid(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved,
         this.cy._styleEngine.midArrowEnds
       );
@@ -1370,7 +1510,7 @@ export class Renderer {
     if( store.edgeOverlayCount() > 0 ){
       this.edgePipeline?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.edge, 'edge.overlay' );
-      this.curvedEdgePipeline?.drawLayer(
+      curvedEdges?.drawLayer(
         pass, device, uniform, mirror, store.highWater( 'edges' ), cull.curved, 'edge.overlay' );
     }
 
@@ -1380,7 +1520,7 @@ export class Renderer {
     }
 
     if( store.underlayCount() > 0 && cull.underlay != null ){
-      this.underlayPipeline?.draw(
+      this.underlays()?.draw(
         pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.underlay, true );
     }
 
@@ -1389,37 +1529,44 @@ export class Renderer {
     // leaf background images composite right over their bodies (15.3),
     // under overlays and labels; zero-cost while no node styles one
     if( store.imageCount() > 0 && this.imageArrays != null ){
-      this.imagePipeline?.draw(
+      this.images()?.draw(
         pass, device, uniform, mirror, this.imageArrays, store.highWater( 'nodes' ), cull.node );
     }
 
     // leaf charts over their images (round 23), under overlays/labels
     if( store.chartCount() > 0 ){
-      this.chartPipeline?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
+      this.charts()?.draw( pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.node );
     }
 
     if( store.overlayCount() > 0 && cull.overlay != null ){
-      this.overlayPipeline?.draw(
+      this.overlays()?.draw(
         pass, device, uniform, mirror, store.highWater( 'nodes' ), cull.overlay, false );
     }
 
-    if( this.labelLayer != null && this.labelPipeline != null ){
-      this.labelPipeline.draw(
-        pass, device, uniform, this.labelLayer.glyphs, mirror, this.labelLayer.atlas, cull.glyph
+    // an unlabelled graph rasters no glyph, so neither label pipeline is
+    // built until some stream has one (see "deferred pipelines")
+    const labels = this.labelLayer;
+
+    if( labels != null && labels.glyphs.highWater > 0 ){
+      this.labels()?.draw(
+        pass, device, uniform, labels.glyphs, mirror, labels.atlas, cull.glyph
       );
     }
 
-    if( this.labelLayer != null && this.edgeLabelPipeline != null ){
-      this.edgeLabelPipeline.draw(
-        pass, device, uniform, this.labelLayer.edgeGlyphs, mirror, this.labelLayer.atlas, cull.edgeGlyph
+    if( labels != null && ( labels.edgeGlyphs.highWater > 0
+      || labels.sourceGlyphs.highWater > 0 || labels.targetGlyphs.highWater > 0 ) ){
+      const edgeLabels = this.edgeLabels();
+
+      edgeLabels?.draw(
+        pass, device, uniform, labels.edgeGlyphs, mirror, labels.atlas, cull.edgeGlyph
       );
       // the end-label streams (D4) share the pipeline; their glyphs
       // carry the endParam re-anchor
-      this.edgeLabelPipeline.draw(
-        pass, device, uniform, this.labelLayer.sourceGlyphs, mirror, this.labelLayer.atlas, cull.sourceGlyph
+      edgeLabels?.draw(
+        pass, device, uniform, labels.sourceGlyphs, mirror, labels.atlas, cull.sourceGlyph
       );
-      this.edgeLabelPipeline.draw(
-        pass, device, uniform, this.labelLayer.targetGlyphs, mirror, this.labelLayer.atlas, cull.targetGlyph
+      edgeLabels?.draw(
+        pass, device, uniform, labels.targetGlyphs, mirror, labels.atlas, cull.targetGlyph
       );
     }
   }
@@ -1636,7 +1783,11 @@ export class Renderer {
 
     // edges only: node picks are answered synchronously on the CPU
     this.edgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), pickCull.edge, true );
-    this.curvedEdgePipeline?.draw( pass, device, uniform, mirror, store.highWater( 'edges' ), pickCull.curved, true );
+
+    if( store.hasCurvedEdges() ){
+      this.curvedEdges()?.draw(
+        pass, device, uniform, mirror, store.highWater( 'edges' ), pickCull.curved, true );
+    }
     pass.end();
   }
 

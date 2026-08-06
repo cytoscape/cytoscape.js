@@ -2774,6 +2774,50 @@ Not yet covered, and the remainder of the round: the documented limit
 edges — the 256-layer image cap, a full glyph atlas, the export texture
 cap.  Each needs a fixture large enough to reach the limit.
 
+## First-frame cost: deferred pipelines (round 53)
+
+The renderer builds its *feature* pipelines on the first frame that draws
+them, not at init.  Only the pipelines every graph needs — nodes, straight
+edges, arrows — plus picking and the label layer are built when the device
+arrives.
+
+The reason is that creating a pipeline is not where the cost is.  Dawn
+returns from `createRenderPipeline` in 0 ms and compiles the shader when
+the pipeline is first *used*, so building the whole set at init does not
+pay for itself: it moves that compilation onto the first frame, including
+for every feature the graph does not use.  Measured as the wall time of
+the first presented frame of a one-node graph, on the SwiftShader adapter
+the visual goldens pin:
+
+| | first frame |
+|---|---|
+| all 12 draw pipelines | 4.60 s |
+| node pipeline only | 2.65 s |
+| no draw pipelines at all | 1.06 s |
+
+A real adapter shows the same shape an order of magnitude smaller
+(0.53 s).  Deferring the eight feature pipelines takes the one-node case
+to **2.72 s** software / proportionally on hardware, and leaves a graph
+that uses every feature exactly where it was.
+
+Two notes for anyone changing this.
+
+- **`createRenderPipelineAsync` is not the answer.**  Awaited, it is ~15%
+  better and scales perfectly linearly (1/4/8 pipelines → 621/2409/4756 ms
+  sync against 613/2013/4053 ms async): Dawn compiles them serially on one
+  thread either way.  The lever is not compiling what you do not draw.
+- **The curved gate is monotone.**  `GraphStore.hasCurvedEdges()` goes true
+  where `FLAG_CURVED` is written and never goes back, so a graph that
+  curves an edge once holds the curved edge and curved arrow pipelines for
+  its lifetime.  Recompiling costs more than holding them, and the gate is
+  read once per frame.  `test/curve-stream-gate.mjs` pins which curve
+  styles reach the curved stream — `haystack` and `straight-triangle` do
+  not, and neither does `bezier` until a parallel pair bundles.
+
+A deferred pipeline moves a failure from mount to first draw.  The
+`visual` Playwright project draws every gated feature, which is what makes
+that checkable.
+
 ## Porting from v3 (round 47)
 
 `MIGRATING.md` at the repo root is the porting guide, and it ships in the

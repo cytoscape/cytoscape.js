@@ -1,6 +1,22 @@
 {
   "runs": [
     {
+      "file": "results-render-2026-08-06T23-41-39-127Z.json",
+      "date": "2026-08-06T23:41:39.127Z",
+      "commit": "3c9c3e33",
+      "commitSubject": "docs(v4): closing sweep for round 55 — record, prose, and the summary",
+      "branch": "v4",
+      "profile": "renderer",
+      "suiteFilter": "gen-25k",
+      "dirty": false,
+      "totalMs": 678965,
+      "fingerprint": "2d2ea233",
+      "machine": "Intel Core i9-9900K 8c/16t · 62.6 GiB · CoffeeLake-S GT2 [UHD Graphics 630] + Ellesmere [Radeon RX 470/480/570/570X/580/580X/590] (8.0 GiB)",
+      "adapter": "amd gcn-4",
+      "jobs": 8,
+      "note": "round 55 baseline: the arrow scenes and their arrows-off control, before the gap/trim port"
+    },
+    {
       "file": "results-render-2026-08-05T18-38-42-377Z.json",
       "date": "2026-08-05T18:38:42.377Z",
       "commit": "365d4d5a",

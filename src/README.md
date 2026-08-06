@@ -1892,12 +1892,22 @@ the edges/children drawn over them — they lose the occlusion
 benefit); parent ghost/underlay/overlay/label decorations keep
 their existing post-edge draw positions (permanent since the
 2026-08-01 z-index drop — decorations are top-tier accents by
-design); and v4's parent boxes can sit sub-pixel smaller than v3's
-when children have borders — v3's node bb includes the border's
-miter-corner overshoot (~(√2−1)·border/2 per side on cornered
-shapes) while v4's child extents are the plain border-inclusive
-`outerHalf` (the `parity-compounds` scene carries a looser bound
-for exactly this).
+design); and v4's parent boxes sit smaller than v3's, for **two
+separate reasons that round 55 had to disentangle**.  The one
+recorded first: v3's node bb includes the border's miter-corner
+overshoot (~(√2−1)·border/2 per side on cornered shapes) while
+v4's child extents are the plain border-inclusive `outerHalf` (the
+`parity-compounds` scene carries a looser bound for exactly this).
+The second, measured in round 55 and **independent of the border**:
+v4's parent box is the children's union plus padding *exactly*,
+where v3's is that plus **1.0 model px on every side** — the same
+1 px at `border-width` 0, 1 and 4, on ellipse children that have no
+miter corners at all.  Reading a parent-box difference as the
+border effect alone will therefore mis-explain it; the routing
+harness's `compound` scene pins `border-width: 0` on both sides so
+that only the second reason can be in play.  Whether v4 should
+inflate to match is open — see PLAN.md's ledger item 19, and note
+that round 54 is scheduled to tighten these bounds further.
 
 Round 14.10 (compound loop edges): an edge between a node and its
 own ancestor/descendant — or a self-loop on a parent — **routes

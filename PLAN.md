@@ -723,6 +723,44 @@ conditional halves of calls the sitting took.
     larger future direction to keep beside it: **a WebGL fallback
     renderer** may be worth considering for users whose platforms
     cannot support WebGPU at all — logged as a direction, not scoped.
+19. **v3's derived parent box is 1 px larger per side than v4's** (round
+    55, 2026-08-06).  Measured on a parent with two 30x30 ellipse
+    children and padding 10: v4's box is the children's union plus
+    padding *exactly* (120.00 wide), v3's is that plus 1 px on each side
+    (122.00), and **the gap does not move with `border-width`** — 0, the
+    default, and 4 all give 1.0 px per side.  So this is not the
+    border/miter difference `src/README.md` records, and that note is
+    incomplete as an explanation of parent-box differences.  Everything
+    on an ancestry edge follows from it (v3 builds compound control
+    points from `min(pos − outerW/2)`), and it is what the round-55
+    routing harness reports as a flat 1.000000 on every field of
+    `p-child`, `p-grandchild` and `child-p`.
+    **The call**: match v3 by inflating v4's box, or keep v4's tighter
+    box and record the deviation?  The direction of travel says the
+    latter — round 54 is scheduled to tighten compound bounds further
+    and item 16 ratified the tighter compound `fit()` — but this is
+    public geometry, so it is logged rather than taken.
+    Not yet isolated, and deliberately not claimed: the larger
+    divergences in the same scene (`parent-parent` 16.04 px,
+    `leaf-parent` 8.07 px) are *consistent with* the same 1 px amplified
+    where an endpoint clips a box at a shallow angle, but that has not
+    been demonstrated.
+20. **`sourceEndpoint()`/`targetEndpoint()` answer the node centre on a
+    straight edge** (round 55, 2026-08-06).  v3 answers the node
+    *boundary* (its `rs.arrowStartX/Y`, the spacing-shortened arrow
+    point).  v4's `Collection._endpointPoint` falls through to the raw
+    node positions whenever there is no curve eval and no route, which
+    is every straight edge — so the answer is off by a whole node
+    radius, measured as 13.207 px on a 30x30 node at the harness's
+    generic slope, and by exactly the boundary offset in every straight
+    row of every scene.  `renderedTargetEndpoint()` is how applications
+    place custom overlays, so this is visible, not theoretical.
+    It is **logged rather than fixed** because it is public API and
+    `test/collection-dimensions.mjs:164-167` currently pins v4's answer
+    as correct — removing or changing public API is the maintainer's
+    call even when the ledger looks like authorization.  The fix is
+    small and its blast radius is known: that spec, and one Playwright
+    probe at `renderer.spec.js:4516-4546` that assumes the old value.
 
 ## Context
 
@@ -13023,3 +13061,53 @@ conservative store bound on this path.  They are kept as contract
 breadth, with a comment saying they are not what makes the block
 discriminate — a spec that reads like a guard but cannot fail is exactly
 what this repo's notes keep warning about.
+
+### The compound finding, corrected — and an open call
+
+The first pass through this round's record said the compound tier showed
+"a constant 1.0 px offset on ancestry edges".  True, but the attribution
+that suggests itself is wrong, and `src/README.md` is what suggests it:
+it records that "v4's parent boxes can sit sub-pixel smaller than v3's
+when children have borders — v3's node bb includes the border's
+miter-corner overshoot (~(√2−1)·border/2 per side on cornered shapes)".
+Reading the divergence as that known deviation would have closed the
+question.
+
+It is not that.  Measured directly, with a parent holding two 30x30
+ellipse children at x = 0 and x = 90 and padding 10:
+
+| `border-width` | v3 parent width | v4 parent width | left edge, v3 vs v4 |
+|---|---|---|---|
+| default | 122.00 | 120.00 | −26.500 vs −25.500 |
+| 0 | 122.00 | 120.00 | −26.000 vs −25.000 |
+| 4 | 126.00 | 124.00 | −30.000 vs −29.000 |
+
+**The gap is exactly 1.0 model px per side and does not move with the
+border at all** — not at 0, where the recorded explanation cannot apply,
+and not at 4, where it would have to scale.  The children are ellipses,
+which have no miter corners to overshoot in the first place.  v4's box is
+the children's union plus padding, exactly; v3's is that plus 1 px on
+each side, for a reason that is not the border.
+
+So the README's note is not wrong about the effect it describes, but it
+is **incomplete as an explanation of parent-box differences**, and this
+round's scene now pins `border-width: 0` on both sides precisely so that
+explanation is removed from the picture and whatever remains cannot be
+about borders.
+
+Every ancestry-edge divergence (`p-child`, `p-grandchild`, `child-p`:
+1.000000 on every field) follows from that 1 px, since v3's
+`findCompoundLoopPoints` builds its control points from
+`min(pos − outerW/2)` over the two endpoints.  The larger divergences —
+`parent-parent` at 16.04 and `leaf-parent` at 8.07 — are **not yet
+isolated**; they are consistent with the same box difference amplified
+where an endpoint clips a box at a shallow angle, but that has not been
+demonstrated and should not be recorded as though it had.
+
+Direction matters here, which is why this is a call and not a fix.  Round
+54 is already scheduled to *tighten* v4's compound bounds, and item 16
+ratified the tighter compound `fit()` — so v4 being the tighter of the
+two is very likely the intended behaviour and the right answer is to
+record a deviation, not to inflate v4's box by a pixel to match v3.  But
+that is the maintainer's call on public geometry, so it is logged rather
+than taken; see the ledger entry below.

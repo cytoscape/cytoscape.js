@@ -331,19 +331,26 @@ const compounds = () => {
 
   return {
     name: 'compound', tolClass: 'compound',
-    expectFail: 'round 55 finding — a constant 1.0 px offset on ancestry edges, and larger errors clipping against a derived parent box',
+    expectFail: 'round 55 finding, open call — v3\'s derived parent box is 1.0 model px larger per side than the children\'s union, independent of border width; every divergence here traces to that',
     note: 'the seven compound arrangements, three of them controls that must match',
     elements,
     edges: [ 'p-child', 'p-grandchild', 'child-p', 'sibling', 'cross', 'parent-parent', 'leaf-parent' ],
+    // `border-width: 0` on both sides is not decoration.  src/README.md
+    // attributes v4's smaller parent boxes to v3's node bb picking up the
+    // border's miter-corner overshoot, so the obvious reading of any gap
+    // here is "that known deviation".  Pinning the border to zero removes
+    // that explanation from the scene: whatever remains cannot be about
+    // borders.  Measured — the gap is 1.0 model px per side at
+    // border-width 0, 1 and 4 alike.
     v3Style: [
-      { selector: 'node', style: { ...NODE } },
-      { selector: ':parent', style: { 'padding': 10, 'shape': 'rectangle' } },
+      { selector: 'node', style: { ...NODE, 'border-width': 0 } },
+      { selector: ':parent', style: { 'padding': 10, 'shape': 'rectangle', 'border-width': 0 } },
       { selector: 'edge', style: { 'curve-style': 'bezier', ...shared } },
       { selector: 'edge[fam = \'unbundled-bezier\']', style: { 'curve-style': 'unbundled-bezier' } }
     ],
     v4Style: {
-      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
-      parents: { 'padding': 10, 'shape': 'rectangle' },
+      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b', 'border-width': 0 },
+      parents: { 'padding': 10, 'shape': 'rectangle', 'border-width': 0 },
       edges: { 'curve-style': { data: 'fam' }, ...shared }
     }
   };

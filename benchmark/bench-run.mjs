@@ -8,7 +8,7 @@
 
 import { writeFileSync } from 'node:fs';
 import { run } from 'mitata';
-import { N } from './graph.mjs';
+import { N } from './bench-size.mjs'; // not graph.mjs: that one loads v3 and v4
 import { oneShotStats } from './render-stats.mjs';
 
 const STAT_KEYS = [ 'min', 'max', 'p25', 'p50', 'p75', 'p99', 'p999', 'avg', 'ticks' ];

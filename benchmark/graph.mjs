@@ -5,12 +5,14 @@
 // Both factories accept the same `{ elements }` shape, so a single element
 // list drives both.
 
+import { N } from './bench-size.mjs';
 import cytoscapeV3 from '../v3/src/test.mjs';
 import cytoscape from '../src/index.mjs';
 
-// Node count is overridable so a run can be scaled up/down:
-//   BENCH_N=5000 npm run benchmark
-export const N = Number( process.env.BENCH_N ) || 2000;
+// The run size lives in bench-size.mjs, which imports nothing — so a module
+// that wants only `N` need not evaluate v3 and v4 to get it.  Re-exported
+// here because twenty suites import it from this module.
+export { N, MIDNUM, MID } from './bench-size.mjs';
 
 /**
  * A deterministic graph: N nodes on a grid, each with two out-edges
@@ -49,8 +51,7 @@ export function makeGpu( elements ){
   return cytoscape( { elements: clone( elements ) } );
 }
 
-// A representative node index/id in the middle of the graph, for single-element
-// lookups. Benchmarks rotate over a small band of ids starting here so the JIT
-// can't hoist a loop-invariant pure call out of the measured region.
-export const MIDNUM = Math.floor( N / 2 );
-export const MID = 'n' + MIDNUM;
+// MIDNUM / MID — a representative node index/id in the middle of the graph,
+// for single-element lookups — are re-exported at the top of this file.
+// Benchmarks rotate over a small band of ids starting there so the JIT can't
+// hoist a loop-invariant pure call out of the measured region.

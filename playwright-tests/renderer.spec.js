@@ -3310,11 +3310,13 @@ test.describe( 'WebGPU renderer', () => {
 
   test( 'ready rejects when no adapter can be acquired', async ( { page } ) => {
     // This takes the adapter away rather than faking the environment, so it
-    // needs an environment to take it away *from*: on a build with no
-    // navigator.gpu at all — Linux WebKit, which the renderer-webkit project
-    // drives — there is nothing to stub, and the graph is in the other
-    // failure state, the one 'hard error when WebGPU is unavailable' covers.
-    test.skip( !( await hasGpuApi( page ) ), 'no navigator.gpu to take an adapter away from' );
+    // needs `navigator.gpu` to exist to stub requestAdapter to null.  A
+    // browser with no WebGPU API at all is in the *other* init state, the
+    // one no stub can un-make ('WebGPU is required to render but is
+    // unavailable') — and that state has its own spec, 'hard error when
+    // WebGPU is unavailable', which is one of the two that do run on
+    // WebKit.  Linux WebKit lands there, so skip rather than throw.
+    test.skip( !( await hasGpuApi( page ) ), 'navigator.gpu is not exposed in this browser' );
 
     // the README's own headline for the headless/rendered boundary, and
     // the state a blocklisted or software-less machine is really in — no

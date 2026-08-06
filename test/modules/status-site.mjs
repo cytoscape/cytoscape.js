@@ -148,7 +148,11 @@ describe( 'status site: the Cloudflare Pages per-file cap', function(){
 
     const path = join( ROOT, 'debug', 'network-ndex-x-large.json' );
 
-    if( !existsSync( path ) || !existsSync( join( ROOT, 'build', 'cytoscape.cjs.js' ) ) ){ return; }
+    // A missing *fixture* is a legitimate skip (a slim checkout has nothing to
+    // measure).  A missing or stale *bundle* is not — `wireSize` throws with
+    // the `npm run build` instruction, and `npm run test:modules` builds first
+    // so the scripted path never hits it (2026-08-06).
+    if( !existsSync( path ) ){ return; }
 
     const onDisk = statSync( path ).size;
     const encoded = wireSize( ROOT, path );
@@ -159,6 +163,39 @@ describe( 'status site: the Cloudflare Pages per-file cap', function(){
     expect( encoded ).to.be.at.most( PAGES_MAX_BYTES );
     // and it must be a real reduction, not a rounding win
     expect( encoded ).to.be.lessThan( onDisk / 2 );
+  } );
+
+  // The two build-availability guards (2026-08-06).  A stale bundle used to
+  // surface as `cy.toColumnarElements is not a function` swallowed by
+  // `wireSize`, which the spec above then reported as "the fixture could not
+  // be encoded at all".  Both guards must instead name the one fix.  Each spec
+  // imports a fresh module instance via a query string, because `wireLib`
+  // caches at module level and a poisoned cache would leak into the specs
+  // above.
+
+  it( 'a stale bundle names the rebuild fix, not a TypeError deep in the encoder', async function(){
+    const mod = await import( '../../scripts/status/wire-fixtures.mjs?control=stale' );
+    const root = mkdtempSync( join( tmpdir(), 'cy-wire-stale-' ) );
+
+    try {
+      mkdirSync( join( root, 'build' ) );
+      writeFileSync( join( root, 'build', 'cytoscape.cjs.js' ), 'module.exports = {};\n' );
+
+      expect( () => mod.wireLib( root ) ).to.throw( /stale[\s\S]*npm run build/ );
+    } finally {
+      rmSync( root, { recursive: true, force: true } );
+    }
+  } );
+
+  it( 'a missing bundle throws the rebuild instruction rather than answering null', async function(){
+    const mod = await import( '../../scripts/status/wire-fixtures.mjs?control=missing' );
+    const root = mkdtempSync( join( tmpdir(), 'cy-wire-missing-' ) );
+
+    try {
+      expect( () => mod.wireSize( root, join( root, 'x.json' ) ) ).to.throw( /missing[\s\S]*npm run build/ );
+    } finally {
+      rmSync( root, { recursive: true, force: true } );
+    }
   } );
 
   it( 'minifying really does take ndex-large under the cap, measured on disk', function(){

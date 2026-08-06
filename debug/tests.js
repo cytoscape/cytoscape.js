@@ -264,9 +264,9 @@
   });
 
   test({
-    name: "alphaAndGradientOverlays",
-    displayName: "Alpha colors & gradient overlays/underlays",
-    description: "Showcase alpha-aware colors (solid, text bg/border, bypass) plus linear/radial gradient overlays & underlays on nodes and edges",
+    name: 'alphaAndGradientOverlays',
+    displayName: 'Alpha colors & gradient overlays/underlays',
+    description: 'Showcase alpha-aware colors (solid, text bg/border, bypass) plus linear/radial gradient overlays & underlays on nodes and edges',
     setup: function(){
 
     cy.scratch('prevEles', cy.elements().jsons());
@@ -356,13 +356,14 @@
     cy.style().update();
     },
     teardown: function(){
+      cy.elements().remove();
       cy.style().resetToDefault();
       const prevEles = cy.scratch('prevEles');
       const prevStyle = cy.scratch('prevStyle');
-      cy.add(prevEles);
-      cy.style(prevStyle);
       cy.removeScratch('prevEles');
       cy.removeScratch('prevStyle');
+      cy.add(prevEles);
+      cy.style(prevStyle);
     }
   });
 

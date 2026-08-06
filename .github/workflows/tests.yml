@@ -25,6 +25,14 @@ jobs:
       working-directory: v3
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps
+    # `build/` is gitignored, so a fresh checkout has no bundle — and
+    # `test/modules/status-site.mjs` plans the status site's mirror of the
+    # debug harness, which loads `../build/cytoscape.umd.js`.  Playwright's
+    # webServer does build one, but that runs later in the `run-s` chain than
+    # `test:modules`, so without this step three specs fail on the runner and
+    # pass on any machine that has ever built.
+    - name: Build the bundles
+      run: npm run build
     - name: Run tests
       run: npm test
     - name: Verify type definitions

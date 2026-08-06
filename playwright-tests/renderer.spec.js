@@ -3228,6 +3228,13 @@ test.describe( 'WebGPU renderer', () => {
   */
 
   test( 'ready rejects when no adapter can be acquired', async ( { page } ) => {
+    // needs `navigator.gpu` to exist so requestAdapter can be stubbed to
+    // null; a browser with no WebGPU API at all is in the *other* init
+    // state ('WebGPU is required to render but is unavailable'), which no
+    // stub can un-make — WebKit builds without WebGPU land here (2026-08-06)
+    test.skip( !( await page.evaluate( () => navigator.gpu != null ) ),
+      'navigator.gpu is not exposed in this browser' );
+
     // the README's own headline for the headless/rendered boundary, and
     // the state a blocklisted or software-less machine is really in — no
     // stub can produce it on a box that has an adapter, so the adapter is

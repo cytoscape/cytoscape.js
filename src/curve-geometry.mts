@@ -1052,7 +1052,8 @@ export const computeCorner = (
   prevX: number, prevY: number, curX: number, curY: number,
   nextX: number, nextY: number, radiusMax: number, isArc: boolean
 ): RouteCorner => {
-  if( radiusMax === 0 ){
+  /** The no-arc answer: the corner stays a corner. */
+  const noArc = (): RouteCorner => {
     out.cx = curX; out.cy = curY;
     out.r = 0;
     out.startX = curX; out.startY = curY;
@@ -1061,17 +1062,39 @@ export const computeCorner = (
     out.ccw = false;
 
     return out;
-  }
+  };
+
+  if( radiusMax === 0 ){ return noArc(); }
 
   // vectors from the corner toward its neighbours (v3's asVec)
   const v1x = prevX - curX;
   const v1y = prevY - curY;
   const v1l = Math.sqrt( v1x * v1x + v1y * v1y );
-  const v1nx = v1x / v1l;
-  const v1ny = v1y / v1l;
   const v2x = nextX - curX;
   const v2y = nextY - curY;
   const v2l = Math.sqrt( v2x * v2x + v2y * v2y );
+
+  // A zero-length leg has no direction, so there is no corner to round —
+  // and normalizing it would put NaN into every value below.
+  //
+  // This is a **deliberate divergence from v3**, and the only one in this
+  // function: v3's `asVec` (src/round.mts) divides unguarded and produces
+  // NaN corners here, and its own collinear check sits *after* the
+  // normalize, where `abs(NaN) < 1e-6` is false, so it never fires
+  // either.  The configuration is not exotic — an axis-aligned pair of
+  // nodes under `round-taxi` produces two coincident interior points in
+  // both libraries (that part is a faithful port), which is what a grid
+  // layout hands you.  Four edges of debug/'s `v3-default` network are
+  // exactly this.
+  //
+  // v4's consequence was worse than v3's, which is why matching v3 here
+  // was not an option: the NaN propagated out to `boundingBox()`, which
+  // answered `{x1: null, y1: null, x2: null, y2: null}` — so the edge was
+  // unpickable, uncullable and corrupted any bound that included it.
+  if( v1l === 0 || v2l === 0 ){ return noArc(); }
+
+  const v1nx = v1x / v1l;
+  const v1ny = v1y / v1l;
   const v2nx = v2x / v2l;
   const v2ny = v2y / v2l;
 
@@ -1079,16 +1102,7 @@ export const computeCorner = (
   const sinA90 = v1nx * v2nx - v1ny * -v2ny;
   let angle = Math.asin( Math.max( -1, Math.min( 1, sinA ) ) );
 
-  if( Math.abs( angle ) < 1e-6 ){ // collinear: no arc
-    out.cx = curX; out.cy = curY;
-    out.r = 0;
-    out.startX = curX; out.startY = curY;
-    out.stopX = curX; out.stopY = curY;
-    out.a0 = 0; out.a1 = 0;
-    out.ccw = false;
-
-    return out;
-  }
+  if( Math.abs( angle ) < 1e-6 ){ return noArc(); } // collinear: no arc
 
   let radDirection = 1;
   let drawDirection = false;

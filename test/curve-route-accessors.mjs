@@ -176,4 +176,97 @@ describe('gpu/curve-route-accessors (12b)', function(){
     });
   });
 
+  /*
+   * Round 55: axis-aligned round-taxi and round-segments used to answer
+   * `{x1: null, y1: null, x2: null, y2: null}`.
+   *
+   * `evalTaxi` emits two *coincident* interior points when the endpoints
+   * share an axis — a faithful port of v3, which does the same — and
+   * `computeCorner` then normalized a zero-length leg, so NaN reached
+   * every strip vertex, the bounding box and the hit test.  The edge was
+   * invisible on the GPU (a NaN clip position is dropped), unpickable,
+   * and poisoned any bound that included it.
+   *
+   * A grid layout is what produces this, so it was not a corner case: it
+   * is what a maintainer saw on `debug/?network=v3-default`, four of
+   * whose edges are round-taxi.
+   *
+   * These specs are the deterministic pin.  The browser tier finds the
+   * same defect (`finite geometry: taxi` in playwright-tests/routing.spec.js),
+   * but a guard reachable only from the browser suite is invisible to the
+   * Node tier and to the throw gate.
+   *
+   * Control, run with the guard removed: **only the bounding-box spec of
+   * the three fails.**  The midpoint and hit-test specs pass either way,
+   * because a NaN *corner* does not reach the midpoint (which comes from
+   * the route points, not the arcs) and `elementsInBox` answers from the
+   * conservative store bound rather than the exact polyline on this
+   * path.  They are kept deliberately, as contract breadth against a
+   * future regression that does reach them — but they are not what makes
+   * this block discriminate, and a reader should not assume they are.
+   */
+  describe('degenerate rounded routes stay finite (round 55)', function(){
+    var aligned = ( style, dx, dy ) => cytoscape({
+      elements: [
+        { data: { id: 'a' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b' }, position: { x: dx, y: dy } },
+        { data: { id: 'e', source: 'a', target: 'b' } }
+      ],
+      style: { edges: style }
+    });
+
+    var finiteBox = bb => [ 'x1', 'y1', 'x2', 'y2', 'w', 'h' ]
+      .every( k => Number.isFinite( bb[ k ] ) );
+
+    var cases = [
+      [ 'round-taxi, vertical', { 'curve-style': 'round-taxi' }, 0, 160 ],
+      [ 'round-taxi, horizontal', { 'curve-style': 'round-taxi' }, 200, 0 ],
+      [ 'round-segments with coincident points',
+        { 'curve-style': 'round-segments',
+          'segment-distances': [ 20, 20 ], 'segment-weights': [ 0.5, 0.5 ] }, 200, 0 ]
+    ];
+
+    cases.forEach( function( entry ){
+      var label = entry[ 0 ];
+      var style = entry[ 1 ];
+      var dx = entry[ 2 ];
+      var dy = entry[ 3 ];
+
+      it(`${label}: the bounding box is finite`, function(){
+        cy = aligned( style, dx, dy );
+
+        var bb = cy.$id('e').boundingBox();
+
+        expect( finiteBox( bb ), `bb was ${JSON.stringify( bb )}` ).to.equal( true );
+
+        // and it actually spans the edge rather than collapsing
+        expect( bb.w + bb.h ).to.be.greaterThan( 100 );
+      });
+
+      it(`${label}: the midpoint and endpoints are finite`, function(){
+        cy = aligned( style, dx, dy );
+
+        var e = cy.$id('e');
+
+        for( var p of [ e.midpoint(), e.sourceEndpoint(), e.targetEndpoint() ] ){
+          expect( Number.isFinite( p.x ) && Number.isFinite( p.y ),
+            `got ${JSON.stringify( p )}` ).to.equal( true );
+        }
+      });
+
+      it(`${label}: it is still hit-testable`, function(){
+        cy = aligned( style, dx, dy );
+
+        var bb = cy.$id('e').boundingBox();
+
+        // a box over the whole edge must find it — with NaN geometry the
+        // comparison silently answered false and the edge vanished from
+        // box selection
+        var hit = cy.elementsInBox( bb.x1 - 5, bb.y1 - 5, bb.x2 + 5, bb.y2 + 5 );
+
+        expect( hit.filter( el => el.isEdge() ).length ).to.equal( 1 );
+      });
+    } );
+  });
+
 });

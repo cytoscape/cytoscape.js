@@ -772,9 +772,18 @@ fn computeCornerW(prev: vec2f, cur: vec2f, next: vec2f, radiusMax: f32, isArc: b
 
   let v1 = prev - cur;
   let v1l = length(v1);
-  let v1n = v1 / v1l;
   let v2 = next - cur;
   let v2l = length(v2);
+
+  // A zero-length leg has no direction, so there is no corner to round,
+  // and normalizing it would put NaN into every value below — on the GPU
+  // that NaNs the clip position and the whole edge disappears.  The CPU
+  // twin (computeCorner in src/curve-geometry.mts) carries the same guard
+  // and the reasoning: this is a deliberate divergence from v3, which
+  // divides unguarded here.  Axis-aligned round-taxi is the case.
+  if (v1l == 0.0 || v2l == 0.0) { return crn; }
+
+  let v1n = v1 / v1l;
   let v2n = v2 / v2l;
 
   let sinA = v1n.x * v2n.y - v1n.y * v2n.x;

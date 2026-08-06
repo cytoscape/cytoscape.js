@@ -164,12 +164,11 @@ test.describe( 'v3-vs-v4 routing parity (numeric)', () => {
    * fix has to satisfy: when the guard lands, the entry stops being hit
    * and this spec fails until it is removed.
    */
-  const NON_FINITE_ALLOWED = [
-    { scene: 'taxi', id: 'round-taxi-vert', field: 'bb',
-      why: 'axis-aligned round-taxi: computeCorner divides by a zero leg (round 55, fix 2)' },
-    { scene: 'taxi', id: 'round-taxi-horiz', field: 'bb',
-      why: 'axis-aligned round-taxi: computeCorner divides by a zero leg (round 55, fix 2)' }
-  ];
+  // Empty since round 55's zero-leg guard landed.  It was not empty when
+  // this spec was written: `round-taxi-vert` and `round-taxi-horiz` both
+  // answered a non-finite `boundingBox()`, and removing those two entries
+  // is what the fix had to earn.
+  const NON_FINITE_ALLOWED = [];
 
   for( const scene of SCENES ){
     test( `finite geometry: ${scene.name}`, async ( { page } ) => {

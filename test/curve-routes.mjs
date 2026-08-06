@@ -76,6 +76,58 @@ describe('gpu/curve-routes: 12b route geometry', function(){
       expect( out.cx ).to.equal( 50 );
       expect( out.cy ).to.equal( 0 );
     });
+
+    /*
+     * Round 55: the one place computeCorner deliberately does NOT match
+     * v3, pinned here so the divergence is a decision on the record
+     * rather than a drift.
+     *
+     * A zero-length leg — two coincident route points — has no direction.
+     * v3's `asVec` divides by it unguarded and returns NaN for every
+     * field, and v3's own collinear short-circuit cannot save it because
+     * that test runs *after* the normalize, where `abs(NaN) < 1e-6` is
+     * false.  The configuration is ordinary: an axis-aligned node pair
+     * under `round-taxi` makes `evalTaxi` emit two coincident interior
+     * points in both libraries (a faithful port), which is what a grid
+     * layout produces — four edges of `debug/`'s `v3-default` network are
+     * exactly this.
+     *
+     * v4's consequence was strictly worse than v3's, which is why
+     * matching v3 was not an option: the NaN reached `boundingBox()`,
+     * which answered all-null, so the edge became unpickable and
+     * corrupted any bound containing it.
+     */
+    describe('a zero-length leg (round 55, a deliberate divergence)', function(){
+      const cases = [
+        [ 'prev coincides with the corner', 50, 0, 50, 0, 100, 0 ],
+        [ 'next coincides with the corner', 0, 0, 50, 0, 50, 0 ],
+        [ 'both coincide', 50, 0, 50, 0, 50, 0 ]
+      ];
+
+      for( const [ label, px, py, cx, cy, nx, ny ] of cases ){
+        it(`collapses to the point where v3 returns NaN — ${label}`, function(){
+          const v3 = getRoundCorner(
+            { x: px, y: py }, { x: cx, y: cy }, { x: nx, y: ny }, 15, true );
+
+          // the control: v3 really is NaN here, so this spec is pinning a
+          // divergence rather than describing agreement
+          expect( Number.isNaN( v3.cx ), 'v3 is expected to be NaN here' ).to.equal( true );
+
+          const out = computeCorner( emptyRouteCorner(), px, py, cx, cy, nx, ny, 15, true );
+
+          expect( out.r ).to.equal( 0 );
+          expect( out.cx ).to.equal( cx );
+          expect( out.cy ).to.equal( cy );
+          expect( out.startX ).to.equal( cx );
+          expect( out.stopY ).to.equal( cy );
+
+          for( const v of [ out.cx, out.cy, out.r, out.startX, out.startY,
+            out.stopX, out.stopY, out.a0, out.a1 ] ){
+            expect( Number.isFinite( v ), 'every field must be finite' ).to.equal( true );
+          }
+        });
+      }
+    });
   });
 
   describe('quadPiece allocator', function(){

@@ -12981,3 +12981,45 @@ One bug found by the twins failing: v3 passes **half** extents to
 `polygonIntersectLine` (it scales unit base points by them), so the
 obvious call reads as a shape twice the size — a silent 2x rather than an
 error.
+
+### Phase 2, fix 2 — the zero-leg guard (landed)
+
+`computeCorner` and its WGSL twin now return the no-arc corner when
+either leg has zero length, instead of normalizing it.
+
+**This is a deliberate divergence from v3**, and the only one in that
+function.  v3's `asVec` (`v3/src/round.mts`) divides unguarded and
+produces NaN for every field, and v3's own collinear short-circuit cannot
+save it because that test runs *after* the normalize, where
+`abs( NaN ) < 1e-6` is false.  Matching v3 was not an option because v4's
+consequence was strictly worse: v3 keeps finite `allpts` and only loses
+its `roundCorners`, while v4's NaN reached every strip vertex, the
+bounding box and the hit test — `boundingBox()` answered
+`{x1: null, y1: null, x2: null, y2: null}`, so the edge was invisible on
+the GPU (a NaN clip position is dropped), unpickable, and poisoned any
+bound that contained it.
+
+The trigger is ordinary rather than exotic: an axis-aligned node pair
+under `round-taxi` makes `evalTaxi` emit two coincident interior points
+in *both* libraries — a faithful port — and a grid layout produces
+axis-aligned pairs by construction.  Four edges of `debug/`'s
+`v3-default` network are exactly this, which is what the maintainer saw
+as "the taxi edge breaks in the middle".
+
+Pinned in three places, deliberately: the `computeCorner` twin in
+`test/curve-routes.mjs` (three coincidence cases, each asserting *v3 is
+NaN here* first, so the spec pins a divergence rather than describing
+agreement), public-behaviour specs in `test/curve-route-accessors.mjs`,
+and the browser tier's `finite geometry` specs, whose allowlist the fix
+emptied — which is what "a failing test the fix has to satisfy" means in
+practice.
+
+**Control, and a finding inside it.**  With the guard removed, six of the
+new specs fail — but *only the bounding-box spec* of the three
+public-behaviour ones does.  The midpoint and hit-test specs pass either
+way, because a NaN corner does not reach the midpoint (which comes from
+the route points, not the arcs) and `elementsInBox` answers from the
+conservative store bound on this path.  They are kept as contract
+breadth, with a comment saying they are not what makes the block
+discriminate — a spec that reads like a guard but cannot fail is exactly
+what this repo's notes keep warning about.

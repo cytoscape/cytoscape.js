@@ -12,8 +12,9 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-07, covering work through round 56 — the arrow
-  gap, which round 55 had designed, measured and left unbuilt.
+- **Last updated**: 2026-08-07, covering work through round 57 — the cleanup
+  round, which turned out to be mostly a round about what its own tools could
+  not see.
 
 ---
 
@@ -38,12 +39,12 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,051 unit · 250 module · 24 soak · 318 browser |
+| Automated tests | 2,056 unit · 263 module · 24 soak · 321 browser |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 44 golden images · 36 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · **11 numeric routing-parity scenes** comparing geometry rather than pixels |
-| Benchmarks | 25 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
+| Visual regression | 44 golden images · 37 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · 11 numeric routing-parity scenes comparing geometry rather than pixels |
+| Benchmarks | 24 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 680 KiB minified, 185 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire, a quarter of it WebGPU shader source v3 has no equivalent of |
+| Bundle | 689 KiB minified, 188 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire, a quarter of it WebGPU shader source v3 has no equivalent of |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
@@ -58,9 +59,14 @@ free the vertex-shader binding that would let **edge labels and the casing
 strokes** see the arrow trim.
 
 The unbuilt work that *is* decided — `border-style`, the documentation site,
-shader minification, a tighter compound-fit bound, a cleanup round, release
-engineering — is scheduled. That list is what has been written down; it is not
-a complete account of what 4.0 needs.
+shader minification, a tighter compound-fit bound, release engineering — is
+scheduled. That list is what has been written down; it is not a complete
+account of what 4.0 needs, and round 57 demonstrated as much by adding two
+more entries to it in the same week it said so: bringing the per-element
+style-override *ergonomics* back through the declarative mapper system, and
+splitting the largest implementation files the way the algorithms already
+are. Both are logged as directions with what would have to be measured
+first, neither is scheduled.
 
 ---
 
@@ -126,9 +132,9 @@ it.
 
 ---
 
-## Week 3 — 3–7 August: hardening, release preparation, a CI reckoning, and two rounds that began with someone looking at the screen
+## Week 3 — 3–7 August: hardening, release preparation, a CI reckoning, and three rounds that began with someone looking at the screen
 
-*139 commits. Rounds 28–53.2.*
+*Rounds 28–57.*
 
 With the feature ledger closed, the work moved to what was *unpinned* rather
 than unbuilt — contracts, documentation, packaging and robustness.
@@ -308,6 +314,54 @@ To make this kind of thing visible in future, the parity suite gained a
 anti-aliasing no longer masks geometry, carrying bounds four to twenty times
 tighter than the existing scenes.
 
+### Round 57: the cleanup round, and what its own tools could not see
+
+Six items the maintainer asked for, all landed: the repository adopts a
+standard code formatter, the two long documents stop opening with a wall of
+text and say plainly how far from ready v4 is, the debug harness gains four
+networks ported from v3's documentation demos, the deploy build stops warning
+about paths it should not, and the default *look* moves onto v3's.
+
+Two of those are worth reading about, because in both cases the interesting
+result was a thing a tool found rather than a thing the round built.
+
+**Reformatting the source tree is a free control on every tool that reads it
+as text**, and it found four defects. These audits — documentation coverage,
+error coverage, the docs generator — each carry an unstated assumption about
+how the code is laid out, and reformatting falsifies all of them at once. Five
+public members whose parameters happened to wrap across lines were being
+**skipped** by a gate reporting 100%; the real surface was 239 members, not
+232, and five of them were undocumented behind the gap. Two more audits lost
+detection silently for related reasons. And the error-coverage gate had a
+**false pass**: a guard no test had ever fired was reading as covered, through
+the one measurement blind spot that tool documents about itself. None of this
+was caused by the formatter — all of it was hidden by the old layout.
+
+**"Make the default look like v3's" turned out to be a design question, not a
+colour change.** Asked what actually differed, the measurement came back
+almost empty: v4 and v3 have painted nodes and edges the same grey since the
+first week, and 68 of the 72 differing property readings are formatting
+(`0` against `0px`). The two real differences were not properties at all — a
+*selected* edge in v4 looked exactly like an unselected one, and the flag that
+records a *pressed* element had existed for fifty rounds with nothing reading
+it. Both are drawn now, and a new side-by-side comparison against v3 covering
+selected nodes, a selected compound group, straight and curved selected edges
+and their arrowheads reads **zero differing pixels**.
+
+Building it surfaced a divergence the round could easily have shipped in
+silence. In v3 the selection colour is a *default* — any stylesheet that names
+its own node colour overrides it, and a styled v3 app shows no selection
+colour at all unless it writes its own rule. v4 has no such rule to write, so
+copying v3 exactly would leave an application no way to make selection
+visible. v4's colour therefore always wins; the divergence is recorded, with
+the mechanism that would reverse it, rather than left to be discovered.
+
+A smaller one, in the same spirit: the specs written for the new demo networks
+found a defect on their first run. A helper built its comparison keys in a way
+that turned the boolean `true` into the string `"true"`, so every arrowhead
+rendered filled where half should have been hollow — twelve identical heads,
+entirely plausible on screen, and exactly what the spec was named to catch.
+
 ---
 
 ## What remains before 4.0
@@ -329,7 +383,6 @@ optional to scheduled.
 | `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
 | Arrow trim on labels and casings | **a binding, not a decision.** Two vertex shaders are at the hardware's storage-buffer limit and cannot see the arrow data, so an edge label on an arrowed curve sits ~2.6px from where the API says it should. The fix is to free a slot |
 | Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
-| Cleanup (round 57) | decided — a v3-like default stylesheet, a standard code formatter, more demo networks, and making these documents both readable and less confident |
 | `border-style` / `outline-style` (round 38) | decided in full — build only |
 | Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
 | Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |
@@ -342,7 +395,7 @@ optional to scheduled.
 
 ---
 
-## How this project works, in four habits
+## How this project works, in four habits (and a fifth arriving)
 
 These explain most of what the record contains, and are worth knowing before
 reading it.
@@ -357,10 +410,19 @@ reading it.
 3. **Decisions are written down when taken**, with their rationale, which is why
    the migration guide could be compiled rather than reconstructed.
 4. **Run it where it will actually run.** A suite that passes on the machine
-   that wrote it has proved less than it appears: every defect found in the
-   final CI rounds was in something never executed on a fresh checkout, on a
-   runner, or in a browser nobody could launch locally. The habit that follows
-   is to reproduce the environment rather than reason about it.
+   that wrote it has proved less than it appears: every defect found in the CI
+   rounds was in something never executed on a fresh checkout, on a runner, or
+   in a browser nobody could launch locally. The habit that follows is to
+   reproduce the environment rather than reason about it. The same idea
+   explains why three of the last five rounds began with a person opening a
+   page: a green suite says the paths that ran are fine and nothing about the
+   ones that never did.
+
+A fifth is emerging from the last round and is worth naming: **a change that
+should be invisible is the best test of the tools that watch for changes.**
+Reformatting every source file could not alter behaviour, and it exposed four
+defects in the checks themselves — including one that had been reporting a
+guard as tested when nothing had ever run it.
 
 ---
 

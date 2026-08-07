@@ -225,10 +225,21 @@ short edges at zoom 3-5 where anti-aliasing no longer hides geometry,
 and the six goldens that had been silently **cropping the graph**, one of
 them losing a third of its canvas including four arrowheads whose mapper
 clauses had never been written.  Four of its own inherited predictions
-were corrected by measurement; the round record has them.  **Round 57**
-is a cleanup round raised by the maintainer (the default stylesheet,
-`oxfmt`, the documents' readability and their over-confidence, more
-debug networks).
+were corrected by measurement; the round record has them.
+
+**Round 57** (2026-08-07) is the cleanup round the maintainer raised,
+and it is six items with one thread: the repository adopts `oxfmt`,
+these two documents are made readable and honest about how far v4 is
+from ready, `debug/` gains four networks ported from v3's demos, the
+status build stops warning about paths it should not, and the default
+look moves onto v3's.  Its most useful outputs are the things a tool
+found rather than the things it built: reformatting the tree exposed
+five public members invisible to the `@param` gate, two audits whose
+detection fell silently, and one **false pass in the throw gate**; and
+the first draft of the selection parity scene turned up a real
+divergence — v3's selection colour is a *default* any user block beats,
+where v4's is unconditional — which is now a recorded deviation with
+its reversal rather than a surprise in a diff.
 
 **v4 is not close to a release, and this file is not a route to one.**
 The round list is the currently *documented* set, not a plan for
@@ -3577,9 +3588,63 @@ measure-first, expected never taken) and the **tween warm-up** (item
 `executePlan()` coverage gap and CI's removed job timeout stay recorded
 decisions rather than open ones.
 
-**Amended 2026-08-07 (round 56).**  Add **round 57** (cleanup, planned at
-the end of this file) to the unbuilt list, and two questions to the
-undecided one: the **`arrow-scale` quantization** (item 23 — closing it
+**2026-08-07, round 57 — the cleanup round.**  Six items the maintainer
+raised, all landed.  Three are the repository looking after itself:
+`oxfmt` replaces this repo's own call-spacing (57.2), the two long
+documents stop opening with a wall of text and say plainly that v4 is
+not close to a release (57.3, 57.4), and the status build's path checker
+gets a maintained allowlist so its warnings mean something again (57.6).
+Two are for looking at pixels: four networks ported from v3's
+documentation demos (57.5), and v3's default *look* — selection on
+nodes, edges and arrowheads, and `:active` through the round-13 A2
+overlay props (57.1).
+
+What is worth carrying forward is, again, what measurement said rather
+than what the round built.
+
+**A formatter is a free control on every tool that reads the sources as
+text.**  Reformatting the tree falsified all their layout assumptions at
+once and found four defects: five public members whose parameters
+wrapped were **skipped** by the `@param` gate (232/232 was reading a
+surface of 239, with five untagged behind it), `memberBody` stopped at a
+wrapped parameter line and again at a multi-line return type so
+`@throws` detection fell silently, an `export const f =` that broke
+after the `=` vanished from all four audits, and the **throw gate had a
+false pass** — a guard inside a module-level arrow const read as covered
+through the misattribution the script documents as its own blind spot,
+while no spec had ever fired it.  None of that was caused by the
+formatter; all of it was hidden by the previous layout.
+
+**The item that looked like a colour change was a design question.**
+"The default stylesheet should look like v3's" measured to almost
+nothing on the property surface — `#999` on both sides for nodes and
+edges since round 1, and 68 of 72 differing (group, property) pairs are
+spelling — because the two things that differed are not properties at
+all.  A selected edge in v4 was indistinguishable from an unselected
+one, and `FLAG_ACTIVE` had existed since round 6 with nothing reading
+the bit.  Building both turned up the divergence the round could most
+easily have shipped silently: v3's selection colour lives in the
+*default* stylesheet, so any user block naming a colour beats it, while
+v4's is drawn by the shader and always wins.  Matching v3 exactly would
+leave a v4 app no way to make selection visible, since there is no
+`:selected` to write — so the shader wins, and the deviation is recorded
+with the mechanism that would reverse it.
+
+**And a spec written for a new fixture found a defect on its first
+run**, which is the argument for writing the property rather than the
+smoke test: the debug demos' `arrow-fill` never resolved to `hollow`,
+because a clause helper built its keys with `Object.keys` and turned the
+boolean `true` into the string `'true'`.  Twelve identical filled heads
+would have looked entirely plausible.
+
+**Amended 2026-08-07 (round 56, then closed by round 57).**  Round 57
+(cleanup) joined the unbuilt list here and has since **landed in full**
+— `oxfmt`, the two documents' readability and their readiness language,
+four `debug/` networks from v3's demos, the status build's path
+allowlist, and the default look moved onto v3's (selection on nodes,
+edges and arrows; `:active` through the overlay props).  So the unbuilt
+list above stands as written.  The same amendment added two questions to
+the undecided one: the **`arrow-scale` quantization** (item 23 — closing it
 spends the six reserved packing bits, which a 17th arrow shape also
 wants) and **where the arrow trim cannot reach** (item 24 — edge labels
 and the layer strokes; a binding rather than a decision).
@@ -14154,4 +14219,13 @@ bakes into the shader where v3 spells them in its default stylesheet.
   17.3's own deviation — so pressing an edge activates nothing, and this
   is that limit rather than a new one.  And v4 keeps a hover brighten
   v3 has no rule for, because v4 has no `:hover` an app could write.
-- [ ] **57.7 Closing docs sweep** + the `EXECUTIVE_SUMMARY.md` rewrite.
+- [x] **57.7 Closing docs sweep** (2026-08-07) — both documents end to
+  end plus `AGENTS.md`, and the `EXECUTIVE_SUMMARY.md` rewrite the
+  standing rule requires when a round closes.  The three named drift
+  sites were checked: "Suggested sequencing" gains the round-57
+  paragraph; the "Needs a call" ledger needed nothing (this round closes
+  no design call and opens none — the two ideas it logged are directions,
+  items 25 and 26); "Gaps with direction already set" likewise.  The
+  "what remains" amendment that added round 57 to the unbuilt list is
+  struck with what closed it, which is the entry this file has most often
+  left standing.

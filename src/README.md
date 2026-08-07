@@ -347,8 +347,14 @@ v3's demos, and the default look moves onto v3's — which measurement
 narrowed to the two affordances that are *not* style properties.  v4's
 colours already matched (`#999` on both sides for nodes and edges since
 round 1); what did not was that a selected edge looked exactly like an
-unselected one, and that `FLAG_ACTIVE` existed with nothing reading it.
-See the round-57 plan in PLAN.md.
+unselected one, and that `FLAG_ACTIVE` existed with **nothing reading
+it** — no shader bound the bit and the pointer layer never set it.
+Both are drawn now: v3's `:selected` (and `:parent:selected`) in the
+node fragment shader and on every edge and arrow colour, and v3's
+`:active` through the round-13 A2 overlay machinery, which is what that
+machinery was ported for.  The live parity scene over selected leaves, a
+selected parent, straight and curved edges and their arrowheads reads
+**0 differing pixels**.  See the round-57 plan in PLAN.md.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
@@ -3989,3 +3995,25 @@ it here in round 57.4.*
   modules remain (`math`, `types`, `util/colors`, `util/position`,
   `util/sort`), now a maintained allowlist in
   `test/modules/import-graph.mjs` and a round-42 call.
+  (`@param` reads **239/239** since round 57.2, not 232: the gate had
+  never seen a member whose parameters *wrapped*, and adopting a
+  formatter made five of them visible at once.)
+- **Two directions logged in round 57, neither scheduled** (PLAN.md's
+  ledger items 25 and 26).  **25** would bring the per-element bypass
+  *ergonomics* back without the mechanism: `ele.style( name, value )`
+  rewriting the sheet so that element takes its value through a `case`
+  clause keyed on its id, which keeps every value analyzable and
+  serializable.  The thing to measure first is what an N-clause
+  first-match-wins chain costs when N is "elements the app has
+  bypassed", and what `cy.style()` then exports.  **26** would split the
+  big implementation files the way `src/algorithms/` already is —
+  `style.mts` is 7.9k lines and `collection.mts` 5.8k — with the
+  constraint that these audits walk *class bodies*, so a v3-style split
+  onto a prototype would make every moved member invisible to all four
+  gates at once while they kept reading 100%.
+- **Two deviations round 57.1 recorded rather than smoothed over**, both
+  in "Known deviations from v3" above: v4's selection colour always
+  wins where v3's is a default any user block beats, and `:active`
+  reaches nodes only (the press target is the synchronous CPU pick,
+  nodes-only since round 17.3) while v4 keeps a hover brighten v3 has no
+  rule for.

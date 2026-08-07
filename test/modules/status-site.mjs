@@ -22,6 +22,11 @@ import {
   networkRefs,
 } from '../../scripts/status/refs.mjs';
 import { goldenTitles } from '../../scripts/status/goldens-page.mjs';
+import {
+  HISTORICAL_PATHS,
+  renderMarkdown,
+  resolveRepoPath,
+} from '../../scripts/status/markdown.mjs';
 import { newestMtime, SOURCE_EXT } from '../../scripts/status/repo-state.mjs';
 import {
   mkdtempSync,
@@ -718,6 +723,78 @@ describe('status site: what the builder needs', function () {
       outside,
       `the status build now imports:\n  ${outside.join('\n  ')}`,
     ).to.eql([]);
+  });
+});
+
+describe("status site: the documents' paths (round 57.6)", function () {
+  // The build extracts every rooted repo path from a code span and tests it
+  // against the tree — AGENTS.md's own prescription after a docs sweep
+  // missed four spellings by grepping for the ones it had thought of.  Six
+  // spellings are *quoted* rather than pointed at (round 42's rename, and
+  // the lesson that quotes the pre-rename names as examples), and they
+  // warned on every build until they were listed.
+  //
+  // An allowlist is only worth having if it is checked, so both directions
+  // are: an entry nothing mentions is dead, and an entry that resolves is
+  // no longer historical.
+
+  const rendered = DOCUMENTS.filter((d) => existsSync(join(ROOT, d.file))).map(
+    (d) => ({
+      file: d.file,
+      ...renderMarkdown(readFileSync(join(ROOT, d.file), 'utf8'), {
+        root: ROOT,
+      }),
+    }),
+  );
+
+  it('warns about no path at all — the exemptions cover exactly the quotations', function () {
+    const { warnings } = buildPlan({ root: ROOT, skip: new Set(['fixtures']) });
+
+    expect(warnings.filter((w) => /documented path/.test(w))).to.eql([]);
+  });
+
+  it('every exempt spelling is still quoted by some document', function () {
+    const quoted = new Set(rendered.flatMap((r) => r.paths.map((p) => p.path)));
+
+    // an entry nobody mentions any more is a dead exemption, and the next
+    // spelling to go stale inherits nothing from it — but it is exactly the
+    // kind of line that rots quietly, so it fails here instead
+    expect(Object.keys(HISTORICAL_PATHS).filter((k) => !quoted.has(k))).to.eql(
+      [],
+    );
+  });
+
+  it('no exempt spelling resolves — one that does is a live pointer', function () {
+    expect(
+      Object.keys(HISTORICAL_PATHS).filter(
+        (k) => resolveRepoPath(k, ROOT) != null,
+      ),
+    ).to.eql([]);
+  });
+
+  it('every exemption carries a reason', function () {
+    expect(
+      Object.entries(HISTORICAL_PATHS)
+        .filter(([, why]) => typeof why !== 'string' || why.trim() === '')
+        .map(([k]) => k),
+    ).to.eql([]);
+  });
+
+  it('marks a quoted spelling differently from a broken one', function () {
+    const md = [
+      'A retired name: `src/gpu/README.md`.',
+      '',
+      'A broken one: `src/does-not-exist.mts`.',
+    ].join('\n');
+
+    const { html } = renderMarkdown(md, { root: ROOT });
+
+    expect(html).to.contain('path-historical');
+    expect(html).to.contain('path-missing');
+
+    // the control: without the allowlist the two are indistinguishable, so
+    // the reason string has to reach the page
+    expect(html).to.contain(HISTORICAL_PATHS['src/gpu/README.md']);
   });
 });
 

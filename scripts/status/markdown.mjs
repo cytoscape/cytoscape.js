@@ -74,6 +74,40 @@ const ROOTED =
 const GLOB = /[*?]|\/$/;
 
 /**
+ * Spellings the documents **quote** rather than point at: a path that was
+ * correct once, named in a record of the rename that retired it or in a
+ * lesson about a sweep that missed it.  Every one is correct prose and none
+ * of them can resolve, so without this list the build warns eight times on
+ * every run and the warning becomes something to ignore — which is worse
+ * than not having it, since the same sweep that produced these eight also
+ * surfaced four *genuinely* stale pointers.
+ *
+ * A heuristic ("skip anything that looks historical") cannot draw that line,
+ * so this is an allowlist on round 37.1's terms — maintained, and checked in
+ * both directions by `test/modules/status-site.mjs`:
+ *
+ *   - an entry no document mentions any more **fails**, so a spelling that
+ *     is edited out takes its exemption with it;
+ *   - an entry that starts *resolving* **fails**, because a path that exists
+ *     again is a live pointer and the reader should get the link.
+ *
+ * @type {Record<string, string>}
+ */
+export const HISTORICAL_PATHS = {
+  'src/gpu/README.md':
+    "round 42's record of the promotion out of src/gpu/ — the file is src/README.md now",
+  'playwright-tests/webgpu.spec.js':
+    'round 42.1 renamed it to renderer.spec.js; the record names both sides of the rename',
+  'typescript/tests/gpu.test-d.ts':
+    'quoted by AGENTS.md and round 43.9 as a spelling the round-42 sweep missed — the point is that it was wrong',
+  'test/modules/gpu-import-graph.mjs':
+    'the same pair of quotations; it is import-graph.mjs now',
+  'test/gpu-':
+    'AGENTS.md quotes it as the *substitution* the round-42 sweep grepped for, which is why it missed the two spellings above',
+  'typescript/tests/gpu': 'the other half of that quoted substitution',
+};
+
+/**
  * GitHub-shaped slug, deduped against `seen`.
  *
  * The `seen` map must be shared between the TOC and the heading renderer:
@@ -140,7 +174,9 @@ export function resolveRepoPath(path, root) {
  * @param pageFor — maps a relative `*.md` link to this site's page, or null
  * @param maxDepth — deepest heading level in the TOC
  * @returns `{ html, toc, title, paths }` — `paths` is every rooted repo path
- *   found in a code span with whether it resolved, which `audits` reports on
+ *   found in a code span with whether it resolved and, when it did not, the
+ *   `HISTORICAL_PATHS` reason it is quoted rather than broken; the build
+ *   warns on the ones with neither
  */
 export function renderMarkdown(
   md,
@@ -204,8 +240,16 @@ export function renderMarkdown(
       }
 
       const hit = resolveRepoPath(raw, root);
+      const historical = HISTORICAL_PATHS[raw];
 
-      paths.push({ path: raw, resolved: hit });
+      paths.push({ path: raw, resolved: hit, historical: historical ?? null });
+
+      // a quoted spelling is still marked in the page — the reader should be
+      // able to see that it names nothing — but it is not a *warning*, and
+      // the title says which of the two it is
+      if (historical != null && hit == null) {
+        return `<code class="path-historical" title="${esc(historical)}">${safe}</code>`;
+      }
 
       if (hit == null) {
         return `<code class="path-missing" title="does not resolve in this tree">${safe}</code>`;

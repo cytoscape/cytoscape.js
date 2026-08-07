@@ -74,6 +74,9 @@ main.prose hr { border: 0; border-top: 1px solid var(--grid); margin: 28px 0; }
 .anchor { float: left; margin-left: -0.8em; padding-right: 0.3em; color: var(--muted); text-decoration: none; opacity: 0; }
 h1:hover .anchor, h2:hover .anchor, h3:hover .anchor, h4:hover .anchor { opacity: 1; }
 code.path-missing { border-color: #d03b3b; text-decoration: underline dotted #d03b3b; }
+/* a spelling the documents quote rather than point at: marked, not flagged,
+   and its title says which rename retired it (round 57.6) */
+code.path-historical { text-decoration: underline dotted var(--muted); }
 /* PLAN.md renders to ~840 KB in one page; this is what makes that affordable */
 .doc-section { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 .toc {

@@ -161,7 +161,12 @@ export function buildPlan({
 
       const md = readFileSync(path, 'utf8');
       const { html, toc, paths } = renderMarkdown(md, mdCtx);
-      const unresolved = paths.filter((p) => p.resolved == null);
+      // a spelling in `HISTORICAL_PATHS` is quoted rather than pointed at
+      // and can never resolve, so warning about it every build only teaches
+      // the reader to skip the warning (round 57.6)
+      const unresolved = paths.filter(
+        (p) => p.resolved == null && p.historical == null,
+      );
 
       if (unresolved.length > 0) {
         // AGENTS.md's own prescription: extract every rooted path and test it.

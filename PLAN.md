@@ -13878,8 +13878,42 @@ bakes into the shader where v3 spells them in its default stylesheet.
 ### Pass split (docs in-commit; each pass its own commit(s))
 
 - [x] **57.0 Docs-first** — this section.
-- [ ] **57.2 `oxfmt`** — first, per call 5.
-- [ ] **57.6 The path checker's allowlist.**
+- [x] **57.2 `oxfmt`** (2026-08-07) — 325 files outside `v3/`, two config
+  overrides (`singleQuote`, `printWidth: 80`) and the rest of the tool's
+  defaults.  **The reformat is a free control on every tool that reads
+  the sources as text, and it found four defects.**  The `@param` gate
+  read 232/232 while five public members were invisible to it — it
+  captured the argument list with `\(([^)]*)\)`, so a member whose
+  parameters wrapped matched nothing and was skipped, and
+  `Collection.boundingBoxAt` had no `@param` at all behind that.
+  `memberBody` stopped at a wrapped signature's first *parameter* line
+  (two-space indented, so it reads as the next member) and again at a
+  multi-line return type's `  } {`, dropping `@throws` detection for
+  every exported arrow function in `src/algorithms/` and for
+  `Collection.boundingBox`.  An `export const f =` that broke after the
+  `=` vanished from all four audits.  And the throw gate had a **false
+  pass**: `src/style.mts`'s bg-length guard sits in a module-level arrow
+  const — the misattribution the script documents as its own blind spot
+  — so it read as covered while no spec had ever fired it.  Each is
+  fixed by joining the signature before parsing it; the guard got the
+  spec round 30.1 would have written, with a message assertion and a
+  control.  `@param` is 239/239 now.  Five `file:line` allowlist entries
+  moved and the gate named all five, which is the failure mode 37.1 was
+  built for arriving a third time.  Goldens byte-stable, every parity
+  scene at its recorded value.
+- [x] **57.6 The path checker's allowlist** (2026-08-07) — six
+  spellings, `HISTORICAL_PATHS` in `scripts/status/markdown.mjs`, each
+  with the rename or the lesson that quotes it.  A quoted span still
+  renders marked (`path-historical`, the reason as its title) — a reader
+  should see that it names nothing — but it is not a warning, and the
+  build now reports **zero** documented-path warnings, which is what
+  makes the remaining ones worth reading.
+  Checked in both directions, on 37.1's terms: an entry no document
+  mentions fails, an entry that starts resolving fails, an entry with no
+  reason fails, and the build warning about *any* path fails.  All four
+  controls run: dropping one exemption, adding a dead one, adding one
+  that resolves (`src/core.mts`) and adding a reasonless one each fail
+  exactly the spec written for them.
 - [ ] **57.3 The document openings.**
 - [ ] **57.4 The readiness language.**
 - [ ] **57.5 Four more debug networks.**

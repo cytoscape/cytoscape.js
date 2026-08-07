@@ -9,6 +9,7 @@ import { HierarchyIndex } from './hierarchy.mjs';
 import type { CompoundStyle } from './hierarchy.mjs';
 import { CurveBlob } from './curve-blob.mjs';
 import {
+  boundaryOffset,
   CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
   evalRoute, haystackPoint, headerDeviation, routeVertex, segmentHitsBox
 } from '../curve-geometry.mjs';
@@ -2482,6 +2483,49 @@ export class GraphStore implements ModelView {
       params[ at + 1 ], radius, p );
 
     return { sx, sy, tx: p.x, ty: p.y };
+  }
+
+  /**
+   * Where a **straight** edge meets a node's boundary, along the chord
+   * between the two node centres (round 55).
+   *
+   * This is the CPU twin of the straight arrow shader's tip placement
+   * (`tip = tipC - dir * boundaryOffset(...)`), so the accessor built on
+   * it reports the point the renderer actually draws to.
+   *
+   * It exists because v4 previously answered the node *centre* here —
+   * `Collection._endpointPoint` fell through to the raw positions for
+   * every straight edge — which is off by a whole node radius from v3
+   * and from what is on screen.
+   *
+   * @param slot — the edge's slot
+   * @param which — 0 for the source end, 1 for the target end
+   * @returns the boundary point in model space
+   */
+  straightEndpointAt( slot: number, which: 0 | 1 ): { x: number; y: number } {
+    this.flushDerived();
+
+    const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
+    const pos = this.nodes.column( 'node.position' ) as Float32Array;
+    const outer = this.nodes.column( 'node.outerHalf' ) as Float32Array;
+    const shape = this.nodes.column( 'node.shape' ) as Uint32Array;
+
+    const self = endpoints[ slot * 2 + which ];
+    const other = endpoints[ slot * 2 + ( which === 0 ? 1 : 0 ) ];
+    const cx = pos[ self * 2 ];
+    const cy = pos[ self * 2 + 1 ];
+
+    let dx = pos[ other * 2 ] - cx;
+    let dy = pos[ other * 2 + 1 ] - cy;
+    const l = Math.sqrt( dx * dx + dy * dy );
+
+    // coincident endpoints have no chord direction; `setBoundaryPoint`
+    // picks +x in the same situation, so this matches it
+    if( l < 1e-6 ){ dx = 1; dy = 0; } else { dx /= l; dy /= l; }
+
+    const off = boundaryOffset( shape[ self ], outer[ self * 2 ], outer[ self * 2 + 1 ], dx, dy );
+
+    return { x: cx + dx * off, y: cy + dy * off };
   }
 
   /**

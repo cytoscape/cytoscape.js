@@ -1497,7 +1497,16 @@ each is deliberate, not a pass-1 deferral:
     since 12b also the unbundled control list, with
     `segmentPoints()` covering segments/taxi);
     `midpoint()` is the curve midpoint and `source/targetEndpoint()`
-    the curve's boundary endpoints when the edge curves.  Public
+    the node-boundary endpoints — for curved edges the curve's, and
+    since round 55 for straight edges too, along the chord between the
+    node centres, which is both v3's answer and the point v4's arrow
+    shader draws to.  (Before that they answered the node *centre* on a
+    straight edge, off by a whole node radius.)  One v3 term is still
+    outstanding: v3 additionally pulls the point back by the arrow
+    shape's `spacing`, which is zero for every head except `tee` (1 px)
+    and `circle`/`circle-triangle`; that lands with the gap/trim port,
+    so the accessor never reports a point the renderer does not draw.
+    Public
     `eles.boundingBox()` is the *exact lazy* tier of the
     expensive-geometry design: the flattened polyline at the drawn
     subdivision, memoized per edge against a store-wide geometry epoch
@@ -1905,9 +1914,16 @@ where v3's is that plus **1.0 model px on every side** — the same
 miter corners at all.  Reading a parent-box difference as the
 border effect alone will therefore mis-explain it; the routing
 harness's `compound` scene pins `border-width: 0` on both sides so
-that only the second reason can be in play.  Whether v4 should
-inflate to match is open — see PLAN.md's ledger item 19, and note
-that round 54 is scheduled to tighten these bounds further.
+that only the second reason can be in play.
+**v4 keeps the tighter box, decided 2026-08-06, and the reason v3
+has the pixel is worth knowing**: v3 caches elements as textures and
+composites them through canvas2d, where antialiasing leaves the true
+extent uncertain by about a pixel, so the margin is a rendering
+allowance rather than geometry.  v4 has no per-element textures and
+rasterizes the whole scene on the GPU, so it has nothing to allow
+for — which is also why the gap never moved with the border.  The
+consequence for parity: every ancestry-edge control point sits 1 px
+from v3's, and that is correct rather than a defect.
 
 Round 14.10 (compound loop edges): an edge between a node and its
 own ancestor/descendant — or a self-loop on a parent — **routes

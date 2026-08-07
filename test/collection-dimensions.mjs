@@ -161,9 +161,25 @@ describe('gpu/collection: rendered dimensions, shift, endpoints', function(){
     expect( cy.$id('e1').renderedMidpoint() ).to.deep.equal({ x: 410, y: 305 });
   });
 
-  it('sourceEndpoint() / targetEndpoint()', function(){
-    expect( cy.$id('e1').sourceEndpoint() ).to.deep.equal({ x: 100, y: 100 });
-    expect( cy.$id('e1').targetEndpoint() ).to.deep.equal({ x: 300, y: 200 });
+  it('sourceEndpoint() / targetEndpoint() sit on the node boundary', function(){
+    // Round 55 changed this: it used to answer the node *centres*,
+    // { x: 100, y: 100 } and { x: 300, y: 200 }, which is v4's own
+    // fall-through for a straight edge and is off by a whole node radius
+    // from both v3 and what v4's renderer draws.
+    //
+    // The boundary along the chord, hand-derived: the nodes are 40x20
+    // ellipses, so halfW = 20 and halfH = 10; the chord (200, 100)
+    // normalizes to (2, 1)/sqrt(5), and an ellipse's offset along a unit
+    // direction is 1 / hypot(dx/halfW, dy/halfH) = 10*sqrt(2) ≈ 15.811.
+    // That puts the source end 10*sqrt(2) right and 5*sqrt(2) down of
+    // (100, 100), and the target end symmetrically inside (300, 200).
+    const src = cy.$id('e1').sourceEndpoint();
+    const tgt = cy.$id('e1').targetEndpoint();
+
+    expect( src.x ).to.be.closeTo( 100 + 10 * Math.SQRT2, 1e-6 );
+    expect( src.y ).to.be.closeTo( 100 + 5 * Math.SQRT2, 1e-6 );
+    expect( tgt.x ).to.be.closeTo( 300 - 10 * Math.SQRT2, 1e-6 );
+    expect( tgt.y ).to.be.closeTo( 200 - 5 * Math.SQRT2, 1e-6 );
   });
 
   it('relativePosition() equals position without compounds', function(){

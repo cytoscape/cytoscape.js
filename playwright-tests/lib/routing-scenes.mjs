@@ -58,7 +58,6 @@ const base = () => {
   return {
     name: 'base',
     tolClass: 'exact',
-    expectFail: 'fix 1 — v4 answers the node centre where v3 answers the boundary',
     note: 'the control: a single straight edge on a generic slope',
     elements: [ node( 'a', -137, -61 ), node( 'b', 123, 79 ), edge( 'e', 'a', 'b', 'straight' ) ],
     edges: [ 'e' ],
@@ -95,7 +94,6 @@ const families = () => {
 
   return {
     name: 'families', tolClass: 'derived',
-    expectFail: 'fix 1 — only the two straight families diverge; every curve family already matches',
     note: 'one edge per curve family at a generic orientation',
     elements, edges, v3Style, v4Style
   };
@@ -256,7 +254,11 @@ const arrows = () => {
 
   return {
     name: 'arrows', tolClass: 'derived',
-    expectFail: 'fixes 1 and 3 — the node-centre endpoint, plus v3\'s arrow spacing on tee and circle',
+    // fix 1 (the boundary endpoint) took this scene from 14 diverged
+    // fields to 4.  What is left is exactly v3's `spacing` term, which
+    // fix 3 owns: circle by 9.880383 (getArrowWidth(5, 1.5) x 0.15) and
+    // tee by its constant 1.0.  The other five heads are clean.
+    expectFail: 'fix 3 — the residual is v3\'s arrow spacing on tee and circle, nothing else',
     note: 'one edge per arrow shape — the spacing half of v3\'s gap/spacing pair',
     elements, edges,
     v3Style: [
@@ -370,7 +372,6 @@ const bundles = () => {
 
   return {
     name: 'bundles', tolClass: 'derived',
-    expectFail: 'fix 1 — only the odd bundle\'s straight middle member diverges; the stagger is exact',
     note: 'a 2-bundle and a 3-bundle with one reversed member',
     elements,
     edges: [ 'two-a', 'two-b', 'three-a', 'three-b', 'three-rev' ],

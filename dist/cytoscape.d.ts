@@ -2572,6 +2572,27 @@ declare class GraphStore implements ModelView {
     ty: number;
   } | null;
   /**
+   * Where a **straight** edge meets a node's boundary, along the chord
+   * between the two node centres (round 55).
+   *
+   * This is the CPU twin of the straight arrow shader's tip placement
+   * (`tip = tipC - dir * boundaryOffset(...)`), so the accessor built on
+   * it reports the point the renderer actually draws to.
+   *
+   * It exists because v4 previously answered the node *centre* here —
+   * `Collection._endpointPoint` fell through to the raw positions for
+   * every straight edge — which is off by a whole node radius from v3
+   * and from what is on screen.
+   *
+   * @param slot — the edge's slot
+   * @param which — 0 for the source end, 1 for the target end
+   * @returns the boundary point in model space
+   */
+  straightEndpointAt(slot: number, which: 0 | 1): {
+    x: number;
+    y: number;
+  };
+  /**
    * The exact bounding box of a curved edge (null for straight ones):
    * the flattened polyline at the drawn subdivision, memoized per slot
    * against the geometry epoch — the "exact lazy CPU eval" tier of the
@@ -5503,6 +5524,12 @@ declare class Collection {
    * route evaluator — so it accounts for curve family, node boundary
    * clipping, haystack offsets and any manual `source-endpoint`.
    *
+   * A **straight** edge answers the node boundary along the chord
+   * between the node centres (round 55; it previously answered the node
+   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
+   * which is non-zero only for `tee`; that term arrives with the
+   * gap/trim port.
+   *
    * @returns the endpoint, or undefined for non-edges
    */
   sourceEndpoint(): Position | undefined;
@@ -5510,6 +5537,12 @@ declare class Collection {
    * The edge's target-side endpoint in model space, resolved through the
    * route evaluator — so it accounts for curve family, node boundary
    * clipping, haystack offsets and any manual `target-endpoint`.
+   *
+   * A **straight** edge answers the node boundary along the chord
+   * between the node centres (round 55; it previously answered the node
+   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
+   * which is non-zero only for `tee`; that term arrives with the
+   * gap/trim port.
    *
    * @returns the endpoint, or undefined for non-edges
    */

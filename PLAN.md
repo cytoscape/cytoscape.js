@@ -749,11 +749,19 @@ conditional halves of calls the sitting took.
     points from `min(pos − outerW/2)`), and it is what the round-55
     routing harness reports as a flat 1.000000 on every field of
     `p-child`, `p-grandchild` and `child-p`.
-    **The call**: match v3 by inflating v4's box, or keep v4's tighter
-    box and record the deviation?  The direction of travel says the
-    latter — round 54 is scheduled to tighten compound bounds further
-    and item 16 ratified the tighter compound `fit()` — but this is
-    public geometry, so it is logged rather than taken.
+    **Call taken (2026-08-06): keep v4's tighter box; the deviation is
+    recorded, and so is the reason v3 has the pixel.**  The maintainer
+    supplied what the measurement could not: v3's extra pixel exists
+    because v3 caches *elements as textures* and composites them through
+    canvas2d, where antialiasing makes the true extent uncertain by
+    about a pixel — the margin is a rendering allowance, not geometry.
+    v4 has no per-element textures and rasterizes the whole scene on the
+    GPU, so it has nothing to allow for.  That also resolves why the gap
+    was invariant to `border-width`: it was never a border term.
+    This settles the question `src/README.md` had been describing
+    incompletely, and it agrees with the direction already set — round
+    54 tightens compound bounds further, and item 16 ratified the
+    tighter compound `fit()`.
     Not yet isolated, and deliberately not claimed: the larger
     divergences in the same scene (`parent-parent` 16.04 px,
     `leaf-parent` 8.07 px) are *consistent with* the same 1 px amplified
@@ -769,12 +777,53 @@ conditional halves of calls the sitting took.
     generic slope, and by exactly the boundary offset in every straight
     row of every scene.  `renderedTargetEndpoint()` is how applications
     place custom overlays, so this is visible, not theoretical.
-    It is **logged rather than fixed** because it is public API and
-    `test/collection-dimensions.mjs:164-167` currently pins v4's answer
-    as correct — removing or changing public API is the maintainer's
-    call even when the ledger looks like authorization.  The fix is
-    small and its blast radius is known: that spec, and one Playwright
-    probe at `renderer.spec.js:4516-4546` that assumes the old value.
+    **Call taken (2026-08-06): match v3.  Landed the same day.**
+    `GraphStore.straightEndpointAt` resolves the boundary along the
+    chord — the CPU twin of the straight arrow shader's own tip
+    placement, so the accessor reports the point the renderer draws to.
+    The one v3 term deliberately left out is the arrow shape's
+    `spacing`, non-zero only for `tee` and the circle heads: it arrives
+    with the gap/trim port, so the accessor never describes a point the
+    renderer does not draw.
+    Effect on the routing harness's `arrows` scene: **14 diverged fields
+    to 4**, and the residual is exactly that spacing term — `circle` by
+    9.880383 (`getArrowWidth(5, 1.5) x 0.15`) and `tee` by its constant
+    1.0, with the other five heads clean.  The `base`, `families` and
+    `bundles` scenes went fully green and lost their `test.fail()`
+    markers.
+    One prediction in that plan was wrong and is corrected here: the
+    Playwright probe at `renderer.spec.js:4516-4546` was expected to
+    break and did not, because it exercises a *manual endpoint* (12c),
+    which takes the route path rather than the straight fall-through
+    this changed.  Only `test/collection-dimensions.mjs` needed
+    rewriting.
+
+21. **Hollow and translucent *mid* arrows keep showing the line**
+    (round 55, 2026-08-06).  The fix for endpoint heads is to stop the
+    line short of the head, which reproduces v3's `destination-out`
+    erase at zero runtime cost.  A mid arrow sits mid-line, where a trim
+    cannot reach, so it is not covered.
+    **Call taken (2026-08-06): punt and log.**  Record it as a
+    deviation, and note the maintainer's lean — **v4 may simply not
+    support `arrow-fill: hollow` on mid arrows**, in which case the
+    deviation becomes a documented drop rather than a defect.  Revisit
+    with a scene that measures how visible it is; the round's own
+    cautionary case is that the filled-head gap *looked* dramatic and
+    measured 0.495%.  The options priced, if it is ever taken up:
+    collapse the strip quads inside the mid arrow's arc-length window
+    (no extra draw, but the edge vertex shader then needs the mid shape
+    ids, which pushes toward the heavier trim carrier), or build the
+    erase pass for that case alone.
+22. **`edgeHitsBox` keeps its straight-edge approximation** (round 55,
+    2026-08-06).  Once the gap/trim port shortens the drawn line, the
+    comment claiming containment and box selection "agree about where
+    the edge is" stops being exactly true.
+    **Call taken (2026-08-06): keep the approximation, amend the
+    comment.**  It backs box selection, where a stub of an edge near a
+    node is not a distinction a user is making, so the cheap and simple
+    answer is the right one on UX grounds.  The comment is the thing to
+    fix, not the code — this entry exists so that a later reader finds
+    a decision rather than an inconsistency.
 
 ## Context
 
@@ -13266,3 +13315,49 @@ found by checking rather than by reasoning:
 The second correction is the more useful one to carry forward.  Both
 statements were plausible, both came from the same reading of the code,
 and only one survived being looked at.
+
+### Fix 1 — the straight-edge endpoint, landed (2026-08-06)
+
+The call went to the maintainer as ledger item 20 and came back "match
+v3", so `_endpointPoint` now resolves the node boundary along the chord
+for a straight edge instead of falling through to the node centre.  The
+resolve itself lives in `GraphStore.straightEndpointAt`, beside
+`curveEvalAt` and the other column readers, because it is the **CPU twin
+of the straight arrow shader's own tip placement** — which is the
+property that makes it right: the accessor reports the point the
+renderer draws to.
+
+One v3 term is deliberately left out.  v3 also subtracts the arrow
+shape's `spacing`, non-zero only for `tee` (a constant 1 px) and the
+circle heads; that arrives with the gap/trim port, where the *shader*
+gets it too.  Adding it now would have made the accessor describe a
+point v4 does not draw — trading one wrong answer for a subtler one.
+
+What it did to the harness, which is the useful record:
+
+| scene | before | after |
+|---|---|---|
+| `base` | 4 diverged | clean, `test.fail()` removed |
+| `families` | 8 diverged (both straight families) | clean, marker removed |
+| `bundles` | 2 diverged (the odd bundle's straight middle member) | clean, marker removed |
+| `arrows` | 14 diverged | **4**, and exactly v3's spacing term |
+
+The `arrows` residual is worth quoting because it is the fix's own
+receipt: `circle` by 9.880383 — `getArrowWidth( 5, 1.5 ) x 0.15` to six
+decimals — and `tee` by 1.000000, with the other five heads clean.  The
+harness reproduces v3's spacing formula without being told it, twice
+now.
+
+**A third correction to this round's predictions.**  The plan expected
+the Playwright probe at `renderer.spec.js:4516-4546` to fail and it did
+not: that spec exercises a *manual* endpoint (12c), which resolves
+through the route path rather than the straight fall-through this
+touched.  Only `test/collection-dimensions.mjs` needed rewriting, and its
+new expectations are hand-derived rather than pasted from the output —
+the boundary of a 40x20 ellipse along the (2, 1) chord is `10*sqrt(2)`
+across and `5*sqrt(2)` down.
+
+That makes three predictions in one round that measurement corrected: the
+arrow-gap scene that measured nothing, the "invisible on the GPU" claim,
+and this one.  All three were plausible readings of the code.  None
+survived being run.

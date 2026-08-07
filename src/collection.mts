@@ -2527,6 +2527,12 @@ export class Collection {
    * route evaluator — so it accounts for curve family, node boundary
    * clipping, haystack offsets and any manual `source-endpoint`.
    *
+   * A **straight** edge answers the node boundary along the chord
+   * between the node centres (round 55; it previously answered the node
+   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
+   * which is non-zero only for `tee`; that term arrives with the
+   * gap/trim port.
+   *
    * @returns the endpoint, or undefined for non-edges
    */
   sourceEndpoint(): Position | undefined {
@@ -2537,6 +2543,12 @@ export class Collection {
    * The edge's target-side endpoint in model space, resolved through the
    * route evaluator — so it accounts for curve family, node boundary
    * clipping, haystack offsets and any manual `target-endpoint`.
+   *
+   * A **straight** edge answers the node boundary along the chord
+   * between the node centres (round 55; it previously answered the node
+   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
+   * which is non-zero only for `tee`; that term arrives with the
+   * gap/trim port.
    *
    * @returns the endpoint, or undefined for non-edges
    */
@@ -2697,10 +2709,15 @@ export class Collection {
       return which === 0 ? { x: hay.sx, y: hay.sy } : { x: hay.tx, y: hay.ty };
     }
 
-    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
-    const node = endpoints[ ref.slot * 2 + which ];
-
-    return { x: this._store.getX( node ), y: this._store.getY( node ) };
+    // straight edges (round 55): the node boundary along the chord, which
+    // is both what v3 answers and what v4's arrow shader draws to.  This
+    // used to return the node *centre* — off by a whole node radius, and
+    // visible to anyone using renderedTargetEndpoint() to place an
+    // overlay.  v3 additionally pulls the point back by the arrow shape's
+    // `spacing`, which is zero for every head except `tee`; that term
+    // lands with the gap/trim port, so that the accessor never describes
+    // a point the renderer does not draw.
+    return this._store.straightEndpointAt( ref.slot, which );
   }
 
   private _toRenderedPoint( pos: Position | undefined ): Position | undefined {

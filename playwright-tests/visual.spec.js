@@ -86,6 +86,61 @@ test.describe( 'WebGPU visual goldens', () => {
     expect( deviceErrors, 'WebGPU reported validation errors' ).toEqual( [] );
   } );
 
+  /**
+   * Give one scene a larger canvas than the 400x300 the suite defaults to
+   * (round 56).
+   *
+   * Must run before `makeReadyCy`: the container is sized from the
+   * viewport by CSS, and the instance reads its dimensions at
+   * construction.
+   *
+   * @param page — the Playwright page
+   * @param width — canvas width in CSS px
+   * @param height — canvas height in CSS px
+   */
+  const useViewport = async ( page, width, height ) => {
+    await page.setViewportSize( { width, height } );
+  };
+
+  /**
+   * Assert the whole graph is inside the exported viewport (round 56).
+   *
+   * Goldens export the *viewport*, not the graph, so a scene that has
+   * outgrown its canvas is silently cropped — and the cropped part is
+   * then covered by no test at all while the golden goes on passing.
+   * Six scenes were in that state when this check was written, the worst
+   * (`arrow-shapes`, and it is an *arrow* golden) losing **109 px** of a
+   * 300 px canvas: over a third of the scene, including whole rows of
+   * heads.
+   *
+   * Called by every golden before its diff, so a scene that grows past
+   * its canvas fails here rather than quietly shrinking its own coverage.
+   *
+   * @param page — the Playwright page, with `window.cy` live
+   * @param name — the golden's name, for the failure message
+   */
+  const expectGraphFits = async ( page, name ) => {
+    const r = await page.evaluate( () => {
+      const bb = window.cy.elements().renderedBoundingBox();
+
+      return { x1: bb.x1, y1: bb.y1, x2: bb.x2, y2: bb.y2,
+        w: window.cy.width(), h: window.cy.height() };
+    } );
+    const over = {
+      left: Math.max( 0, -r.x1 ), top: Math.max( 0, -r.y1 ),
+      right: Math.max( 0, r.x2 - r.w ), bottom: Math.max( 0, r.y2 - r.h )
+    };
+    const worst = Math.max( over.left, over.top, over.right, over.bottom );
+
+    expect( worst,
+      `${name}: the graph spills outside the exported ${r.w}x${r.h} viewport ` +
+      `(left ${over.left.toFixed( 1 )}, top ${over.top.toFixed( 1 )}, ` +
+      `right ${over.right.toFixed( 1 )}, bottom ${over.bottom.toFixed( 1 )} px). ` +
+      'Give the scene a larger canvas with useViewport(), or bring its ' +
+      'content in — a cropped golden tests less than it looks like it does.'
+    ).toBeLessThanOrEqual( 0.5 );
+  };
+
   const checkGolden = ( name, uri, testInfo, opts = {} ) => {
     // throws with diff artifacts on mismatch; writes the golden under
     // UPDATE_GOLDENS=1
@@ -132,6 +187,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'nodes-edges-arrows' );
     checkGolden( 'nodes-edges-arrows', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -153,6 +209,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'selection-accent' );
     checkGolden( 'selection-accent', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -202,6 +259,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'polygon-shapes' );
     checkGolden( 'polygon-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -249,6 +307,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'shapes-27' );
     checkGolden( 'shapes-27', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -287,11 +346,15 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'shapes-27-round' );
     checkGolden( 'shapes-27-round', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
   test( 'golden: arrowhead shapes (round 10)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // round 56: this scene needs more than the suite's 400x300 — at
+    // 400x300 it was cropped, and expectGraphFits now says so
+    await useViewport( page, 400, 440 );
 
     const shapes = [ 'triangle', 'vee', 'chevron', 'circle', 'square', 'diamond', 'tee',
       // round 27.6: v3's compound heads
@@ -324,7 +387,18 @@ test.describe( 'WebGPU visual goldens', () => {
             { when: { data: 'shape', eq: 'circle' }, then: 'circle' },
             { when: { data: 'shape', eq: 'square' }, then: 'square' },
             { when: { data: 'shape', eq: 'diamond' }, then: 'diamond' },
-            { when: { data: 'shape', eq: 'tee' }, then: 'tee' }
+            { when: { data: 'shape', eq: 'tee' }, then: 'tee' },
+            // Round 56.  These four were added to the `shapes` list by round
+            // 27.6 and never given a clause, so they fell through to
+            // `triangle` — and the rows they occupy were below the 300 px
+            // crop, so the golden showed seven heads while claiming eleven.
+            // Two defects hiding each other: the crop hid the missing
+            // mapper, and the missing mapper meant the crop removed nothing
+            // that looked wrong.
+            { when: { data: 'shape', eq: 'triangle-tee' }, then: 'triangle-tee' },
+            { when: { data: 'shape', eq: 'circle-triangle' }, then: 'circle-triangle' },
+            { when: { data: 'shape', eq: 'triangle-cross' }, then: 'triangle-cross' },
+            { when: { data: 'shape', eq: 'triangle-backcurve' }, then: 'triangle-backcurve' }
           ], else: 'triangle' },
           'target-arrow-color': '#8e44ad',
           'source-arrow-shape': { case: [ { when: { data: 'atSource', eq: 1 }, then: 'chevron' } ], else: 'none' },
@@ -336,6 +410,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'arrow-shapes' );
     checkGolden( 'arrow-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -376,6 +451,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'line-styles' );
     checkGolden( 'line-styles', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -422,6 +498,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'mapped-colors' );
     checkGolden( 'mapped-colors', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -465,6 +542,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'far-zoom-lod' );
     checkGolden( 'far-zoom-lod', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -505,6 +583,7 @@ test.describe( 'WebGPU visual goldens', () => {
 
     // looser bound than geometry goldens: the OS text rasterizer under the
     // atlas differs per platform (see the header comment)
+    await expectGraphFits( page, 'labels-open-sans' );
     checkGolden( 'labels-open-sans', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -551,6 +630,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'edge-labels' );
     checkGolden( 'edge-labels', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -559,6 +639,9 @@ test.describe( 'WebGPU visual goldens', () => {
 
   test( 'golden: edge label autorotate (angles + the flip rule)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // round 56: this scene needs more than the suite's 400x300 — at
+    // 400x300 it was cropped, and expectGraphFits now says so
+    await useViewport( page, 400, 330 );
 
     await page.evaluate( async () => {
       await document.fonts.load( `32px 'Open Sans'` );
@@ -604,6 +687,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'edge-label-autorotate' );
     checkGolden( 'edge-label-autorotate', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -649,6 +733,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'bezier-bundles' );
     checkGolden( 'bezier-bundles', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -686,6 +771,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'self-loops' );
     checkGolden( 'self-loops', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -722,6 +808,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'curved-arrows' );
     checkGolden( 'curved-arrows', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -770,6 +857,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'curved-edge-labels' );
     checkGolden( 'curved-edge-labels', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -812,6 +900,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'unbundled-bezier' );
     checkGolden( 'unbundled-bezier', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -855,6 +944,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'segments-families' );
     checkGolden( 'segments-families', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -899,6 +989,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'taxi-families' );
     checkGolden( 'taxi-families', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -938,6 +1029,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'label-visuals' );
     checkGolden( 'label-visuals', await exportPng( page, { bg: '#888' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -977,6 +1069,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'haystack' );
     checkGolden( 'haystack', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1015,6 +1108,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'straight-triangle' );
     checkGolden( 'straight-triangle', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1060,6 +1154,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'manual-endpoints' );
     checkGolden( 'manual-endpoints', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1087,6 +1182,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'ghost' );
     checkGolden( 'ghost', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1118,6 +1214,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'node-layers' );
     checkGolden( 'node-layers', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1156,6 +1253,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'edge-layers' );
     checkGolden( 'edge-layers', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1202,6 +1300,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'label-boxes' );
     checkGolden( 'label-boxes', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -1210,6 +1309,9 @@ test.describe( 'WebGPU visual goldens', () => {
 
   test( 'golden: arrow scalars — scale, hollow, stroke widths (round 13 B7)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // round 56: this scene needs more than the suite's 400x300 — at
+    // 400x300 it was cropped, and expectGraphFits now says so
+    await useViewport( page, 400, 360 );
 
     await makeReadyCy( page, {
       elements: [
@@ -1247,11 +1349,15 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'arrow-scalars' );
     checkGolden( 'arrow-scalars', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
   test( 'golden: mid arrows on straight, bezier, taxi and haystack (round 13 C1)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // round 56: this scene needs more than the suite's 400x300 — at
+    // 400x300 it was cropped, and expectGraphFits now says so
+    await useViewport( page, 400, 350 );
 
     await makeReadyCy( page, {
       elements: [
@@ -1287,11 +1393,15 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'mid-arrows' );
     checkGolden( 'mid-arrows', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
   test( 'golden: gradient fills — directions, radial, curved lines (round 13 C2)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // round 56: this scene needs more than the suite's 400x300 — at
+    // 400x300 it was cropped, and expectGraphFits now says so
+    await useViewport( page, 400, 350 );
 
     await makeReadyCy( page, {
       elements: [
@@ -1335,6 +1445,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'gradients' );
     checkGolden( 'gradients', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1372,6 +1483,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'shape-polygon' );
     checkGolden( 'shape-polygon', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1411,6 +1523,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'labels-bold-italic' );
     checkGolden( 'labels-bold-italic', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -1468,6 +1581,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'label-align' );
     checkGolden( 'label-align', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -1476,6 +1590,9 @@ test.describe( 'WebGPU visual goldens', () => {
 
   test( 'golden: source/target labels along straight, bezier, taxi and loop edges (round 13 D4)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    // round 56: this scene needs more than the suite's 400x300 — at
+    // 400x300 it was cropped, and expectGraphFits now says so
+    await useViewport( page, 440, 400 );
 
     await page.evaluate( async () => {
       await document.fonts.load( `32px 'Open Sans'` );
@@ -1526,10 +1643,11 @@ test.describe( 'WebGPU visual goldens', () => {
         }
       },
       zoom: 1,
-      pan: { x: 200, y: 150 }
+      pan: { x: 210, y: 165 }
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'end-labels' );
     checkGolden( 'end-labels', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -1569,6 +1687,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'compounds' );
     checkGolden( 'compounds', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1601,6 +1720,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'compound-loops' );
     checkGolden( 'compound-loops', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1655,6 +1775,7 @@ test.describe( 'WebGPU visual goldens', () => {
     }, QUAD_PNG );
     await waitForImages( page );
 
+    await expectGraphFits( page, 'images-basic' );
     checkGolden( 'images-basic', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1684,6 +1805,7 @@ test.describe( 'WebGPU visual goldens', () => {
     }, QUAD_PNG );
     await waitForImages( page );
 
+    await expectGraphFits( page, 'images-cover-clip' );
     checkGolden( 'images-cover-clip', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1720,6 +1842,7 @@ test.describe( 'WebGPU visual goldens', () => {
     }, { quad: QUAD_PNG, half: HALF_PNG } );
     await waitForImages( page );
 
+    await expectGraphFits( page, 'images-multi' );
     checkGolden( 'images-multi', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
@@ -1757,6 +1880,7 @@ test.describe( 'WebGPU visual goldens', () => {
 
     // svg rasterization + the EDT ride the browser raster stack, so the
     // golden carries the label-family tolerance
+    await expectGraphFits( page, 'images-sdf-icons' );
     checkGolden( 'images-sdf-icons', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -1956,6 +2080,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'labels-wrap' );
     checkGolden( 'labels-wrap', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -1988,6 +2113,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'labels-wrap-edge' );
     checkGolden( 'labels-wrap-edge', await exportPng( page, { bg: '#fff' } ), testInfo, {
       threshold: 0.25,
       maxDiffRatio: 0.02
@@ -2047,6 +2173,7 @@ test.describe( 'WebGPU visual goldens', () => {
     } );
     await waitFrames( page );
 
+    await expectGraphFits( page, 'charts-pie-stripes' );
     checkGolden( 'charts-pie-stripes', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 

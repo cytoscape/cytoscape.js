@@ -14,7 +14,9 @@ is rewritten from that record — see *Maintaining this file* at the end.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Last updated**: 2026-08-06, covering work through round 55 — the
   edge-routing and arrow parity round, inserted after a maintainer opened
-  the debug page and found five things no test could see.
+  the debug page and found five things no test could see.  Its four new
+  decisions were all taken the same day; one remaining build (the arrow
+  gap) carries into the next round with failing tests in place.
 
 ---
 
@@ -40,16 +42,14 @@ every push for several weeks; `npm test` passes from a clean checkout.
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
 
-**Four questions remain genuinely open before 4.0.** Two are long-standing:
-the error/warning policy (round 40, with its preparatory classification of
-every error site approved), and which gesture defaults an event handler may
-veto (direction set: explicit toggles come first). Round 55 added two more,
-both narrow and both about public geometry: whether an edge endpoint
-accessor should answer the node boundary as v3 does rather than the node
-centre, and whether v4's compound parent box should inflate by a pixel per
-side to match v3's. The remaining unbuilt work — the arrow gap port,
-`border-style`, the documentation site, shader minification, a tighter
-compound fit bound, and release engineering — is decided and scheduled.
+**Two questions remain genuinely open before 4.0** — the error/warning
+policy (round 40, with its preparatory classification of every error site
+approved), and which gesture defaults an event handler may veto (direction
+set: explicit toggles come first). Round 55 raised four more and all four
+were answered the same day. The remaining unbuilt work — the arrow gap
+port, `border-style`, the documentation site, shader minification, a
+tighter compound fit bound, and release engineering — is decided and
+scheduled.
 
 ---
 
@@ -223,18 +223,31 @@ translucent edge diverges from v3 over **27% of the canvas**, and v4 draws
 more than twice as much ink as v3 in the hollow-arrowhead scene, because
 the line really is visible through every head.
 
-Three defects came out of it. One was fixed: a rounded taxi edge between
-two nodes that share a row or column — which is what a grid layout
-produces, and what the maintainer had been looking at — collapsed to
-"not a number" internally, so the edge vanished from the display, could
-not be clicked, and corrupted any measurement of the graph's extent. Two
-were logged as decisions for the maintainer rather than taken, because
-both change a published answer: an edge endpoint accessor reports the
-centre of a node where v3 reports its boundary, and v4's box around a
-compound group is a pixel tighter per side than v3's. The arrowhead work
-itself — teaching the renderer to stop the line short of the head, which
-is what makes hollow and translucent heads look right — is designed,
-measured and covered by failing tests, but not yet built.
+Three defects came out of it, and two were fixed. A rounded taxi edge
+between two nodes that share a row or column — which is what a grid
+layout produces, and what the maintainer had been looking at — collapsed
+to "not a number" internally, which broke the measurement of the whole
+graph's extent and so broke *fitting the graph to the screen* for any
+diagram containing one. And an edge endpoint accessor reported the centre
+of a node where v3 reports its boundary, off by a whole node radius;
+applications use that accessor to place their own overlays, so the wrong
+answer was visible on screen.
+
+A third measurement turned out not to be a defect at all, and the
+explanation is the useful part. v4's box around a compound group is a
+pixel tighter per side than v3's — the same pixel whether the nodes have
+borders or not, which ruled out the explanation the project had recorded
+years of habit around. The pixel is v3 compensating for its own renderer:
+v3 caches each element as a texture and composites it through canvas2d,
+where antialiasing leaves the true extent uncertain by about that much.
+v4 draws the whole scene on the GPU with no per-element textures, so it
+has nothing to compensate for. v4's box is simply the correct one, and
+that is now recorded as a deviation with its reason rather than as an
+open question.
+
+The arrowhead work itself — teaching the renderer to stop the line short
+of the head, which is what makes hollow and translucent heads look right
+— is designed, measured and covered by failing tests, but not yet built.
 
 ---
 
@@ -249,9 +262,7 @@ optional to scheduled.
 
 | | needs |
 |---|---|
-| Arrow gap / spacing (round 55's remainder) | decided in full — build only. The constants are verified against v3's own functions and three parity scenes fail until it lands; what remains is plumbing the value to the shaders that draw the line |
-| Edge endpoint accessors | **a call**: report the node boundary as v3 does, or keep the node centre and record the deviation? A published answer either way |
-| Compound parent box | **a call**: inflate v4's box by a pixel per side to match v3, or keep the tighter box and record it? Note round 54 is already scheduled to tighten these bounds further |
+| Arrow gap / spacing (round 55's remainder) | decided in full — build only. The constants are verified against v3's own functions and three parity scenes fail until it lands; what remains is plumbing the value to the shaders that draw the line. Hollow *mid* arrows are explicitly out of scope, and may not be supported at all |
 | `border-style` / `outline-style` (round 38) | decided in full — build only |
 | Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
 | Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |

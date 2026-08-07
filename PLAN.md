@@ -170,6 +170,21 @@ degenerates — which moved the search downstream to the strip and the
 arrows.  It fixed the `round-taxi` NaN that made `boundingBox()` answer
 all-null, logged two public-API calls (items 19–20), and left **its arrow
 gap port unlanded**, with failing tests and verified constants in place.
+**Round 56** (2026-08-07) landed that port and rather more: v3's `gap`
+and `spacing` on both the CPU and in generated WGSL, the hollow-head
+*stroke clipping* nobody had predicted — found by rendering the scene
+rather than by reading the code — a **close-up parity tier** that views
+short edges at zoom 3-5 where anti-aliasing no longer hides geometry,
+and the six goldens that had been silently **cropping the graph**, one of
+them losing a third of its canvas including four arrowheads whose mapper
+clauses had never been written.  Four of its own inherited predictions
+were corrected by measurement; the round record has them.  **Round 57**
+is a cleanup round raised by the maintainer (the default stylesheet,
+`oxfmt`, the documents' readability and their over-confidence, more
+debug networks).
+
+**The round list in this file is the currently *documented* set, not a
+plan for everything v4 needs before 4.0.**
 `src/README.md` is
 the maintained scope / deviations doc; this file records each round's
 plan and outcome.
@@ -640,6 +655,46 @@ docs checks), and each is left in place pending the call.
     against a CPU counterpart, which is the same rule that kept the
     `gpu-*.mts` file names in round 42.1.  None is exported.
 
+23. **`arrow-scale` is quantized to 1/16, and it is not only readback**
+    (round 56, 2026-08-07).  `edge.arrowShapes` stores the scale as an
+    integer x16 in its top byte (round 13 B7).  The ledger has described
+    that as "quantized readback — recorded" since; measurement says the
+    scope is wider.  The *drawn* head takes its size from the quantized
+    value, and since round 56 so do v3's `gap` and `spacing`, so an
+    `arrow-scale` that is not a multiple of 1/16 is wrong in geometry as
+    well as in what `style()` reports.  Measured at `arrow-scale: 1.4`,
+    which quantizes to 22/16 = **1.375**: the triangle gap is 19.25
+    against v3's 19.6, the circle spacing 12.260282 against 12.483196,
+    and the straight midpoint 120.187500 against 120.100000.  1.8% small
+    on every arrow quantity.
+    Deliberately **not** dodged by giving the routing scenes a
+    representable scale: the seven residual fields are pinned in
+    `routing-ledger.mjs` with two-sided bands, so re-quantizing the field
+    fails them and forces a re-measurement.
+    The call, and why it is one: the contract's own note says the escape
+    hatch is that "the scale byte can be re-quantized", and there are six
+    reserved bits (18..23) sitting next to it.  Spending them takes the
+    scale to 14 bits at x128 — 0.11% error instead of 1.8% — but
+    **forecloses a 17th arrow shape**, which the same paragraph names as
+    the other claim on that span.  Which of the two the reserve is for is
+    the maintainer's call, not a round's.
+    (Note the third option: leave it.  v3's own `arrow-scale` is a
+    presentation knob and 1.8% of an arrowhead is sub-pixel at most zoom
+    levels — the reason this was invisible until a close-up scene
+    existed.)
+
+24. **Where the arrow trim cannot reach** (round 56, 2026-08-07) — two
+    places the gap is not applied, both because a vertex stage is at the
+    8-storage-buffer budget with no slot for `edge.width`, and a layout
+    entry counts even for a binding the shader never reads:
+    - **edge labels** anchor at the untrimmed midpoint, ~2.6 model px
+      from what `midpoint()` answers on an arrowed bezier;
+    - **overlay / underlay / casing strokes** run a gap further than v3's,
+      which strokes its casing along the shortened path.
+    Neither is a decision — the fix is to free a binding, and the
+    curved-edge pipeline's own layout split is the precedent.  Logged
+    rather than attempted inside a round that had already grown large.
+
 ### Public-surface changes made without a call, logged rather than buried
 
 None of these needed a decision to *make* — one is a missing export and
@@ -799,7 +854,9 @@ conditional halves of calls the sitting took.
     rewriting.
 
 21. **Hollow and translucent *mid* arrows keep showing the line**
-    (round 55, 2026-08-06).  The fix for endpoint heads is to stop the
+    (round 55, 2026-08-06; **still open after round 56**, which landed
+    the endpoint trim and left mid arrows exactly as this entry
+    describes).  The fix for endpoint heads is to stop the
     line short of the head, which reproduces v3's `destination-out`
     erase at zero runtime cost.  A mid arrow sits mid-line, where a trim
     cannot reach, so it is not covered.
@@ -815,9 +872,9 @@ conditional halves of calls the sitting took.
     ids, which pushes toward the heavier trim carrier), or build the
     erase pass for that case alone.
 22. **`edgeHitsBox` keeps its straight-edge approximation** (round 55,
-    2026-08-06).  Once the gap/trim port shortens the drawn line, the
-    comment claiming containment and box selection "agree about where
-    the edge is" stops being exactly true.
+    2026-08-06).  Round 56 shortened the drawn line, so the comment
+    claiming containment and box selection "agree about where the edge
+    is" is now inexact, as this entry predicted.
     **Call taken (2026-08-06): keep the approximation, amend the
     comment.**  It backs box selection, where a stub of an edge near a
     node is not a distinction a user is making, so the cheap and simple
@@ -3380,6 +3437,20 @@ measure-first, expected never taken) and the **tween warm-up** (item
 18, revisit with data).  Items 14–16 are ratified and closed; the
 `executePlan()` coverage gap and CI's removed job timeout stay recorded
 decisions rather than open ones.
+
+**Amended 2026-08-07 (round 56).**  Add **round 57** (cleanup, planned at
+the end of this file) to the unbuilt list, and two questions to the
+undecided one: the **`arrow-scale` quantization** (item 23 — closing it
+spends the six reserved packing bits, which a 17th arrow shape also
+wants) and **where the arrow trim cannot reach** (item 24 — edge labels
+and the layer strokes; a binding rather than a decision).
+
+And a caution that applies to this paragraph in particular: it is an
+inventory of what has been **written down**, not a claim that finishing
+it finishes v4.  The maintainer can name several rounds that are not
+logged yet, and rounds 43, 46.5, 55 and 56 were each inserted after the
+sequence they interrupt was already planned.  Round 57 item 4 exists
+because these summaries had drifted into reading like a complete plan.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 
@@ -13377,3 +13448,208 @@ That makes three predictions in one round that measurement corrected: the
 arrow-gap scene that measured nothing, the "invisible on the GPU" claim,
 and this one.  All three were plausible readings of the code.  None
 survived being run.
+
+## Round 56 — the arrow gap, landed (2026-08-07)
+
+Round 55 designed this fix, measured it, and did not land it.  This round
+landed it, and the useful half of the record is the four places where
+measurement contradicted the design note it was working from.
+
+### What was wrong
+
+v3 keeps **two** shortened points per edge end and they are not the same
+point: the drawn line stops `arrowShapes[shape].gap(edge)` behind the
+node boundary, and the arrow *tip* sits `spacing(edge)` behind it.  v4
+had neither.  Its line ran to the node **centre**, so it showed through
+every hollow head, composited twice under every translucent one, and
+leaked a wedge past every filled tip.
+
+A second defect, which no plan had predicted, came out of rendering the
+scenes rather than reasoning about them: a hollow head **strokes its
+outline**, so its ink reaches half a stroke width *outside* the polygon —
+furthest out at the back corners, where two edges meet acutely.  The
+arrow quad's margin was 1 px, so v3's corner tabs were cut off flat.
+That is the "clipping around the back corners" the maintainer reported,
+and it is the same defect shape round 27.6 fixed longitudinally (a
+hardcoded `0.3` clipping the compound heads) arriving in the lateral
+direction.
+
+### The carrier, and why the shape word travels rather than a trim
+
+`edge.width` widened from one component to two: lane 0 the width, lane 1
+a bit-exact copy of `edge.arrowShapes`.  All four edge vertex stages
+already bind that column and **none has a spare storage-buffer slot**, so
+this is the only way the shape word reaches the stage that has to shorten
+the line without a new binding anywhere.  `GraphStore.setArrowShapes` is
+the single writer and copies through a `Uint32Array` view of the column's
+own buffer — exact for any word, rather than exact only while the packing
+happens to leave bit 23 clear.
+
+Round 55 logged **CPU-computed trims** as the alternative.  The reason to
+prefer the word is not the 8 bytes: the head is drawn at the
+*quantized* arrow-scale, so a gap derived from the same quantized value
+meets the head exactly, where one computed from the unquantized scale
+would leave a sub-pixel seam.
+
+### Where the gap applies — routing, not paint
+
+The lesson the new `curved-arrows` routing scene bought: v3's
+`storeAllpts` builds the **drawn path** from `rs.startX/Y` and
+`rs.endX/Y`, the gap-shortened points.  So a head shortens the *curve
+itself*, and its midpoint and its flattened bound follow.  A trim written
+as "stop drawing early" would have passed every pixel scene and diverged
+here — it did, by 2.585 px on `mid.y`, before the fix.
+
+And v3's straight midpoint is not the chord's:
+
+    rs.midX = ( rs.startX + rs.endX + rs.arrowStartX + rs.arrowEndX ) / 4
+
+which lands back on the chord midpoint only when both ends carry the same
+head.  That is why the symmetric `arrows` scene reported `mid` clean for
+a whole round while getting the endpoints wrong.  Four rows of the new
+`asym-arrows` scene reproduce a hand-derived v3 formula **exactly** —
+`none->triangle` 120.100000, `triangle->none` 129.900000,
+`diamond->chevron` 125.122500, `tee->triangle-tee` 120.600000 — which is
+the third independent confirmation of the gap constants, after round 55's
+probe of v3's own `registerArrowShapes` and the harness measuring v3's
+rendered endpoint from the other direction.
+
+### Four predictions measurement corrected
+
+1. **Round 55's design note is wrong about the trim.**  It says trimming
+   to "the head's back extent" reproduces v3's erase.  A/B'd three ways
+   on this machine, and it is *worse*: `closeup-gap` 0.263% against
+   0.020%, `closeup-heads` 0.047% against 0.000%.  It over-trims wherever
+   the head is narrower than the line, and a **concave** head breaks its
+   premise outright — v3 shows the line through a `vee`'s notch, whose
+   axial depth is 0.15 against a 0.3 back extent.  The rule that wins is
+   v3's own `gap`, extended to the head's *contiguous axial depth* only
+   where that is visible, which is a hollow end.  `ARROW_AXIAL_DEPTH` is
+   computed by walking the axis rather than declared, for the reason
+   27.6's bound is computed.
+2. **`parity-arrow-alpha` was measuring the wrong thing** — round 55's own
+   cautionary case, one level up.  At `arrow-scale: 4` its heads are
+   longer than the chord, so they overlap *each other*, and v3 erases
+   before painting each one; the scene read a head-over-head difference
+   under a name that says line-over-head, and sat at 18.6% after the fix
+   for that reason alone.  Retuned to scale 1.5: **0.853%**, with an
+   opaque-line control of **0.000%**.
+3. **The goldens could not have caught any of this.**  Measured on one
+   machine, pre- and post-change: 11 of 43 goldens moved, the largest by
+   **0.178%**, against a 0.5% bound.  A change that moved a live parity
+   scene from 5.610% to 0.020% moves the golden tier by a third of its
+   tolerance.  Round 27 recorded this qualitatively; this is the number.
+4. **`arrow-shape` is not a property in either library.**  v3 registers
+   only the four prefixed spellings, so the bare name the routing sheets
+   carried was a no-op v3 warned about on every scene — invisible because
+   `routing.spec.js` does not watch the console, and harmless only
+   because it named the value already in force.  Found when a close-up
+   *pixel* scene copied the idiom into a suite that does watch.
+
+### Measured
+
+| scene | before | after |
+|---|---|---|
+| `parity-arrow-gap` | 3.537% | **0.000%** |
+| `parity-arrow-hollow` | 11.775% | **0.442%** |
+| `parity-arrow-alpha` | 26.707% | **0.853%** (retuned) |
+| `closeup-gap` | 5.610% | **0.020%** |
+| `closeup-heads` | 0.149% | **0.000%** |
+| `closeup-hollow` | 2.555% | **0.898%** |
+| `closeup-edges` | 0.093% | **0.004%** |
+| `closeup-curves` | 0.972% | **0.005%** |
+
+Four scenes with nothing to do with arrows went to *exactly* zero —
+`basic`, `transform`, `opacity-split`, `compound-arrows` — because the
+line no longer runs under a translucent node.  Routing: `arrows` is 0
+diverged of 42; `asym-arrows` and `curved-arrows` diverge only by the
+arrow-scale quantization, pinned entry by entry in the ledger.  **No
+`test.fail` marker is left anywhere in the suite** — every one was
+earned off.  109 visual + routing, 104 renderer, 2046 Node, 250 module,
+24 soak specs green, and the debug harness driven at
+`?network=v3-default` shows heads on their boundaries with no line
+through the hollow interiors and no cut corners.
+
+### The close-up tier
+
+The maintainer asked for parity tests that zoom in closely enough to
+judge fidelity.  Five scenes (`parity-closeup-*`) render **short edges at
+zoom 3-5**, on the property that anti-aliasing is a boundary effect and
+does not scale: zooming grows the ink while the fringe stays a pixel
+wide, so AA's share of the mismatch falls and the bounds can be 4-20x
+tighter than the zoom-1 tier's 2-3%.  Each bound is set from that scene's
+own measured control.
+
+`closeup-curves` with its heads off reads **0.002%** — three curve
+families magnified 3x, two pixels from v3.  That is the strongest
+statement in the suite that v4's routing is exact.
+
+### Goldens: six were cropping the graph
+
+Measured every scene's rendered bounding box against its exported
+viewport: **six of 43 spill**, worst `arrow-shapes` at **109 px** below a
+300 px canvas — over a third of the scene, and an arrow golden at that.
+The six get a canvas that fits, and `expectGraphFits` now runs before
+every golden diff so a scene that outgrows its canvas fails loudly.
+
+Uncropping `arrow-shapes` found the better defect underneath: round 27.6
+added v3's four compound heads to the scene's `shapes` list and **never
+added their mapper clauses**, so all four fell through to `triangle` —
+and their rows are exactly the ones the crop removed.  Two defects hiding
+each other: the crop hid the missing mapper, and the missing mapper meant
+the crop appeared to remove nothing that looked wrong.  The golden had
+been showing seven heads while naming eleven since 27.6.
+
+### Recorded deviations
+
+- **Edge labels and the overlay/underlay/casing strokes ride the
+  untrimmed path.**  A binding, not a decision: both vertex stages sit at
+  the 8-storage-buffer budget with no slot for `edge.width`, and a layout
+  entry counts even for a binding the shader never reads.  An edge label
+  on an arrowed bezier anchors ~2.6 model px from what `midpoint()`
+  answers.  The fix is to free a binding (the curved-edge pipeline's
+  layout split is the precedent); logged rather than guessed at.
+- **Two translucent heads that overlap composite** where v3's erase
+  flattens them.  v4 has no erase pass by design (decision 1 of round 55).
+- **A hollow head's back corners are radiused** where v3 miters them —
+  offsetting a distance field rounds a join by construction.  That is
+  *all* of `closeup-hollow`'s 0.898% residual: its `filled` control reads
+  0.000%.
+
+### Open call raised — `arrow-scale` is quantized to 1/16
+
+`edge.arrowShapes` stores the scale as an integer x16 (round 13 B7), so
+`arrow-scale: 1.4` is drawn and measured at **1.375**, 1.8% small — and
+it is not only readback, as the ledger line said: the head's *size*, v3's
+`gap` and v3's `spacing` all derive from it.  Every residual in
+`asym-arrows` and `curved-arrows` is this and nothing else.  See open
+call 23.
+
+## Round 57 plan — cleanup (raised by the maintainer 2026-08-07)
+
+Five items, all from the maintainer, none blocked on a decision:
+
+1. **The default stylesheet should look like v3's.**  Grey by default for
+   both nodes and edges, the same blue on selection for both, and v3's
+   **active** style expressed through the overlay props — which v4 has
+   (round 13 A2 ported them precisely so the baked-in affordances could
+   become styled defaults) and has not yet used for this.
+2. **Adopt `oxfmt`, and drop the extra-space call style.**  `cy.foo( bar,
+   baz )` becomes `cy.foo(bar, baz)` — a standard format rather than this
+   repo's own.  Mechanical, and best done in one commit that touches
+   nothing else so it stays reviewable.
+3. **The status site's design and record pages each open with one huge
+   paragraph.**  Fix the *source* markdown (`src/README.md` and this
+   file's header) so both read as prose rather than as a wall — the site
+   publishes them verbatim, so there is nothing to fix in the generator.
+4. **The documents are too bullish about v4 being close to ready.**  They
+   are not, and the planned rounds are only the ones that happen to be
+   written down — the maintainer can name several more that are not
+   logged yet.  Say both things explicitly: temper the readiness language,
+   and state that the round list is the *currently documented* set rather
+   than an exhaustive plan.
+5. **More demo networks in `debug/`**, ported from v3's demos: node types,
+   edge types, edge arrow types, labels.  The harness has ten networks and
+   round 46.6 added v3's default debug graph for exactly this reason —
+   these four are the next most useful for judging a rendering change by
+   eye.

@@ -12,44 +12,55 @@ is rewritten from that record — see *Maintaining this file* at the end.
   carries earlier v3-era work (a TypeScript migration through June and
   mid-July) that `PLAN.md` does not cover and this summary does not describe.
 - **Status**: not released. `cytoscape@3` remains the shipping library.
-- **Last updated**: 2026-08-06, covering work through round 55 — the
-  edge-routing and arrow parity round, inserted after a maintainer opened
-  the debug page and found five things no test could see.  Its four new
-  decisions were all taken the same day; one remaining build (the arrow
-  gap) carries into the next round with failing tests in place.
+- **Last updated**: 2026-08-07, covering work through round 56 — the arrow
+  gap, which round 55 had designed, measured and left unbuilt.
 
 ---
 
 ## Where it stands
 
-v4 is feature-complete against its own scope and is in release preparation. The
-public API keeps v3's *shape* — `cy.add()`, `eles.filter()`, `node.position()`,
-the traversal and algorithm surfaces — while several v3 mechanisms were removed
-by decision rather than reimplemented, each recorded with its rationale.
+v4 covers its own documented scope and is being hardened. The public API keeps
+v3's *shape* — `cy.add()`, `eles.filter()`, `node.position()`, the traversal and
+algorithm surfaces — while several v3 mechanisms were removed by decision rather
+than reimplemented, each recorded with its rationale.
 
-Continuous integration is green again as of 2026-08-06, having been red on
-every push for several weeks; `npm test` passes from a clean checkout.
+**It is not close to a release, and the round list is not a plan for getting
+there.** The rounds named below are the ones that have been *written down*;
+several more are known to be needed and are not logged yet, and four of the
+rounds that have shipped (43, 46.5, 55, 56) were inserted after the sequence
+they interrupt was already planned. Rounds 55 and 56 are the pattern to expect:
+both began with a maintainer opening a page and seeing something no test could,
+and both found more than they set out to fix. Treat "what remains" below as an
+inventory, not an estimate.
+
+Continuous integration is green as of 2026-08-06, having been red on every push
+for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,041 unit · 250 module · 24 soak · 308 browser |
+| Automated tests | 2,046 unit · 250 module · 24 soak · 317 browser |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 43 golden images · 31 live v3-vs-v4 pixel-parity scenes · **9 numeric routing-parity scenes** comparing geometry rather than pixels |
+| Visual regression | 43 golden images · 36 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · **11 numeric routing-parity scenes** comparing geometry rather than pixels |
 | Benchmarks | 25 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
-| Bundle | 661 KiB minified, 179 KiB gzipped — 1.4× v3 (411 / 126 KiB) on the wire, of which **24% is WebGPU shader source** v3 has no equivalent of |
+| Bundle | 680 KiB minified, 185 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire, a quarter of it WebGPU shader source v3 has no equivalent of |
 
 The headline case: a 19,607-node / 464,657-edge network initialises in **1.7 s
 against v3's 19.1 s**, and holds **33 ms frames where v3 takes 4,460 ms**.
 
-**Two questions remain genuinely open before 4.0** — the error/warning
-policy (round 40, with its preparatory classification of every error site
-approved), and which gesture defaults an event handler may veto (direction
-set: explicit toggles come first). Round 55 raised four more and all four
-were answered the same day. The remaining unbuilt work — the arrow gap
-port, `border-style`, the documentation site, shader minification, a
-tighter compound fit bound, and release engineering — is decided and
-scheduled.
+**Four questions are open**, up from two. The long-standing pair: the
+error/warning policy (round 40, its preparatory classification of every error
+site approved), and which gesture defaults an event handler may veto (direction
+set — explicit toggles come first). Round 56 added two: whether to spend the six
+reserved arrow-packing bits on **un-quantizing `arrow-scale`** (which currently
+renders 1.4 as 1.375) or keep them for a seventeenth arrow shape, and how to
+free the vertex-shader binding that would let **edge labels and the casing
+strokes** see the arrow trim.
+
+The unbuilt work that *is* decided — `border-style`, the documentation site,
+shader minification, a tighter compound-fit bound, a cleanup round, release
+engineering — is scheduled. That list is what has been written down; it is not
+a complete account of what 4.0 needs.
 
 ---
 
@@ -115,7 +126,7 @@ it.
 
 ---
 
-## Week 3 — 3–6 August: hardening, release preparation, and a CI reckoning
+## Week 3 — 3–7 August: hardening, release preparation, a CI reckoning, and two rounds that began with someone looking at the screen
 
 *139 commits. Rounds 28–53.2.*
 
@@ -247,11 +258,50 @@ open question.
 
 The arrowhead work itself — teaching the renderer to stop the line short
 of the head, which is what makes hollow and translucent heads look right
-— is designed, measured and covered by failing tests, but not yet built.
+— was designed and measured here and built in the next round.
+
+### Round 56: the arrow gap, and two things nobody had predicted
+
+v3 keeps two shortened points at each end of an edge: the drawn line stops
+short of the node by one distance, and the arrowhead's tip sits at another.
+v4 had neither, so its line ran all the way to the node's *centre* — visible
+through every hollow arrowhead, doubled under every translucent one. Porting
+v3's rule took the divergence on those scenes from 11.8% and 26.7% of the
+frame to 0.4% and 0.9%.
+
+Two findings came from **looking at the rendered pixels** rather than reading
+the code, which is the round's transferable part:
+
+- A hollow arrowhead is drawn by stroking its outline, so its ink reaches
+  outside the shape — furthest at the back corners. v4's arrowhead quad had a
+  one-pixel margin, so those corners were being **cut off flat**. That was the
+  "clipping" the maintainer had reported, and no amount of reasoning about the
+  gap would have found it.
+- Six of the 43 golden images were **cropping their own scene**. The worst lost
+  109 pixels of a 300-pixel canvas — and it was the arrowhead golden. Restoring
+  it exposed four compound arrowheads that had been listed in the scene since
+  August 2nd and never actually drawn, because their style rule was missing.
+  Two defects had been concealing each other.
+
+The round also inherited four confident statements from its predecessor and
+**measurement contradicted all four**, including the recommended way to trim
+the line (the alternative tested worse) and the assumption that the golden
+images would catch the change (they moved by at most 0.178% against a 0.5%
+tolerance — they could not have).
+
+To make this kind of thing visible in future, the parity suite gained a
+**close-up tier**: short edges viewed at 3–5× magnification, where
+anti-aliasing no longer masks geometry, carrying bounds four to twenty times
+tighter than the existing scenes.
 
 ---
 
 ## What remains before 4.0
+
+**This table lists what has been written down.** Several rounds that v4 needs
+are not in it because they have not been scoped yet, and four of the rounds
+that have already shipped were inserted after this sequence was planned. It is
+an inventory, not a schedule.
 
 A design sitting on 2026-08-06 swept the accumulated open decisions: the
 `border-style` scope questions were settled (full v3 parity, including the
@@ -262,7 +312,10 @@ optional to scheduled.
 
 | | needs |
 |---|---|
-| Arrow gap / spacing (round 55's remainder) | decided in full — build only. The constants are verified against v3's own functions and three parity scenes fail until it lands; what remains is plumbing the value to the shaders that draw the line. Hollow *mid* arrows are explicitly out of scope, and may not be supported at all |
+| `arrow-scale` quantization | **a decision.** Arrow scale is stored as a 1/16 step, so `arrow-scale: 1.4` draws at 1.375 — 1.8% small on the head, the gap and the spacing alike. Fixing it spends the six spare bits in the same field, which a seventeenth arrowhead shape also wants. One or the other |
+| Arrow trim on labels and casings | **a binding, not a decision.** Two vertex shaders are at the hardware's storage-buffer limit and cannot see the arrow data, so an edge label on an arrowed curve sits ~2.6px from where the API says it should. The fix is to free a slot |
+| Hollow *mid* arrows | still show the line: they sit mid-edge, where a trim cannot reach. May end up unsupported rather than fixed |
+| Cleanup (round 57) | decided — a v3-like default stylesheet, a standard code formatter, more demo networks, and making these documents both readable and less confident |
 | `border-style` / `outline-style` (round 38) | decided in full — build only |
 | Error / warning policy (round 40) | a design sitting; first, every error site is classified into always-throws vs recoverable, so the "demote errors to warnings" option is decided on real numbers |
 | Gesture-default veto (`preventDefault()`) | direction set — explicit toggles come first and remain primary; the exact list is designed when that work lands |

@@ -260,7 +260,27 @@ the search moved downstream to the strip and the arrows.  It fixed the
 graph, and so `fit()`), corrected `source/targetEndpoint()` to v3's
 node-boundary answer, and established that v4's tighter compound box is
 *correct* rather than a shortfall.  Its one unbuilt piece, the arrow
-`gap`, is the first entry under "Follow-up hooks".
+`gap`, landed as **round 56** (2026-08-07).
+
+Round 56 ports v3's `gap` and `spacing` in full.  v3 keeps two shortened
+points per edge end — the drawn line stops `gap` behind the node
+boundary, the arrow tip sits `spacing` behind it — and v4 had neither, so
+its line ran to the node *centre* and showed through every hollow head.
+The shape word rides in `edge.width`'s second lane, which is how it
+reaches four vertex stages that are all at the 8-storage-buffer budget,
+and the WGSL for `gap` is **generated from the same tables** the CPU
+reads.  The gap is routing rather than paint: v3 builds its drawn path
+from the shortened points, so a head shortens the *curve* and moves its
+midpoint.
+
+Two further findings, both from looking at pixels rather than at code.
+A hollow head **strokes its outline**, reaching half a stroke width
+outside the polygon and furthest out at the back corners — clipped to the
+quad's 1 px margin, which is the flat-cut corners the maintainer saw.
+And six of the 43 goldens were **cropping the graph**, the worst losing
+109 px of a 300 px canvas; uncropping it exposed four compound arrowheads
+that had been listed in the scene and never given a mapper clause since
+round 27.6.
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
@@ -1515,15 +1535,16 @@ each is deliberate, not a pass-1 deferral:
     since 12b also the unbundled control list, with
     `segmentPoints()` covering segments/taxi);
     `midpoint()` is the curve midpoint and `source/targetEndpoint()`
-    the node-boundary endpoints — for curved edges the curve's, and
-    since round 55 for straight edges too, along the chord between the
-    node centres, which is both v3's answer and the point v4's arrow
-    shader draws to.  (Before that they answered the node *centre* on a
-    straight edge, off by a whole node radius.)  One v3 term is still
-    outstanding: v3 additionally pulls the point back by the arrow
-    shape's `spacing`, which is zero for every head except `tee` (1 px)
-    and `circle`/`circle-triangle`; that lands with the gap/trim port,
-    so the accessor never reports a point the renderer does not draw.
+    v3's **arrow** points — its `rs.arrowStartX/Y`, which sit the arrow
+    shape's `spacing` behind the node boundary, not the drawn line's
+    ends, which sit `gap` behind it.  Round 55 corrected them from the
+    node *centre* (off by a whole node radius on a straight edge) to the
+    boundary; round 56 added `spacing`, non-zero for `tee` (1 px) and the
+    two disc heads, and the renderer draws to the same point.
+    `midpoint()` follows v3 per family, which on a **straight** edge is
+    not the chord midpoint but `( startX + endX + arrowStartX +
+    arrowEndX ) / 4` — the two shortenings cancel only when both ends
+    carry the same head.
     Public
     `eles.boundingBox()` is the *exact lazy* tier of the
     expensive-geometry design: the flattened polyline at the drawn
@@ -2955,6 +2976,40 @@ still be what it says.
   pop above later-inserted nodes.  **Permanent since 2026-08-01**:
   z-index is dropped from v4 by decided design (see "Design
   decisions" above), so draw order stays structural for good.
+- **Arrow compositing is a trim, not an erase** (round 56).  v3 makes a
+  hollow or translucent head read as one shape by erasing the head's
+  footprint out of the canvas (`destination-out`) before painting it; v4
+  stops the line short instead, which costs no second pass.  The two
+  agree wherever the head covers the line, which is v3's own reason for
+  sizing `gap` as it does — but three cases fall outside a single trim
+  distance, and all three are accepted:
+  - **v3's erase punches through whatever is under the head** — a
+    compound parent's body, another edge — and a trim does not.
+  - **Two translucent heads that overlap** composite in v4 where v3's
+    erase flattens them.  Reachable when `arrow-scale` makes the heads
+    longer than the chord they sit on.
+  - **Mid arrows are not covered at all**: they sit mid-line, where a
+    trim cannot reach.  PLAN.md's open call 21 carries the maintainer's
+    lean that `arrow-fill: hollow` may simply not be supported on mid
+    arrows.
+- **A hollow head's back corners are radiused**, where canvas2d miters
+  them: v4 strokes by offsetting a distance field, and that rounds a join
+  by construction.  Same family as the butt-cap note the edge layers
+  carry.  It is the whole of the close-up hollow parity scene's 0.898%
+  residual — the same scene with `arrow-fill: filled` reads 0.000%.
+- **Edge labels and the overlay/underlay/casing strokes ride the
+  *untrimmed* path** (round 56).  Not a decision: both vertex stages sit
+  at WebGPU's base 8-storage-buffer limit with no slot for `edge.width`,
+  and a bind-group layout entry counts against that limit even for a
+  binding the shader never reads — so neither can reach the arrow word.
+  An edge label on an arrowed bezier anchors about 2.6 model px from
+  what `midpoint()` answers, and a casing runs a gap further than v3's.
+  PLAN.md's open call 24; the fix is to free a binding.
+- **`arrow-scale` is quantized to 1/16** and always was (round 13 B7) —
+  but it is not only readback, as this file used to imply.  The drawn
+  head's size takes the quantized value, and since round 56 so do v3's
+  `gap` and `spacing`, so `arrow-scale: 1.4` renders at **1.375**: 1.8%
+  small on every arrow quantity.  PLAN.md's open call 23.
 - **Float32 positions**: ~7 significant digits of precision (pure-memcpy
   uploads are worth the trade at this stage).
 - **Pan-vs-grab is exact**: pointerdown does a synchronous CPU node pick
@@ -3672,8 +3727,11 @@ still be what it says.
   shapes, v3's nonlinear arrow-size formula and per-element numeric
   `text-rotation` all landed, completing v3's node-shape and
   arrowhead **vocabularies** — which round 55 had to distinguish from
-  arrow *compositing*, still open and listed at the top of this
-  section.  **`border-style` / `outline-style`** was
+  arrow *compositing*, ported in turn by **round 56**: v3's `gap` and
+  `spacing`, the hollow-stroke clipping, and the six goldens that were
+  cropping their own scenes.  What is left of arrow compositing is the
+  three deviations listed under "Known deviations" — mid arrows, the
+  erase's reach under a head, and overlapping translucent heads.  **`border-style` / `outline-style`** was
   the last one left, waiting on a scope call rather than a technique;
   the fifth design sitting took it — **full coverage, every shape** —
   and it builds as round 38, which has not started: scoping it turned

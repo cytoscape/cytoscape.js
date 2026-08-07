@@ -14090,4 +14090,29 @@ bakes into the shader where v3 spells them in its default stylesheet.
   headless is added `selected: true`, so it now draws blue rather than
   the sheet's red — which pins that the flag survived the re-mount as
   well as the geometry.
+- [x] **57.1b Selection reaches edges and arrows** (2026-08-07) — the
+  edge, curved-edge and both arrow fragment shaders bind `edge.flags`
+  and take v3's `#0169D9` on `line-color` and on all four arrow colours,
+  which is what v3's `:selected` does.  Before this a selected edge in
+  v4 was **indistinguishable from an unselected one**: `FLAG_SELECTED`
+  was read at exactly one place in all of the WGSL, the node fragment
+  shader.
+  The binding is the interesting half.  Three of the four shaders had a
+  free fragment slot; the straight edge shader had none — eight storage
+  buffers in each stage — and the fix was not the layout split open call
+  24 names but something cheaper that the split's own reasoning
+  suggests: the fragment stage wanted **one number** out of
+  `edge.curveParams` (the straight-triangle kind), so it now takes that
+  as a flat varying and the column went vertex-only, freeing its slot.
+  A binding for a number is what the budget could not afford.
+  `parity-selection` grew selected and unselected straight edges, a
+  selected `unbundled-bezier`, and circle/triangle heads on all of them,
+  and reads **0 differing pixels** — v4's selection look is not close to
+  v3's here, it is the same image.  Four controls, each failing the
+  scene's 0.1% bound: 3.147% (node colour removed), 5.883% (a selected
+  parent taking the leaf colour), **0.690%** (the line left untinted)
+  and **0.367%** (the heads left untinted).  The last two are the reason
+  the bound is 0.1% and not the suite's 3% default — at 3% both would
+  have passed with the feature missing, which is round 27's own
+  cautionary case.
 - [ ] **57.7 Closing docs sweep** + the `EXECUTIVE_SUMMARY.md` rewrite.

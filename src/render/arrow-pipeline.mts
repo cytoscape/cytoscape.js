@@ -125,6 +125,13 @@ export class ArrowPipeline {
           visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
+        {
+          // the flags column (round 57.1b): v3's :selected recolours
+          // every arrow colour along with the line
+          binding: ARROW_COLUMNS.length + 6,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
       ],
     });
 
@@ -216,6 +223,10 @@ export class ArrowPipeline {
           {
             binding: ARROW_COLUMNS.length + 5,
             resource: { buffer: mirror.buffer('edge.curveParams') },
+          },
+          {
+            binding: ARROW_COLUMNS.length + 6,
+            resource: { buffer: mirror.buffer('edge.flags') },
           },
         ],
       }),

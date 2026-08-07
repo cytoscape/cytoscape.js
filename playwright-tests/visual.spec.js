@@ -5169,34 +5169,84 @@ test.describe('v3-vs-v4 render parity', () => {
     // `src/README.md`), and this scene is scoped to the thing the round
     // is about: the two libraries' **defaults**.
     const elements = [
-      { data: { id: 'a' }, position: { x: -140, y: -70 }, selected: true },
-      { data: { id: 'b' }, position: { x: -20, y: -70 } },
-      { data: { id: 'c' }, position: { x: 100, y: -70 }, selected: true },
+      { data: { id: 'a' }, position: { x: -150, y: -100 }, selected: true },
+      { data: { id: 'b' }, position: { x: -30, y: -100 } },
+      { data: { id: 'c' }, position: { x: 90, y: -100 }, selected: true },
+      // a selected edge and its unselected twin, straight and curved:
+      // v3's `:selected` recolours `line-color` and all four arrow
+      // colours, so the heads have to follow their edge
+      { data: { id: 'e1' }, position: { x: -150, y: -10 } },
+      { data: { id: 'e2' }, position: { x: 90, y: -10 } },
+      { data: { id: 'sel', source: 'e1', target: 'e2' }, selected: true },
+      { data: { id: 'f1' }, position: { x: -150, y: 60 } },
+      { data: { id: 'f2' }, position: { x: 90, y: 60 } },
+      { data: { id: 'plain', source: 'f1', target: 'f2' } },
+      { data: { id: 'g1' }, position: { x: -150, y: 140 } },
+      { data: { id: 'g2' }, position: { x: 90, y: 140 } },
+      {
+        data: { id: 'curved', source: 'g1', target: 'g2', c: 1 },
+        selected: true,
+      },
       { data: { id: 'p' }, selected: true },
-      { data: { id: 'p1', parent: 'p' }, position: { x: -110, y: 80 } },
-      { data: { id: 'p2', parent: 'p' }, position: { x: -10, y: 80 } },
+      { data: { id: 'p1', parent: 'p' }, position: { x: -110, y: 240 } },
+      { data: { id: 'p2', parent: 'p' }, position: { x: -10, y: 240 } },
       { data: { id: 'q' } },
-      { data: { id: 'q1', parent: 'q' }, position: { x: 110, y: 80 } },
+      { data: { id: 'q1', parent: 'q' }, position: { x: 110, y: 240 } },
     ];
     // a border but no border *colour*: both libraries default it to
     // black, and it staying black under selection is what says the rule
     // recolours the fill rather than the whole element
     const shared = { width: 56, height: 56, 'border-width': 6 };
+    // `curve-style` is stated on both sides: v3's raw default is
+    // `haystack` and v4's is `straight` (round 12's signed-off call), a
+    // difference this scene is not about
+    const edgeShared = {
+      width: 8,
+      'curve-style': 'straight',
+      'target-arrow-shape': 'triangle',
+      'source-arrow-shape': 'circle',
+    };
 
     await runParity(
       page,
       testInfo,
       'parity-selection',
       elements,
-      [{ selector: 'node', style: Object.assign({}, shared) }],
-      { nodes: Object.assign({}, shared) },
-      // measured 0.017% (20 px).  The bound is 0.3% rather than the
-      // suite's 3% default because this scene has no AA-heavy geometry
-      // and the controls sit two orders of magnitude above it: with the
-      // selection colour removed it reads **3.147%**, and with a
-      // selected parent taking the leaf colour instead of v3's lighter
-      // pair, **5.883%** — both fail even the loose default.
-      { minInk: 3000, bound: 0.003 },
+      [
+        { selector: 'node', style: Object.assign({}, shared) },
+        { selector: 'edge', style: Object.assign({}, edgeShared) },
+        {
+          selector: 'edge[c = 1]',
+          style: {
+            'curve-style': 'unbundled-bezier',
+            'control-point-distances': 60,
+            'control-point-weights': 0.5,
+          },
+        },
+      ],
+      {
+        nodes: Object.assign({}, shared),
+        edges: Object.assign({}, edgeShared, {
+          'curve-style': {
+            case: [{ when: { data: 'c', eq: 1 }, then: 'unbundled-bezier' }],
+            else: 'straight',
+          },
+          'control-point-distances': 60,
+          'control-point-weights': 0.5,
+        }),
+      },
+      // Measured **0 differing pixels** across nodes, a compound parent,
+      // straight and curved edges and both arrowheads — v4's selection
+      // look is not merely close to v3's here, it is the same image.
+      // The bound is 0.1% rather than the suite's 3% default because
+      // every control sits well above it: **3.147%** with the node
+      // colour removed, **5.883%** with a selected parent taking the
+      // leaf colour rather than v3's lighter pair, **0.690%** with the
+      // edge line left untinted and **0.367%** with the arrowheads left
+      // untinted.  At the default bound the last two would pass with
+      // the feature missing, which is the whole failure mode round 27
+      // recorded (a test that cannot fail is not evidence).
+      { minInk: 3000, bound: 0.001 },
     );
   });
 

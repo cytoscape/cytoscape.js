@@ -2166,6 +2166,11 @@ ${DASH_WGSL}
 @group(0) @binding(12) var<storage, read> edgeLayer: array<vec2u>;
 // line-fill gradient record (round 13 C2), fragment-only
 @group(0) @binding(13) var<storage, read> edgeGradients: array<array<u32, 8>>;
+// round 57.1b: v3 recolours a selected edge's line and its arrows, and
+// this is the only column that says so.  It cost nothing to bind
+// because the fragment stage gave up curveParams for it — the FS wanted
+// one number out of that column and now takes it as a flat varying.
+@group(0) @binding(14) var<storage, read> edgeFlags: array<u32>;
 
 // C2: sRGB line gradient over the packed record (same layout as the
 // node background gradient; linear runs along the edge, radial from
@@ -2211,6 +2216,11 @@ struct EdgeVSOut {
   @location(3) @interpolate(flat) instance: u32,
   @location(4) u: f32,          // longitudinal distance from the source, model px
   @location(5) @interpolate(flat) totalLen: f32, // model px (C2 gradients)
+  // the curve kind, carried rather than re-read: it freed the fragment
+  // stage's curveParams binding for edge.flags, which is what lets the
+  // FS know an edge is selected (round 57.1b).  The FS wanted exactly
+  // one number out of that column.
+  @location(6) @interpolate(flat) kind: f32,
 }
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
@@ -2330,12 +2340,14 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   // centre.
   out.u = t * (len / frame.zoomDpr);
   out.totalLen = max(len / frame.zoomDpr, 1e-4);
+  out.kind = params.w;
   return out;
 }
 
 @fragment
 fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
   var c = unpack4x8unorm(lineColors[in.instance]);
+  let sel = (edgeFlags[in.instance] & FLAG_SELECTED) != 0u;
 
   // line-fill gradient (C2): linear along the edge, radial from the mid
   let grec = edgeGradients[in.instance];
@@ -2349,6 +2361,11 @@ fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
     c = gradientColorAt(grec, clamp(t, 0.0, 1.0));
   }
 
+  // v3's :selected sets line-color, which beats a line-fill gradient
+  // for the same reason it beats background-color: it is a later
+  // declaration.  Keeps the resolved alpha, so line-opacity applies.
+  if (sel) { c = vec4f(SELECT_ACCENT, c.a); }
+
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
   // line-style: dashed uses the per-edge line-dash-pattern/-offset,
@@ -2356,7 +2373,7 @@ fn fsEdge(in: EdgeVSOut) -> @location(0) vec4f {
   // Picking ignores the gaps, as v3 does.  Straight-triangle fills
   // ignore line-style (v3 fills the triangle path).
   let ls = lineStyles[in.instance];
-  let isTriangle = curveParams[in.instance].w == 7.0;
+  let isTriangle = in.kind == 7.0;
 
   if (!isTriangle && ls != 0u) {
     let pat = select(dashPatterns[in.instance], vec4f(1.0, 1.0, 1.0, 1.0), ls == 2u);
@@ -2435,6 +2452,7 @@ fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32)
   out.halfWidth = halfW;
   out.alphaComp = 1.0;
   out.instance = slot;
+  out.kind = params.w;
   out.u = 0.0;
   return out;
 }
@@ -2492,6 +2510,9 @@ ${DASH_WGSL}
 @group(0) @binding(13) var<storage, read> edgeLayer: array<vec2u>;
 // line-fill gradient record (round 13 C2), fragment-only
 @group(0) @binding(14) var<storage, read> edgeGradients: array<array<u32, 8>>;
+// round 57.1b: v3 recolours a selected edge's line.  Scene entry points
+// only — the layer draw has its own layout and does not bind this.
+@group(0) @binding(15) var<storage, read> edgeFlags: array<u32>;
 
 // C2: sRGB line gradient (same record layout as the node gradient)
 fn gradientStopPos(rec: array<u32, 8>, i: u32) -> f32 {
@@ -2673,6 +2694,12 @@ fn fsCurvedEdge(in: CurvedVSOut) -> @location(0) vec4f {
     c = gradientColorAt(grec, clamp(t, 0.0, 1.0));
   }
 
+  // v3's :selected line-color, which beats a line-fill gradient the same
+  // way it beats background-color — it is a later declaration
+  if ((edgeFlags[in.instance] & FLAG_SELECTED) != 0u) {
+    c = vec4f(SELECT_ACCENT, c.a);
+  }
+
   var alpha = c.a * opacities[in.instance] * in.alphaComp * (1.0 - frame.edgeDim);
 
   // line-style dashes ride the polyline's longitudinal coordinate;
@@ -2845,6 +2872,9 @@ struct End { endId: u32 }
 @group(0) @binding(8) var<storage, read> arrowShapes: array<u32>;
 // hollow stroke widths per end, model px (B7)
 @group(0) @binding(9) var<storage, read> arrowWidths: array<vec2f>;
+// round 57.1b: v3's :selected recolours all four arrow colours along
+// with the line, so the head follows its edge.  Fragment-only.
+@group(0) @binding(11) var<storage, read> edgeFlags: array<u32>;
 // curve params: the mid entry point reads the haystack kind (C1)
 @group(0) @binding(10) var<storage, read> curveParams: array<vec4f>;
 
@@ -3032,8 +3062,13 @@ ${ARROW_POLY.cases}
   let aw = arrowWidths[in.slot];
   let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
   let alpha = in.color.a * arrowCoverage(sd, hollow, strokePx);
+  // v3 recolours source/target/mid arrow colours with the line, so a
+  // selected edge's heads follow it.  The stored alpha is kept: it
+  // carries the opacity fold (edge opacity x line-opacity, round 13 B1)
+  let rgb = select(in.color.rgb, SELECT_ACCENT,
+    (edgeFlags[in.slot] & FLAG_SELECTED) != 0u);
 
-  return vec4f(in.color.rgb * alpha, alpha); // premultiplied
+  return vec4f(rgb * alpha, alpha); // premultiplied
 }
 
 // Mid arrows (C1): tip at the edge midpoint (the haystack offset
@@ -3144,6 +3179,9 @@ struct End { endId: u32 }
 @group(0) @binding(9) var<storage, read> arrows: array<u32>;
 @group(0) @binding(10) var<storage, read> arrowShapes: array<u32>;
 @group(0) @binding(11) var<storage, read> arrowWidths: array<vec2f>;
+// round 57.1b: v3's :selected recolours all four arrow colours along
+// with the line, so the head follows its edge.  Fragment-only.
+@group(0) @binding(12) var<storage, read> edgeFlags: array<u32>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
@@ -3343,8 +3381,13 @@ ${ARROW_POLY.cases}
   let aw = arrowWidths[in.slot];
   let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
   let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * arrowCoverage(sd, hollow, strokePx);
+  // v3 recolours source/target/mid arrow colours with the line, so a
+  // selected edge's heads follow it.  The stored alpha is kept: it
+  // carries the opacity fold (edge opacity x line-opacity, round 13 B1)
+  let rgb = select(c.rgb, SELECT_ACCENT,
+    (edgeFlags[in.slot] & FLAG_SELECTED) != 0u);
 
-  return vec4f(c.rgb * alpha, alpha); // premultiplied
+  return vec4f(rgb * alpha, alpha); // premultiplied
 }
 
 // Mid arrows on curved edges (C1): tip at the curve/route midpoint,

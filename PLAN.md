@@ -2784,6 +2784,22 @@ per-item history.)*
    in every width regime — measured, not asserted, with the live
    parity diff moving 4.459% → 0.013%.  Recorded deviation: a
    hollow compound head falls back to filled.
+   **Re-opened by round 55** (2026-08-06), and the way it was closed
+   is the lesson.  The *vocabulary* is complete and the *sizes* match;
+   what round 27 never measured is how the head relates to the **line
+   beneath it**, because its parity scene used opaque filled heads
+   whose own fill hides the difference, and every later curve scene set
+   `arrow-shape: none` on the reasoning that arrows were where the two
+   renderers differed.  v4 implements no arrow `gap` at all: v3
+   shortens the drawn line by `arrowShapes[shape].gap(edge)`, v4 runs
+   it to the node centre.  Measured against v3: **3.5%** of the frame
+   for the wedge a filled head leaks around its tip, **11.8%** for a
+   hollow head showing the line through its interior, **26.7%** for a
+   translucent edge compositing line and head separately.  Scheduled,
+   with verified constants in `src/shape-points.mts` and three failing
+   parity scenes; hollow *mid* arrows are excluded and may never be
+   supported.  So: arrow parity is complete in vocabulary and sizing,
+   and open in compositing.
 6. **Label parity** — placement (`text-valign`/`text-halign` grid
    vs v4's fixed below-node), per-element numeric `text-rotation`,
    **source/target edge labels** (10 props — second/third label
@@ -5577,7 +5593,7 @@ signed off 2026-08-01.
 - [x] **16.0 Docs-first** — landed with the design-sitting commit
   (`0f0ee859`), before any round-16 implementation.
 - [x] **16.1 Shaping engine** (2026-08-01) —
-  `render/label-wrap.mts`: `breakLines` (v3's `text-wrap` semantics —
+  `src/label-wrap.mts`: `breakLines` (v3's `text-wrap` semantics —
   `none` collapses newlines, `wrap` honors `\n` + greedy word wrap
   with `whitespace` overflow vs `anywhere` mid-word splits,
   `ellipsis` truncates one line with '…'), `layoutLabelBlock`
@@ -8231,7 +8247,7 @@ commit(s)):
 - [x] **28.2 `cy.animate({ panBy })`** (2026-08-03) — landed as
   planned, in `_resolveViewportTargets` beside `fit`/`center`: the
   delta resolves against the pan **at creation**, which is v3's own
-  rule (`define/animation.mts` normalizes `panBy` against `cy.pan()`
+  rule (`v3/src/define/animation.mts` normalizes `panBy` against `cy.pan()`
   when the animation is created, not per tick), so by the time the
   tween runs it is an ordinary absolute `pan` target and needs no new
   channel, no new capture path and no interaction with the round-21

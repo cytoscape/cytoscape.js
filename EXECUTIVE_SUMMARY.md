@@ -32,7 +32,7 @@ every push for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,038 unit · 250 module · 24 soak · 308 browser |
+| Automated tests | 2,041 unit · 250 module · 24 soak · 308 browser |
 | Documented API | 362 members over 48 sections, gated at 100% |
 | Visual regression | 43 golden images · 31 live v3-vs-v4 pixel-parity scenes · **9 numeric routing-parity scenes** comparing geometry rather than pixels |
 | Benchmarks | 25 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |

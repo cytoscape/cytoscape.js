@@ -243,6 +243,24 @@ buffer that made a load never return, two more costing 25.9 s and
 5.7 s, and element identity comparing equal across two instances,
 so `union()` silently dropped the other graph's elements.  Each has
 its own section below.
+Round 55 (2026-08-06) is the **edge-routing and arrow parity** round,
+inserted after a maintainer opened `debug/?network=v3-default` and
+reported five things no test could see — because every golden compares
+v4 against v4, and the scenes that do compare against v3 were both too
+coarse (a 6 px arrow gap is 0.005% of their canvas) and deliberately
+arrow-free.  It built a **numeric** v3-vs-v4 routing harness that
+compares routed geometry field by field rather than photographing it,
+put an ink floor under all 29 pixel-parity scenes (twelve had none), and
+pinned the boundary-approximation tier against v3's own math.  Its
+headline is a negative result worth as much as a fix: **v4's curve
+routing is correct** — taxi, segments, self-loop stagger and bundle
+sign all match v3 exactly, including the axis-aligned degenerates — so
+the search moved downstream to the strip and the arrows.  It fixed the
+`round-taxi` zero-leg NaN (which broke `boundingBox()` for the whole
+graph, and so `fit()`), corrected `source/targetEndpoint()` to v3's
+node-boundary answer, and established that v4's tighter compound box is
+*correct* rather than a shortfall.  Its one unbuilt piece, the arrow
+`gap`, is the first entry under "Follow-up hooks".
 
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
@@ -2898,6 +2916,29 @@ still be what it says.
 
 ## Known deviations from v3 (accepted for pass 1)
 
+> **Two entries below are *not* accepted** and say so where they appear:
+> the missing arrow `gap` (round 55 measured it; the fix is scheduled and
+> its constants are already in the tree) and `border-style` /
+> `outline-style` (round 38).  Everything else in this section is a
+> decision, not a backlog item.
+
+- **Straight-edge endpoint accessors** (round 55, *fixed* — kept here
+  because the answer changed): `source/targetEndpoint()` used to report
+  the node **centre** on a straight edge, off by a whole node radius from
+  v3.  They now report the node boundary along the chord, which is also
+  the point the arrow shader draws to.  One v3 term is still outstanding
+  and arrives with the arrow gap: v3 additionally subtracts the head's
+  `spacing`, non-zero only for `tee` and the circle heads.
+- **Compound parent boxes are a pixel tighter per side than v3's**, and
+  this is correct rather than a shortfall.  v3 caches elements as
+  textures and composites them through canvas2d, where antialiasing
+  leaves the true extent uncertain by about a pixel, so its margin is a
+  rendering allowance; v4 rasterizes the whole scene on the GPU with no
+  per-element textures and has nothing to allow for.  Measured invariant
+  to `border-width` (0, 1 and 4 all give the same 1.0 px), which is what
+  distinguishes it from the border/miter difference recorded separately
+  above.  Consequence: every compound ancestry edge's control points sit
+  1 px from v3's.
 - **Listener firing order**: one core emitter with ref/predicate-qualified
   listeners.  Since round 14.5, compound bubbling gives v3's cross-phase
   order (origin → ancestors → core, stopPropagation honored); the
@@ -3190,13 +3231,20 @@ still be what it says.
   — coverage is a smoothstep over the distance, so a union is just
   `min( sdA, sdB )`), `circle-triangle` (a polygon plus an analytic
   disc, pulled back by its radius so the *disc* meets the node
-  boundary — v3's `spacing`, and the only head v3 offsets),
+  boundary — v3's `spacing`; **not** the only head v3 offsets, as
+  this note used to claim: measured off v3's own table at
+  `width: 5, arrow-scale: 1.5`, `circle` offsets by the same
+  9.8804 and `tee` by a constant 1 px),
   `triangle-cross` (whose bar thickness tracks the **edge width**,
   resolved per fragment) and `triangle-backcurve` (its quadratic
   sampled at codegen into an ordinary point table).  Recorded
   deviation: `arrow-fill: hollow` on a compound head falls back to
   filled — the stroke `abs( sd )` is wrong at the seam where a
-  union's parts meet, and v3 does not stroke compounds either.
+  union's parts meet.  (This note used to add "and v3 does not
+  stroke compounds either", which round 55 checked and found false:
+  v3's `triangleTee` builds both subpaths into one path and
+  `drawArrowShape` strokes whatever path it built.  The seam is the
+  real reason and the only one.)
   Round 13 B7 added `arrow-scale` (quantized ×1/16 in
   storage — readback rounds accordingly), `source/target-arrow-fill`
   (filled | hollow — a stroke ring at the per-end
@@ -3219,9 +3267,29 @@ still be what it says.
   default).  One quad per visible edge per enabled end, reusing the
   edge cull stream; the tip sits on the endpoint node's boundary
   (round-rect approximated by its box, polygons by their inscribed
-  ellipse).  Arrows draw *over* the line — a translucent
-  arrow shows the line through it — are not pickable (the GPU pick pass
-  stays edges-only), and size with the drawn (floored) edge width.
+  ellipse).  Arrows are not pickable (the GPU pick pass stays
+  edges-only), and size with the drawn (floored) edge width.
+  **Outstanding deviation — v4 draws no arrow `gap`** (round 55,
+  measured; scheduled, *not* accepted).  v3 keeps two shortened
+  endpoints per edge end: the arrow tip at `spacing` behind the node
+  boundary and the drawn *line's* end at `gap` behind it
+  (`2 x width x arrow-scale` for a triangle, less for `vee`,
+  `diamond`, `chevron`, a constant 1 for `tee`).  v4 subtracts
+  neither, so its line runs under the head and out the other side.
+  Three consequences, each measured against v3 by the
+  `parity-arrow-*` scenes: a filled head leaks a wedge of line around
+  its tip where the head is narrower than the line (**3.5%** of the
+  frame); a hollow head shows the line through its interior instead of
+  the background (**11.8%**, and v4 inks more than twice what v3 does
+  in that scene); and a translucent edge composites line and head
+  separately, so 0.5 over 0.5 reads 0.75 (**26.7%**, the largest
+  divergence in the parity suite).  The fix is to trim the line to the
+  head's back extent — which reproduces v3's `destination-out` erase
+  without a second pass — and its constants already live in
+  `src/shape-points.mts`, verified against v3's own functions.  Mid
+  arrows are deliberately out of that scope: they sit mid-line where a
+  trim cannot reach, and `arrow-fill: hollow` on a mid arrow may
+  simply never be supported (the mid fill/width props already throw).
 - **Gestures** (round 10 additions): the **cxttap family** — right
   button emits `cxttapstart` / `cxtdrag` (once moving) / `cxttapend`,
   plus `cxttap` when the press never moved; the browser context menu is
@@ -3540,6 +3608,22 @@ still be what it says.
 
 ## Follow-up hooks
 
+- **Round 55's remainder — the arrow `gap`.**  The one piece of v4's
+  rendering known to differ from v3 in a way a user sees, and the only
+  entry in this list that is a *measured defect* rather than scheduled
+  scope.  v3 shortens the drawn line by
+  `arrowShapes[shape].gap(edge)`; v4 shortens it by nothing, so the line
+  runs under the head and out the other side.  Against v3: **3.5%** of
+  the frame for a filled head's tip wedge, **11.8%** for a hollow head
+  showing the line through, **26.7%** for a translucent edge
+  double-compositing.  Everything except the plumbing is in the tree —
+  the per-shape constants in `src/shape-points.mts` (verified against
+  v3's own functions), three failing `parity-arrow-*` scenes, and a
+  benchmark baseline to measure the change against.  What remains is
+  carrying the trim to the edge vertex shaders, which needs
+  `edge.width` widened to two components so it can also carry the arrow
+  record.  Hollow *mid* arrows are out of scope and may never be
+  supported.
 - **The release sequence** (rounds 44–51), and what is left of the four
   that have landed.  **44** (packaging) is complete as a source
   concern; its one remaining act is release-time and belongs to round
@@ -3587,7 +3671,9 @@ still be what it says.
   (2026-08-02): the unported shape keywords, the compound arrow
   shapes, v3's nonlinear arrow-size formula and per-element numeric
   `text-rotation` all landed, completing v3's node-shape and
-  arrowhead vocabularies.  **`border-style` / `outline-style`** was
+  arrowhead **vocabularies** — which round 55 had to distinguish from
+  arrow *compositing*, still open and listed at the top of this
+  section.  **`border-style` / `outline-style`** was
   the last one left, waiting on a scope call rather than a technique;
   the fifth design sitting took it — **full coverage, every shape** —
   and it builds as round 38, which has not started: scoping it turned

@@ -13676,7 +13676,7 @@ call 23.
 
 ## Round 57 plan — cleanup (raised by the maintainer 2026-08-07)
 
-Five items, all from the maintainer, none blocked on a decision:
+Six items, all from the maintainer, none blocked on a decision:
 
 1. **The default stylesheet should look like v3's.**  Grey by default for
    both nodes and edges, the same blue on selection for both, and v3's
@@ -13713,3 +13713,106 @@ Five items, all from the maintainer, none blocked on a decision:
    the docs; the genuinely stale pointers it *did* surface — three v3
    sources that moved under `v3/` and one line-wrapped path — were fixed
    in the same pass.)
+
+### Code investigation (2026-08-07, precedes the passes)
+
+**Item 1's first clause is already true, and measuring it is what says
+so.**  Every property v4 accepts was read back from a bare node and a bare
+edge on *both* libraries (round 47's method — ask the running code, do not
+transcribe the ledger).  72 (group, property) pairs differ, and 68 of them
+are **spelling**: `0` against `0px`, `-0.7853981` against `-45deg`,
+`rgba(0,0,0,0)` against `rgb(153,153,153)` where v4 folds a zero opacity
+into the colour it reads back and the channel is invisible on both sides.
+
+Four are real, and only one of them is this round's:
+
+| | v4 | v3 | |
+|---|---|---|---|
+| edge `width` | 2 | **3** | v3's default sheet says `edge { width: 3 }` — **fixed here** |
+| node `text-valign` | bottom | top | recorded deviation, round 13 D3 — every label golden pins it |
+| edge `curve-style` | straight | haystack | signed-off round-12 call 1, performance-first |
+| node `font-family` | `sans-serif` | `Helvetica Neue, Helvetica, sans-serif` | one font per atlas; the stack's tail is v4's value |
+
+`background-color` and `line-color` do not appear in that diff at all:
+both are `#999` on both sides, and have been since round 1.  So "grey by
+default for both" needed nothing, and the item's real content is the two
+affordances that are **not** properties — selection and active — which v4
+bakes into the shader where v3 spells them in its default stylesheet.
+
+**What v4 actually draws today**, against v3's five default-sheet rules:
+
+- `:selected` — v3 paints the node body, the line and all four arrow
+  colours `#0169D9`.  v4 draws a **ring** at the node boundary and gives an
+  edge *nothing at all*: `FLAG_SELECTED` is read at exactly one place in
+  all of the WGSL (`shaders.mts`, the node fragment shader).  A selected
+  edge is indistinguishable from an unselected one.
+- `:parent:selected` — v3 tints `#CCE1F9` / `#aec8e5`; v4 has no such case.
+- `:active` — v3 lays a black overlay at 25% over 10 px of padding.  v4
+  has `FLAG_ACTIVE` and the public `activate()`/`active()` pair, and
+  **nothing reads the bit**: the pointer layer never sets it, and no
+  shader binds it.  What v4 draws instead is a +0.15 rgb brighten on
+  `FLAG_HOVERED | FLAG_GRABBED`, which round 13 A2's own record marked as
+  the placeholder ("the existing shader hover/active brighten, accent ring
+  and DOM selection box become the styled defaults").
+- `:parent` — v4's parents overlay carries v3's five properties exactly
+  (round 14.6).  Nothing to do.
+- `:loop` / `edge:compound` — v3 forces `bezier` on both; v4 routes loops
+  as loops and ancestry edges as `CURVE_CMPD` regardless of declared
+  style, which is the same look by a different mechanism.  Nothing to do.
+
+### Design calls (round 57)
+
+1. **The affordances stay shader-drawn; only what they draw changes.**
+   v4 has no `:selected` blocks and does not restyle on selection — that is
+   decided design, and round 4's select/unselect fast path
+   (`dependsOnSelection`) rests on it.  So this round does **not** reopen
+   selection-dependent restyling: it changes the *pixels the shader
+   produces* for a selected or active element to v3's, and leaves stored
+   truth alone.  Consequence, recorded: `style('background-color')` on a
+   selected node still reads its own colour, exactly as it does today with
+   the ring.
+2. **`FLAG_ACTIVE` becomes the press state, as in v3**, set by the pointer
+   layer on press and cleared on release/cancel — v3's `near.activate()` /
+   `unactivate()` in `load-listeners.mts`.  It is already public API
+   (`activate()`, `active()`, `inactive()`), so this makes an existing
+   surface mean something rather than adding one.
+3. **The active overlay rides the round-13 A2 layer machinery**, which is
+   what the item asks for.  The overlay pass draws a synthesized default
+   record — black, 25%, padding 10, round-rectangle — for an active
+   element that has styled no overlay of its own; an element that *has*
+   one keeps it (a user's overlay is not overridden by a press).  That
+   needs the cull predicate and the pass gate to admit active elements,
+   which is where the work is.
+4. **The grab half of the brighten goes; the hover half stays.**  A
+   pressed element now gets v3's overlay, so brightening it too would be
+   two affordances for one state.  Hover is a different state that v3 does
+   not style at all and v4 has no other way to express — dropping it would
+   remove feedback the maintainer did not ask to remove — so it stays, as
+   a recorded deviation from v3 rather than an oversight.
+5. **`oxfmt` lands before everything else.**  It rewrites every source
+   file, so landing it first means the rest of the round is written in the
+   new style once rather than reformatted after the fact.  The one thing
+   to watch is that the throw-coverage gate's allowlists are keyed by
+   `file:line` (round 37.1) — a reformat that moves a `throw` by one line
+   fails the build, correctly, and the fix rides the same commit.
+6. **The path checker gets a maintained allowlist, not a heuristic.**  A
+   "skip anything that looks historical" rule cannot tell a quotation from
+   a stale pointer, which is the distinction that matters — the same sweep
+   that found these eight also found four *genuinely* stale ones.  So each
+   exempt spelling is listed with its reason, and the list is validated on
+   37.1's terms: an entry that no longer appears in any document, or one
+   whose path has come back into the tree, fails its spec.  A dead
+   exemption is exactly as bad as a false warning.
+
+### Pass split (docs in-commit; each pass its own commit(s))
+
+- [x] **57.0 Docs-first** — this section.
+- [ ] **57.2 `oxfmt`** — first, per call 5.
+- [ ] **57.6 The path checker's allowlist.**
+- [ ] **57.3 The document openings.**
+- [ ] **57.4 The readiness language.**
+- [ ] **57.5 Four more debug networks.**
+- [ ] **57.1 The default stylesheet.**  Last, because it is the only item
+  that moves pixels and so the only one whose verification is the browser
+  tier.
+- [ ] **57.7 Closing docs sweep** + the `EXECUTIVE_SUMMARY.md` rewrite.

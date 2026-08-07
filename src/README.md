@@ -282,6 +282,16 @@ And six goldens were **cropping the graph**, the worst losing
 that had been listed in the scene and never given a mapper clause since
 round 27.6.
 
+**Round 57** (2026-08-07) is a cleanup round the maintainer raised: the
+repository adopts `oxfmt`, these documents are made readable and honest
+about how far v4 is from ready, `debug/` gains four networks ported from
+v3's demos, and the default look moves onto v3's — which measurement
+narrowed to the two affordances that are *not* style properties.  v4's
+colours already matched (`#999` on both sides for nodes and edges since
+round 1); what did not was that a selected edge looked exactly like an
+unselected one, and that `FLAG_ACTIVE` existed with nothing reading it.
+See the round-57 plan in PLAN.md.
+
 Culling: a compute pre-pass per group (nodes, edges, glyphs) compacts the
 drawable slots into a visible list + `drawIndexedIndirect` args — a
 deterministic three-dispatch stream compaction that preserves slot order

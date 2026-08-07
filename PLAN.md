@@ -682,6 +682,10 @@ docs checks), and each is left in place pending the call.
     presentation knob and 1.8% of an arrowhead is sub-pixel at most zoom
     levels — the reason this was invisible until a close-up scene
     existed.)
+    **Deferred by the maintainer (2026-08-07): logged, not decided.**  No
+    round may spend the reserved span until this is answered — which is
+    why round 56's own need for two flag bits was met from `edge.width`'s
+    mirror lane instead, leaving all six bits of the real column intact.
 
 24. **Where the arrow trim cannot reach** (round 56, 2026-08-07) — two
     places the gap is not applied, both because a vertex stage is at the

@@ -2155,15 +2155,32 @@ test.describe( 'v3-vs-v4 render parity', () => {
    * geometry difference has nowhere to hide.
    *
    * Controls (2026-08-07, the same scene with the feature under test
-   * removed): gap 0.573% (no heads), hollow 0.137% (filled), curves
+   * removed): gap 0.573% (no heads), hollow 0.000% (filled), curves
    * 0.002% (no heads), edges and heads are their own floors.
+   *
+   * Measured before and after round 56's trim:
+   *
+   *     scene     before    after    bound
+   *     gap        5.610%   0.020%    0.3%
+   *     heads      0.149%   0.000%    0.2%
+   *     hollow     2.555%   0.898%    1.2%
+   *     edges      0.093%   0.004%    0.2%
+   *     curves     0.972%   0.005%    0.2%
+   *
+   * `hollow` keeps the loosest bound of the five and is the only one
+   * whose residual is not anti-aliasing: its `filled` control reads
+   * **0.000%**, so what is left is entirely the hollow *stroke*.  v4
+   * strokes by offsetting a distance field, which rounds a join by
+   * construction, where canvas2d miters it — so v3's back corners come
+   * to a point and v4's are radiused.  A recorded deviation, of the same
+   * family as the butt-cap note the edge layers already carry.
    */
   const CLOSE_UP_BOUND = {
-    gap: 0.012,
-    heads: 0.004,
-    hollow: 0.005,
-    edges: 0.003,
-    curves: 0.003
+    gap: 0.003,
+    heads: 0.002,
+    hollow: 0.012,
+    edges: 0.002,
+    curves: 0.002
   };
 
   let deviceErrors = [];
@@ -3615,12 +3632,6 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
   test( 'parity: the line spills past a narrow arrowhead (round 55)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
-    // Expected to fail until round 55's gap/trim port lands; Playwright
-    // fails the run if it starts passing, so the fix removes the marker.
-    // The scenes above it are the guard against this swallowing a crash:
-    // a broken page would also fail the ink floor, which is asserted
-    // before the ratio.
-    test.fail( true, 'round 55, fix 3 — v4 implements no arrow gap' );
 
     /*
      * This scene is named for what it can actually see, which is not what
@@ -3665,12 +3676,6 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
   test( 'parity: hollow arrowheads show the background, not the line (round 55)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
-    // Expected to fail until round 55's gap/trim port lands; Playwright
-    // fails the run if it starts passing, so the fix removes the marker.
-    // The scenes above it are the guard against this swallowing a crash:
-    // a broken page would also fail the ink floor, which is asserted
-    // before the ratio.
-    test.fail( true, 'round 55, fix 3 — v4 implements no arrow gap' );
 
     // v3 erases the arrow footprint (`destination-out`) before painting a
     // hollow head, so its interior shows the page background.  v4 draws a
@@ -3696,24 +3701,29 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
   test( 'parity: a translucent edge is one shape, not a line plus an arrow (round 55)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
-    // Expected to fail until round 55's gap/trim port lands; Playwright
-    // fails the run if it starts passing, so the fix removes the marker.
-    // The scenes above it are the guard against this swallowing a crash:
-    // a broken page would also fail the ink floor, which is asserted
-    // before the ratio.
-    test.fail( true, 'round 55, fix 3 — v4 implements no arrow gap' );
 
-    // The first scene in the suite to combine `opacity < 1` with an arrow
-    // at all.  Where v4's line and head overlap, each contributes its own
-    // alpha: 0.5 over 0.5 reads 0.75 against v3's 0.5.
-    //
-    // Measured 2026-08-06: **26.707%**, the largest divergence anywhere
-    // in the parity suite.
-    //
-    // Control: `line-opacity: 1` reads **0.777%**, a 34x drop, so this
-    // scene measures the compositing rather than the geometry.
+    /*
+     * The first scene in the suite to combine `opacity < 1` with an arrow
+     * at all.  Where v4's line and head overlap, each contributes its own
+     * alpha: 0.5 over 0.5 reads 0.75 against v3's 0.5.  Round 55 measured
+     * **26.707%**, the largest divergence anywhere in the parity suite.
+     *
+     * Retuned in round 56, and the reason is the round's own cautionary
+     * case arriving a second time.  At `arrow-scale: 4` each head is 167
+     * model px long on a 254 px chord, so the *two heads overlap each
+     * other* — and v3 erases before painting each one, which flattens
+     * that overlap too.  The scene was therefore reading a
+     * head-over-head difference under a name that says line-over-head,
+     * and it stayed at 18.6% after the trim landed for that reason
+     * alone.  Scale 1.5 keeps the heads clear of one another, so what is
+     * left is the compositing this test is named for.
+     *
+     * The head-over-head case is real and is recorded as a deviation
+     * (v4 has no erase pass, so two translucent heads that overlap
+     * composite where v3's flatten); it is not this scene's job.
+     */
     const { v3Style, v4Style } = arrowSheets( {
-      'width': 18, 'arrow-scale': 4, 'line-color': '#000',
+      'width': 18, 'arrow-scale': 1.5, 'line-color': '#000',
       'line-opacity': 0.5,
       'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
       'source-arrow-color': '#000', 'target-arrow-color': '#000'
@@ -3779,8 +3789,6 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
   test( 'parity close-up: the gap between the line and a filled head (round 56)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
-    test.fail( true, 'round 56 — v4 implements no arrow gap; the fix removes this' );
-
     // Measured 2026-08-07, before the trim: **5.610%**, against a
     // no-heads control of 0.573% — a 9.8x drop, so the scene measures
     // the heads and the line around them, not ambient AA.
@@ -3864,8 +3872,6 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
   test( 'parity close-up: hollow heads, where a clipped stroke shows (round 56)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
-    test.fail( true, 'round 56 — v4 implements no arrow gap; the fix removes this' );
-
     // Measured 2026-08-07, before the trim: **2.555%**, against a
     // `filled` control of 0.137% — an 18.6x drop.
 
@@ -3931,8 +3937,6 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
   test( 'parity close-up: curved edges carrying arrowheads (round 56)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
-    test.fail( true, 'round 56 — v4 implements no arrow gap; the fix removes this' );
-
     // Measured 2026-08-07, before the trim: **0.972%**, against a
     // no-heads control of **0.002%** — a 486x drop.  That control is
     // also the strongest statement in this tier that v4's curve routing

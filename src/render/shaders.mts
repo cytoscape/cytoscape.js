@@ -12,8 +12,9 @@ unpack4x8unorm — byte-identical to the CPU columns, zero conversion.
 */
 
 import {
-  ARROW_COMPOUND_POINTS, ARROW_MAX_BACK, ARROW_POINTS, POLYGON_POINTS,
-  ROUND_POLYGON_SOURCE
+  ARROW_AXIAL_DEPTH, ARROW_COMPOUND_POINTS, ARROW_GAP_CONST, ARROW_GAP_K,
+  ARROW_GAP_K_DEFAULT, ARROW_MAX_BACK, ARROW_MAX_FRONT, ARROW_POINTS,
+  POLYGON_POINTS, ROUND_POLYGON_SOURCE
 } from '../shape-points.mjs';
 import { IMAGE_TIER_SIZES as IMAGE_TIER_SIZES_WGSL, SDF_IMAGE_SIZE as SDF_IMAGE_SIZE_WGSL } from '../image-registry.mjs';
 import {
@@ -25,8 +26,8 @@ import {
   ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
   ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, CUT_RECTANGLE_CORNER,
-  ARROW_CIRCLE_TRIANGLE, ARROW_CIRCLE_TRIANGLE_RADIUS, ARROW_TRIANGLE_CROSS,
-  ARROW_TRIANGLE_TEE,
+  ARROW_CIRCLE, ARROW_CIRCLE_TRIANGLE, ARROW_CIRCLE_TRIANGLE_RADIUS,
+  ARROW_TEE, ARROW_TRIANGLE_CROSS, ARROW_TRIANGLE_TEE,
   BARREL_CTRL_OFFSET_PCT, BARREL_CURVE_SEGMENTS,
   BARREL_HEIGHT_OFFSET_MAX, BARREL_HEIGHT_OFFSET_PCT,
   BARREL_WIDTH_OFFSET_MAX, BARREL_WIDTH_OFFSET_PCT,
@@ -40,7 +41,9 @@ import {
  * footguns); computed CPU-side from the core viewport + device pixel ratio.
  * Layout must match Renderer's Float32Array(16): viewportPx, panPx, zoomDpr,
  * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, labelMinPx,
- * curveSlack, haystackSlack (+3 pads) — 64 bytes.
+ * curveSlack, haystackSlack, outlineSlack, arrowScaleMax, imageMinPx,
+ * pickMode, arrowWidthMax — 18 floats, 72 bytes.  Round 56 spent the
+ * last pad slot on arrowWidthMax, so the next field grows the buffer.
  */
 export const FRAME_STRUCT = `
 struct Frame {
@@ -59,6 +62,7 @@ struct Frame {
   arrowScaleMax: f32,    // B7: max arrow-scale styled (arrow quads size for it)
   imageMinPx: f32,       // 15.7: skip image sampling below this on-screen node size (displayed px)
   pickMode: f32,         // 20.2: 1 in the pick pass — events:'no' elements drop from pick culling only
+  arrowWidthMax: f32,    // 56: max hollow-arrow stroke, model px (the quad grows by half of it)
 }
 `;
 
@@ -296,6 +300,8 @@ struct CurveGeom {
   c1: vec2f,  // control point (bezier), or the loop's first control
   c2: vec2f,  // the loop's second control (loops; == c1 for bezier)
   m: vec2f,   // curve midpoint (bezier Q(0.5); loop control midpoint)
+  aS: vec2f,  // 56: the source arrow point (spacing behind the boundary)
+  aE: vec2f,  // 56: the target arrow point
   kind: f32,
 }
 
@@ -308,10 +314,19 @@ fn curveBoundaryPoint(c: vec2f, half: vec2f, shape: u32, toward: vec2f) -> vec2f
   return c + d * boundaryOffset(shape, half, d);
 }
 
+// setBoundaryPoint's twin (round 56): the boundary point shortened by
+// 'amount' toward the near control, which is v3's own construction.
+fn curveBoundaryShortened(
+  c: vec2f, half: vec2f, shape: u32, toward: vec2f, amount: f32
+) -> vec2f {
+  return shortenTowardW(curveBoundaryPoint(c, half, shape, toward), toward, amount);
+}
+
 fn evalCurveGeom(
   params: vec4f,
   sC: vec2f, sHalf: vec2f, sShape: u32,
-  tC: vec2f, tHalf: vec2f, tShape: u32
+  tC: vec2f, tHalf: vec2f, tShape: u32,
+  trim: vec4f
 ) -> CurveGeom {
   var g: CurveGeom;
 
@@ -324,8 +339,10 @@ fn evalCurveGeom(
     g.c1 = c1;
     g.c2 = c2;
     g.m = (c1 + c2) * 0.5;
-    g.s = curveBoundaryPoint(sC, sHalf, sShape, c1);
-    g.e = curveBoundaryPoint(tC, tHalf, tShape, c2);
+    g.s = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.x);
+    g.e = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.y);
+    g.aS = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.z);
+    g.aE = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.w);
 
     return g;
   }
@@ -344,8 +361,10 @@ fn evalCurveGeom(
     g.c1 = c1;
     g.c2 = c2;
     g.m = (c1 + c2) * 0.5;
-    g.s = curveBoundaryPoint(sC, sHalf, sShape, c1);
-    g.e = curveBoundaryPoint(tC, tHalf, tShape, c2);
+    g.s = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.x);
+    g.e = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.y);
+    g.aS = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.z);
+    g.aE = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.w);
 
     return g;
   }
@@ -369,8 +388,10 @@ fn evalCurveGeom(
 
   g.c1 = c;
   g.c2 = c;
-  g.s = curveBoundaryPoint(sC, sHalf, sShape, c);
-  g.e = curveBoundaryPoint(tC, tHalf, tShape, c);
+  g.s = curveBoundaryShortened(sC, sHalf, sShape, c, trim.x);
+  g.e = curveBoundaryShortened(tC, tHalf, tShape, c, trim.y);
+  g.aS = curveBoundaryShortened(sC, sHalf, sShape, c, trim.z);
+  g.aE = curveBoundaryShortened(tC, tHalf, tShape, c, trim.w);
   g.m = 0.25 * g.s + 0.5 * c + 0.25 * g.e;
 
   return g;
@@ -493,6 +514,8 @@ struct Route {
   q: array<vec2f, ${ MAX_CURVE_PTS + 2 }>, // start, interior points, end
   radius: array<f32, ${ MAX_CURVE_PTS }>,
   arcMode: array<u32, ${ MAX_CURVE_PTS }>,
+  aS: vec2f, // 56: the source arrow point (spacing behind the endpoint)
+  aE: vec2f, // 56: the target arrow point
 }
 
 struct RouteFrame { b1: vec2f, b2: vec2f, nrm: vec2f, fsi: vec2f, fti: vec2f }
@@ -536,7 +559,8 @@ fn subDWH(dxy: f32, dwh: f32) -> f32 {
 fn evalRouteW(
   header: vec4f,
   sC: vec2f, sHalf: vec2f, sShape: u32,
-  tC: vec2f, tHalf: vec2f, tShape: u32
+  tC: vec2f, tHalf: vec2f, tShape: u32,
+  trim: vec4f
 ) -> Route {
   var r: Route;
 
@@ -720,28 +744,35 @@ fn evalRouteW(
   }
 
   let qn = r.n + 2u;
-
-  if (!hasEndpt) {
-    // endpoints on the node boundaries toward the first/last interior point
-    r.q[0u] = curveBoundaryPoint(sC, sHalf, sShape, r.q[1u]);
-    r.q[qn - 1u] = curveBoundaryPoint(tC, tHalf, tShape, r.q[qn - 2u]);
-
-    return r;
-  }
-
-  // 12c: resolve each end through its endpoint-block entry.  With no
-  // interior points (n = 0, the straight-with-endpoints chord) each end
-  // aims at the other end's raw anchor (v3's lines path).
+  // each end shortens toward its aim — the near interior route point
   var sAim = r.q[1u];
   var tAim = r.q[qn - 2u];
 
-  if (r.n == 0u) {
-    sAim = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape);
-    tAim = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape);
+  if (!hasEndpt) {
+    // endpoints on the node boundaries toward the first/last interior point
+    r.q[0u] = curveBoundaryPoint(sC, sHalf, sShape, sAim);
+    r.q[qn - 1u] = curveBoundaryPoint(tC, tHalf, tShape, tAim);
+  } else {
+    // 12c: resolve each end through its endpoint-block entry.  With no
+    // interior points (n = 0, the straight-with-endpoints chord) each end
+    // aims at the other end's raw anchor (v3's lines path).
+    if (r.n == 0u) {
+      sAim = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape);
+      tAim = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape);
+    }
+
+    r.q[0u] = resolveEndptW(blockOff, false, sC, sHalf, sShape, sAim, fS);
+    r.q[qn - 1u] = resolveEndptW(blockOff, true, tC, tHalf, tShape, tAim, fT);
   }
 
-  r.q[0u] = resolveEndptW(blockOff, false, sC, sHalf, sShape, sAim, fS);
-  r.q[qn - 1u] = resolveEndptW(blockOff, true, tC, tHalf, tShape, tAim, fT);
+  // Round 56: v3's two shortenings, the evalRoute twin.  The route's own
+  // ends move by the draw trim, because v3 builds its drawn path from the
+  // shortened points and everything derived from it follows; the arrow
+  // points are kept separately for the head to sit on.
+  r.aS = shortenTowardW(r.q[0u], sAim, trim.z);
+  r.aE = shortenTowardW(r.q[qn - 1u], tAim, trim.w);
+  r.q[0u] = shortenTowardW(r.q[0u], sAim, trim.x);
+  r.q[qn - 1u] = shortenTowardW(r.q[qn - 1u], tAim, trim.y);
 
   return r;
 }
@@ -1171,11 +1202,15 @@ fn arrow${ id }p${ part }SD(p: vec2f, s: f32) -> f32 {
   cases += `    case ${ ARROW_TRIANGLE_TEE }u: { ` +
     `sd = min(arrow${ ARROW_TRIANGLE_TEE }p0SD(p, s), arrow${ ARROW_TRIANGLE_TEE }p1SD(p, s)); }\n`;
 
-  // circle-triangle: the disc sits at the tip, the triangle behind it
+  // circle-triangle: v3's frame, the disc centred on the arrow origin
+  // with the triangle behind it.  Before round 56 both this disc and the
+  // point table were shifted a radius back so the drawn result was right
+  // without the tip carrying `spacing`; 56 applies `spacing` to the tip
+  // for every shape instead, so the frame is v3's and the accessors can
+  // report the same point.
   cases += `    case ${ ARROW_CIRCLE_TRIANGLE }u: { ` +
     `sd = min(arrow${ ARROW_CIRCLE_TRIANGLE }p0SD(p, s), ` +
-    `length(p - vec2f(0.0, -${ ARROW_CIRCLE_TRIANGLE_RADIUS } * s)) - ` +
-    `${ ARROW_CIRCLE_TRIANGLE_RADIUS } * s); }\n`;
+    `length(p) - ${ ARROW_CIRCLE_TRIANGLE_RADIUS } * s); }\n`;
 
   // triangle-cross: the bar's thickness tracks the *edge width*, not the
   // arrow size, so its points cannot be a static table — this is why the
@@ -1187,6 +1222,131 @@ fn arrow${ id }p${ part }SD(p: vec2f, s: f32) -> f32 {
 };
 
 const ARROW_POLY = arrowSdFns();
+/**
+ * v3's `gap( edge )` and `spacing( edge )` as WGSL, **generated from the
+ * same tables `arrowGap`/`arrowSpacing` read** (round 56).
+ *
+ * The dual-implementation discipline this file uses for curves says the
+ * two sides must agree by construction rather than by review.  For a
+ * lookup table the strongest form of that is to emit one side from the
+ * other, which is what this does: adding a head to `ARROW_GAP_K` changes
+ * the shader with no second edit, and a spec asserts the generated
+ * source names every id the table does.
+ *
+ * `spacing` is not table-driven — it is three special cases in v3 — so it
+ * is written out, with the two disc heads sharing `arrowSizeW`.
+ */
+const arrowGapFns = (): string => {
+  let cases = '';
+
+  for( const [ id, k ] of ARROW_GAP_K ){
+    cases += `    case ${ id }u: { return ${ fmtF32( k ) } * wModel * scale; }\n`;
+  }
+
+  for( const [ id, c ] of ARROW_GAP_CONST ){
+    cases += `    case ${ id }u: { return ${ fmtF32( c ) }; }\n`;
+  }
+
+  let depths = '';
+
+  for( const [ id, d ] of ARROW_AXIAL_DEPTH ){
+    depths += `    case ${ id }u: { return ${ fmtF32( d ) }; }\n`;
+  }
+
+  return `
+// v3's getArrowWidth: the arrow size unit, in *model* px (27.3 — the 29
+// is a model-space floor, so this must not see a device width)
+fn arrowSizeW(wModel: f32, scale: f32) -> f32 {
+  return max(pow(wModel * 13.37, 0.9), 29.0) * scale;
+}
+
+// v3's arrowShapes[shape].gap(edge): how far behind the node boundary
+// the drawn line stops.  Generated from ARROW_GAP_K / ARROW_GAP_CONST.
+fn arrowGapW(shape: u32, wModel: f32, scale: f32) -> f32 {
+  switch shape {
+${ cases }    default: { return ${ fmtF32( ARROW_GAP_K_DEFAULT ) } * wModel * scale; }
+  }
+}
+
+// v3's arrowShapes[shape].spacing(edge): how far behind the node
+// boundary the arrow *tip* sits.  Non-zero for three heads only.
+fn arrowSpacingW(shape: u32, wModel: f32, scale: f32) -> f32 {
+  if (shape == ${ ARROW_TEE }u) { return 1.0; }
+  if (shape == ${ ARROW_CIRCLE }u || shape == ${ ARROW_CIRCLE_TRIANGLE }u) {
+    return arrowSizeW(wModel, scale) * ${ fmtF32( ARROW_CIRCLE_TRIANGLE_RADIUS ) };
+  }
+  return 0.0;
+}
+
+// The shape ids for this edge's two ends, unpacked from edge.width's
+// lane 1 (round 56 — the arrow word rides there so the vertex stages,
+// which have no spare storage-buffer slot, can reach it).
+fn arrowWordOf(w: vec2f) -> u32 { return bitcast<u32>(w.y); }
+fn srcShapeOf(word: u32) -> u32 { return (word >> ${ ARROW_SHIFT_SOURCE }u) & ${ ARROW_SHAPE_MASK }u; }
+fn tgtShapeOf(word: u32) -> u32 { return (word >> ${ ARROW_SHIFT_TARGET }u) & ${ ARROW_SHAPE_MASK }u; }
+fn scaleOfWord(word: u32) -> f32 {
+  let q = word >> ${ ARROW_SHIFT_SCALE }u;
+  return select(f32(q) / 16.0, 1.0, q == 0u);
+}
+
+// How far back the head covers the edge's axis contiguously, in
+// arrow-frame units.  Generated from ARROW_AXIAL_DEPTH — see the note
+// there for why this is not ARROW_BACK.
+fn arrowAxialDepthW(shape: u32) -> f32 {
+  switch shape {
+${ depths }    default: { return 0.0; }
+  }
+}
+
+// Where the *drawn* line stops, in model px.
+//
+// v3 does not trim: it paints the line in full and then erases the
+// head's footprint out of the canvas (destination-out), so the visible
+// line ends wherever the head's shape ends.  v4 reproduces that with a
+// trim, which costs no second pass, no extra pipeline and no change to
+// how cy.png composites its background — but a trim is one distance, so
+// it takes the deeper of v3's own gap and the head's contiguous axial
+// depth.  Under the gap the line is inside the head either way; past the
+// depth the head no longer covers the axis and v3 would show the line
+// (a vee's notch is the case that makes this not simply ARROW_BACK).
+fn arrowDrawTrimW(shape: u32, hollow: bool, wModel: f32, scale: f32) -> f32 {
+  let gap = arrowGapW(shape, wModel, scale);
+  if (!hollow) { return gap; }
+  return max(gap, arrowAxialDepthW(shape) * arrowSizeW(wModel, scale));
+}
+
+// The four shortenings for one edge, packed for the curve evaluators:
+// (srcDrawTrim, tgtDrawTrim, srcSpacing, tgtSpacing).  The ArrowTrim
+// twin — same order, same meaning.
+fn arrowTrimOf(w: vec2f) -> vec4f {
+  let word = arrowWordOf(w);
+  let scale = scaleOfWord(word);
+  let src = srcShapeOf(word);
+  let tgt = tgtShapeOf(word);
+  let srcHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u;
+  let tgtHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u;
+
+  return vec4f(
+    arrowDrawTrimW(src, srcHollow, w.x, scale),
+    arrowDrawTrimW(tgt, tgtHollow, w.x, scale),
+    arrowSpacingW(src, w.x, scale),
+    arrowSpacingW(tgt, w.x, scale));
+}
+
+// v3's shortenIntersection, verbatim including the degenerate clamp: the
+// boundary point moved by 'amount' toward the far point, never past it.
+fn shortenTowardW(pt: vec2f, toward: vec2f, amount: f32) -> vec2f {
+  let disp = pt - toward;
+  let len = length(disp);
+  var ratio = (len - amount) / max(len, 1e-6);
+  if (ratio < 0.0) { ratio = 0.00001; }
+  return toward + disp * ratio;
+}
+`;
+};
+
+const ARROW_GAP_WGSL = arrowGapFns();
+
 
 // SDFs ported from shader-sdf.mts (https://iquilezles.org/articles/distfunctions2d/)
 const SDF = `
@@ -1893,6 +2053,7 @@ fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
 export const EDGE_SHADER = `
 ${COMMON}
 ${BOUNDARY_WGSL}
+${ARROW_GAP_WGSL}
 ${DASH_WGSL}
 
 // flags columns are not bound here: the cull pass already dropped dead or
@@ -2010,6 +2171,56 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
     pa = pa + bd * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], bd);
     pb = pb - bd * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -bd);
     taper = 1.0 - t; // full width at the base, a point at the apex
+  } else if (params.w != 6.0) {
+    // Round 56: v3's arrow gap.  The drawn line stops gap(shape) behind
+    // each node boundary, which is what makes a hollow or translucent
+    // head read as one shape instead of a head laid over a line — the
+    // line is strictly inside the head over that span, so trimming to it
+    // reproduces v3's destination-out erase with no second pass.
+    //
+    // Haystack (kind 6) is excluded because v3 draws it no arrows at all
+    // and routes it through a different path entirely; straight-triangle
+    // (kind 7) above resolves its own boundary tips and tapers to a
+    // point, so a trim there would cut the apex off.
+    let word = arrowWordOf(widths[slot]);
+    let wModel = widths[slot].x;
+    let scale = scaleOfWord(word);
+
+    var md = pb - pa;
+    let ml = max(length(md), 1e-6);
+
+    md = md / ml;
+
+    let bs = pa + md * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], md);
+    let bt = pb - md * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -md);
+
+    // v3 shortens each boundary point *toward the far end*, so the two
+    // trims are independent and neither can cross the other
+    let srcHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u;
+    let tgtHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u;
+
+    var ts = arrowDrawTrimW(srcShapeOf(word), srcHollow, wModel, scale);
+    var tt = arrowDrawTrimW(tgtShapeOf(word), tgtHollow, wModel, scale);
+
+    // Heads bigger than the edge they sit on: v3 shortens each end
+    // independently, so its two line ends cross and it draws a short
+    // *reversed* segment in the middle — visible through a hollow head as
+    // a stub that has nothing to do with the edge.  Scaling both trims to
+    // meet instead collapses the line to a point, which is what "the
+    // heads cover the whole edge" should look like.  A deliberate
+    // divergence, and only reachable where v3's own output is an artifact.
+    let avail = length(bt - bs);
+    let total = ts + tt;
+
+    if (total > avail) {
+      let k = avail / max(total, 1e-6);
+
+      ts = ts * k;
+      tt = tt * k;
+    }
+
+    pa = shortenTowardW(bs, bt, ts);
+    pb = shortenTowardW(bt, bs, tt);
   }
 
   let a = modelToPx(frame, pa);
@@ -2027,23 +2238,16 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
   out.halfWidth = halfW;
   out.alphaComp = lod.y;
   out.instance = slot;
-  // model px along the edge.  v3 launches the dash pattern at the
-  // *source boundary* (its line starts there); center-to-center quads
-  // subtract the source boundary offset so dash phases match (B3) —
-  // haystack lines start at their offset points, like v3's.
-  var u0 = 0.0;
-  var u1 = 0.0;
-
-  if (params.w != 6.0) {
-    let dirM = (pb - pa) / max(length(pb - pa), 1e-6);
-
-    u0 = boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], dirM);
-    u1 = boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -dirM);
-  }
-
-  out.u = t * (len / frame.zoomDpr) - u0;
-  // the visible span (boundary to boundary — v3's gradient extent)
-  out.totalLen = max(len / frame.zoomDpr - u0 - u1, 1e-4);
+  // Model px along the *drawn* line, which since round 56 is what this
+  // quad spans: the branches above resolve pa/pb to the trimmed boundary
+  // points, and haystack's offset points are its own line ends.  v3
+  // launches the dash pattern and the line gradient at the same place —
+  // its rs.startX/Y — so both now agree with v3 by construction rather
+  // than by subtracting the boundary offsets back off a centre-to-centre
+  // quad, which is what this did while the quad ran node centre to node
+  // centre.
+  out.u = t * (len / frame.zoomDpr);
+  out.totalLen = max(len / frame.zoomDpr, 1e-4);
   return out;
 }
 
@@ -2179,6 +2383,7 @@ fn fsEdgeLayer(in: EdgeVSOut) -> @location(0) vec4f {
 export const CURVED_EDGE_SHADER = `
 ${COMMON}
 ${BOUNDARY_WGSL}
+${ARROW_GAP_WGSL}
 ${CURVE_WGSL}
 ${ROUTE_WGSL}
 ${DASH_WGSL}
@@ -2284,7 +2489,8 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      arrowTrimOf(widths[slot])
     );
     let t = f32(tIdx) / CURVE_SEGS_F;
 
@@ -2313,7 +2519,8 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
     var route = evalRouteW(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      arrowTrimOf(widths[slot])
     );
 
     p = routeVertexW(&route, tIdx);
@@ -2440,7 +2647,17 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      // The overlay/underlay/casing strokes ride the *untrimmed* path
+      // (round 56).  Not a choice: this pipeline has its own bind group
+      // layout precisely because its vertex stage cannot afford a slot
+      // for edge.width, so it has no way to reach the arrow word — and a
+      // layout entry counts against the budget even for a binding the
+      // shader never reads.  v3 strokes its casing along the *shortened*
+      // path, so a layer on an arrowed edge runs a gap further than v3's
+      // does; recorded as a deviation with a follow-up, and matched by
+      // the straight-stream layer entry point so the two agree.
+      vec4f(0.0)
     );
     let t = f32(tIdx) / CURVE_SEGS_F;
 
@@ -2456,7 +2673,17 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
     var route = evalRouteW(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      // The overlay/underlay/casing strokes ride the *untrimmed* path
+      // (round 56).  Not a choice: this pipeline has its own bind group
+      // layout precisely because its vertex stage cannot afford a slot
+      // for edge.width, so it has no way to reach the arrow word — and a
+      // layout entry counts against the budget even for a binding the
+      // shader never reads.  v3 strokes its casing along the *shortened*
+      // path, so a layer on an arrowed edge runs a gap further than v3's
+      // does; recorded as a deviation with a follow-up, and matched by
+      // the straight-stream layer entry point so the two agree.
+      vec4f(0.0)
     );
 
     p = routeVertexW(&route, tIdx);
@@ -2505,6 +2732,7 @@ fn fsCurvedLayer(in: CurvedVSOut) -> @location(0) vec4f {
 export const ARROW_SHADER = `
 ${COMMON}
 ${BOUNDARY_WGSL}
+${ARROW_GAP_WGSL}
 
 // One arrowhead quad per visible edge, per end: reuses the edge cull
 // pass's visible list and indirect args (indexCount 6, one quad per
@@ -2529,8 +2757,9 @@ ${BOUNDARY_WGSL}
 struct End { endId: u32 }
 @group(0) @binding(7) var<uniform> end: End;
 // shape ids packed source | target<<8, hollow bits 16/17, arrow-scale
-// ×16 in the top byte (B7), mid shapes at bits 18..20 / 21..23 (C1) —
-// fragment stage only
+// ×16 in the top byte (B7) and the mid shapes (C1) — see the layout
+// above packArrowShapes in contract.mts.  Fragment stage only; the
+// vertex stage reads the same word out of edge.width lane 1 (round 56).
 @group(0) @binding(8) var<storage, read> arrowShapes: array<u32>;
 // hollow stroke widths per end, model px (B7)
 @group(0) @binding(9) var<storage, read> arrowWidths: array<vec2f>;
@@ -2589,9 +2818,18 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   let len = max(length(toTip), 1e-4); // zero-length edges were culled
   let dir = toTip / len;
 
-  // the tip sits on the tip node's boundary (border straddles half in, half out)
+  // The tip sits spacing(shape) behind the tip node's boundary (border
+  // straddles half in, half out).  Round 56: before this the tip sat *on*
+  // the boundary and the two disc heads compensated by carrying their
+  // point tables and SDF shifted back a radius — exact, but it left
+  // spacing meaning zero to the renderer and v3's value to the
+  // accessors.  Now v3's rule applies to every head and the arrow frame
+  // is v3's frame, so sourceEndpoint() can report the point drawn.
   let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
-  let tip = tipC - dir * boundaryOffset(nodeShapes[tipSlot], half, dir);
+  let word = arrowWordOf(edgeWidths[slot]);
+  let thisShape = select(tgtShapeOf(word), srcShapeOf(word), isSource);
+  let spacing = arrowSpacingW(thisShape, edgeWidths[slot].x, scaleOfWord(word)) * frame.zoomDpr;
+  let tip = tipC - dir * (boundaryOffset(nodeShapes[tipSlot], half, dir) + spacing);
 
   // sizing follows the drawn (floored) edge width; alpha matches the
   // edge LOD.  The quad covers the frame's max arrow-scale (B7) — the
@@ -2602,15 +2840,26 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
   let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
-  let halfBase = sizeMax * ARROW_HALF_LATERAL;
+  // 56: a hollow head strokes its outline, so its ink reaches half a
+  // stroke width *outside* the polygon — furthest out at the back
+  // corners, where two edges meet acutely and the join juts past both.
+  // That was clipped to the quad's 1px AA margin and read as flat-cut
+  // corners against v3.  frame.arrowWidthMax is the monotone maximum of
+  // the styled stroke widths (the vertex stage has no binding for the
+  // per-edge column); over-growing a filled head's quad costs a few
+  // transparent fragments.
+  let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5; // 0 at base, 1 at tip
-  // arrow-local frame: y = 0 at the tip, negative behind (v3's arrow tables);
-  // 1px AA margin on every side
-  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  // arrow-local frame: y = 0 at the arrow origin, negative behind (v3's
+  // arrow tables), positive in front — the disc heads are centred on the
+  // origin and so reach ARROW_MAX_FRONT past it (round 56).  1px AA
+  // margin on every side.
+  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
   let lateral = corner.x * (halfBase + 1.0);
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
@@ -2658,6 +2907,9 @@ fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
 // additionally hangs the edge width below its base, so that is added at
 // the call site.
 const ARROW_MAX_BACK: f32 = ${ ARROW_MAX_BACK };
+// how far in front of the origin a head reaches — nonzero only for the
+// two disc heads, which v3 centres on the origin (round 56)
+const ARROW_MAX_FRONT: f32 = ${ ARROW_MAX_FRONT };
 const ARROW_HALF_LATERAL: f32 = 0.15;
 
 // this end's shape id from the packed word (C1: ends + mids)
@@ -2691,7 +2943,7 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
 
   switch shape {
 ${ ARROW_POLY.cases }
-    case 4u: { sd = length(p - vec2f(0.0, -0.15 * s)) - 0.15 * s; } // circle
+    case 4u: { sd = length(p) - 0.15 * s; } // circle: v3's frame, centred on the origin (56)
     default: { sd = 1e6; } // none (already degenerate in the VS)
   }
 
@@ -2740,13 +2992,22 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
   let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
-  let halfBase = sizeMax * ARROW_HALF_LATERAL;
+  // 56: a hollow head strokes its outline, so its ink reaches half a
+  // stroke width *outside* the polygon — furthest out at the back
+  // corners, where two edges meet acutely and the join juts past both.
+  // That was clipped to the quad's 1px AA margin and read as flat-cut
+  // corners against v3.  frame.arrowWidthMax is the monotone maximum of
+  // the styled stroke widths (the vertex stage has no binding for the
+  // per-edge column); over-growing a filled head's quad costs a few
+  // transparent fragments.
+  let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5;
-  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
   let lateral = corner.x * (halfBase + 1.0);
 
   out.position = vec4f(pxToClip(frame, mid + dir * yLocal + n * lateral), EDGE_Z, 1.0);
@@ -2780,6 +3041,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 export const CURVED_ARROW_SHADER = `
 ${COMMON}
 ${BOUNDARY_WGSL}
+${ARROW_GAP_WGSL}
 ${CURVE_WGSL}
 ${ROUTE_WGSL}
 
@@ -2847,6 +3109,9 @@ fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
 // additionally hangs the edge width below its base, so that is added at
 // the call site.
 const ARROW_MAX_BACK: f32 = ${ ARROW_MAX_BACK };
+// how far in front of the origin a head reaches — nonzero only for the
+// two disc heads, which v3 centres on the origin (round 56)
+const ARROW_MAX_FRONT: f32 = ${ ARROW_MAX_FRONT };
 const ARROW_HALF_LATERAL: f32 = 0.15;
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
@@ -2899,24 +3164,24 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      arrowTrimOf(edgeWidths[slot])
     );
 
     toward = select(g.c2, g.c1, isSource);
-
-    // the tip sits on the tip node's boundary along the curve's end
-    // tangent (border-inclusive outer halves, like the straight arrows)
-    let tipC = modelToPx(frame, nodePositions[tipSlot]);
-    let toTip = tipC - modelToPx(frame, toward);
-    let dirB = toTip / max(length(toTip), 1e-4);
-    let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
-
-    tip = tipC - dirB * boundaryOffset(nodeShapes[tipSlot], half, dirB);
+    // Round 56: the evaluator resolves both of v3's shortenings, and the
+    // *arrow* point is the one a head sits on — spacing behind the
+    // boundary, where g.s/g.e are the gap-shortened line ends.  Reading
+    // the line end here and subtracting spacing on top of it would
+    // double the shortening, which is what pulled the heads off their
+    // nodes when this shader was first wired up.
+    tip = modelToPx(frame, select(g.aE, g.aS, isSource));
   } else {
     var route = evalRouteW(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      arrowTrimOf(edgeWidths[slot])
     );
     let qn = route.n + 2u;
 
@@ -2926,15 +3191,16 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
       toward = select(route.q[route.n], route.q[1u], isSource);
     }
 
-    // the route's resolved endpoint IS the tip — for default modes it
-    // equals the boundary point; for 12c manual endpoints it is the
+    // the route's *arrow* point (56) — for default modes the boundary
+    // point pulled back by spacing; for 12c manual endpoints the
     // manual/inside/shortened point (v3's arrowStart/End)
-    tip = modelToPx(frame, select(route.q[qn - 1u], route.q[0u], isSource));
+    tip = modelToPx(frame, select(route.aE, route.aS, isSource));
   }
 
   let toTip2 = tip - modelToPx(frame, toward);
   let len = max(length(toTip2), 1e-4);
   let dir = toTip2 / len;
+
 
   // sizing follows the drawn (floored) edge width; the curved stream is
   // never decimated, so the alpha comp is the plain width-floor ratio.
@@ -2946,13 +3212,22 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
   let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
-  let halfBase = sizeMax * ARROW_HALF_LATERAL;
+  // 56: a hollow head strokes its outline, so its ink reaches half a
+  // stroke width *outside* the polygon — furthest out at the back
+  // corners, where two edges meet acutely and the join juts past both.
+  // That was clipped to the quad's 1px AA margin and read as flat-cut
+  // corners against v3.  frame.arrowWidthMax is the monotone maximum of
+  // the styled stroke widths (the vertex stage has no binding for the
+  // per-edge column); over-growing a filled head's quad costs a few
+  // transparent fragments.
+  let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5; // 0 at base, 1 at tip
-  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
   let lateral = corner.x * (halfBase + 1.0);
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
@@ -2979,7 +3254,7 @@ fn fsArrow(in: ArrowVSOut) -> @location(0) vec4f {
 
   switch shape {
 ${ ARROW_POLY.cases }
-    case 4u: { sd = length(p - vec2f(0.0, -0.15 * s)) - 0.15 * s; } // circle
+    case 4u: { sd = length(p) - 0.15 * s; } // circle: v3's frame, centred on the origin (56)
     default: { sd = 1e6; } // none: fully discarded by alpha
   }
 
@@ -3007,7 +3282,8 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
     let g = evalCurveGeom(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      arrowTrimOf(edgeWidths[slot])
     );
 
     mid = g.m;
@@ -3017,7 +3293,8 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
     var route = evalRouteW(
       params,
       nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      arrowTrimOf(edgeWidths[slot])
     );
     let midTan = routeMidpointW(&route);
 
@@ -3037,13 +3314,22 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
   let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
-  let halfBase = sizeMax * ARROW_HALF_LATERAL;
+  // 56: a hollow head strokes its outline, so its ink reaches half a
+  // stroke width *outside* the polygon — furthest out at the back
+  // corners, where two edges meet acutely and the join juts past both.
+  // That was clipped to the quad's 1px AA margin and read as flat-cut
+  // corners against v3.  frame.arrowWidthMax is the monotone maximum of
+  // the styled stroke widths (the vertex stage has no binding for the
+  // per-edge column); over-growing a filled head's quad costs a few
+  // transparent fragments.
+  let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);
   let corner = quadCorner(vi);
   let t = (corner.y + 1.0) * 0.5;
-  let yLocal = mix(-(arrowLen + 1.0), 1.0, t);
+  let yLocal = mix(-(arrowLen + 1.0), sizeMax * ARROW_MAX_FRONT + hollowReach + 1.0, t); // 56
   let lateral = corner.x * (halfBase + 1.0);
 
   out.position = vec4f(pxToClip(frame, midPx + dir * yLocal + n * lateral), EDGE_Z, 1.0);
@@ -3173,7 +3459,18 @@ fn routeEndWalkW(r: ptr<function, Route>, fromSource: bool, dist: f32) -> vec4f 
 const labelShader = ( edge: boolean ): string => `
 ${COMMON}
 ${GLYPH_STRUCT}
-${ edge ? BOUNDARY_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : '' }
+${ edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGSL : '' }
+// Round 56, a recorded deviation: this stage passes a **zero** arrow
+// trim to the curve evaluators, so an edge label on an arrowed curved
+// edge anchors at the *untrimmed* midpoint while midpoint() answers
+// v3's trimmed one — about 2.6 model px apart on a bezier at
+// arrow-scale 1.2.  The cause is a binding, not a decision: this vertex
+// stage already binds 7 storage buffers plus the visible list, exactly
+// the base budget, with no slot left for edge.width and therefore no way
+// to reach the arrow word.  Closing it means freeing a binding here (the
+// curved-edge pipeline's layout split is the precedent) and is logged as
+// a follow-up rather than guessed at.
+//
 // flags columns are not bound here: the cull pass already dropped glyphs
 // of dead/hidden owners.  The edge variant binds the curve inputs too —
 // 7 storage buffers + the visible list (node size and border ride the
@@ -3229,7 +3526,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     let geom = evalCurveGeom(
       params,
       pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      vec4f(0.0) // see the arrow-gap note below
     );
 
     anchor = geom.m;
@@ -3250,7 +3548,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     var route = evalRouteW(
       params,
       pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
+      pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      vec4f(0.0) // see the arrow-gap note below
     );
     let midTan = routeMidpointW(&route);
 
@@ -3272,7 +3571,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
       let geom = evalCurveGeom(
         params,
         pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
+        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
+        vec4f(0.0) // see the arrow-gap note below
       );
 
       at = curveEndWalk(geom, fromSource, dist);
@@ -3285,7 +3585,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
       var endRoute = evalRouteW(
         params,
         pa, nodeOuterHalf[ends.x], nodeShapes[ends.x],
-        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y]
+        pb, nodeOuterHalf[ends.y], nodeShapes[ends.y],
+        vec4f(0.0) // see the arrow-gap note below
       );
 
       at = routeEndWalkW(&endRoute, fromSource, dist);

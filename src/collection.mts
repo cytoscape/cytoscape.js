@@ -2503,13 +2503,26 @@ export class Collection {
       return { x: ( hay.sx + hay.tx ) / 2, y: ( hay.sy + hay.ty ) / 2 };
     }
 
-    const endpoints = this._store.column( 'edge.endpoints' ) as Uint32Array;
-    const s = endpoints[ ref.slot * 2 ];
-    const t = endpoints[ ref.slot * 2 + 1 ];
+    // Straight edges: v3's `storeAllpts` does *not* answer the chord
+    // midpoint here, it answers
+    //
+    //     ( startX + endX + arrowStartX + arrowEndX ) / 4
+    //
+    // — the mean of the two gap-shortened line ends and the two
+    // spacing-shortened arrow points.  With the same head at both ends
+    // the shortenings cancel and it lands back on the chord midpoint,
+    // which is why this read as correct for four rounds; give the ends
+    // different heads and it stops cancelling.  It matters beyond the
+    // accessor: this is where a mid-arrow sits and an edge label
+    // anchors.
+    const line = this._store.straightLineEndAt( ref.slot, 0 );
+    const lineEnd = this._store.straightLineEndAt( ref.slot, 1 );
+    const arrow = this._store.straightEndpointAt( ref.slot, 0 );
+    const arrowEnd = this._store.straightEndpointAt( ref.slot, 1 );
 
     return {
-      x: ( this._store.getX( s ) + this._store.getX( t ) ) / 2,
-      y: ( this._store.getY( s ) + this._store.getY( t ) ) / 2
+      x: ( line.x + lineEnd.x + arrow.x + arrowEnd.x ) / 4,
+      y: ( line.y + lineEnd.y + arrow.y + arrowEnd.y ) / 4
     };
   }
 
@@ -2528,10 +2541,11 @@ export class Collection {
    * clipping, haystack offsets and any manual `source-endpoint`.
    *
    * A **straight** edge answers the node boundary along the chord
-   * between the node centres (round 55; it previously answered the node
-   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
-   * which is non-zero only for `tee`; that term arrives with the
-   * gap/trim port.
+   * between the node centres, pulled back by the arrow shape's
+   * `spacing` (round 55 landed the boundary, round 56 the spacing) —
+   * v3's `rs.arrowStartX/Y`.  That is the *arrow* point, not the drawn
+   * line's end: the line stops `gap` behind the boundary, further back
+   * again, which is what makes a hollow head read as one shape.
    *
    * @returns the endpoint, or undefined for non-edges
    */
@@ -2545,10 +2559,11 @@ export class Collection {
    * clipping, haystack offsets and any manual `target-endpoint`.
    *
    * A **straight** edge answers the node boundary along the chord
-   * between the node centres (round 55; it previously answered the node
-   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
-   * which is non-zero only for `tee`; that term arrives with the
-   * gap/trim port.
+   * between the node centres, pulled back by the arrow shape's
+   * `spacing` (round 55 landed the boundary, round 56 the spacing) —
+   * v3's `rs.arrowStartX/Y`.  That is the *arrow* point, not the drawn
+   * line's end: the line stops `gap` behind the boundary, further back
+   * again, which is what makes a hollow head read as one shape.
    *
    * @returns the endpoint, or undefined for non-edges
    */
@@ -2686,20 +2701,19 @@ export class Collection {
 
     if( ref == null || ref.group !== 'edges' || !this._store.isCurrent( ref ) ){ return undefined; }
 
-    // curved edges: the curve's boundary endpoints (closer to v3's
-    // arrow endpoints than the straight-edge node-center approximation)
+    // v3 answers its *arrow* points here (`rs.arrowStartX/Y`), which sit
+    // `spacing` behind the boundary — not the drawn line's ends, which
+    // sit `gap` behind it.  The evaluators carry both since round 56.
     const ev = this._store.curveEvalAt( ref.slot );
 
     if( ev != null ){
-      return which === 0 ? { x: ev.sx, y: ev.sy } : { x: ev.ex, y: ev.ey };
+      return which === 0 ? { x: ev.asx, y: ev.asy } : { x: ev.aex, y: ev.aey };
     }
 
     const route = this._store.curveRouteAt( ref.slot );
 
     if( route != null ){
-      const i = which === 0 ? 0 : route.n + 1;
-
-      return { x: route.qx[ i ], y: route.qy[ i ] };
+      return which === 0 ? { x: route.asx, y: route.asy } : { x: route.aex, y: route.aey };
     }
 
     // haystack edges (12c): the offset points — v3's haystackPts

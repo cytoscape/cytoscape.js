@@ -96,6 +96,64 @@ export const loopRadius = ( stepSize: number, j: number ): number => {
   return LOOP_RADIUS_FACTOR * stepSize * ( j / 3 + 1 );
 };
 
+/**
+ * Per-end arrow shortenings for one edge, in model px (round 56).
+ *
+ * v3 keeps *two* shortened points per end and they are not the same
+ * point: the drawn line stops `gap` behind the node boundary, while the
+ * arrow tip sits `spacing` behind it.  Both are supplied by the caller
+ * rather than derived here, because the arrow shape and scale live in
+ * columns this module deliberately does not read — the same reason the
+ * node halves arrive as numbers.
+ *
+ * The WGSL twins take the same two quantities out of `edge.width`'s
+ * lane 1 and compute them with generated copies of `arrowGap` /
+ * `arrowSpacing`, so the two sides agree by construction.
+ */
+export interface ArrowTrim {
+  /** where the drawn line stops, behind the source/target boundary */
+  srcGap: number;
+  tgtGap: number;
+  /** where the arrow tip sits, behind the source/target boundary */
+  srcSpacing: number;
+  tgtSpacing: number;
+}
+
+/** The trim of an edge with no heads — every term zero. */
+export const NO_ARROW_TRIM: ArrowTrim = Object.freeze( {
+  srcGap: 0, tgtGap: 0, srcSpacing: 0, tgtSpacing: 0
+} );
+
+/**
+ * v3's `shortenIntersection`, verbatim including its degenerate clamp:
+ * `pt` moved `amount` toward `toward`, never past it.
+ *
+ * The clamp is not a nicety — a gap larger than the distance to the far
+ * point would otherwise flip the line inside out, and v3's own answer
+ * (collapse onto `toward`) is what its renderer draws.
+ *
+ * @param out — receives the shortened point
+ * @param px — the point to shorten
+ * @param py — the point to shorten
+ * @param tx — the point to shorten toward
+ * @param ty — the point to shorten toward
+ * @param amount — how far to move, in model px
+ */
+export const shortenToward = (
+  out: { x: number; y: number },
+  px: number, py: number, tx: number, ty: number, amount: number
+): void => {
+  const dx = px - tx;
+  const dy = py - ty;
+  const len = Math.sqrt( dx * dx + dy * dy );
+  let ratio = ( len - amount ) / Math.max( len, 1e-6 );
+
+  if( ratio < 0 ){ ratio = 0.00001; }
+
+  out.x = tx + dx * ratio;
+  out.y = ty + dy * ratio;
+};
+
 /** One edge's evaluated curve: endpoints on the node boundaries, the
  * control point(s), and the label-anchor midpoint. */
 export interface CurveEval {
@@ -110,12 +168,19 @@ export interface CurveEval {
   c2x: number; c2y: number;
   /** curve midpoint: bezier Q(0.5); loop: the control midpoint */
   mx: number; my: number;
+  /** the *arrow* points (round 56) — `spacing` behind each boundary,
+   * where `sx/sy` and `ex/ey` are `gap` behind it.  v3 keeps both
+   * (`rs.arrowStartX/Y` against `rs.startX/Y`) and the public endpoint
+   * accessors report these, not the line ends. */
+  asx: number; asy: number;
+  aex: number; aey: number;
 }
 
 /** A zeroed `CurveEval` for callers to reuse as `evalCurve`'s `out`
  * scratch — the evaluators never allocate on the hot path. */
 export const emptyCurveEval = (): CurveEval => ( {
-  kind: 0, sx: 0, sy: 0, ex: 0, ey: 0, c1x: 0, c1y: 0, c2x: 0, c2y: 0, mx: 0, my: 0
+  kind: 0, sx: 0, sy: 0, ex: 0, ey: 0, c1x: 0, c1y: 0, c2x: 0, c2y: 0, mx: 0, my: 0,
+  asx: 0, asy: 0, aex: 0, aey: 0
 } );
 
 /**
@@ -128,7 +193,8 @@ export const emptyCurveEval = (): CurveEval => ( {
 export const evalCurve = (
   out: CurveEval, kind: number, p0: number, p1: number, p2: number,
   sxC: number, syC: number, sHalfW: number, sHalfH: number, sShape: number,
-  txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number
+  txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number,
+  trim: ArrowTrim = NO_ARROW_TRIM
 ): CurveEval => {
   out.kind = kind;
 
@@ -153,8 +219,8 @@ export const evalCurve = (
     out.mx = ( c1x + c2x ) / 2;
     out.my = ( c1y + c2y ) / 2;
 
-    setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, c1x, c1y );
-    setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, c2x, c2y );
+    setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, c1x, c1y, trim.srcGap, trim.srcSpacing );
+    setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, c2x, c2y, trim.tgtGap, trim.tgtSpacing );
 
     return out;
   }
@@ -174,8 +240,8 @@ export const evalCurve = (
     out.mx = ( c1x + c2x ) / 2;
     out.my = ( c1y + c2y ) / 2;
 
-    setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, c1x, c1y );
-    setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, c2x, c2y );
+    setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, c1x, c1y, trim.srcGap, trim.srcSpacing );
+    setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, c2x, c2y, trim.tgtGap, trim.tgtSpacing );
 
     return out;
   }
@@ -220,8 +286,8 @@ export const evalCurve = (
   out.c2y = cy;
 
   // endpoints on the boundary toward the control point
-  setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, cx, cy );
-  setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, cx, cy );
+  setBoundaryPoint( out, false, sxC, syC, sHalfW, sHalfH, sShape, cx, cy, trim.srcGap, trim.srcSpacing );
+  setBoundaryPoint( out, true, txC, tyC, tHalfW, tHalfH, tShape, cx, cy, trim.tgtGap, trim.tgtSpacing );
 
   // Q(0.5) — the label anchor
   out.mx = 0.25 * out.sx + 0.5 * cx + 0.25 * out.ex;
@@ -230,10 +296,21 @@ export const evalCurve = (
   return out;
 };
 
+/**
+ * Resolve one end's boundary point and both of v3's shortenings of it
+ * (round 56): the line end `gap` behind the boundary, and the arrow tip
+ * `spacing` behind it.
+ *
+ * Both shorten *toward the near control point*, which is v3's own
+ * construction (`shortenIntersection( intersect, p1, ... )` where `p1`
+ * is the control) — not toward the far node, and not along the curve's
+ * arc.  On a straight edge the two coincide; on a bezier they do not,
+ * and using the chord there would tilt the trimmed end off the curve.
+ */
 const setBoundaryPoint = (
   out: CurveEval, isEnd: boolean,
   cx: number, cy: number, halfW: number, halfH: number, shape: number,
-  towardX: number, towardY: number
+  towardX: number, towardY: number, gap: number, spacing: number
 ): void => {
   let dx = towardX - cx;
   let dy = towardY - cy;
@@ -248,15 +325,32 @@ const setBoundaryPoint = (
   }
 
   const off = boundaryOffset( shape, halfW, halfH, dx, dy );
+  const bx = cx + dx * off;
+  const by = cy + dy * off;
+
+  shortenToward( SCRATCH, bx, by, towardX, towardY, gap );
 
   if( isEnd ){
-    out.ex = cx + dx * off;
-    out.ey = cy + dy * off;
+    out.ex = SCRATCH.x;
+    out.ey = SCRATCH.y;
   } else {
-    out.sx = cx + dx * off;
-    out.sy = cy + dy * off;
+    out.sx = SCRATCH.x;
+    out.sy = SCRATCH.y;
+  }
+
+  shortenToward( SCRATCH, bx, by, towardX, towardY, spacing );
+
+  if( isEnd ){
+    out.aex = SCRATCH.x;
+    out.aey = SCRATCH.y;
+  } else {
+    out.asx = SCRATCH.x;
+    out.asy = SCRATCH.y;
   }
 };
+
+/** module-level scratch — the evaluators never allocate on the hot path */
+const SCRATCH = { x: 0, y: 0 };
 
 const qbezier = ( p0: number, c: number, p1: number, t: number ): number => {
   const s = 1 - t;
@@ -529,6 +623,10 @@ export interface CurveRoute {
   round: boolean;
   radius: Float64Array;
   arcMode: Uint8Array;
+  /** the *arrow* points (round 56): `spacing` behind each resolved
+   * endpoint, where `q[0]`/`q[n+1]` are `gap` behind it. */
+  asx: number; asy: number;
+  aex: number; aey: number;
 }
 
 /** A zeroed `CurveRoute` for callers to reuse as an `out` scratch.  Its
@@ -541,7 +639,8 @@ export const emptyCurveRoute = (): CurveRoute => ( {
   qy: new Float64Array( MAX_CURVE_PTS + 2 ),
   round: false,
   radius: new Float64Array( MAX_CURVE_PTS ),
-  arcMode: new Uint8Array( MAX_CURVE_PTS )
+  arcMode: new Uint8Array( MAX_CURVE_PTS ),
+  asx: 0, asy: 0, aex: 0, aey: 0
 } );
 
 /** The intersection frame shared by MULTI and SEGMENTS (and the 12a
@@ -600,7 +699,8 @@ export const evalRoute = (
   out: CurveRoute, kind: number,
   blob: ArrayLike<number>, off: number, n: number,
   sxC: number, syC: number, sHalfW: number, sHalfH: number, sShape: number,
-  txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number
+  txC: number, tyC: number, tHalfW: number, tHalfH: number, tShape: number,
+  trim: ArrowTrim = NO_ARROW_TRIM
 ): CurveRoute => {
   const hasEndpt = kind >= CURVE_HAS_ENDPT;
   const base = hasEndpt ? kind - CURVE_HAS_ENDPT : kind;
@@ -679,53 +779,81 @@ export const evalRoute = (
   }
 
   const qn = out.n + 2;
+  // each end shortens *toward* its aim point, which is the near interior
+  // route point — v3's `shortenIntersection( intersect, p1, ... )`
+  let sAimX: number, sAimY: number, tAimX: number, tAimY: number;
 
   if( !hasEndpt ){
     // endpoints on the node boundaries toward the first/last interior point
+    sAimX = out.qx[ 1 ];
+    sAimY = out.qy[ 1 ];
+    tAimX = out.qx[ qn - 2 ];
+    tAimY = out.qy[ qn - 2 ];
+
     const s = setRouteBoundary(
-      sxC, syC, sHalfW, sHalfH, sShape, out.qx[ 1 ], out.qy[ 1 ] );
+      sxC, syC, sHalfW, sHalfH, sShape, sAimX, sAimY );
 
     out.qx[ 0 ] = s.x;
     out.qy[ 0 ] = s.y;
 
     const e = setRouteBoundary(
-      txC, tyC, tHalfW, tHalfH, tShape, out.qx[ qn - 2 ], out.qy[ qn - 2 ] );
+      txC, tyC, tHalfW, tHalfH, tShape, tAimX, tAimY );
 
     out.qx[ qn - 1 ] = e.x;
     out.qy[ qn - 1 ] = e.y;
-
-    return out;
-  }
-
-  // 12c: resolve each end through its endpoint-block entry.  The "aim"
-  // is the near interior point; with no interior points (n = 0, the
-  // straight-with-endpoints chord) each end aims at the *other end's
-  // raw anchor* (v3's lines path: tgtPos + tgtManEndptPt et al.)
-  let sAimX: number, sAimY: number, tAimX: number, tAimY: number;
-
-  if( out.n > 0 ){
-    sAimX = out.qx[ 1 ];
-    sAimY = out.qy[ 1 ];
-    tAimX = out.qx[ qn - 2 ];
-    tAimY = out.qy[ qn - 2 ];
   } else {
-    rawEndpointAnchor( blob, off, true, txC, tyC, tHalfW, tHalfH, tShape, anchorScratch );
-    sAimX = anchorScratch.x;
-    sAimY = anchorScratch.y;
-    rawEndpointAnchor( blob, off, false, sxC, syC, sHalfW, sHalfH, sShape, anchorScratch );
-    tAimX = anchorScratch.x;
-    tAimY = anchorScratch.y;
+    // 12c: resolve each end through its endpoint-block entry.  The "aim"
+    // is the near interior point; with no interior points (n = 0, the
+    // straight-with-endpoints chord) each end aims at the *other end's
+    // raw anchor* (v3's lines path: tgtPos + tgtManEndptPt et al.)
+    if( out.n > 0 ){
+      sAimX = out.qx[ 1 ];
+      sAimY = out.qy[ 1 ];
+      tAimX = out.qx[ qn - 2 ];
+      tAimY = out.qy[ qn - 2 ];
+    } else {
+      rawEndpointAnchor( blob, off, true, txC, tyC, tHalfW, tHalfH, tShape, anchorScratch );
+      sAimX = anchorScratch.x;
+      sAimY = anchorScratch.y;
+      rawEndpointAnchor( blob, off, false, sxC, syC, sHalfW, sHalfH, sShape, anchorScratch );
+      tAimX = anchorScratch.x;
+      tAimY = anchorScratch.y;
+    }
+
+    resolveEndpoint(
+      blob, off, false, sxC, syC, sHalfW, sHalfH, sShape,
+      sAimX, sAimY, fSix, fSiy, anchorScratch );
+    out.qx[ 0 ] = anchorScratch.x;
+    out.qy[ 0 ] = anchorScratch.y;
+
+    resolveEndpoint(
+      blob, off, true, txC, tyC, tHalfW, tHalfH, tShape,
+      tAimX, tAimY, fTix, fTiy, anchorScratch );
+    out.qx[ qn - 1 ] = anchorScratch.x;
+    out.qy[ qn - 1 ] = anchorScratch.y;
   }
 
-  resolveEndpoint(
-    blob, off, false, sxC, syC, sHalfW, sHalfH, sShape,
-    sAimX, sAimY, fSix, fSiy, anchorScratch );
+  // Round 56: v3's two shortenings, applied to whichever endpoints the
+  // branches above resolved.  The *arrow* points are recorded separately
+  // and the route's own ends move by the gap, because v3's `storeAllpts`
+  // builds the drawn path from the gap-shortened points — so a head
+  // shortens the route itself, and everything derived from it (the
+  // midpoint, the flattened bound) follows.  The 12c distance shortening
+  // has already been applied by `resolveEndpoint`; these compose, exactly
+  // as v3's `gap( edge ) + tgtDist` does.
+  shortenToward( anchorScratch, out.qx[ 0 ], out.qy[ 0 ], sAimX, sAimY, trim.srcSpacing );
+  out.asx = anchorScratch.x;
+  out.asy = anchorScratch.y;
+
+  shortenToward( anchorScratch, out.qx[ qn - 1 ], out.qy[ qn - 1 ], tAimX, tAimY, trim.tgtSpacing );
+  out.aex = anchorScratch.x;
+  out.aey = anchorScratch.y;
+
+  shortenToward( anchorScratch, out.qx[ 0 ], out.qy[ 0 ], sAimX, sAimY, trim.srcGap );
   out.qx[ 0 ] = anchorScratch.x;
   out.qy[ 0 ] = anchorScratch.y;
 
-  resolveEndpoint(
-    blob, off, true, txC, tyC, tHalfW, tHalfH, tShape,
-    tAimX, tAimY, fTix, fTiy, anchorScratch );
+  shortenToward( anchorScratch, out.qx[ qn - 1 ], out.qy[ qn - 1 ], tAimX, tAimY, trim.tgtGap );
   out.qx[ qn - 1 ] = anchorScratch.x;
   out.qy[ qn - 1 ] = anchorScratch.y;
 

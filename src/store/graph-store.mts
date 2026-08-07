@@ -11,15 +11,18 @@ import { CurveBlob } from './curve-blob.mjs';
 import {
   boundaryOffset,
   CURVE_SEGS, curveDeviation, curvePointAt, emptyCurveEval, emptyCurveRoute, evalCurve,
-  evalRoute, haystackPoint, headerDeviation, routeVertex, segmentHitsBox
+  evalRoute, haystackPoint, headerDeviation, routeVertex, segmentHitsBox,
+  shortenToward
 } from '../curve-geometry.mjs';
-import type { CurveEval, CurveRoute } from '../curve-geometry.mjs';
+import type { ArrowTrim, CurveEval, CurveRoute } from '../curve-geometry.mjs';
+import { arrowGap, arrowSpacing } from '../shape-points.mjs';
 import {
   columnSpec, columnSpecsForGroup,
   CHART_HEADER,
   CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI,
   CURVE_SEGMENTS,
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
+  ARROW_SHAPE_MASK, ARROW_SHIFT_SCALE, ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET,
   FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
   FLAG_DRAWN, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
   FLAG_SELF_INVISIBLE, FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT,
@@ -35,6 +38,10 @@ import { estimateBlock, WRAP_NONE } from '../label-wrap.mjs';
 
 /** floats per image record in the image pool (round 15.2) */
 export const IMG_STRIDE = 12;
+
+/** scratch for the straight-endpoint shortenings — the geometry readers
+ * never allocate on the hot path */
+const shortenScratch = { x: 0, y: 0 };
 
 /** A percent-or-px value ({ v, pct }) as parsed by the style engine. */
 export interface BgLen { v: number; pct: boolean; }
@@ -2241,6 +2248,29 @@ export class GraphStore implements ModelView {
     if( scale > this.arrowScaleMaxV ){ this.arrowScaleMaxV = scale; }
   }
 
+  private arrowWidthMaxV = 0;
+
+  /**
+   * The largest hollow-arrow stroke width any edge has styled, model px
+   * (round 56).
+   *
+   * A hollow head strokes its *outline*, so the ink reaches half a stroke
+   * width **outside** the polygon — furthest out at the back corners,
+   * where two edges meet at an acute angle.  The arrow vertex stage has
+   * no spare storage binding for `edge.arrowWidths`, so the quad grows by
+   * this frame-level maximum instead, exactly as it already does for
+   * `arrowScaleMax`.  Monotone, and it only costs quad area.
+   */
+  arrowWidthMax(): number {
+    return this.arrowWidthMaxV;
+  }
+
+  /** Raise the monotone hollow-stroke maximum (the style layer's
+   * report, after 'match-line' and percent forms are resolved). */
+  noteArrowWidth( width: number ): void {
+    if( width > this.arrowWidthMaxV ){ this.arrowWidthMaxV = width; }
+  }
+
   /** monotone (round 13 B5): the largest outline outward extent any
    * node has styled — the ghost cull grows by it (no binding left for
    * the packed geometry there) */
@@ -2427,6 +2457,52 @@ export class GraphStore implements ModelView {
     return [ params[ at ], params[ at + 1 ], params[ at + 2 ], params[ at + 3 ] ];
   }
 
+  /** scratch for `arrowTrimAt` — the geometry readers never allocate */
+  private trimScratch: ArrowTrim = { srcGap: 0, tgtGap: 0, srcSpacing: 0, tgtSpacing: 0 };
+
+  /**
+   * v3's two per-end shortenings for one edge, resolved from the arrow
+   * and width columns (round 56).
+   *
+   * This is the CPU side of what `edge.width` lane 1 carries to the
+   * vertex stages: the same packed word, the same `arrowGap` /
+   * `arrowSpacing`, so the drawn line and every accessor agree by
+   * construction rather than by two hand-kept copies of v3's table.
+   *
+   * Haystack is the one exception, and it is v3's: haystack edges draw
+   * no heads at all and route through a different path, so they take no
+   * shortening.
+   *
+   * @param slot — the edge slot
+   * @returns a shared scratch — consume it before the next call
+   */
+  arrowTrimAt( slot: number ): ArrowTrim {
+    const out = this.trimScratch;
+    const params = this.edges.column( 'edge.curveParams' ) as Float32Array;
+
+    if( params[ slot * 4 + 3 ] === CURVE_HAYSTACK ){
+      out.srcGap = out.tgtGap = out.srcSpacing = out.tgtSpacing = 0;
+
+      return out;
+    }
+
+    const word = ( this.edges.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ];
+    const width = ( this.edges.column( 'edge.width' ) as Float32Array )[ slot * 2 ];
+    const src = ( word >>> ARROW_SHIFT_SOURCE ) & ARROW_SHAPE_MASK;
+    const tgt = ( word >>> ARROW_SHIFT_TARGET ) & ARROW_SHAPE_MASK;
+    const q = word >>> ARROW_SHIFT_SCALE;
+    // the *quantized* scale, deliberately: the head is drawn at it, so a
+    // gap derived from the unquantized value would not meet the head
+    const scale = q === 0 ? 1 : q / 16;
+
+    out.srcGap = arrowGap( src, width, scale );
+    out.tgtGap = arrowGap( tgt, width, scale );
+    out.srcSpacing = arrowSpacing( src, width, scale );
+    out.tgtSpacing = arrowSpacing( tgt, width, scale );
+
+    return out;
+  }
+
   /**
    * Evaluate one curved edge's geometry from the live columns (null for
    * straight edges).  The returned object is a shared scratch unless
@@ -2458,7 +2534,8 @@ export class GraphStore implements ModelView {
       pos[ s * 2 ], pos[ s * 2 + 1 ],
       outer[ s * 2 ], outer[ s * 2 + 1 ], shape[ s ],
       pos[ t * 2 ], pos[ t * 2 + 1 ],
-      outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ]
+      outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ],
+      this.arrowTrimAt( slot )
     );
   }
 
@@ -2489,7 +2566,8 @@ export class GraphStore implements ModelView {
     return evalRoute(
       out, kind, this.blob.data(), params[ at ], params[ at + 2 ],
       pos[ s * 2 ], pos[ s * 2 + 1 ], outer[ s * 2 ], outer[ s * 2 + 1 ], shape[ s ],
-      pos[ t * 2 ], pos[ t * 2 + 1 ], outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ]
+      pos[ t * 2 ], pos[ t * 2 + 1 ], outer[ t * 2 ], outer[ t * 2 + 1 ], shape[ t ],
+      this.arrowTrimAt( slot )
     );
   }
 
@@ -2548,7 +2626,7 @@ export class GraphStore implements ModelView {
    * @param which — 0 for the source end, 1 for the target end
    * @returns the boundary point in model space
    */
-  straightEndpointAt( slot: number, which: 0 | 1 ): { x: number; y: number } {
+  straightEndpointAt( slot: number, which: 0 | 1, arrows: boolean = true ): { x: number; y: number } {
     this.flushDerived();
 
     const endpoints = this.edges.column( 'edge.endpoints' ) as Uint32Array;
@@ -2570,8 +2648,37 @@ export class GraphStore implements ModelView {
     if( l < 1e-6 ){ dx = 1; dy = 0; } else { dx /= l; dy /= l; }
 
     const off = boundaryOffset( shape[ self ], outer[ self * 2 ], outer[ self * 2 + 1 ], dx, dy );
+    const trim = this.arrowTrimAt( slot );
+    const back = arrows
+      ? ( which === 0 ? trim.srcSpacing : trim.tgtSpacing )
+      : ( which === 0 ? trim.srcGap : trim.tgtGap );
 
-    return { x: cx + dx * off, y: cy + dy * off };
+    shortenScratch.x = cx + dx * off;
+    shortenScratch.y = cy + dy * off;
+    // v3's shortenIntersection, toward the far node centre — the clamp
+    // matters when a head is larger than the chord it sits on
+    shortenToward(
+      shortenScratch, shortenScratch.x, shortenScratch.y,
+      pos[ other * 2 ], pos[ other * 2 + 1 ], back );
+
+    return { x: shortenScratch.x, y: shortenScratch.y };
+  }
+
+  /**
+   * Where a straight edge's **drawn line** ends — `gap` behind the node
+   * boundary, which is further back than the arrow point
+   * `straightEndpointAt` answers (round 56).
+   *
+   * v3 keeps both (`rs.startX/Y` against `rs.arrowStartX/Y`) and its
+   * straight midpoint is the mean of all four, which is the only public
+   * caller of this today.
+   *
+   * @param slot — the edge slot
+   * @param which — 0 for the source end, 1 for the target end
+   * @returns the drawn line's end in model space
+   */
+  straightLineEndAt( slot: number, which: 0 | 1 ): { x: number; y: number } {
+    return this.straightEndpointAt( slot, which, false );
   }
 
   /**

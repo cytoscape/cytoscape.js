@@ -5457,8 +5457,15 @@ export class StyleEngine {
           : typeof aw === 'number' ? aw
             : aw.percent * computed.width;
 
-      store.setPair( 'edge.arrowWidths', slot,
-        resolveAw( computed.sourceArrowWidth ), resolveAw( computed.targetArrowWidth ) );
+      const srcAw = resolveAw( computed.sourceArrowWidth );
+      const tgtAw = resolveAw( computed.targetArrowWidth );
+
+      store.setPair( 'edge.arrowWidths', slot, srcAw, tgtAw );
+      // 56: a hollow head's stroke straddles its outline, so the ink
+      // reaches half a stroke width outside the polygon.  The arrow
+      // vertex stage cannot bind this column, so the quad grows by a
+      // frame-level maximum instead — reported here, resolved.
+      store.noteArrowWidth( Math.max( srcAw, tgtAw ) );
       // overlay/underlay strokes (A2): stroke width = edge width + 2·padding,
       // derived here so the layer shaders need no width binding
       const layerRgbaE = ( [ r, g, b, a ]: RGBA, opacity: number ): number =>

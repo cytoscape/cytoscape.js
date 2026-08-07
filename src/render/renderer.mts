@@ -250,7 +250,7 @@ export class Renderer {
     this.curvedArrowPipeline = null;
     this.arrowPipeline = null;
     this.uniform = null;
-    this.frameData = new Float32Array( 18 ); // 17 Frame fields, padded to 8-byte struct alignment
+    this.frameData = new Float32Array( 18 ); // 18 Frame fields (the last pad went to arrowWidthMax, 56)
     this.isReady = false;
     this.frameRequested = false;
     this.destroyed = false;
@@ -810,6 +810,7 @@ export class Renderer {
     f[12] = this.cy._store.haystackSlack();
     f[13] = this.cy._store.outlineSlack();
     f[14] = this.cy._store.arrowScaleMax();
+    f[17] = this.cy._store.arrowWidthMax(); // 56: hollow strokes reach outside the head
     f[15] = opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX; // export scale is the figure's own resolution
 
     device.queue.writeBuffer( this.exportUniform, 0, f.buffer, f.byteOffset, f.byteLength );
@@ -1891,6 +1892,7 @@ export class Renderer {
     f[12] = this.cy._store.haystackSlack();
     f[13] = this.cy._store.outlineSlack();
     f[14] = this.cy._store.arrowScaleMax();
+    f[17] = this.cy._store.arrowWidthMax(); // 56: hollow strokes reach outside the head
     f[15] = ( opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX ) * this.scaleCtl.scale; // displayed px, like labelMinPx
 
     ( this.device as GPUDevice ).queue.writeBuffer( this.uniform as GPUBuffer, 0, f.buffer, f.byteOffset, f.byteLength );
@@ -1930,6 +1932,7 @@ export class Renderer {
     f[12] = this.cy._store.haystackSlack();
     f[13] = this.cy._store.outlineSlack();
     f[14] = this.cy._store.arrowScaleMax();
+    f[17] = this.cy._store.arrowWidthMax(); // 56: hollow strokes reach outside the head
     f[15] = ( opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX ) * this.scaleCtl.scale; // displayed px, like labelMinPx
     f[16] = 1; // pickMode (20.2): the edge cull kernels drop events:'no' edges here only
 

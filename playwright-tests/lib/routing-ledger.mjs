@@ -74,6 +74,67 @@ export const DIVERGENCES = [
     key: 'shapes/round-rectangle/*',
     expect: 0.008,
     reason: 'round-rectangle boundary approximated by its box; 2.25 px at a corner, 0.008 on this chord'
+  },
+
+  // -- the arrow-scale quantization (round 56, measured here) --------------
+  //
+  // `edge.arrowShapes` stores `arrow-scale` as an integer x16 in its top
+  // byte (round 13 B7), so a scale is rounded to the nearest 1/16 before
+  // anything reads it.  Every arrow quantity derives from that value —
+  // the head's size, v3's `gap` and v3's `spacing` — so all three carry
+  // the rounding.
+  //
+  // These scenes ask for `arrow-scale: 1.4`, which is not representable:
+  // round(1.4 x 16) = 22, so v4 draws and measures at **1.375**, 1.8%
+  // small.  Both numbers below are reproduced *exactly* by recomputing
+  // v3's formula at 1.375 rather than 1.4, which is what identifies the
+  // cause rather than merely bounding it:
+  //
+  //     triangle gap   2 x 7 x 1.400 = 19.600   ->  mid.x 120.100000  (v3)
+  //                    2 x 7 x 1.375 = 19.250   ->  mid.x 120.187500  (v4)
+  //     circle spacing getArrowWidth(7, 1.400) x 0.15 = 12.483196     (v3)
+  //                    getArrowWidth(7, 1.375) x 0.15 = 12.260282     (v4)
+  //
+  // Deliberately pinned rather than dodged by picking a representable
+  // scale: the deviation is real and visible in the *drawn head*, not
+  // only in an accessor, and it is logged for the maintainer as an open
+  // call.  The bands are two-sided, so re-quantizing the field — the
+  // contract already names that as the escape hatch — fails these
+  // entries and forces them to be re-measured.
+  {
+    key: 'asym-arrows/none-triangle/mid.x',
+    expect: 0.0875,
+    reason: 'arrow-scale 1.4 quantizes to 22/16 = 1.375, shrinking the target gap by 0.35 px'
+  },
+  {
+    key: 'asym-arrows/triangle-none/mid.x',
+    expect: 0.0875,
+    reason: 'arrow-scale quantization, source end'
+  },
+  {
+    key: 'asym-arrows/tee-triangle-tee/mid.x',
+    expect: 0.0875,
+    reason: 'arrow-scale quantization on the triangle-tee end (tee is a constant gap, unaffected)'
+  },
+  {
+    key: 'asym-arrows/diamond-chevron/mid.x',
+    expect: 0.0022,
+    reason: 'arrow-scale quantization, mostly cancelling between two heads of similar gap'
+  },
+  {
+    key: 'asym-arrows/vee-circle/tgt.x',
+    expect: 0.2229,
+    reason: 'arrow-scale quantization inside circle spacing = getArrowWidth x 0.15'
+  },
+  {
+    key: 'asym-arrows/vee-circle/mid.x',
+    expect: 0.0973,
+    reason: 'arrow-scale quantization, the circle end contributing its spacing to the mid average'
+  },
+  {
+    key: 'curved-arrows/unbundled-bezier/mid.y',
+    expect: 0.0269,
+    reason: 'arrow-scale quantization moving the gap-shortened bezier endpoint'
   }
 ];
 

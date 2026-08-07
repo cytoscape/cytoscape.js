@@ -264,11 +264,11 @@ const arrows = () => {
 
   return {
     name: 'arrows', tolClass: 'derived',
-    // fix 1 (the boundary endpoint) took this scene from 14 diverged
-    // fields to 4.  What is left is exactly v3's `spacing` term, which
-    // fix 3 owns: circle by 9.880383 (getArrowWidth(5, 1.5) x 0.15) and
-    // tee by its constant 1.0.  The other five heads are clean.
-    expectFail: 'fix 3 — the residual is v3\'s arrow spacing on tee and circle, nothing else',
+    // 14 diverged -> 4 (round 55's boundary endpoint) -> **0** (round
+    // 56's spacing).  The last two were circle by 9.880383, which is
+    // getArrowWidth(5, 1.5) x 0.15, and tee by its constant 1.0; both
+    // are now exact.  `arrow-scale: 1.5` is 24/16, so this scene is
+    // clean of the quantization the asymmetric scene pins.
     note: 'one edge per arrow shape — the spacing half of v3\'s gap/spacing pair',
     elements, edges,
     v3Style: [
@@ -458,7 +458,9 @@ const curvedArrows = () => {
 
   return {
     name: 'curved-arrows', tolClass: 'derived',
-    expectFail: 'fix 3 — the head shortens the curve, so every endpoint and midpoint moves',
+    // Before round 56 the unbundled bezier's mid.y diverged by 2.585 px:
+    // the head shortens the *curve*, not just the paint.  It is now 0.027,
+    // which is the arrow-scale quantization alone (ledger).
     note: 'four curve families with heads on both ends — the gap as routing, not paint',
     elements, edges,
     v3Style: [
@@ -513,7 +515,10 @@ const asymmetricArrows = () => {
 
   return {
     name: 'asym-arrows', tolClass: 'derived',
-    expectFail: 'fix 3 — v4 answers the chord midpoint where v3 averages four shortened points',
+    // Before round 56 this diverged by up to 12.48 px and every mid.x by
+    // ~4.9; v4 answered the chord midpoint where v3 averages four
+    // shortened points.  The residual is the arrow-scale quantization
+    // alone, pinned entry by entry in the ledger.
     note: 'different heads per end — the midpoint term that a symmetric scene cancels',
     elements, edges,
     v3Style: [

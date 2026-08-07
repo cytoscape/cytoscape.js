@@ -81,13 +81,15 @@ export const ARROW_COMPOUND_POINTS: ReadonlyMap<number, readonly ( readonly numb
     [ 0, 0, 0.15, -0.3, -0.15, -0.3 ],
     [ -0.15, -0.4, -0.15, -0.5, 0.15, -0.5, 0.15, -0.4 ]
   ] ],
-  // v3 pulls circle-triangle back by its circle radius (the shape's
-  // `spacing`), so the *disc* touches the node boundary rather than the
-  // disc's centre sitting on it.  Baking that 0.15 shift into the points
-  // (and into the disc centre in the shader) makes it exact with no
-  // runtime spacing logic — the only head v3 offsets at all.
+  // v3's `pointsTr`, verbatim.  Until round 56 this table was shifted
+  // 0.15 back and the disc centre with it, to bake in the shape's
+  // `spacing` without any runtime offset logic.  That was exact, but it
+  // made `spacing` mean two different things — zero to the renderer,
+  // v3's value to the accessors — and the endpoint accessors have to
+  // report v3's.  56 applies `spacing` to the *tip* for every shape
+  // instead, so one table serves both and the arrow frame is v3's.
   [ ARROW_CIRCLE_TRIANGLE, [
-    [ 0, -0.3, 0.15, -0.6, -0.15, -0.6 ]
+    [ 0, -0.15, 0.15, -0.45, -0.15, -0.45 ]
   ] ],
   [ ARROW_TRIANGLE_CROSS, [
     [ 0, 0, 0.15, -0.3, -0.15, -0.3 ]
@@ -189,6 +191,35 @@ export const ARROW_MAX_BACK: number = ( () => {
 } )();
 
 /**
+ * How far **in front of** the tip any arrowhead reaches, in arrow-frame
+ * units (round 56).
+ *
+ * Zero for every polygon head — v3's tables all sit at y <= 0 — and
+ * `ARROW_CIRCLE_TRIANGLE_RADIUS` for the two disc heads, whose circle is
+ * centred on the arrow origin and so reaches a radius *past* it.  That
+ * is exactly compensated by the `spacing` those heads carry, but the
+ * arrow quad is built in the arrow frame and has to cover it.
+ *
+ * The pair with `ARROW_MAX_BACK` exists for the same reason that one is
+ * computed rather than hardcoded (round 27.6 shipped clipped compound
+ * heads behind a hardcoded 0.3): a new head with a forward extent must
+ * grow the quad without anyone remembering to.
+ */
+export const ARROW_MAX_FRONT: number = ( () => {
+  let max = 0;
+
+  const scan = ( pts: readonly number[] ): void => {
+    for( let i = 1; i < pts.length; i += 2 ){ max = Math.max( max, pts[ i ] ); }
+  };
+
+  for( const pts of ARROW_POINTS.values() ){ scan( pts ); }
+  for( const parts of ARROW_COMPOUND_POINTS.values() ){ for( const pts of parts ){ scan( pts ); } }
+
+  // the disc heads are centred on the origin, so they reach a radius forward
+  return Math.max( max, ARROW_CIRCLE_TRIANGLE_RADIUS );
+} )();
+
+/**
  * How far behind the tip **each** arrowhead reaches, in arrow-frame
  * units — `ARROW_MAX_BACK` per shape rather than the max over all of
  * them (round 55).
@@ -231,12 +262,11 @@ export const ARROW_BACK: ReadonlyMap<number, number> = ( () => {
  * v3's `arrowShapes[shape].gap(edge)` as a multiple of
  * `width x arrow-scale` (round 55).
  *
- * **Not yet wired to anything.**  These three tables are the verified
- * data half of round 55's fix 3; the plumbing that would consume them —
- * widening `edge.width` to carry the arrow record so the edge vertex
- * shaders can derive a trim — is the half that did not land.  See
- * PLAN.md's round-55 record.  Until then v4 draws no gap at all, and the
- * `parity-arrow-*` scenes are marked `test.fail()` for exactly that.
+ * Read through `arrowGap` below rather than directly.  Round 55 verified
+ * these constants and round 56 wired them up: `edge.width` lane 1 carries
+ * the arrow word to the edge vertex stages, which shorten the line, and
+ * `shaders.mts` generates its WGSL twin of `arrowGap` from these same
+ * tables so there is one source of truth rather than two.
  *
  * v3 keeps two shortened endpoints per edge end: the arrow tip at
  * `spacing(edge)` behind the node boundary, and the *drawn line's* end at
@@ -296,20 +326,59 @@ export const ARROW_GAP_CONST: ReadonlyMap<number, number> = new Map( [
 ] );
 
 /**
- * v3's `arrowShapes[shape].spacing(edge)` — how far behind the node
- * boundary the arrow *tip* sits, in model px.
+ * v3's `getArrowWidth( width, scale )` — the arrowhead's size unit in
+ * **model** px, before any device scaling.
  *
- * Only `tee` needs an entry.  v3 also gives `circle` and
- * `circle-triangle` a spacing of `getArrowWidth x 0.15`, but v4's SDFs
- * for both are authored with the disc already shifted a radius behind
- * the tip (`ARROW_CIRCLE_TRIANGLE_RADIUS`), so applying the spacing again
- * would double it.  A comment in this file used to claim circle-triangle
- * was the only head v3 offsets at all; it is not, and `tee` being missed
- * was a real 1 model px placement error.
+ * Evaluating in model space is load-bearing and was round 27.3's finding:
+ * the 29 is a model-space floor, so applying the power law to a
+ * LOD-floored *device* width would make arrows grow as you zoom out.
+ *
+ * @param width — the edge width in model px
+ * @param scale — the edge's `arrow-scale`
+ * @returns the size unit v3's arrow point tables are multiplied by
  */
-export const ARROW_SPACING_CONST: ReadonlyMap<number, number> = new Map( [
-  [ ARROW_TEE, 1 ]
-] );
+export const arrowSizeModel = ( width: number, scale: number ): number =>
+  Math.max( Math.pow( width * 13.37, 0.9 ), 29 ) * scale;
+
+/**
+ * v3's `arrowShapes[shape].gap( edge )` — how far behind the node
+ * boundary, along the edge, the **drawn line** stops.
+ *
+ * @param shape — an ARROW_* id
+ * @param width — the edge width in model px
+ * @param scale — the edge's `arrow-scale`
+ * @returns the gap in model px (0 for `none`)
+ */
+export const arrowGap = ( shape: number, width: number, scale: number ): number => {
+  const constant = ARROW_GAP_CONST.get( shape );
+
+  if( constant != null ){ return constant; }
+
+  return ( ARROW_GAP_K.get( shape ) ?? ARROW_GAP_K_DEFAULT ) * width * scale;
+};
+
+/**
+ * v3's `arrowShapes[shape].spacing( edge )` — how far behind the node
+ * boundary the arrow **tip** sits.
+ *
+ * Non-zero for exactly three heads: `tee` by a constant 1 px, and the
+ * two disc-bearing heads by their radius, so that the *disc* touches the
+ * boundary rather than its centre sitting on it.
+ *
+ * @param shape — an ARROW_* id
+ * @param width — the edge width in model px
+ * @param scale — the edge's `arrow-scale`
+ * @returns the spacing in model px
+ */
+export const arrowSpacing = ( shape: number, width: number, scale: number ): number => {
+  if( shape === ARROW_TEE ){ return 1; }
+
+  if( shape === ARROW_CIRCLE || shape === ARROW_CIRCLE_TRIANGLE ){
+    return arrowSizeModel( width, scale ) * ARROW_CIRCLE_TRIANGLE_RADIUS;
+  }
+
+  return 0;
+};
 
 
 /**
@@ -332,3 +401,87 @@ export const insideUnitPolygon = ( points: ArrayLike<number>, x: number, y: numb
 
   return inside;
 };
+
+/**
+ * How far back from the tip a head covers the edge's **axis**
+ * continuously, in arrow-frame units (round 56).
+ *
+ * This is the quantity the *drawn* line is trimmed to, and it is not
+ * `ARROW_BACK`.  v3 does not trim at all — it paints the line in full and
+ * then erases the head's footprint out of the canvas
+ * (`globalCompositeOperation = 'destination-out'`), so what a viewer sees
+ * is the line minus the head's shape.  v4 reproduces that by stopping the
+ * line instead, which costs no second pass — but a trim is a single
+ * distance, so it can only reproduce the erase where the head covers the
+ * line *contiguously from the tip*.
+ *
+ * For the convex heads that is the whole head and this equals
+ * `ARROW_BACK`.  For the concave ones it is strictly less, and using
+ * `ARROW_BACK` there would be a visible over-trim rather than a
+ * conservative one:
+ *
+ *   - `vee` is a notch — on the axis the polygon stops at 0.15 while the
+ *     arms run back to 0.3, and v3 shows the line *through* the notch.
+ *   - `chevron` likewise, at 0.1.
+ *   - `triangle-tee` and `triangle-cross` carry a detached bar behind a
+ *     gap, so the contiguous depth is the triangle's 0.3, not the bar's.
+ *
+ * Computed by walking the axis rather than declared, for the reason
+ * round 27.6 made `ARROW_MAX_BACK` computed: a hand-written table is a
+ * silent clip (or a silent over-trim) the next time a head is added.
+ */
+export const ARROW_AXIAL_DEPTH: ReadonlyMap<number, number> = ( () => {
+  const depth = new Map<number, number>();
+  const STEP = 1 / 2048;
+
+  /** is the axis point (0, -k) inside any part of this head? */
+  const covered = ( id: number, k: number ): boolean => {
+    if( id === ARROW_CIRCLE || id === ARROW_CIRCLE_TRIANGLE ){
+      // the disc is centred on the arrow origin (v3's frame)
+      if( k <= ARROW_CIRCLE_TRIANGLE_RADIUS ){ return true; }
+    }
+
+    const simple = ARROW_POINTS.get( id );
+
+    if( simple != null && insideUnitPolygon( simple, 0, -k ) ){ return true; }
+
+    const parts = ARROW_COMPOUND_POINTS.get( id );
+
+    if( parts != null ){
+      for( const pts of parts ){
+        if( insideUnitPolygon( pts, 0, -k ) ){ return true; }
+      }
+    }
+
+    return false;
+  };
+
+  const ids = new Set<number>( [
+    ...ARROW_POINTS.keys(), ...ARROW_COMPOUND_POINTS.keys(), ARROW_CIRCLE
+  ] );
+
+  for( const id of ids ){
+    let k = 0;
+
+    // walk out from just inside the tip until the axis leaves the shape
+    while( k < ARROW_MAX_BACK && covered( id, k + STEP ) ){ k += STEP; }
+
+    // then bisect the last step, so the answer is the true boundary and
+    // not the sampling grid — half a step of under-trim is a hairline of
+    // line left showing inside a hollow head, which is the whole defect
+    let lo = k;
+    let hi = Math.min( k + STEP, ARROW_MAX_BACK );
+
+    for( let i = 0; i < 40; i++ ){
+      const mid = ( lo + hi ) / 2;
+
+      if( covered( id, mid ) ){ lo = mid; } else { hi = mid; }
+    }
+
+    depth.set( id, lo );
+  }
+
+  depth.set( ARROW_NONE, 0 );
+
+  return depth;
+} )();

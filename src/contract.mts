@@ -482,19 +482,49 @@ export type ColumnId =
   | 'node.chartRef'
   | 'edge.endpoints' // Uint32Array(2·cap), source,target node *slots*
   | 'edge.lineColor' // Uint8Array(4·cap)
-  | 'edge.width' // Float32Array(cap)
+  /**
+   * Float32Array(2·cap) — `[ width, arrowBits ]` per edge.
+   *
+   * Lane 0 is the edge width in model px.  Lane 1 is a **bit-exact copy
+   * of `edge.arrowShapes`** reinterpreted as f32, so that the four edge
+   * vertex stages — all of which already bind this column and none of
+   * which has a spare storage-buffer slot — can derive v3's per-shape
+   * arrow `gap`/`spacing` without a new binding (round 56).
+   *
+   * The copy is written by `GraphStore.setArrowShapes` alone, through a
+   * `Uint32Array` view of this column's own buffer rather than a bitcast
+   * via a JS number.  Today's packing leaves bit 23 clear, so no
+   * reachable word is an f32 NaN and a number round trip would in fact
+   * be exact — but that is a property of the *packing*, not of the
+   * mirror, and the reserved span at bits 18..23 is explicitly there to
+   * be spent.  The aliased view is exact for any word, so the mirror
+   * does not quietly acquire a dependency on which bits are free.
+   *
+   * Nothing reads lane 1 on the CPU — `edge.arrowShapes` is the readable
+   * truth, and a spec pins the two in step.
+   *
+   * Deriving the gap from the *same quantized* arrow-scale the head is
+   * drawn at is deliberate: the line then meets the head exactly, where
+   * a gap computed from the unquantized scale would not.
+   */
+  | 'edge.width' // Float32Array(2·cap)
   | 'edge.opacity' // Float32Array(cap)
   | 'edge.flags' // Uint32Array(cap)
   | 'edge.sourceArrow' // Uint8Array(4·cap), arrowhead RGBA; a=0 means no arrow at this end
   | 'edge.targetArrow' // Uint8Array(4·cap)
   | 'edge.lineStyle' // Uint32Array(cap), LINE_* ids
   /**
-   * Uint32Array(cap) — ARROW_* ids packed source | target<<8, plus
-   * (round 13 B7) hollow-fill flags at bits 16 (source) / 17 (target)
-   * and the edge's arrow-scale quantized ×16 in bits 24..31 (0..15.94;
-   * readback is quantized — recorded).  Round 13 C1 packs the
-   * mid-arrow shapes into the free bits: mid-source at 18..20,
-   * mid-target at 21..23 (3 bits each — every ARROW_* id fits).
+   * Uint32Array(cap) — the four arrowhead ids, the two hollow-fill flags
+   * and the quantized arrow-scale in one word.  **The layout is written
+   * out once, above `packArrowShapes`** — read it there rather than here,
+   * and change it only there.
+   *
+   * (This comment used to restate the layout and had been wrong since
+   * round 27.1: it still described the mid ids as 3-bit fields at
+   * 18..20 / 21..23, which is the packing 27.1 replaced with 4-bit
+   * fields at 8..11 / 12..15 — contradicting the correct block twelve
+   * lines above it.  Round 56 found it by writing a spec against the
+   * prose, and deleted the restatement rather than fixing it twice.)
    */
   | 'edge.arrowShapes'
   /** Uint8Array(4·cap) ×2 — mid-arrow colors per end (round 13 C1),
@@ -604,7 +634,7 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec( 'node.flags', 'nodes', Uint32Array, 1 ),
   spec( 'edge.endpoints', 'edges', Uint32Array, 2 ),
   spec( 'edge.lineColor', 'edges', Uint8Array, 4 ),
-  spec( 'edge.width', 'edges', Float32Array, 1 ),
+  spec( 'edge.width', 'edges', Float32Array, 2 ),
   spec( 'edge.opacity', 'edges', Float32Array, 1 ),
   spec( 'edge.flags', 'edges', Uint32Array, 1 ),
   spec( 'edge.sourceArrow', 'edges', Uint8Array, 4 ),

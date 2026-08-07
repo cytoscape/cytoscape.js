@@ -1696,7 +1696,7 @@ export class Collection {
 
     return ref.group === 'nodes'
       ? this._nodeDim( ref, 0 )
-      : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot ];
+      : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot * 2 ];
   }
 
   /**
@@ -1719,7 +1719,7 @@ export class Collection {
 
     return ref.group === 'nodes'
       ? this._nodeDim( ref, 1 )
-      : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot ];
+      : ( this._store.column( 'edge.width' ) as Float32Array )[ ref.slot * 2 ];
   }
 
   /** A node's core width/height: for parents the column stores the

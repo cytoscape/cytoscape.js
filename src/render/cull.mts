@@ -185,7 +185,7 @@ ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
 @group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;
-@group(0) @binding(3) var<storage, read> widths: array<f32>;
+@group(0) @binding(3) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(4) var<storage, read> edgeFlags: array<u32>;
 @group(0) @binding(5) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(6) var<storage, read> nodeFlags: array<u32>;
@@ -238,7 +238,7 @@ fn isVisible(slot: u32) -> bool {
 
   if ((nodeFlags[ends.x] & SHOWN) != SHOWN || (nodeFlags[ends.y] & SHOWN) != SHOWN) { return false; }
 
-  let widthPx = widths[slot] * frame.zoomDpr;
+  let widthPx = widths[slot].x * frame.zoomDpr;
   let lod = edgeLod(slot, widthPx, frame.edgeWidthFloor);
 
   if (lod.x == 0.0) { return false; } // decimated hairline
@@ -272,7 +272,7 @@ ${COMMON}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
 @group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;
-@group(0) @binding(3) var<storage, read> widths: array<f32>;
+@group(0) @binding(3) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(4) var<storage, read> edgeFlags: array<u32>;
 @group(0) @binding(5) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(6) var<storage, read> nodeFlags: array<u32>;
@@ -324,7 +324,7 @@ fn isVisible(slot: u32) -> bool {
 
   if ((nodeFlags[ends.x] & SHOWN) != SHOWN || (nodeFlags[ends.y] & SHOWN) != SHOWN) { return false; }
 
-  let widthPx = widths[slot] * frame.zoomDpr;
+  let widthPx = widths[slot].x * frame.zoomDpr;
   let a = modelToPx(frame, nodePositions[ends.x]);
   let b = modelToPx(frame, nodePositions[ends.y]);
 

@@ -3310,8 +3310,11 @@ const splitCompoundProps = ( props: StyleProps ): {
 // Module scope: allocated once, and the switch reads the same columns.
 type ColumnIdArg = Parameters<GraphStore['column']>[0];
 
+// lane 0, mirroring GraphStore.setScalar: a scalar channel on a
+// multi-component column reads and writes the first lane (edge.width
+// carries the arrow bits in lane 1 since round 56)
 const readScalar = ( store: GraphStore, slot: number, id: ColumnIdArg ): number =>
-  ( store.column( id ) as Float32Array | Uint32Array )[ slot ];
+  ( store.column( id ) as Float32Array | Uint32Array )[ slot * columnSpec( id as ColumnId ).components ];
 
 const readPair = ( store: GraphStore, slot: number, id: ColumnIdArg, i: 0 | 1 ): number =>
   ( store.column( id ) as Float32Array )[ slot * 2 + i ];
@@ -3530,7 +3533,7 @@ defineReader( [ 'overlay-color', 'overlay-opacity', 'overlay-padding', 'overlay-
 
     if( prop.endsWith( '-opacity' ) ){ return ( erec[ 0 ] >>> 24 ) / 255; }
 
-    const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
+    const width = ( store.column( 'edge.width' ) as Float32Array )[ slot * 2 ];
 
     return Math.max( 0, erec[ 1 ] / 256 - width ) / 2;
   }
@@ -3812,7 +3815,7 @@ defineReader( [ 'line-cap' ],
 defineReader( [ 'line-outline-width' ], ( store, slot ) => {
   // stored stroke = width + outline width (B4)
   const rec = ( store.column( 'edge.casing' ) as Uint32Array )[ slot * 2 + 1 ];
-  const width = ( store.column( 'edge.width' ) as Float32Array )[ slot ];
+  const width = ( store.column( 'edge.width' ) as Float32Array )[ slot * 2 ];
 
   return rec === 0 ? 0 : Math.max( 0, rec / 256 - width );
 } );
@@ -5433,7 +5436,9 @@ export class StyleEngine {
       const srcArrowId = ARROW_ENUM[ computed.sourceArrowShape ];
       const tgtArrowId = ARROW_ENUM[ computed.targetArrowShape ];
 
-      store.setScalar( 'edge.arrowShapes', slot, packArrowShapes(
+      // not setScalar: the word is mirrored into edge.width's lane 1 so
+      // the edge vertex stages can derive v3's gap (round 56)
+      store.setArrowShapes( slot, packArrowShapes(
         srcArrowId, tgtArrowId,
         ARROW_ENUM[ computed.midSourceArrowShape ], ARROW_ENUM[ computed.midTargetArrowShape ],
         // 27.6: a hollow compound head falls back to filled (recorded)

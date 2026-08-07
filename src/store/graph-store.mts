@@ -1905,12 +1905,16 @@ export class GraphStore implements ModelView {
 
     const spec = columnSpec( id );
     const arr = this.table( spec.group ).column( id ) as Float32Array | Uint32Array;
+    // a scalar channel on a multi-component column addresses lane 0 and
+    // leaves the rest alone: `edge.width` carries the arrow bits in lane 1
+    // (round 56), and a scalar write must not clobber them
+    const at = slot * spec.components;
 
     if( id === 'node.borderWidth' && value > this.borderMax ){ this.borderMax = value; }
 
-    if( arr[ slot ] === value ){ return; }
+    if( arr[ at ] === value ){ return; }
 
-    arr[ slot ] = value;
+    arr[ at ] = value;
     this.geoEpoch++;
     this.dirty.mark( id, slot );
 
@@ -2008,6 +2012,48 @@ export class GraphStore implements ModelView {
 
     arr[ i ] = value;
     this.dirty.mark( id, slot );
+  }
+
+  /** `Uint32Array` alias of `edge.width`'s buffer, for the exact bit
+   * copy below.  Re-derived when growth or compaction swaps the array. */
+  private widthBitsView: Uint32Array | null = null;
+
+  /**
+   * Write the packed arrow-shapes word, mirroring it bit-for-bit into
+   * lane 1 of `edge.width` (round 56).
+   *
+   * The mirror exists because all four edge vertex stages already bind
+   * `edge.width` and none has a spare storage-buffer slot, so this is how
+   * the shape word — and with it v3's per-shape `gap` and `spacing` —
+   * reaches the vertex stage that has to shorten the line.
+   *
+   * The copy goes through a `Uint32Array` view of the column's own
+   * buffer rather than a bitcast via a JS number: an `arrow-scale` of
+   * 7.94 or more sets bits 30..24, and with a mid-target shape ≥ 4
+   * setting bit 23 the word *is* an f32 NaN pattern, whose payload a
+   * round trip through a JS double would not preserve.
+   *
+   * @param slot — the edge slot
+   * @param word — the packed word (see `edge.arrowShapes` in the contract)
+   */
+  setArrowShapes( slot: number, word: number ): void {
+    const shapes = this.edges.column( 'edge.arrowShapes' ) as Uint32Array;
+    const width = this.edges.column( 'edge.width' ) as Float32Array;
+
+    if( this.widthBitsView == null || this.widthBitsView.buffer !== width.buffer ){
+      this.widthBitsView = new Uint32Array( width.buffer );
+    }
+
+    // the mirror can be stale even when the word is not: a growth or a
+    // compaction reallocates edge.width, so both are compared
+    if( shapes[ slot ] === word && this.widthBitsView[ slot * 2 + 1 ] === word ){ return; }
+
+    shapes[ slot ] = word;
+    this.widthBitsView[ slot * 2 + 1 ] = word;
+    // the gap shortens the drawn line, so this moves geometry
+    this.geoEpoch++;
+    this.dirty.mark( 'edge.arrowShapes', slot );
+    this.dirty.mark( 'edge.width', slot );
   }
 
   /**

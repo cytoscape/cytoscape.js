@@ -1905,7 +1905,7 @@ ${DASH_WGSL}
 // list, within the base 8-buffer budget.
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>; // source,target node slots
-@group(0) @binding(2) var<storage, read> widths: array<f32>;
+@group(0) @binding(2) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;
 @group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;
@@ -1982,8 +1982,8 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
 
   // LOD: floor hairline edges; edgeLod's alpha compensation must match the
   // cull predicate's decimation decision (shared WGSL)
-  let lod = edgeLod(slot, widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
-  let widthPx = max(widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let lod = edgeLod(slot, widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
 
   let ends = endpoints[slot];
   let params = curveParams[slot];
@@ -2186,7 +2186,7 @@ ${DASH_WGSL}
 @group(0) @binding(0) var<uniform> frame: Frame;
 // vertex-stage columns (7 + the visible list = the 8-buffer budget)
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
-@group(0) @binding(2) var<storage, read> widths: array<f32>;
+@group(0) @binding(2) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
 @group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
@@ -2266,8 +2266,8 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
 
   // LOD: width floor with alpha compensation; the curved stream is not
   // decimated (its cull predicate draws every shown curved edge)
-  let widthPx = max(widths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
-  let alphaComp = min(widths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+  let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let alphaComp = min(widths[slot].x * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
 
   // this vertex's subdivision point + the extrusion normal there:
   // adjacent quads share exact vertex geometry, so the strip is
@@ -2518,7 +2518,7 @@ ${BOUNDARY_WGSL}
 // stored arrow alpha at style-write time for the same reason.
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
-@group(0) @binding(2) var<storage, read> edgeWidths: array<f32>;
+@group(0) @binding(2) var<storage, read> edgeWidths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
 @group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
@@ -2596,13 +2596,13 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // sizing follows the drawn (floored) edge width; alpha matches the
   // edge LOD.  The quad covers the frame's max arrow-scale (B7) — the
   // FS renders the exact per-edge scale within it.
-  let lod = edgeLod(slot, edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
-  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let lod = edgeLod(slot, edgeWidths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(edgeWidths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
   let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
@@ -2615,7 +2615,7 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthModel = edgeWidths[slot];
+  out.widthModel = edgeWidths[slot].x;
   out.slot = slot;
   // edge opacity is pre-folded into c.a at style-write time
   out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
@@ -2734,13 +2734,13 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 
   if (end.endId == 3u) { dir = -dir; } // mid-source points backward
 
-  let lod = edgeLod(slot, edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
-  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
+  let lod = edgeLod(slot, edgeWidths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let widthPx = max(edgeWidths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
   let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
@@ -2751,7 +2751,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 
   out.position = vec4f(pxToClip(frame, mid + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthModel = edgeWidths[slot];
+  out.widthModel = edgeWidths[slot].x;
   out.slot = slot;
   out.color = vec4f(c.rgb, c.a * lod.y * (1.0 - frame.edgeDim));
   return out;
@@ -2785,7 +2785,7 @@ ${ROUTE_WGSL}
 
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
-@group(0) @binding(2) var<storage, read> edgeWidths: array<f32>;
+@group(0) @binding(2) var<storage, read> edgeWidths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
 @group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
@@ -2940,13 +2940,13 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // never decimated, so the alpha comp is the plain width-floor ratio.
   // The quad covers the frame's max arrow-scale (B7); the FS renders
   // the exact per-edge scale within it.
-  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
-  let alphaComp = min(edgeWidths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+  let widthPx = max(edgeWidths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let alphaComp = min(edgeWidths[slot].x * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
   let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
@@ -2957,7 +2957,7 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
   out.position = vec4f(pxToClip(frame, tip + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthModel = edgeWidths[slot];
+  out.widthModel = edgeWidths[slot].x;
   out.slot = slot;
   out.alphaComp = alphaComp;
   return out;
@@ -3031,13 +3031,13 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   if (end.endId == 3u) { dir = -dir; } // mid-source points backward
 
   let midPx = modelToPx(frame, mid);
-  let widthPx = max(edgeWidths[slot] * frame.zoomDpr, frame.edgeWidthFloor);
-  let alphaComp = min(edgeWidths[slot] * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+  let widthPx = max(edgeWidths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
+  let alphaComp = min(edgeWidths[slot].x * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
   let sMax = max(frame.arrowScaleMax, 1.0);
   // 27.3: the quad covers the largest arrow this edge could draw (the
   // frame's max arrow-scale); the FS renders the exact per-edge size
-  let sizeMax = arrowSizePx(edgeWidths[slot], sMax, frame.zoomDpr);
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot] * frame.zoomDpr;
+  let sizeMax = arrowSizePx(edgeWidths[slot].x, sMax, frame.zoomDpr);
+  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr;
   let halfBase = sizeMax * ARROW_HALF_LATERAL;
 
   let n = vec2f(-dir.y, dir.x);
@@ -3048,7 +3048,7 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 
   out.position = vec4f(pxToClip(frame, midPx + dir * yLocal + n * lateral), EDGE_Z, 1.0);
   out.p = vec2f(lateral, yLocal);
-  out.widthModel = edgeWidths[slot];
+  out.widthModel = edgeWidths[slot].x;
   out.slot = slot;
   out.alphaComp = alphaComp;
   return out;

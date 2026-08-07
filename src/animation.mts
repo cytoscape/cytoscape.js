@@ -103,11 +103,14 @@ const STYLE_CHANNELS: Record<string, StyleChannel> = {
   // round 25.1: node size — two lanes of one pair column.  Sharing the
   // column means width and height share the round-21 eviction channel
   // (recorded).  Compound parents are skipped at capture *and* per tick
-  // (auto-bounds own their size column).  25.2: edge width is a plain
-  // scalar column, but three derived channels bake it at style-write —
-  // the capture carries them as ride-along lane writes (see
-  // captureEdgeWidthRides).
-  'width': { columns: { nodes: 'node.size', edges: 'edge.width' }, lanes: { nodes: 0 }, kind: 'scalar', tier: 'geometry', min: 0 },
+  // (auto-bounds own their size column).  25.2: three derived channels
+  // bake the edge width at style-write — the capture carries them as
+  // ride-along lane writes (see captureEdgeWidthRides).
+  // Round 56: edge width became lane 0 of a two-lane column (lane 1 is
+  // the arrow-bits mirror), so this is a lane write on both groups now.
+  // It costs nothing: lane writes never offload, and the geometry tier
+  // never did.
+  'width': { columns: { nodes: 'node.size', edges: 'edge.width' }, lanes: { nodes: 0, edges: 0 }, kind: 'scalar', tier: 'geometry', min: 0 },
   'height': { columns: { nodes: 'node.size' }, lanes: { nodes: 1 }, kind: 'scalar', tier: 'geometry', min: 0 },
   // round 25.4: compound padding — the declared value in its declared
   // unit (px, or a fraction under '%'); parents only, resolved by the
@@ -1089,7 +1092,7 @@ export class Animation {
         const stroke = rec[ slot * 2 + 1 ] / 256;
 
         write.data[ i * 2 ] = stroke;
-        write.data[ i * 2 + 1 ] = stroke + ( toWidth - width[ slot ] );
+        write.data[ i * 2 + 1 ] = stroke + ( toWidth - width[ slot * 2 ] );
       }
 
       this.writes.push( write );

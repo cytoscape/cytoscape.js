@@ -192,14 +192,47 @@ type ColumnId = 'node.position' | 'node.size' | 'node.fillColor' | 'node.borderC
  * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
  * paint, like images: nothing in bb, cull-extent or CPU-pick.
  */
-'node.chartRef' | 'edge.endpoints' | 'edge.lineColor' | 'edge.width' | 'edge.opacity' | 'edge.flags' | 'edge.sourceArrow' | 'edge.targetArrow' | 'edge.lineStyle' |
+'node.chartRef' | 'edge.endpoints' | 'edge.lineColor' |
 /**
- * Uint32Array(cap) — ARROW_* ids packed source | target<<8, plus
- * (round 13 B7) hollow-fill flags at bits 16 (source) / 17 (target)
- * and the edge's arrow-scale quantized ×16 in bits 24..31 (0..15.94;
- * readback is quantized — recorded).  Round 13 C1 packs the
- * mid-arrow shapes into the free bits: mid-source at 18..20,
- * mid-target at 21..23 (3 bits each — every ARROW_* id fits).
+ * Float32Array(2·cap) — `[ width, arrowBits ]` per edge.
+ *
+ * Lane 0 is the edge width in model px.  Lane 1 is `edge.arrowShapes`
+ * **plus two derived flags** (`ARROW_SHIFT_*_SHOWS_LINE`),
+ * reinterpreted as f32, so that the four edge vertex stages — all of
+ * which already bind this column and none of which has a spare
+ * storage-buffer slot — can derive v3's per-shape arrow `gap`/`spacing`
+ * without a new binding (round 56).
+ *
+ * It is written by `GraphStore.updateArrowBits` alone — from the shape
+ * word *and* the two stored arrow colours, so either input changing
+ * refreshes it — through a `Uint32Array` view of this column's own
+ * buffer rather than a bitcast via a JS number.  Today's packing leaves bit 23 clear, so no
+ * reachable word is an f32 NaN and a number round trip would in fact
+ * be exact — but that is a property of the *packing*, not of the
+ * mirror, and the reserved span at bits 18..23 is explicitly there to
+ * be spent.  The aliased view is exact for any word, so the mirror
+ * does not quietly acquire a dependency on which bits are free.
+ *
+ * Nothing reads lane 1 on the CPU — `edge.arrowShapes` is the readable
+ * truth, and a spec pins the two in step.
+ *
+ * Deriving the gap from the *same quantized* arrow-scale the head is
+ * drawn at is deliberate: the line then meets the head exactly, where
+ * a gap computed from the unquantized scale would not.
+ */
+'edge.width' | 'edge.opacity' | 'edge.flags' | 'edge.sourceArrow' | 'edge.targetArrow' | 'edge.lineStyle' |
+/**
+ * Uint32Array(cap) — the four arrowhead ids, the two hollow-fill flags
+ * and the quantized arrow-scale in one word.  **The layout is written
+ * out once, above `packArrowShapes`** — read it there rather than here,
+ * and change it only there.
+ *
+ * (This comment used to restate the layout and had been wrong since
+ * round 27.1: it still described the mid ids as 3-bit fields at
+ * 18..20 / 21..23, which is the packing 27.1 replaced with 4-bit
+ * fields at 8..11 / 12..15 — contradicting the correct block twelve
+ * lines above it.  Round 56 found it by writing a spec against the
+ * prose, and deleted the restatement rather than fixing it twice.)
  */
 'edge.arrowShapes' |
 /** Uint8Array(4·cap) ×2 — mid-arrow colors per end (round 13 C1),
@@ -1785,6 +1818,28 @@ interface CompoundStyle {
 }
 //#endregion
 //#region src/curve-geometry.d.mts
+/**
+ * Per-end arrow shortenings for one edge, in model px (round 56).
+ *
+ * v3 keeps *two* shortened points per end and they are not the same
+ * point: the drawn line stops `gap` behind the node boundary, while the
+ * arrow tip sits `spacing` behind it.  Both are supplied by the caller
+ * rather than derived here, because the arrow shape and scale live in
+ * columns this module deliberately does not read — the same reason the
+ * node halves arrive as numbers.
+ *
+ * The WGSL twins take the same two quantities out of `edge.width`'s
+ * lane 1 and compute them with generated copies of `arrowGap` /
+ * `arrowSpacing`, so the two sides agree by construction.
+ */
+interface ArrowTrim {
+  /** where the drawn line stops, behind the source/target boundary */
+  srcGap: number;
+  tgtGap: number;
+  /** where the arrow tip sits, behind the source/target boundary */
+  srcSpacing: number;
+  tgtSpacing: number;
+}
 /** One edge's evaluated curve: endpoints on the node boundaries, the
  * control point(s), and the label-anchor midpoint. */
 interface CurveEval {
@@ -1804,6 +1859,14 @@ interface CurveEval {
   /** curve midpoint: bezier Q(0.5); loop: the control midpoint */
   mx: number;
   my: number;
+  /** the *arrow* points (round 56) — `spacing` behind each boundary,
+   * where `sx/sy` and `ex/ey` are `gap` behind it.  v3 keeps both
+   * (`rs.arrowStartX/Y` against `rs.startX/Y`) and the public endpoint
+   * accessors report these, not the line ends. */
+  asx: number;
+  asy: number;
+  aex: number;
+  aey: number;
 }
 /**
  * One evaluated route: the two boundary endpoints plus the interior
@@ -1820,6 +1883,12 @@ interface CurveRoute {
   round: boolean;
   radius: Float64Array;
   arcMode: Uint8Array;
+  /** the *arrow* points (round 56): `spacing` behind each resolved
+   * endpoint, where `q[0]`/`q[n+1]` are `gap` behind it. */
+  asx: number;
+  asy: number;
+  aex: number;
+  aey: number;
 }
 //#endregion
 //#region src/store/graph-store.d.mts
@@ -2428,6 +2497,49 @@ declare class GraphStore implements ModelView {
    * raw with a dirty mark.
    */
   setLane(id: ColumnId, slot: number, lane: number, value: number): void;
+  /** `Uint32Array` alias of `edge.width`'s buffer, for the exact bit
+   * copy below.  Re-derived when growth or compaction swaps the array. */
+  private widthBitsView;
+  /**
+   * Write the packed arrow-shapes word, mirroring it bit-for-bit into
+   * lane 1 of `edge.width` (round 56).
+   *
+   * The mirror exists because all four edge vertex stages already bind
+   * `edge.width` and none has a spare storage-buffer slot, so this is how
+   * the shape word — and with it v3's per-shape `gap` and `spacing` —
+   * reaches the vertex stage that has to shorten the line.
+   *
+   * The copy goes through a `Uint32Array` view of the column's own
+   * buffer rather than a bitcast via a JS number: an `arrow-scale` of
+   * 7.94 or more sets bits 30..24, and with a mid-target shape ≥ 4
+   * setting bit 23 the word *is* an f32 NaN pattern, whose payload a
+   * round trip through a JS double would not preserve.
+   *
+   * @param slot — the edge slot
+   * @param word — the packed word (see `edge.arrowShapes` in the contract)
+   */
+  setArrowShapes(slot: number, word: number): void;
+  /**
+   * Write-through for `edge.width`'s mirror lane: the shape word plus the
+   * two `SHOWS_LINE` flags (round 56).
+   *
+   * Called from every write to either input — the shape word and the two
+   * end-arrow colours — because the flags derive from both.  A head
+   * "shows the line" when it is hollow, or when its stored alpha is below
+   * opaque: exactly the cases where v3's `destination-out` erase is doing
+   * the hiding rather than the head's own fill, and so exactly the cases
+   * where v4 has to shorten the line past v3's `gap` to the head's own
+   * depth.  An opaque filled head hides the difference either way, and
+   * shortening further would cut the slivers v3 leaves where the head is
+   * narrower than the line.
+   *
+   * Known limit, inherited rather than introduced: a paint channel the
+   * mapper kernel owns can leave the *stored* arrow bytes stale (see the
+   * getters' note in `style.mts`), so a head made translucent purely
+   * on-device reads as opaque here.  The CPU column is what every other
+   * CPU consumer reads too.
+   */
+  private updateArrowBits;
   /**
    * Write-through for the derived node.outerHalf column (size/2 +
    * borderWidth/2 per axis — see the contract): follows every size/border
@@ -2496,6 +2608,22 @@ declare class GraphStore implements ModelView {
   /** Raise the monotone arrow-scale maximum (the style layer's report;
    * arrow scale is not a store column). */
   noteArrowScale(scale: number): void;
+  private arrowWidthMaxV;
+  /**
+   * The largest hollow-arrow stroke width any edge has styled, model px
+   * (round 56).
+   *
+   * A hollow head strokes its *outline*, so the ink reaches half a stroke
+   * width **outside** the polygon — furthest out at the back corners,
+   * where two edges meet at an acute angle.  The arrow vertex stage has
+   * no spare storage binding for `edge.arrowWidths`, so the quad grows by
+   * this frame-level maximum instead, exactly as it already does for
+   * `arrowScaleMax`.  Monotone, and it only costs quad area.
+   */
+  arrowWidthMax(): number;
+  /** Raise the monotone hollow-stroke maximum (the style layer's
+   * report, after 'match-line' and percent forms are resolved). */
+  noteArrowWidth(width: number): void;
   /** monotone (round 13 B5): the largest outline outward extent any
    * node has styled — the ghost cull grows by it (no binding left for
    * the packed geometry there) */
@@ -2542,6 +2670,25 @@ declare class GraphStore implements ModelView {
    * pending derivation flushed first (the accessors' read path).
    */
   curveParamsAt(slot: number): [number, number, number, number];
+  /** scratch for `arrowTrimAt` — the geometry readers never allocate */
+  private trimScratch;
+  /**
+   * v3's two per-end shortenings for one edge, resolved from the arrow
+   * and width columns (round 56).
+   *
+   * This is the CPU side of what `edge.width` lane 1 carries to the
+   * vertex stages: the same packed word, the same `arrowGap` /
+   * `arrowSpacing`, so the drawn line and every accessor agree by
+   * construction rather than by two hand-kept copies of v3's table.
+   *
+   * Haystack is the one exception, and it is v3's: haystack edges draw
+   * no heads at all and route through a different path, so they take no
+   * shortening.
+   *
+   * @param slot — the edge slot
+   * @returns a shared scratch — consume it before the next call
+   */
+  arrowTrimAt(slot: number): ArrowTrim;
   /**
    * Evaluate one curved edge's geometry from the live columns (null for
    * straight edges).  The returned object is a shared scratch unless
@@ -2588,7 +2735,24 @@ declare class GraphStore implements ModelView {
    * @param which — 0 for the source end, 1 for the target end
    * @returns the boundary point in model space
    */
-  straightEndpointAt(slot: number, which: 0 | 1): {
+  straightEndpointAt(slot: number, which: 0 | 1, arrows?: boolean): {
+    x: number;
+    y: number;
+  };
+  /**
+   * Where a straight edge's **drawn line** ends — `gap` behind the node
+   * boundary, which is further back than the arrow point
+   * `straightEndpointAt` answers (round 56).
+   *
+   * v3 keeps both (`rs.startX/Y` against `rs.arrowStartX/Y`) and its
+   * straight midpoint is the mean of all four, which is the only public
+   * caller of this today.
+   *
+   * @param slot — the edge slot
+   * @param which — 0 for the source end, 1 for the target end
+   * @returns the drawn line's end in model space
+   */
+  straightLineEndAt(slot: number, which: 0 | 1): {
     x: number;
     y: number;
   };
@@ -5525,10 +5689,11 @@ declare class Collection {
    * clipping, haystack offsets and any manual `source-endpoint`.
    *
    * A **straight** edge answers the node boundary along the chord
-   * between the node centres (round 55; it previously answered the node
-   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
-   * which is non-zero only for `tee`; that term arrives with the
-   * gap/trim port.
+   * between the node centres, pulled back by the arrow shape's
+   * `spacing` (round 55 landed the boundary, round 56 the spacing) —
+   * v3's `rs.arrowStartX/Y`.  That is the *arrow* point, not the drawn
+   * line's end: the line stops `gap` behind the boundary, further back
+   * again, which is what makes a hollow head read as one shape.
    *
    * @returns the endpoint, or undefined for non-edges
    */
@@ -5539,10 +5704,11 @@ declare class Collection {
    * clipping, haystack offsets and any manual `target-endpoint`.
    *
    * A **straight** edge answers the node boundary along the chord
-   * between the node centres (round 55; it previously answered the node
-   * centre).  v3 additionally subtracts the arrow shape's `spacing`,
-   * which is non-zero only for `tee`; that term arrives with the
-   * gap/trim port.
+   * between the node centres, pulled back by the arrow shape's
+   * `spacing` (round 55 landed the boundary, round 56 the spacing) —
+   * v3's `rs.arrowStartX/Y`.  That is the *arrow* point, not the drawn
+   * line's end: the line stops `gap` behind the boundary, further back
+   * again, which is what makes a hollow head read as one shape.
    *
    * @returns the endpoint, or undefined for non-edges
    */

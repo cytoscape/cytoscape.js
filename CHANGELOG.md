@@ -160,3 +160,10 @@ dashes on eccentric ellipses, a conservative edge-label bounding term, no
 decimation on the curved edge stream, and others — are enumerated in
 `src/README.md` under "Known deviations from v3". Each is recorded where the
 feature is described, with the reason.
+
+One is worth naming here because it is visible in ordinary styling: v3 makes
+a hollow or translucent arrowhead read as one shape with its edge by erasing
+the head's footprint from the canvas, and v4 shortens the line instead — no
+extra pass, and the same pixels wherever the head covers the line. It does
+not reach **mid arrows**, which sit mid-line, so `arrow-fill: hollow` on a
+`mid-source`/`mid-target` head still shows the line through it.

@@ -277,7 +277,7 @@ Two further findings, both from looking at pixels rather than at code.
 A hollow head **strokes its outline**, reaching half a stroke width
 outside the polygon and furthest out at the back corners — clipped to the
 quad's 1 px margin, which is the flat-cut corners the maintainer saw.
-And six of the 43 goldens were **cropping the graph**, the worst losing
+And six goldens were **cropping the graph**, the worst losing
 109 px of a 300 px canvas; uncropping it exposed four compound arrowheads
 that had been listed in the scene and never given a mapper clause since
 round 27.6.

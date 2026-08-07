@@ -38,9 +38,9 @@ for several weeks; `npm test` passes from a clean checkout.
 
 | | |
 |---|---|
-| Automated tests | 2,046 unit · 250 module · 24 soak · 317 browser |
+| Automated tests | 2,051 unit · 250 module · 24 soak · 318 browser |
 | Documented API | 362 members over 48 sections, gated at 100% |
-| Visual regression | 43 golden images · 36 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · **11 numeric routing-parity scenes** comparing geometry rather than pixels |
+| Visual regression | 44 golden images · 36 live v3-vs-v4 pixel-parity scenes, five of them **close-ups** at zoom 3–5 · **11 numeric routing-parity scenes** comparing geometry rather than pixels |
 | Benchmarks | 25 suites; **13× faster than v3** on CPU work, **27×** on rendering (geometric means over 106 and 64 paired rows) |
 | Style parity | v4 accepts 153 of v3's 291 style property names; the rest are dropped by decision |
 | Bundle | 680 KiB minified, 185 KiB gzipped — ~1.5× v3 (411 / 126 KiB) on the wire, a quarter of it WebGPU shader source v3 has no equivalent of |
@@ -287,7 +287,7 @@ the code, which is the round's transferable part:
   one-pixel margin, so those corners were being **cut off flat**. That was the
   "clipping" the maintainer had reported, and no amount of reasoning about the
   gap would have found it.
-- Six of the 43 golden images were **cropping their own scene**. The worst lost
+- Six goldens were **cropping their own scene**. The worst lost
   109 pixels of a 300-pixel canvas — and it was the arrowhead golden. Restoring
   it exposed four compound arrowheads that had been listed in the scene since
   August 2nd and never actually drawn, because their style rule was missing.

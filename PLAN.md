@@ -994,7 +994,7 @@ debug/                   # the manual harness, rebuilt in round 43:
                          #   network-ndex-x-large.json   the one fixture that lives here, not in v3/
 playwright-page/index.html (+ parity.html for the live v3-vs-v4 diffs)
 playwright-tests/renderer.spec.js (+ visual.spec.js + goldens/)
-test/*.mjs               # 125 suites picked up by the test:js glob (127 files, less the
+test/*.mjs               # 126 suites picked up by the test:js glob (128 files, less the
                          #   two the glob excludes: types-* and node-test-setup), incl.
                          #   style-readback-all.mjs — round 35.1's characterization of all 153
                          #   readable style props on a node and an edge, the guard the readback
@@ -1006,7 +1006,7 @@ test/soak/*.mjs          # round 48: the robustness tier, run by `npm run test:s
                          #   window, promoted from measurement to gate), wire-fuzz.mjs
                          #   (seeded byte mutations; found three defects on its first run)
                          #   and isolation.mjs (multi-instance; found the fourth)
-benchmark/               # 22 suites + the renderer/report runners (see the Benchmarks section of the README).
+benchmark/               # 24 suites + the renderer/report runners (see the Benchmarks section of the README).
                          #   Round 36.5 added style-bundle.mjs — the style getters measured through the
                          #   *built bundle*, giving rounds 34-35's headline figures a re-runnable source.
                          #   Round 33 added layouts, style, load, spatial, data, events, store and
@@ -1761,7 +1761,7 @@ record.
   `isChild`/`isChildless`/`isOrphan`, and compound-relative
   `relativePosition`/`padding`/bounds — **landed in round 14**.
 - ~~**Animations**~~ — landed in round 9 (CPU-canonical path; below).
-- **Graph algorithms** (`src/collection/algorithms/*`): bfs/dfs,
+- **Graph algorithms** (`v3/src/collection/algorithms/*`): bfs/dfs,
   dijkstra, aStar, kruskal, bellmanFord, floydWarshall, pageRank, all
   centralities (degree/closeness/betweenness), all clustering
   (markov/k-means/k-medoids/fuzzy-c-means/hierarchical/affinity), tarjan
@@ -2851,16 +2851,24 @@ per-item history.)*
    beneath it**, because its parity scene used opaque filled heads
    whose own fill hides the difference, and every later curve scene set
    `arrow-shape: none` on the reasoning that arrows were where the two
-   renderers differed.  v4 implements no arrow `gap` at all: v3
-   shortens the drawn line by `arrowShapes[shape].gap(edge)`, v4 runs
-   it to the node centre.  Measured against v3: **3.5%** of the frame
-   for the wedge a filled head leaks around its tip, **11.8%** for a
-   hollow head showing the line through its interior, **26.7%** for a
-   translucent edge compositing line and head separately.  Scheduled,
-   with verified constants in `src/shape-points.mts` and three failing
-   parity scenes; hollow *mid* arrows are excluded and may never be
-   supported.  So: arrow parity is complete in vocabulary and sizing,
-   and open in compositing.
+   renderers differed.  v4 implemented no arrow `gap` at all: v3
+   shortens the drawn line by `arrowShapes[shape].gap(edge)`, v4 ran
+   it to the node centre.  Measured against v3 at the time: **3.5%** of
+   the frame for the wedge a filled head leaks around its tip, **11.8%**
+   for a hollow head showing the line through its interior, **26.7%**
+   for a translucent edge compositing line and head separately.
+   ***Closed by round 56*** (2026-08-07): v3's `gap` and `spacing` both
+   port, the three scenes read 0.000%, 0.442% and **0 differing pixels**,
+   and the round found and fixed a second defect nobody had predicted —
+   a hollow head's stroke reaches outside its polygon and was being
+   clipped at the back corners.
+   What is left of arrow parity is three recorded deviations rather than
+   unbuilt work, all in `src/README.md`: **mid arrows** are not covered
+   by a trim (open call 21, and may end up unsupported), v3's erase
+   reaches *under* a head where a trim cannot, and two translucent heads
+   that overlap **each other** composite where v3 flattens them.  Plus
+   two questions the round raised: the `arrow-scale` quantization (item
+   23) and the two stages the trim cannot reach (item 24).
 6. **Label parity** — placement (`text-valign`/`text-halign` grid
    vs v4's fixed below-node), per-element numeric `text-rotation`,
    **source/target edge labels** (10 props — second/third label
@@ -3480,7 +3488,7 @@ mid-implementation).
 
 - **Geometry ports v3's math verbatim.**  Control points, loop
   construction, segment/taxi routing and endpoint math come from the
-  same formulas v3 uses (`src/extensions/renderer/base/coord-ele-math/
+  same formulas v3 uses (`v3/src/extensions/renderer/base/coord-ele-math/
   edge-control-points.mts` — the step-size stagger for bundles, the
   loop-direction/sweep construction, the distance/weight frame for
   unbundled beziers and segments, the taxi turn logic), so curves are
@@ -7439,7 +7447,7 @@ release.
   `Collection.animate()` still advertises the pre-round-25
   animatable set (no width/height, edge width, padding or
   font-size).  A JSDoc pass is also a true-up pass.
-- The docmaker target shape (`documentation/docmaker.json`) is
+- The docmaker target shape (`v3/documentation/docmaker.json`) is
   `{ name, descr, formats: [ { descr, args: [ { name, descr } ] } ],
   md }` — a summary sentence, per-overload descriptions and named
   arguments, grouped into named subsections.  Standard JSDoc
@@ -10692,8 +10700,9 @@ calls already taken (fifth sitting); nothing here needs design.
   documents' legacy-alias lines now carry the two-name exception, so
   code and ledger agree for the first time since 2026-07-29.
   **One line deleted from `style.mts` broke three specs elsewhere**, and
-  fixing it properly was worth the detour: `test/modules/throw-coverage.
-  mjs`'s fixture named real throw sites by hardcoded line number
+  fixing it properly was worth the detour:
+  `test/modules/throw-coverage.mjs`'s fixture named real throw sites by
+  hardcoded line number
   (`874`, `1031`, `1074`), so deleting the `roundrectangle` row shifted
   every one of them by one.  The fixture now *resolves* its lines from
   the sources by anchor text.  It is the round-34 lesson arriving in a
@@ -13693,3 +13702,14 @@ Five items, all from the maintainer, none blocked on a decision:
    round 46.6 added v3's default debug graph for exactly this reason —
    these four are the next most useful for judging a rendering change by
    eye.
+6. **The status build's path checker warns on eight paths that are
+   deliberately historical** — round 42's record of the `src/gpu/` → `src/`
+   rename, and the AGENTS.md lesson that *quotes* the old spellings as
+   examples of what went wrong.  Every one is correct prose; the checker
+   cannot tell a pointer from a quotation.  A warning that fires on every
+   build and is always to be ignored is worse than none, so either teach
+   the checker to skip fenced/quoted historical names or exempt those two
+   files' history sections explicitly.  (Found 2026-08-07 while sweeping
+   the docs; the genuinely stale pointers it *did* surface — three v3
+   sources that moved under `v3/` and one line-wrapped path — were fixed
+   in the same pass.)

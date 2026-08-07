@@ -8,19 +8,41 @@ stable slots, per-column coalesced dirty spans) written through to
 shapes, straight and curved edges — round 12a's bundled bezier +
 self-loops and round 12b's unbundled-bezier/segments/taxi families —
 reading endpoint positions and curve params on-GPU, GPU picking,
-compute culling + indirect draws + LOD).  Round 13 (2026-07-31) swept
+compute culling + indirect draws + LOD).
+
+**What this document is.**  The maintained scope, deviations and
+design-decisions record for v4 — what it does, what it deliberately does
+*not* do, and why.  It is not a tutorial and not an API reference: the
+API is documented in JSDoc on the source (and shipped in
+`dist/cytoscape.d.ts`), and the development record with its per-round
+measurements is `PLAN.md`.  If you are looking for what to port and what
+to change, read `MIGRATING.md` first.
+
+The three sections a reader usually wants are **"Design decisions"**
+(the calls that make v4 different from v3, each with its reason),
+**"Known deviations from v3"** (where v4 does not match and what it does
+instead), and **"Follow-up hooks"** (what is deliberately still open).
+Everything between here and them is a chronology, and skipping it costs
+nothing.
+
+## What landed, round by round
+
+Round 13 (2026-07-31) swept
 the straightforward v3 style props into the prototype — ghosts,
 overlay/underlay + core theming, the opacity split, border/outline
 geometry, dashes and casing, arrow scalars and mid-arrows, gradients,
 custom polygons, and the label prop families (fonts,
 min-zoomed-font-size, the alignment grid, source/target labels) —
 each with stored-truth readback and a golden and/or live v3
-pixel-parity pin (details per prop below and in PLAN.md).  Round 14
+pixel-parity pin (details per prop below and in PLAN.md).
+
+Round 14
 (2026-07-31) brought **compound nodes**: parent/child hierarchy with
 auto-sized parents materialized into the columnar model,
 parents-under-descendants draw order, ancestor-gated visibility and
 rendered effective opacity, ported event bubbling, a `parents` sheet
 group with structural query/case terms, and compound loop edges.
+
 Rounds 15–18 (2026-08-01) closed the design queue: **background
 images** (tiered texture arrays + mips, SVG zoom-promotion, the SDF
 icon mode, multi-image parity), **multiline labels + label bounding
@@ -28,12 +50,15 @@ boxes** (the wrap family; labels join bb/fit by default),
 the **event vocabulary + extension contract** (the curated set +
 pointer events; registry-free layouts), and the **GPU force layout**
 (CPU reference + on-device integrator under the position lease).
+
 Round 19 (2026-08-01) closed the last open architecture item:
 **slot-moving compaction** — live elements move down to a dense slot
 prefix (a monotone remap, so compaction is a visual no-op) with
 forwarded lazy ref repair, an automatic dead-slot trigger plus
 `cy.compact()`, and highWater/capacity shrinking to the current graph
-instead of its peak.  Round 20 (2026-08-01) closed the interaction
+instead of its peak.
+
+Round 20 (2026-08-01) closed the interaction
 options + touch parity gap: the tuning quartet (`wheelSensitivity`,
 `desktopTapThreshold`/`touchTapThreshold`, `tapholdDuration` — ctor
 options + getter/setters), the `events`/`text-events`
@@ -46,13 +71,17 @@ now re-fanning bezier bundles — while the `visibility` style prop is
 paint-only invisibility that keeps space and bundle ranks), and
 brought **node charts**: v3's pie/stripe props as the lean
 list-valued `chart` family with data-driven values and scheme
-palettes.  Round 24 (2026-08-01, the fourth design sitting) closed
+palettes.
+
+Round 24 (2026-08-01, the fourth design sitting) closed
 the animation follow-up: **style transitions** (the `transition-*`
 config per sheet group — restyles tween on stored truth with
 latest-wins eviction, GPU-offloaded when all-paint, under the
 auto-vs-explicit mapper-domain performance contract) and the
 **animation controls** (`pause`/`resume`/`reverse` + read-only
-`progress`/`paused`).  Round 25 (2026-08-02) built that record's
+`progress`/`paused`).
+
+Round 25 (2026-08-02) built that record's
 logged follow-up, the **geometry tweens**: node `width`/`height`,
 edge `width` (its style-write-baked derivatives riding along),
 compound `padding` and `font-size` animate and transition on the
@@ -60,6 +89,7 @@ CPU path — never leased, never stale (`width()`/`bb()`/pick read
 the mid-flight value) — with the per-tick invalidation cascade run
 by the store's write funnel (label re-anchor, auto-bounds, the
 ride lanes) and priced by a dedicated benchmark sweep.
+
 Round 26 (2026-08-02) changed no behaviour at all: it built the
 **authoring surface** the release documentation will be generated
 from — JSDoc on every public member of the prototype (a 46% → 100%
@@ -67,6 +97,7 @@ sweep, gated by a coverage test), and the first shipped
 **TypeScript declarations** for `cytoscape`, which carry those
 comments into consumers' editors.  See "Documenting the source"
 below.
+
 Round 27 (2026-08-02) closed the visual-parity tail rounds 13–16 had
 left: v4 now renders **v3's complete node-shape vocabulary** (the
 seven `round-*` keywords, `cut-rectangle`, `right-rhomboid`,
@@ -78,6 +109,7 @@ arrowheads by v3's own nonlinear formula, and accepts a numeric
 v3-vs-v4 parity diff rather than by a golden alone — see the
 round-27 records in PLAN.md for the measurements.  `border-style`/
 `outline-style` remain the one unported style pair.
+
 Round 28 (2026-08-03) took what was left of the gap ledger that
 needed no design call: **CPU-pick coverage** for round 27's shapes
 (the shader halves were pinned by parity diffs, the CPU replicas by
@@ -86,6 +118,7 @@ nothing — and three specs named for picking asserted only
 **`panBy` viewport-animation target**, and the ledger's own drift.
 What remains in the ledger is now open *calls* rather than open work
 — see PLAN.md.
+
 Round 29 (2026-08-03) asked a different question — not what is
 unbuilt but what is **unpinned** — and answered it in five passes:
 the 83-method alias surface is now asserted (its type declarations
@@ -98,6 +131,7 @@ elsewhere, or silently not at all.  It also priced curved edges on
 the CPU (`benchmark/curves.mjs`) and re-ran the renderer
 benchmark on real hardware, which showed round 27's shader branches
 cost nothing measurable per frame.
+
 Round 30 (2026-08-03) continued that axis onto the part of the
 surface this file states most often and the suite tested least:
 **what v4 throws**.  Failing loudly is a decided design — an unknown
@@ -111,6 +145,7 @@ survey turned up beside them are covered (`cy.stop()`,
 metrics), and the measurement itself ships as
 `scripts/throw-coverage.mjs` — see "Measuring the error contract"
 below.
+
 Round 31 (2026-08-03) asked the follow-on question — when those throws
 fire, do they say the right thing, and does the shipped documentation
 admit they exist?  It found **one message advising a form v4 rejects**
@@ -125,6 +160,7 @@ only two names of the round-17 event vocabulary no test mentioned.
 Note where that defect lived: *this file* has always described the
 bypass correctly — the stale advice was in the runtime message and the
 JSDoc, which a markdown sweep never reads.
+
 Round 32 (2026-08-03) finished that sentence's last clause: **every
 public member that takes arguments now documents them** (221/221 at the
 time, up from 143; **232/232** today — round 36.2 widened the audit to
@@ -132,6 +168,7 @@ the exported functions it had never walked and 37.3 to the entry point
 itself), gated the same way, because
 docmaker emits a description per argument and a missing one is a hole in
 the release docs rather than only in an editor.
+
 Round 33 (2026-08-03) changed no behaviour either: it was the
 **benchmark sweep**, taking the suites from 14 to 22 so that the
 surfaces with no measurement at all — layouts, the algorithm tail, the
@@ -148,6 +185,7 @@ run.  Both rounds are recorded in "Benchmarks" below.  Round 35
 why a 150-case switch and not a lookup — by making `readProp` a
 dispatch table, **flattening** the per-property spread rather than
 uniformly lowering it.
+
 Round 36 (2026-08-04) is the **completion round**: the tail of work
 that needed no decision at all, now that what remains in PLAN.md is
 otherwise open calls.  `@returns` is complete (276/276 at the time;
@@ -159,6 +197,7 @@ three measurements this repo had promised and never recorded are
 recorded, and a **stranded-doc-block check** shipped — which found six
 more instances of this codebase's most repeated defect on its first
 run, one of them shipping in `dist/cytoscape.d.ts`.
+
 The **fifth design sitting** (2026-08-04) then took every open call in
 PLAN.md's ledger at once and planned rounds 37–51 through the release:
 `border-style`/`outline-style` at full coverage, a v4 Event and emitter,
@@ -169,6 +208,7 @@ release engineering — with one question deliberately left open, the
 round 41 found that *which* gesture defaults `preventDefault()` should
 suppress cannot be derived from v3, so that list is a v4 contract still
 to be designed.
+
 Round 37 (2026-08-04) is that roadmap's governance close-out, and it
 changes almost no behaviour: the two audits held back on policy calls
 now **gate** (throw coverage at zero tolerance, `@returns` at 277/277
@@ -179,12 +219,14 @@ exceptions), constructor strictness is closed at the *type* layer where
 the runtime stays deliberately permissive, and the event-name contract
 is documented — a round that also corrected two things this file said
 that were not true of the code (see the events and JSDoc sections).
+
 Round 39 (2026-08-04) built the sitting's **decided feature tail**, three
 independent small things: **overlap box selection**
 (`boxSelectionMode`), **graph-level `data()` on the binary wire**
 (format version 4, applied by `options.elements` and deliberately
 ignored by `cy.add`), and **`cy.gc()`** as the explicit alias of
 `compact()`.
+
 Round 41 (2026-08-04) gave v4 **its own Event object and emitter**,
 severing the last import v4 made of v3's event machinery: `event.target`
 is typed, `originalEvent` is populated by the interaction layer at last,
@@ -194,6 +236,7 @@ unmeasured claims: the emitter was not v4's *only* remaining shared
 import (five utility modules remain, now audited), and
 `preventDefault()`'s gesture half could not be enumerated from v3, which
 never reads the flag either — so that half is an open call.
+
 Round 42 (2026-08-04) is the packaging move, and it changes no
 behaviour: **v4 became the package.**  This source promoted from
 `src/gpu/` to `src/`, the whole v3 file set moved into a
@@ -203,8 +246,9 @@ alone — `cytoscape@4.0.0-unstable`, v4 as `exports["."]`, `./gpu`
 kept as a deprecated alias.  The `gpu-`/`webgpu-` prefixes dropped
 from the test, benchmark, script, debug and Playwright names; the
 five utility modules v4 had still been importing from v3 are now
-v4's own copies, so nothing under `src/` imports outside it.  The
-factory, the bundles, the declaration, the UMD global **and the
+v4's own copies, so nothing under `src/` imports outside it.
+
+The factory, the bundles, the declaration, the UMD global **and the
 exported type names** are all plainly `cytoscape`'s now: `Core`,
 `Collection`, `Event`, `Stylesheet`, `CytoscapeOptions` and the rest
 lost the `Gpu` prefix in 42.6, with no deprecated aliases — the
@@ -216,6 +260,7 @@ prototype"; that is the same rule that kept `gpu-context.mts` and
 `render/gpu-*.mts` while `gpu-types.mts` became `public-types.mts`.
 v3 stays untouched inside `v3/`, so every v3 asset remains
 available for comparison benchmarks and parity work.
+
 Round 43 (2026-08-04) rebuilt the **debug harness** — v4's only
 manual page — which had been quietly discarding the whole style
 surface: its sanitizer kept a 14-property whitelist and dropped
@@ -227,6 +272,7 @@ v3 page's view/layout/toggle/selection/event/add-remove sections,
 and a module spec that compiles every sheet against its own fixture.
 The round also fixed the background-grab indicator, which had never
 followed the cursor — see the core-theming notes below.
+
 Rounds 44, 45, 47 and 48 (2026-08-04/05) are the release sequence's
 decision-free part: **44** gates the packaging chain (rolldown
 outputs → `dist:copy` → the manifest → the tarball, every link
@@ -243,6 +289,7 @@ buffer that made a load never return, two more costing 25.9 s and
 5.7 s, and element identity comparing equal across two instances,
 so `union()` silently dropped the other graph's elements.  Each has
 its own section below.
+
 Round 55 (2026-08-06) is the **edge-routing and arrow parity** round,
 inserted after a maintainer opened `debug/?network=v3-default` and
 reported five things no test could see — because every golden compares

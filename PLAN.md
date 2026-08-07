@@ -1,5 +1,19 @@
 # WebGPU model + renderer prototype (#3486)
 
+**This file is the development record, not an introduction.**  It is
+written in rounds: a plan section per round, a landed section beside it,
+and — the part worth reading if you read nothing else — what measurement
+said when the round was wrong about itself.  Two shorter documents exist
+for the two other jobs: `src/README.md` is the maintained scope and
+design-decisions doc, and `EXECUTIVE_SUMMARY.md` is the five-minute
+version of this file for someone who will never open it.
+
+Three sections here are kept current rather than appended to, and they
+are where to start: **"Open calls for the maintainer"** (every question
+waiting on a decision, plus the ideas logged for later), **"Suggested
+sequencing"** (what is built, what is not, and what nobody has written
+down yet), and the round-by-round summary immediately below.
+
 **Status: implemented and evolving** on the `v4` branch (started as
 `feature/webgpu`).  The base pass (11 commits, `e30542cf4..9b177c193`)
 landed first — including SDF node labels, pulled into scope so labelled
@@ -7,34 +21,46 @@ rendering could be assessed for performance — and subsequent rounds
 (follow-ups, API gap closure, the selector removal, mappers, animation,
 image export, label testability, the round-10 parity sprint, round-11
 slot-stable compaction, edge-label autorotate) are recorded below as
-"Landed (round N)" sections, each verified green when it landed; the
+"Landed (round N)" sections, each verified green when it landed.
+
+Rounds 12–14 are the three big parity rounds, all complete: the
 round-12 curved-edges plan has both flagged calls signed off, pass
 12a (bundled bezier + self-loops) landed 2026-07-30, and pass 12b
 (unbundled bezier + segments + taxi) landed 2026-07-30/31, and pass
 12c (endpoints + haystack/straight-triangle) landed 2026-07-30/31 —
-**round 12 is complete**; the round-13 style-prop parity plan
+**round 12 is complete**.
+
+The round-13 style-prop parity plan
 (2026-07-30, at the end of this file) landed in full on 2026-07-31 —
 **round 13 is complete** (12c → A1–A2 → B1–B7 → C1–C3 → D1–D4, every
 item with Node specs plus a golden and/or a live v3 pixel-parity
-scene); the round-14 compound-nodes plan (2026-07-31, at the end of
+scene).
+
+The round-14 compound-nodes plan (2026-07-31, at the end of
 this file) landed in full the same day — **round 14 is complete**
 (14.0 docs-first → 14.1–14.8 model/CPU → 14.9–14.11 renderer/
 interaction → 14.12 benchmarks, every item tests-first with Node
 specs, and the renderer items with goldens + live v3 pixel-parity
-scenes).  A 2026-08-01 design sitting **dropped z-index outright**
+scenes).
+
+A 2026-08-01 design sitting **dropped z-index outright**
 (decided design) and scoped rounds 15–18 — background images,
 multiline labels + label bb, the event vocabulary + extension
 contract, and the GPU force layout — and all four rounds **landed in
 full the same day** (plans + per-item records at the end of this
 file; every item tests-first, 2142 Node + 60 module tests and
-138 Playwright specs green at the close).  **Round 19** (2026-08-01)
+138 Playwright specs green at the close).
+
+**Round 19** (2026-08-01)
 landed slot-moving compaction — the last open architecture item —
 and **round 20** (2026-08-01, the plan at the end of this file)
 closed gap item 8: the interaction tuning options
 (`wheelSensitivity`, the tap-threshold pair, `tapholdDuration`), the
 `events`/`text-events` pointer-transparency props, and the
 two-finger-cxt + three-finger-box touch gestures (2190 Node tests
-and 147 Playwright specs green at the close).  A **third design
+and 147 Playwright specs green at the close).
+
+A **third design
 sitting** (2026-08-01) took three user calls and scoped rounds
 21–23, all landed the same day: **round 21** removed the animation
 queue (concurrency by channel, promises as the sequencing
@@ -46,13 +72,17 @@ flip), and **round 23** brought node charts (v3's 101 pie/stripe
 props as the lean list-valued `chart` family — data-driven values,
 scheme palettes, donut holes — with the pie parity scene at 0.000%
 against v3; 2214 Node tests and 151 Playwright specs green at the
-close).  Rounds 24–28 (2026-08-01/03) closed the remaining ledger
+close).
+
+Rounds 24–28 (2026-08-01/03) closed the remaining ledger
 work — style transitions and the animation controls (24), the
 geometry tweens (25), the authoring surface of JSDoc + shipped
 declarations (26), the visual-parity remnants of v3's shape and
 arrowhead vocabularies (27), and the no-call remainder (28) — after
 which **what was left of the ledger was open calls rather than
-effort**.  Rounds 29–30 (2026-08-03) therefore work a different axis:
+effort**.
+
+Rounds 29–30 (2026-08-03) therefore work a different axis:
 not what is unbuilt but what is **unpinned** — the alias surface, the
 decided drops at the API boundary and the curve premium in 29, and
 v4's **error contract** in 30, which took the throw sites the Node
@@ -61,6 +91,7 @@ that axis and moved it onto the *documented* contract: 31 found the
 one error message advising a form v4 rejects and took `@throws` to
 16/16 under a gate, and 32 took `@param` to 221/221 under the same
 gate, the boundary drawn by docmaker's own per-argument shape.
+
 **Round 33** (2026-08-03, at the end of this file) took the same
 question to the third measurement axis — *what costs what* — where
 roughly a third of the prototype had no benchmark at all and the
@@ -70,7 +101,9 @@ them (closing open call 7), and the round's most useful output is the
 **five slow paths it found and localized** — the style getters, the
 compound emit walk, the layout contract's per-run materialization,
 `mutableElements()` and `indexOf()` — each logged rather than fixed,
-because a measurement round measures.  **Round 34** (2026-08-03) then
+because a measurement round measures.
+
+**Round 34** (2026-08-03) then
 fixed all five: three now sit at parity with v3 (`indexOf`,
 `mutableElements`, and the emit path's new no-listener gate), the style
 getters went 5.8× → 2.3× by memoizing `normalizeProp`, and the layout
@@ -79,10 +112,12 @@ were **corrected while being fixed** — the style gap was inflated by
 tsx's `__name` wrapper, and the row round 33 cited for the emit finding
 never reached the emit path — which is the round's own lesson: check a
 hot-path finding against the built bundle before rewriting anything.
+
 **Round 35** (2026-08-03) came from the maintainer asking why the
 residual was shaped the way it was — a 150-case switch behind the style
 getters — and replaced it with a dispatch table, which *flattens* the
 per-property spread (5.1× → 2.3×) rather than uniformly lowering it.
+
 **Round 36** (2026-08-04) is the **completion round**: with the rest of
 this file's remainder being open calls, it took the tail that needs no
 decision — `@returns` to 276/276 (written, ungated at the time; round
@@ -96,6 +131,7 @@ measurements promised here and never taken.  It also shipped a
 **stranded-doc-block check**, which found six more instances of this
 codebase's most repeated documentation defect on its first run — one of
 them shipping in the declarations.
+
 A **fifth design sitting** (2026-08-04) then took **every open call in
 the ledger** with the maintainer and scoped the **production-readiness
 roadmap**: rounds 37–51, from the governance close-out (gates, the alias
@@ -105,6 +141,7 @@ export, the docs generator and v4 site, the migration guide, robustness
 and cross-platform passes, to a published **4.0.0**.  The per-item
 decisions are recorded in "Open calls for the maintainer" below; the
 sitting record and the round 37–51 plans are at the end of this file.
+
 **Rounds 37, 39, 41 and 42 have since landed** (2026-08-04): **37** the
 governance close-out (throw coverage and `@returns` now gate, the alias
 split), **39** the decided feature tail (overlap box selection, graph data
@@ -114,19 +151,25 @@ call when the enumeration turned out not to be derivable from v3 — and
 **42** the great restructure, which changed no behaviour and made v4 *the*
 package: this source promoted from `src/gpu/` to `src/`, v3 moved whole
 into a self-contained, still-buildable `v3/`, and the root `package.json`
-became `cytoscape@4.0.0-unstable`.  **Round 43** (2026-08-04) was inserted
+became `cytoscape@4.0.0-unstable`.
+
+**Round 43** (2026-08-04) was inserted
 ahead of the release sequence — the **debug harness**, which turned out to be
 both broken (four of its seven networks 404'd, a round-42 regression) and
 misleading (its style sanitizer was so far behind the engine that every fixture
 rendered flat and unlabelled); it also fixed the background-grab indicator,
-which had never followed the cursor.  A **maintainer review pass on
+which had never followed the cursor.
+
+A **maintainer review pass on
 2026-08-05** then found three more things only opening the page could —
 LiveReload had never connected on either project, box selection cost seconds
 of forced layout in the harness's own event log, and the compound fixture was
 not the verbatim port its record claimed — the last of which turned up a
 library defect underneath it: the conservative `fit()` scan was inflating
 compound graphs by a chord term belonging to a different curve kind (recorded
-as 43.10–43.13 and open call 16).  **Rounds 44, 45, 47 and 48 then
+as 43.10–43.13 and open call 16).
+
+**Rounds 44, 45, 47 and 48 then
 landed** (2026-08-04/05), taken in that order because they are the release
 sequence's decision-free part: **44** the packaging gates, whose finding was
 that two of its own three items were never open questions at all (v3's
@@ -141,7 +184,9 @@ property table is *measured* against both libraries rather than remembered
 which found **four defects** — a corrupt wire buffer that made a load never
 return, two more that cost 25.9 s and 5.7 s, and identity comparing equal
 across two instances, so that `union()` silently dropped the other graph's
-elements.  **Round 46.5** (2026-08-05) was then inserted at the
+elements.
+
+**Round 46.5** (2026-08-05) was then inserted at the
 maintainer's request, outside the release sequence: the **status site**,
 a deployable preview of the branch — the harness, the benchmark archive,
 the API reference and the repository documents compiled into a gitignored
@@ -156,6 +201,7 @@ whole open backlog (items 14–16 ratified, round 52's build-step call
 taken, item 12 given its direction, the round-54 bounds round
 scheduled), so round 38 is unblocked.  **Round 40 is a design
 sitting**, its taxonomy-first prep approved at the same sitting.
+
 **Round 55** (2026-08-06) was then inserted ahead of 38, after a
 maintainer opened `debug/?network=v3-default` and reported five things no
 test could see — because every golden is v4-vs-v4 and the parity scenes
@@ -170,6 +216,7 @@ degenerates — which moved the search downstream to the strip and the
 arrows.  It fixed the `round-taxi` NaN that made `boundingBox()` answer
 all-null, logged two public-API calls (items 19–20), and left **its arrow
 gap port unlanded**, with failing tests and verified constants in place.
+
 **Round 56** (2026-08-07) landed that port and rather more: v3's `gap`
 and `spacing` on both the CPU and in generated WGSL, the hollow-head
 *stroke clipping* nobody had predicted — found by rendering the scene
@@ -13914,7 +13961,18 @@ bakes into the shader where v3 spells them in its default stylesheet.
   controls run: dropping one exemption, adding a dead one, adding one
   that resolves (`src/core.mts`) and adding a reasonless one each fail
   exactly the spec written for them.
-- [ ] **57.3 The document openings.**
+- [x] **57.3 The document openings** (2026-08-07) — `src/README.md`
+  opened with a **261-line** paragraph and this file with a **182-line**
+  one; the status site publishes both verbatim, so that is what a reader
+  arriving at the design page and the record page saw first.  Both are
+  now broken at their natural round boundaries — the longest header
+  paragraph in either is 22 lines — and both gained a short lead that
+  says what the document is, what it is *not*, and which two or three
+  sections a reader usually wants.  `src/README.md`'s chronology also
+  gained an `h2`, so the site's table of contents offers it as something
+  to skip rather than as 250 lines of undifferentiated text.  No prose
+  was dropped: the edit is paragraph breaks, four connective sentences
+  where a `;` became a full stop, and the two leads.
 - [ ] **57.4 The readiness language.**
 - [ ] **57.5 Four more debug networks.**
 - [ ] **57.1 The default stylesheet.**  Last, because it is the only item

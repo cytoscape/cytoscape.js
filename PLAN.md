@@ -886,6 +886,68 @@ conditional halves of calls the sitting took.
     fix, not the code — this entry exists so that a later reader finds
     a decision rather than an inconsistency.
 
+### Logged round ideas (raised, not scoped)
+
+Directions the maintainer has raised that are neither open questions nor
+scheduled work.  They live here rather than in a round record for the
+standing reason the ledger exists — an idea recorded only where it was
+raised is an idea nobody finds — and each carries the first thing that
+would have to be measured, so picking one up starts from a question
+rather than from a blank page.
+
+25. **Bring the bypass UX back, spelled as a `case` mapper** (raised
+    2026-08-07).  v4 removed the per-element style bypass by decided
+    design: `ele.style( name, value )` throws (29.3), and round 31.1
+    corrected its message to name the declarative replacement.  The idea
+    is to give the *ergonomics* back without giving the mechanism back —
+    a bypass call rewrites the sheet so that element gets the value
+    through a `case` clause keyed on its id, which keeps every value
+    analyzable, serializable and GPU-evaluable (round 8's invariant, and
+    the whole reason the fn form went).
+    Three things to measure before building any of it, in this order:
+    - **What the clause chain costs.**  `case` is CPU-evaluated and
+      first-match-wins over an ordered list, so N bypassed elements is an
+      N-clause chain evaluated per element of the group — quadratic in
+      the thing an app does most (`benchmark/style.mjs` is the suite).  A
+      per-id index over the clauses is the obvious answer and is a change
+      to the mapper IR, not to the sugar.
+    - **What `style()` reads back afterwards.**  Stored truth is v4's
+      readback rule, so a bypass would read back like any other resolved
+      value — but `cy.style()` and `cy.json()` would now export a sheet
+      the app never wrote.  That is a real surface change and probably
+      the deciding question.
+    - **What removes one.**  v3 has `removeStyle`; here it is "drop the
+      clause", which needs the clause to be identifiable, which is why
+      the keying is a design call rather than an implementation detail.
+26. **Split the big implementation files, v4's way** (raised
+    2026-08-07).  `style.mts` is 7.9k lines, `collection.mts` 5.8k,
+    `store/graph-store.mts` 5.0k, `render/shaders.mts` 4.3k, `core.mts`
+    3.1k.  v3 split its collection into `v3/src/collection/*` (traversing,
+    data, dimensions, events, …); v4 has already done the same thing once,
+    for `src/algorithms/` — one file per algorithm over a shared
+    `algo-shared.mts`, slot-native, no prototype patching.
+    The constraints are what make this a round rather than a refactor
+    anyone can do in an afternoon, and all three are things this file has
+    already been bitten by:
+    - **The audits read files as text.**  `PUBLIC_API` is a file list, and
+      `auditFile` walks *class bodies*; a split done v3's way — assigning
+      onto a prototype from several modules — would make every moved
+      member invisible to coverage, `@param`, `@returns` and `@throws` at
+      once, and the gates would keep reading 100%.  That is round 57.2's
+      lesson before the fact.  Whatever shape is chosen has to keep the
+      members inside the class, or the audits have to learn the new shape
+      first.
+    - **The `// -- section --` banners are the docs generator's section
+      grouping** (rounds 26 and 45).  A split has to decide whether a file
+      boundary *is* a section boundary; if it is, the generator gets
+      simpler, and `docs-generate` has a spec that will say so.
+    - **`git blame` and this file's own round records point into these
+      files.**  A move is cheap to make and expensive to have made
+      carelessly; round 42's method (compare every moved file against its
+      pre-move blob, and filter the diff to the changes the round is
+      *allowed* to make) is the one that proved a 1100-file move
+      behaviour-neutral, and it applies here unchanged.
+
 ## Context
 
 Issue #3486 specs a v4 performance redesign: columnar/GPU-native model, persistent GPU buffers, WebGPU rendering. This first pass (originally on `feature/webgpu`, branched from the TS refactor PR #3477; the work now lives on `v4`) builds a **separate v4-style prototype** — not a mode of the canvas renderer like WebGL. It ships a new GPU-oriented data layer with the familiar synchronous core/element API on top, plus a WebGPU render pipeline. The existing v3 core, collection, and renderers are **not modified**.
@@ -3463,6 +3525,15 @@ it finishes v4.  The maintainer can name several rounds that are not
 logged yet, and rounds 43, 46.5, 55 and 56 were each inserted after the
 sequence they interrupt was already planned.  Round 57 item 4 exists
 because these summaries had drifted into reading like a complete plan.
+
+**Amended 2026-08-07 (during round 57).**  Two of those unlogged rounds
+are now logged, as ledger items **25** (bring the bypass UX back, spelled
+as a `case` mapper) and **26** (split the big implementation files, the
+way `src/algorithms/` already is).  Neither is scheduled and neither is a
+question for the maintainer — they are directions with their
+measure-this-first noted, which is the form that makes an idea pickable
+up later.  They are also the concrete demonstration of the sentence
+above: the list grew by two in the same week it was called incomplete.
 
 ## Round 12 plan — curved edges (planned 2026-07-29)
 

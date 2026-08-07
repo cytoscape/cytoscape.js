@@ -2146,6 +2146,26 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
   const MAX_PARITY_RATIO = 0.02;
 
+  /*
+   * Round 56: the close-up tier's bounds, one per scene and each set
+   * from that scene's own measured control rather than from a suite
+   * default.  They are 4-20x tighter than the zoom-1 tier's 2-3%, which
+   * is the whole point: at zoom the anti-aliased fringe stays a pixel
+   * wide while the ink grows, so the ambient mismatch falls and a real
+   * geometry difference has nowhere to hide.
+   *
+   * Controls (2026-08-07, the same scene with the feature under test
+   * removed): gap 0.573% (no heads), hollow 0.137% (filled), curves
+   * 0.002% (no heads), edges and heads are their own floors.
+   */
+  const CLOSE_UP_BOUND = {
+    gap: 0.012,
+    heads: 0.004,
+    hollow: 0.005,
+    edges: 0.003,
+    curves: 0.003
+  };
+
   let deviceErrors = [];
 
   /*
@@ -3701,6 +3721,261 @@ test.describe( 'v3-vs-v4 render parity', () => {
 
     await runParity( page, testInfo, 'parity-arrow-alpha', ARROW_ELEMENTS, v3Style, v4Style,
       { minInk: 3000 } );
+  } );
+
+
+  /* ----------------------------------------------------------------
+   * Round 56: the close-up tier.
+   *
+   * Every parity scene above this one views its fixture at zoom 1,
+   * where an arrowhead is ~30 device px across.  At that size the
+   * difference between a correct head and a nearly-correct one is a
+   * handful of pixels — inside the anti-aliasing budget the bounds have
+   * to allow, which is how round 27 could close "arrow parity" with the
+   * line running to the node centre underneath.
+   *
+   * These scenes render **short edges at high zoom** instead, so the
+   * geometry under test fills the frame.  Two properties make that
+   * worth doing rather than just bigger:
+   *
+   *   - **Anti-aliasing is a boundary effect and does not scale.**
+   *     Zooming grows the ink roughly quadratically while the AA fringe
+   *     stays about a pixel wide, so AA's *share* of the mismatch falls.
+   *     A close-up scene can carry a far tighter bound than a zoom-1
+   *     one, which is what makes it able to fail.
+   *   - **Short edges keep both ends on screen.**  A long edge at zoom 6
+   *     puts its ends outside the frame, which would quietly turn an
+   *     arrow test into a test of the middle of a line.
+   *
+   * Each scene records its measured ratio and the control that shows it
+   * discriminates.  The bounds are set from those measurements, not
+   * from the suite's zoom-1 defaults.
+   * ---------------------------------------------------------------- */
+
+  /**
+   * Two nodes and one short edge, sized so that at `zoom` the pair fills
+   * the 400x300 frame.  `rows` repeats it vertically.
+   */
+  const closeUpElements = ( { chord = 60, rows = [ 0 ] } = {} ) =>
+    rows.flatMap( ( y, i ) => [
+      { data: { id: `s${i}` }, position: { x: -chord / 2, y } },
+      { data: { id: `t${i}` }, position: { x: chord / 2, y } },
+      { data: { id: `e${i}`, source: `s${i}`, target: `t${i}` } }
+    ] );
+
+  /** One look in both dialects, for a close-up edge scene. */
+  const closeUpSheets = ( nodeStyle, edgeStyle ) => ( {
+    v3Style: [
+      { selector: 'node', style: { 'shape': 'ellipse', 'background-color': '#c0392b', ...nodeStyle } },
+      { selector: 'edge', style: { 'curve-style': 'straight', ...edgeStyle } }
+    ],
+    v4Style: {
+      nodes: { 'background-color': '#c0392b', ...nodeStyle },
+      edges: { 'curve-style': 'straight', ...edgeStyle }
+    }
+  } );
+
+  const CLOSE_UP_NODE = { 'width': 16, 'height': 16 };
+
+  test( 'parity close-up: the gap between the line and a filled head (round 56)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    test.fail( true, 'round 56 — v4 implements no arrow gap; the fix removes this' );
+
+    // Measured 2026-08-07, before the trim: **5.610%**, against a
+    // no-heads control of 0.573% — a 9.8x drop, so the scene measures
+    // the heads and the line around them, not ambient AA.
+    /*
+     * Tuned, not guessed — and the first draft is worth recording because
+     * it repeated round 55's mistake at a higher zoom.
+     *
+     * Draft: width 6 at `arrow-scale` 1, one edge at zoom 5, reasoning
+     * that v3's 12-model-px gap is 60 device px of blank line and could
+     * not possibly hide.  It read **0.624%**.  It hides completely: v3
+     * sizes the gap so the line stops *under* the head (here a 15.5 px
+     * back extent over a 12 px gap), and an opaque filled head paints
+     * the same pixels either way.  Magnification does not help, because
+     * the thing being measured is covered at every scale.
+     *
+     * What a filled head does leak is the wedge near the tip, where the
+     * head is narrower than the line — so the scene is tuned for that:
+     * a *thick* line under a *small* head (the head's half-width only
+     * reaches the line's over the last fifth of its length), across
+     * three rows because the wedge is per-end and does not grow with
+     * zoom the way ink does.
+     */
+    const { v3Style, v4Style } = closeUpSheets( CLOSE_UP_NODE, {
+      'width': 12, 'arrow-scale': 0.45, 'line-color': '#2c3e50',
+      'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+      'source-arrow-color': '#2c3e50', 'target-arrow-color': '#2c3e50'
+    } );
+
+    await runParity( page, testInfo, 'parity-closeup-gap',
+      closeUpElements( { chord: 60, rows: [ -25, 0, 25 ] } ), v3Style, v4Style,
+      { zoom: 4, minInk: 4000, bound: CLOSE_UP_BOUND.gap } );
+  } );
+
+  test( 'parity close-up: every arrowhead in v3\'s vocabulary (round 56)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // Twelve heads, three per row, at zoom 3.  This is the scene that
+    // sees a head's *outline* — a clipped corner, a mis-sized bar, a
+    // disc centred a radius out — rather than only its overall extent.
+    const heads = [
+      'triangle', 'triangle-tee', 'triangle-cross',
+      'triangle-backcurve', 'vee', 'chevron',
+      'square', 'diamond', 'circle',
+      'tee', 'circle-triangle', 'none'
+    ];
+    const elements = heads.flatMap( ( head, i ) => {
+      const col = i % 3;
+      const row = Math.floor( i / 3 );
+      const cx = ( col - 1 ) * 42;
+      const y = ( row - 1.5 ) * 24 + 12;
+
+      return [
+        { data: { id: `s${i}` }, position: { x: cx - 17, y } },
+        { data: { id: `t${i}` }, position: { x: cx + 17, y } },
+        { data: { id: `e${i}`, head, source: `s${i}`, target: `t${i}` } }
+      ];
+    } );
+
+    const shared = {
+      'width': 3, 'arrow-scale': 0.75, 'line-color': '#2c3e50',
+      'target-arrow-color': '#2c3e50'
+    };
+    const v3Style = [
+      { selector: 'node', style: { 'width': 10, 'height': 10, 'background-color': '#c0392b' } },
+      { selector: 'edge', style: { 'curve-style': 'straight', ...shared } },
+      ...heads.map( head => ( {
+        selector: `edge[head = "${head}"]`, style: { 'target-arrow-shape': head }
+      } ) )
+    ];
+    const v4Style = {
+      nodes: { 'width': 10, 'height': 10, 'background-color': '#c0392b' },
+      edges: {
+        'curve-style': 'straight', ...shared,
+        'target-arrow-shape': { data: 'head' }
+      }
+    };
+
+    await runParity( page, testInfo, 'parity-closeup-heads', elements, v3Style, v4Style,
+      { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.heads } );
+  } );
+
+  test( 'parity close-up: hollow heads, where a clipped stroke shows (round 56)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    test.fail( true, 'round 56 — v4 implements no arrow gap; the fix removes this' );
+
+    // Measured 2026-08-07, before the trim: **2.555%**, against a
+    // `filled` control of 0.137% — an 18.6x drop.
+
+    // A hollow head is the case where the arrow quad's own margin has to
+    // hold more than the polygon: the stroke straddles the outline, so it
+    // reaches `arrow-width / 2` *outside* it — furthest out at the back
+    // corners, which is where the maintainer reported clipping.
+    const { v3Style, v4Style } = closeUpSheets( CLOSE_UP_NODE, {
+      'width': 4, 'arrow-scale': 2.5, 'line-color': '#2c3e50',
+      'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+      'source-arrow-color': '#2c3e50', 'target-arrow-color': '#2c3e50',
+      'source-arrow-fill': 'hollow', 'target-arrow-fill': 'hollow',
+      'source-arrow-width': 5, 'target-arrow-width': 5
+    } );
+
+    await runParity( page, testInfo, 'parity-closeup-hollow',
+      closeUpElements( { chord: 66 } ), v3Style, v4Style,
+      { zoom: 4, minInk: 3000, bound: CLOSE_UP_BOUND.hollow } );
+  } );
+
+  test( 'parity close-up: plain edges against the node boundary (round 56)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+
+    // No arrows at all: this is the edge-vs-node control for the whole
+    // close-up tier.  Three widths on three slopes, magnified — it sees
+    // where the line meets the node outline, the extrusion half-width,
+    // and the butt cap, none of which any zoom-1 scene resolves.
+    // A regression in the trim that shortened an *unarrowed* edge would
+    // show here and nowhere else.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -40, y: -30 } },
+      { data: { id: 'b' }, position: { x: 40, y: -30 } },
+      { data: { id: 'c' }, position: { x: -40, y: 8 } },
+      { data: { id: 'd' }, position: { x: 40, y: 26 } },
+      { data: { id: 'f' }, position: { x: -18, y: 44 } },
+      { data: { id: 'g' }, position: { x: 30, y: -8 } },
+      { data: { id: 'e1', w: 12, source: 'a', target: 'b' } },
+      { data: { id: 'e2', w: 6, source: 'c', target: 'd' } },
+      { data: { id: 'e3', w: 2, source: 'f', target: 'g' } }
+    ];
+    const v3Style = [
+      { selector: 'node', style: {
+        'width': 22, 'height': 22, 'background-color': '#c0392b',
+        'border-width': 2, 'border-color': '#2c3e50'
+      } },
+      // no arrow props at all: `arrow-shape` is not a property in either
+      // library (v3 registers only the four prefixed spellings), and no
+      // head is the default on both sides
+      { selector: 'edge', style: { 'curve-style': 'straight', 'line-color': '#16a085' } },
+      ...[ 12, 6, 2 ].map( w => ( { selector: `edge[w = ${w}]`, style: { 'width': w } } ) )
+    ];
+    const v4Style = {
+      nodes: {
+        'width': 22, 'height': 22, 'background-color': '#c0392b',
+        'border-width': 2, 'border-color': '#2c3e50'
+      },
+      edges: { 'curve-style': 'straight', 'line-color': '#16a085', 'width': { data: 'w' } }
+    };
+
+    await runParity( page, testInfo, 'parity-closeup-edges', elements, v3Style, v4Style,
+      { zoom: 3.5, minInk: 4000, bound: CLOSE_UP_BOUND.edges } );
+  } );
+
+  test( 'parity close-up: curved edges carrying arrowheads (round 56)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    test.fail( true, 'round 56 — v4 implements no arrow gap; the fix removes this' );
+
+    // Measured 2026-08-07, before the trim: **0.972%**, against a
+    // no-heads control of **0.002%** — a 486x drop.  That control is
+    // also the strongest statement in this tier that v4's curve routing
+    // is exact: three families, magnified, two pixels apart from v3.
+
+    // The curve families with arrows on, magnified — the combination no
+    // scene in the suite had: the curve scenes all set `arrow-shape:
+    // none` (round 55's finding), and the arrow scenes are all straight.
+    // A trim applied along the wrong direction at a curve's end shows
+    // here as a kinked or over-shortened tail.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -44, y: -34 } },
+      { data: { id: 'b' }, position: { x: 44, y: -34 } },
+      { data: { id: 'c' }, position: { x: -44, y: 4 } },
+      { data: { id: 'd' }, position: { x: 44, y: 4 } },
+      { data: { id: 'f' }, position: { x: -44, y: 40 } },
+      { data: { id: 'g' }, position: { x: 44, y: 40 } },
+      { data: { id: 'e1', kind: 'unbundled-bezier', source: 'a', target: 'b' } },
+      { data: { id: 'e2', kind: 'segments', source: 'c', target: 'd' } },
+      { data: { id: 'e3', kind: 'taxi', source: 'f', target: 'g' } }
+    ];
+    const shared = {
+      'width': 5, 'arrow-scale': 1, 'line-color': '#2c3e50',
+      'target-arrow-shape': 'triangle', 'target-arrow-color': '#2c3e50',
+      'source-arrow-shape': 'vee', 'source-arrow-color': '#2c3e50',
+      'control-point-distances': 18, 'control-point-weights': 0.5,
+      'segment-distances': '10 -10', 'segment-weights': '0.3 0.7',
+      'taxi-direction': 'horizontal', 'taxi-turn': '50%'
+    };
+    const v3Style = [
+      { selector: 'node', style: { 'width': 16, 'height': 16, 'background-color': '#c0392b' } },
+      { selector: 'edge', style: shared },
+      ...[ 'unbundled-bezier', 'segments', 'taxi' ].map( kind => ( {
+        selector: `edge[kind = "${kind}"]`, style: { 'curve-style': kind }
+      } ) )
+    ];
+    const v4Style = {
+      nodes: { 'width': 16, 'height': 16, 'background-color': '#c0392b' },
+      edges: { ...shared, 'curve-style': { data: 'kind' } }
+    };
+
+    await runParity( page, testInfo, 'parity-closeup-curves', elements, v3Style, v4Style,
+      { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.curves } );
   } );
 
 } );

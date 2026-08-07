@@ -14,11 +14,21 @@ Conventions every scene follows, and the reason for each:
     about interaction (bundles, compounds).  v3 buckets edges by node
     pair, so unrelated edges sharing a pair would silently become bundle
     members and every number would move.
-  - **`arrow-shape: none` unless the scene is about arrows.**  v3
-    shortens its line by `arrowShapes[shape].gap(edge)`; with `none` that
-    is 0, which is the one configuration where v4's current
-    no-gap-at-all behaviour agrees with v3.  Scenes that want to *see*
-    the gap say so.
+  - **No arrowheads unless the scene is about arrows.**  v3 shortens its
+    line by `arrowShapes[shape].gap(edge)` and pulls its arrow point back
+    by `spacing(edge)`; with no head both are 0, which is the one
+    configuration where a gapless v4 agreed with v3.  Scenes that want to
+    *see* either say so.
+
+    This is the **default** on both sides, and saying it out loud is a
+    trap: `arrow-shape` is not a property in either library.  v3 registers
+    only the four prefixed spellings (`source-`, `target-`, `mid-source-`,
+    `mid-target-`), so the bare name these sheets used to carry was a
+    no-op v3 warned about on every scene — invisible here because
+    routing.spec.js does not listen to the console, and harmless only
+    because it happened to name the value that was already in force.
+    Round 56 found it when a close-up *pixel* scene copied the idiom into
+    a suite that does listen.
   - **No labels.**  Glyph metrics differ by design between canvas and
     SDF, and the label-aware endpoint modes would drag that difference
     into a geometry comparison.
@@ -35,7 +45,7 @@ const NODE = { 'width': 30, 'height': 30, 'shape': 'ellipse', 'background-color'
 const sheets = ( shared, families ) => ( {
   v3Style: [
     { selector: 'node', style: { ...NODE } },
-    { selector: 'edge', style: { 'curve-style': 'straight', 'arrow-shape': 'none', ...shared } },
+    { selector: 'edge', style: { 'curve-style': 'straight', ...shared } },
     ...families.map( fam => ( {
       selector: `edge[fam = '${fam}']`, style: { 'curve-style': fam }
     } ) )
@@ -377,7 +387,7 @@ const bundles = () => {
     edges: [ 'two-a', 'two-b', 'three-a', 'three-b', 'three-rev' ],
     v3Style: [
       { selector: 'node', style: { ...NODE } },
-      { selector: 'edge', style: { 'curve-style': 'bezier', 'arrow-shape': 'none' } }
+      { selector: 'edge', style: { 'curve-style': 'bezier' } }
     ],
     v4Style: {
       nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
@@ -401,7 +411,7 @@ const loops = () => {
     elements, edges: [ 'loop1', 'loop2', 'loop3' ],
     v3Style: [
       { selector: 'node', style: { ...NODE } },
-      { selector: 'edge', style: { 'curve-style': 'bezier', 'arrow-shape': 'none' } }
+      { selector: 'edge', style: { 'curve-style': 'bezier' } }
     ],
     v4Style: {
       nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
@@ -410,8 +420,126 @@ const loops = () => {
   };
 };
 
+/**
+ * R10 — curved families **carrying arrowheads** (round 56).
+ *
+ * The combination the harness did not have.  Every curve scene above
+ * draws no head, and the one arrow scene is straight — so nothing here
+ * could see that v3's gap is not a paint-time trim at all: `storeAllpts`
+ * builds the drawn path from `rs.startX/Y` and `rs.endX/Y`, the
+ * *gap-shortened* points, so the head shortens the **curve itself** and
+ * with it `midpoint()` and the whole flattened bound.
+ *
+ * A trim implemented as "stop drawing early" instead of "move the end
+ * anchor" passes every pixel scene at zoom 1 and diverges here.
+ */
+const curvedArrows = () => {
+  const fams = [ 'unbundled-bezier', 'segments', 'taxi', 'bezier' ];
+  const elements = [];
+  const edges = [];
+
+  fams.forEach( ( fam, i ) => {
+    const y = i * 130;
+
+    elements.push(
+      { data: { id: `${fam}-s` }, position: { x: 0, y } },
+      { data: { id: `${fam}-t` }, position: { x: 260, y } },
+      { data: { id: fam, source: `${fam}-s`, target: `${fam}-t`, fam } } );
+    edges.push( fam );
+  } );
+
+  const shared = {
+    'width': 6, 'arrow-scale': 1.2, 'line-color': '#2c3e50',
+    'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+    'control-point-distances': [ 50 ], 'control-point-weights': [ 0.5 ],
+    'segment-distances': [ 30, -30 ], 'segment-weights': [ 0.3, 0.7 ],
+    'taxi-direction': 'horizontal', 'taxi-turn': '50%'
+  };
+
+  return {
+    name: 'curved-arrows', tolClass: 'derived',
+    expectFail: 'fix 3 — the head shortens the curve, so every endpoint and midpoint moves',
+    note: 'four curve families with heads on both ends — the gap as routing, not paint',
+    elements, edges,
+    v3Style: [
+      { selector: 'node', style: { ...NODE } },
+      { selector: 'edge', style: { 'curve-style': 'straight', ...shared } },
+      ...fams.map( fam => ( { selector: `edge[fam = '${fam}']`, style: { 'curve-style': fam } } ) )
+    ],
+    v4Style: {
+      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
+      edges: { ...shared, 'curve-style': { data: 'fam' } }
+    }
+  };
+};
+
+/**
+ * R11 — **asymmetric** heads on a straight edge (round 56).
+ *
+ * v3's straight midpoint is not the chord's:
+ *
+ *     rs.midX = ( rs.startX + rs.endX + rs.arrowStartX + rs.arrowEndX ) / 4
+ *
+ * — the mean of the two gap-shortened line ends and the two
+ * spacing-shortened arrow points.  With the *same* head at both ends the
+ * two shortenings cancel and it lands back on the chord midpoint, which
+ * is why R5 reports `mid` clean while getting the endpoints wrong.  Give
+ * the ends different heads and it stops cancelling.
+ *
+ * That matters beyond the accessor: the midpoint is where mid-arrows sit
+ * and where an edge label anchors.
+ */
+const asymmetricArrows = () => {
+  const pairs = [
+    [ 'none', 'triangle' ],
+    [ 'triangle', 'none' ],
+    [ 'vee', 'circle' ],
+    [ 'tee', 'triangle-tee' ],
+    [ 'diamond', 'chevron' ]
+  ];
+  const elements = [];
+  const edges = [];
+
+  pairs.forEach( ( [ src, tgt ], i ) => {
+    const id = `${src}-${tgt}`;
+    const y = i * 110;
+
+    elements.push(
+      { data: { id: `${id}-s` }, position: { x: 0, y } },
+      { data: { id: `${id}-t` }, position: { x: 250, y } },
+      { data: { id, source: `${id}-s`, target: `${id}-t`, src, tgt } } );
+    edges.push( id );
+  } );
+
+  return {
+    name: 'asym-arrows', tolClass: 'derived',
+    expectFail: 'fix 3 — v4 answers the chord midpoint where v3 averages four shortened points',
+    note: 'different heads per end — the midpoint term that a symmetric scene cancels',
+    elements, edges,
+    v3Style: [
+      { selector: 'node', style: { ...NODE } },
+      { selector: 'edge', style: {
+        'curve-style': 'straight', 'width': 7, 'arrow-scale': 1.4, 'line-color': '#2c3e50'
+      } },
+      ...pairs.map( ( [ src, tgt ] ) => ( {
+        selector: `edge[src = '${src}'][tgt = '${tgt}']`,
+        style: { 'source-arrow-shape': src, 'target-arrow-shape': tgt }
+      } ) )
+    ],
+    v4Style: {
+      nodes: { 'width': 30, 'height': 30, 'background-color': '#c0392b' },
+      edges: {
+        'curve-style': 'straight', 'width': 7, 'arrow-scale': 1.4, 'line-color': '#2c3e50',
+        'source-arrow-shape': { data: 'src' },
+        'target-arrow-shape': { data: 'tgt' }
+      }
+    }
+  };
+};
+
 export const SCENES = [
-  base(), families(), taxiOrientations(), segments(), shapes(), arrows(), compounds(), bundles(), loops()
+  base(), families(), taxiOrientations(), segments(), shapes(), arrows(), compounds(), bundles(), loops(),
+  curvedArrows(), asymmetricArrows()
 ];
 
 export const sceneByName = ( name ) => SCENES.find( s => s.name === name );

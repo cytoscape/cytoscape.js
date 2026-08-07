@@ -2563,6 +2563,19 @@ declare class GraphStore implements ModelView {
   /** live counts of nodes with a visible overlay / underlay (13 A2) */
   private overlays;
   private underlays;
+  /** elements carrying FLAG_ACTIVE — v3's `:active`, round 57.1c */
+  private actives;
+  /**
+   * Elements the pointer layer has marked active (pressed) — v3's
+   * `:active` state, which round 57.1c draws as an overlay.
+   *
+   * The overlay pass is skipped whenever nothing is styled with one, so
+   * without this an active element with no *styled* overlay would draw
+   * nothing at all: the count is what keeps the pass alive for it.
+   *
+   * @returns the number of live elements with the flag set
+   */
+  activeCount(): number;
   /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
   overlayCount(): number;
   /** Nodes with a visible underlay (13 A2) — the pass-skip gate. */

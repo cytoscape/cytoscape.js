@@ -1813,7 +1813,11 @@ each is deliberate, not a pass-1 deferral:
   and decorations); overlay/underlay, `active-bg-*` and
   `selection-box-*` become stylable props, with today's baked-in
   affordances (shader hover/active brighten, the accent ring, the DOM
-  selection box) as the styled defaults.  *Deferred*:
+  selection box) as the styled defaults.  **Round 57.1 finished that
+  sentence**: v3's `:selected` and `:parent:selected` are what the node
+  fragment shader draws now, and v3's `:active` — black at 25% over 10 px
+  of padding — is drawn by this very overlay machinery, substituted for
+  a pressed element that has styled no overlay of its own.  *Deferred*:
   `text-metrics`/`box-select-labels` get their v4 form in the
   multiline/label-bb round.  (Since landed, round 16.4/16.5:
   `eles.labelBoundingBox()` and `boxSelectionIncludesLabels`.)
@@ -3025,6 +3029,19 @@ still be what it says.
 > section is a decision, not a backlog item.  (The missing arrow `gap`
 > was the other; round 56 landed it.)
 
+- **`:active` reaches nodes only, and hover has no v3 counterpart**
+  (round 57.1c).  v4 draws v3's `:active` overlay for a pressed *node*;
+  pressing an **edge** activates nothing, because the pointer layer's
+  press target comes from the synchronous CPU pick, which is nodes-only
+  by the round-17.3 deviation (an edge would need the async GPU tile).
+  `edge.activate()` still sets the flag and `active()` still reports it —
+  nothing draws it.
+  In the other direction, v4 keeps a **hover brighten** that v3 has no
+  rule for at all: v3 styles hover nowhere, and v4 has no `:hover` an app
+  could write, so removing it would take feedback away with no
+  replacement.  `FLAG_GRABBED` left the brighten in the same round, since
+  a pressed element now carries the overlay and two affordances for one
+  state is worse than either.
 - **The selection colour is not overridable, where v3's is** (round
   57.1).  v4 draws v3's `:selected` rule — `#0169D9` on the fill, on an
   edge's `line-color` and on all four arrow colours, and

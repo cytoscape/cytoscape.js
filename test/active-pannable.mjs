@@ -113,4 +113,54 @@ describe('gpu/active-pannable', function () {
       expect(cy2.$id('e0').pannable()).to.be.true;
     });
   });
+
+  // Round 57.1c drew v3's `:active` overlay from this flag, and the
+  // overlay pass is skipped entirely when nothing is styled with one —
+  // so the store keeps a count of active elements to know a press is
+  // live.  A count is bookkeeping, and bookkeeping leaks: these pin the
+  // three writers (the single-slot path, the bulk path, removal) rather
+  // than the drawing, which the `renderer` project covers.
+  describe('the active count the overlay pass gates on (round 57.1c)', function () {
+    const count = () => cy._store.activeCount();
+
+    it('starts at zero and follows activate/unactivate', function () {
+      expect(count()).to.equal(0);
+
+      cy.$id('a').activate();
+      expect(count()).to.equal(1);
+
+      // idempotent: activating twice is still one active element
+      cy.$id('a').activate();
+      expect(count()).to.equal(1);
+
+      cy.$id('a').unactivate();
+      expect(count()).to.equal(0);
+    });
+
+    it('counts a bulk activate over a collection', function () {
+      cy.nodes().activate();
+      expect(count()).to.equal(cy.nodes().length);
+
+      cy.nodes().unactivate();
+      expect(count()).to.equal(0);
+    });
+
+    it('loses an active element that is removed', function () {
+      // the leak that matters: a pressed element removed under the
+      // cursor would otherwise hold the overlay pass alive forever
+      cy.$id('a').activate();
+      expect(count()).to.equal(1);
+
+      cy.$id('a').remove();
+      expect(count()).to.equal(0);
+    });
+
+    it('loses an active *edge* removed by its endpoint cascade', function () {
+      cy.$id('ab').activate();
+      expect(count()).to.equal(1);
+
+      cy.$id('b').remove(); // takes `ab` and `ba` with it
+      expect(count()).to.equal(0);
+    });
+  });
 });

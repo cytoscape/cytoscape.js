@@ -1,4 +1,5 @@
 import {
+  FLAG_ACTIVE,
   FLAG_GRABBABLE,
   FLAG_GRABBED,
   FLAG_HOVERED,
@@ -384,6 +385,12 @@ export class PointerHandler {
       shift: e.shiftKey,
     };
 
+    // v3's `:active` (round 57.1c): the pressed element carries the flag
+    // whether or not the press turns into a drag — v3 calls
+    // `near.activate()` on mousedown, before it decides anything else —
+    // and the overlay pass draws v3's black-25%-over-10px wash from it.
+    this.setPressed(picked);
+
     if (canDrag && picked != null) {
       if (dragSet != null) {
         for (let i = 0; i < dragSet.length; i++) {
@@ -656,7 +663,15 @@ export class PointerHandler {
     el.style.top = `${p.y - size}px`;
   }
 
+  /**
+   * The press ended: hide the background-grab indicator and drop
+   * `FLAG_ACTIVE` from whatever carried it.  Called from every gesture
+   * end — pointerup, pointercancel, the touch teardown and destroy — so
+   * it is the one place the active state is released.
+   */
   private hideActiveBg(): void {
+    this.setPressed(null);
+
     if (this.activeEl != null) {
       this.activeEl.style.display = 'none';
     }
@@ -1483,6 +1498,33 @@ export class PointerHandler {
         position,
         originalEvent: this.domEvent ?? undefined,
       }); // 17.1
+    }
+  }
+
+  /**
+   * The element carrying `FLAG_ACTIVE` for the current press — v3's
+   * `:active`, which round 57.1c draws as an overlay.
+   *
+   * One element rather than a set: v3 activates the element under the
+   * press and the touch gestures re-activate rather than accumulate, so
+   * clearing the previous one here is what keeps the store's active
+   * count honest without a per-gesture teardown at six call sites.
+   */
+  private pressed: Collection | null = null;
+
+  private setPressed(ele: Collection | null): void {
+    if (this.pressed === ele) {
+      return;
+    }
+
+    if (this.pressed != null) {
+      this.setFlagOn(this.pressed, FLAG_ACTIVE, false);
+    }
+
+    this.pressed = ele;
+
+    if (ele != null) {
+      this.setFlagOn(ele, FLAG_ACTIVE, true);
     }
   }
 

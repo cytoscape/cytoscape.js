@@ -1927,7 +1927,10 @@ export class Renderer {
       );
     }
 
-    if (store.overlayCount() > 0 && cull.overlay != null) {
+    if (
+      (store.overlayCount() > 0 || store.activeCount() > 0) &&
+      cull.overlay != null
+    ) {
       this.overlays()?.draw(
         pass,
         device,
@@ -2127,7 +2130,11 @@ export class Renderer {
       );
     }
 
-    // overlay/underlay (round 13 A2): same gating, one kind, two groups
+    // overlay/underlay (round 13 A2): same gating, one kind, two groups.
+    // Round 57.1c widened the overlay's gate: v3's `:active` is drawn as
+    // an overlay, so a pressed element with no *styled* overlay still
+    // needs the pass — otherwise the affordance would appear only in
+    // graphs that happened to style one.
     const layerInputs = (id: 'node.overlay' | 'node.underlay'): GPUBuffer[] => [
       mirror.buffer('node.position'),
       mirror.buffer('node.size'),
@@ -2135,7 +2142,10 @@ export class Renderer {
       mirror.buffer(id),
     ];
 
-    if (store.overlayCount() > 0 && groups.overlay != null) {
+    if (
+      (store.overlayCount() > 0 || store.activeCount() > 0) &&
+      groups.overlay != null
+    ) {
       groups.overlay.ensure(
         uniform,
         Math.max(1, store.capacity('nodes')),
@@ -2248,7 +2258,10 @@ export class Renderer {
       groups.ghost.encode(pass, store.highWater('nodes'));
     }
 
-    if (store.overlayCount() > 0 && groups.overlay != null) {
+    if (
+      (store.overlayCount() > 0 || store.activeCount() > 0) &&
+      groups.overlay != null
+    ) {
       groups.overlay.encode(pass, store.highWater('nodes'));
     }
 

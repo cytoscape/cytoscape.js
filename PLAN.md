@@ -14115,4 +14115,43 @@ bakes into the shader where v3 spells them in its default stylesheet.
   the bound is 0.1% and not the suite's 3% default — at 3% both would
   have passed with the feature missing, which is round 27's own
   cautionary case.
+- [x] **57.1c v3's `:active`, through the overlay props** (2026-08-07) —
+  the item's third clause, and the one round 13 A2 had already written
+  the machinery for: "the existing shader hover/active brighten, accent
+  ring and DOM selection box become the styled defaults."
+  `FLAG_ACTIVE` and the public `activate()`/`active()`/`inactive()` trio
+  have existed since round 6 with **nothing reading the bit** — no shader
+  bound it and the pointer layer never set it.  Now the pointer sets it
+  on press and clears it on every gesture end (v3's `near.activate()` /
+  `unactivate()`), and the overlay layer substitutes v3's record — black,
+  25%, padding 10, round-rectangle — for an element that has styled no
+  overlay of its own.  A user's overlay is never overridden by a press.
+  Three pieces had to agree or the affordance appears in some graphs and
+  not others: the **pass gate** (the overlay pass is skipped when nothing
+  is styled with one, so it now also runs while something is active), the
+  **cull predicate** (which rejected a disabled record, so a pressed node
+  was culled before it could draw), and the **layer shader**.  The cull's
+  substitution and the shader's are the same record for the same reason
+  they were in round 12a: a cull that disagrees with a draw either drops
+  the element or sizes it wrong.
+  One thing needed an entry point rather than a uniform: the same shader
+  draws both layers with a different record column bound, so it cannot
+  tell overlay from underlay — and synthesising `:active` for both would
+  darken the padding ring twice.  `vsLayerPlain`/`fsLayerPlain` are the
+  underlay's, chosen at construction where the column already is.
+  Verified in the browser, and the sample point is what makes the spec
+  discriminate: it sits in the 10 px ring *outside* the node, where only
+  an overlay can put ink — a brighten of the body would leave it white.
+  Three controls, each failing it: the pointer not setting the flag, the
+  cull dropping active nodes, and the pass gate ignoring them.  Four Node
+  specs pin the store's active count over its three writers (the
+  single-slot path the pointer uses, the bulk path `activate()` uses, and
+  removal), because a count leaks: a pressed element removed under the
+  cursor would hold the overlay pass alive forever.  Both bookkeeping
+  controls fail.
+  **Two recorded deviations.**  `:active` reaches nodes only — the
+  press target is the synchronous CPU pick, which is nodes-only by round
+  17.3's own deviation — so pressing an edge activates nothing, and this
+  is that limit rather than a new one.  And v4 keeps a hover brighten
+  v3 has no rule for, because v4 has no `:hover` an app could write.
 - [ ] **57.7 Closing docs sweep** + the `EXECUTIVE_SUMMARY.md` rewrite.

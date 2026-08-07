@@ -58,7 +58,9 @@ export class NodeLayerPipeline {
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
           buffer: { type: 'uniform' },
         },
-        ...[1, 2, 3].map((binding) => ({
+        // 1..3 positions/sizes/the layer record; 4 the flags column,
+        // which the overlay reads for v3's `:active` (round 57.1c)
+        ...[1, 2, 3, 4].map((binding) => ({
           binding,
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
@@ -76,10 +78,13 @@ export class NodeLayerPipeline {
       device.createRenderPipeline({
         label,
         layout,
-        vertex: { module, entryPoint: 'vsLayer' },
+        vertex: {
+          module,
+          entryPoint: column === 'node.overlay' ? 'vsLayer' : 'vsLayerPlain',
+        },
         fragment: {
           module,
-          entryPoint: 'fsLayer',
+          entryPoint: column === 'node.overlay' ? 'fsLayer' : 'fsLayerPlain',
           targets: [{ format, blend: PREMULTIPLIED_BLEND }],
         },
         primitive: { topology: 'triangle-list' },
@@ -115,6 +120,7 @@ export class NodeLayerPipeline {
         { binding: 1, resource: { buffer: mirror.buffer('node.position') } },
         { binding: 2, resource: { buffer: mirror.buffer('node.size') } },
         { binding: 3, resource: { buffer: mirror.buffer(this.column) } },
+        { binding: 4, resource: { buffer: mirror.buffer('node.flags') } },
       ],
     });
 

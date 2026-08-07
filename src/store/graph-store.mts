@@ -47,6 +47,7 @@ import {
   ARROW_SHIFT_SRC_SHOWS_LINE,
   ARROW_SHIFT_TARGET,
   ARROW_SHIFT_TGT_SHOWS_LINE,
+  FLAG_ACTIVE,
   FLAG_ALIVE,
   FLAG_CHILD,
   FLAG_CURVED,
@@ -2151,6 +2152,15 @@ export class GraphStore implements ModelView {
 
     arr[slot] = next;
     this.dirty.mark(id, slot);
+
+    // round 57.1c: v3's `:active` overlay is drawn from this bit, and
+    // the overlay pass is skipped entirely when nothing is styled with
+    // one — so the renderer needs to know a press is live.  A count
+    // rather than a boolean because the touch gestures can activate a
+    // second element before the first is released.
+    if ((bit & FLAG_ACTIVE) !== 0) {
+      this.actives += on ? 1 : -1;
+    }
   }
 
   /**
@@ -2204,6 +2214,12 @@ export class GraphStore implements ModelView {
 
       flags[slot] = next;
       changed++;
+
+      // the same bookkeeping `setFlag` does — `activate()` reaches the
+      // flag through here rather than through that path (round 57.1c)
+      if ((bit & FLAG_ACTIVE) !== 0) {
+        this.actives += on ? 1 : -1;
+      }
 
       if (isNode) {
         if (slot < nMin) {
@@ -2554,6 +2570,22 @@ export class GraphStore implements ModelView {
   /** live counts of nodes with a visible overlay / underlay (13 A2) */
   private overlays = 0;
   private underlays = 0;
+  /** elements carrying FLAG_ACTIVE — v3's `:active`, round 57.1c */
+  private actives = 0;
+
+  /**
+   * Elements the pointer layer has marked active (pressed) — v3's
+   * `:active` state, which round 57.1c draws as an overlay.
+   *
+   * The overlay pass is skipped whenever nothing is styled with one, so
+   * without this an active element with no *styled* overlay would draw
+   * nothing at all: the count is what keeps the pass alive for it.
+   *
+   * @returns the number of live elements with the flag set
+   */
+  activeCount(): number {
+    return this.actives;
+  }
 
   /** Nodes with a visible overlay (13 A2) — the pass-skip gate. */
   overlayCount(): number {
@@ -4706,6 +4738,19 @@ export class GraphStore implements ModelView {
 
     if (id != null) {
       this.ids.remove(id);
+    }
+
+    // a removed element takes its flags with it, so the active count has
+    // to lose it here or removing a pressed element leaks a permanently
+    // live overlay pass (round 57.1c)
+    const flagId: ColumnId = group === 'nodes' ? 'node.flags' : 'edge.flags';
+
+    if (
+      ((this.table(group).column(flagId) as Uint32Array)[slot] &
+        FLAG_ACTIVE) !==
+      0
+    ) {
+      this.actives--;
     }
 
     if (group === 'nodes') {

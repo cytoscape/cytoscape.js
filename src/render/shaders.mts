@@ -112,6 +112,7 @@ const FLAG_VISIBLE: u32 = 2u;
 const FLAG_SELECTED: u32 = 4u;
 const FLAG_GRABBED: u32 = 16u;
 const FLAG_HOVERED: u32 = 32u;
+const FLAG_ACTIVE: u32 = 256u; // pressed — v3's :active (round 57.1c)
 const FLAG_CURVED: u32 = 1024u; // edge renders in the curved stream (store-managed)
 // the curve is not chord-bounded (taxi, extrapolated weights): cull by
 // the endpoint AABB grown by slack + chord length instead (12b)
@@ -2072,6 +2073,11 @@ ${COMMON}
 @group(0) @binding(2) var<storage, read> sizes: array<vec2f>;
 // [rgba, padding*256, shape, radius*256 | 0xffffffff = auto]
 @group(0) @binding(3) var<storage, read> layers: array<vec4u>;
+// round 57.1c: v3's :active is an overlay — black at 25% over 10px of
+// padding — and this is where v4 draws it.  The flag is what the layer
+// reads; nothing about stored truth changes, so style( 'overlay-color' )
+// on a pressed element still answers its own value.
+@group(0) @binding(4) var<storage, read> nodeFlags: array<u32>;
 
 struct LayerVSOut {
   @builtin(position) position: vec4f,
@@ -2082,11 +2088,31 @@ struct LayerVSOut {
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
-@vertex
-fn vsLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LayerVSOut {
+// v3's :active block, verbatim: overlay-color black, overlay-padding
+// 10, overlay-opacity 0.25, over the default round-rectangle shape with
+// an 'auto' radius.  Substituted only where the element has styled *no*
+// overlay of its own — a user's overlay is not overridden by a press.
+const ACTIVE_RECORD = vec4u(0x40000000u, 10u * 256u, 0u, 0xffffffffu);
+
+// actives is false for the underlay's entry points below: v3's
+// :active sets overlay-* only, and synthesising it for both layers
+// would darken the padding ring twice.  The instance knows which layer
+// it draws (the column is fixed at construction), so this is an entry
+// point rather than a uniform.
+fn layerRecord(slot: u32, actives: bool) -> vec4u {
+  let rec = layers[slot];
+
+  if ((rec.x >> 24u) != 0u) { return rec; } // the element's own, enabled
+  if (!actives) { return rec; }
+  if ((nodeFlags[slot] & FLAG_ACTIVE) == 0u) { return rec; }
+
+  return ACTIVE_RECORD;
+}
+
+fn layerVS(vi: u32, ii: u32, actives: bool) -> LayerVSOut {
   var out: LayerVSOut;
   let slot = visible[ii];
-  let padding = f32(layers[slot].y) / 256.0 * frame.zoomDpr;
+  let padding = f32(layerRecord(slot, actives).y) / 256.0 * frame.zoomDpr;
   let half = sizes[slot] * 0.5 * frame.zoomDpr + vec2f(padding);
 
   let centerPx = modelToPx(frame, positions[slot]);
@@ -2100,14 +2126,23 @@ fn vsLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   return out;
 }
 
+@vertex
+fn vsLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LayerVSOut {
+  return layerVS(vi, ii, true);
+}
+
+@vertex
+fn vsLayerPlain(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> LayerVSOut {
+  return layerVS(vi, ii, false);
+}
+
 fn layerRoundRectSD(p: vec2f, b: vec2f, r: f32) -> f32 {
   let q = abs(p) - b + vec2f(r);
   return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0))) - r;
 }
 
-@fragment
-fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
-  let rec = layers[in.instance];
+fn layerFS(in: LayerVSOut, actives: bool) -> vec4f {
+  let rec = layerRecord(in.instance, actives);
   let color = unpack4x8unorm(rec.x);
   var sd = 0.0;
 
@@ -2129,6 +2164,16 @@ fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
 
   let alpha = (1.0 - smoothstep(-0.75, 0.75, sd)) * color.a;
   return vec4f(color.rgb * alpha, alpha); // premultiplied
+}
+
+@fragment
+fn fsLayer(in: LayerVSOut) -> @location(0) vec4f {
+  return layerFS(in, true);
+}
+
+@fragment
+fn fsLayerPlain(in: LayerVSOut) -> @location(0) vec4f {
+  return layerFS(in, false);
 }
 `;
 

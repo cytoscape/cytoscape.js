@@ -2402,6 +2402,60 @@ test.describe('WebGPU renderer', () => {
     expect(picked).toBe('a');
   });
 
+  test("a pressed node draws v3's :active overlay (round 57.1c)", async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // v3's `:active` block is `overlay-color: black, overlay-padding: 10,
+    // overlay-opacity: 0.25`, applied to whatever the press landed on.
+    // v4 has carried `FLAG_ACTIVE` and the public `activate()`/`active()`
+    // pair since round 6 with **nothing reading the bit** — no shader
+    // bound it and the pointer layer never set it.  Round 57.1c draws it
+    // through the round-13 A2 overlay machinery, which is what that
+    // machinery was ported for.
+    //
+    // The sample point is the part that makes this discriminate: it sits
+    // in the 10px padding ring *outside* the node, where only the
+    // overlay can put ink.  A brighten of the body (what v4 did before)
+    // would leave it white.
+    await makeReadyCy(page, RED_NODE_GRAPH);
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const ring = { x: center.x + 55, y: center.y };
+    const before = await pixelAt(page, ring.x, ring.y);
+
+    expect(before[0]).toBeGreaterThan(240); // background, outside the node
+    expect(before[2]).toBeGreaterThan(240);
+
+    await page.mouse.move(center.x, center.y);
+    await page.mouse.down();
+    await waitFrames(page);
+
+    expect(await page.evaluate(() => window.cy.$id('a').active())).toBe(true);
+
+    const pressed = await pixelAt(page, ring.x, ring.y);
+
+    // black at 25% over white is ~191 on every channel
+    expect(pressed[0]).toBeLessThan(215);
+    expect(pressed[0]).toBeGreaterThan(165);
+    expect(Math.abs(pressed[0] - pressed[2])).toBeLessThan(12); // neutral
+
+    await page.mouse.up();
+    await waitFrames(page);
+
+    expect(await page.evaluate(() => window.cy.$id('a').active())).toBe(false);
+
+    const after = await pixelAt(page, ring.x, ring.y);
+
+    // and it goes away again — the half a one-shot spec would miss
+    expect(after[0]).toBeGreaterThan(240);
+    expect(after[2]).toBeGreaterThan(240);
+  });
+
   test('tap selects and background tap clears', async ({ page }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 

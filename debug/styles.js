@@ -626,6 +626,231 @@ var styles = (function () {
     };
   }
 
+  // -- round 57.5: the four demos ported from v3's documentation -----------
+  //
+  // Where v3 writes a class selector these read a data key through a `case`
+  // mapper, which is v4's answer to per-element styling: declarative, so it
+  // stays analyzable, serializable and (for paint channels) GPU-evaluable.
+
+  /** `case` over `data(key)`, with an else. */
+  function byData(key, map, fallback) {
+    return {
+      case: Object.keys(map).map(function (v) {
+        return { when: { data: key, eq: v }, then: map[v] };
+      }),
+      else: fallback,
+    };
+  }
+
+  // v3's node-types demo styles `shape: data(type)` directly.  v4's shape is an
+  // enum channel and mapper-capable, but a *raw passthrough* would have to
+  // trust the data, so this is a `case` over the keyword list — which also
+  // means a typo in the fixture renders as the `else` rather than throwing at
+  // an arbitrary element.
+  function nodeTypes(elements, def) {
+    var shapes = {};
+
+    elements.nodes.forEach(function (n) {
+      shapes[n.data.type] = n.data.type;
+    });
+
+    return {
+      nodes: {
+        shape: byData('type', shapes, 'ellipse'),
+        width: 60,
+        height: 60,
+        'background-color': '#dfe6ee',
+        'border-width': 2,
+        'border-color': '#5b6472',
+        // `shape-polygon-points` is constants-only (a list prop — the 12b
+        // scope rule), so v3's `shape-polygon-points: data(points)` has no v4
+        // spelling.  A constant is enough here because the points are read
+        // only by the one node whose shape resolves to `polygon`; every other
+        // node ignores them.  It is v3's own cross from the same demo.
+        'shape-polygon-points': [
+          -0.33, -1, 0.33, -1, 0.33, -0.33, 1, -0.33, 1, 0.33, 0.33, 0.33, 0.33,
+          1, -0.33, 1, -0.33, 0.33, -1, 0.33, -1, -0.33, -0.33, -0.33,
+        ],
+        label: { data: 'label' },
+        'font-size': 11,
+        color: '#1d2433',
+        'text-valign': 'bottom',
+        'text-margin-y': 4,
+        'text-wrap': 'wrap',
+        'text-max-width': 130,
+      },
+      edges: {},
+    };
+  }
+
+  function edgeTypes(elements, def) {
+    return {
+      nodes: {
+        width: 26,
+        height: 26,
+        'background-color': '#5b6472',
+        label: { data: 'label' },
+        'font-size': 12,
+        color: '#1d2433',
+        'text-valign': 'center',
+        'text-halign': 'left',
+        'text-margin-x': -6,
+      },
+      edges: {
+        width: 3,
+        'line-color': '#2f6fa8',
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': '#2f6fa8',
+        'curve-style': byData(
+          'type',
+          {
+            bezier: 'bezier',
+            'unbundled-bezier': 'unbundled-bezier',
+            'multi-unbundled-bezier': 'unbundled-bezier',
+            straight: 'straight',
+            haystack: 'haystack',
+            segments: 'segments',
+            'round-segments': 'round-segments',
+            taxi: 'taxi',
+            'round-taxi': 'round-taxi',
+            'straight-triangle': 'straight-triangle',
+          },
+          'straight',
+        ),
+        // One parameterisation per family, not per edge: these are list props
+        // and list props are constants-only, so v3's separate arrays for its
+        // single and multiple unbundled-bezier rows collapse to one.  That is
+        // why the two rows draw the same curve here and different ones there,
+        // and it is the same limit round 46.6 recorded porting v3's default
+        // graph.  `straight-triangle` takes the width below.
+        'control-point-distances': [40, -40],
+        'control-point-weights': [0.25, 0.75],
+        'segment-distances': [40, -40],
+        'segment-weights': [0.25, 0.75],
+        'segment-radii': [15, 15],
+        'haystack-radius': 0.5,
+        'taxi-direction': 'downward',
+        'taxi-turn': 20,
+        'taxi-turn-min-distance': 5,
+        'taxi-radius': 10,
+      },
+    };
+  }
+
+  function edgeArrows(elements, def) {
+    var heads = {};
+
+    elements.edges.forEach(function (e) {
+      heads[e.data.arrow] = e.data.arrow;
+    });
+
+    return {
+      nodes: {
+        width: 16,
+        height: 16,
+        'background-color': '#5b6472',
+        label: { data: 'label' },
+        'font-size': 12,
+        color: '#1d2433',
+        // above the node rather than beside it: a left-aligned
+        // `triangle-backcurve (hollow)` is wider than the gap between
+        // columns and lands on the previous row's target node
+        'text-valign': 'top',
+        'text-margin-y': -4,
+      },
+      edges: {
+        width: 3,
+        'line-color': '#2f6fa8',
+        'curve-style': 'straight',
+        'target-arrow-shape': byData('arrow', heads, 'none'),
+        'target-arrow-color': '#2f6fa8',
+        // hollow heads are the ones that show whether the line stops where it
+        // should: v3 erases the head's footprint, v4 trims the line to it
+        // (round 56), and the two agree to 0.442% on the parity scene.  A
+        // filled head hides the whole question, which is why both are here.
+        // NOT `byData` here: its keys come from `Object.keys`, which turns a
+        // boolean into the *string* 'true', so the clause would compare
+        // `eq: 'true'` against a boolean `true` and never match.  The spec in
+        // `test/modules/debug-harness.mjs` caught exactly that on its first
+        // run — every edge read back `filled` while the fixture alternated.
+        'target-arrow-fill': {
+          case: [{ when: { data: 'hollow', eq: true }, then: 'hollow' }],
+          else: 'filled',
+        },
+        'arrow-scale': 2,
+      },
+    };
+  }
+
+  function labels(elements, def) {
+    var VALIGN = { top: 'top', center: 'center', bottom: 'bottom' };
+    var HALIGN = { left: 'left', center: 'center', right: 'right' };
+
+    return {
+      nodes: {
+        width: 40,
+        height: 40,
+        'background-color': '#dfe6ee',
+        'border-width': 2,
+        'border-color': '#5b6472',
+        label: { data: 'label' },
+        'font-size': 13,
+        color: '#1d2433',
+        // v4 has v3's 3x3 anchor grid and **not** its `-inside` variants
+        // (round 13 D3), so those three cells of v3's demo have no port; the
+        // fixture drops them rather than approximating them.
+        'text-valign': byData('valign', VALIGN, 'bottom'),
+        'text-halign': byData('halign', HALIGN, 'center'),
+        'text-wrap': byData(
+          'kind',
+          {
+            'multiline-manual': 'wrap',
+            'multiline-auto': 'wrap',
+            ellipsis: 'ellipsis',
+          },
+          'none',
+        ),
+        'text-max-width': byData(
+          'kind',
+          { 'multiline-auto': 80, ellipsis: 120 },
+          9999,
+        ),
+        // v4-only next to v3's page: any label takes a numeric rotation
+        // (round 27.7), in radians rather than v3's '30deg' string
+        'text-rotation': byData('kind', { rotated: Math.PI / 6 }, 0),
+        'text-outline-width': byData('kind', { outline: 3 }, 0),
+        'text-outline-color': '#5b6472',
+        'text-background-opacity': byData('kind', { background: 1 }, 0),
+        'text-background-color': '#888',
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': 3,
+        'text-border-width': byData('kind', { background: 1 }, 0),
+        'text-border-color': '#1d2433',
+        'text-border-opacity': byData('kind', { background: 1 }, 0),
+        // the outline and background cells read their text in white
+        color: byData(
+          'kind',
+          { outline: '#fff', background: '#fff' },
+          '#1d2433',
+        ),
+      },
+      edges: {
+        width: 3,
+        'line-color': '#2f6fa8',
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': '#2f6fa8',
+        label: { data: 'label' },
+        'font-size': 13,
+        color: '#1d2433',
+        'text-outline-width': 3,
+        'text-outline-color': '#fff',
+        // the edge label re-angles in the vertex shader from the live endpoint
+        // positions, so dragging either node re-rotates it with no rebuild
+        'text-rotation': 'autorotate',
+      },
+    };
+  }
+
   var production = {
     'em-web': emWeb,
     'em-web-clustered': emWebClustered,
@@ -635,6 +860,10 @@ var styles = (function () {
     'ndex-x-large': ndexXLarge,
     'v3-default': v3Default,
     'compound-fixture': compoundFixture,
+    'node-types': nodeTypes,
+    'edge-types': edgeTypes,
+    'edge-arrows': edgeArrows,
+    labels: labels,
     gen: generated,
     compound: generated,
   };

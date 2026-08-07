@@ -245,6 +245,124 @@ describe('debug harness (round 43)', function () {
     });
   });
 
+  describe('the v3-demo networks draw what they are named for (round 57.5)', function () {
+    // The four demos ported from `v3/documentation/demos/` exist to be looked
+    // at, so "the sheet compiles" is not the property that matters — round 43
+    // shipped exactly that guarantee and a maintainer found three defects by
+    // opening the page a day later.  What *is* checkable here is the failure
+    // these demos are most likely to have: a `case` mapper whose clause list
+    // has drifted from the fixture's data, so a keyword falls through to the
+    // `else` and renders as something else entirely.
+    //
+    // That is not hypothetical.  Round 56 found four compound arrowheads that
+    // had been listed in a golden's scene since round 27.6 and never given a
+    // mapper clause, so all four drew as `triangle` — for nine rounds, under a
+    // golden that passed the whole time.  These specs are that defect made
+    // detectable: every keyword the fixture names must read back as *itself*.
+
+    const load = (id) => {
+      const def = networks[id];
+      const elements = fixtures.generate(def.generated);
+
+      return {
+        elements,
+        cy: cytoscape({
+          elements: { nodes: elements.nodes, edges: elements.edges },
+          style: styles.sheet('production', id, elements, def),
+        }),
+      };
+    };
+
+    it('node-types: every shape keyword resolves to itself', function () {
+      const { elements, cy } = load('node-types');
+      const wrong = elements.nodes
+        .map((n) => [n.data.id, n.data.type, cy.$id(n.data.id).style('shape')])
+        .filter(([, want, got]) => got !== want);
+
+      expect(wrong, 'shapes that fell through the case mapper').to.eql([]);
+      expect(elements.nodes.length).to.be.at.least(20);
+      cy.destroy();
+    });
+
+    it('edge-arrows: every arrowhead keyword resolves to itself', function () {
+      const { elements, cy } = load('edge-arrows');
+      const wrong = elements.edges
+        .map((e) => [
+          e.data.id,
+          e.data.arrow,
+          cy.$id(e.data.id).style('target-arrow-shape'),
+        ])
+        .filter(([, want, got]) => got !== want);
+
+      expect(wrong, 'arrowheads that fell through the case mapper').to.eql([]);
+
+      // and both fills are actually present, which is the comparison the
+      // fixture alternates rows to make
+      const fills = new Set(
+        elements.edges.map((e) => cy.$id(e.data.id).style('target-arrow-fill')),
+      );
+
+      expect([...fills].sort()).to.eql(['filled', 'hollow']);
+      cy.destroy();
+    });
+
+    it('edge-types: every curve-style keyword is reached', function () {
+      const { elements, cy } = load('edge-types');
+      const got = new Set(
+        elements.edges.map((e) => cy.$id(e.data.id).style('curve-style')),
+      );
+
+      // `multi-unbundled-bezier` deliberately maps onto `unbundled-bezier` —
+      // v4's list-valued curve params are constants-only, so the two rows
+      // share one parameterisation (recorded on the sheet)
+      expect([...got].sort()).to.eql([
+        'bezier',
+        'haystack',
+        'round-segments',
+        'round-taxi',
+        'segments',
+        'straight',
+        'straight-triangle',
+        'taxi',
+        'unbundled-bezier',
+      ]);
+      cy.destroy();
+    });
+
+    it('labels: the 3x3 anchor grid is fully covered, and rotation reaches one cell', function () {
+      const { elements, cy } = load('labels');
+      const pairs = elements.nodes
+        .filter((n) => n.data.kind === 'align')
+        .map(
+          (n) =>
+            `${cy.$id(n.data.id).style('text-valign')} ${cy.$id(n.data.id).style('text-halign')}`,
+        );
+
+      expect(new Set(pairs).size, 'each cell of the grid is distinct').to.equal(
+        9,
+      );
+
+      // v4 has no `-inside` variants (round 13 D3), so nine is the whole grid
+      expect(pairs.sort()).to.eql([
+        'bottom center',
+        'bottom left',
+        'bottom right',
+        'center center',
+        'center left',
+        'center right',
+        'top center',
+        'top left',
+        'top right',
+      ]);
+      expect(cy.$id('rotated').style('text-rotation')).to.be.closeTo(
+        Math.PI / 6,
+        1e-6,
+      );
+      expect(cy.$id('ar').style('text-rotation')).to.equal('autorotate');
+      cy.destroy();
+    });
+  });
+
   describe('the sheets say what they mean', function () {
     it("labels resolve to the network's own key, not to ids", function () {
       // the defect round 43 fixed: `?labels=true` used to *replace* the sheet's

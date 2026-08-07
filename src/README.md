@@ -377,20 +377,30 @@ shader over every allocated slot.
   shared by the model (`store/`) and the renderer (`render/`) — change it
   first when the layout changes.
 - Manual testing: `npm run watch` → http://localhost:3333/.  The harness
-  (round 43) offers nine networks — six from real exports (four fixtures
-  shared with v3's WebGL harness under `v3/debug/webgl/`, the 465k-edge
-  `ndex-x-large` local to `debug/`, and a clustered variant derived from
-  em-web in-page) and three built in-page — each with a hand-authored v4
-  stylesheet, plus sections for
+  (round 43) offers **fourteen networks** — six from real exports (four
+  fixtures shared with v3's WebGL harness under `v3/debug/webgl/`, the
+  465k-edge `ndex-x-large` local to `debug/`, and a clustered variant
+  derived from em-web in-page) and eight built in-page — each with a
+  hand-authored v4 stylesheet, plus sections for
   the viewport, layouts, the core toggles, query-object selection, an
-  event log and add/remove.  `test/modules/debug-harness.mjs` is its only
+  event log and add/remove.
+  Five of them are about *drawing* rather than scale, and they are the
+  ones to open when a rendering change needs an eye on it: v3's own
+  default debug graph (`?network=v3-default`, round 46.6) and its four
+  documentation demos (`node-types`, `edge-types`, `edge-arrows`,
+  `labels` — round 57.5), which between them put every shape keyword,
+  every curve style, every arrowhead in both fills and the whole label
+  surface on one screen.
+  `test/modules/debug-harness.mjs` is its only
   automated coverage: every fixture exists at the path the page fetches,
   every sheet compiles against that fixture's real data, the compound
   fixture lays out into disjoint parent boxes, the event log reads
-  layout once per frame rather than once per event, and `watch:sync`
+  layout once per frame rather than once per event, `watch:sync`
   binds livereload on every interface (the 2026-08-05 review pass —
   three defects the harness's first real user found, recorded under
-  round 43 in PLAN.md).
+  round 43 in PLAN.md), and — round 57.5 — **every keyword each demo
+  names reads back as itself**, which is the `case`-clause drift that
+  left four arrowheads undrawn for nine rounds under a passing golden.
   Browser tests: the `renderer` Playwright project, plus the
   `visual` project — golden-image diffs (pixelmatch against PNGs
   in `playwright-tests/goldens/`, pinned to the SwiftShader adapter so

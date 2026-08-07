@@ -331,6 +331,265 @@ var fixtures = (function () {
     };
   }
 
+  // -- round 57.5: four demos ported from v3's documentation ---------------
+  //
+  // `v3/documentation/demos/{node-types,edge-types,edge-arrows,labels}` are the
+  // four pages a person opens to judge *drawing* rather than scale, and round
+  // 46.6 added v3's default debug graph for the same reason.  Each is rebuilt
+  // here rather than fetched: they are a few dozen elements of hand-written
+  // JSON, and building them in-page keeps the fixture set to files that are
+  // large enough to be worth a file.
+  //
+  // The v3 demos style themselves with `data(...)` mappers and classes.  v4
+  // has the first and not the second, so where v3 writes a class these carry a
+  // data key and the sheet in `debug/styles.js` maps it through a `case`.
+  // Positions are explicit, because the point of each of these is a *layout
+  // you can read*, and grid's column count depends on the container's aspect
+  // ratio (the trap round 43.12 recorded).
+
+  /** v3's `node-types` demo: one node per shape keyword, in v3's order. */
+  function nodeTypesFixture() {
+    // v3's list, verbatim and in its order.  v4 accepts every one of them —
+    // round 27 completed the vocabulary — which is the thing this fixture is
+    // for: 26 shapes drawn side by side is how you see that a keyword renders
+    // as itself rather than falling through to `triangle` (the defect round 56
+    // found hiding under a cropped golden).
+    var types = [
+      'ellipse',
+      'triangle',
+      'round-triangle',
+      'rectangle',
+      'round-rectangle',
+      'bottom-round-rectangle',
+      'cut-rectangle',
+      'barrel',
+      'rhomboid',
+      'right-rhomboid',
+      'diamond',
+      'round-diamond',
+      'pentagon',
+      'round-pentagon',
+      'hexagon',
+      'round-hexagon',
+      'concave-hexagon',
+      'heptagon',
+      'round-heptagon',
+      'octagon',
+      'round-octagon',
+      'star',
+      'tag',
+      'round-tag',
+      'vee',
+      'polygon',
+    ];
+    var COLS = 7;
+    var nodes = types.map(function (type, i) {
+      return {
+        data: { id: type, type: type, label: type },
+        position: { x: (i % COLS) * 150, y: Math.floor(i / COLS) * 150 },
+      };
+    });
+
+    return { nodes: nodes, edges: [], hasPositions: true };
+  }
+
+  /** v3's `edge-types` demo: one row per `curve-style`. */
+  function edgeTypesFixture() {
+    // v3 spells the families as classes and gives `ab`, `bc` and friends their
+    // own control-point and segment arrays.  v4's list-valued curve params are
+    // constants-only (the round-12b scope rule), so a family gets one
+    // parameterisation — recorded on the sheet, and the same limit round 46.6
+    // hit porting v3's default graph.
+    //
+    // `count` is how many parallel edges the row draws, which is the whole
+    // point for `bezier` (it bundles multi-edges only, so a lone bezier edge
+    // renders straight — round 12's signed-off call 2) and for `haystack`.
+    var rows = [
+      { type: 'bezier', label: 'bezier (x3)', count: 3, back: true },
+      { type: 'unbundled-bezier', label: 'unbundled-bezier', count: 1 },
+      {
+        type: 'multi-unbundled-bezier',
+        label: 'unbundled-bezier (multi)',
+        count: 1,
+      },
+      { type: 'straight', label: 'straight', count: 1 },
+      { type: 'haystack', label: 'haystack (x4)', count: 4 },
+      { type: 'segments', label: 'segments', count: 1 },
+      { type: 'round-segments', label: 'round-segments', count: 1 },
+      { type: 'taxi', label: 'taxi', count: 1, drop: 110 },
+      { type: 'round-taxi', label: 'round-taxi', count: 1, drop: 110 },
+      { type: 'straight-triangle', label: 'straight-triangle', count: 1 },
+    ];
+    var nodes = [];
+    var edges = [];
+    var y = 0;
+
+    rows.forEach(function (row, r) {
+      var src = 's' + r;
+      var tgt = 't' + r;
+      var drop = row.drop || 0;
+
+      nodes.push({
+        data: { id: src, label: row.label },
+        position: { x: 0, y: y },
+      });
+      nodes.push({ data: { id: tgt }, position: { x: 320, y: y + drop } });
+
+      for (var k = 0; k < row.count; k++) {
+        edges.push({
+          data: {
+            id: src + '-' + k,
+            source: src,
+            target: tgt,
+            type: row.type,
+          },
+        });
+      }
+
+      // v3's bezier row includes one edge the other way, which is what makes
+      // the antiparallel stagger sign visible
+      if (row.back) {
+        edges.push({
+          data: { id: tgt + '-back', source: tgt, target: src, type: row.type },
+        });
+      }
+
+      y += 150 + drop;
+    });
+
+    return { nodes: nodes, edges: edges, hasPositions: true };
+  }
+
+  /** v3's `edge-arrows` demo: one row per arrowhead keyword. */
+  function edgeArrowsFixture() {
+    // Every head v4 draws, filled and hollow side by side.  v3's page has a
+    // button that toggles `arrow-fill` over the whole graph; alternating it
+    // per row shows both at once, which is what you want when the question is
+    // "does this head look right", and it exercises the round-56 trim in both
+    // of the states that behave differently (an opaque head hides the line
+    // under it; a hollow one does not, so the line has to stop).
+    var heads = [
+      'triangle',
+      'triangle-tee',
+      'circle-triangle',
+      'triangle-cross',
+      'triangle-backcurve',
+      'vee',
+      'tee',
+      'square',
+      'circle',
+      'diamond',
+      'chevron',
+      'none',
+    ];
+    var COLS = 3;
+    var nodes = [];
+    var edges = [];
+
+    heads.forEach(function (head, i) {
+      var x = (i % COLS) * 300;
+      var y = Math.floor(i / COLS) * 130;
+      var src = 'a' + i;
+      var tgt = 'b' + i;
+      // alternate the fill *by row*, so a row reads as one comparison
+      var hollow = Math.floor(i / COLS) % 2 === 1;
+
+      nodes.push({
+        data: { id: src, label: head + (hollow ? ' (hollow)' : '') },
+        position: { x: x, y: y },
+      });
+      nodes.push({ data: { id: tgt }, position: { x: x + 190, y: y } });
+      edges.push({
+        data: {
+          id: 'e' + i,
+          source: src,
+          target: tgt,
+          arrow: head,
+          hollow: hollow,
+        },
+      });
+    });
+
+    return { nodes: nodes, edges: edges, hasPositions: true };
+  }
+
+  /** v3's `labels` demo: the alignment grid and the label decorations. */
+  function labelsFixture() {
+    // v3's demo also covers `top-inside`/`left-inside` and their siblings.
+    // **v4 has the 3x3 grid only** (round 13 D3) — the `-inside` keywords
+    // throw — so those three cells are dropped rather than faked, and the
+    // sheet says so.  The two v4 gains v3's page has no cell for are here
+    // instead: a numeric `text-rotation` (round 27.7, any label) and an
+    // autorotated *edge* label.
+    var cells = [
+      ['top', 'left'],
+      ['top', 'center'],
+      ['top', 'right'],
+      ['center', 'left'],
+      ['center', 'center'],
+      ['center', 'right'],
+      ['bottom', 'left'],
+      ['bottom', 'center'],
+      ['bottom', 'right'],
+    ];
+    var nodes = [];
+    var edges = [];
+    var COLS = 3;
+    var i;
+
+    for (i = 0; i < cells.length; i++) {
+      nodes.push({
+        data: {
+          id: 'align' + i,
+          kind: 'align',
+          valign: cells[i][0],
+          halign: cells[i][1],
+          label: cells[i][0] + ' ' + cells[i][1],
+        },
+        position: { x: (i % COLS) * 220, y: Math.floor(i / COLS) * 130 },
+      });
+    }
+
+    var extras = [
+      { kind: 'multiline-manual', label: 'multiline manual\nfoo\nbar\nbaz' },
+      { kind: 'multiline-auto', label: 'multiline auto foo bar baz' },
+      { kind: 'outline', label: 'outline' },
+      { kind: 'background', label: 'background' },
+      { kind: 'rotated', label: 'rotated 30deg' },
+      { kind: 'ellipsis', label: 'ellipsis truncates this one' },
+    ];
+
+    for (i = 0; i < extras.length; i++) {
+      nodes.push({
+        data: {
+          id: extras[i].kind,
+          kind: extras[i].kind,
+          label: extras[i].label,
+        },
+        position: { x: (i % COLS) * 220, y: 390 + Math.floor(i / COLS) * 150 },
+      });
+    }
+
+    nodes.push({
+      data: { id: 'ar-src', kind: 'plain', label: 'move me' },
+      position: { x: 0, y: 700 },
+    });
+    nodes.push({
+      data: { id: 'ar-tgt', kind: 'plain', label: '' },
+      position: { x: 440, y: 790 },
+    });
+    edges.push({
+      data: {
+        id: 'ar',
+        source: 'ar-src',
+        target: 'ar-tgt',
+        label: 'autorotate (drag an end)',
+      },
+    });
+
+    return { nodes: nodes, edges: edges, hasPositions: true };
+  }
+
   function generate(kind, spec) {
     if (kind === 'v3-default') {
       return v3DefaultFixture();
@@ -340,6 +599,18 @@ var fixtures = (function () {
     }
     if (kind === 'fixture') {
       return compoundFixture();
+    }
+    if (kind === 'node-types') {
+      return nodeTypesFixture();
+    }
+    if (kind === 'edge-types') {
+      return edgeTypesFixture();
+    }
+    if (kind === 'edge-arrows') {
+      return edgeArrowsFixture();
+    }
+    if (kind === 'labels') {
+      return labelsFixture();
     }
 
     return generateNetwork(spec);

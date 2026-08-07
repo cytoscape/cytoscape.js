@@ -1108,7 +1108,7 @@ src/
   interact/pointer.mts   # pointer/wheel/touch: pan, zoom, hover, taps, box select, drag, pinch, cxt
   README.md              # scope + accepted deviations (the maintained doc)
 debug/                   # the manual harness, rebuilt in round 43:
-                         #   networks.js   the nine networks: six from real exports (four fixtures
+                         #   networks.js   the fourteen networks: six from real exports (four fixtures
                          #                 shared with v3's WebGL harness under v3/debug/webgl/, the
                          #                 465k-edge ndex-x-large local here, and a clustered variant
                          #                 derived from em-web in-page) + three built in-page
@@ -14012,7 +14012,44 @@ bakes into the shader where v3 spells them in its default stylesheet.
   cites now read 0.000% / 0.442% / 0 differing pixels.  A list of what is
   still open is worth exactly as much as its freshness, which is now said
   in the list itself.
-- [ ] **57.5 Four more debug networks.**
+- [x] **57.5 Four more debug networks** (2026-08-07) —
+  `?network=node-types` / `edge-types` / `edge-arrows` / `labels`,
+  ported from `v3/documentation/demos/`, built in-page with explicit
+  positions (grid's column count depends on the container's aspect
+  ratio — the trap round 43.12 recorded) and a hand-authored v4 sheet
+  each.  Where v3 writes a class selector these carry a data key and the
+  sheet maps it through a `case`, which is v4's answer to per-element
+  styling.  The harness goes from ten networks to fourteen, and five of
+  them are now about *drawing* rather than scale.
+  Three things the port could not take verbatim, each a recorded limit
+  rather than a shortcut: v3's `shape-polygon-points: data(points)` has
+  no v4 spelling (list props are constants-only), so the cross rides as
+  a constant that only the `polygon` node reads; the two
+  unbundled-bezier rows share one parameterisation for the same reason
+  (round 46.6 hit this porting v3's default graph); and v4 has the 3x3
+  label-anchor grid without v3's `-inside` variants (round 13 D3), so
+  those cells are dropped rather than faked.
+  **The spec is the interesting part.**  "The sheet compiles" is what
+  round 43 shipped, and a maintainer found three defects by opening the
+  page a day later — so these four get the property they exist for
+  instead: *every keyword the fixture names must read back as itself*.
+  That is round 56's defect made detectable, where four compound
+  arrowheads had been listed in a golden's scene since round 27.6 with
+  no mapper clause, drawing as `triangle` for nine rounds under a golden
+  that passed throughout.
+  It found one on its first run.  `arrow-fill` never resolved to
+  `hollow`: the helper builds its clauses from `Object.keys`, which
+  turns the boolean `true` into the string `'true'`, so the comparison
+  was `eq: 'true'` against a boolean and every edge read `filled`.  The
+  screenshot would have shown twelve identical filled heads — plausible,
+  and exactly the failure the spec is named for.
+  Controls: unmapping one shape keyword, one curve family, or collapsing
+  two cells of the anchor grid each fail exactly one spec.
+  And the page was driven, per the standing rule: all four render in a
+  real browser at their expected counts with no page errors, and the
+  screenshots moved the arrowhead labels above their nodes (a
+  left-aligned `triangle-backcurve (hollow)` overhangs the next column)
+  — a defect no spec would ever have raised.
 - [ ] **57.1 The default stylesheet.**  Last, because it is the only item
   that moves pixels and so the only one whose verification is the browser
   tier.

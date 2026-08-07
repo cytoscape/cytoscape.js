@@ -96,8 +96,10 @@ export function indexPage({ state, parts }) {
   return `<h1>cytoscape.js v4 — status</h1>
   <p class="lede">A live preview of the <code>v4</code> branch: the development harness running on the
   WebGPU renderer, the benchmark archive, the generated API reference, and the documents that record
-  what v4 is and why. Rebuilt on every push. <strong>Not a release</strong> — for the released library
-  use <a href="https://www.npmjs.com/package/cytoscape" rel="noreferrer">cytoscape@3</a>.</p>
+  what v4 is and why. Rebuilt on every push. <strong>Not a release, and not close to one</strong> — the
+  round list in the development record is what has been written down rather than everything 4.0 needs.
+  For the released library use
+  <a href="https://www.npmjs.com/package/cytoscape" rel="noreferrer">cytoscape@3</a>.</p>
 
   <div class="tiles">${tiles}</div>
   ${machine}

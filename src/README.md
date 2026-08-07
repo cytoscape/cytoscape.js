@@ -25,6 +25,17 @@ instead), and **"Follow-up hooks"** (what is deliberately still open).
 Everything between here and them is a chronology, and skipping it costs
 nothing.
 
+**How far along this is.**  v4 covers its own documented scope and is
+being hardened; it is **not close to a release**, and the round list in
+`PLAN.md` is what has been *written down* rather than everything 4.0
+needs — several rounds are known to be needed and are not logged yet.
+This document has the same optimistic bias `PLAN.md` does and for the
+same reason: it is assembled from rounds that closed green, so "landed",
+"complete" and "at parity" appear on almost every line.  Each is true of
+the scope it names.  None of them is a statement about the distance to
+4.0, and "Follow-up hooks" at the end is the closest thing here to an
+honest inventory — an inventory, not an estimate.
+
 ## What landed, round by round
 
 Round 13 (2026-07-31) swept
@@ -3723,22 +3734,23 @@ still be what it says.
 
 ## Follow-up hooks
 
-- **Round 55's remainder — the arrow `gap`.**  The one piece of v4's
-  rendering known to differ from v3 in a way a user sees, and the only
-  entry in this list that is a *measured defect* rather than scheduled
-  scope.  v3 shortens the drawn line by
-  `arrowShapes[shape].gap(edge)`; v4 shortens it by nothing, so the line
-  runs under the head and out the other side.  Against v3: **3.5%** of
-  the frame for a filled head's tip wedge, **11.8%** for a hollow head
-  showing the line through, **26.7%** for a translucent edge
-  double-compositing.  Everything except the plumbing is in the tree —
-  the per-shape constants in `src/shape-points.mts` (verified against
-  v3's own functions), three failing `parity-arrow-*` scenes, and a
-  benchmark baseline to measure the change against.  What remains is
-  carrying the trim to the edge vertex shaders, which needs
-  `edge.width` widened to two components so it can also carry the arrow
-  record.  Hollow *mid* arrows are out of scope and may never be
-  supported.
+*This list is where an over-confident document has to be honest, so read
+it as the counterweight to everything above.  It is also the section
+that drifts hardest: the entry immediately below described round 55's
+unbuilt arrow `gap` for a day after **round 56 built it**, which is the
+failure mode the standing closing-sweep rule exists for and which found
+it here in round 57.4.*
+
+- ~~**Round 55's remainder — the arrow `gap`**~~ — **landed as round 56**
+  (2026-08-07).  v3's `gap` and `spacing` both port, on the CPU and in
+  generated WGSL; the three scenes that measured 3.5% / 11.8% / 26.7%
+  against v3 now read **0.000% / 0.442% / 0 differing pixels**.  What is
+  left of it is three recorded deviations rather than unbuilt work, and
+  they are below: hollow **mid** arrows (no trim reaches mid-line — open
+  call 21, and they may end up unsupported), edge labels and the
+  overlay/underlay/casing strokes riding the *untrimmed* path (open call
+  24 — a binding, not a decision), and two overlapping translucent heads
+  compositing where v3's erase flattens them.
 - **The release sequence** (rounds 44–51), and what is left of the four
   that have landed.  **44** (packaging) is complete as a source
   concern; its one remaining act is release-time and belongs to round

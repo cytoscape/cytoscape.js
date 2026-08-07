@@ -230,11 +230,29 @@ is a cleanup round raised by the maintainer (the default stylesheet,
 `oxfmt`, the documents' readability and their over-confidence, more
 debug networks).
 
-**The round list in this file is the currently *documented* set, not a
-plan for everything v4 needs before 4.0.**
-`src/README.md` is
-the maintained scope / deviations doc; this file records each round's
-plan and outcome.
+**v4 is not close to a release, and this file is not a route to one.**
+The round list is the currently *documented* set, not a plan for
+everything v4 needs before 4.0: several rounds are known to be needed
+and are not logged yet, and four of the rounds that have shipped — 43,
+46.5, 55 and 56 — were each inserted after the sequence they interrupt
+was already planned.  Rounds 55 and 56 are the pattern to expect rather
+than the exception: both began with a maintainer opening a page and
+seeing something no test in this repository could, and both found more
+than they set out to fix.  Read "what remains" as an inventory of what
+has been written down; it is not an estimate, and a round's absence from
+it is not evidence that the work is absent too.
+
+The reason this needs saying at all is that a per-round record reads
+optimistically by construction.  Every round closes green, so a file
+made of closed rounds reads like a finished thing — and the phrases that
+accumulate in it ("the autonomous shelf is clear", "what remains is
+calls rather than effort", "v3's arrow vocabulary is complete") were
+each true about their own scope and say nothing about the distance to
+4.0.  They are kept as written, because each is accurate history; this
+paragraph is here so the sum of them is not mistaken for a claim.
+
+`src/README.md` is the maintained scope / deviations doc; this file
+records each round's plan and outcome.
 
 ## Process (applies to all work under this plan)
 
@@ -13973,7 +13991,27 @@ bakes into the shader where v3 spells them in its default stylesheet.
   to skip rather than as 250 lines of undifferentiated text.  No prose
   was dropped: the edit is paragraph breaks, four connective sentences
   where a `;` became a full stop, and the two leads.
-- [ ] **57.4 The readiness language.**
+- [x] **57.4 The readiness language** (2026-08-07) — the claim is now
+  made in the same words in four places, because a reader arrives at
+  whichever one they arrive at: this file's header, `src/README.md`'s
+  lead, the status site's landing page (**"Not a release, and not close
+  to one"**) and `EXECUTIVE_SUMMARY.md`, which round 56 had already
+  tempered.  `README.md`, `CHANGELOG.md` and `MIGRATING.md` — the three
+  that ship — were checked and already said "not released; use
+  `cytoscape@3`", so they gained nothing.
+  Both documents also say *why* they read optimistically, which is the
+  part that stops the sentence being decoration: they are assembled from
+  rounds that closed green, so "landed", "complete" and "at parity"
+  appear on nearly every line and each is true about its own scope
+  only.  Those phrases are kept as written — they are accurate history —
+  and the caveat is what keeps their sum from reading as a claim.
+  **And the sweep found the section that had drifted the other way**:
+  `src/README.md`'s follow-up hooks still opened with round 55's unbuilt
+  arrow `gap`, the day after round 56 built it, describing v4's largest
+  measured divergence from v3 as outstanding when the three scenes it
+  cites now read 0.000% / 0.442% / 0 differing pixels.  A list of what is
+  still open is worth exactly as much as its freshness, which is now said
+  in the list itself.
 - [ ] **57.5 Four more debug networks.**
 - [ ] **57.1 The default stylesheet.**  Last, because it is the only item
   that moves pixels and so the only one whose verification is the browser

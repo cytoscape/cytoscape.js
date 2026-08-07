@@ -13516,17 +13516,45 @@ rendered endpoint from the other direction.
 
 ### Four predictions measurement corrected
 
-1. **Round 55's design note is wrong about the trim.**  It says trimming
-   to "the head's back extent" reproduces v3's erase.  A/B'd three ways
-   on this machine, and it is *worse*: `closeup-gap` 0.263% against
-   0.020%, `closeup-heads` 0.047% against 0.000%.  It over-trims wherever
-   the head is narrower than the line, and a **concave** head breaks its
-   premise outright — v3 shows the line through a `vee`'s notch, whose
-   axial depth is 0.15 against a 0.3 back extent.  The rule that wins is
-   v3's own `gap`, extended to the head's *contiguous axial depth* only
-   where that is visible, which is a hollow end.  `ARROW_AXIAL_DEPTH` is
-   computed by walking the axis rather than declared, for the reason
-   27.6's bound is computed.
+1. **Round 55's design note is half right, and the half that is wrong is
+   its scope rather than its idea.**  It says trimming to "the head's
+   back extent" reproduces v3's erase.  Two corrections, and the second
+   was the maintainer's, not the round's:
+   - *Back extent* is the wrong depth for a **concave** head.  v3 shows
+     the line through a `vee`'s notch, so the trim has to stop at the
+     head's **contiguous axial depth** — 0.15 for `vee` against a 0.3
+     back extent.  `ARROW_AXIAL_DEPTH` is computed by walking the axis
+     rather than declared, for the reason 27.6's bound is computed.
+   - The round's *first* answer extended that trim only for **hollow**
+     ends, chosen from an A/B rather than from a principle, and the
+     maintainer pushed back: if round 55's approach works for most head
+     types, why not use it for most?  Re-derived, the principle is
+     **"does the head hide the line?"** — an opaque filled head does, so
+     v3's plain `gap` is exact and shortening further would cut the
+     slivers v3 leaves where the head is narrower than the line; a
+     hollow *or translucent* head does not, so v3's `destination-out`
+     erase is what hides the line and the trim must reach the head's own
+     depth.
+   Measured three ways on the corrected suite, and the generalisation is
+   strictly better than either blanket rule:
+
+   | scene | hollow only | always | never | **hollow or translucent** |
+   |---|---|---|---|---|
+   | `arrow-alpha` | 0.853% | 0.000% | 0.853% | **0.000%** |
+   | `closeup-gap` | 0.020% | 0.263% | 0.020% | **0.020%** |
+   | `closeup-heads` | 0.000% | 0.047% | 0.000% | **0.000%** |
+   | `closeup-curves` | 0.005% | 0.092% | 0.005% | **0.005%** |
+
+   A translucent edge with arrowheads is now **pixel-identical to v3** —
+   0 differing pixels — which closes the last of the five things the
+   maintainer reported at the head of round 55.
+   The flag rides in `edge.width`'s mirror lane, not in
+   `edge.arrowShapes`: the mirror is v4's own private channel to the
+   vertex stages, so spending its copy of the reserved span costs the
+   real column's reserve nothing (which item 23 is about).  That makes
+   the mirror a **derived** word rather than a bit-exact copy, and the
+   store re-derives it from *both* inputs — the shape word and the two
+   stored arrow colours.
 2. **`parity-arrow-alpha` was measuring the wrong thing** — round 55's own
    cautionary case, one level up.  At `arrow-scale: 4` its heads are
    longer than the chord, so they overlap *each other*, and v3 erases
@@ -13534,11 +13562,19 @@ rendered endpoint from the other direction.
    under a name that says line-over-head, and sat at 18.6% after the fix
    for that reason alone.  Retuned to scale 1.5: **0.853%**, with an
    opaque-line control of **0.000%**.
-3. **The goldens could not have caught any of this.**  Measured on one
-   machine, pre- and post-change: 11 of 43 goldens moved, the largest by
-   **0.178%**, against a 0.5% bound.  A change that moved a live parity
-   scene from 5.610% to 0.020% moves the golden tier by a third of its
-   tolerance.  Round 27 recorded this qualitatively; this is the number.
+3. **The goldens could not have caught any of this, so one was built that
+   can.**  Measured on one machine, pre- and post-change: 11 of 43
+   goldens moved, the largest by **0.178%**, against a 0.5% bound.  That
+   is not a tuning accident — it is what the trim *is*: v3 sizes its gap
+   so the line stops under the head, so on an opaque filled head the
+   whole difference is covered, and every arrow golden in the suite used
+   opaque filled heads.
+   The new `arrow-gap` golden is built from the heads that do **not**
+   cover it — hollow and translucent, four rows, at zoom 4.  Its two
+   controls: with the trim degraded to v3's plain `gap` it moves
+   **1.394%**, and with the trim removed entirely (v4 before this round)
+   **5.253%** — 2.8x and 10.5x its bound, against the 0.178% the other 42
+   managed between them.
 4. **`arrow-shape` is not a property in either library.**  v3 registers
    only the four prefixed spellings, so the bare name the routing sheets
    carried was a no-op v3 warned about on every scene — invisible because

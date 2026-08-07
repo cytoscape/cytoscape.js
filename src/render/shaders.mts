@@ -25,7 +25,8 @@ import {
 import {
   ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
   ARROW_SHIFT_MID_SOURCE, ARROW_SHIFT_MID_TARGET, ARROW_SHIFT_SCALE,
-  ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET, CUT_RECTANGLE_CORNER,
+  ARROW_SHIFT_SOURCE, ARROW_SHIFT_SRC_SHOWS_LINE, ARROW_SHIFT_TARGET,
+  ARROW_SHIFT_TGT_SHOWS_LINE, CUT_RECTANGLE_CORNER,
   ARROW_CIRCLE, ARROW_CIRCLE_TRIANGLE, ARROW_CIRCLE_TRIANGLE_RADIUS,
   ARROW_TEE, ARROW_TRIANGLE_CROSS, ARROW_TRIANGLE_TEE,
   BARREL_CTRL_OFFSET_PCT, BARREL_CURVE_SEGMENTS,
@@ -1309,9 +1310,16 @@ ${ depths }    default: { return 0.0; }
 // depth.  Under the gap the line is inside the head either way; past the
 // depth the head no longer covers the axis and v3 would show the line
 // (a vee's notch is the case that makes this not simply ARROW_BACK).
-fn arrowDrawTrimW(shape: u32, hollow: bool, wModel: f32, scale: f32) -> f32 {
+fn arrowDrawTrimW(shape: u32, showsLine: bool, wModel: f32, scale: f32) -> f32 {
   let gap = arrowGapW(shape, wModel, scale);
-  if (!hollow) { return gap; }
+
+  // An opaque filled head hides the line under it either way, so v3's
+  // gap is exactly right and shortening further would cut the slivers v3
+  // leaves where the head is narrower than the line.  A head that shows
+  // the line — hollow, or translucent — is hidden by v3's *erase*
+  // instead, which reaches the head's own depth.
+  if (!showsLine) { return gap; }
+
   return max(gap, arrowAxialDepthW(shape) * arrowSizeW(wModel, scale));
 }
 
@@ -1323,12 +1331,13 @@ fn arrowTrimOf(w: vec2f) -> vec4f {
   let scale = scaleOfWord(word);
   let src = srcShapeOf(word);
   let tgt = tgtShapeOf(word);
-  let srcHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u;
-  let tgtHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u;
+  // derived by the store, mirror-only: hollow or translucent
+  let srcShows = ((word >> ${ ARROW_SHIFT_SRC_SHOWS_LINE }u) & 1u) == 1u;
+  let tgtShows = ((word >> ${ ARROW_SHIFT_TGT_SHOWS_LINE }u) & 1u) == 1u;
 
   return vec4f(
-    arrowDrawTrimW(src, srcHollow, w.x, scale),
-    arrowDrawTrimW(tgt, tgtHollow, w.x, scale),
+    arrowDrawTrimW(src, srcShows, w.x, scale),
+    arrowDrawTrimW(tgt, tgtShows, w.x, scale),
     arrowSpacingW(src, w.x, scale),
     arrowSpacingW(tgt, w.x, scale));
 }
@@ -2196,11 +2205,11 @@ fn vsEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> E
 
     // v3 shortens each boundary point *toward the far end*, so the two
     // trims are independent and neither can cross the other
-    let srcHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_SOURCE }u) & 1u) == 1u;
-    let tgtHollow = ((word >> ${ ARROW_SHIFT_HOLLOW_TARGET }u) & 1u) == 1u;
+    let srcShows = ((word >> ${ ARROW_SHIFT_SRC_SHOWS_LINE }u) & 1u) == 1u;
+    let tgtShows = ((word >> ${ ARROW_SHIFT_TGT_SHOWS_LINE }u) & 1u) == 1u;
 
-    var ts = arrowDrawTrimW(srcShapeOf(word), srcHollow, wModel, scale);
-    var tt = arrowDrawTrimW(tgtShapeOf(word), tgtHollow, wModel, scale);
+    var ts = arrowDrawTrimW(srcShapeOf(word), srcShows, wModel, scale);
+    var tt = arrowDrawTrimW(tgtShapeOf(word), tgtShows, wModel, scale);
 
     // Heads bigger than the edge they sit on: v3 shortens each end
     // independently, so its two line ends cross and it draws a short

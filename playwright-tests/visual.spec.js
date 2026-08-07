@@ -414,6 +414,70 @@ test.describe( 'WebGPU visual goldens', () => {
     checkGolden( 'arrow-shapes', await exportPng( page, { bg: '#fff' } ), testInfo );
   } );
 
+  test( 'golden: the arrow gap — hollow and translucent heads (round 56)', async ( { page }, testInfo ) => {
+    test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
+    await useViewport( page, 400, 500 );
+
+    /*
+     * The goldens could not see round 56's arrow trim land: of 43, eleven
+     * moved and the largest by **0.178%**, against a 0.5% bound.  That is
+     * not an accident of tuning — it is what the trim *is*.  v3 sizes its
+     * gap so the line stops under the head, so on an opaque filled head
+     * the whole difference is covered, and every arrow golden in this
+     * suite used opaque filled heads.
+     *
+     * So this scene is built from the heads that do *not* cover it:
+     * hollow ones, whose interior shows what is under it, and translucent
+     * ones, where line and head each contribute their own alpha.  Those
+     * are also the two cases the maintainer reported.
+     *
+     * Sized for sensitivity rather than looks: short edges at zoom 4, so
+     * the band between v3's gap point and the head's back edge is tens of
+     * pixels rather than single digits, and six ends rather than two,
+     * because the band is per end.
+     */
+    // width 4 rather than 5: v3's `getArrowWidth` floors at 29 before
+    // applying `arrow-scale`, so below about width 3.2 the head stops
+    // shrinking while the gap keeps going — which *widens* the band this
+    // scene is built to see.  Four rows because the band is per end.
+    const rows = [
+      { y: -51, fill: 'hollow', opacity: 1 },
+      { y: -17, fill: 'filled', opacity: 0.45 },
+      { y: 17, fill: 'hollow', opacity: 0.45 },
+      { y: 51, fill: 'hollow', opacity: 1 }
+    ];
+    const elements = rows.flatMap( ( r, i ) => [
+      { data: { id: `s${i}` }, position: { x: -34, y: r.y } },
+      { data: { id: `t${i}` }, position: { x: 34, y: r.y } },
+      { data: { id: `e${i}`, row: i, source: `s${i}`, target: `t${i}` } }
+    ] );
+
+    await makeReadyCy( page, {
+      elements,
+      style: {
+        nodes: { 'width': 16, 'height': 16, 'background-color': '#c0392b' },
+        edges: {
+          'curve-style': 'straight',
+          'width': 4, 'arrow-scale': 2.4, 'line-color': '#2c3e50',
+          'source-arrow-shape': 'triangle', 'target-arrow-shape': 'triangle',
+          'source-arrow-color': '#2c3e50', 'target-arrow-color': '#2c3e50',
+          'source-arrow-fill': { case: rows.map( ( r, i ) => (
+            { when: { data: 'row', eq: i }, then: r.fill } ) ), else: 'filled' },
+          'target-arrow-fill': { case: rows.map( ( r, i ) => (
+            { when: { data: 'row', eq: i }, then: r.fill } ) ), else: 'filled' },
+          'line-opacity': { case: rows.map( ( r, i ) => (
+            { when: { data: 'row', eq: i }, then: r.opacity } ) ), else: 1 }
+        }
+      },
+      zoom: 4,
+      pan: { x: 200, y: 250 }
+    } );
+    await waitFrames( page );
+
+    await expectGraphFits( page, 'arrow-gap' );
+    checkGolden( 'arrow-gap', await exportPng( page, { bg: '#fff' } ), testInfo );
+  } );
+
   test( 'golden: edge line styles (solid, dashed, dotted)', async ( { page }, testInfo ) => {
     test.skip( !( await hasAdapter( page ) ), 'no WebGPU adapter available' );
 

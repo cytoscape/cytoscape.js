@@ -22,7 +22,9 @@ import {
   CURVE_BEZIER, CURVE_CMPD, CURVE_HAS_ENDPT, CURVE_HAYSTACK, CURVE_LOOP, CURVE_MULTI,
   CURVE_SEGMENTS,
   CURVE_STRAIGHT, CURVE_TAXI, CURVE_TRIANGLE,
-  ARROW_SHAPE_MASK, ARROW_SHIFT_SCALE, ARROW_SHIFT_SOURCE, ARROW_SHIFT_TARGET,
+  ARROW_SHAPE_MASK, ARROW_SHIFT_HOLLOW_SOURCE, ARROW_SHIFT_HOLLOW_TARGET,
+  ARROW_SHIFT_SCALE, ARROW_SHIFT_SOURCE, ARROW_SHIFT_SRC_SHOWS_LINE,
+  ARROW_SHIFT_TARGET, ARROW_SHIFT_TGT_SHOWS_LINE,
   FLAG_ALIVE, FLAG_CHILD, FLAG_CURVED, FLAG_CURVED_BOX, FLAG_GRABBABLE, FLAG_LOCKED,
   FLAG_DRAWN, FLAG_PANNABLE, FLAG_PARENT, FLAG_SELECTABLE, FLAG_SELECTED, FLAG_SELF_HIDDEN,
   FLAG_SELF_INVISIBLE, FLAG_VISIBLE, LABEL_MARGIN, NO_SLOT,
@@ -2045,21 +2047,60 @@ export class GraphStore implements ModelView {
    */
   setArrowShapes( slot: number, word: number ): void {
     const shapes = this.edges.column( 'edge.arrowShapes' ) as Uint32Array;
+
+    if( shapes[ slot ] !== word ){
+      shapes[ slot ] = word;
+      // the gap shortens the drawn line, so this moves geometry
+      this.geoEpoch++;
+      this.dirty.mark( 'edge.arrowShapes', slot );
+    }
+
+    this.updateArrowBits( slot );
+  }
+
+  /**
+   * Write-through for `edge.width`'s mirror lane: the shape word plus the
+   * two `SHOWS_LINE` flags (round 56).
+   *
+   * Called from every write to either input — the shape word and the two
+   * end-arrow colours — because the flags derive from both.  A head
+   * "shows the line" when it is hollow, or when its stored alpha is below
+   * opaque: exactly the cases where v3's `destination-out` erase is doing
+   * the hiding rather than the head's own fill, and so exactly the cases
+   * where v4 has to shorten the line past v3's `gap` to the head's own
+   * depth.  An opaque filled head hides the difference either way, and
+   * shortening further would cut the slivers v3 leaves where the head is
+   * narrower than the line.
+   *
+   * Known limit, inherited rather than introduced: a paint channel the
+   * mapper kernel owns can leave the *stored* arrow bytes stale (see the
+   * getters' note in `style.mts`), so a head made translucent purely
+   * on-device reads as opaque here.  The CPU column is what every other
+   * CPU consumer reads too.
+   */
+  private updateArrowBits( slot: number ): void {
     const width = this.edges.column( 'edge.width' ) as Float32Array;
+    const word = ( this.edges.column( 'edge.arrowShapes' ) as Uint32Array )[ slot ];
+    const src = this.edges.column( 'edge.sourceArrow' ) as Uint8Array;
+    const tgt = this.edges.column( 'edge.targetArrow' ) as Uint8Array;
 
     if( this.widthBitsView == null || this.widthBitsView.buffer !== width.buffer ){
       this.widthBitsView = new Uint32Array( width.buffer );
     }
 
-    // the mirror can be stale even when the word is not: a growth or a
-    // compaction reallocates edge.width, so both are compared
-    if( shapes[ slot ] === word && this.widthBitsView[ slot * 2 + 1 ] === word ){ return; }
+    const shows = ( alpha: number, hollowShift: number ): number =>
+      ( alpha > 0 && alpha < 255 ) || ( ( word >>> hollowShift ) & 1 ) === 1 ? 1 : 0;
 
-    shapes[ slot ] = word;
-    this.widthBitsView[ slot * 2 + 1 ] = word;
-    // the gap shortens the drawn line, so this moves geometry
+    const bits = word
+      | ( shows( src[ slot * 4 + 3 ], ARROW_SHIFT_HOLLOW_SOURCE ) << ARROW_SHIFT_SRC_SHOWS_LINE )
+      | ( shows( tgt[ slot * 4 + 3 ], ARROW_SHIFT_HOLLOW_TARGET ) << ARROW_SHIFT_TGT_SHOWS_LINE );
+
+    // the mirror can be stale even when its inputs are not: a growth or a
+    // compaction reallocates edge.width
+    if( this.widthBitsView[ slot * 2 + 1 ] === bits ){ return; }
+
+    this.widthBitsView[ slot * 2 + 1 ] = bits;
     this.geoEpoch++;
-    this.dirty.mark( 'edge.arrowShapes', slot );
     this.dirty.mark( 'edge.width', slot );
   }
 
@@ -2420,6 +2461,12 @@ export class GraphStore implements ModelView {
     arr[ at + 2 ] = b;
     arr[ at + 3 ] = a;
     this.dirty.mark( id, slot );
+
+    // round 56: an end arrow's alpha decides whether the head hides the
+    // line under it, which decides how far the line is shortened
+    if( id === 'edge.sourceArrow' || id === 'edge.targetArrow' ){
+      this.updateArrowBits( slot );
+    }
   }
 
   // -- curves (round 12a; derivation in store/curve-index.mts) --

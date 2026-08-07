@@ -2985,9 +2985,12 @@ still be what it says.
   distance, and all three are accepted:
   - **v3's erase punches through whatever is under the head** — a
     compound parent's body, another edge — and a trim does not.
-  - **Two translucent heads that overlap** composite in v4 where v3's
-    erase flattens them.  Reachable when `arrow-scale` makes the heads
-    longer than the chord they sit on.
+  - **Two translucent heads that overlap *each other*** composite in v4
+    where v3's erase flattens them.  Reachable when `arrow-scale` makes
+    the heads longer than the chord they sit on.  A translucent head over
+    its own line is exact: the trim reaches the head's depth whenever the
+    head does not hide the line, and that parity scene reads **0
+    differing pixels**.
   - **Mid arrows are not covered at all**: they sit mid-line, where a
     trim cannot reach.  PLAN.md's open call 21 carries the maintainer's
     lean that `arrow-fill: hollow` may simply not be supported on mid

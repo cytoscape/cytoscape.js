@@ -334,6 +334,28 @@ Recorded cap: 16 arrow shapes.  Adding a seventeenth means finding two
 more bits (the reserved span holds one more id, or the scale byte can be
 re-quantized), not a silent truncation — `packArrowShapes` throws.
 */
+/**
+ * Two flags that exist **only in `edge.width`'s mirror lane**, never in
+ * `edge.arrowShapes` (round 56).
+ *
+ * Each says: *this end's head does not hide the line beneath it* — it is
+ * hollow, or its stored alpha is below opaque.  That is precisely the
+ * condition under which the drawn line has to be shortened past v3's
+ * `gap` to the head's own depth, because v3 relies on its
+ * `destination-out` erase there and an opaque head would have hidden the
+ * difference.
+ *
+ * They live in the mirror rather than in `edge.arrowShapes` deliberately.
+ * The real column's bits 18..23 are reserved, and both a seventeenth
+ * arrow shape and a finer `arrow-scale` want them; the mirror is v4's own
+ * private channel to the vertex stages and spending its copy of that span
+ * costs the reserve nothing.  The consequence is that **the mirror is a
+ * derived word, not a bit-exact copy** — if the reserve is ever spent,
+ * these two move.
+ */
+export const ARROW_SHIFT_SRC_SHOWS_LINE = 18;
+export const ARROW_SHIFT_TGT_SHOWS_LINE = 19;
+
 export const ARROW_SHAPE_MASK = 0xf;
 export const ARROW_SHIFT_SOURCE = 0;
 export const ARROW_SHIFT_TARGET = 4;
@@ -485,15 +507,17 @@ export type ColumnId =
   /**
    * Float32Array(2·cap) — `[ width, arrowBits ]` per edge.
    *
-   * Lane 0 is the edge width in model px.  Lane 1 is a **bit-exact copy
-   * of `edge.arrowShapes`** reinterpreted as f32, so that the four edge
-   * vertex stages — all of which already bind this column and none of
-   * which has a spare storage-buffer slot — can derive v3's per-shape
-   * arrow `gap`/`spacing` without a new binding (round 56).
+   * Lane 0 is the edge width in model px.  Lane 1 is `edge.arrowShapes`
+   * **plus two derived flags** (`ARROW_SHIFT_*_SHOWS_LINE`),
+   * reinterpreted as f32, so that the four edge vertex stages — all of
+   * which already bind this column and none of which has a spare
+   * storage-buffer slot — can derive v3's per-shape arrow `gap`/`spacing`
+   * without a new binding (round 56).
    *
-   * The copy is written by `GraphStore.setArrowShapes` alone, through a
-   * `Uint32Array` view of this column's own buffer rather than a bitcast
-   * via a JS number.  Today's packing leaves bit 23 clear, so no
+   * It is written by `GraphStore.updateArrowBits` alone — from the shape
+   * word *and* the two stored arrow colours, so either input changing
+   * refreshes it — through a `Uint32Array` view of this column's own
+   * buffer rather than a bitcast via a JS number.  Today's packing leaves bit 23 clear, so no
    * reachable word is an f32 NaN and a number round trip would in fact
    * be exact — but that is a property of the *packing*, not of the
    * mirror, and the reserved span at bits 18..23 is explicitly there to

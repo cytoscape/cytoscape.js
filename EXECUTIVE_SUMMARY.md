@@ -267,7 +267,17 @@ short of the node by one distance, and the arrowhead's tip sits at another.
 v4 had neither, so its line ran all the way to the node's *centre* — visible
 through every hollow arrowhead, doubled under every translucent one. Porting
 v3's rule took the divergence on those scenes from 11.8% and 26.7% of the
-frame to 0.4% and 0.9%.
+frame to 0.4% and **zero**: a translucent edge with arrowheads is now
+pixel-identical to v3.
+
+Reaching zero on the translucent case took a correction from the maintainer.
+The first implementation shortened the line further only for *hollow* heads,
+a rule picked from an A/B rather than from a principle. Asked why it should
+not apply more widely, the principle turned out to be **"does the head hide
+the line?"** — an opaque head does, so v3's plain gap is exact; a hollow *or
+translucent* head does not, so v3 is relying on its erase and the line has to
+be shortened to the head's own depth. Widening the rule that way is better on
+every scene at once, which neither blanket answer managed.
 
 Two findings came from **looking at the rendered pixels** rather than reading
 the code, which is the round's transferable part:
@@ -282,12 +292,16 @@ the code, which is the round's transferable part:
   it exposed four compound arrowheads that had been listed in the scene since
   August 2nd and never actually drawn, because their style rule was missing.
   Two defects had been concealing each other.
+- The golden images **could not see this round's own fix**: eleven moved, by at
+  most 0.178% against a half-percent tolerance. That is not bad luck — v3 sizes
+  the gap so the line stops *underneath* the head, so an opaque head hides the
+  entire difference, and every arrowhead golden used opaque heads. A new golden
+  built from hollow and translucent heads moves 1.4% when the fix is degraded
+  and 5.3% when it is removed.
 
 The round also inherited four confident statements from its predecessor and
 **measurement contradicted all four**, including the recommended way to trim
-the line (the alternative tested worse) and the assumption that the golden
-images would catch the change (they moved by at most 0.178% against a 0.5%
-tolerance — they could not have).
+the line and the assumption that the golden images would catch the change.
 
 To make this kind of thing visible in future, the parity suite gained a
 **close-up tier**: short edges viewed at 3–5× magnification, where

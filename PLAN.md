@@ -14050,7 +14050,44 @@ bakes into the shader where v3 spells them in its default stylesheet.
   screenshots moved the arrowhead labels above their nodes (a
   left-aligned `triangle-backcurve (hollow)` overhangs the next column)
   — a defect no spec would ever have raised.
-- [ ] **57.1 The default stylesheet.**  Last, because it is the only item
-  that moves pixels and so the only one whose verification is the browser
-  tier.
+- [x] **57.1a The selection look, and edge `width`** (2026-08-07) — the
+  node fragment shader draws v3's `:selected` rule instead of v4's accent
+  ring: the **fill** goes `#0169D9` and the border keeps its own colour,
+  and a selected compound parent takes v3's `#CCE1F9` / `#aec8e5` pair
+  (`:parent:selected`, which v4 had recorded as unported).  Deliberately
+  outside the LOD branch, so a selected node stays visibly selected at
+  far zoom where decorations collapse.  `FLAG_GRABBED` leaves the hover
+  brighten, since 57.1c gives a pressed element v3's overlay instead and
+  two affordances for one state is worse than either.  Edge `width`
+  default 2 -> 3, v3's default sheet's only element rule.
+  **A parity scene that could not have passed before**, which is the
+  point of building it: v3 fills a selected node and v4 ringed one, so
+  the two disagreed over the whole interior of every selected node and
+  no scene covered it.  `parity-selection` reads **0.017%** (20 px) over
+  selected leaves, a selected parent and their unselected twins, with
+  neither stylesheet mentioning selection — so what it compares is
+  precisely the two libraries' defaults.  Two controls, both failing even
+  the suite's loose 3% default: **3.147%** with the colour removed and
+  **5.883%** with a selected parent taking the leaf colour.
+  **And it found a real divergence, recorded rather than hidden.**  The
+  scene's first draft styled `background-color` and read 5.18%: in v3
+  the selection rules are *default-sheet* rules, so a user block naming a
+  colour comes later and beats them — a v3 app with a palette shows no
+  selection colour unless it writes its own `:selected`.  v4 has no
+  `:selected` to write, so matching that exactly would leave an app no
+  way to make selection visible at all.  The shader wins instead; the
+  deviation is in `src/README.md` with the mechanism that would reverse
+  it (a per-group bit in the Frame uniform, which is *exact* here rather
+  than approximate, because a v4 sheet has exactly one block per group).
+  Goldens: **two** moved and eleven did not.  `UPDATE_GOLDENS=1` rewrites
+  every golden whether or not it exceeded its bound, so the run was
+  re-checked without it — only `selection-accent` (its scene grew a
+  parent pair) and `polygon-shapes` (its selected star) actually failed,
+  and the other eleven were reverted as sub-tolerance drift.  That is
+  round 27.3's discipline, and it is the difference between a golden
+  diff that means something and one that means "a run happened".
+  One renderer spec changed and says more for it: the node it adds while
+  headless is added `selected: true`, so it now draws blue rather than
+  the sheet's red — which pins that the flag survived the re-mount as
+  well as the geometry.
 - [ ] **57.7 Closing docs sweep** + the `EXECUTIVE_SUMMARY.md` rewrite.

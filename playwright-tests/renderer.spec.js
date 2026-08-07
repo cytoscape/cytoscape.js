@@ -807,11 +807,15 @@ test.describe('WebGPU renderer', () => {
     expect(old[0]).toBeGreaterThan(240);
     expect(old[1]).toBeGreaterThan(240);
 
-    // ...and the node added while headless renders too (red, per the sheet)
+    // ...and the node added while headless renders too.  It was added
+    // `selected: true`, so since round 57.1 it draws in v3's selection
+    // blue (#0169d9) rather than the sheet's red — which makes this
+    // assertion say more than it did: the flag survived the re-mount as
+    // well as the geometry.
     const added = await pixelAt(page, center.x - 80, center.y - 40);
 
-    expect(added[0]).toBeGreaterThan(150);
-    expect(added[1]).toBeLessThan(100);
+    expect(added[0]).toBeLessThan(60);
+    expect(added[2]).toBeGreaterThan(150);
 
     // label glyphs rebuilt after mount: dark pixels exist below the node
     const png = decodePng(

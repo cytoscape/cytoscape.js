@@ -45,7 +45,8 @@ describe('gpu/style', function () {
       expect(cy.$id('a').width()).to.equal(30);
       expect(cy.$id('a').height()).to.equal(30);
       expect(fillOf('a')).to.deep.equal([153, 153, 153, 255]); // #999
-      expect(cy.$id('ab').width()).to.equal(2);
+      // v3's default stylesheet's one element rule (round 57.1)
+      expect(cy.$id('ab').width()).to.equal(3);
       expect(lineOf('ab')).to.deep.equal([153, 153, 153, 255]);
     });
 

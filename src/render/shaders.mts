@@ -122,7 +122,18 @@ const FLAG_PARENT: u32 = 4096u;
 const FLAG_NO_EVENTS: u32 = 32768u; // 20.2: pointer-transparent (pick-mode culls only)
 const SHOWN: u32 = 262145u; // ALIVE | DRAWN (round 22: the draw tier — visibility folds in)
 
+// v3's default stylesheet, drawn rather than restyled (round 57.1).  v4
+// has no selector blocks and does not re-run the style engine on
+// selection — round 4's select/unselect fast path rests on that — so the
+// three rules v3 spells as :selected, :parent:selected and :active
+// are *shader* constants here.  The values are v3's own, verbatim.
+//
+// Consequence, recorded: style('background-color') on a selected node
+// still reads the element's own colour.  Stored truth is unchanged; only
+// the pixels differ, exactly as the accent ring this replaces did.
 const SELECT_ACCENT = vec3f(0.00392, 0.41176, 0.85098); // #0169d9
+const SELECT_PARENT_FILL = vec3f(0.8, 0.88235, 0.97647); // #cce1f9
+const SELECT_PARENT_BORDER = vec3f(0.68235, 0.78431, 0.89804); // #aec8e5
 
 // early-z depth ranks: the node depth prepass writes NODE_Z for opaque
 // node interiors; edges draw at EDGE_Z with a 'less' test so fragments
@@ -1801,28 +1812,46 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
   }
 
   var edge = 0.0; // coverage boundary: sd <= edge is inked
+  let flags = nodeFlags[slot];
+  let selected = (flags & FLAG_SELECTED) != 0u;
+
+  // v3's :selected sets background-color #0169D9 and leaves the border
+  // alone; :parent:selected takes the lighter pair instead.
+  // The *fill* goes blue rather than a ring being drawn at the boundary,
+  // which is what v4 did until round 57.1 — a ring is a different
+  // affordance, and the ask was to look like v3.
+  //
+  // Deliberately outside the !plain branch below: this is a colour
+  // swap with no geometry, so a selected node stays visibly selected at
+  // far zoom where the decorations LOD out.  The alpha is the fill's own,
+  // so background-opacity still applies.
+  if (selected) {
+    color = vec4f(select(SELECT_ACCENT, SELECT_PARENT_FILL,
+      (flags & FLAG_PARENT) != 0u), color.a);
+  }
 
   if (!plain) {
     let borderWidth = borderWidths[slot] * frame.zoomDpr;
-    let flags = nodeFlags[slot];
     // border-position (B2): the band straddles the boundary by v3's
     // rule — center [−bw/2, bw/2] (the default), inside [−bw, 0],
     // outside [0, bw]
     let bOut = borderOutward(borderGeom[slot].y & 0xffu, borderWidth);
 
     if (borderWidth > 0.0 && sd > bOut - borderWidth) {
-      color = unpack4x8unorm(borderColors[slot]);
+      // a selected *parent* is the one case where v3 recolours the
+      // border too (:parent:selected); a selected leaf keeps its own
+      color = select(unpack4x8unorm(borderColors[slot]),
+        vec4f(SELECT_PARENT_BORDER, 1.0),
+        selected && (flags & FLAG_PARENT) != 0u);
       edge = bOut;
     }
 
-    // selection accent ring at the boundary
-    if ((flags & FLAG_SELECTED) != 0u && sd > -max(2.0, borderWidth)) {
-      color = vec4f(SELECT_ACCENT, 1.0);
-      edge = max(edge, 0.0);
-    }
-
-    // hover/grab brighten
-    if ((flags & (FLAG_HOVERED | FLAG_GRABBED)) != 0u) {
+    // hover brighten.  FLAG_GRABBED left this condition in round 57.1:
+    // a pressed element now carries v3's :active overlay, and
+    // brightening it as well would be two affordances for one state.
+    // Hover is a state v3 does not style at all and v4 has no other way
+    // to express, so it stays — a recorded deviation, not an oversight.
+    if ((flags & FLAG_HOVERED) != 0u) {
       color = vec4f(min(color.rgb + vec3f(0.15), vec3f(1.0)), color.a);
     }
   }

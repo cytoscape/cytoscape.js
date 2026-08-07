@@ -1008,7 +1008,8 @@ each is deliberate, not a pass-1 deferral:
   GPU-evaluable.  The opaque `(ele) => props` form was removed — its
   cases are covered by mappers (`case` for conditionals, `data(id)` for
   identity), and selection-dependent recolouring is intentionally gone
-  (the `:selected` accent ring is shader-drawn).  Removed means
+  (v3's `:selected` rule is drawn by the shader — see below).  Removed
+  means
   **rejected**, since round 29.3: a group written as a function throws
   at `setSheet`.  Until then it was silently *ignored*, so a v3
   stylesheet ported wholesale produced an unstyled graph and no error —
@@ -1991,9 +1992,12 @@ public bb/fit do include labels, but the auto-bounds derivation
 deliberately does not — recorded).  Compound props throw outside the
 parents group.  Readback answers from the per-parent record
 (`style('padding')` returns the declared px number or the percent
-string; leaves read 0, as v3 leaves do).  The v3 `:parent:selected`
-tint is not ported — v4 never restyles on selection (the shader
-accent ring is the selection affordance); recorded deviation.
+string; leaves read 0, as v3 leaves do).  v3's `:parent:selected`
+tint **is** drawn since round 57.1 — its `#CCE1F9` fill and `#aec8e5`
+border are constants in the node fragment shader, like the leaf rule —
+so v4 never restyles on selection and still looks like v3.  The live
+parity scene reads **0.017%** over a scene of selected leaves and a
+selected parent.
 GPU mapper eval: nodes-group paint mappers on channels the parents
 group resolves differently (default-overlay channels the nodes block
 does not override, plus any user parents-block prop) demote to the
@@ -2736,7 +2740,7 @@ that scale).  Flag mutators (`select`/`unselect`, `show`/`hide`, `lock`,
 `grabify`, `selectify`) go through one bulk pass over the flags column
 (`GraphStore.flagRefs`: hoisted columns, one coalesced dirty span per
 group); select/unselect skips its restyle pass entirely unless some style
-block matches on `:selected`/`:unselected` (the selected accent ring is
+block matches on `:selected`/`:unselected` (the whole selection look is
 drawn by the shader, so the default stylesheet never restyles) and only
 emits when someone is listening.  `shift()` and constant `positions()`
 are direct column arithmetic — no per-element handles or Position
@@ -3015,11 +3019,26 @@ still be what it says.
 
 ## Known deviations from v3 (accepted for pass 1)
 
-> **Two entries below are *not* accepted** and say so where they appear:
-> the missing arrow `gap` (round 55 measured it; the fix is scheduled and
-> its constants are already in the tree) and `border-style` /
-> `outline-style` (round 38).  Everything else in this section is a
-> decision, not a backlog item.
+> **One entry below is *not* accepted** and says so where it appears:
+> `border-style` / `outline-style` (round 38).  Everything else in this
+> section is a decision, not a backlog item.  (The missing arrow `gap`
+> was the other; round 56 landed it.)
+
+- **The selection colour is not overridable, where v3's is** (round
+  57.1).  v4 draws v3's `:selected` rule — `#0169D9` on the fill,
+  `#CCE1F9`/`#aec8e5` on a selected compound parent — in the node
+  fragment shader, and it always wins.  In v3 those rules live in the
+  *default stylesheet*, so a user block setting `background-color` comes
+  later and beats them: a v3 app with a styled palette shows no selection
+  colour at all unless it writes its own `:selected` rule.
+  v4 has no `:selected` to write, so matching v3 exactly would leave an
+  app **no** way to make selection visible, which is why the shader wins
+  instead.  The two agree exactly on the default sheet — the live parity
+  scene reads 0.017% — and diverge for any sheet that names a colour.
+  *To reverse*: the style engine knows per group whether the sheet
+  declares `background-color` / `line-color`, and a v4 sheet has exactly
+  one block per group, so a bit per group carried in the Frame uniform
+  would reproduce v3's precedence exactly rather than approximately.
 
 - **Straight-edge endpoint accessors** (round 55, *fixed* — kept here
   because the answer changed): `source/targetEndpoint()` used to report

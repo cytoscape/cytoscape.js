@@ -565,7 +565,11 @@ const EDGE_DEFAULTS: EdgeComputed = {
   lineCap: 0, // butt, as v3
   lineDashPattern: [6, 3, 6, 3], // v3's [6, 3], pair-normalized
   lineDashOffset: 0,
-  width: 2,
+  // v3's default *stylesheet* carries `edge { width: 3 }` — the only
+  // element rule in it besides :parent/:selected/:active — and v4 had 2
+  // (round 57.1).  Changed to match, since "the default stylesheet should
+  // look like v3's" names exactly that file.
+  width: 3,
   opacity: 1,
   lineStyle: LINE_SOLID,
   sourceArrowShape: 'none',

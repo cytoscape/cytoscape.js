@@ -228,14 +228,27 @@ test.describe('WebGPU visual goldens', () => {
     );
   });
 
-  test('golden: selection accent rings', async ({ page }, testInfo) => {
+  test('golden: the selection look (round 57.1)', async ({
+    page,
+  }, testInfo) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
+    // Round 57.1 replaced v4's accent *ring* with v3's own rule: the
+    // selected node's **fill** goes #0169D9 and its border keeps its own
+    // colour, and a selected compound parent takes v3's lighter
+    // #CCE1F9 / #aec8e5 pair instead.  Both cases are here, beside their
+    // unselected twins — the comparison is what makes the golden say
+    // anything, since a golden only ever answers "did this change?".
     await makeReadyCy(page, {
       elements: [
-        { data: { id: 'a' }, position: { x: -80, y: 0 }, selected: true },
-        { data: { id: 'b' }, position: { x: 80, y: 0 } },
+        { data: { id: 'a' }, position: { x: -120, y: -60 }, selected: true },
+        { data: { id: 'b' }, position: { x: 0, y: -60 } },
         { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'p' }, selected: true },
+        { data: { id: 'c', parent: 'p' }, position: { x: -90, y: 70 } },
+        { data: { id: 'd', parent: 'p' }, position: { x: 20, y: 70 } },
+        { data: { id: 'q' } },
+        { data: { id: 'e', parent: 'q' }, position: { x: 140, y: 70 } },
       ],
       style: {
         nodes: {
@@ -5125,6 +5138,65 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { minInk: 1200 },
+    );
+  });
+
+  test('parity: the selection look (round 57.1)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // **This scene could not have passed before round 57.1**, which is
+    // the argument for it: v3 fills a selected node #0169D9 and v4 drew
+    // a ring at its boundary, so the two disagreed over the whole
+    // interior of every selected node and no parity scene covered it.
+    // Neither stylesheet mentions selection — v3's default sheet carries
+    // `:selected` and `:parent:selected`, and v4 draws the same rule in
+    // the node fragment shader — so what this compares is precisely the
+    // two libraries' *defaults*.
+    //
+    // The parent pair is here because v3 gives it a different colour
+    // (#CCE1F9 / #aec8e5), and a scene with leaves alone would pass with
+    // that case unimplemented.
+    //
+    // **The sheet sets no colour at all, deliberately.**  In v3 the
+    // selection rules live in the *default* stylesheet, so a user block
+    // setting `background-color` comes later and beats them — a v3 app
+    // with a styled palette shows no selection colour unless it writes
+    // its own `:selected` rule.  v4 has no `:selected` to write, so its
+    // affordance is unconditional and would diverge here for any sheet
+    // that names a colour.  That is a recorded deviation (see
+    // `src/README.md`), and this scene is scoped to the thing the round
+    // is about: the two libraries' **defaults**.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -140, y: -70 }, selected: true },
+      { data: { id: 'b' }, position: { x: -20, y: -70 } },
+      { data: { id: 'c' }, position: { x: 100, y: -70 }, selected: true },
+      { data: { id: 'p' }, selected: true },
+      { data: { id: 'p1', parent: 'p' }, position: { x: -110, y: 80 } },
+      { data: { id: 'p2', parent: 'p' }, position: { x: -10, y: 80 } },
+      { data: { id: 'q' } },
+      { data: { id: 'q1', parent: 'q' }, position: { x: 110, y: 80 } },
+    ];
+    // a border but no border *colour*: both libraries default it to
+    // black, and it staying black under selection is what says the rule
+    // recolours the fill rather than the whole element
+    const shared = { width: 56, height: 56, 'border-width': 6 };
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-selection',
+      elements,
+      [{ selector: 'node', style: Object.assign({}, shared) }],
+      { nodes: Object.assign({}, shared) },
+      // measured 0.017% (20 px).  The bound is 0.3% rather than the
+      // suite's 3% default because this scene has no AA-heavy geometry
+      // and the controls sit two orders of magnitude above it: with the
+      // selection colour removed it reads **3.147%**, and with a
+      // selected parent taking the leaf colour instead of v3's lighter
+      // pair, **5.883%** — both fail even the loose default.
+      { minInk: 3000, bound: 0.003 },
     );
   });
 
